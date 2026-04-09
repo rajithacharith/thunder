@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi} from 'vitest';
+import StepFactory from '../StepFactory';
+import type {Element} from '@/features/flows/models/elements';
+import type {Resources} from '@/features/flows/models/resources';
 import type {Step} from '@/features/flows/models/steps';
 import {StepTypes, StepCategories} from '@/features/flows/models/steps';
-import type {Resources} from '@/features/flows/models/resources';
-import type {Element} from '@/features/flows/models/elements';
-import StepFactory from '../StepFactory';
 
 // Mock CommonStepFactory
 vi.mock('@/features/flows/components/resources/steps/CommonStepFactory', () => ({

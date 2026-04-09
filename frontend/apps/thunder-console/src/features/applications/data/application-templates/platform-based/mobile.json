@@ -1,25 +1,29 @@
 {
   "id": "mobile",
   "displayName": "Mobile",
-  "name": "Mobile Application",
   "description": "Native mobile application",
-  "inboundAuthConfig": [
-    {
-      "type": "oauth2",
-      "config": {
-        "grantTypes": [
-          "authorization_code",
-          "refresh_token"
-        ],
-        "responseTypes": [
-          "code"
-        ],
-        "redirectUris": [],
-        "pkceRequired": true,
-        "tokenEndpointAuthMethod": "none",
-        "publicClient": true
+  "defaults": {
+    "name": "Mobile Application",
+    "inboundAuthConfig": [
+      {
+        "type": "oauth2",
+        "config": {
+          "grantTypes": ["authorization_code", "refresh_token"],
+          "responseTypes": ["code"],
+          "redirectUris": [],
+          "pkceRequired": true,
+          "tokenEndpointAuthMethod": "none",
+          "publicClient": true
+        }
       }
+    ],
+    "allowedUserTypes": []
+  },
+  "fieldConstraints": {
+    "oauth2": {
+      "publicClient": {"readOnly": true, "value": true},
+      "pkceRequired": {"readOnly": true, "value": true},
+      "tokenEndpointAuthMethod": {"readOnly": true, "value": "none"}
     }
-  ],
-  "allowedUserTypes": []
+  }
 }

@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import type {CommonResourcePropertiesPropsInterface} from '@/features/flows/components/resource-property-panel/ResourceProperties';
+import {Alert, FormHelperText, FormLabel, MenuItem, Select, Stack, TextField, Typography} from '@wso2/oxygen-ui';
 import {useMemo, type ReactNode} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Alert, FormHelperText, FormLabel, MenuItem, Select, Stack, TextField, Typography} from '@wso2/oxygen-ui';
+import type {CommonResourcePropertiesPropsInterface} from '@/features/flows/components/resource-property-panel/ResourceProperties';
+import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
 import type {StepData} from '@/features/flows/models/steps';
 import {ExecutionTypes} from '@/features/flows/models/steps';
-import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
 import useIdentityProviders from '@/features/integrations/api/useIdentityProviders';
 import {IdentityProviderTypes, type IdentityProviderType} from '@/features/integrations/models/identity-provider';
 import useNotificationSenders from '@/features/notification-senders/api/useNotificationSenders';

@@ -16,24 +16,24 @@
  * under the License.
  */
 
-import {useCallback} from 'react';
 import type {Edge, Node} from '@xyflow/react';
 import cloneDeep from 'lodash-es/cloneDeep';
 import isEmpty from 'lodash-es/isEmpty';
 import mergeWith from 'lodash-es/mergeWith';
+import {useCallback} from 'react';
+import {mutateComponents} from '../utils/componentMutations';
+import generateUnconnectedEdges from '../utils/edgeUtils';
+import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
+import useGenerateStepElement from '@/features/flows/hooks/useGenerateStepElement';
 import {BlockTypes, type Element} from '@/features/flows/models/elements';
+import {ResourceTypes, type Resource, type Resources} from '@/features/flows/models/resources';
 import {StepTypes, type Step, type StepData} from '@/features/flows/models/steps';
 import {type Template, TemplateTypes, type TemplateReplacer} from '@/features/flows/models/templates';
 import type {Widget} from '@/features/flows/models/widget';
-import {ResourceTypes, type Resource, type Resources} from '@/features/flows/models/resources';
 import generateIdsForResources from '@/features/flows/utils/generateIdsForResources';
 import resolveComponentMetadata from '@/features/flows/utils/resolveComponentMetadata';
 import resolveStepMetadata from '@/features/flows/utils/resolveStepMetadata';
 import updateTemplatePlaceholderReferences from '@/features/flows/utils/updateTemplatePlaceholderReferences';
-import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
-import useGenerateStepElement from '@/features/flows/hooks/useGenerateStepElement';
-import generateUnconnectedEdges from '../utils/edgeUtils';
-import {mutateComponents} from '../utils/componentMutations';
 
 /**
  * Props for the useTemplateAndWidgetLoading hook.
@@ -81,8 +81,15 @@ export interface UseTemplateAndWidgetLoadingReturn {
  * @returns Loading handlers.
  */
 const useTemplateAndWidgetLoading = (props: UseTemplateAndWidgetLoadingProps): UseTemplateAndWidgetLoadingReturn => {
-  const {resources, generateSteps, generateEdges, validateEdges, getBlankTemplateComponents, setNodes, updateNodeInternals} =
-    props;
+  const {
+    resources,
+    generateSteps,
+    generateEdges,
+    validateEdges,
+    getBlankTemplateComponents,
+    setNodes,
+    updateNodeInternals,
+  } = props;
 
   const {setFlowCompletionConfigs, edgeStyle} = useFlowBuilderCore();
   const {generateStepElement} = useGenerateStepElement();

@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {BrowserRouter, Route, Routes} from 'react-router';
 import type {JSX} from 'react';
+import {BrowserRouter, Route, Routes} from 'react-router';
 import appRoutes, {type AppRoute} from './config/appRoutes';
 
 export default function App(): JSX.Element {

@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {renderHook} from '@thunder/test-utils';
+import {describe, it, expect} from 'vitest';
 import useLayoutBuilder from '../useLayoutBuilder';
 
 describe('useLayoutBuilder', () => {

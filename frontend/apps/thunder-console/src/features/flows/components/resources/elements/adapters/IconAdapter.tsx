@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {type ReactElement, type ComponentType} from 'react';
 import {Box} from '@wso2/oxygen-ui';
 import * as Icons from '@wso2/oxygen-ui-icons-react';
+import {type ReactElement, type ComponentType} from 'react';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 
 /**
@@ -53,9 +53,9 @@ function IconAdapter({resource}: IconAdapterPropsInterface): ReactElement {
   const size = iconElement?.size ?? 24;
   const color = iconElement?.color ?? 'currentColor';
 
-  const IconComponent = (name in Icons
-    ? Icons[name as keyof typeof Icons]
-    : undefined) as ComponentType<{size?: number; color?: string}> | undefined;
+  const IconComponent = (name in Icons ? Icons[name as keyof typeof Icons] : undefined) as
+    | ComponentType<{size?: number; color?: string}>
+    | undefined;
 
   if (!IconComponent) {
     return (

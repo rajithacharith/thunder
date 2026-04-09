@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {Outlet} from 'react-router';
 import {Box} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
+import {Outlet} from 'react-router';
 
 export default function DefaultLayout(): JSX.Element {
   return (

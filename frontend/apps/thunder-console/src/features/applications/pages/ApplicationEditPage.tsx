@@ -16,8 +16,7 @@
  * under the License.
  */
 
-import {useState, useCallback, useMemo, type SyntheticEvent} from 'react';
-import {Link, useNavigate, useParams} from 'react-router';
+import {useLogger} from '@thunder/logger/react';
 import {
   Box,
   Stack,
@@ -34,23 +33,25 @@ import {
   PageTitle,
 } from '@wso2/oxygen-ui';
 import {ArrowLeft, AppWindow, Edit} from '@wso2/oxygen-ui-icons-react';
+import {useState, useCallback, useMemo, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useLogger} from '@thunder/logger';
+import {Link, useNavigate, useParams} from 'react-router';
 import CopyableId from '../../../components/CopyableId';
-import useGetApplication from '../api/useGetApplication';
-import useUpdateApplication from '../api/useUpdateApplication';
-import type {Application} from '../models/application';
-import type {OAuth2Config} from '../models/oauth';
 import ResourceAvatar from '../../../components/ResourceAvatar';
 import UnsavedChangesBar from '../../../components/UnsavedChangesBar';
-import IntegrationGuides from '../components/edit-application/integration-guides/IntegrationGuides';
-import EditGeneralSettings from '../components/edit-application/general-settings/EditGeneralSettings';
-import EditFlowsSettings from '../components/edit-application/flows-settings/EditFlowsSettings';
-import EditCustomizationSettings from '../components/edit-application/customization-settings/EditCustomizationSettings';
-import EditTokenSettings from '../components/edit-application/token-settings/EditTokenSettings';
+import useGetApplication from '../api/useGetApplication';
+import useUpdateApplication from '../api/useUpdateApplication';
 import EditAdvancedSettings from '../components/edit-application/advanced-settings/EditAdvancedSettings';
-import getTemplateMetadata from '../utils/getTemplateMetadata';
+import EditCustomizationSettings from '../components/edit-application/customization-settings/EditCustomizationSettings';
+import EditFlowsSettings from '../components/edit-application/flows-settings/EditFlowsSettings';
+import EditGeneralSettings from '../components/edit-application/general-settings/EditGeneralSettings';
+import IntegrationGuides from '../components/edit-application/integration-guides/IntegrationGuides';
+import EditTokenSettings from '../components/edit-application/token-settings/EditTokenSettings';
+import type {Application} from '../models/application';
+import type {OAuth2Config} from '../models/oauth';
 import getIntegrationGuidesForTemplate from '../utils/getIntegrationGuidesForTemplate';
+import getTemplateFieldConstraints from '../utils/getTemplateFieldConstraints';
+import getTemplateMetadata from '../utils/getTemplateMetadata';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -115,6 +116,11 @@ export default function ApplicationEditPage() {
     [application],
   );
 
+  const oauth2Constraints = useMemo(
+    () => getTemplateFieldConstraints(application?.template)?.oauth2,
+    [application?.template],
+  );
+
   const handleFieldChange = useCallback((field: keyof Application, value: unknown) => {
     setEditedApp((prev) => ({...prev, [field]: value}));
   }, []);
@@ -157,7 +163,7 @@ export default function ApplicationEditPage() {
         </Alert>
         <Button
           onClick={() => {
-            handleBack().catch(() => {});
+            handleBack().catch(() => null);
           }}
           startIcon={<ArrowLeft size={16} />}
         >
@@ -175,7 +181,7 @@ export default function ApplicationEditPage() {
         </Alert>
         <Button
           onClick={() => {
-            handleBack().catch(() => {});
+            handleBack().catch(() => null);
           }}
           startIcon={<ArrowLeft size={16} />}
         >
@@ -185,7 +191,7 @@ export default function ApplicationEditPage() {
     );
   }
 
-  const oauth2Config: OAuth2Config | undefined = application.inboundAuthConfig?.find(
+  const oauth2Config: OAuth2Config | undefined = (editedApp.inboundAuthConfig ?? application.inboundAuthConfig)?.find(
     (config) => config.type === 'oauth2',
   )?.config;
 
@@ -208,7 +214,6 @@ export default function ApplicationEditPage() {
           <Stack direction="row" alignItems="center" spacing={1} mb={1}>
             {isEditingName ? (
               <TextField
-                autoFocus
                 value={tempName}
                 onChange={(e) => setTempName(e.target.value)}
                 onBlur={() => {
@@ -253,7 +258,6 @@ export default function ApplicationEditPage() {
           <Stack direction="row" alignItems="flex-start" spacing={1}>
             {isEditingDescription ? (
               <TextField
-                autoFocus
                 fullWidth
                 multiline
                 rows={2}
@@ -328,7 +332,10 @@ export default function ApplicationEditPage() {
             })()}
 
           {/* Application ID */}
-          <CopyableId value={application.id} copyLabel={t('applications:edit.page.copyApplicationId', 'Copy Application ID')} />
+          <CopyableId
+            value={application.id}
+            copyLabel={t('applications:edit.page.copyApplicationId', 'Copy Application ID')}
+          />
         </PageTitle.SubHeader>
       </PageTitle>
 
@@ -420,6 +427,7 @@ export default function ApplicationEditPage() {
             application={application}
             editedApp={editedApp}
             oauth2Config={oauth2Config}
+            oauth2Constraints={oauth2Constraints}
             onFieldChange={handleFieldChange}
           />
         </TabPanel>
@@ -435,7 +443,7 @@ export default function ApplicationEditPage() {
           isSaving={updateApplication.isPending}
           onReset={() => setEditedApp({})}
           onSave={() => {
-            handleSave().catch(() => {});
+            handleSave().catch(() => null);
           }}
         />
       )}

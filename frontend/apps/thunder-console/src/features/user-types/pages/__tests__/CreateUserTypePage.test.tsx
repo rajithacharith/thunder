@@ -16,12 +16,12 @@
  * under the License.
  */
 
+import {render, screen, waitFor, userEvent, within} from '@thunder/test-utils';
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, userEvent, within} from '@thunder/test-utils';
 import type useCreateUserTypeHook from '../../api/useCreateUserType';
-import CreateUserTypePage from '../CreateUserTypePage';
 import UserTypeCreateProvider from '../../contexts/UserTypeCreate/UserTypeCreateProvider';
+import CreateUserTypePage from '../CreateUserTypePage';
 
 const mockNavigate = vi.fn();
 const mockMutateAsync = vi.fn();
@@ -38,7 +38,7 @@ vi.mock('react-router', async () => {
         href={to}
         onClick={(e) => {
           e.preventDefault();
-          Promise.resolve(mockNavigate(to)).catch(() => {});
+          Promise.resolve(mockNavigate(to)).catch(() => null);
         }}
       >
         {children}
@@ -289,6 +289,9 @@ describe('CreateUserTypePage', () => {
 
     const addButton = screen.getByRole('button', {name: /Add Property/i});
     await user.click(addButton);
+
+    const propertyInputs = screen.getAllByPlaceholderText(/e\.g\., email, age, address/i);
+    expect(propertyInputs.length).toBeGreaterThan(1);
   });
 
   it('allows removing a property', async () => {
@@ -301,12 +304,20 @@ describe('CreateUserTypePage', () => {
     const addButton = screen.getByRole('button', {name: /Add Property/i});
     await user.click(addButton);
 
+    let propertyInputs = screen.getAllByPlaceholderText(/e\.g\., email, age, address/i);
+    const initialCount = propertyInputs.length;
+
     // Now remove the second property
     const removeButtons = screen
       .getAllByRole('button')
       .filter((btn) => btn.classList.contains('MuiIconButton-colorError'));
 
     await user.click(removeButtons[removeButtons.length - 1]);
+
+    await waitFor(() => {
+      propertyInputs = screen.getAllByPlaceholderText(/e\.g\., email, age, address/i);
+      expect(propertyInputs.length).toBe(initialCount - 1);
+    });
   });
 
   it('allows changing property name', async () => {

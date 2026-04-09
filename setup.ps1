@@ -50,6 +50,7 @@ $BOOTSTRAP_FAIL_FAST = if ($env:BOOTSTRAP_FAIL_FAST -eq "false") { $false } else
 $BOOTSTRAP_SKIP_PATTERN = if ($env:BOOTSTRAP_SKIP_PATTERN) { $env:BOOTSTRAP_SKIP_PATTERN } else { "" }
 $BOOTSTRAP_ONLY_PATTERN = if ($env:BOOTSTRAP_ONLY_PATTERN) { $env:BOOTSTRAP_ONLY_PATTERN } else { "" }
 $BOOTSTRAP_DIR = if ($env:BOOTSTRAP_DIR) { $env:BOOTSTRAP_DIR } else { ".\bootstrap" }
+$WITH_CONSENT = if ($env:WITH_CONSENT -eq 'false') { $false } else { $true }
 
 # ============================================================================
 # Logging Functions
@@ -210,6 +211,7 @@ function Show-Help {
     Write-Host "Options:"
     Write-Host "  --debug                  Enable debug mode with remote debugging"
     Write-Host "  --debug-port PORT        Set debug port (default: 2345)"
+    Write-Host "  --without-consent        Disable the bundled consent server"
     Write-Host "  --help                   Show this help message"
     Write-Host ""
     Write-Host "Description:"
@@ -244,6 +246,11 @@ while ($i -lt $args.Count) {
                 Write-Host "Missing value for --debug-port" -ForegroundColor Red
                 exit 1
             }
+            break
+        }
+        '--without-consent' {
+            $WITH_CONSENT = $false
+            $i++
             break
         }
         '--help' {
@@ -449,6 +456,48 @@ if (-not $thunderPath) {
     $thunderPath = Join-Path $scriptDir 'thunder'
 }
 
+# Start Consent Server (if enabled)
+$consentProc = $null
+$consentDir = Join-Path $scriptDir 'consent'
+if ($WITH_CONSENT) {
+    if (-not (Test-Path $consentDir)) {
+        Log-Error "Consent server is enabled but consent directory not found: $consentDir"
+        exit 1
+    }
+    Write-Host "[INFO] Starting Consent Server..." -ForegroundColor Cyan
+    $consentPort = if ($env:CONSENT_SERVER_PORT) { $env:CONSENT_SERVER_PORT } else { "9090" }
+    $consentBinary = @(
+        (Join-Path $consentDir 'consent-server.exe'),
+        (Join-Path $consentDir 'consent-server')
+    ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+    if (-not $consentBinary) {
+        Log-Error "Consent server is enabled but consent-server binary not found in: $consentDir"
+        exit 1
+    }
+    $consentProc = Start-Process -FilePath $consentBinary -WorkingDirectory $consentDir -NoNewWindow -PassThru
+    $consentTimeout = 30
+    $consentElapsed = 0
+    while ($consentElapsed -lt $consentTimeout) {
+        if ($consentProc.HasExited) {
+            Log-Error "Consent server process exited unexpectedly (code $($consentProc.ExitCode))"
+            exit 1
+        }
+        try {
+            $resp = Invoke-WebRequest -Uri "http://localhost:${consentPort}/health/readiness" -UseBasicParsing -ErrorAction Stop
+            if ($resp.StatusCode -eq 200) {
+                Write-Host "[INFO] Consent server is ready" -ForegroundColor Cyan
+                break
+            }
+        } catch { }
+        Start-Sleep -Seconds 1
+        $consentElapsed++
+    }
+    if ($consentElapsed -ge $consentTimeout) {
+        Log-Error "Consent server failed to become ready within ${consentTimeout}s"
+        exit 1
+    }
+}
+
 $proc = $null
 try {
     if ($DEBUG_MODE) {
@@ -476,6 +525,11 @@ try {
         if ($proc -and -not $proc.HasExited) {
             try {
                 Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+            } catch { }
+        }
+        if ($consentProc -and -not $consentProc.HasExited) {
+            try {
+                Stop-Process -Id $consentProc.Id -Force -ErrorAction SilentlyContinue
             } catch { }
         }
     }
@@ -712,6 +766,11 @@ finally {
     if ($proc -and -not $proc.HasExited) {
         try {
             Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+        } catch { }
+    }
+    if ($consentProc -and -not $consentProc.HasExited) {
+        try {
+            Stop-Process -Id $consentProc.Id -Force -ErrorAction SilentlyContinue
         } catch { }
     }
 

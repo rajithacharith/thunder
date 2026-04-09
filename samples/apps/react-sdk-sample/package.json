@@ -1,7 +1,7 @@
 {
     "name": "react-sdk-sample",
     "private": true,
-    "version": "0.28.0",
+    "version": "0.30.0",
     "type": "module",
     "scripts": {
         "dev": "vite",
@@ -11,7 +11,7 @@
         "preview": "vite preview"
     },
     "dependencies": {
-        "@asgardeo/react": "0.14.2",
+        "@asgardeo/react": "0.19.0",
         "@wso2/oxygen-ui": "0.0.1-alpha.10",
         "jwt-decode": "4.0.0",
         "react": "19.2.3",
@@ -29,15 +29,17 @@
         "eslint-plugin-react-refresh": "0.4.24",
         "globals": "16.4.0",
         "typescript": "5.9.3",
-        "typescript-eslint": "8.46.2",
-        "vite": "npm:rolldown-vite@7.1.20"
+        "typescript-eslint": "8.57.2",
+        "vite": "npm:rolldown-vite@7.2.5"
     },
     "pnpm": {
         "overrides": {
-            "vite": "npm:rolldown-vite@7.1.20"
+            "vite": "npm:rolldown-vite@7.2.5"
         }
     },
     "overrides": {
-        "flatted": ">=3.4.2"
+        "flatted": ">=3.4.2",
+        "picomatch": ">=4.0.4",
+        "dompurify": ">=3.3.2"
     }
 }

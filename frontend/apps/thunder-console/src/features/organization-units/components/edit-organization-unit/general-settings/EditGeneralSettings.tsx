@@ -16,13 +16,13 @@
  * under the License.
  */
 
+import {Stack} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useState, useCallback, useRef, useEffect} from 'react';
-import {Stack} from '@wso2/oxygen-ui';
-import type {OrganizationUnit} from '../../../models/organization-unit';
-import QuickCopySection from './QuickCopySection';
-import ParentSettingsSection from './ParentSettingsSection';
 import DangerZoneSection from './DangerZoneSection';
+import ParentSettingsSection from './ParentSettingsSection';
+import QuickCopySection from './QuickCopySection';
+import type {OrganizationUnit} from '../../../models/organization-unit';
 
 /**
  * Props for the {@link EditGeneralSettings} component.

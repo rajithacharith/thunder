@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import withConfig from './hocs/withConfig';
-import withTheme from './hocs/withTheme';
-import withI18n from './hocs/withI18n';
 import App from './App';
+import withConfig from './hocs/withConfig';
+import withI18n from './hocs/withI18n';
+import withTheme from './hocs/withTheme';
 
 const AppWithDecorators = withConfig(withTheme(withI18n(App)));
 

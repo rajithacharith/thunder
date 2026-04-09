@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, expect, it} from 'vitest';
 import type {Node} from '@xyflow/react';
+import {describe, expect, it} from 'vitest';
 import {resolveCollisions} from '../resolveCollisions';
 
 describe('resolveCollisions', () => {
@@ -81,7 +81,7 @@ describe('resolveCollisions', () => {
       // After resolution, the x-overlap should be reduced
       // Original overlap: node1 ends at x=100, node2 starts at x=80, so 20px overlap
       const originalXOverlap = 20;
-      const newXOverlap = Math.max(0, (result[0].position.x + 100) - result[1].position.x);
+      const newXOverlap = Math.max(0, result[0].position.x + 100 - result[1].position.x);
 
       expect(newXOverlap).toBeLessThan(originalXOverlap);
     });

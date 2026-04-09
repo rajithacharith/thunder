@@ -52,7 +52,7 @@ function mergeArrays(target: unknown[], source: unknown[]): unknown[] {
 }
 
 function mergeTwo(target: Record<string, unknown>, source: Record<string, unknown>): void {
-  Object.keys(source).forEach(key => {
+  Object.keys(source).forEach((key) => {
     const srcVal = source[key];
 
     if (srcVal === undefined) return;
@@ -78,7 +78,7 @@ function mergeTwo(target: Record<string, unknown>, source: Record<string, unknow
  * @returns The mutated destination object.
  */
 export default function merge<T extends object>(object: T, ...sources: object[]): T {
-  sources.forEach(source => {
+  sources.forEach((source) => {
     if (source == null) return;
 
     mergeTwo(object as Record<string, unknown>, source as Record<string, unknown>);

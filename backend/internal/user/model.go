@@ -32,6 +32,7 @@ type User struct {
 	Type       string          `json:"type,omitempty"`
 	Attributes json.RawMessage `json:"attributes,omitempty"`
 	Display    string          `json:"display,omitempty"`
+	IsReadOnly bool            `json:"isReadOnly"`
 }
 
 // Credential represents the credentials of a user.

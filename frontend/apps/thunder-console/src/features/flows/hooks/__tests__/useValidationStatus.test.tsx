@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {renderHook} from '@testing-library/react';
 import type {ReactNode} from 'react';
+import {describe, it, expect, vi} from 'vitest';
 import {ValidationContext, type ValidationContextProps} from '../../context/ValidationContext';
-import useValidationStatus from '../useValidationStatus';
 import Notification, {NotificationType} from '../../models/notification';
+import useValidationStatus from '../useValidationStatus';
 
 describe('useValidationStatus', () => {
   const mockNotification = new Notification('notification-1', 'Test Notification', NotificationType.WARNING);

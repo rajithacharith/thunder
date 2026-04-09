@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {render} from '@testing-library/react';
-import TechnologyBasedApplicationTemplateMetadata from '../TechnologyBasedApplicationTemplateMetadata';
+import {describe, it, expect} from 'vitest';
 import {TechnologyApplicationTemplate} from '../../models/application-templates';
+import TechnologyBasedApplicationTemplateMetadata from '../TechnologyBasedApplicationTemplateMetadata';
 
 describe('TechnologyBasedApplicationTemplateMetadata', () => {
   describe('Structure', () => {
@@ -70,7 +70,7 @@ describe('TechnologyBasedApplicationTemplateMetadata', () => {
 
     it('should have a template', () => {
       expect(reactMetadata?.template).toBeDefined();
-      expect(reactMetadata?.template).toHaveProperty('name');
+      expect(reactMetadata?.template).toHaveProperty(['defaults', 'name']);
     });
 
     it('should not be disabled', () => {
@@ -106,7 +106,7 @@ describe('TechnologyBasedApplicationTemplateMetadata', () => {
 
     it('should have a template', () => {
       expect(nextjsMetadata?.template).toBeDefined();
-      expect(nextjsMetadata?.template).toHaveProperty('name');
+      expect(nextjsMetadata?.template).toHaveProperty(['defaults', 'name']);
     });
 
     it('should be marked as disabled', () => {
@@ -124,7 +124,7 @@ describe('TechnologyBasedApplicationTemplateMetadata', () => {
     it('should have valid template objects', () => {
       TechnologyBasedApplicationTemplateMetadata.forEach((metadata) => {
         expect(metadata.template).toBeDefined();
-        expect(metadata.template.name).toBeDefined();
+        expect(metadata.template.defaults?.name).toBeDefined();
         expect(metadata.template.description).toBeDefined();
       });
     });

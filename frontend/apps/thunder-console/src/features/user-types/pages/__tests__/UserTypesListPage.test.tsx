@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import UserTypesListPage from '../UserTypesListPage';
 
 const mockNavigate = vi.fn();

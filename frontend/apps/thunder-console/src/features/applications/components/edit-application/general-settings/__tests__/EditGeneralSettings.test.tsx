@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import EditGeneralSettings from '../EditGeneralSettings';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {Application} from '../../../../models/application';
 import type {OAuth2Config} from '../../../../models/oauth';
+import EditGeneralSettings from '../EditGeneralSettings';
 
 // Mock the child components
 vi.mock('../QuickCopySection', () => ({

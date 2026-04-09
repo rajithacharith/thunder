@@ -1,4 +1,4 @@
-# Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+# Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
 #
 # WSO2 LLC. licenses this file to you under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
@@ -22,7 +22,9 @@ metadata:
     openchoreo.dev/description: "Identity platform powered by WSO2 Thunder"
     openchoreo.dev/display-name: "Identity Platform"
 spec:
-  deploymentPipelineRef: {{ .Values.pipelineName }}
+  deploymentPipelineRef:
+    kind: DeploymentPipeline
+    name: {{ .Values.pipelineName }}
 
 ---
 
@@ -35,14 +37,18 @@ metadata:
     openchoreo.dev/display-name: "Identity Platform Pipeline"
 spec:
   promotionPaths:
-    - sourceEnvironmentRef: development
+    - sourceEnvironmentRef:
+        kind: Environment
+        name: development
       targetEnvironmentRefs:
-        - name: staging
-          requiresApproval: false
-    - sourceEnvironmentRef: staging
+        - kind: Environment
+          name: staging
+    - sourceEnvironmentRef:
+        kind: Environment
+        name: staging
       targetEnvironmentRefs:
-        - name: production
-          requiresApproval: true
+        - kind: Environment
+          name: production
 
 ---
 
@@ -54,10 +60,10 @@ metadata:
     openchoreo.dev/description: "Development environment for identity platform"
     openchoreo.dev/display-name: "Development"
 spec:
-  dataPlaneRef: {{ .Values.organization.name }}
+  dataPlaneRef:
+    kind: ClusterDataPlane
+    name: {{ .Values.dataPlane.name }}
   isProduction: false
-  gateway:
-    dnsPrefix: "{{ .Values.gateway.dnsPrefixDev }}"
 
 ---
 
@@ -69,10 +75,10 @@ metadata:
     openchoreo.dev/description: "Staging environment for identity platform"
     openchoreo.dev/display-name: "Staging"
 spec:
-  dataPlaneRef: {{ .Values.organization.name }}
+  dataPlaneRef:
+    kind: ClusterDataPlane
+    name: {{ .Values.dataPlane.name }}
   isProduction: false
-  gateway:
-    dnsPrefix: "{{ .Values.gateway.dnsPrefixStaging }}"
 
 ---
 
@@ -84,7 +90,7 @@ metadata:
     openchoreo.dev/description: "Production environment for identity platform"
     openchoreo.dev/display-name: "Production"
 spec:
-  dataPlaneRef: {{ .Values.organization.name }}
+  dataPlaneRef:
+    kind: ClusterDataPlane
+    name: {{ .Values.dataPlane.name }}
   isProduction: true
-  gateway:
-    dnsPrefix: "{{ .Values.gateway.dnsPrefixProd }}"

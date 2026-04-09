@@ -16,18 +16,7 @@
  * under the License.
  */
 
-import lowerCase from 'lodash-es/lowerCase';
-import startCase from 'lodash-es/startCase';
-import React, {
-  type ChangeEvent,
-  type ReactElement,
-  type SyntheticEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
-import {useTranslation} from 'react-i18next';
+import {useGetLanguages, useGetTranslations, useUpdateTranslation} from '@thunder/i18n';
 import {
   Alert,
   Autocomplete,
@@ -46,10 +35,21 @@ import {
   Typography,
 } from '@wso2/oxygen-ui';
 import {PlusIcon, XIcon} from '@wso2/oxygen-ui-icons-react';
-import {useGetLanguages, useGetTranslations, useUpdateTranslation} from '@thunder/i18n';
+import lowerCase from 'lodash-es/lowerCase';
+import startCase from 'lodash-es/startCase';
+import React, {
+  type ChangeEvent,
+  type ReactElement,
+  type SyntheticEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import {useTranslation} from 'react-i18next';
 import {invalidateI18nCache} from '../../../../i18n/invalidate-i18n-cache';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
 import FlowI18nConstants from '../../constants/FlowI18nConstants';
+import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
 
 /**
  * Props interface for the language text field component.

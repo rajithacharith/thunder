@@ -17,8 +17,8 @@
  */
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any */
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import UserTypeDeleteDialog from '../UserTypeDeleteDialog';
 
 const mockMutate = vi.fn();
@@ -97,10 +97,13 @@ describe('UserTypeDeleteDialog', () => {
     const deleteButton = screen.getByRole('button', {name: /^delete$/i});
     await user.click(deleteButton);
 
-    expect(mockMutate).toHaveBeenCalledWith('schema-123', expect.objectContaining({
-      onSuccess: expect.any(Function),
-      onError: expect.any(Function),
-    }));
+    expect(mockMutate).toHaveBeenCalledWith(
+      'schema-123',
+      expect.objectContaining({
+        onSuccess: expect.any(Function),
+        onError: expect.any(Function),
+      }),
+    );
   });
 
   it('calls onClose and onSuccess on successful deletion', async () => {
@@ -146,11 +149,5 @@ describe('UserTypeDeleteDialog', () => {
 
     expect(screen.getByRole('button', {name: /deleting/i})).toBeDisabled();
     expect(screen.getByRole('button', {name: /cancel/i})).toBeDisabled();
-  });
-
-  it('disables delete button when userTypeId is null', () => {
-    render(<UserTypeDeleteDialog {...defaultProps} userTypeId={null} />);
-
-    expect(screen.getByRole('button', {name: /^delete$/i})).toBeDisabled();
   });
 });

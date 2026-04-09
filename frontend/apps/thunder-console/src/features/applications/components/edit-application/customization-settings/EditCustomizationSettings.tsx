@@ -17,10 +17,10 @@
  */
 
 import {Stack} from '@wso2/oxygen-ui';
-import type {Application} from '../../../models/application';
 import AppearanceSection from './AppearanceSection';
-import UrlsSection from './UrlsSection';
 import ContactsSection from './ContactsSection';
+import UrlsSection from './UrlsSection';
+import type {Application} from '../../../models/application';
 
 /**
  * Props for the {@link EditCustomizationSettings} component.

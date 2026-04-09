@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, expect, it, vi, beforeEach, afterEach} from 'vitest';
 import humanId from 'human-id';
+import {describe, expect, it, vi, beforeEach, afterEach} from 'vitest';
 import generateRandomHumanReadableIdentifiers from '../generateRandomHumanReadableIdentifiers';
 
 // Mock the human-id library

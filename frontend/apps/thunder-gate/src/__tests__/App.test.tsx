@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import App from '../App';
 
 // Create a variable to hold the mock routes that we can change per test

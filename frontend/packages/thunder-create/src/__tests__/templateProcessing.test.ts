@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach} from 'vitest';
-import {mkdir, rm, readFile, stat, writeFile} from 'fs/promises';
 import {existsSync} from 'fs';
-import {join} from 'path';
+import {mkdir, rm, readFile, stat, writeFile} from 'fs/promises';
 import {tmpdir} from 'os';
+import {join} from 'path';
 import {createLogger} from '@thunder/logger';
-import ensureDir from '../utils/ensureDir';
+import {describe, it, expect, beforeEach, afterEach} from 'vitest';
 import createFileFromTemplate from '../utils/createFileFromTemplate';
+import ensureDir from '../utils/ensureDir';
 import getTemplateDir from '../utils/getTemplateDir';
 import registerHandlebarsHelpers from '../utils/registerHandlebarsHelpers';
 

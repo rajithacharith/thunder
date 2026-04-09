@@ -16,19 +16,19 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
-import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
 import type {Node, Edge} from '@xyflow/react';
-import useContainerDialogConfirm, {type UseContainerDialogConfirmProps} from '../useContainerDialogConfirm';
+import type {ReactNode} from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {DragSourceData, DragTargetData, DragEventWithNative} from '../../models/drag-drop';
-import type {Resource} from '../../models/resources';
-import {ResourceTypes} from '../../models/resources';
 import type {Element} from '../../models/elements';
 import {ElementCategories, BlockTypes} from '../../models/elements';
+import {ResourceTypes} from '../../models/resources';
+import type {Resource} from '../../models/resources';
 import type {Step} from '../../models/steps';
 import {StepTypes} from '../../models/steps';
+import useContainerDialogConfirm, {type UseContainerDialogConfirmProps} from '../useContainerDialogConfirm';
 // Widget import removed - unused
 
 // Use vi.hoisted to define mocks that need to be referenced in vi.mock
@@ -345,11 +345,9 @@ describe('useContainerDialogConfirm', () => {
 
       // Capture the callback passed to updateNodeData
       let capturedCallback: ((node: Node) => {components: Element[]}) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_id: string, callback: (node: Node) => {components: Element[]}) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_id: string, callback: (node: Node) => {components: Element[]}) => {
+        capturedCallback = callback;
+      });
 
       const {result} = renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),
@@ -388,11 +386,9 @@ describe('useContainerDialogConfirm', () => {
       const props = createDefaultProps('input-on-view', pendingDropRef);
 
       let capturedCallback: ((node: Node) => {components: Element[]}) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_id: string, callback: (node: Node) => {components: Element[]}) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_id: string, callback: (node: Node) => {components: Element[]}) => {
+        capturedCallback = callback;
+      });
 
       const {result} = renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),

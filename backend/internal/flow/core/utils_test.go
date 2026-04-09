@@ -117,45 +117,45 @@ func (s *UtilsTestSuite) TestResolvePlaceholderUserIDFromAuthenticatedUser() {
 		},
 	}
 
-	result := ResolvePlaceholder(ctx, "{{ context.userID }}")
+	result := ResolvePlaceholder(ctx, "{{ context.userId }}")
 	s.Equal("user-123", result)
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderUserIDFromRuntimeData() {
 	ctx := &NodeContext{
-		RuntimeData: map[string]string{"userID": "runtime-user-456"},
+		RuntimeData: map[string]string{"userId": "runtime-user-456"},
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			UserID: "",
 		},
 	}
 
-	result := ResolvePlaceholder(ctx, "{{ context.userID }}")
+	result := ResolvePlaceholder(ctx, "{{ context.userId }}")
 	s.Equal("runtime-user-456", result)
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderUserIDAuthenticatedUserTakesPrecedence() {
 	ctx := &NodeContext{
-		RuntimeData: map[string]string{"userID": "runtime-user-id"},
+		RuntimeData: map[string]string{"userId": "runtime-user-id"},
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			UserID: "auth-user-id",
 		},
 	}
 
-	result := ResolvePlaceholder(ctx, "{{ context.userID }}")
+	result := ResolvePlaceholder(ctx, "{{ context.userId }}")
 	s.Equal("auth-user-id", result, "AuthenticatedUser.UserID should take precedence over RuntimeData")
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderUserIDNotFromUserInputs() {
 	ctx := &NodeContext{
-		UserInputs:  map[string]string{"userID": "input-user-id"},
+		UserInputs:  map[string]string{"userId": "input-user-id"},
 		RuntimeData: map[string]string{},
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			UserID: "",
 		},
 	}
 
-	result := ResolvePlaceholder(ctx, "{{ context.userID }}")
-	s.Equal("{{ context.userID }}", result, "userID should NOT be resolved from UserInputs")
+	result := ResolvePlaceholder(ctx, "{{ context.userId }}")
+	s.Equal("{{ context.userId }}", result, "userId should NOT be resolved from UserInputs")
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderKeyNotFound() {

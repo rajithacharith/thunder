@@ -17,9 +17,9 @@
  */
 
 import {type PropsWithChildren, type ReactElement, useCallback, useEffect, useMemo, useState} from 'react';
-import Notification, {NotificationType} from '../models/notification';
 import {ValidationContext, type ValidationConfig} from './ValidationContext';
 import useFlowBuilderCore from '../hooks/useFlowBuilderCore';
+import Notification, {NotificationType} from '../models/notification';
 
 export interface ValidationProviderProps {
   /**
@@ -71,7 +71,7 @@ function ValidationProvider({
 
     // Cleanup: clear the registration when unmounting
     return () => {
-      registerCloseValidationPanel(() => {});
+      registerCloseValidationPanel(() => null);
     };
   }, [registerCloseValidationPanel]);
 

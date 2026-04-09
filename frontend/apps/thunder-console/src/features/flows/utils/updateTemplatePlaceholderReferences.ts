@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type {JsonArray, JsonObject, JsonValue} from '../models/json';
 import generateResourceId from './generateResourceId';
+import type {JsonArray, JsonObject, JsonValue} from '../models/json';
 
 interface Replacer {
   key?: string;

@@ -18,14 +18,14 @@
 
 /* eslint-disable react/require-default-props, jsx-a11y/no-static-element-interactions */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import React, {type ReactNode} from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';
-import {EdgeStyleTypes} from '../../../models/steps';
+import type {Base} from '../../../models/base';
 import {PreviewScreenType} from '../../../models/custom-text-preference';
 import {ElementTypes} from '../../../models/elements';
-import type {Base} from '../../../models/base';
+import {EdgeStyleTypes} from '../../../models/steps';
 
 // Import after mocks are set up
 import BaseEdge from '../BaseEdge';
@@ -84,7 +84,6 @@ vi.mock('@xyflow/react', () => ({
     Bottom: 'bottom',
   },
 }));
-
 
 interface MockBoxProps {
   children?: React.ReactNode;
@@ -518,7 +517,7 @@ describe('BaseEdge', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle deleteElements rejection gracefully', async () => {
+    it('should handle deleteElements rejection gracefully', () => {
       mockDeleteElements.mockRejectedValueOnce(new Error('Delete failed'));
 
       const {container} = render(<BaseEdge {...defaultProps} />, {
@@ -537,9 +536,12 @@ describe('BaseEdge', () => {
 
   describe('Label Hover Effects', () => {
     it('should maintain hover state when mouse enters label', () => {
-      const {container} = render(<BaseEdge {...defaultProps} label={<span data-testid="edge-label">Test Label</span>} />, {
-        wrapper: createWrapper(),
-      });
+      const {container} = render(
+        <BaseEdge {...defaultProps} label={<span data-testid="edge-label">Test Label</span>} />,
+        {
+          wrapper: createWrapper(),
+        },
+      );
 
       // First hover over the edge group
       const group = container.querySelector('g');
@@ -556,9 +558,12 @@ describe('BaseEdge', () => {
     });
 
     it('should update hover state when mouse leaves label', () => {
-      const {container} = render(<BaseEdge {...defaultProps} label={<span data-testid="edge-label">Test Label</span>} />, {
-        wrapper: createWrapper(),
-      });
+      const {container} = render(
+        <BaseEdge {...defaultProps} label={<span data-testid="edge-label">Test Label</span>} />,
+        {
+          wrapper: createWrapper(),
+        },
+      );
 
       // Hover over the edge group
       const group = container.querySelector('g');

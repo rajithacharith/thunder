@@ -16,30 +16,11 @@
  * under the License.
  */
 
-/* eslint-disable @typescript-eslint/naming-convention */
-/* eslint-disable no-underscore-dangle */
-
-import path from 'path';
-import {fileURLToPath} from 'url';
-import {FlatCompat} from '@eslint/eslintrc';
 import type {Linter} from 'eslint';
 import tseslint from 'typescript-eslint';
-import createParserOptions from '../utils/tsconfig-resolver.js';
-
-const __filename: string = fileURLToPath(import.meta.url);
-const __dirname: string = path.dirname(__filename);
-
-const compat: FlatCompat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+import createParserOptions from '../utils/tsconfig-resolver';
 
 const typescriptConfig: Linter.Config[] = [
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  ...compat.extends('airbnb-base'),
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  ...compat.extends('airbnb/hooks'),
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  ...compat.extends('@kesills/airbnb-typescript/base'),
   ...tseslint.configs.recommendedTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,
   {
@@ -51,6 +32,14 @@ const typescriptConfig: Linter.Config[] = [
   {
     files: ['**/*.{js,jsx,cjs,mjs}'],
     ...tseslint.configs.disableTypeChecked,
+  },
+  {
+    name: 'thunder/typescript-resolver',
+    settings: {
+      'import/resolver': {
+        typescript: {alwaysTryTypes: true},
+      },
+    },
   },
   {
     name: 'thunder/typescript-overrides',

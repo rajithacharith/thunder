@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {screen, waitFor, renderWithProviders} from '@thunder/test-utils';
-import OrganizationUnitsListPage from '../OrganizationUnitsListPage';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {OrganizationUnitListResponse} from '../../models/responses';
+import OrganizationUnitsListPage from '../OrganizationUnitsListPage';
 
 // Mock navigate
 const mockNavigate = vi.fn();

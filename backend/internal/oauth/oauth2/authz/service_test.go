@@ -376,6 +376,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Se
 		Run(func(_ context.Context, initContext *flowexec.FlowInitContext) {
 			assert.Equal(suite.T(), "test-app-id", initContext.ApplicationID)
 			assert.Equal(suite.T(), string(flowcm.FlowTypeAuthentication), initContext.FlowType)
+			assert.Equal(suite.T(), "test-client-id", initContext.RuntimeData[flowcm.RuntimeKeyClientID])
 			assert.ElementsMatch(suite.T(), []string{"email"},
 				strings.Fields(initContext.RuntimeData[flowcm.RuntimeKeyRequiredEssentialAttributes]))
 			assert.ElementsMatch(suite.T(), []string{"user_id", "phone_number"},

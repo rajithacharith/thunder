@@ -17,11 +17,11 @@
  */
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any */
+import {render, screen, waitFor, within, userEvent} from '@thunder/test-utils';
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, within, userEvent} from '@thunder/test-utils';
-import ViewUserTypePage from '../ViewUserTypePage';
 import type {ApiUserSchema, ApiError} from '../../types/user-types';
+import ViewUserTypePage from '../ViewUserTypePage';
 
 const mockNavigate = vi.fn();
 const mockRefetch = vi.fn();
@@ -42,7 +42,7 @@ vi.mock('react-router', async () => {
         href={to}
         onClick={(e) => {
           e.preventDefault();
-          Promise.resolve(mockNavigate(to)).catch(() => {});
+          Promise.resolve(mockNavigate(to)).catch(() => null);
         }}
       >
         {children}
@@ -409,12 +409,9 @@ describe('ViewUserTypePage', () => {
       const isInitiallyChecked = firstCheckbox.getAttribute('checked') !== null;
       await user.click(firstCheckbox);
 
+      const expectedChecked = !isInitiallyChecked;
       await waitFor(() => {
-        if (isInitiallyChecked) {
-          expect(firstCheckbox).not.toBeChecked();
-        } else {
-          expect(firstCheckbox).toBeChecked();
-        }
+        expect(firstCheckbox).toHaveProperty('checked', expectedChecked);
       });
     });
 
@@ -1581,10 +1578,7 @@ describe('ViewUserTypePage', () => {
       await user.click(saveButton);
 
       await waitFor(() => {
-        expect(mockShowToast).toHaveBeenCalledWith(
-          expect.stringContaining('email'),
-          'error',
-        );
+        expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('email'), 'error');
       });
 
       expect(mockUpdateMutateAsync).not.toHaveBeenCalled();
@@ -1604,10 +1598,7 @@ describe('ViewUserTypePage', () => {
       await user.click(saveButton);
 
       await waitFor(() => {
-        expect(mockShowToast).toHaveBeenCalledWith(
-          expect.stringContaining('Failed to save user type'),
-          'error',
-        );
+        expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('Failed to save user type'), 'error');
       });
     });
   });

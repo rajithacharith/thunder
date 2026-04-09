@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import {useMemo, type ReactElement, type ReactNode} from 'react';
-import type {Element as FlowElement} from '@/features/flows/models/elements';
-import {Trans, useTranslation} from 'react-i18next';
-import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
-import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
-import {FormHelperText, TextField} from '@wso2/oxygen-ui';
 import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {FormHelperText, TextField} from '@wso2/oxygen-ui';
+import {useMemo, type ReactElement, type ReactNode} from 'react';
+import {Trans, useTranslation} from 'react-i18next';
 import {Hint} from '../../hint';
 import TemplatePlaceholder, {containsTemplateLiteral} from '../TemplatePlaceholder';
+import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
+import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
+import type {Element as FlowElement} from '@/features/flows/models/elements';
 
 /**
  * Phone Number Input element type with properties at top level.
@@ -85,9 +85,11 @@ function PhoneNumberInputAdapter({resource}: PhoneNumberInputAdapterPropsInterfa
   const phoneElement = resource as PhoneNumberInputElement;
 
   const rawLabel = phoneElement?.label ?? '';
-  const labelNode: ReactNode = containsTemplateLiteral(rawLabel)
-    ? <TemplatePlaceholder value={rawLabel} t={t} />
-    : (resolve(rawLabel, {t}) ?? rawLabel);
+  const labelNode: ReactNode = containsTemplateLiteral(rawLabel) ? (
+    <TemplatePlaceholder value={rawLabel} t={t} />
+  ) : (
+    (resolve(rawLabel, {t}) ?? rawLabel)
+  );
 
   return (
     <>

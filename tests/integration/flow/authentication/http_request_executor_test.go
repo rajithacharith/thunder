@@ -59,7 +59,7 @@ var (
 					"method": "POST",
 					"headers": "{\"Content-Type\": \"application/json\", " +
 						"\"X-Flow-Id\": \"{{ context.flowID }}\"}",
-					"body": "{\"userId\": \"{{ context.userID }}\", " +
+					"body": "{\"userId\": \"{{ context.userId }}\", " +
 						"\"username\": \"{{ context.username }}\", \"event\": " +
 						"\"user_authenticated\", \"unknownField\": \"{{ context.unknownPlaceholder }}\"}",
 					"responseMapping": "{\"notificationId\": \"id\", \"status\": \"status\"}",
@@ -110,7 +110,7 @@ var (
 					"url":           "http://localhost:9091/api/error",
 					"method":        "POST",
 					"headers":       "{\"Content-Type\": \"application/json\"}",
-					"body":          "{\"userId\": \"{{ context.userID }}\"}",
+					"body":          "{\"userId\": \"{{ context.userId }}\"}",
 					"errorHandling": "{\"failOnError\": false}",
 					"timeout":       "5",
 				},
@@ -159,7 +159,7 @@ var (
 					"url":           "http://localhost:9091/api/error",
 					"method":        "POST",
 					"headers":       "{\"Content-Type\": \"application/json\"}",
-					"body":          "{\"userId\": \"{{ context.userID }}\"}",
+					"body":          "{\"userId\": \"{{ context.userId }}\"}",
 					"errorHandling": "{\"failOnError\": true}",
 					"timeout":       "5",
 				},
@@ -209,7 +209,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"email": map[string]interface{}{

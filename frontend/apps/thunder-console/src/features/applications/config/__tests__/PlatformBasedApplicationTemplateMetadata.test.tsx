@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {render} from '@testing-library/react';
-import PlatformBasedApplicationTemplateMetadata from '../PlatformBasedApplicationTemplateMetadata';
+import {describe, it, expect} from 'vitest';
 import {PlatformApplicationTemplate} from '../../models/application-templates';
+import PlatformBasedApplicationTemplateMetadata from '../PlatformBasedApplicationTemplateMetadata';
 
 describe('PlatformBasedApplicationTemplateMetadata', () => {
   describe('Structure', () => {
@@ -70,7 +70,7 @@ describe('PlatformBasedApplicationTemplateMetadata', () => {
 
     it('should have a template', () => {
       expect(browserMetadata?.template).toBeDefined();
-      expect(browserMetadata?.template).toHaveProperty('name');
+      expect(browserMetadata?.template).toHaveProperty(['defaults', 'name']);
     });
 
     it('should not be disabled', () => {
@@ -106,7 +106,7 @@ describe('PlatformBasedApplicationTemplateMetadata', () => {
 
     it('should have a template', () => {
       expect(serverMetadata?.template).toBeDefined();
-      expect(serverMetadata?.template).toHaveProperty('name');
+      expect(serverMetadata?.template).toHaveProperty(['defaults', 'name']);
     });
   });
 
@@ -138,7 +138,7 @@ describe('PlatformBasedApplicationTemplateMetadata', () => {
 
     it('should have a template', () => {
       expect(mobileMetadata?.template).toBeDefined();
-      expect(mobileMetadata?.template).toHaveProperty('name');
+      expect(mobileMetadata?.template).toHaveProperty(['defaults', 'name']);
     });
   });
 
@@ -170,7 +170,7 @@ describe('PlatformBasedApplicationTemplateMetadata', () => {
 
     it('should have a template', () => {
       expect(backendMetadata?.template).toBeDefined();
-      expect(backendMetadata?.template).toHaveProperty('name');
+      expect(backendMetadata?.template).toHaveProperty(['defaults', 'name']);
     });
   });
 
@@ -184,7 +184,7 @@ describe('PlatformBasedApplicationTemplateMetadata', () => {
     it('should have valid template objects', () => {
       PlatformBasedApplicationTemplateMetadata.forEach((metadata) => {
         expect(metadata.template).toBeDefined();
-        expect(metadata.template.name).toBeDefined();
+        expect(metadata.template.defaults?.name).toBeDefined();
         expect(metadata.template.description).toBeDefined();
       });
     });

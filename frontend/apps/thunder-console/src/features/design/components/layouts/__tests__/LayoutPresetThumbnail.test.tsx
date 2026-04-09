@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {render} from '@thunder/test-utils';
+import {describe, it, expect} from 'vitest';
 import LayoutPresetThumbnail from '../LayoutPresetThumbnail';
 
 describe('LayoutPresetThumbnail', () => {

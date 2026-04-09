@@ -31,9 +31,9 @@ import {
   useReactFlow,
 } from '@xyflow/react';
 import {useRef, useContext} from 'react';
-import PluginRegistry from '../plugins/PluginRegistry';
-import FlowEventTypes from '../models/extension';
 import FlowBuilderCoreContext from '../context/FlowBuilderCoreContext';
+import FlowEventTypes from '../models/extension';
+import PluginRegistry from '../plugins/PluginRegistry';
 
 /**
  * Props interface for useVisualFlowHandlers hook

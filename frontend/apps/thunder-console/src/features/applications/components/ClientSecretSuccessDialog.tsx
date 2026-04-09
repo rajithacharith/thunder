@@ -16,7 +16,6 @@
  * under the License.
  */
 
-import {useState, useRef, useEffect, type JSX} from 'react';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +30,7 @@ import {
   Stack,
 } from '@wso2/oxygen-ui';
 import {Copy, Eye, EyeOff, AlertTriangle} from '@wso2/oxygen-ui-icons-react';
+import {useState, useRef, useEffect, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 
 /**

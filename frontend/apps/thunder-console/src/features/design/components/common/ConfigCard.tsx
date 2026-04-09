@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import type {JSX, ReactNode} from 'react';
 import {Accordion, AccordionDetails, AccordionSummary, Typography} from '@wso2/oxygen-ui';
 import {ChevronDown} from '@wso2/oxygen-ui-icons-react';
+import type {JSX, ReactNode} from 'react';
 
 export interface ConfigCardProps {
   title: string;

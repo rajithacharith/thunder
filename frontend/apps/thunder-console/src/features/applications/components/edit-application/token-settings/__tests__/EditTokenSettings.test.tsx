@@ -16,75 +16,124 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
-import EditTokenSettings from '../EditTokenSettings';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {Application} from '../../../../models/application';
 import type {OAuth2Config} from '../../../../models/oauth';
+import EditTokenSettings from '../EditTokenSettings';
 
-// Mock child components
+// Stable mock references — must be created via vi.hoisted so they are available
+// inside the hoisted vi.mock factory functions below. Without stable references,
+// useAsgardeo/useConfig/useLogger return new object identities on every render,
+// causing fetchSchemas' useEffect to re-fire every render → infinite loop → OOM.
+const {mockHttp, mockGetServerUrl, mockLogger} = vi.hoisted(() => {
+  const hoistedMockHttp = {
+    request: vi.fn().mockResolvedValue({
+      data: {
+        totalResults: 1,
+        startIndex: 0,
+        count: 1,
+        schemas: [
+          {
+            id: 'schema-1',
+            name: 'default',
+          },
+        ],
+      },
+    }),
+  };
+  const hoistedMockGetServerUrl = vi.fn().mockReturnValue('https://api.example.com');
+  const hoistedMockLogger = {
+    error: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  };
+  return {mockHttp: hoistedMockHttp, mockGetServerUrl: hoistedMockGetServerUrl, mockLogger: hoistedMockLogger};
+});
 
+// Mock child components.
+// TokenUserAttributesSection receives accessTokenAttributes/idTokenAttributes in OAuth mode
+// and sharedAttributes in native mode — there is no "tokenType" prop on the real component.
+// The mock renders separate testids for access and id sections (matching test expectations)
+// and exposes the UserInfo inherit checkbox so the User Info tests can verify state.
 vi.mock('../TokenUserAttributesSection', () => ({
-  default: ({tokenType, headerAction}: {tokenType: string; headerAction?: React.ReactNode}) => (
-    <div data-testid={`token-user-attributes-section-${tokenType}`}>
-      Token User Attributes Section - {tokenType}
-      {headerAction}
-    </div>
-  ),
+  default: ({
+    accessTokenAttributes,
+    idTokenAttributes,
+    isUserInfoCustomAttributes,
+    onToggleUserInfo,
+  }: {
+    accessTokenAttributes?: string[];
+    idTokenAttributes?: string[];
+    isUserInfoCustomAttributes?: boolean;
+    onToggleUserInfo?: (checked: boolean) => void;
+  }) => {
+    const isOAuthMode = accessTokenAttributes !== undefined || idTokenAttributes !== undefined;
+    if (isOAuthMode) {
+      return (
+        <div>
+          <div data-testid="token-user-attributes-section-access">Access Token Attributes</div>
+          <div data-testid="token-user-attributes-section-id">ID Token Attributes</div>
+          <label>
+            <input
+              type="checkbox"
+              checked={!isUserInfoCustomAttributes}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => onToggleUserInfo?.(!e.target.checked)}
+              readOnly={onToggleUserInfo === undefined}
+            />
+            Use same attributes as ID Token
+          </label>
+        </div>
+      );
+    }
+    return <div data-testid="token-user-attributes-section-shared">Shared Token Attributes</div>;
+  },
 }));
 
+// TokenValidationSection is called with tokenType="oauth" in OAuth mode and
+// tokenType="shared" in native mode. The mock splits "oauth" into separate
+// access and id testids to match test expectations.
 vi.mock('../TokenValidationSection', () => ({
-  default: ({tokenType}: {tokenType: string}) => (
-    <div data-testid={`token-validation-section-${tokenType}`}>Token Validation Section - {tokenType}</div>
-  ),
+  default: ({tokenType}: {tokenType: string}) => {
+    if (tokenType === 'oauth') {
+      return (
+        <>
+          <div data-testid="token-validation-section-access">Access Token Validation</div>
+          <div data-testid="token-validation-section-id">ID Token Validation</div>
+        </>
+      );
+    }
+    return <div data-testid={`token-validation-section-${tokenType}`}>Token Validation Section - {tokenType}</div>;
+  },
 }));
 
-// Mock useAsgardeo
+// Mock useAsgardeo — stable mockHttp reference prevents fetchSchemas effect from
+// re-firing on every render (http is in the effect's dependency array).
 vi.mock('@asgardeo/react', () => ({
   useAsgardeo: () => ({
-    http: {
-      request: vi.fn().mockResolvedValue({
-        data: {
-          totalResults: 1,
-          startIndex: 0,
-          count: 1,
-          schemas: [
-            {
-              id: 'schema-1',
-              name: 'default',
-            },
-          ],
-        },
-      }),
-    },
+    http: mockHttp,
   }),
 }));
 
-// Mock useConfig
+// Mock useConfig — stable mockGetServerUrl reference (also in fetchSchemas deps).
 vi.mock('@thunder/shared-contexts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
     useConfig: () => ({
-      getServerUrl: () => 'https://api.example.com',
+      getServerUrl: mockGetServerUrl,
     }),
   };
 });
 
-// Mock useLogger
+// Mock useLogger — stable mockLogger reference (also in fetchSchemas deps).
 vi.mock('@thunder/logger', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@thunder/logger')>();
   return {
     ...actual,
-    useLogger: () => ({
-      error: vi.fn(),
-      info: vi.fn(),
-      debug: vi.fn(),
-    }),
+    useLogger: () => mockLogger,
   };
 });
-
-// Wrapper is now provided by test-utils
 
 describe('EditTokenSettings', () => {
   const mockOnFieldChange = vi.fn();
@@ -102,7 +151,7 @@ describe('EditTokenSettings', () => {
     vi.clearAllMocks();
   });
 
-  describe.skip('Native Mode (No OAuth2 Config) - SKIPPED: Component hangs due to async operations', () => {
+  describe('Native Mode (No OAuth2 Config)', () => {
     it('should render without crashing', () => {
       const {container} = render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
@@ -136,7 +185,7 @@ describe('EditTokenSettings', () => {
     });
   });
 
-  describe.skip('OAuth2/OIDC Mode - SKIPPED: Component hangs due to async operations', () => {
+  describe('OAuth2/OIDC Mode', () => {
     const mockOAuth2Config: OAuth2Config = {
       token: {
         accessToken: {
@@ -212,7 +261,7 @@ describe('EditTokenSettings', () => {
     });
   });
 
-  describe.skip('Props Validation - SKIPPED: Component hangs due to async operations', () => {
+  describe('Props Validation', () => {
     it('should handle undefined oauth2Config gracefully', () => {
       const {container} = render(
         <EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} oauth2Config={undefined} />,
@@ -247,7 +296,7 @@ describe('EditTokenSettings', () => {
     });
   });
 
-  describe.skip('Section Rendering Order - SKIPPED: Component hangs due to async operations', () => {
+  describe('Section Rendering Order', () => {
     it('should render all sections for OAuth mode', () => {
       const mockOAuth2Config: OAuth2Config = {
         token: {
@@ -264,7 +313,8 @@ describe('EditTokenSettings', () => {
         />,
       );
 
-      expect(container).toBeTruthy();      expect(screen.getByTestId('token-user-attributes-section-access')).toBeInTheDocument();
+      expect(container).toBeTruthy();
+      expect(screen.getByTestId('token-user-attributes-section-access')).toBeInTheDocument();
       expect(screen.getByTestId('token-validation-section-access')).toBeInTheDocument();
       expect(screen.getByTestId('token-user-attributes-section-id')).toBeInTheDocument();
       expect(screen.getByTestId('token-validation-section-id')).toBeInTheDocument();
@@ -275,10 +325,11 @@ describe('EditTokenSettings', () => {
 
       expect(container).toBeTruthy();
       expect(screen.getByTestId('token-user-attributes-section-shared')).toBeInTheDocument();
-      expect(screen.getByTestId('token-validation-section-shared')).toBeInTheDocument();    });
+      expect(screen.getByTestId('token-validation-section-shared')).toBeInTheDocument();
+    });
   });
 
-  describe.skip('User Info Configuration Logic - SKIPPED: Component hangs due to async operations', () => {
+  describe('User Info Configuration Logic', () => {
     const idTokenAttrs = ['sub', 'email'];
     const mockApp = {...mockApplication};
 

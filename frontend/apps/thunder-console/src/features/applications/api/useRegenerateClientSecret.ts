@@ -16,13 +16,14 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useConfig, useToast} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
+import {getErrorMessage} from '@thunder/utils';
 import {useTranslation} from 'react-i18next';
+import ApplicationQueryKeys from '../constants/application-query-keys';
 import type {Application} from '../models/application';
 import type {InboundAuthConfig} from '../models/inbound-auth';
-import ApplicationQueryKeys from '../constants/application-query-keys';
 
 /**
  * Variables for the {@link useRegenerateClientSecret} mutation.
@@ -205,8 +206,8 @@ export default function useRegenerateClientSecret(): UseMutationResult<
       });
       showToast(t('regenerateSecret.snackbar.success'), 'success');
     },
-    onError: () => {
-      showToast(t('regenerateSecret.dialog.error'), 'error');
+    onError: (error) => {
+      showToast(getErrorMessage(error, t, 'regenerateSecret.dialog.error'), 'error');
     },
   });
 }

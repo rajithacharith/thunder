@@ -16,16 +16,18 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
 import {Palette} from '@wso2/oxygen-ui-icons-react';
+import {describe, it, expect, vi} from 'vitest';
 import SectionHeader from '../SectionHeader';
 
 vi.mock('react-i18next', async () => {
   const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
   return {
     ...actual,
-    useTranslation: () => ({t: (key: string, fallback?: string | Record<string, unknown>) => (typeof fallback === 'string' ? fallback : key)}),
+    useTranslation: () => ({
+      t: (key: string, fallback?: string | Record<string, unknown>) => (typeof fallback === 'string' ? fallback : key),
+    }),
   };
 });
 

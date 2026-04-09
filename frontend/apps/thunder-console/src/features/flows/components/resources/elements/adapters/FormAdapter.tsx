@@ -16,18 +16,18 @@
  * under the License.
  */
 
+import {CollisionPriority} from '@dnd-kit/abstract';
+import {Badge, Box, Typography} from '@wso2/oxygen-ui';
+import classNames from 'classnames';
 import {useMemo, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
-import classNames from 'classnames';
-import {Badge, Box, Typography} from '@wso2/oxygen-ui';
-import {CollisionPriority} from '@dnd-kit/abstract';
+import Droppable from '../../../dnd/Droppable';
+import ReorderableFlowElement from '../../steps/view/ReorderableElement';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
 import {ElementCategories, type Element as FlowElement} from '@/features/flows/models/elements';
 import FlowEventTypes from '@/features/flows/models/extension';
 import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
 import generateResourceId from '@/features/flows/utils/generateResourceId';
-import ReorderableFlowElement from '../../steps/view/ReorderableElement';
-import Droppable from '../../../dnd/Droppable';
 import './FormAdapter.scss';
 
 /**

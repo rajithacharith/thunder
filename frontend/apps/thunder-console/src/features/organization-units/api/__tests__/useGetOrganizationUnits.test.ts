@@ -17,10 +17,10 @@
  */
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
-import useGetOrganizationUnits from '../useGetOrganizationUnits';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import type {OrganizationUnitListResponse} from '../../models/responses';
+import useGetOrganizationUnits from '../useGetOrganizationUnits';
 
 // Mock useAsgardeo
 const mockHttpRequest = vi.fn();
@@ -127,7 +127,7 @@ describe('useGetOrganizationUnits', () => {
     });
   });
 
-  it('should set loading state during fetch', async () => {
+  it('should set loading state during fetch', () => {
     mockHttpRequest.mockImplementation(
       () =>
         new Promise(() => {

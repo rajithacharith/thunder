@@ -20,14 +20,14 @@ import {Box, Typography, Stack, Card, CardActionArea, CardContent, Divider} from
 import type {JSX} from 'react';
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
-import {TokenEndpointAuthMethods, type OAuth2Config} from '../../models/oauth';
-import type {ApplicationTemplate} from '../../models/application-templates';
-import {TechnologyApplicationTemplate, PlatformApplicationTemplate} from '../../models/application-templates';
-import TechnologyBasedApplicationTemplateMetadata from '../../config/TechnologyBasedApplicationTemplateMetadata';
 import PlatformBasedApplicationTemplateMetadata from '../../config/PlatformBasedApplicationTemplateMetadata';
-import inferApplicationTemplateTechnologyFromConfig from '../../utils/inferApplicationTemplateTechnologyFromConfig';
+import TechnologyBasedApplicationTemplateMetadata from '../../config/TechnologyBasedApplicationTemplateMetadata';
 import useApplicationCreate from '../../contexts/ApplicationCreate/useApplicationCreate';
 import {ApplicationCreateFlowSignInApproach} from '../../models/application-create-flow';
+import {TechnologyApplicationTemplate, PlatformApplicationTemplate} from '../../models/application-templates';
+import type {ApplicationTemplate} from '../../models/application-templates';
+import {TokenEndpointAuthMethods, type OAuth2Config} from '../../models/oauth';
+import inferApplicationTemplateTechnologyFromConfig from '../../utils/inferApplicationTemplateTechnologyFromConfig';
 
 const TechnologyBasedTemplates: Record<TechnologyApplicationTemplate, ApplicationTemplate> =
   TechnologyBasedApplicationTemplateMetadata.reduce(
@@ -177,7 +177,7 @@ export default function ConfigureStack({
   useEffect((): void => {
     setSelectedTemplateConfig(technologyConfig);
 
-    const oauthInboundConfig: OAuth2Config = technologyConfig.inboundAuthConfig?.[0]?.config ?? {
+    const oauthInboundConfig: OAuth2Config = technologyConfig.defaults?.inboundAuthConfig?.[0]?.config ?? {
       publicClient: false,
       pkceRequired: false,
       grantTypes: [],

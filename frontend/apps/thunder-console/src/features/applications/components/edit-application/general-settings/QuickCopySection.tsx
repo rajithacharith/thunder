@@ -19,9 +19,9 @@
 import {Stack, TextField, InputAdornment, Tooltip, IconButton, FormControl, FormLabel} from '@wso2/oxygen-ui';
 import {Copy, Check} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
+import SettingsCard from '../../../../../components/SettingsCard';
 import type {Application} from '../../../models/application';
 import type {OAuth2Config} from '../../../models/oauth';
-import SettingsCard from '../../../../../components/SettingsCard';
 
 /**
  * Props for the {@link QuickCopySection} component.
@@ -86,7 +86,7 @@ export default function QuickCopySection({
                   <Tooltip title={copiedField === 'app_id' ? t('common:actions.copied') : t('common:actions.copy')}>
                     <IconButton
                       onClick={() => {
-                        onCopyToClipboard(application.id, 'app_id').catch(() => {});
+                        onCopyToClipboard(application.id, 'app_id').catch(() => null);
                       }}
                       edge="end"
                     >
@@ -117,13 +117,11 @@ export default function QuickCopySection({
                 readOnly: true,
                 endAdornment: (
                   <InputAdornment position="end">
-                    <Tooltip
-                      title={copiedField === 'clientId' ? t('common:actions.copied') : t('common:actions.copy')}
-                    >
+                    <Tooltip title={copiedField === 'clientId' ? t('common:actions.copied') : t('common:actions.copy')}>
                       <IconButton
                         onClick={() => {
                           if (oauth2Config?.clientId) {
-                            onCopyToClipboard(oauth2Config.clientId, 'clientId').catch(() => {});
+                            onCopyToClipboard(oauth2Config.clientId, 'clientId').catch(() => null);
                           }
                         }}
                         edge="end"

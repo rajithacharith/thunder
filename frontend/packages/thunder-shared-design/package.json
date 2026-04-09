@@ -65,6 +65,7 @@
     "rimraf": "catalog:",
     "rolldown": "catalog:",
     "typescript": "catalog:",
+    "i18next": "catalog:",
     "@vitest/browser-playwright": "catalog:",
     "playwright": "catalog:",
     "vitest": "catalog:"
@@ -80,7 +81,9 @@
     "@thunder/utils": "workspace:^",
     "@wso2/oxygen-ui": "catalog:",
     "@wso2/oxygen-ui-icons-react": "catalog:",
+    "dompurify": "catalog:",
     "lucide-react": "catalog:",
+    "react-i18next": "catalog:",
     "tslib": "catalog:"
   },
   "peerDependencies": {

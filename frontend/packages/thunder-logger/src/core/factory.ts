@@ -16,12 +16,12 @@
  * under the License.
  */
 
+import LogLevel from '../models/log-level';
 import type Transport from '../models/transport';
 import type {TransportConfig, TransportFactory} from '../models/transport-config';
-import LogLevel from '../models/log-level';
 import ConsoleTransport from '../transports/ConsoleTransport';
-import StdoutTransport from '../transports/StdoutTransport';
 import HttpTransport, {type HttpTransportOptions} from '../transports/HttpTransport';
+import StdoutTransport from '../transports/StdoutTransport';
 
 /**
  * Registry of transport factories.

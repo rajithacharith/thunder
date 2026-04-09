@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, act, renderHook} from '@thunder/test-utils';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
-import useCreateApplication from '../useCreateApplication';
+import {waitFor, act, renderHook} from '@thunder/test-utils';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import ApplicationQueryKeys from '../../constants/application-query-keys';
 import type {Application} from '../../models/application';
 import type {CreateApplicationRequest} from '../../models/requests';
-import ApplicationQueryKeys from '../../constants/application-query-keys';
+import useCreateApplication from '../useCreateApplication';
 
 // Import mocked modules
 
@@ -72,13 +72,13 @@ describe('useCreateApplication', () => {
             idToken: {
               validityPeriod: 3600,
               userAttributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
-              scopeClaims: {
-                profile: ['name', 'given_name', 'family_name', 'picture'],
-                email: ['email', 'email_verified'],
-                phone: ['phone_number', 'phone_number_verified'],
-                group: ['groups'],
-              },
             },
+          },
+          scopeClaims: {
+            profile: ['name', 'given_name', 'family_name', 'picture'],
+            email: ['email', 'email_verified'],
+            phone: ['phone_number', 'phone_number_verified'],
+            group: ['groups'],
           },
           scopes: ['openid', 'email', 'profile'],
         },
@@ -215,7 +215,7 @@ describe('useCreateApplication', () => {
       expect(result.current.isPending).toBe(true);
     });
 
-    await act(async () => {
+    act(() => {
       resolveRequest({data: mockApplication});
     });
 

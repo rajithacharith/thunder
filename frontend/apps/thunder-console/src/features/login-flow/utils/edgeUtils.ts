@@ -18,8 +18,8 @@
 
 import type {Edge, Node} from '@xyflow/react';
 import {MarkerType} from '@xyflow/react';
-import type {Element} from '@/features/flows/models/elements';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
+import type {Element} from '@/features/flows/models/elements';
 
 /**
  * Generates edges for components that have actions with 'onSuccess' references
@@ -50,7 +50,7 @@ const generateUnconnectedEdges = (currentEdges: Edge[], currentNodes: Node[], ed
           );
 
           // If no edge exists or it's pointing to the wrong node, add a missing edge
-          if (!existingEdge || existingEdge.target !== expectedTarget) {
+          if (existingEdge?.target !== expectedTarget) {
             missingEdges.push({
               animated: false,
               id: `${buttonId}_MISSING_EDGE`,
@@ -77,7 +77,7 @@ const generateUnconnectedEdges = (currentEdges: Edge[], currentNodes: Node[], ed
           );
 
           // If no edge exists or it's pointing to the wrong node, add a missing edge
-          if (!existingFailureEdge || existingFailureEdge.target !== expectedFailureTarget) {
+          if (existingFailureEdge?.target !== expectedFailureTarget) {
             missingEdges.push({
               animated: false,
               id: `${stepId}_FAILURE_MISSING_EDGE`,

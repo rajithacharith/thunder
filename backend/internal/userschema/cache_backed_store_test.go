@@ -76,14 +76,14 @@ func setupCacheMock[T any](
 	mockCache *cachemock.CacheInterfaceMock[T],
 	data map[string]T,
 ) {
-	mockCache.EXPECT().Set(mock.Anything, mock.Anything).
-		RunAndReturn(func(key cache.CacheKey, value T) error {
+	mockCache.EXPECT().Set(mock.Anything, mock.Anything, mock.Anything).
+		RunAndReturn(func(ctx context.Context, key cache.CacheKey, value T) error {
 			data[key.Key] = value
 			return nil
 		}).Maybe()
 
-	mockCache.EXPECT().Get(mock.Anything).
-		RunAndReturn(func(key cache.CacheKey) (T, bool) {
+	mockCache.EXPECT().Get(mock.Anything, mock.Anything).
+		RunAndReturn(func(ctx context.Context, key cache.CacheKey) (T, bool) {
 			if val, ok := data[key.Key]; ok {
 				return val, true
 			}
@@ -91,14 +91,14 @@ func setupCacheMock[T any](
 			return zero, false
 		}).Maybe()
 
-	mockCache.EXPECT().Delete(mock.Anything).
-		RunAndReturn(func(key cache.CacheKey) error {
+	mockCache.EXPECT().Delete(mock.Anything, mock.Anything).
+		RunAndReturn(func(ctx context.Context, key cache.CacheKey) error {
 			delete(data, key.Key)
 			return nil
 		}).Maybe()
 
-	mockCache.EXPECT().Clear().
-		RunAndReturn(func() error {
+	mockCache.EXPECT().Clear(mock.Anything).
+		RunAndReturn(func(ctx context.Context) error {
 			for k := range data {
 				delete(data, k)
 			}
@@ -112,11 +112,11 @@ func setupCacheMock[T any](
 
 // assertSchemaCachedByIDAndName verifies the schema is cached in both ID and Name caches.
 func (s *CacheBackedStoreTestSuite) assertSchemaCachedByIDAndName(schema UserSchema) {
-	cachedByID, ok := s.schemaByIDCache.Get(cache.CacheKey{Key: schema.ID})
+	cachedByID, ok := s.schemaByIDCache.Get(context.Background(), cache.CacheKey{Key: schema.ID})
 	s.True(ok)
 	s.Equal(schema.ID, cachedByID.ID)
 
-	cachedByName, ok := s.schemaByNameCache.Get(cache.CacheKey{Key: schema.Name})
+	cachedByName, ok := s.schemaByNameCache.Get(context.Background(), cache.CacheKey{Key: schema.Name})
 	s.True(ok)
 	s.Equal(schema.Name, cachedByName.Name)
 }
@@ -175,7 +175,7 @@ func (s *CacheBackedStoreTestSuite) TestGetUserSchemaByID_StoreError() {
 	s.Equal(storeErr, err)
 
 	// Verify nothing cached.
-	_, ok := s.schemaByIDCache.Get(cache.CacheKey{Key: "bad-id"})
+	_, ok := s.schemaByIDCache.Get(context.Background(), cache.CacheKey{Key: "bad-id"})
 	s.False(ok)
 }
 
@@ -209,7 +209,7 @@ func (s *CacheBackedStoreTestSuite) TestGetUserSchemaByName_StoreError() {
 	_, err := s.cachedStore.GetUserSchemaByName(context.Background(), "bad-name")
 	s.Equal(storeErr, err)
 
-	_, ok := s.schemaByNameCache.Get(cache.CacheKey{Key: "bad-name"})
+	_, ok := s.schemaByNameCache.Get(context.Background(), cache.CacheKey{Key: "bad-name"})
 	s.False(ok)
 }
 
@@ -234,7 +234,7 @@ func (s *CacheBackedStoreTestSuite) TestCreateUserSchema_StoreError() {
 	s.Equal(storeErr, err)
 
 	// Verify nothing cached on error.
-	_, ok := s.schemaByIDCache.Get(cache.CacheKey{Key: schema.ID})
+	_, ok := s.schemaByIDCache.Get(context.Background(), cache.CacheKey{Key: schema.ID})
 	s.False(ok)
 }
 
@@ -256,16 +256,16 @@ func (s *CacheBackedStoreTestSuite) TestUpdateUserSchemaByID_Success() {
 	s.mockStore.AssertExpectations(s.T())
 
 	// Old name key should be invalidated.
-	_, ok := s.schemaByNameCache.Get(cache.CacheKey{Key: "TestSchema"})
+	_, ok := s.schemaByNameCache.Get(context.Background(), cache.CacheKey{Key: "TestSchema"})
 	s.False(ok)
 
 	// New name key should be cached.
-	cachedByNewName, ok := s.schemaByNameCache.Get(cache.CacheKey{Key: "UpdatedSchema"})
+	cachedByNewName, ok := s.schemaByNameCache.Get(context.Background(), cache.CacheKey{Key: "UpdatedSchema"})
 	s.True(ok)
 	s.Equal("UpdatedSchema", cachedByNewName.Name)
 
 	// ID cache should now point at the updated schema.
-	cachedByID, ok := s.schemaByIDCache.Get(cache.CacheKey{Key: oldSchema.ID})
+	cachedByID, ok := s.schemaByIDCache.Get(context.Background(), cache.CacheKey{Key: oldSchema.ID})
 	s.True(ok)
 	s.Equal("UpdatedSchema", cachedByID.Name)
 	s.Equal("given_name", cachedByID.SystemAttributes.Display)
@@ -286,11 +286,11 @@ func (s *CacheBackedStoreTestSuite) TestUpdateUserSchemaByID_StoreError() {
 	s.Equal(storeErr, err)
 
 	// Original cache entries should still exist (not invalidated on error).
-	cachedByID, ok := s.schemaByIDCache.Get(cache.CacheKey{Key: oldSchema.ID})
+	cachedByID, ok := s.schemaByIDCache.Get(context.Background(), cache.CacheKey{Key: oldSchema.ID})
 	s.True(ok)
 	s.Equal("TestSchema", cachedByID.Name)
 
-	cachedByName, ok := s.schemaByNameCache.Get(cache.CacheKey{Key: oldSchema.Name})
+	cachedByName, ok := s.schemaByNameCache.Get(context.Background(), cache.CacheKey{Key: oldSchema.Name})
 	s.True(ok)
 	s.Equal("TestSchema", cachedByName.Name)
 }
@@ -309,10 +309,10 @@ func (s *CacheBackedStoreTestSuite) TestDeleteUserSchemaByID_ExistsInCache() {
 	s.mockStore.AssertExpectations(s.T())
 
 	// Both caches should be invalidated.
-	_, ok := s.schemaByIDCache.Get(cache.CacheKey{Key: schema.ID})
+	_, ok := s.schemaByIDCache.Get(context.Background(), cache.CacheKey{Key: schema.ID})
 	s.False(ok)
 
-	_, ok = s.schemaByNameCache.Get(cache.CacheKey{Key: schema.Name})
+	_, ok = s.schemaByNameCache.Get(context.Background(), cache.CacheKey{Key: schema.Name})
 	s.False(ok)
 }
 
@@ -326,10 +326,10 @@ func (s *CacheBackedStoreTestSuite) TestDeleteUserSchemaByID_NotInCache() {
 	s.mockStore.AssertExpectations(s.T())
 
 	// Both caches should be invalidated (even though fetched from store).
-	_, ok := s.schemaByIDCache.Get(cache.CacheKey{Key: schema.ID})
+	_, ok := s.schemaByIDCache.Get(context.Background(), cache.CacheKey{Key: schema.ID})
 	s.False(ok)
 
-	_, ok = s.schemaByNameCache.Get(cache.CacheKey{Key: schema.Name})
+	_, ok = s.schemaByNameCache.Get(context.Background(), cache.CacheKey{Key: schema.Name})
 	s.False(ok)
 }
 

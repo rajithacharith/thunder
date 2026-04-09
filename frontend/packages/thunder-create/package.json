@@ -60,7 +60,7 @@
     "lodash-es": "catalog:",
     "@thunder/logger": "workspace:^",
     "commander": "^11.1.0",
-    "handlebars": "^4.7.8",
+    "handlebars": "^4.7.9",
     "picocolors": "^1.0.0"
   },
   "devDependencies": {

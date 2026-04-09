@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {renderHook, waitFor, act} from '@thunder/test-utils';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
-import useUpdateFlow from '../useUpdateFlow';
-import type {UpdateFlowRequest, FlowDefinitionResponse} from '../../models/responses';
-import {FlowType, FlowNodeType} from '../../models/flows';
+import {renderHook, waitFor, act} from '@thunder/test-utils';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import FlowQueryKeys from '../../constants/flow-query-keys';
+import {FlowType, FlowNodeType} from '../../models/flows';
+import type {UpdateFlowRequest, FlowDefinitionResponse} from '../../models/responses';
+import useUpdateFlow from '../useUpdateFlow';
 
 vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
@@ -128,7 +128,7 @@ describe('useUpdateFlow', () => {
       expect(result.current.isPending).toBe(true);
     });
 
-    await act(async () => {
+    act(() => {
       resolveRequest({data: mockFlowResponse});
     });
 

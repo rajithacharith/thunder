@@ -17,7 +17,11 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import type {CreateOrganizationUnitRequest, UpdateOrganizationUnitRequest, OrganizationUnitListParams} from '../requests';
+import type {
+  CreateOrganizationUnitRequest,
+  UpdateOrganizationUnitRequest,
+  OrganizationUnitListParams,
+} from '../requests';
 
 describe('Request Models', () => {
   describe('CreateOrganizationUnitRequest', () => {

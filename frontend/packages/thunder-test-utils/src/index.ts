@@ -16,7 +16,13 @@
  * under the License.
  */
 
-export {default as render, renderWithProviders, renderHook, getByTranslationKey, configureTestUtils} from './test-utils';
+export {
+  default as render,
+  renderWithProviders,
+  renderHook,
+  getByTranslationKey,
+  configureTestUtils,
+} from './test-utils';
 export type {ThunderTestConfig} from './test-utils';
 
 // Re-export everything from @testing-library/react for convenience

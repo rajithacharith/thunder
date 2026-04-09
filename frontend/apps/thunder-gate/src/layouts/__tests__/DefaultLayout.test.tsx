@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {MemoryRouter, Routes, Route} from 'react-router';
+import {describe, it, expect} from 'vitest';
 import DefaultLayout from '../DefaultLayout';
 
 describe('DefaultLayout', () => {

@@ -18,17 +18,17 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-assignment, react/button-has-type, react/require-default-props */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import React from 'react';
 import {render, screen, fireEvent, waitFor, cleanup} from '@thunder/test-utils';
 import type {Node, Edge} from '@xyflow/react';
-import DecoratedVisualFlow from '../DecoratedVisualFlow';
+import React from 'react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';
-import {EdgeStyleTypes} from '../../../models/steps';
+import type {Base} from '../../../models/base';
 import {PreviewScreenType} from '../../../models/custom-text-preference';
 import {ElementTypes} from '../../../models/elements';
-import type {Base} from '../../../models/base';
 import type {Resources} from '../../../models/resources';
+import {EdgeStyleTypes} from '../../../models/steps';
+import DecoratedVisualFlow from '../DecoratedVisualFlow';
 
 // Mock hooks
 vi.mock('../../../hooks/useFlowBuilderCore', () => ({
@@ -58,15 +58,15 @@ vi.mock('../../../hooks/useGenerateStepElement', () => ({
 }));
 
 vi.mock('../../../hooks/useDeleteExecutionResource', () => ({
-  default: () => {},
+  default: () => null,
 }));
 
 vi.mock('../../../hooks/useStaticContentField', () => ({
-  default: () => {},
+  default: () => null,
 }));
 
 vi.mock('../../../hooks/useConfirmPasswordField', () => ({
-  default: () => {},
+  default: () => null,
 }));
 
 vi.mock('../../../hooks/useVisualFlowHandlers', () => ({

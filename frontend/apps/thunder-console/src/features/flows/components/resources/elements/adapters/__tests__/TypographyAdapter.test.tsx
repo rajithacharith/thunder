@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render} from '@testing-library/react';
 import type {ReactNode} from 'react';
-import {TypographyVariants, ElementTypes, type Element as FlowElement} from '@/features/flows/models/elements';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import TypographyAdapter from '../TypographyAdapter';
+import {TypographyVariants, ElementTypes, type Element as FlowElement} from '@/features/flows/models/elements';
 
 // Mock dependencies
 vi.mock('react-i18next', () => ({

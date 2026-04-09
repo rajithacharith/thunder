@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ConfigureStack from '../ConfigureStack';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import ApplicationCreateContext, {
   type ApplicationCreateContextType,
 } from '../../../contexts/ApplicationCreate/ApplicationCreateContext';
-import {PlatformApplicationTemplate, TechnologyApplicationTemplate} from '../../../models/application-templates';
 import {ApplicationCreateFlowSignInApproach} from '../../../models/application-create-flow';
+import {PlatformApplicationTemplate, TechnologyApplicationTemplate} from '../../../models/application-templates';
+import ConfigureStack from '../ConfigureStack';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -179,7 +179,7 @@ describe('ConfigureStack', () => {
 
     expect(setSelectedTemplateConfig).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: 'React Application',
+        defaults: expect.objectContaining({name: 'React Application'}) as unknown,
       }),
     );
   });
@@ -226,7 +226,7 @@ describe('ConfigureStack', () => {
     expect(browserCard).toBeInTheDocument();
   });
 
-  it('calls onReadyChange based on selection state', async () => {
+  it('calls onReadyChange based on selection state', () => {
     const onReadyChange = vi.fn();
 
     renderWithContext({
@@ -457,7 +457,7 @@ describe('ConfigureStack', () => {
 
     expect(setSelectedTemplateConfig).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: 'Mobile Application',
+        defaults: expect.objectContaining({name: 'Mobile Application'}) as unknown,
       }),
     );
   });
@@ -504,7 +504,7 @@ describe('ConfigureStack', () => {
 
     expect(setSelectedTemplateConfig).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: 'Server Application',
+        defaults: expect.objectContaining({name: 'Server Application'}) as unknown,
       }),
     );
   });
@@ -683,7 +683,7 @@ describe('ConfigureStack', () => {
       // Should use default technology (React)
       expect(setSelectedTemplateConfig).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'React Application',
+          defaults: expect.objectContaining({name: 'React Application'}) as unknown,
         }),
       );
     });
@@ -704,7 +704,7 @@ describe('ConfigureStack', () => {
       // Should use platform template since technology is hidden
       expect(setSelectedTemplateConfig).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'Browser Application',
+          defaults: expect.objectContaining({name: 'Browser Application'}) as unknown,
         }),
       );
     });

@@ -1,23 +1,20 @@
 {
   "id": "other",
   "displayName": "Other",
-  "name": "Custom Application",
   "description": "Custom application with standard OAuth2 configuration",
-  "inboundAuthConfig": [
-    {
-      "type": "oauth2",
-      "config": {
-        "grantTypes": [
-          "authorization_code",
-          "refresh_token"
-        ],
-        "responseTypes": [
-          "code"
-        ],
-        "pkceRequired": true,
-        "tokenEndpointAuthMethod": "none",
-        "publicClient": true
+  "defaults": {
+    "name": "Custom Application",
+    "inboundAuthConfig": [
+      {
+        "type": "oauth2",
+        "config": {
+          "grantTypes": ["authorization_code", "refresh_token"],
+          "responseTypes": ["code"],
+          "pkceRequired": true,
+          "tokenEndpointAuthMethod": "none",
+          "publicClient": true
+        }
       }
-    }
-  ]
+    ]
+  }
 }

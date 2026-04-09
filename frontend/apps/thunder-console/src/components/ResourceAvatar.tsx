@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import type {ReactNode, JSX, KeyboardEvent} from 'react';
-import {useState, useCallback, useEffect} from 'react';
 import {Avatar, Box, IconButton} from '@wso2/oxygen-ui';
 import type {AvatarProps} from '@wso2/oxygen-ui';
 import {Edit} from '@wso2/oxygen-ui-icons-react';
+import {useState, useCallback} from 'react';
+import type {ReactNode, JSX, KeyboardEvent} from 'react';
 import ResourceLogoDialog from './ResourceLogoDialog';
 
 const EMOJI_SCHEME = 'emoji:';
@@ -113,18 +113,12 @@ export default function ResourceAvatar({
   ...rest
 }: ResourceAvatarProps): JSX.Element {
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-  const [imgError, setImgError] = useState<boolean>(false);
+  const [imgErrorUrl, setImgErrorUrl] = useState<string | null>(null);
 
   const hasValue = Boolean(value);
   const displayValue: string = hasValue ? resolveDisplayValue(value!) : '';
   const isUrlValue: boolean = Boolean(displayValue) && isUrl(displayValue);
-
-  /**
-   * Reset the image error state whenever the URL changes so a new src gets a fresh attempt.
-   */
-  useEffect((): void => {
-    setImgError(false);
-  }, [displayValue]);
+  const imgError: boolean = imgErrorUrl === displayValue && Boolean(displayValue);
 
   const handleOpenDialog = useCallback((): void => {
     setIsDialogOpen(true);
@@ -135,8 +129,8 @@ export default function ResourceAvatar({
   }, []);
 
   const handleImgError = useCallback((): void => {
-    setImgError(true);
-  }, []);
+    setImgErrorUrl(displayValue);
+  }, [displayValue]);
 
   const handleSelect = useCallback(
     (val: string): void => {

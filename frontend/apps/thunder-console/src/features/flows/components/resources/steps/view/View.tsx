@@ -22,14 +22,14 @@ import {Handle, Position, useNodeId, useReactFlow} from '@xyflow/react';
 import classNames from 'classnames';
 import {memo, useCallback, useMemo, useState, type HTMLAttributes, type MouseEvent, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
-import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
-import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
-import FlowEventTypes from '@/features/flows/models/extension';
-import type {Element} from '@/features/flows/models/elements';
-import type {StepData} from '@/features/flows/models/steps';
-import generateResourceId from '@/features/flows/utils/generateResourceId';
-import Droppable from '../../../dnd/Droppable';
 import ReorderableViewElement from './ReorderableElement';
+import Droppable from '../../../dnd/Droppable';
+import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
+import type {Element} from '@/features/flows/models/elements';
+import FlowEventTypes from '@/features/flows/models/extension';
+import type {StepData} from '@/features/flows/models/steps';
+import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
+import generateResourceId from '@/features/flows/utils/generateResourceId';
 import './View.scss';
 
 /**

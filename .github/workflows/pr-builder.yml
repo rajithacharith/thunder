@@ -209,6 +209,11 @@ jobs:
           cd frontend
           pnpm nx affected --target=lint --parallel=3 --base=${{ steps.set-shas.outputs.base }} --head=${{ steps.set-shas.outputs.head }}
 
+      - name: 🎨 Check Frontend Formatting
+        run: |
+          cd frontend
+          pnpm format:check
+
   build:
     name: 🛠️ Build Product
     if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group'}}

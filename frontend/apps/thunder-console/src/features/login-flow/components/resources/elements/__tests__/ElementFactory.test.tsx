@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import {ResourceTypes} from '@/features/flows/models/resources';
-import type {Element} from '@/features/flows/models/elements';
+import {describe, it, expect, vi} from 'vitest';
 import ElementFactory from '../ElementFactory';
+import type {Element} from '@/features/flows/models/elements';
+import {ResourceTypes} from '@/features/flows/models/resources';
 
 // Mock CommonElementFactory
 vi.mock('@/features/flows/components/resources/elements/CommonElementFactory', () => ({

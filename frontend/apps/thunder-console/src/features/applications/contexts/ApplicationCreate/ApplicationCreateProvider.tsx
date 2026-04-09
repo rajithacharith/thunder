@@ -16,19 +16,19 @@
  * under the License.
  */
 
-import type {PropsWithChildren} from 'react';
-import {useState, useMemo, useCallback, useEffect} from 'react';
 import type {Theme} from '@thunder/shared-design';
-import useGetApplications from '../../api/useGetApplications';
-import {AuthenticatorTypes} from '../../../integrations/models/authenticators';
+import type {PropsWithChildren} from 'react';
+import {useState, useMemo, useCallback} from 'react';
 import ApplicationCreateContext, {type ApplicationCreateContextType} from './ApplicationCreateContext';
+import type {BasicFlowDefinition} from '../../../flows/models/responses';
+import {AuthenticatorTypes} from '../../../integrations/models/authenticators';
+import useGetApplications from '../../api/useGetApplications';
 import {ApplicationCreateFlowSignInApproach, ApplicationCreateFlowStep} from '../../models/application-create-flow';
 import type {
   TechnologyApplicationTemplate,
   PlatformApplicationTemplate,
   ApplicationTemplate,
 } from '../../models/application-templates';
-import type {BasicFlowDefinition} from '../../../flows/models/responses';
 
 /**
  * Props for the {@link ApplicationCreateProvider} component.
@@ -138,17 +138,16 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
   const [callbackUrlFromConfig, setCallbackUrlFromConfig] = useState<string>(INITIAL_STATE.callbackUrlFromConfig);
   const [relyingPartyId, setRelyingPartyId] = useState<string>('');
   const [relyingPartyName, setRelyingPartyName] = useState<string>('');
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(INITIAL_STATE.hasCompletedOnboarding);
   const [error, setError] = useState<string | null>(INITIAL_STATE.error);
 
-  // Check if user has completed onboarding by checking if they have any applications
-  useEffect(() => {
-    if (applicationsData?.applications && applicationsData.totalResults > 1) {
-      setHasCompletedOnboarding(true);
-    } else if (applicationsData?.applications && applicationsData.totalResults === 0) {
-      setHasCompletedOnboarding(false);
-    }
+  // Derive onboarding completion status from fetched applications data
+  const hasCompletedOnboarding = useMemo(() => {
+    if (applicationsData?.applications && applicationsData.totalResults > 1) return true;
+    if (applicationsData?.applications && applicationsData.totalResults === 0) return false;
+    return INITIAL_STATE.hasCompletedOnboarding;
   }, [applicationsData?.applications, applicationsData?.totalResults]);
+
+  const setHasCompletedOnboarding = useCallback(() => void 0, []);
 
   const toggleIntegration = useCallback((integrationId: string): void => {
     setIntegrations((prev) => ({
@@ -173,7 +172,6 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
     setCallbackUrlFromConfig(INITIAL_STATE.callbackUrlFromConfig);
     setRelyingPartyId('');
     setRelyingPartyName('');
-    setHasCompletedOnboarding(INITIAL_STATE.hasCompletedOnboarding);
     setError(INITIAL_STATE.error);
   }, []);
 
@@ -234,14 +232,11 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
       selectedTemplateConfig,
       hostingUrl,
       callbackUrlFromConfig,
-      setCallbackUrlFromConfig,
       relyingPartyId,
-      setRelyingPartyId,
       relyingPartyName,
-      setRelyingPartyName,
       hasCompletedOnboarding,
+      setHasCompletedOnboarding,
       error,
-      setError,
       reset,
     ],
   );

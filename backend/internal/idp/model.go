@@ -61,7 +61,7 @@ type basicIDPResponse struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	Type        string `json:"type"`
-	IsReadOnly  bool   `json:"isReadOnly,omitempty"`
+	IsReadOnly  bool   `json:"isReadOnly"`
 }
 
 // idpRequestWithID represents the request payload for creating an identity provider from file-based config.

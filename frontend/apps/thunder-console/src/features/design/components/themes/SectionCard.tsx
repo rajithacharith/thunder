@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type {JSX, ReactNode} from 'react';
 import {Box, Card, CardContent, Typography} from '@wso2/oxygen-ui';
+import type {JSX, ReactNode} from 'react';
 
 export interface SectionCardProps {
   label: string;

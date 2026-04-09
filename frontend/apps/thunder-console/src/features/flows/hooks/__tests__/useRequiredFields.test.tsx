@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {renderHook} from '@testing-library/react';
 import type {ReactNode} from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {ValidationContext, type ValidationContextProps} from '../../context/ValidationContext';
-import useRequiredFields, {type RequiredFieldInterface} from '../useRequiredFields';
-import type {Resource} from '../../models/resources';
 import Notification from '../../models/notification';
+import type {Resource} from '../../models/resources';
+import useRequiredFields, {type RequiredFieldInterface} from '../useRequiredFields';
 
 describe('useRequiredFields', () => {
   const mockAddNotification = vi.fn();
@@ -247,7 +247,11 @@ describe('useRequiredFields', () => {
     });
 
     it('should update notification when one of multiple fields becomes valid', () => {
-      const existingNotification = new Notification('resource-1_REQUIRED_FIELD_ERROR', 'Required field missing', 'error');
+      const existingNotification = new Notification(
+        'resource-1_REQUIRED_FIELD_ERROR',
+        'Required field missing',
+        'error',
+      );
       existingNotification.addResourceFieldNotification('resource-1_label', 'Label is required');
       existingNotification.addResourceFieldNotification('resource-1_value', 'Value is required');
       mockGetNotification.mockReturnValue(existingNotification);

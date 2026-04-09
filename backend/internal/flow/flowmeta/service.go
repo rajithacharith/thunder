@@ -178,12 +178,13 @@ func (fms *flowMetaService) populateTypeMetadata(
 
 	response.IsRegistrationFlowEnabled = app.IsRegistrationFlowEnabled
 	response.Application = &ApplicationMetadata{
-		ID:        app.ID,
-		Name:      app.Name,
-		LogoURL:   app.LogoURL,
-		URL:       app.URL,
-		TosURI:    app.TosURI,
-		PolicyURI: app.PolicyURI,
+		ID:          app.ID,
+		Name:        app.Name,
+		Description: app.Description,
+		LogoURL:     app.LogoURL,
+		URL:         app.URL,
+		TosURI:      app.TosURI,
+		PolicyURI:   app.PolicyURI,
 	}
 
 	ouList, ouErr := fms.ouService.GetOrganizationUnitList(ctx, 1, 0)

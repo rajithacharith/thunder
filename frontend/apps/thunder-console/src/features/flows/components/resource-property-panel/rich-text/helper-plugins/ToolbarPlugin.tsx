@@ -22,6 +22,20 @@ import {$createHeadingNode, $isHeadingNode, type HeadingTagType} from '@lexical/
 import {$setBlocksType} from '@lexical/selection';
 import {mergeRegister} from '@lexical/utils';
 
+import {Button, Divider, IconButton, ListItemText, Menu, MenuItem, Paper, Stack} from '@wso2/oxygen-ui';
+import {
+  Bold,
+  ChevronDownIcon,
+  Italic,
+  LinkIcon,
+  Redo2,
+  TextAlignCenter,
+  TextAlignEnd,
+  TextAlignJustify,
+  TextAlignStart,
+  Underline,
+  Undo2,
+} from '@wso2/oxygen-ui-icons-react';
 import classNames from 'classnames';
 import {
   $createParagraphNode,
@@ -37,20 +51,6 @@ import {
 } from 'lexical';
 import type {CommandListenerPriority, EditorState, ElementNode, BaseSelection, NodeKey, TextNode} from 'lexical';
 import React, {type HTMLAttributes, type ReactElement, useCallback, useEffect, useState} from 'react';
-import {Button, Divider, IconButton, ListItemText, Menu, MenuItem, Paper, Stack} from '@wso2/oxygen-ui';
-import {
-  Bold,
-  ChevronDownIcon,
-  Italic,
-  LinkIcon,
-  Redo2,
-  TextAlignCenter,
-  TextAlignEnd,
-  TextAlignJustify,
-  TextAlignStart,
-  Underline,
-  Undo2,
-} from '@wso2/oxygen-ui-icons-react';
 import getSelectedNode from '../utils/getSelectedNode';
 
 const LowPriority: CommandListenerPriority = 1;

@@ -16,10 +16,6 @@
  * under the License.
  */
 
-import {useState, useEffect, useMemo, useCallback} from 'react';
-import type {ReactNode, SyntheticEvent, JSX} from 'react';
-import {Link, useNavigate, useParams} from 'react-router';
-import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
 import {useToast} from '@thunder/shared-contexts';
 import {
@@ -37,14 +33,18 @@ import {
   PageTitle,
 } from '@wso2/oxygen-ui';
 import {ArrowLeft, Edit} from '@wso2/oxygen-ui-icons-react';
+import type {ReactNode, SyntheticEvent, JSX} from 'react';
+import {useState, useMemo, useCallback} from 'react';
+import {useTranslation} from 'react-i18next';
+import {Link, useNavigate, useParams} from 'react-router';
 import CopyableId from '../../../components/CopyableId';
 import UnsavedChangesBar from '../../../components/UnsavedChangesBar';
 import useGetUserType from '../api/useGetUserType';
 import useUpdateUserType from '../api/useUpdateUserType';
-import type {PropertyDefinition, UserSchemaDefinition, PropertyType, SchemaPropertyInput} from '../types/user-types';
-import UserTypeDeleteDialog from '../components/edit-user-type/UserTypeDeleteDialog';
 import EditGeneralSettings from '../components/edit-user-type/general-settings/EditGeneralSettings';
 import EditSchemaSettings from '../components/edit-user-type/schema-settings/EditSchemaSettings';
+import UserTypeDeleteDialog from '../components/edit-user-type/UserTypeDeleteDialog';
+import type {PropertyDefinition, UserSchemaDefinition, PropertyType, SchemaPropertyInput} from '../types/user-types';
 
 interface TabPanelProps {
   children?: ReactNode;
@@ -74,7 +74,10 @@ function convertSchemaToProperties(schema: UserSchemaDefinition): SchemaProperty
     id: `${index}`,
     name: key,
     displayName: 'displayName' in value ? (value.displayName ?? '') : '',
-    type: value.type === 'string' && 'enum' in value && Array.isArray(value.enum) && value.enum.length > 0 ? 'enum' : value.type,
+    type:
+      value.type === 'string' && 'enum' in value && Array.isArray(value.enum) && value.enum.length > 0
+        ? 'enum'
+        : value.type,
     required: value.required ?? false,
     unique: 'unique' in value ? (value.unique ?? false) : false,
     credential: 'credential' in value ? (value.credential ?? false) : false,
@@ -150,7 +153,9 @@ export default function ViewUserTypePage(): JSX.Element {
   const [tempName, setTempName] = useState('');
 
   // Edited fields (partial — only fields the user has changed)
-  const [editedUserType, setEditedUserType] = useState<Partial<{name: string; ouId: string; allowSelfRegistration: boolean; displayAttribute: string}>>({});
+  const [editedUserType, setEditedUserType] = useState<
+    Partial<{name: string; ouId: string; allowSelfRegistration: boolean; displayAttribute: string}>
+  >({});
 
   // Edited schema properties (null = no changes, non-null = user edited)
   const [editedProperties, setEditedProperties] = useState<SchemaPropertyInput[] | null>(null);
@@ -159,10 +164,7 @@ export default function ViewUserTypePage(): JSX.Element {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Base properties from server data (useMemo so they're available synchronously)
-  const baseProperties = useMemo(
-    () => (userType ? convertSchemaToProperties(userType.schema) : []),
-    [userType],
-  );
+  const baseProperties = useMemo(() => (userType ? convertSchemaToProperties(userType.schema) : []), [userType]);
 
   // Effective properties (edited or from server)
   const effectiveProperties = editedProperties ?? baseProperties;
@@ -184,14 +186,16 @@ export default function ViewUserTypePage(): JSX.Element {
 
   // Clear display attribute if selected property becomes ineligible
   const effectiveDisplayAttribute = editedUserType.displayAttribute ?? userType?.systemAttributes?.display ?? '';
-  useEffect(() => {
+  const [prevEligible, setPrevEligible] = useState(eligibleDisplayProperties);
+  if (prevEligible !== eligibleDisplayProperties) {
+    setPrevEligible(eligibleDisplayProperties);
     if (effectiveDisplayAttribute) {
       const eligibleNames = eligibleDisplayProperties.map((p) => p.name.trim());
       if (!eligibleNames.includes(effectiveDisplayAttribute)) {
         setEditedUserType((prev) => ({...prev, displayAttribute: ''}));
       }
     }
-  }, [eligibleDisplayProperties, effectiveDisplayAttribute]);
+  }
 
   // Change detection
   const hasChanges = useMemo(
@@ -238,7 +242,10 @@ export default function ViewUserTypePage(): JSX.Element {
     const trimmedNames = effectiveProperties.filter((p) => p.name.trim()).map((p) => p.name.trim());
     const duplicates = trimmedNames.filter((n, i) => trimmedNames.indexOf(n) !== i);
     if (duplicates.length > 0) {
-      showToast(t('userTypes:validationErrors.duplicateProperties', {duplicates: [...new Set(duplicates)].join(', ')}), 'error');
+      showToast(
+        t('userTypes:validationErrors.duplicateProperties', {duplicates: [...new Set(duplicates)].join(', ')}),
+        'error',
+      );
       return;
     }
 
@@ -290,7 +297,7 @@ export default function ViewUserTypePage(): JSX.Element {
         </Alert>
         <Button
           onClick={() => {
-            handleBack().catch(() => {});
+            handleBack().catch(() => null);
           }}
           startIcon={<ArrowLeft size={16} />}
         >
@@ -309,7 +316,7 @@ export default function ViewUserTypePage(): JSX.Element {
         </Alert>
         <Button
           onClick={() => {
-            handleBack().catch(() => {});
+            handleBack().catch(() => null);
           }}
           startIcon={<ArrowLeft size={16} />}
         >
@@ -323,12 +330,13 @@ export default function ViewUserTypePage(): JSX.Element {
     <PageContent>
       {/* Header */}
       <PageTitle>
-        <PageTitle.BackButton component={<Link to={listUrl} />}>{t('userTypes:edit.back', 'Back to User Types')}</PageTitle.BackButton>
+        <PageTitle.BackButton component={<Link to={listUrl} />}>
+          {t('userTypes:edit.back', 'Back to User Types')}
+        </PageTitle.BackButton>
         <PageTitle.Header>
           <Stack direction="row" alignItems="center" spacing={1} mb={1}>
             {isEditingName ? (
               <TextField
-                autoFocus
                 value={tempName}
                 onChange={(e) => setTempName(e.target.value)}
                 onBlur={() => {
@@ -435,7 +443,7 @@ export default function ViewUserTypePage(): JSX.Element {
           isSaving={updateUserTypeMutation.isPending}
           onReset={handleReset}
           onSave={() => {
-            handleSave().catch(() => {});
+            handleSave().catch(() => null);
           }}
         />
       )}

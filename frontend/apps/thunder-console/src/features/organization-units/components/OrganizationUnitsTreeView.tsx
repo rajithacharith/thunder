@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {useState, useCallback, useEffect, useRef, useMemo} from 'react';
-import type {ReactNode, MouseEvent, KeyboardEvent, SyntheticEvent, JSX} from 'react';
-import {useNavigate} from 'react-router';
+import {useAsgardeo} from '@asgardeo/react';
+import {useQueryClient} from '@tanstack/react-query';
 import {useLogger} from '@thunder/logger/react';
+import {useConfig} from '@thunder/shared-contexts';
 import {
   Box,
   IconButton,
@@ -36,26 +36,26 @@ import {
   Avatar,
 } from '@wso2/oxygen-ui';
 import {Building, EllipsisVertical, Pencil, Plus, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {useState, useCallback, useEffect, useRef, useMemo} from 'react';
+import type {ReactNode, MouseEvent, KeyboardEvent, SyntheticEvent, JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useConfig} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
-import {useQueryClient} from '@tanstack/react-query';
+import {useNavigate} from 'react-router';
+import OrganizationUnitDeleteDialog from './OrganizationUnitDeleteDialog';
 import ResourceAvatar from '../../../components/ResourceAvatar';
-import useGetOrganizationUnits from '../api/useGetOrganizationUnits';
 import fetchChildOrganizationUnits from '../api/fetchChildOrganizationUnits';
 import fetchOrganizationUnits from '../api/fetchOrganizationUnits';
+import useGetOrganizationUnits from '../api/useGetOrganizationUnits';
+import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
+import OrganizationUnitTreeConstants from '../constants/organization-unit-tree-constants';
+import useOrganizationUnit from '../contexts/useOrganizationUnit';
 import type {OrganizationUnit} from '../models/organization-unit';
 import type {OrganizationUnitTreeItem} from '../models/organization-unit-tree';
 import type {OrganizationUnitListResponse} from '../models/responses';
-import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
-import OrganizationUnitTreeConstants from '../constants/organization-unit-tree-constants';
-import buildTreeItems from '../utils/buildTreeItems';
-import buildItemMap from '../utils/buildItemMap';
-import updateTreeItemChildren from '../utils/updateTreeItemChildren';
 import appendTreeItemChildren from '../utils/appendTreeItemChildren';
+import buildItemMap from '../utils/buildItemMap';
+import buildTreeItems from '../utils/buildTreeItems';
 import findTreeItem from '../utils/findTreeItem';
-import OrganizationUnitDeleteDialog from './OrganizationUnitDeleteDialog';
-import useOrganizationUnit from '../contexts/useOrganizationUnit';
+import updateTreeItemChildren from '../utils/updateTreeItemChildren';
 
 function TreeViewLoadingIcon(): JSX.Element {
   return <CircularProgress size={18} />;
@@ -852,7 +852,7 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
 
   if (!treeItems.length) {
     // Data loaded but no organization units exist — show empty state
-    if (data && data.organizationUnits.length === 0) {
+    if (data?.organizationUnits.length === 0) {
       return (
         <Box sx={{textAlign: 'center', py: 8}}>
           <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>

@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {useState, useCallback, useRef, useEffect, type JSX} from 'react';
+import {useLogger} from '@thunder/logger/react';
 import {Stack, Typography, Tooltip} from '@wso2/oxygen-ui';
 import {Copy, Check} from '@wso2/oxygen-ui-icons-react';
+import {useState, useCallback, useRef, useEffect, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useLogger} from '@thunder/logger/react';
 
 interface CopyableIdProps {
   /** The ID value to display and copy */
@@ -75,7 +75,10 @@ export default function CopyableId({value, copyLabel = undefined}: CopyableIdPro
   };
 
   return (
-    <Tooltip title={copied ? t('common:actions.copied') : (copyLabel ?? t('common:actions.copyId', 'Copy ID'))} placement="right">
+    <Tooltip
+      title={copied ? t('common:actions.copied') : (copyLabel ?? t('common:actions.copyId', 'Copy ID'))}
+      placement="right"
+    >
       <Stack
         direction="row"
         alignItems="center"

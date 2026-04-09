@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
-import {ElementTypes, type Element as FlowElement} from '@/features/flows/models/elements';
+import type {ReactNode} from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import ResendButtonAdapter from '../ResendButtonAdapter';
+import {ElementTypes, type Element as FlowElement} from '@/features/flows/models/elements';
 
 // Mock dependencies
 vi.mock('react-i18next', () => ({

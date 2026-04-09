@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import EditCustomizationSettings from '../EditCustomizationSettings';
+import {describe, it, expect, vi} from 'vitest';
 import type {Application} from '../../../../models/application';
+import EditCustomizationSettings from '../EditCustomizationSettings';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -38,6 +38,7 @@ vi.mock('@thunder/shared-design', () => ({
     },
     isLoading: false,
   })),
+  useGetLayouts: vi.fn(() => ({data: undefined, isLoading: false})),
 }));
 
 describe('EditCustomizationSettings', () => {

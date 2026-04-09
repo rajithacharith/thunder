@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
-import {Box, useColorScheme, useTheme} from '@wso2/oxygen-ui';
 import type {LayoutListItem} from '@thunder/shared-design';
+import {Box, useColorScheme, useTheme} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
 
 export interface LayoutThumbnailProps {
   layout: LayoutListItem;

@@ -16,9 +16,7 @@
  * under the License.
  */
 
-import {useEffect, useMemo, useState, useCallback} from 'react';
-import getInitials from '@/utils/getInitials';
-import {useNavigate} from 'react-router';
+import {useLogger} from '@thunder/logger/react';
 import {
   Avatar,
   IconButton,
@@ -36,12 +34,14 @@ import {
   DataGrid,
 } from '@wso2/oxygen-ui';
 import {Eye, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {useMemo, useState, useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useLogger} from '@thunder/logger/react';
+import {useNavigate} from 'react-router';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
-import useGetUsers from '../api/useGetUsers';
 import useDeleteUser from '../api/useDeleteUser';
+import useGetUsers from '../api/useGetUsers';
 import type {UserWithDetails} from '../types/users';
+import getInitials from '@/utils/getInitials';
 
 export default function UsersList() {
   const navigate = useNavigate();
@@ -59,11 +59,13 @@ export default function UsersList() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Show snackbar when error occurs
-  useEffect(() => {
+  const [prevError, setPrevError] = useState<typeof error>(null);
+  if (prevError !== error) {
+    setPrevError(error);
     if (error) {
       setSnackbarOpen(true);
     }
-  }, [error]);
+  }
 
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false);
@@ -140,10 +142,7 @@ export default function UsersList() {
         flex: 1,
         minWidth: 200,
         renderCell: (params: DataGrid.GridRenderCellParams<UserWithDetails>) => (
-          <Typography
-            variant="body2"
-            sx={{fontFamily: 'monospace', fontSize: '0.875rem'}}
-          >
+          <Typography variant="body2" sx={{fontFamily: 'monospace', fontSize: '0.875rem'}}>
             {params.row.id}
           </Typography>
         ),

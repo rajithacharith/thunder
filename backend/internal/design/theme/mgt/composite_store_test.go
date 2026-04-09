@@ -205,7 +205,9 @@ func (suite *CompositeThemeStoreTestSuite) TestGetTheme_FromDBStore() {
 	theme, err := suite.store.GetTheme("theme1")
 
 	suite.NoError(err)
-	suite.Equal(expectedTheme, theme)
+	suite.Equal(expectedTheme.ID, theme.ID)
+	suite.Equal(expectedTheme.DisplayName, theme.DisplayName)
+	suite.False(theme.IsReadOnly)
 }
 
 // Test GetTheme - From file store (fallback when not in DB store)
@@ -217,7 +219,9 @@ func (suite *CompositeThemeStoreTestSuite) TestGetTheme_FromFileStore() {
 	theme, err := suite.store.GetTheme("theme1")
 
 	suite.NoError(err)
-	suite.Equal(expectedTheme, theme)
+	suite.Equal(expectedTheme.ID, theme.ID)
+	suite.Equal(expectedTheme.DisplayName, theme.DisplayName)
+	suite.True(theme.IsReadOnly)
 }
 
 // Test GetTheme - Not found in either store

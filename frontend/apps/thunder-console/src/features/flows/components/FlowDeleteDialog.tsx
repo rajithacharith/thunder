@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {useState, type JSX} from 'react';
 import {Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Alert} from '@wso2/oxygen-ui';
+import {useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import useDeleteFlow from '../api/useDeleteFlow';
 

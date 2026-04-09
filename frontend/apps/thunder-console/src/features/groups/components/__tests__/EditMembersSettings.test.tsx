@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {renderWithProviders} from '@thunder/test-utils';
-import EditMembersSettings from '../edit-group/members-settings/EditMembersSettings';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import type {Group} from '../../models/group';
+import EditMembersSettings from '../edit-group/members-settings/EditMembersSettings';
 
 vi.mock('../edit-group/members-settings/ManageMembersSection', () => ({
   default: ({
@@ -34,11 +34,7 @@ vi.mock('../edit-group/members-settings/ManageMembersSection', () => ({
   }) => (
     <div data-testid="manage-members-section">
       {headerAction && <div data-testid="header-action">{headerAction}</div>}
-      <button
-        type="button"
-        data-testid="remove-member-btn"
-        onClick={() => onRemoveMember({id: 'u1', type: 'user'})}
-      >
+      <button type="button" data-testid="remove-member-btn" onClick={() => onRemoveMember({id: 'u1', type: 'user'})}>
         Remove
       </button>
     </div>
@@ -46,7 +42,15 @@ vi.mock('../edit-group/members-settings/ManageMembersSection', () => ({
 }));
 
 vi.mock('../edit-group/members-settings/AddMemberDialog', () => ({
-  default: ({open, onClose, onAdd}: {open: boolean; onClose: () => void; onAdd: (members: {id: string; type: string}[]) => void}) =>
+  default: ({
+    open,
+    onClose,
+    onAdd,
+  }: {
+    open: boolean;
+    onClose: () => void;
+    onAdd: (members: {id: string; type: string}[]) => void;
+  }) =>
     open ? (
       <div data-testid="add-member-dialog">
         <button type="button" onClick={onClose}>
@@ -142,11 +146,9 @@ describe('EditMembersSettings', () => {
   });
 
   it('should close dialog on successful add', async () => {
-    mockAddMutate.mockImplementation(
-      (_data: unknown, opts: {onSuccess: () => void}) => {
-        opts.onSuccess();
-      },
-    );
+    mockAddMutate.mockImplementation((_data: unknown, opts: {onSuccess: () => void}) => {
+      opts.onSuccess();
+    });
 
     const user = userEvent.setup();
     renderWithProviders(<EditMembersSettings group={mockGroup} />);
@@ -164,11 +166,9 @@ describe('EditMembersSettings', () => {
   });
 
   it('should show error when add fails', async () => {
-    mockAddMutate.mockImplementation(
-      (_data: unknown, opts: {onError: (err: Error) => void}) => {
-        opts.onError(new Error('Add failed'));
-      },
-    );
+    mockAddMutate.mockImplementation((_data: unknown, opts: {onError: (err: Error) => void}) => {
+      opts.onError(new Error('Add failed'));
+    });
 
     const user = userEvent.setup();
     renderWithProviders(<EditMembersSettings group={mockGroup} />);
@@ -199,11 +199,9 @@ describe('EditMembersSettings', () => {
 
   it('should clear error on successful remove', async () => {
     // First trigger an error
-    mockAddMutate.mockImplementation(
-      (_data: unknown, opts: {onError: (err: Error) => void}) => {
-        opts.onError(new Error('Some error'));
-      },
-    );
+    mockAddMutate.mockImplementation((_data: unknown, opts: {onError: (err: Error) => void}) => {
+      opts.onError(new Error('Some error'));
+    });
 
     const user = userEvent.setup();
     renderWithProviders(<EditMembersSettings group={mockGroup} />);
@@ -218,11 +216,9 @@ describe('EditMembersSettings', () => {
     });
 
     // Now trigger successful remove which should clear the error
-    mockRemoveMutate.mockImplementation(
-      (_data: unknown, opts: {onSuccess: () => void}) => {
-        opts.onSuccess();
-      },
-    );
+    mockRemoveMutate.mockImplementation((_data: unknown, opts: {onSuccess: () => void}) => {
+      opts.onSuccess();
+    });
 
     await user.click(screen.getByTestId('remove-member-btn'));
 
@@ -232,11 +228,9 @@ describe('EditMembersSettings', () => {
   });
 
   it('should show error when remove fails', async () => {
-    mockRemoveMutate.mockImplementation(
-      (_data: unknown, opts: {onError: (err: Error) => void}) => {
-        opts.onError(new Error('Remove failed'));
-      },
-    );
+    mockRemoveMutate.mockImplementation((_data: unknown, opts: {onError: (err: Error) => void}) => {
+      opts.onError(new Error('Remove failed'));
+    });
 
     const user = userEvent.setup();
     renderWithProviders(<EditMembersSettings group={mockGroup} />);
@@ -249,11 +243,9 @@ describe('EditMembersSettings', () => {
   });
 
   it('should close error alert when dismiss is clicked', async () => {
-    mockRemoveMutate.mockImplementation(
-      (_data: unknown, opts: {onError: (err: Error) => void}) => {
-        opts.onError(new Error('Remove failed'));
-      },
-    );
+    mockRemoveMutate.mockImplementation((_data: unknown, opts: {onError: (err: Error) => void}) => {
+      opts.onError(new Error('Remove failed'));
+    });
 
     const user = userEvent.setup();
     renderWithProviders(<EditMembersSettings group={mockGroup} />);

@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import type {Resource} from '@/features/flows/models/resources';
-import {useMemo, useRef, useState, type ReactElement} from 'react';
-import {useTranslation} from 'react-i18next';
-import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
 import {Box, FormHelperText, IconButton, Tooltip} from '@wso2/oxygen-ui';
 import {SquareFunction} from '@wso2/oxygen-ui-icons-react';
+import {useMemo, useState, type ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
 import type {ToolbarPluginProps} from './helper-plugins/ToolbarPlugin';
 import RichText from './RichText';
 import DynamicValuePopover from '../DynamicValuePopover';
+import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
+import type {Resource} from '@/features/flows/models/resources';
 
 /**
  * Props interface for the RichTextWithTranslation component.
@@ -61,7 +61,7 @@ function RichTextWithTranslation({
 }: RichTextWithTranslationProps): ReactElement {
   const {t} = useTranslation();
   const [isDynamicValuePopoverOpen, setIsDynamicValuePopoverOpen] = useState<boolean>(false);
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [buttonEl, setButtonEl] = useState<HTMLButtonElement | null>(null);
   const {selectedNotification} = useValidationStatus();
 
   /**
@@ -83,7 +83,7 @@ function RichTextWithTranslation({
       {errorMessage && <FormHelperText error>{errorMessage}</FormHelperText>}
       <Tooltip title={t('flows:core.elements.textPropertyField.tooltip.configureDynamicValue')}>
         <IconButton
-          ref={buttonRef}
+          ref={setButtonEl}
           onClick={() => setIsDynamicValuePopoverOpen(!isDynamicValuePopoverOpen)}
           size="small"
           sx={{position: 'absolute', top: 8, right: 8}}
@@ -93,7 +93,7 @@ function RichTextWithTranslation({
       </Tooltip>
       <DynamicValuePopover
         open={isDynamicValuePopoverOpen}
-        anchorEl={buttonRef.current}
+        anchorEl={buttonEl}
         propertyKey="richText"
         onClose={() => setIsDynamicValuePopoverOpen(false)}
         value={String((resource as Resource & {label?: string})?.label ?? '')}

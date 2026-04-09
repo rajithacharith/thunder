@@ -2,3 +2,6 @@
 /build
 /node_modules
 /coverage
+
+pnpm-lock.yaml
+/packages/thunder-create/src/templates

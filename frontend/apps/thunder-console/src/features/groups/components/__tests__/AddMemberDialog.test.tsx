@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {renderWithProviders} from '@thunder/test-utils';
 import type * as OxygenUI from '@wso2/oxygen-ui';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import AddMemberDialog from '../edit-group/members-settings/AddMemberDialog';
 
 interface MockDataGridProps {
@@ -36,7 +36,12 @@ vi.mock('@wso2/oxygen-ui', async () => {
     ...actual,
     DataGrid: {
       ...(actual.DataGrid ?? {}),
-      DataGrid: ({rows = [], loading = false, checkboxSelection = false, onRowSelectionModelChange = undefined}: MockDataGridProps) => (
+      DataGrid: ({
+        rows = [],
+        loading = false,
+        checkboxSelection = false,
+        onRowSelectionModelChange = undefined,
+      }: MockDataGridProps) => (
         <div data-testid="users-grid" data-loading={loading}>
           {rows.map((row) => (
             <div key={row.id} data-testid={`user-${row.id}`}>

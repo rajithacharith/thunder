@@ -16,16 +16,16 @@
  * under the License.
  */
 
-import {useCallback, useMemo, useState, type JSX} from 'react';
-import {useNavigate} from 'react-router';
+import {getDisplayNameForCode, toFlagEmoji, useGetLanguages} from '@thunder/i18n';
 import {useLogger} from '@thunder/logger/react';
 import {Chip, DataGrid, IconButton, ListingTable, Tooltip, useTheme} from '@wso2/oxygen-ui';
 import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {useCallback, useMemo, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import {getDisplayNameForCode, toFlagEmoji, useGetLanguages} from '@thunder/i18n';
-import ResourceAvatar from '@/components/ResourceAvatar';
-import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
+import {useNavigate} from 'react-router';
 import TranslationDeleteDialog from './TranslationDeleteDialog';
+import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
+import ResourceAvatar from '@/components/ResourceAvatar';
 
 export default function TranslationsList(): JSX.Element {
   const theme = useTheme();

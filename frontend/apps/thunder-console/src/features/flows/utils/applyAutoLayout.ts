@@ -17,8 +17,8 @@
  */
 
 // eslint-disable-next-line import/no-extraneous-dependencies, import/extensions
-import ELK from 'elkjs/lib/elk.bundled.js';
 import type {Edge, Node} from '@xyflow/react';
+import ELK from 'elkjs/lib/elk.bundled.js';
 
 /**
  * Configuration options for auto-layout.
@@ -178,7 +178,7 @@ export default async function applyAutoLayout(
     let layoutedNodes = nodes.map((node) => {
       const elkNode = layoutedGraph.children?.find((n) => n.id === node.id);
 
-      if (!elkNode || elkNode.x === undefined || elkNode.y === undefined) {
+      if (elkNode?.x === undefined || elkNode.y === undefined) {
         return node;
       }
 

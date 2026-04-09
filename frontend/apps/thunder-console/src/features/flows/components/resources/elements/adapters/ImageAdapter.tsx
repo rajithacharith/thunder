@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import {useCallback, useMemo, useState, type CSSProperties, type ReactElement} from 'react';
-import {Trans, useTranslation} from 'react-i18next';
+import {isI18nTemplatePattern, isMetaTemplatePattern} from '@thunder/utils';
 import {Box, Typography} from '@wso2/oxygen-ui';
 import {ImageIcon} from '@wso2/oxygen-ui-icons-react';
+import {useCallback, useMemo, useState, type CSSProperties, type ReactElement} from 'react';
+import {Trans, useTranslation} from 'react-i18next';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
-import {isI18nTemplatePattern, isMetaTemplatePattern} from '@thunder/utils';
 
 /**
  * Image element type with properties at top level.

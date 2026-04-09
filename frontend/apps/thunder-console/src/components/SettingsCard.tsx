@@ -65,6 +65,10 @@ interface SettingsCardProps {
    */
   onToggle?: (enabled: boolean) => void;
   /**
+   * Optional icon element to render to the left of the title
+   */
+  titleIcon?: ReactNode;
+  /**
    * Optional custom action element to render in the header
    */
   headerAction?: ReactNode;
@@ -106,6 +110,7 @@ export default function SettingsCard({
   children,
   enabled = undefined,
   onToggle = undefined,
+  titleIcon = undefined,
   headerAction = undefined,
   slotProps = undefined,
 }: SettingsCardProps) {
@@ -121,9 +126,12 @@ export default function SettingsCard({
     <Paper {...rootProps} sx={rootSx}>
       <Box {...headerProps} sx={{p: 3, ...(headerSx as object)}}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
-          <Typography variant="h5" {...titleProps} sx={titleSx}>
-            {title}
-          </Typography>
+          <Stack direction="row" alignItems="center" spacing={1.5}>
+            {titleIcon}
+            <Typography variant="h5" {...titleProps} sx={titleSx}>
+              {title}
+            </Typography>
+          </Stack>
           <Stack direction="row" alignItems="center" spacing={2}>
             {headerAction}
             {hasToggle && (

@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import {Card, CardContent, Typography} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Card, CardContent, Typography} from '@wso2/oxygen-ui';
 import SectionLabel from '../common/SectionLabel';
 import SelectRow from '../common/SelectRow';
 import SliderRow from '../common/SliderRow';

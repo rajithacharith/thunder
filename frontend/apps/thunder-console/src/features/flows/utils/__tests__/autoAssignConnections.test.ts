@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, expect, it} from 'vitest';
 import type {Node} from '@xyflow/react';
-import autoAssignConnections from '../autoAssignConnections';
+import {describe, expect, it} from 'vitest';
 import type {ExecutorConnectionInterface} from '../../models/metadata';
 import {ExecutionTypes, StepTypes} from '../../models/steps';
+import autoAssignConnections from '../autoAssignConnections';
 
 describe('autoAssignConnections', () => {
   const createNode = (
@@ -121,9 +121,7 @@ describe('autoAssignConnections', () => {
     });
 
     it('should auto-assign senderId when properties.senderId is placeholder', () => {
-      const nodes = [
-        createNode('node-1', StepTypes.Execution, ExecutionTypes.SMSOTPAuth, {senderId: '{{SENDER_ID}}'}),
-      ];
+      const nodes = [createNode('node-1', StepTypes.Execution, ExecutionTypes.SMSOTPAuth, {senderId: '{{SENDER_ID}}'})];
       const connections: ExecutorConnectionInterface[] = [
         {executorName: ExecutionTypes.SMSOTPAuth, connections: ['sms-sender-1']},
       ];

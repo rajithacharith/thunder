@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {renderHook, render, fireEvent} from '@testing-library/react';
 import type {NodeProps} from '@xyflow/react';
-import {StaticStepTypes, StepTypes, type Step} from '@/features/flows/models/steps';
-import type {Resources} from '@/features/flows/models/resources';
-import type {Element} from '@/features/flows/models/elements';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import useNodeTypes from '../useNodeTypes';
+import type {Element} from '@/features/flows/models/elements';
+import type {Resources} from '@/features/flows/models/resources';
+import {StaticStepTypes, StepTypes, type Step} from '@/features/flows/models/steps';
 
 // Mock StepFactory component
 vi.mock('../../components/resources/steps/StepFactory', () => ({
@@ -341,16 +341,19 @@ describe('useNodeTypes', () => {
       // Initial render
       render(<ViewNodeType {...mockNodeProps} />);
 
+      const initialNodeTypes = result.current.nodeTypes;
+
       // Update callback
       rerender({onAddElementToView: newOnAddElementToView});
 
       // The ref should be updated without recreating nodeTypes
+      expect(result.current.nodeTypes).toBe(initialNodeTypes);
     });
 
     it('should update onAddElementToForm ref when callback changes', () => {
       const newOnAddElementToForm = vi.fn();
 
-      const {rerender} = renderHook(
+      const {result, rerender} = renderHook(
         ({onAddElementToForm}) =>
           useNodeTypes({
             steps: [createMockStep()],
@@ -365,10 +368,13 @@ describe('useNodeTypes', () => {
         },
       );
 
+      const initialNodeTypes = result.current.nodeTypes;
+
       // Update callback
       rerender({onAddElementToForm: newOnAddElementToForm});
 
       // The ref should be updated without recreating nodeTypes
+      expect(result.current.nodeTypes).toBe(initialNodeTypes);
     });
 
     it('should update resources ref when resources change', () => {
@@ -377,7 +383,7 @@ describe('useNodeTypes', () => {
         templates: [{id: 'new-template'}],
       } as unknown as Resources;
 
-      const {rerender} = renderHook(
+      const {result, rerender} = renderHook(
         ({resources}) =>
           useNodeTypes({
             steps: [createMockStep()],
@@ -392,10 +398,13 @@ describe('useNodeTypes', () => {
         },
       );
 
+      const initialNodeTypes = result.current.nodeTypes;
+
       // Update resources
       rerender({resources: newResources});
 
       // The ref should be updated without recreating nodeTypes
+      expect(result.current.nodeTypes).toBe(initialNodeTypes);
     });
   });
 

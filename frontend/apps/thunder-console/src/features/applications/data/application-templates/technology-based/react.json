@@ -1,30 +1,32 @@
 {
   "id": "react",
   "displayName": "React",
-  "name": "React Application",
   "description": "Single Page Application built with React",
-  "inboundAuthConfig": [
-    {
-      "type": "oauth2",
-      "config": {
-        "grantTypes": [
-          "authorization_code",
-          "refresh_token"
-        ],
-        "responseTypes": [
-          "code"
-        ],
-        "redirectUris": [
-          "http://localhost:5173"
-        ],
-        "pkceRequired": true,
-        "tokenEndpointAuthMethod": "none",
-        "publicClient": true
+  "defaults": {
+    "name": "React Application",
+    "inboundAuthConfig": [
+      {
+        "type": "oauth2",
+        "config": {
+          "grantTypes": ["authorization_code", "refresh_token"],
+          "responseTypes": ["code"],
+          "redirectUris": ["http://localhost:5173"],
+          "pkceRequired": true,
+          "tokenEndpointAuthMethod": "none",
+          "publicClient": true
+        }
       }
+    ],
+    "allowedUserTypes": []
+  },
+  "fieldConstraints": {
+    "oauth2": {
+      "publicClient": {"readOnly": true, "value": true},
+      "pkceRequired": {"readOnly": true, "value": true},
+      "tokenEndpointAuthMethod": {"readOnly": true, "value": "none"}
     }
-  ],
-  "allowedUserTypes": [],
-  "integration_guides": {
+  },
+  "integrationGuides": {
     "INBUILT": {
       "llm_prompt": {
         "id": "llm-prompt",

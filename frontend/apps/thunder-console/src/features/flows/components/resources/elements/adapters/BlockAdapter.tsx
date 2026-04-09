@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import {useMemo, type ReactElement} from 'react';
 import {Box} from '@wso2/oxygen-ui';
 import classNames from 'classnames';
+import {useMemo, type ReactElement} from 'react';
+import {ReorderableElement} from '../../steps/view/ReorderableElement';
 import {type Element as FlowElement} from '@/features/flows/models/elements';
 import FlowEventTypes from '@/features/flows/models/extension';
 import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
-import {ReorderableElement} from '../../steps/view/ReorderableElement';
 import './BlockAdapter.scss';
 
 /**

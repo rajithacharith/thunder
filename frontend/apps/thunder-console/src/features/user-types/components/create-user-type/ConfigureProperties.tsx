@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {useResolveDisplayName} from '@thunder/shared-hooks';
 import {
   Alert,
   Box,
@@ -38,10 +39,9 @@ import {Plus, Trash2, Info} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useCallback, useEffect, useMemo, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useResolveDisplayName} from '@thunder/shared-hooks';
 
-import type {SchemaPropertyInput, UIPropertyType} from '../../types/user-types';
 import I18nTextInput from './I18nTextInput';
+import type {SchemaPropertyInput, UIPropertyType} from '../../types/user-types';
 
 /**
  * Props for the {@link ConfigureProperties} component.
@@ -204,11 +204,9 @@ export default function ConfigureProperties({
     );
   };
 
-  const supportsUnique = (type: UIPropertyType): boolean =>
-    type === 'string' || type === 'number' || type === 'enum';
+  const supportsUnique = (type: UIPropertyType): boolean => type === 'string' || type === 'number' || type === 'enum';
 
-  const supportsCredential = (type: UIPropertyType): boolean =>
-    type === 'string' || type === 'number';
+  const supportsCredential = (type: UIPropertyType): boolean => type === 'string' || type === 'number';
 
   return (
     <Stack direction="column" spacing={4} data-testid="configure-properties">
@@ -284,7 +282,9 @@ export default function ConfigureProperties({
               value={property.displayName}
               onChange={(newValue: string) => handlePropertyChange(property.id, 'displayName', newValue)}
               placeholder={t('userTypes:displayNamePlaceholder', 'e.g., First Name')}
-              defaultNewKey={userTypeName && property.name.trim() ? `${userTypeName}.${property.name.trim()}` : undefined}
+              defaultNewKey={
+                userTypeName && property.name.trim() ? `${userTypeName}.${property.name.trim()}` : undefined
+              }
             />
           </Box>
 
@@ -390,12 +390,7 @@ export default function ConfigureProperties({
               {property.enum.length > 0 && (
                 <Box sx={{mt: 1.5, display: 'flex', flexWrap: 'wrap', gap: 1}}>
                   {property.enum.map((val) => (
-                    <Chip
-                      key={val}
-                      label={val}
-                      size="small"
-                      onDelete={() => handleRemoveEnumValue(property.id, val)}
-                    />
+                    <Chip key={val} label={val} size="small" onDelete={() => handleRemoveEnumValue(property.id, val)} />
                   ))}
                 </Box>
               )}
@@ -424,7 +419,10 @@ export default function ConfigureProperties({
           <FormControl fullWidth>
             <FormLabel>{t('userTypes:displayAttribute', 'Display Attribute')}</FormLabel>
             <Typography variant="body2" color="text.secondary" sx={{mb: 1}}>
-              {t('userTypes:displayAttributeHint', 'The property used to display user names in listings and references')}
+              {t(
+                'userTypes:displayAttributeHint',
+                'The property used to display user names in listings and references',
+              )}
             </Typography>
             <Select
               value={displayAttribute}

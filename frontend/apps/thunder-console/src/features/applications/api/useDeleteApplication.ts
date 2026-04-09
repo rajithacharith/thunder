@@ -16,9 +16,10 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useConfig, useToast} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
+import {getErrorMessage} from '@thunder/utils';
 import {useTranslation} from 'react-i18next';
 import ApplicationQueryKeys from '../constants/application-query-keys';
 
@@ -87,8 +88,8 @@ export default function useDeleteApplication(): UseMutationResult<void, Error, s
       });
       showToast(t('delete.success'), 'success');
     },
-    onError: () => {
-      showToast(t('delete.error'), 'error');
+    onError: (error) => {
+      showToast(getErrorMessage(error, t, 'delete.error'), 'error');
     },
   });
 }

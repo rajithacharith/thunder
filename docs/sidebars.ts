@@ -229,6 +229,11 @@ const sidebars: SidebarsConfig = {
             },
           ],
         },
+        {
+          type: 'doc',
+          id: 'guides/guides/consent',
+          label: 'Consent',
+        },
       ],
     },
 

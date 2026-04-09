@@ -22,8 +22,8 @@ import type {JSX} from 'react';
 import {useState, useEffect, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
-import TechnologyGuide from '../edit-application/integration-guides/TechnologyGuide';
 import type {IntegrationGuides} from '../../models/application-templates';
+import TechnologyGuide from '../edit-application/integration-guides/TechnologyGuide';
 
 /**
  * Props for the {@link IntegrationGuide} component.

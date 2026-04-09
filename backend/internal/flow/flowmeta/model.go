@@ -31,12 +31,13 @@ type FlowMetadataResponse struct {
 
 // ApplicationMetadata represents application-specific metadata.
 type ApplicationMetadata struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	LogoURL   string `json:"logoUrl,omitempty"`
-	URL       string `json:"url,omitempty"`
-	TosURI    string `json:"tosUri,omitempty"`
-	PolicyURI string `json:"policyUri,omitempty"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	LogoURL     string `json:"logoUrl,omitempty"`
+	URL         string `json:"url,omitempty"`
+	TosURI      string `json:"tosUri,omitempty"`
+	PolicyURI   string `json:"policyUri,omitempty"`
 }
 
 // OUMetadata represents organization unit metadata.

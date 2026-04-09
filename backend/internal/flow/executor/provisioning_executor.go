@@ -339,20 +339,18 @@ func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
 }
 
 // getOUID retrieves the organization unit ID from runtime data.
+// Priority: RuntimeData["ouId"] (set by OUResolverExecutor) > RuntimeData["defaultOUID"] (set by UserTypeResolver).
 func (p *provisioningExecutor) getOUID(ctx *core.NodeContext) string {
-	ouID := ""
-	// Check for ouId in runtime data
+	// Check for ouId in runtime data (e.g. from OUResolverExecutor).
 	if val, ok := ctx.RuntimeData[ouIDKey]; ok && val != "" {
-		ouID = val
+		return val
 	}
-	// If not found, check for defaultOUID in runtime data
-	if ouID == "" {
-		if val, ok := ctx.RuntimeData[defaultOUIDKey]; ok && val != "" {
-			ouID = val
-		}
+	// Fallback: check for defaultOUID in runtime data (set by UserTypeResolver).
+	if val, ok := ctx.RuntimeData[defaultOUIDKey]; ok && val != "" {
+		return val
 	}
 
-	return ouID
+	return ""
 }
 
 // getUserType retrieves the user type from runtime data.

@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
-import type {IdentityProviderListResponse} from '../models/responses';
 import IntegrationQueryKeys from '../constants/query-keys';
+import type {IdentityProviderListResponse} from '../models/responses';
 
 /**
  * Custom hook to fetch identity providers (integrations) from the Thunder server.

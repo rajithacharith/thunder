@@ -18,32 +18,32 @@
 
 /* eslint-disable max-classes-per-file, @typescript-eslint/class-methods-use-this */
 
-import {describe, expect, it, vi} from 'vitest';
 import type {Node, Edge} from '@xyflow/react';
+import {describe, expect, it, vi} from 'vitest';
 import applyAutoLayout, {type AutoLayoutOptions} from '../applyAutoLayout';
 
 // Mock ELK
 vi.mock('elkjs/lib/elk.bundled.js', () => ({
-    default: class MockELK {
-      layout(graph: {
-        id: string;
-        children: {id: string; width: number; height: number}[];
-        edges: {id: string; sources: string[]; targets: string[]}[];
-      }) {
-        // Return nodes with calculated positions based on their index
-        const layoutedChildren = graph.children.map((child, index) => ({
-          ...child,
-          x: index * 200,
-          y: 100,
-        }));
+  default: class MockELK {
+    layout(graph: {
+      id: string;
+      children: {id: string; width: number; height: number}[];
+      edges: {id: string; sources: string[]; targets: string[]}[];
+    }) {
+      // Return nodes with calculated positions based on their index
+      const layoutedChildren = graph.children.map((child, index) => ({
+        ...child,
+        x: index * 200,
+        y: 100,
+      }));
 
-        return Promise.resolve({
-          ...graph,
-          children: layoutedChildren,
-        });
-      }
-    },
-  }));
+      return Promise.resolve({
+        ...graph,
+        children: layoutedChildren,
+      });
+    }
+  },
+}));
 
 describe('applyAutoLayout', () => {
   const createNode = (
@@ -341,14 +341,13 @@ describe('applyAutoLayout', () => {
 
       // VIEW nodes should be aligned (have similar Y positions considering their heights)
       const viewNodes = result.filter((n) => n.type?.toUpperCase() === 'VIEW');
-      if (viewNodes.length >= 2) {
-        // Views should be centered at the same Y
-        const heights = viewNodes.map((n) => n.measured?.height ?? 100);
-        const centers = viewNodes.map((n, i) => n.position.y + heights[i] / 2);
-        // Allow some tolerance for rounding
-        const tolerance = 5;
-        expect(Math.abs(centers[0] - centers[1])).toBeLessThan(tolerance);
-      }
+      expect(viewNodes.length).toBeGreaterThanOrEqual(2);
+      // Views should be centered at the same Y
+      const heights = viewNodes.map((n) => n.measured?.height ?? 100);
+      const centers = viewNodes.map((n, i) => n.position.y + heights[i] / 2);
+      // Allow some tolerance for rounding
+      const tolerance = 5;
+      expect(Math.abs(centers[0] - centers[1])).toBeLessThan(tolerance);
     });
 
     it('should handle nodes without type', async () => {

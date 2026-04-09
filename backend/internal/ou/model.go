@@ -31,7 +31,7 @@ type OrganizationUnitBasic struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	LogoURL     string `json:"logoUrl,omitempty"`
-	IsReadOnly  bool   `json:"isReadOnly,omitempty"`
+	IsReadOnly  bool   `json:"isReadOnly"`
 }
 
 // OrganizationUnit represents an organization unit.

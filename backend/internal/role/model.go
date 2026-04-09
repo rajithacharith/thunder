@@ -49,6 +49,7 @@ type RoleSummaryResponse struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	OUID        string `json:"ouId"`
+	IsReadOnly  bool   `json:"isReadOnly"`
 }
 
 // RoleResponse represents a complete role with permissions.
@@ -156,6 +157,7 @@ type Role struct {
 	Name        string
 	Description string
 	OUID        string
+	IsReadOnly  bool
 }
 
 // RoleWithPermissions represents complete role details used internally by the service layer.

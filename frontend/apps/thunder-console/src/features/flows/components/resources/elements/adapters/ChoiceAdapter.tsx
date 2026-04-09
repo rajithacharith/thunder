@@ -16,13 +16,13 @@
  * under the License.
  */
 
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {FormControl, FormControlLabel, FormHelperText, FormLabel, Radio, RadioGroup} from '@wso2/oxygen-ui';
 import type {ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
-import type {Element as FlowElement} from '@/features/flows/models/elements';
-import type {FieldOption} from '@/features/flows/models/base';
-import {FormControl, FormControlLabel, FormHelperText, FormLabel, Radio, RadioGroup} from '@wso2/oxygen-ui';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import {Hint} from '../hint';
+import type {FieldOption} from '@/features/flows/models/base';
+import type {Element as FlowElement} from '@/features/flows/models/elements';
 
 /**
  * Choice element type with properties at top level.
@@ -57,9 +57,7 @@ function ChoiceAdapter({resource}: ChoiceAdapterPropsInterface): ReactElement {
 
   return (
     <FormControl sx={{my: 2}}>
-      <FormLabel id={choiceElement?.id}>
-        {resolve(choiceElement?.label, {t}) ?? choiceElement?.label ?? ''}
-      </FormLabel>
+      <FormLabel id={choiceElement?.id}>{resolve(choiceElement?.label, {t}) ?? choiceElement?.label ?? ''}</FormLabel>
       <RadioGroup defaultValue={choiceElement?.defaultValue}>
         {choiceElement?.options?.map((option: FieldOption) => (
           <FormControlLabel

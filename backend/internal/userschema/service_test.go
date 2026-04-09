@@ -293,6 +293,7 @@ func TestValidateUserReturnsTrueWhenValidationPasses(t *testing.T) {
 		context.Background(),
 		"employee",
 		json.RawMessage(`{"email":"employee@example.com"}`),
+		false,
 	)
 
 	require.True(t, ok)
@@ -311,7 +312,7 @@ func TestValidateUserReturnsInternalErrorWhenSchemaLoadFails(t *testing.T) {
 		transactioner:   &mockTransactioner{},
 	}
 
-	ok, svcErr := service.ValidateUser(context.Background(), "employee", json.RawMessage(`{}`))
+	ok, svcErr := service.ValidateUser(context.Background(), "employee", json.RawMessage(`{}`), false)
 
 	require.False(t, ok)
 	require.NotNil(t, svcErr)
@@ -363,6 +364,7 @@ func TestValidateUserReturnsSchemaNotFoundWhenSchemaMissing(t *testing.T) {
 		context.Background(),
 		"employee",
 		json.RawMessage(`{"email":"employee@example.com"}`),
+		false,
 	)
 
 	require.False(t, ok)

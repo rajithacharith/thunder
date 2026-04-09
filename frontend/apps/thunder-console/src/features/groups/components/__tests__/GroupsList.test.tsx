@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {renderWithProviders} from '@thunder/test-utils';
 import type * as OxygenUI from '@wso2/oxygen-ui';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import type {GroupListResponse} from '../../models/group';
 import GroupsList from '../GroupsList';
 
@@ -52,10 +52,14 @@ vi.mock('@wso2/oxygen-ui', async () => {
         </div>
       ),
       Container: ({children}: {children: React.ReactNode}): React.ReactElement => children as React.ReactElement,
-      RowActions: ({children}: {children: React.ReactNode}) => (
-        <div data-testid="row-actions">{children}</div>
-      ),
-      DataGrid: ({rows = [], columns = [], loading = false, onRowClick = undefined, getRowId = undefined}: MockDataGridProps) => (
+      RowActions: ({children}: {children: React.ReactNode}) => <div data-testid="row-actions">{children}</div>,
+      DataGrid: ({
+        rows = [],
+        columns = [],
+        loading = false,
+        onRowClick = undefined,
+        getRowId = undefined,
+      }: MockDataGridProps) => (
         <div data-testid="data-grid" data-loading={loading}>
           {rows.map((row) => {
             const rowId = getRowId ? getRowId(row) : row.id;

@@ -16,6 +16,8 @@
  * under the License.
  */
 
+import {Box, Button, Tooltip, useColorScheme} from '@wso2/oxygen-ui';
+import {LayoutGrid, Save} from '@wso2/oxygen-ui-icons-react';
 import {
   Background,
   ControlButton,
@@ -26,16 +28,14 @@ import {
   type ReactFlowProps,
 } from '@xyflow/react';
 import {type ReactElement, useCallback} from 'react';
-import {Box, Button, Tooltip, useColorScheme} from '@wso2/oxygen-ui';
+import {useTranslation} from 'react-i18next';
+import EdgeStyleMenu from './EdgeStyleSelector';
+import useEdgeStyleSelector from '../../hooks/useEdgeStyleSelector';
+import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import getEdgeStyleIcon from '../../utils/getEdgeStyleIcon';
+import CanvasValidationIndicator from '../validation-panel/CanvasValidationIndicator';
 import '@xyflow/react/dist/style.css';
 import './VisualFlow.scss';
-import {LayoutGrid, Save} from '@wso2/oxygen-ui-icons-react';
-import {useTranslation} from 'react-i18next';
-import CanvasValidationIndicator from '../validation-panel/CanvasValidationIndicator';
-import EdgeStyleMenu from './EdgeStyleSelector';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
-import useEdgeStyleSelector from '../../hooks/useEdgeStyleSelector';
-import getEdgeStyleIcon from '../../utils/getEdgeStyleIcon';
 
 /**
  * Props interface of {@link VisualFlow}

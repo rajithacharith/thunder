@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
+import {render, screen} from '@thunder/test-utils';
+import {describe, expect, it, vi, beforeEach} from 'vitest';
+import {GroupCreateFlowStep} from '../../../models/group-create-flow';
 import GroupCreateProvider from '../GroupCreateProvider';
 import useGroupCreate from '../useGroupCreate';
-import {GroupCreateFlowStep} from '../../../models/group-create-flow';
 
 function TestConsumer() {
   const context = useGroupCreate();

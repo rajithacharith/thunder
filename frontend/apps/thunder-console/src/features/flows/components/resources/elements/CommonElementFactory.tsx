@@ -16,26 +16,26 @@
  * under the License.
  */
 
-import {BlockTypes, ElementCategories, ElementTypes, type Element} from '@/features/flows/models/elements';
 import type {ReactElement} from 'react';
-import FormAdapter from './adapters/FormAdapter';
 import BlockAdapter from './adapters/BlockAdapter';
-import CheckboxAdapter from './adapters/input/CheckboxAdapter';
-import PhoneNumberInputAdapter from './adapters/input/PhoneNumberInputAdapter';
-import OTPInputAdapter from './adapters/input/OTPInputAdapter';
-import DefaultInputAdapter from './adapters/input/DefaultInputAdapter';
-import ChoiceAdapter from './adapters/ChoiceAdapter';
 import ButtonAdapter from './adapters/ButtonAdapter';
-import TypographyAdapter from './adapters/TypographyAdapter';
-import DividerAdapter from './adapters/DividerAdapter';
-import RichTextAdapter from './adapters/RichTextAdapter';
-import ImageAdapter from './adapters/ImageAdapter';
-import IconAdapter from './adapters/IconAdapter';
-import StackAdapter from './adapters/StackAdapter';
 import CaptchaAdapter from './adapters/CaptchaAdapter';
-import ResendButtonAdapter from './adapters/ResendButtonAdapter';
-import TimerAdapter from './adapters/TimerAdapter';
+import ChoiceAdapter from './adapters/ChoiceAdapter';
 import ConsentAdapter from './adapters/ConsentAdapter';
+import DividerAdapter from './adapters/DividerAdapter';
+import FormAdapter from './adapters/FormAdapter';
+import IconAdapter from './adapters/IconAdapter';
+import ImageAdapter from './adapters/ImageAdapter';
+import CheckboxAdapter from './adapters/input/CheckboxAdapter';
+import DefaultInputAdapter from './adapters/input/DefaultInputAdapter';
+import OTPInputAdapter from './adapters/input/OTPInputAdapter';
+import PhoneNumberInputAdapter from './adapters/input/PhoneNumberInputAdapter';
+import ResendButtonAdapter from './adapters/ResendButtonAdapter';
+import RichTextAdapter from './adapters/RichTextAdapter';
+import StackAdapter from './adapters/StackAdapter';
+import TimerAdapter from './adapters/TimerAdapter';
+import TypographyAdapter from './adapters/TypographyAdapter';
+import {BlockTypes, ElementCategories, ElementTypes, type Element} from '@/features/flows/models/elements';
 
 /**
  * Props interface of {@link CommonElementFactory}

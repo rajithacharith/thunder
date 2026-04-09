@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactElement} from 'react';
-import {useTranslation} from 'react-i18next';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {isI18nTemplatePattern, isMetaTemplatePattern} from '@thunder/utils';
 import {
   Box,
   FormControl,
@@ -31,11 +31,11 @@ import {
 } from '@wso2/oxygen-ui';
 import {SquareFunction} from '@wso2/oxygen-ui-icons-react';
 import startCase from 'lodash-es/startCase';
-import {isI18nTemplatePattern, isMetaTemplatePattern} from '@thunder/utils';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {useEffect, useMemo, useState, type ChangeEvent, type ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
+import DynamicValuePopover from './DynamicValuePopover';
 import useValidationStatus from '../../hooks/useValidationStatus';
 import type {Resource} from '../../models/resources';
-import DynamicValuePopover from './DynamicValuePopover';
 
 /**
  * Props interface of {@link TextPropertyField}
@@ -83,7 +83,7 @@ function TextPropertyField({
   const {resolve} = useTemplateLiteralResolver();
   const [isDynamicValuePopoverOpen, setIsDynamicValuePopoverOpen] = useState<boolean>(false);
   const [localValue, setLocalValue] = useState<string>(propertyValue);
-  const iconButtonRef = useRef<HTMLButtonElement>(null);
+  const [iconButtonEl, setIconButtonEl] = useState<HTMLButtonElement | null>(null);
   const {selectedNotification} = useValidationStatus();
 
   /**
@@ -110,7 +110,7 @@ function TextPropertyField({
    * Resolve the i18n value if the pattern is detected.
    */
   const resolvedI18nValue: string = useMemo(
-    () => (isI18nPattern ? resolve(propertyValue, {t}) ?? '' : ''),
+    () => (isI18nPattern ? (resolve(propertyValue, {t}) ?? '') : ''),
     [propertyValue, isI18nPattern, t, resolve],
   );
 
@@ -177,7 +177,7 @@ function TextPropertyField({
               <InputAdornment position="end">
                 <Tooltip title={t('flows:core.elements.textPropertyField.tooltip.configureDynamicValue')}>
                   <IconButton
-                    ref={iconButtonRef}
+                    ref={setIconButtonEl}
                     onClick={handleDynamicValueToggle}
                     size="small"
                     edge="end"
@@ -214,7 +214,7 @@ function TextPropertyField({
       )}
       <DynamicValuePopover
         open={isDynamicValuePopoverOpen}
-        anchorEl={iconButtonRef.current}
+        anchorEl={iconButtonEl}
         propertyKey={propertyKey}
         onClose={handleDynamicValueClose}
         value={propertyValue}

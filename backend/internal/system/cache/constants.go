@@ -34,4 +34,6 @@ type cacheType string
 const (
 	// cacheTypeInMemory represents an in-memory cache type.
 	cacheTypeInMemory cacheType = "inmemory"
+	// cacheTypeRedis represents a Redis-backed cache type.
+	cacheTypeRedis cacheType = "redis"
 )

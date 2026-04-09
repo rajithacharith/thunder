@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {useState, useMemo, useCallback, useEffect, type PropsWithChildren} from 'react';
-import {useParams} from 'react-router';
 import {useGetLayout} from '@thunder/shared-design';
+import {useState, useMemo, useCallback, type PropsWithChildren} from 'react';
+import {useParams} from 'react-router';
 import LayoutBuilderContext, {type LayoutBuilderContextType, type LayoutConfig} from './LayoutBuilderContext';
 
 /**
@@ -61,7 +61,9 @@ export default function LayoutBuilderProvider({children}: LayoutBuilderProviderP
   const {layoutId = ''} = useParams<{layoutId: string}>();
   const {data: layoutData, isLoading} = useGetLayout(layoutId);
 
-  const [draftLayout, setDraftLayout] = useState<LayoutConfig | null>(null);
+  const [draftLayout, setDraftLayout] = useState<LayoutConfig | null>(
+    () => (layoutData?.layout as LayoutConfig) ?? null,
+  );
   const [isDirty, setIsDirty] = useState<boolean>(false);
   const [selectedScreen, setSelectedScreen] = useState<string | null>(null);
   const [screenDraft, setScreenDraft] = useState<Record<string, unknown> | null>(null);
@@ -71,22 +73,24 @@ export default function LayoutBuilderProvider({children}: LayoutBuilderProviderP
   const handle = layoutData?.handle ?? null;
   const displayName = layoutData?.displayName ?? null;
 
-  // Initialize draft when layout data loads
-  useEffect(() => {
+  // Initialize draft when layout data loads (update during render to avoid effect-driven cascades)
+  const [prevLayoutData, setPrevLayoutData] = useState(layoutData);
+  if (prevLayoutData !== layoutData) {
+    setPrevLayoutData(layoutData);
     if (layoutData?.layout && !draftLayout) {
       setDraftLayout(layoutData.layout as LayoutConfig);
     }
-  }, [layoutData, draftLayout]);
+  }
 
-  // Auto-select first screen when layout loads
-  useEffect(() => {
+  // Derive effective selected screen — falls back to first screen when nothing is explicitly selected
+  const effectiveSelectedScreen = useMemo(() => {
+    if (selectedScreen) return selectedScreen;
     if (draftLayout?.screens) {
       const screenNames = Object.keys(draftLayout.screens);
-      if (screenNames.length > 0 && !selectedScreen) {
-        setSelectedScreen(screenNames[0]);
-      }
+      return screenNames.length > 0 ? screenNames[0] : null;
     }
-  }, [draftLayout, selectedScreen]);
+    return null;
+  }, [selectedScreen, draftLayout]);
 
   /**
    * Resets the draft to match the original layout
@@ -166,7 +170,7 @@ export default function LayoutBuilderProvider({children}: LayoutBuilderProviderP
       setDraftLayout,
       isDirty,
       setIsDirty,
-      selectedScreen,
+      selectedScreen: effectiveSelectedScreen,
       setSelectedScreen,
       screenDraft,
       setScreenDraft,
@@ -187,7 +191,7 @@ export default function LayoutBuilderProvider({children}: LayoutBuilderProviderP
       displayName,
       draftLayout,
       isDirty,
-      selectedScreen,
+      effectiveSelectedScreen,
       screenDraft,
       extraScreens,
       isSaving,

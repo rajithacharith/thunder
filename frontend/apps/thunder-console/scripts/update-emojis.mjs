@@ -35,8 +35,8 @@
  */
 
 import {writeFileSync} from 'node:fs';
-import {fileURLToPath} from 'node:url';
 import {dirname, resolve} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {createLogger} from '@thunder/logger';
 
 const logger = createLogger({level: 'info'});
@@ -61,55 +61,58 @@ const OUTPUT_PATH = resolve(__dirname, '../src/components/EmojiPicker/emojis.jso
  * @returns {Array<{ label: string, emojis: Array<{ char: string, keywords: string }> }>}
  */
 function parse(text) {
-  const {categories} = text.split('\n').map((raw) => raw.trim()).reduce(
-    ({categories: cats, currentGroup}, line) => {
-      // Track current group
-      if (line.startsWith('# group:')) {
-        const label = line.slice('# group:'.length).trim();
-        if (SKIP_GROUPS.has(label)) {
-          return {categories: cats, currentGroup: null};
+  const {categories} = text
+    .split('\n')
+    .map((raw) => raw.trim())
+    .reduce(
+      ({categories: cats, currentGroup}, line) => {
+        // Track current group
+        if (line.startsWith('# group:')) {
+          const label = line.slice('# group:'.length).trim();
+          if (SKIP_GROUPS.has(label)) {
+            return {categories: cats, currentGroup: null};
+          }
+          const newGroup = {label, emojis: []};
+          cats.push(newGroup);
+          return {categories: cats, currentGroup: newGroup};
         }
-        const newGroup = {label, emojis: []};
-        cats.push(newGroup);
-        return {categories: cats, currentGroup: newGroup};
-      }
 
-      // Skip comments, empty lines, lines in a skipped group, or non-fully-qualified entries
-      if (!currentGroup || !line || line.startsWith('#') || !line.includes('; fully-qualified')) {
+        // Skip comments, empty lines, lines in a skipped group, or non-fully-qualified entries
+        if (!currentGroup || !line || line.startsWith('#') || !line.includes('; fully-qualified')) {
+          return {categories: cats, currentGroup};
+        }
+
+        // Line format example:
+        //   1F600  ; fully-qualified  # 😀 E1.0 grinning face
+        const hashIndex = line.indexOf('#');
+        if (hashIndex === -1) return {categories: cats, currentGroup};
+
+        const afterHash = line.slice(hashIndex + 1).trim();
+
+        // afterHash: "😀 E1.0 grinning face"
+        // The emoji char is the first grapheme cluster (may be multiple code points)
+        const spaceAfterEmoji = afterHash.indexOf(' ');
+        if (spaceAfterEmoji === -1) return {categories: cats, currentGroup};
+
+        const char = afterHash.slice(0, spaceAfterEmoji).trim();
+        const rest = afterHash.slice(spaceAfterEmoji + 1).trim();
+
+        // rest: "E1.0 grinning face"
+        // Parse and gate the version token (E<number>.<number>)
+        const versionMatch = rest.match(/^E(\d+\.\d+)\s*/);
+        if (!versionMatch || parseFloat(versionMatch[1]) > MAX_EMOJI_VERSION) {
+          return {categories: cats, currentGroup};
+        }
+
+        const keywords = rest.slice(versionMatch[0].length).trim();
+        if (char && keywords) {
+          currentGroup.emojis.push({char, keywords});
+        }
+
         return {categories: cats, currentGroup};
-      }
-
-      // Line format example:
-      //   1F600  ; fully-qualified  # 😀 E1.0 grinning face
-      const hashIndex = line.indexOf('#');
-      if (hashIndex === -1) return {categories: cats, currentGroup};
-
-      const afterHash = line.slice(hashIndex + 1).trim();
-
-      // afterHash: "😀 E1.0 grinning face"
-      // The emoji char is the first grapheme cluster (may be multiple code points)
-      const spaceAfterEmoji = afterHash.indexOf(' ');
-      if (spaceAfterEmoji === -1) return {categories: cats, currentGroup};
-
-      const char = afterHash.slice(0, spaceAfterEmoji).trim();
-      const rest = afterHash.slice(spaceAfterEmoji + 1).trim();
-
-      // rest: "E1.0 grinning face"
-      // Parse and gate the version token (E<number>.<number>)
-      const versionMatch = rest.match(/^E(\d+\.\d+)\s*/);
-      if (!versionMatch || parseFloat(versionMatch[1]) > MAX_EMOJI_VERSION) {
-        return {categories: cats, currentGroup};
-      }
-
-      const keywords = rest.slice(versionMatch[0].length).trim();
-      if (char && keywords) {
-        currentGroup.emojis.push({char, keywords});
-      }
-
-      return {categories: cats, currentGroup};
-    },
-    {categories: [], currentGroup: null}
-  );
+      },
+      {categories: [], currentGroup: null},
+    );
 
   return categories;
 }
@@ -140,5 +143,6 @@ async function main() {
 
 main().catch((err) => {
   logger.error(err);
+  // eslint-disable-next-line no-undef
   process.exit(1);
 });

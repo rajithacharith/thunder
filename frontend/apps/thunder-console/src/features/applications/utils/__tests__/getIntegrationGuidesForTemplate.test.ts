@@ -27,7 +27,7 @@ vi.mock('../../config/TechnologyBasedApplicationTemplateMetadata', () => ({
     {
       template: {
         id: 'react',
-        integration_guides: {
+        integrationGuides: {
           inbuilt: {
             llm_prompt: {
               id: 'react-llm',
@@ -56,7 +56,7 @@ vi.mock('../../config/TechnologyBasedApplicationTemplateMetadata', () => ({
     {
       template: {
         id: 'nextjs',
-        integration_guides: {
+        integrationGuides: {
           inbuilt: {
             llm_prompt: {
               id: 'nextjs-llm',
@@ -95,7 +95,7 @@ vi.mock('../../config/PlatformBasedApplicationTemplateMetadata', () => ({
     {
       template: {
         id: 'browser',
-        integration_guides: {
+        integrationGuides: {
           inbuilt: {
             llm_prompt: {
               id: 'browser-llm',

@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import type {ChangeEvent, ReactElement, SyntheticEvent} from 'react';
 import {Checkbox, FormControl, FormControlLabel, FormLabel, TextField} from '@wso2/oxygen-ui';
 import startCase from 'lodash-es/startCase';
+import type {ChangeEvent, ReactElement, SyntheticEvent} from 'react';
 import RichTextWithTranslation from './rich-text/RichTextWithTranslation';
 import {ElementTypes} from '../../models/elements';
 import type {Resource} from '../../models/resources';

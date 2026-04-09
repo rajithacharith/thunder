@@ -16,8 +16,6 @@
  * under the License.
  */
 
-import {useEffect, useMemo, useState, type ReactNode, type SyntheticEvent} from 'react';
-import {useTranslation} from 'react-i18next';
 import {
   Autocomplete,
   FormHelperText,
@@ -26,6 +24,8 @@ import {
   TextField,
   type AutocompleteRenderInputParams,
 } from '@wso2/oxygen-ui';
+import {useMemo, useState, type ReactNode, type SyntheticEvent} from 'react';
+import {useTranslation} from 'react-i18next';
 import type {CommonResourcePropertiesPropsInterface} from '@/features/flows/components/resource-property-panel/ResourceProperties';
 import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
 import {ElementTypes, type Element} from '@/features/flows/models/elements';
@@ -55,9 +55,11 @@ function FieldExtendedProperties({resource, onChange}: FieldExtendedPropertiesPr
   const [localSelectedValue, setLocalSelectedValue] = useState<string | null>(() => resourceRef ?? null);
 
   // Sync local state when resource changes (e.g., when switching to a different element)
-  useEffect(() => {
+  const [prevResourceRef, setPrevResourceRef] = useState(resourceRef);
+  if (resourceRef !== prevResourceRef) {
+    setPrevResourceRef(resourceRef);
     setLocalSelectedValue(resourceRef ?? null);
-  }, [resourceRef]);
+  }
 
   /**
    * Get the error message for the ref field.
@@ -84,7 +86,12 @@ function FieldExtendedProperties({resource, onChange}: FieldExtendedPropertiesPr
         renderInput={(params: AutocompleteRenderInputParams) => (
           <>
             <FormLabel htmlFor="attribute-select">{t('flows:core.fieldExtendedProperties.attribute')}</FormLabel>
-            <TextField {...params} id="attribute-select" placeholder={t('flows:core.fieldExtendedProperties.selectAttribute')} error={!!errorMessage} />
+            <TextField
+              {...params}
+              id="attribute-select"
+              placeholder={t('flows:core.fieldExtendedProperties.selectAttribute')}
+              error={!!errorMessage}
+            />
           </>
         )}
         value={localSelectedValue}

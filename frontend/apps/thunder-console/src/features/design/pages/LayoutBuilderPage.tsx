@@ -16,15 +16,29 @@
  * under the License.
  */
 
-import {useRef, type JSX} from 'react';
+import {useGetThemes, useGetTheme, type Stylesheet} from '@thunder/shared-design';
+import {
+  Autocomplete,
+  Box,
+  Button,
+  Drawer,
+  IconButton,
+  TextField,
+  Tooltip,
+  Typography,
+  useColorScheme,
+} from '@wso2/oxygen-ui';
+import {ArrowLeft, Crosshair, Layers, Save} from '@wso2/oxygen-ui-icons-react';
+import {useCallback, useMemo, useRef, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
-import {Box, Button, Drawer, IconButton, Tooltip, Typography, useColorScheme} from '@wso2/oxygen-ui';
-import {ArrowLeft, Layers, Save} from '@wso2/oxygen-ui-icons-react';
-import LayoutPreviewPanel from '../components/LayoutPreviewPanel';
+import BuilderStaticPanel from '../../../components/BuilderLayout/BuilderStaticPanel';
+import GatePreview from '../../../components/GatePreview/GatePreview';
 import LayoutConfigPanel from '../components/LayoutConfigPanel';
-import ScreenListItem from '../components/layouts/ScreenListItem';
+import LayoutPreviewPanel from '../components/LayoutPreviewPanel';
 import AddScreenRow from '../components/layouts/AddScreenRow';
+import type {CustomCSSEditorHandle} from '../components/layouts/CustomCSSEditor';
+import ScreenListItem from '../components/layouts/ScreenListItem';
 import DesignUIConstants from '../constants/design-ui-constants';
 import useLayoutBuilder from '../contexts/LayoutBuilder/useLayoutBuilder';
 
@@ -35,7 +49,10 @@ export default function LayoutBuilderPage(): JSX.Element {
 
   const {
     layoutId,
+    handle,
     displayName,
+    draftLayout,
+    updateDraftLayout,
     selectedScreen,
     setSelectedScreen,
     screenDraft,
@@ -47,7 +64,64 @@ export default function LayoutBuilderPage(): JSX.Element {
     setIsDirty,
   } = useLayoutBuilder();
 
-  const saveHandlerRef = useRef<() => void>(() => {});
+  const saveHandlerRef = useRef<() => void>(() => {
+    /* no-op */
+  });
+  const cssEditorRef = useRef<CustomCSSEditorHandle>(null);
+  const [inspectorEnabled, setInspectorEnabled] = useState(false);
+
+  // Theme selector for preview
+  const {data: themesData} = useGetThemes();
+  const themeOptions = themesData?.themes ?? [];
+  const [selectedThemeId, setSelectedThemeId] = useState<string | null>(null);
+  const resolvedThemeId = selectedThemeId ?? themeOptions[0]?.id ?? null;
+  const {data: themeData} = useGetTheme(resolvedThemeId ?? '');
+  const previewTheme = themeData?.theme ?? undefined;
+
+  // Extract page background from the selected screen draft
+  const currentScreenDef = selectedScreen ? (screenDraft ?? draftLayout?.screens?.[selectedScreen]) : undefined;
+  const pageBackground = (currentScreenDef?.background as Record<string, unknown> | undefined)?.value as
+    | string
+    | undefined;
+
+  // Stylesheets from draft layout (layout-level, not per-screen)
+  const draftHead = (draftLayout as Record<string, unknown> | null)?.head as Record<string, unknown> | undefined;
+  const rawStylesheets = draftHead?.stylesheets as Stylesheet[] | undefined;
+  const stylesheets = useMemo(() => rawStylesheets ?? [], [rawStylesheets]);
+
+  const handleStylesheetsChange = useCallback(
+    (updated: Stylesheet[]) => {
+      updateDraftLayout(['head', 'stylesheets'], updated);
+    },
+    [updateDraftLayout],
+  );
+
+  /** When the inspector picks a selector, append a stub rule to the last inline stylesheet (or create one). */
+  const handleSelectSelector = useCallback(
+    (selector: string) => {
+      // Flush any pending debounced edits so we read the latest content.
+      cssEditorRef.current?.flush();
+      const stub = `${selector} {\n  \n}\n`;
+      const lastInlineIdx = stylesheets.map((s) => s.type).lastIndexOf('inline');
+
+      if (lastInlineIdx >= 0) {
+        const sheet = stylesheets[lastInlineIdx];
+        if (sheet.type === 'inline') {
+          const separator = sheet.content && !sheet.content.endsWith('\n') ? '\n\n' : '\n';
+          const updated = stylesheets.map((s, i) =>
+            i === lastInlineIdx && s.type === 'inline' ? {...s, content: `${s.content}${separator}${stub}`} : s,
+          );
+          handleStylesheetsChange(updated);
+        }
+      } else {
+        const existing = new Set(stylesheets.map((s) => s.id));
+        let n = stylesheets.length + 1;
+        while (existing.has(`custom-${n}`)) n += 1;
+        handleStylesheetsChange([...stylesheets, {id: `custom-${n}`, type: 'inline', content: stub}]);
+      }
+    },
+    [stylesheets, handleStylesheetsChange],
+  );
 
   const allScreens = getAllScreens();
   const screenNames = Object.keys(allScreens);
@@ -87,23 +161,40 @@ export default function LayoutBuilderPage(): JSX.Element {
           </IconButton>
         </Tooltip>
 
-        <Box sx={{flex: 1, display: 'flex', justifyContent: 'center', pointerEvents: 'none'}}>
+        <Box sx={{flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2}}>
           <Typography variant="body2" sx={{fontWeight: 600, fontSize: '0.875rem', color: 'text.primary'}}>
             {displayName ?? '—'}
           </Typography>
+          {handle === 'centered' && (
+            <Tooltip title={inspectorEnabled ? 'Disable element inspector' : 'Inspect elements'}>
+              <IconButton
+                size="small"
+                onClick={() => setInspectorEnabled((prev) => !prev)}
+                sx={{
+                  bgcolor: inspectorEnabled ? 'primary.main' : 'transparent',
+                  color: inspectorEnabled ? 'primary.contrastText' : 'text.secondary',
+                  '&:hover': {
+                    bgcolor: inspectorEnabled ? 'primary.dark' : 'action.hover',
+                  },
+                }}
+              >
+                <Crosshair size={16} />
+              </IconButton>
+            </Tooltip>
+          )}
+          {handle === 'centered' && themeOptions.length > 0 && (
+            <Autocomplete
+              size="small"
+              options={themeOptions}
+              getOptionLabel={(option) => option.displayName}
+              value={themeOptions.find((opt) => opt.id === resolvedThemeId) ?? themeOptions[0] ?? null}
+              onChange={(_e, newValue) => setSelectedThemeId(newValue?.id ?? null)}
+              disableClearable
+              sx={{width: 200}}
+              renderInput={(params) => <TextField {...params} placeholder="Theme" variant="outlined" />}
+            />
+          )}
         </Box>
-
-        <Button
-          size="small"
-          variant="contained"
-          disableElevation
-          disabled={!isDirty}
-          onClick={() => saveHandlerRef.current()}
-          startIcon={<Save size={14} />}
-          sx={{textTransform: 'none', fontSize: '0.8125rem', borderRadius: 1.5}}
-        >
-          Save
-        </Button>
       </Box>
 
       {/* ── Main area ─────────────────────────────────────────────────────── */}
@@ -116,72 +207,74 @@ export default function LayoutBuilderPage(): JSX.Element {
           bgcolor: (systemMode ?? mode) === 'dark' ? '#141414' : '#f6f7f9',
         }}
       >
-        {/* ── Left panel: screen list ───────────────────────────────────── */}
-        <Drawer
-          variant="persistent"
-          anchor="left"
-          open
-          sx={{
-            width: DesignUIConstants.LEFT_PANEL_WIDTH,
-            flexShrink: 0,
-            '& .MuiDrawer-paper': {
-              width: DesignUIConstants.LEFT_PANEL_WIDTH,
-              position: 'relative',
-              border: 'none',
-              borderRight: '1px solid',
-              borderColor: 'divider',
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column',
-            },
-          }}
-        >
-          <Box
+        {/* ── Left panel: screen list (hidden for centered layout) ──────── */}
+        {handle !== 'centered' && (
+          <Drawer
+            variant="persistent"
+            anchor="left"
+            open
             sx={{
-              px: 1.25,
-              pt: 1.5,
-              pb: 0.75,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.75,
+              width: DesignUIConstants.LEFT_PANEL_WIDTH,
+              flexShrink: 0,
+              '& .MuiDrawer-paper': {
+                width: DesignUIConstants.LEFT_PANEL_WIDTH,
+                position: 'relative',
+                border: 'none',
+                borderRight: '1px solid',
+                borderColor: 'divider',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+              },
             }}
           >
-            <Layers size={14} style={{opacity: 0.5}} />
-            <Typography
-              variant="caption"
+            <Box
               sx={{
-                fontWeight: 600,
-                fontSize: '0.68rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                color: 'text.secondary',
+                px: 1.25,
+                pt: 1.5,
+                pb: 0.75,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.75,
               }}
             >
-              {t('layouts.builder.screens.label', 'Screens')}
-            </Typography>
-            <Box sx={{flex: 1}} />
-            <Typography variant="caption" sx={{fontSize: '0.65rem', color: 'text.disabled'}}>
-              {screenNames.length}
-            </Typography>
-          </Box>
+              <Layers size={14} style={{opacity: 0.5}} />
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: '0.68rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  color: 'text.secondary',
+                }}
+              >
+                {t('layouts.builder.screens.label', 'Screens')}
+              </Typography>
+              <Box sx={{flex: 1}} />
+              <Typography variant="caption" sx={{fontSize: '0.65rem', color: 'text.disabled'}}>
+                {screenNames.length}
+              </Typography>
+            </Box>
 
-          <Box sx={{flex: 1, overflowY: 'auto', px: 1.25, pb: 1, display: 'flex', flexDirection: 'column', gap: 0.5}}>
-            {screenNames.map((name) => (
-              <ScreenListItem
-                key={name}
-                name={name}
-                extendsBase={allScreens[name]?.extends as string | undefined}
-                isSelected={selectedScreen === name}
-                onClick={() => setSelectedScreen(name)}
-              />
-            ))}
-          </Box>
+            <Box sx={{flex: 1, overflowY: 'auto', px: 1.25, pb: 1, display: 'flex', flexDirection: 'column', gap: 0.5}}>
+              {screenNames.map((name) => (
+                <ScreenListItem
+                  key={name}
+                  name={name}
+                  extendsBase={allScreens[name]?.extends as string | undefined}
+                  isSelected={selectedScreen === name}
+                  onClick={() => setSelectedScreen(name)}
+                />
+              ))}
+            </Box>
 
-          {/* Add screen */}
-          <Box sx={{px: 1.25, pb: 1.25, pt: 0.5, borderTop: '1px solid', borderColor: 'divider'}}>
-            <AddScreenRow baseScreens={baseScreenNames} onAdd={handleAddScreen} />
-          </Box>
-        </Drawer>
+            {/* Add screen */}
+            <Box sx={{px: 1.25, pb: 1.25, pt: 0.5, borderTop: '1px solid', borderColor: 'divider'}}>
+              <AddScreenRow baseScreens={baseScreenNames} onAdd={handleAddScreen} />
+            </Box>
+          </Drawer>
+        )}
 
         {/* ── Center: canvas with rulers ────────────────────────────────── */}
         <Box
@@ -194,59 +287,47 @@ export default function LayoutBuilderPage(): JSX.Element {
             flexDirection: 'column',
           }}
         >
-          <LayoutPreviewPanel
-            layoutId={layoutId ?? null}
-            selectedScreen={selectedScreen}
-            screenDraft={screenDraft}
-            showRulers
-          />
+          {handle === 'centered' ? (
+            <GatePreview
+              theme={previewTheme ?? undefined}
+              displayName={displayName ?? ''}
+              pageBackground={pageBackground}
+              stylesheets={stylesheets}
+              inspectorEnabled={inspectorEnabled}
+              onSelectSelector={handleSelectSelector}
+            />
+          ) : (
+            <LayoutPreviewPanel
+              layoutId={layoutId ?? null}
+              selectedScreen={selectedScreen}
+              screenDraft={screenDraft}
+              showRulers
+            />
+          )}
         </Box>
 
-        {/* ── Right panel: screen config ────────────────────────────────── */}
-        <Drawer
-          variant="persistent"
-          anchor="right"
-          open
-          sx={{
-            width: DesignUIConstants.RIGHT_PANEL_WIDTH,
-            flexShrink: 0,
-            '& .MuiDrawer-paper': {
-              width: DesignUIConstants.RIGHT_PANEL_WIDTH,
-              position: 'relative',
-              border: 'none',
-              borderLeft: '1px solid',
-              borderColor: 'divider',
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column',
-            },
-          }}
-        >
-          <Box
-            sx={{
-              height: 40,
-              flexShrink: 0,
-              px: 2,
-              display: 'flex',
-              alignItems: 'center',
-              borderBottom: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            <Typography
-              variant="caption"
-              sx={{
-                fontWeight: 600,
-                fontSize: '0.7rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                color: 'text.secondary',
-              }}
+        {/* ── Right panel: save + config ─────────────────────────────────── */}
+        <Box>
+          {/* Save */}
+          <Box sx={{mr: 1, mb: 1, p: 2, display: 'flex', justifyContent: 'flex-end', gap: 2}}>
+            <Button
+              variant="contained"
+              disabled={!isDirty}
+              startIcon={<Save size={18} />}
+              onClick={() => saveHandlerRef.current()}
             >
-              {selectedScreen ? `Screen — ${selectedScreen}` : t('layouts.builder.constraints.label', 'Constraints')}
-            </Typography>
+              {t('layouts.builder.actions.save.label', 'Save')}
+            </Button>
           </Box>
-          <Box sx={{flex: 1, overflow: 'hidden'}}>
+          {/* ── Right panel: screen config ────────────────────────────────── */}
+          <BuilderStaticPanel
+            width={DesignUIConstants.RIGHT_PANEL_WIDTH}
+            header={(() => {
+              if (handle === 'centered') return t('layouts.config.custom_css.title', 'Custom CSS');
+              if (selectedScreen) return `Screen — ${selectedScreen}`;
+              return t('layouts.builder.constraints.label', 'Constraints');
+            })()}
+          >
             <LayoutConfigPanel
               layoutId={layoutId ?? null}
               selectedScreen={selectedScreen}
@@ -255,9 +336,12 @@ export default function LayoutBuilderPage(): JSX.Element {
               onScreenDraftChange={setScreenDraft}
               onDirtyChange={setIsDirty}
               saveHandlerRef={saveHandlerRef}
+              stylesheets={stylesheets}
+              onStylesheetsChange={handleStylesheetsChange}
+              cssEditorRef={cssEditorRef}
             />
-          </Box>
-        </Drawer>
+          </BuilderStaticPanel>
+        </Box>
       </Box>
     </Box>
   );

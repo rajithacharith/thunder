@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
-import {Box, Typography, TextField, Autocomplete, CircularProgress} from '@wso2/oxygen-ui';
-import {useTranslation} from 'react-i18next';
 import {useGetThemes} from '@thunder/shared-design';
-import SettingsCard from '@/components/SettingsCard';
+import {Box, Typography, TextField, Autocomplete, CircularProgress} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
+import {useTranslation} from 'react-i18next';
 import type {OrganizationUnit} from '../../../models/organization-unit';
+import SettingsCard from '@/components/SettingsCard';
 
 /**
  * Props for the {@link AppearanceSection} component.

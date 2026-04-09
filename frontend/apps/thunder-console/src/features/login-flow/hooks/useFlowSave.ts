@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {useCallback} from 'react';
 import type {Edge, Node} from '@xyflow/react';
+import {useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import useCreateFlow from '@/features/flows/api/useCreateFlow';
@@ -76,8 +76,16 @@ export interface UseFlowSaveReturn {
  * @returns Save handler and save state.
  */
 const useFlowSave = (props: UseFlowSaveProps): UseFlowSaveReturn => {
-  const {flowId, isEditingExistingFlow, isFlowValid, flowName, flowHandle, showError, showSuccess, setOpenValidationPanel} =
-    props;
+  const {
+    flowId,
+    isEditingExistingFlow,
+    isFlowValid,
+    flowName,
+    flowHandle,
+    showError,
+    showSuccess,
+    setOpenValidationPanel,
+  } = props;
 
   const {t} = useTranslation();
   const navigate = useNavigate();

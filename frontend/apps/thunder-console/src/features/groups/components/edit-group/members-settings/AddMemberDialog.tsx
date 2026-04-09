@@ -16,7 +16,6 @@
  * under the License.
  */
 
-import {useState, useMemo, useCallback, type JSX} from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -32,10 +31,11 @@ import {
   useTheme,
 } from '@wso2/oxygen-ui';
 import {User} from '@wso2/oxygen-ui-icons-react';
+import {useState, useMemo, useCallback, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
+import useDataGridLocaleText from '../../../../../hooks/useDataGridLocaleText';
 import useGetUsers from '../../../../users/api/useGetUsers';
 import type {ApiUser} from '../../../../users/types/users';
-import useDataGridLocaleText from '../../../../../hooks/useDataGridLocaleText';
 import type {Member} from '../../../models/group';
 
 interface AddMemberDialogProps {
@@ -109,11 +109,24 @@ export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogP
         flex: 1,
         minWidth: 200,
         renderCell: (params: DataGrid.GridRenderCellParams<ApiUser>): JSX.Element => (
-          <Box sx={{display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', overflow: 'hidden'}}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              height: '100%',
+              overflow: 'hidden',
+            }}
+          >
             <Typography variant="body2" noWrap>
               {params.row.display ?? params.row.id}
             </Typography>
-            <Typography variant="caption" color="text.secondary" noWrap sx={{fontFamily: 'monospace', fontSize: '0.7rem'}}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              noWrap
+              sx={{fontFamily: 'monospace', fontSize: '0.7rem'}}
+            >
               {params.row.id}
             </Typography>
           </Box>

@@ -47,7 +47,7 @@ func (s *SchemaValidateTestSuite) TestValidAttributes_Pass() {
 	}`))
 	s.Require().NoError(err)
 
-	ok, err := schema.Validate(json.RawMessage(`{"email":"user@example.com","age":30}`), s.logger)
+	ok, err := schema.Validate(json.RawMessage(`{"email":"user@example.com","age":30}`), s.logger, false)
 	s.Require().NoError(err)
 	s.Require().True(ok)
 }
@@ -58,7 +58,7 @@ func (s *SchemaValidateTestSuite) TestExtraTopLevelAttribute_Rejected() {
 	}`))
 	s.Require().NoError(err)
 
-	ok, err := schema.Validate(json.RawMessage(`{"email":"user@example.com","address":"123 Main St"}`), s.logger)
+	ok, err := schema.Validate(json.RawMessage(`{"email":"user@example.com","address":"123 Main St"}`), s.logger, false)
 	s.Require().NoError(err)
 	s.Require().False(ok)
 }
@@ -74,7 +74,7 @@ func (s *SchemaValidateTestSuite) TestExtraNestedObjectAttribute_Rejected() {
 	}`))
 	s.Require().NoError(err)
 
-	ok, err := schema.Validate(json.RawMessage(`{"address":{"city":"NYC","zip":"10001"}}`), s.logger)
+	ok, err := schema.Validate(json.RawMessage(`{"address":{"city":"NYC","zip":"10001"}}`), s.logger, false)
 	s.Require().NoError(err)
 	s.Require().False(ok)
 }
@@ -87,7 +87,7 @@ func (s *SchemaValidateTestSuite) TestValidOnlyDeclaredAttributes_Pass() {
 	}`))
 	s.Require().NoError(err)
 
-	ok, err := schema.Validate(json.RawMessage(`{"email":"a@b.com","age":25,"active":true}`), s.logger)
+	ok, err := schema.Validate(json.RawMessage(`{"email":"a@b.com","age":25,"active":true}`), s.logger, false)
 	s.Require().NoError(err)
 	s.Require().True(ok)
 }
@@ -100,7 +100,7 @@ func (s *SchemaValidateTestSuite) TestSubsetOfDeclaredAttributes_Pass() {
 	}`))
 	s.Require().NoError(err)
 
-	ok, err := schema.Validate(json.RawMessage(`{"email":"a@b.com"}`), s.logger)
+	ok, err := schema.Validate(json.RawMessage(`{"email":"a@b.com"}`), s.logger, false)
 	s.Require().NoError(err)
 	s.Require().True(ok)
 }
@@ -111,7 +111,7 @@ func (s *SchemaValidateTestSuite) TestMultipleExtraAttributes_Rejected() {
 	}`))
 	s.Require().NoError(err)
 
-	ok, err := schema.Validate(json.RawMessage(`{"email":"a@b.com","foo":"bar","baz":123}`), s.logger)
+	ok, err := schema.Validate(json.RawMessage(`{"email":"a@b.com","foo":"bar","baz":123}`), s.logger, false)
 	s.Require().NoError(err)
 	s.Require().False(ok)
 }
@@ -139,7 +139,7 @@ func (s *SchemaValidateTestSuite) TestDeeplyNestedExtraAttribute_Rejected() {
 				"country": "US"
 			}
 		}
-	}`), s.logger)
+	}`), s.logger, false)
 	s.Require().NoError(err)
 	s.Require().False(ok)
 }
@@ -150,7 +150,7 @@ func (s *SchemaValidateTestSuite) TestEmptyAttributes_Pass() {
 	}`))
 	s.Require().NoError(err)
 
-	ok, err := schema.Validate(json.RawMessage(`{}`), s.logger)
+	ok, err := schema.Validate(json.RawMessage(`{}`), s.logger, false)
 	s.Require().NoError(err)
 	s.Require().True(ok)
 }
@@ -161,7 +161,7 @@ func (s *SchemaValidateTestSuite) TestNilAttributes_Pass() {
 	}`))
 	s.Require().NoError(err)
 
-	ok, err := schema.Validate(nil, s.logger)
+	ok, err := schema.Validate(nil, s.logger, false)
 	s.Require().NoError(err)
 	s.Require().True(ok)
 }
@@ -178,7 +178,7 @@ func (s *SchemaValidateTestSuite) TestValidNestedObjectAttributes_Pass() {
 	}`))
 	s.Require().NoError(err)
 
-	ok, err := schema.Validate(json.RawMessage(`{"address":{"street":"123 Main","city":"NYC"}}`), s.logger)
+	ok, err := schema.Validate(json.RawMessage(`{"address":{"street":"123 Main","city":"NYC"}}`), s.logger, false)
 	s.Require().NoError(err)
 	s.Require().True(ok)
 }
@@ -210,7 +210,7 @@ func (s *SchemaValidateTestSuite) TestDisplayNameOnAllPropertyTypes_CompileSucce
 		"active": true,
 		"address": {"city": "NYC"},
 		"tags": ["admin"]
-	}`), s.logger)
+	}`), s.logger, false)
 	s.Require().NoError(err)
 	s.Require().True(ok)
 }

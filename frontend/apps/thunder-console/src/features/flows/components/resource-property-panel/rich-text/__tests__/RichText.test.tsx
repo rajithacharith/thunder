@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import type {Resource} from '@/features/flows/models/resources';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import RichText from '../RichText';
+import type {Resource} from '@/features/flows/models/resources';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -30,9 +30,7 @@ vi.mock('react-i18next', () => ({
 
 // Mock the lexical plugins and components
 vi.mock('@lexical/react/LexicalComposer', () => ({
-  LexicalComposer: ({children}: {children: React.ReactNode}) => (
-    <div data-testid="lexical-composer">{children}</div>
-  ),
+  LexicalComposer: ({children}: {children: React.ReactNode}) => <div data-testid="lexical-composer">{children}</div>,
 }));
 
 vi.mock('@lexical/react/LexicalRichTextPlugin', () => ({
@@ -42,15 +40,11 @@ vi.mock('@lexical/react/LexicalRichTextPlugin', () => ({
 }));
 
 vi.mock('@lexical/react/LexicalContentEditable', () => ({
-  ContentEditable: (props: Record<string, unknown>) => (
-    <div data-testid="content-editable" {...props} />
-  ),
+  ContentEditable: (props: Record<string, unknown>) => <div data-testid="content-editable" {...props} />,
 }));
 
 vi.mock('@lexical/react/LexicalErrorBoundary', () => ({
-  LexicalErrorBoundary: ({children}: {children: React.ReactNode}) => (
-    <div data-testid="error-boundary">{children}</div>
-  ),
+  LexicalErrorBoundary: ({children}: {children: React.ReactNode}) => <div data-testid="error-boundary">{children}</div>,
 }));
 
 vi.mock('@lexical/react/LexicalHistoryPlugin', () => ({
@@ -67,9 +61,7 @@ vi.mock('@lexical/react/LexicalLinkPlugin', () => ({
 
 // Mock helper plugins
 vi.mock('../helper-plugins/ToolbarPlugin', () => ({
-  default: ({disabled}: {disabled?: boolean}) => (
-    <div data-testid="toolbar-plugin" data-disabled={disabled} />
-  ),
+  default: ({disabled}: {disabled?: boolean}) => <div data-testid="toolbar-plugin" data-disabled={disabled} />,
 }));
 
 vi.mock('../helper-plugins/CustomLinkPlugin', () => ({
@@ -78,37 +70,33 @@ vi.mock('../helper-plugins/CustomLinkPlugin', () => ({
 
 vi.mock('../helper-plugins/HTMLPlugin', () => ({
   default: ({resource, disabled}: {onChange: () => void; resource: Resource; disabled?: boolean}) => (
-    <div
-      data-testid="html-plugin"
-      data-resource-id={resource?.id}
-      data-disabled={disabled}
-    />
+    <div data-testid="html-plugin" data-resource-id={resource?.id} data-disabled={disabled} />
   ),
 }));
-
 
 describe('RichText', () => {
   const mockOnChange = vi.fn();
 
-  const createMockResource = (overrides: Partial<Resource & {label?: string}> = {}): Resource => ({
-    id: 'resource-1',
-    resourceType: 'ELEMENT',
-    type: 'RICH_TEXT',
-    category: 'DISPLAY',
-    version: '1.0.0',
-    deprecated: false,
-    deletable: true,
-    display: {
-      label: 'Test Rich Text',
-      image: '',
-      showOnResourcePanel: true,
-    },
-    config: {
-      field: {name: 'richText', type: 'RICH_TEXT'},
-      styles: {},
-    },
-    ...overrides,
-  } as unknown as Resource);
+  const createMockResource = (overrides: Partial<Resource & {label?: string}> = {}): Resource =>
+    ({
+      id: 'resource-1',
+      resourceType: 'ELEMENT',
+      type: 'RICH_TEXT',
+      category: 'DISPLAY',
+      version: '1.0.0',
+      deprecated: false,
+      deletable: true,
+      display: {
+        label: 'Test Rich Text',
+        image: '',
+        showOnResourcePanel: true,
+      },
+      config: {
+        field: {name: 'richText', type: 'RICH_TEXT'},
+        styles: {},
+      },
+      ...overrides,
+    }) as unknown as Resource;
 
   beforeEach(() => {
     vi.clearAllMocks();

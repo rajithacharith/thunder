@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
+import {render, screen} from '@thunder/test-utils';
+import {describe, expect, it, vi, beforeEach} from 'vitest';
+import {UserCreateFlowStep} from '../../../models/user-create-flow';
 import UserCreateProvider from '../UserCreateProvider';
 import useUserCreate from '../useUserCreate';
-import {UserCreateFlowStep} from '../../../models/user-create-flow';
 
 // Test component to consume the context
 function TestConsumer() {
@@ -37,10 +37,7 @@ function TestConsumer() {
       <button type="button" onClick={() => context.setCurrentStep(UserCreateFlowStep.USER_DETAILS)}>
         Set Details Step
       </button>
-      <button
-        type="button"
-        onClick={() => context.setSelectedSchema({id: 'schema-1', name: 'Employee', ouId: 'ou-1'})}
-      >
+      <button type="button" onClick={() => context.setSelectedSchema({id: 'schema-1', name: 'Employee', ouId: 'ou-1'})}>
         Set Schema
       </button>
       <button type="button" onClick={() => context.setFormValues({username: 'john'})}>

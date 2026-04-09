@@ -17,26 +17,41 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@thunder/test-utils';
+import {render as testRender, screen, fireEvent, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
+import {DesignContext, type DesignContextType} from '@thunder/shared-design';
 import SignUpBox from '../SignUpBox';
 
-// Mock useDesign
+// Mock useDesign and FlowComponentRenderer
 const mockUseDesign = vi.fn();
-vi.mock('@thunder/shared-design', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-  useDesign: () => mockUseDesign(),
-  mapEmbeddedFlowTextVariant: (variant: string) => {
-    switch (variant) {
-      case 'H1':
-        return 'h1';
-      case 'H2':
-        return 'h2';
-      default:
-        return 'body1';
-    }
-  },
-}));
+vi.mock('@thunder/shared-design', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-design')>();
+  return {
+    ...actual,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    useDesign: () => mockUseDesign(),
+    mapEmbeddedFlowTextVariant: (variant: string) => {
+      switch (variant) {
+        case 'H1':
+          return 'h1';
+        case 'H2':
+          return 'h2';
+        default:
+          return 'body1';
+      }
+    },
+  };
+});
+
+// Wrap renders with DesignContext so real adapters inside FlowComponentRenderer can access it
+const render = (ui: React.ReactElement) => {
+  const designValue: DesignContextType = {
+    isDesignEnabled: false,
+    isLoading: false,
+    ...(mockUseDesign() as Partial<DesignContextType>),
+  };
+  return testRender(<DesignContext.Provider value={designValue}>{ui}</DesignContext.Provider>);
+};
 
 // Mock useBranding
 const mockUseBranding = vi.fn().mockReturnValue({
@@ -63,15 +78,6 @@ vi.mock('react-router', () => ({
   useSearchParams: () => [new URLSearchParams(), vi.fn()],
 }));
 
-// Mock getIntegrationIcon
-vi.mock('../../../utils/getIntegrationIcon', () => ({
-  default: (label: string) => {
-    if (label.includes('Google')) return <span data-testid="google-icon">G</span>;
-    if (label.includes('GitHub')) return <span data-testid="github-icon">GH</span>;
-    return null;
-  },
-}));
-
 // Mock Asgardeo SignUp component
 const mockHandleSubmit = vi.fn().mockResolvedValue(undefined);
 const mockHandleInputChange = vi.fn();
@@ -88,9 +94,7 @@ interface MockSignUpRenderProps {
 }
 
 // Factory function to create fresh mock props for each test
-const createMockSignUpRenderProps = (
-  overrides: Partial<MockSignUpRenderProps> = {},
-): MockSignUpRenderProps => ({
+const createMockSignUpRenderProps = (overrides: Partial<MockSignUpRenderProps> = {}): MockSignUpRenderProps => ({
   values: {},
   fieldErrors: {},
   error: null,
@@ -108,8 +112,9 @@ vi.mock('@asgardeo/react', async () => {
   const actual = await vi.importActual('@asgardeo/react');
   return {
     ...actual,
-    SignUp: ({children}: {children: (props: typeof mockSignUpRenderProps) => React.ReactNode}) =>
-      <div data-testid="asgardeo-signup">{children(mockSignUpRenderProps)}</div>,
+    SignUp: ({children}: {children: (props: typeof mockSignUpRenderProps) => React.ReactNode}) => (
+      <div data-testid="asgardeo-signup">{children(mockSignUpRenderProps)}</div>
+    ),
     EmbeddedFlowComponentType: {
       Text: 'TEXT',
       Block: 'BLOCK',
@@ -453,7 +458,6 @@ describe('SignUpBox', () => {
     });
     render(<SignUpBox />);
     expect(screen.getByText('Continue with Google')).toBeInTheDocument();
-    expect(screen.getByTestId('google-icon')).toBeInTheDocument();
   });
 
   it('renders sign in redirect link', () => {
@@ -888,7 +892,7 @@ describe('SignUpBox', () => {
     expect(mockHandleInputChange).toHaveBeenCalled();
   });
 
-  it('handles OTP_INPUT digit entry', async () => {
+  it('handles OTP_INPUT digit entry', () => {
     mockSignUpRenderProps = createMockSignUpRenderProps({
       values: {},
       components: [
@@ -924,7 +928,7 @@ describe('SignUpBox', () => {
     expect(mockHandleInputChange).toHaveBeenCalled();
   });
 
-  it('handles OTP_INPUT backspace navigation', async () => {
+  it('handles OTP_INPUT backspace navigation', () => {
     mockSignUpRenderProps = createMockSignUpRenderProps({
       values: {},
       components: [
@@ -962,7 +966,7 @@ describe('SignUpBox', () => {
     expect(otpInputs).toHaveLength(6);
   });
 
-  it('handles OTP_INPUT paste', async () => {
+  it('handles OTP_INPUT paste', () => {
     mockSignUpRenderProps = createMockSignUpRenderProps({
       values: {},
       components: [
@@ -1003,7 +1007,7 @@ describe('SignUpBox', () => {
     expect(otpInputs).toHaveLength(6);
   });
 
-  it('rejects non-digit input in OTP field', async () => {
+  it('rejects non-digit input in OTP field', () => {
     mockSignUpRenderProps = createMockSignUpRenderProps({
       values: {},
       components: [
@@ -1040,7 +1044,7 @@ describe('SignUpBox', () => {
     expect(mockHandleInputChange).not.toHaveBeenCalled();
   });
 
-  it('handles SELECT with object option having complex value', async () => {
+  it('handles SELECT with object option having complex value', () => {
     mockSignUpRenderProps = createMockSignUpRenderProps({
       values: {},
       components: [
@@ -1054,9 +1058,7 @@ describe('SignUpBox', () => {
               ref: 'complexField',
               label: 'Complex Field',
               placeholder: 'Select option',
-              options: [
-                {value: {nested: 'value'}, label: {text: 'Label'}},
-              ],
+              options: [{value: {nested: 'value'}, label: {text: 'Label'}}],
               required: true,
             },
             {
@@ -1525,7 +1527,7 @@ describe('SignUpBox', () => {
     expect(screen.queryByLabelText(/No Ref Field/)).not.toBeInTheDocument();
   });
 
-  it('returns null for non-TRIGGER action in social login block', async () => {
+  it('returns null for non-TRIGGER action in social login block', () => {
     mockSignUpRenderProps = createMockSignUpRenderProps({
       components: [
         {

@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type {DesignResolveResponse} from '../models/responses';
 import type {LayoutConfig} from '../models/layout';
+import type {DesignResolveResponse} from '../models/responses';
 
 /**
  * Extracts layout configuration from design resolve data.

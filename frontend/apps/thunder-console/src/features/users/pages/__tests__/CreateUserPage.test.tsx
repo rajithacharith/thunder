@@ -16,12 +16,12 @@
  * under the License.
  */
 
+import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
-import CreateUserPage from '../CreateUserPage';
 import UserCreateProvider from '../../contexts/UserCreate/UserCreateProvider';
 import type {UserSchemaListResponse, ApiUserSchema, SchemaInterface} from '../../types/users';
+import CreateUserPage from '../CreateUserPage';
 
 const mockNavigate = vi.fn();
 const mockMutateAsync = vi.fn();
@@ -39,7 +39,7 @@ vi.mock('react-router', async () => {
         href={to}
         onClick={(e) => {
           e.preventDefault();
-          Promise.resolve(mockNavigate(to)).catch(() => {});
+          Promise.resolve(mockNavigate(to)).catch(() => null);
         }}
       >
         {children}
@@ -635,9 +635,7 @@ describe('CreateUserPage', () => {
     await user.click(snackbarCloseButton[snackbarCloseButton.length - 1]);
 
     await waitFor(() => {
-      expect(
-        screen.queryByText('Organization unit ID is missing for the selected user type.'),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Organization unit ID is missing for the selected user type.')).not.toBeInTheDocument();
     });
   });
 
@@ -685,9 +683,7 @@ describe('CreateUserPage', () => {
     await user.click(screen.getByRole('button', {name: /create user/i}));
 
     await waitFor(() => {
-      expect(
-        screen.getByText('Organization unit ID is missing for the selected user type.'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Organization unit ID is missing for the selected user type.')).toBeInTheDocument();
     });
 
     expect(mockMutateAsync).not.toHaveBeenCalled();
@@ -916,10 +912,7 @@ describe('CreateUserPage', () => {
       await user.click(screen.getByTestId('select-ou'));
 
       await waitFor(() => {
-        expect(screen.getByTestId('configure-organization-unit')).toHaveAttribute(
-          'data-selected-ou-id',
-          'child-ou-1',
-        );
+        expect(screen.getByTestId('configure-organization-unit')).toHaveAttribute('data-selected-ou-id', 'child-ou-1');
       });
 
       // Go back to user type

@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
-import {Link} from 'react-router';
 import {Stack, Typography, CircularProgress, TextField, FormControl, FormLabel} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import SettingsCard from '@/components/SettingsCard';
-import type {OrganizationUnit} from '../../../models/organization-unit';
-import type {OUNavigationState} from '../../../models/navigation';
+import {Link} from 'react-router';
 import useGetOrganizationUnit from '../../../api/useGetOrganizationUnit';
+import type {OUNavigationState} from '../../../models/navigation';
+import type {OrganizationUnit} from '../../../models/organization-unit';
+import SettingsCard from '@/components/SettingsCard';
 
 /**
  * Props for the {@link ParentSettingsSection} component.

@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import * as ReactDOM from 'react-dom/client';
-import {StrictMode} from 'react';
-import {ConfigProvider} from '@thunder/shared-contexts';
-import {LoggerProvider, LogLevel} from '@thunder/logger/react';
-import {setCnPrefix} from '@thunder/utils';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
+import {LoggerProvider, LogLevel} from '@thunder/logger/react';
+import {ConfigProvider} from '@thunder/shared-contexts';
+import {setCnPrefix} from '@thunder/utils';
+import {StrictMode} from 'react';
+import * as ReactDOM from 'react-dom/client';
 import AppWithDecorators from './AppWithDecorators';
 import './index.css';
 

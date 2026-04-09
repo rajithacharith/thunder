@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import FlowsListPage from '../FlowsListPage';
 
 // Mock @thunder/logger/react

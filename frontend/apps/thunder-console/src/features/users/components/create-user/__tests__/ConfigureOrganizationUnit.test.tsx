@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import ConfigureOrganizationUnit, {type ConfigureOrganizationUnitProps} from '../ConfigureOrganizationUnit';
 
 vi.mock('react-i18next', () => ({

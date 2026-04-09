@@ -305,11 +305,22 @@ func (s *themeMgtStore) buildThemeListItemFromResultRow(row map[string]interface
 		return Theme{}, fmt.Errorf("failed to extract updated_at: %w", err)
 	}
 
+	var themeJSON json.RawMessage
+	if themeInterface, ok := row["theme"]; ok {
+		switch v := themeInterface.(type) {
+		case string:
+			themeJSON = json.RawMessage(v)
+		case []byte:
+			themeJSON = json.RawMessage(v)
+		}
+	}
+
 	return Theme{
 		ID:          id,
 		Handle:      handle,
 		DisplayName: displayName,
 		Description: description,
+		Theme:       themeJSON,
 		CreatedAt:   createdAt,
 		UpdatedAt:   updatedAt,
 	}, nil

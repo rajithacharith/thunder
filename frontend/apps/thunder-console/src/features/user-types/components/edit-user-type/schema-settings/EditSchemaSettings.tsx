@@ -16,7 +16,6 @@
  * under the License.
  */
 
-import {useState, type JSX} from 'react';
 import {
   Box,
   Stack,
@@ -40,6 +39,7 @@ import {
   DialogActions,
 } from '@wso2/oxygen-ui';
 import {Trash2, Plus, Info} from '@wso2/oxygen-ui-icons-react';
+import {useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {SchemaPropertyInput, PropertyType} from '../../../types/user-types';
 import I18nTextInput from '../../create-user-type/I18nTextInput';
@@ -82,8 +82,7 @@ export default function EditSchemaSettings({
                   (value as string) === 'string' || (value as string) === 'number' || (value as string) === 'enum'
                     ? prop.unique
                     : false,
-                credential:
-                  (value as string) === 'string' || (value as string) === 'number' ? prop.credential : false,
+                credential: (value as string) === 'string' || (value as string) === 'number' ? prop.credential : false,
               }),
             }
           : prop,
@@ -198,12 +197,20 @@ export default function EditSchemaSettings({
               value={property.displayName}
               onChange={(newValue: string) => handlePropertyChange(property.id, 'displayName', newValue)}
               placeholder={t('userTypes:displayNamePlaceholder', 'e.g., First Name')}
-              defaultNewKey={userTypeName.trim() && property.name.trim() ? `${userTypeName.trim()}.${property.name.trim()}` : undefined}
+              defaultNewKey={
+                userTypeName.trim() && property.name.trim()
+                  ? `${userTypeName.trim()}.${property.name.trim()}`
+                  : undefined
+              }
             />
 
             {/* Checkbox options with info tooltips */}
             <Box sx={{display: 'flex', gap: 3}}>
-              <Tooltip title={t('userTypes:tooltips.required', 'This field must be provided when creating a user')} placement="top" arrow>
+              <Tooltip
+                title={t('userTypes:tooltips.required', 'This field must be provided when creating a user')}
+                placement="top"
+                arrow
+              >
                 <FormControlLabel
                   control={
                     <Checkbox
@@ -220,7 +227,11 @@ export default function EditSchemaSettings({
                 />
               </Tooltip>
               {(property.type === 'string' || property.type === 'number' || property.type === 'enum') && (
-                <Tooltip title={t('userTypes:tooltips.unique', 'Each user must have a distinct value for this field')} placement="top" arrow>
+                <Tooltip
+                  title={t('userTypes:tooltips.unique', 'Each user must have a distinct value for this field')}
+                  placement="top"
+                  arrow
+                >
                   <FormControlLabel
                     control={
                       <Checkbox
@@ -239,7 +250,11 @@ export default function EditSchemaSettings({
                 </Tooltip>
               )}
               {(property.type === 'string' || property.type === 'number') && (
-                <Tooltip title={t('userTypes:tooltips.credential', 'Values will be hashed and not returned in API responses')} placement="top" arrow>
+                <Tooltip
+                  title={t('userTypes:tooltips.credential', 'Values will be hashed and not returned in API responses')}
+                  placement="top"
+                  arrow
+                >
                   <FormControlLabel
                     control={
                       <Checkbox
@@ -252,9 +267,7 @@ export default function EditSchemaSettings({
                           }
                           onPropertiesChange(
                             properties.map((prop) =>
-                              prop.id === property.id
-                                ? {...prop, credential: checked, unique: false}
-                                : prop,
+                              prop.id === property.id ? {...prop, credential: checked, unique: false} : prop,
                             ),
                           );
                         }}
@@ -274,7 +287,10 @@ export default function EditSchemaSettings({
             {/* Credential indicator */}
             {property.credential && (
               <Alert severity="info" variant="outlined">
-                {t('userTypes:credentialHint', 'This field will be treated as a secret. Values will be hashed and cannot be retrieved.')}
+                {t(
+                  'userTypes:credentialHint',
+                  'This field will be treated as a secret. Values will be hashed and cannot be retrieved.',
+                )}
               </Alert>
             )}
 

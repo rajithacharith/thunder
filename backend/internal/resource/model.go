@@ -28,7 +28,7 @@ type ResourceServerResponse struct {
 	Identifier  string `json:"identifier,omitempty"`
 	OUID        string `json:"ouId"`
 	Delimiter   string `json:"delimiter"`
-	IsReadOnly  bool   `json:"isReadOnly,omitempty"`
+	IsReadOnly  bool   `json:"isReadOnly"`
 }
 
 // ResourceResponse represents a resource.

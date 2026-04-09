@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {screen, waitFor, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {renderWithProviders} from '@thunder/test-utils';
-import EditGeneralSettings from '../edit-group/general-settings/EditGeneralSettings';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import type {Group} from '../../models/group';
+import EditGeneralSettings from '../edit-group/general-settings/EditGeneralSettings';
 
 describe('EditGeneralSettings', () => {
   const mockGroup: Group = {
@@ -91,9 +91,7 @@ describe('EditGeneralSettings', () => {
   it('should render copy button for organization unit ID', () => {
     renderWithProviders(<EditGeneralSettings {...defaultProps} />);
 
-    expect(
-      screen.getByLabelText('Copy organization unit ID'),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Copy organization unit ID')).toBeInTheDocument();
   });
 
   it('should copy organization unit ID to clipboard when copy button is clicked', async () => {

@@ -16,12 +16,12 @@
  * under the License.
  */
 
+import {useCopyToClipboard} from '@thunder/shared-hooks';
 import {Box, Typography, Stack, TextField, IconButton, InputAdornment, Alert, Button, Divider} from '@wso2/oxygen-ui';
 import {Copy, Eye, EyeOff, AlertTriangle} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useCopyToClipboard} from '@thunder/shared-hooks';
 
 export interface ShowClientSecretProps {
   /**
@@ -49,7 +49,7 @@ export interface ShowClientSecretProps {
 export default function ShowClientSecret({
   appName,
   clientSecret,
-  onCopySecret = () => {},
+  onCopySecret = () => null,
   onContinue,
 }: ShowClientSecretProps): JSX.Element {
   const {t} = useTranslation();

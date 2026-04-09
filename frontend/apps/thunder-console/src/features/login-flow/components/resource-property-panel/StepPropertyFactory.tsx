@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import type {ReactElement} from 'react';
+import RulesProperties from './nodes/RulesProperties';
 import type {CommonStepPropertyFactoryPropsInterface} from '@/features/flows/components/resource-property-panel/CommonStepPropertyFactory';
 import CommonStepPropertyFactory from '@/features/flows/components/resource-property-panel/CommonStepPropertyFactory';
 import {StepTypes} from '@/features/flows/models/steps';
-import type {ReactElement} from 'react';
-import RulesProperties from './nodes/RulesProperties';
 
 /**
  * Props interface of {@link StepPropertyFactory}

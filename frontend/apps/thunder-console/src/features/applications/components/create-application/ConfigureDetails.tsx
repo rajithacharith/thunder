@@ -16,6 +16,8 @@
  * under the License.
  */
 
+import {zodResolver} from '@hookform/resolvers/zod';
+import {useLogger} from '@thunder/logger/react';
 import {
   Box,
   Typography,
@@ -33,16 +35,14 @@ import {
 import {Globe} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useEffect} from 'react';
-import {useTranslation} from 'react-i18next';
 import {useForm, Controller, useWatch} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
+import {useTranslation} from 'react-i18next';
 import {z} from 'zod';
-import {useLogger} from '@thunder/logger/react';
-import getConfigurationTypeFromTemplate from '../../utils/getConfigurationTypeFromTemplate';
-import type {PlatformApplicationTemplate, TechnologyApplicationTemplate} from '../../models/application-templates';
+import {AuthenticatorTypes} from '../../../integrations/models/authenticators';
 import useApplicationCreate from '../../contexts/ApplicationCreate/useApplicationCreate';
 import {ApplicationCreateFlowConfiguration} from '../../models/application-create-flow';
-import {AuthenticatorTypes} from '../../../integrations/models/authenticators';
+import type {PlatformApplicationTemplate, TechnologyApplicationTemplate} from '../../models/application-templates';
+import getConfigurationTypeFromTemplate from '../../utils/getConfigurationTypeFromTemplate';
 
 /**
  * Zod schema for validating URL inputs (hosting URLs and callback URLs).
@@ -268,7 +268,7 @@ export default function ConfigureDetails({
   onReadyChange,
   userTypes = [],
   selectedUserTypes = [],
-  onUserTypesChange = (): void => {},
+  onUserTypesChange = () => null,
 }: ConfigureDetailsProps): JSX.Element {
   const {t} = useTranslation();
   const logger = useLogger('ConfigureDetails');
@@ -300,8 +300,7 @@ export default function ConfigureDetails({
     },
   });
 
-  const isPasskeyConfigEnabled: boolean =
-    !selectedAuthFlow && (integrations[AuthenticatorTypes.PASSKEY] ?? false);
+  const isPasskeyConfigEnabled: boolean = !selectedAuthFlow && (integrations[AuthenticatorTypes.PASSKEY] ?? false);
 
   const configurationType: ApplicationCreateFlowConfiguration =
     getConfigurationTypeFromTemplate(selectedTemplateConfig);
@@ -449,10 +448,7 @@ export default function ConfigureDetails({
   ]);
 
   // For platforms that don't require configuration AND no passkey configuration needed
-  if (
-    configurationType === ApplicationCreateFlowConfiguration.NONE &&
-    !isPasskeyConfigEnabled
-  ) {
+  if (configurationType === ApplicationCreateFlowConfiguration.NONE && !isPasskeyConfigEnabled) {
     return (
       <Stack spacing={3}>
         <Box sx={{textAlign: 'center', py: 4}}>
@@ -486,9 +482,9 @@ export default function ConfigureDetails({
       {/* User Type Selection - shown when template requires it and user types are available */}
       {userTypes &&
         userTypes.length > 0 &&
-        selectedTemplateConfig?.allowedUserTypes !== undefined &&
-        Array.isArray(selectedTemplateConfig.allowedUserTypes) &&
-        selectedTemplateConfig.allowedUserTypes.length === 0 && (
+        selectedTemplateConfig?.defaults?.allowedUserTypes !== undefined &&
+        Array.isArray(selectedTemplateConfig.defaults?.allowedUserTypes) &&
+        selectedTemplateConfig.defaults?.allowedUserTypes.length === 0 && (
           <FormControl fullWidth>
             <FormLabel htmlFor="user-types-select">
               {t('applications:onboarding.configure.details.userTypes.label')}
@@ -640,7 +636,7 @@ export default function ConfigureDetails({
           </Stack>
         </>
       )}
-      
+
       {/* Passkey Relying Party Configuration */}
       {isPasskeyConfigEnabled && (
         <Stack spacing={2}>

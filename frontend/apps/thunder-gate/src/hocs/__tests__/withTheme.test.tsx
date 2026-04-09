@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import type {MouseEventHandler, ReactNode} from 'react';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type {MouseEventHandler, ReactNode} from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import withTheme from '../withTheme';
 
 // Track the theme passed to OxygenUIThemeProvider
@@ -75,13 +75,7 @@ vi.mock('@wso2/oxygen-ui', () => ({
   ColorSchemeToggle: () => <div data-testid="color-scheme-toggle">Toggle</div>,
   CircularProgress: () => <div data-testid="circular-progress">Loading...</div>,
   Box: ({children}: {children: ReactNode}) => <div data-testid="box">{children}</div>,
-  Button: ({
-    children,
-    onClick = undefined,
-  }: {
-    children: ReactNode;
-    onClick?: MouseEventHandler<HTMLButtonElement>;
-  }) => (
+  Button: ({children, onClick = undefined}: {children: ReactNode; onClick?: MouseEventHandler<HTMLButtonElement>}) => (
     <button type="button" data-testid="language-button" onClick={onClick}>
       {children}
     </button>

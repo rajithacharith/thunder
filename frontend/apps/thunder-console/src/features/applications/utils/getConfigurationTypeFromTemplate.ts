@@ -16,10 +16,8 @@
  * under the License.
  */
 
+import {ApplicationCreateFlowConfiguration} from '../models/application-create-flow';
 import type {ApplicationTemplate} from '../models/application-templates';
-import {
-  ApplicationCreateFlowConfiguration,
-} from '../models/application-create-flow';
 
 /**
  * Detect configuration type from template.
@@ -35,7 +33,7 @@ const getConfigurationTypeFromTemplate = (
 ): ApplicationCreateFlowConfiguration => {
   if (!templateConfig) return ApplicationCreateFlowConfiguration.NONE;
 
-  const oauthConfig = templateConfig.inboundAuthConfig?.find((config) => config.type === 'oauth2')?.config;
+  const oauthConfig = templateConfig.defaults?.inboundAuthConfig?.find((config) => config.type === 'oauth2')?.config;
 
   // If redirectUris is already populated, no configuration needed
   if (oauthConfig?.redirectUris && oauthConfig.redirectUris.length > 0) {
@@ -44,7 +42,7 @@ const getConfigurationTypeFromTemplate = (
 
   // If redirectUris is undefined, null, or empty array, determine what type of configuration is needed
   // TODO: Remove this once https://github.com/asgardeo/thunder/pulls/924 is merged.
-  const templateName = templateConfig.name?.toLowerCase() ?? '';
+  const templateName = templateConfig.defaults?.name?.toLowerCase() ?? '';
 
   // Mobile apps need deep link
   if (templateName.includes('mobile')) {

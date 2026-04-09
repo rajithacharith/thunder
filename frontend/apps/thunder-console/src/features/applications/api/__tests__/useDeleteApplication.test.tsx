@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
-import useDeleteApplication from '../useDeleteApplication';
-import type {ApplicationListResponse} from '../../models/responses';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import ApplicationQueryKeys from '../../constants/application-query-keys';
+import type {ApplicationListResponse} from '../../models/responses';
+import useDeleteApplication from '../useDeleteApplication';
 
 // Mock the dependencies
 vi.mock('@asgardeo/react', () => ({
@@ -32,6 +32,7 @@ vi.mock('@thunder/shared-contexts', async (importOriginal) => {
   return {
     ...actual,
     useConfig: vi.fn(),
+    useToast: vi.fn().mockReturnValue({showToast: vi.fn()}),
   };
 });
 

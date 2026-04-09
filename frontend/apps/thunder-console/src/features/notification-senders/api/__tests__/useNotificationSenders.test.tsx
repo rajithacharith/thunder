@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {renderHook, waitFor} from '@thunder/test-utils';
-import useNotificationSenders from '../useNotificationSenders';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import NotificationSenderQueryKeys from '../../constants/query-keys';
 import type {NotificationSenderListResponse} from '../../models/notification-sender';
+import useNotificationSenders from '../useNotificationSenders';
 
 // Mock useConfig
 const mockGetServerUrl = vi.fn(() => 'https://api.example.com');
@@ -162,7 +162,7 @@ describe('useNotificationSenders', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      const providers = result.current.data?.map(sender => sender.provider);
+      const providers = result.current.data?.map((sender) => sender.provider);
       expect(providers).toContain('twilio');
       expect(providers).toContain('vonage');
       expect(providers).toContain('custom');
@@ -177,7 +177,7 @@ describe('useNotificationSenders', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      const twilioSender = result.current.data?.find(s => s.id === 'sender-1');
+      const twilioSender = result.current.data?.find((s) => s.id === 'sender-1');
       expect(twilioSender?.properties).toHaveLength(2);
       expect(twilioSender?.properties?.[0]).toEqual({name: 'accountSid', value: 'AC123'});
       expect(twilioSender?.properties?.[1]).toEqual({name: 'authToken', value: 'token123', isSecret: true});
@@ -186,7 +186,7 @@ describe('useNotificationSenders', () => {
 
   describe('Loading State', () => {
     it('should be loading initially', () => {
-      mockHttpRequest.mockImplementation(() => new Promise(() => {})); // Never resolves
+      mockHttpRequest.mockImplementation(() => new Promise(() => null)); // Never resolves
 
       const {result} = renderHook(() => useNotificationSenders());
 
@@ -281,7 +281,7 @@ describe('useNotificationSenders', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      result.current.data?.forEach(sender => {
+      result.current.data?.forEach((sender) => {
         expect(sender).toHaveProperty('id');
         expect(sender).toHaveProperty('name');
         expect(sender).toHaveProperty('provider');
@@ -297,8 +297,8 @@ describe('useNotificationSenders', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      const senderWithDescription = result.current.data?.find(s => s.description);
-      const senderWithoutDescription = result.current.data?.find(s => !s.description);
+      const senderWithDescription = result.current.data?.find((s) => s.description);
+      const senderWithoutDescription = result.current.data?.find((s) => !s.description);
 
       expect(senderWithDescription?.description).toBeDefined();
       expect(senderWithoutDescription?.description).toBeUndefined();

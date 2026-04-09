@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
-import OrganizationUnitEditPage from '../OrganizationUnitEditPage';
 import type {OrganizationUnit} from '../../models/organization-unit';
+import OrganizationUnitEditPage from '../OrganizationUnitEditPage';
 
 // Mock navigate, useParams, and useLocation
 const mockNavigate = vi.fn();
@@ -38,7 +38,7 @@ vi.mock('react-router', async () => {
         href={to}
         onClick={(e) => {
           e.preventDefault();
-          Promise.resolve(mockNavigate(to)).catch(() => {});
+          Promise.resolve(mockNavigate(to)).catch(() => null);
         }}
       >
         {children}
@@ -399,18 +399,17 @@ describe('OrganizationUnitEditPage', () => {
       (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Test Organization Unit'),
     );
 
-    if (nameEditButton) {
-      fireEvent.click(nameEditButton);
+    expect(nameEditButton).toBeDefined();
+    fireEvent.click(nameEditButton!);
 
-      // Type new name - get by current display value
-      const nameInput = screen.getByDisplayValue('Test Organization Unit');
-      fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
-      fireEvent.blur(nameInput);
+    // Type new name - get by current display value
+    const nameInput = screen.getByDisplayValue('Test Organization Unit');
+    fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
+    fireEvent.blur(nameInput);
 
-      await waitFor(() => {
-        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
-      });
-    }
+    await waitFor(() => {
+      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+    });
   });
 
   it('should reset changes when reset button is clicked', async () => {
@@ -426,24 +425,23 @@ describe('OrganizationUnitEditPage', () => {
       (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Test Organization Unit'),
     );
 
-    if (nameEditButton) {
-      fireEvent.click(nameEditButton);
+    expect(nameEditButton).toBeDefined();
+    fireEvent.click(nameEditButton!);
 
-      const nameInput = screen.getByDisplayValue('Test Organization Unit');
-      fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
-      fireEvent.blur(nameInput);
+    const nameInput = screen.getByDisplayValue('Test Organization Unit');
+    fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
+    fireEvent.blur(nameInput);
 
-      await waitFor(() => {
-        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+    });
 
-      // Click reset
-      fireEvent.click(screen.getByText('Reset'));
+    // Click reset
+    fireEvent.click(screen.getByText('Reset'));
 
-      await waitFor(() => {
-        expect(screen.queryByText('You have unsaved changes')).not.toBeInTheDocument();
-      });
-    }
+    await waitFor(() => {
+      expect(screen.queryByText('You have unsaved changes')).not.toBeInTheDocument();
+    });
   });
 
   it('should edit description when edit button is clicked', async () => {
@@ -459,23 +457,22 @@ describe('OrganizationUnitEditPage', () => {
       (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('A test description'),
     );
 
-    if (descriptionEditButton) {
-      fireEvent.click(descriptionEditButton);
+    expect(descriptionEditButton).toBeDefined();
+    fireEvent.click(descriptionEditButton!);
 
-      // Should show a textbox for editing - get by current display value
-      await waitFor(() => {
-        const textbox = screen.getByDisplayValue('A test description');
-        expect(textbox).toBeInTheDocument();
-      });
-
+    // Should show a textbox for editing - get by current display value
+    await waitFor(() => {
       const textbox = screen.getByDisplayValue('A test description');
-      fireEvent.change(textbox, {target: {value: 'Updated description'}});
-      fireEvent.blur(textbox);
+      expect(textbox).toBeInTheDocument();
+    });
 
-      await waitFor(() => {
-        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
-      });
-    }
+    const textbox = screen.getByDisplayValue('A test description');
+    fireEvent.change(textbox, {target: {value: 'Updated description'}});
+    fireEvent.blur(textbox);
+
+    await waitFor(() => {
+      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+    });
   });
 
   it('should cancel description editing on Escape key', async () => {
@@ -490,20 +487,19 @@ describe('OrganizationUnitEditPage', () => {
       (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('A test description'),
     );
 
-    if (descriptionEditButton) {
-      fireEvent.click(descriptionEditButton);
+    expect(descriptionEditButton).toBeDefined();
+    fireEvent.click(descriptionEditButton!);
 
-      await waitFor(() => {
-        expect(screen.getByDisplayValue('A test description')).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('A test description')).toBeInTheDocument();
+    });
 
-      const textbox = screen.getByDisplayValue('A test description');
-      fireEvent.keyDown(textbox, {key: 'Escape'});
+    const textbox = screen.getByDisplayValue('A test description');
+    fireEvent.keyDown(textbox, {key: 'Escape'});
 
-      await waitFor(() => {
-        expect(screen.getByText('A test description')).toBeInTheDocument();
-      });
-    }
+    await waitFor(() => {
+      expect(screen.getByText('A test description')).toBeInTheDocument();
+    });
   });
 
   it('should save description on Ctrl+Enter', async () => {
@@ -518,21 +514,20 @@ describe('OrganizationUnitEditPage', () => {
       (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('A test description'),
     );
 
-    if (descriptionEditButton) {
-      fireEvent.click(descriptionEditButton);
+    expect(descriptionEditButton).toBeDefined();
+    fireEvent.click(descriptionEditButton!);
 
-      await waitFor(() => {
-        expect(screen.getByDisplayValue('A test description')).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('A test description')).toBeInTheDocument();
+    });
 
-      const textbox = screen.getByDisplayValue('A test description');
-      fireEvent.change(textbox, {target: {value: 'New description'}});
-      fireEvent.keyDown(textbox, {key: 'Enter', ctrlKey: true});
+    const textbox = screen.getByDisplayValue('A test description');
+    fireEvent.change(textbox, {target: {value: 'New description'}});
+    fireEvent.keyDown(textbox, {key: 'Enter', ctrlKey: true});
 
-      await waitFor(() => {
-        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
-      });
-    }
+    await waitFor(() => {
+      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+    });
   });
 
   it('should cancel name editing on Escape key', async () => {
@@ -547,20 +542,19 @@ describe('OrganizationUnitEditPage', () => {
       (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Test Organization Unit'),
     );
 
-    if (nameEditButton) {
-      fireEvent.click(nameEditButton);
+    expect(nameEditButton).toBeDefined();
+    fireEvent.click(nameEditButton!);
 
-      await waitFor(() => {
-        expect(screen.getByDisplayValue('Test Organization Unit')).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Test Organization Unit')).toBeInTheDocument();
+    });
 
-      const textbox = screen.getByDisplayValue('Test Organization Unit');
-      fireEvent.keyDown(textbox, {key: 'Escape'});
+    const textbox = screen.getByDisplayValue('Test Organization Unit');
+    fireEvent.keyDown(textbox, {key: 'Escape'});
 
-      await waitFor(() => {
-        expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
-      });
-    }
+    await waitFor(() => {
+      expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
+    });
   });
 
   it('should save name on Enter key', async () => {
@@ -575,21 +569,20 @@ describe('OrganizationUnitEditPage', () => {
       (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Test Organization Unit'),
     );
 
-    if (nameEditButton) {
-      fireEvent.click(nameEditButton);
+    expect(nameEditButton).toBeDefined();
+    fireEvent.click(nameEditButton!);
 
-      await waitFor(() => {
-        expect(screen.getByDisplayValue('Test Organization Unit')).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Test Organization Unit')).toBeInTheDocument();
+    });
 
-      const textbox = screen.getByDisplayValue('Test Organization Unit');
-      fireEvent.change(textbox, {target: {value: 'Updated Name'}});
-      fireEvent.keyDown(textbox, {key: 'Enter'});
+    const textbox = screen.getByDisplayValue('Test Organization Unit');
+    fireEvent.change(textbox, {target: {value: 'Updated Name'}});
+    fireEvent.keyDown(textbox, {key: 'Enter'});
 
-      await waitFor(() => {
-        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
-      });
-    }
+    await waitFor(() => {
+      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+    });
   });
 
   it('should call save and refetch when save button is clicked', async () => {
@@ -607,31 +600,30 @@ describe('OrganizationUnitEditPage', () => {
       (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Test Organization Unit'),
     );
 
-    if (nameEditButton) {
-      fireEvent.click(nameEditButton);
+    expect(nameEditButton).toBeDefined();
+    fireEvent.click(nameEditButton!);
 
-      const nameInput = screen.getByDisplayValue('Test Organization Unit');
-      fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
-      fireEvent.blur(nameInput);
+    const nameInput = screen.getByDisplayValue('Test Organization Unit');
+    fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
+    fireEvent.blur(nameInput);
 
-      await waitFor(() => {
-        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+    });
 
-      // Click save
-      fireEvent.click(screen.getByText('Save'));
+    // Click save
+    fireEvent.click(screen.getByText('Save'));
 
-      await waitFor(() => {
-        expect(mockMutateAsync).toHaveBeenCalledWith(
-          expect.objectContaining({
-            id: 'ou-123',
-            data: expect.objectContaining({
-              name: 'Updated Name',
-            }) as unknown,
-          }),
-        );
-      });
-    }
+    await waitFor(() => {
+      expect(mockMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'ou-123',
+          data: expect.objectContaining({
+            name: 'Updated Name',
+          }) as unknown,
+        }),
+      );
+    });
   });
 
   it('should handle save error gracefully', async () => {
@@ -649,20 +641,19 @@ describe('OrganizationUnitEditPage', () => {
       (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Test Organization Unit'),
     );
 
-    if (nameEditButton) {
-      fireEvent.click(nameEditButton);
+    expect(nameEditButton).toBeDefined();
+    fireEvent.click(nameEditButton!);
 
-      const nameInput = screen.getByDisplayValue('Test Organization Unit');
-      fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
-      fireEvent.blur(nameInput);
+    const nameInput = screen.getByDisplayValue('Test Organization Unit');
+    fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
+    fireEvent.blur(nameInput);
 
-      await waitFor(() => {
-        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+    });
 
-      // Click save - should not throw
-      fireEvent.click(screen.getByText('Save'));
-    }
+    // Click save - should not throw
+    fireEvent.click(screen.getByText('Save'));
   });
 
   it('should not save empty name on blur', async () => {
@@ -677,18 +668,17 @@ describe('OrganizationUnitEditPage', () => {
       (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Test Organization Unit'),
     );
 
-    if (nameEditButton) {
-      fireEvent.click(nameEditButton);
+    expect(nameEditButton).toBeDefined();
+    fireEvent.click(nameEditButton!);
 
-      const nameInput = screen.getByDisplayValue('Test Organization Unit');
-      fireEvent.change(nameInput, {target: {value: ''}});
-      fireEvent.blur(nameInput);
+    const nameInput = screen.getByDisplayValue('Test Organization Unit');
+    fireEvent.change(nameInput, {target: {value: ''}});
+    fireEvent.blur(nameInput);
 
-      // Should not show unsaved changes for empty name
-      await waitFor(() => {
-        expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
-      });
-    }
+    // Should not show unsaved changes for empty name
+    await waitFor(() => {
+      expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
+    });
   });
 
   it('should navigate back from error state', async () => {
@@ -893,13 +883,12 @@ describe('OrganizationUnitEditPage', () => {
     // Find and click the delete confirm button in dialog
     const deleteButtons = screen.getAllByText('Delete');
     const confirmDeleteButton = deleteButtons.find((btn) => btn.closest('.MuiDialog-root'));
-    if (confirmDeleteButton) {
-      fireEvent.click(confirmDeleteButton);
+    expect(confirmDeleteButton).toBeDefined();
+    fireEvent.click(confirmDeleteButton!);
 
-      await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/organization-units');
-      });
-    }
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/organization-units');
+    });
   });
 
   it('should handle delete success navigation error gracefully', async () => {
@@ -927,14 +916,13 @@ describe('OrganizationUnitEditPage', () => {
     // Find and click the delete confirm button in dialog
     const deleteButtons = screen.getAllByText('Delete');
     const confirmDeleteButton = deleteButtons.find((btn) => btn.closest('.MuiDialog-root'));
-    if (confirmDeleteButton) {
-      fireEvent.click(confirmDeleteButton);
+    expect(confirmDeleteButton).toBeDefined();
+    fireEvent.click(confirmDeleteButton!);
 
-      // Should not throw - error is logged
-      await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/organization-units');
-      });
-    }
+    // Should not throw - error is logged
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/organization-units');
+    });
   });
 
   describe('Avatar Image', () => {
@@ -1110,14 +1098,13 @@ describe('OrganizationUnitEditPage', () => {
       // Find and click the delete confirm button in dialog
       const deleteButtons = screen.getAllByText('Delete');
       const confirmDeleteButton = deleteButtons.find((btn) => btn.closest('.MuiDialog-root'));
-      if (confirmDeleteButton) {
-        fireEvent.click(confirmDeleteButton);
+      expect(confirmDeleteButton).toBeDefined();
+      fireEvent.click(confirmDeleteButton!);
 
-        // Snackbar should appear with error
-        await waitFor(() => {
-          expect(screen.getByRole('alert')).toBeInTheDocument();
-        });
-      }
+      // Snackbar should appear with error
+      await waitFor(() => {
+        expect(screen.getByRole('alert')).toBeInTheDocument();
+      });
     });
   });
 
@@ -1135,27 +1122,25 @@ describe('OrganizationUnitEditPage', () => {
         (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Test Organization Unit'),
       );
 
-      if (nameEditButton) {
-        fireEvent.click(nameEditButton);
-        const nameInput = screen.getByDisplayValue('Test Organization Unit');
-        fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
-        fireEvent.blur(nameInput);
+      expect(nameEditButton).toBeDefined();
+      fireEvent.click(nameEditButton!);
+      const nameInput = screen.getByDisplayValue('Test Organization Unit');
+      fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
+      fireEvent.blur(nameInput);
 
-        await waitFor(() => {
-          expect(screen.getByText('Updated Name')).toBeInTheDocument();
-        });
+      await waitFor(() => {
+        expect(screen.getByText('Updated Name')).toBeInTheDocument();
+      });
 
-        // Second edit: the input should show the edited name
-        const editButtons2 = screen.getAllByRole('button');
-        const nameEditButton2 = editButtons2.find(
-          (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Updated Name'),
-        );
+      // Second edit: the input should show the edited name
+      const editButtons2 = screen.getAllByRole('button');
+      const nameEditButton2 = editButtons2.find(
+        (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Updated Name'),
+      );
 
-        if (nameEditButton2) {
-          fireEvent.click(nameEditButton2);
-          expect(screen.getByDisplayValue('Updated Name')).toBeInTheDocument();
-        }
-      }
+      expect(nameEditButton2).toBeDefined();
+      fireEvent.click(nameEditButton2!);
+      expect(screen.getByDisplayValue('Updated Name')).toBeInTheDocument();
     }, 15_000);
 
     it('should display edited description when re-editing after a description change', async () => {
@@ -1171,31 +1156,29 @@ describe('OrganizationUnitEditPage', () => {
         (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('A test description'),
       );
 
-      if (descEditButton) {
-        fireEvent.click(descEditButton);
-        const descInput = screen.getByDisplayValue('A test description');
-        fireEvent.change(descInput, {target: {value: 'Updated Description'}});
-        fireEvent.blur(descInput);
+      expect(descEditButton).toBeDefined();
+      fireEvent.click(descEditButton!);
+      const descInput = screen.getByDisplayValue('A test description');
+      fireEvent.change(descInput, {target: {value: 'Updated Description'}});
+      fireEvent.blur(descInput);
 
-        await waitFor(() => {
-          expect(screen.getByText('Updated Description')).toBeInTheDocument();
-        });
+      await waitFor(() => {
+        expect(screen.getByText('Updated Description')).toBeInTheDocument();
+      });
 
-        // Second edit: Escape should restore the edited description
-        const editButtons2 = screen.getAllByRole('button');
-        const descEditButton2 = editButtons2.find(
-          (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Updated Description'),
-        );
+      // Second edit: Escape should restore the edited description
+      const editButtons2 = screen.getAllByRole('button');
+      const descEditButton2 = editButtons2.find(
+        (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Updated Description'),
+      );
 
-        if (descEditButton2) {
-          fireEvent.click(descEditButton2);
-          fireEvent.keyDown(screen.getByDisplayValue('Updated Description'), {key: 'Escape'});
+      expect(descEditButton2).toBeDefined();
+      fireEvent.click(descEditButton2!);
+      fireEvent.keyDown(screen.getByDisplayValue('Updated Description'), {key: 'Escape'});
 
-          await waitFor(() => {
-            expect(screen.getByText('Updated Description')).toBeInTheDocument();
-          });
-        }
-      }
+      await waitFor(() => {
+        expect(screen.getByText('Updated Description')).toBeInTheDocument();
+      });
     });
 
     it('should restore edited name on Escape key when editedOU has name', async () => {
@@ -1211,34 +1194,32 @@ describe('OrganizationUnitEditPage', () => {
         (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Test Organization Unit'),
       );
 
-      if (nameEditButton) {
-        fireEvent.click(nameEditButton);
-        const nameInput = screen.getByDisplayValue('Test Organization Unit');
-        fireEvent.change(nameInput, {target: {value: 'Edited Name'}});
-        fireEvent.blur(nameInput);
+      expect(nameEditButton).toBeDefined();
+      fireEvent.click(nameEditButton!);
+      const nameInput = screen.getByDisplayValue('Test Organization Unit');
+      fireEvent.change(nameInput, {target: {value: 'Edited Name'}});
+      fireEvent.blur(nameInput);
 
-        await waitFor(() => {
-          expect(screen.getByText('Edited Name')).toBeInTheDocument();
-        });
+      await waitFor(() => {
+        expect(screen.getByText('Edited Name')).toBeInTheDocument();
+      });
 
-        // Re-edit and press Escape
-        const editButtons2 = screen.getAllByRole('button');
-        const nameEditButton2 = editButtons2.find(
-          (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Edited Name'),
-        );
+      // Re-edit and press Escape
+      const editButtons2 = screen.getAllByRole('button');
+      const nameEditButton2 = editButtons2.find(
+        (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Edited Name'),
+      );
 
-        if (nameEditButton2) {
-          fireEvent.click(nameEditButton2);
-          const nameInput2 = screen.getByDisplayValue('Edited Name');
-          fireEvent.change(nameInput2, {target: {value: 'Something Else'}});
-          fireEvent.keyDown(nameInput2, {key: 'Escape'});
+      expect(nameEditButton2).toBeDefined();
+      fireEvent.click(nameEditButton2!);
+      const nameInput2 = screen.getByDisplayValue('Edited Name');
+      fireEvent.change(nameInput2, {target: {value: 'Something Else'}});
+      fireEvent.keyDown(nameInput2, {key: 'Escape'});
 
-          // Should restore to the edited name, not the original
-          await waitFor(() => {
-            expect(screen.getByText('Edited Name')).toBeInTheDocument();
-          });
-        }
-      }
+      // Should restore to the edited name, not the original
+      await waitFor(() => {
+        expect(screen.getByText('Edited Name')).toBeInTheDocument();
+      });
     });
 
     it('should save name changes on Enter with trimmed value', async () => {
@@ -1253,17 +1234,16 @@ describe('OrganizationUnitEditPage', () => {
         (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Test Organization Unit'),
       );
 
-      if (nameEditButton) {
-        fireEvent.click(nameEditButton);
-        const nameInput = screen.getByDisplayValue('Test Organization Unit');
-        fireEvent.change(nameInput, {target: {value: ''}});
-        fireEvent.keyDown(nameInput, {key: 'Enter'});
+      expect(nameEditButton).toBeDefined();
+      fireEvent.click(nameEditButton!);
+      const nameInput = screen.getByDisplayValue('Test Organization Unit');
+      fireEvent.change(nameInput, {target: {value: ''}});
+      fireEvent.keyDown(nameInput, {key: 'Enter'});
 
-        // Should not save empty name, should exit editing
-        await waitFor(() => {
-          expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
-        });
-      }
+      // Should not save empty name, should exit editing
+      await waitFor(() => {
+        expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
+      });
     });
   });
 
@@ -1283,30 +1263,29 @@ describe('OrganizationUnitEditPage', () => {
         (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('A test description'),
       );
 
-      if (descEditButton) {
-        fireEvent.click(descEditButton);
-        const descInput = screen.getByDisplayValue('A test description');
-        fireEvent.change(descInput, {target: {value: 'New description'}});
-        fireEvent.blur(descInput);
+      expect(descEditButton).toBeDefined();
+      fireEvent.click(descEditButton!);
+      const descInput = screen.getByDisplayValue('A test description');
+      fireEvent.change(descInput, {target: {value: 'New description'}});
+      fireEvent.blur(descInput);
 
-        await waitFor(() => {
-          expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
-        });
+      await waitFor(() => {
+        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+      });
 
-        // Click save
-        fireEvent.click(screen.getByText('Save'));
+      // Click save
+      fireEvent.click(screen.getByText('Save'));
 
-        await waitFor(() => {
-          expect(mockMutateAsync).toHaveBeenCalledWith(
-            expect.objectContaining({
-              id: 'ou-123',
-              data: expect.objectContaining({
-                description: 'New description',
-              }) as unknown,
-            }),
-          );
-        });
-      }
+      await waitFor(() => {
+        expect(mockMutateAsync).toHaveBeenCalledWith(
+          expect.objectContaining({
+            id: 'ou-123',
+            data: expect.objectContaining({
+              description: 'New description',
+            }) as unknown,
+          }),
+        );
+      });
     });
   });
 });

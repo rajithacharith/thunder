@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router';
-import AuthenticationFlowSection from '../AuthenticationFlowSection';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import useGetFlows from '../../../../../flows/api/useGetFlows';
 import type {Application} from '../../../../models/application';
+import AuthenticationFlowSection from '../AuthenticationFlowSection';
 
 // Mock the useGetFlows hook
 vi.mock('../../../../../flows/api/useGetFlows');

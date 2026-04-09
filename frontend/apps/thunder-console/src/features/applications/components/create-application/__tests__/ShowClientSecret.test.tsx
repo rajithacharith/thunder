@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import ShowClientSecret, {type ShowClientSecretProps} from '../ShowClientSecret';
 
 // Mock the useCopyToClipboard hook
@@ -109,7 +109,7 @@ describe('ShowClientSecret', () => {
       // Get all icon buttons - the first one in the input should be the visibility toggle
       const allButtons = screen.getAllByRole('button');
       // Filter to get only icon buttons (small buttons without text content)
-      const iconButtons = allButtons.filter(btn => btn.querySelector('svg'));
+      const iconButtons = allButtons.filter((btn) => btn.querySelector('svg'));
       // The first icon button should be the visibility toggle
       const visibilityButton = iconButtons[0];
       expect(visibilityButton).toBeInTheDocument();
@@ -134,7 +134,7 @@ describe('ShowClientSecret', () => {
 
       // Get all icon buttons - the second one in the input should be the copy button
       const allButtons = screen.getAllByRole('button');
-      const iconButtons = allButtons.filter(btn => btn.querySelector('svg'));
+      const iconButtons = allButtons.filter((btn) => btn.querySelector('svg'));
       // The second icon button should be the copy button (first is visibility toggle)
       const copyButton = iconButtons[1];
       expect(copyButton).toBeInTheDocument();

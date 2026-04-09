@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, afterEach} from 'vitest';
 import {existsSync, rmSync} from 'fs';
-import {join} from 'path';
 import {tmpdir} from 'os';
+import {join} from 'path';
+import {describe, it, expect, afterEach} from 'vitest';
 import ensureDir from '../ensureDir';
 
 describe('ensureDir', () => {

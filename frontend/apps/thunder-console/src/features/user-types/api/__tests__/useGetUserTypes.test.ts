@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
-import useGetUserTypes from '../useGetUserTypes';
-import type {UserSchemaListResponse} from '../../types/user-types';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import UserTypeQueryKeys from '../../constants/userTypeQueryKeys';
+import type {UserSchemaListResponse} from '../../types/user-types';
+import useGetUserTypes from '../useGetUserTypes';
 
 // Mock the dependencies
 vi.mock('@asgardeo/react', () => ({
@@ -73,7 +73,7 @@ describe('useGetUserTypes', () => {
   });
 
   it('should initialize with loading state', () => {
-    mockHttpRequest.mockReturnValue(new Promise(() => {})); // Never resolves
+    mockHttpRequest.mockReturnValue(new Promise(() => null)); // Never resolves
 
     const {result} = renderHook(() => useGetUserTypes());
 

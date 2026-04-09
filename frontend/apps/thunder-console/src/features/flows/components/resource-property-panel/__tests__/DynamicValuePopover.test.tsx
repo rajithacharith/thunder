@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import DynamicValuePopover from '../DynamicValuePopover';
 
 vi.mock('react-i18next', () => ({
@@ -33,13 +33,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../I18nConfigurationCard', () => ({
-  I18nConfigurationCardContent: ({
-    i18nKey,
-    onChange,
-  }: {
-    i18nKey: string;
-    onChange: (key: string) => void;
-  }) => (
+  I18nConfigurationCardContent: ({i18nKey, onChange}: {i18nKey: string; onChange: (key: string) => void}) => (
     <div data-testid="i18n-content">
       <span data-testid="i18n-key">{i18nKey}</span>
       <button type="button" data-testid="i18n-change" onClick={() => onChange('flowI18n:login.title')}>
@@ -50,13 +44,7 @@ vi.mock('../I18nConfigurationCard', () => ({
 }));
 
 vi.mock('../MetaConfigurationCard', () => ({
-  MetaConfigurationCardContent: ({
-    metaKey,
-    onChange,
-  }: {
-    metaKey: string;
-    onChange: (key: string) => void;
-  }) => (
+  MetaConfigurationCardContent: ({metaKey, onChange}: {metaKey: string; onChange: (key: string) => void}) => (
     <div data-testid="meta-content">
       <span data-testid="meta-key">{metaKey}</span>
       <button type="button" data-testid="meta-change" onClick={() => onChange('application.name')}>
@@ -95,9 +83,7 @@ describe('DynamicValuePopover', () => {
       />,
     );
 
-    expect(
-      screen.getByText(/flows:core.elements.textPropertyField.dynamicValuePopover.title/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/flows:core.elements.textPropertyField.dynamicValuePopover.title/)).toBeInTheDocument();
   });
 
   it('should render Translation and Variables tabs', () => {
@@ -165,9 +151,7 @@ describe('DynamicValuePopover', () => {
       />,
     );
 
-    await user.click(
-      screen.getByText('flows:core.elements.textPropertyField.dynamicValuePopover.tabs.variables'),
-    );
+    await user.click(screen.getByText('flows:core.elements.textPropertyField.dynamicValuePopover.tabs.variables'));
 
     await waitFor(() => {
       expect(screen.getByTestId('meta-content')).toBeInTheDocument();
@@ -190,9 +174,7 @@ describe('DynamicValuePopover', () => {
     // Initially on Variables tab
     expect(screen.getByTestId('meta-content')).toBeInTheDocument();
 
-    await user.click(
-      screen.getByText('flows:core.elements.textPropertyField.dynamicValuePopover.tabs.translation'),
-    );
+    await user.click(screen.getByText('flows:core.elements.textPropertyField.dynamicValuePopover.tabs.translation'));
 
     await waitFor(() => {
       expect(screen.getByTestId('i18n-content')).toBeInTheDocument();

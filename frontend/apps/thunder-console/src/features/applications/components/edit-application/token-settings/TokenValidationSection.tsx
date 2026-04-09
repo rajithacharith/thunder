@@ -16,10 +16,11 @@
  * under the License.
  */
 
-import {TextField} from '@wso2/oxygen-ui';
-import {useTranslation} from 'react-i18next';
+import {Box, FormControl, FormLabel, Stack, Tab, Tabs, TextField} from '@wso2/oxygen-ui';
+import {useState} from 'react';
 import {Controller} from 'react-hook-form';
 import type {Control, FieldErrors} from 'react-hook-form';
+import {useTranslation} from 'react-i18next';
 import SettingsCard from '../../../../../components/SettingsCard';
 
 /**
@@ -43,70 +44,82 @@ interface TokenValidationSectionProps {
     idTokenValidity: number;
   }>;
   /**
-   * Type of token being configured
-   * - 'shared': Single validity period for native apps
-   * - 'access': Access token validity for OAuth2
-   * - 'id': ID token validity for OIDC
+   * Token mode:
+   * - 'shared': Single validity period for native apps (no tabs)
+   * - 'oauth': Tabbed layout with separate Access Token and ID Token validity inputs
    */
-  tokenType: 'shared' | 'access' | 'id';
+  tokenType: 'shared' | 'oauth';
 }
 
 /**
- * Section component for configuring token validity period.
+ * Section component for configuring token validity periods.
  *
- * Displays a number input for setting token expiration time in seconds.
- * The field name and labels adapt based on tokenType:
- * - 'shared': validityPeriod field for native apps
- * - 'access': accessTokenValidity field for OAuth2 access tokens
- * - 'id': idTokenValidity field for OIDC ID tokens
- *
- * Includes validation with minimum value of 1 second.
+ * - `tokenType="shared"`: renders a single validity period input for native apps.
+ * - `tokenType="oauth"`: renders two tabs (Access Token / ID Token), each with its
+ *   own validity period input. The tab state is managed internally and is independent
+ *   of any other tab state in the page.
  *
  * @param props - Component props
- * @returns Token validity input UI within a SettingsCard
+ * @returns Token validity configuration UI within a SettingsCard
  */
 export default function TokenValidationSection({control, errors, tokenType}: TokenValidationSectionProps) {
   const {t} = useTranslation();
+  const [activeValidationTab, setActiveValidationTab] = useState<'access' | 'id'>('access');
 
-  const getTitle = () => {
-    if (tokenType === 'access') return t('applications:edit.token.accessTokenValidation.title');
-    if (tokenType === 'id') return t('applications:edit.token.idTokenValidation.title');
-    return t('applications:edit.token.tokenValidation.title');
-  };
+  const title = t('applications:edit.token.token_validation.title', 'Token Validity');
+  const description = t(
+    'applications:edit.token.token_validation.description',
+    'Configure how long tokens remain valid before expiration',
+  );
+  const label = t('applications:edit.token.labels.token_validity', 'Token Validity');
+  const hint = t('applications:edit.token.validity.hint', 'Token validity period in seconds (e.g., 3600 for 1 hour)');
 
-  const getDescription = () => {
-    if (tokenType === 'access') return t('applications:edit.token.accessTokenValidation.description');
-    if (tokenType === 'id') return t('applications:edit.token.idTokenValidation.description');
-    return t('applications:edit.token.tokenValidation.description');
-  };
-
-  let fieldName: 'validityPeriod' | 'accessTokenValidity' | 'idTokenValidity';
-  if (tokenType === 'shared') {
-    fieldName = 'validityPeriod';
-  } else if (tokenType === 'access') {
-    fieldName = 'accessTokenValidity';
-  } else {
-    fieldName = 'idTokenValidity';
-  }
-
-  return (
-    <SettingsCard title={getTitle()} description={getDescription()}>
+  const renderField = (fieldName: 'validityPeriod' | 'accessTokenValidity' | 'idTokenValidity') => (
+    <FormControl fullWidth required>
+      <FormLabel htmlFor={`${fieldName}-input`}>{label}</FormLabel>
       <Controller
         name={fieldName}
         control={control}
         render={({field}) => (
           <TextField
+            id={`${fieldName}-input`}
             {...field}
             fullWidth
-            label={t('applications:edit.token.labels.tokenValidity')}
             type="number"
             onChange={(e) => field.onChange(parseInt(e.target.value, 10))}
             error={!!errors[fieldName]}
-            helperText={errors[fieldName]?.message ?? t('applications:edit.token.validity.hint')}
+            helperText={errors[fieldName]?.message ?? hint}
             inputProps={{min: 1}}
           />
         )}
       />
+    </FormControl>
+  );
+
+  if (tokenType === 'oauth') {
+    return (
+      <SettingsCard slotProps={{content: {sx: {p: 0}}}} title={title} description={description}>
+        <Stack spacing={2}>
+          <Tabs
+            value={activeValidationTab === 'access' ? 0 : 1}
+            onChange={(_, newValue: number) => setActiveValidationTab(newValue === 0 ? 'access' : 'id')}
+            sx={{borderBottom: 1, borderColor: 'divider'}}
+          >
+            <Tab label={t('applications:edit.token.tabs.access_token', 'Access Token')} />
+            <Tab label={t('applications:edit.token.tabs.id_token', 'ID Token')} />
+          </Tabs>
+          <Box sx={{p: 3}}>
+            {activeValidationTab === 'access' && renderField('accessTokenValidity')}
+            {activeValidationTab === 'id' && renderField('idTokenValidity')}
+          </Box>
+        </Stack>
+      </SettingsCard>
+    );
+  }
+
+  return (
+    <SettingsCard title={title} description={description}>
+      {renderField('validityPeriod')}
     </SettingsCard>
   );
 }

@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import type {ElementFactoryProps} from '@/features/flows/context/FlowBuilderCoreProvider';
-import CommonElementFactory from '@/features/flows/components/resources/elements/CommonElementFactory';
-import {ResourceTypes} from '@/features/flows/models/resources';
 import {type ReactElement} from 'react';
+import CommonElementFactory from '@/features/flows/components/resources/elements/CommonElementFactory';
+import type {ElementFactoryProps} from '@/features/flows/context/FlowBuilderCoreProvider';
 import type {Element} from '@/features/flows/models/elements';
+import {ResourceTypes} from '@/features/flows/models/resources';
 
 /**
  * Factory for creating components.

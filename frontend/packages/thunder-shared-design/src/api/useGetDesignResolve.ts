@@ -18,8 +18,8 @@
 
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import type {DesignResolveResponse} from '../models/responses';
 import DesignQueryKeys from '../constants/design-query-keys';
+import type {DesignResolveResponse} from '../models/responses';
 
 type DesignResolveType = 'APP' | 'OU';
 

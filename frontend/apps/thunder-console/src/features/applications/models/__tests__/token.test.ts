@@ -33,7 +33,6 @@ describe('Token Models', () => {
       expect(tokenConfig.userAttributes).toEqual(['email', 'username']);
     });
 
-
     it('should accept validity period and user attributes', () => {
       const tokenConfig: TokenConfig = {
         validityPeriod: 7200,

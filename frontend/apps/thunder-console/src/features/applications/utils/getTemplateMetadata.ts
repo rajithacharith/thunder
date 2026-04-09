@@ -17,9 +17,9 @@
  */
 
 import type {JSX} from 'react';
-import TechnologyBasedApplicationTemplateMetadata from '../config/TechnologyBasedApplicationTemplateMetadata';
-import PlatformBasedApplicationTemplateMetadata from '../config/PlatformBasedApplicationTemplateMetadata';
 import normalizeTemplateId from './normalizeTemplateId';
+import PlatformBasedApplicationTemplateMetadata from '../config/PlatformBasedApplicationTemplateMetadata';
+import TechnologyBasedApplicationTemplateMetadata from '../config/TechnologyBasedApplicationTemplateMetadata';
 
 interface TemplateMetadata {
   icon: JSX.Element;

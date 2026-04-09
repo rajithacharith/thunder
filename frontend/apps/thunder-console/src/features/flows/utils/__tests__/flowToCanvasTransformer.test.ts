@@ -17,10 +17,10 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {transformFlowToCanvas} from '../flowToCanvasTransformer';
+import VisualFlowConstants from '../../constants/VisualFlowConstants';
 import type {FlowDefinitionResponse, FlowNode} from '../../models/responses';
 import {StaticStepTypes, StepTypes} from '../../models/steps';
-import VisualFlowConstants from '../../constants/VisualFlowConstants';
+import {transformFlowToCanvas} from '../flowToCanvasTransformer';
 
 describe('flowToCanvasTransformer', () => {
   const createBaseFlowData = (nodes: FlowNode[]): FlowDefinitionResponse => ({

@@ -16,15 +16,28 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import type {Resource} from '@/features/flows/models/resources';
+import {describe, it, expect, vi} from 'vitest';
 import WidgetPropertyFactory from '../WidgetPropertyFactory';
+import type {Resource} from '@/features/flows/models/resources';
 
 // Mock CommonWidgetPropertyFactory
 vi.mock('@/features/flows/components/resource-property-panel/CommonWidgetPropertyFactory', () => ({
-  default: ({resource, propertyKey, propertyValue}: {resource: Resource; propertyKey: string; propertyValue: unknown}) => (
-    <div data-testid="common-widget-property-factory" data-resource-id={resource.id} data-property-key={propertyKey} data-property-value={String(propertyValue)}>
+  default: ({
+    resource,
+    propertyKey,
+    propertyValue,
+  }: {
+    resource: Resource;
+    propertyKey: string;
+    propertyValue: unknown;
+  }) => (
+    <div
+      data-testid="common-widget-property-factory"
+      data-resource-id={resource.id}
+      data-property-key={propertyKey}
+      data-property-value={String(propertyValue)}
+    >
       Common Widget Property Factory
     </div>
   ),
@@ -62,12 +75,7 @@ describe('WidgetPropertyFactory', () => {
       const resource = createMockResource({id: 'custom-widget'});
 
       render(
-        <WidgetPropertyFactory
-          resource={resource}
-          propertyKey="title"
-          propertyValue="Title"
-          onChange={mockOnChange}
-        />,
+        <WidgetPropertyFactory resource={resource} propertyKey="title" propertyValue="Title" onChange={mockOnChange} />,
       );
 
       expect(screen.getByTestId('common-widget-property-factory')).toHaveAttribute('data-resource-id', 'custom-widget');

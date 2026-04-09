@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import {type ReactElement, useMemo} from 'react';
-import {Panel} from '@xyflow/react';
-import {useTranslation} from 'react-i18next';
 import {Box, Typography, Tooltip, ButtonBase} from '@wso2/oxygen-ui';
-import classNames from 'classnames';
 import {CircleXIcon, TriangleAlertIcon, InfoIcon} from '@wso2/oxygen-ui-icons-react';
-import useValidationStatus from '../../hooks/useValidationStatus';
+import {Panel} from '@xyflow/react';
+import classNames from 'classnames';
+import {type ReactElement, useMemo} from 'react';
+import {useTranslation} from 'react-i18next';
 import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import useValidationStatus from '../../hooks/useValidationStatus';
 import Notification, {NotificationType} from '../../models/notification';
 import './CanvasValidationIndicator.scss';
 

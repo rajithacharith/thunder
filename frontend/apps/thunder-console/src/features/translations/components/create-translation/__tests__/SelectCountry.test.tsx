@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
+import {render, screen} from '@thunder/test-utils';
+import {describe, expect, it, vi, beforeEach} from 'vitest';
 import SelectCountry from '../SelectCountry';
 
 vi.mock('react-i18next', async () => {
@@ -136,9 +136,7 @@ describe('SelectCountry', () => {
     it('calls onReadyChange(true) on mount when a country is already selected', () => {
       const onReadyChange = vi.fn();
 
-      render(
-        <SelectCountry {...defaultProps} onReadyChange={onReadyChange} selectedCountry={mockCountries[0]} />,
-      );
+      render(<SelectCountry {...defaultProps} onReadyChange={onReadyChange} selectedCountry={mockCountries[0]} />);
 
       expect(onReadyChange).toHaveBeenCalledWith(true);
     });
@@ -161,13 +159,7 @@ describe('SelectCountry', () => {
       const onCountryChange = vi.fn();
       const user = userEvent.setup();
 
-      render(
-        <SelectCountry
-          {...defaultProps}
-          selectedCountry={mockCountries[0]}
-          onCountryChange={onCountryChange}
-        />,
-      );
+      render(<SelectCountry {...defaultProps} selectedCountry={mockCountries[0]} onCountryChange={onCountryChange} />);
 
       await user.clear(screen.getByRole('combobox'));
 

@@ -16,14 +16,14 @@
  * under the License.
  */
 
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {Checkbox, FormControlLabel, FormHelperText} from '@wso2/oxygen-ui';
 import {useMemo, type CSSProperties, type ReactElement} from 'react';
 import {Trans, useTranslation} from 'react-i18next';
-import {Checkbox, FormControlLabel, FormHelperText} from '@wso2/oxygen-ui';
+import {Hint} from '../../hint';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
-import {Hint} from '../../hint';
 
 const CHECKBOX_VALIDATION_FIELD_NAMES = {
   label: 'label',

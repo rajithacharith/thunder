@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
-import type {LayoutResponse} from '../models/responses';
 import DesignQueryKeys from '../constants/design-query-keys';
+import type {LayoutResponse} from '../models/responses';
 
 /**
  * Custom hook to fetch a single layout configuration by ID from the Thunder server.

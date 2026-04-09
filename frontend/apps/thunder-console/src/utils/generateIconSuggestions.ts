@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import EMOJI_DATA from '../components/EmojiPicker/emojis.json';
 import type {EmojiCategory} from '../components/EmojiPicker/EmojiPicker';
+import EMOJI_DATA from '../components/EmojiPicker/emojis.json';
 
 export const EMOJI_CATEGORIES: EmojiCategory[] = EMOJI_DATA as unknown as EmojiCategory[];
 

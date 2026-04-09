@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
-import {useContext} from 'react';
 import {renderHook} from '@testing-library/react';
-import FlowBuilderCoreContext from '../FlowBuilderCoreContext';
+import {useContext} from 'react';
+import {describe, it, expect} from 'vitest';
 import {PreviewScreenType} from '../../models/custom-text-preference';
 import {EdgeStyleTypes} from '../../models/steps';
+import FlowBuilderCoreContext from '../FlowBuilderCoreContext';
 
 describe('FlowBuilderCoreContext', () => {
   describe('default context values', () => {
@@ -85,7 +85,7 @@ describe('FlowBuilderCoreContext', () => {
       expect(() => result.current.setFlowEdgeTypes(() => ({}))).not.toThrow();
       expect(() => result.current.setFlowNodeTypes(() => ({}))).not.toThrow();
       expect(() => result.current.setIsOpenResourcePropertiesPanel(true)).not.toThrow();
-      expect(() => result.current.registerCloseValidationPanel(() => {})).not.toThrow();
+      expect(() => result.current.registerCloseValidationPanel(() => null)).not.toThrow();
       expect(() => result.current.setIsResourcePanelOpen(() => true)).not.toThrow();
       expect(() => result.current.setIsVersionHistoryPanelOpen(() => true)).not.toThrow();
       expect(() => result.current.setLanguage?.('en')).not.toThrow();
@@ -125,7 +125,7 @@ describe('FlowBuilderCoreContext', () => {
       expect(
         ResourceProperties({
           resource: {} as never,
-          onChange: () => {},
+          onChange: () => null,
         }),
       ).toBeNull();
     });

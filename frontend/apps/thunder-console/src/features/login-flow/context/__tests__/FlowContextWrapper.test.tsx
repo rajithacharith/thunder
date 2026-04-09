@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {useContext} from 'react';
+import {describe, it, expect} from 'vitest';
 import FlowContextWrapper from '../FlowContextWrapper';
 import LoginFlowBuilderContext from '../LoginFlowBuilderContext';
 

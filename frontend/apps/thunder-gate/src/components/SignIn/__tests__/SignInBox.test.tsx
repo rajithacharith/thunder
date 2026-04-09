@@ -17,25 +17,41 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@thunder/test-utils';
+import {render as testRender, screen, fireEvent, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
+import {DesignContext, type DesignContextType} from '@thunder/shared-design';
 import SignInBox from '../SignInBox';
 // Mock useDesign
 const mockUseDesign = vi.fn();
-vi.mock('@thunder/shared-design', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-  useDesign: () => mockUseDesign(),
-  mapEmbeddedFlowTextVariant: (variant: string) => {
-    switch (variant) {
-      case 'H1':
-        return 'h1';
-      case 'H2':
-        return 'h2';
-      default:
-        return 'body1';
-    }
-  },
-}));
+vi.mock('@thunder/shared-design', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-design')>();
+  return {
+    ...actual,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    useDesign: () => mockUseDesign(),
+    mapEmbeddedFlowTextVariant: (variant: string) => {
+      switch (variant) {
+        case 'H1':
+          return 'h1';
+        case 'H2':
+          return 'h2';
+        default:
+          return 'body1';
+      }
+    },
+  };
+});
+
+// Wrap renders with DesignContext derived from the same mock that backs useDesign(),
+// so adapters reading from context directly stay in sync with the hook.
+const render = (ui: React.ReactElement) => {
+  const designValue: DesignContextType = {
+    isDesignEnabled: false,
+    isLoading: false,
+    ...(mockUseDesign() as Partial<DesignContextType>),
+  };
+  return testRender(<DesignContext.Provider value={designValue}>{ui}</DesignContext.Provider>);
+};
 
 // Mock useBranding
 const mockUseBranding = vi.fn().mockReturnValue({
@@ -64,15 +80,6 @@ let mockSearchParams: URLSearchParams = new URLSearchParams();
 vi.mock('react-router', () => ({
   useNavigate: () => mockNavigate,
   useSearchParams: () => [mockSearchParams, vi.fn()],
-}));
-
-// Mock getIntegrationIcon
-vi.mock('../../../utils/getIntegrationIcon', () => ({
-  default: (label: string) => {
-    if (label.includes('Google')) return <span data-testid="google-icon">G</span>;
-    if (label.includes('GitHub')) return <span data-testid="github-icon">GH</span>;
-    return null;
-  },
 }));
 
 // Mock Asgardeo SignIn and SignUp components
@@ -359,10 +366,9 @@ describe('SignInBox', () => {
     });
     render(<SignInBox />);
     expect(screen.getByText('Continue with Google')).toBeInTheDocument();
-    expect(screen.getByTestId('google-icon')).toBeInTheDocument();
   });
 
-  it('shows validation error for required fields', async () => {
+  it('shows validation error for required fields', () => {
     mockSignInRenderProps = createMockSignInRenderProps({
       components: [
         {
@@ -468,7 +474,7 @@ describe('SignInBox', () => {
     expect(screen.getByText('Resend OTP')).toBeInTheDocument();
   });
 
-  it('renders TRIGGER action within form block', async () => {
+  it('renders TRIGGER action within form block', () => {
     mockSignInRenderProps = createMockSignInRenderProps({
       components: [
         {
@@ -522,7 +528,7 @@ describe('SignInBox', () => {
     expect(screen.getByText('Sign up')).toBeInTheDocument();
   });
 
-  it('navigates to sign up page when clicking sign up link', async () => {
+  it('navigates to sign up page when clicking sign up link', () => {
     mockResolveAll.mockImplementation(
       (template: string, handlers?: Record<string, (key: string) => string | undefined>) =>
         template.replace(/\{\{meta\(([^)]+)\)\}\}/g, (_match, path: string) => handlers?.meta?.(path) ?? _match),
@@ -667,7 +673,7 @@ describe('SignInBox', () => {
     });
   });
 
-  it('navigates to sign up with query params preserved', async () => {
+  it('navigates to sign up with query params preserved', () => {
     mockResolveAll.mockImplementation(
       (template: string, handlers?: Record<string, (key: string) => string | undefined>) =>
         template.replace(/\{\{meta\(([^)]+)\)\}\}/g, (_match, path: string) => handlers?.meta?.(path) ?? _match),
@@ -783,7 +789,7 @@ describe('SignInBox', () => {
     expect(phoneInput).toHaveValue('+1234567890');
   });
 
-  it('handles OTP input digit entry and auto-focus', async () => {
+  it('handles OTP input digit entry and auto-focus', () => {
     mockSignInRenderProps = createMockSignInRenderProps({
       components: [
         {
@@ -819,7 +825,7 @@ describe('SignInBox', () => {
     expect(otpInputs[0]).toHaveValue('1');
   });
 
-  it('handles OTP input backspace navigation', async () => {
+  it('handles OTP input backspace navigation', () => {
     mockSignInRenderProps = createMockSignInRenderProps({
       components: [
         {
@@ -856,7 +862,7 @@ describe('SignInBox', () => {
     expect(otpInputs).toHaveLength(6);
   });
 
-  it('handles OTP input paste', async () => {
+  it('handles OTP input paste', () => {
     mockSignInRenderProps = createMockSignInRenderProps({
       components: [
         {
@@ -896,7 +902,7 @@ describe('SignInBox', () => {
     expect(otpInputs).toHaveLength(6);
   });
 
-  it('rejects non-digit input in OTP field', async () => {
+  it('rejects non-digit input in OTP field', () => {
     mockSignInRenderProps = createMockSignInRenderProps({
       components: [
         {
@@ -1046,7 +1052,7 @@ describe('SignInBox', () => {
     expect(screen.queryByLabelText(/Username/)).not.toBeInTheDocument();
   });
 
-  it('handles password validation error', async () => {
+  it('handles password validation error', () => {
     mockSignInRenderProps = createMockSignInRenderProps({
       components: [
         {
@@ -1081,7 +1087,7 @@ describe('SignInBox', () => {
     expect(mockOnSubmit).not.toHaveBeenCalled();
   });
 
-  it('handles phone validation error', async () => {
+  it('handles phone validation error', () => {
     mockSignInRenderProps = createMockSignInRenderProps({
       components: [
         {
@@ -1116,7 +1122,7 @@ describe('SignInBox', () => {
     expect(mockOnSubmit).not.toHaveBeenCalled();
   });
 
-  it('handles OTP validation error', async () => {
+  it('handles OTP validation error', () => {
     mockSignInRenderProps = createMockSignInRenderProps({
       components: [
         {
@@ -1327,7 +1333,7 @@ describe('SignInBox', () => {
     });
   });
 
-  it('does not update input when ref is undefined', async () => {
+  it('does not update input when ref is undefined', () => {
     mockSignInRenderProps = createMockSignInRenderProps({
       components: [
         {
@@ -1512,7 +1518,7 @@ describe('SignInBox', () => {
     expect(screen.queryByLabelText(/Field/)).not.toBeInTheDocument();
   });
 
-  it('returns null for non-TRIGGER action in social login block', async () => {
+  it('returns null for non-TRIGGER action in social login block', () => {
     mockSignInRenderProps = createMockSignInRenderProps({
       components: [
         {
@@ -1647,7 +1653,7 @@ describe('SignInBox', () => {
     expect(screen.getByText('Alternative Action')).toBeInTheDocument();
   });
 
-  it('uses fallback keys for social login trigger with undefined id', async () => {
+  it('uses fallback keys for social login trigger with undefined id', () => {
     mockSignInRenderProps = createMockSignInRenderProps({
       components: [
         {
@@ -1977,7 +1983,7 @@ describe('SignInBox', () => {
     expect(tokenInput).toHaveAttribute('autocomplete', 'off');
   });
 
-  it('handles sign up link navigation', async () => {
+  it('handles sign up link navigation', () => {
     mockResolveAll.mockImplementation(
       (template: string, handlers?: Record<string, (key: string) => string | undefined>) =>
         template.replace(/\{\{meta\(([^)]+)\)\}\}/g, (_match, path: string) => handlers?.meta?.(path) ?? _match),

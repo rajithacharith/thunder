@@ -67,28 +67,28 @@ func (s *CacheBackedFlowStoreTestSuite) SetupTest() {
 }
 
 func (s *CacheBackedFlowStoreTestSuite) setupCacheMock() {
-	s.flowByIDCache.EXPECT().Set(mock.Anything, mock.Anything).
-		RunAndReturn(func(key cache.CacheKey, value *CompleteFlowDefinition) error {
+	s.flowByIDCache.EXPECT().Set(mock.Anything, mock.Anything, mock.Anything).
+		RunAndReturn(func(ctx context.Context, key cache.CacheKey, value *CompleteFlowDefinition) error {
 			s.cacheData[key.Key] = value
 			return nil
 		}).Maybe()
 
-	s.flowByIDCache.EXPECT().Get(mock.Anything).
-		RunAndReturn(func(key cache.CacheKey) (*CompleteFlowDefinition, bool) {
+	s.flowByIDCache.EXPECT().Get(mock.Anything, mock.Anything).
+		RunAndReturn(func(ctx context.Context, key cache.CacheKey) (*CompleteFlowDefinition, bool) {
 			if val, ok := s.cacheData[key.Key]; ok {
 				return val, true
 			}
 			return nil, false
 		}).Maybe()
 
-	s.flowByIDCache.EXPECT().Delete(mock.Anything).
-		RunAndReturn(func(key cache.CacheKey) error {
+	s.flowByIDCache.EXPECT().Delete(mock.Anything, mock.Anything).
+		RunAndReturn(func(ctx context.Context, key cache.CacheKey) error {
 			delete(s.cacheData, key.Key)
 			return nil
 		}).Maybe()
 
-	s.flowByIDCache.EXPECT().Clear().
-		RunAndReturn(func() error {
+	s.flowByIDCache.EXPECT().Clear(mock.Anything).
+		RunAndReturn(func(ctx context.Context) error {
 			for k := range s.cacheData {
 				delete(s.cacheData, k)
 			}
@@ -100,22 +100,22 @@ func (s *CacheBackedFlowStoreTestSuite) setupCacheMock() {
 	s.flowByIDCache.EXPECT().IsEnabled().Return(true).Maybe()
 
 	// Setup mock for flowByHandleCache
-	s.flowByHandleCache.EXPECT().Set(mock.Anything, mock.Anything).
-		RunAndReturn(func(key cache.CacheKey, value *CompleteFlowDefinition) error {
+	s.flowByHandleCache.EXPECT().Set(mock.Anything, mock.Anything, mock.Anything).
+		RunAndReturn(func(ctx context.Context, key cache.CacheKey, value *CompleteFlowDefinition) error {
 			s.handleCacheData[key.Key] = value
 			return nil
 		}).Maybe()
 
-	s.flowByHandleCache.EXPECT().Get(mock.Anything).
-		RunAndReturn(func(key cache.CacheKey) (*CompleteFlowDefinition, bool) {
+	s.flowByHandleCache.EXPECT().Get(mock.Anything, mock.Anything).
+		RunAndReturn(func(ctx context.Context, key cache.CacheKey) (*CompleteFlowDefinition, bool) {
 			if val, ok := s.handleCacheData[key.Key]; ok {
 				return val, true
 			}
 			return nil, false
 		}).Maybe()
 
-	s.flowByHandleCache.EXPECT().Delete(mock.Anything).
-		RunAndReturn(func(key cache.CacheKey) error {
+	s.flowByHandleCache.EXPECT().Delete(mock.Anything, mock.Anything).
+		RunAndReturn(func(ctx context.Context, key cache.CacheKey) error {
 			delete(s.handleCacheData, key.Key)
 			return nil
 		}).Maybe()
@@ -614,7 +614,7 @@ func (s *CacheBackedFlowStoreTestSuite) TestRestoreFlowVersionError() {
 }
 
 func (s *CacheBackedFlowStoreTestSuite) TestCacheFlowNil() {
-	s.cachedStore.cacheFlow(nil)
+	s.cachedStore.cacheFlow(context.Background(), nil)
 
 	s.Empty(s.cacheData)
 }
@@ -623,7 +623,7 @@ func (s *CacheBackedFlowStoreTestSuite) TestCacheFlowEmptyID() {
 	flow := s.createTestFlow()
 	flow.ID = ""
 
-	s.cachedStore.cacheFlow(flow)
+	s.cachedStore.cacheFlow(context.Background(), flow)
 
 	s.Empty(s.cacheData)
 }
@@ -631,7 +631,7 @@ func (s *CacheBackedFlowStoreTestSuite) TestCacheFlowEmptyID() {
 func (s *CacheBackedFlowStoreTestSuite) TestCacheFlowCacheError() {
 	// Create a new cache mock just for this test to override the setupCacheMock expectations
 	errorCache := cachemock.NewCacheInterfaceMock[*CompleteFlowDefinition](s.T())
-	errorCache.EXPECT().Set(mock.Anything, mock.Anything).
+	errorCache.EXPECT().Set(mock.Anything, mock.Anything, mock.Anything).
 		Return(errors.New("cache error")).Once()
 	errorCache.EXPECT().GetName().Return("FlowByIDCache").Maybe()
 
@@ -640,7 +640,7 @@ func (s *CacheBackedFlowStoreTestSuite) TestCacheFlowCacheError() {
 	s.cachedStore.flowByIDCache = errorCache
 
 	flow := s.createTestFlow()
-	s.cachedStore.cacheFlow(flow)
+	s.cachedStore.cacheFlow(context.Background(), flow)
 
 	// Restore original cache
 	s.cachedStore.flowByIDCache = originalCache
@@ -651,7 +651,7 @@ func (s *CacheBackedFlowStoreTestSuite) TestCacheFlowCacheError() {
 }
 
 func (s *CacheBackedFlowStoreTestSuite) TestInvalidateFlowCacheEmptyID() {
-	s.cachedStore.invalidateFlowCache("")
+	s.cachedStore.invalidateFlowCache(context.Background(), "")
 
 	s.Empty(s.cacheData)
 }
@@ -662,7 +662,7 @@ func (s *CacheBackedFlowStoreTestSuite) TestInvalidateFlowCacheError() {
 
 	// Create a new cache mock just for this test to override the setupCacheMock expectations
 	errorCache := cachemock.NewCacheInterfaceMock[*CompleteFlowDefinition](s.T())
-	errorCache.EXPECT().Delete(mock.Anything).
+	errorCache.EXPECT().Delete(mock.Anything, mock.Anything).
 		Return(errors.New("cache error")).Once()
 	errorCache.EXPECT().GetName().Return("FlowByIDCache").Maybe()
 
@@ -670,7 +670,7 @@ func (s *CacheBackedFlowStoreTestSuite) TestInvalidateFlowCacheError() {
 	originalCache := s.cachedStore.flowByIDCache
 	s.cachedStore.flowByIDCache = errorCache
 
-	s.cachedStore.invalidateFlowCache("flow-1")
+	s.cachedStore.invalidateFlowCache(context.Background(), "flow-1")
 
 	// Restore original cache
 	s.cachedStore.flowByIDCache = originalCache

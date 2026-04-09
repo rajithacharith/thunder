@@ -18,13 +18,13 @@
 
 import {type Edge, type Node, useReactFlow} from '@xyflow/react';
 import {useEffect} from 'react';
+import useFlowBuilderCore from './useFlowBuilderCore';
+import VisualFlowConstants from '../constants/VisualFlowConstants';
 import {ActionTypes} from '../models/actions';
 import {type Element, ElementCategories} from '../models/elements';
 import FlowEventTypes from '../models/extension';
 import {StepTypes} from '../models/steps';
 import PluginRegistry from '../plugins/PluginRegistry';
-import VisualFlowConstants from '../constants/VisualFlowConstants';
-import useFlowBuilderCore from './useFlowBuilderCore';
 
 /**
  * Custom hook to handle the deletion of execution resources in the flow builder.
@@ -44,7 +44,7 @@ const useDeleteExecutionResource = (): void => {
    *
    * @param deleted - An array of nodes that have been deleted from the flow.
    */
-  async function deleteExecutionActionNode(deleted: Node[]): Promise<boolean> {
+  function deleteExecutionActionNode(deleted: Node[]): boolean {
     const nodes: Node[] = getNodes();
     const edges: Edge[] = getEdges();
     const actionNodes: Node[] = [];
@@ -104,7 +104,7 @@ const useDeleteExecutionResource = (): void => {
    * @param element - The element being deleted, which is expected to be a execution action.
    * @returns Returns true if the deletion was successful.
    */
-  async function deleteExecutionNode(_stepId: string, element: Element): Promise<boolean> {
+  function deleteExecutionNode(_stepId: string, element: Element): boolean {
     const action = element.action as {type?: string; onSuccess?: string} | undefined;
 
     if (element.category === ElementCategories.Action && action?.type === ActionTypes.Next) {
@@ -122,7 +122,7 @@ const useDeleteExecutionResource = (): void => {
    * @param deleted - The deleted edges from the flow.
    * @returns Returns true if the deletion was successful.
    */
-  async function deleteComponentAndNode(deleted: Edge[]): Promise<boolean> {
+  function deleteComponentAndNode(deleted: Edge[]): boolean {
     const nodes: Node[] = getNodes();
     const executionNodeIds: string[] = [];
     const actionNodeIds: string[] = [];
@@ -164,27 +164,27 @@ const useDeleteExecutionResource = (): void => {
 
   useEffect(() => {
     // Attach unique identifiers to the functions for plugin registration
-    (
-      deleteComponentAndNode as typeof deleteComponentAndNode & Record<string, string>
-    )[VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER] = 'deleteComponentAndNode';
-    (
-      deleteExecutionNode as typeof deleteExecutionNode & Record<string, string>
-    )[VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER] = 'deleteExecutionNode';
-    (
-      deleteExecutionActionNode as typeof deleteExecutionActionNode & Record<string, string>
-    )[VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER] = 'deleteExecutionActionNode';
+    (deleteComponentAndNode as typeof deleteComponentAndNode & Record<string, string>)[
+      VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
+    ] = 'deleteComponentAndNode';
+    (deleteExecutionNode as typeof deleteExecutionNode & Record<string, string>)[
+      VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
+    ] = 'deleteExecutionNode';
+    (deleteExecutionActionNode as typeof deleteExecutionActionNode & Record<string, string>)[
+      VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
+    ] = 'deleteExecutionActionNode';
 
     PluginRegistry.getInstance().registerAsync(
       FlowEventTypes.ON_NODE_DELETE,
-      deleteExecutionActionNode as (...args: unknown[]) => Promise<boolean>,
+      deleteExecutionActionNode as unknown as (...args: unknown[]) => Promise<boolean>,
     );
     PluginRegistry.getInstance().registerAsync(
       FlowEventTypes.ON_NODE_ELEMENT_DELETE,
-      deleteExecutionNode as (...args: unknown[]) => Promise<boolean>,
+      deleteExecutionNode as unknown as (...args: unknown[]) => Promise<boolean>,
     );
     PluginRegistry.getInstance().registerAsync(
       FlowEventTypes.ON_EDGE_DELETE,
-      deleteComponentAndNode as (...args: unknown[]) => Promise<boolean>,
+      deleteComponentAndNode as unknown as (...args: unknown[]) => Promise<boolean>,
     );
 
     return () => {

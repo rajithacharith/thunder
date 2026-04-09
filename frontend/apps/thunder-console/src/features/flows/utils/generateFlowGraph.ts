@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {type CreateFlowRequest, type FlowNode, type FlowPrompt} from '../models/responses';
 import {FlowType, FlowNodeType} from '../models/flows';
+import {type CreateFlowRequest, type FlowNode, type FlowPrompt} from '../models/responses';
 
 /**
  * Options for generating a flow graph
@@ -40,15 +40,7 @@ export interface FlowGeneratorOptions {
  * @returns Complete flow creation request payload
  */
 export default function generateFlowGraph(options: FlowGeneratorOptions): CreateFlowRequest {
-  const {
-    hasBasicAuth,
-    hasPasskey,
-    googleIdpId,
-    githubIdpId,
-    hasSmsOtp,
-    relyingPartyId,
-    relyingPartyName,
-  } = options;
+  const {hasBasicAuth, hasPasskey, googleIdpId, githubIdpId, hasSmsOtp, relyingPartyId, relyingPartyName} = options;
 
   // 1. Generate Flow Handle and Name
   const parts: string[] = [];

@@ -16,15 +16,15 @@
  * under the License.
  */
 
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {TextField} from '@wso2/oxygen-ui';
 import {useMemo, type CSSProperties, type ReactElement, type ReactNode} from 'react';
 import {Trans, useTranslation} from 'react-i18next';
-import {TextField} from '@wso2/oxygen-ui';
+import {Hint} from '../../hint';
+import TemplatePlaceholder, {containsTemplateLiteral} from '../TemplatePlaceholder';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
-import {Hint} from '../../hint';
-import TemplatePlaceholder, {containsTemplateLiteral} from '../TemplatePlaceholder';
 
 const INPUT_VALIDATION_FIELD_NAMES = {
   label: 'label',
@@ -96,9 +96,11 @@ function DefaultInputAdapter({resource}: DefaultInputAdapterPropsInterface): Rea
   const inputElement = resource as InputElement;
 
   const rawLabel = inputElement?.label ?? '';
-  const labelNode: ReactNode = containsTemplateLiteral(rawLabel)
-    ? <TemplatePlaceholder value={rawLabel} t={t} />
-    : (resolve(rawLabel, {t}) ?? rawLabel);
+  const labelNode: ReactNode = containsTemplateLiteral(rawLabel) ? (
+    <TemplatePlaceholder value={rawLabel} t={t} />
+  ) : (
+    (resolve(rawLabel, {t}) ?? rawLabel)
+  );
 
   return (
     <TextField

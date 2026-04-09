@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import ResourcePanelDraggable from '../ResourcePanelDraggable';
+import {describe, it, expect, vi} from 'vitest';
 import type {Resource} from '../../../models/resources';
+import ResourcePanelDraggable from '../ResourcePanelDraggable';
 
 // Mock Draggable component
 vi.mock('../../dnd/Draggable', () => ({
@@ -65,17 +65,18 @@ vi.mock('../../../utils/resolveStaticResourcePath', () => ({
   default: (path: string) => `/static/${path}`,
 }));
 
-const createMockResource = (overrides: Partial<Resource> = {}): Resource => ({
-  type: 'DRAGGABLE_STEP',
-  resourceType: 'STEP',
-  display: {
-    label: 'Draggable Step',
-    description: 'A draggable step description',
-    image: 'step-icon.svg',
-    showOnResourcePanel: true,
-  },
-  ...overrides,
-} as Resource);
+const createMockResource = (overrides: Partial<Resource> = {}): Resource =>
+  ({
+    type: 'DRAGGABLE_STEP',
+    resourceType: 'STEP',
+    display: {
+      label: 'Draggable Step',
+      description: 'A draggable step description',
+      image: 'step-icon.svg',
+      showOnResourcePanel: true,
+    },
+    ...overrides,
+  }) as Resource;
 
 describe('ResourcePanelDraggable', () => {
   describe('Draggable Wrapper', () => {

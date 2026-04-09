@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import {Box, Stack, Typography} from '@wso2/oxygen-ui';
 import type {JSX, ReactNode} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Box, Stack, Typography} from '@wso2/oxygen-ui';
 
 export interface SectionHeaderProps {
   title: string;

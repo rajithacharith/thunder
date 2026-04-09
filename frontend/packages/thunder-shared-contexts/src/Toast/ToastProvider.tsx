@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import {Alert, Snackbar} from '@wso2/oxygen-ui';
 import {useState, useCallback, useMemo} from 'react';
 import type {SyntheticEvent, PropsWithChildren, JSX} from 'react';
-import {Alert, Snackbar} from '@wso2/oxygen-ui';
 import ToastContext, {type ToastSeverity} from './ToastContext';
 
 /**

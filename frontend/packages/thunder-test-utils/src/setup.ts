@@ -20,10 +20,10 @@
 
 import '@testing-library/jest-dom';
 import {cleanup} from '@testing-library/react';
-import {afterEach, beforeAll, vi} from 'vitest';
+import enUS from '@thunder/i18n/locales/en-US';
 import i18n from 'i18next';
 import {initReactI18next} from 'react-i18next';
-import enUS from '@thunder/i18n/locales/en-US';
+import {afterEach, beforeAll, vi} from 'vitest';
 
 // Initialize i18n for tests
 beforeAll(async () => {
@@ -166,26 +166,21 @@ vi.mock('@asgardeo/react', () => ({
 
 // Mock MUI transition components to prevent RAF-based animation hangs in tests.
 vi.mock('@mui/material/Fade', () => ({
-  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) =>
-    inProp !== false ? children : null,
+  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) => (inProp !== false ? children : null),
 }));
 
 vi.mock('@mui/material/Grow', () => ({
-  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) =>
-    inProp !== false ? children : null,
+  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) => (inProp !== false ? children : null),
 }));
 
 vi.mock('@mui/material/Collapse', () => ({
-  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) =>
-    inProp !== false ? children : null,
+  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) => (inProp !== false ? children : null),
 }));
 
 vi.mock('@mui/material/Slide', () => ({
-  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) =>
-    inProp !== false ? children : null,
+  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) => (inProp !== false ? children : null),
 }));
 
 vi.mock('@mui/material/Zoom', () => ({
-  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) =>
-    inProp !== false ? children : null,
+  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) => (inProp !== false ? children : null),
 }));

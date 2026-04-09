@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import {Box, Checkbox, FormControlLabel, FormHelperText} from '@wso2/oxygen-ui';
 import startCase from 'lodash-es/startCase';
 import {type ReactElement, type SyntheticEvent, useMemo} from 'react';
-import {Box, Checkbox, FormControlLabel, FormHelperText} from '@wso2/oxygen-ui';
-import type {Resource} from '../../models/resources';
 import useValidationStatus from '../../hooks/useValidationStatus';
+import type {Resource} from '../../models/resources';
 
 /**
  * Props interface of {@link CheckboxPropertyField}

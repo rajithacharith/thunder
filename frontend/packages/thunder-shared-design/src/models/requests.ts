@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type {Theme} from './theme';
 import type {LayoutConfig} from './layout';
+import type {Theme} from './theme';
 
 /**
  * Request payload for creating a new theme configuration

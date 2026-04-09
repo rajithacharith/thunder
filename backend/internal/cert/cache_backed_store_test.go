@@ -74,7 +74,7 @@ func (suite *CacheBackedStoreTestSuite) TestGetCertificateByID_CacheHit() {
 	cert := suite.createTestCertificate()
 	cacheKey := cache.CacheKey{Key: "test-cert-id"}
 
-	suite.mockCertByIDCache.On("Get", cacheKey).Return(cert, true)
+	suite.mockCertByIDCache.On("Get", mock.Anything, cacheKey).Return(cert, true)
 
 	result, err := suite.cacheBackedStore.GetCertificateByID(context.Background(), "test-cert-id")
 
@@ -91,10 +91,10 @@ func (suite *CacheBackedStoreTestSuite) TestGetCertificateByID_CacheMiss_Success
 	cacheKey := cache.CacheKey{Key: "test-cert-id"}
 	refCacheKey := getCertByReferenceCacheKey(cert.RefType, cert.RefID)
 
-	suite.mockCertByIDCache.On("Get", cacheKey).Return(nil, false)
+	suite.mockCertByIDCache.On("Get", mock.Anything, cacheKey).Return(nil, false)
 	suite.mockStore.On("GetCertificateByID", mock.Anything, "test-cert-id").Return(cert, nil)
-	suite.mockCertByIDCache.On("Set", cacheKey, cert).Return(nil)
-	suite.mockCertByRefCache.On("Set", refCacheKey, cert).Return(nil)
+	suite.mockCertByIDCache.On("Set", mock.Anything, cacheKey, cert).Return(nil)
+	suite.mockCertByRefCache.On("Set", mock.Anything, refCacheKey, cert).Return(nil)
 
 	result, err := suite.cacheBackedStore.GetCertificateByID(context.Background(), "test-cert-id")
 
@@ -109,7 +109,7 @@ func (suite *CacheBackedStoreTestSuite) TestGetCertificateByID_CacheMiss_Success
 func (suite *CacheBackedStoreTestSuite) TestGetCertificateByID_CacheMiss_StoreError() {
 	cacheKey := cache.CacheKey{Key: "test-id"}
 
-	suite.mockCertByIDCache.On("Get", cacheKey).Return(nil, false)
+	suite.mockCertByIDCache.On("Get", mock.Anything, cacheKey).Return(nil, false)
 	suite.mockStore.On("GetCertificateByID", mock.Anything, "test-id").
 		Return(nil, errors.New("store error"))
 
@@ -124,7 +124,7 @@ func (suite *CacheBackedStoreTestSuite) TestGetCertificateByID_CacheMiss_StoreEr
 func (suite *CacheBackedStoreTestSuite) TestGetCertificateByID_CacheMiss_NilResult() {
 	cacheKey := cache.CacheKey{Key: "test-id"}
 
-	suite.mockCertByIDCache.On("Get", cacheKey).Return(nil, false)
+	suite.mockCertByIDCache.On("Get", mock.Anything, cacheKey).Return(nil, false)
 	suite.mockStore.On("GetCertificateByID", mock.Anything, "test-id").Return(nil, nil)
 
 	result, err := suite.cacheBackedStore.GetCertificateByID(context.Background(), "test-id")
@@ -140,11 +140,11 @@ func (suite *CacheBackedStoreTestSuite) TestGetCertificateByID_CacheMiss_CacheSe
 	cacheKey := cache.CacheKey{Key: "test-cert-id"}
 	refCacheKey := getCertByReferenceCacheKey(cert.RefType, cert.RefID)
 
-	suite.mockCertByIDCache.On("Get", cacheKey).Return(nil, false)
+	suite.mockCertByIDCache.On("Get", mock.Anything, cacheKey).Return(nil, false)
 	suite.mockStore.On("GetCertificateByID", mock.Anything, "test-cert-id").Return(cert, nil)
-	suite.mockCertByIDCache.On("Set", cacheKey, cert).
+	suite.mockCertByIDCache.On("Set", mock.Anything, cacheKey, cert).
 		Return(errors.New("cache error"))
-	suite.mockCertByRefCache.On("Set", refCacheKey, cert).Return(nil)
+	suite.mockCertByRefCache.On("Set", mock.Anything, refCacheKey, cert).Return(nil)
 
 	result, err := suite.cacheBackedStore.GetCertificateByID(context.Background(), "test-cert-id")
 
@@ -163,7 +163,7 @@ func (suite *CacheBackedStoreTestSuite) TestGetCertificateByReference_CacheHit()
 	cert := suite.createTestCertificate()
 	cacheKey := getCertByReferenceCacheKey(CertificateReferenceTypeApplication, "test-app-id")
 
-	suite.mockCertByRefCache.On("Get", cacheKey).Return(cert, true)
+	suite.mockCertByRefCache.On("Get", mock.Anything, cacheKey).Return(cert, true)
 
 	result, err := suite.cacheBackedStore.GetCertificateByReference(context.Background(),
 		CertificateReferenceTypeApplication, "test-app-id")
@@ -180,11 +180,11 @@ func (suite *CacheBackedStoreTestSuite) TestGetCertificateByReference_CacheMiss_
 	cacheKey := getCertByReferenceCacheKey(CertificateReferenceTypeApplication, "test-app-id")
 	idCacheKey := cache.CacheKey{Key: cert.ID}
 
-	suite.mockCertByRefCache.On("Get", cacheKey).Return(nil, false)
+	suite.mockCertByRefCache.On("Get", mock.Anything, cacheKey).Return(nil, false)
 	suite.mockStore.On("GetCertificateByReference", mock.Anything,
 		CertificateReferenceTypeApplication, "test-app-id").Return(cert, nil)
-	suite.mockCertByIDCache.On("Set", idCacheKey, cert).Return(nil)
-	suite.mockCertByRefCache.On("Set", cacheKey, cert).Return(nil)
+	suite.mockCertByIDCache.On("Set", mock.Anything, idCacheKey, cert).Return(nil)
+	suite.mockCertByRefCache.On("Set", mock.Anything, cacheKey, cert).Return(nil)
 
 	result, err := suite.cacheBackedStore.GetCertificateByReference(context.Background(),
 		CertificateReferenceTypeApplication, "test-app-id")
@@ -200,7 +200,7 @@ func (suite *CacheBackedStoreTestSuite) TestGetCertificateByReference_CacheMiss_
 func (suite *CacheBackedStoreTestSuite) TestGetCertificateByReference_CacheMiss_StoreError() {
 	cacheKey := getCertByReferenceCacheKey(CertificateReferenceTypeIDP, "test-id")
 
-	suite.mockCertByRefCache.On("Get", cacheKey).Return(nil, false)
+	suite.mockCertByRefCache.On("Get", mock.Anything, cacheKey).Return(nil, false)
 	suite.mockStore.On("GetCertificateByReference", mock.Anything,
 		CertificateReferenceTypeIDP, "test-id").
 		Return(nil, errors.New("store error"))
@@ -224,8 +224,8 @@ func (suite *CacheBackedStoreTestSuite) TestCreateCertificate_Success() {
 	refCacheKey := getCertByReferenceCacheKey(cert.RefType, cert.RefID)
 
 	suite.mockStore.On("CreateCertificate", mock.Anything, cert).Return(nil)
-	suite.mockCertByIDCache.On("Set", idCacheKey, cert).Return(nil)
-	suite.mockCertByRefCache.On("Set", refCacheKey, cert).Return(nil)
+	suite.mockCertByIDCache.On("Set", mock.Anything, idCacheKey, cert).Return(nil)
+	suite.mockCertByRefCache.On("Set", mock.Anything, refCacheKey, cert).Return(nil)
 
 	err := suite.cacheBackedStore.CreateCertificate(context.Background(), cert)
 
@@ -256,9 +256,9 @@ func (suite *CacheBackedStoreTestSuite) TestCreateCertificate_CacheSetError() {
 	refCacheKey := getCertByReferenceCacheKey(cert.RefType, cert.RefID)
 
 	suite.mockStore.On("CreateCertificate", mock.Anything, cert).Return(nil)
-	suite.mockCertByIDCache.On("Set", idCacheKey, cert).
+	suite.mockCertByIDCache.On("Set", mock.Anything, idCacheKey, cert).
 		Return(errors.New("cache error"))
-	suite.mockCertByRefCache.On("Set", refCacheKey, cert).Return(nil)
+	suite.mockCertByRefCache.On("Set", mock.Anything, refCacheKey, cert).Return(nil)
 
 	err := suite.cacheBackedStore.CreateCertificate(context.Background(), cert)
 
@@ -288,10 +288,10 @@ func (suite *CacheBackedStoreTestSuite) testSuccessfulUpdate(
 	refCacheKey := getCertByReferenceCacheKey(existingCert.RefType, existingCert.RefID)
 
 	mockStoreCall(existingCert, updatedCert)
-	suite.mockCertByIDCache.On("Delete", idCacheKey).Return(nil)
-	suite.mockCertByRefCache.On("Delete", refCacheKey).Return(nil)
-	suite.mockCertByIDCache.On("Set", idCacheKey, updatedCert).Return(nil)
-	suite.mockCertByRefCache.On("Set", refCacheKey, updatedCert).Return(nil)
+	suite.mockCertByIDCache.On("Delete", mock.Anything, idCacheKey).Return(nil)
+	suite.mockCertByRefCache.On("Delete", mock.Anything, refCacheKey).Return(nil)
+	suite.mockCertByIDCache.On("Set", mock.Anything, idCacheKey, updatedCert).Return(nil)
+	suite.mockCertByRefCache.On("Set", mock.Anything, refCacheKey, updatedCert).Return(nil)
 
 	err := updateFunc(context.Background(), existingCert, updatedCert)
 
@@ -345,11 +345,11 @@ func (suite *CacheBackedStoreTestSuite) TestUpdateCertificateByID_CacheInvalidat
 	refCacheKey := getCertByReferenceCacheKey(existingCert.RefType, existingCert.RefID)
 
 	suite.mockStore.On("UpdateCertificateByID", mock.Anything, existingCert, updatedCert).Return(nil)
-	suite.mockCertByIDCache.On("Delete", idCacheKey).
+	suite.mockCertByIDCache.On("Delete", mock.Anything, idCacheKey).
 		Return(errors.New("cache error"))
-	suite.mockCertByRefCache.On("Delete", refCacheKey).Return(nil)
-	suite.mockCertByIDCache.On("Set", idCacheKey, updatedCert).Return(nil)
-	suite.mockCertByRefCache.On("Set", refCacheKey, updatedCert).Return(nil)
+	suite.mockCertByRefCache.On("Delete", mock.Anything, refCacheKey).Return(nil)
+	suite.mockCertByIDCache.On("Set", mock.Anything, idCacheKey, updatedCert).Return(nil)
+	suite.mockCertByRefCache.On("Set", mock.Anything, refCacheKey, updatedCert).Return(nil)
 
 	err := suite.cacheBackedStore.UpdateCertificateByID(context.Background(), existingCert, updatedCert)
 
@@ -399,10 +399,10 @@ func (suite *CacheBackedStoreTestSuite) TestDeleteCertificateByID_CacheHit() {
 	idCacheKey := cache.CacheKey{Key: "test-cert-id"}
 	refCacheKey := getCertByReferenceCacheKey(cert.RefType, cert.RefID)
 
-	suite.mockCertByIDCache.On("Get", idCacheKey).Return(cert, true)
+	suite.mockCertByIDCache.On("Get", mock.Anything, idCacheKey).Return(cert, true)
 	suite.mockStore.On("DeleteCertificateByID", mock.Anything, "test-cert-id").Return(nil)
-	suite.mockCertByIDCache.On("Delete", idCacheKey).Return(nil)
-	suite.mockCertByRefCache.On("Delete", refCacheKey).Return(nil)
+	suite.mockCertByIDCache.On("Delete", mock.Anything, idCacheKey).Return(nil)
+	suite.mockCertByRefCache.On("Delete", mock.Anything, refCacheKey).Return(nil)
 
 	err := suite.cacheBackedStore.DeleteCertificateByID(context.Background(), "test-cert-id")
 
@@ -417,11 +417,11 @@ func (suite *CacheBackedStoreTestSuite) TestDeleteCertificateByID_CacheMiss_Fetc
 	idCacheKey := cache.CacheKey{Key: "test-cert-id"}
 	refCacheKey := getCertByReferenceCacheKey(cert.RefType, cert.RefID)
 
-	suite.mockCertByIDCache.On("Get", idCacheKey).Return(nil, false)
+	suite.mockCertByIDCache.On("Get", mock.Anything, idCacheKey).Return(nil, false)
 	suite.mockStore.On("GetCertificateByID", mock.Anything, "test-cert-id").Return(cert, nil)
 	suite.mockStore.On("DeleteCertificateByID", mock.Anything, "test-cert-id").Return(nil)
-	suite.mockCertByIDCache.On("Delete", idCacheKey).Return(nil)
-	suite.mockCertByRefCache.On("Delete", refCacheKey).Return(nil)
+	suite.mockCertByIDCache.On("Delete", mock.Anything, idCacheKey).Return(nil)
+	suite.mockCertByRefCache.On("Delete", mock.Anything, refCacheKey).Return(nil)
 
 	err := suite.cacheBackedStore.DeleteCertificateByID(context.Background(), "test-cert-id")
 
@@ -434,7 +434,7 @@ func (suite *CacheBackedStoreTestSuite) TestDeleteCertificateByID_CacheMiss_Fetc
 func (suite *CacheBackedStoreTestSuite) TestDeleteCertificateByID_CertNotFound() {
 	idCacheKey := cache.CacheKey{Key: "non-existent"}
 
-	suite.mockCertByIDCache.On("Get", idCacheKey).Return(nil, false)
+	suite.mockCertByIDCache.On("Get", mock.Anything, idCacheKey).Return(nil, false)
 	suite.mockStore.On("GetCertificateByID", mock.Anything, "non-existent").
 		Return(nil, ErrCertificateNotFound)
 
@@ -450,7 +450,7 @@ func (suite *CacheBackedStoreTestSuite) TestDeleteCertificateByID_CertNotFound()
 func (suite *CacheBackedStoreTestSuite) TestDeleteCertificateByID_GetError() {
 	idCacheKey := cache.CacheKey{Key: "test-id"}
 
-	suite.mockCertByIDCache.On("Get", idCacheKey).Return(nil, false)
+	suite.mockCertByIDCache.On("Get", mock.Anything, idCacheKey).Return(nil, false)
 	suite.mockStore.On("GetCertificateByID", mock.Anything, "test-id").
 		Return(nil, errors.New("store error"))
 
@@ -464,7 +464,7 @@ func (suite *CacheBackedStoreTestSuite) TestDeleteCertificateByID_GetError() {
 func (suite *CacheBackedStoreTestSuite) TestDeleteCertificateByID_NilCert() {
 	idCacheKey := cache.CacheKey{Key: "test-id"}
 
-	suite.mockCertByIDCache.On("Get", idCacheKey).Return(nil, false)
+	suite.mockCertByIDCache.On("Get", mock.Anything, idCacheKey).Return(nil, false)
 	suite.mockStore.On("GetCertificateByID", mock.Anything, "test-id").Return(nil, nil)
 
 	err := suite.cacheBackedStore.DeleteCertificateByID(context.Background(), "test-id")
@@ -479,7 +479,7 @@ func (suite *CacheBackedStoreTestSuite) TestDeleteCertificateByID_StoreDeleteErr
 	cert := suite.createTestCertificate()
 	idCacheKey := cache.CacheKey{Key: "test-cert-id"}
 
-	suite.mockCertByIDCache.On("Get", idCacheKey).Return(cert, true)
+	suite.mockCertByIDCache.On("Get", mock.Anything, idCacheKey).Return(cert, true)
 	suite.mockStore.On("DeleteCertificateByID", mock.Anything, "test-cert-id").
 		Return(errors.New("delete error"))
 
@@ -498,11 +498,11 @@ func (suite *CacheBackedStoreTestSuite) TestDeleteCertificateByReference_CacheHi
 	refCacheKey := getCertByReferenceCacheKey(CertificateReferenceTypeApplication, "test-app-id")
 	idCacheKey := cache.CacheKey{Key: cert.ID}
 
-	suite.mockCertByRefCache.On("Get", refCacheKey).Return(cert, true)
+	suite.mockCertByRefCache.On("Get", mock.Anything, refCacheKey).Return(cert, true)
 	suite.mockStore.On("DeleteCertificateByReference", mock.Anything,
 		CertificateReferenceTypeApplication, "test-app-id").Return(nil)
-	suite.mockCertByIDCache.On("Delete", idCacheKey).Return(nil)
-	suite.mockCertByRefCache.On("Delete", refCacheKey).Return(nil)
+	suite.mockCertByIDCache.On("Delete", mock.Anything, idCacheKey).Return(nil)
+	suite.mockCertByRefCache.On("Delete", mock.Anything, refCacheKey).Return(nil)
 
 	err := suite.cacheBackedStore.DeleteCertificateByReference(context.Background(),
 		CertificateReferenceTypeApplication, "test-app-id")
@@ -518,13 +518,13 @@ func (suite *CacheBackedStoreTestSuite) TestDeleteCertificateByReference_CacheMi
 	refCacheKey := getCertByReferenceCacheKey(CertificateReferenceTypeApplication, "test-app-id")
 	idCacheKey := cache.CacheKey{Key: cert.ID}
 
-	suite.mockCertByRefCache.On("Get", refCacheKey).Return(nil, false)
+	suite.mockCertByRefCache.On("Get", mock.Anything, refCacheKey).Return(nil, false)
 	suite.mockStore.On("GetCertificateByReference", mock.Anything,
 		CertificateReferenceTypeApplication, "test-app-id").Return(cert, nil)
 	suite.mockStore.On("DeleteCertificateByReference", mock.Anything,
 		CertificateReferenceTypeApplication, "test-app-id").Return(nil)
-	suite.mockCertByIDCache.On("Delete", idCacheKey).Return(nil)
-	suite.mockCertByRefCache.On("Delete", refCacheKey).Return(nil)
+	suite.mockCertByIDCache.On("Delete", mock.Anything, idCacheKey).Return(nil)
+	suite.mockCertByRefCache.On("Delete", mock.Anything, refCacheKey).Return(nil)
 
 	err := suite.cacheBackedStore.DeleteCertificateByReference(context.Background(),
 		CertificateReferenceTypeApplication, "test-app-id")
@@ -538,7 +538,7 @@ func (suite *CacheBackedStoreTestSuite) TestDeleteCertificateByReference_CacheMi
 func (suite *CacheBackedStoreTestSuite) TestDeleteCertificateByReference_CertNotFound() {
 	refCacheKey := getCertByReferenceCacheKey(CertificateReferenceTypeIDP, "non-existent")
 
-	suite.mockCertByRefCache.On("Get", refCacheKey).Return(nil, false)
+	suite.mockCertByRefCache.On("Get", mock.Anything, refCacheKey).Return(nil, false)
 	suite.mockStore.On("GetCertificateByReference", mock.Anything,
 		CertificateReferenceTypeIDP, "non-existent").
 		Return(nil, ErrCertificateNotFound)
@@ -555,7 +555,7 @@ func (suite *CacheBackedStoreTestSuite) TestDeleteCertificateByReference_CertNot
 func (suite *CacheBackedStoreTestSuite) TestDeleteCertificateByReference_GetError() {
 	refCacheKey := getCertByReferenceCacheKey(CertificateReferenceTypeApplication, "test-id")
 
-	suite.mockCertByRefCache.On("Get", refCacheKey).Return(nil, false)
+	suite.mockCertByRefCache.On("Get", mock.Anything, refCacheKey).Return(nil, false)
 	suite.mockStore.On("GetCertificateByReference", mock.Anything,
 		CertificateReferenceTypeApplication, "test-id").
 		Return(nil, errors.New("store error"))

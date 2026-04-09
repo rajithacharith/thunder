@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import OrganizationUnitTreeConstants from '../constants/organization-unit-tree-constants';
 import type {OrganizationUnit} from '../models/organization-unit';
 import type {OrganizationUnitTreeItem} from '../models/organization-unit-tree';
-import OrganizationUnitTreeConstants from '../constants/organization-unit-tree-constants';
 
 export default function buildTreeItems(ous: OrganizationUnit[]): OrganizationUnitTreeItem[] {
   return ous.map((ou) => ({

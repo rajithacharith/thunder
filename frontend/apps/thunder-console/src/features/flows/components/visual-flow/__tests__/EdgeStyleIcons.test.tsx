@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {render} from '@testing-library/react';
+import {describe, it, expect} from 'vitest';
 import {BezierEdgeIcon, SmoothStepEdgeIcon, StepEdgeIcon} from '../EdgeStyleIcons';
 
 describe('EdgeStyleIcons', () => {

@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import {memo, useCallback, useMemo, useRef, type DragEvent, type ReactElement} from 'react';
-import {useTranslation} from 'react-i18next';
-import {Handle, Position, useNodeId, useReactFlow} from '@xyflow/react';
 import {Box, IconButton, Tooltip, Typography} from '@wso2/oxygen-ui';
 import {CrossIcon} from '@wso2/oxygen-ui-icons-react';
+import {Handle, Position, useNodeId, useReactFlow} from '@xyflow/react';
+import {memo, useCallback, useMemo, useRef, type DragEvent, type ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
+import type {CommonStepFactoryPropsInterface} from '../CommonStepFactory';
 import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
 import type {Resource} from '@/features/flows/models/resources';
-import type {CommonStepFactoryPropsInterface} from '../CommonStepFactory';
 import './Rule.scss';
 
 /**
@@ -46,26 +46,27 @@ function Rule({data, id}: RulePropsInterface): ReactElement {
 
   const ref = useRef<HTMLDivElement>(null);
 
-  const handleDragOver: (event: DragEvent<HTMLDivElement>) => void = useCallback(
-    (event: DragEvent<HTMLDivElement>) => {
-      event.preventDefault();
-      const {dataTransfer} = event;
-      if (dataTransfer) {
-        dataTransfer.dropEffect = 'move';
-      }
-    },
-    [],
-  );
+  const handleDragOver: (event: DragEvent<HTMLDivElement>) => void = useCallback((event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const {dataTransfer} = event;
+    if (dataTransfer) {
+      dataTransfer.dropEffect = 'move';
+    }
+  }, []);
 
   const handleDrop: (e: DragEvent<HTMLDivElement>) => void = useCallback((event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
   }, []);
 
   // Memoize ruleStep to prevent recreation on each render
-  const ruleStep: Resource = useMemo(() => ({
-    ...(typeof data === 'object' && data !== null ? data : {}),
-    id: id ?? nodeId ?? '',
-  } as Resource), [data, id, nodeId]);
+  const ruleStep: Resource = useMemo(
+    () =>
+      ({
+        ...(typeof data === 'object' && data !== null ? data : {}),
+        id: id ?? nodeId ?? '',
+      }) as Resource,
+    [data, id, nodeId],
+  );
 
   return (
     <div ref={ref} className="flow-builder-rule" onDrop={handleDrop} onDrag={handleDragOver}>

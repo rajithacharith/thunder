@@ -48,7 +48,7 @@ type CompleteFlowDefinition struct {
 	Nodes         []NodeDefinition `json:"nodes,omitempty" yaml:"nodes" jsonschema:"List of nodes defining the flow logic."`
 	CreatedAt     string           `json:"createdAt,omitempty" yaml:"createdAt" jsonschema:"Timestamp when the flow was created."`
 	UpdatedAt     string           `json:"updatedAt,omitempty" yaml:"updatedAt" jsonschema:"Timestamp when the flow was last updated."`
-	IsReadOnly    bool             `json:"isReadOnly,omitempty" yaml:"isReadOnly" jsonschema:"Whether the flow is immutable (declarative)."`
+	IsReadOnly    bool             `json:"isReadOnly" yaml:"isReadOnly" jsonschema:"Whether the flow is immutable (declarative)."`
 }
 
 // BasicFlowDefinition represents basic information about a flow definition.

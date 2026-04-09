@@ -16,19 +16,16 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {useContext} from 'react';
+import {describe, it, expect} from 'vitest';
 import LoginFlowBuilderContext from '../LoginFlowBuilderContext';
 
 // Test consumer component
 function TestConsumer() {
   const context = useContext(LoginFlowBuilderContext);
   return (
-    <div
-      data-testid="context-consumer"
-      data-is-null={context === null ? 'true' : 'false'}
-    >
+    <div data-testid="context-consumer" data-is-null={context === null ? 'true' : 'false'}>
       Context Value: {context === null ? 'null' : 'object'}
     </div>
   );

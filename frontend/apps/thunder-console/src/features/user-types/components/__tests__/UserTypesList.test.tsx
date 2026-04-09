@@ -17,14 +17,14 @@
  */
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, no-underscore-dangle */
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
-import {type ReactElement, type ReactNode} from 'react';
 import type * as OxygenUI from '@wso2/oxygen-ui';
-import UserTypesList from '../UserTypesList';
-import type useGetUserTypesHook from '../../api/useGetUserTypes';
+import {type ReactElement, type ReactNode} from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type useDeleteUserTypeHook from '../../api/useDeleteUserType';
+import type useGetUserTypesHook from '../../api/useGetUserTypes';
 import type {UserSchemaListResponse, UserSchemaListItem} from '../../types/user-types';
+import UserTypesList from '../UserTypesList';
 
 const {mockLoggerError} = vi.hoisted(() => ({
   mockLoggerError: vi.fn(),
@@ -285,7 +285,7 @@ describe('UserTypesList', () => {
     });
   });
 
-  it('renders inline delete buttons for each row', async () => {
+  it('renders inline delete buttons for each row', () => {
     render(<UserTypesList />);
 
     // The component uses inline delete buttons instead of a menu
@@ -385,13 +385,11 @@ describe('UserTypesList', () => {
     render(<UserTypesList />);
 
     const row = screen.getByTestId('row-schema1');
-    if (row) {
-      await user.click(row);
+    await user.click(row);
 
-      await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/user-types/schema1');
-      });
-    }
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/user-types/schema1');
+    });
   });
 
   it('closes snackbar when close button is clicked', async () => {

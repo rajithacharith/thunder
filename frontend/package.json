@@ -28,22 +28,20 @@
     "build:packages": "nx run-many --target=build --projects=packages/*",
     "clean": "nx run-many --target=clean --all",
     "i18n:extract": "pnpm i18next-cli sync",
+    "format:check": "prettier --check --cache .",
+    "format:fix": "prettier --write --cache .",
     "lint": "nx run-many --target=lint --all --parallel",
     "lint:fix": "nx run-many --target=fix:lint --all --parallel",
     "test": "nx run-many --target=test --all --parallel",
     "typecheck": "nx run-many --target=typecheck --all --parallel"
   },
   "devDependencies": {
-    "@nx/js": "22.5.1",
-    "@swc-node/register": "1.11.1",
-    "@swc/core": "1.15.8",
-    "@swc/helpers": "0.5.18",
     "@thunder/eslint-plugin-thunder": "workspace:^",
     "@thunder/logger": "workspace:^",
     "@thunder/prettier-config": "workspace:^",
     "eslint": "catalog:",
-    "i18next-cli": "^1.47.12",
-    "nx": "22.5.1",
+    "i18next-cli": "^1.51.3",
+    "nx": "22.6.2",
     "prettier": "catalog:",
     "rimraf": "catalog:",
     "tslib": "catalog:",
@@ -52,10 +50,12 @@
   "pnpm": {
     "overrides": {
       "flatted@3.3.3": ">=3.4.0",
-      "minimatch@10.1.1": ">=10.2.1",
+      "picomatch": ">=4.0.4",
       "vite": "catalog:",
       "nx>axios": ">=1.13.5",
-      "rollup": ">=4.59.0"
+      "dompurify": ">=3.3.2",
+      "minimatch@>=5.0.0 <5.1.8": ">=5.1.8",
+      "serialize-javascript": ">=7.0.3"
     },
     "packageExtensions": {
       "@hookform/resolvers": {

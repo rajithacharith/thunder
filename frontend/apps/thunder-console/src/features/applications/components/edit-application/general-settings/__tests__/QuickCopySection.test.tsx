@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import QuickCopySection from '../QuickCopySection';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {Application} from '../../../../models/application';
 import type {OAuth2Config} from '../../../../models/oauth';
+import QuickCopySection from '../QuickCopySection';
 
 // Mock the SettingsCard component
 vi.mock('../../../../../../components/SettingsCard', () => ({

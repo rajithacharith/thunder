@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi} from 'vitest';
 import LoginFlowBuilderPage from '../LoginFlowPage';
 
 // Mock ReactFlowProvider
@@ -34,9 +34,7 @@ vi.mock('../../components/LoginFlowBuilder', () => ({
 
 // Mock LoginFlowBuilderProvider
 vi.mock('../../context/LoginFlowBuilderProvider', () => ({
-  default: ({children}: {children: React.ReactNode}) => (
-    <div data-testid="login-flow-builder-provider">{children}</div>
-  ),
+  default: ({children}: {children: React.ReactNode}) => <div data-testid="login-flow-builder-provider">{children}</div>,
 }));
 
 describe('LoginFlowBuilderPage', () => {

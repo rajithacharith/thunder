@@ -16,13 +16,13 @@
  * under the License.
  */
 
+import {I18N_KEY_PATTERN, META_KEY_PATTERN, isMetaTemplatePattern} from '@thunder/utils';
+import {Box, Card, CardContent, CardHeader, IconButton, Popover, Tab, Tabs} from '@wso2/oxygen-ui';
+import {XIcon} from '@wso2/oxygen-ui-icons-react';
 import lowerCase from 'lodash-es/lowerCase';
 import startCase from 'lodash-es/startCase';
 import {type ReactElement, type SyntheticEvent, useCallback, useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Box, Card, CardContent, CardHeader, IconButton, Popover, Tab, Tabs} from '@wso2/oxygen-ui';
-import {XIcon} from '@wso2/oxygen-ui-icons-react';
-import {I18N_KEY_PATTERN, META_KEY_PATTERN, isMetaTemplatePattern} from '@thunder/utils';
 import {I18nConfigurationCardContent} from './I18nConfigurationCard';
 import {MetaConfigurationCardContent} from './MetaConfigurationCard';
 
@@ -63,7 +63,9 @@ function DynamicValuePopover({
   onChange,
 }: DynamicValuePopoverPropsInterface): ReactElement {
   const {t} = useTranslation();
-  const [activeTab, setActiveTab] = useState<number>(() => (isMetaTemplatePattern(value) ? TAB_VARIABLES : TAB_TRANSLATION));
+  const [activeTab, setActiveTab] = useState<number>(() =>
+    isMetaTemplatePattern(value) ? TAB_VARIABLES : TAB_TRANSLATION,
+  );
 
   /**
    * Reset active tab based on current value when popover opens.
@@ -109,11 +111,7 @@ function DynamicValuePopover({
           }
           sx={{pb: 0}}
         />
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          sx={{px: 2, borderBottom: 1, borderColor: 'divider'}}
-        >
+        <Tabs value={activeTab} onChange={handleTabChange} sx={{px: 2, borderBottom: 1, borderColor: 'divider'}}>
           <Tab label={t('flows:core.elements.textPropertyField.dynamicValuePopover.tabs.translation')} />
           <Tab label={t('flows:core.elements.textPropertyField.dynamicValuePopover.tabs.variables')} />
         </Tabs>

@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import {render, screen, waitFor} from '@thunder/test-utils';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import userEvent from '@testing-library/user-event';
 import type {Theme} from '@thunder/shared-design';
+import {render, screen, waitFor} from '@thunder/test-utils';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import ApplicationCreateProvider from '../../contexts/ApplicationCreate/ApplicationCreateProvider';
 import type {Application} from '../../models/application';
 import ApplicationCreatePage from '../ApplicationCreatePage';
-import ApplicationCreateProvider from '../../contexts/ApplicationCreate/ApplicationCreateProvider';
 
 // Mock functions
 const mockCreateApplication = vi.fn();
@@ -488,14 +488,11 @@ describe('ApplicationCreatePage', () => {
 
       const closeButton = container.querySelector('button');
       expect(closeButton).toBeInTheDocument();
+      await user.click(closeButton!);
 
-      if (closeButton) {
-        await user.click(closeButton);
-
-        await waitFor(() => {
-          expect(mockNavigate).toHaveBeenCalledWith('/applications');
-        });
-      }
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/applications');
+      });
     });
   });
 

@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import ExecutionFactory from '../ExecutionFactory';
 import type {Step} from '@/features/flows/models/steps';
 import {ExecutionTypes} from '@/features/flows/models/steps';
-import ExecutionFactory from '../ExecutionFactory';
 
 // Use vi.hoisted to define mock function before vi.mock hoisting
 const mockUseColorScheme = vi.hoisted(() =>

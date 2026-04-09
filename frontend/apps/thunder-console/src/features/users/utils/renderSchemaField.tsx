@@ -16,12 +16,22 @@
  * under the License.
  */
 
+import {
+  Box,
+  Typography,
+  TextField,
+  FormLabel,
+  FormControl,
+  Select,
+  MenuItem,
+  Checkbox,
+  FormControlLabel,
+} from '@wso2/oxygen-ui';
 import {Controller} from 'react-hook-form';
 import type {Control, FieldErrors, Path} from 'react-hook-form';
-import {Box, Typography, TextField, FormLabel, FormControl, Select, MenuItem, Checkbox, FormControlLabel} from '@wso2/oxygen-ui';
-import type {PropertyDefinition} from '../types/users';
 import ArrayFieldInput from '../components/ArrayFieldInput';
 import CredentialFieldInput from '../components/CredentialFieldInput';
+import type {PropertyDefinition} from '../types/users';
 
 /**
  * Helper function to render a form field based on the property definition

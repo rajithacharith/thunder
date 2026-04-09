@@ -16,8 +16,15 @@
  * under the License.
  */
 
-import {type ChangeEvent, type ReactElement, type SyntheticEvent, useCallback, useMemo, useRef, useState} from 'react';
-import {useTranslation} from 'react-i18next';
+import {
+  useGetLanguages,
+  useGetTranslations,
+  useUpdateTranslation,
+  NamespaceConstants,
+  I18nDefaultConstants,
+} from '@thunder/i18n';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {isI18nTemplatePattern, I18N_KEY_PATTERN} from '@thunder/utils';
 import {
   Alert,
   Autocomplete,
@@ -39,15 +46,8 @@ import {
   Typography,
 } from '@wso2/oxygen-ui';
 import {PlusIcon, SquareFunction, XIcon} from '@wso2/oxygen-ui-icons-react';
-import {
-  useGetLanguages,
-  useGetTranslations,
-  useUpdateTranslation,
-  NamespaceConstants,
-  I18nDefaultConstants,
-} from '@thunder/i18n';
-import {isI18nTemplatePattern, I18N_KEY_PATTERN} from '@thunder/utils';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {type ChangeEvent, type ReactElement, type SyntheticEvent, useCallback, useMemo, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {invalidateI18nCache} from '../../../../i18n/invalidate-i18n-cache';
 
 /**
@@ -443,7 +443,7 @@ export default function I18nTextInput({
 }: I18nTextInputProps): ReactElement {
   const {t} = useTranslation();
   const {resolve} = useTemplateLiteralResolver();
-  const iconButtonRef = useRef<HTMLButtonElement>(null);
+  const [iconButtonEl, setIconButtonEl] = useState<HTMLButtonElement | null>(null);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   const isDynamic = isI18nTemplatePattern(value);
@@ -475,7 +475,7 @@ export default function I18nTextInput({
             <InputAdornment position="end">
               <Tooltip title={t('userTypes:displayNameI18n.tooltip', 'Configure translation')}>
                 <IconButton
-                  ref={iconButtonRef}
+                  ref={setIconButtonEl}
                   onClick={() => setIsPopoverOpen(!isPopoverOpen)}
                   size="small"
                   edge="end"
@@ -509,7 +509,7 @@ export default function I18nTextInput({
       )}
       <I18nPopover
         open={isPopoverOpen}
-        anchorEl={iconButtonRef.current}
+        anchorEl={iconButtonEl}
         onClose={() => setIsPopoverOpen(false)}
         value={value}
         onChange={onChange}

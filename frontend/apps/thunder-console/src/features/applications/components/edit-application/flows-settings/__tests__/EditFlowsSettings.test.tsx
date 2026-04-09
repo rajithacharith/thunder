@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
-import EditFlowsSettings from '../EditFlowsSettings';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {Application} from '../../../../models/application';
+import EditFlowsSettings from '../EditFlowsSettings';
 
 // Mock the child components
 vi.mock('../AuthenticationFlowSection', () => ({

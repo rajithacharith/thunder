@@ -48,7 +48,7 @@ General rules for all Thunder frontend projects:
 Rules for TypeScript projects:
 
 - Extends `@typescript-eslint/recommended`
-- `@thunder/copyright-header`: Enforces copyright headers  
+- `@thunder/copyright-header`: Enforces copyright headers
 - `@thunder/no-internal-imports`: Prevents internal imports
 
 #### `react`
@@ -56,7 +56,7 @@ Rules for TypeScript projects:
 Rules for React projects:
 
 - Extends `plugin:react/recommended` and `plugin:react-hooks/recommended`
-- `@thunder/copyright-header`: Enforces copyright headers  
+- `@thunder/copyright-header`: Enforces copyright headers
 - `@thunder/no-internal-imports`: Prevents internal imports
 - React-specific rules and settings
 
@@ -65,12 +65,12 @@ Rules for React projects:
 Rules for Next.js projects:
 
 - Extends `next/core-web-vitals`
-- `@thunder/copyright-header`: Enforces copyright headers  
+- `@thunder/copyright-header`: Enforces copyright headers
 - `@thunder/no-internal-imports`: Prevents internal imports
 
 Rules for TypeScript frontend projects:
 
-- `@thunder/copyright-header`: Enforces copyright headers  
+- `@thunder/copyright-header`: Enforces copyright headers
 - `@thunder/no-internal-imports`: Prevents internal imports
 
 ## Rules
@@ -111,12 +111,12 @@ Prevents importing from internal directories of other modules to maintain proper
 
 ```js
 // ❌ Incorrect - importing from internal path
-import { secret } from 'package/internal/secret';
-import { build } from 'package/lib/build';
+import {secret} from 'package/internal/secret';
+import {build} from 'package/lib/build';
 
 // ✅ Correct - using public API
-import { publicApi } from 'package';
-import { helper } from './helper'; // relative imports are OK
+import {publicApi} from 'package';
+import {helper} from './helper'; // relative imports are OK
 ```
 
 ## Development

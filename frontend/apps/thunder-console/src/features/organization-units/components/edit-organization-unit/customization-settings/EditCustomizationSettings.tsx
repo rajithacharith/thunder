@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
 import {Stack} from '@wso2/oxygen-ui';
-import type {OrganizationUnit} from '../../../models/organization-unit';
+import type {JSX} from 'react';
 import AppearanceSection from './AppearanceSection';
+import type {OrganizationUnit} from '../../../models/organization-unit';
 
 /**
  * Props for the {@link EditCustomizationSettings} component.

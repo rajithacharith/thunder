@@ -17,9 +17,9 @@
  */
 
 import {Box, Typography, Stack, Autocomplete, TextField, Divider} from '@wso2/oxygen-ui';
+import {Workflow} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useMemo} from 'react';
-import {Workflow} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {type BasicFlowDefinition} from '../../../../flows/models/responses';
 

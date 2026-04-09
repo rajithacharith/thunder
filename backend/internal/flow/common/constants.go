@@ -135,6 +135,8 @@ const (
 	DataInviteLink = "inviteLink"
 	// DataEmailSent is the key used to indicate that an email was sent successfully in the flow response.
 	DataEmailSent = "emailSent"
+	// DataRootOUID is the key used to pass the root OU ID to the frontend for the OU tree picker.
+	DataRootOUID = "rootOuId"
 )
 
 // DefaultHTTPTimeout defines the default timeout duration for HTTP requests.
@@ -157,6 +159,8 @@ const (
 	RuntimeKeyUserEligibleForProvisioning = "userEligibleForProvisioning"
 	// RuntimeKeySkipProvisioning indicates whether to skip provisioning
 	RuntimeKeySkipProvisioning = "skipProvisioning"
+	// RuntimeKeyClientID holds the OAuth client ID for the current flow execution, if applicable.
+	RuntimeKeyClientID = "clientId"
 	// RuntimeKeyRequestedPermissions holds the space-separated permission scopes requested by the OAuth client.
 	RuntimeKeyRequestedPermissions = "requested_permissions"
 	// RuntimeKeyRequiredEssentialAttributes holds the space-separated essential user attributes required for the flow.

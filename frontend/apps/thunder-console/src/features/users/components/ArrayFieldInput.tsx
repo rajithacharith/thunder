@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {useState} from 'react';
 import {Box, TextField, Chip, IconButton} from '@wso2/oxygen-ui';
 import {Plus} from '@wso2/oxygen-ui-icons-react';
+import {useState} from 'react';
 
 /**
  * Array input component for adding multiple values as chips

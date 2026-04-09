@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeAll, afterEach} from 'vitest';
 import {existsSync, mkdirSync, writeFileSync, readFileSync, rmSync} from 'fs';
-import {join} from 'path';
 import {tmpdir} from 'os';
+import {join} from 'path';
+import {describe, it, expect, beforeAll, afterEach} from 'vitest';
 import createFilesFromTemplates from '../createFilesFromTemplates';
 import registerHandlebarsHelpers from '../registerHandlebarsHelpers';
 

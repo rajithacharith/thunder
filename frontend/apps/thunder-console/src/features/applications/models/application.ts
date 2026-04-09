@@ -224,6 +224,13 @@ export interface Application {
   themeId?: string;
 
   /**
+   * Layout configuration ID
+   * References a layout that customizes the screen structure and component positioning
+   * @example '96c62e6d-9297-4295-8195-d28dfe0c9ff7'
+   */
+  layoutId?: string;
+
+  /**
    * Application template identifier
    * Indicates which template was used to create this application
    * @example 'react', 'nextjs', 'browser', 'mobile'

@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import type {ReactNode} from 'react';
-import {ElementCategories, type Element as FlowElement} from '@/features/flows/models/elements';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import FormAdapter from '../FormAdapter';
+import {ElementCategories, type Element as FlowElement} from '@/features/flows/models/elements';
 
 // Mock dependencies
 vi.mock('../FormAdapter.scss', () => ({}));

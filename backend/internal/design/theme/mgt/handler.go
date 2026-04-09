@@ -63,13 +63,17 @@ func (th *themeMgtHandler) HandleThemeListRequest(w http.ResponseWriter, r *http
 
 	themes := make([]ThemeListItem, 0, len(themeList.Themes))
 	for _, theme := range themeList.Themes {
+		defaultColorScheme, primaryColor := extractThemeColorInfo(theme.Theme)
 		themes = append(themes, ThemeListItem{
-			ID:          theme.ID,
-			Handle:      theme.Handle,
-			DisplayName: theme.DisplayName,
-			Description: theme.Description,
-			CreatedAt:   theme.CreatedAt,
-			UpdatedAt:   theme.UpdatedAt,
+			ID:                 theme.ID,
+			Handle:             theme.Handle,
+			DisplayName:        theme.DisplayName,
+			Description:        theme.Description,
+			DefaultColorScheme: defaultColorScheme,
+			PrimaryColor:       primaryColor,
+			CreatedAt:          theme.CreatedAt,
+			UpdatedAt:          theme.UpdatedAt,
+			IsReadOnly:         theme.IsReadOnly,
 		})
 	}
 

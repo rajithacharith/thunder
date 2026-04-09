@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import {cn} from '@thunder/utils';
 import {ColorSchemeImage, Stack, Typography} from '@wso2/oxygen-ui';
 import {Cloud, ShieldCheck, Zap, TerminalSquare} from '@wso2/oxygen-ui-icons-react';
-import {cn} from '@thunder/utils';
 import type {JSX} from 'react';
 
 const items: {
@@ -55,7 +55,14 @@ export default function SignInSlogan(): JSX.Element {
   };
 
   return (
-    <Stack direction="column" alignItems="start" gap={5} maxWidth={450} display={{xs: 'none', md: 'flex'}} className={cn('SignInSlogan--root')}>
+    <Stack
+      direction="column"
+      alignItems="start"
+      gap={5}
+      maxWidth={450}
+      display={{xs: 'none', md: 'flex'}}
+      className={cn('SignInSlogan--root')}
+    >
       <ColorSchemeImage src={logoSrc} alt={{light: 'Logo (Light)', dark: 'Logo (Dark)'}} height={30} width="auto" />
       <Stack sx={{flexDirection: 'column', alignSelf: 'center', gap: 4}}>
         {items.map((item) => (

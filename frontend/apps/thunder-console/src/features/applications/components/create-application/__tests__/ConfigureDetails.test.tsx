@@ -16,18 +16,18 @@
  * under the License.
  */
 
-import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {LoggerProvider, LogLevel} from '@thunder/logger';
-import ConfigureDetails from '../ConfigureDetails';
-import type {ApplicationTemplate} from '../../../models/application-templates';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {AuthenticatorTypes} from '../../../../integrations/models/authenticators';
 import ApplicationCreateContext, {
   type ApplicationCreateContextType,
 } from '../../../contexts/ApplicationCreate/ApplicationCreateContext';
 import {TechnologyApplicationTemplate, PlatformApplicationTemplate} from '../../../models/application-templates';
-import {getDefaultOAuthConfig, TokenEndpointAuthMethods} from '../../../models/oauth';
-import {AuthenticatorTypes} from '../../../../integrations/models/authenticators';
+import type {ApplicationTemplate} from '../../../models/application-templates';
+import {TokenEndpointAuthMethods} from '../../../models/oauth';
+import ConfigureDetails from '../ConfigureDetails';
 
 let translationLookup = (key: string): string => key;
 
@@ -38,18 +38,21 @@ vi.mock('react-i18next', () => ({
 }));
 
 const createTemplate = (name: string, redirectUris?: string[]): ApplicationTemplate => ({
-  name,
   description: `${name} description`,
-  inboundAuthConfig: [
-    {
-      type: 'oauth2',
-      config: {
-        ...getDefaultOAuthConfig(),
-        redirectUris,
-        tokenEndpointAuthMethod: TokenEndpointAuthMethods.CLIENT_SECRET_BASIC,
+  defaults: {
+    name,
+    inboundAuthConfig: [
+      {
+        type: 'oauth2',
+        config: {
+          redirectUris,
+          grantTypes: ['authorization_code'],
+          responseTypes: ['code'],
+          tokenEndpointAuthMethod: TokenEndpointAuthMethods.CLIENT_SECRET_BASIC,
+        },
       },
-    },
-  ],
+    ],
+  },
 });
 
 const renderWithContext = (
@@ -370,9 +373,12 @@ describe('ConfigureDetails', () => {
 
   it('renders user type selection when multiple user types are available', () => {
     // Create template with empty allowedUserTypes array to trigger user type selection
-    const template = {
+    const template: ApplicationTemplate = {
       ...createTemplate('Browser App', []),
-      allowedUserTypes: [], // Empty array means user types selection is required
+      defaults: {
+        ...createTemplate('Browser App', []).defaults,
+        allowedUserTypes: [], // Empty array means user types selection is required
+      },
     };
     const userTypes = [
       {id: 'user-type-1', name: 'Customer', ouId: 'ou-1', allowSelfRegistration: true},
@@ -398,9 +404,12 @@ describe('ConfigureDetails', () => {
 
   it('calls onUserTypesChange when user type selection changes', async () => {
     // Create template with empty allowedUserTypes array to trigger user type selection
-    const template = {
+    const template: ApplicationTemplate = {
       ...createTemplate('Browser App', []),
-      allowedUserTypes: [], // Empty array means user types selection is required
+      defaults: {
+        ...createTemplate('Browser App', []).defaults,
+        allowedUserTypes: [], // Empty array means user types selection is required
+      },
     };
     const userTypes = [
       {id: 'user-type-1', name: 'Customer', ouId: 'ou-1', allowSelfRegistration: true},
@@ -619,7 +628,7 @@ describe('ConfigureDetails', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('initializes passkey relying party defaults from hostname and app name', async () => {
+  it('initializes passkey relying party defaults from hostname and app name', () => {
     const template = createTemplate('Browser App', ['https://example.com/callback']);
 
     renderWithContext(

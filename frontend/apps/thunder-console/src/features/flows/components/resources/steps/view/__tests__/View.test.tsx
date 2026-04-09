@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import type {Element} from '@/features/flows/models/elements';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import View from '../View';
+import type {Element} from '@/features/flows/models/elements';
 
 // Mock i18next
 const translations: Record<string, string> = {
@@ -338,10 +338,9 @@ describe('View', () => {
       render(<View onActionPanelDoubleClick={onDoubleClick} />);
 
       const actionPanel = screen.getByText('View').closest('.flow-builder-step-action-panel');
-      if (actionPanel) {
-        fireEvent.doubleClick(actionPanel);
-        expect(onDoubleClick).toHaveBeenCalled();
-      }
+      expect(actionPanel).not.toBeNull();
+      fireEvent.doubleClick(actionPanel!);
+      expect(onDoubleClick).toHaveBeenCalled();
     });
   });
 

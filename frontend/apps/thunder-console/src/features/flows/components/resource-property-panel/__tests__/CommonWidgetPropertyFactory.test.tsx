@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {render} from '@testing-library/react';
-import CommonWidgetPropertyFactory from '../CommonWidgetPropertyFactory';
+import {describe, it, expect} from 'vitest';
+import {ElementTypes} from '../../../models/elements';
 import type {Resource} from '../../../models/resources';
 import {WidgetTypes} from '../../../models/widget';
-import {ElementTypes} from '../../../models/elements';
+import CommonWidgetPropertyFactory from '../CommonWidgetPropertyFactory';
 
 describe('CommonWidgetPropertyFactory', () => {
   describe('Default Behavior', () => {

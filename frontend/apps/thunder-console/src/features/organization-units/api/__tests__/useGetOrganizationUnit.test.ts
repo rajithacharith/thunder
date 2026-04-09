@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
-import useGetOrganizationUnit from '../useGetOrganizationUnit';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import type {OrganizationUnit} from '../../models/organization-unit';
+import useGetOrganizationUnit from '../useGetOrganizationUnit';
 
 // Mock useAsgardeo
 const mockHttpRequest = vi.fn();
@@ -104,7 +104,7 @@ describe('useGetOrganizationUnit', () => {
     expect(mockHttpRequest).not.toHaveBeenCalled();
   });
 
-  it('should set loading state during fetch', async () => {
+  it('should set loading state during fetch', () => {
     mockHttpRequest.mockImplementation(
       () =>
         new Promise(() => {

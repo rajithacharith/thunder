@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, expect, it, vi, beforeEach} from 'vitest';
 import {render, screen, userEvent, waitFor} from '@thunder/test-utils';
+import {describe, expect, it, vi, beforeEach} from 'vitest';
 import I18nTextInput from '../I18nTextInput';
 
 const {mockResolve, mockMutate, mockAddResourceBundle, mockInvalidateI18nCache, mockLanguages, mockTranslations} =

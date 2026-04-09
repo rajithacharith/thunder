@@ -16,12 +16,12 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
-import type {TranslationsResponse} from '../models/responses';
-import type {CreateTranslationsVariables} from '../models/requests';
 import I18nQueryKeys from '../constants/i18n-query-keys';
+import type {CreateTranslationsVariables} from '../models/requests';
+import type {TranslationsResponse} from '../models/responses';
 
 /**
  * Custom hook to bulk-create translations for a new language.
@@ -70,9 +70,9 @@ export default function useCreateTranslations(): UseMutationResult<
       return response.data;
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({queryKey: [I18nQueryKeys.TRANSLATIONS]}).catch(() => {});
-      queryClient.invalidateQueries({queryKey: [I18nQueryKeys.TRANSLATIONS, variables.language]}).catch(() => {});
-      queryClient.invalidateQueries({queryKey: [I18nQueryKeys.LANGUAGES]}).catch(() => {});
+      void queryClient.invalidateQueries({queryKey: [I18nQueryKeys.TRANSLATIONS]});
+      void queryClient.invalidateQueries({queryKey: [I18nQueryKeys.TRANSLATIONS, variables.language]});
+      void queryClient.invalidateQueries({queryKey: [I18nQueryKeys.LANGUAGES]});
     },
   });
 }

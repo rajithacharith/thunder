@@ -18,10 +18,10 @@
 
 /* eslint-disable no-underscore-dangle,@typescript-eslint/naming-convention */
 
-import {describe, it, expect, beforeAll} from 'vitest';
-import {join} from 'path';
 import {readdir, readFile, stat} from 'fs/promises';
+import {join} from 'path';
 import Handlebars from 'handlebars';
+import {describe, it, expect, beforeAll} from 'vitest';
 import registerHandlebarsHelpers from '../utils/registerHandlebarsHelpers';
 
 describe('Template Validation', () => {
@@ -92,9 +92,7 @@ describe('Template Validation', () => {
           expect(typeof result).toBe('string');
 
           // For non-gitkeep files, ensure some content was generated
-          if (!filePath.includes('gitkeep')) {
-            expect(result.trim().length).toBeGreaterThan(0);
-          }
+          expect(filePath.includes('gitkeep') || result.trim().length > 0).toBe(true);
         } catch (error: unknown) {
           const msg = error instanceof Error ? error.message : String(error);
           throw new Error(`Template compilation error in ${filePath}: ${msg}`);
@@ -106,6 +104,8 @@ describe('Template Validation', () => {
   it('should not have any unescaped triple braces outside of comments', async () => {
     const templatesDir = join(__dirname, '..', 'templates', 'feature');
     const templateFiles = await getTemplateFiles(templatesDir);
+
+    expect(templateFiles.length).toBeGreaterThan(0);
 
     await Promise.all(
       templateFiles.map(async (filePath) => {
@@ -139,6 +139,8 @@ describe('Template Validation', () => {
     const templatesDir = join(__dirname, '..', 'templates', 'feature');
     const templateFiles = await getTemplateFiles(templatesDir);
 
+    expect(templateFiles.length).toBeGreaterThan(0);
+
     await Promise.all(
       templateFiles.map(async (filePath) => {
         const content = await readFile(filePath, 'utf-8');
@@ -167,6 +169,8 @@ describe('Template Validation', () => {
   it('should not have JSX object syntax conflicts', async () => {
     const templatesDir = join(__dirname, '..', 'templates', 'feature');
     const templateFiles = await getTemplateFiles(templatesDir);
+
+    expect(templateFiles.length).toBeGreaterThan(0);
 
     await Promise.all(
       templateFiles.map(async (filePath) => {

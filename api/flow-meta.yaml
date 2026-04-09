@@ -85,6 +85,7 @@ paths:
                     application:
                       id: "60a9b38b-6eba-9f9e-55f9-267067de4680"
                       name: "My Web Application"
+                      description: "My web application for managing resources"
                       logoUrl: "https://myapp.example.com/logo.png"
                       url: "https://myapp.example.com"
                       tosUri: "https://myapp.example.com/terms"
@@ -181,6 +182,10 @@ components:
           type: string
           description: Application name
           example: "My Web Application"
+        description:
+          type: string
+          description: Application description
+          example: "My web application for managing resources"
         logoUrl:
           type: string
           format: uri

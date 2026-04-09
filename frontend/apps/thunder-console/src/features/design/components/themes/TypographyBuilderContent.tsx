@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {type JSX, type SyntheticEvent} from 'react';
-import {Autocomplete, Box, Stack, TextField, Typography, type AutocompleteRenderInputParams} from '@wso2/oxygen-ui';
 import type {Theme} from '@thunder/shared-design';
+import {Autocomplete, Box, Stack, TextField, Typography, type AutocompleteRenderInputParams} from '@wso2/oxygen-ui';
+import {type JSX, type SyntheticEvent} from 'react';
 import ConfigCard from '../common/ConfigCard';
 import SelectRow from '../common/SelectRow';
 import SliderRow from '../common/SliderRow';

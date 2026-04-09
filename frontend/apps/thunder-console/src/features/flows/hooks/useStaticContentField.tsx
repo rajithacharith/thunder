@@ -47,7 +47,7 @@ const useStaticContentField = (): void => {
      *   - args[3]: stepId - The ID of the step where the element is located.
      * @returns Returns false if the static content is added/removed, true otherwise.
      */
-    const addStaticContent = async (...args: unknown[]): Promise<boolean> => {
+    const addStaticContent = (...args: unknown[]): Promise<boolean> => {
       const [propertyKey, newValue, currentElement, stepId] = args as [string, unknown, Element, string];
       // Check if this is a execution step and the property is staticContentEnabled.
       if (currentElement?.type === StepTypes.Execution && propertyKey === STATIC_CONTENT_ENABLED_PROPERTY) {
@@ -81,10 +81,10 @@ const useStaticContentField = (): void => {
           };
         });
 
-        return false;
+        return Promise.resolve(false);
       }
 
-      return true;
+      return Promise.resolve(true);
     };
 
     /**

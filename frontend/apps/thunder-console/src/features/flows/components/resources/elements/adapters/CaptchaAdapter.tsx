@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import {Box} from '@wso2/oxygen-ui';
 import type {ReactElement} from 'react';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
-import {Box} from '@wso2/oxygen-ui';
 
 /**
  * Captcha element type with properties at top level.

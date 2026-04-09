@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
 import {Box, Typography} from '@wso2/oxygen-ui';
 import {Plus} from '@wso2/oxygen-ui-icons-react';
+import type {JSX} from 'react';
 
 export interface AddCardProps {
   label: string;

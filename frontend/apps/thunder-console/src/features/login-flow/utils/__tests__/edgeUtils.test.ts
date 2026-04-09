@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import type {Edge, Node} from '@xyflow/react';
 import {MarkerType} from '@xyflow/react';
-import {StepTypes} from '@/features/flows/models/steps';
-import {ElementTypes, type Element} from '@/features/flows/models/elements';
+import {describe, it, expect} from 'vitest';
 import generateUnconnectedEdges from '../edgeUtils';
+import {ElementTypes, type Element} from '@/features/flows/models/elements';
+import {StepTypes} from '@/features/flows/models/steps';
 
 const createMockNode = (overrides: Partial<Node> = {}): Node => ({
   id: 'node-1',
@@ -74,9 +74,7 @@ describe('generateUnconnectedEdges', () => {
     });
 
     it('should skip nodes without data', () => {
-      const nodes: Node[] = [
-        createMockNode({id: 'node-1', data: undefined as unknown as Record<string, unknown>}),
-      ];
+      const nodes: Node[] = [createMockNode({id: 'node-1', data: undefined as unknown as Record<string, unknown>})];
 
       const result = generateUnconnectedEdges([], nodes, 'default');
       expect(result).toEqual([]);
@@ -346,9 +344,7 @@ describe('generateUnconnectedEdges', () => {
         createMockNode({
           id: 'step-2',
           data: {
-            components: [
-              createMockElement({id: 'button-3', action: {onSuccess: 'step-3'}}),
-            ],
+            components: [createMockElement({id: 'button-3', action: {onSuccess: 'step-3'}})],
           },
         }),
         createMockNode({id: 'step-3'}),
@@ -365,9 +361,7 @@ describe('generateUnconnectedEdges', () => {
         createMockNode({
           id: 'step-1',
           data: {
-            components: [
-              createMockElement({id: 'button-1', action: {onSuccess: 'step-2'}}),
-            ],
+            components: [createMockElement({id: 'button-1', action: {onSuccess: 'step-2'}})],
           },
         }),
         createMockNode({id: 'step-2'}),
@@ -524,9 +518,7 @@ describe('generateUnconnectedEdges', () => {
         createMockNode({
           id: 'step-1',
           data: {
-            components: [
-              createMockElement({id: 'button-1', action: 'string-action' as unknown as Element['action']}),
-            ],
+            components: [createMockElement({id: 'button-1', action: 'string-action' as unknown as Element['action']})],
           },
         }),
       ];
@@ -540,9 +532,7 @@ describe('generateUnconnectedEdges', () => {
         createMockNode({
           id: 'step-1',
           data: {
-            components: [
-              createMockElement({id: 'text-1', type: 'TEXT', action: undefined}),
-            ],
+            components: [createMockElement({id: 'text-1', type: 'TEXT', action: undefined})],
           },
         }),
       ];

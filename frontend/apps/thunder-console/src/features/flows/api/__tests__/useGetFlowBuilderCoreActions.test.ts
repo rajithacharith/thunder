@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {renderHook} from '@testing-library/react';
-import useGetFlowBuilderCoreActions from '../useGetFlowBuilderCoreActions';
+import {describe, it, expect} from 'vitest';
 import actions from '../../data/actions.json';
+import useGetFlowBuilderCoreActions from '../useGetFlowBuilderCoreActions';
 
 describe('useGetFlowBuilderCoreActions', () => {
   describe('Return Structure', () => {
@@ -97,12 +97,11 @@ describe('useGetFlowBuilderCoreActions', () => {
       const {result} = renderHook(() => useGetFlowBuilderCoreActions());
 
       const {data} = result.current;
-      if (data.length > 0) {
-        const firstAction = data[0];
-        expect(firstAction).toHaveProperty('resourceType');
-        expect(firstAction).toHaveProperty('category');
-        expect(firstAction).toHaveProperty('display');
-      }
+      expect(data.length).toBeGreaterThan(0);
+      const firstAction = data[0];
+      expect(firstAction).toHaveProperty('resourceType');
+      expect(firstAction).toHaveProperty('category');
+      expect(firstAction).toHaveProperty('display');
     });
 
     it('should contain navigation category actions', () => {

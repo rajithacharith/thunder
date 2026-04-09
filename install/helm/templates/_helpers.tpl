@@ -91,7 +91,11 @@ This is used to trigger pod restarts when auto-generated Secrets change.
 {{- $config := default dict $database.config -}}
 {{- $runtime := default dict $database.runtime -}}
 {{- $user := default dict $database.user -}}
-{{- if or (and $config.password (not (default dict $config.passwordRef).key)) (and $runtime.password (not (default dict $runtime.passwordRef).key)) (and $user.password (not (default dict $user.passwordRef).key)) }}true{{- end }}
+{{- $consent := default dict $configuration.consent -}}
+{{- $consentDb := default dict $consent.database -}}
+{{- $cache := default dict $configuration.cache -}}
+{{- $redis := default dict $cache.redis -}}
+{{- if or (and $config.password (not (default dict $config.passwordRef).key)) (and $runtime.password (not (default dict $runtime.passwordRef).key)) (and $user.password (not (default dict $user.passwordRef).key)) (and $consent.enabled $consentDb.password (not (default dict $consentDb.passwordRef).key)) (and $redis.password (eq $cache.type "redis") (not (default dict $redis.passwordRef).key)) }}true{{- end }}
 {{- end }}
 
 {{/*
@@ -105,9 +109,12 @@ Injects DB_CONFIG_PASSWORD, DB_RUNTIME_PASSWORD, and DB_USER_PASSWORD from eithe
 {{- $config := default dict $database.config -}}
 {{- $runtime := default dict $database.runtime -}}
 {{- $user := default dict $database.user -}}
+{{- $consent := default dict $configuration.consent -}}
+{{- $consentDb := default dict $consent.database -}}
 {{- $configPasswordRef := default dict $config.passwordRef -}}
 {{- $runtimePasswordRef := default dict $runtime.passwordRef -}}
 {{- $userPasswordRef := default dict $user.passwordRef -}}
+{{- $consentPasswordRef := default dict $consentDb.passwordRef -}}
 {{- if or $config.password $configPasswordRef.key }}
 - name: DB_CONFIG_PASSWORD
   valueFrom:
@@ -128,5 +135,117 @@ Injects DB_CONFIG_PASSWORD, DB_RUNTIME_PASSWORD, and DB_USER_PASSWORD from eithe
     secretKeyRef:
       name: {{ if $userPasswordRef.key }}{{ $userPasswordRef.name | default $defaultDbSecretName }}{{ else }}{{ $defaultDbSecretName }}{{ end }}
       key: {{ $userPasswordRef.key | default "user-db-password" }}
+{{- end }}
+{{- if and $consent.enabled (or $consentDb.password $consentPasswordRef.key) }}
+- name: DB_CONSENT_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ if $consentPasswordRef.key }}{{ $consentPasswordRef.name | default $defaultDbSecretName }}{{ else }}{{ $defaultDbSecretName }}{{ end }}
+      key: {{ $consentPasswordRef.key | default "consent-db-password" }}
+{{- end }}
+{{- end }}
+
+{{/*
+Generate Redis password environment variable definitions for both deployment and setup job.
+Injects CACHE_REDIS_PASSWORD from auto-generated database credentials Secret when Redis cache is enabled.
+*/}}
+{{- define "thunder.cacheRedisPasswordEnvVars" -}}
+{{- $defaultDbSecretName := printf "%s-db-credentials" (include "thunder.fullname" .) -}}
+{{- $configuration := default dict .Values.configuration -}}
+{{- $cache := default dict $configuration.cache -}}
+{{- $redis := default dict $cache.redis -}}
+{{- if and (eq $cache.type "redis") $redis.password }}
+- name: CACHE_REDIS_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ $defaultDbSecretName }}
+      key: cache-redis-password
+{{- end }}
+{{- end }}
+
+{{/*
+Generate generic secret-backed environment variable definitions.
+Expected input:
+  - secretEnv: list of objects with fields {name, secretName, secretKey, optional}
+*/}}
+{{- define "thunder.secretEnvVars" -}}
+{{- $secretEnv := default (list) .secretEnv -}}
+{{- range $index, $item := $secretEnv }}
+{{- if not $item.name }}
+{{- fail (printf "Invalid secretEnv entry at index %d: name is required." $index) }}
+{{- end }}
+{{- if not $item.secretName }}
+{{- fail (printf "Invalid secretEnv entry for %s: secretName is required." $item.name) }}
+{{- end }}
+{{- if not $item.secretKey }}
+{{- fail (printf "Invalid secretEnv entry for %s: secretKey is required." $item.name) }}
+{{- end }}
+- name: {{ $item.name }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $item.secretName }}
+      key: {{ $item.secretKey }}
+      {{- if hasKey $item "optional" }}
+      optional: {{ $item.optional }}
+      {{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+Render ConfigMap/Secret volume items for declarative resources.
+Supports both formats:
+  - string item: "path/to/file.yaml" (used as key and path)
+  - object item: { key: "source-key", path: "target/path.yaml" }
+*/}}
+{{- define "thunder.declarativeResourceItems" -}}
+{{- $items := default (list) .items -}}
+{{- $field := default "declarativeResources.*.items" .field -}}
+{{- range $index, $item := $items }}
+{{- if kindIs "string" $item }}
+- key: {{ $item }}
+  path: {{ $item }}
+{{- else if kindIs "map" $item }}
+{{- if not $item.key }}
+{{- fail (printf "Invalid %s entry at index %d: key is required for object items." $field $index) }}
+{{- end }}
+- key: {{ $item.key }}
+  path: {{ default $item.key $item.path }}
+{{- else }}
+{{- fail (printf "Invalid %s entry at index %d: expected string or object with key/path." $field $index) }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+Render file-level volumeMount entries for declarative resources.
+When items are provided, mounting file-by-file with subPath preserves existing
+files already present in repository/resources.
+Each item may optionally specify a mountPath to override the global base path.
+*/}}
+{{- define "thunder.declarativeResourceVolumeMounts" -}}
+{{- $items := default (list) .items -}}
+{{- $field := default "declarativeResources.*.items" .field -}}
+{{- $globalMountPath := .mountPath -}}
+{{- $readOnly := .readOnly -}}
+{{- $volumeName := default "declarative-resources" .volumeName -}}
+{{- range $index, $item := $items }}
+{{- if kindIs "string" $item }}
+- name: {{ $volumeName }}
+  mountPath: {{ printf "%s/%s" $globalMountPath $item }}
+  subPath: {{ $item }}
+  readOnly: {{ $readOnly }}
+{{- else if kindIs "map" $item }}
+{{- if not $item.key }}
+{{- fail (printf "Invalid %s entry at index %d: key is required for object items." $field $index) }}
+{{- end }}
+{{- $path := default $item.key $item.path }}
+{{- $effectiveMountPath := $item.mountPath | default (printf "%s/%s" $globalMountPath $path) }}
+- name: {{ $volumeName }}
+  mountPath: {{ $effectiveMountPath }}
+  subPath: {{ $path }}
+  readOnly: {{ $readOnly }}
+{{- else }}
+{{- fail (printf "Invalid %s entry at index %d: expected string or object with key/path." $field $index) }}
+{{- end }}
 {{- end }}
 {{- end }}

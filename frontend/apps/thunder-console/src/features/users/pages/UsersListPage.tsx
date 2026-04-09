@@ -16,41 +16,17 @@
  * under the License.
  */
 
-import {useNavigate, useSearchParams} from 'react-router';
+import {useLogger} from '@thunder/logger/react';
 import {Stack, TextField, Button, InputAdornment, PageContent, PageTitle} from '@wso2/oxygen-ui';
-import {useState, useEffect} from 'react';
 import {Plus, Search, Mail} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
-import {useLogger} from '@thunder/logger/react';
+import {useNavigate} from 'react-router';
 import UsersList from '../components/UsersList';
-import InviteUserDialog from '../components/InviteUserDialog';
 
 export default function UsersListPage() {
   const navigate = useNavigate();
   const {t} = useTranslation();
   const logger = useLogger('UsersListPage');
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
-
-  useEffect(() => {
-    if (searchParams.get('invite') === 'true') {
-      setIsInviteDialogOpen(true);
-      setSearchParams({}, {replace: true});
-    }
-  }, [searchParams, setSearchParams]);
-
-  const handleOpenInviteDialog = () => {
-    setIsInviteDialogOpen(true);
-  };
-
-  const handleCloseInviteDialog = () => {
-    setIsInviteDialogOpen(false);
-  };
-
-  const handleInviteSuccess = (inviteLink: string) => {
-    logger.info('Invite link generated successfully', {inviteLink});
-  };
 
   return (
     <PageContent>
@@ -60,7 +36,17 @@ export default function UsersListPage() {
         <PageTitle.SubHeader>{t('users:subtitle')}</PageTitle.SubHeader>
         <PageTitle.Actions>
           <Stack direction="row" spacing={2}>
-            <Button variant="outlined" startIcon={<Mail size={18} />} onClick={handleOpenInviteDialog}>
+            <Button
+              variant="outlined"
+              startIcon={<Mail size={18} />}
+              onClick={() => {
+                (async () => {
+                  await navigate('/users/invite');
+                })().catch((error: unknown) => {
+                  logger.error('Failed to navigate to invite user page', {error});
+                });
+              }}
+            >
               {t('users:inviteUser', 'Invite User')}
             </Button>
             <Button
@@ -96,9 +82,6 @@ export default function UsersListPage() {
         />
       </Stack>
       <UsersList />
-
-      {/* User Onboarding Dialog */}
-      <InviteUserDialog open={isInviteDialogOpen} onClose={handleCloseInviteDialog} onSuccess={handleInviteSuccess} />
     </PageContent>
   );
 }

@@ -64,6 +64,22 @@ deployment:
   # Controls the THUNDER_SKIP_SECURITY environment variable. Set this to true only
   # in non-production environments for testing purposes to bypass REST API security checks.
   skipSecurity: false
+  # Additional environment variables with plain values.
+  # Example:
+  # env:
+  #   - name: LOG_LEVEL
+  #     value: debug
+  #   - name: EXTERNAL_API_BASE_URL
+  #     value: https://api.example.com
+  env: []
+  # Additional environment variables sourced from existing Kubernetes Secrets.
+  # Example:
+  # secretEnv:
+  #   - name: EXTERNAL_API_TOKEN
+  #     secretName: thunder-runtime-secrets
+  #     secretKey: external-api-token
+  #     optional: false
+  secretEnv: []
 
 hpa:
   enabled: true
@@ -166,10 +182,18 @@ configuration:
       key: "file://repository/resources/security/crypto.key"
     passwordHashing:
       algorithm: "PBKDF2"
-      parameters:
+      argon2id:
+        iterations: 2
+        memory: 19456
+        parallelism: 1
+        key_size: 32
+        salt_size: 16
+      pbkdf2:
         iterations: 600000
-        keySize: 32
-        saltSize: 16
+        key_size: 32
+        salt_size: 16
+      sha256:
+        salt_size: 16
     keys:
       - id: "default-key"
         certFile: "repository/resources/security/signing.cert"
@@ -235,6 +259,11 @@ configuration:
     ttl: 3600
     evictionPolicy: "LRU"
     cleanupInterval: 300
+    redis:
+      address: "localhost:6379"
+      password: ""
+      db: 0
+      keyPrefix: "thunder"
 
   # Token Configuration
   jwt:
@@ -271,10 +300,29 @@ configuration:
 
   # Consent configuration
   consent:
-    enabled: false
-    baseUrl: ""
+    enabled: true
+    baseUrl: "http://localhost:9090/api/v1"
     timeout: 5
     maxRetries: 3
+    server:
+      port: 9090
+      hostname: "localhost"
+    database:
+      # WARNING: Use sqlite only if you are running a single pod.
+      type: "postgres" # postgres or sqlite
+      # Below two parameters are only required for sqlite
+      sqlitePath: "repository/database/consentdb.db" # Only required for sqlite
+      sqliteOptions: "_pragma=journal_mode(WAL)&_pragma=cache_size(-16000)" # Only required for sqlite
+      # Below parameters are only required for Postgres
+      name: "consentdb"
+      host: "localhost"
+      port: "5432"
+      username: "asgthunder"
+      password: "asgthunder"
+      sslmode: "require"
+      max_open_conns: 500
+      max_idle_conns: 100
+      conn_max_lifetime: "3600s"
 
 # Persistence configuration for SQLite databases
 # Only relevant when using SQLite as the database type
@@ -284,6 +332,53 @@ persistence:
   accessMode: ReadWriteOnce
   size: 1Gi
   annotations: {}
+
+# Declarative resources mount configuration.
+# Mounts files under Thunder's repository/resources directory.
+declarativeResources:
+  # Enable mounting declarative resources into Thunder pods.
+  enabled: false
+  # Mount path inside Thunder container.
+  mountPath: /opt/thunder/repository/resources
+  # Mount resources as read-only.
+  readOnly: true
+  # Source from an existing ConfigMap.
+  # When 'items' is empty, all keys are mounted.
+  # Each item supports either:
+  #   - string: key and path are the same
+  #   - object: explicit key/path mapping
+  configMap:
+    # Name of an existing ConfigMap in the same namespace.
+    # Example: thunder-declarative-resources (see install/helm/examples/declarative-resources-configmap.yaml)
+    name: ""
+    items: []
+    # Example — references the bundled sample ConfigMap:
+    # name: thunder-declarative-resources
+    # items:
+    #   - key: my-web-app
+    #     path: applications/my-web-app.yaml
+    #     mountPath: /opt/thunder/repository/resources/applications/my-web-app.yaml
+    #   - key: google-idp
+    #     path: identity_providers/google.yaml
+    #     mountPath: /opt/thunder/repository/resources/identity_providers/google.yaml
+    #   - key: default-org
+    #     path: organization_units/default.yaml
+    #     mountPath: /opt/thunder/repository/resources/organization_units/default.yaml
+  # Source from an existing Secret.
+  # Use this when resource files contain sensitive values (e.g. pre-substituted secrets).
+  # Supports the same string/object item formats as configMap above.
+  secret:
+    name: ""
+    items: []
+    # Example:
+    # name: thunder-declarative-resources-secret
+    # items:
+    #   - key: my-app-with-secrets
+    #     path: applications/my-app.yaml
+    #     mountPath: /opt/thunder/repository/resources/applications/my-app.yaml
+    #   - key: google-idp
+    #     path: identity_providers/google.yaml
+    #     mountPath: /opt/thunder/repository/resources/identity_providers/google.yaml
 
 # Setup Job configuration
 # Runs setup.sh as a one-time initialization job during Helm install
@@ -312,6 +407,14 @@ setup:
     #   value: "true"
     # - name: BOOTSTRAP_SKIP_PATTERN
     #   value: "test"
+  # Additional environment variables sourced from existing Kubernetes Secrets.
+  # Example:
+  # secretEnv:
+  #   - name: BOOTSTRAP_API_KEY
+  #     secretName: thunder-setup-secrets
+  #     secretKey: bootstrap-api-key
+  #     optional: false
+  secretEnv: []
   # Resource limits for setup job
   resources:
     limits:

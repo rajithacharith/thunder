@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
-import useUpdateApplication from '../useUpdateApplication';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import ApplicationQueryKeys from '../../constants/application-query-keys';
 import type {Application} from '../../models/application';
 import type {CreateApplicationRequest} from '../../models/requests';
-import ApplicationQueryKeys from '../../constants/application-query-keys';
+import useUpdateApplication from '../useUpdateApplication';
 
 // Mock the dependencies
 vi.mock('@asgardeo/react', () => ({
@@ -33,6 +33,7 @@ vi.mock('@thunder/shared-contexts', async (importOriginal) => {
   return {
     ...actual,
     useConfig: vi.fn(),
+    useToast: vi.fn().mockReturnValue({showToast: vi.fn()}),
   };
 });
 
@@ -74,13 +75,13 @@ describe('useUpdateApplication', () => {
             idToken: {
               validityPeriod: 3600,
               userAttributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
-              scopeClaims: {
-                profile: ['name', 'given_name', 'family_name', 'picture'],
-                email: ['email', 'email_verified'],
-                phone: ['phone_number', 'phone_number_verified'],
-                group: ['groups'],
-              },
             },
+          },
+          scopeClaims: {
+            profile: ['name', 'given_name', 'family_name', 'picture'],
+            email: ['email', 'email_verified'],
+            phone: ['phone_number', 'phone_number_verified'],
+            group: ['groups'],
           },
           scopes: ['openid', 'email', 'profile'],
         },

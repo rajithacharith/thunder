@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
-import type {ThemeResponse} from '../models/responses';
 import DesignQueryKeys from '../constants/design-query-keys';
+import type {ThemeResponse} from '../models/responses';
 
 /**
  * Custom hook to fetch a single theme configuration by ID from the Thunder server.

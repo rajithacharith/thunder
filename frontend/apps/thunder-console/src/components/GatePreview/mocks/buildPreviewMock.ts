@@ -17,8 +17,8 @@
  */
 
 import type {EmbeddedFlowComponent} from '@asgardeo/react';
-import type {IdentityProvider} from '@/features/integrations/models/identity-provider';
 import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
+import type {IdentityProvider} from '@/features/integrations/models/identity-provider';
 import {IdentityProviderTypes} from '@/features/integrations/models/identity-provider';
 
 interface PreviewMeta {
@@ -27,9 +27,12 @@ interface PreviewMeta {
   };
 }
 
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+const ICON_BASE = `${window.location.origin}${base}assets/images/icons`;
+
 const IDP_ICONS: Record<string, string> = {
-  GOOGLE: 'assets/images/icons/google.svg',
-  GITHUB: 'assets/images/icons/github.svg',
+  GOOGLE: `${ICON_BASE}/google.svg`,
+  GITHUB: `${ICON_BASE}/github.svg`,
 };
 
 /**
@@ -178,7 +181,7 @@ export default function buildPreviewMock(
       id: 'action_passkey',
       label: 'Use a Passkey',
       resourceType: 'ELEMENT',
-      startIcon: `${import.meta.env.BASE_URL}/assets/images/icons/fingerprint.svg`,
+      startIcon: `${ICON_BASE}/fingerprint.svg`,
       type: 'ACTION',
       variant: 'SOCIAL',
     });

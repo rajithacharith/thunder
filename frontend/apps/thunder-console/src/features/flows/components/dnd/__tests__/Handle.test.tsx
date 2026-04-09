@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {createRef} from 'react';
+import {describe, it, expect, vi} from 'vitest';
 import Handle from '../Handle';
 
 describe('Handle', () => {
@@ -52,11 +52,7 @@ describe('Handle', () => {
     });
 
     it('should accept ReactNode as label', () => {
-      render(
-        <Handle label={<strong>Bold Label</strong>}>
-          Handle
-        </Handle>,
-      );
+      render(<Handle label={<strong>Bold Label</strong>}>Handle</Handle>);
 
       expect(screen.getByRole('button')).toBeInTheDocument();
     });

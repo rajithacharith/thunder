@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import TechnologyBasedApplicationTemplateMetadata from '../config/TechnologyBasedApplicationTemplateMetadata';
-import PlatformBasedApplicationTemplateMetadata from '../config/PlatformBasedApplicationTemplateMetadata';
-import type {IntegrationGuides} from '../models/application-templates';
 import normalizeTemplateId from './normalizeTemplateId';
+import PlatformBasedApplicationTemplateMetadata from '../config/PlatformBasedApplicationTemplateMetadata';
+import TechnologyBasedApplicationTemplateMetadata from '../config/TechnologyBasedApplicationTemplateMetadata';
+import type {IntegrationGuides} from '../models/application-templates';
 
 /**
  * Gets the integration guides for a given template ID
@@ -39,8 +39,8 @@ export default function getIntegrationGuidesForTemplate(templateId: string | und
     (metadata) => metadata.template.id === normalizedTemplateId,
   );
 
-  if (techTemplate?.template.integration_guides) {
-    return techTemplate.template.integration_guides;
+  if (techTemplate?.template.integrationGuides) {
+    return techTemplate.template.integrationGuides;
   }
 
   // Search in platform-based templates
@@ -48,8 +48,8 @@ export default function getIntegrationGuidesForTemplate(templateId: string | und
     (metadata) => metadata.template.id === normalizedTemplateId,
   );
 
-  if (platformTemplate?.template.integration_guides) {
-    return platformTemplate.template.integration_guides;
+  if (platformTemplate?.template.integrationGuides) {
+    return platformTemplate.template.integrationGuides;
   }
 
   return null;

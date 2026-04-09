@@ -18,8 +18,8 @@
 
 import {Box, Grid, Typography} from '@wso2/oxygen-ui';
 import {motion} from 'framer-motion';
-import {useTranslation} from 'react-i18next';
 import type {JSX} from 'react';
+import {useTranslation} from 'react-i18next';
 import InviteMembersCard from './cards/InviteMembersCard';
 import LoginBoxCard from './cards/LoginBoxCard';
 import MFACard from './cards/MFACard';

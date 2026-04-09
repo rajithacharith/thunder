@@ -18,10 +18,10 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import ValidationPanel from '../ValidationPanel';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import Notification, {NotificationType} from '../../../models/notification';
+import ValidationPanel from '../ValidationPanel';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -95,7 +95,8 @@ vi.mock('../../../hooks/useFlowBuilderCore', () => ({
 }));
 
 describe('ValidationPanel', () => {
-  const createNotification = (id: string, message: string, type: NotificationType): Notification => new Notification(id, message, type);
+  const createNotification = (id: string, message: string, type: NotificationType): Notification =>
+    new Notification(id, message, type);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -198,10 +199,9 @@ describe('ValidationPanel', () => {
       const closeButtons = screen.getAllByRole('button');
       const closeButton = closeButtons.find((btn) => btn.querySelector('svg'));
 
-      if (closeButton) {
-        fireEvent.click(closeButton);
-        expect(mockSetOpenValidationPanel).toHaveBeenCalledWith(false);
-      }
+      expect(closeButton).toBeDefined();
+      fireEvent.click(closeButton!);
+      expect(mockSetOpenValidationPanel).toHaveBeenCalledWith(false);
     });
   });
 
@@ -293,9 +293,7 @@ describe('ValidationPanel', () => {
   describe('Tab Content Display', () => {
     it('should display info notifications in info tab', () => {
       mockCurrentActiveTab = 2;
-      mockNotifications = [
-        createNotification('1', 'Info message', NotificationType.INFO),
-      ];
+      mockNotifications = [createNotification('1', 'Info message', NotificationType.INFO)];
 
       render(<ValidationPanel />);
 

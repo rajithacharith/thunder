@@ -17,13 +17,13 @@
  */
 
 import {List, Divider} from '@wso2/oxygen-ui';
-import type {JSX} from 'react';
 import {UserRound, Google, GitHub, KeyRound} from '@wso2/oxygen-ui-icons-react';
+import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
+import AuthenticationMethodItem from './AuthenticationMethodItem';
+import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
 import {type IdentityProvider, IdentityProviderTypes} from '@/features/integrations/models/identity-provider';
 import getIntegrationIcon from '@/features/integrations/utils/getIntegrationIcon';
-import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
-import AuthenticationMethodItem from './AuthenticationMethodItem';
 
 /**
  * Props for the IndividualMethodsToggleView component

@@ -178,35 +178,10 @@ export interface ScopeClaims {
  * ID Token Configuration
  *
  * Configuration specific to OpenID Connect ID tokens.
- * Extends the base TokenConfig with scope-to-claims mappings.
  *
  * @public
- * @remarks
- * ID tokens are JWT tokens that contain user identity information.
- * The scopeClaims mapping controls which user attributes are included
- * in the ID token based on the requested OAuth2 scopes.
- *
- * @example
- * ```typescript
- * const idTokenConfig: IDTokenConfig = {
- *   validityPeriod: 3600,
- *   userAttributes: ['sub', 'email', 'name'],
- *   scopeClaims: {
- *     profile: ['name', 'given_name', 'family_name', 'picture'],
- *     email: ['email', 'email_verified'],
- *     phone: ['phone_number', 'phone_number_verified']
- *   }
- * };
- * ```
  */
-export interface IDTokenConfig extends TokenConfig {
-  /**
-   * Mapping of OAuth2 scopes to their corresponding claims
-   * Defines which user attributes should be included in the ID token
-   * for each requested scope
-   */
-  scopeClaims: ScopeClaims;
-}
+export type IDTokenConfig = TokenConfig;
 
 /**
  * OAuth2 Token Settings
@@ -282,36 +257,12 @@ export interface OAuth2Token {
  *   publicClient: false,
  *   scopes: ['openid', 'profile', 'email'],
  *   token: {
- *     accessToken: {
- *       validityPeriod: 3600,
- *       userAttributes: ['email', 'username']
- *     },
- *     idToken: {
- *       validityPeriod: 3600,
- *       userAttributes: ['sub', 'email', 'name'],
- *       scopeClaims: {
- *         profile: ['name', 'picture'],
- *         email: ['email', 'email_verified']
- *       }
- *     }
- *   }
- * };
- *
- * // SPA or mobile app configuration (with PKCE)
- * const spaConfig: OAuth2Config = {
- *   redirectUris: ['http://localhost:3000/callback'],
- *   grantTypes: [OAuth2GrantTypes.AUTHORIZATION_CODE, OAuth2GrantTypes.REFRESH_TOKEN],
- *   responseTypes: [OAuth2ResponseTypes.CODE],
- *   pkceRequired: true,
- *   publicClient: true,
- *   scopes: ['openid', 'profile', 'email'],
- *   token: {
- *     accessToken: { validityPeriod: 3600, userAttributes: ['email'] },
- *     idToken: {
- *       validityPeriod: 3600,
- *       userAttributes: ['sub', 'email'],
- *       scopeClaims: { email: ['email'] }
- *     }
+ *     access_token: { validity_period: 3600, user_attributes: ['email', 'username'] },
+ *     id_token: { validity_period: 3600, user_attributes: ['sub', 'email', 'name'] }
+ *   },
+ *   scope_claims: {
+ *     profile: ['name', 'picture'],
+ *     email: ['email', 'email_verified']
  *   }
  * };
  * ```
@@ -400,6 +351,14 @@ export interface OAuth2Config {
    * Defines which attributes are returned in the user info response
    */
   userInfo?: UserInfoConfig;
+
+  /**
+   * Scope to user-attribute mappings
+   * Defines which user attributes are included in tokens when each scope is requested.
+   * Stored at the top level of the OAuth2 config (not inside token.id_token).
+   * @example { profile: ['name', 'given_name'], email: ['email', 'email_verified'] }
+   */
+  scopeClaims?: ScopeClaims;
 }
 
 /**
@@ -415,39 +374,4 @@ export interface UserInfoConfig {
    * List of user attributes to include in the user info response
    */
   userAttributes: string[];
-}
-
-/**
- * Default OAuth2 configuration
- *
- * Returns a default OAuth2 configuration with sensible defaults.
- * Used as a starting point for OAuth2 configuration in application creation.
- *
- * @returns Default OAuth2 configuration
- * @public
- */
-export function getDefaultOAuthConfig(): OAuth2Config {
-  return {
-    redirectUris: [],
-    grantTypes: [OAuth2GrantTypes.CLIENT_CREDENTIALS],
-    responseTypes: [], // Client credentials doesn't use response types
-    tokenEndpointAuthMethod: TokenEndpointAuthMethods.CLIENT_SECRET_BASIC,
-    pkceRequired: false,
-    publicClient: false,
-    scopes: ['openid', 'profile', 'email'],
-    token: {
-      accessToken: {
-        validityPeriod: 3600,
-        userAttributes: ['email', 'username'],
-      },
-      idToken: {
-        validityPeriod: 3600,
-        userAttributes: ['sub', 'email', 'name'],
-        scopeClaims: {
-          profile: ['name', 'given_name', 'family_name', 'picture'],
-          email: ['email', 'email_verified'],
-        },
-      },
-    },
-  };
 }

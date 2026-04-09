@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ConfigureExperience from '../ConfigureExperience';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {ApplicationCreateFlowSignInApproach} from '../../../models/application-create-flow';
+import ConfigureExperience from '../ConfigureExperience';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({

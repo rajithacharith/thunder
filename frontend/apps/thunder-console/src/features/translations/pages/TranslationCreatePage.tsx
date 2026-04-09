@@ -16,19 +16,19 @@
  * under the License.
  */
 
-import {Alert, Box, Breadcrumbs, Button, IconButton, LinearProgress, Typography} from '@wso2/oxygen-ui';
-import {ChevronRight, X} from '@wso2/oxygen-ui-icons-react';
 import {useGetTranslations, useCreateTranslations, I18nDefaultConstants} from '@thunder/i18n';
 import {useLogger} from '@thunder/logger/react';
-import {useCallback, useEffect, useState, type JSX} from 'react';
+import {Alert, Box, Breadcrumbs, Button, IconButton, LinearProgress, Typography} from '@wso2/oxygen-ui';
+import {ChevronRight, X} from '@wso2/oxygen-ui-icons-react';
+import {useCallback, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
+import InitializeLanguage from '../components/create-translation/InitializeLanguage';
+import ReviewLocaleCode from '../components/create-translation/ReviewLocaleCode';
 import SelectCountry from '../components/create-translation/SelectCountry';
 import SelectLanguage from '../components/create-translation/SelectLanguage';
-import ReviewLocaleCode from '../components/create-translation/ReviewLocaleCode';
-import InitializeLanguage from '../components/create-translation/InitializeLanguage';
-import {TranslationCreateFlowStep} from '../models/translation-create-flow';
 import useTranslationCreate from '../contexts/TranslationCreate/useTranslationCreate';
+import {TranslationCreateFlowStep} from '../models/translation-create-flow';
 
 const STEPS: TranslationCreateFlowStep[] = [
   TranslationCreateFlowStep.COUNTRY,
@@ -97,10 +97,12 @@ export default function TranslationCreatePage(): JSX.Element {
   });
 
   // Reset locale when country changes
-  useEffect(() => {
+  const [prevCountry, setPrevCountry] = useState(selectedCountry);
+  if (prevCountry !== selectedCountry) {
+    setPrevCountry(selectedCountry);
     setSelectedLocale(null);
     setStepReady((prev) => ({...prev, LANGUAGE: false}));
-  }, [selectedCountry, setSelectedLocale]);
+  }
 
   const stepLabels: Record<TranslationCreateFlowStep, string> = {
     COUNTRY: t('language.create.steps.country'),

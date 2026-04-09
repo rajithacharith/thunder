@@ -19,16 +19,16 @@ import {move} from '@dnd-kit/helpers';
 import {type DragDropEventHandlers} from '@dnd-kit/react';
 import {type Edge, type Node, type XYPosition, useReactFlow, useUpdateNodeInternals} from '@xyflow/react';
 import type {UpdateNodeInternals} from '@xyflow/system';
-import {useRef} from 'react';
 import cloneDeep from 'lodash-es/cloneDeep';
+import {useRef} from 'react';
 import type {DragSourceData, DragTargetData} from '../models/drag-drop';
 import type {Element} from '../models/elements';
 import type {MetadataInterface} from '../models/metadata';
 import {ResourceTypes, type Resource} from '../models/resources';
 import type {Step, StepData} from '../models/steps';
 import type {Widget} from '../models/widget';
-import generateResourceId from '../utils/generateResourceId';
 import autoAssignConnections from '../utils/autoAssignConnections';
+import generateResourceId from '../utils/generateResourceId';
 
 /**
  * Props interface for useDragDropHandlers hook
@@ -128,9 +128,10 @@ const useDragDropHandlers = (props: UseDragDropHandlersProps): UseDragDropHandle
         y: clientY,
       });
 
-      const existingData = 'data' in sourceResource && typeof sourceResource.data === 'object' && sourceResource.data !== null
-        ? sourceResource.data
-        : {};
+      const existingData =
+        'data' in sourceResource && typeof sourceResource.data === 'object' && sourceResource.data !== null
+          ? sourceResource.data
+          : {};
 
       let generatedStep: Step = {
         ...sourceResource,

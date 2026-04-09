@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {useContext, useMemo} from 'react';
+import {describe, expect, it, vi} from 'vitest';
 import ApplicationCreateContext, {type ApplicationCreateContextType} from '../ApplicationCreateContext';
 
 // Test component to consume the context directly
@@ -119,43 +119,43 @@ describe('ApplicationCreateContext', () => {
     // This test ensures the interface matches expected shape
     const mockContext: ApplicationCreateContextType = {
       relyingPartyId: '',
-      setRelyingPartyId: () => {},
+      setRelyingPartyId: () => null,
       relyingPartyName: '',
-      setRelyingPartyName: () => {},
+      setRelyingPartyName: () => null,
       currentStep: 'NAME',
-      setCurrentStep: () => {},
+      setCurrentStep: () => null,
       appName: '',
-      setAppName: () => {},
+      setAppName: () => null,
       themeId: null,
-      setThemeId: () => {},
+      setThemeId: () => null,
       selectedTheme: null,
-      setSelectedTheme: () => {},
+      setSelectedTheme: () => null,
       appLogo: null,
-      setAppLogo: () => {},
+      setAppLogo: () => null,
       selectedColor: '',
-      setSelectedColor: () => {},
+      setSelectedColor: () => null,
       integrations: {},
-      setIntegrations: () => {},
-      toggleIntegration: () => {},
+      setIntegrations: () => null,
+      toggleIntegration: () => null,
       selectedAuthFlow: null,
-      setSelectedAuthFlow: () => {},
+      setSelectedAuthFlow: () => null,
       signInApproach: 'INBUILT',
-      setSignInApproach: () => {},
+      setSignInApproach: () => null,
       selectedTechnology: null,
-      setSelectedTechnology: () => {},
+      setSelectedTechnology: () => null,
       selectedPlatform: null,
-      setSelectedPlatform: () => {},
+      setSelectedPlatform: () => null,
       selectedTemplateConfig: null,
-      setSelectedTemplateConfig: () => {},
+      setSelectedTemplateConfig: () => null,
       hostingUrl: '',
-      setHostingUrl: () => {},
+      setHostingUrl: () => null,
       callbackUrlFromConfig: '',
-      setCallbackUrlFromConfig: () => {},
+      setCallbackUrlFromConfig: () => null,
       hasCompletedOnboarding: false,
-      setHasCompletedOnboarding: () => {},
+      setHasCompletedOnboarding: () => null,
       error: null,
-      setError: () => {},
-      reset: () => {},
+      setError: () => null,
+      reset: () => null,
     };
 
     expect(mockContext).toBeDefined();
@@ -173,43 +173,43 @@ describe('ApplicationCreateContext', () => {
   it('allows null values for optional properties', () => {
     const mockContext: ApplicationCreateContextType = {
       relyingPartyId: '',
-      setRelyingPartyId: () => {},
+      setRelyingPartyId: () => null,
       relyingPartyName: '',
-      setRelyingPartyName: () => {},
+      setRelyingPartyName: () => null,
       currentStep: 'NAME',
-      setCurrentStep: () => {},
+      setCurrentStep: () => null,
       appName: '',
-      setAppName: () => {},
+      setAppName: () => null,
       themeId: null,
-      setThemeId: () => {},
+      setThemeId: () => null,
       selectedTheme: null,
-      setSelectedTheme: () => {},
+      setSelectedTheme: () => null,
       appLogo: null, // Should allow null
-      setAppLogo: () => {},
+      setAppLogo: () => null,
       selectedColor: '',
-      setSelectedColor: () => {},
+      setSelectedColor: () => null,
       integrations: {},
-      setIntegrations: () => {},
-      toggleIntegration: () => {},
+      setIntegrations: () => null,
+      toggleIntegration: () => null,
       selectedAuthFlow: null, // Should allow null
-      setSelectedAuthFlow: () => {},
+      setSelectedAuthFlow: () => null,
       signInApproach: 'INBUILT',
-      setSignInApproach: () => {},
+      setSignInApproach: () => null,
       selectedTechnology: null, // Should allow null
-      setSelectedTechnology: () => {},
+      setSelectedTechnology: () => null,
       selectedPlatform: null, // Should allow null
-      setSelectedPlatform: () => {},
+      setSelectedPlatform: () => null,
       selectedTemplateConfig: null, // Should allow null
-      setSelectedTemplateConfig: () => {},
+      setSelectedTemplateConfig: () => null,
       hostingUrl: '',
-      setHostingUrl: () => {},
+      setHostingUrl: () => null,
       callbackUrlFromConfig: '',
-      setCallbackUrlFromConfig: () => {},
+      setCallbackUrlFromConfig: () => null,
       hasCompletedOnboarding: false,
-      setHasCompletedOnboarding: () => {},
+      setHasCompletedOnboarding: () => null,
       error: null, // Should allow null
-      setError: () => {},
-      reset: () => {},
+      setError: () => null,
+      reset: () => null,
     };
 
     expect(mockContext.appLogo).toBeNull();

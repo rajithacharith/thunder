@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
+import {render, screen} from '@thunder/test-utils';
+import {describe, expect, it, vi, beforeEach} from 'vitest';
+import {TranslationCreateFlowStep} from '../../../models/translation-create-flow';
 import TranslationCreateProvider from '../TranslationCreateProvider';
 import useTranslationCreate from '../useTranslationCreate';
-import {TranslationCreateFlowStep} from '../../../models/translation-create-flow';
 
 // Test component to consume the context
 function TestConsumer() {

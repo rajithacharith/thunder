@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
+import {describe, it, expect} from 'vitest';
 import useFlowNaming from '../useFlowNaming';
 
 describe('useFlowNaming', () => {
@@ -246,17 +246,14 @@ describe('useFlowNaming', () => {
     });
 
     it('should update when existingFlowData changes', () => {
-      const {result, rerender} = renderHook(
-        ({existingFlowData}) => useFlowNaming({existingFlowData}),
-        {
-          initialProps: {
-            existingFlowData: {
-              name: 'Initial Name',
-              handle: 'initial-handle',
-            },
+      const {result, rerender} = renderHook(({existingFlowData}) => useFlowNaming({existingFlowData}), {
+        initialProps: {
+          existingFlowData: {
+            name: 'Initial Name',
+            handle: 'initial-handle',
           },
         },
-      );
+      });
 
       expect(result.current.flowName).toBe('Initial Name');
       expect(result.current.flowHandle).toBe('initial-handle');

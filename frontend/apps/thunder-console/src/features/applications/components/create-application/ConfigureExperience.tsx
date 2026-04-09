@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {useConfig} from '@thunder/shared-contexts';
 import {
   Box,
   Typography,
@@ -35,9 +36,8 @@ import {ExternalLink, Code, User} from '@wso2/oxygen-ui-icons-react';
 import type {JSX, ChangeEvent} from 'react';
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
-import type {UserSchemaListItem} from '@/features/user-types/types/user-types';
-import {useConfig} from '@thunder/shared-contexts';
 import {ApplicationCreateFlowSignInApproach} from '../../models/application-create-flow';
+import type {UserSchemaListItem} from '@/features/user-types/types/user-types';
 
 /**
  * Props for the {@link ConfigureExperience} component.

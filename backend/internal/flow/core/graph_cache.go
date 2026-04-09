@@ -19,6 +19,7 @@
 package core
 
 import (
+	"context"
 	"errors"
 
 	"github.com/asgardeo/thunder/internal/system/cache"
@@ -26,9 +27,9 @@ import (
 
 // GraphCacheInterface defines operations for caching graphs.
 type GraphCacheInterface interface {
-	Get(flowID string) (GraphInterface, bool)
-	Set(flowID string, graph GraphInterface) error
-	Invalidate(flowID string) error
+	Get(ctx context.Context, flowID string) (GraphInterface, bool)
+	Set(ctx context.Context, flowID string, graph GraphInterface) error
+	Invalidate(ctx context.Context, flowID string) error
 }
 
 // graphCache implements GraphCacheInterface.
@@ -36,20 +37,20 @@ type graphCache struct {
 	cache cache.CacheInterface[*graph]
 }
 
-// newGraphCache creates a new instance of graphCache.
+// newGraphCache creates a new in-memory cache instance of graphCache.
 func newGraphCache() GraphCacheInterface {
 	return &graphCache{
-		cache: cache.GetCache[*graph]("FlowGraphCache"),
+		cache: cache.GetInMemoryCache[*graph]("FlowGraphCache"),
 	}
 }
 
 // Get retrieves a graph from cache by flow ID.
-func (gc *graphCache) Get(flowID string) (GraphInterface, bool) {
+func (gc *graphCache) Get(ctx context.Context, flowID string) (GraphInterface, bool) {
 	if flowID == "" {
 		return nil, false
 	}
 	cacheKey := cache.CacheKey{Key: flowID}
-	g, ok := gc.cache.Get(cacheKey)
+	g, ok := gc.cache.Get(ctx, cacheKey)
 	if ok && g != nil {
 		return g, true
 	}
@@ -57,7 +58,7 @@ func (gc *graphCache) Get(flowID string) (GraphInterface, bool) {
 }
 
 // Set stores a graph in cache.
-func (gc *graphCache) Set(flowID string, g GraphInterface) error {
+func (gc *graphCache) Set(ctx context.Context, flowID string, g GraphInterface) error {
 	if flowID == "" || g == nil {
 		return errors.New("flowID and graph cannot be empty")
 	}
@@ -69,14 +70,14 @@ func (gc *graphCache) Set(flowID string, g GraphInterface) error {
 	}
 
 	cacheKey := cache.CacheKey{Key: flowID}
-	return gc.cache.Set(cacheKey, concreteGraph)
+	return gc.cache.Set(ctx, cacheKey, concreteGraph)
 }
 
 // Invalidate removes a graph from cache.
-func (gc *graphCache) Invalidate(flowID string) error {
+func (gc *graphCache) Invalidate(ctx context.Context, flowID string) error {
 	if flowID == "" {
 		return nil
 	}
 	cacheKey := cache.CacheKey{Key: flowID}
-	return gc.cache.Delete(cacheKey)
+	return gc.cache.Delete(ctx, cacheKey)
 }

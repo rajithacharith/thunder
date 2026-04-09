@@ -16,10 +16,10 @@
  * under the License.
  */
 
+import {useDeleteTheme} from '@thunder/shared-design';
+import {Alert, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle} from '@wso2/oxygen-ui';
 import {useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Alert, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle} from '@wso2/oxygen-ui';
-import {useDeleteTheme} from '@thunder/shared-design';
 
 export interface ThemeDeleteDialogProps {
   open: boolean;
@@ -62,9 +62,7 @@ export default function ThemeDeleteDialog({
     });
   };
 
-  const message = themeName
-    ? t('themes.delete.message', {name: themeName})
-    : t('themes.delete.messageUnnamed');
+  const message = themeName ? t('themes.delete.message', {name: themeName}) : t('themes.delete.messageUnnamed');
 
   return (
     <Dialog open={open} onClose={handleCancel} maxWidth="sm" fullWidth>

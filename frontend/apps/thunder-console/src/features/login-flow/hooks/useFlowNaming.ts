@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useState} from 'react';
 
 /**
  * Props for the useFlowNaming hook.
@@ -66,31 +66,30 @@ export interface UseFlowNamingReturn {
  * });
  * ```
  */
+const generateHandleFromName = (name: string): string =>
+  name
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
 const useFlowNaming = (props?: UseFlowNamingProps): UseFlowNamingReturn => {
   const {existingFlowData, defaultName = 'Login Flow', defaultHandle = 'login-flow'} = props ?? {};
 
-  const [flowName, setFlowName] = useState<string>(defaultName);
-  const [flowHandle, setFlowHandle] = useState<string>(defaultHandle);
+  const [flowName, setFlowName] = useState<string>(() => existingFlowData?.name ?? defaultName);
+  const [flowHandle, setFlowHandle] = useState<string>(() => {
+    if (existingFlowData?.handle) return existingFlowData.handle;
+    if (existingFlowData?.name) return generateHandleFromName(existingFlowData.name);
+    return defaultHandle;
+  });
   const [needsAutoLayout, setNeedsAutoLayout] = useState<boolean>(false);
 
-  /**
-   * Generate a URL-friendly handle from a name.
-   * Converts to lowercase, replaces spaces with hyphens, removes special characters.
-   */
-  const generateHandleFromName = useCallback(
-    (name: string): string =>
-      name
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9-]/g, '')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, ''),
-    [],
-  );
-
-  // Sync flowName and flowHandle when existingFlowData is loaded
-  useEffect(() => {
+  // Sync flowName and flowHandle when existingFlowData changes after initial render
+  const [prevExistingFlowData, setPrevExistingFlowData] = useState(existingFlowData);
+  if (existingFlowData !== prevExistingFlowData) {
+    setPrevExistingFlowData(existingFlowData);
     if (existingFlowData?.name) {
       setFlowName(existingFlowData.name);
     }
@@ -100,19 +99,16 @@ const useFlowNaming = (props?: UseFlowNamingProps): UseFlowNamingReturn => {
     } else if (existingFlowData?.name) {
       setFlowHandle(generateHandleFromName(existingFlowData.name));
     }
-  }, [existingFlowData, generateHandleFromName]);
+  }
 
   /**
    * Handler for flow name changes.
    * Updates both the name and generates a new handle.
    */
-  const handleFlowNameChange = useCallback(
-    (newName: string) => {
-      setFlowName(newName);
-      setFlowHandle(generateHandleFromName(newName));
-    },
-    [generateHandleFromName],
-  );
+  const handleFlowNameChange = useCallback((newName: string) => {
+    setFlowName(newName);
+    setFlowHandle(generateHandleFromName(newName));
+  }, []);
 
   return {
     flowName,

@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {renderHook, waitFor} from '@thunder/test-utils';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
-import useGetFlowById from '../useGetFlowById';
-import type {FlowDefinitionResponse} from '../../models/responses';
-import {FlowType, FlowNodeType} from '../../models/flows';
+import {renderHook, waitFor} from '@thunder/test-utils';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import FlowQueryKeys from '../../constants/flow-query-keys';
+import {FlowType, FlowNodeType} from '../../models/flows';
+import type {FlowDefinitionResponse} from '../../models/responses';
+import useGetFlowById from '../useGetFlowById';
 
 vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
@@ -56,7 +56,7 @@ describe('useGetFlowById', () => {
         meta: {
           components: [],
         },
-        prompts: []
+        prompts: [],
       },
       {
         id: 'node-end',

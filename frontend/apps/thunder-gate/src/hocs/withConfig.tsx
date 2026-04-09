@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import type {JSX, ComponentType} from 'react';
 import {AsgardeoProvider} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
+import type {JSX, ComponentType} from 'react';
 
 export default function withConfig<P extends object>(WrappedComponent: ComponentType<P>) {
   return function WithConfig(props: P): JSX.Element {

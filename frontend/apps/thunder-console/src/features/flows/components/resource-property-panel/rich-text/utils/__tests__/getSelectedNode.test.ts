@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import type {RangeSelection, TextNode, ElementNode} from 'lexical';
 import {$isAtNodeEnd} from '@lexical/selection';
+import type {RangeSelection, TextNode, ElementNode} from 'lexical';
+import {describe, it, expect, vi} from 'vitest';
 import getSelectedNode from '../getSelectedNode';
 
 // Import the mocked function to control its behavior in tests

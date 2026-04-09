@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import type {ReactNode} from 'react';
-import type {Element as FlowElement} from '@/features/flows/models/elements';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import StackAdapter, {type StackElement} from '../StackAdapter';
+import type {Element as FlowElement} from '@/features/flows/models/elements';
 
 const mockUpdateNodeData = vi.fn();
 
@@ -69,15 +69,7 @@ vi.mock('@/features/flows/components/dnd/Droppable', () => ({
 }));
 
 vi.mock('@/features/flows/components/dnd/Handle', () => ({
-  default: ({
-    children,
-    label,
-    onClick,
-  }: {
-    children: ReactNode;
-    label: string;
-    onClick: () => void;
-  }) => (
+  default: ({children, label, onClick}: {children: ReactNode; label: string; onClick: () => void}) => (
     <button type="button" data-testid={`handle-${label}`} aria-label={label} onClick={onClick}>
       {children}
     </button>
@@ -181,11 +173,7 @@ describe('StackAdapter', () => {
     it('should show no empty slots when more children than grid items', () => {
       const resource = createMockElement({
         items: 2,
-        components: [
-          createChildElement('child-1'),
-          createChildElement('child-2'),
-          createChildElement('child-3'),
-        ],
+        components: [createChildElement('child-1'), createChildElement('child-2'), createChildElement('child-3')],
       });
 
       render(<StackAdapter resource={resource} stepId="step-1" />);
@@ -205,9 +193,7 @@ describe('StackAdapter', () => {
 
       const firstActions = screen.getByTestId('extra-actions-child-1');
       expect(firstActions.querySelector('[data-testid="handle-Move Right"]')).toBeInTheDocument();
-      expect(
-        firstActions.querySelector('[data-testid="handle-Move Left"]'),
-      ).not.toBeInTheDocument();
+      expect(firstActions.querySelector('[data-testid="handle-Move Left"]')).not.toBeInTheDocument();
     });
 
     it('should show Move Left but not Move Right for last element', () => {
@@ -220,19 +206,13 @@ describe('StackAdapter', () => {
 
       const lastActions = screen.getByTestId('extra-actions-child-2');
       expect(lastActions.querySelector('[data-testid="handle-Move Left"]')).toBeInTheDocument();
-      expect(
-        lastActions.querySelector('[data-testid="handle-Move Right"]'),
-      ).not.toBeInTheDocument();
+      expect(lastActions.querySelector('[data-testid="handle-Move Right"]')).not.toBeInTheDocument();
     });
 
     it('should show both Move Left and Move Right for middle element', () => {
       const resource = createMockElement({
         direction: 'row',
-        components: [
-          createChildElement('child-1'),
-          createChildElement('child-2'),
-          createChildElement('child-3'),
-        ],
+        components: [createChildElement('child-1'), createChildElement('child-2'), createChildElement('child-3')],
       });
 
       render(<StackAdapter resource={resource} stepId="step-1" />);
@@ -267,9 +247,7 @@ describe('StackAdapter', () => {
 
       const lastActions = screen.getByTestId('extra-actions-child-2');
       expect(lastActions.querySelector('[data-testid="handle-Move Up"]')).toBeInTheDocument();
-      expect(
-        lastActions.querySelector('[data-testid="handle-Move Down"]'),
-      ).not.toBeInTheDocument();
+      expect(lastActions.querySelector('[data-testid="handle-Move Down"]')).not.toBeInTheDocument();
     });
   });
 

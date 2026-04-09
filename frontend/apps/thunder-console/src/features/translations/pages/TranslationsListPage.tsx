@@ -16,12 +16,12 @@
  * under the License.
  */
 
+import {useLogger} from '@thunder/logger/react';
 import {Button, PageContent, PageTitle} from '@wso2/oxygen-ui';
 import {Plus} from '@wso2/oxygen-ui-icons-react';
 import {useCallback, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
-import {useLogger} from '@thunder/logger/react';
 import TranslationsList from '../components/TranslationsList';
 
 /**

@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import SignIn from '../SignIn';
 
 // Mock child components
@@ -31,10 +31,14 @@ vi.mock('../SignInSlogan', () => ({
 
 // Mock useDesign hook
 const mockUseDesign = vi.fn();
-vi.mock('@thunder/shared-design', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-  useDesign: () => mockUseDesign(),
-}));
+vi.mock('@thunder/shared-design', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-design')>();
+  return {
+    ...actual,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    useDesign: () => mockUseDesign(),
+  };
+});
 
 describe('SignIn', () => {
   beforeEach(() => {

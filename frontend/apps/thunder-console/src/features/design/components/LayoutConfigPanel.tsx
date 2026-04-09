@@ -16,10 +16,12 @@
  * under the License.
  */
 
+import {useGetLayout, useUpdateLayout, type Stylesheet} from '@thunder/shared-design';
+import {Box, CircularProgress, Typography} from '@wso2/oxygen-ui';
 import {useCallback, useEffect, useMemo, useRef, type JSX, type RefObject} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Box, CircularProgress, Typography} from '@wso2/oxygen-ui';
-import {useGetLayout, useUpdateLayout} from '@thunder/shared-design';
+import CustomCSSEditor from './layouts/CustomCSSEditor';
+import type {CustomCSSEditorHandle} from './layouts/CustomCSSEditor';
 import ScreenEditor from './layouts/ScreenEditor';
 
 interface LayoutConfigPanelProps {
@@ -30,6 +32,9 @@ interface LayoutConfigPanelProps {
   onScreenDraftChange: (draft: Record<string, unknown>) => void;
   onDirtyChange?: (dirty: boolean) => void;
   saveHandlerRef?: RefObject<() => void>;
+  stylesheets?: Stylesheet[];
+  onStylesheetsChange?: (stylesheets: Stylesheet[]) => void;
+  cssEditorRef?: RefObject<CustomCSSEditorHandle | null>;
 }
 
 // ── Immutable deep-set helper ───────────────────────────────────────────────
@@ -51,8 +56,11 @@ export default function LayoutConfigPanel({
   onScreenChange,
   screenDraft,
   onScreenDraftChange,
-  onDirtyChange = () => {},
+  onDirtyChange = () => null,
   saveHandlerRef = undefined,
+  stylesheets = [],
+  onStylesheetsChange = undefined,
+  cssEditorRef = undefined,
 }: LayoutConfigPanelProps): JSX.Element {
   const {t} = useTranslation('design');
   const {data: layout, isLoading} = useGetLayout(layoutId ?? '');
@@ -84,16 +92,33 @@ export default function LayoutConfigPanel({
   };
 
   const handleSave = useCallback(() => {
-    if (!screenDraft || !layout || !selectedScreen) return;
-    const updatedScreens = {...screens, [selectedScreen]: screenDraft};
-    const updatedLayout = {...layout.layout, screens: updatedScreens};
+    if (!layout) return;
+
+    let updatedLayout = {...layout.layout};
+
+    // Merge screen draft if a screen is selected
+    if (selectedScreen && screenDraft) {
+      updatedLayout = {...updatedLayout, screens: {...screens, [selectedScreen]: screenDraft}};
+    }
+
+    // Only touch head.stylesheets when stylesheet editing is active
+    if (onStylesheetsChange) {
+      if (stylesheets.length > 0) {
+        updatedLayout = {...updatedLayout, head: {...(updatedLayout.head ?? {}), stylesheets}};
+      } else {
+        const headCopy = {...((updatedLayout.head ?? {}) as Record<string, unknown>)};
+        delete headCopy.stylesheets;
+        updatedLayout = {...updatedLayout, head: headCopy};
+      }
+    }
+
     mutateAsync({
       layoutId: layout.id,
       data: {handle: layout.handle, displayName: layout.displayName, layout: updatedLayout},
     })
       .then(() => onDirtyChange?.(false))
       .catch(() => undefined);
-  }, [screenDraft, layout, selectedScreen, screens, mutateAsync, onDirtyChange]);
+  }, [screenDraft, layout, selectedScreen, screens, stylesheets, onStylesheetsChange, mutateAsync, onDirtyChange]);
 
   // Keep the parent's save ref pointing to the latest handleSave
   const handleSaveLatest = useRef(handleSave);
@@ -139,17 +164,14 @@ export default function LayoutConfigPanel({
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <Box sx={{overflowY: 'auto', height: '100%'}}>
+    <>
       {/* Screen config editor */}
-      {screenDraft && selectedScreen ? (
-        <ScreenEditor screenDraft={screenDraft} onUpdate={updateField} />
-      ) : (
-        <Box sx={{px: 2, py: 2}}>
-          <Typography variant="caption" color="text.secondary">
-            {t('layouts.config.no_screen_selected.message', 'No screen selected.')}
-          </Typography>
-        </Box>
+      {screenDraft && selectedScreen && <ScreenEditor screenDraft={screenDraft} onUpdate={updateField} />}
+
+      {/* Custom CSS — layout-level, not per-screen */}
+      {onStylesheetsChange && (
+        <CustomCSSEditor ref={cssEditorRef} stylesheets={stylesheets} onChange={onStylesheetsChange} />
       )}
-    </Box>
+    </>
   );
 }

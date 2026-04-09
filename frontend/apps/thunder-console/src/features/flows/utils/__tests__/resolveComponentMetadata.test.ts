@@ -17,9 +17,9 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import resolveComponentMetadata from '../resolveComponentMetadata';
-import type {Resources} from '../../models/resources';
 import type {Element} from '../../models/elements';
+import type {Resources} from '../../models/resources';
+import resolveComponentMetadata from '../resolveComponentMetadata';
 
 const createMockElement = (overrides: Partial<Element> = {}): Element =>
   ({

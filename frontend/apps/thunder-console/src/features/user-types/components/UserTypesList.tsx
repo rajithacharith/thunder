@@ -16,8 +16,6 @@
  * under the License.
  */
 
-import {useCallback, useEffect, useMemo, useState} from 'react';
-import {useNavigate} from 'react-router';
 import {useLogger} from '@thunder/logger/react';
 import {
   Avatar,
@@ -39,11 +37,13 @@ import {
   useTheme,
 } from '@wso2/oxygen-ui';
 import {Pencil, Trash2, UserRoundCog} from '@wso2/oxygen-ui-icons-react';
+import {useCallback, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
+import {useNavigate} from 'react-router';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
-import useGetUserTypes from '../api/useGetUserTypes';
-import useDeleteUserType from '../api/useDeleteUserType';
 import useGetOrganizationUnits from '../../organization-units/api/useGetOrganizationUnits';
+import useDeleteUserType from '../api/useDeleteUserType';
+import useGetUserTypes from '../api/useGetUserTypes';
 import type {UserSchemaListItem} from '../types/user-types';
 
 type GridColDef<R extends DataGrid.GridValidRowModel = DataGrid.GridValidRowModel> = DataGrid.GridColDef<R>;
@@ -57,11 +57,7 @@ export default function UserTypesList() {
   const logger = useLogger('UserTypesList');
   const dataGridLocaleText = useDataGridLocaleText();
 
-  const {
-    data: userTypesData,
-    isLoading: isUserTypesRequestLoading,
-    error: userTypesRequestError,
-  } = useGetUserTypes();
+  const {data: userTypesData, isLoading: isUserTypesRequestLoading, error: userTypesRequestError} = useGetUserTypes();
   const deleteUserTypeMutation = useDeleteUserType();
   const {
     data: organizationUnitsResponse,
@@ -88,11 +84,13 @@ export default function UserTypesList() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Show snackbar when error occurs
-  useEffect(() => {
+  const [prevError, setPrevError] = useState<typeof error>(null);
+  if (prevError !== error) {
+    setPrevError(error);
     if (error) {
       setSnackbarOpen(true);
     }
-  }, [error]);
+  }
 
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false);

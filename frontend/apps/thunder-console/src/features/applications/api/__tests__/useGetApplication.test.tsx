@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
-import useGetApplication from '../useGetApplication';
-import type {Application} from '../../models/application';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import ApplicationQueryKeys from '../../constants/application-query-keys';
+import type {Application} from '../../models/application';
+import useGetApplication from '../useGetApplication';
 
 // Mock the dependencies
 vi.mock('@asgardeo/react', () => ({
@@ -73,13 +73,13 @@ describe('useGetApplication', () => {
             idToken: {
               validityPeriod: 3600,
               userAttributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
-              scopeClaims: {
-                profile: ['name', 'given_name', 'family_name', 'picture'],
-                email: ['email', 'email_verified'],
-                phone: ['phone_number', 'phone_number_verified'],
-                group: ['groups'],
-              },
             },
+          },
+          scopeClaims: {
+            profile: ['name', 'given_name', 'family_name', 'picture'],
+            email: ['email', 'email_verified'],
+            phone: ['phone_number', 'phone_number_verified'],
+            group: ['groups'],
           },
           scopes: ['openid', 'email', 'profile'],
         },
@@ -110,7 +110,7 @@ describe('useGetApplication', () => {
   });
 
   it('should initialize with loading state when applicationId is provided', () => {
-    mockHttpRequest.mockReturnValue(new Promise(() => {})); // Never resolves
+    mockHttpRequest.mockReturnValue(new Promise(() => null)); // Never resolves
 
     const {result} = renderHook(() => useGetApplication('550e8400-e29b-41d4-a716-446655440000'));
 
@@ -375,13 +375,13 @@ describe('useGetApplication', () => {
               idToken: {
                 validityPeriod: 3600,
                 userAttributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
-                scopeClaims: {
-                  profile: ['name', 'given_name', 'family_name', 'picture'],
-                  email: ['email', 'email_verified'],
-                  phone: ['phone_number', 'phone_number_verified'],
-                  group: ['groups'],
-                },
               },
+            },
+            scopeClaims: {
+              profile: ['name', 'given_name', 'family_name', 'picture'],
+              email: ['email', 'email_verified'],
+              phone: ['phone_number', 'phone_number_verified'],
+              group: ['groups'],
             },
             scopes: ['openid', 'email', 'profile'],
           },

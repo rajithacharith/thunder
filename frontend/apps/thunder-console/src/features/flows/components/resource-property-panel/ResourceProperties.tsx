@@ -18,21 +18,21 @@
 
 import {Stack, Typography} from '@wso2/oxygen-ui';
 import {useReactFlow, type Node as FlowNode} from '@xyflow/react';
-import {useRef, useMemo, useCallback, memo, type ReactElement} from 'react';
 import cloneDeep from 'lodash-es/cloneDeep';
-import merge from 'lodash-es/merge';
 import debounce from 'lodash-es/debounce';
-import set from 'lodash-es/set';
 import isEmpty from 'lodash-es/isEmpty';
-import type {Properties} from '../../models/base';
-import type {Resource} from '../../models/resources';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import merge from 'lodash-es/merge';
+import set from 'lodash-es/set';
+import {useRef, useEffect, useMemo, useCallback, memo, type ReactElement} from 'react';
 import ResourcePropertyPanelConstants from '../../constants/ResourcePropertyPanelConstants';
-import PluginRegistry from '../../plugins/PluginRegistry';
-import FlowEventTypes from '../../models/extension';
-import type {StepData} from '../../models/steps';
+import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import type {Properties} from '../../models/base';
 import type {Element} from '../../models/elements';
 import {ElementTypes} from '../../models/elements';
+import FlowEventTypes from '../../models/extension';
+import type {Resource} from '../../models/resources';
+import type {StepData} from '../../models/steps';
+import PluginRegistry from '../../plugins/PluginRegistry';
 
 /**
  * Props interface of {@link ResourceProperties}
@@ -75,7 +75,6 @@ function ResourceProperties(): ReactElement {
 
   // Use a ref to track the current resource ID for debounced functions
   const lastInteractedResourceIdRef = useRef<string>(lastInteractedResource?.id);
-  lastInteractedResourceIdRef.current = lastInteractedResource?.id;
 
   const lastInteractedResourceRef = useRef(lastInteractedResource);
   const lastInteractedStepIdRef = useRef(lastInteractedStepId);
@@ -83,10 +82,13 @@ function ResourceProperties(): ReactElement {
   const updateNodeDataRef = useRef(updateNodeData);
 
   // Keep refs in sync
-  lastInteractedResourceRef.current = lastInteractedResource;
-  lastInteractedStepIdRef.current = lastInteractedStepId;
-  setLastInteractedResourceRef.current = setLastInteractedResource;
-  updateNodeDataRef.current = updateNodeData;
+  useEffect(() => {
+    lastInteractedResourceIdRef.current = lastInteractedResource?.id;
+    lastInteractedResourceRef.current = lastInteractedResource;
+    lastInteractedStepIdRef.current = lastInteractedStepId;
+    setLastInteractedResourceRef.current = setLastInteractedResource;
+    updateNodeDataRef.current = updateNodeData;
+  });
 
   /**
    * Memoize filtered properties to avoid expensive operations on every render.
@@ -128,7 +130,10 @@ function ResourceProperties(): ReactElement {
 
     // Ensure TEXT elements always expose `align` so the dropdown is visible
     // even for elements that were created before `align` was added as a default.
-    if (lastInteractedResource.type === ElementTypes.Text && (accumulated as Record<string, unknown>).align === undefined) {
+    if (
+      lastInteractedResource.type === ElementTypes.Text &&
+      (accumulated as Record<string, unknown>).align === undefined
+    ) {
       (accumulated as Record<string, unknown>).align = 'left';
     }
 
@@ -211,120 +216,123 @@ function ResourceProperties(): ReactElement {
   }, []);
 
   /**
-   * Create debounced handler using useRef to maintain stable reference.
+   * Create debounced handler using useMemo to maintain stable reference.
    * Uses refs internally to access current values without stale closures.
    */
-  const handlePropertyChangeRef = useRef(
-    debounce(async (propertyKey: string, newValue: string | boolean | object, element: Element): Promise<void> => {
-      const currentStepId = lastInteractedStepIdRef.current;
-      const currentResource = lastInteractedResourceRef.current;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const handlePropertyChangeDebounced = useMemo(
+    () =>
+      debounce(async (propertyKey: string, newValue: string | boolean | object, element: Element): Promise<void> => {
+        const currentStepId = lastInteractedStepIdRef.current;
+        const currentResource = lastInteractedResourceRef.current;
 
-      // Execute plugins for ON_PROPERTY_CHANGE event.
-      const pluginResult = await PluginRegistry.getInstance().executeAsync(
-        FlowEventTypes.ON_PROPERTY_CHANGE,
-        propertyKey,
-        newValue,
-        element,
-        currentStepId,
-      );
+        // Execute plugins for ON_PROPERTY_CHANGE event.
+        const pluginResult = await PluginRegistry.getInstance().executeAsync(
+          FlowEventTypes.ON_PROPERTY_CHANGE,
+          propertyKey,
+          newValue,
+          element,
+          currentStepId,
+        );
 
-      // If plugin handled the change (returned false), still update the resource to trigger re-render
-      // This ensures properties panel updates after plugin modifications (e.g., adding confirm password field)
-      if (!pluginResult) {
-        if (element.id === lastInteractedResourceIdRef.current && currentResource) {
-          const updatedResource: Resource = cloneDeep(currentResource);
-          set(updatedResource as unknown as Record<string, unknown>, propertyKey, newValue);
-          setLastInteractedResourceRef.current(updatedResource);
+        // If plugin handled the change (returned false), still update the resource to trigger re-render
+        // This ensures properties panel updates after plugin modifications (e.g., adding confirm password field)
+        if (!pluginResult) {
+          if (element.id === lastInteractedResourceIdRef.current && currentResource) {
+            const updatedResource: Resource = cloneDeep(currentResource);
+            set(updatedResource as unknown as Record<string, unknown>, propertyKey, newValue);
+            setLastInteractedResourceRef.current(updatedResource);
+          }
+          return;
         }
-        return;
-      }
 
-      const updateComponent = (components: Element[]): Element[] =>
-        components.map((component: Element) => {
-          if (component.id === element.id) {
-            const updated = {...component};
+        const updateComponent = (components: Element[]): Element[] =>
+          components.map((component: Element) => {
+            if (component.id === element.id) {
+              const updated = {...component};
 
-            set(updated, propertyKey, newValue);
+              set(updated, propertyKey, newValue);
 
-            return updated;
+              return updated;
+            }
+
+            if (component.components) {
+              return {
+                ...component,
+                components: updateComponent(component.components),
+              };
+            }
+
+            return component;
+          });
+
+        updateNodeDataRef.current(currentStepId, (node: FlowNode<StepData>) => {
+          const data: StepData = node?.data ?? {};
+
+          if (!isEmpty(node?.data?.components)) {
+            data.components = updateComponent(cloneDeep(node?.data?.components) ?? []);
+          } else if (propertyKey === 'data') {
+            // When propertyKey is exactly 'data', replace the entire data object
+            return {...(newValue as StepData)};
+          } else {
+            // Strip 'data.' prefix if present since we're already setting on the data object
+            const actualKey = propertyKey.startsWith('data.') ? propertyKey.slice(5) : propertyKey;
+            set(data as Record<string, unknown>, actualKey, newValue);
           }
 
-          if (component.components) {
-            return {
-              ...component,
-              components: updateComponent(component.components),
-            };
-          }
-
-          return component;
+          return {...data};
         });
 
-      updateNodeDataRef.current(currentStepId, (node: FlowNode<StepData>) => {
-        const data: StepData = node?.data ?? {};
+        // Only update lastInteractedResource if the element being changed is still the currently selected one.
+        // This prevents stale updates from overwriting the heading when user switches to a different element.
+        // Use the ref to get the current resource ID at execution time (not from the stale closure).
+        if (propertyKey !== 'action' && element.id === lastInteractedResourceIdRef.current && currentResource) {
+          const updatedResource: Resource = cloneDeep(currentResource);
 
-        if (!isEmpty(node?.data?.components)) {
-          data.components = updateComponent(cloneDeep(node?.data?.components) ?? []);
-        } else if (propertyKey === 'data') {
-          // When propertyKey is exactly 'data', replace the entire data object
-          return {...(newValue as StepData)};
-        } else {
-          // Strip 'data.' prefix if present since we're already setting on the data object
-          const actualKey = propertyKey.startsWith('data.') ? propertyKey.slice(5) : propertyKey;
-          set(data as Record<string, unknown>, actualKey, newValue);
+          // Top-level editable properties are set directly on the resource
+          const topLevelEditableProps = [
+            'label',
+            'hint',
+            'placeholder',
+            'required',
+            'src',
+            'alt',
+            'width',
+            'height',
+            'startIcon',
+            'endIcon',
+            'items',
+            'direction',
+            'gap',
+            'align',
+            'justify',
+            'name',
+            'size',
+            'color',
+          ];
+          if (propertyKey === 'data') {
+            // When propertyKey is exactly 'data', replace the entire data object
+            updatedResource.data = newValue as StepData;
+          } else if (topLevelEditableProps.includes(propertyKey)) {
+            set(updatedResource as unknown as Record<string, unknown>, propertyKey, newValue);
+          } else if (propertyKey.startsWith('config.') || propertyKey.startsWith('data.')) {
+            // Properties starting with 'config.' or 'data.' should be set on the resource directly
+            set(updatedResource, propertyKey, newValue);
+          } else {
+            set(updatedResource.data as Record<string, unknown>, propertyKey, newValue);
+          }
+          setLastInteractedResourceRef.current(updatedResource);
         }
-
-        return {...data};
-      });
-
-      // Only update lastInteractedResource if the element being changed is still the currently selected one.
-      // This prevents stale updates from overwriting the heading when user switches to a different element.
-      // Use the ref to get the current resource ID at execution time (not from the stale closure).
-      if (propertyKey !== 'action' && element.id === lastInteractedResourceIdRef.current && currentResource) {
-        const updatedResource: Resource = cloneDeep(currentResource);
-
-        // Top-level editable properties are set directly on the resource
-        const topLevelEditableProps = [
-          'label',
-          'hint',
-          'placeholder',
-          'required',
-          'src',
-          'alt',
-          'width',
-          'height',
-          'startIcon',
-          'endIcon',
-          'items',
-          'direction',
-          'gap',
-          'align',
-          'justify',
-          'name',
-          'size',
-          'color',
-        ];
-        if (propertyKey === 'data') {
-          // When propertyKey is exactly 'data', replace the entire data object
-          updatedResource.data = newValue as StepData;
-        } else if (topLevelEditableProps.includes(propertyKey)) {
-          set(updatedResource as unknown as Record<string, unknown>, propertyKey, newValue);
-        } else if (propertyKey.startsWith('config.') || propertyKey.startsWith('data.')) {
-          // Properties starting with 'config.' or 'data.' should be set on the resource directly
-          set(updatedResource, propertyKey, newValue);
-        } else {
-          set(updatedResource.data as Record<string, unknown>, propertyKey, newValue);
-        }
-        setLastInteractedResourceRef.current(updatedResource);
-      }
-    }, 300),
+      }, 300),
+    [],
   );
 
   const handlePropertyChange = useCallback(
     (propertyKey: string, newValue: string | boolean | object, element: Element) => {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      handlePropertyChangeRef.current(propertyKey, newValue, element);
+      handlePropertyChangeDebounced(propertyKey, newValue, element);
     },
-    [],
+    [handlePropertyChangeDebounced],
   );
 
   if (!lastInteractedResource) {

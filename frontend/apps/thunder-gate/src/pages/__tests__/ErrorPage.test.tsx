@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
+import {describe, it, expect, vi} from 'vitest';
 import ErrorPage from '../ErrorPage';
 
 // Mock the Error component

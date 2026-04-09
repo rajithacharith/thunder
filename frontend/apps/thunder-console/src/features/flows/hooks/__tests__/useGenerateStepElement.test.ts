@@ -18,10 +18,10 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 
-import {describe, it, expect, vi} from 'vitest';
 import {renderHook} from '@testing-library/react';
-import useGenerateStepElement from '../useGenerateStepElement';
+import {describe, it, expect, vi} from 'vitest';
 import type {Element} from '../../models/elements';
+import useGenerateStepElement from '../useGenerateStepElement';
 
 // Mock generateResourceId
 vi.mock('../../utils/generateResourceId', () => ({

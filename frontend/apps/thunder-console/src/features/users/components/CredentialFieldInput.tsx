@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {useState} from 'react';
 import {IconButton, InputAdornment, TextField} from '@wso2/oxygen-ui';
 import {Eye, EyeClosed} from '@wso2/oxygen-ui-icons-react';
+import {useState} from 'react';
 
 interface CredentialFieldInputProps {
   id: string;
@@ -34,7 +34,19 @@ interface CredentialFieldInputProps {
   name: string;
 }
 
-function CredentialFieldInput({id, value, placeholder, required, error, helperText = undefined, color, onChange, onBlur, inputRef, name}: CredentialFieldInputProps) {
+function CredentialFieldInput({
+  id,
+  value,
+  placeholder,
+  required,
+  error,
+  helperText = undefined,
+  color,
+  onChange,
+  onBlur,
+  inputRef,
+  name,
+}: CredentialFieldInputProps) {
   const [showPassword, setShowPassword] = useState(false);
 
   return (

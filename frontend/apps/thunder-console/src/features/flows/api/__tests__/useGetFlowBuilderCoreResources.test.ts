@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {renderHook} from '@testing-library/react';
-import useGetFlowBuilderCoreResources from '../useGetFlowBuilderCoreResources';
+import {describe, it, expect} from 'vitest';
 import elements from '../../data/elements.json';
 import steps from '../../data/steps.json';
 import templates from '../../data/templates.json';
 import widgets from '../../data/widgets.json';
+import useGetFlowBuilderCoreResources from '../useGetFlowBuilderCoreResources';
 
 describe('useGetFlowBuilderCoreResources', () => {
   describe('Return Structure', () => {
@@ -186,20 +186,18 @@ describe('useGetFlowBuilderCoreResources', () => {
       const {result} = renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
-      if (data.elements.length > 0) {
-        const firstElement = data.elements[0];
-        expect(firstElement).toHaveProperty('resourceType', 'ELEMENT');
-      }
+      expect(data.elements.length).toBeGreaterThan(0);
+      const firstElement = data.elements[0];
+      expect(firstElement).toHaveProperty('resourceType', 'ELEMENT');
     });
 
     it('should contain elements with display property', () => {
       const {result} = renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
-      if (data.elements.length > 0) {
-        const firstElement = data.elements[0];
-        expect(firstElement).toHaveProperty('display');
-      }
+      expect(data.elements.length).toBeGreaterThan(0);
+      const firstElement = data.elements[0];
+      expect(firstElement).toHaveProperty('display');
     });
   });
 
@@ -208,20 +206,18 @@ describe('useGetFlowBuilderCoreResources', () => {
       const {result} = renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
-      if (data.steps.length > 0) {
-        const firstStep = data.steps[0];
-        expect(firstStep).toHaveProperty('resourceType', 'STEP');
-      }
+      expect(data.steps.length).toBeGreaterThan(0);
+      const firstStep = data.steps[0];
+      expect(firstStep).toHaveProperty('resourceType', 'STEP');
     });
 
     it('should contain steps with type property', () => {
       const {result} = renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
-      if (data.steps.length > 0) {
-        const firstStep = data.steps[0];
-        expect(firstStep).toHaveProperty('type');
-      }
+      expect(data.steps.length).toBeGreaterThan(0);
+      const firstStep = data.steps[0];
+      expect(firstStep).toHaveProperty('type');
     });
   });
 

@@ -86,15 +86,15 @@ func setupCacheMock[T any](
 	data map[string]T,
 ) {
 	// Set up Set to track values
-	mockCache.EXPECT().Set(mock.Anything, mock.Anything).
-		RunAndReturn(func(key cache.CacheKey, value T) error {
+	mockCache.EXPECT().Set(mock.Anything, mock.Anything, mock.Anything).
+		RunAndReturn(func(ctx context.Context, key cache.CacheKey, value T) error {
 			data[key.Key] = value
 			return nil
 		}).Maybe()
 
 	// Set up Get to return tracked values
-	mockCache.EXPECT().Get(mock.Anything).
-		RunAndReturn(func(key cache.CacheKey) (T, bool) {
+	mockCache.EXPECT().Get(mock.Anything, mock.Anything).
+		RunAndReturn(func(ctx context.Context, key cache.CacheKey) (T, bool) {
 			if val, ok := data[key.Key]; ok {
 				return val, true
 			}
@@ -103,15 +103,15 @@ func setupCacheMock[T any](
 		}).Maybe()
 
 	// Set up Delete to remove from tracked values
-	mockCache.EXPECT().Delete(mock.Anything).
-		RunAndReturn(func(key cache.CacheKey) error {
+	mockCache.EXPECT().Delete(mock.Anything, mock.Anything).
+		RunAndReturn(func(ctx context.Context, key cache.CacheKey) error {
 			delete(data, key.Key)
 			return nil
 		}).Maybe()
 
 	// Set up Clear to clear tracked values
-	mockCache.EXPECT().Clear().
-		RunAndReturn(func() error {
+	mockCache.EXPECT().Clear(mock.Anything).
+		RunAndReturn(func(ctx context.Context) error {
 			for k := range data {
 				delete(data, k)
 			}
@@ -216,12 +216,12 @@ func (suite *CacheBackedStoreTestSuite) TestCreateApplication_Success() {
 	suite.mockStore.AssertExpectations(suite.T())
 
 	// Verify application is cached by ID
-	cachedByID, ok := suite.appByIDCache.Get(cache.CacheKey{Key: app.ID})
+	cachedByID, ok := suite.appByIDCache.Get(context.Background(), cache.CacheKey{Key: app.ID})
 	suite.True(ok)
 	suite.Equal(app.ID, cachedByID.ID)
 
 	// Verify application is cached by name
-	cachedByName, ok := suite.appByNameCache.Get(cache.CacheKey{Key: app.Name})
+	cachedByName, ok := suite.appByNameCache.Get(context.Background(), cache.CacheKey{Key: app.Name})
 	suite.True(ok)
 	suite.Equal(app.Name, cachedByName.Name)
 }
@@ -236,7 +236,7 @@ func (suite *CacheBackedStoreTestSuite) TestCreateApplication_WithOAuth() {
 	suite.mockStore.AssertExpectations(suite.T())
 
 	// Verify OAuth app is cached
-	cachedOAuth, ok := suite.oauthAppCache.Get(cache.CacheKey{Key: "test-client-id"})
+	cachedOAuth, ok := suite.oauthAppCache.Get(context.Background(), cache.CacheKey{Key: "test-client-id"})
 	suite.True(ok)
 	suite.Equal("test-client-id", cachedOAuth.ClientID)
 }
@@ -252,7 +252,7 @@ func (suite *CacheBackedStoreTestSuite) TestCreateApplication_StoreError() {
 	suite.mockStore.AssertExpectations(suite.T())
 
 	// Verify nothing is cached on error
-	_, ok := suite.appByIDCache.Get(cache.CacheKey{Key: app.ID})
+	_, ok := suite.appByIDCache.Get(context.Background(), cache.CacheKey{Key: app.ID})
 	suite.False(ok)
 }
 
@@ -261,8 +261,8 @@ func (suite *CacheBackedStoreTestSuite) TestCreateApplication_CacheSetError() {
 	cacheSetErr := errors.New("cache set error")
 
 	// Override Set expectation to return error
-	suite.appByIDCache.EXPECT().Set(mock.Anything, mock.Anything).Return(cacheSetErr).Maybe()
-	suite.appByNameCache.EXPECT().Set(mock.Anything, mock.Anything).Return(cacheSetErr).Maybe()
+	suite.appByIDCache.EXPECT().Set(mock.Anything, mock.Anything, mock.Anything).Return(cacheSetErr).Maybe()
+	suite.appByNameCache.EXPECT().Set(mock.Anything, mock.Anything, mock.Anything).Return(cacheSetErr).Maybe()
 
 	suite.mockStore.On("CreateApplication", mock.Anything, *app).Return(nil).Once()
 
@@ -328,7 +328,7 @@ func (suite *CacheBackedStoreTestSuite) TestGetApplicationList_StoreError() {
 // GetOAuthApplication tests
 func (suite *CacheBackedStoreTestSuite) TestGetOAuthApplication_CacheHit() {
 	oauthApp := suite.createTestOAuthApp()
-	_ = suite.oauthAppCache.Set(cache.CacheKey{Key: "test-client-id"}, oauthApp)
+	_ = suite.oauthAppCache.Set(context.Background(), cache.CacheKey{Key: "test-client-id"}, oauthApp)
 
 	result, err := suite.cachedStore.GetOAuthApplication(context.Background(), "test-client-id")
 	suite.Nil(err)
@@ -349,7 +349,7 @@ func (suite *CacheBackedStoreTestSuite) TestGetOAuthApplication_CacheMiss() {
 	suite.mockStore.AssertExpectations(suite.T())
 
 	// Verify it's now cached
-	cachedOAuth, ok := suite.oauthAppCache.Get(cache.CacheKey{Key: "test-client-id"})
+	cachedOAuth, ok := suite.oauthAppCache.Get(context.Background(), cache.CacheKey{Key: "test-client-id"})
 	suite.True(ok)
 	suite.Equal(oauthApp.ClientID, cachedOAuth.ClientID)
 }
@@ -375,14 +375,14 @@ func (suite *CacheBackedStoreTestSuite) TestGetOAuthApplication_NilResult() {
 	suite.mockStore.AssertExpectations(suite.T())
 
 	// Verify nothing is cached
-	_, ok := suite.oauthAppCache.Get(cache.CacheKey{Key: "test-client-id"})
+	_, ok := suite.oauthAppCache.Get(context.Background(), cache.CacheKey{Key: "test-client-id"})
 	suite.False(ok)
 }
 
 // GetApplicationByID tests
 func (suite *CacheBackedStoreTestSuite) TestGetApplicationByID_CacheHit() {
 	app := suite.createTestApp()
-	_ = suite.appByIDCache.Set(cache.CacheKey{Key: app.ID}, app)
+	_ = suite.appByIDCache.Set(context.Background(), cache.CacheKey{Key: app.ID}, app)
 
 	result, err := suite.cachedStore.GetApplicationByID(context.Background(), app.ID)
 	suite.Nil(err)
@@ -403,7 +403,7 @@ func (suite *CacheBackedStoreTestSuite) TestGetApplicationByID_CacheMiss() {
 	suite.mockStore.AssertExpectations(suite.T())
 
 	// Verify it's now cached
-	cachedApp, ok := suite.appByIDCache.Get(cache.CacheKey{Key: app.ID})
+	cachedApp, ok := suite.appByIDCache.Get(context.Background(), cache.CacheKey{Key: app.ID})
 	suite.True(ok)
 	suite.Equal(app.ID, cachedApp.ID)
 }
@@ -429,14 +429,14 @@ func (suite *CacheBackedStoreTestSuite) TestGetApplicationByID_NilResult() {
 	suite.mockStore.AssertExpectations(suite.T())
 
 	// Verify nothing is cached
-	_, ok := suite.appByIDCache.Get(cache.CacheKey{Key: "test-id"})
+	_, ok := suite.appByIDCache.Get(context.Background(), cache.CacheKey{Key: "test-id"})
 	suite.False(ok)
 }
 
 // GetApplicationByName tests
 func (suite *CacheBackedStoreTestSuite) TestGetApplicationByName_CacheHit() {
 	app := suite.createTestApp()
-	_ = suite.appByNameCache.Set(cache.CacheKey{Key: app.Name}, app)
+	_ = suite.appByNameCache.Set(context.Background(), cache.CacheKey{Key: app.Name}, app)
 
 	result, err := suite.cachedStore.GetApplicationByName(context.Background(), app.Name)
 	suite.Nil(err)
@@ -457,7 +457,7 @@ func (suite *CacheBackedStoreTestSuite) TestGetApplicationByName_CacheMiss() {
 	suite.mockStore.AssertExpectations(suite.T())
 
 	// Verify it's now cached
-	cachedApp, ok := suite.appByNameCache.Get(cache.CacheKey{Key: app.Name})
+	cachedApp, ok := suite.appByNameCache.Get(context.Background(), cache.CacheKey{Key: app.Name})
 	suite.True(ok)
 	suite.Equal(app.Name, cachedApp.Name)
 }
@@ -483,7 +483,7 @@ func (suite *CacheBackedStoreTestSuite) TestGetApplicationByName_NilResult() {
 	suite.mockStore.AssertExpectations(suite.T())
 
 	// Verify nothing is cached
-	_, ok := suite.appByNameCache.Get(cache.CacheKey{Key: "test-name"})
+	_, ok := suite.appByNameCache.Get(context.Background(), cache.CacheKey{Key: "test-name"})
 	suite.False(ok)
 }
 
@@ -501,7 +501,7 @@ func (suite *CacheBackedStoreTestSuite) TestUpdateApplication_Success() {
 	suite.mockStore.AssertExpectations(suite.T())
 
 	// Verify updated app is cached
-	cachedByID, ok := suite.appByIDCache.Get(cache.CacheKey{Key: updatedApp.ID})
+	cachedByID, ok := suite.appByIDCache.Get(context.Background(), cache.CacheKey{Key: updatedApp.ID})
 	suite.True(ok)
 	suite.Equal(updatedApp.Name, cachedByID.Name)
 }
@@ -512,9 +512,10 @@ func (suite *CacheBackedStoreTestSuite) TestUpdateApplication_WithOAuth() {
 	updatedApp.InboundAuthConfig[0].OAuthAppConfig.RedirectURIs = []string{"https://new.example.com/callback"}
 
 	// Pre-cache the existing app
-	_ = suite.appByIDCache.Set(cache.CacheKey{Key: existingApp.ID}, existingApp)
-	_ = suite.appByNameCache.Set(cache.CacheKey{Key: existingApp.Name}, existingApp)
+	_ = suite.appByIDCache.Set(context.Background(), cache.CacheKey{Key: existingApp.ID}, existingApp)
+	_ = suite.appByNameCache.Set(context.Background(), cache.CacheKey{Key: existingApp.Name}, existingApp)
 	_ = suite.oauthAppCache.Set(
+		context.Background(),
 		cache.CacheKey{Key: existingApp.InboundAuthConfig[0].OAuthAppConfig.ClientID},
 		existingApp.InboundAuthConfig[0].OAuthAppConfig,
 	)
@@ -527,7 +528,7 @@ func (suite *CacheBackedStoreTestSuite) TestUpdateApplication_WithOAuth() {
 
 	// Verify old caches are invalidated and new app is cached
 	clientID := updatedApp.InboundAuthConfig[0].OAuthAppConfig.ClientID
-	cachedOAuth, ok := suite.oauthAppCache.Get(cache.CacheKey{Key: clientID})
+	cachedOAuth, ok := suite.oauthAppCache.Get(context.Background(), cache.CacheKey{Key: clientID})
 	suite.True(ok)
 	suite.Equal(updatedApp.InboundAuthConfig[0].OAuthAppConfig.RedirectURIs, cachedOAuth.RedirectURIs)
 }
@@ -550,8 +551,8 @@ func (suite *CacheBackedStoreTestSuite) TestUpdateApplication_CacheInvalidationE
 	cacheDelErr := errors.New("cache delete error")
 
 	// Override Delete expectation to return error
-	suite.appByIDCache.EXPECT().Delete(mock.Anything).Return(cacheDelErr).Maybe()
-	suite.appByNameCache.EXPECT().Delete(mock.Anything).Return(cacheDelErr).Maybe()
+	suite.appByIDCache.EXPECT().Delete(mock.Anything, mock.Anything).Return(cacheDelErr).Maybe()
+	suite.appByNameCache.EXPECT().Delete(mock.Anything, mock.Anything).Return(cacheDelErr).Maybe()
 
 	suite.mockStore.On("UpdateApplication", mock.Anything, existingApp, updatedApp).Return(nil).Once()
 
@@ -564,7 +565,7 @@ func (suite *CacheBackedStoreTestSuite) TestUpdateApplication_CacheInvalidationE
 // DeleteApplication tests
 func (suite *CacheBackedStoreTestSuite) TestDeleteApplication_FoundInCache() {
 	app := suite.createTestAppWithOAuth()
-	_ = suite.appByIDCache.Set(cache.CacheKey{Key: app.ID}, app)
+	_ = suite.appByIDCache.Set(context.Background(), cache.CacheKey{Key: app.ID}, app)
 
 	suite.mockStore.On("DeleteApplication", mock.Anything, app.ID).Return(nil).Once()
 
@@ -573,11 +574,12 @@ func (suite *CacheBackedStoreTestSuite) TestDeleteApplication_FoundInCache() {
 	suite.mockStore.AssertExpectations(suite.T())
 
 	// Verify all caches are invalidated
-	_, ok := suite.appByIDCache.Get(cache.CacheKey{Key: app.ID})
+	_, ok := suite.appByIDCache.Get(context.Background(), cache.CacheKey{Key: app.ID})
 	suite.False(ok)
-	_, ok = suite.appByNameCache.Get(cache.CacheKey{Key: app.Name})
+	_, ok = suite.appByNameCache.Get(context.Background(), cache.CacheKey{Key: app.Name})
 	suite.False(ok)
-	_, ok = suite.oauthAppCache.Get(cache.CacheKey{Key: app.InboundAuthConfig[0].OAuthAppConfig.ClientID})
+	_, ok = suite.oauthAppCache.Get(
+		context.Background(), cache.CacheKey{Key: app.InboundAuthConfig[0].OAuthAppConfig.ClientID})
 	suite.False(ok)
 }
 
@@ -623,7 +625,7 @@ func (suite *CacheBackedStoreTestSuite) TestDeleteApplication_NilApplication() {
 
 func (suite *CacheBackedStoreTestSuite) TestDeleteApplication_StoreError() {
 	app := suite.createTestApp()
-	_ = suite.appByIDCache.Set(cache.CacheKey{Key: app.ID}, app)
+	_ = suite.appByIDCache.Set(context.Background(), cache.CacheKey{Key: app.ID}, app)
 	storeErr := errors.New("store error")
 
 	suite.mockStore.On("DeleteApplication", mock.Anything, app.ID).Return(storeErr).Once()
@@ -635,12 +637,12 @@ func (suite *CacheBackedStoreTestSuite) TestDeleteApplication_StoreError() {
 
 func (suite *CacheBackedStoreTestSuite) TestDeleteApplication_CacheInvalidationError() {
 	app := suite.createTestApp()
-	_ = suite.appByIDCache.Set(cache.CacheKey{Key: app.ID}, app)
+	_ = suite.appByIDCache.Set(context.Background(), cache.CacheKey{Key: app.ID}, app)
 	cacheDelErr := errors.New("cache delete error")
 
 	// Override Delete expectation to return error
-	suite.appByIDCache.EXPECT().Delete(mock.Anything).Return(cacheDelErr).Maybe()
-	suite.appByNameCache.EXPECT().Delete(mock.Anything).Return(cacheDelErr).Maybe()
+	suite.appByIDCache.EXPECT().Delete(mock.Anything, mock.Anything).Return(cacheDelErr).Maybe()
+	suite.appByNameCache.EXPECT().Delete(mock.Anything, mock.Anything).Return(cacheDelErr).Maybe()
 
 	suite.mockStore.On("DeleteApplication", mock.Anything, app.ID).Return(nil).Once()
 
@@ -653,7 +655,7 @@ func (suite *CacheBackedStoreTestSuite) TestDeleteApplication_CacheInvalidationE
 // cacheApplication tests
 func (suite *CacheBackedStoreTestSuite) TestCacheApplication_WithNil() {
 	// Should not panic with nil
-	suite.cachedStore.cacheApplication(nil)
+	suite.cachedStore.cacheApplication(context.Background(), nil)
 
 	// Verify nothing is cached
 	suite.Equal(0, len(suite.appByIDData))
@@ -664,12 +666,12 @@ func (suite *CacheBackedStoreTestSuite) TestCacheApplication_WithEmptyID() {
 	app := suite.createTestApp()
 	app.ID = ""
 
-	suite.cachedStore.cacheApplication(app)
+	suite.cachedStore.cacheApplication(context.Background(), app)
 
 	// Verify only name is cached
-	_, ok := suite.appByIDCache.Get(cache.CacheKey{Key: ""})
+	_, ok := suite.appByIDCache.Get(context.Background(), cache.CacheKey{Key: ""})
 	suite.False(ok)
-	cachedByName, ok := suite.appByNameCache.Get(cache.CacheKey{Key: app.Name})
+	cachedByName, ok := suite.appByNameCache.Get(context.Background(), cache.CacheKey{Key: app.Name})
 	suite.True(ok)
 	suite.Equal(app.Name, cachedByName.Name)
 }
@@ -678,27 +680,28 @@ func (suite *CacheBackedStoreTestSuite) TestCacheApplication_WithEmptyName() {
 	app := suite.createTestApp()
 	app.Name = ""
 
-	suite.cachedStore.cacheApplication(app)
+	suite.cachedStore.cacheApplication(context.Background(), app)
 
 	// Verify only ID is cached
-	cachedByID, ok := suite.appByIDCache.Get(cache.CacheKey{Key: app.ID})
+	cachedByID, ok := suite.appByIDCache.Get(context.Background(), cache.CacheKey{Key: app.ID})
 	suite.True(ok)
 	suite.Equal(app.ID, cachedByID.ID)
-	_, ok = suite.appByNameCache.Get(cache.CacheKey{Key: ""})
+	_, ok = suite.appByNameCache.Get(context.Background(), cache.CacheKey{Key: ""})
 	suite.False(ok)
 }
 
 func (suite *CacheBackedStoreTestSuite) TestCacheApplication_WithOAuthConfig() {
 	app := suite.createTestAppWithOAuth()
 
-	suite.cachedStore.cacheApplication(app)
+	suite.cachedStore.cacheApplication(context.Background(), app)
 
 	// Verify all caches are populated
-	_, ok := suite.appByIDCache.Get(cache.CacheKey{Key: app.ID})
+	_, ok := suite.appByIDCache.Get(context.Background(), cache.CacheKey{Key: app.ID})
 	suite.True(ok)
-	_, ok = suite.appByNameCache.Get(cache.CacheKey{Key: app.Name})
+	_, ok = suite.appByNameCache.Get(context.Background(), cache.CacheKey{Key: app.Name})
 	suite.True(ok)
-	_, ok = suite.oauthAppCache.Get(cache.CacheKey{Key: app.InboundAuthConfig[0].OAuthAppConfig.ClientID})
+	_, ok = suite.oauthAppCache.Get(
+		context.Background(), cache.CacheKey{Key: app.InboundAuthConfig[0].OAuthAppConfig.ClientID})
 	suite.True(ok)
 }
 
@@ -707,13 +710,13 @@ func (suite *CacheBackedStoreTestSuite) TestCacheApplication_CacheSetError() {
 	cacheSetErr := errors.New("cache set error")
 
 	// Override Set expectation for ID cache to return error
-	suite.appByIDCache.EXPECT().Set(mock.Anything, mock.Anything).Return(cacheSetErr).Maybe()
+	suite.appByIDCache.EXPECT().Set(mock.Anything, mock.Anything, mock.Anything).Return(cacheSetErr).Maybe()
 
 	// Should not panic or fail
-	suite.cachedStore.cacheApplication(app)
+	suite.cachedStore.cacheApplication(context.Background(), app)
 
 	// Name cache should still work
-	cachedByName, ok := suite.appByNameCache.Get(cache.CacheKey{Key: app.Name})
+	cachedByName, ok := suite.appByNameCache.Get(context.Background(), cache.CacheKey{Key: app.Name})
 	suite.True(ok)
 	suite.Equal(app.Name, cachedByName.Name)
 }
@@ -723,13 +726,13 @@ func (suite *CacheBackedStoreTestSuite) TestCacheApplication_NameCacheSetError()
 	cacheSetErr := errors.New("cache set error")
 
 	// Override Set expectation for name cache to return error
-	suite.appByNameCache.EXPECT().Set(mock.Anything, mock.Anything).Return(cacheSetErr).Maybe()
+	suite.appByNameCache.EXPECT().Set(mock.Anything, mock.Anything, mock.Anything).Return(cacheSetErr).Maybe()
 
 	// Should not panic or fail
-	suite.cachedStore.cacheApplication(app)
+	suite.cachedStore.cacheApplication(context.Background(), app)
 
 	// ID cache should still work
-	cachedByID, ok := suite.appByIDCache.Get(cache.CacheKey{Key: app.ID})
+	cachedByID, ok := suite.appByIDCache.Get(context.Background(), cache.CacheKey{Key: app.ID})
 	suite.True(ok)
 	suite.Equal(app.ID, cachedByID.ID)
 }
@@ -737,7 +740,7 @@ func (suite *CacheBackedStoreTestSuite) TestCacheApplication_NameCacheSetError()
 // cacheOAuthApplication tests
 func (suite *CacheBackedStoreTestSuite) TestCacheOAuthApplication_WithNil() {
 	// Should not panic with nil
-	suite.cachedStore.cacheOAuthApplication(nil)
+	suite.cachedStore.cacheOAuthApplication(context.Background(), nil)
 
 	// Verify nothing is cached
 	suite.Equal(0, len(suite.oauthAppData))
@@ -747,7 +750,7 @@ func (suite *CacheBackedStoreTestSuite) TestCacheOAuthApplication_WithEmptyClien
 	oauthApp := suite.createTestOAuthApp()
 	oauthApp.ClientID = ""
 
-	suite.cachedStore.cacheOAuthApplication(oauthApp)
+	suite.cachedStore.cacheOAuthApplication(context.Background(), oauthApp)
 
 	// Verify nothing is cached
 	suite.Equal(0, len(suite.oauthAppData))
@@ -756,10 +759,10 @@ func (suite *CacheBackedStoreTestSuite) TestCacheOAuthApplication_WithEmptyClien
 func (suite *CacheBackedStoreTestSuite) TestCacheOAuthApplication_Success() {
 	oauthApp := suite.createTestOAuthApp()
 
-	suite.cachedStore.cacheOAuthApplication(oauthApp)
+	suite.cachedStore.cacheOAuthApplication(context.Background(), oauthApp)
 
 	// Verify it's cached
-	cached, ok := suite.oauthAppCache.Get(cache.CacheKey{Key: oauthApp.ClientID})
+	cached, ok := suite.oauthAppCache.Get(context.Background(), cache.CacheKey{Key: oauthApp.ClientID})
 	suite.True(ok)
 	suite.Equal(oauthApp.ClientID, cached.ClientID)
 }
@@ -769,16 +772,16 @@ func (suite *CacheBackedStoreTestSuite) TestCacheOAuthApplication_CacheSetError(
 	cacheSetErr := errors.New("cache set error")
 
 	// Override Set expectation to return error
-	suite.oauthAppCache.EXPECT().Set(mock.Anything, mock.Anything).Return(cacheSetErr).Maybe()
+	suite.oauthAppCache.EXPECT().Set(mock.Anything, mock.Anything, mock.Anything).Return(cacheSetErr).Maybe()
 
 	// Should not panic or fail
-	suite.cachedStore.cacheOAuthApplication(oauthApp)
+	suite.cachedStore.cacheOAuthApplication(context.Background(), oauthApp)
 }
 
 // invalidateApplicationCache tests
 func (suite *CacheBackedStoreTestSuite) TestInvalidateApplicationCache_WithEmptyValues() {
 	// Should not panic with empty values
-	suite.cachedStore.invalidateApplicationCache("", "", "")
+	suite.cachedStore.invalidateApplicationCache(context.Background(), "", "", "")
 
 	// Verify nothing happens
 	suite.Equal(0, len(suite.appByIDData))
@@ -791,78 +794,79 @@ func (suite *CacheBackedStoreTestSuite) TestInvalidateApplicationCache_WithAllVa
 	clientID := app.InboundAuthConfig[0].OAuthAppConfig.ClientID
 
 	// Pre-cache the data
-	_ = suite.appByIDCache.Set(cache.CacheKey{Key: app.ID}, app)
-	_ = suite.appByNameCache.Set(cache.CacheKey{Key: app.Name}, app)
-	_ = suite.oauthAppCache.Set(cache.CacheKey{Key: clientID}, app.InboundAuthConfig[0].OAuthAppConfig)
+	_ = suite.appByIDCache.Set(context.Background(), cache.CacheKey{Key: app.ID}, app)
+	_ = suite.appByNameCache.Set(context.Background(), cache.CacheKey{Key: app.Name}, app)
+	_ = suite.oauthAppCache.Set(
+		context.Background(), cache.CacheKey{Key: clientID}, app.InboundAuthConfig[0].OAuthAppConfig)
 
-	suite.cachedStore.invalidateApplicationCache(app.ID, app.Name, clientID)
+	suite.cachedStore.invalidateApplicationCache(context.Background(), app.ID, app.Name, clientID)
 
 	// Verify all caches are invalidated
-	_, ok := suite.appByIDCache.Get(cache.CacheKey{Key: app.ID})
+	_, ok := suite.appByIDCache.Get(context.Background(), cache.CacheKey{Key: app.ID})
 	suite.False(ok)
-	_, ok = suite.appByNameCache.Get(cache.CacheKey{Key: app.Name})
+	_, ok = suite.appByNameCache.Get(context.Background(), cache.CacheKey{Key: app.Name})
 	suite.False(ok)
-	_, ok = suite.oauthAppCache.Get(cache.CacheKey{Key: clientID})
+	_, ok = suite.oauthAppCache.Get(context.Background(), cache.CacheKey{Key: clientID})
 	suite.False(ok)
 }
 
 func (suite *CacheBackedStoreTestSuite) TestInvalidateApplicationCache_OnlyAppID() {
 	app := suite.createTestApp()
-	_ = suite.appByIDCache.Set(cache.CacheKey{Key: app.ID}, app)
+	_ = suite.appByIDCache.Set(context.Background(), cache.CacheKey{Key: app.ID}, app)
 
-	suite.cachedStore.invalidateApplicationCache(app.ID, "", "")
+	suite.cachedStore.invalidateApplicationCache(context.Background(), app.ID, "", "")
 
 	// Verify only ID cache is invalidated
-	_, ok := suite.appByIDCache.Get(cache.CacheKey{Key: app.ID})
+	_, ok := suite.appByIDCache.Get(context.Background(), cache.CacheKey{Key: app.ID})
 	suite.False(ok)
 }
 
 func (suite *CacheBackedStoreTestSuite) TestInvalidateApplicationCache_OnlyAppName() {
 	app := suite.createTestApp()
-	_ = suite.appByNameCache.Set(cache.CacheKey{Key: app.Name}, app)
+	_ = suite.appByNameCache.Set(context.Background(), cache.CacheKey{Key: app.Name}, app)
 
-	suite.cachedStore.invalidateApplicationCache("", app.Name, "")
+	suite.cachedStore.invalidateApplicationCache(context.Background(), "", app.Name, "")
 
 	// Verify only name cache is invalidated
-	_, ok := suite.appByNameCache.Get(cache.CacheKey{Key: app.Name})
+	_, ok := suite.appByNameCache.Get(context.Background(), cache.CacheKey{Key: app.Name})
 	suite.False(ok)
 }
 
 func (suite *CacheBackedStoreTestSuite) TestInvalidateApplicationCache_OnlyClientID() {
 	oauthApp := suite.createTestOAuthApp()
-	_ = suite.oauthAppCache.Set(cache.CacheKey{Key: oauthApp.ClientID}, oauthApp)
+	_ = suite.oauthAppCache.Set(context.Background(), cache.CacheKey{Key: oauthApp.ClientID}, oauthApp)
 
-	suite.cachedStore.invalidateApplicationCache("", "", oauthApp.ClientID)
+	suite.cachedStore.invalidateApplicationCache(context.Background(), "", "", oauthApp.ClientID)
 
 	// Verify only OAuth cache is invalidated
-	_, ok := suite.oauthAppCache.Get(cache.CacheKey{Key: oauthApp.ClientID})
+	_, ok := suite.oauthAppCache.Get(context.Background(), cache.CacheKey{Key: oauthApp.ClientID})
 	suite.False(ok)
 }
 
 func (suite *CacheBackedStoreTestSuite) TestInvalidateApplicationCache_CacheDeleteErrors() {
 	app := suite.createTestApp()
-	_ = suite.appByIDCache.Set(cache.CacheKey{Key: app.ID}, app)
-	_ = suite.appByNameCache.Set(cache.CacheKey{Key: app.Name}, app)
+	_ = suite.appByIDCache.Set(context.Background(), cache.CacheKey{Key: app.ID}, app)
+	_ = suite.appByNameCache.Set(context.Background(), cache.CacheKey{Key: app.Name}, app)
 	cacheDelErr := errors.New("cache delete error")
 
 	// Override Delete expectation to return error
-	suite.appByIDCache.EXPECT().Delete(mock.Anything).Return(cacheDelErr).Maybe()
-	suite.appByNameCache.EXPECT().Delete(mock.Anything).Return(cacheDelErr).Maybe()
+	suite.appByIDCache.EXPECT().Delete(mock.Anything, mock.Anything).Return(cacheDelErr).Maybe()
+	suite.appByNameCache.EXPECT().Delete(mock.Anything, mock.Anything).Return(cacheDelErr).Maybe()
 
 	// Should not panic or fail
-	suite.cachedStore.invalidateApplicationCache(app.ID, app.Name, "")
+	suite.cachedStore.invalidateApplicationCache(context.Background(), app.ID, app.Name, "")
 }
 
 func (suite *CacheBackedStoreTestSuite) TestInvalidateApplicationCache_OAuthCacheDeleteError() {
 	oauthApp := suite.createTestOAuthApp()
-	_ = suite.oauthAppCache.Set(cache.CacheKey{Key: oauthApp.ClientID}, oauthApp)
+	_ = suite.oauthAppCache.Set(context.Background(), cache.CacheKey{Key: oauthApp.ClientID}, oauthApp)
 	cacheDelErr := errors.New("cache delete error")
 
 	// Override Delete expectation to return error
-	suite.oauthAppCache.EXPECT().Delete(mock.Anything).Return(cacheDelErr).Maybe()
+	suite.oauthAppCache.EXPECT().Delete(mock.Anything, mock.Anything).Return(cacheDelErr).Maybe()
 
 	// Should not panic or fail
-	suite.cachedStore.invalidateApplicationCache("", "", oauthApp.ClientID)
+	suite.cachedStore.invalidateApplicationCache(context.Background(), "", "", oauthApp.ClientID)
 }
 
 func (suite *CacheBackedStoreTestSuite) TestIsApplicationExists_Success() {

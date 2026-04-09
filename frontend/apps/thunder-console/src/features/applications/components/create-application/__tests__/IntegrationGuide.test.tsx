@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {BrowserRouter} from 'react-router';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import IntegrationGuide from '../IntegrationGuide';
 
 // Mock react-i18next
@@ -622,7 +622,9 @@ describe('IntegrationGuide', () => {
       renderWithRouter(<IntegrationGuide {...props} />);
 
       // Should not have button role when applicationId is null
-      expect(screen.queryByRole('button', {name: 'applications:onboarding.summary.viewAppAriaLabel'})).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: 'applications:onboarding.summary.viewAppAriaLabel'}),
+      ).not.toBeInTheDocument();
     });
 
     it('should handle navigation errors gracefully', async () => {
@@ -658,9 +660,11 @@ describe('IntegrationGuide', () => {
       unmount();
 
       // Advance timers - should not cause errors
-      act(() => {
-        vi.advanceTimersByTime(3000);
-      });
+      expect(() => {
+        act(() => {
+          vi.advanceTimersByTime(3000);
+        });
+      }).not.toThrow();
     });
   });
 });

@@ -9893,6 +9893,19 @@ components:
           type: string
           description: Display name for the theme
           example: Corporate Theme
+        description:
+          type: string
+          description: Description of the theme
+          example: A timeless theme with warm accents.
+        defaultColorScheme:
+          type: string
+          description: The name of the default color scheme for this theme (e.g. "light"
+            or "dark")
+          example: light
+        primaryColor:
+          type: string
+          description: The primary color hex value from the default color scheme's palette
+          example: "#ff7300"
         createdAt:
           type: string
           format: date-time
@@ -10002,6 +10015,10 @@ components:
           format: date-time
           description: Timestamp when the layout was last updated (ISO 8601 format)
           example: 2024-01-20T14:45:00Z
+        isReadOnly:
+          type: boolean
+          description: Indicates whether the layout is read-only (declarative)
+          example: false
     LayoutListItem:
       type: object
       properties:
@@ -10028,6 +10045,10 @@ components:
           format: date-time
           description: Timestamp when the layout was last updated (ISO 8601 format)
           example: 2024-01-20T14:45:00Z
+        isReadOnly:
+          type: boolean
+          description: Indicates whether the layout is read-only (declarative)
+          example: false
     LayoutListResponse:
       type: object
       properties:

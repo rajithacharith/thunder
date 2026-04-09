@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import ResourcePanelStatic from '../ResourcePanelStatic';
+import {describe, it, expect, vi} from 'vitest';
 import type {Resource} from '../../../models/resources';
+import ResourcePanelStatic from '../ResourcePanelStatic';
 
 // Mock useColorScheme
 vi.mock('@wso2/oxygen-ui', async () => {
@@ -35,17 +35,18 @@ vi.mock('../../../utils/resolveStaticResourcePath', () => ({
   default: (path: string) => `/static/${path}`,
 }));
 
-const createMockResource = (overrides: Partial<Resource> = {}): Resource => ({
-  type: 'TEMPLATE_TYPE',
-  resourceType: 'TEMPLATE',
-  display: {
-    label: 'Static Template',
-    description: 'A static template description',
-    image: 'template-icon.svg',
-    showOnResourcePanel: true,
-  },
-  ...overrides,
-} as Resource);
+const createMockResource = (overrides: Partial<Resource> = {}): Resource =>
+  ({
+    type: 'TEMPLATE_TYPE',
+    resourceType: 'TEMPLATE',
+    display: {
+      label: 'Static Template',
+      description: 'A static template description',
+      image: 'template-icon.svg',
+      showOnResourcePanel: true,
+    },
+    ...overrides,
+  }) as Resource;
 
 describe('ResourcePanelStatic', () => {
   describe('Rendering', () => {
@@ -119,9 +120,7 @@ describe('ResourcePanelStatic', () => {
   describe('Additional Props', () => {
     it('should render with additional className', () => {
       const resource = createMockResource();
-      const {container} = render(
-        <ResourcePanelStatic id="test-id" resource={resource} className="custom-class" />,
-      );
+      const {container} = render(<ResourcePanelStatic id="test-id" resource={resource} className="custom-class" />);
 
       // Component renders - additional props may not be passed through to the underlying element
       expect(container.querySelector('.MuiCard-root')).toBeInTheDocument();

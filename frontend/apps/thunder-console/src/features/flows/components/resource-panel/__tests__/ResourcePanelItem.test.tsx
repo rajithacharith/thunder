@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import ResourcePanelItem from '../ResourcePanelItem';
+import {describe, it, expect, vi} from 'vitest';
 import type {Resource} from '../../../models/resources';
+import ResourcePanelItem from '../ResourcePanelItem';
 
 // Mock useColorScheme
 vi.mock('@wso2/oxygen-ui', async () => {
@@ -35,17 +35,18 @@ vi.mock('../../../utils/resolveStaticResourcePath', () => ({
   default: (path: string) => `/static/${path}`,
 }));
 
-const createMockResource = (overrides: Partial<Resource> = {}): Resource => ({
-  type: 'TEST_STEP',
-  resourceType: 'STEP',
-  display: {
-    label: 'Test Resource',
-    description: 'Test Description',
-    image: 'path/test-image.svg',
-    showOnResourcePanel: true,
-  },
-  ...overrides,
-} as Resource);
+const createMockResource = (overrides: Partial<Resource> = {}): Resource =>
+  ({
+    type: 'TEST_STEP',
+    resourceType: 'STEP',
+    display: {
+      label: 'Test Resource',
+      description: 'Test Description',
+      image: 'path/test-image.svg',
+      showOnResourcePanel: true,
+    },
+    ...overrides,
+  }) as Resource;
 
 describe('ResourcePanelItem', () => {
   describe('Rendering', () => {

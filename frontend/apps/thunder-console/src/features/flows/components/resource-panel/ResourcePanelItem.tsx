@@ -91,7 +91,12 @@ function ResourcePanelItem({
       color?: string;
     }>;
     return IconComponent ? (
-      <Box display="inline-flex" alignItems="center" justifyContent="center" sx={{color: 'text.primary', flexShrink: 0}}>
+      <Box
+        display="inline-flex"
+        alignItems="center"
+        justifyContent="center"
+        sx={{color: 'text.primary', flexShrink: 0}}
+      >
         <IconComponent size={20} />
       </Box>
     ) : null;

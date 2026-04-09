@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {useCallback} from 'react';
 import {MarkerType, type Edge, type Node} from '@xyflow/react';
+import {useCallback} from 'react';
+import LoginFlowConstants from '../constants/LoginFlowConstants';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
 import {ElementTypes, type Element} from '@/features/flows/models/elements';
 import {StepTypes, type Step} from '@/features/flows/models/steps';
-import LoginFlowConstants from '../constants/LoginFlowConstants';
 
 // Use centralized constants
 const {
@@ -196,7 +196,12 @@ const useEdgeGeneration = (props?: UseEdgeGenerationProps): UseEdgeGenerationRet
 
             if (stepIds.has(step.data.action.onSuccess)) {
               generatedEdges.push(
-                createEdge(`${step.id}-to-${step.data.action.onSuccess}`, step.id, sourceHandle, step.data.action.onSuccess),
+                createEdge(
+                  `${step.id}-to-${step.data.action.onSuccess}`,
+                  step.id,
+                  sourceHandle,
+                  step.data.action.onSuccess,
+                ),
               );
               if (step.data.action.onSuccess === userOnboardStepId) {
                 userOnboardEdgeCreated = true;
@@ -212,7 +217,12 @@ const useEdgeGeneration = (props?: UseEdgeGenerationProps): UseEdgeGenerationRet
           // Process step-level onFailure actions
           if (step.data?.action?.onFailure && stepIds.has(step.data.action.onFailure)) {
             generatedEdges.push(
-              createEdge(`${step.id}-failure-to-${step.data.action.onFailure}`, step.id, 'failure', step.data.action.onFailure),
+              createEdge(
+                `${step.id}-failure-to-${step.data.action.onFailure}`,
+                step.id,
+                'failure',
+                step.data.action.onFailure,
+              ),
             );
           }
         });

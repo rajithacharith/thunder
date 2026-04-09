@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {useState, useEffect, type ReactNode, type ChangeEvent} from 'react';
-import {useTranslation} from 'react-i18next';
 import {Divider, FormHelperText, FormLabel, Stack, TextField} from '@wso2/oxygen-ui';
+import {useState, type ReactNode, type ChangeEvent} from 'react';
+import {useTranslation} from 'react-i18next';
 import type {CommonResourcePropertiesPropsInterface} from '@/features/flows/components/resource-property-panel/ResourceProperties';
 import type {Element} from '@/features/flows/models/elements';
 
@@ -49,11 +49,13 @@ function ButtonExtendedProperties({resource, onChange}: ButtonExtendedProperties
   });
 
   // Sync local state when resource changes (e.g., switching to a different button)
-  useEffect(() => {
+  const [prevResource, setPrevResource] = useState(resource);
+  if (resource !== prevResource) {
+    setPrevResource(resource);
     const element = resource as Element & {startIcon?: string; endIcon?: string};
     setStartIconValue(element?.startIcon ?? '');
     setEndIconValue(element?.endIcon ?? '');
-  }, [resource]);
+  }
 
   // Handle startIcon change - update local state immediately, propagate via onChange
   const handleStartIconChange = (value: string): void => {
@@ -72,9 +74,7 @@ function ButtonExtendedProperties({resource, onChange}: ButtonExtendedProperties
       <Divider sx={{marginY: 2}} />
 
       <div>
-        <FormLabel htmlFor="start-icon-input">
-          {t('flows:core.buttonExtendedProperties.startIcon.label')}
-        </FormLabel>
+        <FormLabel htmlFor="start-icon-input">{t('flows:core.buttonExtendedProperties.startIcon.label')}</FormLabel>
         <TextField
           id="start-icon-input"
           value={startIconValue}
@@ -83,15 +83,11 @@ function ButtonExtendedProperties({resource, onChange}: ButtonExtendedProperties
           fullWidth
           size="small"
         />
-        <FormHelperText>
-          {t('flows:core.buttonExtendedProperties.startIcon.hint')}
-        </FormHelperText>
+        <FormHelperText>{t('flows:core.buttonExtendedProperties.startIcon.hint')}</FormHelperText>
       </div>
 
       <div>
-        <FormLabel htmlFor="end-icon-input">
-          {t('flows:core.buttonExtendedProperties.endIcon.label')}
-        </FormLabel>
+        <FormLabel htmlFor="end-icon-input">{t('flows:core.buttonExtendedProperties.endIcon.label')}</FormLabel>
         <TextField
           id="end-icon-input"
           value={endIconValue}
@@ -100,9 +96,7 @@ function ButtonExtendedProperties({resource, onChange}: ButtonExtendedProperties
           fullWidth
           size="small"
         />
-        <FormHelperText>
-          {t('flows:core.buttonExtendedProperties.endIcon.hint')}
-        </FormHelperText>
+        <FormHelperText>{t('flows:core.buttonExtendedProperties.endIcon.hint')}</FormHelperText>
       </div>
 
       <Divider sx={{marginY: 2}} />

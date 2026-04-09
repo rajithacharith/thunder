@@ -16,9 +16,7 @@
  * under the License.
  */
 
-import {useState, useCallback, useMemo} from 'react';
-import type {ReactNode, SyntheticEvent, JSX} from 'react';
-import {useNavigate, useParams, useLocation, Link} from 'react-router';
+import {useLogger} from '@thunder/logger/react';
 import {
   Box,
   Stack,
@@ -35,22 +33,24 @@ import {
   PageTitle,
 } from '@wso2/oxygen-ui';
 import {ArrowLeft, Edit, Building} from '@wso2/oxygen-ui-icons-react';
+import {useState, useCallback, useMemo} from 'react';
+import type {ReactNode, SyntheticEvent, JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useLogger} from '@thunder/logger/react';
+import {useNavigate, useParams, useLocation, Link} from 'react-router';
 import CopyableId from '../../../components/CopyableId';
-import useGetOrganizationUnit from '../api/useGetOrganizationUnit';
-import useUpdateOrganizationUnit from '../api/useUpdateOrganizationUnit';
-import type {OrganizationUnit} from '../models/organization-unit';
-import type {OUNavigationState} from '../models/navigation';
-import OrganizationUnitDeleteDialog from '../components/OrganizationUnitDeleteDialog';
-import useOrganizationUnit from '../contexts/useOrganizationUnit';
-import EditGeneralSettings from '../components/edit-organization-unit/general-settings/EditGeneralSettings';
-import EditChildOrganizationUnitSettings from '../components/edit-organization-unit/child-organization-unit-settings/EditChildOrganizationUnitSettings';
-import EditUsers from '../components/edit-organization-unit/user-settings/EditUserSettings';
-import EditGroups from '../components/edit-organization-unit/group-settings/EditGroupSettings';
-import EditCustomization from '../components/edit-organization-unit/customization-settings/EditCustomizationSettings';
 import ResourceAvatar from '../../../components/ResourceAvatar';
 import UnsavedChangesBar from '../../../components/UnsavedChangesBar';
+import useGetOrganizationUnit from '../api/useGetOrganizationUnit';
+import useUpdateOrganizationUnit from '../api/useUpdateOrganizationUnit';
+import EditChildOrganizationUnitSettings from '../components/edit-organization-unit/child-organization-unit-settings/EditChildOrganizationUnitSettings';
+import EditCustomization from '../components/edit-organization-unit/customization-settings/EditCustomizationSettings';
+import EditGeneralSettings from '../components/edit-organization-unit/general-settings/EditGeneralSettings';
+import EditGroups from '../components/edit-organization-unit/group-settings/EditGroupSettings';
+import EditUsers from '../components/edit-organization-unit/user-settings/EditUserSettings';
+import OrganizationUnitDeleteDialog from '../components/OrganizationUnitDeleteDialog';
+import useOrganizationUnit from '../contexts/useOrganizationUnit';
+import type {OUNavigationState} from '../models/navigation';
+import type {OrganizationUnit} from '../models/organization-unit';
 
 interface TabPanelProps {
   children?: ReactNode;
@@ -224,7 +224,6 @@ export default function OrganizationUnitEditPage(): JSX.Element {
           <Stack direction="row" alignItems="center" spacing={1} mb={1}>
             {isEditingName ? (
               <TextField
-                autoFocus
                 value={tempName}
                 onChange={(e) => setTempName(e.target.value)}
                 onBlur={() => {
@@ -270,7 +269,6 @@ export default function OrganizationUnitEditPage(): JSX.Element {
           <Stack direction="row" alignItems="flex-start" spacing={1}>
             {isEditingDescription ? (
               <TextField
-                autoFocus
                 fullWidth
                 multiline
                 rows={2}
@@ -333,7 +331,10 @@ export default function OrganizationUnitEditPage(): JSX.Element {
           </Stack>
 
           {/* Organization Unit ID */}
-          <CopyableId value={organizationUnit.id} copyLabel={t('organizationUnits:edit.page.copyOuId', 'Copy Organization Unit ID')} />
+          <CopyableId
+            value={organizationUnit.id}
+            copyLabel={t('organizationUnits:edit.page.copyOuId', 'Copy Organization Unit ID')}
+          />
         </PageTitle.SubHeader>
       </PageTitle>
 
@@ -434,7 +435,7 @@ export default function OrganizationUnitEditPage(): JSX.Element {
           onReset={() => setEditedOU({})}
           onSave={() => {
             // Errors are handled in handleSave
-            handleSave().catch(() => {});
+            handleSave().catch(() => null);
           }}
         />
       )}

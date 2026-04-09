@@ -5,6 +5,8 @@
 package flowmgtmock
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/flow/mgt"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -39,8 +41,8 @@ func (_m *graphBuilderInterfaceMock) EXPECT() *graphBuilderInterfaceMock_Expecte
 }
 
 // GetGraph provides a mock function for the type graphBuilderInterfaceMock
-func (_mock *graphBuilderInterfaceMock) GetGraph(flow *flowmgt.CompleteFlowDefinition) (core.GraphInterface, *serviceerror.ServiceError) {
-	ret := _mock.Called(flow)
+func (_mock *graphBuilderInterfaceMock) GetGraph(ctx context.Context, flow *flowmgt.CompleteFlowDefinition) (core.GraphInterface, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, flow)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetGraph")
@@ -48,18 +50,18 @@ func (_mock *graphBuilderInterfaceMock) GetGraph(flow *flowmgt.CompleteFlowDefin
 
 	var r0 core.GraphInterface
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(*flowmgt.CompleteFlowDefinition) (core.GraphInterface, *serviceerror.ServiceError)); ok {
-		return returnFunc(flow)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *flowmgt.CompleteFlowDefinition) (core.GraphInterface, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, flow)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*flowmgt.CompleteFlowDefinition) core.GraphInterface); ok {
-		r0 = returnFunc(flow)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *flowmgt.CompleteFlowDefinition) core.GraphInterface); ok {
+		r0 = returnFunc(ctx, flow)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(core.GraphInterface)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(*flowmgt.CompleteFlowDefinition) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(flow)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *flowmgt.CompleteFlowDefinition) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, flow)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -74,19 +76,25 @@ type graphBuilderInterfaceMock_GetGraph_Call struct {
 }
 
 // GetGraph is a helper method to define mock.On call
+//   - ctx context.Context
 //   - flow *flowmgt.CompleteFlowDefinition
-func (_e *graphBuilderInterfaceMock_Expecter) GetGraph(flow interface{}) *graphBuilderInterfaceMock_GetGraph_Call {
-	return &graphBuilderInterfaceMock_GetGraph_Call{Call: _e.mock.On("GetGraph", flow)}
+func (_e *graphBuilderInterfaceMock_Expecter) GetGraph(ctx interface{}, flow interface{}) *graphBuilderInterfaceMock_GetGraph_Call {
+	return &graphBuilderInterfaceMock_GetGraph_Call{Call: _e.mock.On("GetGraph", ctx, flow)}
 }
 
-func (_c *graphBuilderInterfaceMock_GetGraph_Call) Run(run func(flow *flowmgt.CompleteFlowDefinition)) *graphBuilderInterfaceMock_GetGraph_Call {
+func (_c *graphBuilderInterfaceMock_GetGraph_Call) Run(run func(ctx context.Context, flow *flowmgt.CompleteFlowDefinition)) *graphBuilderInterfaceMock_GetGraph_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *flowmgt.CompleteFlowDefinition
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*flowmgt.CompleteFlowDefinition)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *flowmgt.CompleteFlowDefinition
+		if args[1] != nil {
+			arg1 = args[1].(*flowmgt.CompleteFlowDefinition)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -97,14 +105,14 @@ func (_c *graphBuilderInterfaceMock_GetGraph_Call) Return(graphInterface core.Gr
 	return _c
 }
 
-func (_c *graphBuilderInterfaceMock_GetGraph_Call) RunAndReturn(run func(flow *flowmgt.CompleteFlowDefinition) (core.GraphInterface, *serviceerror.ServiceError)) *graphBuilderInterfaceMock_GetGraph_Call {
+func (_c *graphBuilderInterfaceMock_GetGraph_Call) RunAndReturn(run func(ctx context.Context, flow *flowmgt.CompleteFlowDefinition) (core.GraphInterface, *serviceerror.ServiceError)) *graphBuilderInterfaceMock_GetGraph_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // InvalidateCache provides a mock function for the type graphBuilderInterfaceMock
-func (_mock *graphBuilderInterfaceMock) InvalidateCache(flowID string) {
-	_mock.Called(flowID)
+func (_mock *graphBuilderInterfaceMock) InvalidateCache(ctx context.Context, flowID string) {
+	_mock.Called(ctx, flowID)
 	return
 }
 
@@ -114,19 +122,25 @@ type graphBuilderInterfaceMock_InvalidateCache_Call struct {
 }
 
 // InvalidateCache is a helper method to define mock.On call
+//   - ctx context.Context
 //   - flowID string
-func (_e *graphBuilderInterfaceMock_Expecter) InvalidateCache(flowID interface{}) *graphBuilderInterfaceMock_InvalidateCache_Call {
-	return &graphBuilderInterfaceMock_InvalidateCache_Call{Call: _e.mock.On("InvalidateCache", flowID)}
+func (_e *graphBuilderInterfaceMock_Expecter) InvalidateCache(ctx interface{}, flowID interface{}) *graphBuilderInterfaceMock_InvalidateCache_Call {
+	return &graphBuilderInterfaceMock_InvalidateCache_Call{Call: _e.mock.On("InvalidateCache", ctx, flowID)}
 }
 
-func (_c *graphBuilderInterfaceMock_InvalidateCache_Call) Run(run func(flowID string)) *graphBuilderInterfaceMock_InvalidateCache_Call {
+func (_c *graphBuilderInterfaceMock_InvalidateCache_Call) Run(run func(ctx context.Context, flowID string)) *graphBuilderInterfaceMock_InvalidateCache_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -137,7 +151,7 @@ func (_c *graphBuilderInterfaceMock_InvalidateCache_Call) Return() *graphBuilder
 	return _c
 }
 
-func (_c *graphBuilderInterfaceMock_InvalidateCache_Call) RunAndReturn(run func(flowID string)) *graphBuilderInterfaceMock_InvalidateCache_Call {
+func (_c *graphBuilderInterfaceMock_InvalidateCache_Call) RunAndReturn(run func(ctx context.Context, flowID string)) *graphBuilderInterfaceMock_InvalidateCache_Call {
 	_c.Run(run)
 	return _c
 }

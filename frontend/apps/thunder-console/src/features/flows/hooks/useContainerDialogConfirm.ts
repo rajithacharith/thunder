@@ -19,17 +19,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return */
 
 import {type Edge, type Node, type XYPosition, useReactFlow} from '@xyflow/react';
-import {useRef} from 'react';
 import cloneDeep from 'lodash-es/cloneDeep';
+import {useRef} from 'react';
+import type {DragSourceData, DragTargetData, DragEventWithNative} from '../models/drag-drop';
 import type {Element} from '../models/elements';
 import {BlockTypes, ElementCategories} from '../models/elements';
+import type {MetadataInterface} from '../models/metadata';
 import {ResourceTypes, type Resource} from '../models/resources';
 import {StepTypes, type Step, type StepData} from '../models/steps';
 import type {Widget} from '../models/widget';
-import type {MetadataInterface} from '../models/metadata';
-import type {DragSourceData, DragTargetData, DragEventWithNative} from '../models/drag-drop';
-import generateResourceId from '../utils/generateResourceId';
 import autoAssignConnections from '../utils/autoAssignConnections';
+import generateResourceId from '../utils/generateResourceId';
 
 /**
  * Props interface for useContainerDialogConfirm hook

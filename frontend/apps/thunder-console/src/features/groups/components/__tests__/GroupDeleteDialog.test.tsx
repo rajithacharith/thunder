@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {renderWithProviders} from '@thunder/test-utils';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import GroupDeleteDialog from '../GroupDeleteDialog';
 
 const mockMutate = vi.fn();
@@ -51,7 +51,9 @@ describe('GroupDeleteDialog', () => {
 
     expect(screen.getByText('Delete Group')).toBeInTheDocument();
     expect(screen.getByText('Are you sure you want to delete this group?')).toBeInTheDocument();
-    expect(screen.getByText('This action cannot be undone. All group associations will be permanently removed.')).toBeInTheDocument();
+    expect(
+      screen.getByText('This action cannot be undone. All group associations will be permanently removed.'),
+    ).toBeInTheDocument();
   });
 
   it('should not render content when closed', () => {
@@ -75,7 +77,10 @@ describe('GroupDeleteDialog', () => {
 
     await user.click(screen.getByText('Delete'));
 
-    expect(mockMutate).toHaveBeenCalledWith('g1', expect.objectContaining({onSuccess: expect.any(Function) as unknown, onError: expect.any(Function) as unknown}));
+    expect(mockMutate).toHaveBeenCalledWith(
+      'g1',
+      expect.objectContaining({onSuccess: expect.any(Function) as unknown, onError: expect.any(Function) as unknown}),
+    );
   });
 
   it('should call onSuccess and onClose on successful delete', async () => {

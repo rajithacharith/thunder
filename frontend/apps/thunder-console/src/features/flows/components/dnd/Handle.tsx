@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type {CSSProperties, HTMLAttributes, ReactNode, Ref} from 'react';
 import {Tooltip} from '@wso2/oxygen-ui';
+import type {CSSProperties, HTMLAttributes, ReactNode, Ref} from 'react';
 import Action from './Action';
 
 export interface HandleProps extends HTMLAttributes<HTMLButtonElement> {

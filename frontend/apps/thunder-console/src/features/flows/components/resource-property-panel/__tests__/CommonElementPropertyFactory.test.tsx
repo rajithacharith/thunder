@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import type {ReactNode} from 'react';
-import CommonElementPropertyFactory from '../CommonElementPropertyFactory';
-import {ValidationContext, type ValidationContextProps} from '../../../context/ValidationContext';
-import type {Resource} from '../../../models/resources';
-import {ElementTypes} from '../../../models/elements';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import FlowBuilderElementConstants from '../../../constants/FlowBuilderElementConstants';
+import {ValidationContext, type ValidationContextProps} from '../../../context/ValidationContext';
+import {ElementTypes} from '../../../models/elements';
+import type {Resource} from '../../../models/resources';
+import CommonElementPropertyFactory from '../CommonElementPropertyFactory';
 
 vi.mock('@thunder/logger/react', () => ({
   useLogger: () => ({
@@ -578,10 +578,9 @@ describe('CommonElementPropertyFactory', () => {
       fireEvent.mouseDown(select);
 
       const centerOption = screen.getAllByRole('option').find((o) => o.getAttribute('data-value') === 'center');
-      if (centerOption) {
-        fireEvent.click(centerOption);
-        expect(mockOnChange).toHaveBeenCalledWith('align', 'center', textResource);
-      }
+      expect(centerOption).toBeDefined();
+      fireEvent.click(centerOption!);
+      expect(mockOnChange).toHaveBeenCalledWith('align', 'center', textResource);
     });
 
     it('should not render align dropdown for non-Text elements', () => {

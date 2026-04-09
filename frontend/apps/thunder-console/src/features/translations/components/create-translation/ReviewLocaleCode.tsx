@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {Box, Chip, FormControl, FormLabel, Stack, TextField, Typography, useTheme} from '@wso2/oxygen-ui';
 import {getDisplayNameForCode, toFlagEmoji} from '@thunder/i18n';
 import type {LocaleOption} from '@thunder/i18n';
+import {Box, Chip, FormControl, FormLabel, Stack, TextField, Typography, useTheme} from '@wso2/oxygen-ui';
+import {Lightbulb} from '@wso2/oxygen-ui-icons-react';
 import {useEffect, useMemo, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Lightbulb} from '@wso2/oxygen-ui-icons-react';
 
 /**
  * Props for the {@link ReviewLocaleCode} component.
@@ -114,7 +114,6 @@ export default function ReviewLocaleCode({
             value={localeCode}
             onChange={(e) => onLocaleCodeChange(e.target.value)}
             fullWidth
-            autoFocus
           />
         </FormControl>
 

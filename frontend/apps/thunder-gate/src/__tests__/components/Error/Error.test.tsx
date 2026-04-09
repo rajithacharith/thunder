@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import Error from '../../../components/Error/Error';
 
 // Mock useSearchParams from react-router

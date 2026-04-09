@@ -16,15 +16,15 @@
  * under the License.
  */
 
+import {Box, Button, useColorScheme} from '@wso2/oxygen-ui';
+import {Save, Trash} from '@wso2/oxygen-ui-icons-react';
 import {useCallback, useRef, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
-import {Box, Button, useColorScheme} from '@wso2/oxygen-ui';
-import {Save, Trash} from '@wso2/oxygen-ui-icons-react';
 import BuilderLayout from '../../../components/BuilderLayout/BuilderLayout';
 import BuilderStaticPanel from '../../../components/BuilderLayout/BuilderStaticPanel';
-import ThemePreviewPanel from '../components/ThemePreviewPanel';
 import ThemeConfigPanel from '../components/ThemeConfigPanel';
+import ThemePreviewPanel from '../components/ThemePreviewPanel';
 import ThemeBuilderLeftPanel from '../components/themes/ThemeBuilderLeftPanel';
 import ThemeDeleteDialog from '../components/themes/ThemeDeleteDialog';
 import DesignUIConstants from '../constants/design-ui-constants';
@@ -38,7 +38,7 @@ export default function ThemeBuilderPage(): JSX.Element {
   const {themeId, displayName, activeSection, setActiveSection, isDirty, draftTheme, setDraftTheme, setIsDirty} =
     useThemeBuilder();
 
-  const saveHandlerRef = useRef<() => void>(() => {});
+  const saveHandlerRef = useRef<() => void>(() => null);
   const [isPanelOpen, setIsPanelOpen] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 

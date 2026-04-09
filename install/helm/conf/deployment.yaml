@@ -37,10 +37,18 @@ crypto:
     key: {{ .Values.configuration.crypto.encryption.key | quote }}
   password_hashing:
     algorithm: {{ .Values.configuration.crypto.passwordHashing.algorithm | quote }}
-    parameters:
-      iterations: {{ .Values.configuration.crypto.passwordHashing.parameters.iterations }}
-      key_size: {{ .Values.configuration.crypto.passwordHashing.parameters.keySize }}
-      salt_size: {{ .Values.configuration.crypto.passwordHashing.parameters.saltSize }}
+    pbkdf2:
+      salt_size: {{ .Values.configuration.crypto.passwordHashing.pbkdf2.salt_size }}
+      iterations: {{ .Values.configuration.crypto.passwordHashing.pbkdf2.iterations }}
+      key_size: {{ .Values.configuration.crypto.passwordHashing.pbkdf2.key_size }}
+    argon2id:
+      salt_size: {{ .Values.configuration.crypto.passwordHashing.argon2id.salt_size }}
+      iterations: {{ .Values.configuration.crypto.passwordHashing.argon2id.iterations }}
+      key_size: {{ .Values.configuration.crypto.passwordHashing.argon2id.key_size }}
+      memory: {{ .Values.configuration.crypto.passwordHashing.argon2id.memory }}
+      parallelism: {{ .Values.configuration.crypto.passwordHashing.argon2id.parallelism }}
+    sha256:
+      salt_size: {{ .Values.configuration.crypto.passwordHashing.sha256.salt_size }}
   keys:
   {{- range .Values.configuration.crypto.keys }}
     - id: {{ .id | quote }}
@@ -96,6 +104,13 @@ cache:
   ttl: {{ .Values.configuration.cache.ttl }}
   eviction_policy: {{ .Values.configuration.cache.evictionPolicy | quote }}
   cleanup_interval: {{ .Values.configuration.cache.cleanupInterval }}
+  {{- if eq .Values.configuration.cache.type "redis" }}
+  redis:
+    address: {{ .Values.configuration.cache.redis.address | quote }}
+    password: {{ "{{.CACHE_REDIS_PASSWORD}}" | quote }}
+    db: {{ .Values.configuration.cache.redis.db }}
+    key_prefix: {{ .Values.configuration.cache.redis.keyPrefix | quote }}
+  {{- end }}
 
 jwt:
   issuer: {{ .Values.configuration.jwt.issuer | quote }}
@@ -134,3 +149,6 @@ consent:
   base_url: {{ .Values.configuration.consent.baseUrl | quote }}
   timeout: {{ .Values.configuration.consent.timeout }}
   max_retries: {{ .Values.configuration.consent.maxRetries }}
+
+declarative_resources:
+  enabled: {{ .Values.declarativeResources.enabled }}

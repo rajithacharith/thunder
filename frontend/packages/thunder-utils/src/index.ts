@@ -31,6 +31,9 @@ export {default as isRelativeUrl} from './path/isRelativeUrl';
 export {default as isEmpty} from './object/isEmpty';
 export {default as merge} from './object/merge';
 
+// Error Utilities
+export {default as getErrorMessage} from './error/getErrorMessage';
+
 // Template Pattern Utilities
 export {default as isI18nTemplatePattern, I18N_PATTERN, I18N_KEY_PATTERN} from './template/isI18nTemplatePattern';
 export {default as isMetaTemplatePattern, META_PATTERN, META_KEY_PATTERN} from './template/isMetaTemplatePattern';

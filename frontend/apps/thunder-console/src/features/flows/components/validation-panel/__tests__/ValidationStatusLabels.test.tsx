@@ -16,17 +16,17 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import type {ReactNode} from 'react';
-import ValidationStatusLabels from '../ValidationStatusLabels';
-import {ValidationContext, type ValidationContextProps} from '../../../context/ValidationContext';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';
-import Notification, {NotificationType} from '../../../models/notification';
-import {EdgeStyleTypes} from '../../../models/steps';
+import {ValidationContext, type ValidationContextProps} from '../../../context/ValidationContext';
+import type {Base} from '../../../models/base';
 import {PreviewScreenType} from '../../../models/custom-text-preference';
 import {ElementTypes} from '../../../models/elements';
-import type {Base} from '../../../models/base';
+import Notification, {NotificationType} from '../../../models/notification';
+import {EdgeStyleTypes} from '../../../models/steps';
+import ValidationStatusLabels from '../ValidationStatusLabels';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({

@@ -1,25 +1,22 @@
 {
   "id": "server",
   "displayName": "Server",
-  "name": "Server Application",
   "description": "Server-side application with confidential client",
-  "inboundAuthConfig": [
-    {
-      "type": "oauth2",
-      "config": {
-        "grantTypes": [
-          "authorization_code",
-          "refresh_token"
-        ],
-        "responseTypes": [
-          "code"
-        ],
-        "redirectUris": [],
-        "pkceRequired": true,
-        "tokenEndpointAuthMethod": "client_secret_basic",
-        "publicClient": false
+  "defaults": {
+    "name": "Server Application",
+    "inboundAuthConfig": [
+      {
+        "type": "oauth2",
+        "config": {
+          "grantTypes": ["authorization_code", "refresh_token"],
+          "responseTypes": ["code"],
+          "redirectUris": [],
+          "pkceRequired": true,
+          "tokenEndpointAuthMethod": "client_secret_basic",
+          "publicClient": false
+        }
       }
-    }
-  ],
-  "allowedUserTypes": []
+    ],
+    "allowedUserTypes": []
+  }
 }

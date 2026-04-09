@@ -17,8 +17,8 @@
  */
 
 import {describe, it, expect, beforeAll} from 'vitest';
-import renderTemplate from '../renderTemplate';
 import registerHandlebarsHelpers from '../registerHandlebarsHelpers';
+import renderTemplate from '../renderTemplate';
 
 describe('renderTemplate', () => {
   beforeAll(() => {

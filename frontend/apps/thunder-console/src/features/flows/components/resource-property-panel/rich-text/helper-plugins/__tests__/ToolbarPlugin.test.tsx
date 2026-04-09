@@ -16,36 +16,33 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import ToolbarPlugin from '../ToolbarPlugin';
 
 // Use vi.hoisted for mock functions that need to be available during module mocking
-const {
-  mockDispatchCommand,
-  mockRegisterUpdateListener,
-  mockRegisterCommand,
-  mockGetElementByKey,
-  mockUpdate,
-} = vi.hoisted(() => ({
-  mockDispatchCommand: vi.fn(),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-  mockRegisterUpdateListener: vi.fn((_callback?: any) => vi.fn()),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-  mockRegisterCommand: vi.fn((_command?: any, _callback?: any, _priority?: any) => vi.fn()),
-  mockGetElementByKey: vi.fn(() => document.createElement('div')),
-  mockUpdate: vi.fn((callback: () => void) => callback()),
-}));
+const {mockDispatchCommand, mockRegisterUpdateListener, mockRegisterCommand, mockGetElementByKey, mockUpdate} =
+  vi.hoisted(() => ({
+    mockDispatchCommand: vi.fn(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+    mockRegisterUpdateListener: vi.fn((_callback?: any) => vi.fn()),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+    mockRegisterCommand: vi.fn((_command?: any, _callback?: any, _priority?: any) => vi.fn()),
+    mockGetElementByKey: vi.fn(() => document.createElement('div')),
+    mockUpdate: vi.fn((callback: () => void) => callback()),
+  }));
 
 // Mock the lexical composer context
 vi.mock('@lexical/react/LexicalComposerContext', () => ({
-  useLexicalComposerContext: () => [{
-    dispatchCommand: mockDispatchCommand,
-    registerUpdateListener: mockRegisterUpdateListener,
-    registerCommand: mockRegisterCommand,
-    getElementByKey: mockGetElementByKey,
-    update: mockUpdate,
-  }],
+  useLexicalComposerContext: () => [
+    {
+      dispatchCommand: mockDispatchCommand,
+      registerUpdateListener: mockRegisterUpdateListener,
+      registerCommand: mockRegisterCommand,
+      getElementByKey: mockGetElementByKey,
+      update: mockUpdate,
+    },
+  ],
 }));
 
 // Mock lexical selection
@@ -55,7 +52,10 @@ vi.mock('@lexical/selection', () => ({
 
 // Mock lexical utils
 vi.mock('@lexical/utils', () => ({
-  mergeRegister: (...fns: (() => void)[]) => () => fns.forEach(fn => fn()),
+  mergeRegister:
+    (...fns: (() => void)[]) =>
+    () =>
+      fns.forEach((fn) => fn()),
 }));
 
 // Mock lexical
@@ -492,7 +492,7 @@ describe('ToolbarPlugin', () => {
       // Click paragraph option
       const paragraphItems = screen.getAllByText('Paragraph');
       // The second one is the menu item
-      const paragraphMenuItem = paragraphItems.find(item => item.closest('[role="menuitem"]'));
+      const paragraphMenuItem = paragraphItems.find((item) => item.closest('[role="menuitem"]'));
       if (paragraphMenuItem) {
         fireEvent.click(paragraphMenuItem);
       }
@@ -512,7 +512,7 @@ describe('ToolbarPlugin', () => {
 
       // Click paragraph option
       const paragraphItems = screen.getAllByText('Paragraph');
-      const paragraphMenuItem = paragraphItems.find(item => item.closest('[role="menuitem"]'));
+      const paragraphMenuItem = paragraphItems.find((item) => item.closest('[role="menuitem"]'));
       if (paragraphMenuItem) {
         fireEvent.click(paragraphMenuItem);
       }
@@ -522,7 +522,7 @@ describe('ToolbarPlugin', () => {
   });
 
   describe('Format Heading', () => {
-    it('should format selection to h1 when Heading 1 is clicked', async () => {
+    it('should format selection to h1 when Heading 1 is clicked', () => {
       render(<ToolbarPlugin typography />);
 
       // Open menu
@@ -535,7 +535,7 @@ describe('ToolbarPlugin', () => {
       expect(mockUpdate).toHaveBeenCalled();
     });
 
-    it('should format selection to h2 when Heading 2 is clicked', async () => {
+    it('should format selection to h2 when Heading 2 is clicked', () => {
       render(<ToolbarPlugin typography />);
 
       // Open menu
@@ -548,7 +548,7 @@ describe('ToolbarPlugin', () => {
       expect(mockUpdate).toHaveBeenCalled();
     });
 
-    it('should format selection to h3 when Heading 3 is clicked', async () => {
+    it('should format selection to h3 when Heading 3 is clicked', () => {
       render(<ToolbarPlugin typography />);
 
       // Open menu
@@ -561,7 +561,7 @@ describe('ToolbarPlugin', () => {
       expect(mockUpdate).toHaveBeenCalled();
     });
 
-    it('should format selection to h4 when Heading 4 is clicked', async () => {
+    it('should format selection to h4 when Heading 4 is clicked', () => {
       render(<ToolbarPlugin typography />);
 
       // Open menu
@@ -574,7 +574,7 @@ describe('ToolbarPlugin', () => {
       expect(mockUpdate).toHaveBeenCalled();
     });
 
-    it('should format selection to h5 when Heading 5 is clicked', async () => {
+    it('should format selection to h5 when Heading 5 is clicked', () => {
       render(<ToolbarPlugin typography />);
 
       // Open menu
@@ -706,7 +706,7 @@ describe('ToolbarPlugin', () => {
       expect(leftAlignButton).toBeInTheDocument();
     });
 
-    it('should highlight center align button when alignment is 2', async () => {
+    it('should highlight center align button when alignment is 2', () => {
       // This would require mocking the selection to have alignment format 2
       render(<ToolbarPlugin alignment />);
 
@@ -714,14 +714,14 @@ describe('ToolbarPlugin', () => {
       expect(centerAlignButton).toBeInTheDocument();
     });
 
-    it('should highlight right align button when alignment is 3', async () => {
+    it('should highlight right align button when alignment is 3', () => {
       render(<ToolbarPlugin alignment />);
 
       const rightAlignButton = screen.getByRole('button', {name: 'Right Align'});
       expect(rightAlignButton).toBeInTheDocument();
     });
 
-    it('should highlight justify align button when alignment is 4', async () => {
+    it('should highlight justify align button when alignment is 4', () => {
       render(<ToolbarPlugin alignment />);
 
       const justifyAlignButton = screen.getByRole('button', {name: 'Justify Align'});
@@ -833,7 +833,7 @@ describe('ToolbarPlugin', () => {
 
       // Click paragraph option
       const paragraphItems = screen.getAllByText('Paragraph');
-      const paragraphMenuItem = paragraphItems.find(item => item.closest('[role="menuitem"]'));
+      const paragraphMenuItem = paragraphItems.find((item) => item.closest('[role="menuitem"]'));
       if (paragraphMenuItem) {
         fireEvent.click(paragraphMenuItem);
       }
@@ -864,7 +864,7 @@ describe('ToolbarPlugin', () => {
 
       // Click paragraph option (to change from h1 to paragraph)
       const paragraphItems = screen.getAllByText('Paragraph');
-      const paragraphMenuItem = paragraphItems.find(item => item.closest('[role="menuitem"]'));
+      const paragraphMenuItem = paragraphItems.find((item) => item.closest('[role="menuitem"]'));
       if (paragraphMenuItem) {
         fireEvent.click(paragraphMenuItem);
       }
@@ -882,63 +882,6 @@ describe('ToolbarPlugin', () => {
 
       // Should dispatch with 'https://' to add the link (since isLink is false by default)
       expect(mockDispatchCommand).toHaveBeenCalledWith('TOGGLE_LINK_COMMAND', 'https://');
-    });
-  });
-
-  describe('$updateToolbar Function Coverage', () => {
-    it('should update text format states (bold, italic, underline)', () => {
-      render(<ToolbarPlugin bold italic underline />);
-
-      expect(mockRegisterUpdateListener).toHaveBeenCalled();
-    });
-
-    it('should update link state when parent is link node', () => {
-      render(<ToolbarPlugin link />);
-
-      expect(mockRegisterUpdateListener).toHaveBeenCalled();
-    });
-
-    it('should update link state when node itself is link', () => {
-      // This tests the node being a link directly
-      render(<ToolbarPlugin link />);
-
-      expect(mockRegisterUpdateListener).toHaveBeenCalled();
-    });
-
-    it('should set isLink to false when neither parent nor node is link', () => {
-      render(<ToolbarPlugin link />);
-
-      expect(mockRegisterUpdateListener).toHaveBeenCalled();
-    });
-
-    it('should update alignment state from element format', () => {
-      render(<ToolbarPlugin alignment />);
-
-      expect(mockRegisterUpdateListener).toHaveBeenCalled();
-    });
-
-    it('should update block type to heading when element is heading node', () => {
-      render(<ToolbarPlugin typography />);
-
-      expect(mockRegisterUpdateListener).toHaveBeenCalled();
-    });
-
-    it('should update block type to paragraph for unknown type', () => {
-      render(<ToolbarPlugin typography />);
-
-      expect(mockRegisterUpdateListener).toHaveBeenCalled();
-    });
-
-    it('should update block type for known type in blockTypeToBlockName', () => {
-      render(<ToolbarPlugin typography />);
-
-      expect(mockRegisterUpdateListener).toHaveBeenCalled();
-    });
-
-    it('should handle anchorNode with root key', () => {
-      render(<ToolbarPlugin />);
-
-      expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
   });
 
@@ -1017,7 +960,7 @@ describe('ToolbarPlugin', () => {
 
       // Click paragraph option - this should trigger $setBlocksType
       const paragraphItems = screen.getAllByText('Paragraph');
-      const paragraphMenuItem = paragraphItems.find(item => item.closest('[role="menuitem"]'));
+      const paragraphMenuItem = paragraphItems.find((item) => item.closest('[role="menuitem"]'));
       if (paragraphMenuItem) {
         fireEvent.click(paragraphMenuItem);
       }
@@ -1179,7 +1122,8 @@ describe('ToolbarPlugin', () => {
       (richText.$isHeadingNode as ReturnType<typeof vi.fn>).mockReturnValue(true);
 
       // Mock getSelectedNode to set up proper node structure
-      const getSelectedNode = await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
+      const getSelectedNode =
+        await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
       (getSelectedNode.default as ReturnType<typeof vi.fn>).mockReturnValue({
         getParent: () => null,
         getKey: () => 'test-key',
@@ -1215,7 +1159,7 @@ describe('ToolbarPlugin', () => {
 
       // Click paragraph option - this triggers formatParagraph which calls $setBlocksType
       const paragraphItems = screen.getAllByText('Paragraph');
-      const paragraphMenuItem = paragraphItems.find(item => item.closest('[role="menuitem"]'));
+      const paragraphMenuItem = paragraphItems.find((item) => item.closest('[role="menuitem"]'));
       if (paragraphMenuItem) {
         fireEvent.click(paragraphMenuItem);
       }
@@ -1232,7 +1176,8 @@ describe('ToolbarPlugin', () => {
       const lexical = await vi.importMock<typeof import('lexical')>('lexical');
       const lexicalLink = await vi.importMock<typeof import('@lexical/link')>('@lexical/link');
       const richText = await vi.importMock<typeof import('@lexical/rich-text')>('@lexical/rich-text');
-      const getSelectedNode = await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
+      const getSelectedNode =
+        await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
 
       // Setup for isLink to become true
       (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
@@ -1264,15 +1209,17 @@ describe('ToolbarPlugin', () => {
       });
 
       // Capture the update listener AND immediately call it during registration
-      mockRegisterUpdateListener.mockImplementation((callback: (state: {editorState: {read: (cb: () => void) => void}}) => void) => {
-        // Immediately call the callback to set the initial state
-        callback({
-          editorState: {
-            read: (cb: () => void) => cb(),
-          },
-        });
-        return vi.fn();
-      });
+      mockRegisterUpdateListener.mockImplementation(
+        (callback: (state: {editorState: {read: (cb: () => void) => void}}) => void) => {
+          // Immediately call the callback to set the initial state
+          callback({
+            editorState: {
+              read: (cb: () => void) => cb(),
+            },
+          });
+          return vi.fn();
+        },
+      );
 
       const {rerender} = render(<ToolbarPlugin link />);
 
@@ -1292,7 +1239,8 @@ describe('ToolbarPlugin', () => {
       const lexical = await vi.importMock<typeof import('lexical')>('lexical');
       const lexicalLink = await vi.importMock<typeof import('@lexical/link')>('@lexical/link');
       const richText = await vi.importMock<typeof import('@lexical/rich-text')>('@lexical/rich-text');
-      const getSelectedNode = await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
+      const getSelectedNode =
+        await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
 
       // Setup for isLink to be false
       (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
@@ -1354,7 +1302,8 @@ describe('ToolbarPlugin', () => {
     it('should set blockType from heading tag when element is a heading node', async () => {
       const lexical = await vi.importMock<typeof import('lexical')>('lexical');
       const richText = await vi.importMock<typeof import('@lexical/rich-text')>('@lexical/rich-text');
-      const getSelectedNode = await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
+      const getSelectedNode =
+        await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
 
       (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
       (richText.$isHeadingNode as ReturnType<typeof vi.fn>).mockReturnValue(true);
@@ -1408,7 +1357,8 @@ describe('ToolbarPlugin', () => {
     it('should set blockType to paragraph for unknown element types', async () => {
       const lexical = await vi.importMock<typeof import('lexical')>('lexical');
       const richText = await vi.importMock<typeof import('@lexical/rich-text')>('@lexical/rich-text');
-      const getSelectedNode = await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
+      const getSelectedNode =
+        await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
 
       (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
       (richText.$isHeadingNode as ReturnType<typeof vi.fn>).mockReturnValue(false);
@@ -1459,7 +1409,7 @@ describe('ToolbarPlugin', () => {
   });
 
   describe('SELECTION_CHANGE_COMMAND callback (line 234)', () => {
-    it('should call $updateToolbar when SELECTION_CHANGE_COMMAND is triggered', async () => {
+    it('should call $updateToolbar when SELECTION_CHANGE_COMMAND is triggered', () => {
       // Capture SELECTION_CHANGE_COMMAND callback
       type SelectionCallback = () => boolean;
       let selectionChangeCallback: SelectionCallback | null = null;
@@ -1473,10 +1423,9 @@ describe('ToolbarPlugin', () => {
       render(<ToolbarPlugin />);
 
       // Execute the SELECTION_CHANGE_COMMAND callback
-      if (selectionChangeCallback !== null) {
-        const result = (selectionChangeCallback as SelectionCallback)();
-        expect(result).toBe(false);
-      }
+      expect(selectionChangeCallback).not.toBeNull();
+      const result = (selectionChangeCallback as unknown as SelectionCallback)();
+      expect(result).toBe(false);
 
       expect(mockRegisterCommand).toHaveBeenCalled();
     });

@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {renderHook} from '@testing-library/react';
 import type {ReactNode} from 'react';
+import {describe, it, expect, vi} from 'vitest';
 import ApplicationCreateContext, {
   type ApplicationCreateContextType,
 } from '../../contexts/ApplicationCreate/ApplicationCreateContext';
-import useApplicationCreateContext from '../useApplicationCreateContext';
 import {ApplicationCreateFlowStep, ApplicationCreateFlowSignInApproach} from '../../models/application-create-flow';
+import useApplicationCreateContext from '../useApplicationCreateContext';
 
 describe('useApplicationCreateContext', () => {
   const mockContextValue: ApplicationCreateContextType = {

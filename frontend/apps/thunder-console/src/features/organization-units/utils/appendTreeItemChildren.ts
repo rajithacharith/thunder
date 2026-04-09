@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type {OrganizationUnitTreeItem} from '../models/organization-unit-tree';
 import OrganizationUnitTreeConstants from '../constants/organization-unit-tree-constants';
+import type {OrganizationUnitTreeItem} from '../models/organization-unit-tree';
 
 export default function appendTreeItemChildren(
   items: OrganizationUnitTreeItem[],
@@ -26,7 +26,9 @@ export default function appendTreeItemChildren(
 ): OrganizationUnitTreeItem[] {
   return items.map((item) => {
     if (item.id === parentId) {
-      const existing = (item.children ?? []).filter((c) => !c.id.endsWith(OrganizationUnitTreeConstants.LOAD_MORE_SUFFIX));
+      const existing = (item.children ?? []).filter(
+        (c) => !c.id.endsWith(OrganizationUnitTreeConstants.LOAD_MORE_SUFFIX),
+      );
 
       return {...item, children: [...existing, ...newChildren]};
     }

@@ -16,10 +16,8 @@
  * under the License.
  */
 
-import {Link, useNavigate, useParams} from 'react-router';
-import getInitials from '@/utils/getInitials';
-import {useForm} from 'react-hook-form';
-import {useState, useEffect, useMemo, type SyntheticEvent, type ReactNode, type JSX} from 'react';
+import {useLogger} from '@thunder/logger/react';
+import {useResolveDisplayName} from '@thunder/shared-hooks';
 import {
   Box,
   Stack,
@@ -35,17 +33,19 @@ import {
   PageTitle,
 } from '@wso2/oxygen-ui';
 import {ArrowLeft, Save, X} from '@wso2/oxygen-ui-icons-react';
+import {useState, useEffect, useMemo, type SyntheticEvent, type ReactNode, type JSX} from 'react';
+import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
-import {useLogger} from '@thunder/logger/react';
-import {useResolveDisplayName} from '@thunder/shared-hooks';
-import SettingsCard from '@/components/SettingsCard';
+import {Link, useNavigate, useParams} from 'react-router';
+import UserDeleteDialog from './UserDeleteDialog';
 import CopyableId from '../../../components/CopyableId';
 import useGetUser from '../api/useGetUser';
-import useGetUserSchemas from '../api/useGetUserSchemas';
 import useGetUserSchema from '../api/useGetUserSchema';
+import useGetUserSchemas from '../api/useGetUserSchemas';
 import useUpdateUser from '../api/useUpdateUser';
 import renderSchemaField from '../utils/renderSchemaField';
-import UserDeleteDialog from './UserDeleteDialog';
+import SettingsCard from '@/components/SettingsCard';
+import getInitials from '@/utils/getInitials';
 
 type UpdateUserFormData = Record<string, string | number | boolean>;
 
@@ -190,7 +190,7 @@ export default function ViewUserPage() {
         </Alert>
         <Button
           onClick={() => {
-            handleBack().catch(() => {});
+            handleBack().catch(() => null);
           }}
           startIcon={<ArrowLeft size={16} />}
         >
@@ -209,7 +209,7 @@ export default function ViewUserPage() {
         </Alert>
         <Button
           onClick={() => {
-            handleBack().catch(() => {});
+            handleBack().catch(() => null);
           }}
           startIcon={<ArrowLeft size={16} />}
         >
@@ -322,7 +322,7 @@ export default function ViewUserPage() {
                 <Box
                   component="form"
                   onSubmit={(event) => {
-                    handleSubmit(onSubmit)(event).catch(() => {});
+                    handleSubmit(onSubmit)(event).catch(() => null);
                   }}
                   noValidate
                   sx={{display: 'flex', flexDirection: 'column', gap: 2}}

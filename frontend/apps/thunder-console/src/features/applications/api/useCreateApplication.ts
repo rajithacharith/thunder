@@ -16,13 +16,14 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useConfig, useToast} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
+import {getErrorMessage} from '@thunder/utils';
 import {useTranslation} from 'react-i18next';
+import ApplicationQueryKeys from '../constants/application-query-keys';
 import type {Application} from '../models/application';
 import type {CreateApplicationRequest} from '../models/requests';
-import ApplicationQueryKeys from '../constants/application-query-keys';
 
 /**
  * Custom React hook to create a new application in the Thunder server.
@@ -90,8 +91,8 @@ export default function useCreateApplication(): UseMutationResult<Application, E
       });
       showToast(t('create.success'), 'success');
     },
-    onError: () => {
-      showToast(t('create.error'), 'error');
+    onError: (error) => {
+      showToast(getErrorMessage(error, t, 'create.error'), 'error');
     },
   });
 }

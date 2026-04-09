@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import {StepTypes, type Step} from '@/features/flows/models/steps';
-import type {ReactElement} from 'react';
 import type {NodeProps} from '@xyflow/react';
-import View from './view/View';
+import type {ReactElement} from 'react';
 import End from './end/End';
 import Execution from './execution/Execution';
 import Rule from './rule/Rule';
-import type {Resources} from '../../../models/resources';
+import View from './view/View';
 import type {Element} from '../../../models/elements';
+import type {Resources} from '../../../models/resources';
+import {StepTypes, type Step} from '@/features/flows/models/steps';
 
 /**
  * Props interface of {@link CommonStepFactory}
@@ -71,7 +71,7 @@ function CommonStepFactory({
   onAddElementToForm = undefined,
   ...rest
 }: CommonStepFactoryPropsInterface): ReactElement | null {
-  if (resources && resources[0].type === StepTypes.View) {
+  if (resources?.[0].type === StepTypes.View) {
     return (
       <View
         resources={resources}
@@ -92,7 +92,7 @@ function CommonStepFactory({
     return <Execution resources={resources} data={data} {...rest} />;
   }
 
-  if (resources && resources[0].type === StepTypes.End) {
+  if (resources?.[0].type === StepTypes.End) {
     return <End resources={resources} data={data} {...rest} />;
   }
 

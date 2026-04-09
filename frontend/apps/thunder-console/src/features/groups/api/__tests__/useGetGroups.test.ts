@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor} from '@testing-library/react';
 import {renderHook} from '@thunder/test-utils';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import type {GroupListResponse} from '../../models/group';
 
 const mockHttpRequest = vi.fn();
@@ -88,8 +88,8 @@ describe('useGetGroups', () => {
     });
   });
 
-  it('should set loading state', async () => {
-    mockHttpRequest.mockImplementation(() => new Promise(() => {}));
+  it('should set loading state', () => {
+    mockHttpRequest.mockImplementation(() => new Promise(() => null));
     const {result, unmount} = renderHook(() => useGetGroups());
 
     expect(result.current.isLoading).toBe(true);

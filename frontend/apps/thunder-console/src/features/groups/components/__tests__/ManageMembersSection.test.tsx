@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {renderWithProviders} from '@thunder/test-utils';
 import type * as OxygenUI from '@wso2/oxygen-ui';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import ManageMembersSection from '../edit-group/members-settings/ManageMembersSection';
 
 interface MockDataGridProps {
@@ -113,9 +113,7 @@ describe('ManageMembersSection', () => {
   });
 
   it('should render header action when provided', () => {
-    renderWithProviders(
-      <ManageMembersSection {...defaultProps} headerAction={<button type="button">Add</button>} />,
-    );
+    renderWithProviders(<ManageMembersSection {...defaultProps} headerAction={<button type="button">Add</button>} />);
 
     expect(screen.getByText('Add')).toBeInTheDocument();
   });

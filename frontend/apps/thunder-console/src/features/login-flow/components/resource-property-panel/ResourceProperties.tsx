@@ -16,21 +16,21 @@
  * under the License.
  */
 
-import type {ResourcePropertiesProps} from '@/features/flows/context/FlowBuilderCoreProvider';
-import {useState, useEffect, type ReactElement} from 'react';
-import {useTranslation} from 'react-i18next';
 import {FormControl, FormLabel, MenuItem, Select} from '@wso2/oxygen-ui';
 import isEmpty from 'lodash-es/isEmpty';
-import type {FieldKey, FieldValue} from '@/features/flows/models/base';
-import {ExecutionTypes, StepCategories, StepTypes} from '@/features/flows/models/steps';
-import {ElementCategories, ElementTypes, type Element} from '@/features/flows/models/elements';
-import type {Resource} from '@/features/flows/models/resources';
-import TextPropertyField from '@/features/flows/components/resource-property-panel/TextPropertyField';
-import ResourcePropertyFactory from './ResourcePropertyFactory';
-import RulesProperties from './nodes/RulesProperties';
-import FieldExtendedProperties from './extended-properties/FieldExtendedProperties';
+import {useState, type ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
 import ButtonExtendedProperties from './extended-properties/ButtonExtendedProperties';
 import ExecutionExtendedProperties from './extended-properties/ExecutionExtendedProperties';
+import FieldExtendedProperties from './extended-properties/FieldExtendedProperties';
+import RulesProperties from './nodes/RulesProperties';
+import ResourcePropertyFactory from './ResourcePropertyFactory';
+import TextPropertyField from '@/features/flows/components/resource-property-panel/TextPropertyField';
+import type {ResourcePropertiesProps} from '@/features/flows/context/FlowBuilderCoreProvider';
+import type {FieldKey, FieldValue} from '@/features/flows/models/base';
+import {ElementCategories, ElementTypes, type Element} from '@/features/flows/models/elements';
+import type {Resource} from '@/features/flows/models/resources';
+import {ExecutionTypes, StepCategories, StepTypes} from '@/features/flows/models/steps';
 
 /**
  * Factory to generate the property configurator for the given password recovery flow resource.
@@ -73,16 +73,18 @@ function ResourceProperties({
   });
 
   // Sync selectedVariant when resource changes (e.g., clicking on a different element)
-  useEffect(() => {
+  const [prevResource, setPrevResource] = useState(resource);
+  if (resource !== prevResource) {
+    setPrevResource(resource);
     if (!resource?.variants || resource.variants.length === 0) {
       setSelectedVariant(undefined);
-      return;
+    } else {
+      const currentVariant = resource.variants.find((v: Element) => v.variant === (resource as Element).variant) as
+        | Element
+        | undefined;
+      setSelectedVariant(currentVariant ?? (resource.variants[0] as Element));
     }
-    const currentVariant = resource.variants.find((v: Element) => v.variant === (resource as Element).variant) as
-      | Element
-      | undefined;
-    setSelectedVariant(currentVariant ?? (resource.variants[0] as Element));
-  }, [resource]);
+  }
 
   const renderElementId = (): ReactElement => (
     <ResourcePropertyFactory

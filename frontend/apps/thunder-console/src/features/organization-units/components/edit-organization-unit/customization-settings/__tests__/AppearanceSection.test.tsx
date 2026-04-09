@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
-import AppearanceSection from '../AppearanceSection';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {OrganizationUnit} from '../../../../models/organization-unit';
+import AppearanceSection from '../AppearanceSection';
 
 // Mock useGetThemes hook
 const mockUseGetThemes = vi.fn();
@@ -190,13 +190,12 @@ describe('AppearanceSection', () => {
     const autocomplete = screen.getByPlaceholderText('Select a theme');
     const clearButton = autocomplete.parentElement?.querySelector('[title="Clear"]');
 
-    if (clearButton) {
-      fireEvent.click(clearButton);
+    expect(clearButton).toBeTruthy();
+    fireEvent.click(clearButton!);
 
-      await waitFor(() => {
-        expect(mockOnFieldChange).toHaveBeenCalledWith('themeId', '');
-      });
-    }
+    await waitFor(() => {
+      expect(mockOnFieldChange).toHaveBeenCalledWith('themeId', '');
+    });
   });
 
   it('should handle empty themes list', () => {

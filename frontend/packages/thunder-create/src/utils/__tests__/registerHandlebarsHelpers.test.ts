@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach} from 'vitest';
 import Handlebars from 'handlebars';
+import {describe, it, expect, beforeEach} from 'vitest';
 import registerHandlebarsHelpers from '../registerHandlebarsHelpers';
 
 describe('registerHandlebarsHelpers', () => {

@@ -35,6 +35,8 @@ database:
 crypto:
   encryption:
     key: "file://repository/resources/security/crypto.key"
+  password_hashing:
+    algorithm: "PBKDF2"
   keys:
     - id: "default-key"
       cert_file: "repository/resources/security/signing.cert"
@@ -50,3 +52,7 @@ cors:
 passkey:
   allowed_origins:
     - "https://localhost:8090"
+
+consent:
+  enabled: true
+  base_url: "http://localhost:9090/api/v1"
