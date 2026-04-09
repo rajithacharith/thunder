@@ -1,6 +1,6 @@
 {
     "name": "Disambiguation Login Flow",
-    "handle": "disambiguation-login-flow",
+    "handle": "default-disambiguation-login-flow",
     "flowType": "AUTHENTICATION",
     "nodes": [
         {
