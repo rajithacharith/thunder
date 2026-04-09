@@ -29,7 +29,6 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/system/observability"
 	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
@@ -71,10 +70,9 @@ const (
 type passkeyAuthExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
-	passkeyService   passkey.PasskeyServiceInterface
-	userProvider     userprovider.UserProviderInterface
-	observabilitySvc observability.ObservabilityServiceInterface
-	logger           *log.Logger
+	passkeyService passkey.PasskeyServiceInterface
+	userProvider   userprovider.UserProviderInterface
+	logger         *log.Logger
 }
 
 var _ core.ExecutorInterface = (*passkeyAuthExecutor)(nil)
@@ -84,7 +82,6 @@ var _ identifyingExecutorInterface = (*passkeyAuthExecutor)(nil)
 func newPasskeyAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
 	passkeyService passkey.PasskeyServiceInterface,
-	observabilitySvc observability.ObservabilityServiceInterface,
 	userProvider userprovider.UserProviderInterface,
 ) *passkeyAuthExecutor {
 	defaultInputs := []common.Input{
@@ -136,7 +133,6 @@ func newPasskeyAuthExecutor(
 		identifyingExecutorInterface: identifyExec,
 		passkeyService:               passkeyService,
 		userProvider:                 userProvider,
-		observabilitySvc:             observabilitySvc,
 		logger:                       logger,
 	}
 }

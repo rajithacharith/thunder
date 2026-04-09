@@ -30,7 +30,6 @@ import (
 	"github.com/asgardeo/thunder/internal/notification"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/system/observability"
 	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
@@ -46,10 +45,9 @@ var MobileNumberInput = common.Input{
 type smsOTPAuthExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
-	userProvider     userprovider.UserProviderInterface
-	otpService       notification.OTPServiceInterface
-	observabilitySvc observability.ObservabilityServiceInterface
-	logger           *log.Logger
+	userProvider userprovider.UserProviderInterface
+	otpService   notification.OTPServiceInterface
+	logger       *log.Logger
 }
 
 var _ core.ExecutorInterface = (*smsOTPAuthExecutor)(nil)
@@ -59,7 +57,6 @@ var _ identifyingExecutorInterface = (*smsOTPAuthExecutor)(nil)
 func newSMSOTPAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
 	otpService notification.OTPServiceInterface,
-	observabilitySvc observability.ObservabilityServiceInterface,
 	userProvider userprovider.UserProviderInterface,
 ) *smsOTPAuthExecutor {
 	defaultInputs := []common.Input{
@@ -87,7 +84,6 @@ func newSMSOTPAuthExecutor(
 		identifyingExecutorInterface: identifyExec,
 		userProvider:                 userProvider,
 		otpService:                   otpService,
-		observabilitySvc:             observabilitySvc,
 		logger:                       logger,
 	}
 }

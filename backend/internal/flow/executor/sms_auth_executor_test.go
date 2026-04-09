@@ -32,17 +32,15 @@ import (
 	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/notification/notificationmock"
-	"github.com/asgardeo/thunder/tests/mocks/observability/observabilitymock"
 	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
 type SMSAuthExecutorTestSuite struct {
 	suite.Suite
-	mockOTPService    *notificationmock.OTPServiceInterfaceMock
-	mockFlowFactory   *coremock.FlowFactoryInterfaceMock
-	mockObservability *observabilitymock.ObservabilityServiceInterfaceMock
-	mockUserProvider  *userprovidermock.UserProviderInterfaceMock
-	executor          *smsOTPAuthExecutor
+	mockOTPService   *notificationmock.OTPServiceInterfaceMock
+	mockFlowFactory  *coremock.FlowFactoryInterfaceMock
+	mockUserProvider *userprovidermock.UserProviderInterfaceMock
+	executor         *smsOTPAuthExecutor
 }
 
 func TestSMSAuthExecutorSuite(t *testing.T) {
@@ -52,11 +50,7 @@ func TestSMSAuthExecutorSuite(t *testing.T) {
 func (suite *SMSAuthExecutorTestSuite) SetupTest() {
 	suite.mockOTPService = notificationmock.NewOTPServiceInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
-	suite.mockObservability = observabilitymock.NewObservabilityServiceInterfaceMock(suite.T())
 	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
-
-	// Default behavior for observability: disabled
-	suite.mockObservability.On("IsEnabled").Return(false).Maybe()
 
 	defaultInputs := []common.Input{
 		{
@@ -98,7 +92,7 @@ func (suite *SMSAuthExecutorTestSuite) SetupTest() {
 		defaultInputs, prerequisites).Return(mockExec)
 
 	suite.executor = newSMSOTPAuthExecutor(suite.mockFlowFactory,
-		suite.mockOTPService, suite.mockObservability, suite.mockUserProvider)
+		suite.mockOTPService, suite.mockUserProvider)
 	// Inject the mock base executor
 	suite.executor.ExecutorInterface = mockExec
 }
