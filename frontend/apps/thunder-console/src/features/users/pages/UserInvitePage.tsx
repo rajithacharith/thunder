@@ -747,6 +747,7 @@ export default function UserInvitePage(): JSX.Element {
   const logger = useLogger('UserInvitePage');
   const [copied, setCopied] = useState(false);
   const [flowError, setFlowError] = useState<string | null>(null);
+  const [isComplete, setIsComplete] = useState(false);
 
   // Track breadcrumb trail of visited step labels
   const [breadcrumbs, setBreadcrumbs] = useState<string[]>([]);
@@ -787,6 +788,7 @@ export default function UserInvitePage(): JSX.Element {
     if (prevStepLabelRef.current !== 'complete') {
       prevStepLabelRef.current = 'complete';
       setBreadcrumbs((prev) => [...prev, t('users:invite.steps.complete', 'Complete')]);
+      setIsComplete(true);
     }
   }, [setBreadcrumbs, t]);
 
@@ -798,6 +800,7 @@ export default function UserInvitePage(): JSX.Element {
     setBreadcrumbs([]);
     prevStepLabelRef.current = '';
     setHasOuStep(false);
+    setIsComplete(false);
     setFlowError(null);
     setCopied(false);
   }, []);
@@ -855,8 +858,8 @@ export default function UserInvitePage(): JSX.Element {
               flexDirection: 'column',
               py: 8,
               px: 20,
-              mx: 'auto',
-              alignItems: 'center',
+              mx: isComplete ? 'auto' : 0,
+              alignItems: isComplete ? 'center' : 'flex-start',
             }}
           >
             <Box
