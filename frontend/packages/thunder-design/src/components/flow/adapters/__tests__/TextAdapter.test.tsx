@@ -51,11 +51,28 @@ describe('TextAdapter', () => {
     expect(el.className).toContain('ThunderFlow--text');
   });
 
-  it('applies text alignment based on design mode', () => {
+  it('uses center alignment when design mode is enabled and no align prop', () => {
     renderWithProviders(<TextAdapter component={baseComponent} resolve={(s) => s} />, {
       designContext: {isDesignEnabled: true},
     });
     const el = screen.getByText('Hello World');
-    expect(el).toBeTruthy();
+    expect(el.style.textAlign).toBe('center');
+  });
+
+  it('uses component.align when provided, overriding design mode', () => {
+    const component = {...baseComponent, align: 'center'};
+    renderWithProviders(<TextAdapter component={component} resolve={(s) => s} />, {
+      designContext: {isDesignEnabled: false},
+    });
+    const el = screen.getByText('Hello World');
+    expect(el.style.textAlign).toBe('center');
+  });
+
+  it('falls back to left alignment when no align and design mode is disabled', () => {
+    renderWithProviders(<TextAdapter component={baseComponent} resolve={(s) => s} />, {
+      designContext: {isDesignEnabled: false},
+    });
+    const el = screen.getByText('Hello World');
+    expect(el.style.textAlign).toBe('left');
   });
 });

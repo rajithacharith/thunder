@@ -144,10 +144,10 @@ let mockAcceptInviteRenderProps: MockAcceptInviteRenderProps = createMockAcceptI
 
 // Track props passed to AcceptInvite
 let capturedOnGoToSignIn: (() => void) | undefined;
+let capturedOnComplete: (() => void) | undefined;
 let capturedOnError: ((error: Error) => void) | undefined;
 const mockUseAsgardeo = vi.fn().mockReturnValue({
   resolveFlowTemplateLiterals: (template: string) => template,
-  meta: undefined,
 });
 
 vi.mock('@asgardeo/react', async () => {
@@ -158,13 +158,16 @@ vi.mock('@asgardeo/react', async () => {
     AcceptInvite: ({
       children,
       onGoToSignIn = undefined,
+      onComplete = undefined,
       onError = undefined,
     }: {
       children: (props: typeof mockAcceptInviteRenderProps) => React.ReactNode;
       onGoToSignIn?: () => void;
+      onComplete?: () => void;
       onError?: (error: Error) => void;
     }) => {
       capturedOnGoToSignIn = onGoToSignIn;
+      capturedOnComplete = onComplete;
       capturedOnError = onError;
       return <div data-testid="asgardeo-accept-invite">{children(mockAcceptInviteRenderProps)}</div>;
     },
@@ -187,7 +190,6 @@ describe('AcceptInviteBox', () => {
     vi.clearAllMocks();
     mockUseAsgardeo.mockReturnValue({
       resolveFlowTemplateLiterals: (template: string) => template,
-      meta: undefined,
     });
     mockUseDesign.mockReturnValue({
       isDesignEnabled: false,
@@ -217,14 +219,6 @@ describe('AcceptInviteBox', () => {
     expect(screen.getByText(/This invite link is invalid or has expired/)).toBeInTheDocument();
   });
 
-  it('shows completion message', () => {
-    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
-      isComplete: true,
-    });
-    render(<AcceptInviteBox />);
-    expect(screen.getByText(/Your account has been successfully set up/)).toBeInTheDocument();
-  });
-
   it('shows loading spinner when loading and no components', () => {
     mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
       isLoading: true,
@@ -241,74 +235,25 @@ describe('AcceptInviteBox', () => {
       error: null,
       isValidatingToken: false,
       isTokenInvalid: false,
-      isComplete: false,
     });
     render(<AcceptInviteBox />);
     expect(screen.getByTestId('asgardeo-accept-invite')).toBeInTheDocument();
   });
 
-  it('shows success message when invite flow completes', () => {
+  it('does not pass onComplete to AcceptInvite', () => {
+    render(<AcceptInviteBox />);
+
+    expect(capturedOnComplete).toBeUndefined();
+  });
+
+  it('renders display components when isComplete', () => {
     mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
       isComplete: true,
+      components: [{id: 'heading', type: 'TEXT', label: 'Welcome Aboard!', variant: 'HEADING_1'}],
     });
-
     render(<AcceptInviteBox />);
 
-    expect(screen.getByText(/Your account has been successfully set up\. You can now sign in\./)).toBeInTheDocument();
-  });
-
-  it('shows success message with app name when meta has application name', () => {
-    mockUseAsgardeo.mockReturnValue({
-      resolveFlowTemplateLiterals: (template: string) => template,
-      meta: {application: {name: 'My Test App'}},
-    });
-    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({isComplete: true});
-
-    render(<AcceptInviteBox />);
-
-    expect(
-      screen.getByText(/Your account has been successfully set up for My Test App\. You can now sign in\./),
-    ).toBeInTheDocument();
-  });
-
-  it('shows back to app link with app name when meta has application name and url', () => {
-    mockUseAsgardeo.mockReturnValue({
-      resolveFlowTemplateLiterals: (template: string) => template,
-      meta: {application: {name: 'My Test App', url: 'https://myapp.example.com'}},
-    });
-    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({isComplete: true});
-
-    render(<AcceptInviteBox />);
-
-    const link = screen.getByRole('link', {name: /Back to My Test App/});
-    expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute('href', 'https://myapp.example.com');
-  });
-
-  it('shows generic back to application link when meta has url but no application name', () => {
-    mockUseAsgardeo.mockReturnValue({
-      resolveFlowTemplateLiterals: (template: string) => template,
-      meta: {application: {url: 'https://myapp.example.com'}},
-    });
-    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({isComplete: true});
-
-    render(<AcceptInviteBox />);
-
-    const link = screen.getByRole('link', {name: /Back to Application/});
-    expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute('href', 'https://myapp.example.com');
-  });
-
-  it('does not show back to app link when meta has no application url', () => {
-    mockUseAsgardeo.mockReturnValue({
-      resolveFlowTemplateLiterals: (template: string) => template,
-      meta: {application: {name: 'My Test App'}},
-    });
-    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({isComplete: true});
-
-    render(<AcceptInviteBox />);
-
-    expect(screen.queryByRole('link', {name: /Back to/})).not.toBeInTheDocument();
+    expect(screen.getByText('Welcome Aboard!')).toBeInTheDocument();
   });
 
   it('shows error alert when error is present', () => {
@@ -670,15 +615,13 @@ describe('AcceptInviteBox', () => {
     expect(mockHandleInputChange).toHaveBeenCalled();
   });
 
-  it('handles navigation to sign in via onGoToSignIn', () => {
-    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
-      isComplete: true,
-    });
+  it('passes onGoToSignIn to AcceptInvite', () => {
     render(<AcceptInviteBox />);
 
-    // The component passes onGoToSignIn to AcceptInvite
-    // Just verify component renders correctly
-    expect(screen.getByText(/Your account has been successfully set up/)).toBeInTheDocument();
+    expect(capturedOnGoToSignIn).toBeDefined();
+    capturedOnGoToSignIn?.();
+
+    expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/signin'));
   });
 
   it('renders SELECT component with string options', async () => {

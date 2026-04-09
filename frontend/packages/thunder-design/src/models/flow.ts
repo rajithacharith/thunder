@@ -65,6 +65,8 @@ export type FlowComponent = EmbeddedFlowComponent & {
   startIcon?: string;
   /** Image for trigger buttons */
   image?: string;
+  /** Data source key for dynamic components (e.g., COPYABLE_TEXT). References a key in additionalData. */
+  source?: string;
 };
 
 /**

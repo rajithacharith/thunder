@@ -73,6 +73,7 @@ export {default as FlowComponentRenderer} from './components/flow/FlowComponentR
 
 // Flow adapters
 export {default as BlockAdapter} from './components/flow/adapters/BlockAdapter';
+export {default as CopyableTextAdapter} from './components/flow/adapters/CopyableTextAdapter';
 export {default as ConsentAdapter} from './components/flow/adapters/ConsentAdapter';
 export {default as DividerAdapter} from './components/flow/adapters/DividerAdapter';
 export {default as IconAdapter} from './components/flow/adapters/IconAdapter';

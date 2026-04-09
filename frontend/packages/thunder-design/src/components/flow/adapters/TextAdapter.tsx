@@ -34,11 +34,13 @@ export default function TextAdapter({component, resolve}: TextAdapterProps): JSX
   const {isDesignEnabled} = useDesign();
   const typographyVariant = mapEmbeddedFlowTextVariant(component.variant);
 
+  const textAlign = component.align ?? (isDesignEnabled ? 'center' : 'left');
+
   return (
     <Typography
       className={cn('Flow--text', `Text--${typographyVariant}`)}
       variant={typographyVariant}
-      sx={{mb: 1, textAlign: isDesignEnabled ? 'center' : 'left'}}
+      sx={{mb: 1, textAlign}}
     >
       {t(resolve(component.label)!)}
     </Typography>
