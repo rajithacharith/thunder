@@ -25,6 +25,8 @@ import (
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/authnprovider"
+	"github.com/asgardeo/thunder/internal/authz"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
 	"github.com/asgardeo/thunder/internal/oauth/jwks"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/dcr"
@@ -53,6 +55,8 @@ func Initialize(
 	pkiService pki.PKIServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
+	authzService authz.AuthorizationServiceInterface,
+	entityProvider entityprovider.EntityProviderInterface,
 ) error {
 	// Fetch runtime transactioner for OAuth services.
 	transactioner, err := provider.GetDBProvider().GetRuntimeDBTransactioner()
@@ -64,7 +68,7 @@ func Initialize(
 	tokenBuilder, tokenValidator := tokenservice.Initialize(jwtService)
 	grantHandlerProvider, err := granthandlers.Initialize(
 		mux, jwtService, applicationService, flowExecService, tokenBuilder, tokenValidator,
-		attributeCacheSvc, ouService)
+		attributeCacheSvc, ouService, authzService, entityProvider)
 	if err != nil {
 		return err
 	}

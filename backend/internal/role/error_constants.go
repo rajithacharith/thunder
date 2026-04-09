@@ -96,12 +96,12 @@ var (
 		Error:            "Empty assignments list",
 		ErrorDescription: "At least one assignment must be provided",
 	}
-	// ErrorMissingUserOrGroups is the error returned when both user ID and groups are missing.
-	ErrorMissingUserOrGroups = serviceerror.ServiceError{
+	// ErrorMissingEntityOrGroups is the error returned when both entity ID and groups are missing.
+	ErrorMissingEntityOrGroups = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "ROL-1011",
 		Error:            "Invalid request format",
-		ErrorDescription: "Either userId or groups must be provided for authorization check",
+		ErrorDescription: "Either entityId or groups must be provided for authorization check",
 	}
 	// ErrorInvalidPermissions is returned when one or more permissions are invalid.
 	ErrorInvalidPermissions = serviceerror.ServiceError{
@@ -138,7 +138,7 @@ var (
 		Type:             serviceerror.ClientErrorType,
 		Code:             "ROL-1017",
 		Error:            "Invalid assignee type",
-		ErrorDescription: "The type parameter must be either 'user' or 'group'",
+		ErrorDescription: "The type parameter must be 'user', 'group', or 'app'",
 	}
 )
 

@@ -916,7 +916,7 @@ func (gs *groupService) validateCreateGroupRequest(request CreateGroupRequest) *
 	}
 
 	for _, member := range request.Members {
-		if member.Type != MemberTypeUser && member.Type != MemberTypeGroup {
+		if member.Type != MemberTypeUser && member.Type != MemberTypeGroup && member.Type != MemberTypeApp {
 			return &ErrorInvalidRequestFormat
 		}
 		if member.ID == "" {
@@ -943,7 +943,7 @@ func (gs *groupService) validateUpdateGroupRequest(request UpdateGroupRequest) *
 // validateMemberTypes validates that all members have a valid type.
 func validateMemberTypes(members []Member) *serviceerror.ServiceError {
 	for _, member := range members {
-		if member.Type != MemberTypeUser && member.Type != MemberTypeGroup {
+		if member.Type != MemberTypeUser && member.Type != MemberTypeGroup && member.Type != MemberTypeApp {
 			return &ErrorInvalidRequestFormat
 		}
 		if member.ID == "" {

@@ -42,16 +42,16 @@ func NewRBACEngine(roleService role.RoleServiceInterface) AuthorizationEngine {
 }
 
 // GetAuthorizedPermissions returns the subset of requested permissions
-// that the user is authorized for based on their role assignments.
+// that the entity is authorized for based on their role assignments.
 func (e *rbacEngine) GetAuthorizedPermissions(
 	ctx context.Context,
-	userID string,
+	entityID string,
 	groupIDs []string,
 	requestedPermissions []string,
 ) ([]string, error) {
 	// Delegate to role service
 	authorizedPerms, svcErr := e.roleService.GetAuthorizedPermissions(
-		ctx, userID, groupIDs, requestedPermissions)
+		ctx, entityID, groupIDs, requestedPermissions)
 	if svcErr != nil {
 		return nil, fmt.Errorf("role service error: %s", svcErr.Error)
 	}

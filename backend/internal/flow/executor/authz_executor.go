@@ -114,7 +114,7 @@ func (a *authorizationExecutor) Execute(ctx *core.NodeContext) (*common.Executor
 
 	// Call authorization service
 	authzReq := authzsvc.GetAuthorizedPermissionsRequest{
-		UserID:               userID,
+		EntityID:             userID,
 		GroupIDs:             groupIDs,
 		RequestedPermissions: requestedPerms,
 	}

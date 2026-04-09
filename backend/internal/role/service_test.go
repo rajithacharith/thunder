@@ -1883,7 +1883,7 @@ func (suite *RoleServiceTestSuite) TestGetAuthorizedPermissions() {
 			userID:               "",
 			groups:               nil, // Covers both nil and empty cases
 			requestedPermissions: []string{"perm1", "perm2"},
-			expectedError:        &ErrorMissingUserOrGroups,
+			expectedError:        &ErrorMissingEntityOrGroups,
 			skipMock:             true,
 		},
 		{

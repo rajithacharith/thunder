@@ -315,17 +315,17 @@ func (f *fileBasedStore) CheckRoleNameExistsExcludingID(
 	return false, nil
 }
 
-// GetAuthorizedPermissions returns permissions from roles assigned to the user or groups in the file store.
+// GetAuthorizedPermissions returns permissions from roles assigned to the entity or groups in the file store.
 func (f *fileBasedStore) GetAuthorizedPermissions(
 	ctx context.Context,
-	userID string,
+	entityID string,
 	groupIDs []string,
 	requestPermissions []string,
 ) ([]string, error) {
 	if len(requestPermissions) == 0 {
 		return []string{}, nil
 	}
-	if userID == "" && len(groupIDs) == 0 {
+	if entityID == "" && len(groupIDs) == 0 {
 		return []string{}, nil
 	}
 
@@ -354,7 +354,7 @@ func (f *fileBasedStore) GetAuthorizedPermissions(
 				log.Error(err))
 			continue
 		}
-		if !matchesAssignee(roleData.Assignments, userID, groupSet) {
+		if !matchesAssignee(roleData.Assignments, entityID, groupSet) {
 			continue
 		}
 		for _, resourcePerms := range roleData.Permissions {
@@ -375,11 +375,11 @@ func (f *fileBasedStore) GetAuthorizedPermissions(
 	return result, nil
 }
 
-// GetUserRoles retrieves the names of roles assigned to a user directly and/or through group membership.
+// GetUserRoles retrieves the names of roles assigned to an entity directly and/or through group membership.
 func (f *fileBasedStore) GetUserRoles(
-	ctx context.Context, userID string, groupIDs []string,
+	ctx context.Context, entityID string, groupIDs []string,
 ) ([]string, error) {
-	if userID == "" && len(groupIDs) == 0 {
+	if entityID == "" && len(groupIDs) == 0 {
 		return []string{}, nil
 	}
 
@@ -402,7 +402,7 @@ func (f *fileBasedStore) GetUserRoles(
 				log.Error(err))
 			continue
 		}
-		if !matchesAssignee(roleData.Assignments, userID, groupSet) {
+		if !matchesAssignee(roleData.Assignments, entityID, groupSet) {
 			continue
 		}
 		roleNames = append(roleNames, roleData.Name)
@@ -442,10 +442,10 @@ func isEntityNotFoundError(err error) bool {
 	return errMsg == "entity not found" || strings.Contains(errMsg, "not found")
 }
 
-// matchesAssignee returns true when the user or any of the user's groups is assigned.
-func matchesAssignee(assignments []RoleAssignment, userID string, groupSet map[string]bool) bool {
+// matchesAssignee returns true when the entity or any of the entity's groups is assigned.
+func matchesAssignee(assignments []RoleAssignment, entityID string, groupSet map[string]bool) bool {
 	for _, assignment := range assignments {
-		if assignment.Type == AssigneeTypeUser && assignment.ID == userID {
+		if (assignment.Type == AssigneeTypeUser || assignment.Type == AssigneeTypeApp) && assignment.ID == entityID {
 			return true
 		}
 		if assignment.Type == AssigneeTypeGroup && groupSet[assignment.ID] {
