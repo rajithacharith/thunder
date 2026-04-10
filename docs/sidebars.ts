@@ -234,6 +234,11 @@ const sidebars: SidebarsConfig = {
           id: 'guides/guides/consent',
           label: 'Consent',
         },
+        {
+          type: 'doc',
+          id: 'guides/guides/trusted-issuer',
+          label: 'Trusted Issuer',
+        },
       ],
     },
 
