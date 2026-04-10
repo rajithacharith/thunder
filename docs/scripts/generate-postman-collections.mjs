@@ -18,149 +18,243 @@
  * under the License.
  */
 
+/* eslint-disable @thunder/copyright-header, no-undef */
+
 /**
- * Generates Postman collections from Thunder OpenAPI specifications.
+ * Generates Postman collections, environments, and globals from OpenAPI specifications.
+ * Product name and slug are derived from docusaurus.thunder.config.ts to keep the
+ * "Thunder" term easily changeable.
  *
  * Usage:
- *   node scripts/generate-postman-collections.mjs
+ *   node scripts/generate-postman-collections.mjs [--version-path <path>]
  *
- * Output:
- *   samples/api/postman/<spec-name>.json  - one collection per OpenAPI spec
- *   samples/api/postman/thunder.json      - combined collection from all specs
+ * Options:
+ *   --version-path  The versioned subdirectory under static/api/ to write output into.
+ *                   Defaults to 'next' (the unreleased/current version).
+ *
+ * Output layout under static/api/<versionPath>/postman/:
+ *   collections/
+ *     <slug>-api-postman-collection.json   — single merged collection
+ *     modules/                             — individual collections per spec
+ *       <name>.postman.json
+ *
+ * Note: Only top-level YAML files in api/ are processed. Subdirectories (e.g. WIP/)
+ * are intentionally skipped to match the stable specs served in the docs.
  */
 
 import {readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync} from 'fs';
-import {join, dirname, basename} from 'path';
+import {join, dirname} from 'path';
 import {fileURLToPath} from 'url';
-import Converter from 'openapi-to-postmanv2';
 import {promisify} from 'util';
+import {createLogger} from '@thunder/logger';
+import Converter from 'openapi-to-postmanv2';
 
 const convert = promisify(Converter.convert.bind(Converter));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const ROOT_DIR = join(__dirname, '..', '..');
-const API_DIR = join(ROOT_DIR, 'api');
-const OUTPUT_DIR = join(ROOT_DIR, 'samples', 'api', 'postman');
+const logger = createLogger('generate-postman-collections');
+
+const API_DIR = join(__dirname, '..', '..', 'api');
+const STATIC_DIR = join(__dirname, '..', 'static', 'api');
+const THUNDER_CONFIG_PATH = join(__dirname, '..', 'docusaurus.thunder.config.ts');
+
+// Resolve version path from --version-path <path> CLI arg, defaulting to 'next'
+const versionPathArgIndex = process.argv.indexOf('--version-path');
+const versionPath = versionPathArgIndex !== -1 ? process.argv[versionPathArgIndex + 1] : 'next';
+
+const OUTPUT_DIR = join(STATIC_DIR, versionPath, 'postman');
 
 // Spec files to skip (WIP / not yet stable)
 const SKIP_FILES = new Set(['design.yaml']);
 
 const CONVERT_OPTIONS = {
-    folderStrategy: 'Tags',
-    requestNameSource: 'Fallback',
-    indentCharacter: '  ',
-    collapseFolders: true,
-    optimizeConversion: false,
-    strictRequestNames: false,
-    includeAuthInfoInExample: true,
-    exampleParametersResolution: 'Schema',
-    enableOptionalParameters: false,
-    disabledParametersValidation: false,
-    keepImplicitHeaders: false,
+  folderStrategy: 'Tags',
+  requestNameSource: 'Fallback',
+  indentCharacter: '  ',
+  collapseFolders: true,
+  optimizeConversion: false,
+  strictRequestNames: false,
+  includeAuthInfoInExample: true,
+  exampleParametersResolution: 'Schema',
+  enableOptionalParameters: false,
+  disabledParametersValidation: false,
+  keepImplicitHeaders: false,
 };
+
+/**
+ * Extract project name and slug from docusaurus.thunder.config.ts using regex so the
+ * script stays free of a TypeScript compilation step. The name drives display strings
+ * (e.g. "Thunder API") and the slug drives file/folder names (e.g. "thunder").
+ */
+function readThunderConfig(configPath) {
+  const content = readFileSync(configPath, 'utf8');
+
+  // Match the top-level `name:` field inside the `project:` block  (first string value)
+  const nameMatch = content.match(/project\s*:\s*\{[^}]*?name\s*:\s*['"]([^'"]+)['"]/s);
+  const projectName = nameMatch ? nameMatch[1] : 'Unknown Project';
+  const projectSlug = projectName.toLowerCase();
+  const projectEmoji = content.match(/project\s*:\s*\{[^}]*emoji\s*:\s*['"]([^'"]+)['"]/s)?.[1] || '';
+
+  const fileNameMatch = content.match(/output\s*:\s*['"]([^'"]+)['"]/);
+  const collectionFileName = fileNameMatch ? fileNameMatch[1] : `${projectSlug}-api-postman-collection.json`;
+
+  return {projectName, projectSlug, projectEmoji, collectionFileName};
+}
+
+/**
+ * Ensure a directory exists, creating it recursively if needed.
+ */
+function ensureDir(dirPath) {
+  if (!existsSync(dirPath)) {
+    mkdirSync(dirPath, {recursive: true});
+  }
+}
+
+/**
+ * Replace hardcoded OAuth2 URLs with collection variable references.
+ */
+function replaceOAuth2Urls(obj) {
+  if (obj === null || typeof obj !== 'object') return;
+
+  if (Array.isArray(obj)) {
+    for (const item of obj) replaceOAuth2Urls(item);
+    return;
+  }
+
+  if ((obj.key === 'accessTokenUrl' || obj.key === 'authUrl') && typeof obj.value === 'string') {
+    obj.value = obj.value.replace(/https?:\/\/localhost:\d+/g, '{{baseUrl}}');
+  }
+
+  for (const value of Object.values(obj)) replaceOAuth2Urls(value);
+}
 
 /**
  * Convert a single OpenAPI spec file to a Postman collection.
  */
 async function convertSpec(specPath) {
-    const specContent = readFileSync(specPath, 'utf8');
-    const result = await convert({type: 'string', data: specContent}, CONVERT_OPTIONS);
+  const specContent = readFileSync(specPath, 'utf8');
+  const result = await convert({type: 'string', data: specContent}, CONVERT_OPTIONS);
 
-    if (!result.result) {
-        throw new Error(`Conversion failed for ${specPath}: ${result.reason}`);
-    }
+  if (!result.result) {
+    throw new Error(`Conversion failed for ${specPath}: ${result.reason}`);
+  }
 
-    return result.output[0].data;
+  const collection = result.output[0].data;
+  replaceOAuth2Urls(collection);
+
+  return collection;
 }
 
 /**
- * Generate individual Postman collections for each OpenAPI spec.
+ * Generate individual Postman collections for each OpenAPI spec, writing them
+ * flat under the modules/ subdirectory of collectionsDir.
  */
-async function generateIndividualCollections(specFiles) {
-    const collections = [];
+async function generateModuleCollections(specFiles, collectionsDir) {
+  const collections = [];
+  const modulesDir = join(collectionsDir, 'modules');
 
-    for (const file of specFiles) {
-        const specPath = join(API_DIR, file);
-        const name = basename(file, '.yaml');
-        const outputPath = join(OUTPUT_DIR, `${name}.json`);
+  ensureDir(modulesDir);
 
-        console.log(`  Converting ${file}...`);
-        const collection = await convertSpec(specPath);
+  for (const file of specFiles) {
+    const specPath = join(API_DIR, file);
+    const specName = file.replace(/\.yaml$/, '');
+    const outputPath = join(modulesDir, `${specName}.postman.json`);
 
-        writeFileSync(outputPath, JSON.stringify(collection, null, 2), 'utf8');
-        console.log(`  Written to ${outputPath}`);
+    logger.info(`  Converting ${file}...`);
+    const collection = await convertSpec(specPath);
 
-        collections.push({name, collection});
-    }
+    writeFileSync(outputPath, JSON.stringify(collection, null, 2), 'utf8');
+    logger.info(`  Written to ${outputPath}`);
 
-    return collections;
+    collections.push({name: specName, collection});
+  }
+
+  return collections;
 }
 
 /**
- * Generate a single combined Postman collection from all specs.
+ * Generate a single combined Postman collection from all individual collections.
  *
- * Merges all items (folders/requests) from each individual collection
- * into one top-level collection named "Thunder API".
+ * Merges all items (folders/requests) into one top-level collection.
+ * Variables are merged and deduplicated across all collections (first occurrence wins).
  */
-function generateCombinedCollection(collections) {
-    const combined = {
-        info: {
-            name: 'Thunder API',
-            description: 'Complete API collection for Thunder identity and access management.',
-            schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
-        },
-        item: [],
-        variable: [],
-    };
+function generateCombinedCollection(collections, projectName, projectEmoji) {
+  const combined = {
+    info: {
+      name: projectEmoji ? `${projectEmoji} ${projectName} API` : `${projectName} API`,
+      description: `Complete API collection for ${projectName} identity and access management.`,
+      schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
+    },
+    item: [],
+    variable: [],
+  };
 
-    // Use variables from the first collection as the base
-    const first = collections[0]?.collection;
+  // Merge variables — deduplicate by key, first occurrence wins.
+  const mergedVariables = new Map();
 
-    if (first?.variable) {
-        combined.variable = first.variable;
+  for (const {collection} of collections) {
+    for (const variable of collection.variable ?? []) {
+      if (variable?.key && !mergedVariables.has(variable.key)) {
+        mergedVariables.set(variable.key, variable);
+      }
     }
+  }
 
-    for (const {collection} of collections) {
-        if (collection.item) {
-            combined.item.push(...collection.item);
-        }
+  combined.variable = Array.from(mergedVariables.values());
+
+  const authSource = collections.find(({collection}) => collection.auth)?.collection;
+
+  if (authSource?.auth) {
+    combined.auth = authSource.auth;
+  }
+
+  for (const {collection} of collections) {
+    if (collection.item) {
+      combined.item.push(...collection.item);
     }
+  }
 
-    return combined;
+  return combined;
 }
 
 async function main() {
-    console.log('Generating Postman collections from OpenAPI specs...');
+  logger.info(`Generating Postman collections (version path: ${versionPath})...`);
 
-    const specFiles = readdirSync(API_DIR)
-        .filter((file) => file.endsWith('.yaml') && !SKIP_FILES.has(file))
-        .sort();
+  const {projectName, projectSlug, projectEmoji, collectionFileName} = readThunderConfig(THUNDER_CONFIG_PATH);
 
-    if (specFiles.length === 0) {
-        throw new Error('No OpenAPI spec files found in the api/ directory.');
-    }
+  logger.info(`Product: ${projectEmoji} ${projectName} (slug: ${projectSlug})`);
 
-    console.log(`Found ${specFiles.length} spec file(s)`);
+  // Only top-level YAML files are processed — subdirectories are intentionally skipped.
+  const specFiles = readdirSync(API_DIR)
+    .filter((file) => file.endsWith('.yaml') && !SKIP_FILES.has(file))
+    .sort();
 
-    if (!existsSync(OUTPUT_DIR)) {
-        mkdirSync(OUTPUT_DIR, {recursive: true});
-    }
+  if (specFiles.length === 0) {
+    throw new Error('No OpenAPI spec files found in the api/ directory.');
+  }
 
-    const collections = await generateIndividualCollections(specFiles);
+  logger.info(`Found ${specFiles.length} spec file(s)`);
 
-    console.log('Generating combined collection...');
-    const combined = generateCombinedCollection(collections);
-    const combinedPath = join(OUTPUT_DIR, 'thunder.json');
+  const collectionsDir = join(OUTPUT_DIR, 'collections');
 
-    writeFileSync(combinedPath, JSON.stringify(combined, null, 2), 'utf8');
-    console.log(`Combined collection written to ${combinedPath}`);
+  ensureDir(collectionsDir);
 
-    console.log(`Done. ${collections.length} individual collection(s) + 1 combined collection generated.`);
+  logger.info('Generating module collections...');
+  const collections = await generateModuleCollections(specFiles, collectionsDir);
+
+  logger.info('Generating combined collection...');
+  const combined = generateCombinedCollection(collections, projectName, projectEmoji);
+  const combinedPath = join(collectionsDir, collectionFileName);
+
+  writeFileSync(combinedPath, JSON.stringify(combined, null, 2), 'utf8');
+  logger.info(`Combined collection written to ${combinedPath}`);
+
+  logger.info(`Done. ${collections.length} module collection(s) + 1 combined collection generated.`);
 }
 
 main().catch((error) => {
-    console.error('Error generating Postman collections:', error);
-    process.exit(1);
+  logger.error('Error generating Postman collections:', error);
+  process.exit(1);
 });
