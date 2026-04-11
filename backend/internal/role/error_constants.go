@@ -114,8 +114,9 @@ var (
 			DefaultValue: "Invalid assignment ID",
 		},
 		ErrorDescription: core.I18nMessage{
-			Key:          "error.roleservice.invalid_assignment_id_description",
-			DefaultValue: "One or more assignment IDs in the request do not exist",
+			Key: "error.roleservice.invalid_assignment_id_description",
+			DefaultValue: "One or more assignment IDs in the request do not exist " +
+				"or do not match the claimed type",
 		},
 	}
 	// ErrorInvalidLimit is the error returned when limit parameter is invalid.
@@ -228,7 +229,7 @@ var (
 	// ErrorInvalidAssigneeType is the error returned when the assignee type query parameter is invalid.
 	ErrorInvalidAssigneeType = serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
-		Code: "ROL-1017",
+		Code: "ROL-1016",
 		Error: core.I18nMessage{
 			Key:          "error.roleservice.invalid_assignee_type",
 			DefaultValue: "Invalid assignee type",
@@ -238,10 +239,6 @@ var (
 			DefaultValue: "The type parameter must be 'user', 'group', or 'app'",
 		},
 	}
-)
-
-// Server errors for role management operations.
-var (
 	// ResultLimitExceededInCompositeMode is the error returned when the total number of records exceeds
 	// the maximum limit in composite mode (combining database and declarative resources).
 	ResultLimitExceededInCompositeMode = serviceerror.ServiceError{
@@ -258,6 +255,23 @@ var (
 	}
 )
 
+// Server errors for role management operations.
+var (
+	// ErrorInternalServerError is the error returned when an internal server error occurs.
+	ErrorInternalServerError = serviceerror.ServiceError{
+		Type: serviceerror.ServerErrorType,
+		Code: "ROL-5000",
+		Error: core.I18nMessage{
+			Key:          "error.roleservice.internal_server_error",
+			DefaultValue: "Internal server error",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.roleservice.internal_server_error_description",
+			DefaultValue: "An unexpected error occurred while processing the request",
+		},
+	}
+)
+
 // Internal error constants for role management operations.
 var (
 	// ErrRoleNotFound is returned when the role is not found in the system.
@@ -265,10 +279,4 @@ var (
 
 	// errResultLimitExceededInCompositeMode is the internal sentinel error for composite mode limit exceeded.
 	errResultLimitExceededInCompositeMode = errors.New("result limit exceeded in composite mode")
-
-	// ErrRoleHasAssignments is returned when attempting to delete a role that has active assignments.
-	ErrRoleHasAssignments = errors.New("role has active assignments")
-
-	// ErrRoleNameConflict is returned when a role with the same name already exists in the organization unit.
-	ErrRoleNameConflict = errors.New("role name conflict")
 )

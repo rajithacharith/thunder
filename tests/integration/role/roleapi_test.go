@@ -1255,7 +1255,7 @@ func (suite *RoleAPITestSuite) TestGetRoleAssignments_InvalidType() {
 	// Request with invalid type should return error
 	_, err = suite.getRoleAssignmentsByType(role.ID, 0, 30, "invalid")
 	suite.Require().Error(err)
-	suite.Contains(err.Error(), "ROL-1017", "Should return invalid assignee type error")
+	suite.Contains(err.Error(), "ROL-1016", "Should return invalid assignee type error")
 }
 
 // Test 34: Create Role with App Assignment
