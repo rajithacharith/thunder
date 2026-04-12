@@ -51,6 +51,8 @@ func Generate(data []byte, alg SignAlgorithm, privateKey crypto.PrivateKey) ([]b
 	switch alg {
 	case RSASHA256, RSASHA512:
 		return newRSASign(hashed, hashFunc, privateKey)
+	case RSAPSSSHA256:
+		return newRSAPSSSign(hashed, hashFunc, privateKey)
 	case ECDSASHA256, ECDSASHA384, ECDSASHA512:
 		return newECDSASign(hashed, privateKey)
 	case ED25519:
@@ -70,6 +72,8 @@ func Verify(data []byte, signature []byte, alg SignAlgorithm, publicKey crypto.P
 	switch alg {
 	case RSASHA256, RSASHA512:
 		return verifyRSA(hashed, signature, hashFunc, publicKey)
+	case RSAPSSSHA256:
+		return verifyRSAPSS(hashed, signature, hashFunc, publicKey)
 	case ECDSASHA256, ECDSASHA384, ECDSASHA512:
 		return verifyECDSA(hashed, signature, publicKey)
 	case ED25519:
@@ -87,7 +91,7 @@ func hashData(data []byte, alg SignAlgorithm) ([]byte, crypto.Hash) {
 	var hashFunc crypto.Hash
 
 	switch alg {
-	case RSASHA256, ECDSASHA256:
+	case RSASHA256, RSAPSSSHA256, ECDSASHA256:
 		h = sha256.New()
 		hashFunc = crypto.SHA256
 	case RSASHA512, ECDSASHA512:
@@ -132,6 +136,40 @@ func verifyRSA(hashed, signature []byte, hashFunc crypto.Hash, publicKey crypto.
 	}
 
 	err := rsa.VerifyPKCS1v15(rsaPub, hashFunc, hashed, signature)
+	if err != nil {
+		return ErrInvalidSignature
+	}
+
+	return nil
+}
+
+// newRSAPSSSign creates a digital signature using RSA-PSS.
+// Salt length is set equal to the hash output size as required by RFC 7518 Section 3.5.
+func newRSAPSSSign(hashed []byte, hashFunc crypto.Hash, privateKey crypto.PrivateKey) ([]byte, error) {
+	rsaKey, ok := privateKey.(*rsa.PrivateKey)
+	if !ok {
+		return nil, ErrInvalidPrivateKey
+	}
+
+	opts := &rsa.PSSOptions{SaltLength: rsa.PSSSaltLengthEqualsHash, Hash: hashFunc}
+	signature, err := rsa.SignPSS(rand.Reader, rsaKey, hashFunc, hashed, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return signature, nil
+}
+
+// verifyRSAPSS verifies an RSA-PSS signature.
+// Salt length is set equal to the hash output size as required by RFC 7518 Section 3.5.
+func verifyRSAPSS(hashed, signature []byte, hashFunc crypto.Hash, publicKey crypto.PublicKey) error {
+	rsaPub, ok := publicKey.(*rsa.PublicKey)
+	if !ok {
+		return ErrInvalidPublicKey
+	}
+
+	opts := &rsa.PSSOptions{SaltLength: rsa.PSSSaltLengthEqualsHash, Hash: hashFunc}
+	err := rsa.VerifyPSS(rsaPub, hashFunc, hashed, signature, opts)
 	if err != nil {
 		return ErrInvalidSignature
 	}
