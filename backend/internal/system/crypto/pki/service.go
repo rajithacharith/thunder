@@ -29,10 +29,12 @@ import (
 	"errors"
 	"os"
 	"path"
+	"slices"
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/jose/jws"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -42,6 +44,7 @@ type PKIServiceInterface interface {
 	GetCertThumbprint(id string) string
 	GetX509Certificate(id string) (*x509.Certificate, *serviceerror.ServiceError)
 	GetAllX509Certificates() (map[string]*x509.Certificate, *serviceerror.ServiceError)
+	GetSupportedSigningAlgorithms() []string
 }
 
 // pkiService stores loaded certificates indexed by their ID
@@ -161,6 +164,38 @@ func (s *pkiService) GetAllX509Certificates() (map[string]*x509.Certificate, *se
 		result[id] = parsedCert
 	}
 	return result, nil
+}
+
+// GetSupportedSigningAlgorithms returns a flat deduplicated list of all JWS algorithm strings
+// supported across all configured keys.
+func (s *pkiService) GetSupportedSigningAlgorithms() []string {
+	var result []string
+	for _, cert := range s.certificates {
+		for _, alg := range pkiAlgorithmToJWSAlgorithms(cert.Algorithm) {
+			if !slices.Contains(result, alg) {
+				result = append(result, alg)
+			}
+		}
+	}
+	return result
+}
+
+// pkiAlgorithmToJWSAlgorithms returns the JWS algorithm strings supported for the given PKI algorithm.
+func pkiAlgorithmToJWSAlgorithms(alg PKIAlgorithm) []string {
+	switch alg {
+	case RSA:
+		return []string{string(jws.RS256)}
+	case P256:
+		return []string{string(jws.ES256)}
+	case P384:
+		return []string{string(jws.ES384)}
+	case P521:
+		return []string{string(jws.ES512)}
+	case Ed25519:
+		return []string{string(jws.EdDSA)}
+	default:
+		return nil
+	}
 }
 
 // getAlgorithmFromKey determines the PKIAlgorithm based on the type of the private key.

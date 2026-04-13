@@ -73,7 +73,7 @@ func Initialize(
 		return err
 	}
 	scopeValidator := scope.Initialize()
-	discoveryService := discovery.Initialize(mux)
+	discoveryService := discovery.Initialize(mux, pkiService)
 	token.Initialize(mux, jwtService, applicationService, authnProvider, grantHandlerProvider,
 		scopeValidator, observabilitySvc, discoveryService, transactioner)
 	introspect.Initialize(mux, jwtService, applicationService, authnProvider, discoveryService)

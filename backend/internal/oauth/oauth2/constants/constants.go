@@ -316,11 +316,6 @@ const (
 	ClaimClaimsLocales string = "claims_locales"
 )
 
-// JWT signing algorithms.
-const (
-	SigningAlgorithmRS256 string = "RS256"
-)
-
 // OIDC subject types.
 const (
 	SubjectTypePublic string = "public"
@@ -382,11 +377,6 @@ func GetSupportedTokenEndpointAuthMethods() []string {
 // GetSupportedSubjectTypes returns all supported OIDC subject types.
 func GetSupportedSubjectTypes() []string {
 	return []string{SubjectTypePublic}
-}
-
-// GetSupportedIDTokenSigningAlgorithms returns all supported ID token signing algorithms.
-func GetSupportedIDTokenSigningAlgorithms() []string {
-	return []string{SigningAlgorithmRS256}
 }
 
 // GetStandardClaims returns all standard JWT claims that are always included in tokens.
