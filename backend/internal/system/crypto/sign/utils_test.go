@@ -78,6 +78,17 @@ func (suite *SignUtilsTestSuite) TestSignRSASHA256() {
 	assert.NoError(suite.T(), err)
 }
 
+func (suite *SignUtilsTestSuite) TestSignRSAPSSHA256() {
+	signature, err := Generate(suite.testData, RSAPSSSHA256, suite.rsaPrivateKey)
+
+	assert.NoError(suite.T(), err)
+	assert.NotEmpty(suite.T(), signature)
+
+	// Verify the signature
+	err = Verify(suite.testData, signature, RSAPSSSHA256, &suite.rsaPrivateKey.PublicKey)
+	assert.NoError(suite.T(), err)
+}
+
 func (suite *SignUtilsTestSuite) TestSignRSASHA512() {
 	signature, err := Generate(suite.testData, RSASHA512, suite.rsaPrivateKey)
 
@@ -155,9 +166,11 @@ func (suite *SignUtilsTestSuite) TestSignInvalidPrivateKey() {
 		privateKey crypto.PrivateKey
 	}{
 		{"RSA_WithECDSAKey", RSASHA256, suite.ecdsaPrivateKey},
+		{"RSAPSS_WithECDSAKey", RSAPSSSHA256, suite.ecdsaPrivateKey},
 		{"ECDSA_WithRSAKey", ECDSASHA256, suite.rsaPrivateKey},
 		{"ED25519_WithRSAKey", ED25519, suite.rsaPrivateKey},
 		{"RSA_WithNilKey", RSASHA256, nil},
+		{"RSAPSS_WithNilKey", RSAPSSSHA256, nil},
 		{"ECDSA_WithNilKey", ECDSASHA256, nil},
 		{"ED25519_WithNilKey", ED25519, nil},
 	}
@@ -180,9 +193,11 @@ func (suite *SignUtilsTestSuite) TestVerifyInvalidPublicKey() {
 		publicKey crypto.PublicKey
 	}{
 		{"RSA_WithECDSAKey", RSASHA256, &suite.ecdsaPrivateKey.PublicKey},
+		{"RSAPSS_WithECDSAKey", RSAPSSSHA256, &suite.ecdsaPrivateKey.PublicKey},
 		{"ECDSA_WithRSAKey", ECDSASHA256, &suite.rsaPrivateKey.PublicKey},
 		{"ED25519_WithRSAKey", ED25519, &suite.rsaPrivateKey.PublicKey},
 		{"RSA_WithNilKey", RSASHA256, nil},
+		{"RSAPSS_WithNilKey", RSAPSSSHA256, nil},
 		{"ECDSA_WithNilKey", ECDSASHA256, nil},
 		{"ED25519_WithNilKey", ED25519, nil},
 	}
@@ -473,4 +488,21 @@ func (suite *SignUtilsTestSuite) TestSignECDSAASN1Format() {
 	// The signature should be verifiable (using ASN.1 format)
 	err = Verify(suite.testData, signature, ECDSASHA256, &suite.ecdsaPrivateKey.PublicKey)
 	assert.NoError(suite.T(), err)
+}
+
+func (suite *SignUtilsTestSuite) TestRSAPSSAndPKCS1v15AreNotCrossVerifiable() {
+	// A PSS signature must not verify under PKCS1v15 and vice versa
+	pssSignature, err := Generate(suite.testData, RSAPSSSHA256, suite.rsaPrivateKey)
+	assert.NoError(suite.T(), err)
+
+	err = Verify(suite.testData, pssSignature, RSASHA256, &suite.rsaPrivateKey.PublicKey)
+	assert.Error(suite.T(), err)
+	assert.Equal(suite.T(), ErrInvalidSignature, err)
+
+	pkcs1Signature, err := Generate(suite.testData, RSASHA256, suite.rsaPrivateKey)
+	assert.NoError(suite.T(), err)
+
+	err = Verify(suite.testData, pkcs1Signature, RSAPSSSHA256, &suite.rsaPrivateKey.PublicKey)
+	assert.Error(suite.T(), err)
+	assert.Equal(suite.T(), ErrInvalidSignature, err)
 }

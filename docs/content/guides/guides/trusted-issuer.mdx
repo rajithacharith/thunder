@@ -91,7 +91,7 @@ Thunder picks the verification method based on the token's `iss` claim. If `iss`
 
 Each `required_claims` entry is matched by exact string equality: the claim must be present on the token and its value must match the configured `value` exactly.
 
-Thunder accepts tokens signed with `RS256`, `RS512`, `ES256`, `ES384`, `ES512`, or `EdDSA`. Tokens using any other algorithm are rejected. JWKS responses are cached in-process for `server.security.jwks_cache_ttl` seconds (default: 300), so plan external-server key rotations with at least that much overlap.
+Thunder accepts tokens signed with `RS256`, `PS256`, `RS512`, `ES256`, `ES384`, `ES512`, or `EdDSA`. Tokens using any other algorithm are rejected. JWKS responses are cached in-process for `server.security.jwks_cache_ttl` seconds (default: 300), so plan external-server key rotations with at least that much overlap.
 
 ## Helm Configuration
 
