@@ -29,8 +29,6 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/authn/credentials"
-	"github.com/asgardeo/thunder/internal/authn/otpauthn"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -232,9 +230,9 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestSer
 					"password": "wrongpass",
 				},
 			},
-			serviceError:       &credentials.ErrorInvalidCredentials,
+			serviceError:       &ErrorInvalidCredentials,
 			expectedStatusCode: http.StatusUnauthorized,
-			expectedErrorCode:  credentials.ErrorInvalidCredentials.Code,
+			expectedErrorCode:  ErrorInvalidCredentials.Code,
 		},
 		{
 			name: "UserNotFound",
@@ -429,7 +427,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleVerifySMSOTPRequestServic
 	}
 	serviceError := &serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
-		Code:             otpauthn.ErrorAuthenticationFailed.Code,
+		Code:             ErrorOTPAuthenticationFailed.Code,
 		Error:            "Authentication failed",
 		ErrorDescription: "The provided OTP is incorrect or has expired",
 	}
@@ -447,7 +445,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleVerifySMSOTPRequestServic
 	var errResp apierror.ErrorResponse
 	err := json.Unmarshal(w.Body.Bytes(), &errResp)
 	suite.NoError(err)
-	suite.Equal(otpauthn.ErrorAuthenticationFailed.Code, errResp.Code)
+	suite.Equal(ErrorOTPAuthenticationFailed.Code, errResp.Code)
 }
 
 func (suite *AuthenticationHandlerTestSuite) TestHandleGoogleAuthStartRequestSuccess() {

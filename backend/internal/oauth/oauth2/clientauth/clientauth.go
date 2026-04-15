@@ -150,10 +150,10 @@ func authenticate(
 		}
 	case constants.TokenEndpointAuthMethodClientSecretBasic,
 		constants.TokenEndpointAuthMethodClientSecretPost:
-		_, authnErr := authnProvider.Authenticate(ctx,
+		_, _, authnErr := authnProvider.AuthenticateUser(ctx,
 			map[string]interface{}{"clientId": clientID},
 			map[string]interface{}{"clientSecret": clientSecret},
-			nil)
+			nil, nil, authnprovidermgr.AuthUser{})
 		if authnErr != nil {
 			logger.Debug("Client secret authentication failed",
 				log.String("clientID", log.MaskString(clientID)))

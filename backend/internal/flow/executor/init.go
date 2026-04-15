@@ -21,6 +21,9 @@ package executor
 import (
 	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/authn"
+	"github.com/asgardeo/thunder/internal/authn/otp"
+	"github.com/asgardeo/thunder/internal/authn/passkey"
+	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/authz"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
@@ -46,6 +49,9 @@ func Initialize(
 	notifSenderSvc notification.NotificationSenderServiceInterface,
 	jwtService jwt.JWTServiceInterface,
 	authRegistry *authn.AuthServiceRegistry,
+	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
+	otpService otp.OTPAuthnServiceInterface,
+	passkeyService passkey.PasskeyServiceInterface,
 	authZService authz.AuthorizationServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
@@ -58,11 +64,11 @@ func Initialize(
 ) ExecutorRegistryInterface {
 	reg := newExecutorRegistry()
 	reg.RegisterExecutor(ExecutorNameBasicAuth, newBasicAuthExecutor(
-		flowFactory, entityProvider, authRegistry.CredentialsAuthnService))
+		flowFactory, entityProvider, authnProvider))
 	reg.RegisterExecutor(ExecutorNameSMSAuth, newSMSOTPAuthExecutor(
-		flowFactory, authRegistry.OTPAuthnService, entityProvider))
+		flowFactory, otpService, authnProvider, entityProvider))
 	reg.RegisterExecutor(ExecutorNamePasskeyAuth, newPasskeyAuthExecutor(
-		flowFactory, authRegistry.PasskeyService, entityProvider))
+		flowFactory, passkeyService, authnProvider, entityProvider))
 
 	reg.RegisterExecutor(ExecutorNameOAuth, newOAuthExecutor(
 		"", []common.Input{}, []common.Input{}, flowFactory, idpService, userSchemaService,
@@ -81,7 +87,7 @@ func Initialize(
 
 	reg.RegisterExecutor(ExecutorNameAttributeCollect, newAttributeCollector(flowFactory, entityProvider))
 	reg.RegisterExecutor(ExecutorNameAuthAssert, newAuthAssertExecutor(flowFactory, jwtService,
-		ouService, authRegistry.AuthAssertGenerator, authRegistry.CredentialsAuthnService, entityProvider,
+		ouService, authRegistry.AuthAssertGenerator, authnProvider, entityProvider,
 		attributeCacheSvc, roleService))
 	reg.RegisterExecutor(ExecutorNameAuthorization, newAuthorizationExecutor(flowFactory, authZService, entityProvider))
 	reg.RegisterExecutor(ExecutorNameHTTPRequest, newHTTPRequestExecutor(flowFactory))

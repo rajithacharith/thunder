@@ -181,14 +181,6 @@ packages:
       pkgname: assertmock
       filename: "{{.InterfaceName}}_mock.go"
 
-  github.com/asgardeo/thunder/internal/authn/credentials:
-    config:
-      all: true
-      dir: tests/mocks/authn/credentialsmock
-      structname: '{{.InterfaceName}}Mock'
-      pkgname: credentialsmock
-      filename: "{{.InterfaceName}}_mock.go"
-
   github.com/asgardeo/thunder/internal/authn/otp:
     config:
       all: true
@@ -196,15 +188,6 @@ packages:
       structname: '{{.InterfaceName}}Mock'
       pkgname: otpmock
       filename: "{{.InterfaceName}}_mock.go"
-
-  github.com/asgardeo/thunder/internal/authn/otpauthn:
-    interfaces:
-      OTPAuthnInterface:
-        config:
-          dir: tests/mocks/authn/otpauthnmock
-          structname: 'OTPAuthnInterfaceMock'
-          pkgname: otpauthnmock
-          filename: "OTPAuthnInterface_mock.go"
 
   github.com/asgardeo/thunder/internal/authn/oauth:
     config:
@@ -246,15 +229,6 @@ packages:
           structname: 'WebAuthnAuthnServiceInterfaceMock'
           pkgname: passkeymock
           filename: "WebAuthnAuthnServiceInterface_mock.go"
-
-  github.com/asgardeo/thunder/internal/authn/passkeyauthn:
-    interfaces:
-      PasskeyAuthnServiceInterface:
-        config:
-          dir: tests/mocks/authn/passkeymock
-          structname: 'PasskeyAuthnServiceInterfaceMock'
-          pkgname: passkeymock
-          filename: "PasskeyAuthnServiceInterface_mock.go"
 
   github.com/asgardeo/thunder/internal/authn/consent:
     interfaces:

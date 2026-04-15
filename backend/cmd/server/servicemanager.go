@@ -220,9 +220,10 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 		emailClient = nil
 	}
 	execRegistry := executor.Initialize(flowFactory, ouService,
-		idpService, notifSenderSvc, jwtService, authSvcRegistry, authZService,
-		userSchemaService, observabilitySvc, groupService, roleService, entityProvider,
-		attributeCacheService, emailClient, templateService)
+		idpService, notifSenderSvc, jwtService, authSvcRegistry, authnProvider, otpCoreService,
+		passkeyService, authZService,
+		userSchemaService, observabilitySvc, groupService, roleService, entityProvider, attributeCacheService,
+		emailClient, templateService)
 
 	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(mux, mcpServer, flowFactory, execRegistry, graphCache)
 	if err != nil {

@@ -32,6 +32,7 @@ import (
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
+	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
@@ -60,8 +61,10 @@ func (suite *ClientAuthMiddlewareTestSuite) SetupTest() {
 
 	// Default authn mock: return success for client secret authentication.
 	// Individual tests can override with Once() for specific behavior.
-	suite.mockAuthnProvider.On("Authenticate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(&authnprovidercm.AuthnResult{EntityID: testClientID}, (*serviceerror.ServiceError)(nil)).Maybe()
+	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything).
+		Return(authnprovidermgr.AuthUser{},
+			&authnprovidermgr.AuthnBasicResult{UserID: testClientID}, (*serviceerror.ServiceError)(nil)).Maybe()
 }
 
 func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_Success_ClientSecretPost() {
@@ -220,8 +223,9 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_InvalidClie
 
 	// Override authn mock to fail for wrong secret.
 	failAuthnProvider := managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
-	failAuthnProvider.On("Authenticate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, &serviceerror.ServiceError{
+	failAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything).
+		Return(authnprovidermgr.AuthUser{}, nil, &serviceerror.ServiceError{
 			Code:             authnprovidercm.ErrorCodeAuthenticationFailed,
 			Type:             serviceerror.ClientErrorType,
 			Error:            "auth failed",
@@ -370,8 +374,9 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_BasicAuth_I
 
 	// Override authn mock to fail for wrong secret.
 	failAuthnProvider := managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
-	failAuthnProvider.On("Authenticate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, &serviceerror.ServiceError{
+	failAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything).
+		Return(authnprovidermgr.AuthUser{}, nil, &serviceerror.ServiceError{
 			Code:             authnprovidercm.ErrorCodeAuthenticationFailed,
 			Type:             serviceerror.ClientErrorType,
 			Error:            "auth failed",

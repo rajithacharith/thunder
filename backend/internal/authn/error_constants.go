@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package credentials
+package authn
 
 import "github.com/asgardeo/thunder/internal/system/error/serviceerror"
 
@@ -50,5 +50,12 @@ var (
 		Code:             "AUTH-CRED-1004",
 		Error:            "Invalid token",
 		ErrorDescription: "The provided token is invalid",
+	}
+	// ErrorOTPAuthenticationFailed is the error when the OTP authentication attempt fails.
+	ErrorOTPAuthenticationFailed = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "AUTHN-OTPAUTHN-1009",
+		Error:            "Authentication failed",
+		ErrorDescription: "The OTP authentication attempt failed",
 	}
 )

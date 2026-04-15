@@ -36,6 +36,7 @@ import (
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
+	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/cert"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
@@ -71,8 +72,10 @@ func (suite *ClientAuthTestSuite) SetupTest() {
 
 	// Default authn mock: return success for client secret authentication.
 	// Tests that need failure override this with a fresh mock.
-	suite.mockAuthnProvider.On("Authenticate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(&authnprovidercm.AuthnResult{EntityID: testClientID}, (*serviceerror.ServiceError)(nil)).Maybe()
+	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything).
+		Return(authnprovidermgr.AuthUser{},
+			&authnprovidermgr.AuthnBasicResult{UserID: testClientID}, (*serviceerror.ServiceError)(nil)).Maybe()
 }
 
 func (suite *ClientAuthTestSuite) TestAuthenticate_Success_ClientSecretPost() {
@@ -372,8 +375,9 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidClientSecret() {
 
 	// Create a fresh authn mock that fails for wrong secret.
 	failAuthnProvider := managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
-	failAuthnProvider.On("Authenticate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, &serviceerror.ServiceError{
+	failAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything).
+		Return(authnprovidermgr.AuthUser{}, nil, &serviceerror.ServiceError{
 			Code:             authnprovidercm.ErrorCodeAuthenticationFailed,
 			Type:             serviceerror.ClientErrorType,
 			Error:            "auth failed",
