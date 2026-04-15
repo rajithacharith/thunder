@@ -43,7 +43,6 @@ func Initialize(
 	flowFactory core.FlowFactoryInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	idpService idp.IDPServiceInterface,
-	otpService notification.OTPServiceInterface,
 	notifSenderSvc notification.NotificationSenderServiceInterface,
 	jwtService jwt.JWTServiceInterface,
 	authRegistry *authn.AuthServiceRegistry,
@@ -61,7 +60,7 @@ func Initialize(
 	reg.RegisterExecutor(ExecutorNameBasicAuth, newBasicAuthExecutor(
 		flowFactory, entityProvider, authRegistry.CredentialsAuthnService))
 	reg.RegisterExecutor(ExecutorNameSMSAuth, newSMSOTPAuthExecutor(
-		flowFactory, otpService, entityProvider))
+		flowFactory, authRegistry.OTPAuthnService, entityProvider))
 	reg.RegisterExecutor(ExecutorNamePasskeyAuth, newPasskeyAuthExecutor(
 		flowFactory, authRegistry.PasskeyService, entityProvider))
 

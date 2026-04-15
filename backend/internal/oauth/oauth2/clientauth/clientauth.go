@@ -30,7 +30,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
-	"github.com/asgardeo/thunder/internal/authnprovider"
+	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/cert"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
@@ -48,7 +48,7 @@ func authenticate(
 	ctx context.Context,
 	r *http.Request,
 	appService application.ApplicationServiceInterface,
-	authnProvider authnprovider.AuthnProviderInterface,
+	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	jwtService jwt.JWTServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
 ) (*OAuthClientInfo, *authError) {

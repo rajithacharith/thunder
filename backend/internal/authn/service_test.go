@@ -31,8 +31,8 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/assert"
 	"github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/oauth"
-	"github.com/asgardeo/thunder/internal/authn/passkey"
-	"github.com/asgardeo/thunder/internal/authnprovider"
+	"github.com/asgardeo/thunder/internal/authn/passkeyauthn"
+	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/idp"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
@@ -45,7 +45,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/authn/googlemock"
 	"github.com/asgardeo/thunder/tests/mocks/authn/oauthmock"
 	"github.com/asgardeo/thunder/tests/mocks/authn/oidcmock"
-	"github.com/asgardeo/thunder/tests/mocks/authn/otpmock"
+	"github.com/asgardeo/thunder/tests/mocks/authn/otpauthnmock"
 	"github.com/asgardeo/thunder/tests/mocks/authn/passkeymock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
@@ -74,12 +74,12 @@ type AuthenticationServiceTestSuite struct {
 	mockJWTService         *jwtmock.JWTServiceInterfaceMock
 	mockAssertGenerator    *assertmock.AuthAssertGeneratorInterfaceMock
 	mockCredentialsService *credentialsmock.CredentialsAuthnServiceInterfaceMock
-	mockOTPService         *otpmock.OTPAuthnServiceInterfaceMock
+	mockOTPService         *otpauthnmock.OTPAuthnInterfaceMock
 	mockOAuthService       *oauthmock.OAuthAuthnServiceInterfaceMock
 	mockOIDCService        *oidcmock.OIDCAuthnServiceInterfaceMock
 	mockGoogleService      *googlemock.GoogleOIDCAuthnServiceInterfaceMock
 	mockGithubService      *githubmock.GithubOAuthAuthnServiceInterfaceMock
-	mockPasskeyService     *passkeymock.WebAuthnAuthnServiceInterfaceMock
+	mockPasskeyService     *passkeymock.PasskeyAuthnServiceInterfaceMock
 	service                *authenticationService
 }
 
@@ -124,12 +124,12 @@ func (suite *AuthenticationServiceTestSuite) SetupTest() {
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.mockAssertGenerator = &assertmock.AuthAssertGeneratorInterfaceMock{}
 	suite.mockCredentialsService = &credentialsmock.CredentialsAuthnServiceInterfaceMock{}
-	suite.mockOTPService = &otpmock.OTPAuthnServiceInterfaceMock{}
+	suite.mockOTPService = &otpauthnmock.OTPAuthnInterfaceMock{}
 	suite.mockOAuthService = &oauthmock.OAuthAuthnServiceInterfaceMock{}
 	suite.mockOIDCService = &oidcmock.OIDCAuthnServiceInterfaceMock{}
 	suite.mockGoogleService = &googlemock.GoogleOIDCAuthnServiceInterfaceMock{}
 	suite.mockGithubService = &githubmock.GithubOAuthAuthnServiceInterfaceMock{}
-	suite.mockPasskeyService = &passkeymock.WebAuthnAuthnServiceInterfaceMock{}
+	suite.mockPasskeyService = &passkeymock.PasskeyAuthnServiceInterfaceMock{}
 
 	suite.service = &authenticationService{
 		idpService:             suite.mockIDPService,
@@ -169,7 +169,7 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentials() {
 			setupMocks: func() {
 				suite.mockCredentialsService.On("Authenticate", mock.Anything, identifiers,
 					authnCredentials, mock.Anything).
-					Return(&authnprovider.AuthnResult{
+					Return(&authnprovidercm.AuthnResult{
 						UserID:   testUserID,
 						UserType: testUserType,
 						OUID:     testOrgUnit,
@@ -177,7 +177,7 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentials() {
 					}, nil).Once()
 				suite.mockCredentialsService.On("GetAttributes", mock.Anything, testToken,
 					mock.Anything, mock.Anything).
-					Return(&authnprovider.GetAttributesResult{
+					Return(&authnprovidercm.GetAttributesResult{
 						UserID:   testUserID,
 						UserType: testUserType,
 						OUID:     testOrgUnit,
@@ -195,7 +195,7 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentials() {
 			setupMocks: func() {
 				suite.mockCredentialsService.On("Authenticate", mock.Anything, identifiers,
 					authnCredentials, mock.Anything).
-					Return(&authnprovider.AuthnResult{
+					Return(&authnprovidercm.AuthnResult{
 						UserID:   testUserID,
 						UserType: testUserType,
 						OUID:     testOrgUnit,
@@ -203,7 +203,7 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentials() {
 					}, nil).Once()
 				suite.mockCredentialsService.On("GetAttributes", mock.Anything, testToken,
 					mock.Anything, mock.Anything).
-					Return(&authnprovider.GetAttributesResult{
+					Return(&authnprovidercm.GetAttributesResult{
 						UserID:   testUserID,
 						UserType: testUserType,
 						OUID:     testOrgUnit,
@@ -235,7 +235,7 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentials() {
 			setupMocks: func() {
 				suite.mockCredentialsService.On("Authenticate", mock.Anything, identifiers,
 					authnCredentials, mock.Anything).
-					Return(&authnprovider.AuthnResult{
+					Return(&authnprovidercm.AuthnResult{
 						UserID:   testUserID,
 						UserType: testUserType,
 						OUID:     testOrgUnit,
@@ -243,7 +243,7 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentials() {
 					}, nil).Once()
 				suite.mockCredentialsService.On("GetAttributes", mock.Anything, testToken,
 					mock.Anything, mock.Anything).
-					Return(&authnprovider.GetAttributesResult{
+					Return(&authnprovidercm.GetAttributesResult{
 						UserID:   testUserID,
 						UserType: testUserType,
 						OUID:     testOrgUnit,
@@ -321,14 +321,14 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsJWTG
 	}
 
 	suite.mockCredentialsService.On("Authenticate", mock.Anything, identifiers, authnCredentials, mock.Anything).Return(
-		&authnprovider.AuthnResult{
+		&authnprovidercm.AuthnResult{
 			UserID:   testUserID,
 			UserType: testUserType,
 			OUID:     testOrgUnit,
 			Token:    testToken,
 		}, nil)
 	suite.mockCredentialsService.On("GetAttributes", mock.Anything, testToken, mock.Anything, mock.Anything).Return(
-		&authnprovider.GetAttributesResult{
+		&authnprovidercm.GetAttributesResult{
 			UserID:   testUserID,
 			UserType: testUserType,
 			OUID:     testOrgUnit,
@@ -369,14 +369,14 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsSubj
 	existingAssertion := suite.createTestAssertion("different_user_id")
 
 	suite.mockCredentialsService.On("Authenticate", mock.Anything, identifiers, authnCredentials, mock.Anything).Return(
-		&authnprovider.AuthnResult{
+		&authnprovidercm.AuthnResult{
 			UserID:   testUserID,
 			UserType: testUserType,
 			OUID:     testOrgUnit,
 			Token:    testToken,
 		}, nil)
 	suite.mockCredentialsService.On("GetAttributes", mock.Anything, testToken, mock.Anything, mock.Anything).
-		Return(&authnprovider.GetAttributesResult{
+		Return(&authnprovidercm.GetAttributesResult{
 			UserID:   testUserID,
 			UserType: testUserType,
 			OUID:     testOrgUnit,
@@ -400,14 +400,14 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsInva
 	}
 
 	suite.mockCredentialsService.On("Authenticate", mock.Anything, identifiers, authnCredentials, mock.Anything).Return(
-		&authnprovider.AuthnResult{
+		&authnprovidercm.AuthnResult{
 			UserID:   testUserID,
 			UserType: testUserType,
 			OUID:     testOrgUnit,
 			Token:    testToken,
 		}, nil)
 	suite.mockCredentialsService.On("GetAttributes", mock.Anything, testToken, mock.Anything, mock.Anything).Return(
-		&authnprovider.GetAttributesResult{
+		&authnprovidercm.GetAttributesResult{
 			UserID:   testUserID,
 			UserType: testUserType,
 			OUID:     testOrgUnit,
@@ -439,14 +439,14 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsExis
 	existingAssertion := suite.createTestAssertionWithoutAssurance(testUserID)
 
 	suite.mockCredentialsService.On("Authenticate", mock.Anything, identifiers, authnCredentials, mock.Anything).Return(
-		&authnprovider.AuthnResult{
+		&authnprovidercm.AuthnResult{
 			UserID:   testUserID,
 			UserType: testUserType,
 			OUID:     testOrgUnit,
 			Token:    testToken,
 		}, nil)
 	suite.mockCredentialsService.On("GetAttributes", mock.Anything, testToken, mock.Anything, mock.Anything).Return(
-		&authnprovider.GetAttributesResult{
+		&authnprovidercm.GetAttributesResult{
 			UserID:   testUserID,
 			UserType: testUserType,
 			OUID:     testOrgUnit,
@@ -498,10 +498,10 @@ func (suite *AuthenticationServiceTestSuite) TestSendOTPServiceError() {
 func (suite *AuthenticationServiceTestSuite) TestVerifyOTP() {
 	sessionToken := testSessionTkn
 	otpCode := "123456"
-	testUser := &entityprovider.Entity{
-		ID:   testUserID,
-		Type: "person",
-		OUID: testOrgUnit,
+	testAuthnResult := &authnprovidercm.AuthnResult{
+		UserID:   testUserID,
+		UserType: "person",
+		OUID:     testOrgUnit,
 	}
 
 	testCases := []struct {
@@ -518,7 +518,8 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTP() {
 			existingAssertion: "",
 			expectAssertion:   false,
 			setupMocks: func() {
-				suite.mockOTPService.On("VerifyOTP", mock.Anything, sessionToken, otpCode).Return(testUser, nil).Once()
+				suite.mockOTPService.On("Authenticate", mock.Anything, sessionToken, otpCode).
+					Return(testAuthnResult, nil).Once()
 			},
 			validateAssertion: func(result *common.AuthenticationResponse) {
 				suite.Empty(result.Assertion)
@@ -530,7 +531,8 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTP() {
 			existingAssertion: "",
 			expectAssertion:   true,
 			setupMocks: func() {
-				suite.mockOTPService.On("VerifyOTP", mock.Anything, sessionToken, otpCode).Return(testUser, nil).Once()
+				suite.mockOTPService.On("Authenticate", mock.Anything, sessionToken, otpCode).
+					Return(testAuthnResult, nil).Once()
 				suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything).Return(
 					&assert.AssertionResult{
 						Context: &assert.AssuranceContext{
@@ -556,7 +558,8 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTP() {
 			expectAssertion:   true,
 			setupMocks: func() {
 				existingAssertion := suite.createTestAssertion(testUserID)
-				suite.mockOTPService.On("VerifyOTP", mock.Anything, sessionToken, otpCode).Return(testUser, nil).Once()
+				suite.mockOTPService.On("Authenticate", mock.Anything, sessionToken, otpCode).
+					Return(testAuthnResult, nil).Once()
 				suite.mockJWTService.On("VerifyJWT", existingAssertion, "", mock.Anything).Return(nil).Once()
 				suite.mockAssertGenerator.On("UpdateAssertion", mock.Anything, mock.Anything).Return(
 					&assert.AssertionResult{
@@ -604,7 +607,7 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTPServiceError() {
 		ErrorDescription: "The provided OTP is incorrect",
 	}
 
-	suite.mockOTPService.On("VerifyOTP", mock.Anything, sessionToken, otpCode).Return(nil, svcErr)
+	suite.mockOTPService.On("Authenticate", mock.Anything, sessionToken, otpCode).Return(nil, svcErr)
 
 	result, err := suite.service.VerifyOTP(context.Background(), sessionToken, false, "", otpCode)
 
@@ -1580,13 +1583,13 @@ func (suite *AuthenticationServiceTestSuite) TestExtractClaimsFromAssertionUnmar
 func (suite *AuthenticationServiceTestSuite) TestVerifyOTPJWTGenerationError() {
 	sessionToken := testSessionTkn
 	otpCode := "123456"
-	testUser := &entityprovider.Entity{
-		ID:   testUserID,
-		Type: "person",
-		OUID: testOrgUnit,
+	testAuthnResult := &authnprovidercm.AuthnResult{
+		UserID:   testUserID,
+		UserType: "person",
+		OUID:     testOrgUnit,
 	}
 
-	suite.mockOTPService.On("VerifyOTP", mock.Anything, sessionToken, otpCode).Return(testUser, nil)
+	suite.mockOTPService.On("Authenticate", mock.Anything, sessionToken, otpCode).Return(testAuthnResult, nil)
 	suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything).Return(
 		&assert.AssertionResult{
 			Context: &assert.AssuranceContext{
@@ -1733,7 +1736,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartPasskeyRegistration_Succes
 		UserVerification:        "required",
 	}
 
-	expectedResponse := &passkey.PasskeyRegistrationStartData{
+	expectedResponse := &passkeyauthn.RegistrationStartData{
 		SessionToken: testSessionTkn,
 	}
 
@@ -1751,7 +1754,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartPasskeyRegistration_Succes
 func (suite *AuthenticationServiceTestSuite) TestStartPasskeyRegistration_WithoutAuthSelection() {
 	attestation := ""
 
-	expectedResponse := &passkey.PasskeyRegistrationStartData{
+	expectedResponse := &passkeyauthn.RegistrationStartData{
 		SessionToken: testSessionTkn,
 	}
 
@@ -1797,7 +1800,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyRegistration_Succe
 	sessionToken := testSessionTkn
 	credentialName := "My Passkey"
 
-	expectedResponse := &passkey.PasskeyRegistrationFinishData{
+	expectedResponse := &passkeyauthn.RegistrationFinishData{
 		CredentialID:   "credential-id-123",
 		CredentialName: "My Passkey",
 	}
@@ -1825,7 +1828,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyRegistration_Witho
 	}
 	sessionToken := testSessionTkn
 
-	expectedResponse := &passkey.PasskeyRegistrationFinishData{
+	expectedResponse := &passkeyauthn.RegistrationFinishData{
 		CredentialID: "credential-id-123",
 	}
 
@@ -1868,12 +1871,12 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyRegistration_Servi
 }
 
 func (suite *AuthenticationServiceTestSuite) TestStartPasskeyAuthentication_Success() {
-	expectedResponse := &passkey.PasskeyAuthenticationStartData{
+	expectedResponse := &passkeyauthn.AuthenticationStartData{
 		SessionToken: testSessionTkn,
 	}
 
 	suite.mockPasskeyService.On(
-		"StartAuthentication", mock.Anything, mock.MatchedBy(func(req *passkey.PasskeyAuthenticationStartRequest) bool {
+		"StartAuthentication", mock.Anything, mock.MatchedBy(func(req *passkeyauthn.AuthenticationStartRequest) bool {
 			return req != nil && req.UserID == testUserID && req.RelyingPartyID == testRelyingPartyID
 		})).Return(expectedResponse, nil).Once()
 
@@ -1894,7 +1897,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartPasskeyAuthentication_Serv
 	}
 
 	suite.mockPasskeyService.On(
-		"StartAuthentication", mock.Anything, mock.MatchedBy(func(req *passkey.PasskeyAuthenticationStartRequest) bool {
+		"StartAuthentication", mock.Anything, mock.MatchedBy(func(req *passkeyauthn.AuthenticationStartRequest) bool {
 			return req != nil && req.UserID == testUserID && req.RelyingPartyID == testRelyingPartyID
 		})).Return(nil, serviceError).Once()
 
@@ -1915,15 +1918,15 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Suc
 	}
 	sessionToken := testSessionTkn
 
-	authResponseFromPasskey := &common.AuthenticationResponse{
-		ID:   testUserID,
-		Type: "person",
-		OUID: testOrgUnit,
+	authResultFromPasskey := &authnprovidercm.AuthnResult{
+		UserID:   testUserID,
+		UserType: "person",
+		OUID:     testOrgUnit,
 	}
 
 	suite.mockPasskeyService.On(
 		"FinishAuthentication", mock.Anything,
-		mock.MatchedBy(func(req *passkey.PasskeyAuthenticationFinishRequest) bool {
+		mock.MatchedBy(func(req *passkeyauthn.AuthenticationFinishRequest) bool {
 			return req != nil &&
 				req.CredentialID == testCredentialID &&
 				req.CredentialType == testCredentialType &&
@@ -1932,7 +1935,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Suc
 				req.Signature == response.Signature &&
 				req.UserHandle == response.UserHandle &&
 				req.SessionToken == sessionToken
-		})).Return(authResponseFromPasskey, nil).Once()
+		})).Return(authResultFromPasskey, nil).Once()
 
 	// Mock assertion generation
 	mockAssertionResult := &assert.AssertionResult{
@@ -1974,16 +1977,15 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Wit
 	}
 	sessionToken := testSessionTkn
 
-	expectedResponse := &common.AuthenticationResponse{
-		ID:   testUserID,
-		Type: "person",
-		OUID: testOrgUnit,
-		// No Assertion when skipped
+	authResultFromPasskey := &authnprovidercm.AuthnResult{
+		UserID:   testUserID,
+		UserType: "person",
+		OUID:     testOrgUnit,
 	}
 
 	suite.mockPasskeyService.On(
 		"FinishAuthentication", mock.Anything,
-		mock.MatchedBy(func(req *passkey.PasskeyAuthenticationFinishRequest) bool {
+		mock.MatchedBy(func(req *passkeyauthn.AuthenticationFinishRequest) bool {
 			return req != nil &&
 				req.CredentialID == testCredentialID &&
 				req.CredentialType == testCredentialType &&
@@ -1992,7 +1994,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Wit
 				req.Signature == response.Signature &&
 				req.UserHandle == response.UserHandle &&
 				req.SessionToken == sessionToken
-		})).Return(expectedResponse, nil).Once()
+		})).Return(authResultFromPasskey, nil).Once()
 
 	result, err := suite.service.FinishPasskeyAuthentication(
 		context.Background(), testCredentialID, testCredentialType, response, sessionToken, true, "")
@@ -2013,15 +2015,15 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Wit
 	sessionToken := testSessionTkn
 	existingAssertion := suite.createTestAssertion(testUserID)
 
-	authResponseFromPasskey := &common.AuthenticationResponse{
-		ID:   testUserID,
-		Type: "person",
-		OUID: testOrgUnit,
+	authResultFromPasskey := &authnprovidercm.AuthnResult{
+		UserID:   testUserID,
+		UserType: "person",
+		OUID:     testOrgUnit,
 	}
 
 	suite.mockPasskeyService.On(
 		"FinishAuthentication", mock.Anything,
-		mock.MatchedBy(func(req *passkey.PasskeyAuthenticationFinishRequest) bool {
+		mock.MatchedBy(func(req *passkeyauthn.AuthenticationFinishRequest) bool {
 			return req != nil &&
 				req.CredentialID == testCredentialID &&
 				req.CredentialType == testCredentialType &&
@@ -2030,7 +2032,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Wit
 				req.Signature == response.Signature &&
 				req.UserHandle == response.UserHandle &&
 				req.SessionToken == sessionToken
-		})).Return(authResponseFromPasskey, nil).Once()
+		})).Return(authResultFromPasskey, nil).Once()
 
 	// Mock JWT verification for existing assertion
 	suite.mockJWTService.On("VerifyJWT", existingAssertion, "", mock.Anything).Return(nil).Once()
@@ -2077,7 +2079,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Ser
 
 	suite.mockPasskeyService.On(
 		"FinishAuthentication", mock.Anything,
-		mock.MatchedBy(func(req *passkey.PasskeyAuthenticationFinishRequest) bool {
+		mock.MatchedBy(func(req *passkeyauthn.AuthenticationFinishRequest) bool {
 			return req != nil &&
 				req.CredentialID == testCredentialID &&
 				req.CredentialType == testCredentialType &&

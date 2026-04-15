@@ -34,9 +34,9 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/google"
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/authn/oidc"
-	"github.com/asgardeo/thunder/internal/authn/otp"
-	"github.com/asgardeo/thunder/internal/authn/passkey"
-	"github.com/asgardeo/thunder/internal/authnprovider"
+	"github.com/asgardeo/thunder/internal/authn/otpauthn"
+	"github.com/asgardeo/thunder/internal/authn/passkeyauthn"
+	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/idp"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
@@ -88,12 +88,12 @@ type authenticationService struct {
 	jwtService             jwt.JWTServiceInterface
 	authAssertionGenerator assert.AuthAssertGeneratorInterface
 	credentialsService     credentials.CredentialsAuthnServiceInterface
-	otpService             otp.OTPAuthnServiceInterface
+	otpService             otpauthn.OTPAuthnInterface
 	oauthService           oauth.OAuthAuthnServiceInterface
 	oidcService            oidc.OIDCAuthnServiceInterface
 	googleService          google.GoogleOIDCAuthnServiceInterface
 	githubService          github.GithubOAuthAuthnServiceInterface
-	passkeyService         passkey.PasskeyServiceInterface
+	passkeyService         passkeyauthn.PasskeyAuthnServiceInterface
 }
 
 // newAuthenticationService creates a new instance of AuthenticationService.
@@ -102,12 +102,12 @@ func newAuthenticationService(
 	jwtSvc jwt.JWTServiceInterface,
 	authAssertGen assert.AuthAssertGeneratorInterface,
 	credentialsAuthnSvc credentials.CredentialsAuthnServiceInterface,
-	otpAuthnSvc otp.OTPAuthnServiceInterface,
+	otpAuthnSvc otpauthn.OTPAuthnInterface,
 	oauthAuthnSvc oauth.OAuthAuthnServiceInterface,
 	oidcAuthnSvc oidc.OIDCAuthnServiceInterface,
 	googleAuthnSvc google.GoogleOIDCAuthnServiceInterface,
 	githubAuthnSvc github.GithubOAuthAuthnServiceInterface,
-	passkeySvc passkey.PasskeyServiceInterface,
+	passkeySvc passkeyauthn.PasskeyAuthnServiceInterface,
 ) AuthenticationServiceInterface {
 	return &authenticationService{
 		idpService:             idpSvc,
@@ -140,10 +140,10 @@ func (as *authenticationService) AuthenticateWithCredentials(ctx context.Context
 		return nil, &serviceerror.InternalServerError
 	}
 
-	var requestedAttributes *authnprovider.RequestedAttributes
+	var requestedAttributes *authnprovidercm.RequestedAttributes
 	if authenticateResp.AvailableAttributes != nil {
-		requestedAttributes = &authnprovider.RequestedAttributes{
-			Attributes:    make(map[string]*authnprovider.AttributeMetadataRequest),
+		requestedAttributes = &authnprovidercm.RequestedAttributes{
+			Attributes:    make(map[string]*authnprovidercm.AttributeMetadataRequest),
 			Verifications: nil,
 		}
 		for attrName := range authenticateResp.AvailableAttributes.Attributes {
@@ -209,20 +209,26 @@ func (as *authenticationService) VerifyOTP(ctx context.Context, sessionToken str
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Verifying OTP for authentication")
 
-	user, svcErr := as.otpService.VerifyOTP(ctx, sessionToken, otpCode)
+	authUser, svcErr := as.otpService.Authenticate(ctx, sessionToken, otpCode)
 	if svcErr != nil {
 		return nil, svcErr
 	}
 
 	authResponse := &common.AuthenticationResponse{
-		ID:   user.ID,
-		Type: user.Type,
-		OUID: user.OUID,
+		ID:   authUser.UserID,
+		Type: authUser.UserType,
+		OUID: authUser.OUID,
 	}
 
 	// Generate assertion if not skipped
 	if !skipAssertion {
-		svcErr = as.validateAndAppendAuthAssertion(authResponse, user, common.AuthenticatorSMSOTP,
+		userForAssertion := &entityprovider.Entity{
+			ID:         authUser.UserID,
+			Type:       authUser.UserType,
+			OUID:       authUser.OUID,
+			Attributes: nil, // Attributes not needed for assertion generation in OTP flow
+		}
+		svcErr = as.validateAndAppendAuthAssertion(authResponse, userForAssertion, common.AuthenticatorSMSOTP,
 			existingAssertion, logger)
 		if svcErr != nil {
 			return nil, svcErr
@@ -725,9 +731,9 @@ func (as *authenticationService) StartPasskeyRegistration(
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Starting Passkey registration")
 
-	var passkeyAuthSelection *passkey.AuthenticatorSelection
+	var passkeyAuthnAuthSelection *passkeyauthn.AuthenticatorSelection
 	if authSelection != nil {
-		passkeyAuthSelection = &passkey.AuthenticatorSelection{
+		passkeyAuthnAuthSelection = &passkeyauthn.AuthenticatorSelection{
 			AuthenticatorAttachment: authSelection.AuthenticatorAttachment,
 			RequireResidentKey:      authSelection.RequireResidentKey,
 			ResidentKey:             authSelection.ResidentKey,
@@ -735,11 +741,11 @@ func (as *authenticationService) StartPasskeyRegistration(
 		}
 	}
 
-	req := &passkey.PasskeyRegistrationStartRequest{
+	req := &passkeyauthn.RegistrationStartRequest{
 		UserID:                 userID,
 		RelyingPartyID:         relyingPartyID,
 		RelyingPartyName:       relyingPartyName,
-		AuthenticatorSelection: passkeyAuthSelection,
+		AuthenticatorSelection: passkeyAuthnAuthSelection,
 		Attestation:            attestation,
 	}
 
@@ -754,7 +760,7 @@ func (as *authenticationService) FinishPasskeyRegistration(
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Finishing Passkey registration")
 
-	req := &passkey.PasskeyRegistrationFinishRequest{
+	req := &passkeyauthn.RegistrationFinishRequest{
 		CredentialID:      credential.ID,
 		CredentialType:    credential.Type,
 		ClientDataJSON:    credential.Response.ClientDataJSON,
@@ -772,7 +778,7 @@ func (as *authenticationService) StartPasskeyAuthentication(ctx context.Context,
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Starting Passkey authentication")
 
-	req := &passkey.PasskeyAuthenticationStartRequest{
+	req := &passkeyauthn.AuthenticationStartRequest{
 		UserID:         userID,
 		RelyingPartyID: relyingPartyID,
 	}
@@ -787,7 +793,7 @@ func (as *authenticationService) FinishPasskeyAuthentication(ctx context.Context
 	logger.Debug("Finishing Passkey authentication")
 
 	// Get authentication response from passkey service
-	req := &passkey.PasskeyAuthenticationFinishRequest{
+	req := &passkeyauthn.AuthenticationFinishRequest{
 		CredentialID:      credentialID,
 		CredentialType:    credentialType,
 		ClientDataJSON:    response.ClientDataJSON,
@@ -796,18 +802,24 @@ func (as *authenticationService) FinishPasskeyAuthentication(ctx context.Context
 		UserHandle:        response.UserHandle,
 		SessionToken:      sessionToken,
 	}
-	authResponse, svcErr := as.passkeyService.FinishAuthentication(ctx, req)
+	authUser, svcErr := as.passkeyService.FinishAuthentication(ctx, req)
 	if svcErr != nil {
 		return nil, svcErr
+	}
+
+	authResponse := &common.AuthenticationResponse{
+		ID:   authUser.UserID,
+		Type: authUser.UserType,
+		OUID: authUser.OUID,
 	}
 
 	// Generate assertion if not skipped
 	if !skipAssertion {
 		// Create entity object from authResponse for assertion generation
 		userForAssertion := &entityprovider.Entity{
-			ID:   authResponse.ID,
-			Type: authResponse.Type,
-			OUID: authResponse.OUID,
+			ID:   authUser.UserID,
+			Type: authUser.UserType,
+			OUID: authUser.OUID,
 		}
 
 		svcErr = as.validateAndAppendAuthAssertion(authResponse, userForAssertion, common.AuthenticatorPasskey,

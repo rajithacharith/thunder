@@ -24,7 +24,7 @@ import (
 	"fmt"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/authn/passkey"
+	"github.com/asgardeo/thunder/internal/authn/passkeyauthn"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
@@ -70,7 +70,7 @@ const (
 type passkeyAuthExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
-	passkeyService passkey.PasskeyServiceInterface
+	passkeyService passkeyauthn.PasskeyAuthnServiceInterface
 	entityProvider entityprovider.EntityProviderInterface
 	logger         *log.Logger
 }
@@ -81,7 +81,7 @@ var _ identifyingExecutorInterface = (*passkeyAuthExecutor)(nil)
 // newPasskeyAuthExecutor creates a new instance of PasskeyAuthExecutor.
 func newPasskeyAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
-	passkeyService passkey.PasskeyServiceInterface,
+	passkeyService passkeyauthn.PasskeyAuthnServiceInterface,
 	entityProvider entityprovider.EntityProviderInterface,
 ) *passkeyAuthExecutor {
 	defaultInputs := []common.Input{
@@ -189,7 +189,7 @@ func (p *passkeyAuthExecutor) executeChallenge(ctx *core.NodeContext,
 	}
 
 	// Start passkey authentication (service will detect usernameless flow if userID is empty)
-	startReq := &passkey.PasskeyAuthenticationStartRequest{
+	startReq := &passkeyauthn.AuthenticationStartRequest{
 		UserID:         userID, // May be empty for usernameless flow
 		RelyingPartyID: relyingPartyID,
 	}
@@ -291,7 +291,7 @@ func (p *passkeyAuthExecutor) validatePasskey(ctx *core.NodeContext, execResp *c
 	}
 
 	// Call passkey service to finish authentication
-	finishReq := &passkey.PasskeyAuthenticationFinishRequest{
+	finishReq := &passkeyauthn.AuthenticationFinishRequest{
 		CredentialID:      credentialID,
 		CredentialType:    "public-key",
 		ClientDataJSON:    clientDataJSON,
@@ -316,8 +316,8 @@ func (p *passkeyAuthExecutor) validatePasskey(ctx *core.NodeContext, execResp *c
 	}
 
 	// Store authenticated user ID in runtime data
-	if authResp.ID != "" {
-		execResp.RuntimeData[userAttributeUserID] = authResp.ID
+	if authResp.UserID != "" {
+		execResp.RuntimeData[userAttributeUserID] = authResp.UserID
 	}
 
 	// Clear session token after successful verification
@@ -388,7 +388,7 @@ func (p *passkeyAuthExecutor) executeRegisterStart(ctx *core.NodeContext,
 	}
 
 	// Build registration request
-	regReq := &passkey.PasskeyRegistrationStartRequest{
+	regReq := &passkeyauthn.RegistrationStartRequest{
 		UserID:           userID,
 		RelyingPartyID:   relyingPartyID,
 		RelyingPartyName: relyingPartyName,
@@ -478,7 +478,7 @@ func (p *passkeyAuthExecutor) executeRegisterFinish(ctx *core.NodeContext,
 	}
 
 	// Build finish registration request
-	finishReq := &passkey.PasskeyRegistrationFinishRequest{
+	finishReq := &passkeyauthn.RegistrationFinishRequest{
 		CredentialID:      credentialID,
 		CredentialType:    "public-key",
 		ClientDataJSON:    clientDataJSON,
@@ -568,16 +568,13 @@ func (p *passkeyAuthExecutor) getRelyingPartyName(ctx *core.NodeContext) string 
 }
 
 // getAuthenticatorSelection retrieves authenticator selection criteria from node properties.
-func (p *passkeyAuthExecutor) getAuthenticatorSelection(ctx *core.NodeContext) *passkey.AuthenticatorSelection {
+func (p *passkeyAuthExecutor) getAuthenticatorSelection(ctx *core.NodeContext) *passkeyauthn.AuthenticatorSelection {
 	if len(ctx.NodeProperties) == 0 {
 		return nil
 	}
-
-	// Check if authenticatorSelection is configured
 	if authSel, ok := ctx.NodeProperties["authenticatorSelection"]; ok {
 		if authSelMap, valid := authSel.(map[string]interface{}); valid {
-			selection := &passkey.AuthenticatorSelection{}
-
+			selection := &passkeyauthn.AuthenticatorSelection{}
 			if authAttachment, ok := authSelMap["authenticatorAttachment"].(string); ok {
 				selection.AuthenticatorAttachment = authAttachment
 			}
@@ -590,11 +587,9 @@ func (p *passkeyAuthExecutor) getAuthenticatorSelection(ctx *core.NodeContext) *
 			if userVerification, ok := authSelMap["userVerification"].(string); ok {
 				selection.UserVerification = userVerification
 			}
-
 			return selection
 		}
 	}
-
 	return nil
 }
 

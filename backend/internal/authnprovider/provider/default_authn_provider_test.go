@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package authnprovider
+package provider
 
 import (
 	"context"
@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
 	"github.com/asgardeo/thunder/internal/entity"
 	"github.com/asgardeo/thunder/tests/mocks/entitymock"
 )
@@ -38,7 +39,7 @@ type DefaultAuthnProviderTestSuite struct {
 
 func (suite *DefaultAuthnProviderTestSuite) SetupTest() {
 	suite.mockService = entitymock.NewEntityServiceInterfaceMock(suite.T())
-	suite.provider = newDefaultAuthnProvider(suite.mockService)
+	suite.provider = newDefaultAuthnProvider(suite.mockService, nil, nil)
 }
 
 func TestDefaultAuthnProviderTestSuite(t *testing.T) {
@@ -96,7 +97,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_EntityNotFound() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeUserNotFound, err.Code)
+	suite.Equal(authnprovidercm.ErrorCodeUserNotFound, err.Code)
 }
 
 func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_AuthenticationFailed() {
@@ -110,7 +111,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_AuthenticationFaile
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeAuthenticationFailed, err.Code)
+	suite.Equal(authnprovidercm.ErrorCodeAuthenticationFailed, err.Code)
 }
 
 func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_GetEntityNotFound() {
@@ -133,7 +134,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_GetEntityNotFound()
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeUserNotFound, err.Code)
+	suite.Equal(authnprovidercm.ErrorCodeUserNotFound, err.Code)
 }
 
 func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_ByPreResolvedUserID_Success() {
@@ -180,7 +181,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_ByPreResolvedUserID
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeUserNotFound, err.Code)
+	suite.Equal(authnprovidercm.ErrorCodeUserNotFound, err.Code)
 }
 
 func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_ByPreResolvedUserID_AuthFailed() {
@@ -194,7 +195,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_ByPreResolvedUserID
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeAuthenticationFailed, err.Code)
+	suite.Equal(authnprovidercm.ErrorCodeAuthenticationFailed, err.Code)
 }
 
 func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_EmptyUserID_FallsBackToIdentify() {
@@ -264,8 +265,8 @@ func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_Filtered()
 	suite.mockService.On("GetEntity", mock.Anything, token).
 		Return(entityObj, nil).Once()
 
-	reqAttrs := &RequestedAttributes{
-		Attributes: map[string]*AttributeMetadataRequest{
+	reqAttrs := &authnprovidercm.RequestedAttributes{
+		Attributes: map[string]*authnprovidercm.AttributeMetadataRequest{
 			"email": nil,
 		},
 	}
@@ -288,5 +289,5 @@ func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_InvalidToken() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeInvalidToken, err.Code)
+	suite.Equal(authnprovidercm.ErrorCodeInvalidToken, err.Code)
 }

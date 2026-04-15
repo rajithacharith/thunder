@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/authnprovider"
+	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
@@ -1152,20 +1152,20 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_RetainsTokenAndAvail
 	}
 
 	previousToken := "previous-auth-token"
-	previousAvailableAttrs := &authnprovider.AvailableAttributes{
-		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+	previousAvailableAttrs := &authnprovidercm.AvailableAttributes{
+		Attributes: map[string]*authnprovidercm.AttributeMetadataResponse{
 			"email": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: true,
 				},
 			},
 			"phone": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: false,
 				},
 			},
 		},
-		Verifications: map[string]*authnprovider.VerificationResponse{},
+		Verifications: map[string]*authnprovidercm.VerificationResponse{},
 	}
 
 	ctx := &EngineContext{
@@ -1229,32 +1229,32 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_UpdatesTokenAndAvail
 	}
 
 	previousToken := "previous-auth-token"
-	previousAvailableAttrs := &authnprovider.AvailableAttributes{
-		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+	previousAvailableAttrs := &authnprovidercm.AvailableAttributes{
+		Attributes: map[string]*authnprovidercm.AttributeMetadataResponse{
 			"email": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: true,
 				},
 			},
 		},
-		Verifications: map[string]*authnprovider.VerificationResponse{},
+		Verifications: map[string]*authnprovidercm.VerificationResponse{},
 	}
 
 	newToken := "new-auth-token" //nolint:gosec // G101: This is test data, not a real credential
-	newAvailableAttrs := &authnprovider.AvailableAttributes{
-		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+	newAvailableAttrs := &authnprovidercm.AvailableAttributes{
+		Attributes: map[string]*authnprovidercm.AttributeMetadataResponse{
 			"phone": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: true,
 				},
 			},
 			"address": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: false,
 				},
 			},
 		},
-		Verifications: map[string]*authnprovider.VerificationResponse{},
+		Verifications: map[string]*authnprovidercm.VerificationResponse{},
 	}
 
 	ctx := &EngineContext{
@@ -1353,15 +1353,15 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_TokenSetButAvailable
 		observabilitySvc: mockObservability,
 	}
 
-	previousAvailableAttrs := &authnprovider.AvailableAttributes{
-		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+	previousAvailableAttrs := &authnprovidercm.AvailableAttributes{
+		Attributes: map[string]*authnprovidercm.AttributeMetadataResponse{
 			"email": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: true,
 				},
 			},
 		},
-		Verifications: map[string]*authnprovider.VerificationResponse{},
+		Verifications: map[string]*authnprovidercm.VerificationResponse{},
 	}
 
 	ctx := &EngineContext{

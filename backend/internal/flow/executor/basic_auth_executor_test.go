@@ -29,7 +29,7 @@ import (
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authncreds "github.com/asgardeo/thunder/internal/authn/credentials"
-	"github.com/asgardeo/thunder/internal/authnprovider"
+	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
@@ -154,13 +154,13 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_AuthenticationFlow(
 		RuntimeData: make(map[string]string),
 	}
 
-	authenticateResult := &authnprovider.AuthnResult{
+	authenticateResult := &authnprovidercm.AuthnResult{
 		UserID:   testUserID,
 		UserType: "person",
 		OUID:     "ou-123",
 		Token:    "test-token",
-		AvailableAttributes: &authnprovider.AvailableAttributes{
-			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+		AvailableAttributes: &authnprovidercm.AvailableAttributes{
+			Attributes: map[string]*authnprovidercm.AttributeMetadataResponse{
 				"username": {},
 			},
 		},
@@ -204,13 +204,13 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithEmailAttribute(
 	suite.executor.ExecutorInterface = createMockExecutorWithCustomInputs(
 		suite.T(), ExecutorNameBasicAuth, originalInputs)
 
-	authenticatedUser := &authnprovider.AuthnResult{
+	authenticatedUser := &authnprovidercm.AuthnResult{
 		UserID:   testUserID,
 		UserType: "person",
 		OUID:     "ou-123",
 		Token:    "test-token",
-		AvailableAttributes: &authnprovider.AvailableAttributes{
-			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+		AvailableAttributes: &authnprovidercm.AvailableAttributes{
+			Attributes: map[string]*authnprovidercm.AttributeMetadataResponse{
 				"email": {},
 			},
 		},
@@ -281,13 +281,13 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttribu
 	suite.executor.ExecutorInterface = createMockExecutorWithCustomInputs(
 		suite.T(), ExecutorNameBasicAuth, customInputs)
 
-	authenticatedUser := &authnprovider.AuthnResult{
+	authenticatedUser := &authnprovidercm.AuthnResult{
 		UserID:   testUserID,
 		UserType: "person",
 		OUID:     "ou-123",
 		Token:    "test-token",
-		AvailableAttributes: &authnprovider.AvailableAttributes{
-			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+		AvailableAttributes: &authnprovidercm.AvailableAttributes{
+			Attributes: map[string]*authnprovidercm.AttributeMetadataResponse{
 				"email": {},
 				"phone": {},
 			},
@@ -486,13 +486,13 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_SuccessfulAuth
 		RuntimeData: make(map[string]string),
 	}
 
-	authenticatedUser := &authnprovider.AuthnResult{
+	authenticatedUser := &authnprovidercm.AuthnResult{
 		UserID:   testUserID,
 		UserType: "person",
 		OUID:     "ou-123",
 		Token:    "test-token",
-		AvailableAttributes: &authnprovider.AvailableAttributes{
-			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+		AvailableAttributes: &authnprovidercm.AvailableAttributes{
+			Attributes: map[string]*authnprovidercm.AttributeMetadataResponse{
 				"email": {},
 				"phone": {},
 			},
@@ -535,13 +535,13 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_Success_WithFe
 		RuntimeData: make(map[string]string),
 	}
 
-	authenticateResult := &authnprovider.AuthnResult{
+	authenticateResult := &authnprovidercm.AuthnResult{
 		UserID:   testUserID,
 		UserType: "person",
 		OUID:     "ou-123",
 		Token:    "test-token",
-		AvailableAttributes: &authnprovider.AvailableAttributes{
-			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+		AvailableAttributes: &authnprovidercm.AvailableAttributes{
+			Attributes: map[string]*authnprovidercm.AttributeMetadataResponse{
 				"username": {},
 				"email":    {},
 				"role":     {},
@@ -591,13 +591,13 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_Authentication
 		RuntimeData: make(map[string]string),
 	}
 
-	authenticatedUser := &authnprovider.AuthnResult{
+	authenticatedUser := &authnprovidercm.AuthnResult{
 		UserID:   testUserID,
 		UserType: "person",
 		OUID:     "ou-123",
 		Token:    "test-token",
-		AvailableAttributes: &authnprovider.AvailableAttributes{
-			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+		AvailableAttributes: &authnprovidercm.AvailableAttributes{
+			Attributes: map[string]*authnprovidercm.AttributeMetadataResponse{
 				"email": {},
 				"phone": {},
 			},
@@ -956,7 +956,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_PreResolvedUser_WithPasswor
 		Application: appmodel.Application{},
 	}
 
-	authenticateResult := &authnprovider.AuthnResult{
+	authenticateResult := &authnprovidercm.AuthnResult{
 		UserID:   "pre-resolved-user-123",
 		UserType: "person",
 		OUID:     "ou-123",
