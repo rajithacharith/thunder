@@ -37,8 +37,9 @@ import (
 
 // EncryptionService provides cryptographic operations.
 type EncryptionService struct {
-	Key []byte
-	Kid string
+	DefaultEncryptionKid string
+	// Keys stores key material by key id for decrypt-by-kid lookups.
+	Keys map[string][]byte
 }
 
 var (
@@ -83,17 +84,23 @@ func initEncryptionService() (*EncryptionService, error) {
 
 // newEncryptionService creates a new instance of EncryptionService with the provided key.
 func newEncryptionService(key []byte) *EncryptionService {
+	kid := getKeyID(key)
 	return &EncryptionService{
-		Key: key,
-		Kid: getKeyID(key), // Generate a unique key ID
+		DefaultEncryptionKid: kid,
+		Keys:                 map[string][]byte{kid: key},
 	}
 }
 
 // Encrypt encrypts the given plaintext and returns a JSON string
 // containing the encrypted data.
 func (cs *EncryptionService) Encrypt(plaintext []byte) (string, error) {
+	encryptionKey := cs.getDefaultEncryptionKey()
+	if len(encryptionKey) == 0 {
+		return "", errors.New("default encryption key not found")
+	}
+
 	// Create AES cipher
-	block, err := aes.NewCipher(cs.Key)
+	block, err := aes.NewCipher(encryptionKey)
 	if err != nil {
 		return "", fmt.Errorf("failed to create cipher: %w", err)
 	}
@@ -117,7 +124,7 @@ func (cs *EncryptionService) Encrypt(plaintext []byte) (string, error) {
 	encData := EncryptedData{
 		Algorithm:  AESGCM,
 		Ciphertext: base64.StdEncoding.EncodeToString(ciphertext),
-		KeyID:      cs.Kid, // Unique identifier for the key
+		KeyID:      cs.DefaultEncryptionKid, // Unique identifier for the key
 	}
 
 	// Serialize to JSON
@@ -149,8 +156,13 @@ func (cs *EncryptionService) Decrypt(encodedData string) ([]byte, error) {
 		return nil, fmt.Errorf("invalid payload encoding: %w", err)
 	}
 
+	decryptionKey := cs.getKeyForDecrypt(encData.KeyID)
+	if len(decryptionKey) == 0 {
+		return nil, errors.New("decryption key not found for kid")
+	}
+
 	// Create AES cipher
-	block, err := aes.NewCipher(cs.Key)
+	block, err := aes.NewCipher(decryptionKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cipher: %w", err)
 	}
@@ -175,6 +187,34 @@ func (cs *EncryptionService) Decrypt(encodedData string) ([]byte, error) {
 	}
 
 	return plaintext, nil
+}
+
+// getDefaultEncryptionKey resolves the configured default encryption key.
+func (cs *EncryptionService) getDefaultEncryptionKey() []byte {
+	if cs.DefaultEncryptionKid == "" {
+		return nil
+	}
+
+	if len(cs.Keys) == 0 {
+		return nil
+	}
+
+	return cs.Keys[cs.DefaultEncryptionKid]
+}
+
+// getKeyForDecrypt resolves the key to use for decryption based on the payload kid.
+func (cs *EncryptionService) getKeyForDecrypt(kid string) []byte {
+	if kid == "" {
+		return nil
+	}
+
+	if len(cs.Keys) > 0 {
+		if key, ok := cs.Keys[kid]; ok {
+			return key
+		}
+	}
+
+	return nil
 }
 
 // EncryptString encrypts the given plaintext string and returns a
