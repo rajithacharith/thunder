@@ -91,7 +91,7 @@ Executors are backend operation nodes. Each Executor performs one specific opera
 | **Provisioning** | Creates or updates the user record in the store. |
 | **Attribute Collector** | Collects additional user attributes defined in the user schema. |
 | **Authorization** | Evaluates authorization policies for the current user. |
-| **OU Creation** | Creates an organizational unit for the user. |
+| **OU Creation** | Creates an organizational unit for the user. Supports an optional `parentOuId` property to control where the new organizational unit is placed in the hierarchy. |
 | **User Type Resolver** | Resolves the user type based on configured rules. |
 | **Identity Resolver** | Looks up and resolves a user identity across providers. |
 | **User Consent** | Records explicit user consent for defined scopes or terms. |
@@ -122,7 +122,36 @@ Some Executors run entirely in the background and do not need a preceding View t
 | **Provisioning** | After identity collection in registration flows | — |
 | **Identity Resolver** | Early in the flow, after the user submits an identifier | — |
 | **User Type Resolver** | After Identity Resolver | — |
-| **OU Creation** | After Provisioning in registration flows | OU name and handle inputs must be present in the flow context |
+| **OU Creation** | After Provisioning in registration flows | OU name and handle inputs must be present in the flow context. Accepts an optional `parentOuId` property (see below). |
+
+### OU Creation Properties
+
+The **OU Creation** executor accepts the following optional node property:
+
+| Property | Type | Description |
+|---|---|---|
+| `parentOuId` | `string` | Controls the parent organizational unit for the newly created organizational unit. |
+
+`parentOuId` behavior:
+
+- **Set to a UUID** - Creates the organizational unit as a child of the specified parent.
+- **Set to an empty string (`""`)** - Creates the organizational unit at the root level with no parent.
+- **Omitted** - Falls back to the default organizational unit resolved earlier in the flow (for example, by the **User Type Resolver** executor).
+
+```json title="Example: OU Creation Node with parentOuId"
+{
+  "id": "ou_creation",
+  "type": "TASK_EXECUTION",
+  "properties": {
+    "parentOuId": "019d94ff-072c-7d7f-a5c5-0a638c1f62bc"
+  },
+  "executor": {
+    "name": "OUExecutor"
+  },
+  "onSuccess": "next_node",
+  "onFailure": "error_prompt"
+}
+```
 
 ## Related Guides
 

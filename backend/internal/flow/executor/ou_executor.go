@@ -20,6 +20,7 @@ package executor
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
@@ -96,7 +97,11 @@ func (o *ouExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, e
 	}
 
 	// Create the OU using the OU service.
-	ouRequest := o.getOrganizationUnitRequest(ctx)
+	ouRequest, err := o.getOrganizationUnitRequest(ctx)
+	if err != nil {
+		logger.Error("Failed to build organization unit request", log.String("error", err.Error()))
+		return nil, err
+	}
 	createdOU, svcErr := o.ouService.CreateOrganizationUnit(ctx.Context, ouRequest)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
@@ -133,17 +138,25 @@ func (o *ouExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, e
 }
 
 // getOrganizationUnitRequest constructs an OrganizationUnitRequest from the NodeContext.
-func (o *ouExecutor) getOrganizationUnitRequest(ctx *core.NodeContext) ou.OrganizationUnitRequest {
+func (o *ouExecutor) getOrganizationUnitRequest(ctx *core.NodeContext) (ou.OrganizationUnitRequest, error) {
 	ouRequest := ou.OrganizationUnitRequest{
 		Name:        ctx.UserInputs[userInputOuName],
 		Handle:      ctx.UserInputs[userInputOuHandle],
 		Description: ctx.UserInputs[userInputOuDesc],
 	}
 
-	// Set parent OU ID if defaultOUID is present in runtime data
-	if val, ok := ctx.RuntimeData[defaultOUIDKey]; ok && val != "" {
+	// Check if parentOuId is explicitly set in node properties.
+	if val, ok := ctx.NodeProperties["parentOuId"]; ok {
+		strVal, isStr := val.(string)
+		if !isStr {
+			return ouRequest, fmt.Errorf("parentOuId must be a string, got %T", val)
+		}
+		if strVal != "" {
+			ouRequest.Parent = &strVal
+		}
+	} else if val, ok := ctx.RuntimeData[defaultOUIDKey]; ok && val != "" {
 		ouRequest.Parent = &val
 	}
 
-	return ouRequest
+	return ouRequest, nil
 }
