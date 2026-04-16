@@ -53,7 +53,8 @@ jobs:
           while IFS= read -r id; do
             IGNORE_ARGS+=(--ignore "$id")
           done < <(jq -r '.frontend[].id' "$GITHUB_WORKSPACE/.audit-ignore.json")
-          pnpm audit --audit-level=high "${IGNORE_ARGS[@]}"
+          # Remove `--ignore-registry-errors` once pnpm 11 is generally available. Tracker: https://github.com/pnpm/pnpm/issues/11265
+          pnpm audit --ignore-registry-errors --audit-level=high "${IGNORE_ARGS[@]}"
 
       - name: 🔍 Run npm audit (E2E Tests)
         working-directory: tests/e2e

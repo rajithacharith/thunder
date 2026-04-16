@@ -16,13 +16,13 @@
  * under the License.
  */
 
+import {SettingsCard} from '@thunder/components';
+import {useDataGridLocaleText} from '@thunder/hooks';
 import {Box, DataGrid, Avatar} from '@wso2/oxygen-ui';
 import {useMemo, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import useDataGridLocaleText from '../../../../../hooks/useDataGridLocaleText';
 import useGetOrganizationUnitGroups from '../../../api/useGetOrganizationUnitGroups';
 import type {Group} from '../../../models/group';
-import SettingsCard from '@/components/SettingsCard';
 import getInitials from '@/utils/getInitials';
 
 /**

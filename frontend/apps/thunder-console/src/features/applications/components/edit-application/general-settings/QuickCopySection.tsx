@@ -16,10 +16,10 @@
  * under the License.
  */
 
+import {SettingsCard} from '@thunder/components';
 import {Stack, TextField, InputAdornment, Tooltip, IconButton, FormControl, FormLabel} from '@wso2/oxygen-ui';
 import {Copy, Check} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
-import SettingsCard from '../../../../../components/SettingsCard';
 import type {Application} from '../../../models/application';
 import type {OAuth2Config} from '../../../models/oauth';
 

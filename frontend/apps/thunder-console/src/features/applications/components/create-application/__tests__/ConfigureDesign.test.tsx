@@ -17,20 +17,27 @@
  */
 
 import userEvent from '@testing-library/user-event';
+import {generateIconSuggestions} from '@thunder/components';
 import {render, screen} from '@thunder/test-utils';
+import type {ReactNode} from 'react';
 import {describe, it, expect, beforeEach, vi} from 'vitest';
 import ConfigureDesign, {type ConfigureDesignProps} from '../ConfigureDesign';
 
-// Mock the utility and component dependencies
-vi.mock('../../../../../utils/generateIconSuggestions');
-vi.mock('../../../../../components/EmojiPicker/EmojiPicker', () => ({
-  default: vi.fn(() => null),
+// Mock the Thunder Packages
+vi.mock('@thunder/components', () => ({
+  generateIconSuggestions: vi.fn(() => null),
+  ResourceAvatar: vi.fn(({value, fallback, onClick}: {value?: string; fallback?: ReactNode; onClick?: () => void}) => (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{display: 'inline-block', background: 'none', border: 'none', padding: 0, cursor: 'pointer'}}
+    >
+      {value ?? fallback}
+    </button>
+  )),
 }));
-
-// Mock the themes API
 vi.mock('@thunder/design');
 
-const {default: generateIconSuggestions} = await import('../../../../../utils/generateIconSuggestions');
 const {useGetThemes, useGetTheme} = await import('@thunder/design');
 
 describe('ConfigureDesign', () => {

@@ -22,20 +22,21 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import ManageAssignmentsSection from '../ManageAssignmentsSection';
 
 vi.mock('../../../../api/useGetRoleAssignments');
-vi.mock('../../../../../../hooks/useDataGridLocaleText');
+vi.mock('@thunder/hooks', () => ({
+  useDataGridLocaleText: vi.fn(),
+}));
 
-vi.mock('@/components/SettingsCard', () => ({
-  default: ({
+vi.mock('@thunder/components', () => ({
+  SettingsCard: ({
     title,
     description,
     children,
-    headerAction,
+    headerAction = undefined,
   }: {
     title: string;
     description: string;
     children: React.ReactNode;
     headerAction?: React.ReactNode;
-    slotProps?: unknown;
   }) => (
     <div data-testid="settings-card">
       <h3>{title}</h3>
@@ -102,7 +103,7 @@ vi.mock('@wso2/oxygen-ui', async (importOriginal) => {
 });
 
 const {default: useGetRoleAssignments} = await import('../../../../api/useGetRoleAssignments');
-const {default: useDataGridLocaleText} = await import('../../../../../../hooks/useDataGridLocaleText');
+const {useDataGridLocaleText} = await import('@thunder/hooks');
 
 describe('ManageAssignmentsSection', () => {
   const mockOnRemoveAssignment = vi.fn();

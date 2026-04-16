@@ -17,7 +17,6 @@
     "jsx": "react-jsx",
 
     /* Path Aliases */
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@/components/*": ["./src/components/*"],
@@ -26,9 +25,7 @@
       "@/contexts/*": ["./src/contexts/*"],
       "@/lib/*": ["./src/lib/*"],
       "@/hooks/*": ["./src/hooks/*"],
-      "@/types/*": ["./src/types/*"],
-      "@wso2/oxygen-ui": ["../../../oxygen-ui/packages/oxygen-ui/dist/*"],
-      "@wso2/oxygen-ui-icons-react": ["../../../oxygen-ui/packages/oxygen-ui-icons-react/dist/*"]
+      "@/types/*": ["./src/types/*"]
     },
 
     /* Linting */

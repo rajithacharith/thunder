@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {CopyableId, ResourceAvatar, UnsavedChangesBar} from '@thunder/components';
 import {useLogger} from '@thunder/logger/react';
 import {
   Box,
@@ -36,9 +37,6 @@ import {ArrowLeft, Edit} from '@wso2/oxygen-ui-icons-react';
 import {useState, useCallback, useMemo, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Link, useNavigate, useParams} from 'react-router';
-import CopyableId from '../../../components/CopyableId';
-import ResourceAvatar from '../../../components/ResourceAvatar';
-import UnsavedChangesBar from '../../../components/UnsavedChangesBar';
 import useGetApplication from '../api/useGetApplication';
 import useUpdateApplication from '../api/useUpdateApplication';
 import EditAdvancedSettings from '../components/edit-application/advanced-settings/EditAdvancedSettings';

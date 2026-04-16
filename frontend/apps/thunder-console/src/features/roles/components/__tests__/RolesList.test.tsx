@@ -36,7 +36,9 @@ vi.mock('react-router', async () => {
     useNavigate: vi.fn(),
   };
 });
-vi.mock('../../../../hooks/useDataGridLocaleText');
+vi.mock('@thunder/hooks', () => ({
+  useDataGridLocaleText: vi.fn(),
+}));
 
 // Mock @wso2/oxygen-ui to avoid cssstyle issues with CSS variables
 vi.mock('@wso2/oxygen-ui', async (importOriginal) => {
@@ -122,7 +124,7 @@ vi.mock('@thunder/logger/react', () => ({
 
 const {default: useGetRoles} = await import('../../api/useGetRoles');
 const {useNavigate} = await import('react-router');
-const {default: useDataGridLocaleText} = await import('../../../../hooks/useDataGridLocaleText');
+const {useDataGridLocaleText} = await import('@thunder/hooks');
 
 describe('RolesList', () => {
   let mockNavigate: ReturnType<typeof vi.fn>;

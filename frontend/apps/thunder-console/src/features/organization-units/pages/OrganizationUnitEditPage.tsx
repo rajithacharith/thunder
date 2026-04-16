@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {CopyableId, ResourceAvatar, UnsavedChangesBar} from '@thunder/components';
 import {useLogger} from '@thunder/logger/react';
 import {
   Box,
@@ -37,9 +38,6 @@ import {useState, useCallback, useMemo} from 'react';
 import type {ReactNode, SyntheticEvent, JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate, useParams, useLocation, Link} from 'react-router';
-import CopyableId from '../../../components/CopyableId';
-import ResourceAvatar from '../../../components/ResourceAvatar';
-import UnsavedChangesBar from '../../../components/UnsavedChangesBar';
 import useGetOrganizationUnit from '../api/useGetOrganizationUnit';
 import useUpdateOrganizationUnit from '../api/useUpdateOrganizationUnit';
 import EditChildOrganizationUnitSettings from '../components/edit-organization-unit/child-organization-unit-settings/EditChildOrganizationUnitSettings';

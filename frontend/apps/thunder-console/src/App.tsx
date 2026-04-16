@@ -17,6 +17,12 @@
  */
 
 import {ProtectedRoute} from '@asgardeo/react-router';
+import {
+  TranslationCreateProvider,
+  TranslationCreatePage,
+  TranslationsEditPage,
+  TranslationsListPage,
+} from '@thunder/admin-translations';
 import {ToastProvider} from '@thunder/contexts';
 import type {JSX} from 'react';
 import {BrowserRouter, Route, Routes} from 'react-router';
@@ -46,10 +52,6 @@ import RoleCreateProvider from './features/roles/contexts/RoleCreate/RoleCreateP
 import CreateRolePage from './features/roles/pages/CreateRolePage';
 import RoleEditPage from './features/roles/pages/RoleEditPage';
 import RolesListPage from './features/roles/pages/RolesListPage';
-import TranslationCreateProvider from './features/translations/contexts/TranslationCreate/TranslationCreateProvider';
-import TranslationCreatePage from './features/translations/pages/TranslationCreatePage';
-import TranslationsEditPage from './features/translations/pages/TranslationsEditPage';
-import TranslationsListPage from './features/translations/pages/TranslationsListPage';
 import UserTypeCreateProvider from './features/user-types/contexts/UserTypeCreate/UserTypeCreateProvider';
 import CreateUserTypePage from './features/user-types/pages/CreateUserTypePage';
 import UserTypesListPage from './features/user-types/pages/UserTypesListPage';

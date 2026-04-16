@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {useDataGridLocaleText} from '@thunder/hooks';
 import {useLogger} from '@thunder/logger/react';
 import {
   Chip,
@@ -37,7 +38,6 @@ import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useCallback, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
-import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
 import useDeleteUserType from '../api/useDeleteUserType';
 import useGetUserTypes from '../api/useGetUserTypes';
 import type {UserSchemaListItem} from '../types/user-types';

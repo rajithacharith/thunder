@@ -73,8 +73,8 @@ vi.mock('react-router', async () => {
 });
 
 // Mock useDataGridLocaleText
-vi.mock('../../../../hooks/useDataGridLocaleText', () => ({
-  default: () => ({}),
+vi.mock('@thunder/hooks', () => ({
+  useDataGridLocaleText: () => ({}),
 }));
 
 // Mock useGetFlows

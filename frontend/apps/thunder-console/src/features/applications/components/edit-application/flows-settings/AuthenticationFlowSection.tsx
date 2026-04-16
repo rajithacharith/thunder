@@ -16,10 +16,10 @@
  * under the License.
  */
 
+import {SettingsCard} from '@thunder/components';
 import {Box, Typography, TextField, Autocomplete, CircularProgress, Alert} from '@wso2/oxygen-ui';
 import {useTranslation, Trans} from 'react-i18next';
 import {Link} from 'react-router';
-import SettingsCard from '../../../../../components/SettingsCard';
 import useGetFlows from '../../../../flows/api/useGetFlows';
 import {FlowType} from '../../../../flows/models/flows';
 import type {Application} from '../../../models/application';

@@ -16,17 +16,17 @@
  * under the License.
  */
 
+import {SettingsCard} from '@thunder/components';
+import {useDataGridLocaleText} from '@thunder/hooks';
 import {useLogger} from '@thunder/logger/react';
 import {Box, DataGrid, Avatar, useTheme} from '@wso2/oxygen-ui';
 import {Building} from '@wso2/oxygen-ui-icons-react';
 import {useMemo, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
-import useDataGridLocaleText from '../../../../../hooks/useDataGridLocaleText';
 import useGetChildOrganizationUnits from '../../../api/useGetChildOrganizationUnits';
 import type {OUNavigationState} from '../../../models/navigation';
 import type {OrganizationUnit} from '../../../models/organization-unit';
-import SettingsCard from '@/components/SettingsCard';
 
 /**
  * Props for the {@link ManageChildOrganizationUnitSection} component.

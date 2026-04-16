@@ -16,6 +16,8 @@
  * under the License.
  */
 
+import {ResourceAvatar} from '@thunder/components';
+import {useDataGridLocaleText} from '@thunder/hooks';
 import {useLogger} from '@thunder/logger/react';
 import {Box, Chip, IconButton, Tooltip, Typography, ListingTable, DataGrid, useTheme} from '@wso2/oxygen-ui';
 import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
@@ -23,8 +25,6 @@ import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import ApplicationDeleteDialog from './ApplicationDeleteDialog';
-import ResourceAvatar from '../../../components/ResourceAvatar';
-import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
 import useGetApplications from '../api/useGetApplications';
 import type {BasicApplication} from '../models/application';
 import getTemplateMetadata from '../utils/getTemplateMetadata';

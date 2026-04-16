@@ -16,12 +16,12 @@
  * under the License.
  */
 
+import {SettingsCard} from '@thunder/components';
 import {Stack, TextField, Button, IconButton, Typography, InputAdornment, Tooltip} from '@wso2/oxygen-ui';
 import {Copy, Check} from '@wso2/oxygen-ui-icons-react';
 import {useState, useCallback, useRef, useEffect, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {Role} from '../../../models/role';
-import SettingsCard from '@/components/SettingsCard';
 
 interface EditGeneralSettingsProps {
   role: Role;

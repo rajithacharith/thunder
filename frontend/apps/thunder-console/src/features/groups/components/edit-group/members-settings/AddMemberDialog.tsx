@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {useDataGridLocaleText} from '@thunder/hooks';
 import {
   Dialog,
   DialogTitle,
@@ -35,7 +36,6 @@ import {
 import {AppWindow, User} from '@wso2/oxygen-ui-icons-react';
 import {useState, useMemo, useCallback, type JSX, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
-import useDataGridLocaleText from '../../../../../hooks/useDataGridLocaleText';
 import useGetApplications from '../../../../applications/api/useGetApplications';
 import type {BasicApplication} from '../../../../applications/models/application';
 import useGetUsers from '../../../../users/api/useGetUsers';
