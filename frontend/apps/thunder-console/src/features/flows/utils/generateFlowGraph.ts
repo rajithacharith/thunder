@@ -207,7 +207,7 @@ export default function generateFlowGraph(options: FlowGeneratorOptions): Create
         label: 'Sign in with Google',
         variant: 'OUTLINED',
         eventType: 'TRIGGER',
-        startIcon: {icon: 'google'},
+        image: 'assets/images/icons/google.svg',
       });
 
       promptPrompts.push({
@@ -225,7 +225,7 @@ export default function generateFlowGraph(options: FlowGeneratorOptions): Create
         label: 'Sign in with GitHub',
         variant: 'OUTLINED',
         eventType: 'TRIGGER',
-        startIcon: {icon: 'github'},
+        image: 'assets/images/icons/github.svg',
       });
 
       promptPrompts.push({
