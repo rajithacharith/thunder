@@ -100,6 +100,19 @@ export interface ConfigContextType {
    * @returns The trusted issuer scopes array
    */
   getTrustedIssuerScopes: () => string[];
+
+  /**
+   * Indicates whether the configured trusted issuer is a generic OIDC provider
+   * rather than a Thunder / Asgardeo instance. When true, the console must suppress
+   * Thunder / Asgardeo specific bootstrap calls (flow metadata, branding preferences) that
+   * would otherwise fail against a generic OIDC provider.
+   *
+   * Returns false when no trusted issuer is configured, and when the configured
+   * trusted issuer type is `thunder` (the default).
+   *
+   * @returns True if the trusted issuer is a generic OIDC provider
+   */
+  isTrustedIssuerGenericOidc: () => boolean;
 }
 
 /**

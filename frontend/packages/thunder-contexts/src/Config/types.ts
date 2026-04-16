@@ -157,6 +157,17 @@ export interface TrustedIssuerConfig {
    * @example ["openid", "profile", "email", "system"]
    */
   scopes?: string[];
+
+  /**
+   * Type of external authorization server. Set to `generic` when the trusted
+   * issuer is a generic OIDC provider rather than another Thunder instance.
+   * When `generic`, the console skips Thunder-specific bootstrap calls
+   * (flow metadata, branding preferences) that would otherwise fail against a generic OIDC provider.
+   *
+   * Defaults to `thunder` for backward compatibility with existing
+   * Thunder-to-Thunder federation deployments.
+   */
+  type?: 'thunder' | 'generic';
 }
 
 /**

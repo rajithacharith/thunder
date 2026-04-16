@@ -17,23 +17,42 @@
  */
 
 import {render, screen, userEvent, waitFor} from '@thunder/test-utils';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {afterEach, describe, it, expect, vi, beforeEach} from 'vitest';
 import DashboardLayout from '../DashboardLayout';
 
 const mockSignIn = vi.fn();
 const mockSignOut = vi.fn();
+const mockClearSession = vi.fn();
 const mockLoggerError = vi.fn();
+const mockLoggerWarn = vi.fn();
 const mockUserData = vi.fn();
+let mockDiscovery: {wellKnown?: {end_session_endpoint?: string}} | undefined;
+let mockIsTrustedIssuerGenericOidc = false;
 
 // Mock Asgardeo
 vi.mock('@asgardeo/react', () => ({
   useAsgardeo: () => ({
     signIn: mockSignIn,
+    clearSession: mockClearSession,
+    discovery: mockDiscovery,
   }),
   User: ({children}: {children: (user: unknown) => React.ReactNode}) => children(mockUserData()),
   SignOutButton: ({children}: {children: (props: {signOut: () => void}) => React.ReactNode}) =>
     children({signOut: mockSignOut}),
 }));
+
+// Mock @thunder/contexts
+vi.mock('@thunder/contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/contexts')>();
+  return {
+    ...actual,
+    useConfig: () => ({
+      isTrustedIssuerGenericOidc: () => mockIsTrustedIssuerGenericOidc,
+      getTrustedIssuerClientId: () => 'test-client-id',
+      getClientUrl: () => 'https://localhost:5191/console',
+    }),
+  };
+});
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -46,8 +65,8 @@ vi.mock('react-i18next', () => ({
 vi.mock('@thunder/logger/react', () => ({
   useLogger: () => ({
     error: mockLoggerError,
+    warn: mockLoggerWarn,
     info: vi.fn(),
-    warn: vi.fn(),
     debug: vi.fn(),
   }),
 }));
@@ -70,6 +89,8 @@ describe('DashboardLayout', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUserData.mockReturnValue({name: 'Test User', email: 'test@example.com'});
+    mockIsTrustedIssuerGenericOidc = false;
+    mockDiscovery = undefined;
   });
 
   it('renders AppShell layout', () => {
@@ -168,5 +189,61 @@ describe('DashboardLayout', () => {
     render(<DashboardLayout />);
 
     expect(screen.getByTestId('outlet')).toBeInTheDocument();
+  });
+
+  describe('generic OIDC sign out', () => {
+    let originalLocation: Location;
+
+    beforeEach(() => {
+      mockIsTrustedIssuerGenericOidc = true;
+      originalLocation = window.location;
+      Object.defineProperty(window, 'location', {
+        value: {...originalLocation, href: ''},
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    afterEach(() => {
+      Object.defineProperty(window, 'location', {
+        value: originalLocation,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it('clears local session and redirects to client URL when end_session_endpoint is missing', async () => {
+      mockDiscovery = {wellKnown: {}};
+      const user = userEvent.setup();
+
+      render(<DashboardLayout />);
+
+      const userMenuTrigger = screen.getByLabelText('Test User');
+      await user.click(userMenuTrigger);
+
+      const signOutButton = await screen.findByText('common:userMenu.signOut');
+      await user.click(signOutButton);
+
+      expect(mockClearSession).toHaveBeenCalled();
+      expect(mockLoggerWarn).toHaveBeenCalledWith(expect.stringContaining('end_session_endpoint missing'));
+      expect(window.location.href).toBe('https://localhost:5191/console');
+    });
+
+    it('clears local session and redirects to IdP end_session_endpoint when available', async () => {
+      mockDiscovery = {wellKnown: {end_session_endpoint: 'https://idp.example.com/logout'}};
+      const user = userEvent.setup();
+
+      render(<DashboardLayout />);
+
+      const userMenuTrigger = screen.getByLabelText('Test User');
+      await user.click(userMenuTrigger);
+
+      const signOutButton = await screen.findByText('common:userMenu.signOut');
+      await user.click(signOutButton);
+
+      expect(mockClearSession).toHaveBeenCalled();
+      expect(window.location.href).toContain('https://idp.example.com/logout');
+      expect(window.location.href).toContain('client_id=test-client-id');
+    });
   });
 });
