@@ -1138,6 +1138,38 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 
 				return headerBase64 + "." + payloadBase64 + "." + signatureBase64
 			},
+			expectedAud: testAudience,
+			expectedIss: testIssuer,
+			expectError: false,
+		},
+		{
+			name: "AudClaimAsArrayContainingExpected",
+			setupFunc: func() string {
+				payload := map[string]interface{}{
+					"sub": "test-subject",
+					"aud": []interface{}{testAudience, "https://example.auth0.com/userinfo"},
+					"iss": testIssuer,
+					"exp": time.Now().Add(time.Hour).Unix(),
+					"iat": time.Now().Unix(),
+				}
+				return suite.createJWTWithCustomPayload(payload)
+			},
+			expectedAud: testAudience,
+			expectedIss: testIssuer,
+			expectError: false,
+		},
+		{
+			name: "AudClaimAsArrayWithoutExpected",
+			setupFunc: func() string {
+				payload := map[string]interface{}{
+					"sub": "test-subject",
+					"aud": []interface{}{"https://other.example.com", "https://example.auth0.com/userinfo"},
+					"iss": testIssuer,
+					"exp": time.Now().Add(time.Hour).Unix(),
+					"iat": time.Now().Unix(),
+				}
+				return suite.createJWTWithCustomPayload(payload)
+			},
 			expectedAud:   testAudience,
 			expectedIss:   testIssuer,
 			expectError:   true,

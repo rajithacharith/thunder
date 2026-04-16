@@ -34,6 +34,7 @@ const mockGetScopes = vi.fn();
 const mockGetTrustedIssuerUrl = vi.fn();
 const mockGetTrustedIssuerClientId = vi.fn();
 const mockGetTrustedIssuerScopes = vi.fn();
+const mockIsTrustedIssuerGenericOidc = vi.fn();
 const mockConfig: Record<string, unknown> = {};
 
 vi.mock('@thunder/contexts', () => ({
@@ -45,6 +46,7 @@ vi.mock('@thunder/contexts', () => ({
     getTrustedIssuerUrl: mockGetTrustedIssuerUrl,
     getTrustedIssuerClientId: mockGetTrustedIssuerClientId,
     getTrustedIssuerScopes: mockGetTrustedIssuerScopes,
+    isTrustedIssuerGenericOidc: mockIsTrustedIssuerGenericOidc,
     config: mockConfig,
   }),
 }));
@@ -58,6 +60,8 @@ vi.mock('@asgardeo/react', () => ({
     afterSignInUrl,
     scopes,
     signInOptions,
+    preferences,
+    sendCookiesInRequests,
     /* eslint-enable react/require-default-props */
   }: {
     children: React.ReactNode;
@@ -66,8 +70,18 @@ vi.mock('@asgardeo/react', () => ({
     afterSignInUrl?: string;
     scopes?: string[];
     signInOptions?: Record<string, string>;
+    preferences?: Record<string, unknown>;
+    sendCookiesInRequests?: boolean;
   }) => {
-    capturedProviderProps = {baseUrl, clientId, afterSignInUrl, scopes, signInOptions};
+    capturedProviderProps = {
+      baseUrl,
+      clientId,
+      afterSignInUrl,
+      scopes,
+      signInOptions,
+      preferences,
+      sendCookiesInRequests,
+    };
     return (
       <div
         data-testid="asgardeo-provider"
@@ -94,6 +108,7 @@ describe('withConfig (console)', () => {
     mockGetTrustedIssuerUrl.mockReturnValue('https://server.example.com');
     mockGetTrustedIssuerClientId.mockReturnValue('client-id');
     mockGetTrustedIssuerScopes.mockReturnValue([]);
+    mockIsTrustedIssuerGenericOidc.mockReturnValue(false);
   });
 
   it('renders without crashing', () => {
@@ -273,6 +288,57 @@ describe('withConfig (console)', () => {
 
       render(<WithConfigComponent />);
       expect(capturedProviderProps.signInOptions).toBeUndefined();
+    });
+
+    it('does not pass preferences when the trusted issuer is a Thunder instance', () => {
+      mockConfig.trusted_issuer = {hostname: 'localhost', port: 8090, http_only: true, type: 'thunder'};
+      mockIsTrustedIssuerGenericOidc.mockReturnValue(false);
+      mockGetServerUrl.mockReturnValue('http://localhost:9443');
+      mockGetTrustedIssuerUrl.mockReturnValue('http://localhost:8090');
+      mockGetTrustedIssuerClientId.mockReturnValue('FEDERATED_CONSOLE');
+      mockGetClientUrl.mockReturnValue('http://localhost:9443/console');
+
+      render(<WithConfigComponent />);
+      expect(capturedProviderProps.preferences).toBeUndefined();
+    });
+
+    it('disables Asgardeo vendor-specific bootstrap calls for generic OIDC trusted issuers', () => {
+      mockConfig.trusted_issuer = {hostname: 'tenant.auth0.com', port: 443, http_only: false, type: 'generic'};
+      mockIsTrustedIssuerGenericOidc.mockReturnValue(true);
+      mockGetServerUrl.mockReturnValue('https://tenant.example.com:9443');
+      mockGetTrustedIssuerUrl.mockReturnValue('https://tenant.auth0.com');
+      mockGetTrustedIssuerClientId.mockReturnValue('AUTH0_CLIENT_ID');
+      mockGetClientUrl.mockReturnValue('https://tenant.example.com:9443/console');
+
+      render(<WithConfigComponent />);
+      expect(capturedProviderProps.preferences).toEqual({
+        resolveFromMeta: false,
+        theme: {inheritFromBranding: false},
+      });
+    });
+
+    it('leaves sendCookiesInRequests at SDK default when the trusted issuer is a Thunder instance', () => {
+      mockConfig.trusted_issuer = {hostname: 'localhost', port: 8090, http_only: true, type: 'thunder'};
+      mockIsTrustedIssuerGenericOidc.mockReturnValue(false);
+      mockGetServerUrl.mockReturnValue('http://localhost:9443');
+      mockGetTrustedIssuerUrl.mockReturnValue('http://localhost:8090');
+      mockGetTrustedIssuerClientId.mockReturnValue('FEDERATED_CONSOLE');
+      mockGetClientUrl.mockReturnValue('http://localhost:9443/console');
+
+      render(<WithConfigComponent />);
+      expect(capturedProviderProps.sendCookiesInRequests).toBeUndefined();
+    });
+
+    it('sets sendCookiesInRequests=false for generic OIDC trusted issuers (CORS credentialed fetch fix)', () => {
+      mockConfig.trusted_issuer = {hostname: 'tenant.auth0.com', port: 443, http_only: false, type: 'generic'};
+      mockIsTrustedIssuerGenericOidc.mockReturnValue(true);
+      mockGetServerUrl.mockReturnValue('https://tenant.example.com:9443');
+      mockGetTrustedIssuerUrl.mockReturnValue('https://tenant.auth0.com');
+      mockGetTrustedIssuerClientId.mockReturnValue('AUTH0_CLIENT_ID');
+      mockGetClientUrl.mockReturnValue('https://tenant.example.com:9443/console');
+
+      render(<WithConfigComponent />);
+      expect(capturedProviderProps.sendCookiesInRequests).toBe(false);
     });
   });
 });

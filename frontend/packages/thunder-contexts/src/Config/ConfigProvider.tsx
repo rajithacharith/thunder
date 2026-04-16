@@ -161,6 +161,7 @@ export default function ConfigProvider({children}: ConfigProviderProps) {
         }
         return config.client.scopes ?? [];
       },
+      isTrustedIssuerGenericOidc: () => config.trusted_issuer?.type === 'generic',
     }),
     [config],
   );

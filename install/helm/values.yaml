@@ -196,6 +196,12 @@ configuration:
     #   publicUrl: "https://cp.example.com"
     #   clientId: "FEDERATED_CONSOLE"
     #   scopes: "['openid', 'profile', 'email', 'group', 'ou', 'system', 'system:user', 'system:group', 'system:ou:view', 'system:userschema:view']"
+    #   # Type of external authorization server. Set to `generic` when the trusted
+    #   # issuer is a generic OIDC provider. When `generic`, the console skips
+    #   # Thunder-specific bootstrap calls (flow metadata, branding preferences)
+    #   # that would otherwise fail against a generic OIDC provider.
+    #   # Defaults to `thunder`.
+    #   type: "thunder"
 
   # TLS configuration
   tls:
