@@ -21,9 +21,9 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import type {Role} from '../../../../models/role';
 import EditGeneralSettings from '../EditGeneralSettings';
 
-// Mock SettingsCard
-vi.mock('@/components/SettingsCard', () => ({
-  default: ({title, description, children}: {title: string; description: string; children: React.ReactNode}) => (
+// Mock Components
+vi.mock('@thunder/components', () => ({
+  SettingsCard: ({title, description, children}: {title: string; description: string; children: React.ReactNode}) => (
     <div data-testid="settings-card">
       <h3>{title}</h3>
       <p>{description}</p>

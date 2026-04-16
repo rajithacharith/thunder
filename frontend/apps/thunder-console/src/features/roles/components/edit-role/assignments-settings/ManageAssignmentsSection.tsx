@@ -16,14 +16,14 @@
  * under the License.
  */
 
+import {SettingsCard} from '@thunder/components';
+import {useDataGridLocaleText} from '@thunder/hooks';
 import {Box, Avatar, DataGrid, IconButton, Tabs, Tab} from '@wso2/oxygen-ui';
 import {AppWindow, Trash2, User, Users} from '@wso2/oxygen-ui-icons-react';
 import {useState, useMemo, type JSX, type ReactNode, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
-import useDataGridLocaleText from '../../../../../hooks/useDataGridLocaleText';
 import useGetRoleAssignments from '../../../api/useGetRoleAssignments';
 import type {RoleAssignment} from '../../../models/role';
-import SettingsCard from '@/components/SettingsCard';
 
 interface ManageAssignmentsSectionProps {
   roleId: string;

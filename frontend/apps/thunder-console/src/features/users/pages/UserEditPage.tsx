@@ -16,8 +16,9 @@
  * under the License.
  */
 
-import {useLogger} from '@thunder/logger/react';
+import {CopyableId, ResourceAvatar, SettingsCard} from '@thunder/components';
 import {useResolveDisplayName} from '@thunder/hooks';
+import {useLogger} from '@thunder/logger/react';
 import {
   Box,
   Stack,
@@ -40,15 +41,12 @@ import {useState, useEffect, useMemo, useCallback, useRef, type SyntheticEvent, 
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
 import {Link, useNavigate, useParams} from 'react-router';
-import CopyableId from '../../../components/CopyableId';
 import useGetUser from '../api/useGetUser';
 import useGetUserSchema from '../api/useGetUserSchema';
 import useGetUserSchemas from '../api/useGetUserSchemas';
 import useUpdateUser from '../api/useUpdateUser';
 import UserDeleteDialog from '../components/UserDeleteDialog';
 import renderSchemaField from '../utils/renderSchemaField';
-import ResourceAvatar from '@/components/ResourceAvatar';
-import SettingsCard from '@/components/SettingsCard';
 import getInitials from '@/utils/getInitials';
 
 type UpdateUserFormData = Record<string, string | number | boolean>;

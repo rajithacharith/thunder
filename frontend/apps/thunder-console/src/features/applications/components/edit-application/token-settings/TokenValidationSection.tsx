@@ -16,12 +16,12 @@
  * under the License.
  */
 
+import {SettingsCard} from '@thunder/components';
 import {Box, FormControl, FormLabel, Stack, Tab, Tabs, TextField} from '@wso2/oxygen-ui';
 import {useState} from 'react';
 import {Controller} from 'react-hook-form';
 import type {Control, FieldErrors} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
-import SettingsCard from '../../../../../components/SettingsCard';
 
 /**
  * Props for the {@link TokenValidationSection} component.

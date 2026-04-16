@@ -25,3 +25,5 @@ export {
   type UseCopyToClipboardOptions,
   type UseCopyToClipboardResult,
 } from './useCopyToClipboard';
+
+export {default as useDataGridLocaleText} from './useDataGridLocaleText';

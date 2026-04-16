@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {BuilderLayout, BuilderPanelHeader} from '@thunder/components';
 import {Accordion, AccordionDetails, AccordionSummary, Box, Stack, Typography} from '@wso2/oxygen-ui';
 import {BoxesIcon, BoxIcon, ChevronDownIcon, CogIcon, LayoutTemplate, ZapIcon} from '@wso2/oxygen-ui-icons-react';
 import kebabCase from 'lodash-es/kebabCase';
@@ -24,8 +25,6 @@ import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import ResourcePanelDraggable from './ResourcePanelDraggable';
 import ResourcePanelStatic from './ResourcePanelStatic';
-import BuilderLayout from '../../../../components/BuilderLayout/BuilderLayout';
-import BuilderPanelHeader from '../../../../components/BuilderLayout/BuilderPanelHeader';
 import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
 import type {Element} from '../../models/elements';
 import type {Resource, Resources} from '../../models/resources';

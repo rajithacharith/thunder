@@ -29,9 +29,9 @@ vi.mock('../../../../../user-types/api/useGetUserTypes');
 
 type MockedUseGetUserTypes = ReturnType<typeof useGetUserTypes>;
 
-// Mock the SettingsCard component
-vi.mock('../../../../../../components/SettingsCard', () => ({
-  default: ({title, description, children}: {title: string; description: string; children: React.ReactNode}) => (
+// Mock the Components
+vi.mock('@thunder/components', () => ({
+  SettingsCard: ({title, description, children}: {title: string; description: string; children: React.ReactNode}) => (
     <div data-testid="settings-card">
       <div data-testid="card-title">{title}</div>
       <div data-testid="card-description">{description}</div>

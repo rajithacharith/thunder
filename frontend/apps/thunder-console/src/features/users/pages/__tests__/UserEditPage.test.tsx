@@ -26,6 +26,14 @@ const {mockLoggerError} = vi.hoisted(() => ({
   mockLoggerError: vi.fn(),
 }));
 
+vi.mock('@thunder/components', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/components')>();
+  return {
+    ...actual,
+    CopyableId: vi.fn(() => null),
+  };
+});
+
 const mockNavigate = vi.fn();
 const mockUpdateMutateAsync = vi.fn();
 const mockDeleteMutate = vi.fn();

@@ -26,9 +26,9 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({t: (_key: string, fallback?: string) => fallback ?? _key}),
 }));
 
-// Mock SettingsCard
-vi.mock('../../../../../../components/SettingsCard', () => ({
-  default: ({title, description, children}: {title: string; description: string; children: React.ReactNode}) => (
+// Mock Components
+vi.mock('@thunder/components', () => ({
+  SettingsCard: ({title, description, children}: {title: string; description: string; children: React.ReactNode}) => (
     <div data-testid="settings-card">
       <div data-testid="card-title">{title}</div>
       <div data-testid="card-description">{description}</div>

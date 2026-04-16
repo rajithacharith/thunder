@@ -16,8 +16,9 @@
  * under the License.
  */
 
-import {useLogger} from '@thunder/logger/react';
+import {CopyableId, UnsavedChangesBar} from '@thunder/components';
 import {useToast} from '@thunder/contexts';
+import {useLogger} from '@thunder/logger/react';
 import {
   Box,
   Stack,
@@ -37,8 +38,6 @@ import type {ReactNode, SyntheticEvent, JSX} from 'react';
 import {useState, useMemo, useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Link, useNavigate, useParams} from 'react-router';
-import CopyableId from '../../../components/CopyableId';
-import UnsavedChangesBar from '../../../components/UnsavedChangesBar';
 import useGetUserType from '../api/useGetUserType';
 import useUpdateUserType from '../api/useUpdateUserType';
 import EditGeneralSettings from '../components/edit-user-type/general-settings/EditGeneralSettings';

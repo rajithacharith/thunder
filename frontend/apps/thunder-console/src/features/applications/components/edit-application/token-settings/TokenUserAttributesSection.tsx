@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {SettingsCard} from '@thunder/components';
 import {
   Box,
   Stack,
@@ -34,7 +35,6 @@ import {
 import type React from 'react';
 import {useTranslation} from 'react-i18next';
 import JwtPreview from './JwtPreview';
-import SettingsCard from '../../../../../components/SettingsCard';
 import TokenConstants from '../../../constants/token-constants';
 
 /**

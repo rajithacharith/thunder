@@ -18,8 +18,9 @@
 
 import {useAsgardeo} from '@asgardeo/react';
 import {useQueryClient} from '@tanstack/react-query';
-import {useLogger} from '@thunder/logger/react';
+import {ResourceAvatar} from '@thunder/components';
 import {useConfig} from '@thunder/contexts';
+import {useLogger} from '@thunder/logger/react';
 import {
   Box,
   IconButton,
@@ -38,7 +39,6 @@ import type {ReactNode, MouseEvent, KeyboardEvent, SyntheticEvent, JSX} from 're
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import OrganizationUnitDeleteDialog from './OrganizationUnitDeleteDialog';
-import ResourceAvatar from '../../../components/ResourceAvatar';
 import fetchChildOrganizationUnits from '../api/fetchChildOrganizationUnits';
 import fetchOrganizationUnits from '../api/fetchOrganizationUnits';
 import useGetOrganizationUnits from '../api/useGetOrganizationUnits';

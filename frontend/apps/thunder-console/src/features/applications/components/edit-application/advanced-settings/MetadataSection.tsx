@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import {SettingsCard} from '@thunder/components';
 import {Box, Stack, Typography} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
-import SettingsCard from '../../../../../components/SettingsCard';
 import type {Application} from '../../../models/application';
 
 /**

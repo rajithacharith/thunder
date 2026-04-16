@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {SettingsCard} from '@thunder/components';
 import {Stack, Typography, CircularProgress, TextField, FormControl, FormLabel} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -23,7 +24,6 @@ import {Link} from 'react-router';
 import useGetOrganizationUnit from '../../../api/useGetOrganizationUnit';
 import type {OUNavigationState} from '../../../models/navigation';
 import type {OrganizationUnit} from '../../../models/organization-unit';
-import SettingsCard from '@/components/SettingsCard';
 
 /**
  * Props for the {@link ParentSettingsSection} component.

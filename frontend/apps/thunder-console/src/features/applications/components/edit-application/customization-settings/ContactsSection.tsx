@@ -16,12 +16,11 @@
  * under the License.
  */
 
+import {Kbd, SettingsCard} from '@thunder/components';
 import {Autocomplete, Chip, TextField} from '@wso2/oxygen-ui';
 import {useState} from 'react';
 import {useTranslation, Trans} from 'react-i18next';
 import {z} from 'zod';
-import Kbd from '../../../../../components/Kbd';
-import SettingsCard from '../../../../../components/SettingsCard';
 import type {Application} from '../../../models/application';
 
 /**

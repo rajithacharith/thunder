@@ -23,6 +23,28 @@ import type {ReactNode} from 'react';
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import GroupEditPage from '../GroupEditPage';
 
+vi.mock('@thunder/components', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/components')>();
+  return {
+    ...actual,
+    CopyableId: vi.fn(({value}: {value: string}) => (
+      <span
+        data-testid="copyable-id"
+        role="button"
+        tabIndex={0}
+        onClick={() => void navigator.clipboard.writeText(value)}
+        onKeyDown={(e: {key: string}) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            void navigator.clipboard.writeText(value);
+          }
+        }}
+      >
+        {value}
+      </span>
+    )),
+  };
+});
+
 const mockNavigate = vi.fn();
 vi.mock('react-router', async () => {
   const actual = await vi.importActual<typeof import('react-router')>('react-router');

@@ -28,8 +28,8 @@ vi.mock('../../../../api/useGetOrganizationUnitUsers', () => ({
 }));
 
 // Mock useDataGridLocaleText hook
-vi.mock('../../../../../../hooks/useDataGridLocaleText', () => ({
-  default: () => ({}),
+vi.mock('@thunder/hooks', () => ({
+  useDataGridLocaleText: () => ({}),
 }));
 
 // Mock translations

@@ -45,8 +45,8 @@ vi.mock('../../components/edit-role/assignments-settings/EditAssignmentsSettings
   default: () => <div data-testid="edit-assignments-settings">Assignments Settings</div>,
 }));
 
-vi.mock('../../../../components/CopyableId', () => ({
-  default: ({value}: {value: string}) => <span data-testid="copyable-id">{value}</span>,
+vi.mock('@thunder/components', () => ({
+  CopyableId: ({value}: {value: string}) => <span data-testid="copyable-id">{value}</span>,
 }));
 
 vi.mock('react-router', async () => {
