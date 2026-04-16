@@ -62,7 +62,7 @@ type UserSchemaServiceInterface interface {
 		ctx context.Context,
 		userType string,
 		userAttributes json.RawMessage,
-		identifyUser func(map[string]interface{}) (*string, error),
+		exists func(map[string]interface{}) (bool, error),
 	) (bool, *serviceerror.ServiceError)
 	GetCredentialAttributes(
 		ctx context.Context, userType string,
@@ -538,7 +538,7 @@ func (us *userSchemaService) ValidateUserUniqueness(
 	ctx context.Context,
 	userType string,
 	userAttributes json.RawMessage,
-	identifyUser func(map[string]interface{}) (*string, error),
+	exists func(map[string]interface{}) (bool, error),
 ) (bool, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
 
@@ -559,7 +559,7 @@ func (us *userSchemaService) ValidateUserUniqueness(
 		return false, logAndReturnServerError(logger, "Failed to unmarshal user attributes", err)
 	}
 
-	isValid, err := compiledSchema.ValidateUniqueness(userAttrs, identifyUser, logger)
+	isValid, err := compiledSchema.ValidateUniqueness(userAttrs, exists, logger)
 	if err != nil {
 		return false, logAndReturnServerError(logger, "Failed during uniqueness validation", err)
 	}

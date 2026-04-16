@@ -32,7 +32,9 @@ type defaultEntityProvider struct {
 }
 
 // newDefaultEntityProvider creates a new default entity provider.
-func newDefaultEntityProvider(entitySvc entity.EntityServiceInterface) EntityProviderInterface {
+func newDefaultEntityProvider(
+	entitySvc entity.EntityServiceInterface,
+) EntityProviderInterface {
 	return &defaultEntityProvider{
 		entitySvc: entitySvc,
 	}
@@ -45,12 +47,27 @@ func (p *defaultEntityProvider) IdentifyEntity(
 	ctx := security.WithRuntimeContext(context.Background())
 	entityID, err := p.entitySvc.IdentifyEntity(ctx, filters)
 	if err != nil {
-		if errors.Is(err, entity.ErrEntityNotFound) {
-			return nil, NewEntityProviderError(ErrorCodeEntityNotFound, "Entity not found", err.Error())
-		}
-		return nil, NewEntityProviderError(ErrorCodeSystemError, "System error", err.Error())
+		return nil, mapEntityError(err)
 	}
 	return entityID, nil
+}
+
+// SearchEntities searches for all entities matching the given filters.
+// OUHandle is not resolved here — callers that need it (e.g. disambiguation flows)
+// resolve it on demand via the OU service.
+func (p *defaultEntityProvider) SearchEntities(
+	filters map[string]interface{},
+) ([]*Entity, *EntityProviderError) {
+	ctx := security.WithRuntimeContext(context.Background())
+	entities, err := p.entitySvc.SearchEntities(ctx, filters)
+	if err != nil {
+		return nil, mapEntityError(err)
+	}
+	result := make([]*Entity, 0, len(entities))
+	for i := range entities {
+		result = append(result, toProviderEntity(&entities[i]))
+	}
+	return result, nil
 }
 
 // GetEntity retrieves an entity by ID.
@@ -60,10 +77,7 @@ func (p *defaultEntityProvider) GetEntity(
 	ctx := security.WithRuntimeContext(context.Background())
 	result, err := p.entitySvc.GetEntity(ctx, entityID)
 	if err != nil {
-		if errors.Is(err, entity.ErrEntityNotFound) {
-			return nil, NewEntityProviderError(ErrorCodeEntityNotFound, "Entity not found", err.Error())
-		}
-		return nil, NewEntityProviderError(ErrorCodeSystemError, "System error", err.Error())
+		return nil, mapEntityError(err)
 	}
 	return toProviderEntity(result), nil
 }
@@ -80,10 +94,7 @@ func (p *defaultEntityProvider) CreateEntity(
 	svcEntity := toServiceEntity(e)
 	result, err := p.entitySvc.CreateEntity(ctx, svcEntity, systemCredentials)
 	if err != nil {
-		if errors.Is(err, entity.ErrEntityNotFound) {
-			return nil, NewEntityProviderError(ErrorCodeEntityNotFound, "Entity not found", err.Error())
-		}
-		return nil, NewEntityProviderError(ErrorCodeSystemError, "System error", err.Error())
+		return nil, mapEntityError(err)
 	}
 	return toProviderEntity(result), nil
 }
@@ -100,10 +111,7 @@ func (p *defaultEntityProvider) UpdateEntity(
 	svcEntity := toServiceEntity(e)
 	result, err := p.entitySvc.UpdateEntity(ctx, entityID, svcEntity)
 	if err != nil {
-		if errors.Is(err, entity.ErrEntityNotFound) {
-			return nil, NewEntityProviderError(ErrorCodeEntityNotFound, "Entity not found", err.Error())
-		}
-		return nil, NewEntityProviderError(ErrorCodeSystemError, "System error", err.Error())
+		return nil, mapEntityError(err)
 	}
 	return toProviderEntity(result), nil
 }
@@ -118,7 +126,31 @@ func (p *defaultEntityProvider) DeleteEntity(
 		if errors.Is(err, entity.ErrEntityNotFound) {
 			return nil
 		}
-		return NewEntityProviderError(ErrorCodeSystemError, "System error", err.Error())
+		return mapEntityError(err)
+	}
+	return nil
+}
+
+// UpdateCredentials updates schema-defined credentials for an entity.
+func (p *defaultEntityProvider) UpdateCredentials(
+	entityID string, credentials json.RawMessage,
+) *EntityProviderError {
+	ctx := security.WithRuntimeContext(context.Background())
+	err := p.entitySvc.UpdateCredentials(ctx, entityID, credentials)
+	if err != nil {
+		return mapEntityError(err)
+	}
+	return nil
+}
+
+// UpdateAttributes updates schema-defined attributes for an entity.
+func (p *defaultEntityProvider) UpdateAttributes(
+	entityID string, attributes json.RawMessage,
+) *EntityProviderError {
+	ctx := security.WithRuntimeContext(context.Background())
+	err := p.entitySvc.UpdateAttributes(ctx, entityID, attributes)
+	if err != nil {
+		return mapEntityError(err)
 	}
 	return nil
 }
@@ -130,10 +162,7 @@ func (p *defaultEntityProvider) UpdateSystemAttributes(
 	ctx := security.WithRuntimeContext(context.Background())
 	err := p.entitySvc.UpdateSystemAttributes(ctx, entityID, attributes)
 	if err != nil {
-		if errors.Is(err, entity.ErrEntityNotFound) {
-			return NewEntityProviderError(ErrorCodeEntityNotFound, "Entity not found", err.Error())
-		}
-		return NewEntityProviderError(ErrorCodeSystemError, "System error", err.Error())
+		return mapEntityError(err)
 	}
 	return nil
 }
@@ -146,44 +175,9 @@ func (p *defaultEntityProvider) UpdateSystemCredentials(
 	ctx := security.WithRuntimeContext(context.Background())
 	err := p.entitySvc.UpdateSystemCredentials(ctx, entityID, credentials)
 	if err != nil {
-		if errors.Is(err, entity.ErrEntityNotFound) {
-			return NewEntityProviderError(ErrorCodeEntityNotFound, "Entity not found", err.Error())
-		}
-		return NewEntityProviderError(ErrorCodeSystemError, "System error", err.Error())
+		return mapEntityError(err)
 	}
 	return nil
-}
-
-// GetEntityGroups retrieves the groups an entity belongs to with pagination.
-func (p *defaultEntityProvider) GetEntityGroups(
-	entityID string, limit, offset int,
-) (*EntityGroupListResponse, *EntityProviderError) {
-	ctx := security.WithRuntimeContext(context.Background())
-	count, err := p.entitySvc.GetGroupCountForEntity(ctx, entityID)
-	if err != nil {
-		return nil, NewEntityProviderError(ErrorCodeSystemError, "System error", err.Error())
-	}
-
-	groups, err := p.entitySvc.GetEntityGroups(ctx, entityID, limit, offset)
-	if err != nil {
-		return nil, NewEntityProviderError(ErrorCodeSystemError, "System error", err.Error())
-	}
-
-	providerGroups := make([]EntityGroup, len(groups))
-	for i, g := range groups {
-		providerGroups[i] = EntityGroup{
-			ID:   g.ID,
-			Name: g.Name,
-			OUID: g.OUID,
-		}
-	}
-
-	return &EntityGroupListResponse{
-		TotalResults: count,
-		StartIndex:   offset,
-		Count:        len(providerGroups),
-		Groups:       providerGroups,
-	}, nil
 }
 
 // GetTransitiveEntityGroups retrieves all groups an entity belongs to, including inherited groups.
@@ -193,7 +187,7 @@ func (p *defaultEntityProvider) GetTransitiveEntityGroups(
 	ctx := security.WithRuntimeContext(context.Background())
 	groups, err := p.entitySvc.GetTransitiveEntityGroups(ctx, entityID)
 	if err != nil {
-		return nil, NewEntityProviderError(ErrorCodeSystemError, "System error", err.Error())
+		return nil, mapEntityError(err)
 	}
 
 	result := make([]EntityGroup, len(groups))
@@ -214,7 +208,7 @@ func (p *defaultEntityProvider) ValidateEntityIDs(
 	ctx := security.WithRuntimeContext(context.Background())
 	invalidIDs, err := p.entitySvc.ValidateEntityIDs(ctx, entityIDs)
 	if err != nil {
-		return nil, NewEntityProviderError(ErrorCodeSystemError, "System error", err.Error())
+		return nil, mapEntityError(err)
 	}
 	return invalidIDs, nil
 }
@@ -226,7 +220,7 @@ func (p *defaultEntityProvider) GetEntitiesByIDs(
 	ctx := security.WithRuntimeContext(context.Background())
 	entities, err := p.entitySvc.GetEntitiesByIDs(ctx, entityIDs)
 	if err != nil {
-		return nil, NewEntityProviderError(ErrorCodeSystemError, "System error", err.Error())
+		return nil, mapEntityError(err)
 	}
 
 	result := make([]Entity, len(entities))
@@ -242,14 +236,14 @@ func toProviderEntity(e *entity.Entity) *Entity {
 		return nil
 	}
 	return &Entity{
-		ID:                 e.ID,
-		Category:           EntityCategory(e.Category.String()),
-		Type:               e.Type,
-		State:              EntityState(e.State.String()),
-		OrganizationUnitID: e.OrganizationUnitID,
-		Attributes:         e.Attributes,
-		SystemAttributes:   e.SystemAttributes,
-		IsReadOnly:         e.IsReadOnly,
+		ID:               e.ID,
+		Category:         EntityCategory(e.Category.String()),
+		Type:             e.Type,
+		State:            EntityState(e.State.String()),
+		OUID:             e.OUID,
+		OUHandle:         e.OUHandle,
+		Attributes:       e.Attributes,
+		SystemAttributes: e.SystemAttributes,
 	}
 }
 
@@ -259,13 +253,33 @@ func toServiceEntity(e *Entity) *entity.Entity {
 		return nil
 	}
 	return &entity.Entity{
-		ID:                 e.ID,
-		Category:           entity.EntityCategory(e.Category.String()),
-		Type:               e.Type,
-		State:              entity.EntityState(e.State.String()),
-		OrganizationUnitID: e.OrganizationUnitID,
-		Attributes:         e.Attributes,
-		SystemAttributes:   e.SystemAttributes,
-		IsReadOnly:         e.IsReadOnly,
+		ID:               e.ID,
+		Category:         entity.EntityCategory(e.Category.String()),
+		Type:             e.Type,
+		State:            entity.EntityState(e.State.String()),
+		OUID:             e.OUID,
+		Attributes:       e.Attributes,
+		SystemAttributes: e.SystemAttributes,
+	}
+}
+
+// mapEntityError converts an entity service error into an EntityProviderError,
+// preserving the underlying error code semantics where possible.
+func mapEntityError(err error) *EntityProviderError {
+	switch {
+	case errors.Is(err, entity.ErrEntityNotFound):
+		return NewEntityProviderError(ErrorCodeEntityNotFound, "Entity not found", err.Error())
+	case errors.Is(err, entity.ErrAmbiguousEntity):
+		return NewEntityProviderError(ErrorCodeAmbiguousEntity, "Ambiguous entity", err.Error())
+	case errors.Is(err, entity.ErrAttributeConflict):
+		return NewEntityProviderError(ErrorCodeAttributeConflict, "Attribute conflict", err.Error())
+	case errors.Is(err, entity.ErrSchemaValidationFailed):
+		return NewEntityProviderError(ErrorCodeSchemaValidationFailed, "Schema validation failed", err.Error())
+	case errors.Is(err, entity.ErrInvalidCredential):
+		return NewEntityProviderError(ErrorCodeInvalidRequestFormat, "Invalid credential", err.Error())
+	case errors.Is(err, entity.ErrBadAttributesInRequest):
+		return NewEntityProviderError(ErrorCodeInvalidRequestFormat, "Invalid request", err.Error())
+	default:
+		return NewEntityProviderError(ErrorCodeSystemError, "System error", err.Error())
 	}
 }

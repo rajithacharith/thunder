@@ -39,24 +39,22 @@ func Initialize(
 	ouService oupkg.OrganizationUnitServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 	authzService sysauthz.SystemAuthorizationServiceInterface,
-) (UserServiceInterface, oupkg.OUUserResolver, declarativeresource.ResourceExporter, error) {
+) (oupkg.OUUserResolver, declarativeresource.ResourceExporter, error) {
 	// Step 1: Create service with entity service
 	userService := newUserService(authzService, entityService, ouService, userSchemaService)
 
 	// Step 2: Load user-specific indexed attributes into the entity store.
 	if err := entityService.LoadIndexedAttributes(getUserIndexedAttributes()); err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	// Step 3: Load declarative resources if user store mode requires it.
 	storeMode := getUserStoreMode()
 	if storeMode == serverconst.StoreModeDeclarative || storeMode == serverconst.StoreModeComposite {
 		if err := entityService.LoadDeclarativeResources(makeUserDeclarativeConfig()); err != nil {
-			return nil, nil, nil, err
+			return nil, nil, err
 		}
 	}
-
-	setUserService(userService) // Set the provider for backward compatibility
 
 	userHandler := newUserHandler(userService)
 	registerRoutes(mux, userHandler)
@@ -65,8 +63,8 @@ func Initialize(
 	ouUserResolver := newOUUserResolver(entityService, userSchemaService)
 
 	// Create and return exporter
-	exporter := newUserExporter(userService)
-	return userService, ouUserResolver, exporter, nil
+	exporter := newUserExporter(userService, entityService)
+	return ouUserResolver, exporter, nil
 }
 
 // getUserStoreMode determines the store mode for users from config.

@@ -24,7 +24,9 @@ import (
 )
 
 // InitializeEntityProvider initializes the entity provider.
-func InitializeEntityProvider(entitySvc entity.EntityServiceInterface) EntityProviderInterface {
+func InitializeEntityProvider(
+	entitySvc entity.EntityServiceInterface,
+) EntityProviderInterface {
 	entityProviderConfig := config.GetThunderRuntime().Config.EntityProvider
 	switch entityProviderConfig.Type {
 	case "disabled":
@@ -35,7 +37,9 @@ func InitializeEntityProvider(entitySvc entity.EntityServiceInterface) EntityPro
 }
 
 // initializeDefaultEntityProvider initializes the default entity provider.
-func initializeDefaultEntityProvider(entitySvc entity.EntityServiceInterface) EntityProviderInterface {
+func initializeDefaultEntityProvider(
+	entitySvc entity.EntityServiceInterface,
+) EntityProviderInterface {
 	return newDefaultEntityProvider(entitySvc)
 }
 
