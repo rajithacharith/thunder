@@ -63,30 +63,40 @@ thunder-component:
     # Paths are relative to the Thunder working directory inside the container.
     storageSize: "1Gi"  # PVC size for SQLite database files
     config:
-      path: "repository/database/configdb.db"
+      sqlite:
+        path: "repository/database/configdb.db"
     runtime:
-      path: "repository/database/runtimedb.db"
+      sqlite:
+        path: "repository/database/runtimedb.db"
     user:
-      path: "repository/database/userdb.db"
+      sqlite:
+        path: "repository/database/userdb.db"
 
     # ── PostgreSQL (used when type: postgres) — uncomment and fill in ─────────
-    # host: <DB_HOST>          # Shared hostname for all three databases
-    # port: 5432               # Rendered as an integer in the ConfigMap — do not quote
     # config:
-    #   database: thunderdb
-    #   username: <DB_USERNAME>
-    #   password: <DB_PASSWORD>
-    #   sslmode: disable       # Use verify-full in production
+    #   postgres:
+    #     hostname: <DB_HOST>
+    #     port: 5432              # Rendered as an integer in the ConfigMap — do not quote
+    #     name: configdb
+    #     username: <DB_USERNAME>
+    #     password: <DB_PASSWORD>
+    #     sslmode: disable        # Use verify-full in production
     # runtime:
-    #   database: thunderdb
-    #   username: <DB_USERNAME>
-    #   password: <DB_PASSWORD>
-    #   sslmode: disable
+    #   postgres:
+    #     hostname: <DB_HOST>
+    #     port: 5432
+    #     name: runtimedb
+    #     username: <DB_USERNAME>
+    #     password: <DB_PASSWORD>
+    #     sslmode: disable
     # user:
-    #   database: thunderdb
-    #   username: <DB_USERNAME>
-    #   password: <DB_PASSWORD>
-    #   sslmode: disable
+    #   postgres:
+    #     hostname: <DB_HOST>
+    #     port: 5432
+    #     name: userdb
+    #     username: <DB_USERNAME>
+    #     password: <DB_PASSWORD>
+    #     sslmode: disable
 
   # ── Application config ───────────────────────────────────────────────────────
   jwt:
