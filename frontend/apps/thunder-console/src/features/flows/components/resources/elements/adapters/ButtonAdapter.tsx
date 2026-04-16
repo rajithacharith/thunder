@@ -143,10 +143,10 @@ function ButtonAdapter({resource, elementIndex = undefined}: ButtonAdapterPropsI
   const startIcon = useMemo(() => {
     // Check resource.startIcon first (new format), then resource.image for backwards compatibility,
     // then config.image, then variant default
-    if (buttonElement?.startIcon) {
+    if (buttonElement?.startIcon && typeof buttonElement.startIcon === 'string') {
       return <img src={resolveStaticResourcePath(buttonElement.startIcon)} height={20} alt="" />;
     }
-    if (buttonElement?.image) {
+    if (buttonElement?.image && typeof buttonElement.image === 'string') {
       return <img src={resolveStaticResourcePath(buttonElement.image)} height={20} alt="" />;
     }
     if (buttonConfig?.image) {
@@ -159,7 +159,7 @@ function ButtonAdapter({resource, elementIndex = undefined}: ButtonAdapterPropsI
   }, [buttonElement?.startIcon, buttonElement?.image, buttonConfig?.image, image]);
 
   const endIcon = useMemo(() => {
-    if (buttonElement?.endIcon) {
+    if (buttonElement?.endIcon && typeof buttonElement.endIcon === 'string') {
       return <img src={resolveStaticResourcePath(buttonElement.endIcon)} height={20} alt="" />;
     }
     return undefined;
