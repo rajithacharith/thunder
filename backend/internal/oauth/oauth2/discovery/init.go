@@ -21,12 +21,13 @@ package discovery
 import (
 	"net/http"
 
+	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize initializes the discovery service and registers its routes
-func Initialize(mux *http.ServeMux) DiscoveryServiceInterface {
-	discoveryService := newDiscoveryService()
+func Initialize(mux *http.ServeMux, pkiService pki.PKIServiceInterface) DiscoveryServiceInterface {
+	discoveryService := newDiscoveryService(pkiService)
 	discoveryHandler := newDiscoveryHandler(discoveryService)
 	registerRoutes(mux, discoveryHandler)
 	return discoveryService

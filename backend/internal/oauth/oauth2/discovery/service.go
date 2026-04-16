@@ -24,6 +24,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/pkce"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 )
 
 // DiscoveryServiceInterface defines the interface for discovery services
@@ -34,13 +35,14 @@ type DiscoveryServiceInterface interface {
 
 // discoveryService implements DiscoveryServiceInterface
 type discoveryService struct {
-	baseURL string
+	baseURL    string
+	pkiService pki.PKIServiceInterface
 }
 
-// NewDiscoveryService creates a new discovery service instance
-func newDiscoveryService() DiscoveryServiceInterface {
+// newDiscoveryService creates a new discovery service instance
+func newDiscoveryService(pkiService pki.PKIServiceInterface) DiscoveryServiceInterface {
 	runtime := config.GetThunderRuntime()
-	ds := &discoveryService{}
+	ds := &discoveryService{pkiService: pkiService}
 	ds.baseURL = config.GetServerURL(&runtime.Config.Server)
 	return ds
 }
@@ -72,7 +74,7 @@ func (ds *discoveryService) GetOIDCMetadata(ctx context.Context) *OIDCProviderMe
 	return &OIDCProviderMetadata{
 		OAuth2AuthorizationServerMetadata: *oauth2Meta,
 		SubjectTypesSupported:             ds.getSupportedSubjectTypes(),
-		IDTokenSigningAlgValuesSupported:  ds.getSupportedIDTokenSigningAlgorithms(),
+		IDTokenSigningAlgValuesSupported:  ds.pkiService.GetSupportedSigningAlgorithms(),
 		ClaimsSupported:                   ds.getSupportedClaims(),
 		ClaimsParameterSupported:          true,
 	}
@@ -132,10 +134,6 @@ func (ds *discoveryService) getSupportedCodeChallengeMethods() []string {
 
 func (ds *discoveryService) getSupportedSubjectTypes() []string {
 	return constants.GetSupportedSubjectTypes()
-}
-
-func (ds *discoveryService) getSupportedIDTokenSigningAlgorithms() []string {
-	return constants.GetSupportedIDTokenSigningAlgorithms()
 }
 
 func (ds *discoveryService) getSupportedClaims() []string {
