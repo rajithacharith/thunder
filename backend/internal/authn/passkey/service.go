@@ -72,14 +72,11 @@ type passkeyService struct {
 func newPasskeyService(
 	entitySvc entity.EntityServiceInterface, sessionStore sessionStoreInterface,
 ) PasskeyServiceInterface {
-	service := &passkeyService{
+	return &passkeyService{
 		entityService: entitySvc,
 		sessionStore:  sessionStore,
 		logger:        log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
 	}
-	common.RegisterAuthenticator(service.getMetadata())
-
-	return service
 }
 
 // StartRegistration initiates passkey credential registration for a user.
@@ -531,14 +528,6 @@ func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyA
 		log.String("entityID", log.MaskString(userID)))
 
 	return authResponse, nil
-}
-
-// getMetadata returns the metadata for passkey authenticator.
-func (w *passkeyService) getMetadata() common.AuthenticatorMeta {
-	return common.AuthenticatorMeta{
-		Name:    common.AuthenticatorPasskey,
-		Factors: []common.AuthenticationFactor{common.FactorPossession, common.FactorInherence},
-	}
 }
 
 // getEntity retrieves an entity by ID, mapping entity-layer errors to passkey service errors.

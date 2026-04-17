@@ -24,8 +24,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/asgardeo/thunder/internal/authn/assert"
+	"github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/consent"
-	"github.com/asgardeo/thunder/internal/authn/credentials"
 	"github.com/asgardeo/thunder/internal/authn/github"
 	"github.com/asgardeo/thunder/internal/authn/google"
 	"github.com/asgardeo/thunder/internal/authn/oauth"
@@ -33,26 +33,21 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/otp"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
 	"github.com/asgardeo/thunder/internal/authn/reactsdk"
-	"github.com/asgardeo/thunder/internal/authnprovider"
+	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	consentmgt "github.com/asgardeo/thunder/internal/consent"
-	"github.com/asgardeo/thunder/internal/entity"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/idp"
-	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // AuthServiceRegistry holds references to all authentication services.
 type AuthServiceRegistry struct {
-	CredentialsAuthnService credentials.CredentialsAuthnServiceInterface
-	OTPAuthnService         otp.OTPAuthnServiceInterface
 	OAuthAuthnService       oauth.OAuthAuthnServiceInterface
 	OIDCAuthnService        oidc.OIDCAuthnServiceInterface
 	GithubOAuthAuthnService github.GithubOAuthAuthnServiceInterface
 	GoogleOIDCAuthnService  google.GoogleOIDCAuthnServiceInterface
 	AuthAssertGenerator     assert.AuthAssertGeneratorInterface
-	PasskeyService          passkey.PasskeyServiceInterface
 	ConsentEnforcerService  consent.ConsentEnforcerServiceInterface
 }
 
@@ -62,25 +57,25 @@ func Initialize(
 	mcpServer *mcp.Server,
 	idpSvc idp.IDPServiceInterface,
 	jwtSvc jwt.JWTServiceInterface,
-	entitySvc entity.EntityServiceInterface,
 	entityProvider entityprovider.EntityProviderInterface,
-	otpSvc notification.OTPServiceInterface,
-	authnProvider authnprovider.AuthnProviderInterface,
+	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	consentSvc consentmgt.ConsentServiceInterface,
+	passkeySvc passkey.PasskeyServiceInterface,
+	otpSvc otp.OTPAuthnServiceInterface,
 ) (AuthenticationServiceInterface, *AuthServiceRegistry) {
 	authServiceRegistry := createAuthServiceRegistry(idpSvc, jwtSvc,
-		entitySvc, entityProvider, otpSvc, authnProvider, consentSvc)
+		entityProvider, consentSvc)
 	authnService := newAuthenticationService(
 		idpSvc,
 		jwtSvc,
 		authServiceRegistry.AuthAssertGenerator,
-		authServiceRegistry.CredentialsAuthnService,
-		authServiceRegistry.OTPAuthnService,
+		authnProvider,
+		otpSvc,
 		authServiceRegistry.OAuthAuthnService,
 		authServiceRegistry.OIDCAuthnService,
 		authServiceRegistry.GoogleOIDCAuthnService,
 		authServiceRegistry.GithubOAuthAuthnService,
-		authServiceRegistry.PasskeyService,
+		passkeySvc,
 	)
 
 	authnHandler := newAuthenticationHandler(authnService)
@@ -98,20 +93,26 @@ func Initialize(
 func createAuthServiceRegistry(
 	idpSvc idp.IDPServiceInterface,
 	jwtSvc jwt.JWTServiceInterface,
-	entitySvc entity.EntityServiceInterface,
 	entityProvider entityprovider.EntityProviderInterface,
-	otpSvc notification.OTPServiceInterface,
-	authnProvider authnprovider.AuthnProviderInterface,
 	consentSvc consentmgt.ConsentServiceInterface,
 ) *AuthServiceRegistry {
+	common.RegisterAuthenticator(common.AuthenticatorMeta{
+		Name:    common.AuthenticatorCredentials,
+		Factors: []common.AuthenticationFactor{common.FactorKnowledge},
+	})
+	common.RegisterAuthenticator(common.AuthenticatorMeta{
+		Name:    common.AuthenticatorSMSOTP,
+		Factors: []common.AuthenticationFactor{common.FactorPossession},
+	})
+	common.RegisterAuthenticator(common.AuthenticatorMeta{
+		Name:    common.AuthenticatorPasskey,
+		Factors: []common.AuthenticationFactor{common.FactorPossession, common.FactorInherence},
+	})
 	return &AuthServiceRegistry{
-		CredentialsAuthnService: credentials.Initialize(authnProvider),
-		OTPAuthnService:         otp.Initialize(otpSvc, entityProvider),
 		OAuthAuthnService:       oauth.Initialize(idpSvc, entityProvider),
 		OIDCAuthnService:        oidc.Initialize(idpSvc, entityProvider, jwtSvc),
 		GithubOAuthAuthnService: github.Initialize(idpSvc, entityProvider),
 		GoogleOIDCAuthnService:  google.Initialize(idpSvc, entityProvider, jwtSvc),
-		PasskeyService:          passkey.Initialize(entitySvc),
 		AuthAssertGenerator:     assert.Initialize(),
 		ConsentEnforcerService:  consent.Initialize(consentSvc, jwtSvc),
 	}

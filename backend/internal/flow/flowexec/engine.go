@@ -98,6 +98,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 			ForwardedData:     ctx.ForwardedData,
 			Application:       ctx.Application,
 			AuthenticatedUser: ctx.AuthenticatedUser,
+			AuthUser:          ctx.AuthUser,
 			ExecutionHistory:  ctx.ExecutionHistory,
 		}
 		if nodeCtx.NodeInputs == nil {
@@ -378,6 +379,11 @@ func (fe *flowEngine) updateContextWithNodeResponse(engineCtx *EngineContext, no
 	// It replaces any existing forwarded data rather than merging
 	if len(nodeResp.ForwardedData) > 0 {
 		engineCtx.ForwardedData = nodeResp.ForwardedData
+	}
+
+	// Write back AuthUser from the node response
+	if nodeResp.AuthUser.IsAuthenticated() {
+		engineCtx.AuthUser = nodeResp.AuthUser
 	}
 }
 

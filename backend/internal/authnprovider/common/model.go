@@ -16,7 +16,8 @@
  * under the License.
  */
 
-package authnprovider
+// Package common provides common data models and error types shared across authnprovider sub-packages.
+package common
 
 // AuthnMetadata contains metadata for authentication.
 type AuthnMetadata struct {
@@ -35,8 +36,9 @@ type AuthnResult struct {
 	UserID   string `json:"userId"`
 	UserType string `json:"userType"`
 
-	Token               string               `json:"token"`
-	AvailableAttributes *AvailableAttributes `json:"availableAttributes"`
+	Token                     string              `json:"token"`
+	IsAttributeValuesIncluded bool                `json:"isAttributeValuesIncluded"`
+	AttributesResponse        *AttributesResponse `json:"attributesResponse,omitempty"`
 }
 
 // GetAttributesMetadata contains metadata for fetching attributes.
@@ -58,17 +60,6 @@ type GetAttributesResult struct {
 	UserType string `json:"userType"`
 
 	AttributesResponse *AttributesResponse `json:"attributeResponse,omitempty"`
-}
-
-// AvailableAttributes contains the available attributes and verifications for a user.
-type AvailableAttributes struct {
-	Attributes    map[string]*AttributeMetadataResponse `json:"attributes,omitempty"`
-	Verifications map[string]*VerificationResponse      `json:"verifications,omitempty"`
-}
-
-// AttributeMetadataResponse contains metadata for an attribute.
-type AttributeMetadataResponse struct {
-	AssuranceMetadataResponse *AssuranceMetadataResponse `json:"assuranceMetadataResponse,omitempty"`
 }
 
 // AssuranceMetadataResponse contains assurance metadata for an attribute.

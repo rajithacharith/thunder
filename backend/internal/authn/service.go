@@ -29,14 +29,13 @@ import (
 
 	"github.com/asgardeo/thunder/internal/authn/assert"
 	"github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/authn/credentials"
 	"github.com/asgardeo/thunder/internal/authn/github"
 	"github.com/asgardeo/thunder/internal/authn/google"
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/authn/otp"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
-	"github.com/asgardeo/thunder/internal/authnprovider"
+	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/idp"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
@@ -87,7 +86,7 @@ type authenticationService struct {
 	idpService             idp.IDPServiceInterface
 	jwtService             jwt.JWTServiceInterface
 	authAssertionGenerator assert.AuthAssertGeneratorInterface
-	credentialsService     credentials.CredentialsAuthnServiceInterface
+	authnProvider          authnprovidermgr.AuthnProviderManagerInterface
 	otpService             otp.OTPAuthnServiceInterface
 	oauthService           oauth.OAuthAuthnServiceInterface
 	oidcService            oidc.OIDCAuthnServiceInterface
@@ -101,7 +100,7 @@ func newAuthenticationService(
 	idpSvc idp.IDPServiceInterface,
 	jwtSvc jwt.JWTServiceInterface,
 	authAssertGen assert.AuthAssertGeneratorInterface,
-	credentialsAuthnSvc credentials.CredentialsAuthnServiceInterface,
+	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	otpAuthnSvc otp.OTPAuthnServiceInterface,
 	oauthAuthnSvc oauth.OAuthAuthnServiceInterface,
 	oidcAuthnSvc oidc.OIDCAuthnServiceInterface,
@@ -113,7 +112,7 @@ func newAuthenticationService(
 		idpService:             idpSvc,
 		jwtService:             jwtSvc,
 		authAssertionGenerator: authAssertGen,
-		credentialsService:     credentialsAuthnSvc,
+		authnProvider:          authnProvider,
 		otpService:             otpAuthnSvc,
 		oauthService:           oauthAuthnSvc,
 		oidcService:            oidcAuthnSvc,
@@ -130,48 +129,37 @@ func (as *authenticationService) AuthenticateWithCredentials(ctx context.Context
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Authenticating with credentials")
 
-	authenticateResp, svcErr := as.credentialsService.Authenticate(ctx, identifiers, credentials, nil)
-	if svcErr != nil {
-		return nil, svcErr
+	if len(identifiers) == 0 || len(credentials) == 0 {
+		return nil, &ErrorEmptyAttributesOrCredentials
 	}
 
-	if authenticateResp == nil {
+	newAuthUser, basicResult, svcErr := as.authnProvider.AuthenticateUser(ctx, identifiers, credentials, nil, nil,
+		authnprovidermgr.AuthUser{})
+	if svcErr != nil {
+		return nil, as.mapCredentialsAuthnError(svcErr, logger)
+	}
+
+	if basicResult == nil {
 		logger.Error("Credentials authenticate response is nil")
 		return nil, &serviceerror.InternalServerError
 	}
 
-	var requestedAttributes *authnprovider.RequestedAttributes
-	if authenticateResp.AvailableAttributes != nil {
-		requestedAttributes = &authnprovider.RequestedAttributes{
-			Attributes:    make(map[string]*authnprovider.AttributeMetadataRequest),
-			Verifications: nil,
-		}
-		for attrName := range authenticateResp.AvailableAttributes.Attributes {
-			requestedAttributes.Attributes[attrName] = nil
-		}
-	}
-
-	authUser, svcErr := as.credentialsService.GetAttributes(ctx, authenticateResp.Token, requestedAttributes, nil)
+	_, attrsResponse, svcErr := as.authnProvider.GetUserAttributes(ctx, nil, nil, newAuthUser)
 	if svcErr != nil {
-		return nil, svcErr
-	}
-
-	if authUser == nil {
-		logger.Error("Credentials get attributes response is nil")
-		return nil, &serviceerror.InternalServerError
+		return nil, as.mapCredentialsGetAttributesError(svcErr, logger)
 	}
 
 	authResponse := &common.AuthenticationResponse{
-		ID:   authUser.UserID,
-		Type: authUser.UserType,
-		OUID: authUser.OUID,
+		ID:   basicResult.UserID,
+		Type: basicResult.UserType,
+		OUID: basicResult.OUID,
 	}
 
 	// Generate assertion if not skipped
 	if !skipAssertion {
 		authUserAttributes := make(map[string]interface{})
-		if authUser.AttributesResponse != nil && authUser.AttributesResponse.Attributes != nil {
-			for attrName, attrValue := range authUser.AttributesResponse.Attributes {
+		if attrsResponse != nil && attrsResponse.Attributes != nil {
+			for attrName, attrValue := range attrsResponse.Attributes {
 				authUserAttributes[attrName] = attrValue.Value
 			}
 		}
@@ -182,9 +170,9 @@ func (as *authenticationService) AuthenticateWithCredentials(ctx context.Context
 		}
 
 		authenticatedUser := &entityprovider.Entity{
-			ID:         authUser.UserID,
-			Type:       authUser.UserType,
-			OUID:       authUser.OUID,
+			ID:         basicResult.UserID,
+			Type:       basicResult.UserType,
+			OUID:       basicResult.OUID,
 			Attributes: authUserAttributesJSON,
 		}
 		svcErr = as.validateAndAppendAuthAssertion(authResponse, authenticatedUser, common.AuthenticatorCredentials,
@@ -209,20 +197,39 @@ func (as *authenticationService) VerifyOTP(ctx context.Context, sessionToken str
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Verifying OTP for authentication")
 
-	user, svcErr := as.otpService.VerifyOTP(ctx, sessionToken, otpCode)
+	credentials := map[string]interface{}{
+		"otp": map[string]interface{}{
+			"sessionToken": sessionToken,
+			"otp":          otpCode,
+		},
+	}
+	_, basicResult, svcErr := as.authnProvider.AuthenticateUser(
+		ctx, nil, credentials, nil, nil, authnprovidermgr.AuthUser{})
 	if svcErr != nil {
+		if svcErr.Type == serviceerror.ServerErrorType {
+			return nil, &serviceerror.InternalServerError
+		}
+		if svcErr.Code == authnprovidermgr.ErrorAuthenticationFailed.Code {
+			return nil, &ErrorOTPAuthenticationFailed
+		}
 		return nil, svcErr
 	}
 
 	authResponse := &common.AuthenticationResponse{
-		ID:   user.ID,
-		Type: user.Type,
-		OUID: user.OUID,
+		ID:   basicResult.UserID,
+		Type: basicResult.UserType,
+		OUID: basicResult.OUID,
 	}
 
 	// Generate assertion if not skipped
 	if !skipAssertion {
-		svcErr = as.validateAndAppendAuthAssertion(authResponse, user, common.AuthenticatorSMSOTP,
+		userForAssertion := &entityprovider.Entity{
+			ID:         basicResult.UserID,
+			Type:       basicResult.UserType,
+			OUID:       basicResult.OUID,
+			Attributes: nil, // Attributes not needed for assertion generation in OTP flow
+		}
+		svcErr = as.validateAndAppendAuthAssertion(authResponse, userForAssertion, common.AuthenticatorSMSOTP,
 			existingAssertion, logger)
 		if svcErr != nil {
 			return nil, svcErr
@@ -604,6 +611,36 @@ func (as *authenticationService) finishGithubAuthentication(ctx context.Context,
 	return sub, user, nil
 }
 
+// mapCredentialsAuthnError maps provider manager errors to credentials-specific service errors.
+func (as *authenticationService) mapCredentialsAuthnError(svcErr *serviceerror.ServiceError,
+	logger *log.Logger) *serviceerror.ServiceError {
+	switch svcErr.Code {
+	case authnprovidermgr.ErrorAuthenticationFailed.Code:
+		return &ErrorInvalidCredentials
+	case authnprovidermgr.ErrorUserNotFound.Code:
+		return &common.ErrorUserNotFound
+	case authnprovidermgr.ErrorInvalidRequest.Code:
+		return &ErrorEmptyAttributesOrCredentials
+	default:
+		logger.Error("Error occurred while authenticating with credentials",
+			log.String("errorCode", svcErr.Code), log.String("errorDescription", svcErr.ErrorDescription))
+		return &serviceerror.InternalServerError
+	}
+}
+
+// mapCredentialsGetAttributesError maps provider manager errors from GetUserAttributes to credentials-specific errors.
+func (as *authenticationService) mapCredentialsGetAttributesError(svcErr *serviceerror.ServiceError,
+	logger *log.Logger) *serviceerror.ServiceError {
+	switch svcErr.Code {
+	case authnprovidermgr.ErrorGetAttributesClientError.Code:
+		return &ErrorInvalidToken
+	default:
+		logger.Error("Error occurred while getting attributes for credentials authentication",
+			log.String("errorCode", svcErr.Code), log.String("errorDescription", svcErr.ErrorDescription))
+		return &serviceerror.InternalServerError
+	}
+}
+
 // handleIDPServiceError handles errors from IDP service.
 func (as *authenticationService) handleIDPServiceError(idpID string, svcErr *serviceerror.ServiceError,
 	logger *log.Logger) *serviceerror.ServiceError {
@@ -725,9 +762,9 @@ func (as *authenticationService) StartPasskeyRegistration(
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Starting Passkey registration")
 
-	var passkeyAuthSelection *passkey.AuthenticatorSelection
+	var passkeyAuthSel *passkey.AuthenticatorSelection
 	if authSelection != nil {
-		passkeyAuthSelection = &passkey.AuthenticatorSelection{
+		passkeyAuthSel = &passkey.AuthenticatorSelection{
 			AuthenticatorAttachment: authSelection.AuthenticatorAttachment,
 			RequireResidentKey:      authSelection.RequireResidentKey,
 			ResidentKey:             authSelection.ResidentKey,
@@ -739,7 +776,7 @@ func (as *authenticationService) StartPasskeyRegistration(
 		UserID:                 userID,
 		RelyingPartyID:         relyingPartyID,
 		RelyingPartyName:       relyingPartyName,
-		AuthenticatorSelection: passkeyAuthSelection,
+		AuthenticatorSelection: passkeyAuthSel,
 		Attestation:            attestation,
 	}
 
@@ -786,8 +823,7 @@ func (as *authenticationService) FinishPasskeyAuthentication(ctx context.Context
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Finishing Passkey authentication")
 
-	// Get authentication response from passkey service
-	req := &passkey.PasskeyAuthenticationFinishRequest{
+	passkeyCredential := &passkey.PasskeyAuthenticationFinishRequest{
 		CredentialID:      credentialID,
 		CredentialType:    credentialType,
 		ClientDataJSON:    response.ClientDataJSON,
@@ -796,18 +832,32 @@ func (as *authenticationService) FinishPasskeyAuthentication(ctx context.Context
 		UserHandle:        response.UserHandle,
 		SessionToken:      sessionToken,
 	}
-	authResponse, svcErr := as.passkeyService.FinishAuthentication(ctx, req)
+	credentials := map[string]interface{}{"passkey": passkeyCredential}
+	_, basicResult, svcErr := as.authnProvider.AuthenticateUser(
+		ctx, nil, credentials, nil, nil, authnprovidermgr.AuthUser{})
 	if svcErr != nil {
+		if svcErr.Type == serviceerror.ServerErrorType {
+			return nil, &serviceerror.InternalServerError
+		}
+		if svcErr.Code == authnprovidermgr.ErrorAuthenticationFailed.Code {
+			return nil, &ErrorPasskeyAuthenticationFailed
+		}
 		return nil, svcErr
+	}
+
+	authResponse := &common.AuthenticationResponse{
+		ID:   basicResult.UserID,
+		Type: basicResult.UserType,
+		OUID: basicResult.OUID,
 	}
 
 	// Generate assertion if not skipped
 	if !skipAssertion {
 		// Create entity object from authResponse for assertion generation
 		userForAssertion := &entityprovider.Entity{
-			ID:   authResponse.ID,
-			Type: authResponse.Type,
-			OUID: authResponse.OUID,
+			ID:   basicResult.UserID,
+			Type: basicResult.UserType,
+			OUID: basicResult.OUID,
 		}
 
 		svcErr = as.validateAndAppendAuthAssertion(authResponse, userForAssertion, common.AuthenticatorPasskey,

@@ -25,8 +25,8 @@ import (
 	"errors"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	authncreds "github.com/asgardeo/thunder/internal/authn/credentials"
-	"github.com/asgardeo/thunder/internal/authnprovider"
+	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
+	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
@@ -39,7 +39,7 @@ type basicAuthExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
 	entityProvider entityprovider.EntityProviderInterface
-	credsAuthSvc   authncreds.CredentialsAuthnServiceInterface
+	authnProvider  authnprovidermgr.AuthnProviderManagerInterface
 	logger         *log.Logger
 }
 
@@ -50,7 +50,7 @@ var _ identifyingExecutorInterface = (*basicAuthExecutor)(nil)
 func newBasicAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
 	entityProvider entityprovider.EntityProviderInterface,
-	credsAuthSvc authncreds.CredentialsAuthnServiceInterface,
+	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 ) *basicAuthExecutor {
 	defaultInputs := []common.Input{
 		{
@@ -77,7 +77,7 @@ func newBasicAuthExecutor(
 		ExecutorInterface:            base,
 		identifyingExecutorInterface: identifyExec,
 		entityProvider:               entityProvider,
-		credsAuthSvc:                 credsAuthSvc,
+		authnProvider:                authnProvider,
 		logger:                       logger,
 	}
 }
@@ -213,16 +213,17 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 
 	// For authentication flows, call Authenticate directly.
 	metadata := b.buildAuthnMetadata(ctx)
-	authnResult, svcErr := b.credsAuthSvc.Authenticate(ctx.Context, userIdentifiers, userCredentials, metadata)
+	newAuthUser, authnResult, svcErr := b.authnProvider.AuthenticateUser(ctx.Context, userIdentifiers,
+		userCredentials, nil, metadata, ctx.AuthUser)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecUserInputRequired
 			execResp.Inputs = b.GetRequiredInputs(ctx)
 
 			switch svcErr.Code {
-			case authncm.ErrorUserNotFound.Code:
+			case authnprovidermgr.ErrorUserNotFound.Code:
 				execResp.FailureReason = failureReasonUserNotFound
-			case authncreds.ErrorInvalidCredentials.Code:
+			case authnprovidermgr.ErrorAuthenticationFailed.Code:
 				execResp.FailureReason = failureReasonInvalidCredentials
 			default:
 				execResp.FailureReason = "Failed to authenticate user: " + svcErr.ErrorDescription
@@ -235,6 +236,7 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 			log.String("errorCode", svcErr.Code), log.String("errorDescription", svcErr.ErrorDescription))
 		return nil, errors.New("failed to authenticate user")
 	}
+	execResp.AuthUser = newAuthUser
 
 	// Try to retrieve the user and get the attributes
 	userAttributes := map[string]interface{}{}
@@ -256,19 +258,17 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	}
 
 	return &authncm.AuthenticatedUser{
-		IsAuthenticated:     true,
-		UserID:              authnResult.UserID,
-		OUID:                authnResult.OUID,
-		UserType:            authnResult.UserType,
-		Attributes:          userAttributes,
-		AvailableAttributes: authnResult.AvailableAttributes,
-		Token:               authnResult.Token,
+		IsAuthenticated: true,
+		UserID:          authnResult.UserID,
+		OUID:            authnResult.OUID,
+		UserType:        authnResult.UserType,
+		Attributes:      userAttributes,
 	}, nil
 }
 
 // buildAuthnMetadata constructs the metadata for authentication.
-func (b *basicAuthExecutor) buildAuthnMetadata(ctx *core.NodeContext) *authnprovider.AuthnMetadata {
-	metadata := &authnprovider.AuthnMetadata{
+func (b *basicAuthExecutor) buildAuthnMetadata(ctx *core.NodeContext) *authnprovidercm.AuthnMetadata {
+	metadata := &authnprovidercm.AuthnMetadata{
 		AppMetadata: make(map[string]interface{}),
 	}
 

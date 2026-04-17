@@ -22,7 +22,7 @@ import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/application"
-	"github.com/asgardeo/thunder/internal/authnprovider"
+	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/clientauth"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
@@ -34,7 +34,7 @@ func Initialize(
 	mux *http.ServeMux,
 	jwtService jwt.JWTServiceInterface,
 	appService application.ApplicationServiceInterface,
-	authnProvider authnprovider.AuthnProviderInterface,
+	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
 ) TokenIntrospectionServiceInterface {
 	introspectionService := newTokenIntrospectionService(jwtService)
@@ -48,7 +48,7 @@ func registerRoutes(
 	mux *http.ServeMux,
 	introspectHandler *tokenIntrospectionHandler,
 	appService application.ApplicationServiceInterface,
-	authnProvider authnprovider.AuthnProviderInterface,
+	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	jwtService jwt.JWTServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
 ) {

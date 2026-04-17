@@ -28,7 +28,8 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/authnprovider"
+	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
+	managerpkg "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/system/config"
 
@@ -491,20 +492,20 @@ func (s *StoreTestSuite) TestBuildFlowContextFromResultRow_WithByteToken() {
 
 func (s *StoreTestSuite) TestStoreFlowContext_WithAvailableAttributes() {
 	// Setup
-	testAvailableAttributes := &authnprovider.AvailableAttributes{
-		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+	testAvailableAttributes := &authnprovidercm.AttributesResponse{
+		Attributes: map[string]*authnprovidercm.AttributeResponse{
 			"email": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: true,
 				},
 			},
 			"phone": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: false,
 				},
 			},
 		},
-		Verifications: map[string]*authnprovider.VerificationResponse{},
+		Verifications: map[string]*authnprovidercm.VerificationResponse{},
 	}
 	mockDBProvider := providermock.NewDBProviderInterfaceMock(s.T())
 	mockDBClient := providermock.NewDBClientInterfaceMock(s.T())
@@ -550,20 +551,20 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithAvailableAttributes() {
 
 func (s *StoreTestSuite) TestUpdateFlowContext_WithAvailableAttributes() {
 	// Setup
-	testAvailableAttributes := &authnprovider.AvailableAttributes{
-		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+	testAvailableAttributes := &authnprovidercm.AttributesResponse{
+		Attributes: map[string]*authnprovidercm.AttributeResponse{
 			"email": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: true,
 				},
 			},
 			"address": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: false,
 				},
 			},
 		},
-		Verifications: map[string]*authnprovider.VerificationResponse{},
+		Verifications: map[string]*authnprovidercm.VerificationResponse{},
 	}
 	mockDBProvider := providermock.NewDBProviderInterfaceMock(s.T())
 	mockDBClient := providermock.NewDBClientInterfaceMock(s.T())
@@ -608,20 +609,20 @@ func (s *StoreTestSuite) TestUpdateFlowContext_WithAvailableAttributes() {
 
 func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
 	// Setup
-	testAvailableAttributes := &authnprovider.AvailableAttributes{
-		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+	testAvailableAttributes := &authnprovidercm.AttributesResponse{
+		Attributes: map[string]*authnprovidercm.AttributeResponse{
 			"email": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: true,
 				},
 			},
 			"phone": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: false,
 				},
 			},
 		},
-		Verifications: map[string]*authnprovider.VerificationResponse{},
+		Verifications: map[string]*authnprovidercm.VerificationResponse{},
 	}
 	mockGraph := coremock.NewGraphInterfaceMock(s.T())
 	mockGraph.On("GetID").Return("test-graph-id")
@@ -698,4 +699,42 @@ func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
 
 	mockDBProvider.AssertExpectations(s.T())
 	mockDBClient.AssertExpectations(s.T())
+}
+
+func (s *StoreTestSuite) TestEngineContextRoundTrip_WithAuthUser() {
+	var authUser managerpkg.AuthUser
+	err := json.Unmarshal([]byte(`{"userId":"au-user-1","userType":"person","ouId":"ou-1","providersAuthData":{}}`),
+		&authUser)
+	s.NoError(err)
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetID").Return("test-graph-id")
+	mockGraph.On("GetType").Return(common.FlowTypeAuthentication)
+
+	originalCtx := EngineContext{
+		ExecutionID: "authuser-flow-id",
+		AppID:       "authuser-app-id",
+		FlowType:    common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "au-user-1",
+			Attributes:      map[string]interface{}{},
+		},
+		AuthUser:         authUser,
+		UserInputs:       map[string]string{},
+		RuntimeData:      map[string]string{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Graph:            mockGraph,
+	}
+
+	dbModel, err := FromEngineContext(originalCtx)
+	s.NoError(err)
+	s.NotNil(dbModel)
+
+	// Token encryption is handled inside AuthUser.MarshalJSON; verify the JSON blob is present
+	content := s.getContextContent(dbModel)
+	s.NotNil(content.AuthUser)
+
+	restoredCtx, err := dbModel.ToEngineContext(mockGraph)
+	s.NoError(err)
+	s.True(restoredCtx.AuthUser.IsAuthenticated())
 }

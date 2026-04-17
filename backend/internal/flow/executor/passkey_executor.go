@@ -25,6 +25,7 @@ import (
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
+	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
@@ -71,6 +72,7 @@ type passkeyAuthExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
 	passkeyService passkey.PasskeyServiceInterface
+	authnProvider  authnprovidermgr.AuthnProviderManagerInterface
 	entityProvider entityprovider.EntityProviderInterface
 	logger         *log.Logger
 }
@@ -82,6 +84,7 @@ var _ identifyingExecutorInterface = (*passkeyAuthExecutor)(nil)
 func newPasskeyAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
 	passkeyService passkey.PasskeyServiceInterface,
+	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	entityProvider entityprovider.EntityProviderInterface,
 ) *passkeyAuthExecutor {
 	defaultInputs := []common.Input{
@@ -132,6 +135,7 @@ func newPasskeyAuthExecutor(
 		ExecutorInterface:            base,
 		identifyingExecutorInterface: identifyExec,
 		passkeyService:               passkeyService,
+		authnProvider:                authnProvider,
 		entityProvider:               entityProvider,
 		logger:                       logger,
 	}
@@ -290,8 +294,7 @@ func (p *passkeyAuthExecutor) validatePasskey(ctx *core.NodeContext, execResp *c
 		return fmt.Errorf("no session token found for passkey authentication")
 	}
 
-	// Call passkey service to finish authentication
-	finishReq := &passkey.PasskeyAuthenticationFinishRequest{
+	passkeyCredential := &passkey.PasskeyAuthenticationFinishRequest{
 		CredentialID:      credentialID,
 		CredentialType:    "public-key",
 		ClientDataJSON:    clientDataJSON,
@@ -300,7 +303,9 @@ func (p *passkeyAuthExecutor) validatePasskey(ctx *core.NodeContext, execResp *c
 		UserHandle:        userHandle,
 		SessionToken:      sessionToken,
 	}
-	authResp, svcErr := p.passkeyService.FinishAuthentication(ctx.Context, finishReq)
+	credentials := map[string]interface{}{"passkey": passkeyCredential}
+	newAuthUser, authResp, svcErr := p.authnProvider.AuthenticateUser(
+		ctx.Context, nil, credentials, nil, nil, ctx.AuthUser)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug("Passkey verification failed", log.String("userID", userID),
@@ -314,10 +319,11 @@ func (p *passkeyAuthExecutor) validatePasskey(ctx *core.NodeContext, execResp *c
 			log.String("error", svcErr.ErrorDescription))
 		return fmt.Errorf("failed to verify passkey: %s", svcErr.ErrorDescription)
 	}
+	execResp.AuthUser = newAuthUser
 
 	// Store authenticated user ID in runtime data
-	if authResp.ID != "" {
-		execResp.RuntimeData[userAttributeUserID] = authResp.ID
+	if authResp.UserID != "" {
+		execResp.RuntimeData[userAttributeUserID] = authResp.UserID
 	}
 
 	// Clear session token after successful verification
@@ -572,12 +578,9 @@ func (p *passkeyAuthExecutor) getAuthenticatorSelection(ctx *core.NodeContext) *
 	if len(ctx.NodeProperties) == 0 {
 		return nil
 	}
-
-	// Check if authenticatorSelection is configured
 	if authSel, ok := ctx.NodeProperties["authenticatorSelection"]; ok {
 		if authSelMap, valid := authSel.(map[string]interface{}); valid {
 			selection := &passkey.AuthenticatorSelection{}
-
 			if authAttachment, ok := authSelMap["authenticatorAttachment"].(string); ok {
 				selection.AuthenticatorAttachment = authAttachment
 			}
@@ -590,11 +593,9 @@ func (p *passkeyAuthExecutor) getAuthenticatorSelection(ctx *core.NodeContext) *
 			if userVerification, ok := authSelMap["userVerification"].(string); ok {
 				selection.UserVerification = userVerification
 			}
-
 			return selection
 		}
 	}
-
 	return nil
 }
 

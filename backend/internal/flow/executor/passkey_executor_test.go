@@ -28,11 +28,13 @@ import (
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
+	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/authn/passkeymock"
+	"github.com/asgardeo/thunder/tests/mocks/authnprovider/managermock"
 	"github.com/asgardeo/thunder/tests/mocks/entityprovidermock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 )
@@ -49,7 +51,8 @@ const (
 
 type PasskeyAuthExecutorTestSuite struct {
 	suite.Suite
-	mockPasskeyService *passkeymock.PasskeyServiceInterfaceMock
+	mockPasskeyService *passkeymock.WebAuthnAuthnServiceInterfaceMock
+	mockAuthnProvider  *managermock.AuthnProviderManagerInterfaceMock
 	mockFlowFactory    *coremock.FlowFactoryInterfaceMock
 	mockEntityProvider *entityprovidermock.EntityProviderInterfaceMock
 	executor           *passkeyAuthExecutor
@@ -60,7 +63,8 @@ func TestPasskeyAuthExecutorSuite(t *testing.T) {
 }
 
 func (suite *PasskeyAuthExecutorTestSuite) SetupTest() {
-	suite.mockPasskeyService = passkeymock.NewPasskeyServiceInterfaceMock(suite.T())
+	suite.mockPasskeyService = passkeymock.NewWebAuthnAuthnServiceInterfaceMock(suite.T())
+	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 	suite.mockEntityProvider = entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
 
@@ -75,7 +79,7 @@ func (suite *PasskeyAuthExecutorTestSuite) SetupTest() {
 		mock.Anything, mock.Anything).Return(mockExec)
 
 	suite.executor = newPasskeyAuthExecutor(suite.mockFlowFactory,
-		suite.mockPasskeyService, suite.mockEntityProvider)
+		suite.mockPasskeyService, suite.mockAuthnProvider, suite.mockEntityProvider)
 }
 
 func createMockPasskeyAuthExecutor(t *testing.T) core.ExecutorInterface {
@@ -269,10 +273,11 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_Success() {
 		inputUserHandle:        "user-handle",
 	}
 
-	authResp := &authncm.AuthenticationResponse{
-		ID: testPasskeyUserID,
+	authResp := &authnprovidermgr.AuthnBasicResult{
+		UserID: testPasskeyUserID,
 	}
-	suite.mockPasskeyService.On("FinishAuthentication", mock.Anything, mock.Anything).Return(authResp, nil)
+	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything).Return(authnprovidermgr.AuthUser{}, authResp, nil)
 
 	attrs := map[string]interface{}{"email": "test@example.com"}
 	attrsJSON, _ := json.Marshal(attrs)
@@ -334,8 +339,9 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_InvalidPasskey_Clie
 		inputSignature:         "invalid-signature",
 	}
 
-	suite.mockPasskeyService.On("FinishAuthentication", mock.Anything, mock.Anything).Return(
-		nil, &serviceerror.ServiceError{
+	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything).Return(
+		authnprovidermgr.AuthUser{}, (*authnprovidermgr.AuthnBasicResult)(nil), &serviceerror.ServiceError{
 			Type:             serviceerror.ClientErrorType,
 			ErrorDescription: "Invalid signature",
 		})
@@ -359,8 +365,9 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_ServiceError_Server
 		inputSignature:         "signature",
 	}
 
-	suite.mockPasskeyService.On("FinishAuthentication", mock.Anything, mock.Anything).Return(
-		nil, &serviceerror.ServiceError{
+	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything).Return(
+		authnprovidermgr.AuthUser{}, (*authnprovidermgr.AuthnBasicResult)(nil), &serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
 			ErrorDescription: "Database error",
 		})
@@ -912,10 +919,11 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_GetAuthenticatedUse
 		inputUserHandle:        "user-handle",
 	}
 
-	authResp := &authncm.AuthenticationResponse{
-		ID: testPasskeyUserID,
+	authResp := &authnprovidermgr.AuthnBasicResult{
+		UserID: testPasskeyUserID,
 	}
-	suite.mockPasskeyService.On("FinishAuthentication", mock.Anything, mock.Anything).Return(authResp, nil)
+	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything).Return(authnprovidermgr.AuthUser{}, authResp, nil)
 
 	// Simulate user not found when getting authenticated user details
 	suite.mockEntityProvider.On("GetEntity", testPasskeyUserID).Return(

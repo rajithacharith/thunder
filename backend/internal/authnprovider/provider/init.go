@@ -16,11 +16,13 @@
  * under the License.
  */
 
-package authnprovider
+package provider
 
 import (
 	"time"
 
+	"github.com/asgardeo/thunder/internal/authn/otp"
+	"github.com/asgardeo/thunder/internal/authn/passkey"
 	"github.com/asgardeo/thunder/internal/entity"
 	"github.com/asgardeo/thunder/internal/system/config"
 	systemhttp "github.com/asgardeo/thunder/internal/system/http"
@@ -28,19 +30,27 @@ import (
 )
 
 // InitializeAuthnProvider initializes the authentication provider.
-func InitializeAuthnProvider(entitySvc entity.EntityServiceInterface) AuthnProviderInterface {
+func InitializeAuthnProvider(
+	entitySvc entity.EntityServiceInterface,
+	passkeySvc passkey.PasskeyServiceInterface,
+	otpSvc otp.OTPAuthnServiceInterface,
+) AuthnProviderInterface {
 	authnProviderConfig := config.GetThunderRuntime().Config.AuthnProvider
 	switch authnProviderConfig.Type {
 	case "rest":
 		return initializeRestAuthnProvider()
 	default:
-		return initializeDefaultAuthnProvider(entitySvc)
+		return initializeDefaultAuthnProvider(entitySvc, passkeySvc, otpSvc)
 	}
 }
 
 // initializeDefaultAuthnProvider initializes the default authentication provider.
-func initializeDefaultAuthnProvider(entitySvc entity.EntityServiceInterface) AuthnProviderInterface {
-	return newDefaultAuthnProvider(entitySvc)
+func initializeDefaultAuthnProvider(
+	entitySvc entity.EntityServiceInterface,
+	passkeySvc passkey.PasskeyServiceInterface,
+	otpSvc otp.OTPAuthnServiceInterface,
+) AuthnProviderInterface {
+	return newDefaultAuthnProvider(entitySvc, passkeySvc, otpSvc)
 }
 
 // initializeRestAuthnProvider initializes the REST authentication provider.

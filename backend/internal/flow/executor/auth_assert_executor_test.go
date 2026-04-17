@@ -31,7 +31,8 @@ import (
 	"github.com/asgardeo/thunder/internal/attributecache"
 	authnassert "github.com/asgardeo/thunder/internal/authn/assert"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/authnprovider"
+	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
+	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
@@ -41,7 +42,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/attributecachemock"
 	"github.com/asgardeo/thunder/tests/mocks/authn/assertmock"
-	"github.com/asgardeo/thunder/tests/mocks/authn/credentialsmock"
+	"github.com/asgardeo/thunder/tests/mocks/authnprovider/managermock"
 	"github.com/asgardeo/thunder/tests/mocks/entityprovidermock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
@@ -61,7 +62,7 @@ type AuthAssertExecutorTestSuite struct {
 	mockJWTService        *jwtmock.JWTServiceInterfaceMock
 	mockOUService         *oumock.OrganizationUnitServiceInterfaceMock
 	mockAssertGenerator   *assertmock.AuthAssertGeneratorInterfaceMock
-	mockCredsAuthSvc      *credentialsmock.CredentialsAuthnServiceInterfaceMock
+	mockAuthnProvider     *managermock.AuthnProviderManagerInterfaceMock
 	mockEntityProvider    *entityprovidermock.EntityProviderInterfaceMock
 	mockFlowFactory       *coremock.FlowFactoryInterfaceMock
 	mockAttributeCacheSvc *attributecachemock.AttributeCacheServiceInterfaceMock
@@ -80,7 +81,7 @@ func (suite *AuthAssertExecutorTestSuite) SetupTest() {
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	suite.mockAssertGenerator = assertmock.NewAuthAssertGeneratorInterfaceMock(suite.T())
-	suite.mockCredsAuthSvc = credentialsmock.NewCredentialsAuthnServiceInterfaceMock(suite.T())
+	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
 	suite.mockEntityProvider = entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 	suite.mockAttributeCacheSvc = attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
@@ -91,7 +92,7 @@ func (suite *AuthAssertExecutorTestSuite) SetupTest() {
 		[]common.Input{}, []common.Input{}).Return(mockExec)
 
 	suite.executor = newAuthAssertExecutor(suite.mockFlowFactory, suite.mockJWTService,
-		suite.mockOUService, suite.mockAssertGenerator, suite.mockCredsAuthSvc, suite.mockEntityProvider,
+		suite.mockOUService, suite.mockAssertGenerator, suite.mockAuthnProvider, suite.mockEntityProvider,
 		suite.mockAttributeCacheSvc, suite.mockRoleService)
 }
 
@@ -118,7 +119,7 @@ func initializeTestRuntime() error {
 func (suite *AuthAssertExecutorTestSuite) TestNewAuthAssertExecutor() {
 	assert.NotNil(suite.T(), suite.executor)
 	assert.NotNil(suite.T(), suite.executor.jwtService)
-	assert.NotNil(suite.T(), suite.executor.credsAuthSvc)
+	assert.NotNil(suite.T(), suite.executor.authnProvider)
 	assert.NotNil(suite.T(), suite.executor.entityProvider)
 	assert.NotNil(suite.T(), suite.executor.authAssertGenerator)
 }
@@ -458,60 +459,62 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributesFromUserProvider_
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributesFromAuthnProvider_Success() {
-	reqAttrs := &authnprovider.RequestedAttributes{
-		Attributes: map[string]*authnprovider.AttributeMetadataRequest{
+	reqAttrs := &authnprovidercm.RequestedAttributes{
+		Attributes: map[string]*authnprovidercm.AttributeMetadataRequest{
 			"email": nil,
 			"name":  nil,
 		},
 		Verifications: nil,
 	}
 
-	res := authnprovider.GetAttributesResult{
-		AttributesResponse: &authnprovider.AttributesResponse{
-			Attributes: map[string]*authnprovider.AttributeResponse{
-				"email": {Value: testEmail},
-				"name":  {Value: "Test User"},
-			},
+	res := &authnprovidercm.AttributesResponse{
+		Attributes: map[string]*authnprovidercm.AttributeResponse{
+			"email": {Value: testEmail},
+			"name":  {Value: "Test User"},
 		},
 	}
 
-	suite.mockCredsAuthSvc.On("GetAttributes", mock.Anything, "token-123", reqAttrs,
-		(*authnprovider.GetAttributesMetadata)(nil)).Return(&res, nil)
+	authUser := authnprovidermgr.AuthUser{}
+	suite.mockAuthnProvider.
+		On("GetUserAttributes", mock.Anything, reqAttrs, (*authnprovidercm.GetAttributesMetadata)(nil), authUser).
+		Return(authnprovidermgr.AuthUser{}, res, nil)
 
 	resultAttrs, err := suite.executor.getUserAttributesFromAuthnProvider(context.Background(),
-		"token-123", []string{"email", "name"}, nil)
+		[]string{"email", "name"}, nil, authUser)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resultAttrs)
 	assert.Equal(suite.T(), testEmail, resultAttrs["email"])
 	assert.Equal(suite.T(), "Test User", resultAttrs["name"])
-	suite.mockCredsAuthSvc.AssertExpectations(suite.T())
+	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributesFromAuthnProvider_ServiceError() {
-	reqAttrs := &authnprovider.RequestedAttributes{
-		Attributes: map[string]*authnprovider.AttributeMetadataRequest{
+	reqAttrs := &authnprovidercm.RequestedAttributes{
+		Attributes: map[string]*authnprovidercm.AttributeMetadataRequest{
 			"email": nil,
 			"name":  nil,
 		},
 		Verifications: nil,
 	}
 
-	suite.mockCredsAuthSvc.On("GetAttributes", mock.Anything, "token-123", reqAttrs,
-		(*authnprovider.GetAttributesMetadata)(nil)).Return(nil, &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "ATTRIBUTES_FETCH_FAILED",
-		Error:            "failed to fetch attributes",
-		ErrorDescription: "something went wrong",
-	})
+	authUser := authnprovidermgr.AuthUser{}
+	suite.mockAuthnProvider.
+		On("GetUserAttributes", mock.Anything, reqAttrs, (*authnprovidercm.GetAttributesMetadata)(nil), authUser).
+		Return(authnprovidermgr.AuthUser{}, (*authnprovidercm.AttributesResponse)(nil), &serviceerror.ServiceError{
+			Type:             serviceerror.ServerErrorType,
+			Code:             "ATTRIBUTES_FETCH_FAILED",
+			Error:            "failed to fetch attributes",
+			ErrorDescription: "something went wrong",
+		})
 
 	resultAttrs, err := suite.executor.getUserAttributesFromAuthnProvider(context.Background(),
-		"token-123", []string{"email", "name"}, nil)
+		[]string{"email", "name"}, nil, authUser)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), resultAttrs)
 	assert.Contains(suite.T(), err.Error(), "something went wrong while fetching user attributes")
-	suite.mockCredsAuthSvc.AssertExpectations(suite.T())
+	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
@@ -932,179 +935,6 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_GetUserGroupsFa
 	assert.Nil(suite.T(), resp)
 	assert.Contains(suite.T(), err.Error(), "something went wrong while fetching user groups")
 	suite.mockEntityProvider.AssertExpectations(suite.T())
-}
-
-func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithAllFields() {
-	ctx := &core.NodeContext{
-		Application: appmodel.Application{
-			Metadata: map[string]interface{}{
-				"key1": "value1",
-				"key2": "value2",
-			},
-			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
-				{
-					Type: appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
-						ClientID: "client-123",
-					},
-				},
-				{
-					Type: appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
-						ClientID: "client-456",
-					},
-				},
-			},
-		},
-		RuntimeData: map[string]string{
-			"required_locales": "en_US",
-		},
-	}
-
-	metadata := suite.executor.buildGetAttributesMetadata(ctx)
-
-	assert.NotNil(suite.T(), metadata)
-	assert.NotNil(suite.T(), metadata.AppMetadata)
-	assert.Equal(suite.T(), "value1", metadata.AppMetadata["key1"])
-	assert.Equal(suite.T(), "value2", metadata.AppMetadata["key2"])
-
-	clientIDs, ok := metadata.AppMetadata["client_ids"].([]string)
-	assert.True(suite.T(), ok)
-	assert.Len(suite.T(), clientIDs, 2)
-	assert.Contains(suite.T(), clientIDs, "client-123")
-	assert.Contains(suite.T(), clientIDs, "client-456")
-
-	assert.Equal(suite.T(), "en_US", metadata.Locale)
-}
-
-func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithNoMetadata() {
-	ctx := &core.NodeContext{
-		Application: appmodel.Application{},
-		RuntimeData: map[string]string{},
-	}
-
-	metadata := suite.executor.buildGetAttributesMetadata(ctx)
-
-	assert.NotNil(suite.T(), metadata)
-	assert.NotNil(suite.T(), metadata.AppMetadata)
-	assert.Empty(suite.T(), metadata.AppMetadata)
-	assert.Empty(suite.T(), metadata.Locale)
-}
-
-func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithOnlyAppMetadata() {
-	ctx := &core.NodeContext{
-		Application: appmodel.Application{
-			Metadata: map[string]interface{}{
-				"custom_field": "custom_value",
-			},
-		},
-		RuntimeData: map[string]string{},
-	}
-
-	metadata := suite.executor.buildGetAttributesMetadata(ctx)
-
-	assert.NotNil(suite.T(), metadata)
-	assert.Equal(suite.T(), "custom_value", metadata.AppMetadata["custom_field"])
-	assert.Empty(suite.T(), metadata.Locale)
-	_, hasClientIDs := metadata.AppMetadata["client_ids"]
-	assert.False(suite.T(), hasClientIDs)
-}
-
-func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithOnlyClientIDs() {
-	ctx := &core.NodeContext{
-		Application: appmodel.Application{
-			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
-				{
-					Type: appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
-						ClientID: "single-client",
-					},
-				},
-			},
-		},
-		RuntimeData: map[string]string{},
-	}
-
-	metadata := suite.executor.buildGetAttributesMetadata(ctx)
-
-	assert.NotNil(suite.T(), metadata)
-	clientIDs, ok := metadata.AppMetadata["client_ids"].([]string)
-	assert.True(suite.T(), ok)
-	assert.Len(suite.T(), clientIDs, 1)
-	assert.Equal(suite.T(), "single-client", clientIDs[0])
-	assert.Empty(suite.T(), metadata.Locale)
-}
-
-func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithOnlyLocale() {
-	ctx := &core.NodeContext{
-		Application: appmodel.Application{},
-		RuntimeData: map[string]string{
-			"required_locales": "fr_FR",
-		},
-	}
-
-	metadata := suite.executor.buildGetAttributesMetadata(ctx)
-
-	assert.NotNil(suite.T(), metadata)
-	assert.Equal(suite.T(), "fr_FR", metadata.Locale)
-	_, hasClientIDs := metadata.AppMetadata["client_ids"]
-	assert.False(suite.T(), hasClientIDs)
-}
-
-func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithNilOAuthConfig() {
-	ctx := &core.NodeContext{
-		Application: appmodel.Application{
-			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
-				{
-					Type:           appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: nil,
-				},
-			},
-		},
-		RuntimeData: map[string]string{},
-	}
-
-	metadata := suite.executor.buildGetAttributesMetadata(ctx)
-
-	assert.NotNil(suite.T(), metadata)
-	_, hasClientIDs := metadata.AppMetadata["client_ids"]
-	assert.False(suite.T(), hasClientIDs)
-}
-
-func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithEmptyClientID() {
-	ctx := &core.NodeContext{
-		Application: appmodel.Application{
-			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
-				{
-					Type: appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
-						ClientID: "",
-					},
-				},
-			},
-		},
-		RuntimeData: map[string]string{},
-	}
-
-	metadata := suite.executor.buildGetAttributesMetadata(ctx)
-
-	assert.NotNil(suite.T(), metadata)
-	_, hasClientIDs := metadata.AppMetadata["client_ids"]
-	assert.False(suite.T(), hasClientIDs)
-}
-
-func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithEmptyLocale() {
-	ctx := &core.NodeContext{
-		Application: appmodel.Application{},
-		RuntimeData: map[string]string{
-			"required_locales": "",
-		},
-	}
-
-	metadata := suite.executor.buildGetAttributesMetadata(ctx)
-
-	assert.NotNil(suite.T(), metadata)
-	assert.Empty(suite.T(), metadata.Locale)
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_ConsentRecordedWithoutConsentedKey() {

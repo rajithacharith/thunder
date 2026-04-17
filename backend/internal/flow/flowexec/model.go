@@ -27,7 +27,8 @@ import (
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/authnprovider"
+	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
+	managerpkg "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/crypto/encrypt"
@@ -55,6 +56,7 @@ type EngineContext struct {
 	Application appmodel.Application
 
 	AuthenticatedUser authncm.AuthenticatedUser
+	AuthUser          managerpkg.AuthUser
 	Assertion         string
 	ExecutionHistory  map[string]*common.NodeExecutionRecord
 }
@@ -133,6 +135,7 @@ type flowContextContent struct {
 	UserAttributes      *string `json:"userAttributes,omitempty"`
 	Token               *string `json:"token,omitempty"`
 	AvailableAttributes *string `json:"availableAttributes,omitempty"`
+	AuthUser            *string `json:"authUser,omitempty"`
 }
 
 // GetGraphID extracts the graph ID from the context JSON.
@@ -192,9 +195,9 @@ func (f *FlowContextDB) ToEngineContext(graph core.GraphInterface) (EngineContex
 	}
 
 	// Parse available attributes
-	var availableAttributes *authnprovider.AvailableAttributes
+	var availableAttributes *authnprovidercm.AttributesResponse
 	if content.AvailableAttributes != nil && strings.TrimSpace(*content.AvailableAttributes) != "" {
-		var attrs authnprovider.AvailableAttributes
+		var attrs authnprovidercm.AttributesResponse
 		if err := json.Unmarshal([]byte(*content.AvailableAttributes), &attrs); err != nil {
 			return EngineContext{}, err
 		}
@@ -243,6 +246,14 @@ func (f *FlowContextDB) ToEngineContext(graph core.GraphInterface) (EngineContex
 		currentAction = *content.CurrentAction
 	}
 
+	// Deserialize AuthUser if present
+	var authUser managerpkg.AuthUser
+	if content.AuthUser != nil {
+		if err := json.Unmarshal([]byte(*content.AuthUser), &authUser); err != nil {
+			return EngineContext{}, err
+		}
+	}
+
 	return EngineContext{
 		ExecutionID:       f.ExecutionID,
 		TraceID:           "", // TraceID is transient and set from request context
@@ -255,6 +266,7 @@ func (f *FlowContextDB) ToEngineContext(graph core.GraphInterface) (EngineContex
 		CurrentAction:     currentAction,
 		Graph:             graph,
 		AuthenticatedUser: authenticatedUser,
+		AuthUser:          authUser,
 		ExecutionHistory:  executionHistory,
 	}, nil
 }
@@ -342,6 +354,17 @@ func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
 		availableAttributes = &availableAttrsStr
 	}
 
+	// Serialize AuthUser if present
+	var authUserStr *string
+	if ctx.AuthUser.IsAuthenticated() {
+		authUserJSON, err := json.Marshal(&ctx.AuthUser)
+		if err != nil {
+			return nil, err
+		}
+		s := string(authUserJSON)
+		authUserStr = &s
+	}
+
 	// Get graph ID
 	if ctx.Graph == nil || ctx.Graph.GetID() == "" {
 		return nil, fmt.Errorf("graph with a valid ID is required to persist engine context")
@@ -364,6 +387,7 @@ func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
 		UserAttributes:      &userAttributes,
 		Token:               encryptedToken,
 		AvailableAttributes: availableAttributes,
+		AuthUser:            authUserStr,
 	}
 
 	contextJSON, err := json.Marshal(content)

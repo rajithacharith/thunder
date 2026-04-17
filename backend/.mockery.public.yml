@@ -181,14 +181,6 @@ packages:
       pkgname: assertmock
       filename: "{{.InterfaceName}}_mock.go"
 
-  github.com/asgardeo/thunder/internal/authn/credentials:
-    config:
-      all: true
-      dir: tests/mocks/authn/credentialsmock
-      structname: '{{.InterfaceName}}Mock'
-      pkgname: credentialsmock
-      filename: "{{.InterfaceName}}_mock.go"
-
   github.com/asgardeo/thunder/internal/authn/otp:
     config:
       all: true
@@ -448,12 +440,20 @@ packages:
       pkgname: entityprovidermock
       filename: "{{.InterfaceName}}_mock.go"
 
-  github.com/asgardeo/thunder/internal/authnprovider:
+  github.com/asgardeo/thunder/internal/authnprovider/provider:
     config:
       all: true
-      dir: tests/mocks/authnprovidermock
+      dir: tests/mocks/authnprovider/providermock
       structname: '{{.InterfaceName}}Mock'
-      pkgname: authnprovidermock
+      pkgname: providermock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/authnprovider/manager:
+    config:
+      all: true
+      dir: tests/mocks/authnprovider/managermock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: managermock
       filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/system/sysauthz:
