@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {CopyableId, ResourceAvatar, SettingsCard} from '@thunder/components';
+import {ResourceAvatar, SettingsCard} from '@thunder/components';
 import {useResolveDisplayName} from '@thunder/hooks';
 import {useLogger} from '@thunder/logger/react';
 import {
@@ -35,6 +35,8 @@ import {
   IconButton,
   PageContent,
   PageTitle,
+  FormControl,
+  FormLabel,
 } from '@wso2/oxygen-ui';
 import {ArrowLeft, Save, X, Copy, Check} from '@wso2/oxygen-ui-icons-react';
 import {useState, useEffect, useMemo, useCallback, useRef, type SyntheticEvent, type ReactNode, type JSX} from 'react';
@@ -45,6 +47,7 @@ import useGetUser from '../api/useGetUser';
 import useGetUserSchema from '../api/useGetUserSchema';
 import useGetUserSchemas from '../api/useGetUserSchemas';
 import useUpdateUser from '../api/useUpdateUser';
+import QuickCopySection from '../components/edit-user/QuickCopySection';
 import UserDeleteDialog from '../components/UserDeleteDialog';
 import renderSchemaField from '../utils/renderSchemaField';
 import getInitials from '@/utils/getInitials';
@@ -262,7 +265,6 @@ export default function UserEditPage() {
           <Stack direction="row" alignItems="center" spacing={1}>
             <Chip label={user.type} size="small" sx={{px: 0.5}} />
           </Stack>
-          <CopyableId value={user.id} copyLabel={t('users:manageUser.copyUserId', 'Copy User ID')} />
         </PageTitle.SubHeader>
       </PageTitle>
 
@@ -281,6 +283,8 @@ export default function UserEditPage() {
         {/* General Tab */}
         <TabPanel value={activeTab} index={0}>
           <Stack spacing={3}>
+            <QuickCopySection user={user} copiedField={copiedField} onCopyToClipboard={handleCopyToClipboard} />
+
             {/* User Attributes */}
             <SettingsCard
               title={t('users:manageUser.sections.attributes.title', 'User Attributes')}
@@ -400,81 +404,91 @@ export default function UserEditPage() {
               )}
             >
               <Stack spacing={2}>
-                <TextField
-                  label={t('users:manageUser.sections.organizationUnit.handleLabel', 'Handle')}
-                  value={user.ouHandle ?? '-'}
-                  fullWidth
-                  size="small"
-                  slotProps={{
-                    input: {
-                      readOnly: true,
-                      endAdornment: user.ouHandle ? (
-                        <InputAdornment position="end">
-                          <Tooltip
-                            title={
-                              copiedField === 'ouHandle'
-                                ? t('common:actions.copied')
-                                : t(
-                                    'users:manageUser.sections.organizationUnit.copyHandle',
-                                    'Copy Organization Unit Handle',
-                                  )
-                            }
-                          >
-                            <IconButton
-                              aria-label={t(
-                                'users:manageUser.sections.organizationUnit.copyHandle',
-                                'Copy Organization Unit Handle',
-                              )}
-                              onClick={() => {
-                                handleCopyToClipboard(user.ouHandle!, 'ouHandle').catch(() => null);
-                              }}
-                              edge="end"
+                <FormControl fullWidth>
+                  <FormLabel htmlFor="ou-handle-input">
+                    {t('users:manageUser.sections.organizationUnit.handleLabel', 'Handle')}
+                  </FormLabel>
+                  <TextField
+                    id="ou-handle-input"
+                    value={user.ouHandle ?? '-'}
+                    fullWidth
+                    size="small"
+                    slotProps={{
+                      input: {
+                        readOnly: true,
+                        endAdornment: user.ouHandle ? (
+                          <InputAdornment position="end">
+                            <Tooltip
+                              title={
+                                copiedField === 'ouHandle'
+                                  ? t('common:actions.copied')
+                                  : t(
+                                      'users:manageUser.sections.organizationUnit.copyHandle',
+                                      'Copy Organization Unit Handle',
+                                    )
+                              }
                             >
-                              {copiedField === 'ouHandle' ? <Check size={16} /> : <Copy size={16} />}
-                            </IconButton>
-                          </Tooltip>
-                        </InputAdornment>
-                      ) : undefined,
-                    },
-                  }}
-                  sx={{'& input': {fontFamily: 'monospace', fontSize: '0.875rem'}}}
-                />
-                <TextField
-                  label={t('users:manageUser.sections.organizationUnit.idLabel', 'ID')}
-                  value={user.ouId}
-                  fullWidth
-                  size="small"
-                  slotProps={{
-                    input: {
-                      readOnly: true,
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <Tooltip
-                            title={
-                              copiedField === 'ouId'
-                                ? t('common:actions.copied')
-                                : t('users:manageUser.sections.organizationUnit.copyId', 'Copy Organization Unit ID')
-                            }
-                          >
-                            <IconButton
-                              aria-label={t(
-                                'users:manageUser.sections.organizationUnit.copyId',
-                                'Copy Organization Unit ID',
-                              )}
-                              onClick={() => {
-                                handleCopyToClipboard(user.ouId, 'ouId').catch(() => null);
-                              }}
-                              edge="end"
+                              <IconButton
+                                aria-label={t(
+                                  'users:manageUser.sections.organizationUnit.copyHandle',
+                                  'Copy Organization Unit Handle',
+                                )}
+                                onClick={() => {
+                                  handleCopyToClipboard(user.ouHandle!, 'ouHandle').catch(() => null);
+                                }}
+                                edge="end"
+                              >
+                                {copiedField === 'ouHandle' ? <Check size={16} /> : <Copy size={16} />}
+                              </IconButton>
+                            </Tooltip>
+                          </InputAdornment>
+                        ) : undefined,
+                      },
+                    }}
+                    sx={{'& input': {fontFamily: 'monospace', fontSize: '0.875rem'}}}
+                  />
+                </FormControl>
+                <FormControl fullWidth>
+                  <FormLabel htmlFor="ou-id-input">
+                    {t('users:manageUser.sections.organizationUnit.idLabel', 'ID')}
+                  </FormLabel>
+                  <TextField
+                    id="ou-id-input"
+                    value={user.ouId}
+                    fullWidth
+                    size="small"
+                    slotProps={{
+                      input: {
+                        readOnly: true,
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <Tooltip
+                              title={
+                                copiedField === 'ouId'
+                                  ? t('common:actions.copied')
+                                  : t('users:manageUser.sections.organizationUnit.copyId', 'Copy Organization Unit ID')
+                              }
                             >
-                              {copiedField === 'ouId' ? <Check size={16} /> : <Copy size={16} />}
-                            </IconButton>
-                          </Tooltip>
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                  sx={{'& input': {fontFamily: 'monospace', fontSize: '0.875rem'}}}
-                />
+                              <IconButton
+                                aria-label={t(
+                                  'users:manageUser.sections.organizationUnit.copyId',
+                                  'Copy Organization Unit ID',
+                                )}
+                                onClick={() => {
+                                  handleCopyToClipboard(user.ouId, 'ouId').catch(() => null);
+                                }}
+                                edge="end"
+                              >
+                                {copiedField === 'ouId' ? <Check size={16} /> : <Copy size={16} />}
+                              </IconButton>
+                            </Tooltip>
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                    sx={{'& input': {fontFamily: 'monospace', fontSize: '0.875rem'}}}
+                  />
+                </FormControl>
               </Stack>
             </SettingsCard>
 

@@ -16,7 +16,6 @@
  * under the License.
  */
 
-import {CopyableId} from '@thunder/components';
 import {useToast} from '@thunder/contexts';
 import {useLogger} from '@thunder/logger/react';
 import {
@@ -298,9 +297,6 @@ export default function GroupEditPage(): JSX.Element {
               </>
             )}
           </Stack>
-
-          {/* Group ID */}
-          <CopyableId value={group.id} copyLabel={t('groups:edit.general.sections.quickCopy.copyGroupId')} />
         </PageTitle.SubHeader>
       </PageTitle>
 

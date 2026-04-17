@@ -232,7 +232,7 @@ describe('ViewUserTypePage', () => {
       render(<ViewUserTypePage />);
 
       expect(screen.getByText('Employee Schema')).toBeInTheDocument();
-      expect(screen.getByText('schema-123')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('schema-123')).toBeInTheDocument();
     });
 
     it('displays General and Schema tabs', () => {
@@ -258,7 +258,7 @@ describe('ViewUserTypePage', () => {
       await user.click(editNameButton);
 
       // Should show a text field with the current name
-      const nameInput = screen.getByRole('textbox');
+      const nameInput = screen.getByRole('textbox', {name: /user type name/i});
       expect(nameInput).toHaveValue('Employee Schema');
 
       // Edit the name
@@ -775,7 +775,7 @@ describe('ViewUserTypePage', () => {
       const editNameButton = screen.getByRole('button', {name: /edit user type name/i});
       await user.click(editNameButton);
 
-      const nameInput = screen.getByRole('textbox');
+      const nameInput = screen.getByRole('textbox', {name: /user type name/i});
       await user.clear(nameInput);
       await user.type(nameInput, 'New Name{Enter}');
 
@@ -849,7 +849,7 @@ describe('ViewUserTypePage', () => {
       const editNameButton = screen.getByRole('button', {name: /edit user type name/i});
       await user.click(editNameButton);
 
-      const nameInput = screen.getByRole('textbox');
+      const nameInput = screen.getByRole('textbox', {name: /user type name/i});
       await user.clear(nameInput);
       await user.type(nameInput, 'Updated Schema{Enter}');
 
@@ -1241,7 +1241,7 @@ describe('ViewUserTypePage', () => {
       // Edit name to trigger save bar (since OU is empty, no change to OU)
       const editNameButton = screen.getByRole('button', {name: /edit user type name/i});
       await user.click(editNameButton);
-      const nameInput = screen.getByRole('textbox');
+      const nameInput = screen.getByRole('textbox', {name: /user type name/i});
       await user.clear(nameInput);
       await user.type(nameInput, 'New Name{Enter}');
 
@@ -1619,7 +1619,7 @@ describe('ViewUserTypePage', () => {
       const editNameButton = screen.getByRole('button', {name: /edit user type name/i});
       await user.click(editNameButton);
 
-      const nameInput = screen.getByRole('textbox');
+      const nameInput = screen.getByRole('textbox', {name: /user type name/i});
       await user.clear(nameInput);
       await user.type(nameInput, 'Temp Name{Escape}');
 
@@ -1640,7 +1640,7 @@ describe('ViewUserTypePage', () => {
       await user.click(editNameButton);
 
       // Verify input is shown, then blur without changing the name
-      expect(screen.getByRole('textbox')).toBeInTheDocument();
+      expect(screen.getByRole('textbox', {name: /user type name/i})).toBeInTheDocument();
       await user.tab();
 
       // No unsaved changes bar should appear

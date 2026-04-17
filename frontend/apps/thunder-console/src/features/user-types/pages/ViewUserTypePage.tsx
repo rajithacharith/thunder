@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {CopyableId, UnsavedChangesBar} from '@thunder/components';
+import {UnsavedChangesBar} from '@thunder/components';
 import {useToast} from '@thunder/contexts';
 import {useLogger} from '@thunder/logger/react';
 import {
@@ -358,6 +358,7 @@ export default function ViewUserTypePage(): JSX.Element {
                   }
                 }}
                 size="small"
+                inputProps={{'aria-label': t('userTypes:edit.nameInputAriaLabel', 'User type name')}}
               />
             ) : (
               <>
@@ -380,9 +381,6 @@ export default function ViewUserTypePage(): JSX.Element {
             )}
           </Stack>
         </PageTitle.Header>
-        <PageTitle.SubHeader>
-          <CopyableId value={userType.id} copyLabel={t('userTypes:edit.copyId', 'Copy user type ID')} />
-        </PageTitle.SubHeader>
       </PageTitle>
 
       {/* Tabs */}

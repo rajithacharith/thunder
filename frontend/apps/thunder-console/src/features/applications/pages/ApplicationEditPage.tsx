@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {CopyableId, ResourceAvatar, UnsavedChangesBar} from '@thunder/components';
+import {ResourceAvatar, UnsavedChangesBar} from '@thunder/components';
 import {useLogger} from '@thunder/logger/react';
 import {
   Box,
@@ -331,12 +331,6 @@ export default function ApplicationEditPage() {
                 </Box>
               ) : null;
             })()}
-
-          {/* Application ID */}
-          <CopyableId
-            value={application.id}
-            copyLabel={t('applications:edit.page.copyApplicationId', 'Copy Application ID')}
-          />
         </PageTitle.SubHeader>
       </PageTitle>
 

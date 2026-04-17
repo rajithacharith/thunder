@@ -17,10 +17,21 @@
  */
 
 import {SettingsCard} from '@thunder/components';
-import {Stack, TextField, Button, IconButton, Typography, InputAdornment, Tooltip} from '@wso2/oxygen-ui';
+import {
+  Stack,
+  TextField,
+  Button,
+  IconButton,
+  Typography,
+  InputAdornment,
+  Tooltip,
+  FormControl,
+  FormLabel,
+} from '@wso2/oxygen-ui';
 import {Copy, Check} from '@wso2/oxygen-ui-icons-react';
 import {useState, useCallback, useRef, useEffect, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
+import QuickCopySection from './QuickCopySection';
 import type {Role} from '../../../models/role';
 
 interface EditGeneralSettingsProps {
@@ -53,47 +64,54 @@ export default function EditGeneralSettings({role, onDeleteClick}: EditGeneralSe
 
   return (
     <Stack spacing={3}>
+      <QuickCopySection role={role} copiedField={copiedField} onCopyToClipboard={handleCopyToClipboard} />
+
       {/* Organization Unit */}
       <SettingsCard
         title={t('roles:edit.general.sections.organizationUnit.title')}
         description={t('roles:edit.general.sections.organizationUnit.description')}
       >
         <Stack spacing={2}>
-          <TextField
-            label={t('roles:edit.general.sections.organizationUnit.idLabel', 'ID')}
-            value={role.ouId}
-            fullWidth
-            size="small"
-            slotProps={{
-              input: {
-                readOnly: true,
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Tooltip
-                      title={
-                        copiedField === 'ouId'
-                          ? t('common:actions.copied')
-                          : t('roles:edit.general.sections.organizationUnit.copyId')
-                      }
-                    >
-                      <IconButton
-                        aria-label={t('roles:edit.general.sections.organizationUnit.copyId')}
-                        onClick={() => {
-                          handleCopyToClipboard(role.ouId, 'ouId').catch(() => {
-                            /* noop */
-                          });
-                        }}
-                        edge="end"
+          <FormControl fullWidth>
+            <FormLabel htmlFor="ou-id-input">
+              {t('roles:edit.general.sections.organizationUnit.idLabel', 'ID')}
+            </FormLabel>
+            <TextField
+              id="ou-id-input"
+              value={role.ouId}
+              fullWidth
+              size="small"
+              slotProps={{
+                input: {
+                  readOnly: true,
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Tooltip
+                        title={
+                          copiedField === 'ouId'
+                            ? t('common:actions.copied')
+                            : t('roles:edit.general.sections.organizationUnit.copyId')
+                        }
                       >
-                        {copiedField === 'ouId' ? <Check size={16} /> : <Copy size={16} />}
-                      </IconButton>
-                    </Tooltip>
-                  </InputAdornment>
-                ),
-              },
-            }}
-            sx={{'& input': {fontFamily: 'monospace', fontSize: '0.875rem'}}}
-          />
+                        <IconButton
+                          aria-label={t('roles:edit.general.sections.organizationUnit.copyId')}
+                          onClick={() => {
+                            handleCopyToClipboard(role.ouId, 'ouId').catch(() => {
+                              /* noop */
+                            });
+                          }}
+                          edge="end"
+                        >
+                          {copiedField === 'ouId' ? <Check size={16} /> : <Copy size={16} />}
+                        </IconButton>
+                      </Tooltip>
+                    </InputAdornment>
+                  ),
+                },
+              }}
+              sx={{'& input': {fontFamily: 'monospace', fontSize: '0.875rem'}}}
+            />
+          </FormControl>
         </Stack>
       </SettingsCard>
 

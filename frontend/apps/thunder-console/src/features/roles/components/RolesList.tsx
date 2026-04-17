@@ -18,8 +18,8 @@
 
 import {useDataGridLocaleText} from '@thunder/hooks';
 import {useLogger} from '@thunder/logger/react';
-import {Box, Avatar, IconButton, Typography, Tooltip, DataGrid, ListingTable, useTheme} from '@wso2/oxygen-ui';
-import {ShieldCheck, Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {Box, IconButton, Typography, Tooltip, DataGrid, ListingTable, useTheme} from '@wso2/oxygen-ui';
+import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
@@ -73,29 +73,6 @@ export default function RolesList(): JSX.Element {
 
   const columns: DataGrid.GridColDef<RoleSummary>[] = useMemo(
     () => [
-      {
-        field: 'avatar',
-        headerName: '',
-        width: 70,
-        sortable: false,
-        filterable: false,
-        renderCell: (): JSX.Element => (
-          <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%'}}>
-            <Avatar
-              sx={{
-                p: 0.5,
-                backgroundColor: theme.vars?.palette.grey[500],
-                width: 30,
-                height: 30,
-                fontSize: '0.875rem',
-                ...theme.applyStyles('dark', {backgroundColor: theme.vars?.palette.grey[900]}),
-              }}
-            >
-              <ShieldCheck size={14} />
-            </Avatar>
-          </Box>
-        ),
-      },
       {
         field: 'name',
         headerName: t('roles:listing.columns.name'),
