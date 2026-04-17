@@ -25,6 +25,7 @@ import QuickCopySection from './QuickCopySection';
 import type {Application} from '../../../models/application';
 import {TokenEndpointAuthMethods} from '../../../models/oauth';
 import type {OAuth2Config} from '../../../models/oauth';
+import ApplicationDeleteDialog from '../../ApplicationDeleteDialog';
 import ClientSecretSuccessDialog from '../../ClientSecretSuccessDialog';
 import RegenerateSecretDialog from '../../RegenerateSecretDialog';
 
@@ -60,6 +61,10 @@ interface EditGeneralSettingsProps {
    * @param fieldName - The name of the field being copied
    */
   onCopyToClipboard: (text: string, fieldName: string) => Promise<void>;
+  /**
+   * Callback invoked after the application is successfully deleted
+   */
+  onDeleteSuccess?: () => void;
 }
 
 /**
@@ -80,9 +85,11 @@ export default function EditGeneralSettings({
   oauth2Config = undefined,
   copiedField,
   onCopyToClipboard,
+  onDeleteSuccess = undefined,
 }: EditGeneralSettingsProps): JSX.Element {
   const [regenerateDialogOpen, setRegenerateDialogOpen] = useState(false);
   const [secretDialogOpen, setSecretDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [newClientSecret, setNewClientSecret] = useState<string>('');
 
   const isConfidentialClient =
@@ -118,7 +125,11 @@ export default function EditGeneralSettings({
           oauth2Config={oauth2Config}
           onFieldChange={onFieldChange}
         />
-        {isConfidentialClient && <DangerZoneSection onRegenerateClick={handleRegenerateClick} />}
+        <DangerZoneSection
+          showRegenerateSecret={isConfidentialClient}
+          onRegenerateClick={handleRegenerateClick}
+          onDeleteClick={() => setDeleteDialogOpen(true)}
+        />
       </Stack>
 
       {/* Regenerate Client Secret Confirmation Dialog */}
@@ -134,6 +145,14 @@ export default function EditGeneralSettings({
         open={secretDialogOpen}
         clientSecret={newClientSecret}
         onClose={handleSecretDialogClose}
+      />
+
+      {/* Delete Application Confirmation Dialog */}
+      <ApplicationDeleteDialog
+        open={deleteDialogOpen}
+        applicationId={application.id}
+        onClose={() => setDeleteDialogOpen(false)}
+        onSuccess={onDeleteSuccess}
       />
     </>
   );

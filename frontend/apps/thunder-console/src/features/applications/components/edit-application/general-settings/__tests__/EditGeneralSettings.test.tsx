@@ -58,10 +58,23 @@ vi.mock('../AccessSection', () => ({
 }));
 
 vi.mock('../DangerZoneSection', () => ({
-  default: ({onRegenerateClick}: {onRegenerateClick: () => void}) => (
+  default: ({
+    onRegenerateClick,
+    onDeleteClick,
+    showRegenerateSecret,
+  }: {
+    onRegenerateClick?: () => void;
+    onDeleteClick: () => void;
+    showRegenerateSecret?: boolean;
+  }) => (
     <div data-testid="danger-zone-section">
-      <button type="button" onClick={onRegenerateClick} data-testid="regenerate-button">
-        Regenerate Client Secret
+      {showRegenerateSecret && (
+        <button type="button" onClick={onRegenerateClick} data-testid="regenerate-button">
+          Regenerate Client Secret
+        </button>
+      )}
+      <button type="button" onClick={onDeleteClick} data-testid="delete-button">
+        Delete Application
       </button>
     </div>
   ),
@@ -97,6 +110,30 @@ vi.mock('../../../ClientSecretSuccessDialog', () => ({
       <div data-testid="secret-dialog" data-client-secret={clientSecret}>
         <button type="button" onClick={onClose} data-testid="secret-dialog-close">
           Close Secret Dialog
+        </button>
+      </div>
+    ) : null,
+}));
+
+vi.mock('../../../ApplicationDeleteDialog', () => ({
+  default: ({
+    open,
+    applicationId,
+    onClose,
+    onSuccess,
+  }: {
+    open: boolean;
+    applicationId: string;
+    onClose: () => void;
+    onSuccess?: () => void;
+  }) =>
+    open ? (
+      <div data-testid="delete-dialog" data-application-id={applicationId}>
+        <button type="button" onClick={onClose} data-testid="delete-dialog-close">
+          Cancel
+        </button>
+        <button type="button" onClick={() => onSuccess?.()} data-testid="delete-dialog-success">
+          Confirm Delete
         </button>
       </div>
     ) : null,
@@ -308,9 +345,10 @@ describe('EditGeneralSettings', () => {
       );
 
       expect(screen.getByTestId('danger-zone-section')).toBeInTheDocument();
+      expect(screen.getByTestId('regenerate-button')).toBeInTheDocument();
     });
 
-    it('should not render DangerZoneSection for public client (none auth method)', () => {
+    it('should render DangerZoneSection without regenerate for public client (none auth method)', () => {
       const publicClientConfig: OAuth2Config = {
         clientId: 'public-client-123',
         tokenEndpointAuthMethod: 'none',
@@ -327,10 +365,11 @@ describe('EditGeneralSettings', () => {
         />,
       );
 
-      expect(screen.queryByTestId('danger-zone-section')).not.toBeInTheDocument();
+      expect(screen.getByTestId('danger-zone-section')).toBeInTheDocument();
+      expect(screen.queryByTestId('regenerate-button')).not.toBeInTheDocument();
     });
 
-    it('should not render DangerZoneSection when no oauth2Config provided', () => {
+    it('should render DangerZoneSection without regenerate when no oauth2Config provided', () => {
       render(
         <EditGeneralSettings
           application={mockApplication}
@@ -341,10 +380,11 @@ describe('EditGeneralSettings', () => {
         />,
       );
 
-      expect(screen.queryByTestId('danger-zone-section')).not.toBeInTheDocument();
+      expect(screen.getByTestId('danger-zone-section')).toBeInTheDocument();
+      expect(screen.queryByTestId('regenerate-button')).not.toBeInTheDocument();
     });
 
-    it('should not render DangerZoneSection for private_key_jwt auth method', () => {
+    it('should render DangerZoneSection without regenerate for private_key_jwt auth method', () => {
       const pkjwtClientConfig: OAuth2Config = {
         clientId: 'pkjwt-client-123',
         tokenEndpointAuthMethod: 'private_key_jwt',
@@ -361,7 +401,8 @@ describe('EditGeneralSettings', () => {
         />,
       );
 
-      expect(screen.queryByTestId('danger-zone-section')).not.toBeInTheDocument();
+      expect(screen.getByTestId('danger-zone-section')).toBeInTheDocument();
+      expect(screen.queryByTestId('regenerate-button')).not.toBeInTheDocument();
     });
 
     it('should render DangerZoneSection for client_secret_post auth method', () => {
@@ -383,6 +424,7 @@ describe('EditGeneralSettings', () => {
       );
 
       expect(screen.getByTestId('danger-zone-section')).toBeInTheDocument();
+      expect(screen.getByTestId('regenerate-button')).toBeInTheDocument();
     });
   });
 
@@ -494,6 +536,87 @@ describe('EditGeneralSettings', () => {
       fireEvent.click(closeSecretButton);
 
       expect(screen.queryByTestId('secret-dialog')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Delete Application Flow', () => {
+    it('should open delete dialog when delete button is clicked', () => {
+      render(
+        <EditGeneralSettings
+          application={mockApplication}
+          editedApp={{}}
+          onFieldChange={mockOnFieldChange}
+          copiedField={null}
+          onCopyToClipboard={mockOnCopyToClipboard}
+        />,
+      );
+
+      const deleteButton = screen.getByTestId('delete-button');
+      fireEvent.click(deleteButton);
+
+      expect(screen.getByTestId('delete-dialog')).toBeInTheDocument();
+    });
+
+    it('should pass application id to delete dialog', () => {
+      render(
+        <EditGeneralSettings
+          application={mockApplication}
+          editedApp={{}}
+          onFieldChange={mockOnFieldChange}
+          copiedField={null}
+          onCopyToClipboard={mockOnCopyToClipboard}
+        />,
+      );
+
+      const deleteButton = screen.getByTestId('delete-button');
+      fireEvent.click(deleteButton);
+
+      expect(screen.getByTestId('delete-dialog')).toHaveAttribute('data-application-id', 'app-123');
+    });
+
+    it('should close delete dialog when cancel is triggered', () => {
+      render(
+        <EditGeneralSettings
+          application={mockApplication}
+          editedApp={{}}
+          onFieldChange={mockOnFieldChange}
+          copiedField={null}
+          onCopyToClipboard={mockOnCopyToClipboard}
+        />,
+      );
+
+      const deleteButton = screen.getByTestId('delete-button');
+      fireEvent.click(deleteButton);
+
+      expect(screen.getByTestId('delete-dialog')).toBeInTheDocument();
+
+      const cancelButton = screen.getByTestId('delete-dialog-close');
+      fireEvent.click(cancelButton);
+
+      expect(screen.queryByTestId('delete-dialog')).not.toBeInTheDocument();
+    });
+
+    it('should call onDeleteSuccess when delete is confirmed', () => {
+      const mockOnDeleteSuccess = vi.fn();
+
+      render(
+        <EditGeneralSettings
+          application={mockApplication}
+          editedApp={{}}
+          onFieldChange={mockOnFieldChange}
+          copiedField={null}
+          onCopyToClipboard={mockOnCopyToClipboard}
+          onDeleteSuccess={mockOnDeleteSuccess}
+        />,
+      );
+
+      const deleteButton = screen.getByTestId('delete-button');
+      fireEvent.click(deleteButton);
+
+      const confirmButton = screen.getByTestId('delete-dialog-success');
+      fireEvent.click(confirmButton);
+
+      expect(mockOnDeleteSuccess).toHaveBeenCalledTimes(1);
     });
   });
 });

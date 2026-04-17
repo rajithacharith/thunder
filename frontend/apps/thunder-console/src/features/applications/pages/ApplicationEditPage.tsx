@@ -400,6 +400,9 @@ export default function ApplicationEditPage() {
             oauth2Config={oauth2Config}
             copiedField={copiedField}
             onCopyToClipboard={handleCopyToClipboard}
+            onDeleteSuccess={() => {
+              handleBack().catch(() => null);
+            }}
           />
         </TabPanel>
 
