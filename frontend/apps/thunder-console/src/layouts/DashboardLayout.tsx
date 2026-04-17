@@ -17,6 +17,7 @@
  */
 
 import {SignOutButton, User, useAsgardeo} from '@asgardeo/react';
+import {useConfig} from '@thunder/contexts';
 import {useLogger} from '@thunder/logger/react';
 import {
   AppShell,
@@ -45,11 +46,35 @@ import {useTranslation} from 'react-i18next';
 import {Link as NavigateLink, Outlet} from 'react-router';
 
 export default function DashboardLayout(): ReactNode {
-  const {signIn} = useAsgardeo();
+  const {signIn, clearSession, discovery} = useAsgardeo();
+  const {isTrustedIssuerGenericOidc, getTrustedIssuerClientId, getClientUrl} = useConfig();
   const {t} = useTranslation();
   const logger = useLogger();
 
   const handleSignOut = (signOut: () => Promise<void>): void => {
+    if (isTrustedIssuerGenericOidc()) {
+      try {
+        clearSession();
+      } catch (error: unknown) {
+        logger.error('Failed to clear local session before IdP sign out', {error});
+      }
+
+      const endSessionEndpoint = discovery?.wellKnown?.end_session_endpoint;
+      if (!endSessionEndpoint) {
+        logger.warn('end_session_endpoint missing from IdP discovery document; ending local session only');
+        // eslint-disable-next-line react-hooks/immutability
+        window.location.href = getClientUrl();
+        return;
+      }
+
+      const logoutUrl = new URL(endSessionEndpoint);
+      logoutUrl.searchParams.set('client_id', getTrustedIssuerClientId());
+      logoutUrl.searchParams.set('post_logout_redirect_uri', getClientUrl());
+      // eslint-disable-next-line react-hooks/immutability
+      window.location.href = logoutUrl.toString();
+      return;
+    }
+
     signOut()
       .then(() => signIn())
       .catch((error: unknown) => {

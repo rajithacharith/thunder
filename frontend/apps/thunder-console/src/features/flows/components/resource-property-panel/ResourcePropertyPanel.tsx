@@ -16,12 +16,12 @@
  * under the License.
  */
 
+import {BuilderFloatingPanel} from '@thunder/components';
 import {Box, Button, IconButton, type DrawerProps} from '@wso2/oxygen-ui';
 import {X, TrashIcon} from '@wso2/oxygen-ui-icons-react';
 import {useReactFlow} from '@xyflow/react';
 import {memo, useCallback, useState, type HTMLAttributes, type ReactElement} from 'react';
 import ResourceProperties from './ResourceProperties';
-import BuilderFloatingPanel from '../../../../components/BuilderLayout/BuilderFloatingPanel';
 import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
 import {type Element} from '../../models/elements';
 import {ResourceTypes} from '../../models/resources';

@@ -16,6 +16,8 @@
  * under the License.
  */
 
+import {ResourceAvatar} from '@thunder/components';
+import {useDataGridLocaleText} from '@thunder/hooks';
 import {useLogger} from '@thunder/logger/react';
 import {
   IconButton,
@@ -37,11 +39,9 @@ import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useMemo, useState, useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
-import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
 import useDeleteUser from '../api/useDeleteUser';
 import useGetUsers from '../api/useGetUsers';
 import type {UserWithDetails} from '../models/users';
-import ResourceAvatar from '@/components/ResourceAvatar';
 import getInitials from '@/utils/getInitials';
 
 export default function UsersList() {

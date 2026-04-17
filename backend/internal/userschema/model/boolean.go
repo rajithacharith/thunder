@@ -60,7 +60,7 @@ func (p *boolean) validateValue(value interface{}, path string, logger *log.Logg
 func (p *boolean) validateUniqueness(
 	value interface{},
 	path string,
-	identifyUser func(map[string]interface{}) (*string, error),
+	exists func(map[string]interface{}) (bool, error),
 	logger *log.Logger,
 ) (bool, error) {
 	return true, nil

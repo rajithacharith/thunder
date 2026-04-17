@@ -25,7 +25,9 @@ vi.mock('../../../../../users/api/useGetUsers');
 vi.mock('../../../../../groups/api/useGetGroups');
 vi.mock('../../../../../applications/api/useGetApplications');
 vi.mock('../../../../api/useGetRoleAssignments');
-vi.mock('../../../../../../hooks/useDataGridLocaleText');
+vi.mock('@thunder/hooks', () => ({
+  useDataGridLocaleText: vi.fn(),
+}));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -106,7 +108,7 @@ const {default: useGetUsers} = await import('../../../../../users/api/useGetUser
 const {default: useGetGroups} = await import('../../../../../groups/api/useGetGroups');
 const {default: useGetApplications} = await import('../../../../../applications/api/useGetApplications');
 const {default: useGetRoleAssignments} = await import('../../../../api/useGetRoleAssignments');
-const {default: useDataGridLocaleText} = await import('../../../../../../hooks/useDataGridLocaleText');
+const {useDataGridLocaleText} = await import('@thunder/hooks');
 
 describe('AddAssignmentDialog', () => {
   const mockOnClose = vi.fn();

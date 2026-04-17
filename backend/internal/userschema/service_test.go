@@ -338,9 +338,9 @@ func TestValidateUserUniquenessReturnsTrueWhenNoConflicts(t *testing.T) {
 		context.Background(),
 		"employee",
 		json.RawMessage(`{"email":"unique@example.com"}`),
-		func(filters map[string]interface{}) (*string, error) {
+		func(filters map[string]interface{}) (bool, error) {
 			require.Equal(t, map[string]interface{}{"email": "unique@example.com"}, filters)
-			return nil, nil
+			return false, nil
 		},
 	)
 
@@ -388,7 +388,7 @@ func TestValidateUserUniquenessReturnsSchemaNotFoundWhenSchemaMissing(t *testing
 		context.Background(),
 		"employee",
 		json.RawMessage(`{}`),
-		func(map[string]interface{}) (*string, error) { return nil, nil },
+		func(map[string]interface{}) (bool, error) { return false, nil },
 	)
 
 	require.False(t, ok)
@@ -412,7 +412,7 @@ func TestValidateUserUniquenessReturnsInternalErrorWhenSchemaLoadFails(t *testin
 		context.Background(),
 		"employee",
 		json.RawMessage(`{}`),
-		func(map[string]interface{}) (*string, error) { return nil, nil },
+		func(map[string]interface{}) (bool, error) { return false, nil },
 	)
 
 	require.False(t, ok)

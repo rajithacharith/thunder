@@ -47,7 +47,7 @@ type property interface {
 	isUnique() bool
 	validateValue(value interface{}, path string, logger *log.Logger) (bool, error)
 	validateUniqueness(value interface{}, path string,
-		identifyUser func(map[string]interface{}) (*string, error), logger *log.Logger) (bool, error)
+		exists func(map[string]interface{}) (bool, error), logger *log.Logger) (bool, error)
 }
 
 // Schema represents a user schema with a set of properties.
@@ -187,7 +187,7 @@ func (cs *Schema) Validate(attributes json.RawMessage, logger *log.Logger, skipC
 // ValidateUniqueness checks uniqueness constraints for the schema properties.
 func (cs *Schema) ValidateUniqueness(
 	attrs map[string]interface{},
-	identifyUser func(map[string]interface{}) (*string, error),
+	exists func(map[string]interface{}) (bool, error),
 	logger *log.Logger,
 ) (bool, error) {
 	if len(cs.properties) == 0 {
@@ -195,12 +195,12 @@ func (cs *Schema) ValidateUniqueness(
 	}
 
 	for propName, prop := range cs.properties {
-		value, exists := attrs[propName]
-		if !exists {
+		value, ok := attrs[propName]
+		if !ok {
 			continue
 		}
 
-		isValid, err := prop.validateUniqueness(value, propName, identifyUser, logger)
+		isValid, err := prop.validateUniqueness(value, propName, exists, logger)
 		if err != nil {
 			return false, err
 		}

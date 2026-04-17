@@ -22,10 +22,12 @@ package sign
 type SignAlgorithm string
 
 const (
-	// RSASHA256 represents RSA signature with SHA-256 hash
+	// RSASHA256 represents RSA signature with SHA-256 hash (PKCS1v15)
 	RSASHA256 SignAlgorithm = "RSA-SHA256"
-	// RSASHA512 represents RSA signature with SHA-512 hash
+	// RSASHA512 represents RSA signature with SHA-512 hash (PKCS1v15)
 	RSASHA512 SignAlgorithm = "RSA-SHA512"
+	// RSAPSSSHA256 represents RSA-PSS signature with SHA-256 hash
+	RSAPSSSHA256 SignAlgorithm = "RSA-PSS-SHA256"
 	// ECDSASHA256 represents ECDSA signature with SHA-256 hash
 	ECDSASHA256 SignAlgorithm = "ECDSA-SHA256"
 	// ECDSASHA384 represents ECDSA signature with SHA-384 hash

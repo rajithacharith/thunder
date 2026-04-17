@@ -438,6 +438,24 @@ func (js *jwtService) getJWKSKeys(jwksURL string) ([]map[string]interface{}, *se
 	return jwks.Keys, nil
 }
 
+// audienceMatches checks whether the aud claim matches the expected audience.
+// Supports both string and array forms of the aud claim.
+func audienceMatches(audClaim interface{}, expectedAud string) bool {
+	switch v := audClaim.(type) {
+	case string:
+		return v == expectedAud
+	case []interface{}:
+		for _, item := range v {
+			if s, ok := item.(string); ok && s == expectedAud {
+				return true
+			}
+		}
+		return false
+	default:
+		return false
+	}
+}
+
 // verifyJWTClaims verifies the standard claims of a JWT token.
 func (js *jwtService) verifyJWTClaims(jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError {
 	// Decode the JWT payload
@@ -463,24 +481,23 @@ func (js *jwtService) verifyJWTClaims(jwtToken string, expectedAud, expectedIss 
 		return &ErrorInvalidJWTFormat
 	}
 
-	if nbf, ok := payload["nbf"].(float64); ok {
+	// Validate nbf only when present. Many OIDC providers omit this claim.
+	if nbfRaw, ok := payload["nbf"]; ok {
+		nbf, isNumber := nbfRaw.(float64)
+		if !isNumber {
+			js.logger.Debug("JWT token 'nbf' claim present but not a number")
+			return &ErrorInvalidJWTFormat
+		}
 		if now < int64(nbf)-leeway {
 			js.logger.Debug("JWT token is not valid yet (nbf claim)")
 			return &ErrorInvalidJWTFormat
 		}
-	} else {
-		js.logger.Debug("JWT token missing 'nbf' claim or it is not a number")
-		return &ErrorInvalidJWTFormat
 	}
 
+	// Validate aud claim. Supports both string and array forms.
 	if expectedAud != "" {
-		if aud, ok := payload["aud"].(string); ok {
-			if aud != expectedAud {
-				js.logger.Debug("Invalid audience: expected " + expectedAud + ", got " + aud)
-				return &ErrorInvalidJWTFormat
-			}
-		} else {
-			js.logger.Debug("Missing 'aud' claim or it is not a string")
+		if !audienceMatches(payload["aud"], expectedAud) {
+			js.logger.Debug("Invalid audience: expected " + expectedAud)
 			return &ErrorInvalidJWTFormat
 		}
 	}

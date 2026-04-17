@@ -121,56 +121,96 @@ vi.mock('../../components/edit-application/integration-guides/IntegrationGuides'
   default: vi.fn(() => <div data-testid="integration-guides">Integration Guides</div>),
 }));
 
-vi.mock('../../../../components/EmojiPicker/EmojiPicker', () => ({
-  default: vi.fn(() => null),
-}));
-
-vi.mock('../../../../components/ResourceLogoDialog', () => ({
-  default: vi.fn(
-    ({open, onClose, onSelect}: {open: boolean; onClose: () => void; onSelect: (value: string) => void}) => (
-      <div data-testid="emoji-picker" style={{display: open ? 'block' : 'none'}}>
-        <button type="button" onClick={() => onSelect('emoji:🚀')}>
-          Select Icon
-        </button>
-        <button type="button" onClick={onClose}>
-          Close
-        </button>
-      </div>
+vi.mock('@thunder/components', async () => {
+  const React = await import('react');
+  return {
+    CopyableId: vi.fn(() => null),
+    EmojiPicker: vi.fn(() => null),
+    ResourceLogoDialog: vi.fn(
+      ({open, onClose, onSelect}: {open: boolean; onClose: () => void; onSelect: (value: string) => void}) => (
+        <div data-testid="resource-logo-dialog" style={{display: open ? 'block' : 'none'}}>
+          <button type="button" onClick={() => onSelect('emoji:🚀')}>
+            Select Icon
+          </button>
+          <button type="button" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      ),
     ),
-  ),
-}));
-
-vi.mock('../../../../components/UnsavedChangesBar', () => ({
-  default: vi.fn(
-    ({
-      message,
-      resetLabel,
-      saveLabel,
-      savingLabel,
-      isSaving,
-      onReset,
-      onSave,
+    UnsavedChangesBar: vi.fn(
+      ({
+        message,
+        resetLabel,
+        saveLabel,
+        savingLabel,
+        isSaving,
+        onReset,
+        onSave,
+      }: {
+        message: string;
+        resetLabel: string;
+        saveLabel: string;
+        savingLabel: string;
+        isSaving: boolean;
+        onReset: () => void;
+        onSave: () => void;
+      }) => (
+        <div data-testid="unsaved-changes-bar">
+          <span>{message}</span>
+          <button type="button" onClick={onReset}>
+            {resetLabel}
+          </button>
+          <button type="button" onClick={onSave} disabled={isSaving}>
+            {isSaving ? savingLabel : saveLabel}
+          </button>
+        </div>
+      ),
+    ),
+    ResourceAvatar: vi.fn(function MockResourceAvatar({
+      value,
+      onSelect,
+      editAriaLabel,
     }: {
-      message: string;
-      resetLabel: string;
-      saveLabel: string;
-      savingLabel: string;
-      isSaving: boolean;
-      onReset: () => void;
-      onSave: () => void;
-    }) => (
-      <div data-testid="unsaved-changes-bar">
-        <span>{message}</span>
-        <button type="button" onClick={onReset}>
-          {resetLabel}
-        </button>
-        <button type="button" onClick={onSave} disabled={isSaving}>
-          {isSaving ? savingLabel : saveLabel}
-        </button>
-      </div>
-    ),
-  ),
-}));
+      value?: string;
+      onSelect?: (v: string) => void;
+      editAriaLabel?: string;
+    }) {
+      const [open, setOpen] = React.useState(false);
+      const [imgError, setImgError] = React.useState(false);
+      const isUrl = typeof value === 'string' && (value.startsWith('http://') || value.startsWith('https://'));
+      const displayValue =
+        typeof value === 'string' && value.startsWith('emoji:') ? value.slice('emoji:'.length) : value;
+      return (
+        <>
+          {isUrl && (
+            <button type="button" onClick={() => setOpen(true)}>
+              <img src={value} alt="logo" onError={() => setImgError(true)} style={imgError ? {display: 'none'} : {}} />
+            </button>
+          )}
+          {!isUrl && displayValue && <span>{displayValue}</span>}
+          {editAriaLabel && onSelect && (
+            <button type="button" aria-label={editAriaLabel} onClick={() => setOpen(true)} />
+          )}
+          <div data-testid="emoji-picker" style={{display: open ? 'block' : 'none'}}>
+            <button
+              type="button"
+              onClick={() => {
+                onSelect?.('emoji:🚀');
+                setOpen(false);
+              }}
+            >
+              Select Icon
+            </button>
+            <button type="button" onClick={() => setOpen(false)}>
+              Close
+            </button>
+          </div>
+        </>
+      );
+    }),
+  };
+});
 
 const mockUseGetApplication = useGetApplication as ReturnType<typeof vi.fn>;
 const mockUseUpdateApplication = useUpdateApplication as ReturnType<typeof vi.fn>;

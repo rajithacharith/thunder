@@ -19,7 +19,7 @@
     "inputType": "text",
     "hint": "",
     "label": "Text",
-    "required": false,
+    "required": true,
     "placeholder": "Enter your text"
   },
   {
@@ -34,7 +34,7 @@
     "inputType": "password",
     "hint": "",
     "label": "Password",
-    "required": false,
+    "required": true,
     "placeholder": "Enter your password"
   },
   {
@@ -48,7 +48,7 @@
     "inputType": "email",
     "hint": "",
     "label": "Email",
-    "required": false,
+    "required": true,
     "placeholder": "Enter your email"
   },
   {
@@ -62,7 +62,7 @@
     "inputType": "tel",
     "hint": "",
     "label": "Phone",
-    "required": false,
+    "required": true,
     "placeholder": "Enter your phone number"
   },
   {
@@ -76,7 +76,7 @@
     "inputType": "number",
     "hint": "",
     "label": "Number",
-    "required": false,
+    "required": true,
     "placeholder": "Enter a number"
   },
   {
@@ -90,7 +90,7 @@
     "inputType": "date",
     "hint": "",
     "label": "Date",
-    "required": false,
+    "required": true,
     "placeholder": "dd-mm-yyyy"
   },
   {
@@ -105,7 +105,7 @@
     "hint": "",
     "ref": "otp",
     "label": "OTP",
-    "required": false,
+    "required": true,
     "placeholder": ""
   },
   {
@@ -130,7 +130,7 @@
     },
     "hint": "",
     "label": "Checkbox",
-    "required": false
+    "required": true
   },
   {
     "resourceType": "ELEMENT",
@@ -142,7 +142,7 @@
     },
     "hint": "",
     "label": "Select",
-    "required": false,
+    "required": true,
     "placeholder": "Select an option",
     "options": []
   },
@@ -157,7 +157,7 @@
     },
     "hint": "",
     "label": "Choice",
-    "required": false,
+    "required": true,
     "defaultValue": "option1",
     "options": [
       {

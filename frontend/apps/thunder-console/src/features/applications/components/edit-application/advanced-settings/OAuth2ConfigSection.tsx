@@ -17,6 +17,7 @@
  */
 
 import {useAsgardeo} from '@asgardeo/react';
+import {SettingsCard} from '@thunder/components';
 import {
   Box,
   Stack,
@@ -35,7 +36,6 @@ import {
 } from '@wso2/oxygen-ui';
 import {Lock} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
-import SettingsCard from '../../../../../components/SettingsCard';
 import type {ApplicationTemplate} from '../../../models/application-templates';
 import type {OAuth2Config} from '../../../models/oauth';
 

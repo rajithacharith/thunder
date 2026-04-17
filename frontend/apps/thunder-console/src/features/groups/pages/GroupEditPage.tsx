@@ -16,8 +16,9 @@
  * under the License.
  */
 
-import {useLogger} from '@thunder/logger/react';
+import {CopyableId} from '@thunder/components';
 import {useToast} from '@thunder/contexts';
+import {useLogger} from '@thunder/logger/react';
 import {
   Box,
   Stack,
@@ -38,7 +39,6 @@ import {useState, useCallback, useMemo} from 'react';
 import type {ReactNode, SyntheticEvent, JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Link, useNavigate, useParams} from 'react-router';
-import CopyableId from '../../../components/CopyableId';
 import useGetGroup from '../api/useGetGroup';
 import useUpdateGroup from '../api/useUpdateGroup';
 import EditGeneralSettings from '../components/edit-group/general-settings/EditGeneralSettings';

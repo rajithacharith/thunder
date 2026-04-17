@@ -81,7 +81,7 @@ Always use predefined keys from `event.DataKey` for consistency:
 |-----|-------|
 | `UserID` | Authenticated user identifier |
 | `ClientID` | OAuth client identifier |
-| `FlowID` | Flow execution identifier |
+| `ExecutionID` | Flow execution identifier |
 | `Message` | Human-readable message |
 | `Error` | Error message for failures |
 | `LatencyUs` | Operation latency in microseconds |

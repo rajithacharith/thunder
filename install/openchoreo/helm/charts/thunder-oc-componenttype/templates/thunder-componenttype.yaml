@@ -190,13 +190,16 @@ spec:
             database:
               config:
                 type: "sqlite"
-                name: "{{ "{{.DB_CONFIG_PATH}}" }}"
+                sqlite:
+                  path: "{{ "{{.DB_CONFIG_PATH}}" }}"
               runtime:
                 type: "sqlite"
-                name: "{{ "{{.DB_RUNTIME_PATH}}" }}"
+                sqlite:
+                  path: "{{ "{{.DB_RUNTIME_PATH}}" }}"
               user:
                 type: "sqlite"
-                name: "{{ "{{.DB_USER_PATH}}" }}"
+                sqlite:
+                  path: "{{ "{{.DB_USER_PATH}}" }}"
 
             cache:
               disabled: false
@@ -253,28 +256,31 @@ spec:
             database:
               config:
                 type: "postgres"
-                hostname: "{{ "{{.DB_CONFIG_HOSTNAME}}" }}"
-                port: {{ "{{.DB_PORT}}" }}
-                name: "{{ "{{.DB_CONFIG_NAME}}" }}"
-                username: "{{ "{{.DB_CONFIG_USERNAME}}" }}"
-                password: "{{ "{{.DB_CONFIG_PASSWORD}}" }}"
-                sslmode: "{{ "{{.DB_CONFIG_SSLMODE}}" }}"
+                postgres:
+                  hostname: "{{ "{{.DB_CONFIG_HOSTNAME}}" }}"
+                  port: {{ "{{.DB_PORT}}" }}
+                  name: "{{ "{{.DB_CONFIG_NAME}}" }}"
+                  username: "{{ "{{.DB_CONFIG_USERNAME}}" }}"
+                  password: "{{ "{{.DB_CONFIG_PASSWORD}}" }}"
+                  sslmode: "{{ "{{.DB_CONFIG_SSLMODE}}" }}"
               runtime:
                 type: "postgres"
-                hostname: "{{ "{{.DB_RUNTIME_HOSTNAME}}" }}"
-                port: {{ "{{.DB_PORT}}" }}
-                name: "{{ "{{.DB_RUNTIME_NAME}}" }}"
-                username: "{{ "{{.DB_RUNTIME_USERNAME}}" }}"
-                password: "{{ "{{.DB_RUNTIME_PASSWORD}}" }}"
-                sslmode: "{{ "{{.DB_RUNTIME_SSLMODE}}" }}"
+                postgres:
+                  hostname: "{{ "{{.DB_RUNTIME_HOSTNAME}}" }}"
+                  port: {{ "{{.DB_PORT}}" }}
+                  name: "{{ "{{.DB_RUNTIME_NAME}}" }}"
+                  username: "{{ "{{.DB_RUNTIME_USERNAME}}" }}"
+                  password: "{{ "{{.DB_RUNTIME_PASSWORD}}" }}"
+                  sslmode: "{{ "{{.DB_RUNTIME_SSLMODE}}" }}"
               user:
                 type: "postgres"
-                hostname: "{{ "{{.DB_USER_HOSTNAME}}" }}"
-                port: {{ "{{.DB_PORT}}" }}
-                name: "{{ "{{.DB_USER_NAME}}" }}"
-                username: "{{ "{{.DB_USER_USERNAME}}" }}"
-                password: "{{ "{{.DB_USER_PASSWORD}}" }}"
-                sslmode: "{{ "{{.DB_USER_SSLMODE}}" }}"
+                postgres:
+                  hostname: "{{ "{{.DB_USER_HOSTNAME}}" }}"
+                  port: {{ "{{.DB_PORT}}" }}
+                  name: "{{ "{{.DB_USER_NAME}}" }}"
+                  username: "{{ "{{.DB_USER_USERNAME}}" }}"
+                  password: "{{ "{{.DB_USER_PASSWORD}}" }}"
+                  sslmode: "{{ "{{.DB_USER_SSLMODE}}" }}"
 
             cache:
               disabled: false

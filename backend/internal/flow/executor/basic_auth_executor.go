@@ -27,20 +27,20 @@ import (
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authncreds "github.com/asgardeo/thunder/internal/authn/credentials"
 	"github.com/asgardeo/thunder/internal/authnprovider"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 // basicAuthExecutor implements the ExecutorInterface for basic authentication.
 type basicAuthExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
-	userProvider userprovider.UserProviderInterface
-	credsAuthSvc authncreds.CredentialsAuthnServiceInterface
-	logger       *log.Logger
+	entityProvider entityprovider.EntityProviderInterface
+	credsAuthSvc   authncreds.CredentialsAuthnServiceInterface
+	logger         *log.Logger
 }
 
 var _ core.ExecutorInterface = (*basicAuthExecutor)(nil)
@@ -49,7 +49,7 @@ var _ identifyingExecutorInterface = (*basicAuthExecutor)(nil)
 // newBasicAuthExecutor creates a new instance of BasicAuthExecutor.
 func newBasicAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
-	userProvider userprovider.UserProviderInterface,
+	entityProvider entityprovider.EntityProviderInterface,
 	credsAuthSvc authncreds.CredentialsAuthnServiceInterface,
 ) *basicAuthExecutor {
 	defaultInputs := []common.Input{
@@ -69,14 +69,14 @@ func newBasicAuthExecutor(
 		log.String(log.LoggerKeyExecutorName, ExecutorNameBasicAuth))
 
 	identifyExec := newIdentifyingExecutor(ExecutorNameBasicAuth, defaultInputs, []common.Input{},
-		flowFactory, userProvider)
+		flowFactory, entityProvider)
 	base := flowFactory.CreateExecutor(ExecutorNameBasicAuth, common.ExecutorTypeAuthentication,
 		defaultInputs, []common.Input{})
 
 	return &basicAuthExecutor{
 		ExecutorInterface:            base,
 		identifyingExecutorInterface: identifyExec,
-		userProvider:                 userProvider,
+		entityProvider:               entityProvider,
 		credsAuthSvc:                 credsAuthSvc,
 		logger:                       logger,
 	}
@@ -84,7 +84,7 @@ func newBasicAuthExecutor(
 
 // Execute executes the basic authentication logic.
 func (b *basicAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := b.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := b.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing basic authentication executor")
 
 	execResp := &common.ExecutorResponse{
@@ -168,7 +168,7 @@ func (b *basicAuthExecutor) getCredentialInputs(ctx *core.NodeContext) []common.
 // credential attributes and returns the authenticated user details.
 func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*authncm.AuthenticatedUser, error) {
-	logger := b.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := b.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	userIdentifiers := map[string]interface{}{}
 	userCredentials := map[string]interface{}{}
@@ -238,17 +238,17 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 
 	// Try to retrieve the user and get the attributes
 	userAttributes := map[string]interface{}{}
-	user, err := b.userProvider.GetUser(authnResult.UserID)
+	user, err := b.entityProvider.GetEntity(authnResult.UserID)
 
 	if err != nil {
-		if err.Code != userprovider.ErrorCodeNotImplemented {
+		if err.Code != entityprovider.ErrorCodeNotImplemented {
 			logger.Error("Failed to get user attributes", log.Error(err))
 			return nil, errors.New("failed to get user attributes")
 		}
 		logger.Debug("User provider is not implemented. User attributes will be empty.")
 	}
 
-	if err == nil && user != nil {
+	if err == nil && user != nil && len(user.Attributes) > 0 {
 		if err := json.Unmarshal(user.Attributes, &userAttributes); err != nil {
 			logger.Error("Failed to unmarshal user attributes", log.Error(err))
 			return nil, errors.New("failed to unmarshal user attributes")

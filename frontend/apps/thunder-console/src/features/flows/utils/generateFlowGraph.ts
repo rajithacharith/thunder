@@ -85,6 +85,18 @@ export default function generateFlowGraph(options: FlowGeneratorOptions): Create
       '<span class="rich-text-pre-wrap">Sign up</span></a></p>',
   };
 
+  // Application Logo
+  metaComponents.push({
+    category: 'DISPLAY',
+    type: 'IMAGE',
+    id: 'image',
+    src: '{{meta(application.logoUrl)}}',
+    alt: '{{t(signin:images.app_logo.alt)}}',
+    height: '60',
+    width: '',
+    resourceType: 'ELEMENT',
+  });
+
   // Header
   metaComponents.push({
     type: 'TEXT',
@@ -132,7 +144,6 @@ export default function generateFlowGraph(options: FlowGeneratorOptions): Create
           variant: 'PRIMARY',
           eventType: 'SUBMIT',
         },
-        selfSignUpLink,
       ],
     });
 
@@ -173,7 +184,6 @@ export default function generateFlowGraph(options: FlowGeneratorOptions): Create
           variant: hasBasicAuth ? 'SECONDARY' : 'PRIMARY',
           eventType: 'SUBMIT',
         },
-        ...(!hasBasicAuth ? [selfSignUpLink] : []),
       ],
     });
 
@@ -197,7 +207,7 @@ export default function generateFlowGraph(options: FlowGeneratorOptions): Create
         label: 'Sign in with Google',
         variant: 'OUTLINED',
         eventType: 'TRIGGER',
-        startIcon: {icon: 'google'},
+        image: 'assets/images/icons/google.svg',
       });
 
       promptPrompts.push({
@@ -215,7 +225,7 @@ export default function generateFlowGraph(options: FlowGeneratorOptions): Create
         label: 'Sign in with GitHub',
         variant: 'OUTLINED',
         eventType: 'TRIGGER',
-        startIcon: {icon: 'github'},
+        image: 'assets/images/icons/github.svg',
       });
 
       promptPrompts.push({
@@ -231,6 +241,11 @@ export default function generateFlowGraph(options: FlowGeneratorOptions): Create
       id: 'block_social',
       components: socialComponents,
     });
+  }
+
+  // Self Sign Up Link — always at the bottom, after all auth options
+  if (hasBasicAuth || hasPasskey) {
+    metaComponents.push(selfSignUpLink);
   }
 
   // Connect PROMPT node

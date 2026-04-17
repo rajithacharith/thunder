@@ -82,11 +82,11 @@ spec:
       - key: GATE_CLIENT_SCHEME
         value: {{ .Values.gate.scheme | quote }}
       - key: DB_CONFIG_PATH
-        value: {{ .Values.database.config.path | default "repository/database/thunder_config.db" | quote }}
+        value: {{ .Values.database.config.sqlite.path | default "repository/database/configdb.db" | quote }}
       - key: DB_RUNTIME_PATH
-        value: {{ .Values.database.runtime.path | default "repository/database/thunder_runtime.db" | quote }}
+        value: {{ .Values.database.runtime.sqlite.path | default "repository/database/runtimedb.db" | quote }}
       - key: DB_USER_PATH
-        value: {{ .Values.database.user.path | default "repository/database/thunder_user.db" | quote }}
+        value: {{ .Values.database.user.sqlite.path | default "repository/database/userdb.db" | quote }}
       - key: CRYPTO_ENCRYPTION_KEY
         value: {{ .Values.crypto.encryption.key | quote }}
   endpoints:

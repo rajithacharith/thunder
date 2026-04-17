@@ -135,6 +135,7 @@ func (suite *JWSUtilsTestSuite) TestMapAlgorithmToSignAlgAllSupported() {
 	}{
 		{"RS256", RS256, sign.RSASHA256},
 		{"RS512", RS512, sign.RSASHA512},
+		{"PS256", PS256, sign.RSAPSSSHA256},
 		{"ES256", ES256, sign.ECDSASHA256},
 		{"ES384", ES384, sign.ECDSASHA384},
 		{"ES512", ES512, sign.ECDSASHA512},

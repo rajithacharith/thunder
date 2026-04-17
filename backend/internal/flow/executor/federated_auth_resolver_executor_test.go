@@ -26,9 +26,9 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
-	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 )
 
@@ -59,15 +59,15 @@ func (suite *FederatedAuthResolverTestSuite) TestNewFederatedAuthResolverExecuto
 }
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_SingleCandidateMatch() {
-	candidates := []*userprovider.User{
-		{UserID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", UserType: "Customer"},
-		{UserID: "user-2", OUID: "ou-2", OUHandle: "org-beta", UserType: "Customer"},
+	candidates := []*entityprovider.Entity{
+		{ID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", Type: "Customer"},
+		{ID: "user-2", OUID: "ou-2", OUHandle: "org-beta", Type: "Customer"},
 	}
 	candidatesJSON, _ := json.Marshal(candidates)
 
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		UserInputs: map[string]string{"ouHandle": "org-alpha"},
+		ExecutionID: "flow-123",
+		UserInputs:  map[string]string{"ouHandle": "org-alpha"},
 		RuntimeData: map[string]string{
 			common.RuntimeKeyCandidateUsers: string(candidatesJSON),
 			"sub":                           "sub-123",
@@ -92,7 +92,7 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_SingleCandidateMatch() 
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_NoCandidatesInRuntimeData() {
 	ctx := &core.NodeContext{
-		FlowID:      "flow-123",
+		ExecutionID: "flow-123",
 		UserInputs:  map[string]string{"ouHandle": "org-alpha"},
 		RuntimeData: map[string]string{},
 	}
@@ -107,12 +107,12 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_NoCandidatesInRuntimeDa
 }
 
 func (suite *FederatedAuthResolverTestSuite) executeWithCandidatesAndInput(
-	candidates []*userprovider.User, inputs map[string]string) (*common.ExecutorResponse, error) {
+	candidates []*entityprovider.Entity, inputs map[string]string) (*common.ExecutorResponse, error) {
 	candidatesJSON, _ := json.Marshal(candidates)
 
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		UserInputs: inputs,
+		ExecutionID: "flow-123",
+		UserInputs:  inputs,
 		RuntimeData: map[string]string{
 			common.RuntimeKeyCandidateUsers: string(candidatesJSON),
 		},
@@ -128,9 +128,9 @@ func (suite *FederatedAuthResolverTestSuite) executeWithCandidatesAndInput(
 }
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_NoMatchingCandidate() {
-	candidates := []*userprovider.User{
-		{UserID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", UserType: "Customer"},
-		{UserID: "user-2", OUID: "ou-2", OUHandle: "org-beta", UserType: "Customer"},
+	candidates := []*entityprovider.Entity{
+		{ID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", Type: "Customer"},
+		{ID: "user-2", OUID: "ou-2", OUHandle: "org-beta", Type: "Customer"},
 	}
 
 	resp, err := suite.executeWithCandidatesAndInput(candidates, map[string]string{"ouHandle": "org-gamma"})
@@ -141,9 +141,9 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_NoMatchingCandidate() {
 }
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_MultipleCandidatesStillAmbiguous() {
-	candidates := []*userprovider.User{
-		{UserID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", UserType: "Customer"},
-		{UserID: "user-2", OUID: "ou-1", OUHandle: "org-alpha", UserType: "Admin"},
+	candidates := []*entityprovider.Entity{
+		{ID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", Type: "Customer"},
+		{ID: "user-2", OUID: "ou-1", OUHandle: "org-alpha", Type: "Admin"},
 	}
 
 	resp, err := suite.executeWithCandidatesAndInput(candidates, map[string]string{"ouHandle": "org-alpha"})
@@ -155,9 +155,9 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_MultipleCandidatesStill
 }
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_IndistinguishableCandidates() {
-	candidates := []*userprovider.User{
-		{UserID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", UserType: "Customer"},
-		{UserID: "user-2", OUID: "ou-1", OUHandle: "org-alpha", UserType: "Customer"},
+	candidates := []*entityprovider.Entity{
+		{ID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", Type: "Customer"},
+		{ID: "user-2", OUID: "ou-1", OUHandle: "org-alpha", Type: "Customer"},
 	}
 
 	resp, err := suite.executeWithCandidatesAndInput(candidates, map[string]string{"ouHandle": "org-alpha"})
@@ -169,7 +169,7 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_IndistinguishableCandid
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_RequiredInputsMissing() {
 	ctx := &core.NodeContext{
-		FlowID:      "flow-123",
+		ExecutionID: "flow-123",
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
 	}
@@ -185,8 +185,8 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_RequiredInputsMissing()
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_InvalidCandidatesJSON() {
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		UserInputs: map[string]string{"ouHandle": "org-alpha"},
+		ExecutionID: "flow-123",
+		UserInputs:  map[string]string{"ouHandle": "org-alpha"},
 		RuntimeData: map[string]string{
 			common.RuntimeKeyCandidateUsers: "invalid-json",
 		},
@@ -202,14 +202,14 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_InvalidCandidatesJSON()
 }
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_PreservesSubInRuntimeData() {
-	candidates := []*userprovider.User{
-		{UserID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", UserType: "Customer"},
+	candidates := []*entityprovider.Entity{
+		{ID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", Type: "Customer"},
 	}
 	candidatesJSON, _ := json.Marshal(candidates)
 
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		UserInputs: map[string]string{"ouHandle": "org-alpha"},
+		ExecutionID: "flow-123",
+		UserInputs:  map[string]string{"ouHandle": "org-alpha"},
 		RuntimeData: map[string]string{
 			common.RuntimeKeyCandidateUsers: string(candidatesJSON),
 			"sub":                           "federated-sub-123",
@@ -230,14 +230,14 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_PreservesSubInRuntimeDa
 }
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_FailsWithoutFederatedSub() {
-	candidates := []*userprovider.User{
-		{UserID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", UserType: "Customer"},
+	candidates := []*entityprovider.Entity{
+		{ID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", Type: "Customer"},
 	}
 	candidatesJSON, _ := json.Marshal(candidates)
 
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		UserInputs: map[string]string{"ouHandle": "org-alpha"},
+		ExecutionID: "flow-123",
+		UserInputs:  map[string]string{"ouHandle": "org-alpha"},
 		RuntimeData: map[string]string{
 			common.RuntimeKeyCandidateUsers: string(candidatesJSON),
 		},
@@ -257,15 +257,15 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_FailsWithoutFederatedSu
 }
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_IgnoresUnexpectedInputKeys() {
-	candidates := []*userprovider.User{
-		{UserID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", UserType: "Customer"},
-		{UserID: "user-2", OUID: "ou-2", OUHandle: "org-beta", UserType: "Admin"},
+	candidates := []*entityprovider.Entity{
+		{ID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", Type: "Customer"},
+		{ID: "user-2", OUID: "ou-2", OUHandle: "org-beta", Type: "Admin"},
 	}
 	candidatesJSON, _ := json.Marshal(candidates)
 
 	// Malicious client sends userID as an extra input
 	ctx := &core.NodeContext{
-		FlowID: "flow-123",
+		ExecutionID: "flow-123",
 		UserInputs: map[string]string{
 			"ouHandle": "org-alpha",
 			"userID":   "user-2", // should be ignored

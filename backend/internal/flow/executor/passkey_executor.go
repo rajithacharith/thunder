@@ -25,11 +25,11 @@ import (
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const (
@@ -71,7 +71,7 @@ type passkeyAuthExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
 	passkeyService passkey.PasskeyServiceInterface
-	userProvider   userprovider.UserProviderInterface
+	entityProvider entityprovider.EntityProviderInterface
 	logger         *log.Logger
 }
 
@@ -82,7 +82,7 @@ var _ identifyingExecutorInterface = (*passkeyAuthExecutor)(nil)
 func newPasskeyAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
 	passkeyService passkey.PasskeyServiceInterface,
-	userProvider userprovider.UserProviderInterface,
+	entityProvider entityprovider.EntityProviderInterface,
 ) *passkeyAuthExecutor {
 	defaultInputs := []common.Input{
 		{
@@ -124,7 +124,7 @@ func newPasskeyAuthExecutor(
 		log.String(log.LoggerKeyExecutorName, ExecutorNamePasskeyAuth))
 
 	identifyExec := newIdentifyingExecutor(ExecutorNamePasskeyAuth, defaultInputs, prerequisites,
-		flowFactory, userProvider)
+		flowFactory, entityProvider)
 	base := flowFactory.CreateExecutor(ExecutorNamePasskeyAuth, common.ExecutorTypeAuthentication,
 		defaultInputs, prerequisites)
 
@@ -132,14 +132,14 @@ func newPasskeyAuthExecutor(
 		ExecutorInterface:            base,
 		identifyingExecutorInterface: identifyExec,
 		passkeyService:               passkeyService,
-		userProvider:                 userProvider,
+		entityProvider:               entityProvider,
 		logger:                       logger,
 	}
 }
 
 // Execute executes the passkey authentication logic.
 func (p *passkeyAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := p.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := p.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing passkey authentication executor")
 
 	execResp := &common.ExecutorResponse{
@@ -170,7 +170,7 @@ func (p *passkeyAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRe
 // executeChallenge generates and returns a passkey authentication challenge.
 func (p *passkeyAuthExecutor) executeChallenge(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*common.ExecutorResponse, error) {
-	logger := p.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := p.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	// Get userID from context (may be empty for usernameless flow)
 	userID := p.GetUserIDFromContext(ctx)
@@ -232,7 +232,7 @@ func (p *passkeyAuthExecutor) executeChallenge(ctx *core.NodeContext,
 // executeVerify verifies the passkey authentication response.
 func (p *passkeyAuthExecutor) executeVerify(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*common.ExecutorResponse, error) {
-	logger := p.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := p.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Verifying passkey authentication response")
 
 	// Check for required inputs
@@ -339,22 +339,24 @@ func (p *passkeyAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	}
 
 	// Get user details from user provider
-	user, providerErr := p.userProvider.GetUser(userID)
+	user, providerErr := p.entityProvider.GetEntity(userID)
 	if providerErr != nil {
 		return nil, fmt.Errorf("failed to get user details: %s", providerErr.Error())
 	}
 
 	// Extract user attributes
-	var attrs map[string]interface{}
-	if err := json.Unmarshal(user.Attributes, &attrs); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal user attributes: %w", err)
+	attrs := make(map[string]interface{})
+	if len(user.Attributes) > 0 {
+		if err := json.Unmarshal(user.Attributes, &attrs); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal user attributes: %w", err)
+		}
 	}
 
 	authenticatedUser := &authncm.AuthenticatedUser{
 		IsAuthenticated: true,
-		UserID:          user.UserID,
+		UserID:          user.ID,
 		OUID:            user.OUID,
-		UserType:        user.UserType,
+		UserType:        user.Type,
 		Attributes:      attrs,
 	}
 
@@ -364,7 +366,7 @@ func (p *passkeyAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 // executeRegisterStart initiates passkey credential registration.
 func (p *passkeyAuthExecutor) executeRegisterStart(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*common.ExecutorResponse, error) {
-	logger := p.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := p.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Starting passkey registration")
 
 	userID := p.GetUserIDFromContext(ctx)
@@ -431,7 +433,7 @@ func (p *passkeyAuthExecutor) executeRegisterStart(ctx *core.NodeContext,
 // executeRegisterFinish completes passkey credential registration.
 func (p *passkeyAuthExecutor) executeRegisterFinish(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*common.ExecutorResponse, error) {
-	logger := p.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := p.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Finishing passkey registration")
 
 	// Check for required inputs

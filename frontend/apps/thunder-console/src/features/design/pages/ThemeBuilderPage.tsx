@@ -16,13 +16,12 @@
  * under the License.
  */
 
+import {BuilderLayout, BuilderStaticPanel} from '@thunder/components';
 import {Box, Button, useColorScheme} from '@wso2/oxygen-ui';
 import {ArrowLeft, Save, Trash, Undo2} from '@wso2/oxygen-ui-icons-react';
 import {useCallback, useRef, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
-import BuilderLayout from '../../../components/BuilderLayout/BuilderLayout';
-import BuilderStaticPanel from '../../../components/BuilderLayout/BuilderStaticPanel';
 import ThemeConfigPanel from '../components/ThemeConfigPanel';
 import ThemePreviewPanel from '../components/ThemePreviewPanel';
 import ThemeBuilderLeftPanel from '../components/themes/ThemeBuilderLeftPanel';

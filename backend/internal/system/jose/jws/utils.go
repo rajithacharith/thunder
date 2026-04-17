@@ -61,6 +61,8 @@ func MapAlgorithmToSignAlg(jwsAlg Algorithm) (sign.SignAlgorithm, error) {
 		return sign.RSASHA256, nil
 	case RS512:
 		return sign.RSASHA512, nil
+	case PS256:
+		return sign.RSAPSSSHA256, nil
 	case ES256:
 		return sign.ECDSASHA256, nil
 	case ES384:

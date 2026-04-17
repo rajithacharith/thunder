@@ -57,6 +57,7 @@ window.__THUNDER_RUNTIME_CONFIG__ = {
     public_url: "https://auth.example.com",
     client_id: "FEDERATED_CONSOLE",
     scopes: ['openid', 'profile', 'email', 'group', 'ou', 'system', 'system:user', 'system:group', 'system:ou:view', 'system:userschema:view'],
+    type: "generic",
   },
 };
 ```
@@ -69,6 +70,7 @@ window.__THUNDER_RUNTIME_CONFIG__ = {
 | `public_url` | Fully-qualified URL of the external authorization server. Used by the console to build authorization requests. |
 | `client_id` | OAuth client ID registered on the external authorization server for this Thunder instance's console. |
 | `scopes` | Scopes the console requests from the external authorization server. Must include every scope Thunder's APIs require. |
+| `type` | Set to `"generic"` when the trusted issuer is a generic OIDC provider. When set, the console skips Thunder-specific bootstrap calls (flow metadata, branding preferences) that would fail against a generic provider and uses the IdP's `end_session_endpoint` for sign-out. Defaults to `"thunder"`. |
 
 When this block is present, the console delegates login to the external authorization server. When omitted, the console authenticates against this Thunder instance normally.
 
@@ -78,20 +80,34 @@ The external authorization server must permit this Thunder instance's origin in 
 
 ## How Validation Works
 
+:::info JWT Validation Update
+Thunder's trusted issuer token validation now accepts tokens that omit the `nbf` (not before) claim, aligning with [RFC 7519 Section 4.1.5](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.5). The `aud` (audience) claim is now accepted as either a single string or a JSON array of strings per [RFC 7519 Section 4.1.3](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3). These changes improve compatibility with commercial OIDC providers that do not emit `nbf` or that issue array-form `aud`. No client-side migration is required; tokens that were accepted before remain valid.
+:::
+
 When trusted issuer is configured and a request carries a bearer token, Thunder:
 
 1. Parses the JWT and confirms its `iss` claim matches `trusted_issuer.issuer`.
 2. Fetches signing keys from `trusted_issuer.jwks_url` and verifies the signature.
-3. Confirms the `aud` claim matches `trusted_issuer.audience`.
-4. Checks that every entry in `required_claims` is present with the expected value.
+3. Checks the `exp` claim and rejects expired tokens.
+4. If the `nbf` (not before) claim is present, checks that the current time is not before the `nbf` value. If `nbf` is absent, the token is still accepted.
+5. Confirms the `aud` claim matches `trusted_issuer.audience`. The `aud` claim can be either a single string or a JSON array of strings; Thunder accepts the token if the configured audience appears in either form.
+6. Checks that every entry in `required_claims` is present with the expected value.
 
 If any step fails, the token is rejected.
+
+### Claim Handling Details
+
+**`nbf` (Not Before):** This claim is optional per [RFC 7519 Section 4.1.5](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.5). Many commercial OIDC providers do not include `nbf` in their tokens. Thunder accepts tokens that omit `nbf` entirely. When `nbf` is present, Thunder enforces it with the configured clock-skew leeway.
+
+**`aud` (Audience):** This claim can be a single string or an array of strings per [RFC 7519 Section 4.1.3](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3). Some identity providers issue array-form `aud` when multiple audiences are bound to the application (for example, the resource API together with the provider's own `/userinfo` endpoint). Thunder matches the configured `trusted_issuer.audience` value against both forms: exact string equality for single-string `aud`, and membership for array `aud`.
+
+**`exp` (Expiry):** This claim is required. Tokens that omit `exp` or provide a non-numeric value are rejected.
 
 Thunder picks the verification method based on the token's `iss` claim. If `iss` matches `trusted_issuer.issuer`, the token is verified against the configured JWKS endpoint. Otherwise, if `iss` matches one of this server's own issuers, Thunder verifies it with its local signing key. Any other `iss` is rejected.
 
 Each `required_claims` entry is matched by exact string equality: the claim must be present on the token and its value must match the configured `value` exactly.
 
-Thunder accepts tokens signed with `RS256`, `RS512`, `ES256`, `ES384`, `ES512`, or `EdDSA`. Tokens using any other algorithm are rejected. JWKS responses are cached in-process for `server.security.jwks_cache_ttl` seconds (default: 300), so plan external-server key rotations with at least that much overlap.
+Thunder accepts tokens signed with `RS256`, `PS256`, `RS512`, `ES256`, `ES384`, `ES512`, or `EdDSA`. Tokens using any other algorithm are rejected. JWKS responses are cached in-process for `server.security.jwks_cache_ttl` seconds (default: 300), so plan external-server key rotations with at least that much overlap.
 
 ## Helm Configuration
 
@@ -122,6 +138,7 @@ configuration:
       publicUrl: "https://auth.example.com"
       clientId: "FEDERATED_CONSOLE"
       scopes: "['openid', 'profile', 'email', 'group', 'ou', 'system', 'system:user', 'system:group', 'system:ou:view', 'system:userschema:view']"
+      type: "generic"
 ```
 
 ## Troubleshooting

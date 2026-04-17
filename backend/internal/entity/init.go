@@ -19,6 +19,7 @@
 package entity
 
 import (
+	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/transaction"
 	"github.com/asgardeo/thunder/internal/userschema"
@@ -31,13 +32,14 @@ import (
 func Initialize(
 	hashService hash.HashServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
+	ouService ou.OrganizationUnitServiceInterface,
 ) (EntityServiceInterface, error) {
 	store, transactioner, err := initializeStore()
 	if err != nil {
 		return nil, err
 	}
 
-	svc := newEntityService(store, hashService, userSchemaService, transactioner)
+	svc := newEntityService(store, hashService, userSchemaService, ouService, transactioner)
 	return svc, nil
 }
 

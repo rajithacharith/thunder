@@ -220,8 +220,10 @@ func (suite *EncryptionTestSuite) TestDifferentKeysEncryption() {
 
 func (suite *EncryptionTestSuite) TestEncryptWithInvalidKey() {
 	service := &EncryptionService{
-		Key: []byte("short"),
-		Kid: "kid",
+		DefaultEncryptionKid: "kid",
+		Keys: map[string][]byte{
+			"kid": []byte("short"),
+		},
 	}
 
 	_, err := service.Encrypt([]byte("data"))
@@ -247,7 +249,7 @@ func (suite *EncryptionTestSuite) TestDecryptUnsupportedAlgorithm() {
 	payload := EncryptedData{
 		Algorithm:  "RSA",
 		Ciphertext: base64.StdEncoding.EncodeToString([]byte("cipher")),
-		KeyID:      service.Kid,
+		KeyID:      service.DefaultEncryptionKid,
 	}
 	raw, _ := json.Marshal(payload)
 
@@ -263,7 +265,7 @@ func (suite *EncryptionTestSuite) TestDecryptInvalidBase64() {
 	payload := EncryptedData{
 		Algorithm:  AESGCM,
 		Ciphertext: "###invalid###",
-		KeyID:      service.Kid,
+		KeyID:      service.DefaultEncryptionKid,
 	}
 	raw, _ := json.Marshal(payload)
 
@@ -280,7 +282,7 @@ func (suite *EncryptionTestSuite) TestDecryptCiphertextTooShort() {
 	payload := EncryptedData{
 		Algorithm:  AESGCM,
 		Ciphertext: base64.StdEncoding.EncodeToString([]byte("short")),
-		KeyID:      service.Kid,
+		KeyID:      service.DefaultEncryptionKid,
 	}
 	raw, _ := json.Marshal(payload)
 
@@ -290,8 +292,10 @@ func (suite *EncryptionTestSuite) TestDecryptCiphertextTooShort() {
 
 func (suite *EncryptionTestSuite) TestDecryptWithInvalidKeyLength() {
 	service := &EncryptionService{
-		Key: []byte("short"),
-		Kid: "kid",
+		DefaultEncryptionKid: "kid",
+		Keys: map[string][]byte{
+			"kid": []byte("short"),
+		},
 	}
 
 	payload := EncryptedData{
@@ -303,6 +307,71 @@ func (suite *EncryptionTestSuite) TestDecryptWithInvalidKeyLength() {
 
 	_, err := service.Decrypt(string(raw))
 	assert.Error(suite.T(), err)
+}
+
+func (suite *EncryptionTestSuite) TestDecryptUsesKeyFromKidMap() {
+	key1, err := generateRandomKey(32)
+	assert.NoError(suite.T(), err)
+	key2, err := generateRandomKey(32)
+	assert.NoError(suite.T(), err)
+
+	primary := newEncryptionService(key1)
+	secondary := newEncryptionService(key2)
+
+	// Encrypt with the secondary key so payload kid points to that key.
+	encrypted, err := secondary.EncryptString("rotated-secret")
+	assert.NoError(suite.T(), err)
+
+	// Decrypt using a service whose active key is key1 but key map contains key2.
+	service := &EncryptionService{
+		DefaultEncryptionKid: primary.DefaultEncryptionKid,
+		Keys: map[string][]byte{
+			primary.DefaultEncryptionKid:   key1,
+			secondary.DefaultEncryptionKid: key2,
+		},
+	}
+
+	decrypted, err := service.DecryptString(encrypted)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "rotated-secret", decrypted)
+}
+
+func (suite *EncryptionTestSuite) TestDecryptFailsWhenKidIsUnknown() {
+	key, err := generateRandomKey(32)
+	assert.NoError(suite.T(), err)
+	service := newEncryptionService(key)
+
+	payload := EncryptedData{
+		Algorithm:  AESGCM,
+		Ciphertext: base64.StdEncoding.EncodeToString([]byte("ciphertext-with-nonce")),
+		KeyID:      "unknown-kid",
+	}
+	raw, _ := json.Marshal(payload)
+
+	_, err = service.Decrypt(string(raw))
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "decryption key not found")
+}
+
+func (suite *EncryptionTestSuite) TestDecryptFailsWhenKidMissing() {
+	key, err := generateRandomKey(32)
+	assert.NoError(suite.T(), err)
+	service := newEncryptionService(key)
+
+	encrypted, err := service.EncryptString("legacy-secret")
+	assert.NoError(suite.T(), err)
+
+	var payload EncryptedData
+	err = json.Unmarshal([]byte(encrypted), &payload)
+	assert.NoError(suite.T(), err)
+
+	// Simulate older payload without kid.
+	payload.KeyID = ""
+	raw, _ := json.Marshal(payload)
+
+	_, err = service.DecryptString(string(raw))
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "decryption key not found")
 }
 
 func (suite *EncryptionTestSuite) TestNon32() {

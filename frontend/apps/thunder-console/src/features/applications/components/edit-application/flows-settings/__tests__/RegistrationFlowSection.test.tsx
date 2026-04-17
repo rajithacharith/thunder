@@ -29,13 +29,13 @@ vi.mock('../../../../../flows/api/useGetFlows');
 
 type MockedUseGetFlows = ReturnType<typeof useGetFlows>;
 
-// Mock the SettingsCard component
-vi.mock('../../../../../../components/SettingsCard', () => ({
-  default: ({
+// Mock the Components
+vi.mock('@thunder/components', () => ({
+  SettingsCard: ({
     title,
     description,
-    enabled,
-    onToggle,
+    enabled = false,
+    onToggle = undefined,
     children,
   }: {
     title: string;

@@ -47,6 +47,9 @@ window.__THUNDER_RUNTIME_CONFIG__ = {
     {{- if .Values.configuration.consoleClient.trustedIssuer.scopes }}
     scopes: {{ .Values.configuration.consoleClient.trustedIssuer.scopes }},
     {{- end }}
+    {{- if .Values.configuration.consoleClient.trustedIssuer.type }}
+    type: {{ .Values.configuration.consoleClient.trustedIssuer.type | quote }},
+    {{- end }}
   },
   {{- end }}
 };

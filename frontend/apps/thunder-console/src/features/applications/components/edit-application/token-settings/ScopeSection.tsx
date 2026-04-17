@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import {SettingsCard} from '@thunder/components';
 import {Box, Stack, Typography, Divider} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
 import ScopeMapper from './ScopeMapper';
 import ScopeSelector from './ScopeSelector';
-import SettingsCard from '../../../../../components/SettingsCard';
 import type {ScopeClaims} from '../../../models/oauth';
 
 /**

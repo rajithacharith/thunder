@@ -25,12 +25,12 @@ import (
 	"strconv"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/notification"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 // mobileNumberInput is the default input definition for mobile number collection.
@@ -45,9 +45,9 @@ var mobileNumberInput = common.Input{
 type smsOTPAuthExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
-	userProvider userprovider.UserProviderInterface
-	otpService   notification.OTPServiceInterface
-	logger       *log.Logger
+	entityProvider entityprovider.EntityProviderInterface
+	otpService     notification.OTPServiceInterface
+	logger         *log.Logger
 }
 
 var _ core.ExecutorInterface = (*smsOTPAuthExecutor)(nil)
@@ -57,7 +57,7 @@ var _ identifyingExecutorInterface = (*smsOTPAuthExecutor)(nil)
 func newSMSOTPAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
 	otpService notification.OTPServiceInterface,
-	userProvider userprovider.UserProviderInterface,
+	entityProvider entityprovider.EntityProviderInterface,
 ) *smsOTPAuthExecutor {
 	defaultInputs := []common.Input{
 		{
@@ -73,14 +73,14 @@ func newSMSOTPAuthExecutor(
 		log.String(log.LoggerKeyExecutorName, ExecutorNameSMSAuth))
 
 	identifyExec := newIdentifyingExecutor(ExecutorNameSMSAuth, defaultInputs, prerequisites,
-		flowFactory, userProvider)
+		flowFactory, entityProvider)
 	base := flowFactory.CreateExecutor(ExecutorNameSMSAuth, common.ExecutorTypeAuthentication,
 		defaultInputs, prerequisites)
 
 	return &smsOTPAuthExecutor{
 		ExecutorInterface:            base,
 		identifyingExecutorInterface: identifyExec,
-		userProvider:                 userProvider,
+		entityProvider:               entityProvider,
 		otpService:                   otpService,
 		logger:                       logger,
 	}
@@ -88,7 +88,7 @@ func newSMSOTPAuthExecutor(
 
 // Execute executes the SMS OTP authentication logic.
 func (s *smsOTPAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing SMS OTP authentication executor")
 
 	execResp := &common.ExecutorResponse{
@@ -114,7 +114,7 @@ func (s *smsOTPAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRes
 // executeSend executes the OTP sending step.
 func (s *smsOTPAuthExecutor) executeSend(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*common.ExecutorResponse, error) {
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	err := s.InitiateOTP(ctx, execResp)
 	if err != nil {
@@ -129,7 +129,7 @@ func (s *smsOTPAuthExecutor) executeSend(ctx *core.NodeContext,
 // executeVerify executes the OTP verification step.
 func (s *smsOTPAuthExecutor) executeVerify(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*common.ExecutorResponse, error) {
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	if !s.HasRequiredInputs(ctx, execResp) {
 		logger.Debug("Required inputs for SMS OTP verification are not provided")
@@ -152,7 +152,7 @@ func (s *smsOTPAuthExecutor) executeVerify(ctx *core.NodeContext,
 // InitiateOTP initiates the OTP sending process to the user's mobile number.
 func (s *smsOTPAuthExecutor) InitiateOTP(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) error {
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Sending SMS OTP to user")
 
 	phoneAttr := s.resolvePhoneInput(ctx, mobileNumberInput).Identifier
@@ -225,7 +225,7 @@ func (s *smsOTPAuthExecutor) InitiateOTP(ctx *core.NodeContext,
 // ProcessAuthFlowResponse processes the authentication flow response for SMS OTP.
 func (s *smsOTPAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) error {
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Processing authentication flow response for SMS OTP")
 
 	err := s.validateOTP(ctx, execResp, logger)
@@ -256,7 +256,7 @@ func (s *smsOTPAuthExecutor) ValidatePrerequisites(ctx *core.NodeContext,
 		return true
 	}
 
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	if ctx.FlowType == common.FlowTypeRegistration {
 		logger.Debug("Prerequisites not met for registration flow, prompting for mobile number")
@@ -328,7 +328,7 @@ func (s *smsOTPAuthExecutor) getUserMobileFromContext(ctx *core.NodeContext, pho
 // satisfyPrerequisites tries to satisfy the prerequisites for the SMSOTPAuthExecutor.
 func (s *smsOTPAuthExecutor) satisfyPrerequisites(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) {
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	execResp.Status = ""
 	execResp.FailureReason = ""
@@ -376,7 +376,7 @@ func (s *smsOTPAuthExecutor) satisfyPrerequisites(ctx *core.NodeContext,
 // resolveUserID resolves the user ID from the context based on various attributes.
 // TODO: Move to a separate resolver when the support is added.
 func (s *smsOTPAuthExecutor) resolveUserID(ctx *core.NodeContext) (bool, error) {
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	// First, check if the user ID is already available in the context.
 	userID := s.GetUserIDFromContext(ctx)
@@ -434,7 +434,7 @@ func (s *smsOTPAuthExecutor) resolveUserIDFromAttribute(ctx *core.NodeContext,
 	}
 	if attributeValue != "" {
 		filters := map[string]interface{}{attributeName: attributeValue}
-		userID, providerErr := s.userProvider.IdentifyUser(filters)
+		userID, providerErr := s.entityProvider.IdentifyEntity(filters)
 		if providerErr != nil {
 			return false, fmt.Errorf("failed to identify user by %s: %s", attributeName, providerErr.Error())
 		}
@@ -455,7 +455,8 @@ func (s *smsOTPAuthExecutor) resolveUserIDFromAttribute(ctx *core.NodeContext,
 // getUserMobileNumber retrieves the mobile number for the given user ID.
 func (s *smsOTPAuthExecutor) getUserMobileNumber(userID string, ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (string, error) {
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID), log.String("userID", userID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID),
+		log.String("userID", userID))
 	logger.Debug("Retrieving user mobile number")
 
 	// Try to get mobile number from context
@@ -468,15 +469,17 @@ func (s *smsOTPAuthExecutor) getUserMobileNumber(userID string, ctx *core.NodeCo
 
 	// Mobile number not in context, fetch from user store
 	logger.Debug("Mobile number not in context, fetching from user store")
-	user, providerErr := s.userProvider.GetUser(userID)
+	user, providerErr := s.entityProvider.GetEntity(userID)
 	if providerErr != nil {
 		return "", fmt.Errorf("failed to retrieve user details: %s", providerErr.Error())
 	}
 
 	// Extract mobile number from user attributes
-	var attrs map[string]interface{}
-	if err := json.Unmarshal(user.Attributes, &attrs); err != nil {
-		return "", fmt.Errorf("failed to unmarshal user attributes: %w", err)
+	attrs := make(map[string]interface{})
+	if len(user.Attributes) > 0 {
+		if err := json.Unmarshal(user.Attributes, &attrs); err != nil {
+			return "", fmt.Errorf("failed to unmarshal user attributes: %w", err)
+		}
 	}
 
 	mobileNumber = ""
@@ -627,7 +630,7 @@ func (s *smsOTPAuthExecutor) validateOTP(ctx *core.NodeContext, execResp *common
 // getAuthenticatedUser returns the authenticated user details for the given user ID.
 func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*authncm.AuthenticatedUser, error) {
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	phoneAttr := ctx.RuntimeData[runtimeKeySMSOTPPhoneAttr]
 	if phoneAttr == "" {
@@ -666,30 +669,31 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 
 	// User not available in context, fetch from user store
 	logger.Debug("Fetching user details from user store", log.String("userID", userID))
-	user, providerErr := s.userProvider.GetUser(userID)
+	user, providerErr := s.entityProvider.GetEntity(userID)
 	if providerErr != nil {
 		return nil, fmt.Errorf("failed to get user details: %s", providerErr.Error())
 	}
 
 	// Extract user attributes
-	var attrs map[string]interface{}
-	if err := json.Unmarshal(user.Attributes, &attrs); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal user attributes: %w", err)
+	attrs := make(map[string]interface{})
+	if len(user.Attributes) > 0 {
+		if err := json.Unmarshal(user.Attributes, &attrs); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal user attributes: %w", err)
+		}
+		if attrs == nil {
+			attrs = make(map[string]interface{})
+		}
 	}
 
-	// Ensure mobile number is in attributes
-	if attrs == nil {
-		attrs = make(map[string]interface{})
-	}
 	if _, exists := attrs[phoneAttr]; !exists {
 		attrs[phoneAttr] = mobileNumber
 	}
 
 	authenticatedUser := &authncm.AuthenticatedUser{
 		IsAuthenticated: true,
-		UserID:          user.UserID,
+		UserID:          user.ID,
 		OUID:            user.OUID,
-		UserType:        user.UserType,
+		UserType:        user.Type,
 		Attributes:      attrs,
 	}
 

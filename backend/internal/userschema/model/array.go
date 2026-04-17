@@ -82,7 +82,7 @@ func (p *array) validateValue(value interface{}, path string, logger *log.Logger
 func (p *array) validateUniqueness(
 	value interface{},
 	path string,
-	identifyUser func(map[string]interface{}) (*string, error),
+	exists func(map[string]interface{}) (bool, error),
 	logger *log.Logger,
 ) (bool, error) {
 	// Arrays are not supported for uniqueness validation

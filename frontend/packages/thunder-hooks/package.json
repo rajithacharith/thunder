@@ -54,6 +54,7 @@
     "@thunder/test-utils": "workspace:^",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
+    "@vitest/browser-playwright": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "react": "catalog:",
@@ -61,20 +62,21 @@
     "rimraf": "catalog:",
     "rolldown": "catalog:",
     "typescript": "catalog:",
-    "@vitest/browser-playwright": "catalog:",
     "playwright": "catalog:",
+    "tslib": "catalog:",
     "vitest": "catalog:"
   },
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
-    "@thunder/utils": "workspace:^",
-    "lucide-react": "catalog:",
-    "tslib": "catalog:"
-  },
+  "dependencies": {},
   "peerDependencies": {
+    "@wso2/oxygen-ui": "catalog:",
+    "@thunder/logger": "workspace:^",
+    "@thunder/test-utils": "workspace:^",
+    "@thunder/utils": "workspace:^",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "react-i18next": "catalog:"
   }
 }

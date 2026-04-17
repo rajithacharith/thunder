@@ -16,12 +16,12 @@
  * under the License.
  */
 
+import {BuilderFloatingPanel} from '@thunder/components';
 import {Box, IconButton, Stack, Tab, Tabs, Typography} from '@wso2/oxygen-ui';
 import {BellIcon, CircleXIcon, InfoIcon, TriangleAlertIcon, X} from '@wso2/oxygen-ui-icons-react';
 import type {PropsWithChildren, ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
 import ValidationNotificationsList from './ValidationNotificationsList';
-import BuilderFloatingPanel from '../../../../components/BuilderLayout/BuilderFloatingPanel';
 import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
 import useValidationStatus from '../../hooks/useValidationStatus';
 import Notification, {NotificationType} from '../../models/notification';
