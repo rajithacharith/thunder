@@ -502,7 +502,7 @@ function package() {
     fi
 
     echo "Creating zip file..."
-    (cd "$DIST_DIR" && zip -r "$PRODUCT_FOLDER.zip" "$PRODUCT_FOLDER")
+    (cd "$DIST_DIR" && find "$PRODUCT_FOLDER" | sort | zip "$PRODUCT_FOLDER.zip" -@)
     rm -rf "${DIST_DIR:?}/$PRODUCT_FOLDER" "$BUILD_DIR"
     echo "================================================================"
 }
@@ -630,7 +630,7 @@ function package_vanilla_sample() {
     fi
 
     echo "Creating React Vanilla sample zip file..."
-    (cd "$DIST_DIR" && zip -r "$VANILLA_SAMPLE_APP_FOLDER.zip" "$VANILLA_SAMPLE_APP_FOLDER")
+    (cd "$DIST_DIR" && find "$VANILLA_SAMPLE_APP_FOLDER" | sort | zip "$VANILLA_SAMPLE_APP_FOLDER.zip" -@)
     rm -rf "${DIST_DIR:?}/$VANILLA_SAMPLE_APP_FOLDER"
 
     echo "✅ React Vanilla sample app packaged successfully as $DIST_DIR/$VANILLA_SAMPLE_APP_FOLDER.zip"
@@ -667,7 +667,7 @@ function package_react_sdk_sample() {
     fi
 
     echo "Creating React SDK sample zip file..."
-    (cd "$DIST_DIR" && zip -r "$REACT_SDK_SAMPLE_APP_FOLDER.zip" "$REACT_SDK_SAMPLE_APP_FOLDER")
+    (cd "$DIST_DIR" && find "$REACT_SDK_SAMPLE_APP_FOLDER" | sort | zip "$REACT_SDK_SAMPLE_APP_FOLDER.zip" -@)
     rm -rf "${DIST_DIR:?}/$REACT_SDK_SAMPLE_APP_FOLDER"
 
     echo "✅ React SDK sample app packaged successfully as $DIST_DIR/$REACT_SDK_SAMPLE_APP_FOLDER.zip"
@@ -704,7 +704,7 @@ function package_react_api_based_sample() {
     fi
 
     echo "Creating React API-based sample zip file..."
-    (cd "$DIST_DIR" && zip -r "$REACT_API_SAMPLE_APP_FOLDER.zip" "$REACT_API_SAMPLE_APP_FOLDER")
+    (cd "$DIST_DIR" && find "$REACT_API_SAMPLE_APP_FOLDER" | sort | zip "$REACT_API_SAMPLE_APP_FOLDER.zip" -@)
     rm -rf "${DIST_DIR:?}/$REACT_API_SAMPLE_APP_FOLDER"
 
     echo "✅ React API-based sample app packaged successfully as $DIST_DIR/$REACT_API_SAMPLE_APP_FOLDER.zip"
