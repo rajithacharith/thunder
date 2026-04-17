@@ -147,7 +147,7 @@ export default function IframeContent({
       >
         <PreviewThemeProvider colorScheme={colorScheme} colorSchemeNode={iframeDoc.documentElement}>
           <ElementInspector enabled={inspectorEnabled} onSelectSelector={onSelectSelector}>
-            <AuthPageLayout variant="SignIn" background={pageBackground}>
+            <AuthPageLayout isLoading={false} variant="SignIn" background={pageBackground}>
               <AuthCardLayout variant="SignInBox" showLogo={false}>
                 <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2}}>
                   {mock.map((component, index) => (

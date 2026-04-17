@@ -42,6 +42,13 @@ export type DesignProviderProps = PropsWithChildren<{
    * This is useful if flow metadata does not contain design information and the design needs to be resolved using the client UUID.
    */
   shouldResolveDesignInternally?: boolean;
+
+  /**
+   * Signals that an external source (e.g. Asgardeo meta) is still loading.
+   * When true, isLoading is reported as true so consumers can defer rendering
+   * until the design data has actually arrived.
+   */
+  isLoading?: boolean;
 }>;
 
 /**
@@ -63,6 +70,7 @@ export default function DesignProvider({
   children = null,
   design: externalDesign = undefined,
   shouldResolveDesignInternally = true,
+  isLoading: isExternalLoading = false,
 }: DesignProviderProps) {
   const {getClientUuid} = useConfig();
   const clientUuid = getClientUuid();
@@ -91,12 +99,12 @@ export default function DesignProvider({
     () => ({
       design,
       isDesignEnabled: Boolean(design) && (!isEmpty(design?.theme) || !isEmpty(design?.layout)),
-      isLoading: externalDesign ? false : isLoading,
+      isLoading: isExternalLoading || (externalDesign ? false : isLoading),
       error: externalDesign ? null : error,
       theme: undefined,
       layout: isEmpty(design?.layout) ? undefined : design?.layout,
     }),
-    [design, externalDesign, isLoading, error],
+    [design, externalDesign, isLoading, error, isExternalLoading],
   );
 
   return <DesignContext.Provider value={contextValue}>{children}</DesignContext.Provider>;
