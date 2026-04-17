@@ -28,7 +28,7 @@ import AcceptInviteBox from '../components/AcceptInvite/AcceptInviteBox';
  */
 export default function AcceptInvitePage(): JSX.Element {
   return (
-    <AuthPageLayout>
+    <AuthPageLayout isLoading={false}>
       <AcceptInviteBox />
     </AuthPageLayout>
   );

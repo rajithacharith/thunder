@@ -28,7 +28,7 @@ afterEach(() => {
 describe('AuthPageLayout', () => {
   it('renders children', () => {
     renderWithProviders(
-      <AuthPageLayout>
+      <AuthPageLayout isLoading={false}>
         <span>Page content</span>
       </AuthPageLayout>,
     );
@@ -37,17 +37,38 @@ describe('AuthPageLayout', () => {
 
   it('renders a main element', () => {
     renderWithProviders(
-      <AuthPageLayout>
+      <AuthPageLayout isLoading={false}>
         <span>Content</span>
       </AuthPageLayout>,
     );
     expect(screen.getByRole('main')).toBeTruthy();
   });
 
+  describe('isLoading prop', () => {
+    it('renders children when isLoading is false', () => {
+      renderWithProviders(
+        <AuthPageLayout isLoading={false}>
+          <span>Page content</span>
+        </AuthPageLayout>,
+      );
+      expect(screen.getByText('Page content')).toBeTruthy();
+    });
+
+    it('renders CircularProgress when isLoading is true', () => {
+      renderWithProviders(
+        <AuthPageLayout isLoading={true}>
+          <span>Page content</span>
+        </AuthPageLayout>,
+      );
+      expect(screen.queryByText('Page content')).toBeNull();
+      expect(screen.getByRole('progressbar')).toBeTruthy();
+    });
+  });
+
   describe('variant prop', () => {
     it('applies Thunder CSS root class when variant is provided', () => {
       renderWithProviders(
-        <AuthPageLayout variant="SignIn">
+        <AuthPageLayout isLoading={false} variant="SignIn">
           <span>Content</span>
         </AuthPageLayout>,
       );
@@ -57,7 +78,7 @@ describe('AuthPageLayout', () => {
 
     it('does not apply Thunder CSS class when variant is not provided', () => {
       renderWithProviders(
-        <AuthPageLayout>
+        <AuthPageLayout isLoading={false}>
           <span>Content</span>
         </AuthPageLayout>,
       );
@@ -70,7 +91,7 @@ describe('AuthPageLayout', () => {
   describe('background prop', () => {
     it('renders without errors when background is provided', () => {
       renderWithProviders(
-        <AuthPageLayout background="#ff0000">
+        <AuthPageLayout isLoading={false} background="#ff0000">
           <span>Content</span>
         </AuthPageLayout>,
       );
@@ -79,7 +100,7 @@ describe('AuthPageLayout', () => {
 
     it('renders without errors when background is a gradient', () => {
       renderWithProviders(
-        <AuthPageLayout background="linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
+        <AuthPageLayout isLoading={false} background="linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
           <span>Content</span>
         </AuthPageLayout>,
       );
@@ -88,7 +109,7 @@ describe('AuthPageLayout', () => {
 
     it('renders without errors when background is not provided (uses theme default)', () => {
       renderWithProviders(
-        <AuthPageLayout>
+        <AuthPageLayout isLoading={false}>
           <span>Content</span>
         </AuthPageLayout>,
       );
@@ -99,7 +120,7 @@ describe('AuthPageLayout', () => {
   describe('combined props', () => {
     it('renders with both variant and background', () => {
       renderWithProviders(
-        <AuthPageLayout variant="SignUp" background="#f0f0f0">
+        <AuthPageLayout isLoading={false} variant="SignUp" background="#f0f0f0">
           <span>Sign up form</span>
         </AuthPageLayout>,
       );
@@ -110,7 +131,7 @@ describe('AuthPageLayout', () => {
 
     it('renders multiple children correctly', () => {
       renderWithProviders(
-        <AuthPageLayout>
+        <AuthPageLayout isLoading={false}>
           <span>First child</span>
           <span>Second child</span>
         </AuthPageLayout>,

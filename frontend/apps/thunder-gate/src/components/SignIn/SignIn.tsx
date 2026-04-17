@@ -16,18 +16,20 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useDesign, AuthPageLayout} from '@thunder/design';
 import type {JSX} from 'react';
 import SignInBox from './SignInBox';
 import SignInSlogan from './SignInSlogan';
 
 export default function SignIn(): JSX.Element {
-  const {isDesignEnabled} = useDesign();
+  const {isMetaLoading} = useAsgardeo();
+  const {isDesignEnabled, isLoading: isDesignLoading} = useDesign();
 
-  const showSlogan = !isDesignEnabled;
+  const showSlogan = !isDesignLoading && !isDesignEnabled;
 
   return (
-    <AuthPageLayout variant="SignIn">
+    <AuthPageLayout isLoading={isMetaLoading || isDesignLoading} variant="SignIn">
       {showSlogan && <SignInSlogan />}
       <SignInBox />
     </AuthPageLayout>
