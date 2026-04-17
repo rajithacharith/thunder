@@ -37,7 +37,7 @@ func TestModelTestSuite(t *testing.T) {
 	testConfig := &config.Config{
 		Crypto: config.CryptoConfig{
 			Encryption: config.EncryptionConfig{
-				Key: "2729a7928c79371e5f312167269294a14bb0660fd166b02a408a20fa73271580",
+				Key: strings.Repeat("11", 32),
 			},
 		},
 	}

@@ -158,7 +158,7 @@ func (s *ManagerTestSuite) TestAuthenticateUser_ServerError() {
 		nil, meta, AuthUser{})
 
 	s.NotNil(svcErr)
-	s.Equal(ErrorAuthServerError.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 	s.Equal(serviceerror.ServerErrorType, svcErr.Type)
 	s.Nil(result)
 	s.False(returnedAuthUser.IsAuthenticated())
@@ -193,7 +193,7 @@ func (s *ManagerTestSuite) TestGetUserAvailableAttributes_EmptyAuthUser() {
 	attrs, svcErr := s.mgr.GetUserAvailableAttributes(context.Background(), AuthUser{})
 	s.Nil(attrs)
 	s.NotNil(svcErr)
-	s.Equal(ErrorNotAuthenticated.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *ManagerTestSuite) TestGetUserAvailableAttributes_WithData() {
@@ -221,7 +221,7 @@ func (s *ManagerTestSuite) TestGetUserAttributes_EmptyAuthUser() {
 	_, attrs, svcErr := s.mgr.GetUserAttributes(context.Background(), nil, nil, AuthUser{})
 	s.Nil(attrs)
 	s.NotNil(svcErr)
-	s.Equal(ErrorNotAuthenticated.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *ManagerTestSuite) TestGetUserAttributes_CacheHit() {
@@ -251,7 +251,7 @@ func (s *ManagerTestSuite) TestGetUserAvailableAttributes_NoProviderData() {
 	attrs, svcErr := s.mgr.GetUserAvailableAttributes(context.Background(), authUser)
 	s.Nil(attrs)
 	s.NotNil(svcErr)
-	s.Equal(ErrorProviderDataNotFound.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *ManagerTestSuite) TestGetUserAttributes_NoProviderData() {
@@ -260,7 +260,7 @@ func (s *ManagerTestSuite) TestGetUserAttributes_NoProviderData() {
 	_, attrs, svcErr := s.mgr.GetUserAttributes(context.Background(), nil, nil, authUser)
 	s.Nil(attrs)
 	s.NotNil(svcErr)
-	s.Equal(ErrorProviderDataNotFound.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *ManagerTestSuite) TestGetUserAttributes_CacheMissServerError() {
@@ -280,7 +280,7 @@ func (s *ManagerTestSuite) TestGetUserAttributes_CacheMissServerError() {
 	_, attrs, svcErr := s.mgr.GetUserAttributes(context.Background(), requestedAttrs, nil, authUser)
 	s.Nil(attrs)
 	s.NotNil(svcErr)
-	s.Equal(ErrorGetAttributesFailed.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 	s.Equal(serviceerror.ServerErrorType, svcErr.Type)
 }
 

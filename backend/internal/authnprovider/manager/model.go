@@ -108,6 +108,7 @@ func (a *AuthUser) MarshalJSON() ([]byte, error) {
 		encryptedToken := ""
 		if data.token != "" {
 			var err error
+			// TODO: remove once the improvement to encrypt the complete context is implemented
 			encryptedToken, err = encryptionService.EncryptString(data.token)
 			if err != nil {
 				return nil, err
@@ -136,9 +137,7 @@ func (a *AuthUser) UnmarshalJSON(b []byte) error {
 	a.userType = proxy.UserType
 	a.ouID = proxy.OUID
 
-	if a.providersAuthData == nil {
-		a.providersAuthData = make(map[providerKey]providerData, len(proxy.ProvidersAuthData))
-	}
+	a.providersAuthData = make(map[providerKey]providerData, len(proxy.ProvidersAuthData))
 
 	for k, v := range proxy.ProvidersAuthData {
 		decryptedToken := ""

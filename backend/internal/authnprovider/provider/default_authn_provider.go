@@ -64,7 +64,11 @@ func (p *defaultAuthnProvider) Authenticate(
 	authenticatedEntityID := ""
 
 	if passkeyCredential, ok := credentials["passkey"]; ok {
-		passkeyCredential := passkeyCredential.(*passkey.PasskeyAuthenticationFinishRequest)
+		passkeyCredential, ok := passkeyCredential.(*passkey.PasskeyAuthenticationFinishRequest)
+		if !ok || passkeyCredential == nil {
+			return nil, newClientError(authnprovidercm.ErrorCodeInvalidRequest,
+				"Invalid passkey payload", "The provided passkey credential is invalid")
+		}
 		authResponse, authErr := p.passkeyService.FinishAuthentication(ctx, passkeyCredential)
 		if authErr != nil {
 			return nil, newClientError(authnprovidercm.ErrorCodeAuthenticationFailed,
@@ -72,9 +76,21 @@ func (p *defaultAuthnProvider) Authenticate(
 		}
 		authenticatedEntityID = authResponse.ID
 	} else if otpCredential, ok := credentials["otp"]; ok {
-		otpCredential := otpCredential.(map[string]interface{})
-		sessionToken := otpCredential["sessionToken"].(string)
-		otpValue := otpCredential["otp"].(string)
+		otpCredential, ok := otpCredential.(map[string]interface{})
+		if !ok {
+			return nil, newClientError(authnprovidercm.ErrorCodeInvalidRequest,
+				"Invalid OTP payload", "The provided OTP credential is invalid")
+		}
+		sessionToken, ok := otpCredential["sessionToken"].(string)
+		if !ok || sessionToken == "" {
+			return nil, newClientError(authnprovidercm.ErrorCodeInvalidRequest,
+				"Invalid OTP payload", "sessionToken is required")
+		}
+		otpValue, ok := otpCredential["otp"].(string)
+		if !ok || otpValue == "" {
+			return nil, newClientError(authnprovidercm.ErrorCodeInvalidRequest,
+				"Invalid OTP payload", "otp is required")
+		}
 		authResponse, authErr := p.otpService.Authenticate(ctx, sessionToken, otpValue)
 		if authErr != nil {
 			if authErr.Type == serviceerror.ClientErrorType {
@@ -90,7 +106,11 @@ func (p *defaultAuthnProvider) Authenticate(
 		}
 		authenticatedEntityID = authResponse.ID
 	} else if userID, ok := identifiers["userID"]; ok && userID != "" {
-		userIDStr := userID.(string)
+		userIDStr, ok := userID.(string)
+		if !ok || userIDStr == "" {
+			return nil, newClientError(authnprovidercm.ErrorCodeInvalidRequest,
+				"Invalid user ID", "The provided userID is invalid")
+		}
 		authResult, authErr := p.entitySvc.AuthenticateEntityByID(ctx, userIDStr, credentials)
 		if authErr != nil {
 			if errors.Is(authErr, entity.ErrEntityNotFound) {

@@ -58,4 +58,11 @@ var (
 		Error:            "Authentication failed",
 		ErrorDescription: "The OTP authentication attempt failed",
 	}
+	// ErrorPasskeyAuthenticationFailed is the error when the passkey authentication attempt fails.
+	ErrorPasskeyAuthenticationFailed = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "AUTHN-PSK-1001",
+		Error:            "Authentication failed",
+		ErrorDescription: "The passkey authentication attempt failed",
+	}
 )

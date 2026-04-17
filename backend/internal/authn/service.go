@@ -836,6 +836,12 @@ func (as *authenticationService) FinishPasskeyAuthentication(ctx context.Context
 	_, basicResult, svcErr := as.authnProvider.AuthenticateUser(
 		ctx, nil, credentials, nil, nil, authnprovidermgr.AuthUser{})
 	if svcErr != nil {
+		if svcErr.Type == serviceerror.ServerErrorType {
+			return nil, &serviceerror.InternalServerError
+		}
+		if svcErr.Code == authnprovidermgr.ErrorAuthenticationFailed.Code {
+			return nil, &ErrorPasskeyAuthenticationFailed
+		}
 		return nil, svcErr
 	}
 

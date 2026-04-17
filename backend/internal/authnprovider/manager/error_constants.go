@@ -30,24 +30,6 @@ var (
 		ErrorDescription: "The authentication attempt failed",
 	}
 
-	// ErrorAuthServerError is returned when the underlying provider fails to process the
-	// authentication attempt due to a server-side error.
-	ErrorAuthServerError = serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "AUTHN-MGR-1002",
-		Error:            "Authentication server error",
-		ErrorDescription: "An internal error occurred while processing the authentication attempt",
-	}
-
-	// ErrorGetAttributesFailed is returned when the underlying provider cannot fulfill the
-	// attribute fetch due to a server-side error.
-	ErrorGetAttributesFailed = serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "AUTHN-MGR-1003",
-		Error:            "Failed to get attributes",
-		ErrorDescription: "An error occurred while fetching user attributes from the provider",
-	}
-
 	// ErrorGetAttributesClientError is returned when the underlying provider rejects the
 	// attribute fetch due to a client-side reason (e.g. invalid or expired token).
 	ErrorGetAttributesClientError = serviceerror.ServiceError{
@@ -55,24 +37,6 @@ var (
 		Code:             "AUTHN-MGR-1004",
 		Error:            "Failed to get attributes",
 		ErrorDescription: "The attribute fetch was rejected by the provider",
-	}
-
-	// ErrorNotAuthenticated is returned when an attribute operation is requested but no authenticated
-	// user session exists (authUser is nil).
-	ErrorNotAuthenticated = serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "AUTHN-MGR-1005",
-		Error:            "User not authenticated",
-		ErrorDescription: "The operation requires an authenticated user session",
-	}
-
-	// ErrorProviderDataNotFound is returned when no provider data exists for the user, meaning
-	// authentication has not been completed through the expected provider.
-	ErrorProviderDataNotFound = serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "AUTHN-MGR-1006",
-		Error:            "Provider data not found",
-		ErrorDescription: "No authentication data found for the provider",
 	}
 
 	// ErrorUserNotFound is returned when the underlying provider indicates no user was found

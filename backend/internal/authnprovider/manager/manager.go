@@ -52,7 +52,7 @@ func (m *authnProviderManager) AuthenticateUser(ctx context.Context, identifiers
 		if svcErr.Type == serviceerror.ServerErrorType {
 			m.logger.Error("provider returned server error during authentication",
 				log.String("error", svcErr.ErrorDescription))
-			return AuthUser{}, nil, serviceerror.CustomServiceError(ErrorAuthServerError, svcErr.ErrorDescription)
+			return AuthUser{}, nil, &serviceerror.InternalServerError
 		}
 		switch svcErr.Code {
 		case authnprovidercm.ErrorCodeUserNotFound:
@@ -81,12 +81,12 @@ func (m *authnProviderManager) GetUserAvailableAttributes(ctx context.Context,
 	authUser AuthUser) (*authnprovidercm.AttributesResponse, *serviceerror.ServiceError) {
 	if !authUser.IsAuthenticated() {
 		m.logger.Error("GetUserAvailableAttributes called with unauthenticated authUser")
-		return nil, &ErrorNotAuthenticated
+		return nil, &serviceerror.InternalServerError
 	}
 	data, ok := authUser.getProviderData(defaultProvider)
 	if !ok {
 		m.logger.Error("GetUserAvailableAttributes: no provider data found for default provider")
-		return nil, &ErrorProviderDataNotFound
+		return nil, &serviceerror.InternalServerError
 	}
 	return data.attributes, nil
 }
@@ -98,12 +98,12 @@ func (m *authnProviderManager) GetUserAttributes(ctx context.Context,
 	authUser AuthUser) (AuthUser, *authnprovidercm.AttributesResponse, *serviceerror.ServiceError) {
 	if !authUser.IsAuthenticated() {
 		m.logger.Error("GetUserAttributes called with unauthenticated authUser")
-		return AuthUser{}, nil, &ErrorNotAuthenticated
+		return AuthUser{}, nil, &serviceerror.InternalServerError
 	}
 	data, ok := authUser.getProviderData(defaultProvider)
 	if !ok {
 		m.logger.Error("GetUserAttributes: no provider data found for default provider")
-		return AuthUser{}, nil, &ErrorProviderDataNotFound
+		return AuthUser{}, nil, &serviceerror.InternalServerError
 	}
 	if data.isAttributeValuesIncluded {
 		return authUser, data.attributes, nil
@@ -113,7 +113,7 @@ func (m *authnProviderManager) GetUserAttributes(ctx context.Context,
 		if svcErr.Type == serviceerror.ServerErrorType {
 			m.logger.Error("provider returned server error while fetching attributes",
 				log.String("error", svcErr.ErrorDescription))
-			return AuthUser{}, nil, serviceerror.CustomServiceError(ErrorGetAttributesFailed, svcErr.ErrorDescription)
+			return AuthUser{}, nil, &serviceerror.InternalServerError
 		}
 		return AuthUser{}, nil, serviceerror.CustomServiceError(ErrorGetAttributesClientError, svcErr.ErrorDescription)
 	}
