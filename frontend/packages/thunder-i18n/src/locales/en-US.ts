@@ -371,6 +371,10 @@ const translations = {
     'manageUser.title': 'Manage User',
     'manageUser.subtitle': 'View and manage user information',
     'manageUser.back': 'Back to Users',
+    'manageUser.sections.quickCopy.title': 'Quick Copy',
+    'manageUser.sections.quickCopy.description': 'Copy user identifiers for use in your application.',
+    'manageUser.sections.quickCopy.userId': 'User ID',
+    'manageUser.sections.quickCopy.copyUserId': 'Copy User ID',
 
     // Create page
     'createUser.title': 'Create User',
@@ -1348,6 +1352,10 @@ const translations = {
     'edit.general.sections.dangerZone.regenerateSecret.description':
       'Regenerating the client secret will immediately invalidate the current client secret and cannot be undone.',
     'edit.general.sections.dangerZone.regenerateSecret.button': 'Regenerate Client Secret',
+    'edit.general.sections.dangerZone.deleteApplication.title': 'Delete Application',
+    'edit.general.sections.dangerZone.deleteApplication.description':
+      'Permanently delete this application and all associated data. This action cannot be undone.',
+    'edit.general.sections.dangerZone.deleteApplication.button': 'Delete Application',
 
     // Flows section
     'edit.flows.labels.authFlow': 'Authentication Flow',

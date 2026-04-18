@@ -16,11 +16,9 @@
  * under the License.
  */
 
-import {CopyableId} from '@thunder/components';
 import {useToast} from '@thunder/contexts';
 import {useLogger} from '@thunder/logger/react';
 import {
-  Avatar,
   Box,
   Stack,
   Typography,
@@ -35,7 +33,7 @@ import {
   PageContent,
   PageTitle,
 } from '@wso2/oxygen-ui';
-import {ArrowLeft, Edit, ShieldCheck} from '@wso2/oxygen-ui-icons-react';
+import {ArrowLeft, Edit} from '@wso2/oxygen-ui-icons-react';
 import {useState, useCallback, useMemo} from 'react';
 import type {ReactNode, SyntheticEvent, JSX} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -185,11 +183,6 @@ export default function RoleEditPage(): JSX.Element {
       {/* Header */}
       <PageTitle>
         <PageTitle.BackButton component={<Link to={listUrl} />}>{t('roles:edit.page.back')}</PageTitle.BackButton>
-        <PageTitle.Avatar>
-          <Avatar>
-            <ShieldCheck size={32} />
-          </Avatar>
-        </PageTitle.Avatar>
         <PageTitle.Header>
           <Stack direction="row" alignItems="center" spacing={1} mb={1}>
             {isEditingName ? (
@@ -283,8 +276,6 @@ export default function RoleEditPage(): JSX.Element {
               </>
             )}
           </Stack>
-
-          <CopyableId value={role.id} copyLabel={t('roles:edit.general.sections.quickCopy.copyRoleId')} />
         </PageTitle.SubHeader>
       </PageTitle>
 

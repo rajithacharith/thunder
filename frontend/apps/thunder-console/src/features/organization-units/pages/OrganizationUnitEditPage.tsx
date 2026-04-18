@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {CopyableId, ResourceAvatar, UnsavedChangesBar} from '@thunder/components';
+import {ResourceAvatar, UnsavedChangesBar} from '@thunder/components';
 import {useLogger} from '@thunder/logger/react';
 import {
   Box,
@@ -328,12 +328,6 @@ export default function OrganizationUnitEditPage(): JSX.Element {
               </>
             )}
           </Stack>
-
-          {/* Organization Unit ID */}
-          <CopyableId
-            value={organizationUnit.id}
-            copyLabel={t('organizationUnits:edit.page.copyOuId', 'Copy Organization Unit ID')}
-          />
         </PageTitle.SubHeader>
       </PageTitle>
 

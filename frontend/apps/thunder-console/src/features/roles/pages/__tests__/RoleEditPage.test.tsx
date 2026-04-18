@@ -46,7 +46,7 @@ vi.mock('../../components/edit-role/assignments-settings/EditAssignmentsSettings
 }));
 
 vi.mock('@thunder/components', () => ({
-  CopyableId: ({value}: {value: string}) => <span data-testid="copyable-id">{value}</span>,
+  CopyableId: vi.fn(() => null),
 }));
 
 vi.mock('react-router', async () => {
@@ -165,16 +165,10 @@ describe('RoleEditPage', () => {
       expect(screen.getByText('Admin Role')).toBeInTheDocument();
     });
 
-    it('should display role description', () => {
+    it('should render role description', () => {
       render(<RoleEditPage />);
 
       expect(screen.getByText('Administrator role')).toBeInTheDocument();
-    });
-
-    it('should render CopyableId with role.id', () => {
-      render(<RoleEditPage />);
-
-      expect(screen.getByTestId('copyable-id')).toHaveTextContent('role-1');
     });
 
     it('should render two tabs', () => {
