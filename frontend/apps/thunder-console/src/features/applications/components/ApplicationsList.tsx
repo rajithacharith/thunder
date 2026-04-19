@@ -186,7 +186,7 @@ export default function ApplicationsList(): JSX.Element {
   }
 
   return (
-    <>
+    <Box data-testid="applications-list">
       <ListingTable.Provider variant="data-grid-card" loading={isLoading}>
         <ListingTable.Container disablePaper>
           <ListingTable.DataGrid
@@ -219,6 +219,6 @@ export default function ApplicationsList(): JSX.Element {
         applicationId={selectedAppId}
         onClose={handleDeleteDialogClose}
       />
-    </>
+    </Box>
   );
 }

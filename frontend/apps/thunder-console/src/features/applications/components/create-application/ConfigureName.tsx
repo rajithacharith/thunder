@@ -109,7 +109,7 @@ export default function ConfigureName({
   };
 
   return (
-    <Stack direction="column" spacing={4} data-testid="configure-name">
+    <Stack direction="column" spacing={4} data-testid="application-configure-name">
       <Typography variant="h1" gutterBottom>
         {t('applications:onboarding.configure.name.title')}
       </Typography>

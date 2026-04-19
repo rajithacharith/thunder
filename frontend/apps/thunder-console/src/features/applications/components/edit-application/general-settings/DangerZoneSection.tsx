@@ -89,7 +89,7 @@ export default function DangerZoneSection({
           'Permanently delete this application and all associated data. This action cannot be undone.',
         )}
       </Typography>
-      <Button variant="contained" color="error" onClick={onDeleteClick}>
+      <Button data-testid="delete-application-button" variant="contained" color="error" onClick={onDeleteClick}>
         {t('applications:edit.general.sections.dangerZone.deleteApplication.button', 'Delete Application')}
       </Button>
     </SettingsCard>

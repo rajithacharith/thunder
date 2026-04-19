@@ -68,7 +68,7 @@ export default function ShowClientSecret({
   };
 
   return (
-    <Stack direction="column" spacing={4} sx={{width: '100%'}}>
+    <Stack direction="column" spacing={4} sx={{width: '100%'}} data-testid="application-show-client-secret">
       {/* Warning Icon */}
       <Box
         sx={{
@@ -120,6 +120,7 @@ export default function ShowClientSecret({
             </Typography>
             <TextField
               fullWidth
+              data-testid="application-client-secret-value"
               type={showSecret ? 'text' : 'password'}
               value={clientSecret}
               InputProps={{
@@ -172,7 +173,7 @@ export default function ShowClientSecret({
         >
           {copied ? t('applications:clientSecret.copied') : t('applications:clientSecret.copySecret')}
         </Button>
-        <Button variant="outlined" fullWidth onClick={onContinue}>
+        <Button data-testid="application-client-secret-continue" variant="outlined" fullWidth onClick={onContinue}>
           {t('common:actions.continue')}
         </Button>
       </Stack>

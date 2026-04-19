@@ -37,6 +37,7 @@ export default function ApplicationsListPage(): JSX.Element {
         <PageTitle.SubHeader>{t('applications:listing.subtitle')}</PageTitle.SubHeader>
         <PageTitle.Actions>
           <Button
+            data-testid="application-add-button"
             variant="contained"
             startIcon={<Plus size={18} />}
             onClick={() => {
