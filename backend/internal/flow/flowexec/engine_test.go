@@ -26,6 +26,8 @@ import (
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
 	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/system/crypto/token"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/observability/observabilitymock"
@@ -1597,4 +1599,166 @@ func (s *EngineTestSuite) TestHandleDisplayOnlyPromptResponse_MergesAdditionalDa
 	s.Nil(nextNode)
 	// Verify merged data
 	s.Equal(common.FlowStatusComplete, flowStep.Status)
+}
+
+func (s *EngineTestSuite) TestValidateChallengeToken_EmptyTokenHashSkipsValidation() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+	ctx := &EngineContext{
+		ExecutionID:        "test-exec-id",
+		ChallengeTokenIn:   "some-token",
+		ChallengeTokenHash: "",
+	}
+
+	svcErr := fe.validateChallengeToken(ctx, mockNode)
+	s.Nil(svcErr)
+}
+
+func (s *EngineTestSuite) TestValidateChallengeToken_SkipValidationWhenPolicyAllows() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetExecutionPolicy").Return(&core.ExecutionPolicy{
+		SkipChallengeValidation: true,
+	})
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	// Generate a token and hash it
+	tokenStr, err := token.GenerateSecureToken()
+	s.NoError(err)
+	tokenHash := token.HashToken(tokenStr)
+
+	ctx := &EngineContext{
+		ExecutionID:        "test-exec-id",
+		ChallengeTokenIn:   "wrong-token",
+		ChallengeTokenHash: tokenHash,
+	}
+
+	svcErr := fe.validateChallengeToken(ctx, mockNode)
+	s.Nil(svcErr)
+}
+
+func (s *EngineTestSuite) TestValidateChallengeToken_ReturnsErrorWhenTokenEmpty() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetExecutionPolicy").Return(nil)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	// Generate a token and hash it
+	tokenStr, err := token.GenerateSecureToken()
+	s.NoError(err)
+	tokenHash := token.HashToken(tokenStr)
+
+	ctx := &EngineContext{
+		ExecutionID:        "test-exec-id",
+		ChallengeTokenIn:   "", // Empty token
+		ChallengeTokenHash: tokenHash,
+	}
+
+	svcErr := fe.validateChallengeToken(ctx, mockNode)
+	s.NotNil(svcErr)
+	s.Equal("FES-1009", svcErr.Code)
+}
+
+func (s *EngineTestSuite) TestValidateChallengeToken_ReturnsErrorWhenTokenInvalid() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetExecutionPolicy").Return(nil)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	// Generate a token and hash it
+	tokenStr, err := token.GenerateSecureToken()
+	s.NoError(err)
+	tokenHash := token.HashToken(tokenStr)
+
+	ctx := &EngineContext{
+		ExecutionID:        "test-exec-id",
+		ChallengeTokenIn:   "invalid-token",
+		ChallengeTokenHash: tokenHash,
+	}
+
+	svcErr := fe.validateChallengeToken(ctx, mockNode)
+	s.NotNil(svcErr)
+	s.Equal("FES-1009", svcErr.Code)
+}
+
+func (s *EngineTestSuite) TestValidateChallengeToken_SucceedsWhenTokenValid() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetExecutionPolicy").Return(nil)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	// Generate a token and hash it
+	tokenStr, err := token.GenerateSecureToken()
+	s.NoError(err)
+	tokenHash := token.HashToken(tokenStr)
+
+	ctx := &EngineContext{
+		ExecutionID:        "test-exec-id",
+		ChallengeTokenIn:   tokenStr,
+		ChallengeTokenHash: tokenHash,
+	}
+
+	svcErr := fe.validateChallengeToken(ctx, mockNode)
+	s.Nil(svcErr)
+}
+
+func (s *EngineTestSuite) TestValidateChallengeToken_SkipValidationWhenNodeNil() {
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	// Generate a token and hash it
+	tokenStr, err := token.GenerateSecureToken()
+	s.NoError(err)
+	tokenHash := token.HashToken(tokenStr)
+
+	ctx := &EngineContext{
+		ExecutionID:        "test-exec-id",
+		ChallengeTokenIn:   "wrong-token",
+		ChallengeTokenHash: tokenHash,
+	}
+
+	svcErr := fe.validateChallengeToken(ctx, nil)
+	s.NotNil(svcErr)
+	s.Equal("FES-1009", svcErr.Code)
+}
+
+func (s *EngineTestSuite) TestValidateChallengeToken_SkipValidationWhenPolicyNil() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetExecutionPolicy").Return(nil)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	// Generate a token and hash it
+	tokenStr, err := token.GenerateSecureToken()
+	s.NoError(err)
+	tokenHash := token.HashToken(tokenStr)
+
+	ctx := &EngineContext{
+		ExecutionID:        "test-exec-id",
+		ChallengeTokenIn:   tokenStr,
+		ChallengeTokenHash: tokenHash,
+	}
+
+	svcErr := fe.validateChallengeToken(ctx, mockNode)
+	s.Nil(svcErr)
 }

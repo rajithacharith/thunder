@@ -894,3 +894,105 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteIncompleteWithOnIncompleteNoFail
 	s.Equal("testuser", ctx.UserInputs["username"],
 		"UserInputs should not be cleared without failure reason")
 }
+
+func (s *TaskExecutionNodeTestSuite) TestGetExecutionPolicy_NoExecutorReturnsNil() {
+	node := newTaskExecutionNode("task-1", make(map[string]interface{}), false, false)
+
+	policy := node.GetExecutionPolicy()
+	s.Nil(policy)
+}
+
+func (s *TaskExecutionNodeTestSuite) TestGetExecutionPolicy_DelegatedToExecutor() {
+	node := newTaskExecutionNode("task-1", make(map[string]interface{}), false, false)
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	mockExecutor := NewExecutorInterfaceMock(s.T())
+	expectedPolicy := &ExecutionPolicy{SkipChallengeValidation: true}
+
+	mockExecutor.On("GetName").Return("test-executor")
+	mockExecutor.On("GetExecutionPolicy", "verify").Return(expectedPolicy)
+
+	execNode.SetMode("verify")
+	execNode.SetExecutor(mockExecutor)
+
+	policy := node.GetExecutionPolicy()
+	s.NotNil(policy)
+	s.True(policy.SkipChallengeValidation)
+}
+
+func (s *TaskExecutionNodeTestSuite) TestGetExecutionPolicy_ExecutorReturnsNil() {
+	node := newTaskExecutionNode("task-1", make(map[string]interface{}), false, false)
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	mockExecutor := NewExecutorInterfaceMock(s.T())
+
+	mockExecutor.On("GetName").Return("test-executor")
+	mockExecutor.On("GetExecutionPolicy", "process").Return(nil)
+
+	execNode.SetMode("process")
+	execNode.SetExecutor(mockExecutor)
+
+	policy := node.GetExecutionPolicy()
+	s.Nil(policy)
+}
+
+func (s *TaskExecutionNodeTestSuite) TestGetExecutionPolicy_DifferentModes() {
+	testCases := []struct {
+		mode     string
+		expected *ExecutionPolicy
+	}{
+		{
+			mode:     "generate",
+			expected: nil,
+		},
+		{
+			mode:     "verify",
+			expected: &ExecutionPolicy{SkipChallengeValidation: true},
+		},
+		{
+			mode:     "validate",
+			expected: &ExecutionPolicy{SkipChallengeValidation: false},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.mode, func() {
+			node := newTaskExecutionNode("task-1", make(map[string]interface{}), false, false)
+			execNode, _ := node.(ExecutorBackedNodeInterface)
+
+			mockExecutor := NewExecutorInterfaceMock(s.T())
+			mockExecutor.On("GetName").Return("test-executor")
+			mockExecutor.On("GetExecutionPolicy", tc.mode).Return(tc.expected)
+
+			execNode.SetMode(tc.mode)
+			execNode.SetExecutor(mockExecutor)
+
+			policy := node.GetExecutionPolicy()
+
+			if tc.expected == nil {
+				s.Nil(policy)
+			} else {
+				s.NotNil(policy)
+				s.Equal(tc.expected.SkipChallengeValidation, policy.SkipChallengeValidation)
+			}
+		})
+	}
+}
+
+func (s *TaskExecutionNodeTestSuite) TestGetExecutionPolicy_WithEmptyMode() {
+	node := newTaskExecutionNode("task-1", make(map[string]interface{}), false, false)
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	mockExecutor := NewExecutorInterfaceMock(s.T())
+	expectedPolicy := &ExecutionPolicy{SkipChallengeValidation: false}
+
+	mockExecutor.On("GetName").Return("test-executor")
+	mockExecutor.On("GetExecutionPolicy", "").Return(expectedPolicy)
+
+	execNode.SetExecutor(mockExecutor)
+	// SetMode is not called, so mode will be empty string
+
+	policy := node.GetExecutionPolicy()
+	s.NotNil(policy)
+	s.False(policy.SkipChallengeValidation)
+}

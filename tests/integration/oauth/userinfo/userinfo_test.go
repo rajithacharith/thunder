@@ -383,7 +383,7 @@ func (ts *UserInfoTestSuite) getAuthorizationCodeToken(scope string) (string, er
 	}
 
 	// Step 3: Initiate authentication flow
-	_, err = testutils.ExecuteAuthenticationFlow(executionId, nil, "")
+	initialStep, err := testutils.ExecuteAuthenticationFlow(executionId, nil, "")
 	if err != nil {
 		return "", fmt.Errorf("failed to initiate authentication flow: %w", err)
 	}
@@ -393,7 +393,7 @@ func (ts *UserInfoTestSuite) getAuthorizationCodeToken(scope string) (string, er
 		"username": "userinfo_test_user",
 		"password": "SecurePass123!",
 	}
-	flowStep, err := testutils.ExecuteAuthenticationFlow(executionId, authInputs, "action_001")
+	flowStep, err := testutils.ExecuteAuthenticationFlow(executionId, authInputs, "action_001", initialStep.ChallengeToken)
 	if err != nil {
 		return "", fmt.Errorf("failed to execute authentication flow: %w", err)
 	}
@@ -453,7 +453,7 @@ func (ts *UserInfoTestSuite) getRefreshToken(scope string) (string, error) {
 	}
 
 	// Step 3: Initiate authentication flow
-	_, err = testutils.ExecuteAuthenticationFlow(executionId, map[string]string{}, "")
+	initialStep, err := testutils.ExecuteAuthenticationFlow(executionId, map[string]string{}, "")
 	if err != nil {
 		return "", fmt.Errorf("failed to initiate authentication flow: %w", err)
 	}
@@ -463,7 +463,7 @@ func (ts *UserInfoTestSuite) getRefreshToken(scope string) (string, error) {
 		"username": "userinfo_test_user",
 		"password": "SecurePass123!",
 	}
-	flowStep, err := testutils.ExecuteAuthenticationFlow(executionId, authInputs, "action_001")
+	flowStep, err := testutils.ExecuteAuthenticationFlow(executionId, authInputs, "action_001", initialStep.ChallengeToken)
 	if err != nil {
 		return "", fmt.Errorf("failed to execute authentication flow: %w", err)
 	}
@@ -957,7 +957,7 @@ func (ts *UserInfoTestSuite) getAuthorizationCodeTokenWithClient(scope, cID, cSe
 	}
 
 	// 3. Initiate Auth
-	_, err = testutils.ExecuteAuthenticationFlow(executionId, nil, "")
+	initialStep, err := testutils.ExecuteAuthenticationFlow(executionId, nil, "")
 	if err != nil {
 		return "", err
 	}
@@ -967,7 +967,7 @@ func (ts *UserInfoTestSuite) getAuthorizationCodeTokenWithClient(scope, cID, cSe
 		"username": "userinfo_test_user",
 		"password": "SecurePass123!",
 	}
-	flowStep, err := testutils.ExecuteAuthenticationFlow(executionId, authInputs, "action_001")
+	flowStep, err := testutils.ExecuteAuthenticationFlow(executionId, authInputs, "action_001", initialStep.ChallengeToken)
 	if err != nil {
 		return "", err
 	}
