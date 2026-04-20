@@ -33,7 +33,10 @@
         "options": "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)",
         "max_open_conns": 500,
         "max_idle_conns": 100,
-        "conn_max_lifetime": 3600
+        "conn_max_lifetime": 3600,
+        "max_retries": 3,
+        "min_retry_backoff_ms": 50,
+        "max_retry_backoff_ms": 2000
       }
     },
     "runtime": {
@@ -43,14 +46,23 @@
         "options": "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)",
         "max_open_conns": 500,
         "max_idle_conns": 100,
-        "conn_max_lifetime": 3600
+        "conn_max_lifetime": 3600,
+        "max_retries": 3,
+        "min_retry_backoff_ms": 50,
+        "max_retry_backoff_ms": 2000
       },
       "redis": {
         "address": "",
         "username": "",
         "password": "",
         "db": 0,
-        "key_prefix": ""
+        "key_prefix": "",
+        "max_retries": 5,
+        "min_retry_backoff_ms": 10,
+        "max_retry_backoff_ms": 100,
+        "dial_timeout_ms": 5000,
+        "read_timeout_ms": 3000,
+        "write_timeout_ms": 3000
       }
     },
     "user": {
@@ -60,7 +72,10 @@
         "options": "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)",
         "max_open_conns": 500,
         "max_idle_conns": 100,
-        "conn_max_lifetime": 3600
+        "conn_max_lifetime": 3600,
+        "max_retries": 3,
+        "min_retry_backoff_ms": 50,
+        "max_retry_backoff_ms": 2000
       }
     }
   },
@@ -77,7 +92,13 @@
       "username": "",
       "password": "",
       "db": 0,
-      "key_prefix": "thunder"
+      "key_prefix": "thunder",
+      "max_retries": 5,
+      "min_retry_backoff_ms": 10,
+      "max_retry_backoff_ms": 100,
+      "dial_timeout_ms": 5000,
+      "read_timeout_ms": 3000,
+      "write_timeout_ms": 3000
     }
   },
   "jwt": {

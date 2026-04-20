@@ -71,7 +71,7 @@ func (suite *DBProviderTestSuite) TestGetUserDBTransactioner_Success() {
 
 	// Manually construct the provider with an initialized client
 	provider := &dbProvider{
-		userClient: NewDBClient(model.NewDB(db), "postgres", "user"),
+		userClient: NewDBClient(model.NewDB(db), "postgres", "user", retryConfig{}),
 	}
 
 	// Test getting the transactioner
@@ -90,7 +90,7 @@ func (suite *DBProviderTestSuite) TestGetRuntimeDBTransactioner_Success() {
 
 	// Manually construct the provider with an initialized client
 	provider := &dbProvider{
-		runtimeClient: NewDBClient(model.NewDB(db), "postgres", "runtime"),
+		runtimeClient: NewDBClient(model.NewDB(db), "postgres", "runtime", retryConfig{}),
 	}
 
 	// Test getting the transactioner

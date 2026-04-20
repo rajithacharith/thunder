@@ -96,33 +96,45 @@ type DataSource struct {
 
 // PostgresDataSource holds PostgreSQL-specific connection details.
 type PostgresDataSource struct {
-	Hostname        string `yaml:"hostname" json:"hostname"`
-	Port            int    `yaml:"port" json:"port"`
-	Name            string `yaml:"name" json:"name"`
-	Username        string `yaml:"username" json:"username"`
-	Password        string `yaml:"password" json:"password"`
-	SSLMode         string `yaml:"sslmode" json:"sslmode"`
-	MaxOpenConns    int    `yaml:"max_open_conns" json:"max_open_conns"`
-	MaxIdleConns    int    `yaml:"max_idle_conns" json:"max_idle_conns"`
-	ConnMaxLifetime int    `yaml:"conn_max_lifetime" json:"conn_max_lifetime"`
+	Hostname          string `yaml:"hostname" json:"hostname"`
+	Port              int    `yaml:"port" json:"port"`
+	Name              string `yaml:"name" json:"name"`
+	Username          string `yaml:"username" json:"username"`
+	Password          string `yaml:"password" json:"password"`
+	SSLMode           string `yaml:"sslmode" json:"sslmode"`
+	MaxOpenConns      int    `yaml:"max_open_conns" json:"max_open_conns"`
+	MaxIdleConns      int    `yaml:"max_idle_conns" json:"max_idle_conns"`
+	ConnMaxLifetime   int    `yaml:"conn_max_lifetime" json:"conn_max_lifetime"`
+	MaxRetries        int    `yaml:"max_retries" json:"max_retries"`
+	MinRetryBackoffMS int    `yaml:"min_retry_backoff_ms" json:"min_retry_backoff_ms"`
+	MaxRetryBackoffMS int    `yaml:"max_retry_backoff_ms" json:"max_retry_backoff_ms"`
 }
 
 // SQLiteDataSource holds SQLite-specific connection details.
 type SQLiteDataSource struct {
-	Path            string `yaml:"path" json:"path"`
-	Options         string `yaml:"options" json:"options"`
-	MaxOpenConns    int    `yaml:"max_open_conns" json:"max_open_conns"`
-	MaxIdleConns    int    `yaml:"max_idle_conns" json:"max_idle_conns"`
-	ConnMaxLifetime int    `yaml:"conn_max_lifetime" json:"conn_max_lifetime"`
+	Path              string `yaml:"path" json:"path"`
+	Options           string `yaml:"options" json:"options"`
+	MaxOpenConns      int    `yaml:"max_open_conns" json:"max_open_conns"`
+	MaxIdleConns      int    `yaml:"max_idle_conns" json:"max_idle_conns"`
+	ConnMaxLifetime   int    `yaml:"conn_max_lifetime" json:"conn_max_lifetime"`
+	MaxRetries        int    `yaml:"max_retries" json:"max_retries"`
+	MinRetryBackoffMS int    `yaml:"min_retry_backoff_ms" json:"min_retry_backoff_ms"`
+	MaxRetryBackoffMS int    `yaml:"max_retry_backoff_ms" json:"max_retry_backoff_ms"`
 }
 
 // RedisDataSource holds Redis-specific connection details.
 type RedisDataSource struct {
-	Address   string `yaml:"address" json:"address"`
-	Username  string `yaml:"username" json:"username"`
-	Password  string `yaml:"password" json:"password"`
-	DB        int    `yaml:"db" json:"db"`
-	KeyPrefix string `yaml:"key_prefix" json:"key_prefix"`
+	Address           string `yaml:"address" json:"address"`
+	Username          string `yaml:"username" json:"username"`
+	Password          string `yaml:"password" json:"password"`
+	DB                int    `yaml:"db" json:"db"`
+	KeyPrefix         string `yaml:"key_prefix" json:"key_prefix"`
+	MaxRetries        int    `yaml:"max_retries" json:"max_retries"`
+	MinRetryBackoffMS int    `yaml:"min_retry_backoff_ms" json:"min_retry_backoff_ms"`
+	MaxRetryBackoffMS int    `yaml:"max_retry_backoff_ms" json:"max_retry_backoff_ms"`
+	DialTimeoutMS     int    `yaml:"dial_timeout_ms" json:"dial_timeout_ms"`
+	ReadTimeoutMS     int    `yaml:"read_timeout_ms" json:"read_timeout_ms"`
+	WriteTimeoutMS    int    `yaml:"write_timeout_ms" json:"write_timeout_ms"`
 }
 
 // DatabaseConfig holds the different database configuration details.
@@ -155,11 +167,17 @@ type CacheConfig struct {
 
 // RedisConfig holds the Redis connection configuration.
 type RedisConfig struct {
-	Address   string `yaml:"address" json:"address"`
-	Username  string `yaml:"username" json:"username"`
-	Password  string `yaml:"password" json:"password"`
-	DB        int    `yaml:"db" json:"db"`
-	KeyPrefix string `yaml:"key_prefix" json:"key_prefix"`
+	Address           string `yaml:"address" json:"address"`
+	Username          string `yaml:"username" json:"username"`
+	Password          string `yaml:"password" json:"password"`
+	DB                int    `yaml:"db" json:"db"`
+	KeyPrefix         string `yaml:"key_prefix" json:"key_prefix"`
+	MaxRetries        int    `yaml:"max_retries" json:"max_retries"`
+	MinRetryBackoffMS int    `yaml:"min_retry_backoff_ms" json:"min_retry_backoff_ms"`
+	MaxRetryBackoffMS int    `yaml:"max_retry_backoff_ms" json:"max_retry_backoff_ms"`
+	DialTimeoutMS     int    `yaml:"dial_timeout_ms" json:"dial_timeout_ms"`
+	ReadTimeoutMS     int    `yaml:"read_timeout_ms" json:"read_timeout_ms"`
+	WriteTimeoutMS    int    `yaml:"write_timeout_ms" json:"write_timeout_ms"`
 }
 
 // JWTConfig holds the JWT configuration details.

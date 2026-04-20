@@ -21,6 +21,7 @@ package provider
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 
@@ -68,10 +69,16 @@ func initRedisProvider() {
 
 		r := cfg.Redis
 		client := redis.NewClient(&redis.Options{
-			Addr:     r.Address,
-			Username: r.Username,
-			Password: r.Password,
-			DB:       r.DB,
+			Addr:            r.Address,
+			Username:        r.Username,
+			Password:        r.Password,
+			DB:              r.DB,
+			MaxRetries:      r.MaxRetries,
+			MinRetryBackoff: time.Duration(r.MinRetryBackoffMS) * time.Millisecond,
+			MaxRetryBackoff: time.Duration(r.MaxRetryBackoffMS) * time.Millisecond,
+			DialTimeout:     time.Duration(r.DialTimeoutMS) * time.Millisecond,
+			ReadTimeout:     time.Duration(r.ReadTimeoutMS) * time.Millisecond,
+			WriteTimeout:    time.Duration(r.WriteTimeoutMS) * time.Millisecond,
 		})
 
 		if err := client.Ping(context.Background()).Err(); err != nil {
