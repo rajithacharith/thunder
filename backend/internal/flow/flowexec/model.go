@@ -31,7 +31,7 @@ import (
 	managerpkg "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
-	"github.com/asgardeo/thunder/internal/system/crypto/encrypt"
+	"github.com/asgardeo/thunder/internal/system/crypto/config"
 )
 
 // EngineContext holds the overall context used by the flow engine during execution.
@@ -133,16 +133,16 @@ func (f *FlowContextDB) isEncrypted() bool {
 }
 
 // decrypt decrypts the Context field in-place if it is still encrypted.
-func (f *FlowContextDB) decrypt() error {
+func (f *FlowContextDB) decrypt(ctx context.Context) error {
 	if !f.isEncrypted() {
 		return nil
 	}
-	encryptionService := encrypt.GetEncryptionService()
-	decrypted, err := encryptionService.DecryptString(f.Context)
+	encryptionService := config.GetEncryptionService()
+	decrypted, err := encryptionService.Decrypt(ctx, []byte(f.Context))
 	if err != nil {
 		return err
 	}
-	f.Context = decrypted
+	f.Context = string(decrypted)
 	return nil
 }
 
@@ -168,18 +168,22 @@ type flowContextContent struct {
 }
 
 // encrypt marshals and encrypts the content, returning the encrypted string.
-func (c *flowContextContent) encrypt() (string, error) {
+func (c *flowContextContent) encrypt(ctx context.Context) (string, error) {
 	data, err := json.Marshal(c)
 	if err != nil {
 		return "", err
 	}
-	encryptionService := encrypt.GetEncryptionService()
-	return encryptionService.EncryptString(string(data))
+	encryptionService := config.GetEncryptionService()
+	encrypted, err := encryptionService.Encrypt(ctx, data)
+	if err != nil {
+		return "", err
+	}
+	return string(encrypted), nil
 }
 
 // GetGraphID extracts the graph ID from the context JSON.
-func (f *FlowContextDB) GetGraphID() (string, error) {
-	if err := f.decrypt(); err != nil {
+func (f *FlowContextDB) GetGraphID(ctx context.Context) (string, error) {
+	if err := f.decrypt(ctx); err != nil {
 		return "", err
 	}
 	var content flowContextContent
@@ -190,9 +194,9 @@ func (f *FlowContextDB) GetGraphID() (string, error) {
 }
 
 // ToEngineContext converts the database model to the flow engine context.
-func (f *FlowContextDB) ToEngineContext(graph core.GraphInterface) (EngineContext, error) {
+func (f *FlowContextDB) ToEngineContext(ctx context.Context, graph core.GraphInterface) (EngineContext, error) {
 	// Ensure context is decrypted before parsing
-	if err := f.decrypt(); err != nil {
+	if err := f.decrypt(ctx); err != nil {
 		return EngineContext{}, err
 	}
 	var content flowContextContent
@@ -301,6 +305,7 @@ func (f *FlowContextDB) ToEngineContext(graph core.GraphInterface) (EngineContex
 	}
 
 	return EngineContext{
+		Context:            ctx,
 		ExecutionID:        f.ExecutionID,
 		TraceID:            "", // TraceID is transient and set from request context
 		FlowType:           graph.GetType(),
@@ -438,7 +443,7 @@ func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
 		ChallengeTokenHash:  challengeTokenHash,
 	}
 
-	encryptedContext, err := content.encrypt()
+	encryptedContext, err := content.encrypt(ctx.Context)
 	if err != nil {
 		return nil, err
 	}

@@ -16,9 +16,10 @@
  * under the License.
  */
 
-package encrypt
+package config
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
@@ -63,15 +64,15 @@ func (suite *EncryptionTestSuite) TestEncryptionService() {
 	original := "This is a secret message that needs encryption!"
 
 	// Encrypt
-	encrypted, err := service.EncryptString(original)
+	encrypted, err := service.Encrypt(context.Background(), []byte(original))
 	assert.NoError(suite.T(), err, "Encryption should not produce an error")
 
 	// Decrypt
-	decrypted, err := service.DecryptString(encrypted)
+	decrypted, err := service.Decrypt(context.Background(), encrypted)
 	assert.NoError(suite.T(), err, "Decryption should not produce an error")
 
 	// Verify
-	assert.Equal(suite.T(), original, decrypted, "Decrypted data should match the original")
+	assert.Equal(suite.T(), original, string(decrypted), "Decrypted data should match the original")
 }
 
 func (suite *EncryptionTestSuite) TestGetEncryptionService_Singleton() {
@@ -130,12 +131,12 @@ func (suite *EncryptionTestSuite) TestTampering() {
 
 	// Encrypt some data
 	original := "Protected data"
-	encrypted, err := service.EncryptString(original)
+	encrypted, err := service.Encrypt(context.Background(), []byte(original))
 	assert.NoError(suite.T(), err, "Encryption should not produce an error")
 
 	// Parse the JSON to get the encrypted data structure
 	var encData EncryptedData
-	err = json.Unmarshal([]byte(encrypted), &encData)
+	err = json.Unmarshal(encrypted, &encData)
 	assert.NoError(suite.T(), err, "Failed to parse encrypted JSON")
 
 	// Tamper with the ciphertext field
@@ -150,7 +151,7 @@ func (suite *EncryptionTestSuite) TestTampering() {
 	assert.NoError(suite.T(), err, "Failed to marshal tampered data")
 
 	// Attempt to decrypt tampered data
-	_, err = service.DecryptString(string(tamperedJSON))
+	_, err = service.Decrypt(context.Background(), tamperedJSON)
 	assert.Error(suite.T(), err, "Expected decryption of tampered data to fail")
 }
 
@@ -161,12 +162,12 @@ func (suite *EncryptionTestSuite) TestEncryptedObjectFormat() {
 
 	// Encrypt some data
 	original := "Data to encrypt"
-	encrypted, err := service.EncryptString(original)
+	encrypted, err := service.Encrypt(context.Background(), []byte(original))
 	assert.NoError(suite.T(), err, "Encryption should not produce an error")
 
 	// Parse the JSON to verify structure
 	var encData EncryptedData
-	err = json.Unmarshal([]byte(encrypted), &encData)
+	err = json.Unmarshal(encrypted, &encData)
 	assert.NoError(suite.T(), err, "Failed to parse encrypted JSON")
 
 	// Verify the structure
@@ -190,12 +191,12 @@ func (suite *EncryptionTestSuite) TestEncryptDecryptCycle() {
 	}
 
 	for _, tc := range testCases {
-		encrypted, err := service.EncryptString(tc)
+		encrypted, err := service.Encrypt(context.Background(), []byte(tc))
 		assert.NoError(suite.T(), err, "Encryption should not produce an error")
 
-		decrypted, err := service.DecryptString(encrypted)
+		decrypted, err := service.Decrypt(context.Background(), encrypted)
 		assert.NoError(suite.T(), err, "Decryption should not produce an error")
-		assert.Equal(suite.T(), tc, decrypted, "Decrypted data should match the original")
+		assert.Equal(suite.T(), tc, string(decrypted), "Decrypted data should match the original")
 	}
 }
 
@@ -211,10 +212,10 @@ func (suite *EncryptionTestSuite) TestDifferentKeysEncryption() {
 
 	// Encrypt with first service
 	original := "Secret message"
-	encrypted, err := service1.EncryptString(original)
+	encrypted, err := service1.Encrypt(context.Background(), []byte(original))
 	assert.NoError(suite.T(), err, "Encryption with first key should not produce an error")
 	// Try to decrypt with second service (should fail)
-	_, err = service2.DecryptString(encrypted)
+	_, err = service2.Decrypt(context.Background(), encrypted)
 	assert.Error(suite.T(), err, "Expected decryption with different key to fail")
 }
 
@@ -226,7 +227,7 @@ func (suite *EncryptionTestSuite) TestEncryptWithInvalidKey() {
 		},
 	}
 
-	_, err := service.Encrypt([]byte("data"))
+	_, err := service.Encrypt(context.Background(), []byte("data"))
 
 	assert.Error(suite.T(), err)
 }
@@ -236,7 +237,7 @@ func (suite *EncryptionTestSuite) TestDecryptInvalidJSON() {
 	assert.NoError(suite.T(), err, "Key generation should not produce an error")
 	service := newEncryptionService(key)
 
-	_, err = service.Decrypt("not-json")
+	_, err = service.Decrypt(context.Background(), []byte("not-json"))
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "invalid data format")
 }
@@ -253,7 +254,7 @@ func (suite *EncryptionTestSuite) TestDecryptUnsupportedAlgorithm() {
 	}
 	raw, _ := json.Marshal(payload)
 
-	_, err = service.Decrypt(string(raw))
+	_, err = service.Decrypt(context.Background(), raw)
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "unsupported algorithm")
 }
@@ -269,7 +270,7 @@ func (suite *EncryptionTestSuite) TestDecryptInvalidBase64() {
 	}
 	raw, _ := json.Marshal(payload)
 
-	_, err := service.Decrypt(string(raw))
+	_, err := service.Decrypt(context.Background(), raw)
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "invalid payload encoding")
 }
@@ -286,7 +287,7 @@ func (suite *EncryptionTestSuite) TestDecryptCiphertextTooShort() {
 	}
 	raw, _ := json.Marshal(payload)
 
-	_, err = service.Decrypt(string(raw))
+	_, err = service.Decrypt(context.Background(), raw)
 	assert.Error(suite.T(), err)
 }
 
@@ -305,7 +306,7 @@ func (suite *EncryptionTestSuite) TestDecryptWithInvalidKeyLength() {
 	}
 	raw, _ := json.Marshal(payload)
 
-	_, err := service.Decrypt(string(raw))
+	_, err := service.Decrypt(context.Background(), raw)
 	assert.Error(suite.T(), err)
 }
 
@@ -319,7 +320,7 @@ func (suite *EncryptionTestSuite) TestDecryptUsesKeyFromKidMap() {
 	secondary := newEncryptionService(key2)
 
 	// Encrypt with the secondary key so payload kid points to that key.
-	encrypted, err := secondary.EncryptString("rotated-secret")
+	encrypted, err := secondary.Encrypt(context.Background(), []byte("rotated-secret"))
 	assert.NoError(suite.T(), err)
 
 	// Decrypt using a service whose active key is key1 but key map contains key2.
@@ -331,9 +332,9 @@ func (suite *EncryptionTestSuite) TestDecryptUsesKeyFromKidMap() {
 		},
 	}
 
-	decrypted, err := service.DecryptString(encrypted)
+	decrypted, err := service.Decrypt(context.Background(), encrypted)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "rotated-secret", decrypted)
+	assert.Equal(suite.T(), "rotated-secret", string(decrypted))
 }
 
 func (suite *EncryptionTestSuite) TestDecryptFailsWhenKidIsUnknown() {
@@ -348,7 +349,7 @@ func (suite *EncryptionTestSuite) TestDecryptFailsWhenKidIsUnknown() {
 	}
 	raw, _ := json.Marshal(payload)
 
-	_, err = service.Decrypt(string(raw))
+	_, err = service.Decrypt(context.Background(), raw)
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "decryption key not found")
 }
@@ -358,18 +359,18 @@ func (suite *EncryptionTestSuite) TestDecryptFailsWhenKidMissing() {
 	assert.NoError(suite.T(), err)
 	service := newEncryptionService(key)
 
-	encrypted, err := service.EncryptString("legacy-secret")
+	encrypted, err := service.Encrypt(context.Background(), []byte("legacy-secret"))
 	assert.NoError(suite.T(), err)
 
 	var payload EncryptedData
-	err = json.Unmarshal([]byte(encrypted), &payload)
+	err = json.Unmarshal(encrypted, &payload)
 	assert.NoError(suite.T(), err)
 
 	// Simulate older payload without kid.
 	payload.KeyID = ""
 	raw, _ := json.Marshal(payload)
 
-	_, err = service.DecryptString(string(raw))
+	_, err = service.Decrypt(context.Background(), raw)
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "decryption key not found")
 }
@@ -384,13 +385,13 @@ func (suite *EncryptionTestSuite) TestNon32() {
 		assert.NoError(suite.T(), err, "Key generation should not produce an error")
 		service := newEncryptionService(key)
 
-		encrypted, err := service.EncryptString(original)
+		encrypted, err := service.Encrypt(context.Background(), []byte(original))
 		assert.NoError(suite.T(), err, "Encryption should not produce an error")
 
-		decrypted, err := service.DecryptString(encrypted)
+		decrypted, err := service.Decrypt(context.Background(), encrypted)
 		assert.NoError(suite.T(), err, "Decryption should not produce an error")
 
-		assert.Equal(suite.T(), original, decrypted, "Decrypted data should match the original")
+		assert.Equal(suite.T(), original, string(decrypted), "Decrypted data should match the original")
 	}
 }
 
@@ -398,7 +399,7 @@ func (suite *EncryptionTestSuite) TestWrongKeySize() {
 	// Generate a key of incorrect size
 	key, _ := generateRandomKey(30)
 	service := newEncryptionService(key)
-	_, err := service.EncryptString("Test data")
+	_, err := service.Encrypt(context.Background(), []byte("Test data"))
 	assert.Error(suite.T(), err, "Expected error due to wrong key size")
 }
 

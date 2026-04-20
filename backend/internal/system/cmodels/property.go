@@ -20,10 +20,12 @@
 package cmodels
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
-	"github.com/asgardeo/thunder/internal/system/crypto/encrypt"
+	"github.com/asgardeo/thunder/internal/system/crypto"
+	"github.com/asgardeo/thunder/internal/system/crypto/config"
 )
 
 // Property represents a generic property with name, value, and isSecret fields.
@@ -74,13 +76,13 @@ func (p *Property) GetValue() (string, error) {
 		return p.value, nil
 	}
 
-	cryptoService := encrypt.GetEncryptionService()
-	decryptedValue, err := cryptoService.DecryptString(p.value)
+	var cryptoProvider crypto.ConfigCryptoProvider = config.GetEncryptionService()
+	decryptedBytes, err := cryptoProvider.Decrypt(context.Background(), []byte(p.value))
 	if err != nil {
 		return "", fmt.Errorf("failed to decrypt secret property %s: %w", p.GetName(), err)
 	}
 
-	return decryptedValue, nil
+	return string(decryptedBytes), nil
 }
 
 // Encrypt encrypts the value if it's a secret property
@@ -89,13 +91,13 @@ func (p *Property) Encrypt() error {
 		return nil
 	}
 
-	cryptoService := encrypt.GetEncryptionService()
-	encryptedValue, err := cryptoService.EncryptString(p.value)
+	var cryptoProvider crypto.ConfigCryptoProvider = config.GetEncryptionService()
+	encryptedBytes, err := cryptoProvider.Encrypt(context.Background(), []byte(p.value))
 	if err != nil {
 		return fmt.Errorf("failed to encrypt secret property %s: %w", p.GetName(), err)
 	}
 
-	p.value = encryptedValue
+	p.value = string(encryptedBytes)
 	return nil
 }
 
