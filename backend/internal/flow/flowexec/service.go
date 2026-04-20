@@ -258,16 +258,9 @@ func (s *flowExecService) loadContextFromStore(ctx context.Context, executionID 
 		return nil, &ErrorInvalidExecutionID
 	}
 
-	dbModel, err := s.flowStore.GetFlowContext(ctx, executionID)
-	if err != nil {
-		logger.Error("Error retrieving flow context from store",
-			log.String(log.LoggerKeyExecutionID, executionID),
-			log.Error(err))
-		return nil, &serviceerror.InternalServerError
-	}
-
-	if dbModel == nil {
-		return nil, &ErrorInvalidExecutionID
+	dbModel, flowCtxErr := s.getFlowContext(ctx, executionID, logger)
+	if flowCtxErr != nil {
+		return nil, flowCtxErr
 	}
 
 	graphID, err := dbModel.GetGraphID()
@@ -554,4 +547,33 @@ func (s *flowExecService) InitiateFlow(ctx context.Context,
 
 	logger.Debug("Flow initiated successfully", log.String(log.LoggerKeyExecutionID, engineCtx.ExecutionID))
 	return engineCtx.ExecutionID, nil
+}
+
+// getFlowContext retrieves the flow context from the store based on the given execution ID.
+// It also ensures that the retrieved context is decrypted before returning.
+func (s *flowExecService) getFlowContext(ctx context.Context, executionID string, logger *log.Logger) (
+	*FlowContextDB, *serviceerror.ServiceError) {
+	if executionID == "" {
+		return nil, &ErrorInvalidExecutionID
+	}
+
+	dbModel, err := s.flowStore.GetFlowContext(ctx, executionID)
+	if err != nil {
+		logger.Error("Error retrieving flow context from store",
+			log.String(log.LoggerKeyExecutionID, executionID),
+			log.String("error", err.Error()))
+		return nil, &serviceerror.InternalServerError
+	}
+
+	if dbModel == nil {
+		return nil, &ErrorInvalidExecutionID
+	}
+
+	if decryptErr := dbModel.decrypt(); decryptErr != nil {
+		logger.Error("Failed to decrypt flow context",
+			log.String(log.LoggerKeyExecutionID, executionID), log.Error(decryptErr))
+		return nil, &serviceerror.InternalServerError
+	}
+
+	return dbModel, nil
 }

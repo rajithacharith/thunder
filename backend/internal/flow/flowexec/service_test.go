@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
@@ -466,4 +467,100 @@ func TestGetFlowExpirySeconds(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestExecute_ContextDecryptionFailure(t *testing.T) {
+	// Tests that when the stored flow context cannot be decrypted,
+	// Execute returns an InternalServerError without proceeding further.
+	testConfig := &config.Config{
+		Crypto: config.CryptoConfig{
+			Encryption: config.EncryptionConfig{
+				Key: "2729a7928c79371e5f312167269294a14bb0660fd166b02a408a20fa73271580",
+			},
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
+	mockStore := newFlowStoreInterfaceMock(t)
+
+	// Context looks encrypted (has "alg" field) but the ciphertext is invalid
+	invalidCtx := &FlowContextDB{
+		ExecutionID: "existing-execution-id",
+		Context:     `{"alg":"AES-GCM","ct":"not-valid-ciphertext!!!","kid":"key-1"}`,
+	}
+	mockStore.EXPECT().GetFlowContext(mock.Anything, "existing-execution-id").Return(invalidCtx, nil)
+
+	service := &flowExecService{
+		flowStore: mockStore,
+	}
+
+	_, svcErr := service.Execute(context.Background(), "test-app", "existing-execution-id",
+		string(common.FlowTypeAuthentication), false, "submit", map[string]string{})
+
+	assert.NotNil(t, svcErr)
+	assert.Equal(t, serviceerror.InternalServerError.Code, svcErr.Code)
+}
+
+func TestExecute_ContextDecryptionSuccess(t *testing.T) {
+	// Tests that a properly encrypted stored context is decrypted and used
+	// to continue flow execution without error.
+	testConfig := &config.Config{
+		Crypto: config.CryptoConfig{
+			Encryption: config.EncryptionConfig{
+				Key: "2729a7928c79371e5f312167269294a14bb0660fd166b02a408a20fa73271580",
+			},
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
+	flowFactory, _ := core.Initialize()
+	testGraph := flowFactory.CreateGraph("test-graph-id", common.FlowTypeAuthentication)
+
+	// Build a properly encrypted FlowContextDB
+	engineCtx := EngineContext{
+		ExecutionID: "existing-execution-id",
+		AppID:       "test-app-id",
+		FlowType:    common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			Attributes: map[string]interface{}{},
+		},
+		UserInputs:       map[string]string{},
+		RuntimeData:      map[string]string{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Graph:            testGraph,
+	}
+	dbModel, err := FromEngineContext(engineCtx)
+	assert.NoError(t, err)
+	assert.Contains(t, dbModel.Context, `"ct"`, "context should be encrypted before retrieval")
+
+	mockStore := newFlowStoreInterfaceMock(t)
+	mockFlowMgtSvc := flowmgtmock.NewFlowMgtServiceInterfaceMock(t)
+	mockEngine := newFlowEngineInterfaceMock(t)
+	mockAppService := applicationmock.NewApplicationServiceInterfaceMock(t)
+
+	mockStore.EXPECT().GetFlowContext(mock.Anything, "existing-execution-id").Return(dbModel, nil)
+	mockFlowMgtSvc.EXPECT().GetGraph(mock.Anything, "test-graph-id").Return(testGraph, nil)
+	mockAppService.EXPECT().GetApplication(mock.Anything, "test-app-id").Return(
+		&appmodel.Application{ID: "test-app-id", AuthFlowID: "test-graph-id"}, nil)
+	mockEngine.EXPECT().Execute(mock.Anything).Return(FlowStep{Status: common.FlowStatusIncomplete}, nil)
+	mockStore.EXPECT().UpdateFlowContext(
+		mock.MatchedBy(func(ctx context.Context) bool { return ctx.Value(txMarkerKey{}) == "tx" }),
+		mock.AnythingOfType("EngineContext")).Return(nil)
+
+	service := &flowExecService{
+		flowStore:      mockStore,
+		flowMgtService: mockFlowMgtSvc,
+		flowEngine:     mockEngine,
+		appService:     mockAppService,
+		transactioner:  &stubTransactioner{},
+	}
+
+	flowStep, svcErr := service.Execute(context.Background(), "test-app", "existing-execution-id",
+		string(common.FlowTypeAuthentication), false, "submit", map[string]string{})
+
+	assert.Nil(t, svcErr)
+	assert.NotNil(t, flowStep)
+	assert.Equal(t, common.FlowStatusIncomplete, flowStep.Status)
 }

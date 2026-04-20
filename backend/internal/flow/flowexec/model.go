@@ -118,6 +118,28 @@ type FlowContextDB struct {
 	UpdatedAt   time.Time
 }
 
+// isEncrypted reports whether the Context field is still in encrypted form.
+func (f *FlowContextDB) isEncrypted() bool {
+	var encCheck struct {
+		Algorithm string `json:"alg"`
+	}
+	return json.Unmarshal([]byte(f.Context), &encCheck) == nil && encCheck.Algorithm != ""
+}
+
+// decrypt decrypts the Context field in-place if it is still encrypted.
+func (f *FlowContextDB) decrypt() error {
+	if !f.isEncrypted() {
+		return nil
+	}
+	encryptionService := encrypt.GetEncryptionService()
+	decrypted, err := encryptionService.DecryptString(f.Context)
+	if err != nil {
+		return err
+	}
+	f.Context = decrypted
+	return nil
+}
+
 // flowContextContent holds all flow state serialized into the CONTEXT JSON column.
 type flowContextContent struct {
 	AppID               string  `json:"appId"`
@@ -138,8 +160,21 @@ type flowContextContent struct {
 	AuthUser            *string `json:"authUser,omitempty"`
 }
 
+// encrypt marshals and encrypts the content, returning the encrypted string.
+func (c *flowContextContent) encrypt() (string, error) {
+	data, err := json.Marshal(c)
+	if err != nil {
+		return "", err
+	}
+	encryptionService := encrypt.GetEncryptionService()
+	return encryptionService.EncryptString(string(data))
+}
+
 // GetGraphID extracts the graph ID from the context JSON.
 func (f *FlowContextDB) GetGraphID() (string, error) {
+	if err := f.decrypt(); err != nil {
+		return "", err
+	}
 	var content flowContextContent
 	if err := json.Unmarshal([]byte(f.Context), &content); err != nil {
 		return "", err
@@ -149,6 +184,10 @@ func (f *FlowContextDB) GetGraphID() (string, error) {
 
 // ToEngineContext converts the database model to the flow engine context.
 func (f *FlowContextDB) ToEngineContext(graph core.GraphInterface) (EngineContext, error) {
+	// Ensure context is decrypted before parsing
+	if err := f.decrypt(); err != nil {
+		return EngineContext{}, err
+	}
 	var content flowContextContent
 	if err := json.Unmarshal([]byte(f.Context), &content); err != nil {
 		return EngineContext{}, err
@@ -183,15 +222,9 @@ func (f *FlowContextDB) ToEngineContext(graph core.GraphInterface) (EngineContex
 		userAttributes = make(map[string]interface{})
 	}
 
-	// Decrypt token if present
 	var token string
-	if content.Token != nil && *content.Token != "" {
-		encryptionService := encrypt.GetEncryptionService()
-		decrypted, err := encryptionService.DecryptString(*content.Token)
-		if err != nil {
-			return EngineContext{}, err
-		}
-		token = decrypted
+	if content.Token != nil {
+		token = *content.Token
 	}
 
 	// Parse available attributes
@@ -332,15 +365,9 @@ func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
 		userType = &ctx.AuthenticatedUser.UserType
 	}
 
-	// Encrypt and store token if present
-	var encryptedToken *string
+	var token *string
 	if ctx.AuthenticatedUser.Token != "" {
-		encryptionService := encrypt.GetEncryptionService()
-		encrypted, err := encryptionService.EncryptString(ctx.AuthenticatedUser.Token)
-		if err != nil {
-			return nil, err
-		}
-		encryptedToken = &encrypted
+		token = &ctx.AuthenticatedUser.Token
 	}
 
 	// Serialize available attributes
@@ -385,18 +412,18 @@ func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
 		UserType:            userType,
 		UserInputs:          &userInputs,
 		UserAttributes:      &userAttributes,
-		Token:               encryptedToken,
+		Token:               token,
 		AvailableAttributes: availableAttributes,
 		AuthUser:            authUserStr,
 	}
 
-	contextJSON, err := json.Marshal(content)
+	encryptedContext, err := content.encrypt()
 	if err != nil {
 		return nil, err
 	}
 
 	return &FlowContextDB{
 		ExecutionID: ctx.ExecutionID,
-		Context:     string(contextJSON),
+		Context:     encryptedContext,
 	}, nil
 }
