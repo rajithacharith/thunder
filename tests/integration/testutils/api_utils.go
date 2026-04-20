@@ -221,10 +221,6 @@ func CreateApplication(app Application) (string, error) {
 		"isRegistrationFlowEnabled": app.IsRegistrationFlowEnabled,
 		"authFlowId":                app.AuthFlowID,
 		"registrationFlowId":        app.RegistrationFlowID,
-		"certificate": map[string]interface{}{
-			"type":  "NONE",
-			"value": "",
-		},
 		"inboundAuthConfig": []map[string]interface{}{
 			{
 				"type": "oauth2",

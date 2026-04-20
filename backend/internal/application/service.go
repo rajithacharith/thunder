@@ -1379,7 +1379,7 @@ func validateTokenEndpointAuthMethod(oauthConfig *model.OAuthAppConfigDTO) *serv
 		return &ErrorInvalidTokenEndpointAuthMethod
 	}
 
-	hasCert := oauthConfig.Certificate != nil && oauthConfig.Certificate.Type != cert.CertificateTypeNone
+	hasCert := oauthConfig.Certificate != nil && oauthConfig.Certificate.Type != ""
 
 	switch oauthConfig.TokenEndpointAuthMethod {
 	case oauth2const.TokenEndpointAuthMethodPrivateKeyJWT:
@@ -1708,7 +1708,7 @@ func resolveClientSecret(
 func (as *applicationService) getValidatedCertificateForCreate(appID string, certificate *model.ApplicationCertificate,
 	certRefType cert.CertificateReferenceType) (
 	*cert.Certificate, *serviceerror.ServiceError) {
-	if certificate == nil || certificate.Type == "" || certificate.Type == cert.CertificateTypeNone {
+	if certificate == nil || certificate.Type == "" {
 		return nil, nil
 	}
 	return getValidatedCertificateInput(appID, "", certificate, certRefType)
@@ -1718,7 +1718,7 @@ func (as *applicationService) getValidatedCertificateForCreate(appID string, cer
 func (as *applicationService) getValidatedCertificateForUpdate(appID, certID string,
 	certificate *model.ApplicationCertificate, certRefType cert.CertificateReferenceType) (
 	*cert.Certificate, *serviceerror.ServiceError) {
-	if certificate == nil || certificate.Type == "" || certificate.Type == cert.CertificateTypeNone {
+	if certificate == nil || certificate.Type == "" {
 		return nil, nil
 	}
 	return getValidatedCertificateInput(appID, certID, certificate, certRefType)
@@ -1758,32 +1758,26 @@ func getValidatedCertificateInput(appID, certID string, certificate *model.Appli
 // createApplicationCertificate creates a certificate for the application.
 func (as *applicationService) createApplicationCertificate(ctx context.Context, certificate *cert.Certificate) (
 	*model.ApplicationCertificate, *serviceerror.ServiceError) {
-	var returnCert *model.ApplicationCertificate
-	if certificate != nil {
-		_, svcErr := as.certService.CreateCertificate(ctx, certificate)
-		if svcErr != nil {
-			if svcErr.Type == serviceerror.ClientErrorType {
-				errorDescription := "Failed to create application certificate: " +
-					svcErr.ErrorDescription
-				return nil, serviceerror.CustomServiceError(
-					ErrorCertificateClientError, errorDescription)
-			}
-			as.logger.Error("Failed to create application certificate", log.Any("serviceError", svcErr))
-			return nil, &ErrorCertificateServerError
-		}
-
-		returnCert = &model.ApplicationCertificate{
-			Type:  certificate.Type,
-			Value: certificate.Value,
-		}
-	} else {
-		returnCert = &model.ApplicationCertificate{
-			Type:  cert.CertificateTypeNone,
-			Value: "",
-		}
+	if certificate == nil {
+		return nil, nil
 	}
 
-	return returnCert, nil
+	_, svcErr := as.certService.CreateCertificate(ctx, certificate)
+	if svcErr != nil {
+		if svcErr.Type == serviceerror.ClientErrorType {
+			errorDescription := "Failed to create application certificate: " +
+				svcErr.ErrorDescription
+			return nil, serviceerror.CustomServiceError(
+				ErrorCertificateClientError, errorDescription)
+		}
+		as.logger.Error("Failed to create application certificate", log.Any("serviceError", svcErr))
+		return nil, &ErrorCertificateServerError
+	}
+
+	return &model.ApplicationCertificate{
+		Type:  certificate.Type,
+		Value: certificate.Value,
+	}, nil
 }
 
 // deleteApplicationCertificate deletes the certificate associated with the application.
@@ -1831,10 +1825,7 @@ func (as *applicationService) getApplicationCertificate(ctx context.Context, app
 
 	if certErr != nil {
 		if certErr.Code == cert.ErrorCertificateNotFound.Code {
-			return &model.ApplicationCertificate{
-				Type:  cert.CertificateTypeNone,
-				Value: "",
-			}, nil
+			return nil, nil
 		}
 
 		if certErr.Type == serviceerror.ClientErrorType {
@@ -1849,10 +1840,7 @@ func (as *applicationService) getApplicationCertificate(ctx context.Context, app
 	}
 
 	if certificate == nil {
-		return &model.ApplicationCertificate{
-			Type:  cert.CertificateTypeNone,
-			Value: "",
-		}, nil
+		return nil, nil
 	}
 
 	return &model.ApplicationCertificate{
@@ -1939,11 +1927,6 @@ func (as *applicationService) updateApplicationCertificate(ctx context.Context, 
 					log.String("appID", appID))
 				return nil, &ErrorCertificateServerError
 			}
-		}
-
-		returnCert = &model.ApplicationCertificate{
-			Type:  cert.CertificateTypeNone,
-			Value: "",
 		}
 	}
 

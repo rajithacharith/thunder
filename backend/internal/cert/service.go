@@ -305,7 +305,7 @@ func isValidReferenceType(refType CertificateReferenceType) bool {
 // isValidCertificateType checks if the provided certificate type is valid.
 func isValidCertificateType(certType CertificateType) bool {
 	switch certType {
-	case CertificateTypeNone, CertificateTypeJWKS, CertificateTypeJWKSURI:
+	case CertificateTypeJWKS, CertificateTypeJWKSURI:
 		return true
 	default:
 		return false

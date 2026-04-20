@@ -1064,7 +1064,6 @@ components:
           type: string
           description: The type of the certificate.
           enum:
-            - "NONE"
             - "JWKS"
             - "JWKS_URI"
           example: "JWKS_URI"

@@ -811,7 +811,6 @@ func (suite *ServiceTestSuite) TestIsValidCertificateType() {
 		certType CertificateType
 		expected bool
 	}{
-		{"None type", CertificateTypeNone, true},
 		{"JWKS type", CertificateTypeJWKS, true},
 		{"JWKS URI type", CertificateTypeJWKSURI, true},
 		{"Invalid type", CertificateType("INVALID"), false},

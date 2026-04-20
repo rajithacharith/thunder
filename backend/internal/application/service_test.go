@@ -547,11 +547,11 @@ func (suite *ServiceTestSuite) TestValidateTokenEndpointAuthMethod() {
 			expectError: true,
 		},
 		{
-			name: "private_key_jwt with certificate type NONE",
+			name: "private_key_jwt with empty certificate type",
 			oauthConfig: &model.OAuthAppConfigDTO{
 				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
 				Certificate: &model.ApplicationCertificate{
-					Type: cert.CertificateTypeNone,
+					Type: "",
 				},
 			},
 			expectError: true,
@@ -607,11 +607,11 @@ func (suite *ServiceTestSuite) TestValidateTokenEndpointAuthMethod_PrivateKeyJWT
 			expectedErrDesc: "private_key_jwt authentication method requires a certificate",
 		},
 		{
-			name: "private_key_jwt requires certificate - NONE type",
+			name: "private_key_jwt requires certificate - empty type",
 			oauthConfig: &model.OAuthAppConfigDTO{
 				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
 				Certificate: &model.ApplicationCertificate{
-					Type: cert.CertificateTypeNone,
+					Type: "",
 				},
 			},
 			expectedErrCode: ErrorInvalidOAuthConfiguration.Code,
@@ -1291,40 +1291,6 @@ func (suite *ServiceTestSuite) TestGetOAuthApplication_Success() {
 		(*entityprovider.EntityProviderError)(nil))
 
 	mockCertService.EXPECT().GetCertificateByReference(mock.Anything,
-		cert.CertificateReferenceTypeOAuthApp, "client123").Return(&cert.Certificate{
-		Type:  cert.CertificateTypeNone,
-		Value: "",
-	}, nil)
-
-	result, svcErr := service.GetOAuthApplication(context.Background(), "client123")
-
-	assert.NotNil(suite.T(), result)
-	assert.Nil(suite.T(), svcErr)
-	assert.Equal(suite.T(), "client123", result.ClientID)
-}
-
-func (suite *ServiceTestSuite) TestGetOAuthApplication_CertificateNotFound() {
-	service, mockStore, mockCertService, _ := suite.setupTestService()
-
-	mockEP := resetIdentifyEntity(service)
-	entityID := testServiceAppID
-	mockEP.On("IdentifyEntity",
-		map[string]interface{}{"clientId": "client123"}).
-		Return(
-			&entityID, (*entityprovider.EntityProviderError)(nil))
-
-	mockStore.On("GetOAuthConfigByAppID", mock.Anything, testServiceAppID).
-		Return(&oauthConfigDAO{
-			AppID:       testServiceAppID,
-			OAuthConfig: &oAuthConfig{},
-		}, nil)
-
-	mockEP.On("GetEntity", testServiceAppID).Unset()
-	mockEP.On("GetEntity", testServiceAppID).Return(
-		&entityprovider.Entity{ID: testServiceAppID},
-		(*entityprovider.EntityProviderError)(nil))
-
-	mockCertService.EXPECT().GetCertificateByReference(mock.Anything,
 		cert.CertificateReferenceTypeOAuthApp, "client123").Return(nil, &cert.ErrorCertificateNotFound)
 
 	result, svcErr := service.GetOAuthApplication(context.Background(), "client123")
@@ -1332,9 +1298,7 @@ func (suite *ServiceTestSuite) TestGetOAuthApplication_CertificateNotFound() {
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
 	assert.Equal(suite.T(), "client123", result.ClientID)
-	assert.NotNil(suite.T(), result.Certificate)
-	assert.Equal(suite.T(), cert.CertificateTypeNone, result.Certificate.Type)
-	assert.Equal(suite.T(), "", result.Certificate.Value)
+	assert.Nil(suite.T(), result.Certificate)
 }
 
 func (suite *ServiceTestSuite) TestGetOAuthApplication_CertificateServerError() {
@@ -1471,7 +1435,7 @@ func (suite *ServiceTestSuite) TestGetApplication_WithInboundAuthConfig_Success(
 	assert.True(suite.T(), inboundAuth.OAuthAppConfig.PKCERequired)
 	assert.False(suite.T(), inboundAuth.OAuthAppConfig.PublicClient)
 	assert.Equal(suite.T(), []string{"openid", "profile"}, inboundAuth.OAuthAppConfig.Scopes)
-	assert.Equal(suite.T(), cert.CertificateTypeNone, inboundAuth.OAuthAppConfig.Certificate.Type)
+	assert.Nil(suite.T(), inboundAuth.OAuthAppConfig.Certificate)
 }
 
 func (suite *ServiceTestSuite) TestGetApplicationList_Success() {
@@ -2260,9 +2224,8 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_NotFound() {
 	result, err := service.getApplicationCertificate(
 		context.Background(), testServiceAppID, cert.CertificateReferenceTypeApplication)
 
-	assert.NotNil(suite.T(), result)
+	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), cert.CertificateTypeNone, result.Type)
 }
 
 func (suite *ServiceTestSuite) TestGetApplicationCertificate_NilCertificate() {
@@ -2274,9 +2237,8 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_NilCertificate() {
 	result, err := service.getApplicationCertificate(
 		context.Background(), testServiceAppID, cert.CertificateReferenceTypeApplication)
 
-	assert.NotNil(suite.T(), result)
+	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), cert.CertificateTypeNone, result.Type)
 }
 
 func (suite *ServiceTestSuite) TestGetApplicationCertificate_Success() {
@@ -2321,9 +2283,8 @@ func (suite *ServiceTestSuite) TestCreateApplicationCertificate_Nil() {
 
 	result, svcErr := service.createApplicationCertificate(context.Background(), nil)
 
-	assert.NotNil(suite.T(), result)
+	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
-	assert.Equal(suite.T(), cert.CertificateTypeNone, result.Type)
 }
 
 func (suite *ServiceTestSuite) TestCreateApplicationCertificate_ClientError() {
@@ -2347,12 +2308,12 @@ func (suite *ServiceTestSuite) TestCreateApplicationCertificate_ClientError() {
 	assert.NotNil(suite.T(), err)
 }
 
-func (suite *ServiceTestSuite) TestGetValidatedCertificateForCreate_None() {
+func (suite *ServiceTestSuite) TestGetValidatedCertificateForCreate_EmptyType() {
 	service, _, _, _ := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
 		Certificate: &model.ApplicationCertificate{
-			Type: "NONE",
+			Type: "",
 		},
 	}
 
@@ -2584,22 +2545,6 @@ func (suite *ServiceTestSuite) TestCreateApplicationCertificate_ServerError() {
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
-}
-
-func (suite *ServiceTestSuite) TestGetValidatedCertificateForCreate_EmptyType() {
-	service, _, _, _ := suite.setupTestService()
-
-	app := &model.ApplicationDTO{
-		Certificate: &model.ApplicationCertificate{
-			Type: "",
-		},
-	}
-
-	result, svcErr := service.getValidatedCertificateForCreate(testServiceAppID, app.Certificate,
-		cert.CertificateReferenceTypeApplication)
-
-	assert.Nil(suite.T(), result)
-	assert.Nil(suite.T(), svcErr)
 }
 
 func (suite *ServiceTestSuite) TestGetValidatedCertificateForCreate_NilCertificate() {

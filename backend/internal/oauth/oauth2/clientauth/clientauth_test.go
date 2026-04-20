@@ -1008,22 +1008,6 @@ func (suite *ClientAuthTestSuite) TestValidateClientAssertion_NilCertificate() {
 	assert.Contains(suite.T(), err.Error(), "no certificate configured")
 }
 
-func (suite *ClientAuthTestSuite) TestValidateClientAssertion_CertificateTypeNone() {
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
-		ClientID: "test-client",
-		Certificate: &appmodel.ApplicationCertificate{
-			Type:  cert.CertificateTypeNone,
-			Value: "",
-		},
-	}
-
-	err := validateClientAssertion(
-		context.Background(), oauthApp, suite.mockJwtService, suite.mockDiscoveryService, "test-client",
-		"some.jwt.token")
-	assert.NotNil(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "no certificate configured")
-}
-
 func (suite *ClientAuthTestSuite) TestValidateClientAssertion_JWKSURI_Success() {
 	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID: "test-client",
