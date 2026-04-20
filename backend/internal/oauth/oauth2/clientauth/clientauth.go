@@ -233,7 +233,7 @@ func validateClientAssertion(
 	jwtService jwt.JWTServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
 	clientID, clientAssertion string) error {
-	if oauthApp.Certificate == nil || oauthApp.Certificate.Type == cert.CertificateTypeNone {
+	if oauthApp.Certificate == nil {
 		return fmt.Errorf("no certificate configured for client assertion validation")
 	}
 

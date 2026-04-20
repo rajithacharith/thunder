@@ -79,10 +79,7 @@ func (ts *ExportAPITestSuite) TestApplicationExportYAML() {
 		URL:                       "https://exporttest.example.com",
 		LogoURL:                   "https://exporttest.example.com/logo.png",
 		IsRegistrationFlowEnabled: true,
-		Certificate: &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -331,10 +328,7 @@ func (ts *ExportAPITestSuite) TestMixedResourcesExportYAML() {
 		Description:               "Test application for mixed export",
 		URL:                       "https://mixedexport.example.com",
 		IsRegistrationFlowEnabled: true,
-		Certificate: &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
