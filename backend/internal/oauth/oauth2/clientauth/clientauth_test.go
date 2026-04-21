@@ -40,6 +40,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/authnprovider/managermock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
@@ -380,8 +381,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidClientSecret() {
 			&serviceerror.ServiceError{
 				Type:             serviceerror.ClientErrorType,
 				Code:             authnprovidermgr.ErrorAuthenticationFailed.Code,
-				Error:            "auth failed",
-				ErrorDescription: "wrong secret",
+				Error:            i18ncore.I18nMessage{DefaultValue: "auth failed"},
+				ErrorDescription: i18ncore.I18nMessage{DefaultValue: "wrong secret"},
 			}).Maybe()
 
 	formData := url.Values{}
@@ -514,8 +515,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_ServiceError() {
 	serviceErr := &serviceerror.ServiceError{
 		Code:             "APP-5001",
 		Type:             serviceerror.ServerErrorType,
-		Error:            "server_error",
-		ErrorDescription: "Internal server error",
+		Error:            i18ncore.I18nMessage{DefaultValue: "server_error"},
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Internal server error"},
 	}
 
 	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
@@ -918,8 +919,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_ServiceError() 
 	serviceErr := &serviceerror.ServiceError{
 		Code:             "APP-5001",
 		Type:             serviceerror.ServerErrorType,
-		Error:            "server_error",
-		ErrorDescription: "Internal server error",
+		Error:            i18ncore.I18nMessage{DefaultValue: "server_error"},
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Internal server error"},
 	}
 
 	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
@@ -1053,7 +1054,7 @@ func (suite *ClientAuthTestSuite) TestValidateClientAssertion_JWKSURI_Verificati
 	suite.mockJwtService.EXPECT().
 		VerifyJWTWithJWKS(assertion, "https://example.com/.well-known/jwks.json",
 			"https://localhost:9443/oauth2/token", "test-client").
-		Return(&serviceerror.ServiceError{Error: "verification failed"})
+		Return(&serviceerror.ServiceError{Error: i18ncore.I18nMessage{DefaultValue: "verification failed"}})
 
 	err := validateClientAssertion(
 		context.Background(), oauthApp, suite.mockJwtService, suite.mockDiscoveryService, "test-client", assertion)
@@ -1257,7 +1258,7 @@ func (suite *ClientAuthTestSuite) TestValidateClientAssertion_VerificationFails(
 		Return(&serviceerror.ServiceError{
 			Code:  "JWT-00001",
 			Type:  serviceerror.ClientErrorType,
-			Error: "invalid_token",
+			Error: i18ncore.I18nMessage{DefaultValue: "invalid_token"},
 		})
 
 	err := validateClientAssertion(

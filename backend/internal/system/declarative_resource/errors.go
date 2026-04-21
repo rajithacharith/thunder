@@ -27,15 +27,21 @@ var (
 	// ErrorDeclarativeResourceCreateOperation is the error returned when
 	// a declarative resource create operation is attempted.
 	ErrorDeclarativeResourceCreateOperation = serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "DCR-1001",
-		Error:            "Declarative resource create operation is not allowed",
-		ErrorDescription: "Creating declarative resources is not permitted",
+		Type: serviceerror.ClientErrorType,
+		Code: "DCR-1001",
+		Error: core.I18nMessage{
+			Key:          "error.declarative_resource.create_not_allowed",
+			DefaultValue: "Declarative resource create operation is not allowed",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.declarative_resource.create_not_allowed_description",
+			DefaultValue: "Creating declarative resources is not permitted",
+		},
 	}
 
 	// I18nErrorDeclarativeResourceCreateOperation is the error returned when
 	// a declarative resource create operation is attempted.
-	I18nErrorDeclarativeResourceCreateOperation = serviceerror.I18nServiceError{
+	I18nErrorDeclarativeResourceCreateOperation = serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "DCR-1001",
 		Error: core.I18nMessage{
@@ -51,15 +57,21 @@ var (
 	// ErrorDeclarativeResourceUpdateOperation is the error returned when
 	// a declarative resource update operation is attempted.
 	ErrorDeclarativeResourceUpdateOperation = serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "DCR-1002",
-		Error:            "Declarative resource update operation is not allowed",
-		ErrorDescription: "Updating declarative resources is not permitted",
+		Type: serviceerror.ClientErrorType,
+		Code: "DCR-1002",
+		Error: core.I18nMessage{
+			Key:          "error.declarative_resource.update_not_allowed",
+			DefaultValue: "Declarative resource update operation is not allowed",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.declarative_resource.update_not_allowed_description",
+			DefaultValue: "Updating declarative resources is not permitted",
+		},
 	}
 
 	// I18nErrorDeclarativeResourceUpdateOperation is the error returned when
 	// a declarative resource update operation is attempted.
-	I18nErrorDeclarativeResourceUpdateOperation = serviceerror.I18nServiceError{
+	I18nErrorDeclarativeResourceUpdateOperation = serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "DCR-1002",
 		Error: core.I18nMessage{
@@ -75,15 +87,21 @@ var (
 	// ErrorDeclarativeResourceDeleteOperation is the error returned when
 	// a declarative resource delete operation is attempted.
 	ErrorDeclarativeResourceDeleteOperation = serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "DCR-1003",
-		Error:            "Declarative resource delete operation is not allowed",
-		ErrorDescription: "Deleting declarative resources is not permitted",
+		Type: serviceerror.ClientErrorType,
+		Code: "DCR-1003",
+		Error: core.I18nMessage{
+			Key:          "error.declarative_resource.delete_not_allowed",
+			DefaultValue: "Declarative resource delete operation is not allowed",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.declarative_resource.delete_not_allowed_description",
+			DefaultValue: "Deleting declarative resources is not permitted",
+		},
 	}
 
 	// I18nErrorDeclarativeResourceDeleteOperation is the error returned when
 	// a declarative resource delete operation is attempted.
-	I18nErrorDeclarativeResourceDeleteOperation = serviceerror.I18nServiceError{
+	I18nErrorDeclarativeResourceDeleteOperation = serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "DCR-1003",
 		Error: core.I18nMessage{

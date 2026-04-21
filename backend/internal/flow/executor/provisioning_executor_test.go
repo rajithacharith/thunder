@@ -19,6 +19,8 @@
 package executor
 
 import (
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"encoding/json"
 	"testing"
 
@@ -1005,7 +1007,9 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_GroupAssignmentF
 
 	// Mock group assignment fails (e.g., group doesn't exist)
 	suite.mockGroupService.On("AddGroupMembers", mock.Anything, "test-group-id", mock.Anything).
-		Return(nil, &serviceerror.ServiceError{Error: "Group not found"})
+		Return(nil, &serviceerror.ServiceError{
+			Error: i18ncore.I18nMessage{Key: "error.test.group_not_found", DefaultValue: "Group not found"},
+		})
 
 	// Role assignment should still be attempted
 	suite.mockRoleService.On("AddAssignments", mock.Anything, "test-role-id", mock.Anything).Return(nil)
@@ -1060,11 +1064,15 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_BothGroupAndRole
 
 	// Mock group assignment fails
 	suite.mockGroupService.On("AddGroupMembers", mock.Anything, "test-group-id", mock.Anything).
-		Return(nil, &serviceerror.ServiceError{Error: "Group not found"})
+		Return(nil, &serviceerror.ServiceError{
+			Error: i18ncore.I18nMessage{Key: "error.test.group_not_found", DefaultValue: "Group not found"},
+		})
 
 	// Mock role assignment also fails
 	suite.mockRoleService.On("AddAssignments", mock.Anything, "test-role-id", mock.Anything).
-		Return(&serviceerror.ServiceError{Error: "Role not found"})
+		Return(&serviceerror.ServiceError{
+			Error: i18ncore.I18nMessage{Key: "error.test.role_not_found", DefaultValue: "Role not found"},
+		})
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -1120,7 +1128,9 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_RoleAssignmentFa
 
 	// Role assignment fails (e.g., role doesn't exist)
 	suite.mockRoleService.On("AddAssignments", mock.Anything, "test-role-id", mock.Anything).
-		Return(&serviceerror.ServiceError{Error: "Role not found"})
+		Return(&serviceerror.ServiceError{
+			Error: i18ncore.I18nMessage{Key: "error.test.role_not_found", DefaultValue: "Role not found"},
+		})
 
 	resp, err := suite.executor.Execute(ctx)
 

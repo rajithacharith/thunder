@@ -34,17 +34,17 @@ const loggerComponentName = "I18nMgtService"
 
 // I18nServiceInterface defines the interface for the i18n service.
 type I18nServiceInterface interface {
-	ListLanguages() ([]string, *serviceerror.I18nServiceError)
+	ListLanguages() ([]string, *serviceerror.ServiceError)
 	ResolveTranslations(language string, namespace string) (
-		*LanguageTranslationsResponse, *serviceerror.I18nServiceError)
+		*LanguageTranslationsResponse, *serviceerror.ServiceError)
 	SetTranslationOverrides(language string, translations map[string]map[string]string) (
-		*LanguageTranslationsResponse, *serviceerror.I18nServiceError)
-	ClearTranslationOverrides(language string) *serviceerror.I18nServiceError
+		*LanguageTranslationsResponse, *serviceerror.ServiceError)
+	ClearTranslationOverrides(language string) *serviceerror.ServiceError
 	ResolveTranslationsForKey(language string, namespace string, key string) (
-		*TranslationResponse, *serviceerror.I18nServiceError)
+		*TranslationResponse, *serviceerror.ServiceError)
 	SetTranslationOverrideForKey(language string, namespace string, key string, value string) (
-		*TranslationResponse, *serviceerror.I18nServiceError)
-	ClearTranslationOverrideForKey(language string, namespace string, key string) *serviceerror.I18nServiceError
+		*TranslationResponse, *serviceerror.ServiceError)
+	ClearTranslationOverrideForKey(language string, namespace string, key string) *serviceerror.ServiceError
 }
 
 // i18nService is the default implementation of I18nServiceInterface.
@@ -63,7 +63,7 @@ func newI18nService(store i18nStoreInterface) I18nServiceInterface {
 
 // ListLanguages retrieves all locale codes that have translations in the system.
 // The default locale is always included in the response, even if it has no translations in the DB.
-func (s *i18nService) ListLanguages() ([]string, *serviceerror.I18nServiceError) {
+func (s *i18nService) ListLanguages() ([]string, *serviceerror.ServiceError) {
 	localeCodes, err := s.store.GetDistinctLanguages()
 	if err != nil {
 		s.logger.Error("Failed to get locales from store", log.Error(err))
@@ -89,7 +89,7 @@ func (s *i18nService) ListLanguages() ([]string, *serviceerror.I18nServiceError)
 // ResolveTranslationsForKey resolves a single translation by language, namespace, and key.
 // It merges custom overrides with default values.
 func (s *i18nService) ResolveTranslationsForKey(
-	language string, namespace string, key string) (*TranslationResponse, *serviceerror.I18nServiceError) {
+	language string, namespace string, key string) (*TranslationResponse, *serviceerror.ServiceError) {
 	if err := validate(language, namespace, key); err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func (s *i18nService) ResolveTranslationsForKey(
 // SetTranslationOverrideForKey creates or updates a custom override for a single translation.
 func (s *i18nService) SetTranslationOverrideForKey(
 	language string, namespace string, key string, value string) (
-	*TranslationResponse, *serviceerror.I18nServiceError) {
+	*TranslationResponse, *serviceerror.ServiceError) {
 	if err := declarativeresource.CheckDeclarativeUpdateI18n(); err != nil {
 		return nil, err
 	}
@@ -168,7 +168,7 @@ func (s *i18nService) SetTranslationOverrideForKey(
 
 // ClearTranslationOverrideForKey removes the custom override for a single translation.
 func (s *i18nService) ClearTranslationOverrideForKey(
-	language string, namespace string, key string) *serviceerror.I18nServiceError {
+	language string, namespace string, key string) *serviceerror.ServiceError {
 	if err := declarativeresource.CheckDeclarativeDeleteI18n(); err != nil {
 		return err
 	}
@@ -187,7 +187,7 @@ func (s *i18nService) ClearTranslationOverrideForKey(
 // ResolveTranslations resolves all translations for a language, organized by namespace.
 // Merges custom overrides with default values.
 func (s *i18nService) ResolveTranslations(
-	language string, namespace string) (*LanguageTranslationsResponse, *serviceerror.I18nServiceError) {
+	language string, namespace string) (*LanguageTranslationsResponse, *serviceerror.ServiceError) {
 	if language == "" {
 		language = SystemLanguage
 	}
@@ -259,7 +259,7 @@ func (s *i18nService) ResolveTranslations(
 // SetTranslationOverrides replaces all custom overrides for a language with provided values.
 func (s *i18nService) SetTranslationOverrides(
 	language string, translations map[string]map[string]string) (
-	*LanguageTranslationsResponse, *serviceerror.I18nServiceError) {
+	*LanguageTranslationsResponse, *serviceerror.ServiceError) {
 	if err := declarativeresource.CheckDeclarativeUpdateI18n(); err != nil {
 		return nil, err
 	}
@@ -314,7 +314,7 @@ func (s *i18nService) SetTranslationOverrides(
 }
 
 // ClearTranslationOverrides removes all custom overrides for a language.
-func (s *i18nService) ClearTranslationOverrides(language string) *serviceerror.I18nServiceError {
+func (s *i18nService) ClearTranslationOverrides(language string) *serviceerror.ServiceError {
 	if err := declarativeresource.CheckDeclarativeDeleteI18n(); err != nil {
 		return err
 	}
@@ -341,7 +341,7 @@ func (s *i18nService) clearAllOverrides(language string) error {
 	return nil
 }
 
-func validate(language string, namespace string, key string) *serviceerror.I18nServiceError {
+func validate(language string, namespace string, key string) *serviceerror.ServiceError {
 	if language == "" {
 		return &ErrorMissingLanguage
 	}

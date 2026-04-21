@@ -74,7 +74,7 @@ func (s *notificationSenderMgtService) CreateSender(
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationSenderMgtService"))
 	logger.Debug("Creating notification sender", log.String("name", sender.Name))
 
-	if err := declarativeresource.CheckDeclarativeCreate(); err != nil {
+	if err := declarativeresource.CheckDeclarativeCreateI18n(); err != nil {
 		return nil, err
 	}
 
@@ -196,7 +196,7 @@ func (s *notificationSenderMgtService) UpdateSender(ctx context.Context, id stri
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationSenderMgtService"))
 	logger.Debug("Updating notification sender", log.String("id", id), log.String("name", sender.Name))
 
-	if err := declarativeresource.CheckDeclarativeUpdate(); err != nil {
+	if err := declarativeresource.CheckDeclarativeUpdateI18n(); err != nil {
 		return nil, err
 	}
 
@@ -273,7 +273,7 @@ func (s *notificationSenderMgtService) DeleteSender(ctx context.Context, id stri
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationSenderMgtService"))
 	logger.Debug("Deleting notification sender", log.String("id", id))
 
-	if err := declarativeresource.CheckDeclarativeDelete(); err != nil {
+	if err := declarativeresource.CheckDeclarativeDeleteI18n(); err != nil {
 		return err
 	}
 

@@ -226,14 +226,14 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 			case authnprovidermgr.ErrorAuthenticationFailed.Code:
 				execResp.FailureReason = failureReasonInvalidCredentials
 			default:
-				execResp.FailureReason = "Failed to authenticate user: " + svcErr.ErrorDescription
+				execResp.FailureReason = "Failed to authenticate user: " + svcErr.ErrorDescription.DefaultValue
 			}
 
 			return nil, nil
 		}
 
 		logger.Error("Failed to authenticate user",
-			log.String("errorCode", svcErr.Code), log.String("errorDescription", svcErr.ErrorDescription))
+			log.String("errorCode", svcErr.Code), log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
 		return nil, errors.New("failed to authenticate user")
 	}
 	execResp.AuthUser = newAuthUser

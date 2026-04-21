@@ -424,7 +424,7 @@ func (suite *OUAPITestSuite) TestCreateOrganizationUnitWithInvalidParent() {
 	suite.Require().NoError(err)
 
 	suite.Equal("OU-1005", errorResp["code"])
-	suite.Equal("Parent organization unit not found", errorResp["message"])
+	suite.Equal("Parent organization unit not found", errorResp["message"].(map[string]interface{})["defaultValue"])
 }
 
 func (suite *OUAPITestSuite) TestCreateOrganizationUnitWithDuplicateName() {
@@ -459,7 +459,7 @@ func (suite *OUAPITestSuite) TestCreateOrganizationUnitWithDuplicateName() {
 	suite.Require().NoError(err)
 
 	suite.Equal("OU-1004", errorResp["code"])
-	suite.Equal("Organization unit name conflict", errorResp["message"])
+	suite.Equal("Organization unit name conflict", errorResp["message"].(map[string]interface{})["defaultValue"])
 }
 
 func (suite *OUAPITestSuite) TestCreateOrganizationUnitWithDuplicateHandle() {
@@ -494,7 +494,7 @@ func (suite *OUAPITestSuite) TestCreateOrganizationUnitWithDuplicateHandle() {
 	suite.Require().NoError(err)
 
 	suite.Equal("OU-1008", errorResp["code"])
-	suite.Equal("Organization unit handle conflict", errorResp["message"])
+	suite.Equal("Organization unit handle conflict", errorResp["message"].(map[string]interface{})["defaultValue"])
 }
 
 func (suite *OUAPITestSuite) TestDeleteOrganizationUnitWithChildren() {
@@ -522,7 +522,7 @@ func (suite *OUAPITestSuite) TestDeleteOrganizationUnitWithChildren() {
 	suite.Require().NoError(err)
 
 	suite.Equal("OU-1006", errorResp["code"])
-	suite.Equal("Organization unit has children", errorResp["message"])
+	suite.Equal("Organization unit has children", errorResp["message"].(map[string]interface{})["defaultValue"])
 }
 
 func (suite *OUAPITestSuite) TestUpdateOrganizationUnitWithInvalidParent() {
@@ -561,7 +561,7 @@ func (suite *OUAPITestSuite) TestUpdateOrganizationUnitWithInvalidParent() {
 	suite.Require().NoError(err)
 
 	suite.Equal("OU-1005", errorResp["code"])
-	suite.Equal("Parent organization unit not found", errorResp["message"])
+	suite.Equal("Parent organization unit not found", errorResp["message"].(map[string]interface{})["defaultValue"])
 }
 
 func (suite *OUAPITestSuite) TestUpdateOrganizationUnitWithDuplicateName() {
@@ -632,7 +632,7 @@ func (suite *OUAPITestSuite) TestUpdateOrganizationUnitWithDuplicateName() {
 	suite.Require().NoError(err)
 
 	suite.Equal("OU-1004", errorResp["code"])
-	suite.Equal("Organization unit name conflict", errorResp["message"])
+	suite.Equal("Organization unit name conflict", errorResp["message"].(map[string]interface{})["defaultValue"])
 }
 
 func (suite *OUAPITestSuite) TestCreateOrganizationUnitWithEmptyName() {

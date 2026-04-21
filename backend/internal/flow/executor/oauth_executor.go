@@ -167,12 +167,12 @@ func (o *oAuthExecutor) BuildAuthorizeFlow(ctx *core.NodeContext, execResp *comm
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = svcErr.ErrorDescription
+			execResp.FailureReason = svcErr.ErrorDescription.DefaultValue
 			return nil
 		}
 
 		logger.Error("Failed to build authorize URL", log.String("errorCode", svcErr.Code),
-			log.String("errorDescription", svcErr.ErrorDescription))
+			log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
 		return errors.New("failed to build authorize URL")
 	}
 
@@ -290,12 +290,12 @@ func (o *oAuthExecutor) ExchangeCodeForToken(ctx *core.NodeContext, execResp *co
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = svcErr.ErrorDescription
+			execResp.FailureReason = svcErr.ErrorDescription.DefaultValue
 			return nil, nil
 		}
 
 		logger.Error("Failed to exchange code for a token", log.String("errorCode", svcErr.Code),
-			log.String("errorDescription", svcErr.ErrorDescription))
+			log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
 		return nil, errors.New("failed to exchange code for token")
 	}
 
@@ -324,12 +324,12 @@ func (o *oAuthExecutor) GetUserInfo(ctx *core.NodeContext, execResp *common.Exec
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = svcErr.ErrorDescription
+			execResp.FailureReason = svcErr.ErrorDescription.DefaultValue
 			return nil, nil
 		}
 
 		logger.Error("Failed to fetch user info", log.String("errorCode", svcErr.Code),
-			log.String("errorDescription", svcErr.ErrorDescription))
+			log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
 		return nil, errors.New("failed to fetch user information")
 	}
 
@@ -356,11 +356,11 @@ func (o *oAuthExecutor) getIDPName(ctx context.Context, idpID string) (string, e
 	idp, svcErr := o.idpService.GetIdentityProvider(ctx, idpID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
-			return "", fmt.Errorf("failed to get identity provider: %s", svcErr.ErrorDescription)
+			return "", fmt.Errorf("failed to get identity provider: %s", svcErr.ErrorDescription.DefaultValue)
 		}
 
 		logger.Error("Error while retrieving identity provider", log.String("errorCode", svcErr.Code),
-			log.String("errorDescription", svcErr.ErrorDescription))
+			log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
 		return "", errors.New("error while retrieving identity provider")
 	}
 
@@ -393,11 +393,11 @@ func (o *oAuthExecutor) GetInternalUser(
 		}
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = svcErr.ErrorDescription
+			execResp.FailureReason = svcErr.ErrorDescription.DefaultValue
 			return nil, nil
 		}
 		logger.Error("Error while retrieving internal user", log.String("errorCode", svcErr.Code),
-			log.String("description", svcErr.ErrorDescription))
+			log.String("description", svcErr.ErrorDescription.DefaultValue))
 		return nil, errors.New("error while retrieving internal user")
 	}
 	if user == nil || user.ID == "" {
@@ -583,12 +583,12 @@ func (o *oAuthExecutor) resolveUserTypeForAutoProvisioning(ctx *core.NodeContext
 		if svcErr != nil {
 			if svcErr.Type == serviceerror.ClientErrorType {
 				execResp.Status = common.ExecFailure
-				execResp.FailureReason = svcErr.ErrorDescription
+				execResp.FailureReason = svcErr.ErrorDescription.DefaultValue
 				return nil
 			}
 
 			logger.Error("Error while retrieving user schema", log.String("errorCode", svcErr.Code),
-				log.String("description", svcErr.ErrorDescription))
+				log.String("description", svcErr.ErrorDescription.DefaultValue))
 			return errors.New("error while retrieving user schema")
 		}
 		if userSchema.AllowSelfRegistration {

@@ -50,7 +50,8 @@ type GroupServiceInterface interface {
 	CreateGroupByPath(ctx context.Context, handlePath string, request CreateGroupByPathRequest) (
 		*Group, *serviceerror.ServiceError)
 	GetGroup(ctx context.Context, groupID string, includeDisplay bool) (*Group, *serviceerror.ServiceError)
-	UpdateGroup(ctx context.Context, groupID string, request UpdateGroupRequest) (*Group, *serviceerror.ServiceError)
+	UpdateGroup(ctx context.Context, groupID string, request UpdateGroupRequest) (
+		*Group, *serviceerror.ServiceError)
 	DeleteGroup(ctx context.Context, groupID string) *serviceerror.ServiceError
 	GetGroupMembers(ctx context.Context, groupID string, limit, offset int, includeDisplay bool) (
 		*MemberListResponse, *serviceerror.ServiceError)
@@ -1229,7 +1230,7 @@ func (gs *groupService) checkGroupAccess(
 
 	hasAccess, err := gs.authzService.IsActionAllowed(ctx, action, &actionCtx)
 	if err != nil {
-		logger.Error("Failed to check authorization", log.String("err", err.Error))
+		logger.Error("Failed to check authorization", log.String("err", err.Error.DefaultValue))
 		return &ErrorInternalServerError
 	}
 	if !hasAccess {

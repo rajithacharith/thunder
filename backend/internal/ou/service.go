@@ -623,7 +623,8 @@ func (ous *organizationUnitService) updateOUInternal(
 }
 
 // DeleteOrganizationUnit deletes an organization unit.
-func (ous *organizationUnitService) DeleteOrganizationUnit(ctx context.Context, id string) *serviceerror.ServiceError {
+func (ous *organizationUnitService) DeleteOrganizationUnit(
+	ctx context.Context, id string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Deleting organization unit", log.String("ouID", id))
 

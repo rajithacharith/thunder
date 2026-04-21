@@ -108,7 +108,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 	// cacheEntry is kept so its current TTLSeconds can be compared later.
 	attrs := make(map[string]interface{})
 	var cacheEntry *attributecache.AttributeCache
-	var fetchErr *serviceerror.I18nServiceError
+	var fetchErr *serviceerror.ServiceError
 	if refreshTokenClaims.AttributeCacheID != "" {
 		cacheEntry, fetchErr = h.attrCacheService.GetAttributeCache(ctx, refreshTokenClaims.AttributeCacheID)
 		if fetchErr != nil {

@@ -28,6 +28,7 @@ import (
 	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	systemhttp "github.com/asgardeo/thunder/internal/system/http"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -122,12 +123,8 @@ func postAndDecode[T any](p *restAuthnProvider, ctx context.Context, url string,
 
 func (p *restAuthnProvider) logAndReturnServerError(msg string, fields ...log.Field) *serviceerror.ServiceError {
 	p.logger.Error(msg, fields...)
-	return &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             authnprovidercm.ErrorCodeSystemError,
-		Error:            "System error",
-		ErrorDescription: "An internal server error occurred",
-	}
+	err := errorSystemError
+	return &err
 }
 
 func isClientError(statusCode int, code string) bool {
@@ -157,10 +154,16 @@ func (p *restAuthnProvider) decodeError(body io.Reader, statusCode int) *service
 	}
 
 	return &serviceerror.ServiceError{
-		Type:             errorType,
-		Code:             apiErr.Code,
-		Error:            apiErr.Message,
-		ErrorDescription: apiErr.Description,
+		Type: errorType,
+		Code: apiErr.Code,
+		Error: core.I18nMessage{
+			Key:          "error.authnproviderservice." + apiErr.Code,
+			DefaultValue: apiErr.Message,
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.authnproviderservice." + apiErr.Code + "_description",
+			DefaultValue: apiErr.Description,
+		},
 	}
 }
 

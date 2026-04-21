@@ -41,18 +41,18 @@ const (
 // AttributeCacheServiceInterface defines the interface for the attribute cache service.
 type AttributeCacheServiceInterface interface {
 	// CreateAttributeCache creates a new attribute cache entry.
-	CreateAttributeCache(ctx context.Context, cache *AttributeCache) (*AttributeCache, *serviceerror.I18nServiceError)
+	CreateAttributeCache(ctx context.Context, cache *AttributeCache) (*AttributeCache, *serviceerror.ServiceError)
 
 	// GetAttributeCache retrieves an attribute cache entry by ID.
-	GetAttributeCache(ctx context.Context, id string) (*AttributeCache, *serviceerror.I18nServiceError)
+	GetAttributeCache(ctx context.Context, id string) (*AttributeCache, *serviceerror.ServiceError)
 
 	// ExtendAttributeCacheTTL extends the TTL of an attribute cache entry.
 	ExtendAttributeCacheTTL(
 		ctx context.Context, id string, ttlSeconds int,
-	) *serviceerror.I18nServiceError
+	) *serviceerror.ServiceError
 
 	// DeleteAttributeCache deletes an attribute cache entry by ID.
-	DeleteAttributeCache(ctx context.Context, id string) *serviceerror.I18nServiceError
+	DeleteAttributeCache(ctx context.Context, id string) *serviceerror.ServiceError
 }
 
 // attributeCacheService is the default implementation of the AttributeCacheServiceInterface.
@@ -70,7 +70,7 @@ func newAttributeCacheService(store attributeCacheStoreInterface) AttributeCache
 // CreateAttributeCache creates a new attribute cache entry.
 func (s *attributeCacheService) CreateAttributeCache(
 	ctx context.Context, cache *AttributeCache,
-) (*AttributeCache, *serviceerror.I18nServiceError) {
+) (*AttributeCache, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Creating attribute cache entry")
 
@@ -106,7 +106,7 @@ func (s *attributeCacheService) CreateAttributeCache(
 // GetAttributeCache retrieves an attribute cache entry by ID.
 func (s *attributeCacheService) GetAttributeCache(
 	ctx context.Context, id string,
-) (*AttributeCache, *serviceerror.I18nServiceError) {
+) (*AttributeCache, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Retrieving attribute cache", log.String("id", id))
 
@@ -131,7 +131,7 @@ func (s *attributeCacheService) GetAttributeCache(
 // ExtendAttributeCacheTTL extends the TTL of an attribute cache entry.
 func (s *attributeCacheService) ExtendAttributeCacheTTL(
 	ctx context.Context, id string, ttlSeconds int,
-) *serviceerror.I18nServiceError {
+) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Extending attribute cache TTL", log.String("id", id))
 
@@ -160,7 +160,7 @@ func (s *attributeCacheService) ExtendAttributeCacheTTL(
 // DeleteAttributeCache deletes an attribute cache entry by ID.
 func (s *attributeCacheService) DeleteAttributeCache(
 	ctx context.Context, id string,
-) *serviceerror.I18nServiceError {
+) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Deleting attribute cache", log.String("id", id))
 

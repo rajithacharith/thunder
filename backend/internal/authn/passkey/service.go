@@ -145,7 +145,7 @@ func (w *passkeyService) StartRegistration(
 	// Store session data in cache with TTL
 	sessionToken, svcErr := w.storeSessionData(sessionData)
 	if svcErr != nil {
-		logger.Error("Failed to store session data", log.String("error", svcErr.Error))
+		logger.Error("Failed to store session data", log.String("error", svcErr.Error.DefaultValue))
 		return nil, svcErr
 	}
 
@@ -219,7 +219,7 @@ func (w *passkeyService) FinishRegistration(ctx context.Context, req *PasskeyReg
 	// Retrieve session data from cache
 	sessionData, userID, relyingPartyID, svcErr := w.retrieveSessionData(req.SessionToken)
 	if svcErr != nil {
-		logger.Error("Failed to retrieve session data", log.String("error", svcErr.Error))
+		logger.Error("Failed to retrieve session data", log.String("error", svcErr.Error.DefaultValue))
 		return nil, svcErr
 	}
 
@@ -364,7 +364,7 @@ func (w *passkeyService) StartAuthentication(ctx context.Context, req *PasskeyAu
 	// Store session data in cache with TTL
 	sessionToken, svcErr := w.storeSessionData(sessionData)
 	if svcErr != nil {
-		logger.Error("Failed to store session data", log.String("error", svcErr.Error))
+		logger.Error("Failed to store session data", log.String("error", svcErr.Error.DefaultValue))
 		return nil, svcErr
 	}
 
@@ -398,7 +398,7 @@ func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyA
 	// Retrieve session data from cache
 	sessionData, sessionUserID, relyingPartyID, svcErr := w.retrieveSessionData(req.SessionToken)
 	if svcErr != nil {
-		logger.Error("Failed to retrieve session data", log.String("error", svcErr.Error))
+		logger.Error("Failed to retrieve session data", log.String("error", svcErr.Error.DefaultValue))
 		return nil, svcErr
 	}
 
@@ -608,7 +608,7 @@ func (w *passkeyService) storePasskeyCredential(
 
 	existingEntries, svcErr := w.getStoredPasskeyEntries(ctx, entityID)
 	if svcErr != nil {
-		return fmt.Errorf("failed to load existing passkey credentials: %s", svcErr.Error)
+		return fmt.Errorf("failed to load existing passkey credentials: %s", svcErr.Error.DefaultValue)
 	}
 
 	existingEntries = append(existingEntries, entity.StoredCredential{
@@ -644,7 +644,7 @@ func (w *passkeyService) updatePasskeyCredential(
 
 	existingEntries, svcErr := w.getStoredPasskeyEntries(ctx, entityID)
 	if svcErr != nil {
-		return fmt.Errorf("failed to load existing passkey credentials: %s", svcErr.Error)
+		return fmt.Errorf("failed to load existing passkey credentials: %s", svcErr.Error.DefaultValue)
 	}
 
 	found := false

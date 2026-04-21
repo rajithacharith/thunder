@@ -41,6 +41,7 @@ import (
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
@@ -65,7 +66,8 @@ type AuthenticationServiceInterface interface {
 		existingAssertion, code string) (*common.AuthenticationResponse, *serviceerror.ServiceError)
 	// Passkey methods
 	StartPasskeyRegistration(ctx context.Context, userID, relyingPartyID, relyingPartyName string,
-		authSelection *PasskeyAuthenticatorSelectionDTO, attestation string) (interface{}, *serviceerror.ServiceError)
+		authSelection *PasskeyAuthenticatorSelectionDTO, attestation string,
+	) (interface{}, *serviceerror.ServiceError)
 	FinishPasskeyRegistration(ctx context.Context, credential PasskeyPublicKeyCredentialDTO, sessionToken,
 		credentialName string) (interface{}, *serviceerror.ServiceError)
 	StartPasskeyAuthentication(
@@ -260,29 +262,31 @@ func (as *authenticationService) StartIDPAuthentication(ctx context.Context, req
 
 	// Route to appropriate service based on IDP type
 	var redirectURL string
+	var buildURLErr *serviceerror.ServiceError
 	switch identityProvider.Type {
 	case idp.IDPTypeOAuth:
-		redirectURL, svcErr = as.oauthService.BuildAuthorizeURL(ctx, idpID)
+		redirectURL, buildURLErr = as.oauthService.BuildAuthorizeURL(ctx, idpID)
 	case idp.IDPTypeOIDC:
-		redirectURL, svcErr = as.oidcService.BuildAuthorizeURL(ctx, idpID)
+		redirectURL, buildURLErr = as.oidcService.BuildAuthorizeURL(ctx, idpID)
 	case idp.IDPTypeGoogle:
-		redirectURL, svcErr = as.googleService.BuildAuthorizeURL(ctx, idpID)
+		redirectURL, buildURLErr = as.googleService.BuildAuthorizeURL(ctx, idpID)
 	case idp.IDPTypeGitHub:
-		redirectURL, svcErr = as.githubService.BuildAuthorizeURL(ctx, idpID)
+		redirectURL, buildURLErr = as.githubService.BuildAuthorizeURL(ctx, idpID)
 	default:
 		logger.Error("Unsupported IDP type", log.String("idpId", idpID),
 			log.String("type", string(identityProvider.Type)))
 		return nil, &serviceerror.InternalServerError
 	}
 
-	if svcErr != nil {
-		return nil, svcErr
+	if buildURLErr != nil {
+		return nil, buildURLErr
 	}
 
 	// Generate session token
 	sessionToken, err := as.createSessionToken(idpID, identityProvider.Type)
 	if err != nil {
-		logger.Error("Failed to create session token", log.String("idpId", idpID), log.String("error", err.Error))
+		logger.Error("Failed to create session token", log.String("idpId", idpID),
+			log.String("error", err.Error.DefaultValue))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -423,7 +427,7 @@ func (as *authenticationService) validateAndAppendAuthAssertion(authResponse *co
 	token, _, err := as.jwtService.GenerateJWT(user.ID, jwtConfig.Audience, jwtConfig.Issuer,
 		jwtConfig.ValidityPeriod, jwtClaims, jwt.TokenTypeJWT)
 	if err != nil {
-		logger.Error("Failed to generate auth assertion", log.String("error", err.Error))
+		logger.Error("Failed to generate auth assertion", log.String("error", err.Error.DefaultValue))
 		return &serviceerror.InternalServerError
 	}
 
@@ -456,7 +460,7 @@ func (as *authenticationService) extractClaimsFromAssertion(assertion string,
 	jwtConfig := config.GetThunderRuntime().Config.JWT
 
 	if err := as.jwtService.VerifyJWT(assertion, "", jwtConfig.Issuer); err != nil {
-		logger.Debug("Failed to verify JWT signature of the assertion", log.String("error", err.Error))
+		logger.Debug("Failed to verify JWT signature of the assertion", log.String("error", err.Error.DefaultValue))
 		return nil, "", &common.ErrorInvalidAssertion
 	}
 
@@ -623,7 +627,7 @@ func (as *authenticationService) mapCredentialsAuthnError(svcErr *serviceerror.S
 		return &ErrorEmptyAttributesOrCredentials
 	default:
 		logger.Error("Error occurred while authenticating with credentials",
-			log.String("errorCode", svcErr.Code), log.String("errorDescription", svcErr.ErrorDescription))
+			log.String("errorCode", svcErr.Code), log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
 		return &serviceerror.InternalServerError
 	}
 }
@@ -636,7 +640,7 @@ func (as *authenticationService) mapCredentialsGetAttributesError(svcErr *servic
 		return &ErrorInvalidToken
 	default:
 		logger.Error("Error occurred while getting attributes for credentials authentication",
-			log.String("errorCode", svcErr.Code), log.String("errorDescription", svcErr.ErrorDescription))
+			log.String("errorCode", svcErr.Code), log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
 		return &serviceerror.InternalServerError
 	}
 }
@@ -645,9 +649,15 @@ func (as *authenticationService) mapCredentialsGetAttributesError(svcErr *servic
 func (as *authenticationService) handleIDPServiceError(idpID string, svcErr *serviceerror.ServiceError,
 	logger *log.Logger) *serviceerror.ServiceError {
 	if svcErr.Type == serviceerror.ClientErrorType {
-		return serviceerror.CustomServiceError(common.ErrorClientErrorWhileRetrievingIDP,
-			fmt.Sprintf("An error occurred while retrieving the identity provider with ID %s: %s",
-				idpID, svcErr.ErrorDescription))
+		errDesc := fmt.Sprintf(
+			"An error occurred while retrieving the identity provider with ID %s: %s",
+			idpID,
+			svcErr.ErrorDescription.DefaultValue,
+		)
+		return serviceerror.CustomServiceError(common.ErrorClientErrorWhileRetrievingIDP, core.I18nMessage{
+			Key:          "error.authnservice.error_retrieving_idp_description",
+			DefaultValue: errDesc,
+		})
 	}
 
 	logger.Error("Error occurred while retrieving IDP", log.String("idpId", idpID), log.Any("error", svcErr))
@@ -699,7 +709,7 @@ func (as *authenticationService) verifyAndDecodeSessionToken(token string, logge
 	jwtConfig := config.GetThunderRuntime().Config.JWT
 	svcErr := as.jwtService.VerifyJWT(token, "auth-svc", jwtConfig.Issuer)
 	if svcErr != nil {
-		logger.Debug("Error verifying session token", log.String("error", svcErr.Error))
+		logger.Debug("Error verifying session token", log.String("error", svcErr.Error.DefaultValue))
 		return nil, &common.ErrorInvalidSessionToken
 	}
 

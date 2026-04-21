@@ -308,7 +308,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_I18nError_ContinuesWi
 			Layout: json.RawMessage(`{}`),
 		}, nil)
 	suite.mockI18nService.On("ResolveTranslations", "en-US", "").
-		Return(nil, &serviceerror.I18nServiceError{Code: "I18N-5000", Type: serviceerror.ServerErrorType})
+		Return(nil, &serviceerror.ServiceError{Code: "I18N-5000", Type: serviceerror.ServerErrorType})
 	suite.mockI18nService.On("ListLanguages").Return([]string{"en"}, nil)
 
 	// Act

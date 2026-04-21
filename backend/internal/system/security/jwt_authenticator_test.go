@@ -31,6 +31,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 )
 
@@ -157,8 +158,8 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 				m.On("VerifyJWTSignature", "invalid.jwt.token").Return(&serviceerror.ServiceError{
 					Type:             serviceerror.ServerErrorType,
 					Code:             "INVALID_SIGNATURE",
-					Error:            "Invalid signature",
-					ErrorDescription: "The JWT signature is invalid",
+					Error:            i18ncore.I18nMessage{DefaultValue: "Invalid signature"},
+					ErrorDescription: i18ncore.I18nMessage{DefaultValue: "The JWT signature is invalid"},
 				})
 			},
 			expectedError: errInvalidToken,
@@ -563,7 +564,7 @@ func (suite *JWTAuthenticatorTestSuite) TestVerifyFederatedToken_JWKSVerificatio
 	mockJWT.On("VerifyJWTWithJWKS", token, jwksURL, audience, issuer).Return(&serviceerror.ServiceError{
 		Type:  serviceerror.ServerErrorType,
 		Code:  "JWKS_ERROR",
-		Error: "JWKS verification failed",
+		Error: i18ncore.I18nMessage{DefaultValue: "JWKS verification failed"},
 	})
 	auth := newJWTAuthenticator(mockJWT)
 
@@ -768,7 +769,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate_FederatedTokenFailure()
 	mockJWT.On("VerifyJWTWithJWKS", token, jwksURL, audience, issuer).Return(&serviceerror.ServiceError{
 		Type:  serviceerror.ServerErrorType,
 		Code:  "JWKS_ERROR",
-		Error: "JWKS verification failed",
+		Error: i18ncore.I18nMessage{DefaultValue: "JWKS verification failed"},
 	})
 	auth := newJWTAuthenticator(mockJWT)
 

@@ -27,6 +27,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -254,14 +255,17 @@ func (h *messageNotificationSenderHandler) HandleOTPVerifyRequest(w http.Respons
 // handleError handles service errors and returns appropriate HTTP responses.
 func (h *messageNotificationSenderHandler) handleError(w http.ResponseWriter,
 	svcErr *serviceerror.ServiceError, customErrDesc string) {
-	apiErrDesc := svcErr.ErrorDescription
+	errDesc := svcErr.ErrorDescription
 	if customErrDesc != "" {
-		apiErrDesc = customErrDesc
+		errDesc = core.I18nMessage{
+			Key:          svcErr.ErrorDescription.Key,
+			DefaultValue: customErrDesc,
+		}
 	}
 	errResp := apierror.ErrorResponse{
 		Code:        svcErr.Code,
 		Message:     svcErr.Error,
-		Description: apiErrDesc,
+		Description: errDesc,
 	}
 
 	statusCode := http.StatusInternalServerError

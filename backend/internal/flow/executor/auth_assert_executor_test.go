@@ -19,6 +19,8 @@
 package executor
 
 import (
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"context"
 	"encoding/json"
 	"testing"
@@ -277,10 +279,14 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_JWTGenerationFails() {
 
 	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).Return("", int64(0), &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "JWT_GENERATION_FAILED",
-		Error:            "JWT generation failed",
-		ErrorDescription: "Failed to generate JWT token",
+		Type: serviceerror.ServerErrorType,
+		Code: "JWT_GENERATION_FAILED",
+		Error: i18ncore.I18nMessage{
+			Key: "error.test.jwt_generation_failed", DefaultValue: "JWT generation failed",
+		},
+		ErrorDescription: i18ncore.I18nMessage{
+			Key: "error.test.failed_to_generate_jwt_token", DefaultValue: "Failed to generate JWT token",
+		},
 	})
 
 	_, err := suite.executor.Execute(ctx)
@@ -313,7 +319,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AssertionGenerationFails_S
 	suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything).
 		Return(nil, &serviceerror.ServiceError{
 			Type:  serviceerror.ServerErrorType,
-			Error: "internal error",
+			Error: i18ncore.I18nMessage{Key: "error.test.internal_error", DefaultValue: "internal error"},
 		})
 
 	_, err := suite.executor.Execute(ctx)
@@ -502,10 +508,14 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributesFromAuthnProvider
 	suite.mockAuthnProvider.
 		On("GetUserAttributes", mock.Anything, reqAttrs, (*authnprovidercm.GetAttributesMetadata)(nil), authUser).
 		Return(authnprovidermgr.AuthUser{}, (*authnprovidercm.AttributesResponse)(nil), &serviceerror.ServiceError{
-			Type:             serviceerror.ServerErrorType,
-			Code:             "ATTRIBUTES_FETCH_FAILED",
-			Error:            "failed to fetch attributes",
-			ErrorDescription: "something went wrong",
+			Type: serviceerror.ServerErrorType,
+			Code: "ATTRIBUTES_FETCH_FAILED",
+			Error: i18ncore.I18nMessage{
+				Key: "error.test.failed_to_fetch_attributes", DefaultValue: "failed to fetch attributes",
+			},
+			ErrorDescription: i18ncore.I18nMessage{
+				Key: "error.test.something_went_wrong", DefaultValue: "something went wrong",
+			},
 		})
 
 	resultAttrs, err := suite.executor.getUserAttributesFromAuthnProvider(context.Background(),
@@ -709,8 +719,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFai
 
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, testAuthOUID).
 		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
-			Error:            "ou_not_found",
-			ErrorDescription: "organization unit not found",
+			Error: i18ncore.I18nMessage{Key: "error.test.ou_not_found", DefaultValue: "ou_not_found"},
+			ErrorDescription: i18ncore.I18nMessage{
+				Key: "error.test.organization_unit_not_found", DefaultValue: "organization unit not found",
+			},
 		})
 
 	_, err := suite.executor.Execute(ctx)
@@ -771,8 +783,10 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganiz
 
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-invalid").
 		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
-			Error:            "ou_not_found",
-			ErrorDescription: "organization unit does not exist",
+			Error: i18ncore.I18nMessage{Key: "error.test.ou_not_found", DefaultValue: "ou_not_found"},
+			ErrorDescription: i18ncore.I18nMessage{
+				Key: "error.test.organization_unit_does_not_exist", DefaultValue: "organization unit does not exist",
+			},
 		})
 
 	_, err := suite.executor.Execute(ctx)
@@ -1480,8 +1494,10 @@ func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithOUDetail
 
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-invalid").
 		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
-			Error:            "ou_not_found",
-			ErrorDescription: "organization unit not found",
+			Error: i18ncore.I18nMessage{Key: "error.test.ou_not_found", DefaultValue: "ou_not_found"},
+			ErrorDescription: i18ncore.I18nMessage{
+				Key: "error.test.organization_unit_not_found", DefaultValue: "organization unit not found",
+			},
 		})
 
 	attrs, err := suite.executor.resolveUserAttributes(ctx, []string{oauth2const.ClaimOUID})

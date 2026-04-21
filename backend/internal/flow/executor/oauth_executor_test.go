@@ -19,6 +19,8 @@
 package executor
 
 import (
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -213,8 +215,10 @@ func (suite *OAuthExecutorTestSuite) TestBuildAuthorizeFlow_BuildURLClientError(
 
 	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, "idp-123").
 		Return("", &serviceerror.ServiceError{
-			Type:             serviceerror.ClientErrorType,
-			ErrorDescription: "Invalid IDP configuration",
+			Type: serviceerror.ClientErrorType,
+			ErrorDescription: i18ncore.I18nMessage{
+				Key: "error.test.invalid_idp_configuration", DefaultValue: "Invalid IDP configuration",
+			},
 		})
 
 	err := suite.executor.BuildAuthorizeFlow(ctx, execResp)
@@ -241,9 +245,11 @@ func (suite *OAuthExecutorTestSuite) TestBuildAuthorizeFlow_BuildURLServerError(
 
 	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, "idp-123").
 		Return("", &serviceerror.ServiceError{
-			Type:             serviceerror.ServerErrorType,
-			Code:             "OAUTH-5000",
-			ErrorDescription: "Internal server error",
+			Type: serviceerror.ServerErrorType,
+			Code: "OAUTH-5000",
+			ErrorDescription: i18ncore.I18nMessage{
+				Key: "error.test.internal_server_error", DefaultValue: "Internal server error",
+			},
 		})
 
 	err := suite.executor.BuildAuthorizeFlow(ctx, execResp)
@@ -306,8 +312,10 @@ func (suite *OAuthExecutorTestSuite) TestExchangeCodeForToken_ClientError() {
 
 	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "invalid_code", true).
 		Return(nil, &serviceerror.ServiceError{
-			Type:             serviceerror.ClientErrorType,
-			ErrorDescription: "Invalid authorization code",
+			Type: serviceerror.ClientErrorType,
+			ErrorDescription: i18ncore.I18nMessage{
+				Key: "error.test.invalid_authorization_code", DefaultValue: "Invalid authorization code",
+			},
 		})
 
 	result, err := suite.executor.ExchangeCodeForToken(ctx, execResp, "invalid_code")
@@ -335,9 +343,11 @@ func (suite *OAuthExecutorTestSuite) TestExchangeCodeForToken_ServerError() {
 
 	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code", true).
 		Return(nil, &serviceerror.ServiceError{
-			Type:             serviceerror.ServerErrorType,
-			Code:             "OAUTH-5000",
-			ErrorDescription: "Token exchange failed",
+			Type: serviceerror.ServerErrorType,
+			Code: "OAUTH-5000",
+			ErrorDescription: i18ncore.I18nMessage{
+				Key: "error.test.token_exchange_failed", DefaultValue: "Token exchange failed",
+			},
 		})
 
 	result, err := suite.executor.ExchangeCodeForToken(ctx, execResp, "auth_code")
@@ -397,8 +407,10 @@ func (suite *OAuthExecutorTestSuite) TestGetUserInfo_ClientError() {
 
 	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, "idp-123", "invalid_token").
 		Return(nil, &serviceerror.ServiceError{
-			Type:             serviceerror.ClientErrorType,
-			ErrorDescription: "Invalid access token",
+			Type: serviceerror.ClientErrorType,
+			ErrorDescription: i18ncore.I18nMessage{
+				Key: "error.test.invalid_access_token", DefaultValue: "Invalid access token",
+			},
 		})
 
 	result, err := suite.executor.GetUserInfo(ctx, execResp, "invalid_token")
@@ -426,9 +438,11 @@ func (suite *OAuthExecutorTestSuite) TestGetUserInfo_ServerError() {
 
 	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, "idp-123", "access_token").
 		Return(nil, &serviceerror.ServiceError{
-			Type:             serviceerror.ServerErrorType,
-			Code:             "OAUTH-5000",
-			ErrorDescription: "Failed to fetch user info",
+			Type: serviceerror.ServerErrorType,
+			Code: "OAUTH-5000",
+			ErrorDescription: i18ncore.I18nMessage{
+				Key: "error.test.failed_to_fetch_user_info", DefaultValue: "Failed to fetch user info",
+			},
 		})
 
 	result, err := suite.executor.GetUserInfo(ctx, execResp, "access_token")
@@ -1238,7 +1252,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_GetU
 		Return(nil, &serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
 			Code:             "SCHEMA-5000",
-			ErrorDescription: "Internal error",
+			ErrorDescription: i18ncore.I18nMessage{Key: "error.test.internal_error", DefaultValue: "Internal error"},
 		})
 
 	err := suite.executor.(*oAuthExecutor).resolveUserTypeForAutoProvisioning(ctx, execResp)
@@ -1272,8 +1286,10 @@ func (suite *OAuthExecutorTestSuite) TestGetInternalUser_Errors() {
 			name: "ClientError",
 			sub:  "invalid-sub",
 			serviceError: &serviceerror.ServiceError{
-				Type:             serviceerror.ClientErrorType,
-				ErrorDescription: "Invalid sub claim",
+				Type: serviceerror.ClientErrorType,
+				ErrorDescription: i18ncore.I18nMessage{
+					Key: "error.test.invalid_sub_claim", DefaultValue: "Invalid sub claim",
+				},
 			},
 			expectError:        false,
 			expectedStatus:     common.ExecFailure,
@@ -1283,9 +1299,11 @@ func (suite *OAuthExecutorTestSuite) TestGetInternalUser_Errors() {
 			name: "ServerError",
 			sub:  "some-sub",
 			serviceError: &serviceerror.ServiceError{
-				Type:             serviceerror.ServerErrorType,
-				Code:             "USER-5000",
-				ErrorDescription: "Internal error",
+				Type: serviceerror.ServerErrorType,
+				Code: "USER-5000",
+				ErrorDescription: i18ncore.I18nMessage{
+					Key: "error.test.internal_error", DefaultValue: "Internal error",
+				},
 			},
 			expectError:   true,
 			errorContains: "error while retrieving internal user",

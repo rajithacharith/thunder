@@ -166,7 +166,7 @@ func (s *ConsentServiceTestSuite) TestListConsentElements_ClientError() {
 	svc := newServiceWithMockClient(s.T(), true, clientMock)
 
 	clientMock.EXPECT().listConsentElements(mock.Anything, "ou1", NamespaceAttribute, "").
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result, svcErr := svc.ListConsentElements(context.Background(), "ou1", NamespaceAttribute, "")
 
@@ -223,7 +223,7 @@ func (s *ConsentServiceTestSuite) TestDeleteConsentElement_Success() {
 	svc := newServiceWithMockClient(s.T(), true, clientMock)
 
 	clientMock.EXPECT().deleteConsentElement(mock.Anything, "ou1", "elem-1").Return(
-		(*serviceerror.I18nServiceError)(nil))
+		(*serviceerror.ServiceError)(nil))
 
 	svcErr := svc.DeleteConsentElement(context.Background(), "ou1", "elem-1")
 
@@ -287,7 +287,7 @@ func (s *ConsentServiceTestSuite) TestValidateConsentElements_ClientError() {
 
 	names := []string{"attr1"}
 	clientMock.EXPECT().validateConsentElements(mock.Anything, "ou1", names).
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result, svcErr := svc.ValidateConsentElements(context.Background(), "ou1", names)
 
@@ -357,7 +357,7 @@ func (s *ConsentServiceTestSuite) TestListConsentPurposes_ClientError() {
 	svc := newServiceWithMockClient(s.T(), true, clientMock)
 
 	clientMock.EXPECT().listConsentPurposes(mock.Anything, "ou1", "").
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result, svcErr := svc.ListConsentPurposes(context.Background(), "ou1", "")
 
@@ -414,7 +414,7 @@ func (s *ConsentServiceTestSuite) TestDeleteConsentPurpose_Success() {
 	svc := newServiceWithMockClient(s.T(), true, clientMock)
 
 	clientMock.EXPECT().deleteConsentPurpose(mock.Anything, "ou1", "purpose-1").Return(
-		(*serviceerror.I18nServiceError)(nil))
+		(*serviceerror.ServiceError)(nil))
 
 	svcErr := svc.DeleteConsentPurpose(context.Background(), "ou1", "purpose-1")
 
@@ -567,7 +567,7 @@ func (s *ConsentServiceTestSuite) TestRevokeConsent_Success() {
 	svc := newServiceWithMockClient(s.T(), true, clientMock)
 
 	payload := &ConsentRevokeRequest{Reason: "user requested"}
-	clientMock.EXPECT().revokeConsent(mock.Anything, "ou1", "c1", payload).Return((*serviceerror.I18nServiceError)(nil))
+	clientMock.EXPECT().revokeConsent(mock.Anything, "ou1", "c1", payload).Return((*serviceerror.ServiceError)(nil))
 
 	svcErr := svc.RevokeConsent(context.Background(), "ou1", "c1", payload)
 

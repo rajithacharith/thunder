@@ -30,6 +30,7 @@ import (
 	entitypkg "github.com/asgardeo/thunder/internal/entity"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/tests/mocks/entitymock"
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 )
@@ -149,7 +150,10 @@ func TestOUUserResolver_GetUserListByOUID(t *testing.T) {
 			}, nil).Once()
 
 		schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-		schemaErr := &serviceerror.ServiceError{Code: "500", Error: "schema unavailable"}
+		schemaErr := &serviceerror.ServiceError{
+			Code:  "500",
+			Error: i18ncore.I18nMessage{DefaultValue: "schema unavailable"},
+		}
 		schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
 			Return((map[string]string)(nil), schemaErr).Once()
 

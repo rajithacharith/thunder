@@ -1306,7 +1306,8 @@ func (suite *RoleServiceTestSuite) TestGetRoleAssignments_WithDisplay_FetchError
 			setupMock: func() {
 				suite.mockGroupService.On("GetGroupsByIDs", mock.Anything,
 					[]string{"group1"}).
-					Return((map[string]*group.Group)(nil), &serviceerror.ServiceError{Code: "INTERNAL_ERROR"}).Once()
+					Return((map[string]*group.Group)(nil),
+						&serviceerror.ServiceError{Code: "INTERNAL_ERROR"}).Once()
 			},
 			expectedDisplay: "group1",
 		},

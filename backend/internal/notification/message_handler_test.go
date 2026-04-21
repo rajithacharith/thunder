@@ -34,6 +34,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 )
 
 type MessageHandlerTestSuite struct {
@@ -376,22 +377,22 @@ func (suite *MessageHandlerTestSuite) TestHandleError() {
 			svcErr:        &ErrorSenderNotFound,
 			customDesc:    "",
 			expectedCode:  404,
-			expectedError: ErrorSenderNotFound.Error,
+			expectedError: ErrorSenderNotFound.Error.String(),
 		},
 		{
 			name:          "duplicate sender name -> 409",
 			svcErr:        &ErrorDuplicateSenderName,
 			customDesc:    "",
 			expectedCode:  409,
-			expectedError: ErrorDuplicateSenderName.Error,
+			expectedError: ErrorDuplicateSenderName.Error.String(),
 		},
 		{
 			name: "generic client error -> 400",
 			svcErr: &serviceerror.ServiceError{
 				Type:             serviceerror.ClientErrorType,
 				Code:             "MNS-1999",
-				Error:            "Some client error",
-				ErrorDescription: "details",
+				Error:            i18ncore.I18nMessage{DefaultValue: "Some client error"},
+				ErrorDescription: i18ncore.I18nMessage{DefaultValue: "details"},
 			},
 			customDesc:    "custom desc",
 			expectedCode:  400,
@@ -402,7 +403,7 @@ func (suite *MessageHandlerTestSuite) TestHandleError() {
 			svcErr:        &ErrorInternalServerError,
 			customDesc:    "internal happened",
 			expectedCode:  500,
-			expectedError: ErrorInternalServerError.Error,
+			expectedError: ErrorInternalServerError.Error.String(),
 		},
 	}
 
@@ -415,11 +416,11 @@ func (suite *MessageHandlerTestSuite) TestHandleError() {
 		var resp apierror.ErrorResponse
 		suite.NoError(json.Unmarshal(rr.Body.Bytes(), &resp), tc.name)
 		suite.Equal(tc.svcErr.Code, resp.Code, tc.name)
-		suite.Equal(tc.expectedError, resp.Message, tc.name)
+		suite.Equal(tc.expectedError, resp.Message.DefaultValue, tc.name)
 		if tc.customDesc != "" {
-			suite.Equal(tc.customDesc, resp.Description, tc.name)
+			suite.Equal(tc.customDesc, resp.Description.DefaultValue, tc.name)
 		} else {
-			suite.Equal(tc.svcErr.ErrorDescription, resp.Description, tc.name)
+			suite.Equal(tc.svcErr.ErrorDescription.String(), resp.Description.DefaultValue, tc.name)
 		}
 	}
 }

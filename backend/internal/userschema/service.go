@@ -29,6 +29,7 @@ import (
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
@@ -1027,7 +1028,10 @@ func invalidSchemaRequestError(detail string) *serviceerror.ServiceError {
 	err := ErrorInvalidUserSchemaRequest
 	errorDescription := err.ErrorDescription
 	if detail != "" {
-		errorDescription = fmt.Sprintf("%s: %s", err.ErrorDescription, detail)
+		errorDescription = core.I18nMessage{
+			Key:          "error.userschemaservice.invalid_user_schema_request_description",
+			DefaultValue: fmt.Sprintf("%s: %s", err.ErrorDescription.DefaultValue, detail),
+		}
 	}
 	return &serviceerror.ServiceError{
 		Code:             err.Code,
@@ -1076,17 +1080,19 @@ func extractAttributeNamesAsMap(schema json.RawMessage) (map[string]bool, *servi
 	return result, nil
 }
 
-// wrapConsentServiceError converts an I18nServiceError from the consent service into a ServiceError
+// wrapConsentServiceError converts an ServiceError from the consent service into a ServiceError
 // for the user schema service.
-func wrapConsentServiceError(err *serviceerror.I18nServiceError, logger *log.Logger) *serviceerror.ServiceError {
+func wrapConsentServiceError(err *serviceerror.ServiceError, logger *log.Logger) *serviceerror.ServiceError {
 	if err == nil {
 		return nil
 	}
 
 	if err.Type == serviceerror.ClientErrorType {
 		logger.Debug("Failed to sync consent elements for the schema changes", log.Any("error", err))
-		return serviceerror.CustomServiceError(ErrorConsentSyncFailed,
-			fmt.Sprintf(ErrorConsentSyncFailed.ErrorDescription+" : code - %s", err.Code))
+		return serviceerror.CustomServiceError(ErrorConsentSyncFailed, core.I18nMessage{
+			Key:          "error.userschemaservice.consent_sync_failed_description",
+			DefaultValue: fmt.Sprintf("%s : code - %s", ErrorConsentSyncFailed.ErrorDescription.DefaultValue, err.Code),
+		})
 	}
 
 	logger.Error("Failed to sync consent elements for the schema changes", log.Any("error", err))

@@ -71,7 +71,7 @@ func (s *GraphBuilderTestSuite) TestGetGraph_NilFlow() {
 	s.Nil(graph)
 	s.NotNil(err)
 	s.Equal(ErrorInvalidFlowData.Code, err.Code)
-	s.Contains(err.ErrorDescription, "Flow definition is nil or has no nodes")
+	s.Contains(err.ErrorDescription.DefaultValue, "Flow definition is nil or has no nodes")
 }
 
 func (s *GraphBuilderTestSuite) TestGetGraph_EmptyNodes() {
@@ -88,7 +88,7 @@ func (s *GraphBuilderTestSuite) TestGetGraph_EmptyNodes() {
 	s.Nil(graph)
 	s.NotNil(err)
 	s.Equal(ErrorInvalidFlowData.Code, err.Code)
-	s.Contains(err.ErrorDescription, "Flow definition is nil or has no nodes")
+	s.Contains(err.ErrorDescription.DefaultValue, "Flow definition is nil or has no nodes")
 }
 
 func (s *GraphBuilderTestSuite) TestGetGraph_CacheHit() {
@@ -184,7 +184,7 @@ func (s *GraphBuilderTestSuite) TestGetGraph_BuildFailure() {
 	s.Nil(graph)
 	s.NotNil(err)
 	s.Equal(ErrorGraphBuildFailure.Code, err.Code)
-	s.Contains(err.ErrorDescription, "node creation error")
+	s.Contains(err.ErrorDescription.DefaultValue, "node creation error")
 }
 
 func (s *GraphBuilderTestSuite) TestGetGraph_CacheSetError() {

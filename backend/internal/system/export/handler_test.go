@@ -481,7 +481,7 @@ func (suite *HandlerTestSuite) TestHandleExportRequest_InvalidJSON() {
 	err := json.Unmarshal(w.Body.Bytes(), &errResp)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "EXP-1001", errResp["code"])
-	assert.Equal(suite.T(), "Invalid export request", errResp["message"])
+	assert.Equal(suite.T(), "Invalid export request", errResp["message"].(map[string]interface{})["defaultValue"])
 }
 
 // Helper function to test service error responses
@@ -721,8 +721,9 @@ func (suite *HandlerTestSuite) TestHandleError_ClientError() {
 	err := json.Unmarshal(w.Body.Bytes(), &errResp)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "EXP-1002", errResp["code"])
-	assert.Equal(suite.T(), "No resources found", errResp["message"])
-	assert.Equal(suite.T(), "No valid resources found for the provided identifiers", errResp["description"])
+	assert.Equal(suite.T(), "No resources found", errResp["message"].(map[string]interface{})["defaultValue"])
+	assert.Equal(suite.T(), "No valid resources found for the provided identifiers",
+		errResp["description"].(map[string]interface{})["defaultValue"])
 }
 
 // TestHandleError_ServerError tests error handling for server errors.
@@ -743,8 +744,9 @@ func (suite *HandlerTestSuite) TestHandleError_ServerError() {
 	err := json.Unmarshal(w.Body.Bytes(), &errResp)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "EXP-5001", errResp["code"])
-	assert.Equal(suite.T(), "Internal server error", errResp["message"])
-	assert.Equal(suite.T(), "An unexpected error occurred while processing the export request", errResp["description"])
+	assert.Equal(suite.T(), "Internal server error", errResp["message"].(map[string]interface{})["defaultValue"])
+	assert.Equal(suite.T(), "An unexpected error occurred while processing the export request",
+		errResp["description"].(map[string]interface{})["defaultValue"])
 }
 
 // Edge case tests
@@ -815,7 +817,7 @@ func (suite *HandlerTestSuite) TestHandleExportJSONRequest_EmptyFiles() {
 	err := json.Unmarshal(w.Body.Bytes(), &errResp)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "EXP-1002", errResp["code"]) // NoResourcesFound
-	assert.Equal(suite.T(), "No resources found", errResp["message"])
+	assert.Equal(suite.T(), "No resources found", errResp["message"].(map[string]interface{})["defaultValue"])
 }
 
 // Benchmark tests

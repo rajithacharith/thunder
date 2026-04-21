@@ -26,6 +26,7 @@ import (
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -114,9 +115,11 @@ func (gh *groupHandler) HandleGroupPostRequest(w http.ResponseWriter, r *http.Re
 	createRequest, err := sysutils.DecodeJSONBody[CreateGroupRequest](r)
 	if err != nil {
 		errResp := apierror.ErrorResponse{
-			Code:        ErrorInvalidRequestFormat.Code,
-			Message:     ErrorInvalidRequestFormat.Error,
-			Description: "Failed to parse request body: " + err.Error(),
+			Code:    ErrorInvalidRequestFormat.Code,
+			Message: ErrorInvalidRequestFormat.Error,
+			Description: core.I18nMessage{
+				Key:          "error.groupservice.create_group_request_parse_failed_description",
+				DefaultValue: "Failed to parse request body: " + err.Error()},
 		}
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, errResp)
 		return
@@ -148,9 +151,11 @@ func (gh *groupHandler) HandleGroupPostByPathRequest(w http.ResponseWriter, r *h
 	createRequest, err := sysutils.DecodeJSONBody[CreateGroupByPathRequest](r)
 	if err != nil {
 		errResp := apierror.ErrorResponse{
-			Code:        ErrorInvalidRequestFormat.Code,
-			Message:     ErrorInvalidRequestFormat.Error,
-			Description: "Failed to parse request body: " + err.Error(),
+			Code:    ErrorInvalidRequestFormat.Code,
+			Message: ErrorInvalidRequestFormat.Error,
+			Description: core.I18nMessage{
+				Key:          "error.groupservice.create_group_by_path_request_parse_failed_description",
+				DefaultValue: "Failed to parse request body: " + err.Error()},
 		}
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, errResp)
 		return
@@ -217,9 +222,12 @@ func (gh *groupHandler) HandleGroupPutRequest(w http.ResponseWriter, r *http.Req
 	updateRequest, err := sysutils.DecodeJSONBody[UpdateGroupRequest](r)
 	if err != nil {
 		errResp := apierror.ErrorResponse{
-			Code:        ErrorInvalidRequestFormat.Code,
-			Message:     ErrorInvalidRequestFormat.Error,
-			Description: "Failed to parse request body: " + err.Error(),
+			Code:    ErrorInvalidRequestFormat.Code,
+			Message: ErrorInvalidRequestFormat.Error,
+			Description: core.I18nMessage{
+				Key:          "error.groupservice.update_group_request_parse_failed_description",
+				DefaultValue: "Failed to parse request body: " + err.Error(),
+			},
 		}
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, errResp)
 		return
@@ -385,8 +393,8 @@ func (gh *groupHandler) handleError(w http.ResponseWriter, logger *log.Logger,
 	}
 
 	if statusCode == http.StatusInternalServerError {
-		logger.Error("Internal server error occurred", log.String("error", svcErr.Error),
-			log.String("description", svcErr.ErrorDescription))
+		logger.Error("Internal server error occurred", log.String("error", svcErr.Error.DefaultValue),
+			log.String("description", svcErr.ErrorDescription.DefaultValue))
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -477,9 +485,12 @@ func extractAndValidatePath(w http.ResponseWriter, r *http.Request) (string, boo
 	path := r.PathValue("path")
 	if path == "" {
 		errResp := apierror.ErrorResponse{
-			Code:        ErrorInvalidRequestFormat.Code,
-			Message:     ErrorInvalidRequestFormat.Error,
-			Description: "Handle path is required",
+			Code:    ErrorInvalidRequestFormat.Code,
+			Message: ErrorInvalidRequestFormat.Error,
+			Description: core.I18nMessage{
+				Key:          "error.groupservice.handle_path_required_description",
+				DefaultValue: "Handle path is required",
+			},
 		}
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, errResp)
 		return "", true

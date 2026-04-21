@@ -19,6 +19,8 @@
 package github
 
 import (
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"bytes"
 	"context"
 	"encoding/json"
@@ -94,7 +96,7 @@ func (suite *GithubOAuthAuthnServiceTestSuite) TestBuildAuthorizeURLSuccess() {
 func (suite *GithubOAuthAuthnServiceTestSuite) TestBuildAuthorizeURLError() {
 	svcErr := &serviceerror.ServiceError{
 		Code:             "ERROR",
-		ErrorDescription: "Failed to build URL",
+		ErrorDescription: core.I18nMessage{Key: "error.test.failed_to_build_url", DefaultValue: "Failed to build URL"},
 	}
 	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, testGithubIDPID).Return("", svcErr)
 
@@ -122,8 +124,10 @@ func (suite *GithubOAuthAuthnServiceTestSuite) TestExchangeCodeForTokenSuccess()
 func (suite *GithubOAuthAuthnServiceTestSuite) TestExchangeCodeForTokenError() {
 	code := "auth_code"
 	svcErr := &serviceerror.ServiceError{
-		Code:             "TOKEN_ERROR",
-		ErrorDescription: "Failed to exchange token",
+		Code: "TOKEN_ERROR",
+		ErrorDescription: core.I18nMessage{
+			Key: "error.test.failed_to_exchange_token", DefaultValue: "Failed to exchange token",
+		},
 	}
 	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, testGithubIDPID, code, false).Return(nil, svcErr)
 
@@ -359,7 +363,7 @@ func (suite *GithubOAuthAuthnServiceTestSuite) TestGetInternalUserError() {
 	sub := "user123"
 	svcErr := &serviceerror.ServiceError{
 		Code:             "USER_NOT_FOUND",
-		ErrorDescription: "User not found",
+		ErrorDescription: core.I18nMessage{Key: "error.test.user_not_found", DefaultValue: "User not found"},
 	}
 	suite.mockOAuthService.On("GetInternalUser", sub).Return(nil, svcErr)
 

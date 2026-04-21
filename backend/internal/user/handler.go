@@ -29,6 +29,7 @@ import (
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
@@ -311,9 +312,12 @@ func (uh *userHandler) HandleUserPostByPathRequest(w http.ResponseWriter, r *htt
 	createRequest, err := sysutils.DecodeJSONBody[CreateUserByPathRequest](r)
 	if err != nil {
 		errResp := apierror.ErrorResponse{
-			Code:        ErrorInvalidRequestFormat.Code,
-			Message:     ErrorInvalidRequestFormat.Error,
-			Description: "Failed to parse request body: " + err.Error(),
+			Code:    ErrorInvalidRequestFormat.Code,
+			Message: ErrorInvalidRequestFormat.Error,
+			Description: core.I18nMessage{
+				Key:          "error.userservice.invalid_request_format_description",
+				DefaultValue: "Failed to parse request body: " + err.Error(),
+			},
 		}
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, errResp)
 		return

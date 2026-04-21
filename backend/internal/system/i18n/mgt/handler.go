@@ -210,7 +210,7 @@ func (h *i18nHandler) HandleClearOverrideTranslation(w http.ResponseWriter, r *h
 }
 
 // handleError handles service errors and returns appropriate HTTP responses.
-func handleError(w http.ResponseWriter, svcErr *serviceerror.I18nServiceError) {
+func handleError(w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
 	statusCode := http.StatusInternalServerError
 	if svcErr.Type == serviceerror.ClientErrorType {
 		statusCode = http.StatusBadRequest
@@ -220,11 +220,11 @@ func handleError(w http.ResponseWriter, svcErr *serviceerror.I18nServiceError) {
 		}
 	}
 
-	errResp := apierror.I18nErrorResponse{
+	errResp := apierror.ErrorResponse{
 		Code:        svcErr.Code,
 		Message:     svcErr.Error,
 		Description: svcErr.ErrorDescription,
 	}
 
-	sysutils.WriteI18nErrorResponse(w, statusCode, errResp)
+	sysutils.WriteErrorResponse(w, statusCode, errResp)
 }

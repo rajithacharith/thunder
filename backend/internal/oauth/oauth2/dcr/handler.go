@@ -52,7 +52,7 @@ func (dh *dcrHandler) HandleDCRRegistration(w http.ResponseWriter, r *http.Reque
 	dcrRequest, err := sysutils.DecodeJSONBody[DCRRegistrationRequest](r)
 	if err != nil {
 		sysutils.WriteJSONError(w, ErrorInvalidRequestFormat.Code,
-			ErrorInvalidRequestFormat.ErrorDescription, http.StatusBadRequest, nil)
+			ErrorInvalidRequestFormat.ErrorDescription.DefaultValue, http.StatusBadRequest, nil)
 		return
 	}
 
@@ -63,7 +63,7 @@ func (dh *dcrHandler) HandleDCRRegistration(w http.ResponseWriter, r *http.Reque
 			logger.Error("Internal server error processing DCR registration request",
 				log.String("client_name", log.MaskString(dcrRequest.ClientName)),
 				log.String("error_code", svcErr.Code),
-				log.String("error", svcErr.Error),
+				log.String("error", svcErr.Error.DefaultValue),
 			)
 		}
 		dh.writeServiceErrorResponse(w, svcErr)
@@ -80,7 +80,7 @@ func (dh *dcrHandler) checkDCRAuthorization(r *http.Request, w http.ResponseWrit
 		return true
 	}
 	sysutils.WriteJSONError(w, ErrorUnauthorized.Code,
-		ErrorUnauthorized.ErrorDescription, http.StatusUnauthorized, nil)
+		ErrorUnauthorized.ErrorDescription.DefaultValue, http.StatusUnauthorized, nil)
 	return false
 }
 
@@ -97,5 +97,5 @@ func (dh *dcrHandler) writeServiceErrorResponse(w http.ResponseWriter, svcErr *s
 		statusCode = http.StatusBadRequest
 	}
 
-	sysutils.WriteJSONError(w, svcErr.Code, svcErr.ErrorDescription, statusCode, nil)
+	sysutils.WriteJSONError(w, svcErr.Code, svcErr.ErrorDescription.DefaultValue, statusCode, nil)
 }

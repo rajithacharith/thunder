@@ -991,8 +991,8 @@ func publishNodeExecutionCompletedEvent(ctx *EngineContext, node core.NodeInterf
 		evt.WithData(event.DataKey.Error, nodeErr.Error).
 			WithData(event.DataKey.ErrorCode, nodeErr.Code).
 			WithData(event.DataKey.ErrorType, string(nodeErr.Type))
-		if nodeErr.ErrorDescription != "" {
-			evt.WithData(event.DataKey.Message, nodeErr.ErrorDescription)
+		if !nodeErr.ErrorDescription.IsEmpty() {
+			evt.WithData(event.DataKey.Message, nodeErr.ErrorDescription.String())
 		}
 	} else if nodeResp != nil && nodeResp.FailureReason != "" {
 		evt.WithData(event.DataKey.FailureReason, nodeResp.FailureReason)
@@ -1089,8 +1089,8 @@ func publishFlowFailedEvent(ctx *EngineContext, svcErr *serviceerror.ServiceErro
 		evt.WithData(event.DataKey.Error, svcErr.Error).
 			WithData(event.DataKey.ErrorCode, svcErr.Code).
 			WithData(event.DataKey.ErrorType, string(svcErr.Type))
-		if svcErr.ErrorDescription != "" {
-			evt.WithData(event.DataKey.Message, svcErr.ErrorDescription)
+		if !svcErr.ErrorDescription.IsEmpty() {
+			evt.WithData(event.DataKey.Message, svcErr.ErrorDescription.String())
 		}
 	}
 

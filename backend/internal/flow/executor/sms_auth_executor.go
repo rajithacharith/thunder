@@ -525,7 +525,7 @@ func (s *smsOTPAuthExecutor) generateAndSendOTP(mobileNumber string, ctx *core.N
 	// Send the OTP
 	sessionToken, svcErr := s.otpService.SendOTP(ctx.Context, senderID, notifcommon.ChannelTypeSMS, mobileNumber)
 	if svcErr != nil {
-		return fmt.Errorf("failed to send OTP: %s", svcErr.ErrorDescription)
+		return fmt.Errorf("failed to send OTP: %s", svcErr.ErrorDescription.DefaultValue)
 	}
 
 	// Store runtime data
@@ -616,7 +616,7 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 				return nil, nil
 			}
 			logger.Error("Failed to verify OTP", log.String("userID", userID), log.Any("serviceError", svcErr))
-			return nil, fmt.Errorf("failed to verify OTP: %s", svcErr.ErrorDescription)
+			return nil, fmt.Errorf("failed to verify OTP: %s", svcErr.ErrorDescription.DefaultValue)
 		}
 
 		execResp.Status = common.ExecComplete
@@ -645,7 +645,7 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 			return nil, nil
 		}
 		logger.Error("Failed to verify OTP", log.String("userID", userID), log.Any("serviceError", svcErr))
-		return nil, fmt.Errorf("failed to verify OTP: %s", svcErr.ErrorDescription)
+		return nil, fmt.Errorf("failed to verify OTP: %s", svcErr.ErrorDescription.DefaultValue)
 	}
 	execResp.AuthUser = newAuthUser
 

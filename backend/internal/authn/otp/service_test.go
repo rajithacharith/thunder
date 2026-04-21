@@ -19,6 +19,8 @@
 package otp
 
 import (
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"context"
 	"testing"
 
@@ -123,18 +125,22 @@ func (suite *OTPAuthnServiceTestSuite) TestSendOTPWithServiceError() {
 		{
 			name: "ServiceError",
 			mockReturnErr: &serviceerror.ServiceError{
-				Type:             serviceerror.ServerErrorType,
-				Code:             "INTERNAL_ERROR",
-				ErrorDescription: "Service unavailable",
+				Type: serviceerror.ServerErrorType,
+				Code: "INTERNAL_ERROR",
+				ErrorDescription: core.I18nMessage{
+					Key: "error.test.service_unavailable", DefaultValue: "Service unavailable",
+				},
 			},
 			expectedErrCode: serviceerror.InternalServerError.Code,
 		},
 		{
 			name: "ClientError",
 			mockReturnErr: &serviceerror.ServiceError{
-				Type:             serviceerror.ClientErrorType,
-				Code:             "INVALID_FORMAT",
-				ErrorDescription: "Invalid phone number format",
+				Type: serviceerror.ClientErrorType,
+				Code: "INVALID_FORMAT",
+				ErrorDescription: core.I18nMessage{
+					Key: "error.test.invalid_phone_number_format", DefaultValue: "Invalid phone number format",
+				},
 			},
 			expectedErrCode:    ErrorClientErrorFromOTPService.Code,
 			expectedDescSubstr: "Invalid phone number format",
@@ -154,7 +160,7 @@ func (suite *OTPAuthnServiceTestSuite) TestSendOTPWithServiceError() {
 			suite.Equal(tc.expectedErrCode, err.Code)
 
 			if tc.expectedDescSubstr != "" {
-				suite.Contains(err.ErrorDescription, tc.expectedDescSubstr)
+				suite.Contains(err.ErrorDescription.DefaultValue, tc.expectedDescSubstr)
 			}
 		})
 	}
@@ -246,9 +252,11 @@ func (suite *OTPAuthnServiceTestSuite) TestAuthenticateWithOTPServiceError() {
 		{
 			name: "ServiceError",
 			mockReturnErr: &serviceerror.ServiceError{
-				Type:             serviceerror.ServerErrorType,
-				Code:             "INTERNAL_ERROR",
-				ErrorDescription: "Service unavailable",
+				Type: serviceerror.ServerErrorType,
+				Code: "INTERNAL_ERROR",
+				ErrorDescription: core.I18nMessage{
+					Key: "error.test.service_unavailable", DefaultValue: "Service unavailable",
+				},
 			},
 			expectedErrCode: serviceerror.InternalServerError.Code,
 		},
@@ -257,7 +265,7 @@ func (suite *OTPAuthnServiceTestSuite) TestAuthenticateWithOTPServiceError() {
 			mockReturnErr: &serviceerror.ServiceError{
 				Type:             serviceerror.ClientErrorType,
 				Code:             "OTP_EXPIRED",
-				ErrorDescription: "OTP has expired",
+				ErrorDescription: core.I18nMessage{Key: "error.test.otp_has_expired", DefaultValue: "OTP has expired"},
 			},
 			expectedErrCode:    ErrorClientErrorFromOTPService.Code,
 			expectedDescSubstr: "OTP has expired",
@@ -276,7 +284,7 @@ func (suite *OTPAuthnServiceTestSuite) TestAuthenticateWithOTPServiceError() {
 			suite.Equal(tc.expectedErrCode, err.Code)
 
 			if tc.expectedDescSubstr != "" {
-				suite.Contains(err.ErrorDescription, tc.expectedDescSubstr)
+				suite.Contains(err.ErrorDescription.DefaultValue, tc.expectedDescSubstr)
 			}
 		})
 	}

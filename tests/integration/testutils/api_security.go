@@ -34,6 +34,7 @@ import (
 var (
 	adminTokenState *TokenResponse
 	tokenInitOnce   sync.Once
+	tokenInitErr    error
 )
 
 // authTransport wraps http.RoundTripper to inject authorization headers
@@ -178,14 +179,18 @@ func GetAccessToken() (string, error) {
 
 	// Fallback: Initialize token if not available (for running individual test packages)
 	if adminTokenState == nil {
-		// Use sync.Once to ensure token is obtained only once even with concurrent calls
-		var initErr error
+		// Use sync.Once to ensure token is obtained only once even with concurrent calls.
+		// Persist the first initialization error so subsequent callers return a clean error
+		// instead of dereferencing a nil token state.
 		tokenInitOnce.Do(func() {
 			log.Println("No token available, obtaining access token automatically...")
-			initErr = ObtainAdminAccessToken()
+			tokenInitErr = ObtainAdminAccessToken()
 		})
-		if initErr != nil {
-			return "", fmt.Errorf("failed to obtain access token: %w", initErr)
+		if tokenInitErr != nil {
+			return "", fmt.Errorf("failed to obtain access token: %w", tokenInitErr)
+		}
+		if adminTokenState == nil {
+			return "", fmt.Errorf("failed to obtain access token: token state is not initialized")
 		}
 	}
 

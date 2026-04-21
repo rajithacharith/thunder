@@ -83,7 +83,7 @@ func (ouh *organizationUnitHandler) HandleOUPostRequest(w http.ResponseWriter, r
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, apierror.ErrorResponse{
 			Code:        ErrorInvalidRequestFormat.Code,
 			Message:     ErrorInvalidRequestFormat.Error,
-			Description: "Failed to parse request body: " + err.Error(),
+			Description: ErrorInvalidRequestFormat.ErrorDescription,
 		})
 		return
 	}
@@ -264,7 +264,7 @@ func validateUpdateRequest(
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, apierror.ErrorResponse{
 			Code:        ErrorInvalidRequestFormat.Code,
 			Message:     ErrorInvalidRequestFormat.Error,
-			Description: "Failed to parse request body: " + err.Error(),
+			Description: ErrorInvalidRequestFormat.ErrorDescription,
 		})
 		return OrganizationUnitRequest{}, true
 	}

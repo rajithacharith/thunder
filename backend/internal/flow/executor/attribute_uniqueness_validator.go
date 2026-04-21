@@ -87,7 +87,7 @@ func (e *attributeUniquenessValidator) Execute(ctx *core.NodeContext) (*common.E
 	uniqueAttrs, svcErr := e.userSchemaService.GetUniqueAttributes(svcCtx, userType)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to retrieve unique attributes from schema for user type %s: %s",
-			userType, svcErr.Error)
+			userType, svcErr.Error.DefaultValue)
 	}
 
 	for _, attr := range uniqueAttrs {

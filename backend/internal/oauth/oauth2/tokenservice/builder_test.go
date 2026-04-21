@@ -19,6 +19,8 @@
 package tokenservice
 
 import (
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"testing"
 	"time"
 
@@ -373,10 +375,14 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Error_JWTGenerationFail
 		int64(3600),
 		mock.Anything, mock.Anything,
 	).Return("", int64(0), &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "JWT_GENERATION_FAILED",
-		Error:            "JWT generation failed",
-		ErrorDescription: "Failed to generate JWT token",
+		Type: serviceerror.ServerErrorType,
+		Code: "JWT_GENERATION_FAILED",
+		Error: core.I18nMessage{
+			Key: "error.test.jwt_generation_failed", DefaultValue: "JWT generation failed",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key: "error.test.failed_to_generate_jwt_token", DefaultValue: "Failed to generate JWT token",
+		},
 	})
 
 	result, err := suite.builder.BuildAccessToken(ctx)
@@ -673,10 +679,14 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Error_JWTGenerationFai
 		int64(3600),
 		mock.Anything, mock.Anything,
 	).Return("", int64(0), &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "JWT_GENERATION_FAILED",
-		Error:            "JWT generation failed",
-		ErrorDescription: "Failed to generate JWT token",
+		Type: serviceerror.ServerErrorType,
+		Code: "JWT_GENERATION_FAILED",
+		Error: core.I18nMessage{
+			Key: "error.test.jwt_generation_failed", DefaultValue: "JWT generation failed",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key: "error.test.failed_to_generate_jwt_token", DefaultValue: "Failed to generate JWT token",
+		},
 	})
 
 	result, err := suite.builder.BuildRefreshToken(ctx)
@@ -1078,10 +1088,14 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_JWTGenerationFailed()
 		int64(3600),
 		mock.Anything, mock.Anything,
 	).Return("", int64(0), &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "JWT_GENERATION_FAILED",
-		Error:            "JWT generation failed",
-		ErrorDescription: "Failed to generate JWT token",
+		Type: serviceerror.ServerErrorType,
+		Code: "JWT_GENERATION_FAILED",
+		Error: core.I18nMessage{
+			Key: "error.test.jwt_generation_failed", DefaultValue: "JWT generation failed",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key: "error.test.failed_to_generate_jwt_token", DefaultValue: "Failed to generate JWT token",
+		},
 	})
 
 	result, err := suite.builder.BuildIDToken(ctx)

@@ -19,6 +19,8 @@
 package executor
 
 import (
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -370,10 +372,13 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_UserOnboarding_ClientErr
 		template.TemplateTypeSMS, mock.Anything).
 		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
 	clientErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "MNS-1001",
-		Error:            "Sender not found",
-		ErrorDescription: "The requested notification sender could not be found",
+		Type:  serviceerror.ClientErrorType,
+		Code:  "MNS-1001",
+		Error: i18ncore.I18nMessage{Key: "error.test.sender_not_found", DefaultValue: "Sender not found"},
+		ErrorDescription: i18ncore.I18nMessage{
+			Key:          "error.test.the_requested_notification_sender_could_not_be_fou",
+			DefaultValue: "The requested notification sender could not be found",
+		},
 	}
 	suite.mockSMSSenderSvc.On("Send", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(clientErr)
@@ -407,9 +412,11 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_UserOnboarding_ServerErr
 		template.TemplateTypeSMS, mock.Anything).
 		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
 	serverErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "MNS-5000",
-		ErrorDescription: "internal server error",
+		Type: serviceerror.ServerErrorType,
+		Code: "MNS-5000",
+		ErrorDescription: i18ncore.I18nMessage{
+			Key: "error.test.internal_server_error", DefaultValue: "internal server error",
+		},
 	}
 	suite.mockSMSSenderSvc.On("Send", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(serverErr)
@@ -443,10 +450,13 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_OtherFlow_NotificationEr
 		template.TemplateTypeSMS, mock.Anything).
 		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
 	clientErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "MNS-1001",
-		Error:            "Sender not found",
-		ErrorDescription: "The requested notification sender could not be found",
+		Type:  serviceerror.ClientErrorType,
+		Code:  "MNS-1001",
+		Error: i18ncore.I18nMessage{Key: "error.test.sender_not_found", DefaultValue: "Sender not found"},
+		ErrorDescription: i18ncore.I18nMessage{
+			Key:          "error.test.the_requested_notification_sender_could_not_be_fou",
+			DefaultValue: "The requested notification sender could not be found",
+		},
 	}
 	suite.mockSMSSenderSvc.On("Send", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(clientErr)
@@ -563,7 +573,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_TemplateRenderFailure_Re
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
 		{Identifier: common.AttributeMobileNumber, Type: common.InputTypePhone, Required: true},
 	}).Maybe()
-	renderErr := &serviceerror.I18nServiceError{Code: "TPL-5000"}
+	renderErr := &serviceerror.ServiceError{Code: "TPL-5000"}
 	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
 		template.TemplateTypeSMS, mock.Anything).
 		Return(nil, renderErr)

@@ -19,6 +19,8 @@
 package clientauth
 
 import (
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -228,8 +230,8 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_InvalidClie
 			&serviceerror.ServiceError{
 				Type:             serviceerror.ClientErrorType,
 				Code:             authnprovidermgr.ErrorAuthenticationFailed.Code,
-				Error:            "auth failed",
-				ErrorDescription: "wrong secret",
+				Error:            core.I18nMessage{Key: "error.test.auth_failed", DefaultValue: "auth failed"},
+				ErrorDescription: core.I18nMessage{Key: "error.test.wrong_secret", DefaultValue: "wrong secret"},
 			}).Maybe()
 
 	// Create middleware with failing authn provider
@@ -380,8 +382,8 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_BasicAuth_I
 			&serviceerror.ServiceError{
 				Type:             serviceerror.ClientErrorType,
 				Code:             authnprovidermgr.ErrorAuthenticationFailed.Code,
-				Error:            "auth failed",
-				ErrorDescription: "wrong secret",
+				Error:            core.I18nMessage{Key: "error.test.auth_failed", DefaultValue: "auth failed"},
+				ErrorDescription: core.I18nMessage{Key: "error.test.wrong_secret", DefaultValue: "wrong secret"},
 			}).Maybe()
 
 	middleware := ClientAuthMiddleware(

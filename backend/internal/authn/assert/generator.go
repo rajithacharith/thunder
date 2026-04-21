@@ -32,7 +32,8 @@ const loggerComponentName = "AuthAssertGenerator"
 
 // AuthAssertGeneratorInterface defines the interface for generating auth assertion claims.
 type AuthAssertGeneratorInterface interface {
-	GenerateAssertion(authenticators []authncm.AuthenticatorReference) (*AssertionResult, *serviceerror.ServiceError)
+	GenerateAssertion(authenticators []authncm.AuthenticatorReference) (*AssertionResult,
+		*serviceerror.ServiceError)
 	UpdateAssertion(context *AssuranceContext, authenticator authncm.AuthenticatorReference) (
 		*AssertionResult, *serviceerror.ServiceError)
 	VerifyAssurance(context *AssuranceContext, requiredAAL AssuranceLevel, requiredIAL AssuranceLevel) (

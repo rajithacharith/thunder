@@ -36,6 +36,7 @@ import (
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -364,7 +365,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupListRequest() {
 			useFlaky:    true,
 			assertBody: func(recorder *httptest.ResponseRecorder) {
 				suite.Require().Equal(http.StatusBadRequest, recorder.Code)
-				suite.Require().Equal("", recorder.Body.String()) // Write fails, body remains empty
+				suite.Require().Equal(serviceerror.ErrorEncodingError+"\n", recorder.Body.String())
 			},
 			assertSvc: func(svc *GroupServiceInterfaceMock) {
 				svc.AssertNotCalled(suite.T(), "GetGroupList", mock.Anything, mock.Anything, mock.Anything)
@@ -571,7 +572,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostRequest() {
 				var body apierror.ErrorResponse
 				require.NoError(suite.T(), json.Unmarshal(rr.Body.Bytes(), &body))
 				require.Equal(suite.T(), ErrorInvalidRequestFormat.Code, body.Code)
-				require.Contains(suite.T(), body.Description, "Failed to parse request body")
+				require.Contains(suite.T(), body.Description.DefaultValue, "Failed to parse request body")
 			},
 			assertService: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "CreateGroup", mock.Anything, mock.Anything)
@@ -664,7 +665,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostRequest() {
 			useFlaky: true,
 			assert: func(rr *httptest.ResponseRecorder) {
 				require.Equal(suite.T(), http.StatusBadRequest, rr.Code)
-				require.Equal(suite.T(), "", rr.Body.String()) // Write fails, body remains empty
+				require.Equal(suite.T(), serviceerror.ErrorEncodingError+"\n", rr.Body.String())
 			},
 			assertService: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "CreateGroup", mock.Anything, mock.Anything)
@@ -814,7 +815,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostByPathReques
 			setJSONHeader:  true,
 			assert: func(rr *httptest.ResponseRecorder) {
 				require.Equal(suite.T(), http.StatusBadRequest, rr.Code)
-				require.Equal(suite.T(), "", rr.Body.String()) // Write fails, body remains empty
+				require.Equal(suite.T(), serviceerror.ErrorEncodingError+"\n", rr.Body.String())
 			},
 			assertService: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "CreateGroupByPath", mock.Anything, mock.Anything)
@@ -929,7 +930,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupGetRequest() {
 			useFlaky: true,
 			assert: func(rr *httptest.ResponseRecorder) {
 				require.Equal(suite.T(), http.StatusBadRequest, rr.Code)
-				require.Equal(suite.T(), "", rr.Body.String()) // Write fails, body remains empty
+				require.Equal(suite.T(), serviceerror.ErrorEncodingError+"\n", rr.Body.String())
 			},
 			assertService: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "GetGroup", mock.Anything, mock.Anything)
@@ -1074,7 +1075,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPutRequest() {
 			setJSONHeader:  true,
 			assert: func(rr *httptest.ResponseRecorder) {
 				require.Equal(suite.T(), http.StatusBadRequest, rr.Code)
-				require.Equal(suite.T(), "", rr.Body.String()) // Write fails, body remains empty
+				require.Equal(suite.T(), serviceerror.ErrorEncodingError+"\n", rr.Body.String())
 			},
 			assertService: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "UpdateGroup", mock.Anything, mock.Anything, mock.Anything)
@@ -1106,7 +1107,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPutRequest() {
 			setJSONHeader: true,
 			assert: func(rr *httptest.ResponseRecorder) {
 				require.Equal(suite.T(), http.StatusBadRequest, rr.Code)
-				require.Equal(suite.T(), "", rr.Body.String()) // Write fails, body remains empty
+				require.Equal(suite.T(), serviceerror.ErrorEncodingError+"\n", rr.Body.String())
 			},
 			assertService: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "UpdateGroup", mock.Anything, mock.Anything, mock.Anything)
@@ -1142,7 +1143,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupDeleteRequest() 
 			useFlaky: true,
 			assert: func(rr *httptest.ResponseRecorder) {
 				require.Equal(suite.T(), http.StatusBadRequest, rr.Code)
-				require.Equal(suite.T(), "", rr.Body.String()) // Write fails, body remains empty
+				require.Equal(suite.T(), serviceerror.ErrorEncodingError+"\n", rr.Body.String())
 			},
 			assertService: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "DeleteGroup", mock.Anything, mock.Anything)
@@ -1323,7 +1324,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersGetReques
 			useFlaky: true,
 			assert: func(rr *httptest.ResponseRecorder) {
 				require.Equal(suite.T(), http.StatusBadRequest, rr.Code)
-				require.Equal(suite.T(), "", rr.Body.String()) // Write fails, body remains empty
+				require.Equal(suite.T(), serviceerror.ErrorEncodingError+"\n", rr.Body.String())
 			},
 			assertService: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "GetGroupMembers",
@@ -1389,7 +1390,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_ExtractAndValidatePathEncod
 	require.True(t, failed)
 	require.Equal(t, "", path)
 	require.Equal(t, http.StatusBadRequest, writer.Code)
-	require.Equal(t, "", writer.Body.String()) // Write fails, body remains empty
+	require.Equal(t, serviceerror.ErrorEncodingError+"\n", writer.Body.String())
 }
 
 func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleErrorInternalServer() {
@@ -1401,8 +1402,8 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleErrorInternalServer()
 	handler.handleError(rr, logger, &serviceerror.ServiceError{
 		Type:             serviceerror.ServerErrorType,
 		Code:             "GRP-9999",
-		Error:            "boom",
-		ErrorDescription: "explosion",
+		Error:            i18ncore.I18nMessage{DefaultValue: "boom"},
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "explosion"},
 	})
 
 	require.Equal(t, http.StatusInternalServerError, rr.Code)

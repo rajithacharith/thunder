@@ -217,7 +217,7 @@ func (ts *UserSchemaRequiredAPITestSuite) TestSchemaCreationRequiresOUID() {
 	var errorResp ErrorResponse
 	ts.Require().NoError(json.Unmarshal(bodyBytes, &errorResp))
 	ts.Assert().Equal("USRS-1004", errorResp.Code)
-	ts.Assert().Contains(errorResp.Description, "organization unit id must not be empty")
+	ts.Assert().Contains(errorResp.Description.DefaultValue, "organization unit id must not be empty")
 }
 
 func (ts *UserSchemaRequiredAPITestSuite) createSchemaHelper(schema CreateUserSchemaRequest) string {

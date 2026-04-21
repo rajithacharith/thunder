@@ -782,7 +782,7 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_FailsForDeclarativeIDP(
 	s.Nil(result)
 	s.NotNil(err)
 	s.Equal("IDP-1010", err.Code)
-	s.Equal("Identity provider is immutable", err.Error)
+	s.Equal("Identity provider is immutable", err.Error.DefaultValue)
 
 	config.ResetThunderRuntime()
 }
@@ -834,7 +834,6 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_SucceedsForMutableIDP()
 	s.Nil(err)
 	s.NotNil(result)
 	s.Equal("Updated Name", result.Name)
-
 	config.ResetThunderRuntime()
 }
 
@@ -870,7 +869,7 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_FailsForDeclarativeIDP(
 
 	s.NotNil(err)
 	s.Equal("IDP-1010", err.Code)
-	s.Equal("Identity provider is immutable", err.Error)
+	s.Equal("Identity provider is immutable", err.Error.DefaultValue)
 
 	config.ResetThunderRuntime()
 }

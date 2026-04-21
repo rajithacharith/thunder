@@ -130,7 +130,8 @@ func (e *ouExporter) getAllChildIDs(ctx context.Context, parentID string) ([]str
 }
 
 // GetResourceByID retrieves an organization unit by its ID.
-func (e *ouExporter) GetResourceByID(ctx context.Context, id string) (interface{}, string, *serviceerror.ServiceError) {
+func (e *ouExporter) GetResourceByID(
+	ctx context.Context, id string) (interface{}, string, *serviceerror.ServiceError) {
 	ou, err := e.service.GetOrganizationUnit(ctx, id)
 	if err != nil {
 		return nil, "", err

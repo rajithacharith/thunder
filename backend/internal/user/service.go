@@ -477,7 +477,8 @@ func (as *userService) GetUserGroups(ctx context.Context, userID string, limit, 
 }
 
 // UpdateUser update the user for given user id.
-func (us *userService) UpdateUser(ctx context.Context, userID string, user *User) (*User, *serviceerror.ServiceError) {
+func (us *userService) UpdateUser(
+	ctx context.Context, userID string, user *User) (*User, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Updating user", log.String("id", userID))
 
@@ -588,7 +589,7 @@ func (us *userService) UpdateUserAttributes(
 			return nil, &ErrorUserSchemaNotFound
 		}
 		return nil, logErrorAndReturnServerError(logger, "Failed to get credential attributes from schema",
-			fmt.Errorf("schema service error: %s", svcErr.ErrorDescription), log.String("id", userID))
+			fmt.Errorf("schema service error: %s", svcErr.ErrorDescription.DefaultValue), log.String("id", userID))
 	}
 	if len(schemaCredentialAttributes) > 0 {
 		var attrs map[string]any

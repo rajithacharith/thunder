@@ -19,6 +19,8 @@
 package consent
 
 import (
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -85,7 +87,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_ConsentDisabled() {
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_ListPurposesClientError() {
-	clientErr := &serviceerror.I18nServiceError{
+	clientErr := &serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "CONSENT-4001",
 	}
@@ -103,7 +105,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_ListPurposesClientE
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_ListPurposesServerError() {
-	serverErr := &serviceerror.I18nServiceError{
+	serverErr := &serviceerror.ServiceError{
 		Type: serviceerror.ServerErrorType,
 		Code: "CONSENT-5001",
 	}
@@ -117,7 +119,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_ListPurposesServerE
 
 	s.Nil(result)
 	s.NotNil(svcErr)
-	s.Equal(serviceerror.InternalServerErrorWithI18n.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_NoPurposesConfigured() {
@@ -142,7 +144,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_SearchConsentsClien
 			},
 		},
 	}
-	clientErr := &serviceerror.I18nServiceError{
+	clientErr := &serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "CONSENT-4002",
 	}
@@ -171,7 +173,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_SearchConsentsServe
 			},
 		},
 	}
-	serverErr := &serviceerror.I18nServiceError{
+	serverErr := &serviceerror.ServiceError{
 		Type: serviceerror.ServerErrorType,
 		Code: "CONSENT-5002",
 	}
@@ -187,7 +189,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_SearchConsentsServe
 
 	s.Nil(result)
 	s.NotNil(svcErr)
-	s.Equal(serviceerror.InternalServerErrorWithI18n.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_AllConsentsActive() {
@@ -418,14 +420,16 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_CreateConsentSessio
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
 	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return("", int64(0), &serviceerror.ServiceError{Error: "JWT generation failed"})
+		Return("", int64(0), &serviceerror.ServiceError{
+			Error: core.I18nMessage{Key: "error.test.jwt_generation_failed", DefaultValue: "JWT generation failed"},
+		})
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "user1",
 		[]string{"email"}, nil, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
-	s.Equal(serviceerror.InternalServerErrorWithI18n.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestCreateConsentSessionToken_GenerateJWTFails() {
@@ -435,7 +439,9 @@ func (s *ConsentEnforcerServiceTestSuite) TestCreateConsentSessionToken_Generate
 
 	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return("", int64(0), &serviceerror.ServiceError{Error: "JWT generation failed"})
+		Return("", int64(0), &serviceerror.ServiceError{
+			Error: core.I18nMessage{Key: "error.test.jwt_generation_failed", DefaultValue: "JWT generation failed"},
+		})
 
 	token, err := s.service.createConsentSessionToken(promptData)
 
@@ -490,7 +496,10 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_SessionTokenInvalid(
 		},
 	}
 	s.mockJWTSvc.On("VerifyJWT", "bad-token", consentSessionTokenAudience, mock.Anything).
-		Return(&serviceerror.ServiceError{Code: "JWT-5001", Error: "Invalid token"})
+		Return(&serviceerror.ServiceError{
+			Code:  "JWT-5001",
+			Error: core.I18nMessage{Key: "error.test.invalid_token", DefaultValue: "Invalid token"},
+		})
 
 	result, svcErr := s.service.RecordConsent(context.Background(), "ou1", "app1", "user1",
 		decisions, "bad-token", 0)
@@ -564,7 +573,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_SearchFails_ClientEr
 			}},
 		},
 	}
-	clientErr := &serviceerror.I18nServiceError{
+	clientErr := &serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "CONSENT-4002",
 	}
@@ -593,7 +602,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_SearchFails_ServerEr
 			}},
 		},
 	}
-	serverErr := &serviceerror.I18nServiceError{
+	serverErr := &serviceerror.ServiceError{
 		Type: serviceerror.ServerErrorType,
 		Code: "CONSENT-5002",
 	}
@@ -608,7 +617,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_SearchFails_ServerEr
 
 	s.Nil(result)
 	s.NotNil(svcErr)
-	s.Equal(serviceerror.InternalServerErrorWithI18n.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateSuccess() {
@@ -665,7 +674,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateFai
 			}},
 		},
 	}
-	clientErr := &serviceerror.I18nServiceError{
+	clientErr := &serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "CONSENT-4003",
 	}
@@ -696,7 +705,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateFai
 			}},
 		},
 	}
-	serverErr := &serviceerror.I18nServiceError{
+	serverErr := &serviceerror.ServiceError{
 		Type: serviceerror.ServerErrorType,
 		Code: "CONSENT-5003",
 	}
@@ -713,7 +722,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateFai
 
 	s.Nil(result)
 	s.NotNil(svcErr)
-	s.Equal(serviceerror.InternalServerErrorWithI18n.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_UpdateSuccess() {
@@ -786,7 +795,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_Upda
 		},
 	}
 	existingConsent := consent.Consent{ID: "consent-existing"}
-	clientErr := &serviceerror.I18nServiceError{
+	clientErr := &serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "CONSENT-4004",
 	}
@@ -818,7 +827,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_Upda
 		},
 	}
 	existingConsent := consent.Consent{ID: "consent-existing"}
-	serverErr := &serviceerror.I18nServiceError{
+	serverErr := &serviceerror.ServiceError{
 		Type: serviceerror.ServerErrorType,
 		Code: "CONSENT-5004",
 	}
@@ -835,7 +844,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_Upda
 
 	s.Nil(result)
 	s.NotNil(svcErr)
-	s.Equal(serviceerror.InternalServerErrorWithI18n.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_WithValidityPeriod() {

@@ -459,7 +459,7 @@ func (ah *applicationHandler) handleError(w http.ResponseWriter, r *http.Request
 			log.String("method", r.Method),
 			log.String("path", r.URL.Path),
 			log.String("error_code", svcErr.Code),
-			log.String("error", svcErr.Error),
+			log.String("error", svcErr.Error.DefaultValue),
 		)
 	}
 

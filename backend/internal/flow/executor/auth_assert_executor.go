@@ -151,10 +151,10 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 		if svcErr != nil {
 			if svcErr.Type == serviceerror.ServerErrorType {
 				logger.Error("Failed to generate auth assertion",
-					log.String("error", svcErr.Error))
+					log.String("error", svcErr.Error.DefaultValue))
 				return "", errors.New("something went wrong while generating auth assertion")
 			}
-			return "", errors.New("failed to generate auth assertion: " + svcErr.Error)
+			return "", errors.New("failed to generate auth assertion: " + svcErr.Error.DefaultValue)
 		}
 
 		jwtClaims["assurance"] = assertionResult.Context
@@ -207,8 +207,8 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 
 	token, _, err := a.jwtService.GenerateJWT(tokenSub, ctx.AppID, iss, validityPeriod, jwtClaims, jwt.TokenTypeJWT)
 	if err != nil {
-		logger.Error("Failed to generate JWT token", log.String("error", err.Error))
-		return "", errors.New("failed to generate JWT token: " + err.Error)
+		logger.Error("Failed to generate JWT token", log.String("error", err.Error.DefaultValue))
+		return "", errors.New("failed to generate JWT token: " + err.Error.DefaultValue)
 	}
 
 	return token, nil
@@ -446,7 +446,7 @@ func (a *authAssertExecutor) getUserAttributesFromAuthnProvider(ctx context.Cont
 		if svcErr.Type == serviceerror.ServerErrorType {
 			return nil, errors.New("something went wrong while fetching user attributes")
 		}
-		return nil, errors.New("failed to fetch user attributes: " + svcErr.ErrorDescription)
+		return nil, errors.New("failed to fetch user attributes: " + svcErr.ErrorDescription.DefaultValue)
 	}
 
 	// Extract attribute values from AttributesResponse
@@ -500,7 +500,8 @@ func (a *authAssertExecutor) appendOUDetailsToClaims(
 	if svcErr != nil {
 		logger.Error("Failed to fetch organization unit details",
 			log.String(ouIDKey, ouID), log.Any("error", svcErr))
-		return errors.New("something went wrong while fetching organization unit: " + svcErr.ErrorDescription)
+		return errors.New("something went wrong while fetching organization unit: " +
+			svcErr.ErrorDescription.DefaultValue)
 	}
 
 	// Only add ouId if configured
@@ -566,7 +567,7 @@ func (a *authAssertExecutor) appendRolesToClaims(
 		logger.Error("Failed to fetch user roles",
 			log.String("userID", ctx.AuthenticatedUser.UserID),
 			log.Any("error", svcErr))
-		return errors.New("something went wrong while fetching user roles: " + svcErr.ErrorDescription)
+		return errors.New("something went wrong while fetching user roles: " + svcErr.ErrorDescription.DefaultValue)
 	}
 
 	if len(roles) > 0 {

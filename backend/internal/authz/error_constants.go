@@ -18,15 +18,24 @@
 
 package authz
 
-import "github.com/asgardeo/thunder/internal/system/error/serviceerror"
+import (
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
+)
 
 // Server errors for authorization operations.
 var (
 	// ErrorAuthorizationFailed is the error returned when authorization evaluation fails.
 	ErrorAuthorizationFailed = serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "AZ-5000",
-		Error:            "Authorization failed",
-		ErrorDescription: "An unexpected error occurred while evaluating authorization",
+		Type: serviceerror.ServerErrorType,
+		Code: "AZ-5000",
+		Error: core.I18nMessage{
+			Key:          "error.authzservice.authorization_failed",
+			DefaultValue: "Authorization failed",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.authzservice.authorization_failed_description",
+			DefaultValue: "An unexpected error occurred while evaluating authorization",
+		},
 	}
 )

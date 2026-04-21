@@ -28,6 +28,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/jose/jwe"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/tests/mocks/crypto/pki/pkimock"
@@ -91,8 +92,8 @@ func (suite *JOSEInitTestSuite) TestInitialize_JWTInitializationFailure() {
 	expectedErr := &serviceerror.ServiceError{
 		Code:             "PKI-001",
 		Type:             serviceerror.ServerErrorType,
-		Error:            "private key not found",
-		ErrorDescription: "The requested private key could not be found",
+		Error:            i18ncore.I18nMessage{DefaultValue: "private key not found"},
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "The requested private key could not be found"},
 	}
 	suite.mockPKIService.On("GetPrivateKey", "test-key-id").Return(nil, expectedErr).Once()
 
@@ -114,8 +115,8 @@ func (suite *JOSEInitTestSuite) TestInitialize_JWEInitializationFailure() {
 	expectedErr := &serviceerror.ServiceError{
 		Code:             "PKI-002",
 		Type:             serviceerror.ServerErrorType,
-		Error:            "certificate error",
-		ErrorDescription: "The certificate could not be processed",
+		Error:            i18ncore.I18nMessage{DefaultValue: "certificate error"},
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "The certificate could not be processed"},
 	}
 	suite.mockPKIService.On("GetPrivateKey", "test-key-id").Return(nil, expectedErr).Once()
 
@@ -155,8 +156,8 @@ func (suite *JOSEInitTestSuite) TestInitialize_PKIServiceGetPrivateKeyError() {
 			pkiError: &serviceerror.ServiceError{
 				Code:             "PKI-003",
 				Type:             serviceerror.ServerErrorType,
-				Error:            "key not found",
-				ErrorDescription: "The requested key was not found",
+				Error:            i18ncore.I18nMessage{DefaultValue: "key not found"},
+				ErrorDescription: i18ncore.I18nMessage{DefaultValue: "The requested key was not found"},
 			},
 			expectError: "failed to retrieve private key",
 		},
@@ -165,8 +166,8 @@ func (suite *JOSEInitTestSuite) TestInitialize_PKIServiceGetPrivateKeyError() {
 			pkiError: &serviceerror.ServiceError{
 				Code:             "PKI-004",
 				Type:             serviceerror.ServerErrorType,
-				Error:            "invalid key format",
-				ErrorDescription: "The key format is invalid",
+				Error:            i18ncore.I18nMessage{DefaultValue: "invalid key format"},
+				ErrorDescription: i18ncore.I18nMessage{DefaultValue: "The key format is invalid"},
 			},
 			expectError: "failed to retrieve private key",
 		},
@@ -175,8 +176,8 @@ func (suite *JOSEInitTestSuite) TestInitialize_PKIServiceGetPrivateKeyError() {
 			pkiError: &serviceerror.ServiceError{
 				Code:             "PKI-005",
 				Type:             serviceerror.ServerErrorType,
-				Error:            "access denied",
-				ErrorDescription: "Access to the key was denied",
+				Error:            i18ncore.I18nMessage{DefaultValue: "access denied"},
+				ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Access to the key was denied"},
 			},
 			expectError: "failed to retrieve private key",
 		},

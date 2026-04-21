@@ -29,6 +29,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/transaction"
 	"github.com/asgardeo/thunder/internal/system/utils"
@@ -60,7 +61,8 @@ type ResourceServiceInterface interface {
 	IsResourceServerDeclarative(id string) bool
 
 	// Resource operations
-	CreateResource(ctx context.Context, resourceServerID string, res Resource) (*Resource, *serviceerror.ServiceError)
+	CreateResource(ctx context.Context, resourceServerID string, res Resource) (
+		*Resource, *serviceerror.ServiceError)
 	GetResource(ctx context.Context, resourceServerID, id string) (*Resource, *serviceerror.ServiceError)
 	GetResourceList(
 		ctx context.Context, resourceServerID string, parentID *string, limit, offset int,
@@ -83,7 +85,8 @@ type ResourceServiceInterface interface {
 	UpdateAction(
 		ctx context.Context, resourceServerID string, resourceID *string, id string, action Action,
 	) (*Action, *serviceerror.ServiceError)
-	DeleteAction(ctx context.Context, resourceServerID string, resourceID *string, id string) *serviceerror.ServiceError
+	DeleteAction(ctx context.Context, resourceServerID string, resourceID *string,
+		id string) *serviceerror.ServiceError
 	ValidatePermissions(
 		ctx context.Context, resourceServerID string, permissions []string,
 	) ([]string, *serviceerror.ServiceError)
@@ -139,7 +142,7 @@ func (rs *resourceService) CreateResourceServer(
 			rs.logger.Debug("Organization unit not found", log.String("ouID", resourceServer.OUID))
 			return nil, &ErrorOrganizationUnitNotFound
 		}
-		rs.logger.Error("Failed to validate organization unit", log.String("error", svcErr.Error))
+		rs.logger.Error("Failed to validate organization unit", log.String("error", svcErr.Error.DefaultValue))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -287,13 +290,10 @@ func (rs *resourceService) UpdateResourceServer(
 	// Check if resource server is declarative (immutable)
 	if rs.IsResourceServerDeclarative(id) {
 		rs.logger.Debug("Cannot modify declarative resource server", log.String("id", id))
-		errorMsg := fmt.Sprintf(ErrorImmutableResourceServer.ErrorDescription, id)
-		return nil, &serviceerror.ServiceError{
-			Type:             ErrorImmutableResourceServer.Type,
-			Code:             ErrorImmutableResourceServer.Code,
-			Error:            ErrorImmutableResourceServer.Error,
-			ErrorDescription: errorMsg,
-		}
+		return nil, serviceerror.CustomServiceError(ErrorImmutableResourceServer, core.I18nMessage{
+			Key:          ErrorImmutableResourceServer.ErrorDescription.Key,
+			DefaultValue: fmt.Sprintf(ErrorImmutableResourceServer.ErrorDescription.DefaultValue, id),
+		})
 	}
 
 	// Preserve the immutable delimiter from existing record
@@ -366,13 +366,10 @@ func (rs *resourceService) DeleteResourceServer(ctx context.Context, id string) 
 	// Check if resource server is declarative (immutable)
 	if rs.IsResourceServerDeclarative(id) {
 		rs.logger.Debug("Cannot delete declarative resource server", log.String("id", id))
-		errorMsg := fmt.Sprintf(ErrorImmutableResourceServer.ErrorDescription, id)
-		return &serviceerror.ServiceError{
-			Type:             ErrorImmutableResourceServer.Type,
-			Code:             ErrorImmutableResourceServer.Code,
-			Error:            ErrorImmutableResourceServer.Error,
-			ErrorDescription: errorMsg,
-		}
+		return serviceerror.CustomServiceError(ErrorImmutableResourceServer, core.I18nMessage{
+			Key:          ErrorImmutableResourceServer.ErrorDescription.Key,
+			DefaultValue: fmt.Sprintf(ErrorImmutableResourceServer.ErrorDescription.DefaultValue, id),
+		})
 	}
 
 	_, err := rs.resourceStore.GetResourceServer(ctx, id)
@@ -591,13 +588,10 @@ func (rs *resourceService) UpdateResource(
 			"Cannot modify resource in declarative resource server",
 			log.String("resource_server_id", resourceServerID),
 		)
-		errorMsg := fmt.Sprintf(ErrorImmutableResource.ErrorDescription, id)
-		return nil, &serviceerror.ServiceError{
-			Type:             ErrorImmutableResource.Type,
-			Code:             ErrorImmutableResource.Code,
-			Error:            ErrorImmutableResource.Error,
-			ErrorDescription: errorMsg,
-		}
+		return nil, serviceerror.CustomServiceError(ErrorImmutableResource, core.I18nMessage{
+			Key:          ErrorImmutableResource.ErrorDescription.Key,
+			DefaultValue: fmt.Sprintf(ErrorImmutableResource.ErrorDescription.DefaultValue, id),
+		})
 	}
 
 	// Validate resource server exists
@@ -649,7 +643,8 @@ func (rs *resourceService) UpdateResource(
 }
 
 // DeleteResource deletes a resource.
-func (rs *resourceService) DeleteResource(ctx context.Context, resourceServerID, id string) *serviceerror.ServiceError {
+func (rs *resourceService) DeleteResource(
+	ctx context.Context, resourceServerID, id string) *serviceerror.ServiceError {
 	if id == "" || resourceServerID == "" {
 		return &ErrorMissingID
 	}
@@ -660,13 +655,10 @@ func (rs *resourceService) DeleteResource(ctx context.Context, resourceServerID,
 			"Cannot delete resource in declarative resource server",
 			log.String("resource_server_id", resourceServerID),
 		)
-		errorMsg := fmt.Sprintf(ErrorImmutableResource.ErrorDescription, id)
-		return &serviceerror.ServiceError{
-			Type:             ErrorImmutableResource.Type,
-			Code:             ErrorImmutableResource.Code,
-			Error:            ErrorImmutableResource.Error,
-			ErrorDescription: errorMsg,
-		}
+		return serviceerror.CustomServiceError(ErrorImmutableResource, core.I18nMessage{
+			Key:          ErrorImmutableResource.ErrorDescription.Key,
+			DefaultValue: fmt.Sprintf(ErrorImmutableResource.ErrorDescription.DefaultValue, id),
+		})
 	}
 
 	// Validate resource server exists
@@ -1002,13 +994,10 @@ func (rs *resourceService) DeleteAction(
 			"Cannot delete action in declarative resource server",
 			log.String("resource_server_id", resourceServerID),
 		)
-		errorMsg := fmt.Sprintf(ErrorImmutableAction.ErrorDescription, id)
-		return &serviceerror.ServiceError{
-			Type:             ErrorImmutableAction.Type,
-			Code:             ErrorImmutableAction.Code,
-			Error:            ErrorImmutableAction.Error,
-			ErrorDescription: errorMsg,
-		}
+		return serviceerror.CustomServiceError(ErrorImmutableAction, core.I18nMessage{
+			Key:          ErrorImmutableAction.ErrorDescription.Key,
+			DefaultValue: fmt.Sprintf(ErrorImmutableAction.ErrorDescription.DefaultValue, id),
+		})
 	}
 
 	// Validate resource server exists

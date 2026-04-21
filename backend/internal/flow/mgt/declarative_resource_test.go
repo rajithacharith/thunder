@@ -32,6 +32,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -201,7 +202,7 @@ func (s *DeclarativeResourceTestSuite) TestFlowGraphExporter_GetAllResourceIDs_E
 
 	expectedError := &serviceerror.ServiceError{
 		Code:  "ERR_CODE",
-		Error: "test error",
+		Error: i18ncore.I18nMessage{DefaultValue: "test error"},
 	}
 
 	mockService.EXPECT().ListFlows(mock.Anything, 10000, 0, common.FlowType("")).Return(nil, expectedError)
@@ -210,7 +211,7 @@ func (s *DeclarativeResourceTestSuite) TestFlowGraphExporter_GetAllResourceIDs_E
 	ids, err := exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), ids)
-	assert.Equal(s.T(), expectedError, err)
+	assert.Equal(s.T(), &serviceerror.InternalServerError, err)
 }
 
 // TestFlowGraphExporter_GetAllResourceIDs_EmptyList tests empty list handling
@@ -256,7 +257,7 @@ func (s *DeclarativeResourceTestSuite) TestFlowGraphExporter_GetResourceByID_Err
 
 	expectedError := &serviceerror.ServiceError{
 		Code:  "ERR_CODE",
-		Error: "test error",
+		Error: i18ncore.I18nMessage{DefaultValue: "test error"},
 	}
 
 	mockService.EXPECT().GetFlow(mock.Anything, "flow-001").Return(nil, expectedError)

@@ -19,6 +19,8 @@
 package executor
 
 import (
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"encoding/json"
 	"testing"
 
@@ -326,8 +328,10 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_AuthenticationFailed() {
 		userAttributePassword: "wrongpassword",
 	}, mock.Anything, mock.Anything, mock.Anything).Return(authnprovidermgr.AuthUser{},
 		(*authnprovidermgr.AuthnBasicResult)(nil), &serviceerror.ServiceError{
-			Type:             serviceerror.ClientErrorType,
-			ErrorDescription: "Invalid credentials",
+			Type: serviceerror.ClientErrorType,
+			ErrorDescription: i18ncore.I18nMessage{
+				Key: "error.test.invalid_credentials", DefaultValue: "Invalid credentials",
+			},
 		})
 
 	resp, err := suite.executor.Execute(ctx)
@@ -359,7 +363,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_UserNotFound_Authentication
 	}, mock.Anything, mock.Anything, mock.Anything).Return(authnprovidermgr.AuthUser{},
 		(*authnprovidermgr.AuthnBasicResult)(nil), &serviceerror.ServiceError{
 			Type:             serviceerror.ClientErrorType,
-			ErrorDescription: "User not found",
+			ErrorDescription: i18ncore.I18nMessage{Key: "error.test.user_not_found", DefaultValue: "User not found"},
 		})
 
 	resp, err := suite.executor.Execute(ctx)
@@ -417,7 +421,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_ServiceError() {
 	}, mock.Anything, mock.Anything, mock.Anything).Return(authnprovidermgr.AuthUser{},
 		(*authnprovidermgr.AuthnBasicResult)(nil), &serviceerror.ServiceError{
 			Type:  serviceerror.ServerErrorType,
-			Error: "database error",
+			Error: i18ncore.I18nMessage{Key: "error.test.database_error", DefaultValue: "database error"},
 		})
 
 	resp, err := suite.executor.Execute(ctx)
@@ -443,7 +447,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_AuthenticationServiceError(
 		mock.Anything, mock.Anything).
 		Return(authnprovidermgr.AuthUser{}, (*authnprovidermgr.AuthnBasicResult)(nil), &serviceerror.ServiceError{
 			Type:  serviceerror.ServerErrorType,
-			Error: "internal server error",
+			Error: i18ncore.I18nMessage{Key: "error.test.internal_server_error", DefaultValue: "internal server error"},
 		})
 
 	resp, err := suite.executor.Execute(ctx)
@@ -699,7 +703,7 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_ClientError_Re
 		authnprovidermgr.AuthUser{}, (*authnprovidermgr.AuthnBasicResult)(nil), &serviceerror.ServiceError{
 			Type:             serviceerror.ClientErrorType,
 			Code:             authnprovidermgr.ErrorAuthenticationFailed.Code,
-			ErrorDescription: "wrong password",
+			ErrorDescription: i18ncore.I18nMessage{Key: "error.test.wrong_password", DefaultValue: "wrong password"},
 		})
 
 	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)

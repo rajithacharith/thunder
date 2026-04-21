@@ -257,7 +257,8 @@ func (js *jwtService) VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey crypt
 }
 
 // VerifyJWTWithJWKS verifies the JWT token using a JWK Set (JWKS) endpoint.
-func (js *jwtService) VerifyJWTWithJWKS(jwtToken, jwksURL, expectedAud, expectedIss string) *serviceerror.ServiceError {
+func (js *jwtService) VerifyJWTWithJWKS(
+	jwtToken, jwksURL, expectedAud, expectedIss string) *serviceerror.ServiceError {
 	parts := strings.Split(jwtToken, ".")
 	if len(parts) != 3 {
 		return &ErrorInvalidJWTFormat

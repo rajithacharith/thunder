@@ -169,7 +169,7 @@ func (s *DefaultClientTestSuite) TestCreateConsentElements_HTTPClientError() {
 	result, svcErr := c.createConsentElements(context.Background(), "ou1", []ConsentElementInput{{Name: "attr1"}})
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestCreateConsentElements_ServerError() {
@@ -183,7 +183,7 @@ func (s *DefaultClientTestSuite) TestCreateConsentElements_ServerError() {
 	result, svcErr := c.createConsentElements(context.Background(), "ou1", []ConsentElementInput{{Name: "attr1"}})
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 // ----- listConsentElements -----
@@ -230,7 +230,7 @@ func (s *DefaultClientTestSuite) TestListConsentElements_ServerError() {
 	result, svcErr := c.listConsentElements(context.Background(), "ou1", NamespaceAttribute, "")
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 // ----- updateConsentElement -----
@@ -389,7 +389,7 @@ func (s *DefaultClientTestSuite) TestValidateConsentElements_ServerError() {
 	result, svcErr := c.validateConsentElements(context.Background(), "ou1", []string{"email"})
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 // ----- createConsentPurpose -----
@@ -477,7 +477,7 @@ func (s *DefaultClientTestSuite) TestListConsentPurposes_ServerError() {
 	result, svcErr := c.listConsentPurposes(context.Background(), "ou1", "app-1")
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 // ----- updateConsentPurpose -----
@@ -630,7 +630,7 @@ func (s *DefaultClientTestSuite) TestCreateConsent_ServerError() {
 	result, svcErr := c.createConsent(context.Background(), "ou1", &ConsentRequest{Type: "x"})
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 // ----- searchConsents -----
@@ -882,7 +882,7 @@ func (s *DefaultClientTestSuite) TestUpdateConsent_ServerError() {
 		&ConsentRequest{Type: ConsentTypeAuthentication})
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestUpdateConsent_UsesCorrectHTTPMethod() {
@@ -939,7 +939,7 @@ func (s *DefaultClientTestSuite) TestRevokeConsent_ServerError() {
 
 	svcErr := c.revokeConsent(context.Background(), "ou1", "c1", &ConsentRevokeRequest{Reason: "reason"})
 
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 // ----- checkStatus corner cases -----
@@ -982,7 +982,7 @@ func (s *DefaultClientTestSuite) TestCheckStatus_5xxReturnsInternalServerError()
 	resp := buildHTTPResponse(s.T(), http.StatusInternalServerError, errBody)
 	svcErr := c.checkStatus(resp)
 
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestCheckStatus_5xxWithCE5009ReturnsElementAssociatedWithPurposeError() {
@@ -1085,7 +1085,7 @@ func (s *DefaultClientTestSuite) TestDoRequest_HTTPClientReturnsError_ReturnsInt
 	result, svcErr := c.listConsentPurposes(context.Background(), "ou1", "")
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 // ----- HTTP client error paths for remaining functions -----
@@ -1100,7 +1100,7 @@ func (s *DefaultClientTestSuite) TestListConsentElements_HTTPError_ReturnsIntern
 	result, svcErr := c.listConsentElements(context.Background(), "ou1", NamespaceAttribute, "email")
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestUpdateConsentElement_HTTPError_ReturnsInternalError() {
@@ -1113,7 +1113,7 @@ func (s *DefaultClientTestSuite) TestUpdateConsentElement_HTTPError_ReturnsInter
 	result, svcErr := c.updateConsentElement(context.Background(), "ou1", "e1", &ConsentElementInput{Name: "email"})
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestDeleteConsentElement_HTTPError_ReturnsInternalError() {
@@ -1125,7 +1125,7 @@ func (s *DefaultClientTestSuite) TestDeleteConsentElement_HTTPError_ReturnsInter
 
 	svcErr := c.deleteConsentElement(context.Background(), "ou1", "e1")
 
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestValidateConsentElements_HTTPError_ReturnsInternalError() {
@@ -1138,7 +1138,7 @@ func (s *DefaultClientTestSuite) TestValidateConsentElements_HTTPError_ReturnsIn
 	result, svcErr := c.validateConsentElements(context.Background(), "ou1", []string{"email"})
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestCreateConsentPurpose_HTTPError_ReturnsInternalError() {
@@ -1151,7 +1151,7 @@ func (s *DefaultClientTestSuite) TestCreateConsentPurpose_HTTPError_ReturnsInter
 	result, svcErr := c.createConsentPurpose(context.Background(), "ou1", &ConsentPurposeInput{Name: "test"})
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestUpdateConsentPurpose_HTTPError_ReturnsInternalError() {
@@ -1164,7 +1164,7 @@ func (s *DefaultClientTestSuite) TestUpdateConsentPurpose_HTTPError_ReturnsInter
 	result, svcErr := c.updateConsentPurpose(context.Background(), "ou1", "p1", &ConsentPurposeInput{Name: "test"})
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestCreateConsent_HTTPError_ReturnsInternalError() {
@@ -1177,7 +1177,7 @@ func (s *DefaultClientTestSuite) TestCreateConsent_HTTPError_ReturnsInternalErro
 	result, svcErr := c.createConsent(context.Background(), "ou1", &ConsentRequest{Type: "authentication"})
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestSearchConsents_HTTPError_ReturnsInternalError() {
@@ -1190,7 +1190,7 @@ func (s *DefaultClientTestSuite) TestSearchConsents_HTTPError_ReturnsInternalErr
 	result, svcErr := c.searchConsents(context.Background(), "ou1", &ConsentSearchFilter{})
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestValidateConsent_HTTPError_ReturnsInternalError() {
@@ -1203,7 +1203,7 @@ func (s *DefaultClientTestSuite) TestValidateConsent_HTTPError_ReturnsInternalEr
 	result, svcErr := c.validateConsent(context.Background(), "ou1", "c1")
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestRevokeConsent_HTTPError_ReturnsInternalError() {
@@ -1215,7 +1215,7 @@ func (s *DefaultClientTestSuite) TestRevokeConsent_HTTPError_ReturnsInternalErro
 
 	svcErr := c.revokeConsent(context.Background(), "ou1", "c1", &ConsentRevokeRequest{Reason: "test"})
 
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 // ----- createConsent with Authorizations (covers consentAuthorizationRequestToDTO) -----
@@ -1320,7 +1320,7 @@ func (s *DefaultClientTestSuite) TestCreateConsentElements_InvalidJSON_ReturnsIn
 	result, svcErr := c.createConsentElements(context.Background(), "ou1", []ConsentElementInput{{Name: "email"}})
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestListConsentElements_InvalidJSON_ReturnsInternalError() {
@@ -1332,7 +1332,7 @@ func (s *DefaultClientTestSuite) TestListConsentElements_InvalidJSON_ReturnsInte
 	result, svcErr := c.listConsentElements(context.Background(), "ou1", NamespaceAttribute, "email")
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestUpdateConsentElement_InvalidJSON_ReturnsInternalError() {
@@ -1344,7 +1344,7 @@ func (s *DefaultClientTestSuite) TestUpdateConsentElement_InvalidJSON_ReturnsInt
 	result, svcErr := c.updateConsentElement(context.Background(), "ou1", "e1", &ConsentElementInput{Name: "email"})
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestValidateConsentElements_InvalidJSON_ReturnsInternalError() {
@@ -1356,7 +1356,7 @@ func (s *DefaultClientTestSuite) TestValidateConsentElements_InvalidJSON_Returns
 	result, svcErr := c.validateConsentElements(context.Background(), "ou1", []string{"email"})
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestCreateConsentPurpose_InvalidJSON_ReturnsInternalError() {
@@ -1368,7 +1368,7 @@ func (s *DefaultClientTestSuite) TestCreateConsentPurpose_InvalidJSON_ReturnsInt
 	result, svcErr := c.createConsentPurpose(context.Background(), "ou1", &ConsentPurposeInput{Name: "login"})
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestListConsentPurposes_InvalidJSON_ReturnsInternalError() {
@@ -1380,7 +1380,7 @@ func (s *DefaultClientTestSuite) TestListConsentPurposes_InvalidJSON_ReturnsInte
 	result, svcErr := c.listConsentPurposes(context.Background(), "ou1", "app-1")
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestUpdateConsentPurpose_InvalidJSON_ReturnsInternalError() {
@@ -1392,7 +1392,7 @@ func (s *DefaultClientTestSuite) TestUpdateConsentPurpose_InvalidJSON_ReturnsInt
 	result, svcErr := c.updateConsentPurpose(context.Background(), "ou1", "p1", &ConsentPurposeInput{Name: "login"})
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestCreateConsent_InvalidJSON_ReturnsInternalError() {
@@ -1404,7 +1404,7 @@ func (s *DefaultClientTestSuite) TestCreateConsent_InvalidJSON_ReturnsInternalEr
 	result, svcErr := c.createConsent(context.Background(), "ou1", &ConsentRequest{Type: "authentication"})
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestSearchConsents_InvalidJSON_ReturnsInternalError() {
@@ -1416,7 +1416,7 @@ func (s *DefaultClientTestSuite) TestSearchConsents_InvalidJSON_ReturnsInternalE
 	result, svcErr := c.searchConsents(context.Background(), "ou1", &ConsentSearchFilter{})
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 func (s *DefaultClientTestSuite) TestValidateConsent_InvalidJSON_ReturnsInternalError() {
@@ -1428,7 +1428,7 @@ func (s *DefaultClientTestSuite) TestValidateConsent_InvalidJSON_ReturnsInternal
 	result, svcErr := c.validateConsent(context.Background(), "ou1", "c1")
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 // ----- consentRequestToDTO inner element loop (Purposes with Elements) -----
@@ -1593,7 +1593,7 @@ func (s *DefaultClientTestSuite) TestDoRequest_ContextCancelledDuringRetry_Retur
 	result, svcErr := c.listConsentPurposes(ctx, "ou1", "")
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 }
 
 // TestDoRequest_5xxRetryThenFinal5xx_PassesThroughToCheckStatus verifies that on the last
@@ -1614,7 +1614,7 @@ func (s *DefaultClientTestSuite) TestDoRequest_5xxRetryThenFinal5xx_PassesThroug
 	result, svcErr := c.listConsentPurposes(context.Background(), "ou1", "")
 
 	s.Nil(result)
-	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+	s.Equal(&serviceerror.InternalServerError, svcErr)
 	httpMock.AssertNumberOfCalls(s.T(), "Do", 2)
 }
 

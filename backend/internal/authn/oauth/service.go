@@ -29,6 +29,7 @@ import (
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	syshttp "github.com/asgardeo/thunder/internal/system/http"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -42,7 +43,8 @@ type OAuthAuthnCoreServiceInterface interface {
 	BuildAuthorizeURL(ctx context.Context, idpID string) (string, *serviceerror.ServiceError)
 	ExchangeCodeForToken(ctx context.Context, idpID, code string, validateResponse bool) (
 		*TokenResponse, *serviceerror.ServiceError)
-	FetchUserInfo(ctx context.Context, idpID, accessToken string) (map[string]interface{}, *serviceerror.ServiceError)
+	FetchUserInfo(ctx context.Context, idpID, accessToken string) (
+		map[string]interface{}, *serviceerror.ServiceError)
 	GetInternalUser(sub string) (*entityprovider.Entity, *serviceerror.ServiceError)
 	GetOAuthClientConfig(ctx context.Context, idpID string) (*OAuthClientConfig, *serviceerror.ServiceError)
 }
@@ -97,11 +99,13 @@ func (s *oAuthAuthnService) GetOAuthClientConfig(ctx context.Context, idpID stri
 	idp, svcErr := s.idpService.GetIdentityProvider(ctx, idpID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
-			return nil, serviceerror.CustomServiceError(ErrorClientErrorWhileRetrievingIDP,
-				"Error while retrieving identity provider: "+svcErr.ErrorDescription)
+			return nil, serviceerror.CustomServiceError(ErrorClientErrorWhileRetrievingIDP, core.I18nMessage{
+				Key:          "error.oauthauthnservice.error_retrieving_idp_description",
+				DefaultValue: "Error while retrieving identity provider: " + svcErr.ErrorDescription.DefaultValue,
+			})
 		}
 		logger.Error("Error while retrieving identity provider", log.String("errorCode", svcErr.Code),
-			log.String("description", svcErr.ErrorDescription))
+			log.String("description", svcErr.ErrorDescription.DefaultValue))
 		return nil, &serviceerror.InternalServerError
 	}
 	if idp == nil {
@@ -118,7 +122,8 @@ func (s *oAuthAuthnService) GetOAuthClientConfig(ctx context.Context, idpID stri
 }
 
 // BuildAuthorizeURL constructs the authorization request URL for the external identity provider.
-func (s *oAuthAuthnService) BuildAuthorizeURL(ctx context.Context, idpID string) (string, *serviceerror.ServiceError) {
+func (s *oAuthAuthnService) BuildAuthorizeURL(
+	ctx context.Context, idpID string) (string, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("idpId", idpID))
 	logger.Debug("Building authorize URL")
 
@@ -200,7 +205,8 @@ func (s *oAuthAuthnService) ExchangeCodeForToken(ctx context.Context, idpID, cod
 // ValidateTokenResponse validates the token response returned by the identity provider.
 // ExchangeCodeForToken method calls this method to validate the token response if validateResponse is set
 // to true. Hence generally you may not need to call this method explicitly.
-func (s *oAuthAuthnService) ValidateTokenResponse(idpID string, tokenResp *TokenResponse) *serviceerror.ServiceError {
+func (s *oAuthAuthnService) ValidateTokenResponse(
+	idpID string, tokenResp *TokenResponse) *serviceerror.ServiceError {
 	logger := s.logger.With(log.String("idpId", idpID))
 	logger.Debug("Validating token response")
 

@@ -100,9 +100,10 @@ func (h *userInfoHandler) writeServiceErrorResponse(w http.ResponseWriter, svcEr
 	}
 
 	if statusCode == http.StatusInternalServerError {
-		utils.WriteJSONError(w, constants.ErrorServerError, serviceerror.InternalServerError.Error, statusCode, nil)
+		utils.WriteJSONError(w, constants.ErrorServerError,
+			serviceerror.InternalServerError.Error.DefaultValue, statusCode, nil)
 	} else {
-		writeBearerError(w, svcErr.Code, svcErr.ErrorDescription, statusCode)
+		writeBearerError(w, svcErr.Code, svcErr.ErrorDescription.DefaultValue, statusCode)
 	}
 }
 

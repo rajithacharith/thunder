@@ -40,7 +40,7 @@ func (_m *TemplateServiceInterfaceMock) EXPECT() *TemplateServiceInterfaceMock_E
 }
 
 // GetTemplateByScenario provides a mock function for the type TemplateServiceInterfaceMock
-func (_mock *TemplateServiceInterfaceMock) GetTemplateByScenario(ctx context.Context, scenario template.ScenarioType, tmplType template.TemplateType) (*template.TemplateDTO, *serviceerror.I18nServiceError) {
+func (_mock *TemplateServiceInterfaceMock) GetTemplateByScenario(ctx context.Context, scenario template.ScenarioType, tmplType template.TemplateType) (*template.TemplateDTO, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, scenario, tmplType)
 
 	if len(ret) == 0 {
@@ -48,8 +48,8 @@ func (_mock *TemplateServiceInterfaceMock) GetTemplateByScenario(ctx context.Con
 	}
 
 	var r0 *template.TemplateDTO
-	var r1 *serviceerror.I18nServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, template.ScenarioType, template.TemplateType) (*template.TemplateDTO, *serviceerror.I18nServiceError)); ok {
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, template.ScenarioType, template.TemplateType) (*template.TemplateDTO, *serviceerror.ServiceError)); ok {
 		return returnFunc(ctx, scenario, tmplType)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, template.ScenarioType, template.TemplateType) *template.TemplateDTO); ok {
@@ -59,11 +59,11 @@ func (_mock *TemplateServiceInterfaceMock) GetTemplateByScenario(ctx context.Con
 			r0 = ret.Get(0).(*template.TemplateDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, template.ScenarioType, template.TemplateType) *serviceerror.I18nServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, template.ScenarioType, template.TemplateType) *serviceerror.ServiceError); ok {
 		r1 = returnFunc(ctx, scenario, tmplType)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.I18nServiceError)
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
 		}
 	}
 	return r0, r1
@@ -105,18 +105,18 @@ func (_c *TemplateServiceInterfaceMock_GetTemplateByScenario_Call) Run(run func(
 	return _c
 }
 
-func (_c *TemplateServiceInterfaceMock_GetTemplateByScenario_Call) Return(templateDTO *template.TemplateDTO, i18nServiceError *serviceerror.I18nServiceError) *TemplateServiceInterfaceMock_GetTemplateByScenario_Call {
-	_c.Call.Return(templateDTO, i18nServiceError)
+func (_c *TemplateServiceInterfaceMock_GetTemplateByScenario_Call) Return(templateDTO *template.TemplateDTO, serviceError *serviceerror.ServiceError) *TemplateServiceInterfaceMock_GetTemplateByScenario_Call {
+	_c.Call.Return(templateDTO, serviceError)
 	return _c
 }
 
-func (_c *TemplateServiceInterfaceMock_GetTemplateByScenario_Call) RunAndReturn(run func(ctx context.Context, scenario template.ScenarioType, tmplType template.TemplateType) (*template.TemplateDTO, *serviceerror.I18nServiceError)) *TemplateServiceInterfaceMock_GetTemplateByScenario_Call {
+func (_c *TemplateServiceInterfaceMock_GetTemplateByScenario_Call) RunAndReturn(run func(ctx context.Context, scenario template.ScenarioType, tmplType template.TemplateType) (*template.TemplateDTO, *serviceerror.ServiceError)) *TemplateServiceInterfaceMock_GetTemplateByScenario_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Render provides a mock function for the type TemplateServiceInterfaceMock
-func (_mock *TemplateServiceInterfaceMock) Render(ctx context.Context, scenario template.ScenarioType, tmplType template.TemplateType, data template.TemplateData) (*template.RenderedTemplate, *serviceerror.I18nServiceError) {
+func (_mock *TemplateServiceInterfaceMock) Render(ctx context.Context, scenario template.ScenarioType, tmplType template.TemplateType, data template.TemplateData) (*template.RenderedTemplate, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, scenario, tmplType, data)
 
 	if len(ret) == 0 {
@@ -124,8 +124,8 @@ func (_mock *TemplateServiceInterfaceMock) Render(ctx context.Context, scenario 
 	}
 
 	var r0 *template.RenderedTemplate
-	var r1 *serviceerror.I18nServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, template.ScenarioType, template.TemplateType, template.TemplateData) (*template.RenderedTemplate, *serviceerror.I18nServiceError)); ok {
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, template.ScenarioType, template.TemplateType, template.TemplateData) (*template.RenderedTemplate, *serviceerror.ServiceError)); ok {
 		return returnFunc(ctx, scenario, tmplType, data)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, template.ScenarioType, template.TemplateType, template.TemplateData) *template.RenderedTemplate); ok {
@@ -135,11 +135,11 @@ func (_mock *TemplateServiceInterfaceMock) Render(ctx context.Context, scenario 
 			r0 = ret.Get(0).(*template.RenderedTemplate)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, template.ScenarioType, template.TemplateType, template.TemplateData) *serviceerror.I18nServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, template.ScenarioType, template.TemplateType, template.TemplateData) *serviceerror.ServiceError); ok {
 		r1 = returnFunc(ctx, scenario, tmplType, data)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.I18nServiceError)
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
 		}
 	}
 	return r0, r1
@@ -187,12 +187,12 @@ func (_c *TemplateServiceInterfaceMock_Render_Call) Run(run func(ctx context.Con
 	return _c
 }
 
-func (_c *TemplateServiceInterfaceMock_Render_Call) Return(renderedTemplate *template.RenderedTemplate, i18nServiceError *serviceerror.I18nServiceError) *TemplateServiceInterfaceMock_Render_Call {
-	_c.Call.Return(renderedTemplate, i18nServiceError)
+func (_c *TemplateServiceInterfaceMock_Render_Call) Return(renderedTemplate *template.RenderedTemplate, serviceError *serviceerror.ServiceError) *TemplateServiceInterfaceMock_Render_Call {
+	_c.Call.Return(renderedTemplate, serviceError)
 	return _c
 }
 
-func (_c *TemplateServiceInterfaceMock_Render_Call) RunAndReturn(run func(ctx context.Context, scenario template.ScenarioType, tmplType template.TemplateType, data template.TemplateData) (*template.RenderedTemplate, *serviceerror.I18nServiceError)) *TemplateServiceInterfaceMock_Render_Call {
+func (_c *TemplateServiceInterfaceMock_Render_Call) RunAndReturn(run func(ctx context.Context, scenario template.ScenarioType, tmplType template.TemplateType, data template.TemplateData) (*template.RenderedTemplate, *serviceerror.ServiceError)) *TemplateServiceInterfaceMock_Render_Call {
 	_c.Call.Return(run)
 	return _c
 }

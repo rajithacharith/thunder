@@ -36,6 +36,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/userschema"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
@@ -128,7 +129,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_NilRequest() {
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), ErrorInvalidRequest.Code, err.Code)
-	assert.Equal(suite.T(), "Invalid export request", err.Error)
+	assert.Equal(suite.T(), "Invalid export request", err.Error.DefaultValue)
 }
 
 // TestExportResources_EmptyRequest tests ExportResources with empty request.
@@ -140,7 +141,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_EmptyRequest() {
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), ErrorNoResourcesFound.Code, err.Code)
-	assert.Equal(suite.T(), "No resources found", err.Error)
+	assert.Equal(suite.T(), "No resources found", err.Error.DefaultValue)
 }
 
 // TestExportResources_DefaultOptions tests ExportResources with default options.
@@ -179,7 +180,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_ApplicationNotFound() {
 
 	appError := &serviceerror.ServiceError{
 		Code:  "APP_NOT_FOUND",
-		Error: "Application not found",
+		Error: i18ncore.I18nMessage{DefaultValue: "Application not found"},
 	}
 
 	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, appID).Return(nil, appError)
@@ -317,7 +318,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_PartialFailure() {
 
 	appError := &serviceerror.ServiceError{
 		Code:  "APP_NOT_FOUND",
-		Error: "Application not found",
+		Error: i18ncore.I18nMessage{DefaultValue: "Application not found"},
 	}
 
 	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, app1ID).Return(mockApp1, nil)
@@ -398,7 +399,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_WildcardApplications_Li
 
 	listError := &serviceerror.ServiceError{
 		Code:  "LIST_FAILED",
-		Error: "Failed to list applications",
+		Error: i18ncore.I18nMessage{DefaultValue: "Failed to list applications"},
 	}
 
 	suite.appServiceMock.EXPECT().GetApplicationList(mock.Anything).Return(nil, listError)
@@ -469,7 +470,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_WildcardApplications_Pa
 
 	appError := &serviceerror.ServiceError{
 		Code:  "APP_NOT_FOUND",
-		Error: "Application not found",
+		Error: i18ncore.I18nMessage{DefaultValue: "Application not found"},
 	}
 
 	suite.appServiceMock.EXPECT().GetApplicationList(mock.Anything).Return(mockAppList, nil)
@@ -645,7 +646,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_NotFou
 
 	idpError := &serviceerror.ServiceError{
 		Code:  "IDP_NOT_FOUND",
-		Error: "Identity provider not found",
+		Error: i18ncore.I18nMessage{DefaultValue: "Identity provider not found"},
 	}
 
 	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "non-existent-idp").Return(nil, idpError)
@@ -691,7 +692,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Wildca
 
 	idpError := &serviceerror.ServiceError{
 		Code:  "IDP_NOT_FOUND",
-		Error: "Identity provider not found",
+		Error: i18ncore.I18nMessage{DefaultValue: "Identity provider not found"},
 	}
 
 	suite.idpServiceMock.EXPECT().GetIdentityProviderList(mock.Anything).Return(mockIDPList, nil)
@@ -914,7 +915,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_PartialFailure_Detailed
 
 	appError := &serviceerror.ServiceError{
 		Code:  "APP_NOT_FOUND",
-		Error: "Application not found",
+		Error: i18ncore.I18nMessage{DefaultValue: "Application not found"},
 	}
 
 	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, app1ID).Return(mockApp1, nil)
@@ -968,7 +969,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Partia
 
 	idpError := &serviceerror.ServiceError{
 		Code:  "IDP_NOT_FOUND",
-		Error: "Identity provider not found",
+		Error: i18ncore.I18nMessage{DefaultValue: "Identity provider not found"},
 	}
 
 	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp1").Return(mockIDP1, nil)
@@ -1017,7 +1018,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_MixedResources_WithErro
 	// Setup app error
 	appError := &serviceerror.ServiceError{
 		Code:  "APP_NOT_FOUND",
-		Error: "Application not found",
+		Error: i18ncore.I18nMessage{DefaultValue: "Application not found"},
 	}
 
 	// Setup successful IDP
@@ -1032,7 +1033,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_MixedResources_WithErro
 	// Setup IDP error
 	idpError := &serviceerror.ServiceError{
 		Code:  "IDP_NOT_FOUND",
-		Error: "Identity provider not found",
+		Error: i18ncore.I18nMessage{DefaultValue: "Identity provider not found"},
 	}
 
 	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, "app1").Return(mockApp1, nil)
@@ -1384,7 +1385,7 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_NotFound() {
 
 	senderError := &serviceerror.ServiceError{
 		Code:  "SENDER_NOT_FOUND",
-		Error: "Notification sender not found",
+		Error: i18ncore.I18nMessage{DefaultValue: "Notification sender not found"},
 	}
 
 	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "non-existent-sender").Return(nil, senderError)
@@ -1610,7 +1611,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_NotFound() {
 
 	schemaError := &serviceerror.ServiceError{
 		Code:  "SCHEMA_NOT_FOUND",
-		Error: "User schema not found",
+		Error: i18ncore.I18nMessage{DefaultValue: "User schema not found"},
 	}
 
 	suite.mockUserSchemaService.EXPECT().GetUserSchema(
@@ -1717,7 +1718,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_WildcardPartialFailur
 
 	schemaError := &serviceerror.ServiceError{
 		Code:  "SCHEMA_NOT_FOUND",
-		Error: "User schema not found",
+		Error: i18ncore.I18nMessage{DefaultValue: "User schema not found"},
 	}
 
 	suite.mockUserSchemaService.EXPECT().
@@ -1828,7 +1829,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_ResourceNot
 	appID := "non-existent-app"
 	appError := &serviceerror.ServiceError{
 		Code:  "APP_NOT_FOUND",
-		Error: "Application not found",
+		Error: i18ncore.I18nMessage{DefaultValue: "Application not found"},
 	}
 
 	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, appID).Return(nil, appError)
@@ -1860,7 +1861,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_PartialSucc
 
 	appError := &serviceerror.ServiceError{
 		Code:  "APP_NOT_FOUND",
-		Error: "Application not found",
+		Error: i18ncore.I18nMessage{DefaultValue: "Application not found"},
 	}
 
 	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, validAppID).Return(mockApp, nil)
@@ -1922,7 +1923,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardSuc
 func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardFailure() {
 	listError := &serviceerror.ServiceError{
 		Code:  "LIST_FAILED",
-		Error: "Failed to list applications",
+		Error: i18ncore.I18nMessage{DefaultValue: "Failed to list applications"},
 	}
 
 	suite.appServiceMock.EXPECT().GetApplicationList(mock.Anything).Return(nil, listError)
@@ -2319,7 +2320,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_FlowNotFoun
 	flowID := "non-existent-flow"
 	flowError := &serviceerror.ServiceError{
 		Code:  "FLOW_NOT_FOUND",
-		Error: "Flow not found",
+		Error: i18ncore.I18nMessage{DefaultValue: "Flow not found"},
 	}
 	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, flowID).Return(nil, flowError)
 
@@ -2402,7 +2403,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardFlo
 func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardFlows_ListFailure() {
 	dbError := &serviceerror.ServiceError{
 		Code:  "DB_ERROR",
-		Error: "Database error",
+		Error: i18ncore.I18nMessage{DefaultValue: "Database error"},
 	}
 	suite.mockFlowService.EXPECT().ListFlows(mock.Anything, 10000, 0, flowcommon.FlowType("")).Return(nil, dbError)
 

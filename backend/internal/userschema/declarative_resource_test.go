@@ -29,6 +29,7 @@ import (
 
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/userschema"
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
@@ -84,8 +85,11 @@ func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_Success() {
 
 func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_Error() {
 	expectedError := &serviceerror.ServiceError{
-		Code:  "ERR_CODE",
-		Error: "test error",
+		Code: "ERR_CODE",
+		Error: core.I18nMessage{
+			Key:          "error.userschemaexporter.test_error",
+			DefaultValue: "test error",
+		},
 	}
 
 	s.mockService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0, false).Return(nil, expectedError)
@@ -126,8 +130,11 @@ func (s *UserSchemaExporterTestSuite) TestGetResourceByID_Success() {
 
 func (s *UserSchemaExporterTestSuite) TestGetResourceByID_Error() {
 	expectedError := &serviceerror.ServiceError{
-		Code:  "ERR_CODE",
-		Error: "test error",
+		Code: "ERR_CODE",
+		Error: core.I18nMessage{
+			Key:          "error.userschemaexporter.test_error",
+			DefaultValue: "test error",
+		},
 	}
 
 	s.mockService.EXPECT().GetUserSchema(mock.Anything, "schema1", mock.Anything).Return(nil, expectedError)

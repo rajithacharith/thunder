@@ -106,7 +106,7 @@ func (h *clientCredentialsGrantHandler) HandleGrant(ctx context.Context, tokenRe
 		})
 		if svcErr != nil {
 			logger.Error("Failed to get authorized permissions for app",
-				log.String("appID", oauthApp.AppID), log.String("error", svcErr.Error))
+				log.String("appID", oauthApp.AppID), log.String("error", svcErr.Error.DefaultValue))
 			return nil, &model.ErrorResponse{
 				Error:            constants.ErrorServerError,
 				ErrorDescription: "Failed to generate token",
