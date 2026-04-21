@@ -99,7 +99,11 @@ function FormAdapter({
   useEffect(() => {
     if (hasInputFields && !hasSubmitButton) {
       const message = (
-        <Trans i18nKey="flows:core.validation.fields.form.noSubmitButton" values={{id: resource.id}}>
+        <Trans
+          i18nKey="flows:core.validation.fields.form.noSubmitButton"
+          values={{id: resource.id}}
+          components={{code: <code />}}
+        >
           Form <code>{resource.id}</code> has input fields but no submit button.
         </Trans>
       );

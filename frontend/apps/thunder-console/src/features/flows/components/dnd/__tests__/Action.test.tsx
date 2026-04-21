@@ -96,7 +96,7 @@ describe('Action', () => {
       render(<Action>Styled</Action>);
 
       const button = screen.getByRole('button');
-      expect(button).toHaveStyle({width: '50px'});
+      expect(button).toHaveStyle({width: '32px'});
     });
   });
 
@@ -106,7 +106,7 @@ describe('Action', () => {
 
       const button = screen.getByRole('button');
       // Note: testing-library converts color names to rgb format
-      expect(button).toHaveStyle({padding: '10px'});
+      expect(button).toHaveStyle({padding: '4px'});
     });
 
     it('should merge custom styles with default styles', () => {

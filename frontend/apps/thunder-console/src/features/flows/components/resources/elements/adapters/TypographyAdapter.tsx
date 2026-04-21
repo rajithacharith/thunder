@@ -86,7 +86,11 @@ function TypographyAdapter({resource}: TypographyAdapterPropsInterface): ReactEl
 
   const generalMessage: ReactElement = useMemo(
     () => (
-      <Trans i18nKey="flows:core.validation.fields.typography.general" values={{id: resource.id}}>
+      <Trans
+        i18nKey="flows:core.validation.fields.typography.general"
+        values={{id: resource.id}}
+        components={{code: <code />}}
+      >
         Required fields are not properly configured for the typography with ID <code>{resource.id}</code>.
       </Trans>
     ),

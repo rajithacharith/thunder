@@ -116,7 +116,6 @@ function BuilderLayout({
           width: panelWidth,
           height: '100%',
           flexShrink: 0,
-          mr: 1,
           transition: (theme) =>
             theme.transitions.create('width', {
               easing: open ? theme.transitions.easing.easeOut : theme.transitions.easing.sharp,
@@ -124,7 +123,6 @@ function BuilderLayout({
             }),
           ...(!open && {
             width: 0,
-            mr: 0,
           }),
           '& .MuiDrawer-paper': {
             width: panelWidth,

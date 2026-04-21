@@ -304,6 +304,7 @@ function ResourceProperties(): ReactElement {
             'height',
             'startIcon',
             'endIcon',
+            'eventType',
             'items',
             'direction',
             'gap',

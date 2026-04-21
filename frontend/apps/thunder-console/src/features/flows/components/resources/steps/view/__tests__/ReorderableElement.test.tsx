@@ -79,9 +79,17 @@ vi.mock('@dnd-kit/abstract/modifiers', () => ({
   RestrictToVerticalAxis: {},
 }));
 
+// Use vi.hoisted for updateNodeData mock so it can be asserted on
+const {mockUpdateNodeData} = vi.hoisted(() => ({
+  mockUpdateNodeData: vi.fn(),
+}));
+
 // Mock @xyflow/react
 vi.mock('@xyflow/react', () => ({
   useNodeId: () => 'test-step-id',
+  useReactFlow: () => ({
+    updateNodeData: mockUpdateNodeData,
+  }),
 }));
 
 // Mock PluginRegistry
@@ -368,12 +376,10 @@ describe('ReorderableElement', () => {
     });
 
     it('should open property panel on content double click', () => {
-      const {container} = render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
+      render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
 
-      const contentDiv = container.querySelector('.flow-builder-step-content-form-field-content');
-      if (contentDiv) {
-        fireEvent.doubleClick(contentDiv);
-      }
+      const contentDiv = screen.getByTestId('element-content');
+      fireEvent.doubleClick(contentDiv);
 
       expect(mockSetLastInteractedResource).toHaveBeenCalledWith(mockElement);
     });
@@ -581,6 +587,117 @@ describe('ReorderableElement', () => {
 
       expect(screen.getByText('Text Input')).toBeInTheDocument();
       expect(screen.getByText('Password Input')).toBeInTheDocument();
+    });
+  });
+
+  describe('Move Up/Down', () => {
+    it('should render move up and move down buttons', () => {
+      render(<ReorderableElement id="sortable-1" index={1} element={mockElement} />);
+
+      expect(screen.getByTestId('handle-move up')).toBeInTheDocument();
+      expect(screen.getByTestId('handle-move down')).toBeInTheDocument();
+    });
+
+    it('should call updateNodeData when move up is clicked', () => {
+      render(<ReorderableElement id="sortable-1" index={1} element={mockElement} />);
+
+      fireEvent.click(screen.getByTestId('handle-move up'));
+
+      expect(mockUpdateNodeData).toHaveBeenCalledWith('test-step-id', expect.any(Function));
+    });
+
+    it('should not call updateNodeData when move up is clicked at index 0', () => {
+      render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
+
+      fireEvent.click(screen.getByTestId('handle-move up'));
+
+      // The handler checks deps.index <= 0, so updateNodeData should not be called
+      expect(mockUpdateNodeData).not.toHaveBeenCalled();
+    });
+
+    it('should call updateNodeData when move down is clicked', () => {
+      render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
+
+      fireEvent.click(screen.getByTestId('handle-move down'));
+
+      expect(mockUpdateNodeData).toHaveBeenCalledWith('test-step-id', expect.any(Function));
+    });
+
+    it('should swap top-level components when move up is clicked', () => {
+      render(<ReorderableElement id="sortable-1" index={1} element={mockElement} />);
+
+      fireEvent.click(screen.getByTestId('handle-move up'));
+
+      const callback = mockUpdateNodeData.mock.calls[0][1] as (
+        node: Record<string, unknown>,
+      ) => Record<string, unknown>;
+      const result = callback({
+        data: {
+          components: [
+            {id: 'other', type: 'TEXT'},
+            {id: 'element-1', type: 'TEXT_INPUT'},
+          ],
+        },
+      });
+
+      expect((result.components as {id: string}[])[0].id).toBe('element-1');
+      expect((result.components as {id: string}[])[1].id).toBe('other');
+    });
+
+    it('should swap nested components when move down is clicked', () => {
+      render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
+
+      fireEvent.click(screen.getByTestId('handle-move down'));
+
+      const callback = mockUpdateNodeData.mock.calls[0][1] as (
+        node: Record<string, unknown>,
+      ) => Record<string, unknown>;
+      const result = callback({
+        data: {
+          components: [
+            {
+              id: 'form-1',
+              type: 'FORM',
+              components: [
+                {id: 'element-1', type: 'TEXT_INPUT'},
+                {id: 'other', type: 'PASSWORD_INPUT'},
+              ],
+            },
+          ],
+        },
+      });
+
+      const form = (result.components as {components: {id: string}[]}[])[0];
+      expect(form.components[0].id).toBe('other');
+      expect(form.components[1].id).toBe('element-1');
+    });
+
+    it('should not swap nested components when element is not found in container', () => {
+      render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
+
+      fireEvent.click(screen.getByTestId('handle-move down'));
+
+      const callback = mockUpdateNodeData.mock.calls[0][1] as (
+        node: Record<string, unknown>,
+      ) => Record<string, unknown>;
+      const result = callback({
+        data: {
+          components: [
+            {
+              id: 'form-1',
+              type: 'FORM',
+              components: [
+                {id: 'unrelated-1', type: 'TEXT'},
+                {id: 'unrelated-2', type: 'BUTTON'},
+              ],
+            },
+          ],
+        },
+      });
+
+      const form = (result.components as {components: {id: string}[]}[])[0];
+      expect(form.components[0].id).toBe('unrelated-1');
+      expect(form.components[1].id).toBe('unrelated-2');
     });
   });
 });

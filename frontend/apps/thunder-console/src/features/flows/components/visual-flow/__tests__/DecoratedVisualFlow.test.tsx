@@ -194,20 +194,13 @@ vi.mock('@dnd-kit/abstract', () => ({
 }));
 
 // Mock @wso2/oxygen-ui
-vi.mock('@wso2/oxygen-ui', () => ({
-  Alert: ({children, severity}: any) => (
-    <div data-testid="alert-component" data-severity={severity}>
-      {children}
-    </div>
-  ),
-  Box: ({children, className}: any) => (
-    <div data-testid="box-component" className={className}>
-      {children}
-    </div>
-  ),
-  OxygenUIThemeProvider: ({children}: any) => children,
-  Snackbar: ({children, open}: any) => (open ? <div data-testid="snackbar-component">{children}</div> : null),
-}));
+vi.mock('@wso2/oxygen-ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@wso2/oxygen-ui')>();
+  return {
+    ...actual,
+    OxygenUIThemeProvider: ({children}: any) => children,
+  };
+});
 
 // Mock classnames
 vi.mock('classnames', () => ({
@@ -216,26 +209,32 @@ vi.mock('classnames', () => ({
 
 // Mock child components
 vi.mock('../VisualFlow', () => ({
-  default: ({nodes, edges, onSave, handleAutoLayout, onNodeDragStop}: any) => (
+  default: ({nodes, edges, onNodeDragStop}: any) => (
     <div
       data-testid="visual-flow"
       data-nodes={JSON.stringify(nodes)}
       data-edges={JSON.stringify(edges)}
-      data-has-save={!!onSave}
-      data-has-auto-layout={!!handleAutoLayout}
       data-has-drag-stop={!!onNodeDragStop}
     >
-      <button data-testid="save-trigger" onClick={onSave}>
-        Save
-      </button>
-      <button data-testid="auto-layout-trigger" onClick={handleAutoLayout}>
-        Auto Layout
-      </button>
       <button data-testid="node-drag-stop-trigger" onClick={onNodeDragStop}>
         Node Drag Stop
       </button>
     </div>
   ),
+}));
+
+vi.mock('../CanvasToolbar', () => ({
+  default: ({onAutoLayout}: any) => (
+    <div data-testid="canvas-toolbar">
+      <button data-testid="auto-layout-trigger" onClick={onAutoLayout}>
+        Auto Layout
+      </button>
+    </div>
+  ),
+}));
+
+vi.mock('../ValidationBadge', () => ({
+  default: () => <div data-testid="validation-badge" />,
 }));
 
 vi.mock('../../dnd/Droppable', () => ({
@@ -247,23 +246,20 @@ vi.mock('../../dnd/Droppable', () => ({
 }));
 
 vi.mock('../../resource-panel/ResourcePanel', () => ({
-  default: ({children, open, disabled, flowTitle}: any) => (
+  default: ({children, open, disabled, flowTitle, rightPanel}: any) => (
     <div data-testid="resource-panel" data-open={open} data-disabled={disabled} data-title={flowTitle}>
       {children}
+      {rightPanel && <div data-testid="right-panel">{rightPanel}</div>}
     </div>
   ),
 }));
 
 vi.mock('../../resource-property-panel/ResourcePropertyPanel', () => ({
-  default: ({children, open}: any) => (
-    <div data-testid="resource-property-panel" data-open={open}>
-      {children}
-    </div>
-  ),
+  default: ({open}: any) => <div data-testid="resource-property-panel" data-open={open} />,
 }));
 
 vi.mock('../../validation-panel/ValidationPanel', () => ({
-  default: () => <div data-testid="validation-panel" />,
+  default: ({open}: any) => <div data-testid="validation-panel" data-open={open} />,
 }));
 
 vi.mock('../FormRequiresViewDialog', () => ({
@@ -390,7 +386,7 @@ describe('DecoratedVisualFlow', () => {
     it('should render the component structure', () => {
       renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
-      expect(screen.getAllByTestId('box-component').length).toBeGreaterThan(0);
+      expect(screen.getByTestId('visual-flow')).toBeInTheDocument();
     });
 
     it('should render DragDropProvider', () => {
@@ -462,20 +458,16 @@ describe('DecoratedVisualFlow', () => {
       expect(resourcePanel).toHaveAttribute('data-title', 'My Custom Flow');
     });
 
-    it('should indicate save handler presence', () => {
-      const mockOnSave = vi.fn();
+    it('should render save button in top bar', () => {
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} onSave={vi.fn()} />);
 
-      renderWithContext(<DecoratedVisualFlow {...defaultProps} onSave={mockOnSave} />);
-
-      const visualFlow = screen.getByTestId('visual-flow');
-      expect(visualFlow).toHaveAttribute('data-has-save', 'true');
+      expect(screen.getByText('core.headerPanel.save')).toBeInTheDocument();
     });
 
-    it('should indicate auto layout handler presence', () => {
+    it('should render canvas toolbar', () => {
       renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
-      const visualFlow = screen.getByTestId('visual-flow');
-      expect(visualFlow).toHaveAttribute('data-has-auto-layout', 'true');
+      expect(screen.getByTestId('canvas-toolbar')).toBeInTheDocument();
     });
   });
 
@@ -488,7 +480,7 @@ describe('DecoratedVisualFlow', () => {
 
       renderWithContext(<DecoratedVisualFlow {...defaultProps} onSave={mockOnSave} />);
 
-      const saveButton = screen.getByTestId('save-trigger');
+      const saveButton = screen.getByText('core.headerPanel.save');
       fireEvent.click(saveButton);
 
       expect(mockOnSave).toHaveBeenCalledWith({
@@ -501,7 +493,7 @@ describe('DecoratedVisualFlow', () => {
     it('should not throw when onSave is not provided', () => {
       renderWithContext(<DecoratedVisualFlow {...defaultProps} onSave={undefined} />);
 
-      const saveButton = screen.getByTestId('save-trigger');
+      const saveButton = screen.getByText('core.headerPanel.save');
       expect(() => fireEvent.click(saveButton)).not.toThrow();
     });
   });
@@ -671,9 +663,8 @@ describe('DecoratedVisualFlow', () => {
 
       renderWithContext(<DecoratedVisualFlow {...defaultProps} triggerAutoLayoutOnLoad />);
 
-      // Component should render with auto-layout handler available
-      const visualFlow = screen.getByTestId('visual-flow');
-      expect(visualFlow).toHaveAttribute('data-has-auto-layout', 'true');
+      // Component should render with canvas toolbar available
+      expect(screen.getByTestId('canvas-toolbar')).toBeInTheDocument();
     });
 
     it('should not trigger auto layout when nodes have different positions', () => {
@@ -688,7 +679,7 @@ describe('DecoratedVisualFlow', () => {
       expect(defaultProps.setNodes).not.toHaveBeenCalled();
     });
 
-    it('should provide auto-layout capability via handleAutoLayout prop', () => {
+    it('should provide auto-layout capability via canvas toolbar', () => {
       mockGetNodes.mockReturnValue([
         {id: 'node-1', position: {x: 0, y: 0}, data: {}},
         {id: 'node-2', position: {x: 0, y: 0}, data: {}},
@@ -696,9 +687,9 @@ describe('DecoratedVisualFlow', () => {
 
       renderWithContext(<DecoratedVisualFlow {...defaultProps} triggerAutoLayoutOnLoad />);
 
-      // Verify auto-layout handler is passed to VisualFlow
-      const visualFlow = screen.getByTestId('visual-flow');
-      expect(visualFlow).toHaveAttribute('data-has-auto-layout', 'true');
+      // Verify canvas toolbar with auto-layout is rendered
+      expect(screen.getByTestId('canvas-toolbar')).toBeInTheDocument();
+      expect(screen.getByTestId('auto-layout-trigger')).toBeInTheDocument();
     });
   });
 

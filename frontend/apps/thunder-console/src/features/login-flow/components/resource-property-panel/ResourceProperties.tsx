@@ -18,7 +18,7 @@
 
 import {FormControl, FormLabel, MenuItem, Select} from '@wso2/oxygen-ui';
 import isEmpty from 'lodash-es/isEmpty';
-import {useState, type ReactElement} from 'react';
+import {useMemo, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
 import ButtonExtendedProperties from './extended-properties/ButtonExtendedProperties';
 import ExecutionExtendedProperties from './extended-properties/ExecutionExtendedProperties';
@@ -61,30 +61,15 @@ function ResourceProperties({
 
     onChange(propertyKey, processedValue, changedResource as Resource);
   };
-  const [selectedVariant, setSelectedVariant] = useState<Element | undefined>(() => {
+  const selectedVariant = useMemo<Element | undefined>(() => {
     if (!resource?.variants || resource.variants.length === 0) {
       return undefined;
     }
-    // Find the variant that matches the resource's current variant, or fall back to the first one
     const currentVariant = resource.variants.find((v: Element) => v.variant === (resource as Element).variant) as
       | Element
       | undefined;
     return currentVariant ?? (resource.variants[0] as Element);
-  });
-
-  // Sync selectedVariant when resource changes (e.g., clicking on a different element)
-  const [prevResource, setPrevResource] = useState(resource);
-  if (resource !== prevResource) {
-    setPrevResource(resource);
-    if (!resource?.variants || resource.variants.length === 0) {
-      setSelectedVariant(undefined);
-    } else {
-      const currentVariant = resource.variants.find((v: Element) => v.variant === (resource as Element).variant) as
-        | Element
-        | undefined;
-      setSelectedVariant(currentVariant ?? (resource.variants[0] as Element));
-    }
-  }
+  }, [resource]);
 
   const renderElementId = (): ReactElement => (
     <ResourcePropertyFactory
@@ -111,7 +96,6 @@ function ResourceProperties({
               onChange={(e) => {
                 const newVariant = resource?.variants?.find((variant: Element) => variant.variant === e.target.value);
                 onVariantChange?.((newVariant?.variant as string) ?? '');
-                setSelectedVariant(newVariant);
               }}
               fullWidth
             >
@@ -218,7 +202,6 @@ function ResourceProperties({
                       (variant: Element) => variant.variant === e.target.value,
                     );
                     onVariantChange?.((newVariant?.variant as string) ?? '');
-                    setSelectedVariant(newVariant);
                   }}
                   fullWidth
                 >

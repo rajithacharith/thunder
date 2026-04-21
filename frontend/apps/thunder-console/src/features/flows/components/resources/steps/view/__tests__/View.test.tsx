@@ -90,9 +90,6 @@ vi.mock('../ReorderableElement', () => ({
   ),
 }));
 
-// Mock SCSS
-vi.mock('../View.scss', () => ({}));
-
 describe('View', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -337,9 +334,8 @@ describe('View', () => {
       const onDoubleClick = vi.fn();
       render(<View onActionPanelDoubleClick={onDoubleClick} />);
 
-      const actionPanel = screen.getByText('View').closest('.flow-builder-step-action-panel');
-      expect(actionPanel).not.toBeNull();
-      fireEvent.doubleClick(actionPanel!);
+      const actionPanel = screen.getByTestId('step-action-panel');
+      fireEvent.doubleClick(actionPanel);
       expect(onDoubleClick).toHaveBeenCalled();
     });
   });

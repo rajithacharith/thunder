@@ -67,7 +67,11 @@ function ResendButtonAdapter({resource}: ResendButtonAdapterPropsInterface): Rea
 
   const generalMessage: ReactElement = useMemo(
     () => (
-      <Trans i18nKey="flows:core.validation.fields.button.general" values={{id: resource.id}}>
+      <Trans
+        i18nKey="flows:core.validation.fields.button.general"
+        values={{id: resource.id}}
+        components={{code: <code />}}
+      >
         Required fields are not properly configured for the resend button with ID <code>{resource.id}</code>.
       </Trans>
     ),

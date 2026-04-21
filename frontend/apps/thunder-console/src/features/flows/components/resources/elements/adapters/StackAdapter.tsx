@@ -218,7 +218,7 @@ function StackAdapter({
         ...VisualFlowConstants.FLOW_BUILDER_STACK_ALLOWED_RESOURCE_TYPES,
       ]}
       sx={layoutSx}
-      bottomZoneMinHeight={0}
+      hideDropZones
     >
       {filteredComponents.map((component: FlowElement, index: number) => {
         const isFirst = index === 0;
