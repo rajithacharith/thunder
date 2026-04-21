@@ -22,6 +22,7 @@ import ButtonAdapter from './adapters/ButtonAdapter';
 import CaptchaAdapter from './adapters/CaptchaAdapter';
 import ChoiceAdapter from './adapters/ChoiceAdapter';
 import ConsentAdapter from './adapters/ConsentAdapter';
+import CustomAdapter from './adapters/CustomAdapter';
 import DividerAdapter from './adapters/DividerAdapter';
 import FormAdapter from './adapters/FormAdapter';
 import IconAdapter from './adapters/IconAdapter';
@@ -164,6 +165,9 @@ function CommonElementFactory({
   }
   if (resource.type === ElementTypes.Consent) {
     return <ConsentAdapter />;
+  }
+  if (resource.type === ElementTypes.Custom) {
+    return <CustomAdapter resource={resource} />;
   }
 
   return null;

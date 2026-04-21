@@ -1759,6 +1759,8 @@ const translations = {
     // Placeholders
     'core.placeholders.image': 'No image source',
     'core.placeholders.image.dynamicSrc': 'Resolved at runtime',
+    'core.placeholders.customComponent': 'Custom',
+    'core.placeholders.customComponent.identifier': 'Identifier: {{id}}',
 
     // Validation messages - rich text
     'core.validation.fields.richText.general':

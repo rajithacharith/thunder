@@ -18,7 +18,7 @@
 
 import {useDataGridLocaleText} from '@thunder/hooks';
 import {useLogger} from '@thunder/logger/react';
-import {Box, IconButton, Typography, Tooltip, DataGrid, ListingTable, useTheme} from '@wso2/oxygen-ui';
+import {Box, IconButton, Typography, Tooltip, DataGrid, ListingTable} from '@wso2/oxygen-ui';
 import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -31,7 +31,6 @@ import type {RoleSummary} from '../models/role';
  * DataGrid component for displaying the list of roles.
  */
 export default function RolesList(): JSX.Element {
-  const theme = useTheme();
   const navigate = useNavigate();
   const {t} = useTranslation();
   const logger = useLogger('RolesList');
@@ -135,7 +134,7 @@ export default function RolesList(): JSX.Element {
         ),
       },
     ],
-    [handleDeleteClick, handleViewClick, t, theme],
+    [handleDeleteClick, handleViewClick, t],
   );
 
   if (error) {

@@ -47,8 +47,12 @@ describe('elements models', () => {
       expect(ElementCategories.Field).toBe('FIELD');
     });
 
-    it('should have exactly 4 categories', () => {
-      expect(Object.keys(ElementCategories)).toHaveLength(4);
+    it('should have Miscellaneous category', () => {
+      expect(ElementCategories.Miscellaneous).toBe('MISCELLANEOUS');
+    });
+
+    it('should have exactly 5 categories', () => {
+      expect(Object.keys(ElementCategories)).toHaveLength(5);
     });
   });
 
@@ -78,8 +82,12 @@ describe('elements models', () => {
       expect(ElementTypes.Timer).toBe('TIMER');
     });
 
-    it('should have exactly 21 element types', () => {
-      expect(Object.keys(ElementTypes)).toHaveLength(21);
+    it('should have Custom type', () => {
+      expect(ElementTypes.Custom).toBe('CUSTOM');
+    });
+
+    it('should have exactly 22 element types', () => {
+      expect(Object.keys(ElementTypes)).toHaveLength(22);
     });
   });
 
