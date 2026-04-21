@@ -155,33 +155,11 @@ function BuilderPanelHeader({
         borderColor: 'divider',
         mb: 1,
         flexShrink: 0,
+        display: 'flex',
+        justifyContent: 'space-between',
       }}
       {...rest}
     >
-      {/* Back button + collapse toggle row */}
-      {(onBack !== undefined || onPanelToggle !== undefined) && (
-        <Box display="flex" alignItems="center" justifyContent="space-between" sx={{mb: 1}}>
-          {onBack !== undefined && (
-            <Button
-              onClick={onBack}
-              variant="text"
-              size="small"
-              startIcon={<ArrowLeft size={14} />}
-              sx={{textTransform: 'none', fontSize: '0.8rem', color: 'text.secondary', whiteSpace: 'nowrap'}}
-            >
-              {backLabel}
-            </Button>
-          )}
-          {onPanelToggle !== undefined && (
-            <Tooltip title={hidePanelTooltip} placement="right">
-              <IconButton onClick={onPanelToggle} size="small">
-                <ChevronLeftIcon size={16} />
-              </IconButton>
-            </Tooltip>
-          )}
-        </Box>
-      )}
-
       {/* Title section */}
       {title &&
         (isEditing ? (
@@ -234,6 +212,30 @@ function BuilderPanelHeader({
             )}
           </Stack>
         ))}
+
+      {/* Back button + collapse toggle row */}
+      {(onBack !== undefined || onPanelToggle !== undefined) && (
+        <Box display="flex" alignItems="center" justifyContent="space-between" sx={{mb: 1}}>
+          {onBack !== undefined && (
+            <Button
+              onClick={onBack}
+              variant="text"
+              size="small"
+              startIcon={<ArrowLeft size={14} />}
+              sx={{textTransform: 'none', fontSize: '0.8rem', color: 'text.secondary', whiteSpace: 'nowrap'}}
+            >
+              {backLabel}
+            </Button>
+          )}
+          {onPanelToggle !== undefined && (
+            <Tooltip title={hidePanelTooltip} placement="right">
+              <IconButton onClick={onPanelToggle} size="small">
+                <ChevronLeftIcon size={16} />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
+      )}
     </Box>
   );
 }

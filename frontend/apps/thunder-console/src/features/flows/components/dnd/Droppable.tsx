@@ -18,141 +18,24 @@
 
 import {pointerIntersection} from '@dnd-kit/collision';
 import {useDroppable, useDragOperation, type UseDroppableInput} from '@dnd-kit/react';
-import {useSortable} from '@dnd-kit/react/sortable';
 import {Box, type BoxProps} from '@wso2/oxygen-ui';
-import {memo, type PropsWithChildren, type ReactElement, type ReactNode, useMemo, Children} from 'react';
+import {memo, type PropsWithChildren, type ReactElement, useMemo, Children} from 'react';
+import DroppablePresentation from './DroppablePresentation';
+import DropZone from './DropZone';
 
-/**
- * Keyframe animation for drop indicator pulse effect.
- * Defined once as a constant to avoid recreation on every render.
- */
-const DROP_INDICATOR_KEYFRAMES = {
-  '@keyframes dropIndicatorPulse': {
-    '0%, 100%': {
-      opacity: 1,
-    },
-    '50%': {
-      opacity: 0.6,
-    },
-  },
-};
+// Module-scoped cache for sticky "target inside" state per droppable.
+// When the dnd-kit target becomes null (pointer over non-sortable elements),
+// we return the last known value so the drop highlight doesn't flicker.
+const droppableInsideState = new Map<string, boolean>();
 
 /**
  * Props interface of {@link Droppable}
  */
 export type DroppableProps = UseDroppableInput<Record<string, unknown>> &
   BoxProps & {
-    /** Minimum height of the invisible end-zone drop target. Defaults to 40. */
-    bottomZoneMinHeight?: number;
+    /** When true, hides the top and bottom drop zone sortables. */
+    hideDropZones?: boolean;
   };
-
-/**
- * Props interface for DroppablePresentation
- */
-interface DroppablePresentationProps {
-  children: ReactNode;
-  className?: string;
-  sx?: BoxProps['sx'];
-}
-
-/**
- * Memoized presentation component for Droppable content.
- * PERFORMANCE FIX: Based on dnd-kit issue #389 - separate presentation from hook
- * This prevents children from re-rendering when useDroppable causes parent re-renders.
- * @see https://github.com/clauderic/dnd-kit/issues/389
- *
- * @param props - Props injected to the component.
- * @returns DroppablePresentation component.
- */
-function DroppablePresentation({children, className = undefined, sx = {}}: DroppablePresentationProps): ReactElement {
-  return (
-    <Box
-      className={className}
-      sx={{
-        display: 'inline-flex',
-        flexDirection: 'column',
-        gap: '10px',
-        height: '100%',
-        width: '100%',
-        ...sx,
-      }}
-    >
-      {children}
-    </Box>
-  );
-}
-
-const MemoizedDroppablePresentation = memo(DroppablePresentation);
-
-/**
- * Invisible sortable at bottom to show drop indicator for inserting at end.
- */
-function BottomZone({
-  id,
-  count,
-  accept = undefined,
-  droppableData = undefined,
-  minHeight = 40,
-}: {
-  id: string;
-  count: number;
-  accept?: UseDroppableInput['accept'];
-  droppableData?: Record<string, unknown>;
-  minHeight?: number;
-}) {
-  const {ref, sortable, isDropTarget} = useSortable({
-    id: `${id}-end`,
-    index: count,
-    accept,
-    data: {...droppableData, isEndZone: true, isReordering: true},
-  });
-
-  const {source} = useDragOperation();
-  const show = useMemo(() => source && isDropTarget && sortable.accepts(source), [source, isDropTarget, sortable]);
-
-  const dropIndicatorStyles = useMemo(
-    () => ({
-      minHeight: `${minHeight}px`,
-      width: '100%',
-      position: 'relative' as const,
-      marginTop: '4px',
-      marginBottom: '4px',
-      ...(show && {
-        '&::before': {
-          content: '""',
-          position: 'absolute' as const,
-          left: 0,
-          right: 0,
-          top: '-8px',
-          height: '3px',
-          backgroundColor: 'primary.main',
-          borderRadius: '2px',
-          zIndex: 100,
-          pointerEvents: 'none' as const,
-          animation: 'dropIndicatorPulse 1s ease-in-out infinite',
-        },
-        '&::after': {
-          content: '""',
-          position: 'absolute' as const,
-          left: '-4px',
-          right: '-4px',
-          top: '-16px',
-          height: 'calc(8px * 2)',
-          backgroundColor: 'rgba(var(--mui-palette-primary-mainChannel) / 0.1)',
-          borderRadius: '4px',
-          zIndex: 99,
-          pointerEvents: 'none' as const,
-        },
-      }),
-      ...DROP_INDICATOR_KEYFRAMES,
-    }),
-    [show, minHeight],
-  );
-
-  return <Box ref={ref} sx={dropIndicatorStyles} />;
-}
-
-const MemoizedBottomZone = memo(BottomZone);
 
 /**
  * Droppable component.
@@ -171,7 +54,7 @@ function Droppable({
   collisionDetector = pointerIntersection,
   data,
   accept,
-  bottomZoneMinHeight = 40,
+  hideDropZones = false,
   ...rest
 }: PropsWithChildren<DroppableProps>): ReactElement {
   const {ref, droppable, isDropTarget} = useDroppable<Record<string, unknown>>({
@@ -182,7 +65,7 @@ function Droppable({
     ...rest,
   });
 
-  const {source} = useDragOperation();
+  const {source, target} = useDragOperation();
   const count = useMemo(() => Children.count(children), [children]);
 
   const canAcceptDrop = useMemo(() => {
@@ -190,14 +73,54 @@ function Droppable({
     return droppable.accepts(source);
   }, [source, droppable]);
 
-  const isDraggingOver = useMemo(() => Boolean(source && isDropTarget), [source, isDropTarget]);
+  // Track whether the target is inside this droppable. When `target` moves to
+  // an ancestor (e.g. pointer over a non-sortable child like an input field),
+  // keep the previous value so the highlight doesn't flicker off — but only
+  // while this droppable is still considered a drop target by dnd-kit.
+  const isTargetInside = useMemo(() => {
+    const key = String(id);
+
+    if (!source) {
+      droppableInsideState.delete(key);
+      return false;
+    }
+    if (!target || !droppable.element) {
+      return droppableInsideState.get(key) ?? false;
+    }
+
+    const targetEl = (target as {element?: Element}).element;
+    if (!targetEl) {
+      return droppableInsideState.get(key) ?? false;
+    }
+
+    const inside = targetEl === droppable.element || droppable.element.contains(targetEl);
+
+    if (!inside && targetEl.contains(droppable.element)) {
+      // Target moved to an ancestor (e.g. canvas). Only keep cached state if
+      // this droppable is still detected as a target — otherwise the pointer
+      // has genuinely left this droppable's bounds (e.g. moved to parent padding).
+      if (!isDropTarget) {
+        droppableInsideState.set(key, false);
+        return false;
+      }
+      return droppableInsideState.get(key) ?? false;
+    }
+
+    droppableInsideState.set(key, inside);
+    return inside;
+  }, [id, source, target, droppable.element, isDropTarget]);
+
+  const showDropHighlight = useMemo(
+    () => Boolean(source && (isDropTarget || isTargetInside)),
+    [source, isDropTarget, isTargetInside],
+  );
 
   const dropStyles = useMemo(() => {
-    if (!isDraggingOver) return {};
+    if (!showDropHighlight) return {};
 
     if (canAcceptDrop) {
       return {
-        backgroundColor: 'rgba(var(--mui-palette-success-mainChannel) / 0.1)',
+        backgroundColor: 'rgba(var(--oxygen-palette-success-mainChannel) / 0.1)',
         border: '2px dashed',
         borderColor: 'success.light',
       };
@@ -208,23 +131,34 @@ function Droppable({
       border: '2px dashed',
       borderColor: 'error.light',
     };
-  }, [isDraggingOver, canAcceptDrop]);
+  }, [showDropHighlight, canAcceptDrop]);
 
   return (
     <Box
       ref={ref as BoxProps['ref']}
       className={className}
+      data-droppable
       sx={{
         display: 'inline-flex',
         flexDirection: 'column',
         height: '100%',
         width: '100%',
-        borderRadius: '4px',
+        borderRadius: 'calc(2 * var(--oxygen-shape-borderRadius, 4px))',
         ...dropStyles,
+        // When a nested droppable is also active, suppress the parent's highlight
+        // to avoid visual doubling. Use transparent border to prevent layout shift.
+        '&[data-drop-active]:has([data-drop-active])': {
+          backgroundColor: 'transparent',
+          borderColor: 'transparent',
+        },
       }}
+      {...(showDropHighlight ? {'data-drop-active': ''} : {})}
     >
-      <MemoizedDroppablePresentation sx={sx}>{children}</MemoizedDroppablePresentation>
-      <MemoizedBottomZone id={id} count={count} accept={accept} droppableData={data} minHeight={bottomZoneMinHeight} />
+      {!hideDropZones && <DropZone id={id} index={-1} position="start" accept={accept} droppableData={data} />}
+      <DroppablePresentation sx={sx} isDragActive={!hideDropZones && showDropHighlight}>
+        {children}
+      </DroppablePresentation>
+      {!hideDropZones && <DropZone id={id} index={count} position="end" accept={accept} droppableData={data} />}
     </Box>
   );
 }

@@ -17,8 +17,15 @@
  */
 
 import {Box, Menu, MenuItem, type BoxProps} from '@wso2/oxygen-ui';
-import {GripVertical, PencilLineIcon, PlusIcon, Trash2Icon} from '@wso2/oxygen-ui-icons-react';
-import {useNodeId} from '@xyflow/react';
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  GripVertical,
+  PencilLineIcon,
+  PlusIcon,
+  TrashIcon,
+} from '@wso2/oxygen-ui-icons-react';
+import {useNodeId, useReactFlow, type Node} from '@xyflow/react';
 import classNames from 'classnames';
 import {useRef, useState, useMemo, memo, type MouseEvent, type ReactElement, type ReactNode} from 'react';
 import Handle from '../../../dnd/Handle';
@@ -29,10 +36,11 @@ import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants'
 import useComponentDelete from '@/features/flows/hooks/useComponentDelete';
 import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
 import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
-import {BlockTypes} from '@/features/flows/models/elements';
+import {BlockTypes, type Element} from '@/features/flows/models/elements';
 import FlowEventTypes from '@/features/flows/models/extension';
 import Notification, {NotificationType} from '@/features/flows/models/notification';
 import type {Resource} from '@/features/flows/models/resources';
+import type {StepData} from '@/features/flows/models/steps';
 import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
 
 /**
@@ -113,6 +121,7 @@ function ReorderableElement({
 }: ReorderableComponentPropsInterface): ReactElement {
   const handleRef = useRef<HTMLButtonElement>(null);
   const stepId: string | null = useNodeId();
+  const {updateNodeData} = useReactFlow();
   const {deleteComponent} = useComponentDelete();
   const {ElementFactory, setLastInteractedResource, setLastInteractedStepId, setIsOpenResourcePropertiesPanel} =
     useFlowBuilderCore();
@@ -125,6 +134,7 @@ function ReorderableElement({
 
   const depsRef = useRef({
     element,
+    index,
     onAddElementToForm,
     availableElements,
     stepId,
@@ -136,11 +146,13 @@ function ReorderableElement({
     deleteComponent,
     setIsOpenResourcePropertiesPanel,
     setAnchorEl,
+    updateNodeData,
   });
 
   // Update refs every render (minimal overhead - just assignment)
   depsRef.current = {
     element,
+    index,
     onAddElementToForm,
     availableElements,
     stepId,
@@ -152,6 +164,7 @@ function ReorderableElement({
     deleteComponent,
     setIsOpenResourcePropertiesPanel,
     setAnchorEl,
+    updateNodeData,
   };
 
   // Store stable references to handler functions
@@ -161,6 +174,8 @@ function ReorderableElement({
     handleMenuOpen: (event: MouseEvent<HTMLElement>) => void;
     handleMenuClose: () => void;
     handleAddFieldToForm: (fieldElement: Resource) => void;
+    handleMoveUp: (event: React.MouseEvent<HTMLElement>) => void;
+    handleMoveDown: (event: React.MouseEvent<HTMLElement>) => void;
   } | null>(null);
 
   // Create handlers only once using lazy initialization - reads ALL deps from ref at call time
@@ -212,11 +227,78 @@ function ReorderableElement({
       }
       deps.setAnchorEl(null);
     },
+
+    handleMoveUp: (event: React.MouseEvent<HTMLElement>): void => {
+      event.stopPropagation();
+      const deps = depsRef.current;
+      if (!deps.stepId || deps.index <= 0) return;
+
+      deps.updateNodeData(deps.stepId, (node: Node) => {
+        const components = [...((node.data as StepData)?.components ?? [])];
+
+        // Check if the element is a top-level component
+        const topIdx = components.findIndex((c: Element) => c.id === deps.element.id);
+        if (topIdx > 0) {
+          const result = [...components];
+          [result[topIdx - 1], result[topIdx]] = [result[topIdx], result[topIdx - 1]];
+          return {components: result};
+        }
+
+        // Otherwise search nested containers — only mutate the one that holds the element
+        return {
+          components: components.map((c: Element) => {
+            if (!c.components) return c;
+            const childIdx = c.components.findIndex((child: Element) => child.id === deps.element.id);
+            if (childIdx <= 0) return c; // not found or already first
+            const result = [...c.components];
+            [result[childIdx - 1], result[childIdx]] = [result[childIdx], result[childIdx - 1]];
+            return {...c, components: result};
+          }),
+        };
+      });
+    },
+
+    handleMoveDown: (event: React.MouseEvent<HTMLElement>): void => {
+      event.stopPropagation();
+      const deps = depsRef.current;
+      if (!deps.stepId) return;
+
+      deps.updateNodeData(deps.stepId, (node: Node) => {
+        const components = [...((node.data as StepData)?.components ?? [])];
+
+        // Check if the element is a top-level component
+        const topIdx = components.findIndex((c: Element) => c.id === deps.element.id);
+        if (topIdx >= 0 && topIdx < components.length - 1) {
+          const result = [...components];
+          [result[topIdx], result[topIdx + 1]] = [result[topIdx + 1], result[topIdx]];
+          return {components: result};
+        }
+
+        // Otherwise search nested containers — only mutate the one that holds the element
+        return {
+          components: components.map((c: Element) => {
+            if (!c.components) return c;
+            const childIdx = c.components.findIndex((child: Element) => child.id === deps.element.id);
+            if (childIdx < 0 || childIdx >= c.components.length - 1) return c; // not found or already last
+            const result = [...c.components];
+            [result[childIdx], result[childIdx + 1]] = [result[childIdx + 1], result[childIdx]];
+            return {...c, components: result};
+          }),
+        };
+      });
+    },
   };
 
   // Extract stable handlers
-  const {handlePropertyPanelOpen, handleElementDelete, handleMenuOpen, handleMenuClose, handleAddFieldToForm} =
-    handlersRef.current;
+  const {
+    handlePropertyPanelOpen,
+    handleElementDelete,
+    handleMenuOpen,
+    handleMenuClose,
+    handleAddFieldToForm,
+    handleMoveUp,
+    handleMoveDown,
+  } = handlersRef.current;
 
   // Filter available elements to only show form-compatible types that are visible on resource panel
   const formCompatibleElements = useMemo(
@@ -245,12 +327,56 @@ function ReorderableElement({
           alignItems="center"
           className={classNames('reorderable-component', className)}
           onDoubleClick={handlePropertyPanelOpen}
+          sx={{
+            position: 'relative',
+            border: '2px dashed transparent',
+            py: 2,
+            px: 1,
+            '&:hover, &:focus, &:active': {
+              borderColor: 'primary.main',
+              bgcolor: 'action.hover',
+              '& > .flow-builder-dnd-actions': {
+                visibility: 'visible',
+              },
+            },
+            // When a nested reorderable is hovered, hide this element's toolbar
+            // so only the innermost element's toolbar is visible.
+            '&:has(.reorderable-component:hover) > .flow-builder-dnd-actions': {
+              visibility: 'hidden',
+            },
+          }}
         >
-          <Box className="flow-builder-dnd-actions">
+          <Box
+            className="flow-builder-dnd-actions"
+            sx={{
+              visibility: 'hidden',
+              position: 'absolute',
+              bgcolor: 'background.default',
+              right: 0,
+              top: 0,
+              height: 32,
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 0,
+              borderBottomLeftRadius: 4,
+              zIndex: 10,
+              pointerEvents: 'none',
+              '& svg': {pointerEvents: 'auto'},
+            }}
+          >
             {!hideDrag && (
-              <Handle label="Drag" cursor="grab" ref={handleRef}>
-                <GripVertical size={16} />
-              </Handle>
+              <>
+                <Handle label="Drag" cursor="grab" ref={handleRef}>
+                  <GripVertical size={16} />
+                </Handle>
+                <Handle label="Move up" onClick={handleMoveUp}>
+                  <ChevronUpIcon size={16} />
+                </Handle>
+                <Handle label="Move down" onClick={handleMoveDown}>
+                  <ChevronDownIcon size={16} />
+                </Handle>
+              </>
             )}
             {!hideEdit && (
               <Handle label="Edit" onClick={handlePropertyPanelOpen}>
@@ -265,14 +391,21 @@ function ReorderableElement({
             )}
             {!hideDelete && (
               <Handle label="Delete" onClick={handleElementDelete}>
-                <Trash2Icon size={16} color="red" />
+                <TrashIcon size={16} color="red" />
               </Handle>
             )}
           </Box>
           <Box
-            className="flow-builder-step-content-form-field-content"
+            data-testid="element-content"
             onClick={handlePropertyPanelOpen}
-            sx={{...slotProps?.ContentContainer?.sx}}
+            sx={{
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
+              '& .adapter': {position: 'relative'},
+              ...slotProps?.ContentContainer?.sx,
+            }}
           >
             <ElementFactory
               stepId={stepId ?? ''}

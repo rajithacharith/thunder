@@ -38,12 +38,9 @@ export type ButtonExtendedPropertiesPropsInterface = CommonResourcePropertiesPro
 function ButtonExtendedProperties({resource, onChange}: ButtonExtendedPropertiesPropsInterface): ReactNode {
   const {t} = useTranslation();
 
-  // Use local state for immediate input feedback
-  const [eventTypeValue, setEventTypeValue] = useState(() => {
-    const element = resource as Element & {eventType?: string};
-    return element?.eventType ?? ActionEventTypes.Trigger;
-  });
+  const eventTypeValue = (resource as Element & {eventType?: string})?.eventType ?? ActionEventTypes.Trigger;
 
+  // Use local state for text inputs — provides immediate keystroke feedback while onChange is debounced
   const [startIconValue, setStartIconValue] = useState(() => {
     const element = resource as Element & {startIcon?: string};
     return element?.startIcon ?? '';
@@ -58,25 +55,18 @@ function ButtonExtendedProperties({resource, onChange}: ButtonExtendedProperties
   const [prevResource, setPrevResource] = useState(resource);
   if (resource !== prevResource) {
     setPrevResource(resource);
-    const element = resource as Element & {eventType?: string; startIcon?: string; endIcon?: string};
-    setEventTypeValue(element?.eventType ?? ActionEventTypes.Trigger);
+    const element = resource as Element & {startIcon?: string; endIcon?: string};
     setStartIconValue(element?.startIcon ?? '');
     setEndIconValue(element?.endIcon ?? '');
   }
 
-  // Handle eventType change
-  const handleEventTypeChange = (value: string): void => {
-    setEventTypeValue(value);
-    onChange('eventType', value, resource);
-  };
-
-  // Handle startIcon change - update local state immediately, propagate via onChange
+  // Handle startIcon change - update local state immediately, propagate via onChange (debounced)
   const handleStartIconChange = (value: string): void => {
     setStartIconValue(value);
     onChange('startIcon', value, resource);
   };
 
-  // Handle endIcon change - update local state immediately, propagate via onChange
+  // Handle endIcon change - update local state immediately, propagate via onChange (debounced)
   const handleEndIconChange = (value: string): void => {
     setEndIconValue(value);
     onChange('endIcon', value, resource);
@@ -91,7 +81,7 @@ function ButtonExtendedProperties({resource, onChange}: ButtonExtendedProperties
         <Select
           id="event-type-select"
           value={eventTypeValue}
-          onChange={(e) => handleEventTypeChange(e.target.value)}
+          onChange={(e) => onChange('eventType', e.target.value, resource)}
           fullWidth
           size="small"
         >

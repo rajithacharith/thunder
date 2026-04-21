@@ -65,7 +65,11 @@ function SelectAdapter({resource}: SelectAdapterPropsInterface): ReactElement {
 
   const generalMessage: ReactElement = useMemo(
     () => (
-      <Trans i18nKey="flows:core.validation.fields.input.general" values={{id: resource.id}}>
+      <Trans
+        i18nKey="flows:core.validation.fields.input.general"
+        values={{id: resource.id}}
+        components={{code: <code />}}
+      >
         Required fields are not properly configured for the input field with ID <code>{resource.id}</code>.
       </Trans>
     ),

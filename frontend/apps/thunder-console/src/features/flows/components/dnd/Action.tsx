@@ -51,7 +51,11 @@ function Action(
           border: 'none',
           transition: 'background-color 0.2s ease',
           height: '100%',
-          width: '50px',
+          width: '32px',
+          padding: '4px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         } as CSSProperties
       }
       onMouseEnter={(e) => {
