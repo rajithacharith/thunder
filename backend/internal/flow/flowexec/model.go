@@ -59,17 +59,21 @@ type EngineContext struct {
 	AuthUser          managerpkg.AuthUser
 	Assertion         string
 	ExecutionHistory  map[string]*common.NodeExecutionRecord
+
+	ChallengeTokenIn   string
+	ChallengeTokenHash string
 }
 
 // FlowStep represents the outcome of a individual flow step
 type FlowStep struct {
-	ExecutionID   string
-	StepID        string
-	Type          common.FlowStepType
-	Status        common.FlowStatus
-	Data          FlowData
-	Assertion     string
-	FailureReason string
+	ExecutionID    string
+	StepID         string
+	Type           common.FlowStepType
+	Status         common.FlowStatus
+	ChallengeToken string
+	Data           FlowData
+	Assertion      string
+	FailureReason  string
 }
 
 // FlowData holds the data returned by a flow execution step
@@ -83,23 +87,25 @@ type FlowData struct {
 
 // FlowResponse represents the flow execution API response body
 type FlowResponse struct {
-	ExecutionID   string   `json:"executionId"`
-	StepID        string   `json:"stepId,omitempty"`
-	FlowStatus    string   `json:"flowStatus"`
-	Type          string   `json:"type,omitempty"`
-	Data          FlowData `json:"data,omitempty"`
-	Assertion     string   `json:"assertion,omitempty"`
-	FailureReason string   `json:"failureReason,omitempty"`
+	ExecutionID    string   `json:"executionId"`
+	StepID         string   `json:"stepId,omitempty"`
+	FlowStatus     string   `json:"flowStatus"`
+	Type           string   `json:"type,omitempty"`
+	ChallengeToken string   `json:"challengeToken,omitempty"`
+	Data           FlowData `json:"data,omitempty"`
+	Assertion      string   `json:"assertion,omitempty"`
+	FailureReason  string   `json:"failureReason,omitempty"`
 }
 
 // FlowRequest represents the flow execution API request body
 type FlowRequest struct {
-	ApplicationID string            `json:"applicationId"`
-	FlowType      string            `json:"flowType"`
-	Verbose       bool              `json:"verbose,omitempty"`
-	ExecutionID   string            `json:"executionId"`
-	Action        string            `json:"action"`
-	Inputs        map[string]string `json:"inputs"`
+	ApplicationID  string            `json:"applicationId"`
+	FlowType       string            `json:"flowType"`
+	Verbose        bool              `json:"verbose,omitempty"`
+	ExecutionID    string            `json:"executionId"`
+	ChallengeToken string            `json:"challengeToken,omitempty"`
+	Action         string            `json:"action"`
+	Inputs         map[string]string `json:"inputs"`
 }
 
 // FlowInitContext represents the context for initiating a new flow with runtime data
@@ -158,6 +164,7 @@ type flowContextContent struct {
 	Token               *string `json:"token,omitempty"`
 	AvailableAttributes *string `json:"availableAttributes,omitempty"`
 	AuthUser            *string `json:"authUser,omitempty"`
+	ChallengeTokenHash  *string `json:"challengeTokenHash,omitempty"`
 }
 
 // encrypt marshals and encrypts the content, returning the encrypted string.
@@ -287,20 +294,27 @@ func (f *FlowContextDB) ToEngineContext(graph core.GraphInterface) (EngineContex
 		}
 	}
 
+	// Get challenge token hash from JSON content
+	challengeTokenHash := ""
+	if content.ChallengeTokenHash != nil {
+		challengeTokenHash = *content.ChallengeTokenHash
+	}
+
 	return EngineContext{
-		ExecutionID:       f.ExecutionID,
-		TraceID:           "", // TraceID is transient and set from request context
-		FlowType:          graph.GetType(),
-		AppID:             content.AppID,
-		Verbose:           content.Verbose,
-		UserInputs:        userInputs,
-		RuntimeData:       runtimeData,
-		CurrentNode:       currentNode,
-		CurrentAction:     currentAction,
-		Graph:             graph,
-		AuthenticatedUser: authenticatedUser,
-		AuthUser:          authUser,
-		ExecutionHistory:  executionHistory,
+		ExecutionID:        f.ExecutionID,
+		TraceID:            "", // TraceID is transient and set from request context
+		FlowType:           graph.GetType(),
+		AppID:              content.AppID,
+		Verbose:            content.Verbose,
+		UserInputs:         userInputs,
+		RuntimeData:        runtimeData,
+		CurrentNode:        currentNode,
+		CurrentAction:      currentAction,
+		Graph:              graph,
+		AuthenticatedUser:  authenticatedUser,
+		AuthUser:           authUser,
+		ExecutionHistory:   executionHistory,
+		ChallengeTokenHash: challengeTokenHash,
 	}, nil
 }
 
@@ -398,6 +412,12 @@ func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
 	}
 	graphID := ctx.Graph.GetID()
 
+	// Get challenge token hash
+	var challengeTokenHash *string
+	if ctx.ChallengeTokenHash != "" {
+		challengeTokenHash = &ctx.ChallengeTokenHash
+	}
+
 	content := flowContextContent{
 		AppID:               ctx.AppID,
 		Verbose:             ctx.Verbose,
@@ -415,6 +435,7 @@ func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
 		Token:               token,
 		AvailableAttributes: availableAttributes,
 		AuthUser:            authUserStr,
+		ChallengeTokenHash:  challengeTokenHash,
 	}
 
 	encryptedContext, err := content.encrypt()

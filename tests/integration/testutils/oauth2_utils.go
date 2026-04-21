@@ -128,8 +128,9 @@ func initiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state
 	return resp, nil
 }
 
-// ExecuteAuthenticationFlow executes an authentication flow and returns the flow step
-func ExecuteAuthenticationFlow(executionId string, inputs map[string]string, action string) (*FlowStep, error) {
+// ExecuteAuthenticationFlow executes an authentication flow and returns the flow step.
+func ExecuteAuthenticationFlow(executionId string, inputs map[string]string, action string,
+	challengeToken ...string) (*FlowStep, error) {
 	flowData := map[string]interface{}{
 		"executionId": executionId,
 	}
@@ -139,6 +140,9 @@ func ExecuteAuthenticationFlow(executionId string, inputs map[string]string, act
 	}
 	if action != "" {
 		flowData["action"] = action
+	}
+	if len(challengeToken) > 0 && challengeToken[0] != "" {
+		flowData["challengeToken"] = challengeToken[0]
 	}
 
 	flowJSON, err := json.Marshal(flowData)
@@ -392,7 +396,7 @@ func ValidateOAuth2ErrorRedirect(location string, expectedError string,
 
 // ObtainAccessTokenWithPassword performs the complete OAuth authorization code flow with password
 // authentication and returns a TokenResponse with the access token and expiry information.
-// clientSecret is optional and can be provided for confidential clients 
+// clientSecret is optional and can be provided for confidential clients
 // and use client_secret_post authentication in the token request.
 func ObtainAccessTokenWithPassword(clientID, redirectURI, scope, username, password string,
 	usePKCE bool, optionalParams ...string) (*TokenResponse, error) {
@@ -443,16 +447,16 @@ func ObtainAccessTokenWithPassword(clientID, redirectURI, scope, username, passw
 	}
 
 	// Step 3: Execute initial authentication flow step (to get to the login prompt)
-	_, err = ExecuteAuthenticationFlow(executionId, nil, "")
+	initialStep, err := ExecuteAuthenticationFlow(executionId, nil, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute initial authentication flow: %w", err)
 	}
 
-	// Step 4: Execute authentication flow with credentials
+	// Step 4: Execute authentication flow with credentials, forwarding the challenge token
 	flowStep, err := ExecuteAuthenticationFlow(executionId, map[string]string{
 		"username": username,
 		"password": password,
-	}, "action_001")
+	}, "action_001", initialStep.ChallengeToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute authentication flow: %w", err)
 	}

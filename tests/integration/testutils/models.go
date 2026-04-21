@@ -239,12 +239,13 @@ type FlowAction struct {
 
 // FlowStep represents a single step in a flow execution
 type FlowStep struct {
-	ExecutionID   string    `json:"executionId"`
-	FlowStatus    string    `json:"flowStatus"`
-	Type          string    `json:"type"`
-	Data          *FlowData `json:"data,omitempty"`
-	Assertion     string    `json:"assertion,omitempty"`
-	FailureReason string    `json:"failureReason,omitempty"`
+	ExecutionID    string    `json:"executionId"`
+	FlowStatus     string    `json:"flowStatus"`
+	Type           string    `json:"type"`
+	Data           *FlowData `json:"data,omitempty"`
+	Assertion      string    `json:"assertion,omitempty"`
+	FailureReason  string    `json:"failureReason,omitempty"`
+	ChallengeToken string    `json:"challengeToken,omitempty"`
 }
 
 // Flow represents a flow definition

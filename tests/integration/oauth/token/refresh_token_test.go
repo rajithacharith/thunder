@@ -308,14 +308,14 @@ func (ts *RefreshTokenTestSuite) obtainTokensViaAuthCodeFlow(
 	ts.Require().NoError(err, "Failed to extract auth data")
 
 	// Step 2: Execute authentication flow.
-	_, err = testutils.ExecuteAuthenticationFlow(executionId, nil, "")
+	initialStep, err := testutils.ExecuteAuthenticationFlow(executionId, nil, "")
 	ts.Require().NoError(err, "Failed to initiate authentication flow")
 
 	flowStep, err := testutils.ExecuteAuthenticationFlow(executionId,
 		map[string]string{
 			"username": refreshTokenTestUsername,
 			"password": refreshTokenTestPassword,
-		}, "action_001")
+		}, "action_001", initialStep.ChallengeToken)
 	ts.Require().NoError(err, "Failed to execute authentication flow")
 	ts.Require().Equal("COMPLETE", flowStep.FlowStatus,
 		"Authentication flow should complete")
