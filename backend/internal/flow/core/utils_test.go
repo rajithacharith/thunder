@@ -158,6 +158,55 @@ func (s *UtilsTestSuite) TestResolvePlaceholderUserIDNotFromUserInputs() {
 	s.Equal("{{ context.userId }}", result, "userId should NOT be resolved from UserInputs")
 }
 
+func (s *UtilsTestSuite) TestResolvePlaceholderOUIDFromAuthenticatedUser() {
+	ctx := &NodeContext{
+		RuntimeData: map[string]string{},
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			OUID: "ou-123",
+		},
+	}
+
+	result := ResolvePlaceholder(ctx, "{{ context.ouId }}")
+	s.Equal("ou-123", result)
+}
+
+func (s *UtilsTestSuite) TestResolvePlaceholderOUIDFromRuntimeData() {
+	ctx := &NodeContext{
+		RuntimeData: map[string]string{"ouId": "runtime-ou-456"},
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			OUID: "",
+		},
+	}
+
+	result := ResolvePlaceholder(ctx, "{{ context.ouId }}")
+	s.Equal("runtime-ou-456", result)
+}
+
+func (s *UtilsTestSuite) TestResolvePlaceholderOUIDAuthenticatedUserTakesPrecedence() {
+	ctx := &NodeContext{
+		RuntimeData: map[string]string{"ouId": "runtime-ou-id"},
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			OUID: "auth-ou-id",
+		},
+	}
+
+	result := ResolvePlaceholder(ctx, "{{ context.ouId }}")
+	s.Equal("auth-ou-id", result, "AuthenticatedUser.OUID should take precedence over RuntimeData")
+}
+
+func (s *UtilsTestSuite) TestResolvePlaceholderOUIDNotFromUserInputs() {
+	ctx := &NodeContext{
+		UserInputs:  map[string]string{"ouId": "input-ou-id"},
+		RuntimeData: map[string]string{},
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			OUID: "",
+		},
+	}
+
+	result := ResolvePlaceholder(ctx, "{{ context.ouId }}")
+	s.Equal("{{ context.ouId }}", result, "ouId should NOT be resolved from UserInputs")
+}
+
 func (s *UtilsTestSuite) TestResolvePlaceholderKeyNotFound() {
 	ctx := &NodeContext{
 		RuntimeData: map[string]string{"existing": "value"},
