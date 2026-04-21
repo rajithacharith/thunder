@@ -20,13 +20,11 @@ package manager
 
 import (
 	"encoding/json"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
 
 	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
-	"github.com/asgardeo/thunder/internal/system/config"
 )
 
 type ModelTestSuite struct {
@@ -34,18 +32,6 @@ type ModelTestSuite struct {
 }
 
 func TestModelTestSuite(t *testing.T) {
-	testConfig := &config.Config{
-		Crypto: config.CryptoConfig{
-			Encryption: config.EncryptionConfig{
-				Key: strings.Repeat("11", 32),
-			},
-		},
-	}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/test/thunder/home", testConfig)
-	if err != nil {
-		t.Fatalf("Failed to initialize Thunder runtime: %v", err)
-	}
 	suite.Run(t, new(ModelTestSuite))
 }
 
@@ -65,9 +51,6 @@ func (s *ModelTestSuite) TestAuthUserMarshalUnmarshal() {
 	// Marshal
 	data, err := json.Marshal(&authUser)
 	s.NoError(err)
-
-	// Token must not appear in plaintext
-	s.False(strings.Contains(string(data), "secret-token"), "token must be encrypted in JSON")
 
 	// Unmarshal into a new AuthUser
 	var restored AuthUser

@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 
 	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
-	"github.com/asgardeo/thunder/internal/system/crypto/encrypt"
 )
 
 type providerKey string
@@ -93,10 +92,8 @@ type providerDataJSON struct {
 	IsAttributeValuesIncluded bool                                `json:"isAttributeValuesIncluded"`
 }
 
-// MarshalJSON implements json.Marshaler. Tokens are encrypted before serialization.
+// MarshalJSON implements json.Marshaler.
 func (a *AuthUser) MarshalJSON() ([]byte, error) {
-	encryptionService := encrypt.GetEncryptionService()
-
 	proxy := authUserJSON{
 		UserID:            a.userID,
 		UserType:          a.userType,
@@ -105,17 +102,8 @@ func (a *AuthUser) MarshalJSON() ([]byte, error) {
 	}
 
 	for p, data := range a.providersAuthData {
-		encryptedToken := ""
-		if data.token != "" {
-			var err error
-			// TODO: remove once the improvement to encrypt the complete context is implemented
-			encryptedToken, err = encryptionService.EncryptString(data.token)
-			if err != nil {
-				return nil, err
-			}
-		}
 		proxy.ProvidersAuthData[string(p)] = providerDataJSON{
-			Token:                     encryptedToken,
+			Token:                     data.token,
 			Attributes:                data.attributes,
 			IsAttributeValuesIncluded: data.isAttributeValuesIncluded,
 		}
@@ -124,14 +112,12 @@ func (a *AuthUser) MarshalJSON() ([]byte, error) {
 	return json.Marshal(proxy)
 }
 
-// UnmarshalJSON implements json.Unmarshaler. Tokens are decrypted after deserialization.
+// UnmarshalJSON implements json.Unmarshaler.
 func (a *AuthUser) UnmarshalJSON(b []byte) error {
 	var proxy authUserJSON
 	if err := json.Unmarshal(b, &proxy); err != nil {
 		return err
 	}
-
-	encryptionService := encrypt.GetEncryptionService()
 
 	a.userID = proxy.UserID
 	a.userType = proxy.UserType
@@ -140,16 +126,8 @@ func (a *AuthUser) UnmarshalJSON(b []byte) error {
 	a.providersAuthData = make(map[providerKey]providerData, len(proxy.ProvidersAuthData))
 
 	for k, v := range proxy.ProvidersAuthData {
-		decryptedToken := ""
-		if v.Token != "" {
-			var err error
-			decryptedToken, err = encryptionService.DecryptString(v.Token)
-			if err != nil {
-				return err
-			}
-		}
 		a.providersAuthData[providerKey(k)] = providerData{
-			token:                     decryptedToken,
+			token:                     v.Token,
 			attributes:                v.Attributes,
 			isAttributeValuesIncluded: v.IsAttributeValuesIncluded,
 		}
