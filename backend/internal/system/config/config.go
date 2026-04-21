@@ -205,11 +205,18 @@ type DCRConfig struct {
 	Insecure bool `yaml:"insecure" json:"insecure"`
 }
 
+// PARConfig holds the Pushed Authorization Request (RFC 9126) configuration.
+type PARConfig struct {
+	RequirePAR bool  `yaml:"require_par" json:"require_par"`
+	ExpiresIn  int64 `yaml:"expires_in" json:"expires_in"`
+}
+
 // OAuthConfig holds the OAuth configuration details.
 type OAuthConfig struct {
 	RefreshToken      RefreshTokenConfig      `yaml:"refresh_token" json:"refresh_token"`
 	AuthorizationCode AuthorizationCodeConfig `yaml:"authorization_code" json:"authorization_code"`
 	DCR               DCRConfig               `yaml:"dcr" json:"dcr"`
+	PAR               PARConfig               `yaml:"par" json:"par"`
 }
 
 // FlowConfig holds the configuration details for the flow service.

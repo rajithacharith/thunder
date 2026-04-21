@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package token
+package par
 
 import (
 	"context"
@@ -26,36 +26,44 @@ import (
 	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/clientauth"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/granthandlers"
-	"github.com/asgardeo/thunder/internal/oauth/scope"
+	"github.com/asgardeo/thunder/internal/resource"
+	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
-	"github.com/asgardeo/thunder/internal/system/observability"
-	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
-// Initialize initializes the token handler and registers its routes.
+// Initialize initializes the PAR handler and registers its routes.
+// Returns the PARServiceInterface so the authorization endpoint can resolve request_uri parameters.
 func Initialize(
 	mux *http.ServeMux,
-	jwtService jwt.JWTServiceInterface,
 	appService application.ApplicationServiceInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
-	grantHandlerProvider granthandlers.GrantHandlerProviderInterface,
-	scopeValidator scope.ScopeValidatorInterface,
-	observabilitySvc observability.ObservabilityServiceInterface,
+	jwtService jwt.JWTServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
-	transactioner transaction.Transactioner,
-) TokenHandlerInterface {
-	tokenSvc := newTokenService(grantHandlerProvider, scopeValidator, observabilitySvc, transactioner)
-	tokenHandler := newTokenHandler(tokenSvc, observabilitySvc)
-	registerRoutes(mux, tokenHandler, appService, authnProvider, jwtService, discoveryService)
-	return tokenHandler
+	resourceService resource.ResourceServiceInterface,
+) PARServiceInterface {
+	store := initializePARStore()
+	parSvc := newPARService(store, resourceService)
+	handler := newPARHandler(parSvc)
+	registerRoutes(mux, handler, appService, authnProvider, jwtService, discoveryService)
+	return parSvc
 }
 
-// registerRoutes registers the routes for the TokenService.
+// initializePARStore selects the PAR store implementation based on the configured runtime DB type.
+func initializePARStore() parStoreInterface {
+	deploymentID := config.GetThunderRuntime().Config.Server.Identifier
+
+	if config.GetThunderRuntime().Config.Database.Runtime.Type == provider.DataSourceTypeRedis {
+		return newRedisPARRequestStore(provider.GetRedisProvider(), deploymentID)
+	}
+	return newPARRequestStore(deploymentID)
+}
+
+// registerRoutes registers the PAR endpoint route with client authentication middleware.
 func registerRoutes(
 	mux *http.ServeMux,
-	tokenHandler TokenHandlerInterface,
+	handler parHandlerInterface,
 	appService application.ApplicationServiceInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	jwtService jwt.JWTServiceInterface,
@@ -67,15 +75,16 @@ func registerRoutes(
 		AllowCredentials: true,
 	}
 
-	endpointURL := discoveryService.GetOAuth2AuthorizationServerMetadata(context.Background()).TokenEndpoint
+	metadata := discoveryService.GetOAuth2AuthorizationServerMetadata(context.Background())
+	endpointURL := metadata.PushedAuthorizationRequestEndpoint
 	clientAuthMiddleware := clientauth.ClientAuthMiddleware(appService, authnProvider, jwtService, endpointURL)
-	handler := clientAuthMiddleware(http.HandlerFunc(tokenHandler.HandleTokenRequest))
+	wrappedHandler := clientAuthMiddleware(http.HandlerFunc(handler.HandlePARRequest))
 
-	pattern, wrappedHandler := middleware.WithCORS(
-		"POST /oauth2/token",
-		handler.ServeHTTP,
+	pattern, corsHandler := middleware.WithCORS(
+		"POST /oauth2/par",
+		wrappedHandler.ServeHTTP,
 		corsOpts,
 	)
 
-	mux.HandleFunc(pattern, wrappedHandler)
+	mux.HandleFunc(pattern, corsHandler)
 }

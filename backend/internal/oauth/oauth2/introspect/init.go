@@ -19,6 +19,7 @@
 package introspect
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/application"
@@ -58,7 +59,8 @@ func registerRoutes(
 		AllowCredentials: true,
 	}
 
-	clientAuthMiddleware := clientauth.ClientAuthMiddleware(appService, authnProvider, jwtService, discoveryService)
+	endpointURL := discoveryService.GetOAuth2AuthorizationServerMetadata(context.Background()).IntrospectionEndpoint
+	clientAuthMiddleware := clientauth.ClientAuthMiddleware(appService, authnProvider, jwtService, endpointURL)
 	handler := clientAuthMiddleware(http.HandlerFunc(introspectHandler.HandleIntrospect))
 
 	pattern, wrappedHandler := middleware.WithCORS(

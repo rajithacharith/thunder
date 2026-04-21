@@ -83,6 +83,45 @@ func ResolveResourceServers(
 	return resolved, nil
 }
 
+// ResolveAndDownscope resolves each resource identifier to its registered Resource Server and
+// returns the subset of requestedScopes that are defined as permissions on at least one resolved
+// RS (RFC 6749 §3.3). Unknown identifiers surface as invalid_target (RFC 8707 §2.2); scopes not
+// defined on any RS are silently dropped. The downscoped slice preserves the order of
+// requestedScopes. When resources is empty or requestedScopes is empty, scopes are returned
+// unchanged.
+func ResolveAndDownscope(
+	ctx context.Context,
+	resourceService resource.ResourceServiceInterface,
+	resources []string,
+	requestedScopes []string,
+) ([]*resource.ResourceServer, []string, *model.ErrorResponse) {
+	resolvedRSes, errResp := ResolveResourceServers(ctx, resourceService, resources)
+	if errResp != nil {
+		return nil, nil, errResp
+	}
+	if len(resolvedRSes) == 0 || len(requestedScopes) == 0 {
+		return resolvedRSes, requestedScopes, nil
+	}
+	rsValidScopes, errResp := ComputeRSValidScopes(ctx, resourceService, resolvedRSes, requestedScopes)
+	if errResp != nil {
+		return nil, nil, errResp
+	}
+	allowed := make(map[string]struct{}, len(requestedScopes))
+	for _, scopes := range rsValidScopes {
+		for _, s := range scopes {
+			allowed[s] = struct{}{}
+		}
+	}
+	downscoped := make([]string, 0, len(requestedScopes))
+	for _, s := range requestedScopes {
+		if _, ok := allowed[s]; ok {
+			downscoped = append(downscoped, s)
+			delete(allowed, s)
+		}
+	}
+	return resolvedRSes, downscoped, nil
+}
+
 // ComputeRSValidScopes returns, for each resolved Resource Server, the subset of requested
 // scopes that are defined as permissions on that RS. Scopes not defined on any RS are absent
 // from the union of the per-RS slices (downscoping per RFC 6749 §3.3).

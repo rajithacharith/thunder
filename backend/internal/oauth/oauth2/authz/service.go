@@ -34,6 +34,8 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/par"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/resourceindicators"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/resource"
@@ -61,6 +63,7 @@ type authorizeService struct {
 	authZValidator  AuthorizationValidatorInterface
 	authCodeStore   AuthorizationCodeStoreInterface
 	authReqStore    authorizationRequestStoreInterface
+	parService      par.PARServiceInterface
 	jwtService      jwt.JWTServiceInterface
 	flowExecService flowexec.FlowExecServiceInterface
 	transactioner   transaction.Transactioner
@@ -75,6 +78,7 @@ func newAuthorizeService(
 	flowExecService flowexec.FlowExecServiceInterface,
 	authCodeStore AuthorizationCodeStoreInterface,
 	authReqStore authorizationRequestStoreInterface,
+	parService par.PARServiceInterface,
 	transactioner transaction.Transactioner,
 ) AuthorizeServiceInterface {
 	return &authorizeService{
@@ -83,6 +87,7 @@ func newAuthorizeService(
 		authZValidator:  newAuthorizationValidator(),
 		authCodeStore:   authCodeStore,
 		authReqStore:    authReqStore,
+		parService:      parService,
 		jwtService:      jwtService,
 		flowExecService: flowExecService,
 		transactioner:   transactioner,
@@ -128,26 +133,8 @@ func (as *authorizeService) GetAuthorizationCodeDetails(
 // Returns the query params needed to redirect to the login page, or a structured authorization error.
 func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Context, msg *OAuthMessage) (
 	*AuthorizationInitResult, *AuthorizationError) {
-	// Extract required parameters.
 	clientID := msg.RequestQueryParams[oauth2const.RequestParamClientID]
-	redirectURI := msg.RequestQueryParams[oauth2const.RequestParamRedirectURI]
-	scope := msg.RequestQueryParams[oauth2const.RequestParamScope]
-	state := msg.RequestQueryParams[oauth2const.RequestParamState]
-	responseType := msg.RequestQueryParams[oauth2const.RequestParamResponseType]
-
-	// Extract PKCE parameters.
-	codeChallenge := msg.RequestQueryParams[oauth2const.RequestParamCodeChallenge]
-	codeChallengeMethod := msg.RequestQueryParams[oauth2const.RequestParamCodeChallengeMethod]
-
-	resources := msg.Resources
-
-	// Extract claims parameter.
-	claimsParam := msg.RequestQueryParams[oauth2const.RequestParamClaims]
-
-	// Extract claims_locales parameter.
-	claimsLocales := msg.RequestQueryParams[oauth2const.RequestParamClaimsLocales]
-
-	nonce := msg.RequestQueryParams[oauth2const.RequestParamNonce]
+	requestURI := msg.RequestQueryParams[oauth2const.RequestParamRequestURI]
 
 	if clientID == "" {
 		return nil, &AuthorizationError{
@@ -179,6 +166,68 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 		}
 	}
 
+	// If request_uri is present, resolve the pushed authorization request.
+	if requestURI != "" {
+		return as.handlePARAuthorizationRequest(ctx, requestURI, clientID, app)
+	}
+
+	// Enforce PAR requirement: if PAR is required (per-client or global), reject requests without request_uri.
+	if app.RequiresPAR() {
+		return nil, &AuthorizationError{
+			Code:    oauth2const.ErrorInvalidRequest,
+			Message: "Pushed authorization request is required for this client",
+		}
+	}
+
+	return as.handleStandardAuthorizationRequest(ctx, msg, app)
+}
+
+// handlePARAuthorizationRequest resolves a request_uri from a PAR and continues the authorization flow.
+func (as *authorizeService) handlePARAuthorizationRequest(
+	ctx context.Context, requestURI string, clientID string, app *appmodel.OAuthAppConfigProcessedDTO,
+) (*AuthorizationInitResult, *AuthorizationError) {
+	oauthParams, err := as.parService.ResolvePushedAuthorizationRequest(ctx, requestURI, clientID)
+	if err != nil {
+		as.logger.Debug("Failed to resolve PAR request", log.Error(err))
+		if errors.Is(err, par.ErrPARResolutionFailed) {
+			return nil, &AuthorizationError{
+				Code:    oauth2const.ErrorServerError,
+				Message: "Failed to process authorization request",
+			}
+		}
+		return nil, &AuthorizationError{
+			Code:    oauth2const.ErrorInvalidRequest,
+			Message: "Invalid, expired, or already used request_uri",
+		}
+	}
+
+	return as.initiateFlowAndStoreRequest(ctx, oauthParams, app)
+}
+
+// handleStandardAuthorizationRequest processes a standard authorization request (without PAR).
+func (as *authorizeService) handleStandardAuthorizationRequest(
+	ctx context.Context, msg *OAuthMessage, app *appmodel.OAuthAppConfigProcessedDTO,
+) (*AuthorizationInitResult, *AuthorizationError) {
+	// Extract required parameters.
+	redirectURI := msg.RequestQueryParams[oauth2const.RequestParamRedirectURI]
+	scope := msg.RequestQueryParams[oauth2const.RequestParamScope]
+	state := msg.RequestQueryParams[oauth2const.RequestParamState]
+	responseType := msg.RequestQueryParams[oauth2const.RequestParamResponseType]
+
+	// Extract PKCE parameters.
+	codeChallenge := msg.RequestQueryParams[oauth2const.RequestParamCodeChallenge]
+	codeChallengeMethod := msg.RequestQueryParams[oauth2const.RequestParamCodeChallengeMethod]
+
+	resources := msg.Resources
+
+	// Extract claims parameter.
+	claimsParam := msg.RequestQueryParams[oauth2const.RequestParamClaims]
+
+	// Extract claims_locales parameter.
+	claimsLocales := msg.RequestQueryParams[oauth2const.RequestParamClaimsLocales]
+
+	nonce := msg.RequestQueryParams[oauth2const.RequestParamNonce]
+
 	// Parse the claims parameter if present.
 	var claimsRequest *oauth2model.ClaimsRequest
 	if claimsParam != "" {
@@ -208,45 +257,27 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 		return nil, authErr
 	}
 
-	// Resolve each resource identifier to its registered Resource Server; unknown identifiers
-	// cause a 400 invalid_target.
-	resolvedRSes := make([]*resource.ResourceServer, 0, len(resources))
-	for _, identifier := range resources {
-		rs, svcErr := as.resourceService.GetResourceServerByIdentifier(ctx, identifier)
-		if svcErr != nil {
-			return nil, &AuthorizationError{
-				Code:              oauth2const.ErrorInvalidTarget,
-				Message:           "The resource parameter does not match any registered resource server",
-				SendErrorToClient: true,
-				ClientRedirectURI: redirectURI,
-				State:             state,
-			}
-		}
-		resolvedRSes = append(resolvedRSes, rs)
-	}
-
 	oidcScopes, nonOidcScopes := oauth2utils.SeparateOIDCAndNonOIDCScopes(scope, app.ScopeClaims)
 
-	// Downscope non-OIDC scopes against the union of permissions defined on the requested
-	// Resource Servers. Scopes not defined on any RS are silently dropped.
-	if len(resolvedRSes) > 0 && len(nonOidcScopes) > 0 {
-		downscoped, svcErr := as.downscopeAgainstResourceServers(ctx, resolvedRSes, nonOidcScopes)
-		if svcErr != nil {
-			return nil, &AuthorizationError{
-				Code:              oauth2const.ErrorServerError,
-				Message:           "Failed to validate permissions",
-				SendErrorToClient: true,
-				ClientRedirectURI: redirectURI,
-				State:             state,
-			}
+	// Resolve resource identifiers to Resource Servers and downscope non-OIDC scopes against
+	// the union of permissions defined on those Resource Servers. Unknown identifiers cause
+	// invalid_target; scopes not defined on any RS are silently dropped.
+	_, nonOidcScopes, errResp := resourceindicators.ResolveAndDownscope(
+		ctx, as.resourceService, resources, nonOidcScopes)
+	if errResp != nil {
+		return nil, &AuthorizationError{
+			Code:              errResp.Error,
+			Message:           errResp.ErrorDescription,
+			SendErrorToClient: true,
+			ClientRedirectURI: redirectURI,
+			State:             state,
 		}
-		nonOidcScopes = downscoped
 	}
 
 	// Construct authorization request context.
-	oauthParams := oauth2model.OAuthParameters{
+	oauthParams := &oauth2model.OAuthParameters{
 		State:               state,
-		ClientID:            clientID,
+		ClientID:            app.ClientID,
 		RedirectURI:         redirectURI,
 		ResponseType:        responseType,
 		StandardScopes:      oidcScopes,
@@ -264,7 +295,7 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 	if redirectURI == "" {
 		if len(app.RedirectURIs) == 0 {
 			as.logger.Error("OAuth application has no registered redirect URIs",
-				log.String("client_id", clientID))
+				log.String("client_id", app.ClientID))
 			return nil, &AuthorizationError{
 				Code:    oauth2const.ErrorServerError,
 				Message: "Failed to process authorization request",
@@ -273,15 +304,24 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 		oauthParams.RedirectURI = app.RedirectURIs[0]
 	}
 
-	essentialAttributes, optionalAttributes := getRequiredAttributes(oidcScopes, claimsRequest, responseType, app)
+	return as.initiateFlowAndStoreRequest(ctx, oauthParams, app)
+}
+
+// initiateFlowAndStoreRequest initiates the authentication flow and stores the authorization request context.
+// This is the common path shared by both standard and PAR-based authorization requests.
+func (as *authorizeService) initiateFlowAndStoreRequest(
+	ctx context.Context, oauthParams *oauth2model.OAuthParameters, app *appmodel.OAuthAppConfigProcessedDTO,
+) (*AuthorizationInitResult, *AuthorizationError) {
+	essentialAttributes, optionalAttributes := getRequiredAttributes(
+		oauthParams.StandardScopes, oauthParams.ClaimsRequest, oauthParams.ResponseType, app)
 
 	// Initiate flow with OAuth context.
 	runtimeData := map[string]string{
-		flowcm.RuntimeKeyClientID:                      clientID,
-		flowcm.RuntimeKeyRequestedPermissions:          utils.StringifyStringArray(nonOidcScopes, " "),
+		flowcm.RuntimeKeyClientID:                      oauthParams.ClientID,
+		flowcm.RuntimeKeyRequestedPermissions:          utils.StringifyStringArray(oauthParams.PermissionScopes, " "),
 		flowcm.RuntimeKeyRequiredEssentialAttributes:   essentialAttributes,
 		flowcm.RuntimeKeyRequiredOptionalAttributes:    optionalAttributes,
-		flowcm.RuntimeKeyRequiredLocales:               claimsLocales,
+		flowcm.RuntimeKeyRequiredLocales:               oauthParams.ClaimsLocales,
 		flowcm.RuntimeKeyUserAttributesCacheTTLSeconds: fmt.Sprintf("%d", resolveUserAttributesCacheTTL(app)),
 	}
 	flowInitCtx := &flowexec.FlowInitContext{
@@ -299,12 +339,12 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 			Message:           "Failed to process authorization request",
 			SendErrorToClient: true,
 			ClientRedirectURI: oauthParams.RedirectURI,
-			State:             state,
+			State:             oauthParams.State,
 		}
 	}
 
 	authRequestCtx := authRequestContext{
-		OAuthParameters: oauthParams,
+		OAuthParameters: *oauthParams,
 	}
 
 	// Store authorization request context in the store.
@@ -316,7 +356,7 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 			Message:           "Failed to process authorization request",
 			SendErrorToClient: true,
 			ClientRedirectURI: oauthParams.RedirectURI,
-			State:             state,
+			State:             oauthParams.State,
 		}
 	}
 
@@ -336,7 +376,7 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 			Message:           "Failed to process authorization request",
 			SendErrorToClient: true,
 			ClientRedirectURI: oauthParams.RedirectURI,
-			State:             state,
+			State:             oauthParams.State,
 		}
 	}
 	if parsedRedirectURI.Scheme == "http" {
@@ -657,41 +697,6 @@ func createAuthorizationCode(
 		ClaimsLocales:       authRequestCtx.OAuthParameters.ClaimsLocales,
 		Nonce:               authRequestCtx.OAuthParameters.Nonce,
 	}, nil
-}
-
-// downscopeAgainstResourceServers returns the subset of requested non-OIDC scopes that are
-// defined as permissions on at least one of the supplied Resource Servers. Scopes not defined
-// on any RS are silently dropped.
-func (as *authorizeService) downscopeAgainstResourceServers(
-	ctx context.Context, resolvedRSes []*resource.ResourceServer, requestedScopes []string,
-) ([]string, error) {
-	if len(requestedScopes) == 0 || len(resolvedRSes) == 0 {
-		return requestedScopes, nil
-	}
-	allowed := make(map[string]struct{}, len(requestedScopes))
-	for _, rs := range resolvedRSes {
-		invalid, valErr := as.resourceService.ValidatePermissions(ctx, rs.ID, requestedScopes)
-		if valErr != nil {
-			return nil, errors.New("failed to validate permissions")
-		}
-		invalidSet := make(map[string]struct{}, len(invalid))
-		for _, p := range invalid {
-			invalidSet[p] = struct{}{}
-		}
-		for _, s := range requestedScopes {
-			if _, isInvalid := invalidSet[s]; !isInvalid {
-				allowed[s] = struct{}{}
-			}
-		}
-	}
-	out := make([]string, 0, len(allowed))
-	for _, s := range requestedScopes {
-		if _, ok := allowed[s]; ok {
-			out = append(out, s)
-			delete(allowed, s)
-		}
-	}
-	return out, nil
 }
 
 // getRequiredAttributes determines the essential and optional user attributes required based on OIDC scopes,

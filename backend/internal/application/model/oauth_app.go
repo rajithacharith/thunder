@@ -27,6 +27,7 @@ import (
 	"slices"
 
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -57,55 +58,58 @@ type OAuthTokenConfig struct {
 
 // OAuthAppConfig represents the structure for OAuth application configuration.
 type OAuthAppConfig struct {
-	ClientID                string                              `json:"clientId"`
-	RedirectURIs            []string                            `json:"redirectUris"`
-	GrantTypes              []oauth2const.GrantType             `json:"grantTypes"`
-	ResponseTypes           []oauth2const.ResponseType          `json:"responseTypes"`
-	TokenEndpointAuthMethod oauth2const.TokenEndpointAuthMethod `json:"tokenEndpointAuthMethod"`
-	PKCERequired            bool                                `json:"pkceRequired"`
-	PublicClient            bool                                `json:"publicClient"`
-	Token                   *OAuthTokenConfig                   `json:"token,omitempty"`
-	Scopes                  []string                            `json:"scopes,omitempty"`
-	UserInfo                *UserInfoConfig                     `json:"userInfo,omitempty"`
-	ScopeClaims             map[string][]string                 `json:"scopeClaims,omitempty"`
-	Certificate             *ApplicationCertificate             `json:"certificate,omitempty"`
+	ClientID                           string                              `json:"clientId"`
+	RedirectURIs                       []string                            `json:"redirectUris"`
+	GrantTypes                         []oauth2const.GrantType             `json:"grantTypes"`
+	ResponseTypes                      []oauth2const.ResponseType          `json:"responseTypes"`
+	TokenEndpointAuthMethod            oauth2const.TokenEndpointAuthMethod `json:"tokenEndpointAuthMethod"`
+	PKCERequired                       bool                                `json:"pkceRequired"`
+	PublicClient                       bool                                `json:"publicClient"`
+	RequirePushedAuthorizationRequests bool                                `json:"requirePushedAuthorizationRequests"`
+	Token                              *OAuthTokenConfig                   `json:"token,omitempty"`
+	Scopes                             []string                            `json:"scopes,omitempty"`
+	UserInfo                           *UserInfoConfig                     `json:"userInfo,omitempty"`
+	ScopeClaims                        map[string][]string                 `json:"scopeClaims,omitempty"`
+	Certificate                        *ApplicationCertificate             `json:"certificate,omitempty"`
 }
 
 // OAuthAppConfigComplete represents the complete structure for OAuth application configuration.
 //
 //nolint:lll
 type OAuthAppConfigComplete struct {
-	ClientID                string                              `json:"clientId" yaml:"client_id"`
-	ClientSecret            string                              `json:"clientSecret,omitempty" yaml:"client_secret"`
-	RedirectURIs            []string                            `json:"redirectUris" yaml:"redirect_uris"`
-	GrantTypes              []oauth2const.GrantType             `json:"grantTypes" yaml:"grant_types"`
-	ResponseTypes           []oauth2const.ResponseType          `json:"responseTypes" yaml:"response_types"`
-	TokenEndpointAuthMethod oauth2const.TokenEndpointAuthMethod `json:"tokenEndpointAuthMethod" yaml:"token_endpoint_auth_method"`
-	PKCERequired            bool                                `json:"pkceRequired" yaml:"pkce_required"`
-	PublicClient            bool                                `json:"publicClient" yaml:"public_client"`
-	Token                   *OAuthTokenConfig                   `json:"token,omitempty" yaml:"token,omitempty"`
-	Scopes                  []string                            `json:"scopes,omitempty" yaml:"scopes,omitempty"`
-	UserInfo                *UserInfoConfig                     `json:"userInfo,omitempty" yaml:"user_info,omitempty"`
-	ScopeClaims             map[string][]string                 `json:"scopeClaims,omitempty" yaml:"scope_claims,omitempty"`
-	Certificate             *ApplicationCertificate             `json:"certificate,omitempty" jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
+	ClientID                           string                              `json:"clientId" yaml:"client_id"`
+	ClientSecret                       string                              `json:"clientSecret,omitempty" yaml:"client_secret"`
+	RedirectURIs                       []string                            `json:"redirectUris" yaml:"redirect_uris"`
+	GrantTypes                         []oauth2const.GrantType             `json:"grantTypes" yaml:"grant_types"`
+	ResponseTypes                      []oauth2const.ResponseType          `json:"responseTypes" yaml:"response_types"`
+	TokenEndpointAuthMethod            oauth2const.TokenEndpointAuthMethod `json:"tokenEndpointAuthMethod" yaml:"token_endpoint_auth_method"`
+	PKCERequired                       bool                                `json:"pkceRequired" yaml:"pkce_required"`
+	PublicClient                       bool                                `json:"publicClient" yaml:"public_client"`
+	RequirePushedAuthorizationRequests bool                                `json:"requirePushedAuthorizationRequests" yaml:"require_pushed_authorization_requests"`
+	Token                              *OAuthTokenConfig                   `json:"token,omitempty" yaml:"token,omitempty"`
+	Scopes                             []string                            `json:"scopes,omitempty" yaml:"scopes,omitempty"`
+	UserInfo                           *UserInfoConfig                     `json:"userInfo,omitempty" yaml:"user_info,omitempty"`
+	ScopeClaims                        map[string][]string                 `json:"scopeClaims,omitempty" yaml:"scope_claims,omitempty"`
+	Certificate                        *ApplicationCertificate             `json:"certificate,omitempty" jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
 }
 
 // OAuthAppConfigDTO represents the data transfer object for OAuth application configuration.
 type OAuthAppConfigDTO struct {
-	AppID                   string                              `json:"appId,omitempty" jsonschema:"The unique identifier of the OAuth application"`
-	ClientID                string                              `json:"clientId,omitempty" jsonschema:"OAuth client ID (auto-generated if not provided)"`
-	ClientSecret            string                              `json:"clientSecret,omitempty" jsonschema:"OAuth client secret (auto-generated if not provided)"`
-	RedirectURIs            []string                            `json:"redirectUris,omitempty" jsonschema:"Allowed redirect URIs. Required for Public (SPA/Mobile) and Confidential (Server) clients. Omit for M2M."`
-	GrantTypes              []oauth2const.GrantType             `json:"grantTypes,omitempty" jsonschema:"OAuth grant types. Common: [authorization_code, refresh_token] for user apps, [client_credentials] for M2M."`
-	ResponseTypes           []oauth2const.ResponseType          `json:"responseTypes,omitempty" jsonschema:"OAuth response types. Common: [code] for user apps. Omit for M2M."`
-	TokenEndpointAuthMethod oauth2const.TokenEndpointAuthMethod `json:"tokenEndpointAuthMethod,omitempty" jsonschema:"Client authentication method. Use 'none' for Public clients, 'client_secret_basic' for Confidential/M2M."`
-	PKCERequired            bool                                `json:"pkceRequired,omitempty" jsonschema:"Require PKCE for security. Recommended for all user-interactive flows."`
-	PublicClient            bool                                `json:"publicClient,omitempty" jsonschema:"Identify if client is public (cannot store secrets). Set true for SPA/Mobile."`
-	Token                   *OAuthTokenConfig                   `json:"token,omitempty" jsonschema:"Token configuration for access tokens and ID tokens"`
-	Scopes                  []string                            `json:"scopes,omitempty" jsonschema:"Allowed OAuth scopes. Add custom scopes as needed for your application."`
-	UserInfo                *UserInfoConfig                     `json:"userInfo,omitempty" jsonschema:"UserInfo endpoint configuration. Configure user attributes returned from the OIDC userinfo endpoint."`
-	ScopeClaims             map[string][]string                 `json:"scopeClaims,omitempty" jsonschema:"Scope-to-claims mapping. Maps OAuth scopes to user claims for both ID token and userinfo."`
-	Certificate             *ApplicationCertificate             `json:"certificate,omitempty" jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
+	AppID                              string                              `json:"appId,omitempty" jsonschema:"The unique identifier of the OAuth application"`
+	ClientID                           string                              `json:"clientId,omitempty" jsonschema:"OAuth client ID (auto-generated if not provided)"`
+	ClientSecret                       string                              `json:"clientSecret,omitempty" jsonschema:"OAuth client secret (auto-generated if not provided)"`
+	RedirectURIs                       []string                            `json:"redirectUris,omitempty" jsonschema:"Allowed redirect URIs. Required for Public (SPA/Mobile) and Confidential (Server) clients. Omit for M2M."`
+	GrantTypes                         []oauth2const.GrantType             `json:"grantTypes,omitempty" jsonschema:"OAuth grant types. Common: [authorization_code, refresh_token] for user apps, [client_credentials] for M2M."`
+	ResponseTypes                      []oauth2const.ResponseType          `json:"responseTypes,omitempty" jsonschema:"OAuth response types. Common: [code] for user apps. Omit for M2M."`
+	TokenEndpointAuthMethod            oauth2const.TokenEndpointAuthMethod `json:"tokenEndpointAuthMethod,omitempty" jsonschema:"Client authentication method. Use 'none' for Public clients, 'client_secret_basic' for Confidential/M2M."`
+	PKCERequired                       bool                                `json:"pkceRequired,omitempty" jsonschema:"Require PKCE for security. Recommended for all user-interactive flows."`
+	PublicClient                       bool                                `json:"publicClient,omitempty" jsonschema:"Identify if client is public (cannot store secrets). Set true for SPA/Mobile."`
+	RequirePushedAuthorizationRequests bool                                `json:"requirePushedAuthorizationRequests,omitempty" jsonschema:"Require Pushed Authorization Requests (PAR) per RFC 9126."`
+	Token                              *OAuthTokenConfig                   `json:"token,omitempty" jsonschema:"Token configuration for access tokens and ID tokens"`
+	Scopes                             []string                            `json:"scopes,omitempty" jsonschema:"Allowed OAuth scopes. Add custom scopes as needed for your application."`
+	UserInfo                           *UserInfoConfig                     `json:"userInfo,omitempty" jsonschema:"UserInfo endpoint configuration. Configure user attributes returned from the OIDC userinfo endpoint."`
+	ScopeClaims                        map[string][]string                 `json:"scopeClaims,omitempty" jsonschema:"Scope-to-claims mapping. Maps OAuth scopes to user claims for both ID token and userinfo."`
+	Certificate                        *ApplicationCertificate             `json:"certificate,omitempty" jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
 }
 
 // IsAllowedGrantType checks if the provided grant type is allowed.
@@ -130,20 +134,21 @@ func (o *OAuthAppConfigDTO) ValidateRedirectURI(redirectURI string) error {
 
 // OAuthAppConfigProcessedDTO represents the processed data transfer object for OAuth application configuration.
 type OAuthAppConfigProcessedDTO struct {
-	AppID                   string                              `yaml:"app_id,omitempty"`
-	OUID                    string                              `yaml:"ou_id,omitempty"`
-	ClientID                string                              `yaml:"client_id,omitempty"`
-	RedirectURIs            []string                            `yaml:"redirect_uris,omitempty"`
-	GrantTypes              []oauth2const.GrantType             `yaml:"grant_types,omitempty"`
-	ResponseTypes           []oauth2const.ResponseType          `yaml:"response_types,omitempty"`
-	TokenEndpointAuthMethod oauth2const.TokenEndpointAuthMethod `yaml:"token_endpoint_auth_method,omitempty"`
-	PKCERequired            bool                                `yaml:"pkce_required,omitempty"`
-	PublicClient            bool                                `yaml:"public_client,omitempty"`
-	Token                   *OAuthTokenConfig                   `yaml:"token,omitempty"`
-	Scopes                  []string                            `yaml:"scopes,omitempty"`
-	UserInfo                *UserInfoConfig                     `yaml:"user_info,omitempty"`
-	ScopeClaims             map[string][]string                 `yaml:"scope_claims,omitempty"`
-	Certificate             *ApplicationCertificate             `yaml:"certificate,omitempty"`
+	AppID                              string                              `yaml:"app_id,omitempty"`
+	OUID                               string                              `yaml:"ou_id,omitempty"`
+	ClientID                           string                              `yaml:"client_id,omitempty"`
+	RedirectURIs                       []string                            `yaml:"redirect_uris,omitempty"`
+	GrantTypes                         []oauth2const.GrantType             `yaml:"grant_types,omitempty"`
+	ResponseTypes                      []oauth2const.ResponseType          `yaml:"response_types,omitempty"`
+	TokenEndpointAuthMethod            oauth2const.TokenEndpointAuthMethod `yaml:"token_endpoint_auth_method,omitempty"`
+	PKCERequired                       bool                                `yaml:"pkce_required,omitempty"`
+	PublicClient                       bool                                `yaml:"public_client,omitempty"`
+	RequirePushedAuthorizationRequests bool                                `yaml:"require_pushed_authorization_requests,omitempty"`
+	Token                              *OAuthTokenConfig                   `yaml:"token,omitempty"`
+	Scopes                             []string                            `yaml:"scopes,omitempty"`
+	UserInfo                           *UserInfoConfig                     `yaml:"user_info,omitempty"`
+	ScopeClaims                        map[string][]string                 `yaml:"scope_claims,omitempty"`
+	Certificate                        *ApplicationCertificate             `yaml:"certificate,omitempty"`
 }
 
 // IsAllowedGrantType checks if the provided grant type is allowed.
@@ -170,6 +175,12 @@ func (o *OAuthAppConfigProcessedDTO) ValidateRedirectURI(redirectURI string) err
 // RequiresPKCE checks if PKCE is required for this application.
 func (o *OAuthAppConfigProcessedDTO) RequiresPKCE() bool {
 	return o.PKCERequired || o.PublicClient
+}
+
+// RequiresPAR checks if Pushed Authorization Requests are required for this application.
+// Returns true if either the client-level or global-level setting requires PAR.
+func (o *OAuthAppConfigProcessedDTO) RequiresPAR() bool {
+	return o.RequirePushedAuthorizationRequests || config.GetThunderRuntime().Config.OAuth.PAR.RequirePAR
 }
 
 // isAllowedGrantType checks if the provided grant type is in the allowed list.

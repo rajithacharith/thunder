@@ -37,6 +37,14 @@ packages:
       pkgname: introspect
       filename: "{{.InterfaceName}}_mock_test.go"
 
+  github.com/asgardeo/thunder/internal/oauth/oauth2/par:
+    config:
+      all: true
+      dir: internal/oauth/oauth2/par
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: par
+      filename: "{{.InterfaceName}}_mock_test.go"
+
   github.com/asgardeo/thunder/internal/oauth/oauth2/authz:
     config:
       all: true
