@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package encrypt
+package config
 
 // CryptoAlgorithm represents the supported encryption algorithms
 type CryptoAlgorithm string

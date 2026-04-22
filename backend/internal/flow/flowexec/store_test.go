@@ -32,7 +32,7 @@ import (
 	managerpkg "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/crypto/encrypt"
+	cryptoconfig "github.com/asgardeo/thunder/internal/system/crypto/config"
 
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
@@ -64,7 +64,7 @@ func TestStoreTestSuite(t *testing.T) {
 }
 
 func (s *StoreTestSuite) getContextContent(dbModel *FlowContextDB) flowContextContent {
-	err := dbModel.decrypt()
+	err := dbModel.decrypt(context.Background())
 	s.NoError(err)
 	var content flowContextContent
 	err = json.Unmarshal([]byte(dbModel.Context), &content)
@@ -278,7 +278,7 @@ func (s *StoreTestSuite) TestGetFlowContext_WithToken() {
 	s.True(content.IsAuthenticated)
 	s.NotNil(content.Token)
 
-	restoredCtx, err := result.ToEngineContext(mockGraph)
+	restoredCtx, err := result.ToEngineContext(context.Background(), mockGraph)
 	s.NoError(err)
 	s.Equal(testToken, restoredCtx.AuthenticatedUser.Token)
 
@@ -300,8 +300,9 @@ func (s *StoreTestSuite) TestGetFlowContext_WithoutToken() {
 		GraphID:         "test-graph-id",
 	})
 	s.NoError(err)
-	encryptedContext, err := encrypt.GetEncryptionService().EncryptString(string(contextJSON))
+	encryptedContextBytes, err := cryptoconfig.GetEncryptionService().Encrypt(context.Background(), contextJSON)
 	s.NoError(err)
+	encryptedContext := string(encryptedContextBytes)
 
 	results := []map[string]interface{}{
 		{
@@ -393,7 +394,7 @@ func (s *StoreTestSuite) TestStoreAndRetrieve_TokenRoundTrip() {
 	s.Equal(originalToken, *content.Token)
 
 	// Step 4: Convert to EngineContext (context already decrypted by getContextContent)
-	retrievedCtx, err := dbModel.ToEngineContext(mockGraph)
+	retrievedCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
 	s.NoError(err)
 
 	// Step 4: Verify all data is preserved correctly
@@ -473,7 +474,7 @@ func (s *StoreTestSuite) TestStoreAndRetrieve_ContextEncryptionRoundTrip() {
 	s.Equal(sensitiveRuntimeData, runtimeData["runtime_key"])
 
 	// Step 4: Convert to EngineContext and verify all data is preserved
-	retrievedCtx, err := dbModel.ToEngineContext(mockGraph)
+	retrievedCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
 	s.NoError(err)
 	s.Equal(originalCtx.ExecutionID, retrievedCtx.ExecutionID)
 	s.Equal(originalCtx.AppID, retrievedCtx.AppID)
@@ -773,7 +774,7 @@ func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
 	s.NotNil(content.AvailableAttributes)
 
 	// Verify we can deserialize it back to original
-	restoredCtx, err := result.ToEngineContext(mockGraph)
+	restoredCtx, err := result.ToEngineContext(context.Background(), mockGraph)
 	s.NoError(err)
 	s.NotNil(restoredCtx.AuthenticatedUser.AvailableAttributes)
 	s.Len(restoredCtx.AuthenticatedUser.AvailableAttributes.Attributes, 2)
@@ -819,7 +820,7 @@ func (s *StoreTestSuite) TestEngineContextRoundTrip_WithAuthUser() {
 	content := s.getContextContent(dbModel)
 	s.NotNil(content.AuthUser)
 
-	restoredCtx, err := dbModel.ToEngineContext(mockGraph)
+	restoredCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
 	s.NoError(err)
 	s.True(restoredCtx.AuthUser.IsAuthenticated())
 }

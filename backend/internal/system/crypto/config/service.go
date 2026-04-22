@@ -16,10 +16,11 @@
  * under the License.
  */
 
-// Package encrypt provides cryptographic functionality with algorithm agility.
-package encrypt
+// Package config provides cryptographic functionality with algorithm agility.
+package config
 
 import (
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -91,9 +92,26 @@ func newEncryptionService(key []byte) *EncryptionService {
 	}
 }
 
-// Encrypt encrypts the given plaintext and returns a JSON string
+// Encrypt implements ConfigCryptoProvider.Encrypt.
+// Encrypts the given plaintext bytes and returns encrypted bytes containing
+// the encrypted data with metadata.
+func (cs *EncryptionService) Encrypt(ctx context.Context, plaintext []byte) ([]byte, error) {
+	encryptedStr, err := cs.encryptInto(plaintext)
+	if err != nil {
+		return nil, err
+	}
+	return []byte(encryptedStr), nil
+}
+
+// Decrypt implements ConfigCryptoProvider.Decrypt.
+// Decrypts the given encrypted bytes and returns the original plaintext bytes.
+func (cs *EncryptionService) Decrypt(ctx context.Context, encodedData []byte) ([]byte, error) {
+	return cs.decryptFrom(string(encodedData))
+}
+
+// encryptInto encrypts the given plaintext and returns a JSON string
 // containing the encrypted data.
-func (cs *EncryptionService) Encrypt(plaintext []byte) (string, error) {
+func (cs *EncryptionService) encryptInto(plaintext []byte) (string, error) {
 	encryptionKey := cs.getDefaultEncryptionKey()
 	if len(encryptionKey) == 0 {
 		return "", errors.New("default encryption key not found")
@@ -136,9 +154,9 @@ func (cs *EncryptionService) Encrypt(plaintext []byte) (string, error) {
 	return string(jsonData), nil
 }
 
-// Decrypt decrypts the given JSON string produced by Encrypt
+// decryptFrom decrypts the given JSON string produced by encryptInto
 // and returns the original plaintext.
-func (cs *EncryptionService) Decrypt(encodedData string) ([]byte, error) {
+func (cs *EncryptionService) decryptFrom(encodedData string) ([]byte, error) {
 	// Deserialize JSON
 	var encData EncryptedData
 	if err := json.Unmarshal([]byte(encodedData), &encData); err != nil {
@@ -215,22 +233,6 @@ func (cs *EncryptionService) getKeyForDecrypt(kid string) []byte {
 	}
 
 	return nil
-}
-
-// EncryptString encrypts the given plaintext string and returns a
-// JSON string containing the encrypted data.
-func (cs *EncryptionService) EncryptString(plaintext string) (string, error) {
-	return cs.Encrypt([]byte(plaintext))
-}
-
-// DecryptString decrypts the given JSON string produced by Encrypt
-// and returns the original plaintext string.
-func (cs *EncryptionService) DecryptString(ciphertext string) (string, error) {
-	plaintext, err := cs.Decrypt(ciphertext)
-	if err != nil {
-		return "", err
-	}
-	return string(plaintext), nil
 }
 
 // getKeyID generates a unique identifier for the key.

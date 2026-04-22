@@ -267,7 +267,7 @@ func (s *flowExecService) loadContextFromStore(ctx context.Context, executionID 
 		return nil, flowCtxErr
 	}
 
-	graphID, err := dbModel.GetGraphID()
+	graphID, err := dbModel.GetGraphID(ctx)
 	if err != nil {
 		logger.Error("Failed to extract graph ID from flow context",
 			log.String(log.LoggerKeyExecutionID, executionID), log.Error(err))
@@ -281,15 +281,12 @@ func (s *flowExecService) loadContextFromStore(ctx context.Context, executionID 
 		return nil, &serviceerror.InternalServerError
 	}
 
-	engineContext, err := dbModel.ToEngineContext(graph)
+	engineContext, err := dbModel.ToEngineContext(ctx, graph)
 	if err != nil {
 		logger.Error("Failed to convert flow context from database format",
 			log.String(log.LoggerKeyExecutionID, executionID), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
-
-	// Embed the request context so downstream helpers can read it from engineContext.Context.
-	engineContext.Context = ctx
 
 	// Set application context if required
 	if err := s.setApplicationToContext(&engineContext, logger); err != nil {
@@ -574,7 +571,7 @@ func (s *flowExecService) getFlowContext(ctx context.Context, executionID string
 		return nil, &ErrorInvalidExecutionID
 	}
 
-	if decryptErr := dbModel.decrypt(); decryptErr != nil {
+	if decryptErr := dbModel.decrypt(ctx); decryptErr != nil {
 		logger.Error("Failed to decrypt flow context",
 			log.String(log.LoggerKeyExecutionID, executionID), log.Error(decryptErr))
 		return nil, &serviceerror.InternalServerError
