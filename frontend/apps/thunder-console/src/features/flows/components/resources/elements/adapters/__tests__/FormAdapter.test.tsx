@@ -139,12 +139,20 @@ describe('FormAdapter', () => {
       expect(screen.getByText('flows:core.adapters.form.placeholder')).toBeInTheDocument();
     });
 
-    it('should show placeholder when only non-FIELD components exist', () => {
+    it('should not show placeholder when non-FIELD components exist', () => {
       const components = [
         createMockElement({id: 'comp-1', category: ElementCategories.Action}),
         createMockElement({id: 'comp-2', category: ElementCategories.Display}),
       ];
       const resource = createMockElement({components});
+
+      render(<FormAdapter resource={resource} stepId="step-1" />);
+
+      expect(screen.queryByText('flows:core.adapters.form.placeholder')).not.toBeInTheDocument();
+    });
+
+    it('should show placeholder when form is empty', () => {
+      const resource = createMockElement({components: []});
 
       render(<FormAdapter resource={resource} stepId="step-1" />);
 

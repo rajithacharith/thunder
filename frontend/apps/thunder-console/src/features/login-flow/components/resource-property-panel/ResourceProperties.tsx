@@ -73,7 +73,6 @@ function ResourceProperties({
 
   const renderElementId = (): ReactElement => (
     <ResourcePropertyFactory
-      InputProps={{readOnly: true}}
       key={`${resource.id}-$id`}
       resource={resource}
       propertyKey="id"

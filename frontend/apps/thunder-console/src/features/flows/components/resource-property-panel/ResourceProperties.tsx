@@ -317,7 +317,7 @@ function ResourceProperties(): ReactElement {
           if (propertyKey === 'data') {
             // When propertyKey is exactly 'data', replace the entire data object
             updatedResource.data = newValue as StepData;
-          } else if (topLevelEditableProps.includes(propertyKey)) {
+          } else if (propertyKey === 'id' || topLevelEditableProps.includes(propertyKey)) {
             set(updatedResource as unknown as Record<string, unknown>, propertyKey, newValue);
           } else if (propertyKey.startsWith('config.') || propertyKey.startsWith('data.')) {
             // Properties starting with 'config.' or 'data.' should be set on the resource directly

@@ -98,6 +98,7 @@ class VisualFlowConstants {
     ElementTypes.Divider,
     ElementTypes.Image,
     ElementTypes.Captcha,
+    ElementTypes.Custom,
     // Input types are allowed for drop detection, but handled specially to show dialog
     ElementTypes.TextInput,
     ElementTypes.PasswordInput,
@@ -149,6 +150,7 @@ class VisualFlowConstants {
     ElementTypes.Divider,
     ElementTypes.Image,
     ElementTypes.Timer,
+    ElementTypes.Custom,
   ];
 
   public static readonly FLOW_BUILDER_STACK_ALLOWED_RESOURCE_TYPES: string[] = [

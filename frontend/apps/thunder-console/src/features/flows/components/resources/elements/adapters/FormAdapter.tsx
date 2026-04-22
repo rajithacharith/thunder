@@ -92,7 +92,7 @@ function FormAdapter({
       (element as FlowElement & {eventType?: string}).eventType === ActionEventTypes.Submit,
   );
 
-  const shouldShowFormFieldsPlaceholder = !hasInputFields;
+  const shouldShowFormFieldsPlaceholder = !hasInputFields && !resource?.components?.length;
 
   const errorId = `${resource.id}_FORM_NO_SUBMIT_BUTTON`;
 
