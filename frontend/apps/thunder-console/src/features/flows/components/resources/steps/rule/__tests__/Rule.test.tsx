@@ -55,9 +55,9 @@ vi.mock('@xyflow/react', () => ({
   }),
 }));
 
-// Mock useFlowBuilderCore
+// Mock useInteractionState
 const mockSetLastInteractedResource = vi.fn();
-vi.mock('@/features/flows/hooks/useFlowBuilderCore', () => ({
+vi.mock('@/features/flows/hooks/useInteractionState', () => ({
   default: () => ({
     setLastInteractedResource: mockSetLastInteractedResource,
   }),

@@ -20,12 +20,11 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import {ReactFlowProvider} from '@xyflow/react';
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';
+import InteractionContext from '../../../context/InteractionContext';
+import UIPanelContext from '../../../context/UIPanelContext';
 import type {Base} from '../../../models/base';
-import {PreviewScreenType} from '../../../models/custom-text-preference';
 import {ElementTypes} from '../../../models/elements';
 import {ResourceTypes} from '../../../models/resources';
-import {EdgeStyleTypes} from '../../../models/steps';
 
 // Import after mocks
 import ResourcePropertyPanel from '../ResourcePropertyPanel';
@@ -74,43 +73,41 @@ describe('ResourcePropertyPanel', () => {
     },
   };
 
-  const defaultContextValue: FlowBuilderCoreContextProps = {
-    lastInteractedResource: mockBaseResource,
-    lastInteractedStepId: 'step-1',
-    ResourceProperties: () => null,
-    resourcePropertiesPanelHeading: 'Test Panel Heading',
-    primaryI18nScreen: PreviewScreenType.LOGIN,
+  const defaultUIPanelValue = {
     isResourcePanelOpen: true,
     isResourcePropertiesPanelOpen: false,
     isVersionHistoryPanelOpen: false,
-    ElementFactory: () => null,
-    onResourceDropOnCanvas: vi.fn(),
-    selectedAttributes: {},
-    setLastInteractedResource: vi.fn(),
-    setLastInteractedStepId: vi.fn(),
-    setResourcePropertiesPanelHeading: vi.fn(),
+    resourcePropertiesPanelHeading: 'Test Panel Heading' as ReactNode,
     setIsResourcePanelOpen: vi.fn(),
     setIsOpenResourcePropertiesPanel: mockSetIsOpenResourcePropertiesPanel,
-    registerCloseValidationPanel: vi.fn(),
     setIsVersionHistoryPanelOpen: vi.fn(),
-    setSelectedAttributes: vi.fn(),
-    flowCompletionConfigs: {},
-    setFlowCompletionConfigs: vi.fn(),
-    flowNodeTypes: {},
-    flowEdgeTypes: {},
-    setFlowNodeTypes: vi.fn(),
-    setFlowEdgeTypes: vi.fn(),
-    isVerboseMode: false,
-    setIsVerboseMode: vi.fn(),
-    edgeStyle: EdgeStyleTypes.SmoothStep,
-    setEdgeStyle: vi.fn(),
+    setResourcePropertiesPanelHeading: vi.fn(),
+    registerCloseValidationPanel: vi.fn(),
   };
 
-  const createWrapper = (contextValue: FlowBuilderCoreContextProps = defaultContextValue) => {
+  const defaultInteractionValue = {
+    lastInteractedResource: mockBaseResource,
+    lastInteractedStepId: 'step-1',
+    setLastInteractedResource: vi.fn(),
+    setLastInteractedStepId: vi.fn(),
+    onResourceDropOnCanvas: vi.fn(),
+    selectedAttributes: {} as Record<string, never[]>,
+    setSelectedAttributes: vi.fn(),
+  };
+
+  const createWrapper = (
+    uiPanelOverrides: Partial<typeof defaultUIPanelValue> = {},
+    interactionOverrides: Partial<typeof defaultInteractionValue> = {},
+  ) => {
+    const uiPanelValue = {...defaultUIPanelValue, ...uiPanelOverrides};
+    const interactionValue = {...defaultInteractionValue, ...interactionOverrides};
+
     function Wrapper({children}: {children: ReactNode}) {
       return (
         <ReactFlowProvider>
-          <FlowBuilderCoreContext.Provider value={contextValue}>{children}</FlowBuilderCoreContext.Provider>
+          <UIPanelContext.Provider value={uiPanelValue}>
+            <InteractionContext.Provider value={interactionValue}>{children}</InteractionContext.Provider>
+          </UIPanelContext.Provider>
         </ReactFlowProvider>
       );
     }
@@ -146,13 +143,8 @@ describe('ResourcePropertyPanel', () => {
         deletable: false,
       };
 
-      const contextWithNonDeletable: FlowBuilderCoreContextProps = {
-        ...defaultContextValue,
-        lastInteractedResource: nonDeletableResource,
-      };
-
       render(<ResourcePropertyPanel open onComponentDelete={mockOnComponentDelete} />, {
-        wrapper: createWrapper(contextWithNonDeletable),
+        wrapper: createWrapper({}, {lastInteractedResource: nonDeletableResource}),
       });
 
       expect(screen.queryByRole('button', {name: /delete element/i, hidden: true})).not.toBeInTheDocument();
@@ -178,13 +170,8 @@ describe('ResourcePropertyPanel', () => {
         resourceType: ResourceTypes.Step,
       };
 
-      const contextWithStep: FlowBuilderCoreContextProps = {
-        ...defaultContextValue,
-        lastInteractedResource: stepResource,
-      };
-
       render(<ResourcePropertyPanel open onComponentDelete={mockOnComponentDelete} />, {
-        wrapper: createWrapper(contextWithStep),
+        wrapper: createWrapper({}, {lastInteractedResource: stepResource}),
       });
 
       const deleteButton = screen.getByRole('button', {name: /delete element/i, hidden: true});
@@ -205,13 +192,8 @@ describe('ResourcePropertyPanel', () => {
     });
 
     it('should not render delete button when lastInteractedResource is null', () => {
-      const contextWithoutResource: FlowBuilderCoreContextProps = {
-        ...defaultContextValue,
-        lastInteractedResource: null as unknown as Base,
-      };
-
       render(<ResourcePropertyPanel open onComponentDelete={mockOnComponentDelete} />, {
-        wrapper: createWrapper(contextWithoutResource),
+        wrapper: createWrapper({}, {lastInteractedResource: null as unknown as Base}),
       });
 
       expect(screen.queryByRole('button', {name: /delete element/i, hidden: true})).not.toBeInTheDocument();
@@ -244,13 +226,8 @@ describe('ResourcePropertyPanel', () => {
         resourceType: ResourceTypes.Step,
       };
 
-      const contextWithStep: FlowBuilderCoreContextProps = {
-        ...defaultContextValue,
-        lastInteractedResource: stepResource,
-      };
-
       render(<ResourcePropertyPanel open onComponentDelete={mockOnComponentDelete} />, {
-        wrapper: createWrapper(contextWithStep),
+        wrapper: createWrapper({}, {lastInteractedResource: stepResource}),
       });
 
       const deleteButton = screen.getByRole('button', {name: /delete element/i, hidden: true});

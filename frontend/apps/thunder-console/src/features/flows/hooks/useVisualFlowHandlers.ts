@@ -30,8 +30,8 @@ import {
   getOutgoers,
   useReactFlow,
 } from '@xyflow/react';
-import {useRef, useContext} from 'react';
-import FlowBuilderCoreContext from '../context/FlowBuilderCoreContext';
+import {useRef} from 'react';
+import useFlowConfig from './useFlowConfig';
 import FlowEventTypes from '../models/extension';
 import PluginRegistry from '../plugins/PluginRegistry';
 
@@ -63,7 +63,7 @@ export interface UseVisualFlowHandlersReturn {
 const useVisualFlowHandlers = (props: UseVisualFlowHandlersProps): UseVisualFlowHandlersReturn => {
   // Get references from ReactFlow hooks
   const reactFlowInstance = useReactFlow();
-  const {edgeStyle} = useContext(FlowBuilderCoreContext);
+  const {edgeStyle} = useFlowConfig();
 
   // Store ALL dependencies in refs - updated every render
   const depsRef = useRef({

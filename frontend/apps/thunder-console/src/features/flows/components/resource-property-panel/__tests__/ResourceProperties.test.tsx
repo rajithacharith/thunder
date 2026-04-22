@@ -20,9 +20,9 @@ import {render, screen} from '@testing-library/react';
 import {ReactFlowProvider} from '@xyflow/react';
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';
+import FlowConfigContext, {type FlowConfigContextProps} from '../../../context/FlowConfigContext';
+import InteractionContext, {type InteractionContextProps} from '../../../context/InteractionContext';
 import type {Base, BaseConfig} from '../../../models/base';
-import {PreviewScreenType} from '../../../models/custom-text-preference';
 import {ElementTypes} from '../../../models/elements';
 import type {Resource} from '../../../models/resources';
 import {EdgeStyleTypes} from '../../../models/steps';
@@ -107,44 +107,46 @@ describe('ResourceProperties', () => {
     ),
   );
 
-  const createContextValue = (overrides: Partial<FlowBuilderCoreContextProps> = {}): FlowBuilderCoreContextProps => ({
-    lastInteractedResource: mockBaseResource,
-    lastInteractedStepId: 'step-1',
-    ResourceProperties: MockResourcePropertiesComponent,
-    resourcePropertiesPanelHeading: 'Test Panel Heading',
-    primaryI18nScreen: PreviewScreenType.LOGIN,
-    isResourcePanelOpen: true,
-    isResourcePropertiesPanelOpen: false,
-    isVersionHistoryPanelOpen: false,
-    ElementFactory: () => null,
-    onResourceDropOnCanvas: vi.fn(),
-    selectedAttributes: {},
-    setLastInteractedResource: mockSetLastInteractedResource,
-    setLastInteractedStepId: vi.fn(),
-    setResourcePropertiesPanelHeading: vi.fn(),
-    setIsResourcePanelOpen: vi.fn(),
-    setIsOpenResourcePropertiesPanel: vi.fn(),
-    registerCloseValidationPanel: vi.fn(),
-    setIsVersionHistoryPanelOpen: vi.fn(),
-    setSelectedAttributes: vi.fn(),
-    flowCompletionConfigs: {},
-    setFlowCompletionConfigs: vi.fn(),
-    flowNodeTypes: {},
-    flowEdgeTypes: {},
-    setFlowNodeTypes: vi.fn(),
-    setFlowEdgeTypes: vi.fn(),
-    isVerboseMode: false,
-    setIsVerboseMode: vi.fn(),
-    edgeStyle: EdgeStyleTypes.SmoothStep,
-    setEdgeStyle: vi.fn(),
-    ...overrides,
-  });
+  interface ContextOverrides {
+    lastInteractedResource?: Base;
+    ResourceProperties?: FlowConfigContextProps['ResourceProperties'];
+  }
 
-  const createWrapper = (contextValue: FlowBuilderCoreContextProps = createContextValue()) => {
+  const createContextValue = (overrides: ContextOverrides = {}): ContextOverrides => overrides;
+
+  const createWrapper = (overrides: ContextOverrides = {}) => {
+    const interactionValue: InteractionContextProps = {
+      lastInteractedResource:
+        'lastInteractedResource' in overrides ? overrides.lastInteractedResource! : mockBaseResource,
+      lastInteractedStepId: 'step-1',
+      setLastInteractedResource: mockSetLastInteractedResource,
+      setLastInteractedStepId: vi.fn(),
+      onResourceDropOnCanvas: vi.fn(),
+      selectedAttributes: {},
+      setSelectedAttributes: vi.fn(),
+    };
+
+    const flowConfigValue: FlowConfigContextProps = {
+      ElementFactory: () => null,
+      ResourceProperties: overrides.ResourceProperties ?? MockResourcePropertiesComponent,
+      flowCompletionConfigs: {},
+      setFlowCompletionConfigs: vi.fn(),
+      isVerboseMode: false,
+      setIsVerboseMode: vi.fn(),
+      edgeStyle: EdgeStyleTypes.SmoothStep,
+      setEdgeStyle: vi.fn(),
+      flowNodeTypes: {},
+      flowEdgeTypes: {},
+      setFlowNodeTypes: vi.fn(),
+      setFlowEdgeTypes: vi.fn(),
+    };
+
     function Wrapper({children}: {children: ReactNode}) {
       return (
         <ReactFlowProvider>
-          <FlowBuilderCoreContext.Provider value={contextValue}>{children}</FlowBuilderCoreContext.Provider>
+          <InteractionContext.Provider value={interactionValue}>
+            <FlowConfigContext.Provider value={flowConfigValue}>{children}</FlowConfigContext.Provider>
+          </InteractionContext.Provider>
         </ReactFlowProvider>
       );
     }

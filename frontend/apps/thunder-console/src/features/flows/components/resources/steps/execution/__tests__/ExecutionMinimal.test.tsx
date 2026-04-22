@@ -52,15 +52,22 @@ vi.mock('@xyflow/react', () => ({
   },
 }));
 
-// Mock useFlowBuilderCore
+// Mock useInteractionState
 const mockSetLastInteractedResource = vi.fn();
 const mockSetLastInteractedStepId = vi.fn();
-const mockSetIsOpenResourcePropertiesPanel = vi.fn();
 
-vi.mock('@/features/flows/hooks/useFlowBuilderCore', () => ({
+vi.mock('@/features/flows/hooks/useInteractionState', () => ({
   default: () => ({
     setLastInteractedResource: mockSetLastInteractedResource,
     setLastInteractedStepId: mockSetLastInteractedStepId,
+  }),
+}));
+
+// Mock useUIPanelState
+const mockSetIsOpenResourcePropertiesPanel = vi.fn();
+
+vi.mock('@/features/flows/hooks/useUIPanelState', () => ({
+  default: () => ({
     setIsOpenResourcePropertiesPanel: mockSetIsOpenResourcePropertiesPanel,
   }),
 }));

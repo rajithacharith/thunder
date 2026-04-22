@@ -19,13 +19,9 @@
 import {render, screen, fireEvent} from '@testing-library/react';
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';
+import UIPanelContext, {type UIPanelContextProps} from '../../../context/UIPanelContext';
 import {ValidationContext, type ValidationContextProps} from '../../../context/ValidationContext';
-import type {Base} from '../../../models/base';
-import {PreviewScreenType} from '../../../models/custom-text-preference';
-import {ElementTypes} from '../../../models/elements';
 import Notification, {NotificationType} from '../../../models/notification';
-import {EdgeStyleTypes} from '../../../models/steps';
 import ValidationStatusLabels from '../ValidationStatusLabels';
 
 // Mock react-i18next
@@ -43,25 +39,6 @@ describe('ValidationStatusLabels', () => {
   const mockSetOpenValidationPanel = vi.fn();
   const mockSetIsOpenResourcePropertiesPanel = vi.fn();
 
-  const mockBaseResource: Base = {
-    id: 'resource-1',
-    type: 'TEXT_INPUT',
-    category: 'FIELD',
-    resourceType: 'ELEMENT',
-    version: '1.0.0',
-    deprecated: false,
-    deletable: true,
-    display: {
-      label: 'Test Resource',
-      image: '',
-      showOnResourcePanel: false,
-    },
-    config: {
-      field: {name: '', type: ElementTypes},
-      styles: {},
-    },
-  };
-
   const defaultValidationContext: ValidationContextProps = {
     isValid: true,
     notifications: [],
@@ -76,47 +53,24 @@ describe('ValidationStatusLabels', () => {
     setOpenValidationPanel: mockSetOpenValidationPanel,
   };
 
-  const defaultFlowBuilderContext: FlowBuilderCoreContextProps = {
-    lastInteractedResource: mockBaseResource,
-    lastInteractedStepId: 'step-1',
-    ResourceProperties: () => null,
-    resourcePropertiesPanelHeading: 'Test Panel Heading',
-    primaryI18nScreen: PreviewScreenType.LOGIN,
+  const defaultUIPanelValue: UIPanelContextProps = {
     isResourcePanelOpen: true,
     isResourcePropertiesPanelOpen: false,
     isVersionHistoryPanelOpen: false,
-    ElementFactory: () => null,
-    onResourceDropOnCanvas: vi.fn(),
-    selectedAttributes: {},
-    setLastInteractedResource: vi.fn(),
-    setLastInteractedStepId: vi.fn(),
-    setResourcePropertiesPanelHeading: vi.fn(),
+    resourcePropertiesPanelHeading: 'Test Panel Heading',
     setIsResourcePanelOpen: vi.fn(),
     setIsOpenResourcePropertiesPanel: mockSetIsOpenResourcePropertiesPanel,
-    registerCloseValidationPanel: vi.fn(),
     setIsVersionHistoryPanelOpen: vi.fn(),
-    setSelectedAttributes: vi.fn(),
-    flowCompletionConfigs: {},
-    setFlowCompletionConfigs: vi.fn(),
-    flowNodeTypes: {},
-    flowEdgeTypes: {},
-    setFlowNodeTypes: vi.fn(),
-    setFlowEdgeTypes: vi.fn(),
-    isVerboseMode: false,
-    setIsVerboseMode: vi.fn(),
-    edgeStyle: EdgeStyleTypes.SmoothStep,
-    setEdgeStyle: vi.fn(),
+    setResourcePropertiesPanelHeading: vi.fn(),
+    registerCloseValidationPanel: vi.fn(),
   };
 
-  const createWrapper = (
-    validationContext: ValidationContextProps = defaultValidationContext,
-    flowBuilderContext: FlowBuilderCoreContextProps = defaultFlowBuilderContext,
-  ) => {
+  const createWrapper = (validationContext: ValidationContextProps = defaultValidationContext) => {
     function Wrapper({children}: {children: ReactNode}) {
       return (
-        <FlowBuilderCoreContext.Provider value={flowBuilderContext}>
+        <UIPanelContext.Provider value={defaultUIPanelValue}>
           <ValidationContext.Provider value={validationContext}>{children}</ValidationContext.Provider>
-        </FlowBuilderCoreContext.Provider>
+        </UIPanelContext.Provider>
       );
     }
     return Wrapper;

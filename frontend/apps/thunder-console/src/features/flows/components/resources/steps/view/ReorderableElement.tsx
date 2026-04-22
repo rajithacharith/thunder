@@ -34,7 +34,9 @@ import type {SortableProps} from '../../../dnd/Sortable';
 import ValidationErrorBoundary from '../../../validation-panel/ValidationErrorBoundary';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
 import useComponentDelete from '@/features/flows/hooks/useComponentDelete';
-import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
+import useFlowConfig from '@/features/flows/hooks/useFlowConfig';
+import useInteractionState from '@/features/flows/hooks/useInteractionState';
+import useUIPanelState from '@/features/flows/hooks/useUIPanelState';
 import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
 import {BlockTypes, type Element} from '@/features/flows/models/elements';
 import FlowEventTypes from '@/features/flows/models/extension';
@@ -123,8 +125,9 @@ function ReorderableElement({
   const stepId: string | null = useNodeId();
   const {updateNodeData} = useReactFlow();
   const {deleteComponent} = useComponentDelete();
-  const {ElementFactory, setLastInteractedResource, setLastInteractedStepId, setIsOpenResourcePropertiesPanel} =
-    useFlowBuilderCore();
+  const {ElementFactory} = useFlowConfig();
+  const {setLastInteractedResource, setLastInteractedStepId} = useInteractionState();
+  const {setIsOpenResourcePropertiesPanel} = useUIPanelState();
   const {setOpenValidationPanel, setSelectedNotification, addNotification} = useValidationStatus();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);

@@ -23,11 +23,11 @@ import Notification, {NotificationType} from '../../models/notification';
 import {ValidationContext} from '../ValidationContext';
 import ValidationProvider from '../ValidationProvider';
 
-// Mock useFlowBuilderCore
+// Mock useUIPanelState
 const mockSetIsOpenResourcePropertiesPanel = vi.fn();
 const mockRegisterCloseValidationPanel = vi.fn();
 
-vi.mock('../../hooks/useFlowBuilderCore', () => ({
+vi.mock('../../hooks/useUIPanelState', () => ({
   default: () => ({
     setIsOpenResourcePropertiesPanel: mockSetIsOpenResourcePropertiesPanel,
     registerCloseValidationPanel: mockRegisterCloseValidationPanel,

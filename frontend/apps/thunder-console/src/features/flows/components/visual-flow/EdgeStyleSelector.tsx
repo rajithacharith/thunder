@@ -20,7 +20,7 @@ import {Menu, MenuItem, ListItemIcon, ListItemText} from '@wso2/oxygen-ui';
 import {type ReactElement, useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
 import {BezierEdgeIcon, SmoothStepEdgeIcon, StepEdgeIcon} from './EdgeStyleIcons';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import useFlowConfig from '../../hooks/useFlowConfig';
 import {EdgeStyleTypes, type EdgeStyleTypes as EdgeStyleTypesType} from '../../models/steps';
 
 /**
@@ -46,7 +46,7 @@ export interface EdgeStyleMenuPropsInterface {
  */
 function EdgeStyleMenu({anchorEl, onClose}: EdgeStyleMenuPropsInterface): ReactElement {
   const {t} = useTranslation();
-  const {edgeStyle, setEdgeStyle} = useFlowBuilderCore();
+  const {edgeStyle, setEdgeStyle} = useFlowConfig();
   const open = Boolean(anchorEl);
 
   const handleStyleSelect = useCallback(

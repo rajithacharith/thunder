@@ -22,7 +22,7 @@ import {Panel} from '@xyflow/react';
 import classNames from 'classnames';
 import {type ReactElement, useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import useUIPanelState from '../../hooks/useUIPanelState';
 import useValidationStatus from '../../hooks/useValidationStatus';
 import Notification, {NotificationType} from '../../models/notification';
 import './CanvasValidationIndicator.scss';
@@ -35,7 +35,7 @@ import './CanvasValidationIndicator.scss';
  */
 function CanvasValidationIndicator(): ReactElement | null {
   const {notifications, setCurrentActiveTab, openValidationPanel, setOpenValidationPanel} = useValidationStatus();
-  const {setIsOpenResourcePropertiesPanel, isResourcePropertiesPanelOpen} = useFlowBuilderCore();
+  const {setIsOpenResourcePropertiesPanel, isResourcePropertiesPanelOpen} = useUIPanelState();
   const {t} = useTranslation();
 
   // Calculate all notification counts in a single pass for better performance

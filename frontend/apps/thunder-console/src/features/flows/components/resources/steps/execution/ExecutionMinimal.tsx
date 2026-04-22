@@ -24,7 +24,8 @@ import type {ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
 import ExecutionFactory from './execution-factory/ExecutionFactory';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
-import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
+import useInteractionState from '@/features/flows/hooks/useInteractionState';
+import useUIPanelState from '@/features/flows/hooks/useUIPanelState';
 import type {Step, StepData} from '@/features/flows/models/steps';
 import './ExecutionMinimal.scss';
 
@@ -45,7 +46,8 @@ export interface ExecutionMinimalPropsInterface {
  * @returns Execution (Minimal) node component.
  */
 function ExecutionMinimal({resource}: ExecutionMinimalPropsInterface): ReactElement {
-  const {setLastInteractedResource, setLastInteractedStepId, setIsOpenResourcePropertiesPanel} = useFlowBuilderCore();
+  const {setLastInteractedResource, setLastInteractedStepId} = useInteractionState();
+  const {setIsOpenResourcePropertiesPanel} = useUIPanelState();
   const stepId: string | null = useNodeId();
 
   const {t} = useTranslation();

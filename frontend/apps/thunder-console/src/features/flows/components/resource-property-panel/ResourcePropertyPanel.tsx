@@ -22,7 +22,8 @@ import {X, TrashIcon} from '@wso2/oxygen-ui-icons-react';
 import {useReactFlow} from '@xyflow/react';
 import {memo, useCallback, type ReactElement} from 'react';
 import ResourceProperties from './ResourceProperties';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import useInteractionState from '../../hooks/useInteractionState';
+import useUIPanelState from '../../hooks/useUIPanelState';
 import {type Element} from '../../models/elements';
 import {ResourceTypes} from '../../models/resources';
 
@@ -43,12 +44,8 @@ export interface ResourcePropertyPanelPropsInterface {
 function ResourcePropertyPanel({open = false, onComponentDelete}: ResourcePropertyPanelPropsInterface): ReactElement {
   const {deleteElements} = useReactFlow();
 
-  const {
-    resourcePropertiesPanelHeading,
-    setIsOpenResourcePropertiesPanel,
-    lastInteractedStepId,
-    lastInteractedResource,
-  } = useFlowBuilderCore();
+  const {resourcePropertiesPanelHeading, setIsOpenResourcePropertiesPanel} = useUIPanelState();
+  const {lastInteractedStepId, lastInteractedResource} = useInteractionState();
 
   const handleClose = useCallback(() => {
     setIsOpenResourcePropertiesPanel(false);

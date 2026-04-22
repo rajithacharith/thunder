@@ -53,9 +53,9 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-// Mock useFlowBuilderCore
+// Mock useUIPanelState
 const mockSetIsResourcePanelOpen = vi.fn();
-vi.mock('../../../hooks/useFlowBuilderCore', () => ({
+vi.mock('../../../hooks/useUIPanelState', () => ({
   default: () => ({
     setIsResourcePanelOpen: mockSetIsResourcePanelOpen,
   }),

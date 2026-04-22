@@ -117,14 +117,26 @@ vi.mock('@/features/flows/hooks/useValidationStatus', () => ({
   }),
 }));
 
-// Mock useFlowBuilderCore
-vi.mock('@/features/flows/hooks/useFlowBuilderCore', () => ({
+// Mock useFlowConfig
+vi.mock('@/features/flows/hooks/useFlowConfig', () => ({
   default: () => ({
     ElementFactory: ({resource}: {resource: Resource}) => (
       <div data-testid="element-factory">{resource.display?.label || resource.type}</div>
     ),
+  }),
+}));
+
+// Mock useInteractionState
+vi.mock('@/features/flows/hooks/useInteractionState', () => ({
+  default: () => ({
     setLastInteractedResource: mockSetLastInteractedResource,
     setLastInteractedStepId: mockSetLastInteractedStepId,
+  }),
+}));
+
+// Mock useUIPanelState
+vi.mock('@/features/flows/hooks/useUIPanelState', () => ({
+  default: () => ({
     setIsOpenResourcePropertiesPanel: mockSetIsOpenResourcePropertiesPanel,
   }),
 }));

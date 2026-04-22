@@ -34,7 +34,10 @@ import {
   type Dispatch,
   type SetStateAction,
 } from 'react';
-import FlowBuilderCoreContext from './FlowBuilderCoreContext';
+import FlowConfigContext from './FlowConfigContext';
+import I18nContext from './I18nContext';
+import InteractionContext from './InteractionContext';
+import UIPanelContext from './UIPanelContext';
 import type {ValidationConfig} from './ValidationContext';
 import ValidationProvider from './ValidationProvider';
 import {PreviewScreenType} from '../models/custom-text-preference';
@@ -109,19 +112,26 @@ function FlowContextWrapper({
   screenTypes,
   validationConfig = {},
 }: PropsWithChildren<FlowBuilderCoreProviderProps>): ReactElement {
+  // ── UI Panel State ──
   const [isResourcePanelOpen, setIsResourcePanelOpen] = useState<boolean>(true);
   const [isResourcePropertiesPanelOpen, setIsOpenResourcePropertiesPanel] = useState<boolean>(false);
   const [isVersionHistoryPanelOpen, setIsVersionHistoryPanelOpen] = useState<boolean>(false);
   const [resourcePropertiesPanelHeading, setResourcePropertiesPanelHeading] = useState<ReactNode>(null);
+
+  // ── Interaction State ──
   const [lastInteractedElementInternal, setLastInteractedElementInternal] = useState<Resource>();
   const [lastInteractedStepId, setLastInteractedStepId] = useState<string>('');
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, Claim[]>>({});
-  const [language, setLanguage] = useState<string>(I18nDefaultConstants.FALLBACK_LANGUAGE);
+
+  // ── Flow Config State ──
   const [flowCompletionConfigs, setFlowCompletionConfigs] = useState<FlowCompletionConfigsInterface>({});
   const [flowNodeTypes, setFlowNodeTypes] = useState<NodeTypes>({});
   const [flowEdgeTypes, setFlowEdgeTypes] = useState<EdgeTypes>({});
   const [isVerboseMode, setIsVerboseMode] = useState<boolean>(true);
   const [edgeStyle, setEdgeStyle] = useState<EdgeStyleTypesType>(EdgeStyleTypes.SmoothStep);
+
+  // ── I18n State ──
+  const [language, setLanguage] = useState<string>(I18nDefaultConstants.FALLBACK_LANGUAGE);
 
   const setResourcePropertiesPanelHeadingRef = useRef(setResourcePropertiesPanelHeading);
   const setLastInteractedElementInternalRef = useRef(setLastInteractedElementInternal);
@@ -256,89 +266,120 @@ function FlowContextWrapper({
     [fallbackTextPreference, primaryI18nScreen],
   );
 
-  const contextValue = useMemo(
+  // ── Domain-specific context values ──
+
+  const uiPanelValue = useMemo(
+    () => ({
+      isResourcePanelOpen,
+      isResourcePropertiesPanelOpen,
+      isVersionHistoryPanelOpen,
+      resourcePropertiesPanelHeading,
+      setIsResourcePanelOpen,
+      setIsOpenResourcePropertiesPanel: setIsOpenResourcePropertiesPanelStable,
+      setIsVersionHistoryPanelOpen,
+      setResourcePropertiesPanelHeading,
+      registerCloseValidationPanel,
+    }),
+    [
+      isResourcePanelOpen,
+      isResourcePropertiesPanelOpen,
+      isVersionHistoryPanelOpen,
+      resourcePropertiesPanelHeading,
+      setIsOpenResourcePropertiesPanelStable,
+      registerCloseValidationPanel,
+    ],
+  );
+
+  const interactionValue = useMemo(
+    () => ({
+      lastInteractedResource: lastInteractedElementInternal!,
+      lastInteractedStepId,
+      setLastInteractedResource,
+      setLastInteractedStepId: setLastInteractedStepIdStable,
+      onResourceDropOnCanvas,
+      selectedAttributes,
+      setSelectedAttributes,
+    }),
+    [
+      lastInteractedElementInternal,
+      lastInteractedStepId,
+      setLastInteractedResource,
+      setLastInteractedStepIdStable,
+      onResourceDropOnCanvas,
+      selectedAttributes,
+    ],
+  );
+
+  const flowConfigValue = useMemo(
     () => ({
       ElementFactory,
       ResourceProperties,
       flowCompletionConfigs,
-      flowEdgeTypes,
-      flowNodeTypes,
-      i18nText,
-      i18nTextLoading: textPreferenceLoading || fallbackTextPreferenceLoading || customTextPreferenceMetaLoading,
-      isBrandingEnabled,
-      isCustomI18nKey,
-      isFlowMetadataLoading,
-      isI18nSubmitting,
-      isResourcePanelOpen,
-      isResourcePropertiesPanelOpen,
-      isVersionHistoryPanelOpen,
-      language,
-      lastInteractedResource: lastInteractedElementInternal!,
-      lastInteractedStepId,
-      metadata: flowMetadata,
-      onResourceDropOnCanvas,
-      primaryI18nScreen,
-      resourcePropertiesPanelHeading,
-      selectedAttributes,
       setFlowCompletionConfigs,
-      setFlowEdgeTypes,
-      setFlowNodeTypes,
-      setIsOpenResourcePropertiesPanel: setIsOpenResourcePropertiesPanelStable,
-      registerCloseValidationPanel,
-      setIsResourcePanelOpen,
-      setIsVersionHistoryPanelOpen,
-      setLanguage,
-      setLastInteractedResource,
-      setLastInteractedStepId: setLastInteractedStepIdStable,
-      setResourcePropertiesPanelHeading,
-      setSelectedAttributes,
-      supportedLocales,
-      updateI18nKey,
+      metadata: flowMetadata,
+      isFlowMetadataLoading,
       isVerboseMode,
       setIsVerboseMode,
       edgeStyle,
       setEdgeStyle,
+      flowNodeTypes,
+      flowEdgeTypes,
+      setFlowNodeTypes,
+      setFlowEdgeTypes,
+      addResourceToFlow: undefined as ((resource: Resource) => void) | undefined,
+      publishFlow: undefined as (() => Promise<boolean>) | undefined,
     }),
     [
       ElementFactory,
       ResourceProperties,
-      customTextPreferenceMetaLoading,
-      fallbackTextPreferenceLoading,
       flowCompletionConfigs,
-      flowEdgeTypes,
       flowMetadata,
-      flowNodeTypes,
-      i18nText,
-      isBrandingEnabled,
-      isCustomI18nKey,
       isFlowMetadataLoading,
-      isI18nSubmitting,
-      isResourcePanelOpen,
-      isResourcePropertiesPanelOpen,
-      isVersionHistoryPanelOpen,
-      language,
-      lastInteractedElementInternal,
-      lastInteractedStepId,
-      onResourceDropOnCanvas,
-      primaryI18nScreen,
-      resourcePropertiesPanelHeading,
-      selectedAttributes,
-      setLastInteractedResource,
-      setLastInteractedStepIdStable,
-      setIsOpenResourcePropertiesPanelStable,
-      registerCloseValidationPanel,
-      supportedLocales,
-      textPreferenceLoading,
-      updateI18nKey,
       isVerboseMode,
       edgeStyle,
+      flowNodeTypes,
+      flowEdgeTypes,
+    ],
+  );
+
+  const i18nValue = useMemo(
+    () => ({
+      primaryI18nScreen,
+      i18nText,
+      i18nTextLoading: textPreferenceLoading || fallbackTextPreferenceLoading || customTextPreferenceMetaLoading,
+      language,
+      setLanguage,
+      updateI18nKey,
+      isI18nSubmitting,
+      isCustomI18nKey,
+      supportedLocales,
+      isBrandingEnabled,
+    }),
+    [
+      primaryI18nScreen,
+      i18nText,
+      textPreferenceLoading,
+      fallbackTextPreferenceLoading,
+      customTextPreferenceMetaLoading,
+      language,
+      updateI18nKey,
+      isI18nSubmitting,
+      isCustomI18nKey,
+      supportedLocales,
+      isBrandingEnabled,
     ],
   );
 
   return (
-    <FlowBuilderCoreContext.Provider value={contextValue}>
-      <ValidationProvider validationConfig={validationConfig}>{children}</ValidationProvider>
-    </FlowBuilderCoreContext.Provider>
+    <FlowConfigContext.Provider value={flowConfigValue}>
+      <I18nContext.Provider value={i18nValue}>
+        <UIPanelContext.Provider value={uiPanelValue}>
+          <InteractionContext.Provider value={interactionValue}>
+            <ValidationProvider validationConfig={validationConfig}>{children}</ValidationProvider>
+          </InteractionContext.Provider>
+        </UIPanelContext.Provider>
+      </I18nContext.Provider>
+    </FlowConfigContext.Provider>
   );
 }
 

@@ -53,10 +53,12 @@ import useConfirmPasswordField from '../../hooks/useConfirmPasswordField';
 import useContainerDialogConfirm from '../../hooks/useContainerDialogConfirm';
 import useDeleteExecutionResource from '../../hooks/useDeleteExecutionResource';
 import useDragDropHandlers from '../../hooks/useDragDropHandlers';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import useFlowConfig from '../../hooks/useFlowConfig';
 import useGenerateStepElement from '../../hooks/useGenerateStepElement';
+import useInteractionState from '../../hooks/useInteractionState';
 import useResourceAdd from '../../hooks/useResourceAdd';
 import useStaticContentField from '../../hooks/useStaticContentField';
+import useUIPanelState from '../../hooks/useUIPanelState';
 import useValidationStatus from '../../hooks/useValidationStatus';
 import useVisualFlowHandlers from '../../hooks/useVisualFlowHandlers';
 import type {DragSourceData, DragTargetData, DragEventWithNative} from '../../models/drag-drop';
@@ -148,8 +150,9 @@ function DecoratedVisualFlow({
   const {toObject, getNodes, getEdges, updateNodeData, fitView} = useReactFlow();
   const updateNodeInternals: UpdateNodeInternals = useUpdateNodeInternals();
   const {deleteComponent} = useComponentDelete();
-  const {isResourcePanelOpen, isResourcePropertiesPanelOpen, isFlowMetadataLoading, metadata, onResourceDropOnCanvas} =
-    useFlowBuilderCore();
+  const {isResourcePanelOpen, isResourcePropertiesPanelOpen} = useUIPanelState();
+  const {isFlowMetadataLoading, metadata} = useFlowConfig();
+  const {onResourceDropOnCanvas} = useInteractionState();
   const {generateStepElement} = useGenerateStepElement();
   const {t} = useTranslation();
   const navigate = useNavigate();

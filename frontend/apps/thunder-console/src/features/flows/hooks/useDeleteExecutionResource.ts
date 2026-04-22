@@ -18,7 +18,7 @@
 
 import {type Edge, type Node, useReactFlow} from '@xyflow/react';
 import {useEffect} from 'react';
-import useFlowBuilderCore from './useFlowBuilderCore';
+import useUIPanelState from './useUIPanelState';
 import VisualFlowConstants from '../constants/VisualFlowConstants';
 import {ActionTypes} from '../models/actions';
 import {type Element, ElementCategories} from '../models/elements';
@@ -33,7 +33,7 @@ import PluginRegistry from '../plugins/PluginRegistry';
  * any associated execution action nodes are also deleted when an execution node is removed.
  */
 const useDeleteExecutionResource = (): void => {
-  const {setIsOpenResourcePropertiesPanel} = useFlowBuilderCore();
+  const {setIsOpenResourcePropertiesPanel} = useUIPanelState();
   const {getEdges, getNodes, updateNodeData, setNodes} = useReactFlow();
 
   /**

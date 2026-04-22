@@ -23,7 +23,7 @@ import mergeWith from 'lodash-es/mergeWith';
 import {useCallback} from 'react';
 import {mutateComponents} from '../utils/componentMutations';
 import generateUnconnectedEdges from '../utils/edgeUtils';
-import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
+import useFlowConfig from '@/features/flows/hooks/useFlowConfig';
 import useGenerateStepElement from '@/features/flows/hooks/useGenerateStepElement';
 import {BlockTypes, type Element} from '@/features/flows/models/elements';
 import {ResourceTypes, type Resource, type Resources} from '@/features/flows/models/resources';
@@ -91,7 +91,7 @@ const useTemplateAndWidgetLoading = (props: UseTemplateAndWidgetLoadingProps): U
     updateNodeInternals,
   } = props;
 
-  const {setFlowCompletionConfigs, edgeStyle} = useFlowBuilderCore();
+  const {setFlowCompletionConfigs, edgeStyle} = useFlowConfig();
   const {generateStepElement} = useGenerateStepElement();
 
   /**
