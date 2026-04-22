@@ -499,7 +499,7 @@ func (as *authorizeService) loadAuthRequestContext(ctx context.Context, authID s
 // verifyAssertion verifies the JWT assertion.
 func (as *authorizeService) verifyAssertion(assertion string) error {
 	if err := as.jwtService.VerifyJWT(assertion, "", ""); err != nil {
-		as.logger.Debug("Invalid assertion signature", log.String("error", err.Error))
+		as.logger.Debug("Invalid assertion signature", log.String("error", err.Error.DefaultValue))
 		return errors.New("invalid assertion signature")
 	}
 	return nil

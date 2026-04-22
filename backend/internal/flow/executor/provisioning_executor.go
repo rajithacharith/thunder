@@ -512,8 +512,8 @@ func (p *provisioningExecutor) assignToGroup(
 		logger.Error("Failed to add user to group",
 			log.String("groupID", groupID),
 			log.String("userID", userID),
-			log.String("error", svcErr.Error))
-		return fmt.Errorf("failed to add user to group: %s", svcErr.Error)
+			log.String("error", svcErr.Error.DefaultValue))
+		return fmt.Errorf("failed to add user to group: %s", svcErr.Error.DefaultValue)
 	}
 
 	logger.Debug("Successfully added user to group",
@@ -542,8 +542,8 @@ func (p *provisioningExecutor) assignToRole(
 		logger.Error("Failed to add role assignment",
 			log.String("roleID", roleID),
 			log.String("userID", userID),
-			log.String("error", svcErr.Error))
-		return fmt.Errorf("failed to assign role: %s", svcErr.Error)
+			log.String("error", svcErr.Error.DefaultValue))
+		return fmt.Errorf("failed to assign role: %s", svcErr.Error.DefaultValue)
 	}
 
 	logger.Debug("Successfully assigned role",

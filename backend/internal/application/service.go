@@ -41,6 +41,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
 	"github.com/asgardeo/thunder/internal/system/transaction"
@@ -1196,7 +1197,7 @@ func (as *applicationService) validateAllowedUserTypes(
 			security.WithRuntimeContext(ctx), limit, offset, false)
 		if svcErr != nil {
 			as.logger.Error("Failed to retrieve user schema list for validation",
-				log.String("error", svcErr.Error), log.String("code", svcErr.Code))
+				log.String("error", svcErr.Error.DefaultValue), log.String("code", svcErr.Code))
 			return &ErrorInternalServerError
 		}
 
@@ -1318,19 +1319,19 @@ func validateRedirectURIs(oauthConfig *model.OAuthAppConfigDTO) *serviceerror.Se
 		}
 
 		if parsedURI.Fragment != "" {
-			return serviceerror.CustomServiceError(
-				ErrorInvalidRedirectURI,
-				"Redirect URIs must not contain a fragment component",
-			)
+			return serviceerror.CustomServiceError(ErrorInvalidRedirectURI, core.I18nMessage{
+				Key:          "error.applicationservice.redirect_uri_fragment_not_allowed_description",
+				DefaultValue: "Redirect URIs must not contain a fragment component",
+			})
 		}
 	}
 
 	if slices.Contains(oauthConfig.GrantTypes, oauth2const.GrantTypeAuthorizationCode) &&
 		len(oauthConfig.RedirectURIs) == 0 {
-		return serviceerror.CustomServiceError(
-			ErrorInvalidOAuthConfiguration,
-			"authorization_code grant type requires redirect URIs",
-		)
+		return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+			Key:          "error.applicationservice.auth_code_requires_redirect_uris_description",
+			DefaultValue: "authorization_code grant type requires redirect URIs",
+		})
 	}
 
 	return nil
@@ -1353,19 +1354,19 @@ func validateGrantTypesAndResponseTypes(oauthConfig *model.OAuthAppConfigDTO) *s
 	if len(oauthConfig.GrantTypes) == 1 &&
 		slices.Contains(oauthConfig.GrantTypes, oauth2const.GrantTypeClientCredentials) &&
 		len(oauthConfig.ResponseTypes) > 0 {
-		return serviceerror.CustomServiceError(
-			ErrorInvalidOAuthConfiguration,
-			"client_credentials grant type cannot be used with response types",
-		)
+		return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+			Key:          "error.applicationservice.client_credentials_cannot_use_response_types_description",
+			DefaultValue: "client_credentials grant type cannot be used with response types",
+		})
 	}
 
 	if slices.Contains(oauthConfig.GrantTypes, oauth2const.GrantTypeAuthorizationCode) {
 		if len(oauthConfig.ResponseTypes) == 0 ||
 			!slices.Contains(oauthConfig.ResponseTypes, oauth2const.ResponseTypeCode) {
-			return serviceerror.CustomServiceError(
-				ErrorInvalidOAuthConfiguration,
-				"authorization_code grant type requires 'code' response type",
-			)
+			return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+				Key:          "error.applicationservice.auth_code_requires_code_response_type_description",
+				DefaultValue: "authorization_code grant type requires 'code' response type",
+			})
 		}
 	}
 
@@ -1384,42 +1385,42 @@ func validateTokenEndpointAuthMethod(oauthConfig *model.OAuthAppConfigDTO) *serv
 	switch oauthConfig.TokenEndpointAuthMethod {
 	case oauth2const.TokenEndpointAuthMethodPrivateKeyJWT:
 		if !hasCert {
-			return serviceerror.CustomServiceError(
-				ErrorInvalidOAuthConfiguration,
-				"private_key_jwt authentication method requires a certificate",
-			)
+			return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+				Key:          "error.applicationservice.private_key_jwt_requires_certificate_description",
+				DefaultValue: "private_key_jwt authentication method requires a certificate",
+			})
 		}
 		if oauthConfig.ClientSecret != "" {
-			return serviceerror.CustomServiceError(
-				ErrorInvalidOAuthConfiguration,
-				"private_key_jwt authentication method cannot have a client secret",
-			)
+			return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+				Key:          "error.applicationservice.private_key_jwt_cannot_have_client_secret_description",
+				DefaultValue: "private_key_jwt authentication method cannot have a client secret",
+			})
 		}
 	case oauth2const.TokenEndpointAuthMethodClientSecretBasic, oauth2const.TokenEndpointAuthMethodClientSecretPost:
 		if hasCert {
-			return serviceerror.CustomServiceError(
-				ErrorInvalidOAuthConfiguration,
-				"client_secret authentication methods cannot have a certificate",
-			)
+			return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+				Key:          "error.applicationservice.client_secret_cannot_have_certificate_description",
+				DefaultValue: "client_secret authentication methods cannot have a certificate",
+			})
 		}
 	case oauth2const.TokenEndpointAuthMethodNone:
 		if !oauthConfig.PublicClient {
-			return serviceerror.CustomServiceError(
-				ErrorInvalidOAuthConfiguration,
-				"'none' authentication method requires the client to be a public client",
-			)
+			return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+				Key:          "error.applicationservice.none_auth_method_requires_public_client_description",
+				DefaultValue: "'none' authentication method requires the client to be a public client",
+			})
 		}
 		if hasCert || oauthConfig.ClientSecret != "" {
-			return serviceerror.CustomServiceError(
-				ErrorInvalidOAuthConfiguration,
-				"'none' authentication method cannot have a certificate or client secret",
-			)
+			return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+				Key:          "error.applicationservice.none_auth_method_cannot_have_cert_or_secret_description",
+				DefaultValue: "'none' authentication method cannot have a certificate or client secret",
+			})
 		}
 		if slices.Contains(oauthConfig.GrantTypes, oauth2const.GrantTypeClientCredentials) {
-			return serviceerror.CustomServiceError(
-				ErrorInvalidOAuthConfiguration,
-				"client_credentials grant type cannot use 'none' authentication method",
-			)
+			return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+				Key:          "error.applicationservice.client_credentials_cannot_use_none_auth_description",
+				DefaultValue: "client_credentials grant type cannot use 'none' authentication method",
+			})
 		}
 	}
 
@@ -1429,18 +1430,18 @@ func validateTokenEndpointAuthMethod(oauthConfig *model.OAuthAppConfigDTO) *serv
 // validatePublicClientConfiguration validates that public client configurations are correct.
 func validatePublicClientConfiguration(oauthConfig *model.OAuthAppConfigDTO) *serviceerror.ServiceError {
 	if oauthConfig.TokenEndpointAuthMethod != oauth2const.TokenEndpointAuthMethodNone {
-		return serviceerror.CustomServiceError(
-			ErrorInvalidPublicClientConfiguration,
-			"Public clients must use 'none' as token endpoint authentication method",
-		)
+		return serviceerror.CustomServiceError(ErrorInvalidPublicClientConfiguration, core.I18nMessage{
+			Key:          "error.applicationservice.public_client_must_use_none_auth_description",
+			DefaultValue: "Public clients must use 'none' as token endpoint authentication method",
+		})
 	}
 
 	// Public clients must always have PKCE required for security
 	if !oauthConfig.PKCERequired {
-		return serviceerror.CustomServiceError(
-			ErrorInvalidPublicClientConfiguration,
-			"Public clients must have PKCE required set to true",
-		)
+		return serviceerror.CustomServiceError(ErrorInvalidPublicClientConfiguration, core.I18nMessage{
+			Key:          "error.applicationservice.public_client_must_have_pkce_description",
+			DefaultValue: "Public clients must have PKCE required set to true",
+		})
 	}
 
 	return nil
@@ -1761,14 +1762,13 @@ func (as *applicationService) createApplicationCertificate(ctx context.Context, 
 	if certificate == nil {
 		return nil, nil
 	}
-
 	_, svcErr := as.certService.CreateCertificate(ctx, certificate)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
-			errorDescription := "Failed to create application certificate: " +
-				svcErr.ErrorDescription
-			return nil, serviceerror.CustomServiceError(
-				ErrorCertificateClientError, errorDescription)
+			return nil, serviceerror.CustomServiceError(ErrorCertificateClientError, core.I18nMessage{
+				Key:          "error.applicationservice.create_certificate_failed_description",
+				DefaultValue: "Failed to create application certificate: " + svcErr.ErrorDescription.DefaultValue,
+			})
 		}
 		as.logger.Error("Failed to create application certificate", log.Any("serviceError", svcErr))
 		return nil, &ErrorCertificateServerError
@@ -1786,9 +1786,10 @@ func (as *applicationService) deleteApplicationCertificate(
 	if certErr := as.certService.DeleteCertificateByReference(
 		ctx, cert.CertificateReferenceTypeApplication, appID); certErr != nil {
 		if certErr.Type == serviceerror.ClientErrorType {
-			errorDescription := "Failed to delete application certificate: " +
-				certErr.ErrorDescription
-			return serviceerror.CustomServiceError(ErrorCertificateClientError, errorDescription)
+			return serviceerror.CustomServiceError(ErrorCertificateClientError, core.I18nMessage{
+				Key:          "error.applicationservice.delete_certificate_failed_description",
+				DefaultValue: "Failed to delete application certificate: " + certErr.ErrorDescription.DefaultValue,
+			})
 		}
 		as.logger.Error("Failed to delete application certificate", log.String("appID", appID),
 			log.Any("serviceError", certErr))
@@ -1804,9 +1805,10 @@ func (as *applicationService) deleteOAuthAppCertificate(
 	if certErr := as.certService.DeleteCertificateByReference(
 		ctx, cert.CertificateReferenceTypeOAuthApp, clientID); certErr != nil {
 		if certErr.Type == serviceerror.ClientErrorType {
-			errorDescription := "Failed to delete OAuth app certificate: " +
-				certErr.ErrorDescription
-			return serviceerror.CustomServiceError(ErrorCertificateClientError, errorDescription)
+			return serviceerror.CustomServiceError(ErrorCertificateClientError, core.I18nMessage{
+				Key:          "error.applicationservice.delete_oauth_certificate_failed_description",
+				DefaultValue: "Failed to delete OAuth app certificate: " + certErr.ErrorDescription.DefaultValue,
+			})
 		}
 		as.logger.Error("Failed to delete OAuth app certificate", log.String("clientID", clientID),
 			log.Any("serviceError", certErr))
@@ -1829,10 +1831,10 @@ func (as *applicationService) getApplicationCertificate(ctx context.Context, app
 		}
 
 		if certErr.Type == serviceerror.ClientErrorType {
-			errorDescription := "Failed to retrieve application certificate: " +
-				certErr.ErrorDescription
-			return nil, serviceerror.CustomServiceError(
-				ErrorCertificateClientError, errorDescription)
+			return nil, serviceerror.CustomServiceError(ErrorCertificateClientError, core.I18nMessage{
+				Key:          "error.applicationservice.retrieve_certificate_failed_description",
+				DefaultValue: "Failed to retrieve application certificate: " + certErr.ErrorDescription.DefaultValue,
+			})
 		}
 		as.logger.Error("Failed to retrieve application certificate", log.Any("serviceError", certErr),
 			log.String("appID", appID))
@@ -1858,10 +1860,10 @@ func (as *applicationService) updateApplicationCertificate(ctx context.Context, 
 		ctx, refType, appID)
 	if certErr != nil && certErr.Code != cert.ErrorCertificateNotFound.Code {
 		if certErr.Type == serviceerror.ClientErrorType {
-			errorDescription := "Failed to retrieve application certificate: " +
-				certErr.ErrorDescription
-			return nil, serviceerror.CustomServiceError(
-				ErrorCertificateClientError, errorDescription)
+			return nil, serviceerror.CustomServiceError(ErrorCertificateClientError, core.I18nMessage{
+				Key:          "error.applicationservice.retrieve_certificate_failed_description",
+				DefaultValue: "Failed to retrieve application certificate: " + certErr.ErrorDescription.DefaultValue,
+			})
 		}
 		as.logger.Error("Failed to retrieve application certificate", log.Any("serviceError", certErr),
 			log.String("appID", appID))
@@ -1886,10 +1888,12 @@ func (as *applicationService) updateApplicationCertificate(ctx context.Context, 
 			_, svcErr := as.certService.UpdateCertificateByID(ctx, existingCert.ID, updatedCert)
 			if svcErr != nil {
 				if svcErr.Type == serviceerror.ClientErrorType {
-					errorDescription := "Failed to update application certificate: " +
-						svcErr.ErrorDescription
-					return nil, serviceerror.CustomServiceError(
-						ErrorCertificateClientError, errorDescription)
+					errDesc := "Failed to update application certificate: " +
+						svcErr.ErrorDescription.DefaultValue
+					return nil, serviceerror.CustomServiceError(ErrorCertificateClientError, core.I18nMessage{
+						Key:          "error.applicationservice.update_certificate_failed_description",
+						DefaultValue: errDesc,
+					})
 				}
 				as.logger.Error("Failed to update application certificate", log.Any("serviceError", svcErr),
 					log.String("appID", appID))
@@ -1899,9 +1903,12 @@ func (as *applicationService) updateApplicationCertificate(ctx context.Context, 
 			_, svcErr := as.certService.CreateCertificate(ctx, updatedCert)
 			if svcErr != nil {
 				if svcErr.Type == serviceerror.ClientErrorType {
-					errorDescription := "Failed to create application certificate: " +
-						svcErr.ErrorDescription
-					return nil, serviceerror.CustomServiceError(ErrorCertificateClientError, errorDescription)
+					errDesc := "Failed to create application certificate: " +
+						svcErr.ErrorDescription.DefaultValue
+					return nil, serviceerror.CustomServiceError(ErrorCertificateClientError, core.I18nMessage{
+						Key:          "error.applicationservice.create_certificate_failed_description",
+						DefaultValue: errDesc,
+					})
 				}
 				as.logger.Error("Failed to create application certificate", log.Any("serviceError", svcErr),
 					log.String("appID", appID))
@@ -1919,9 +1926,12 @@ func (as *applicationService) updateApplicationCertificate(ctx context.Context, 
 				ctx, refType, appID)
 			if deleteErr != nil {
 				if deleteErr.Type == serviceerror.ClientErrorType {
-					errorDescription := "Failed to delete application certificate: " + deleteErr.ErrorDescription
-					return nil, serviceerror.CustomServiceError(
-						ErrorCertificateClientError, errorDescription)
+					errDesc := "Failed to delete application certificate: " +
+						deleteErr.ErrorDescription.DefaultValue
+					return nil, serviceerror.CustomServiceError(ErrorCertificateClientError, core.I18nMessage{
+						Key:          "error.applicationservice.delete_certificate_failed_description",
+						DefaultValue: errDesc,
+					})
 				}
 				as.logger.Error("Failed to delete application certificate", log.Any("serviceError", deleteErr),
 					log.String("appID", appID))
@@ -2184,17 +2194,20 @@ func (as *applicationService) mapStoreError(err error) *serviceerror.ServiceErro
 	return &ErrorInternalServerError
 }
 
-// wrapConsentServiceError converts an I18nServiceError from the consent service into a ServiceError
+// wrapConsentServiceError converts an ServiceError from the consent service into a ServiceError
 // for the application service.
-func (as *applicationService) wrapConsentServiceError(err *serviceerror.I18nServiceError) *serviceerror.ServiceError {
+func (as *applicationService) wrapConsentServiceError(
+	err *serviceerror.ServiceError) *serviceerror.ServiceError {
 	if err == nil {
 		return nil
 	}
 
 	if err.Type == serviceerror.ClientErrorType {
 		as.logger.Debug("Failed to sync consent purpose for the application changes", log.Any("error", err))
-		return serviceerror.CustomServiceError(ErrorConsentSyncFailed,
-			fmt.Sprintf(ErrorConsentSyncFailed.ErrorDescription+" : code - %s", err.Code))
+		return serviceerror.CustomServiceError(ErrorConsentSyncFailed, core.I18nMessage{
+			Key:          "error.applicationservice.consent_sync_failed_description",
+			DefaultValue: fmt.Sprintf(ErrorConsentSyncFailed.ErrorDescription.DefaultValue+" : code - %s", err.Code),
+		})
 	}
 
 	as.logger.Error("Failed to sync consent purpose for the application changes", log.Any("error", err))

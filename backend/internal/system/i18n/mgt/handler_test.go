@@ -221,7 +221,7 @@ func (suite *I18nHandlerTestSuite) TestHandleClearOverrideTranslation_Success() 
 
 func (suite *I18nHandlerTestSuite) TestHandleError_NotFound() {
 	// Testing manual error construction/mapping in handleError
-	svcErr := &serviceerror.I18nServiceError{
+	svcErr := &serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "I18N-1006", // Assuming this is TranslationNotFound
 	}

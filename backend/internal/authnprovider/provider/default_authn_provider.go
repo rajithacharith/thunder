@@ -29,6 +29,7 @@ import (
 	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
 	"github.com/asgardeo/thunder/internal/entity"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -72,7 +73,7 @@ func (p *defaultAuthnProvider) Authenticate(
 		authResponse, authErr := p.passkeyService.FinishAuthentication(ctx, passkeyCredential)
 		if authErr != nil {
 			return nil, newClientError(authnprovidercm.ErrorCodeAuthenticationFailed,
-				authErr.Error, authErr.ErrorDescription)
+				authErr.Error.DefaultValue, authErr.ErrorDescription.DefaultValue)
 		}
 		authenticatedEntityID = authResponse.ID
 	} else if otpCredential, ok := credentials["otp"]; ok {
@@ -96,13 +97,14 @@ func (p *defaultAuthnProvider) Authenticate(
 			if authErr.Type == serviceerror.ClientErrorType {
 				if authErr.Code == otp.ErrorIncorrectOTP.Code {
 					return nil, newClientError(authnprovidercm.ErrorCodeAuthenticationFailed,
-						authErr.Error, authErr.ErrorDescription)
+						authErr.Error.DefaultValue, authErr.ErrorDescription.DefaultValue)
 				}
 				return nil, newClientError(authnprovidercm.ErrorCodeInvalidRequest,
-					authErr.Error, authErr.ErrorDescription)
+					authErr.Error.DefaultValue, authErr.ErrorDescription.DefaultValue)
 			}
 			return nil, p.logAndReturnServerError("OTP authentication failed with server error",
-				log.String("error", authErr.Error), log.String("errorDescription", authErr.ErrorDescription))
+				log.String("error", authErr.Error.DefaultValue),
+				log.String("errorDescription", authErr.ErrorDescription.DefaultValue))
 		}
 		authenticatedEntityID = authResponse.ID
 	} else if userID, ok := identifiers["userID"]; ok && userID != "" {
@@ -253,19 +255,21 @@ func (p *defaultAuthnProvider) GetAttributes(
 
 func newClientError(code, msg, desc string) *serviceerror.ServiceError {
 	return &serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             code,
-		Error:            msg,
-		ErrorDescription: desc,
+		Type: serviceerror.ClientErrorType,
+		Code: code,
+		Error: core.I18nMessage{
+			Key:          "error.authnproviderservice." + code,
+			DefaultValue: msg,
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.authnproviderservice." + code + "_description",
+			DefaultValue: desc,
+		},
 	}
 }
 
 func (p *defaultAuthnProvider) logAndReturnServerError(msg string, fields ...log.Field) *serviceerror.ServiceError {
 	p.logger.Error(msg, fields...)
-	return &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             authnprovidercm.ErrorCodeSystemError,
-		Error:            "System error",
-		ErrorDescription: "An internal server error occurred",
-	}
+	err := errorSystemError
+	return &err
 }

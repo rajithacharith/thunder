@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 )
@@ -78,7 +79,10 @@ func (suite *DisplayUtilTestSuite) TestResolveDisplayAttributePaths_SchemaServic
 	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
 	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
 		Return((map[string]string)(nil),
-			&serviceerror.ServiceError{Code: "500", Error: "schema unavailable"})
+			&serviceerror.ServiceError{
+				Code:  "500",
+				Error: i18ncore.I18nMessage{DefaultValue: "schema unavailable"},
+			})
 
 	logger := log.GetLogger()
 	result := ResolveDisplayAttributePaths(context.Background(), []string{"employee"}, schemaMock, logger)

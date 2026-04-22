@@ -64,7 +64,7 @@ func (e *flowGraphExporter) GetParameterizerType() string {
 func (e *flowGraphExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	flows, err := e.service.ListFlows(ctx, 10000, 0, common.FlowType(""))
 	if err != nil {
-		return nil, err
+		return nil, &serviceerror.InternalServerError
 	}
 	ids := make([]string, 0, len(flows.Flows))
 	for _, flow := range flows.Flows {

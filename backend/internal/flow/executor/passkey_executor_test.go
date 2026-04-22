@@ -19,6 +19,8 @@
 package executor
 
 import (
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"encoding/json"
 	"testing"
 
@@ -233,8 +235,10 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteChallenge_ServiceError_Cli
 
 	suite.mockPasskeyService.On("StartAuthentication", mock.Anything, mock.Anything).Return(
 		nil, &serviceerror.ServiceError{
-			Type:             serviceerror.ClientErrorType,
-			ErrorDescription: "User has no registered passkeys",
+			Type: serviceerror.ClientErrorType,
+			ErrorDescription: i18ncore.I18nMessage{
+				Key: "error.test.user_has_no_registered_passkeys", DefaultValue: "User has no registered passkeys",
+			},
 		})
 
 	resp, err := suite.executor.Execute(ctx)
@@ -251,8 +255,10 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteChallenge_ServiceError_Ser
 
 	suite.mockPasskeyService.On("StartAuthentication", mock.Anything, mock.Anything).Return(
 		nil, &serviceerror.ServiceError{
-			Type:             serviceerror.ServerErrorType,
-			ErrorDescription: "Database connection failed",
+			Type: serviceerror.ServerErrorType,
+			ErrorDescription: i18ncore.I18nMessage{
+				Key: "error.test.database_connection_failed", DefaultValue: "Database connection failed",
+			},
 		})
 
 	_, err := suite.executor.Execute(ctx)
@@ -342,8 +348,10 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_InvalidPasskey_Clie
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).Return(
 		authnprovidermgr.AuthUser{}, (*authnprovidermgr.AuthnBasicResult)(nil), &serviceerror.ServiceError{
-			Type:             serviceerror.ClientErrorType,
-			ErrorDescription: "Invalid signature",
+			Type: serviceerror.ClientErrorType,
+			ErrorDescription: i18ncore.I18nMessage{
+				Key: "error.test.invalid_signature", DefaultValue: "Invalid signature",
+			},
 		})
 
 	resp, err := suite.executor.Execute(ctx)
@@ -369,7 +377,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_ServiceError_Server
 		mock.Anything, mock.Anything, mock.Anything).Return(
 		authnprovidermgr.AuthUser{}, (*authnprovidermgr.AuthnBasicResult)(nil), &serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
-			ErrorDescription: "Database error",
+			ErrorDescription: i18ncore.I18nMessage{Key: "error.test.database_error", DefaultValue: "Database error"},
 		})
 
 	_, err := suite.executor.Execute(ctx)
@@ -435,7 +443,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterStart_ServiceError
 	suite.mockPasskeyService.On("StartRegistration", mock.Anything, mock.Anything).Return(
 		nil, &serviceerror.ServiceError{
 			Type:             serviceerror.ClientErrorType,
-			ErrorDescription: "User not found",
+			ErrorDescription: i18ncore.I18nMessage{Key: "error.test.user_not_found", DefaultValue: "User not found"},
 		})
 
 	resp, err := suite.executor.Execute(ctx)
@@ -452,7 +460,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterStart_ServiceError
 	suite.mockPasskeyService.On("StartRegistration", mock.Anything, mock.Anything).Return(
 		nil, &serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
-			ErrorDescription: "Database error",
+			ErrorDescription: i18ncore.I18nMessage{Key: "error.test.database_error", DefaultValue: "Database error"},
 		})
 
 	_, err := suite.executor.Execute(ctx)
@@ -593,8 +601,10 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_ServiceErro
 
 	suite.mockPasskeyService.On("FinishRegistration", mock.Anything, mock.Anything).Return(
 		nil, &serviceerror.ServiceError{
-			Type:             serviceerror.ClientErrorType,
-			ErrorDescription: "Invalid attestation object",
+			Type: serviceerror.ClientErrorType,
+			ErrorDescription: i18ncore.I18nMessage{
+				Key: "error.test.invalid_attestation_object", DefaultValue: "Invalid attestation object",
+			},
 		})
 
 	resp, err := suite.executor.Execute(ctx)
@@ -618,7 +628,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_ServiceErro
 	suite.mockPasskeyService.On("FinishRegistration", mock.Anything, mock.Anything).Return(
 		nil, &serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
-			ErrorDescription: "Database error",
+			ErrorDescription: i18ncore.I18nMessage{Key: "error.test.database_error", DefaultValue: "Database error"},
 		})
 
 	_, err := suite.executor.Execute(ctx)

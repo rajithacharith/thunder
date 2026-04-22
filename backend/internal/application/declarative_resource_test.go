@@ -31,6 +31,7 @@ import (
 	"github.com/asgardeo/thunder/internal/application/model"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 )
@@ -84,17 +85,17 @@ func (s *ApplicationExporterTestSuite) TestGetAllResourceIDs_Success() {
 }
 
 func (s *ApplicationExporterTestSuite) TestGetAllResourceIDs_Error() {
-	expectedError := &serviceerror.ServiceError{
+	serviceError := &serviceerror.ServiceError{
 		Code:  "ERR_CODE",
-		Error: "test error",
+		Error: i18ncore.I18nMessage{DefaultValue: "test error"},
 	}
 
-	s.mockService.EXPECT().GetApplicationList(mock.Anything).Return(nil, expectedError)
+	s.mockService.EXPECT().GetApplicationList(mock.Anything).Return(nil, serviceError)
 
 	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), ids)
-	assert.Equal(s.T(), expectedError, err)
+	assert.Equal(s.T(), &serviceerror.InternalServerError, err)
 }
 
 func (s *ApplicationExporterTestSuite) TestGetAllResourceIDs_EmptyList() {
@@ -126,18 +127,18 @@ func (s *ApplicationExporterTestSuite) TestGetResourceByID_Success() {
 }
 
 func (s *ApplicationExporterTestSuite) TestGetResourceByID_Error() {
-	expectedError := &serviceerror.ServiceError{
+	serviceError := &serviceerror.ServiceError{
 		Code:  "ERR_CODE",
-		Error: "test error",
+		Error: i18ncore.I18nMessage{DefaultValue: "test error"},
 	}
 
-	s.mockService.EXPECT().GetApplication(mock.Anything, "app1").Return(nil, expectedError)
+	s.mockService.EXPECT().GetApplication(mock.Anything, "app1").Return(nil, serviceError)
 
 	resource, name, err := s.exporter.GetResourceByID(context.Background(), "app1")
 
 	assert.Nil(s.T(), resource)
 	assert.Empty(s.T(), name)
-	assert.Equal(s.T(), expectedError, err)
+	assert.Equal(s.T(), serviceError, err)
 }
 
 func (s *ApplicationExporterTestSuite) TestValidateResource_Success() {

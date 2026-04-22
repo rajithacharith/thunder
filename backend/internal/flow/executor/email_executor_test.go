@@ -416,7 +416,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_TemplateRenderError() 
 		template.ScenarioUserInvite,
 		template.TemplateTypeEmail,
 		mock.Anything,
-	).Return(nil, &serviceerror.I18nServiceError{Code: "TMP-5000"})
+	).Return(nil, &serviceerror.ServiceError{Code: "TMP-5000"})
 
 	resp, err := suite.executor.Execute(ctx)
 	if suite.Error(err) {

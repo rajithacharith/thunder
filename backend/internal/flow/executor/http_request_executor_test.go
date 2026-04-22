@@ -34,6 +34,7 @@ import (
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 )
@@ -943,8 +944,8 @@ func (suite *HTTPRequestExecutorTestSuite) TestEnrichOURuntimeData_OULookupFailu
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-not-found").
 		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
-			Error:            "ou_not_found",
-			ErrorDescription: "organization unit not found",
+			Error:            i18ncore.I18nMessage{DefaultValue: "ou_not_found"},
+			ErrorDescription: i18ncore.I18nMessage{DefaultValue: "organization unit not found"},
 		})
 
 	mockFlowFactory := coremock.NewFlowFactoryInterfaceMock(suite.T())

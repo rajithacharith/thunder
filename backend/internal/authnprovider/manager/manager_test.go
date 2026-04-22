@@ -19,6 +19,8 @@
 package manager
 
 import (
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"context"
 	"testing"
 
@@ -84,7 +86,9 @@ func (s *ManagerTestSuite) TestAuthenticateUser_ClientError() {
 	credentials := map[string]interface{}{"password": "wrong"}
 	meta := &authnprovidercm.AuthnMetadata{}
 	provErr := &serviceerror.ServiceError{
-		Code: "PROV-ERR", Type: serviceerror.ClientErrorType, Error: "invalid credentials",
+		Code:  "PROV-ERR",
+		Type:  serviceerror.ClientErrorType,
+		Error: core.I18nMessage{Key: "error.test.invalid_credentials", DefaultValue: "invalid credentials"},
 	}
 
 	s.mockProvider.On("Authenticate", context.Background(), identifiers, credentials, meta).
@@ -126,7 +130,8 @@ func (s *ManagerTestSuite) assertAuthenticateUserClientErrorMapping(
 	meta := &authnprovidercm.AuthnMetadata{}
 	provErr := &serviceerror.ServiceError{
 		Code: providerErrorCode, Type: serviceerror.ClientErrorType,
-		Error: providerError, ErrorDescription: providerErrorDescription,
+		Error:            core.I18nMessage{DefaultValue: providerError},
+		ErrorDescription: core.I18nMessage{DefaultValue: providerErrorDescription},
 	}
 
 	s.mockProvider.On("Authenticate", context.Background(), identifiers, credentials, meta).
@@ -138,7 +143,7 @@ func (s *ManagerTestSuite) assertAuthenticateUserClientErrorMapping(
 	s.NotNil(svcErr)
 	s.Equal(expectedServiceErrorCode, svcErr.Code)
 	s.Equal(serviceerror.ClientErrorType, svcErr.Type)
-	s.Equal(providerErrorDescription, svcErr.ErrorDescription)
+	s.Equal(providerErrorDescription, svcErr.ErrorDescription.DefaultValue)
 	s.Nil(result)
 	s.False(returnedAuthUser.IsAuthenticated())
 }
@@ -148,7 +153,9 @@ func (s *ManagerTestSuite) TestAuthenticateUser_ServerError() {
 	credentials := map[string]interface{}{"password": "secret"}
 	meta := &authnprovidercm.AuthnMetadata{}
 	provErr := &serviceerror.ServiceError{
-		Code: "PROV-ERR", Type: serviceerror.ServerErrorType, Error: "database unavailable",
+		Code:  "PROV-ERR",
+		Type:  serviceerror.ServerErrorType,
+		Error: core.I18nMessage{Key: "error.test.database_unavailable", DefaultValue: "database unavailable"},
 	}
 
 	s.mockProvider.On("Authenticate", context.Background(), identifiers, credentials, meta).
@@ -270,7 +277,9 @@ func (s *ManagerTestSuite) TestGetUserAttributes_CacheMissServerError() {
 
 	requestedAttrs := &authnprovidercm.RequestedAttributes{}
 	provErr := &serviceerror.ServiceError{
-		Code: "PROVIDER-ERR", Type: serviceerror.ServerErrorType, Error: "provider failure",
+		Code:  "PROVIDER-ERR",
+		Type:  serviceerror.ServerErrorType,
+		Error: core.I18nMessage{Key: "error.test.provider_failure", DefaultValue: "provider failure"},
 	}
 
 	s.mockProvider.On("GetAttributes", context.Background(), "tok", requestedAttrs,
@@ -291,7 +300,9 @@ func (s *ManagerTestSuite) TestGetUserAttributes_CacheMissClientError() {
 
 	requestedAttrs := &authnprovidercm.RequestedAttributes{}
 	provErr := &serviceerror.ServiceError{
-		Code: "PROVIDER-ERR", Type: serviceerror.ClientErrorType, Error: "token expired",
+		Code:  "PROVIDER-ERR",
+		Type:  serviceerror.ClientErrorType,
+		Error: core.I18nMessage{Key: "error.test.token_expired", DefaultValue: "token expired"},
 	}
 
 	s.mockProvider.On("GetAttributes", context.Background(), "expired-tok", requestedAttrs,

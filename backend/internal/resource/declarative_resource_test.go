@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 
 	"github.com/stretchr/testify/assert"
@@ -109,7 +110,7 @@ func (s *ResourceServerExporterTestSuite) TestGetAllResourceIDs_Error() {
 	ctx := context.Background()
 	expectedError := &serviceerror.ServiceError{
 		Code:  "ERR_CODE",
-		Error: "test error",
+		Error: i18ncore.I18nMessage{DefaultValue: "test error"},
 	}
 
 	s.mockService.EXPECT().GetResourceServerList(ctx, 1000, 0).Return(nil, expectedError)

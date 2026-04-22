@@ -213,8 +213,9 @@ func (u *userTypeResolver) handleUserOnboardingFlows(ctx *core.NodeContext,
 			if svcErr != nil {
 				logger.Error("Failed to validate user type against selected OU",
 					log.String(userTypeKey, userType), log.String(ouIDKey, selectedOUID),
-					log.String("error", svcErr.Error))
-				return nil, fmt.Errorf("failed to validate user type against selected OU: %s", svcErr.Error)
+					log.String("error", svcErr.Error.DefaultValue))
+				return nil, fmt.Errorf("failed to validate user type against selected OU: %s",
+					svcErr.Error.DefaultValue)
 			}
 			if !isValid {
 				logger.Debug("User type not valid for selected OU",
@@ -236,7 +237,7 @@ func (u *userTypeResolver) handleUserOnboardingFlows(ctx *core.NodeContext,
 	// List all available user schemas
 	schemas, svcErr := u.userSchemaService.GetUserSchemaList(ctx.Context, 100, 0, false)
 	if svcErr != nil {
-		logger.Debug("Failed to list user schemas", log.String("error", svcErr.Error))
+		logger.Debug("Failed to list user schemas", log.String("error", svcErr.Error.DefaultValue))
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Failed to retrieve user types"
 		return execResp, nil
@@ -353,8 +354,9 @@ func (u *userTypeResolver) filterSchemasByOU(ctx *core.NodeContext,
 		isValid, svcErr := u.ouService.IsParent(ctx.Context, schema.OUID, selectedOUID)
 		if svcErr != nil {
 			logger.Error("Failed to check OU ancestry for schema",
-				log.String("schema", schema.Name), log.String("error", svcErr.Error))
-			return nil, fmt.Errorf("failed to check OU ancestry for schema %s: %s", schema.Name, svcErr.Error)
+				log.String("schema", schema.Name), log.String("error", svcErr.Error.DefaultValue))
+			return nil, fmt.Errorf("failed to check OU ancestry for schema %s: %s",
+				schema.Name, svcErr.Error.DefaultValue)
 		}
 		if isValid {
 			filtered = append(filtered, schema)
@@ -489,7 +491,7 @@ func (u *userTypeResolver) getUserSchemaAndOU(
 	userSchema, svcErr := u.userSchemaService.GetUserSchemaByName(ctx, userType)
 	if svcErr != nil {
 		logger.Error("Failed to resolve user schema for user type",
-			log.String(userTypeKey, userType), log.String("error", svcErr.Error))
+			log.String(userTypeKey, userType), log.String("error", svcErr.Error.DefaultValue))
 		return nil, "", fmt.Errorf("failed to resolve user schema for user type: %s", userType)
 	}
 

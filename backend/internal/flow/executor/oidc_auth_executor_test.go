@@ -19,6 +19,8 @@
 package executor
 
 import (
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -499,8 +501,10 @@ func (suite *OIDCAuthExecutorTestSuite) TestGetIDTokenClaims_Errors() {
 			name:  "ClientError",
 			token: "invalid_token",
 			serviceError: &serviceerror.ServiceError{
-				Type:             serviceerror.ClientErrorType,
-				ErrorDescription: "Invalid ID token",
+				Type: serviceerror.ClientErrorType,
+				ErrorDescription: i18ncore.I18nMessage{
+					Key: "error.test.invalid_id_token", DefaultValue: "Invalid ID token",
+				},
 			},
 			expectError:        false,
 			expectedStatus:     common.ExecFailure,
@@ -510,9 +514,11 @@ func (suite *OIDCAuthExecutorTestSuite) TestGetIDTokenClaims_Errors() {
 			name:  "ServerError",
 			token: "id_token",
 			serviceError: &serviceerror.ServiceError{
-				Type:             serviceerror.ServerErrorType,
-				Code:             "OIDC-5000",
-				ErrorDescription: "Failed to extract claims",
+				Type: serviceerror.ServerErrorType,
+				Code: "OIDC-5000",
+				ErrorDescription: i18ncore.I18nMessage{
+					Key: "error.test.failed_to_extract_claims", DefaultValue: "Failed to extract claims",
+				},
 			},
 			expectError:   true,
 			errorContains: "failed to extract claims from the ID token",
@@ -1336,9 +1342,11 @@ func (suite *OIDCAuthExecutorTestSuite) TestGetContextUserAttributes_OAuthClient
 		{
 			name: "ClientError",
 			serviceError: &serviceerror.ServiceError{
-				Code:             "CONFIG_ERROR",
-				ErrorDescription: "Configuration not found",
-				Type:             serviceerror.ClientErrorType,
+				Code: "CONFIG_ERROR",
+				ErrorDescription: i18ncore.I18nMessage{
+					Key: "error.test.configuration_not_found", DefaultValue: "Configuration not found",
+				},
+				Type: serviceerror.ClientErrorType,
 			},
 			idTokenClaims: map[string]interface{}{
 				"sub":   "user-sub",
@@ -1353,9 +1361,11 @@ func (suite *OIDCAuthExecutorTestSuite) TestGetContextUserAttributes_OAuthClient
 		{
 			name: "ServerError",
 			serviceError: &serviceerror.ServiceError{
-				Code:             "SERVER_ERROR",
-				ErrorDescription: "Internal server error",
-				Type:             serviceerror.ServerErrorType,
+				Code: "SERVER_ERROR",
+				ErrorDescription: i18ncore.I18nMessage{
+					Key: "error.test.internal_server_error", DefaultValue: "Internal server error",
+				},
+				Type: serviceerror.ServerErrorType,
 			},
 			idTokenClaims: map[string]interface{}{
 				"sub": "user-sub",

@@ -30,6 +30,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/tests/mocks/sysauthzmock"
@@ -1833,7 +1834,11 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 
 	resp, err := service.GetOrganizationUnitUsers(context.Background(), "ou-1", 5, 0, false)
 	suite.Require().Nil(resp)
-	suite.Require().Equal(serviceerror.ErrorUnauthorized, *err)
+	suite.Require().Equal(serviceerror.ErrorUnauthorized.Code, err.Code)
+	suite.Require().Equal(serviceerror.ErrorUnauthorized.Type, err.Type)
+	suite.Require().Equal(serviceerror.ErrorUnauthorized.Error.DefaultValue, err.Error.DefaultValue)
+	suite.Require().Equal(serviceerror.ErrorUnauthorized.ErrorDescription.DefaultValue,
+		err.ErrorDescription.DefaultValue)
 
 	// Verify no store or resolver calls were made
 	store.AssertNumberOfCalls(suite.T(), "IsOrganizationUnitExists", 0)
@@ -1850,7 +1855,11 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 
 	resp, err := service.GetOrganizationUnitGroups(context.Background(), "ou-1", 5, 0)
 	suite.Require().Nil(resp)
-	suite.Require().Equal(serviceerror.ErrorUnauthorized, *err)
+	suite.Require().Equal(serviceerror.ErrorUnauthorized.Code, err.Code)
+	suite.Require().Equal(serviceerror.ErrorUnauthorized.Type, err.Type)
+	suite.Require().Equal(serviceerror.ErrorUnauthorized.Error.DefaultValue, err.Error.DefaultValue)
+	suite.Require().Equal(serviceerror.ErrorUnauthorized.ErrorDescription.DefaultValue,
+		err.ErrorDescription.DefaultValue)
 
 	store.AssertNumberOfCalls(suite.T(), "IsOrganizationUnitExists", 0)
 }
@@ -1859,7 +1868,10 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 	store := newOrganizationUnitStoreInterfaceMock(suite.T())
 	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(suite.T())
 	authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
-		Return(false, &serviceerror.ServiceError{Code: "500", Error: "authz service unavailable"}).Once()
+		Return(false, &serviceerror.ServiceError{
+			Code:  "500",
+			Error: i18ncore.I18nMessage{DefaultValue: "authz service unavailable"},
+		}).Once()
 
 	userRes := NewOUUserResolverMock(suite.T())
 	service := suite.newServiceWithResolvers(store, authzMock, userRes, nil)
@@ -1879,7 +1891,11 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 
 	resp, err := service.GetOrganizationUnitChildren(context.Background(), "ou-1", 5, 0)
 	suite.Require().Nil(resp)
-	suite.Require().Equal(serviceerror.ErrorUnauthorized, *err)
+	suite.Require().Equal(serviceerror.ErrorUnauthorized.Code, err.Code)
+	suite.Require().Equal(serviceerror.ErrorUnauthorized.Type, err.Type)
+	suite.Require().Equal(serviceerror.ErrorUnauthorized.Error.DefaultValue, err.Error.DefaultValue)
+	suite.Require().Equal(serviceerror.ErrorUnauthorized.ErrorDescription.DefaultValue,
+		err.ErrorDescription.DefaultValue)
 
 	store.AssertNumberOfCalls(suite.T(), "IsOrganizationUnitExists", 0)
 }
@@ -1888,7 +1904,10 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 	store := newOrganizationUnitStoreInterfaceMock(suite.T())
 	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(suite.T())
 	authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
-		Return(false, &serviceerror.ServiceError{Code: "500", Error: "authz service unavailable"}).Once()
+		Return(false, &serviceerror.ServiceError{
+			Code:  "500",
+			Error: i18ncore.I18nMessage{DefaultValue: "authz service unavailable"},
+		}).Once()
 
 	service := suite.newService(store, authzMock)
 
@@ -1901,7 +1920,10 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 	store := newOrganizationUnitStoreInterfaceMock(suite.T())
 	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(suite.T())
 	authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
-		Return(false, &serviceerror.ServiceError{Code: "500", Error: "authz service unavailable"}).Once()
+		Return(false, &serviceerror.ServiceError{
+			Code:  "500",
+			Error: i18ncore.I18nMessage{DefaultValue: "authz service unavailable"},
+		}).Once()
 
 	groupRes := new(OUGroupResolverMock)
 	service := suite.newServiceWithResolvers(store, authzMock, nil, groupRes)
@@ -1975,7 +1997,8 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 				Return(0, nil).Once()
 			return userRes, nil
 		},
-		func(svc *organizationUnitService, path string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
+		func(svc *organizationUnitService, path string, limit,
+			offset int) (interface{}, *serviceerror.ServiceError) {
 			return svc.GetOrganizationUnitUsersByPath(context.Background(), path, limit, offset, false)
 		},
 	)
@@ -2146,7 +2169,8 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 				Return(0, nil).Once()
 			return nil, groupRes
 		},
-		func(svc *organizationUnitService, path string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
+		func(svc *organizationUnitService, path string, limit,
+			offset int) (interface{}, *serviceerror.ServiceError) {
 			return svc.GetOrganizationUnitGroupsByPath(context.Background(), path, limit, offset)
 		},
 	)

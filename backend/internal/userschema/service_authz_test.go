@@ -29,6 +29,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/security"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/tests/mocks/consentmock"
@@ -45,9 +46,12 @@ func newAuthzError(t interface {
 	Cleanup(func())
 }) *sysauthzmock.SystemAuthorizationServiceInterfaceMock {
 	svcErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ServerErrorType,
-		Code:  "SSE-5000",
-		Error: "authz failure",
+		Type: serviceerror.ServerErrorType,
+		Code: "SSE-5000",
+		Error: core.I18nMessage{
+			Key:          "error.sysauthz.authorization_failure",
+			DefaultValue: "authz failure",
+		},
 	}
 	m := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 	m.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).

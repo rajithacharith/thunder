@@ -45,7 +45,7 @@ func (m *mockFlowMetaService) GetFlowMetadata(
 	namespace *string,
 ) (*FlowMetadataResponse, *serviceerror.ServiceError) {
 	args := m.Called(ctx, metaType, id, language, namespace)
-	if args.Get(0) == nil {
+	if args.Get(1) != nil {
 		return nil, args.Get(1).(*serviceerror.ServiceError)
 	}
 	return args.Get(0).(*FlowMetadataResponse), nil

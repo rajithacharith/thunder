@@ -18,51 +18,90 @@
 
 package authn
 
-import "github.com/asgardeo/thunder/internal/system/error/serviceerror"
+import (
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
+)
 
 // Client errors for credentials authentication.
 var (
 	// ErrorEmptyAttributesOrCredentials is the error when the provided user attributes or credentials are empty.
 	ErrorEmptyAttributesOrCredentials = serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "AUTH-CRED-1001",
-		Error:            "Empty attributes or credentials",
-		ErrorDescription: "The user attributes or credentials cannot be empty",
+		Type: serviceerror.ClientErrorType,
+		Code: "AUTH-CRED-1001",
+		Error: core.I18nMessage{
+			Key:          "error.authnservice.empty_attributes_or_credentials",
+			DefaultValue: "Empty attributes or credentials",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.authnservice.empty_attributes_or_credentials_description",
+			DefaultValue: "The user attributes or credentials cannot be empty",
+		},
 	}
 	// ErrorInvalidCredentials is the error when the provided credentials are invalid.
 	ErrorInvalidCredentials = serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "AUTH-CRED-1002",
-		Error:            "Invalid credentials",
-		ErrorDescription: "The provided credentials are invalid",
+		Type: serviceerror.ClientErrorType,
+		Code: "AUTH-CRED-1002",
+		Error: core.I18nMessage{
+			Key:          "error.authnservice.invalid_credentials",
+			DefaultValue: "Invalid credentials",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.authnservice.invalid_credentials_description",
+			DefaultValue: "The provided credentials are invalid",
+		},
 	}
 	// ErrorClientErrorFromUserSvcAuthentication is the error when there is a client error from
 	// the user service during authentication.
 	ErrorClientErrorFromUserSvcAuthentication = serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "AUTH-CRED-1003",
-		Error:            "authentication failed",
-		ErrorDescription: "An error occurred while authenticating the user",
+		Type: serviceerror.ClientErrorType,
+		Code: "AUTH-CRED-1003",
+		Error: core.I18nMessage{
+			Key:          "error.authnservice.authentication_failed",
+			DefaultValue: "authentication failed",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.authnservice.authentication_failed_description",
+			DefaultValue: "An error occurred while authenticating the user",
+		},
 	}
 	// ErrorInvalidToken is the error when the provided token is invalid.
 	ErrorInvalidToken = serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "AUTH-CRED-1004",
-		Error:            "Invalid token",
-		ErrorDescription: "The provided token is invalid",
+		Type: serviceerror.ClientErrorType,
+		Code: "AUTH-CRED-1004",
+		Error: core.I18nMessage{
+			Key:          "error.authnservice.invalid_token",
+			DefaultValue: "Invalid token",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.authnservice.invalid_token_description",
+			DefaultValue: "The provided token is invalid",
+		},
 	}
 	// ErrorOTPAuthenticationFailed is the error when the OTP authentication attempt fails.
 	ErrorOTPAuthenticationFailed = serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "AUTHN-OTPAUTHN-1009",
-		Error:            "Authentication failed",
-		ErrorDescription: "The OTP authentication attempt failed",
+		Type: serviceerror.ClientErrorType,
+		Code: "AUTHN-OTPAUTHN-1009",
+		Error: core.I18nMessage{
+			Key:          "error.authnservice.otp_authentication_failed",
+			DefaultValue: "Authentication failed",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.authnservice.otp_authentication_failed_description",
+			DefaultValue: "The OTP authentication attempt failed",
+		},
 	}
 	// ErrorPasskeyAuthenticationFailed is the error when the passkey authentication attempt fails.
 	ErrorPasskeyAuthenticationFailed = serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "AUTHN-PSK-1001",
-		Error:            "Authentication failed",
-		ErrorDescription: "The passkey authentication attempt failed",
+		Type: serviceerror.ClientErrorType,
+		Code: "AUTHN-PSK-1001",
+		Error: core.I18nMessage{
+			Key:          "error.authnservice.passkey_authentication_failed",
+			DefaultValue: "Authentication failed",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.authnservice.passkey_authentication_failed_description",
+			DefaultValue: "The passkey authentication attempt failed",
+		},
 	}
 )

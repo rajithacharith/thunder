@@ -42,7 +42,8 @@ var otpUseOnlyNumericChars = true
 // OTPServiceInterface defines the interface for OTP operations.
 type OTPServiceInterface interface {
 	SendOTP(ctx context.Context, request common.SendOTPDTO) (*common.SendOTPResultDTO, *serviceerror.ServiceError)
-	VerifyOTP(ctx context.Context, request common.VerifyOTPDTO) (*common.VerifyOTPResultDTO, *serviceerror.ServiceError)
+	VerifyOTP(ctx context.Context, request common.VerifyOTPDTO) (
+		*common.VerifyOTPResultDTO, *serviceerror.ServiceError)
 }
 
 // otpService implements the OTPServiceInterface.
@@ -306,7 +307,7 @@ func (s *otpService) verifyAndDecodeSessionToken(token string, logger *log.Logge
 	jwtConfig := config.GetThunderRuntime().Config.JWT
 	svcErr := s.jwtService.VerifyJWT(token, "otp-svc", jwtConfig.Issuer)
 	if svcErr != nil {
-		logger.Debug("Invalid session token", log.String("error", svcErr.Error))
+		logger.Debug("Invalid session token", log.String("error", svcErr.Error.DefaultValue))
 		return nil, &ErrorInvalidSessionToken
 	}
 

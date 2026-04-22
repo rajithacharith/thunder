@@ -79,12 +79,17 @@ type UserSchemaListResponse struct {
 	Links        []testutils.Link     `json:"links"`
 }
 
-// ErrorResponse represents an API error response
+type I18nMessage struct {
+	Key          string `json:"key,omitempty"`
+	DefaultValue string `json:"defaultValue,omitempty"`
+}
+
+// ErrorResponse represents an API error response.
 type ErrorResponse struct {
-	Code        string `json:"code"`
-	Message     string `json:"message"`
-	Description string `json:"description,omitempty"`
-	TraceID     string `json:"traceId,omitempty"`
+	Code        string      `json:"code"`
+	Message     I18nMessage `json:"message"`
+	Description I18nMessage `json:"description,omitempty"`
+	TraceID     string      `json:"traceId,omitempty"`
 }
 
 // OrganizationUnit represents an organization unit
@@ -98,16 +103,16 @@ type OrganizationUnit struct {
 
 // CreateUserRequest represents the request to create a user
 type CreateUserRequest struct {
-	OUID             string          `json:"ouId"`
-	Type             string          `json:"type"`
-	Attributes       json.RawMessage `json:"attributes,omitempty"`
+	OUID       string          `json:"ouId"`
+	Type       string          `json:"type"`
+	Attributes json.RawMessage `json:"attributes,omitempty"`
 }
 
 // UpdateUserRequest represents the request to update a user
 type UpdateUserRequest struct {
-	OUID             string          `json:"ouId,omitempty"`
-	Type             string          `json:"type,omitempty"`
-	Attributes       json.RawMessage `json:"attributes,omitempty"`
+	OUID       string          `json:"ouId,omitempty"`
+	Type       string          `json:"type,omitempty"`
+	Attributes json.RawMessage `json:"attributes,omitempty"`
 }
 
 // CreateUserByPathRequest represents the request to create a user under a handle path

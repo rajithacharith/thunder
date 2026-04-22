@@ -650,7 +650,7 @@ func (ts *DisplayAttributeTestSuite) createSchemaExpectError(schema CreateUserSc
 	err = json.Unmarshal(bodyBytes, &errorResp)
 	ts.Require().NoError(err)
 	ts.Assert().NotEmpty(errorResp.Code, "Error should have code")
-	ts.Assert().NotEmpty(errorResp.Message, "Error should have message")
+	ts.Assert().NotEmpty(errorResp.Message.DefaultValue, "Error should have message")
 }
 
 func (ts *DisplayAttributeTestSuite) getUserList(include string) []userItem {

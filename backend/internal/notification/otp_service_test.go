@@ -660,7 +660,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_TemplateRenderFailure_ReturnsInter
 	sender := suite.getValidSender()
 	suite.mockSenderService.On("GetSender", mock.Anything, "sender-123").Return(sender, nil).Once()
 
-	renderErr := &serviceerror.I18nServiceError{Code: "TPL-5000"}
+	renderErr := &serviceerror.ServiceError{Code: "TPL-5000"}
 	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioOTP,
 		template.TemplateTypeSMS, mock.Anything).
 		Return(nil, renderErr).Once()

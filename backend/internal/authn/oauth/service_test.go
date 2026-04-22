@@ -19,6 +19,8 @@
 package oauth
 
 import (
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"bytes"
 	"context"
 	"encoding/json"
@@ -141,9 +143,11 @@ func (suite *OAuthAuthnServiceTestSuite) TestGetOAuthClientConfigWithError() {
 			idpID: testIDPID,
 			mockSetup: func(m *idpmock.IDPServiceInterfaceMock) {
 				clientErr := &serviceerror.ServiceError{
-					Type:             serviceerror.ClientErrorType,
-					Code:             "IDP_NOT_FOUND",
-					ErrorDescription: "Identity provider not found",
+					Type: serviceerror.ClientErrorType,
+					Code: "IDP_NOT_FOUND",
+					ErrorDescription: core.I18nMessage{
+						Key: "error.test.identity_provider_not_found", DefaultValue: "Identity provider not found",
+					},
 				}
 				m.On("GetIdentityProvider", mock.Anything, testIDPID).Return(nil, clientErr)
 			},
@@ -154,9 +158,11 @@ func (suite *OAuthAuthnServiceTestSuite) TestGetOAuthClientConfigWithError() {
 			idpID: testIDPID,
 			mockSetup: func(m *idpmock.IDPServiceInterfaceMock) {
 				serverErr := &serviceerror.ServiceError{
-					Type:             serviceerror.ServerErrorType,
-					Code:             "INTERNAL_ERROR",
-					ErrorDescription: "Database unavailable",
+					Type: serviceerror.ServerErrorType,
+					Code: "INTERNAL_ERROR",
+					ErrorDescription: core.I18nMessage{
+						Key: "error.test.database_unavailable", DefaultValue: "Database unavailable",
+					},
 				}
 				m.On("GetIdentityProvider", mock.Anything, testIDPID).Return(nil, serverErr)
 			},
@@ -281,9 +287,11 @@ func (suite *OAuthAuthnServiceTestSuite) TestBuildAuthorizeURLWithError() {
 	}
 
 	serverErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "INTERNAL_ERROR",
-		ErrorDescription: "Database unavailable",
+		Type: serviceerror.ServerErrorType,
+		Code: "INTERNAL_ERROR",
+		ErrorDescription: core.I18nMessage{
+			Key: "error.test.database_unavailable", DefaultValue: "Database unavailable",
+		},
 	}
 	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).Return(nil, serverErr)
 

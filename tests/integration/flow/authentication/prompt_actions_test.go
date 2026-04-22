@@ -895,8 +895,8 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestSMSOTPAuthWithInvalidMobile() {
 
 	if errorResp != nil {
 		// If we get an error response back, that's expected
-		ts.Require().NotEmpty(errorResp.Message, "Error message should be provided")
-		ts.T().Logf("Authentication failed as expected: %s", errorResp.Message)
+		ts.Require().NotEmpty(errorResp.Message.DefaultValue, "Error message should be provided")
+		ts.T().Logf("Authentication failed as expected: %s", errorResp.Message.DefaultValue)
 	} else {
 		ts.T().Fatalf("Expected authentication to fail with invalid mobile number")
 	}

@@ -320,7 +320,7 @@ func (h *httpRequestExecutor) enrichOURuntimeData(ctx *core.NodeContext, config 
 	organizationUnit, svcErr := h.ouService.GetOrganizationUnit(ctx.Context, ouID)
 	if svcErr != nil {
 		logger.Warn("Failed to fetch OU details for placeholder enrichment",
-			log.String(ouIDKey, ouID), log.String("error", svcErr.Error))
+			log.String(ouIDKey, ouID), log.String("error", svcErr.Error.DefaultValue))
 		return
 	}
 

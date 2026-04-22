@@ -167,7 +167,7 @@ func (rs *roleService) CreateRole(
 			logger.Debug("Organization unit not found", log.String("ouID", role.OUID))
 			return nil, &ErrorOrganizationUnitNotFound
 		}
-		logger.Error("Failed to validate organization unit", log.String("error", svcErr.Error))
+		logger.Error("Failed to validate organization unit", log.String("error", svcErr.Error.DefaultValue))
 		return nil, &ErrorInternalServerError
 	}
 
@@ -280,7 +280,7 @@ func (rs *roleService) UpdateRoleWithPermissions(
 			logger.Debug("Organization unit not found", log.String("ouID", role.OUID))
 			return nil, &ErrorOrganizationUnitNotFound
 		}
-		logger.Error("Failed to validate organization unit", log.String("error", svcErr.Error))
+		logger.Error("Failed to validate organization unit", log.String("error", svcErr.Error.DefaultValue))
 		return nil, &ErrorInternalServerError
 	}
 
@@ -710,7 +710,7 @@ func (rs *roleService) validateAssignmentIDs(
 				logger.Debug("Invalid group member IDs found")
 				return &ErrorInvalidAssignmentID
 			}
-			logger.Error("Failed to validate group IDs", log.String("error", err.Error))
+			logger.Error("Failed to validate group IDs", log.String("error", err.Error.DefaultValue))
 			return &ErrorInternalServerError
 		}
 	}
@@ -897,7 +897,7 @@ func (rs *roleService) validatePermissions(
 		if svcErr != nil {
 			logger.Error("Failed to validate permissions",
 				log.String("resourceServerId", resPerm.ResourceServerID),
-				log.String("error", svcErr.Error))
+				log.String("error", svcErr.Error.DefaultValue))
 			return &ErrorInternalServerError
 		}
 

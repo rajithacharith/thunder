@@ -52,7 +52,7 @@ var googleUserSchema = testutils.UserSchema{
 			"type": "string",
 		},
 		"password": map[string]interface{}{
-			"type": "string",
+			"type":       "string",
 			"credential": true,
 		},
 		"sub": map[string]interface{}{
@@ -125,9 +125,9 @@ func (suite *GoogleAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err)
 
 	user := testutils.User{
-		Type:             googleUserSchema.Name,
-		OUID:             suite.ouID,
-		Attributes:       json.RawMessage(attributesJSON),
+		Type:       googleUserSchema.Name,
+		OUID:       suite.ouID,
+		Attributes: json.RawMessage(attributesJSON),
 	}
 
 	userID, err := testutils.CreateUser(user)
@@ -265,7 +265,7 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthStartInvalidIDPID() {
 	err = json.NewDecoder(resp.Body).Decode(&errorResponse)
 	suite.Require().NoError(err)
 	suite.NotEmpty(errorResponse.Code)
-	suite.NotEmpty(errorResponse.Message)
+	suite.NotEmpty(errorResponse.Message.DefaultValue)
 }
 
 func (suite *GoogleAuthTestSuite) TestGoogleAuthStartMissingIDPID() {
@@ -315,7 +315,7 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthCompleteFlowSuccess() {
 
 	finishRequest := map[string]interface{}{
 		"sessionToken": sessionToken,
-		"code":          authCode,
+		"code":         authCode,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -344,7 +344,7 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthCompleteFlowSuccess() {
 func (suite *GoogleAuthTestSuite) TestGoogleAuthFinishInvalidSessionToken() {
 	finishRequest := map[string]interface{}{
 		"sessionToken": "invalid-session-token",
-		"code":          "some-auth-code",
+		"code":         "some-auth-code",
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -411,7 +411,7 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthCompleteFlowWithSkipAssertionFal
 
 	finishRequest := map[string]interface{}{
 		"sessionToken":  sessionToken,
-		"code":           authCode,
+		"code":          authCode,
 		"skipAssertion": false,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
@@ -469,7 +469,7 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthCompleteFlowWithSkipAssertionTru
 
 	finishRequest := map[string]interface{}{
 		"sessionToken":  sessionToken,
-		"code":           authCode,
+		"code":          authCode,
 		"skipAssertion": true,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
@@ -570,7 +570,7 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthWithAssuranceLevelAAL1() {
 	// Step 3: Finish Google authentication
 	finishReq := map[string]interface{}{
 		"sessionToken": sessionToken,
-		"code":          code,
+		"code":         code,
 	}
 	finishReqJSON, err := json.Marshal(finishReq)
 	suite.Require().NoError(err)
@@ -629,7 +629,7 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthWithSkipAssertion() {
 	// Finish with skipAssertion=true
 	finishReq := map[string]interface{}{
 		"sessionToken":  sessionToken,
-		"code":           code,
+		"code":          code,
 		"skipAssertion": true,
 	}
 	finishReqJSON, err := json.Marshal(finishReq)

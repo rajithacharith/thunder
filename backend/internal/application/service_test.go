@@ -39,6 +39,7 @@ import (
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/userschema"
 	"github.com/asgardeo/thunder/tests/mocks/certmock"
@@ -346,7 +347,7 @@ func (suite *ServiceTestSuite) TestValidateRedirectURIs() {
 			if tt.expectError {
 				assert.NotNil(suite.T(), err)
 				if tt.errorMsg != "" {
-					assert.Contains(suite.T(), err.ErrorDescription, tt.errorMsg)
+					assert.Contains(suite.T(), err.ErrorDescription.DefaultValue, tt.errorMsg)
 				}
 			} else {
 				assert.Nil(suite.T(), err)
@@ -428,7 +429,7 @@ func (suite *ServiceTestSuite) TestValidateGrantTypesAndResponseTypes() {
 			if tt.expectError {
 				assert.NotNil(suite.T(), err)
 				if tt.errorContains != "" {
-					assert.Contains(suite.T(), err.ErrorDescription, tt.errorContains)
+					assert.Contains(suite.T(), err.ErrorDescription.DefaultValue, tt.errorContains)
 				}
 			} else {
 				assert.Nil(suite.T(), err)
@@ -639,7 +640,7 @@ func (suite *ServiceTestSuite) TestValidateTokenEndpointAuthMethod_PrivateKeyJWT
 			require.NotNil(suite.T(), err)
 			assert.Equal(suite.T(), serviceerror.ClientErrorType, err.Type)
 			assert.Equal(suite.T(), tt.expectedErrCode, err.Code)
-			assert.Equal(suite.T(), tt.expectedErrDesc, err.ErrorDescription)
+			assert.Equal(suite.T(), tt.expectedErrDesc, err.ErrorDescription.DefaultValue)
 		})
 	}
 }
@@ -692,7 +693,7 @@ func (suite *ServiceTestSuite) TestValidatePublicClientConfiguration() {
 			if tt.expectError {
 				assert.NotNil(suite.T(), err)
 				if tt.errorMsg != "" {
-					assert.Contains(suite.T(), err.ErrorDescription, tt.errorMsg)
+					assert.Contains(suite.T(), err.ErrorDescription.DefaultValue, tt.errorMsg)
 				}
 			} else {
 				assert.Nil(suite.T(), err)
@@ -2157,13 +2158,13 @@ func (suite *ServiceTestSuite) TestDeleteApplication_OAuthCertError_ClientError(
 	mockCertService.EXPECT().
 		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeOAuthApp, "oauth-client-id").
 		Return(&serviceerror.ServiceError{Type: serviceerror.ClientErrorType,
-			Code: "CERT-1001", ErrorDescription: "Invalid client ID"})
+			Code: "CERT-1001", ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Invalid client ID"}})
 
 	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
 
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), ErrorCertificateClientError.Code, svcErr.Code)
-	assert.Contains(suite.T(), svcErr.ErrorDescription, "Failed to delete OAuth app certificate")
+	assert.Contains(suite.T(), svcErr.ErrorDescription.DefaultValue, "Failed to delete OAuth app certificate")
 }
 
 // TestDeleteApplication_WithOAuthCert_Success verifies successful deletion of an application with OAuth certificate.
@@ -2297,7 +2298,7 @@ func (suite *ServiceTestSuite) TestCreateApplicationCertificate_ClientError() {
 
 	svcErr := &serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
-		ErrorDescription: "Invalid certificate",
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Invalid certificate"},
 	}
 
 	mockCertService.EXPECT().CreateCertificate(mock.Anything, certificate).Return(nil, svcErr)
@@ -2495,7 +2496,7 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_ClientError() {
 
 	svcErr := &serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
-		ErrorDescription: "Invalid certificate",
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Invalid certificate"},
 	}
 
 	mockCertService.EXPECT().
@@ -2594,7 +2595,7 @@ func (suite *ServiceTestSuite) TestDeleteApplicationCertificate_ClientError() {
 
 	svcErr := &serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
-		ErrorDescription: "Certificate not found",
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Certificate not found"},
 	}
 
 	mockCertService.EXPECT().
@@ -2628,7 +2629,7 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_ClientError_NonNotF
 	svcErr := &serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "CES-1001",
-		ErrorDescription: "Invalid certificate",
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Invalid certificate"},
 	}
 
 	mockCertService.EXPECT().
@@ -2828,7 +2829,7 @@ func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Error() {
 
 	svcErr := &serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
-		ErrorDescription: "Invalid certificate",
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Invalid certificate"},
 	}
 
 	mockCertService.EXPECT().
@@ -3622,8 +3623,8 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_GetCertificateCl
 	clientError := &serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "CERT-1001",
-		Error:            "Certificate validation failed",
-		ErrorDescription: "Invalid certificate reference",
+		Error:            i18ncore.I18nMessage{DefaultValue: "Certificate validation failed"},
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Invalid certificate reference"},
 	}
 
 	mockCertService.EXPECT().
@@ -3638,8 +3639,8 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_GetCertificateCl
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), ErrorCertificateClientError.Code, svcErr.Code)
 	assert.Equal(suite.T(), serviceerror.ClientErrorType, svcErr.Type)
-	assert.Contains(suite.T(), svcErr.ErrorDescription, "Failed to retrieve application certificate")
-	assert.Contains(suite.T(), svcErr.ErrorDescription, "Invalid certificate reference")
+	assert.Contains(suite.T(), svcErr.ErrorDescription.DefaultValue, "Failed to retrieve application certificate")
+	assert.Contains(suite.T(), svcErr.ErrorDescription.DefaultValue, "Invalid certificate reference")
 }
 
 // TestUpdateApplicationCertificate_GetCertificateServerError tests when GetCertificateByReference
@@ -3652,8 +3653,8 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_GetCertificateSe
 	serverError := &serviceerror.ServiceError{
 		Type:             serviceerror.ServerErrorType,
 		Code:             "CERT-5001",
-		Error:            "Database error",
-		ErrorDescription: "Failed to retrieve certificate from database",
+		Error:            i18ncore.I18nMessage{DefaultValue: "Database error"},
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Failed to retrieve certificate from database"},
 	}
 
 	mockCertService.EXPECT().
@@ -3690,8 +3691,8 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_UpdateCertificat
 	clientError := &serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "CERT-1002",
-		Error:            "Certificate validation failed",
-		ErrorDescription: "Invalid certificate format",
+		Error:            i18ncore.I18nMessage{DefaultValue: "Certificate validation failed"},
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Invalid certificate format"},
 	}
 
 	mockCertService.EXPECT().
@@ -3710,8 +3711,8 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_UpdateCertificat
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), ErrorCertificateClientError.Code, svcErr.Code)
 	assert.Equal(suite.T(), serviceerror.ClientErrorType, svcErr.Type)
-	assert.Contains(suite.T(), svcErr.ErrorDescription, "Failed to update application certificate")
-	assert.Contains(suite.T(), svcErr.ErrorDescription, "Invalid certificate format")
+	assert.Contains(suite.T(), svcErr.ErrorDescription.DefaultValue, "Failed to update application certificate")
+	assert.Contains(suite.T(), svcErr.ErrorDescription.DefaultValue, "Invalid certificate format")
 }
 
 // TestUpdateApplicationCertificate_UpdateCertificateServerError tests when UpdateCertificateByID
@@ -3735,8 +3736,8 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_UpdateCertificat
 	serverError := &serviceerror.ServiceError{
 		Type:             serviceerror.ServerErrorType,
 		Code:             "CERT-5002",
-		Error:            "Database error",
-		ErrorDescription: "Failed to update certificate in database",
+		Error:            i18ncore.I18nMessage{DefaultValue: "Database error"},
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Failed to update certificate in database"},
 	}
 
 	mockCertService.EXPECT().
@@ -3771,8 +3772,8 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_CreateCertificat
 	clientError := &serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "CERT-1003",
-		Error:            "Certificate validation failed",
-		ErrorDescription: "Invalid certificate data",
+		Error:            i18ncore.I18nMessage{DefaultValue: "Certificate validation failed"},
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Invalid certificate data"},
 	}
 
 	mockCertService.EXPECT().
@@ -3791,8 +3792,8 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_CreateCertificat
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), ErrorCertificateClientError.Code, svcErr.Code)
 	assert.Equal(suite.T(), serviceerror.ClientErrorType, svcErr.Type)
-	assert.Contains(suite.T(), svcErr.ErrorDescription, "Failed to create application certificate")
-	assert.Contains(suite.T(), svcErr.ErrorDescription, "Invalid certificate data")
+	assert.Contains(suite.T(), svcErr.ErrorDescription.DefaultValue, "Failed to create application certificate")
+	assert.Contains(suite.T(), svcErr.ErrorDescription.DefaultValue, "Invalid certificate data")
 }
 
 // TestUpdateApplicationCertificate_CreateCertificateServerError tests when CreateCertificate
@@ -3810,8 +3811,8 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_CreateCertificat
 	serverError := &serviceerror.ServiceError{
 		Type:             serviceerror.ServerErrorType,
 		Code:             "CERT-5003",
-		Error:            "Database error",
-		ErrorDescription: "Failed to create certificate in database",
+		Error:            i18ncore.I18nMessage{DefaultValue: "Database error"},
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Failed to create certificate in database"},
 	}
 
 	mockCertService.EXPECT().
@@ -3849,8 +3850,8 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_DeleteCertificat
 	clientError := &serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "CERT-1004",
-		Error:            "Certificate not found",
-		ErrorDescription: "Certificate does not exist",
+		Error:            i18ncore.I18nMessage{DefaultValue: "Certificate not found"},
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Certificate does not exist"},
 	}
 
 	mockCertService.EXPECT().
@@ -3869,8 +3870,8 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_DeleteCertificat
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), ErrorCertificateClientError.Code, svcErr.Code)
 	assert.Equal(suite.T(), serviceerror.ClientErrorType, svcErr.Type)
-	assert.Contains(suite.T(), svcErr.ErrorDescription, "Failed to delete application certificate")
-	assert.Contains(suite.T(), svcErr.ErrorDescription, "Certificate does not exist")
+	assert.Contains(suite.T(), svcErr.ErrorDescription.DefaultValue, "Failed to delete application certificate")
+	assert.Contains(suite.T(), svcErr.ErrorDescription.DefaultValue, "Certificate does not exist")
 }
 
 // TestUpdateApplicationCertificate_DeleteCertificateServerError tests when DeleteCertificateByReference
@@ -3891,8 +3892,8 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_DeleteCertificat
 	serverError := &serviceerror.ServiceError{
 		Type:             serviceerror.ServerErrorType,
 		Code:             "CERT-5004",
-		Error:            "Database error",
-		ErrorDescription: "Failed to delete certificate from database",
+		Error:            i18ncore.I18nMessage{DefaultValue: "Database error"},
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Failed to delete certificate from database"},
 	}
 
 	mockCertService.EXPECT().
@@ -4728,8 +4729,8 @@ func (suite *ServiceTestSuite) TestUpdateApplication_AppCertificateUpdateError()
 	certServerError := &serviceerror.ServiceError{
 		Type:             serviceerror.ServerErrorType,
 		Code:             "CERT-5001",
-		Error:            "Database error",
-		ErrorDescription: "Failed to retrieve certificate from database",
+		Error:            i18ncore.I18nMessage{DefaultValue: "Database error"},
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Failed to retrieve certificate from database"},
 	}
 
 	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
@@ -4995,7 +4996,7 @@ func (suite *ServiceTestSuite) runCreateApplicationConsentSyncFailsTest() {
 	mockStore.On("CreateApplication", mock.MatchedBy(isTxCtx), mock.Anything).Return(nil)
 	// Consent sync fails: ValidateConsentElements returns an I18n error.
 	mockConsentService.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 	result, svcErr := service.CreateApplication(context.Background(), app)
 
 	assert.Nil(suite.T(), result)
@@ -5046,9 +5047,9 @@ func (suite *ServiceTestSuite) TestUpdateApplication_ConsentEnabled_LoginConsent
 	// Consent enabled → deleteConsentPurposes path (LoginConsent.Enabled=false)
 	mockConsentService.On("IsEnabled").Return(true)
 	mockConsentService.On("ListConsentPurposes", mock.Anything, "default", "app123").
-		Return([]consent.ConsentPurpose{{ID: "purpose-1"}}, (*serviceerror.I18nServiceError)(nil))
+		Return([]consent.ConsentPurpose{{ID: "purpose-1"}}, (*serviceerror.ServiceError)(nil))
 	mockConsentService.On("DeleteConsentPurpose", mock.Anything, "default", "purpose-1").
-		Return((*serviceerror.I18nServiceError)(nil))
+		Return((*serviceerror.ServiceError)(nil))
 
 	result, svcErr := service.UpdateApplication(context.Background(), "app123", app)
 
@@ -5104,7 +5105,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_ConsentSyncFails_Compensate
 	mockConsentService.On("IsEnabled").Return(true)
 	// Consent sync fails: ValidateConsentElements returns an I18n error.
 	mockConsentService.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result, svcErr := service.UpdateApplication(context.Background(), "app123", app)
 
@@ -5266,7 +5267,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_ConsentSyncFails_WithCert_C
 	mockStore.On("CreateApplication", mock.MatchedBy(isTxCtx), mock.Anything).Return(nil)
 	// Consent sync fails
 	mockConsentService.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result, svcErr := service.CreateApplication(context.Background(), app)
 
@@ -5292,10 +5293,10 @@ func (suite *ServiceTestSuite) TestDeleteApplication_ConsentEnabled_DeleteConsen
 	mockStore.On("DeleteApplication", mock.MatchedBy(isTxCtx), "app123").Return(nil)
 	mockConsentService.On("IsEnabled").Return(true)
 	mockConsentService.On("ListConsentPurposes", mock.Anything, "default", "app123").
-		Return([]consent.ConsentPurpose{{ID: "purpose-1"}}, (*serviceerror.I18nServiceError)(nil))
+		Return([]consent.ConsentPurpose{{ID: "purpose-1"}}, (*serviceerror.ServiceError)(nil))
 	// Delete consent purpose fails with a non-associated-records error
 	mockConsentService.On("DeleteConsentPurpose", mock.Anything, "default", "purpose-1").
-		Return(&serviceerror.InternalServerErrorWithI18n)
+		Return(&serviceerror.InternalServerError)
 
 	svcErr := service.DeleteApplication(context.Background(), "app123")
 
@@ -6234,8 +6235,8 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthCertUpdateError() {
 	certError := &serviceerror.ServiceError{
 		Type:             serviceerror.ServerErrorType,
 		Code:             "CERT-500",
-		Error:            "Internal certificate error",
-		ErrorDescription: "Failed to retrieve certificate",
+		Error:            i18ncore.I18nMessage{DefaultValue: "Internal certificate error"},
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Failed to retrieve certificate"},
 	}
 	mockCertService.EXPECT().
 		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeOAuthApp, testClientID).

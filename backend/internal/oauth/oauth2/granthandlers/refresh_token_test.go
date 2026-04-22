@@ -377,7 +377,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_GetAttributeCach
 			Iat:              int64(suite.validClaims["iat"].(float64)),
 		}, nil)
 
-	cacheErr := &serviceerror.I18nServiceError{
+	cacheErr := &serviceerror.ServiceError{
 		Type: serviceerror.ServerErrorType,
 		Code: "ACS-2001",
 		Error: core.I18nMessage{
@@ -661,7 +661,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_NoRenewOnGrant_R
 
 	suite.mockAttrCacheService.On("GetAttributeCache", mock.Anything, testCacheID).
 		Return(&attributecache.AttributeCache{ID: testCacheID, Attributes: map[string]interface{}{}},
-			(*serviceerror.I18nServiceError)(nil)).Once()
+			(*serviceerror.ServiceError)(nil)).Once()
 
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
 		Token:    "new.access.token",
@@ -672,7 +672,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_NoRenewOnGrant_R
 	// TTL ≈ 82800 + buffer(60) = 82860; allow ±2 s for execution time between test setup and handler call.
 	suite.mockAttrCacheService.On("ExtendAttributeCacheTTL", mock.Anything, testCacheID,
 		mock.MatchedBy(func(ttl int) bool { return ttl >= 82858 && ttl <= 82862 })).
-		Return((*serviceerror.I18nServiceError)(nil))
+		Return((*serviceerror.ServiceError)(nil))
 
 	response, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
 
@@ -698,7 +698,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_ExtendsCache_Whe
 
 	suite.mockAttrCacheService.On("GetAttributeCache", mock.Anything, testCacheID).
 		Return(&attributecache.AttributeCache{ID: testCacheID, Attributes: map[string]interface{}{}},
-			(*serviceerror.I18nServiceError)(nil)).Once()
+			(*serviceerror.ServiceError)(nil)).Once()
 
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
 		Token:     "new.access.token",
@@ -709,7 +709,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_ExtendsCache_Whe
 
 	// Access token expiry (now+7200) > refresh token expiry (now+3400) → TTL = 7200 + buffer(60) = 7260.
 	suite.mockAttrCacheService.On("ExtendAttributeCacheTTL", mock.Anything, testCacheID, 7260).
-		Return((*serviceerror.I18nServiceError)(nil))
+		Return((*serviceerror.ServiceError)(nil))
 
 	response, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
 
@@ -736,7 +736,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_NoRenewOnGrant_E
 
 	suite.mockAttrCacheService.On("GetAttributeCache", mock.Anything, testCacheID).
 		Return(&attributecache.AttributeCache{ID: testCacheID, Attributes: map[string]interface{}{}},
-			(*serviceerror.I18nServiceError)(nil)).Once()
+			(*serviceerror.ServiceError)(nil)).Once()
 
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
 		Token:     "new.access.token",
@@ -745,7 +745,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_NoRenewOnGrant_E
 		Scopes:    []string{"read"},
 	}, nil)
 
-	extendErr := &serviceerror.I18nServiceError{
+	extendErr := &serviceerror.ServiceError{
 		Type: serviceerror.ServerErrorType,
 		Code: "ACS-2001",
 		Error: core.I18nMessage{
@@ -779,7 +779,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_RenewOnGrant_Ext
 
 	suite.mockAttrCacheService.On("GetAttributeCache", mock.Anything, testCacheID).
 		Return(&attributecache.AttributeCache{ID: testCacheID, Attributes: map[string]interface{}{}},
-			(*serviceerror.I18nServiceError)(nil)).Once()
+			(*serviceerror.ServiceError)(nil)).Once()
 
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
 		Token:          "new.access.token",
@@ -798,7 +798,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_RenewOnGrant_Ext
 
 	// Expect TTL to be extended to the refresh token validity period (86400 from config) + buffer(60) = 86460.
 	suite.mockAttrCacheService.On("ExtendAttributeCacheTTL", mock.Anything, testCacheID, 86460).
-		Return((*serviceerror.I18nServiceError)(nil))
+		Return((*serviceerror.ServiceError)(nil))
 
 	response, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
 
@@ -824,7 +824,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_RenewOnGrant_Ext
 
 	suite.mockAttrCacheService.On("GetAttributeCache", mock.Anything, testCacheID).
 		Return(&attributecache.AttributeCache{ID: testCacheID, Attributes: map[string]interface{}{}},
-			(*serviceerror.I18nServiceError)(nil)).Once()
+			(*serviceerror.ServiceError)(nil)).Once()
 
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
 		Token:          "new.access.token",
@@ -841,7 +841,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_RenewOnGrant_Ext
 		Scopes:    []string{"read"},
 	}, nil)
 
-	extendErr := &serviceerror.I18nServiceError{
+	extendErr := &serviceerror.ServiceError{
 		Type: serviceerror.ServerErrorType,
 		Code: "ACS-2001",
 		Error: core.I18nMessage{
@@ -880,7 +880,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_SkipsCacheExtend
 			ID:         testCacheID,
 			Attributes: map[string]interface{}{},
 			TTLSeconds: 100000,
-		}, (*serviceerror.I18nServiceError)(nil)).Once()
+		}, (*serviceerror.ServiceError)(nil)).Once()
 
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
 		Token:     "new.access.token",
@@ -926,7 +926,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestExtendCacheTTL_RefreshOutliv
 
 	suite.mockAttrCacheService.On("ExtendAttributeCacheTTL", mock.Anything, testCacheID,
 		mock.MatchedBy(func(ttl int) bool { return ttl >= 82858 && ttl <= 82862 })).
-		Return((*serviceerror.I18nServiceError)(nil))
+		Return((*serviceerror.ServiceError)(nil))
 
 	result := suite.handler.extendCacheTTL(
 		context.Background(), cacheEntry, suite.oauthApp,
@@ -944,7 +944,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestExtendCacheTTL_AccessOutlive
 	cacheEntry := &attributecache.AttributeCache{ID: testCacheID, TTLSeconds: 0}
 
 	suite.mockAttrCacheService.On("ExtendAttributeCacheTTL", mock.Anything, testCacheID, 7260).
-		Return((*serviceerror.I18nServiceError)(nil))
+		Return((*serviceerror.ServiceError)(nil))
 
 	result := suite.handler.extendCacheTTL(
 		context.Background(), cacheEntry, suite.oauthApp,
@@ -961,7 +961,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestExtendCacheTTL_RenewOnGrant_
 	cacheEntry := &attributecache.AttributeCache{ID: testCacheID, TTLSeconds: 0}
 
 	suite.mockAttrCacheService.On("ExtendAttributeCacheTTL", mock.Anything, testCacheID, 86460).
-		Return((*serviceerror.I18nServiceError)(nil))
+		Return((*serviceerror.ServiceError)(nil))
 
 	result := suite.handler.extendCacheTTL(
 		context.Background(), cacheEntry, suite.oauthApp,
@@ -976,7 +976,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestExtendCacheTTL_RenewOnGrant_
 func (suite *RefreshTokenGrantHandlerTestSuite) TestExtendCacheTTL_ExtendFails_ReturnsServerError() {
 	cacheEntry := &attributecache.AttributeCache{ID: testCacheID, TTLSeconds: 0}
 
-	extendErr := &serviceerror.I18nServiceError{
+	extendErr := &serviceerror.ServiceError{
 		Type: serviceerror.ServerErrorType,
 		Code: "ACS-2001",
 		Error: core.I18nMessage{

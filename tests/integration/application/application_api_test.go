@@ -51,7 +51,7 @@ var (
 		URL:                       "https://testapp.example.com",
 		LogoURL:                   "https://testapp.example.com/logo.png",
 		IsRegistrationFlowEnabled: false,
-		Certificate: nil,
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -76,7 +76,7 @@ var (
 		Template:                  "spa",
 		URL:                       "https://apptocreate.example.com",
 		LogoURL:                   "https://apptocreate.example.com/logo.png",
-		Certificate: nil,
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -101,7 +101,7 @@ var (
 		Template:                  "mobile",
 		URL:                       "https://appToUpdate.example.com",
 		LogoURL:                   "https://appToUpdate.example.com/logo.png",
-		Certificate: nil,
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -266,7 +266,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationListingWithLogoURL() {
 		IsRegistrationFlowEnabled: false,
 		URL:                       "https://appwithlogo.example.com",
 		LogoURL:                   "https://appwithlogo.example.com/logo.png",
-		Certificate: nil,
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -292,7 +292,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationListingWithLogoURL() {
 		RegistrationFlowID:        defaultRegistrationFlowID,
 		IsRegistrationFlowEnabled: false,
 		URL:                       "https://appwithoutlogo.example.com",
-		Certificate: nil,
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -636,7 +636,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithDefaults() {
 		IsRegistrationFlowEnabled: false,
 		AuthFlowID:                defaultAuthFlowID,
 		RegistrationFlowID:        defaultRegistrationFlowID,
-		Certificate: nil,
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -707,7 +707,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithInvalidTokenEndpoi
 		AuthFlowID:                defaultAuthFlowID,
 		RegistrationFlowID:        defaultRegistrationFlowID,
 		IsRegistrationFlowEnabled: false,
-		Certificate: nil,
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -739,7 +739,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithInvalidTokenEndpoi
 		AuthFlowID:                defaultAuthFlowID,
 		RegistrationFlowID:        defaultRegistrationFlowID,
 		IsRegistrationFlowEnabled: false,
-		Certificate: nil,
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -808,7 +808,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithPartialDefaults() 
 		AuthFlowID:                defaultAuthFlowID,
 		RegistrationFlowID:        defaultRegistrationFlowID,
 		IsRegistrationFlowEnabled: false,
-		Certificate: nil,
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -4398,7 +4398,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithAllowedUserTypes() {
 		Description:               "Application with allowed user types",
 		IsRegistrationFlowEnabled: false,
 		AllowedUserTypes:          []string{"employee", "customer"},
-		Certificate: nil,
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -4439,7 +4439,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidAllowedUserTypes() 
 		Description:               "Application with invalid user types",
 		IsRegistrationFlowEnabled: false,
 		AllowedUserTypes:          []string{"nonexistent_type_1", "nonexistent_type_2"},
-		Certificate: nil,
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -4476,14 +4476,14 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidAllowedUserTypes() 
 
 	// Verify error response
 	var errorResp struct {
-		Code        string `json:"code"`
-		Message     string `json:"message"`
-		Description string `json:"description"`
+		Code        string                `json:"code"`
+		Message     testutils.I18nMessage `json:"message"`
+		Description testutils.I18nMessage `json:"description"`
 	}
 	err = json.NewDecoder(resp.Body).Decode(&errorResp)
 	ts.Require().NoError(err)
 	ts.Assert().Equal("APP-1025", errorResp.Code, "Error code should be APP-1025")
-	ts.Assert().Contains(errorResp.Message, "Invalid user type", "Error message should mention invalid user type")
+	ts.Assert().Contains(errorResp.Message.DefaultValue, "Invalid user type", "Error message should mention invalid user type")
 }
 
 // TestApplicationUpdateWithAllowedUserTypes tests updating an application with allowed_user_types
@@ -4530,7 +4530,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithAllowedUserTypes() {
 		Name:                      "App To Update With User Types",
 		Description:               "Application to update",
 		IsRegistrationFlowEnabled: false,
-		Certificate: nil,
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -4591,7 +4591,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidAllowedUserTy
 		Name:                      "App To Update With Invalid Types",
 		Description:               "Application to update",
 		IsRegistrationFlowEnabled: false,
-		Certificate: nil,
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -4641,9 +4641,9 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidAllowedUserTy
 
 	// Verify error response
 	var errorResp struct {
-		Code        string `json:"code"`
-		Message     string `json:"message"`
-		Description string `json:"description"`
+		Code        string                `json:"code"`
+		Message     testutils.I18nMessage `json:"message"`
+		Description testutils.I18nMessage `json:"description"`
 	}
 	err = json.NewDecoder(resp.Body).Decode(&errorResp)
 	ts.Require().NoError(err)
@@ -4658,7 +4658,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithEmptyAllowedUserTypes() {
 		Description:               "Application with empty allowed user types",
 		IsRegistrationFlowEnabled: false,
 		AllowedUserTypes:          []string{},
-		Certificate: nil,
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -4721,7 +4721,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithPartialInvalidAllowedUserT
 		Description:               "Application with mix of valid and invalid user types",
 		IsRegistrationFlowEnabled: false,
 		AllowedUserTypes:          []string{"valid_user_type", "invalid_user_type"},
-		Certificate: nil,
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -4758,9 +4758,9 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithPartialInvalidAllowedUserT
 
 	// Verify error response
 	var errorResp struct {
-		Code        string `json:"code"`
-		Message     string `json:"message"`
-		Description string `json:"description"`
+		Code        string                `json:"code"`
+		Message     testutils.I18nMessage `json:"message"`
+		Description testutils.I18nMessage `json:"description"`
 	}
 	err = json.NewDecoder(resp.Body).Decode(&errorResp)
 	ts.Require().NoError(err)

@@ -18,42 +18,69 @@
 
 package manager
 
-import "github.com/asgardeo/thunder/internal/system/error/serviceerror"
+import (
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
+)
 
 var (
 	// ErrorAuthenticationFailed is returned when the underlying provider rejects the authentication
 	// attempt due to a client-side reason (e.g. invalid credentials).
 	ErrorAuthenticationFailed = serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "AUTHN-MGR-1001",
-		Error:            "Authentication failed",
-		ErrorDescription: "The authentication attempt failed",
+		Type: serviceerror.ClientErrorType,
+		Code: "AUTHN-MGR-1001",
+		Error: core.I18nMessage{
+			Key:          "error.authnmgrservice.authentication_failed",
+			DefaultValue: "Authentication failed",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.authnmgrservice.authentication_failed_description",
+			DefaultValue: "The authentication attempt failed",
+		},
 	}
 
 	// ErrorGetAttributesClientError is returned when the underlying provider rejects the
 	// attribute fetch due to a client-side reason (e.g. invalid or expired token).
 	ErrorGetAttributesClientError = serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "AUTHN-MGR-1004",
-		Error:            "Failed to get attributes",
-		ErrorDescription: "The attribute fetch was rejected by the provider",
+		Type: serviceerror.ClientErrorType,
+		Code: "AUTHN-MGR-1004",
+		Error: core.I18nMessage{
+			Key:          "error.authnmgrservice.failed_to_get_attributes",
+			DefaultValue: "Failed to get attributes",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.authnmgrservice.failed_to_get_attributes_description",
+			DefaultValue: "The attribute fetch was rejected by the provider",
+		},
 	}
 
 	// ErrorUserNotFound is returned when the underlying provider indicates no user was found
 	// matching the provided identifiers.
 	ErrorUserNotFound = serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "AUTHN-MGR-1007",
-		Error:            "User not found",
-		ErrorDescription: "No user found matching the provided identifiers",
+		Type: serviceerror.ClientErrorType,
+		Code: "AUTHN-MGR-1007",
+		Error: core.I18nMessage{
+			Key:          "error.authnmgrservice.user_not_found",
+			DefaultValue: "User not found",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.authnmgrservice.user_not_found_description",
+			DefaultValue: "No user found matching the provided identifiers",
+		},
 	}
 
 	// ErrorInvalidRequest is returned when the underlying provider rejects the authentication
 	// request as invalid.
 	ErrorInvalidRequest = serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "AUTHN-MGR-1008",
-		Error:            "Invalid request",
-		ErrorDescription: "The authentication request is invalid",
+		Type: serviceerror.ClientErrorType,
+		Code: "AUTHN-MGR-1008",
+		Error: core.I18nMessage{
+			Key:          "error.authnmgrservice.invalid_request",
+			DefaultValue: "Invalid request",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.authnmgrservice.invalid_request_description",
+			DefaultValue: "The authentication request is invalid",
+		},
 	}
 )

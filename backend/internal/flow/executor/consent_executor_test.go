@@ -270,7 +270,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_ResolveConsent_Clien
 
 	suite.mockConsentEnforcer.On("ResolveConsent", mock.Anything, "default", "app-123", "user-123",
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, &serviceerror.I18nServiceError{
+		Return(nil, &serviceerror.ServiceError{
 			Type: serviceerror.ClientErrorType,
 			ErrorDescription: i18ncore.I18nMessage{
 				DefaultValue: "consent config not found",
@@ -295,7 +295,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_ResolveConsent_Serve
 
 	suite.mockConsentEnforcer.On("ResolveConsent", mock.Anything, "default", "app-123", "user-123",
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, &serviceerror.I18nServiceError{
+		Return(nil, &serviceerror.ServiceError{
 			Type: serviceerror.ServerErrorType,
 		})
 
@@ -701,7 +701,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_RecordConsent_Clien
 
 	suite.mockConsentEnforcer.On("RecordConsent", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, &serviceerror.I18nServiceError{
+		Return(nil, &serviceerror.ServiceError{
 			Type: serviceerror.ClientErrorType,
 			ErrorDescription: i18ncore.I18nMessage{
 				DefaultValue: "invalid consent data",
@@ -734,7 +734,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_RecordConsent_Serve
 
 	suite.mockConsentEnforcer.On("RecordConsent", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, &serviceerror.I18nServiceError{
+		Return(nil, &serviceerror.ServiceError{
 			Type: serviceerror.ServerErrorType,
 		})
 

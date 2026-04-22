@@ -32,6 +32,7 @@ import (
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
 )
@@ -317,10 +318,12 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 			) {
 				// Import application package for its error constants
 				appNotFoundErr := &serviceerror.ServiceError{
-					Type:             serviceerror.ClientErrorType,
-					Code:             "APP-1001", // ErrorApplicationNotFound.Code
-					Error:            "Application not found",
-					ErrorDescription: "The requested application could not be found",
+					Type:  serviceerror.ClientErrorType,
+					Code:  "APP-1001", // ErrorApplicationNotFound.Code
+					Error: i18ncore.I18nMessage{DefaultValue: "Application not found"},
+					ErrorDescription: i18ncore.I18nMessage{
+						DefaultValue: "The requested application could not be found",
+					},
 				}
 				mockAppService.EXPECT().GetApplication(mock.Anything, appID).Return(nil, appNotFoundErr)
 				// No other mocks needed as it fails early
@@ -820,7 +823,18 @@ func TestExecute_EngineError_NonChallengeToken_RemovesContext(t *testing.T) {
 	mockAppService.EXPECT().GetApplication(mock.Anything, "test-app-id").Return(
 		&appmodel.Application{ID: "test-app-id", AuthFlowID: "test-graph-id"}, nil)
 
-	otherErr := &serviceerror.ServiceError{Code: "FES-9999", Error: "some other engine error"}
+	otherErr := &serviceerror.ServiceError{
+		Code: "FES-9999",
+		Type: serviceerror.ServerErrorType,
+		Error: i18ncore.I18nMessage{
+			Key:          "error.flowexecservice.engine_error",
+			DefaultValue: "some other engine error",
+		},
+		ErrorDescription: i18ncore.I18nMessage{
+			Key:          "error.flowexecservice.engine_error_description",
+			DefaultValue: "some other engine error",
+		},
+	}
 	mockEngine.EXPECT().Execute(mock.Anything).Return(FlowStep{}, otherErr)
 	// DeleteFlowContext MUST be called — non-challenge-token errors remove the context
 	mockStore.EXPECT().DeleteFlowContext(

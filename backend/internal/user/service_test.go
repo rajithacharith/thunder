@@ -30,6 +30,7 @@ import (
 	entitypkg "github.com/asgardeo/thunder/internal/entity"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
@@ -1941,7 +1942,10 @@ func TestUserService_UpdateUser_SchemaNotFound(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUserService_CheckUserAccess(t *testing.T) {
-	someAuthzErr := &serviceerror.ServiceError{Code: "SVC-5000", Error: "authz error"}
+	someAuthzErr := &serviceerror.ServiceError{
+		Code:  "SVC-5000",
+		Error: i18ncore.I18nMessage{DefaultValue: "authz error"},
+	}
 
 	tests := []struct {
 		name        string
@@ -1997,7 +2001,10 @@ func TestUserService_GetUserList_ErrorCases(t *testing.T) {
 	filters := map[string]interface{}{}
 	ouIDs := []string{testOrgID}
 	storeErr := errors.New("db error")
-	authzErr := &serviceerror.ServiceError{Code: "SVC-5000", Error: "authz error"}
+	authzErr := &serviceerror.ServiceError{
+		Code:  "SVC-5000",
+		Error: i18ncore.I18nMessage{DefaultValue: "authz error"},
+	}
 
 	tests := []struct {
 		name        string
@@ -2103,7 +2110,10 @@ func TestUserService_GetUserList_ErrorCases(t *testing.T) {
 
 func TestUserService_GetUsersByPath_AuthzChecks(t *testing.T) {
 	ouID := "ou-1"
-	authzErr := &serviceerror.ServiceError{Code: "SVC-5000", Error: "authz error"}
+	authzErr := &serviceerror.ServiceError{
+		Code:  "SVC-5000",
+		Error: i18ncore.I18nMessage{DefaultValue: "authz error"},
+	}
 
 	tests := []struct {
 		name        string
@@ -2164,7 +2174,10 @@ func TestUserService_GetUsersByPath_AuthzChecks(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUserService_CreateUser_AuthzChecks(t *testing.T) {
-	authzErr := &serviceerror.ServiceError{Code: "SVC-5000", Error: "authz error"}
+	authzErr := &serviceerror.ServiceError{
+		Code:  "SVC-5000",
+		Error: i18ncore.I18nMessage{DefaultValue: "authz error"},
+	}
 
 	tests := []struct {
 		name        string
@@ -2212,7 +2225,10 @@ func TestUserService_CreateUser_AuthzChecks(t *testing.T) {
 func TestUserService_GetUser_ErrorCases(t *testing.T) {
 	userID := svcTestUserID1
 	storeErr := errors.New("db error")
-	authzErr := &serviceerror.ServiceError{Code: "SVC-5000", Error: "authz error"}
+	authzErr := &serviceerror.ServiceError{
+		Code:  "SVC-5000",
+		Error: i18ncore.I18nMessage{DefaultValue: "authz error"},
+	}
 
 	tests := []struct {
 		name        string
@@ -2308,7 +2324,10 @@ func TestUserService_GetUser_ErrorCases(t *testing.T) {
 
 func TestUserService_GetUserGroups_AuthzChecks(t *testing.T) {
 	userID := svcTestUserID1
-	authzErr := &serviceerror.ServiceError{Code: "SVC-5000", Error: "authz error"}
+	authzErr := &serviceerror.ServiceError{
+		Code:  "SVC-5000",
+		Error: i18ncore.I18nMessage{DefaultValue: "authz error"},
+	}
 
 	tests := []struct {
 		name        string
@@ -2377,7 +2396,10 @@ func TestUserService_GetUserGroups_AuthzChecks(t *testing.T) {
 func TestUserService_UpdateUser_PreFetchAndAuthzChecks(t *testing.T) {
 	userID := svcTestUserID1
 	storeErr := errors.New("db error")
-	authzErr := &serviceerror.ServiceError{Code: "SVC-5000", Error: "authz error"}
+	authzErr := &serviceerror.ServiceError{
+		Code:  "SVC-5000",
+		Error: i18ncore.I18nMessage{DefaultValue: "authz error"},
+	}
 	updatedUser := &User{Type: testUserType, OUID: testOrgID,
 		Attributes: json.RawMessage(`{"email":"test@example.com"}`)}
 
@@ -2475,7 +2497,10 @@ func TestUserService_UpdateUser_PreFetchAndAuthzChecks(t *testing.T) {
 func TestUserService_UpdateUserAttributes_PreFetchAndAuthzChecks(t *testing.T) {
 	userID := svcTestUserID1
 	storeErr := errors.New("db error")
-	authzErr := &serviceerror.ServiceError{Code: "SVC-5000", Error: "authz error"}
+	authzErr := &serviceerror.ServiceError{
+		Code:  "SVC-5000",
+		Error: i18ncore.I18nMessage{DefaultValue: "authz error"},
+	}
 	attrs := json.RawMessage(`{"email":"new@example.com"}`)
 
 	tests := []struct {
@@ -2573,7 +2598,10 @@ func TestUserService_UpdateUserAttributes_PreFetchAndAuthzChecks(t *testing.T) {
 func TestUserService_UpdateUserCredentials_PreFetchAndAuthzChecks(t *testing.T) {
 	userID := svcTestUserID1
 	storeErr := errors.New("db error")
-	authzErr := &serviceerror.ServiceError{Code: "SVC-5000", Error: "authz error"}
+	authzErr := &serviceerror.ServiceError{
+		Code:  "SVC-5000",
+		Error: i18ncore.I18nMessage{DefaultValue: "authz error"},
+	}
 	creds := json.RawMessage(`{"password":"newPass"}`)
 
 	tests := []struct { //nolint:dupl
@@ -2655,7 +2683,10 @@ func TestUserService_UpdateUserCredentials_PreFetchAndAuthzChecks(t *testing.T) 
 func TestUserService_DeleteUser_PreFetchAndAuthzChecks(t *testing.T) {
 	userID := svcTestUserID1
 	storeErr := errors.New("db error")
-	authzErr := &serviceerror.ServiceError{Code: "SVC-5000", Error: "authz error"}
+	authzErr := &serviceerror.ServiceError{
+		Code:  "SVC-5000",
+		Error: i18ncore.I18nMessage{DefaultValue: "authz error"},
+	}
 
 	tests := []struct { //nolint:dupl
 		name        string
@@ -3050,7 +3081,10 @@ func TestPopulateUserDisplayNames_NilSchemaService(t *testing.T) {
 func TestPopulateUserDisplayNames_SchemaServiceError(t *testing.T) {
 	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
-		Return(map[string]string(nil), &serviceerror.ServiceError{Code: "ERR", Error: "err"}).Once()
+		Return(map[string]string(nil), &serviceerror.ServiceError{
+			Code:  "ERR",
+			Error: i18ncore.I18nMessage{DefaultValue: "err"},
+		}).Once()
 
 	service := &userService{userSchemaService: schemaMock}
 

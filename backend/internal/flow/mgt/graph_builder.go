@@ -27,6 +27,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/flow/executor"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -62,8 +63,10 @@ func newGraphBuilder(
 func (b *graphBuilder) GetGraph(ctx context.Context, flow *CompleteFlowDefinition) (
 	core.GraphInterface, *serviceerror.ServiceError) {
 	if flow == nil || len(flow.Nodes) == 0 {
-		return nil, serviceerror.CustomServiceError(ErrorInvalidFlowData,
-			"Flow definition is nil or has no nodes")
+		return nil, serviceerror.CustomServiceError(ErrorInvalidFlowData, i18ncore.I18nMessage{
+			Key:          "error.flowmgtservice.flow_definition_nil_or_empty_description",
+			DefaultValue: "Flow definition is nil or has no nodes",
+		})
 	}
 
 	logger := b.logger.With(log.String("flowID", flow.ID))
@@ -76,7 +79,10 @@ func (b *graphBuilder) GetGraph(ctx context.Context, flow *CompleteFlowDefinitio
 	graph, err := b.buildGraph(flow)
 	if err != nil {
 		logger.Error("Failed to build graph", log.Error(err))
-		return nil, serviceerror.CustomServiceError(ErrorGraphBuildFailure, err.Error())
+		return nil, serviceerror.CustomServiceError(ErrorGraphBuildFailure, i18ncore.I18nMessage{
+			Key:          "error.flowmgtservice.graph_build_failure_description",
+			DefaultValue: err.Error(),
+		})
 	}
 
 	// Cache the built graph

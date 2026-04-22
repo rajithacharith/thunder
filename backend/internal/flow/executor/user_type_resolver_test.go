@@ -19,6 +19,8 @@
 package executor
 
 import (
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"context"
 	"testing"
 
@@ -328,10 +330,14 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_OURe
 	}
 
 	svcErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "SCHEMA-500",
-		Error:            "Internal Server Error",
-		ErrorDescription: "Failed to retrieve OU",
+		Type: serviceerror.ServerErrorType,
+		Code: "SCHEMA-500",
+		Error: i18ncore.I18nMessage{
+			Key: "error.test.internal_server_error", DefaultValue: "Internal Server Error",
+		},
+		ErrorDescription: i18ncore.I18nMessage{
+			Key: "error.test.failed_to_retrieve_ou", DefaultValue: "Failed to retrieve OU",
+		},
 	}
 	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(nil, svcErr)
@@ -443,10 +449,14 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_OUReso
 	}
 
 	svcErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "SCHEMA-500",
-		Error:            "Internal Server Error",
-		ErrorDescription: "Failed to retrieve OU",
+		Type: serviceerror.ServerErrorType,
+		Code: "SCHEMA-500",
+		Error: i18ncore.I18nMessage{
+			Key: "error.test.internal_server_error", DefaultValue: "Internal Server Error",
+		},
+		ErrorDescription: i18ncore.I18nMessage{
+			Key: "error.test.failed_to_retrieve_ou", DefaultValue: "Failed to retrieve OU",
+		},
 	}
 	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(nil, svcErr)
@@ -720,10 +730,14 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Sch
 		AllowSelfRegistration: true,
 	}
 	svcErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "SCHEMA-500",
-		Error:            "Internal Server Error",
-		ErrorDescription: "Failed to retrieve schema",
+		Type: serviceerror.ServerErrorType,
+		Code: "SCHEMA-500",
+		Error: i18ncore.I18nMessage{
+			Key: "error.test.internal_server_error", DefaultValue: "Internal Server Error",
+		},
+		ErrorDescription: i18ncore.I18nMessage{
+			Key: "error.test.failed_to_retrieve_schema", DefaultValue: "Failed to retrieve schema",
+		},
 	}
 
 	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
@@ -894,10 +908,12 @@ func (suite *UserTypeResolverTestSuite) TestGetUserSchemaAndOU_SchemaNotFound() 
 	suite.SetupTest()
 
 	svcErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "SCHEMA-404",
-		Error:            "Not Found",
-		ErrorDescription: "User schema not found",
+		Type:  serviceerror.ClientErrorType,
+		Code:  "SCHEMA-404",
+		Error: i18ncore.I18nMessage{Key: "error.test.not_found", DefaultValue: "Not Found"},
+		ErrorDescription: i18ncore.I18nMessage{
+			Key: "error.test.user_schema_not_found", DefaultValue: "User schema not found",
+		},
 	}
 	suite.mockUserSchemaService.On("GetUserSchemaByName", context.Background(), "employee").
 		Return(nil, svcErr)
@@ -956,10 +972,12 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_UserTypeP
 
 	// Mock schema retrieval failing
 	svcErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "SCHEMA-404",
-		Error:            "Not Found",
-		ErrorDescription: "User schema not found",
+		Type:  serviceerror.ClientErrorType,
+		Code:  "SCHEMA-404",
+		Error: i18ncore.I18nMessage{Key: "error.test.not_found", DefaultValue: "Not Found"},
+		ErrorDescription: i18ncore.I18nMessage{
+			Key: "error.test.user_schema_not_found", DefaultValue: "User schema not found",
+		},
 	}
 	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "invalid_user").
 		Return(nil, svcErr)
@@ -1011,7 +1029,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 
 	svcErr := &serviceerror.ServiceError{
 		Type:  serviceerror.ServerErrorType,
-		Error: "Simulated Error",
+		Error: i18ncore.I18nMessage{Key: "error.test.simulated_error", DefaultValue: "Simulated Error"},
 	}
 	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0, false).
 		Return(nil, svcErr)
@@ -1399,7 +1417,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_IsPar
 		Return(userSchema, nil)
 	svcErr := &serviceerror.ServiceError{
 		Type:  serviceerror.ServerErrorType,
-		Error: "internal error",
+		Error: i18ncore.I18nMessage{Key: "error.test.internal_error", DefaultValue: "internal error"},
 	}
 	suite.mockOUService.On("IsParent", mock.Anything, "parent-ou-123", "child-ou-456").
 		Return(false, svcErr)
@@ -1548,7 +1566,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_IsPar
 		Return(true, (*serviceerror.ServiceError)(nil))
 	svcErr := &serviceerror.ServiceError{
 		Type:  serviceerror.ServerErrorType,
-		Error: "internal error",
+		Error: i18ncore.I18nMessage{Key: "error.test.internal_error", DefaultValue: "internal error"},
 	}
 	suite.mockOUService.On("IsParent", mock.Anything, "error-ou", "child-ou-456").
 		Return(false, svcErr)

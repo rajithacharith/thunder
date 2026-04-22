@@ -190,7 +190,7 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaNotFound() {
 	}
 
 	ts.Assert().NotEmpty(errorResp.Code, "Error should have code")
-	ts.Assert().NotEmpty(errorResp.Message, "Error should have message")
+	ts.Assert().NotEmpty(errorResp.Message.DefaultValue, "Error should have message")
 }
 
 // TestUpdateUserSchemaWithNameConflict tests PUT /user-schemas/{id} with conflicting name
@@ -233,7 +233,7 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithNameConflict() {
 	}
 
 	ts.Assert().NotEmpty(errorResp.Code, "Error should have code")
-	ts.Assert().NotEmpty(errorResp.Message, "Error should have message")
+	ts.Assert().NotEmpty(errorResp.Message.DefaultValue, "Error should have message")
 }
 
 // TestUpdateUserSchemaWithInvalidData tests PUT /user-schemas/{id} with invalid request data
@@ -300,7 +300,7 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithInvalidData() {
 			}
 
 			ts.Assert().NotEmpty(errorResp.Code, "Error should have code")
-			ts.Assert().NotEmpty(errorResp.Message, "Error should have message")
+			ts.Assert().NotEmpty(errorResp.Message.DefaultValue, "Error should have message")
 		})
 	}
 }

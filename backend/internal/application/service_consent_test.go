@@ -241,7 +241,7 @@ func (s *ApplicationServiceConsentTestSuite) TestWrapConsentServiceError_NilRetu
 func (s *ApplicationServiceConsentTestSuite) TestWrapConsentServiceError_ClientError_ReturnsConsentSyncFailed() {
 	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
 	svc := newTestApplicationServiceWithConsent(cMock)
-	clientErr := &serviceerror.I18nServiceError{
+	clientErr := &serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "CSE-1007",
 	}
@@ -256,7 +256,7 @@ func (s *ApplicationServiceConsentTestSuite) TestWrapConsentServiceError_ClientE
 func (s *ApplicationServiceConsentTestSuite) TestWrapConsentServiceError_ServerError_ReturnsInternalServerError() {
 	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
 	svc := newTestApplicationServiceWithConsent(cMock)
-	serverErr := &serviceerror.I18nServiceError{
+	serverErr := &serviceerror.ServiceError{
 		Type: serviceerror.ServerErrorType,
 		Code: "CSE-500",
 	}
@@ -317,7 +317,7 @@ func (s *ApplicationServiceConsentTestSuite) TestCreateMissingConsentElements_Va
 
 	names := []string{"email"}
 	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", names).
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result := svc.createMissingConsentElements(context.Background(), "default", names)
 
@@ -334,7 +334,7 @@ func (s *ApplicationServiceConsentTestSuite) TestCreateMissingConsentElements_Cr
 		Return([]string{}, nil)
 
 	cMock.EXPECT().CreateConsentElements(mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result := svc.createMissingConsentElements(context.Background(), "default", names)
 
@@ -392,7 +392,7 @@ func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnCreate_Crea
 	}
 
 	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result := svc.syncConsentPurposeOnCreate(context.Background(), appDTO)
 
@@ -412,7 +412,7 @@ func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnCreate_Crea
 	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", mock.Anything).
 		Return([]string{"email"}, nil)
 	cMock.EXPECT().CreateConsentPurpose(mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result := svc.syncConsentPurposeOnCreate(context.Background(), appDTO)
 
@@ -473,7 +473,7 @@ func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnUpdate_Exis
 	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
 		Return([]consent.ConsentPurpose{{ID: "p1", Name: "App"}}, nil)
 	cMock.EXPECT().DeleteConsentPurpose(mock.Anything, "default", "p1").
-		Return((*serviceerror.I18nServiceError)(nil))
+		Return((*serviceerror.ServiceError)(nil))
 
 	result := svc.syncConsentPurposeOnUpdate(context.Background(), existingApp, updatedApp)
 
@@ -515,7 +515,7 @@ func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnUpdate_List
 	updatedApp := &model.ApplicationProcessedDTO{ID: "app-1"}
 
 	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result := svc.syncConsentPurposeOnUpdate(context.Background(), existingApp, updatedApp)
 
@@ -535,7 +535,7 @@ func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnUpdate_Crea
 
 	// createMissingConsentElements fails via ValidateConsentElements returning an error
 	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result := svc.syncConsentPurposeOnUpdate(context.Background(), existingApp, updatedApp)
 
@@ -559,7 +559,7 @@ func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnUpdate_NoPu
 		Return([]consent.ConsentPurpose{}, nil)
 	// CreateConsentPurpose fails
 	cMock.EXPECT().CreateConsentPurpose(mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result := svc.syncConsentPurposeOnUpdate(context.Background(), existingApp, updatedApp)
 
@@ -579,7 +579,7 @@ func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnUpdate_Exis
 		Return([]consent.ConsentPurpose{{ID: "p1", Name: "App"}}, nil).Once()
 	// Second call inside deleteConsentPurposes: returns an error
 	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
-		Return(nil, &serviceerror.InternalServerErrorWithI18n).Once()
+		Return(nil, &serviceerror.InternalServerError).Once()
 
 	result := svc.syncConsentPurposeOnUpdate(context.Background(), existingApp, updatedApp)
 
@@ -605,7 +605,7 @@ func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnUpdate_Upda
 	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
 		Return([]consent.ConsentPurpose{{ID: "p1"}}, nil)
 	cMock.EXPECT().UpdateConsentPurpose(mock.Anything, "default", "p1", mock.Anything).
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result := svc.syncConsentPurposeOnUpdate(context.Background(), existingApp, updatedApp)
 
@@ -633,7 +633,7 @@ func (s *ApplicationServiceConsentTestSuite) TestDeleteConsentPurposes_Success()
 	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
 		Return([]consent.ConsentPurpose{{ID: "p1", Name: "Login"}}, nil)
 	cMock.EXPECT().DeleteConsentPurpose(mock.Anything, "default", "p1").
-		Return((*serviceerror.I18nServiceError)(nil))
+		Return((*serviceerror.ServiceError)(nil))
 
 	result := svc.deleteConsentPurposes(context.Background(), "app-1")
 
@@ -662,7 +662,7 @@ func (s *ApplicationServiceConsentTestSuite) TestDeleteConsentPurposes_OtherDele
 	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
 		Return([]consent.ConsentPurpose{{ID: "p1"}}, nil)
 	cMock.EXPECT().DeleteConsentPurpose(mock.Anything, "default", "p1").
-		Return(&serviceerror.InternalServerErrorWithI18n)
+		Return(&serviceerror.InternalServerError)
 
 	result := svc.deleteConsentPurposes(context.Background(), "app-1")
 
@@ -674,7 +674,7 @@ func (s *ApplicationServiceConsentTestSuite) TestDeleteConsentPurposes_ListError
 	svc := newTestApplicationServiceWithConsent(cMock)
 
 	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result := svc.deleteConsentPurposes(context.Background(), "app-1")
 

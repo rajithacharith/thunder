@@ -212,7 +212,7 @@ func (suite *UserTreeAPITestSuite) TestGetUsersByInvalidPath() {
 	suite.Require().NoError(err)
 
 	suite.Equal("USR-1005", errorResp.Code)
-	suite.Equal("Organization unit not found", errorResp.Message)
+	suite.Equal("Organization unit not found", errorResp.Message.DefaultValue)
 }
 
 // TestGetUsersByPathWithPagination tests retrieving users by path with pagination parameters

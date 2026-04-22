@@ -45,6 +45,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/sign"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/jose/jws"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/crypto/pki/pkimock"
@@ -226,7 +227,10 @@ func (suite *JWTServiceTestSuite) TestInitScenarios() {
 			pkiMock := pkimock.NewPKIServiceInterfaceMock(t)
 
 			if tc.name == "PrivateKeyRetrievalError" {
-				testErr := serviceerror.CustomServiceError(serviceerror.InternalServerError, "test error")
+				testErr := serviceerror.CustomServiceError(serviceerror.InternalServerError, core.I18nMessage{
+					Key:          "error.test.jwt_private_key_retrieval",
+					DefaultValue: "test error",
+				})
 				pkiMock.EXPECT().GetPrivateKey(mock.Anything).Return(nil, testErr)
 			} else {
 				pkiMock.EXPECT().GetPrivateKey(mock.Anything).Return(privateKey, nil)
@@ -2098,7 +2102,10 @@ func (suite *JWTServiceTestSuite) TestInitWithUnsupportedECCurve() {
 	_, err = tempFile.Write(keyPEM)
 	assert.NoError(suite.T(), err)
 	pkiMock := pkimock.NewPKIServiceInterfaceMock(suite.T())
-	testErr := serviceerror.CustomServiceError(serviceerror.InternalServerError, "unsupported EC curve")
+	testErr := serviceerror.CustomServiceError(serviceerror.InternalServerError, core.I18nMessage{
+		Key:          "error.test.jwt_unsupported_ec_curve",
+		DefaultValue: "unsupported EC curve",
+	})
 	pkiMock.EXPECT().GetPrivateKey(mock.Anything).Return(nil, testErr)
 	_, err = Initialize(pkiMock)
 

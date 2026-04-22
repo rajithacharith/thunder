@@ -48,7 +48,7 @@ func (s *templateService) GetTemplateByScenario(
 	ctx context.Context,
 	scenario ScenarioType,
 	tmplType TemplateType,
-) (*TemplateDTO, *serviceerror.I18nServiceError) {
+) (*TemplateDTO, *serviceerror.ServiceError) {
 	s.logger.Debug("Retrieving template by scenario and type",
 		log.String("scenario", string(scenario)),
 		log.String("type", string(tmplType)))
@@ -60,7 +60,7 @@ func (s *templateService) GetTemplateByScenario(
 		s.logger.Error("Failed to retrieve template by scenario",
 			log.String("scenario", string(scenario)),
 			log.Error(err))
-		return nil, &serviceerror.InternalServerErrorWithI18n
+		return nil, &serviceerror.InternalServerError
 	}
 
 	return tmpl, nil
@@ -72,7 +72,7 @@ func (s *templateService) Render(
 	scenario ScenarioType,
 	tmplType TemplateType,
 	data TemplateData,
-) (*RenderedTemplate, *serviceerror.I18nServiceError) {
+) (*RenderedTemplate, *serviceerror.ServiceError) {
 	s.logger.Debug("Rendering template", log.String("scenario", string(scenario)))
 	tmpl, svcErr := s.GetTemplateByScenario(ctx, scenario, tmplType)
 	if svcErr != nil {

@@ -79,7 +79,8 @@ func (ds *dcrService) RegisterClient(ctx context.Context, request *DCRRegistrati
 	if request.OUID == "" {
 		rootOUs, svcErr := ds.ouService.GetOrganizationUnitList(ctx, 1, 0)
 		if svcErr != nil {
-			logger.Error("Failed to retrieve root organization units for DCR", log.String("error", svcErr.Error))
+			logger.Error("Failed to retrieve root organization units for DCR",
+				log.String("error", svcErr.Error.DefaultValue))
 			return nil, &ErrorServerError
 		}
 		if rootOUs == nil || rootOUs.TotalResults == 0 || len(rootOUs.OrganizationUnits) == 0 {
@@ -91,7 +92,7 @@ func (ds *dcrService) RegisterClient(ctx context.Context, request *DCRRegistrati
 
 	appDTO, svcErr := ds.convertDCRToApplication(request)
 	if svcErr != nil {
-		logger.Error("Failed to convert DCR request to application DTO", log.String("error", svcErr.Error))
+		logger.Error("Failed to convert DCR request to application DTO", log.String("error", svcErr.Error.DefaultValue))
 		return nil, &ErrorServerError
 	}
 
@@ -116,7 +117,8 @@ func (ds *dcrService) RegisterClient(ctx context.Context, request *DCRRegistrati
 		var convErr *serviceerror.ServiceError
 		response, convErr = ds.convertApplicationToDCRResponse(createdApp, request.ClientName)
 		if convErr != nil {
-			logger.Error("Failed to convert application to DCR response", log.String("error", convErr.Error))
+			logger.Error("Failed to convert application to DCR response",
+				log.String("error", convErr.Error.DefaultValue))
 			capturedErr = convErr
 			return errors.New("conversion failed")
 		}
@@ -259,7 +261,8 @@ func (ds *dcrService) convertApplicationToDCRResponse(appDTO *model.ApplicationD
 }
 
 // mapApplicationErrorToDCRError maps Application service errors to DCR standard errors.
-func (ds *dcrService) mapApplicationErrorToDCRError(appErr *serviceerror.ServiceError) *serviceerror.ServiceError {
+func (ds *dcrService) mapApplicationErrorToDCRError(
+	appErr *serviceerror.ServiceError) *serviceerror.ServiceError {
 	dcrErr := &serviceerror.ServiceError{
 		Type:             appErr.Type,
 		Error:            appErr.Error,

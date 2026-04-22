@@ -121,7 +121,7 @@ func (a *authorizationExecutor) Execute(ctx *core.NodeContext) (*common.Executor
 
 	authzResp, svcErr := a.authzService.GetAuthorizedPermissions(ctx.Context, authzReq)
 	if svcErr != nil {
-		logger.Error("Authorization service call failed", log.String("error", svcErr.Error))
+		logger.Error("Authorization service call failed", log.String("error", svcErr.Error.DefaultValue))
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Authorization validation failure"
 		return execResp, nil

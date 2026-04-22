@@ -101,7 +101,7 @@ func TestCheckDeclarativeOperations(t *testing.T) {
 
 				result := tc.checkFunc()
 				assert.NotNil(t, result)
-				assert.Contains(t, result.Error, tc.expectedErrText)
+				assert.Contains(t, result.Error.DefaultValue, tc.expectedErrText)
 			})
 
 			t.Run("Returns nil when declarative mode is disabled", func(t *testing.T) {

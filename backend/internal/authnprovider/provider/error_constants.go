@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,16 +16,23 @@
  * under the License.
  */
 
-// Package apierror defines the error structures for the API.
-package apierror
+package provider
 
 import (
+	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/i18n/core"
 )
 
-// ErrorResponse defines an API error response with i18n support.
-type ErrorResponse struct {
-	Code        string           `json:"code"`
-	Message     core.I18nMessage `json:"message"`
-	Description core.I18nMessage `json:"description"`
+var errorSystemError = serviceerror.ServiceError{
+	Type: serviceerror.ServerErrorType,
+	Code: authnprovidercm.ErrorCodeSystemError,
+	Error: core.I18nMessage{
+		Key:          "error.authnproviderservice.system_error",
+		DefaultValue: "System error",
+	},
+	ErrorDescription: core.I18nMessage{
+		Key:          "error.authnproviderservice.system_error_description",
+		DefaultValue: "An internal server error occurred",
+	},
 }

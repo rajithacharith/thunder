@@ -378,7 +378,7 @@ func (suite *UtilsTestSuite) TestValidateMessageNotificationSender_EmptyProperti
 
 	suite.NotNil(err)
 	suite.Equal(ErrorInvalidRequestFormat.Code, err.Code)
-	suite.Contains(err.ErrorDescription, "message notification sender properties cannot be empty")
+	suite.Contains(err.ErrorDescription.DefaultValue, "message notification sender properties cannot be empty")
 }
 
 func (suite *UtilsTestSuite) TestValidateNotificationSender() {

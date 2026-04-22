@@ -29,6 +29,7 @@ import (
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 )
 
@@ -469,8 +470,11 @@ func TestValidateUserSchema_OUServiceError(t *testing.T) {
 	// Simulate a service error (not just not found)
 	mockOUService.EXPECT().GetOrganizationUnit(mock.Anything, "ou-1").
 		Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{
-			Code:  "DB_ERROR",
-			Error: "database connection failed",
+			Code: "DB_ERROR",
+			Error: core.I18nMessage{
+				Key:          "error.organizationunit.database_error",
+				DefaultValue: "database connection failed",
+			},
 		}).
 		Once()
 

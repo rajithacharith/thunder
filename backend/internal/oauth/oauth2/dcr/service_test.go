@@ -29,6 +29,7 @@ import (
 	"github.com/asgardeo/thunder/internal/cert"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 )
@@ -177,8 +178,8 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ApplicationServiceError() {
 	appServiceErr := &serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "APP-1014",
-		Error:            "Invalid URI",
-		ErrorDescription: "The redirect URI is invalid",
+		Error:            i18ncore.I18nMessage{DefaultValue: "Invalid URI"},
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "The redirect URI is invalid"},
 	}
 
 	s.mockAppService.On("CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO")).

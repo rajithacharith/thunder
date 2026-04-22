@@ -34,6 +34,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 )
 
 const (
@@ -189,7 +190,7 @@ func (suite *TokenVerifierTestSuite) TestNewTokenVerifier_JWTVerificationFailed(
 
 	// Mock JWT verification to fail
 	mockJWTService.On("VerifyJWT", testToken, mcpURL, issuer).Return(&serviceerror.ServiceError{
-		ErrorDescription: "invalid token",
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "invalid token"},
 	})
 
 	// Create token verifier

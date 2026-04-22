@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/security"
 )
 
@@ -194,7 +195,10 @@ func TestOuMembershipPolicy_GetAccessibleResources(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestIsActionAllowedByPolicies(t *testing.T) {
-	errSvc := &serviceerror.ServiceError{Code: "ERR-100", Error: "policy evaluation error"}
+	errSvc := &serviceerror.ServiceError{
+		Code:  "ERR-100",
+		Error: i18ncore.I18nMessage{DefaultValue: "policy evaluation error"},
+	}
 
 	tests := []struct {
 		name        string
@@ -245,7 +249,10 @@ func TestIsActionAllowedByPolicies(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetAccessibleResourcesByPolicies(t *testing.T) {
-	errSvc := &serviceerror.ServiceError{Code: "ERR-200", Error: "resource policy error"}
+	errSvc := &serviceerror.ServiceError{
+		Code:  "ERR-200",
+		Error: i18ncore.I18nMessage{DefaultValue: "resource policy error"},
+	}
 
 	tests := []struct {
 		name           string
@@ -301,7 +308,10 @@ func TestGetAccessibleResourcesByPolicies(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestOuInheritancePolicy_IsActionAllowed(t *testing.T) {
-	errSvc := &serviceerror.ServiceError{Code: "ERR-300", Error: "hierarchy resolver error"}
+	errSvc := &serviceerror.ServiceError{
+		Code:  "ERR-300",
+		Error: i18ncore.I18nMessage{DefaultValue: "hierarchy resolver error"},
+	}
 
 	tests := []struct {
 		name         string
@@ -386,7 +396,10 @@ func TestOuInheritancePolicy_IsActionAllowed(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestOuInheritancePolicy_GetAccessibleResources(t *testing.T) {
-	errSvc := &serviceerror.ServiceError{Code: "ERR-400", Error: "ancestor lookup error"}
+	errSvc := &serviceerror.ServiceError{
+		Code:  "ERR-400",
+		Error: i18ncore.I18nMessage{DefaultValue: "ancestor lookup error"},
+	}
 
 	tests := []struct {
 		name           string

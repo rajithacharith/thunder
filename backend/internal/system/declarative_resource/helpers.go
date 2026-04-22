@@ -53,7 +53,7 @@ func CheckDeclarativeDelete() *serviceerror.ServiceError {
 }
 
 // CheckDeclarativeCreateI18n returns an i18n error if declarative mode is enabled and create operation is attempted.
-func CheckDeclarativeCreateI18n() *serviceerror.I18nServiceError {
+func CheckDeclarativeCreateI18n() *serviceerror.ServiceError {
 	if IsDeclarativeModeEnabled() {
 		return &I18nErrorDeclarativeResourceCreateOperation
 	}
@@ -61,7 +61,7 @@ func CheckDeclarativeCreateI18n() *serviceerror.I18nServiceError {
 }
 
 // CheckDeclarativeUpdateI18n returns an i18n error if declarative mode is enabled and update operation is attempted.
-func CheckDeclarativeUpdateI18n() *serviceerror.I18nServiceError {
+func CheckDeclarativeUpdateI18n() *serviceerror.ServiceError {
 	if IsDeclarativeModeEnabled() {
 		return &I18nErrorDeclarativeResourceUpdateOperation
 	}
@@ -69,7 +69,7 @@ func CheckDeclarativeUpdateI18n() *serviceerror.I18nServiceError {
 }
 
 // CheckDeclarativeDeleteI18n returns an i18n error if declarative mode is enabled and delete operation is attempted.
-func CheckDeclarativeDeleteI18n() *serviceerror.I18nServiceError {
+func CheckDeclarativeDeleteI18n() *serviceerror.ServiceError {
 	if IsDeclarativeModeEnabled() {
 		return &I18nErrorDeclarativeResourceDeleteOperation
 	}

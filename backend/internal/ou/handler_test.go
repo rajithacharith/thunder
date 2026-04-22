@@ -417,7 +417,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 				var resp apierror.ErrorResponse
 				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
 				suite.Equal(ErrorInvalidRequestFormat.Code, resp.Code)
-				suite.Contains(resp.Description, "Failed to parse request body")
+				suite.Equal(ErrorInvalidRequestFormat.ErrorDescription.DefaultValue, resp.Description.DefaultValue)
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "CreateOrganizationUnit", mock.Anything)
@@ -429,7 +429,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			useFlaky: true,
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusBadRequest, recorder.Code)
-				suite.Equal("", recorder.Body.String()) // Write fails, body remains empty
+				suite.Equal(serviceerror.ErrorEncodingError+"\n", recorder.Body.String())
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "CreateOrganizationUnit", mock.Anything)
@@ -581,7 +581,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				suite.Equal("", recorder.Body.String()) // Write fails, body remains empty
+				suite.Equal(serviceerror.ErrorEncodingError+"\n", recorder.Body.String())
 			},
 		},
 		{
@@ -661,7 +661,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetRequest(
 			useFlaky: true,
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusBadRequest, recorder.Code)
-				suite.Equal("", recorder.Body.String()) // Write fails, body remains empty
+				suite.Equal(serviceerror.ErrorEncodingError+"\n", recorder.Body.String())
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "GetOrganizationUnit", mock.Anything)
@@ -801,7 +801,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 			useFlaky:       true,
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusBadRequest, recorder.Code)
-				suite.Equal("", recorder.Body.String()) // Write fails, body remains empty
+				suite.Equal(serviceerror.ErrorEncodingError+"\n", recorder.Body.String())
 			},
 		},
 		{
@@ -1202,7 +1202,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetByPathRe
 			useFlaky: true,
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusBadRequest, recorder.Code)
-				suite.Equal("", recorder.Body.String()) // Write fails, body remains empty
+				suite.Equal(serviceerror.ErrorEncodingError+"\n", recorder.Body.String())
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "GetOrganizationUnitByPath", mock.Anything)

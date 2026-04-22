@@ -19,6 +19,8 @@
 package granthandlers
 
 import (
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"context"
 	"errors"
 	"testing"
@@ -359,7 +361,10 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_ClientAttri
 
 	suite.mockOUService.On("GetOrganizationUnit", context.Background(), "ou-456").Return(
 		ou.OrganizationUnit{},
-		&serviceerror.ServiceError{Code: "OU-0001", Error: "not found"},
+		&serviceerror.ServiceError{
+			Code:  "OU-0001",
+			Error: core.I18nMessage{Key: "error.test.not_found", DefaultValue: "not found"},
+		},
 	)
 
 	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, oauthAppWithOU)
@@ -547,8 +552,10 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_AuthzServic
 			RequestedPermissions: []string{"read"},
 		}).Return((*authz.GetAuthorizedPermissionsResponse)(nil),
 		&serviceerror.ServiceError{
-			Code:  "AUTHZ-0001",
-			Error: "authorization check failed",
+			Code: "AUTHZ-0001",
+			Error: core.I18nMessage{
+				Key: "error.test.authorization_check_failed", DefaultValue: "authorization check failed",
+			},
 		})
 
 	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)

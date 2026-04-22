@@ -39,6 +39,7 @@ import (
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/authn/assertmock"
 	"github.com/asgardeo/thunder/tests/mocks/authn/githubmock"
@@ -321,10 +322,14 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsJWTG
 	suite.mockJWTService.On("GenerateJWT", testUserID, "application",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return("", int64(0), &serviceerror.ServiceError{
-			Type:             serviceerror.ServerErrorType,
-			Code:             "JWT_GENERATION_FAILED",
-			Error:            "JWT generation failed",
-			ErrorDescription: "Failed to generate JWT token",
+			Type: serviceerror.ServerErrorType,
+			Code: "JWT_GENERATION_FAILED",
+			Error: core.I18nMessage{
+				Key: "error.test.jwt_generation_failed", DefaultValue: "JWT generation failed",
+			},
+			ErrorDescription: core.I18nMessage{
+				Key: "error.test.failed_to_generate_jwt_token", DefaultValue: "Failed to generate JWT token",
+			},
 		})
 
 	result, err := suite.service.AuthenticateWithCredentials(context.Background(), identifiers,
@@ -383,10 +388,12 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsInva
 	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
 		authnprovidermgr.AuthUser{}, &authnprovidercm.AttributesResponse{}, nil)
 	suite.mockJWTService.On("VerifyJWT", invalidAssertion, "", mock.Anything).Return(&serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "INVALID_JWT",
-		Error:            "Invalid JWT",
-		ErrorDescription: "The JWT signature is invalid",
+		Type:  serviceerror.ServerErrorType,
+		Code:  "INVALID_JWT",
+		Error: core.I18nMessage{Key: "error.test.invalid_jwt", DefaultValue: "Invalid JWT"},
+		ErrorDescription: core.I18nMessage{
+			Key: "error.test.the_jwt_signature_is_invalid", DefaultValue: "The JWT signature is invalid",
+		},
 	})
 
 	result, err := suite.service.AuthenticateWithCredentials(context.Background(), identifiers,
@@ -447,8 +454,8 @@ func (suite *AuthenticationServiceTestSuite) TestSendOTPServiceError() {
 	svcErr := &serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "OTP_ERROR",
-		Error:            "OTP error",
-		ErrorDescription: "Failed to send OTP",
+		Error:            core.I18nMessage{Key: "error.test.otp_error", DefaultValue: "OTP error"},
+		ErrorDescription: core.I18nMessage{Key: "error.test.failed_to_send_otp", DefaultValue: "Failed to send OTP"},
 	}
 
 	suite.mockOTPService.On("SendOTP", mock.Anything, senderID, notifcommon.ChannelTypeSMS, recipient).
@@ -678,10 +685,12 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationEmptyIDPI
 func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationIDPNotFound() {
 	idpID := "nonexistent_idp"
 	svcErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "IDP_NOT_FOUND",
-		Error:            "IDP not found",
-		ErrorDescription: "The identity provider was not found",
+		Type:  serviceerror.ClientErrorType,
+		Code:  "IDP_NOT_FOUND",
+		Error: core.I18nMessage{Key: "error.test.idp_not_found", DefaultValue: "IDP not found"},
+		ErrorDescription: core.I18nMessage{
+			Key: "error.test.the_identity_provider_was_not_found", DefaultValue: "The identity provider was not found",
+		},
 	}
 
 	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(nil, svcErr)
@@ -690,7 +699,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationIDPNotFou
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Contains(err.ErrorDescription, idpID)
+	suite.Contains(err.ErrorDescription.DefaultValue, idpID)
 }
 
 func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationInvalidIDPType() {
@@ -742,10 +751,14 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationJWTGenera
 	suite.mockJWTService.On("GenerateJWT", "auth-svc", "auth-svc",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return("", int64(0), &serviceerror.ServiceError{
-			Type:             serviceerror.ServerErrorType,
-			Code:             "JWT_GENERATION_FAILED",
-			Error:            "JWT generation failed",
-			ErrorDescription: "Failed to generate session token",
+			Type: serviceerror.ServerErrorType,
+			Code: "JWT_GENERATION_FAILED",
+			Error: core.I18nMessage{
+				Key: "error.test.jwt_generation_failed", DefaultValue: "JWT generation failed",
+			},
+			ErrorDescription: core.I18nMessage{
+				Key: "error.test.failed_to_generate_session_token", DefaultValue: "Failed to generate session token",
+			},
 		})
 
 	result, err := suite.service.StartIDPAuthentication(context.Background(), idp.IDPTypeOAuth, idpID)
@@ -922,10 +935,12 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationEmptyAut
 func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationInvalidSessionToken() {
 	suite.mockJWTService.On("VerifyJWT", "invalid_token", "auth-svc", mock.Anything).
 		Return(&serviceerror.ServiceError{
-			Type:             serviceerror.ServerErrorType,
-			Code:             "INVALID_TOKEN",
-			Error:            "Invalid token",
-			ErrorDescription: "The session token is invalid",
+			Type:  serviceerror.ServerErrorType,
+			Code:  "INVALID_TOKEN",
+			Error: core.I18nMessage{Key: "error.test.invalid_token", DefaultValue: "Invalid token"},
+			ErrorDescription: core.I18nMessage{
+				Key: "error.test.the_session_token_is_invalid", DefaultValue: "The session token is invalid",
+			},
 		})
 
 	result, err := suite.service.FinishIDPAuthentication(
@@ -1054,10 +1069,12 @@ func (suite *AuthenticationServiceTestSuite) TestGetSubClaimNotFound() {
 func (suite *AuthenticationServiceTestSuite) TestHandleIDPServiceErrorServerError() {
 	idpID := "test_idp"
 	svcErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "INTERNAL_ERROR",
-		Error:            "Internal error",
-		ErrorDescription: "Database connection failed",
+		Type:  serviceerror.ServerErrorType,
+		Code:  "INTERNAL_ERROR",
+		Error: core.I18nMessage{Key: "error.test.internal_error", DefaultValue: "Internal error"},
+		ErrorDescription: core.I18nMessage{
+			Key: "error.test.internal_error_description", DefaultValue: "Database connection failed",
+		},
 	}
 	logger := log.GetLogger()
 
@@ -1105,10 +1122,14 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationBuildURLE
 		Type: idp.IDPTypeOAuth,
 	}
 	svcErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "INVALID_CONFIG",
-		Error:            "Invalid configuration",
-		ErrorDescription: "Missing redirect URI",
+		Type: serviceerror.ClientErrorType,
+		Code: "INVALID_CONFIG",
+		Error: core.I18nMessage{
+			Key: "error.test.invalid_configuration", DefaultValue: "Invalid configuration",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key: "error.test.missing_redirect_uri", DefaultValue: "Missing redirect URI",
+		},
 	}
 
 	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
@@ -1128,10 +1149,12 @@ func (suite *AuthenticationServiceTestSuite) TestFinishOIDCAuthenticationFetchUs
 		TokenType:   "Bearer",
 	}
 	svcErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "FETCH_ERROR",
-		Error:            "Fetch error",
-		ErrorDescription: "Failed to fetch ID token claims",
+		Type:  serviceerror.ClientErrorType,
+		Code:  "FETCH_ERROR",
+		Error: core.I18nMessage{Key: "error.test.fetch_error", DefaultValue: "Fetch error"},
+		ErrorDescription: core.I18nMessage{
+			Key: "error.test.failed_to_fetch_id_token_claims", DefaultValue: "Failed to fetch ID token claims",
+		},
 	}
 
 	sessionToken := suite.createSessionToken(idp.IDPTypeOIDC)
@@ -1158,10 +1181,12 @@ func (suite *AuthenticationServiceTestSuite) TestFinishGoogleAuthenticationGetIn
 		"sub": testUserID,
 	}
 	svcErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "USER_NOT_FOUND",
-		Error:            "User not found",
-		ErrorDescription: "Internal user not found",
+		Type:  serviceerror.ClientErrorType,
+		Code:  "USER_NOT_FOUND",
+		Error: core.I18nMessage{Key: "error.test.user_not_found", DefaultValue: "User not found"},
+		ErrorDescription: core.I18nMessage{
+			Key: "error.test.internal_user_not_found", DefaultValue: "Internal user not found",
+		},
 	}
 
 	sessionToken := suite.createSessionToken(idp.IDPTypeGoogle)
@@ -1335,10 +1360,12 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationAssertio
 	// Create invalid existing assertion that will fail JWT verification
 	suite.mockJWTService.On("VerifyJWT", invalidAssertion, "", mock.Anything).
 		Return(&serviceerror.ServiceError{
-			Type:             serviceerror.ServerErrorType,
-			Code:             "INVALID_SIGNATURE",
-			Error:            "Invalid signature",
-			ErrorDescription: "The JWT signature is invalid",
+			Type:  serviceerror.ServerErrorType,
+			Code:  "INVALID_SIGNATURE",
+			Error: core.I18nMessage{Key: "error.test.invalid_signature", DefaultValue: "Invalid signature"},
+			ErrorDescription: core.I18nMessage{
+				Key: "error.test.the_jwt_signature_is_invalid", DefaultValue: "The JWT signature is invalid",
+			},
 		}).Once()
 
 	result, err := suite.service.FinishIDPAuthentication(context.Background(), idp.IDPTypeOAuth, sessionToken, false,
@@ -1568,10 +1595,14 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTPJWTGenerationError() {
 	suite.mockJWTService.On("GenerateJWT", testUserID, "application",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return("", int64(0), &serviceerror.ServiceError{
-			Type:             serviceerror.ServerErrorType,
-			Code:             "JWT_GENERATION_FAILED",
-			Error:            "JWT generation failed",
-			ErrorDescription: "Failed to generate JWT token",
+			Type: serviceerror.ServerErrorType,
+			Code: "JWT_GENERATION_FAILED",
+			Error: core.I18nMessage{
+				Key: "error.test.jwt_generation_failed", DefaultValue: "JWT generation failed",
+			},
+			ErrorDescription: core.I18nMessage{
+				Key: "error.test.failed_to_generate_jwt_token", DefaultValue: "Failed to generate JWT token",
+			},
 		})
 
 	result, err := suite.service.VerifyOTP(context.Background(), sessionToken, false, "", otpCode)
@@ -1586,10 +1617,12 @@ func (suite *AuthenticationServiceTestSuite) TestExtractClaimsFromAssertionInval
 
 	suite.mockJWTService.On("VerifyJWT", invalidAssertion, "", mock.Anything).
 		Return(&serviceerror.ServiceError{
-			Type:             serviceerror.ServerErrorType,
-			Code:             "INVALID_SIGNATURE",
-			Error:            "Invalid signature",
-			ErrorDescription: "The JWT signature is invalid",
+			Type:  serviceerror.ServerErrorType,
+			Code:  "INVALID_SIGNATURE",
+			Error: core.I18nMessage{Key: "error.test.invalid_signature", DefaultValue: "Invalid signature"},
+			ErrorDescription: core.I18nMessage{
+				Key: "error.test.the_jwt_signature_is_invalid", DefaultValue: "The JWT signature is invalid",
+			},
 		})
 
 	assuranceCtx, sub, err := suite.service.extractClaimsFromAssertion(invalidAssertion, logger)
@@ -1639,10 +1672,14 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionG
 	mockAssertGenerator := assertmock.NewAuthAssertGeneratorInterfaceMock(suite.T())
 	mockAssertGenerator.On("GenerateAssertion", mock.Anything).
 		Return(nil, &serviceerror.ServiceError{
-			Type:             serviceerror.ServerErrorType,
-			Code:             "ASSERTION_ERROR",
-			Error:            "Assertion generation failed",
-			ErrorDescription: "Failed to generate assertion",
+			Type: serviceerror.ServerErrorType,
+			Code: "ASSERTION_ERROR",
+			Error: core.I18nMessage{
+				Key: "error.test.assertion_generation_failed", DefaultValue: "Assertion generation failed",
+			},
+			ErrorDescription: core.I18nMessage{
+				Key: "error.test.failed_to_generate_assertion", DefaultValue: "Failed to generate assertion",
+			},
 		})
 
 	service := &authenticationService{
@@ -1676,10 +1713,14 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionU
 	mockAssertGenerator := assertmock.NewAuthAssertGeneratorInterfaceMock(suite.T())
 	mockAssertGenerator.On("UpdateAssertion", mock.Anything, mock.Anything).
 		Return(nil, &serviceerror.ServiceError{
-			Type:             serviceerror.ServerErrorType,
-			Code:             "UPDATE_ERROR",
-			Error:            "Assertion update failed",
-			ErrorDescription: "Failed to update assertion",
+			Type: serviceerror.ServerErrorType,
+			Code: "UPDATE_ERROR",
+			Error: core.I18nMessage{
+				Key: "error.test.assertion_update_failed", DefaultValue: "Assertion update failed",
+			},
+			ErrorDescription: core.I18nMessage{
+				Key: "error.test.failed_to_update_assertion", DefaultValue: "Failed to update assertion",
+			},
 		})
 
 	service := &authenticationService{
@@ -1738,10 +1779,12 @@ func (suite *AuthenticationServiceTestSuite) TestStartPasskeyRegistration_Withou
 
 func (suite *AuthenticationServiceTestSuite) TestStartPasskeyRegistration_ServiceError() {
 	serviceError := &serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "PASS_ERROR",
-		Error:            "Passkey error",
-		ErrorDescription: "Failed to start registration",
+		Type:  serviceerror.ClientErrorType,
+		Code:  "PASS_ERROR",
+		Error: core.I18nMessage{Key: "error.test.passkey_error", DefaultValue: "Passkey error"},
+		ErrorDescription: core.I18nMessage{
+			Key: "error.test.failed_to_start_registration", DefaultValue: "Failed to start registration",
+		},
 	}
 
 	suite.mockPasskeyService.On("StartRegistration", mock.Anything, mock.Anything).
@@ -1821,10 +1864,12 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyRegistration_Servi
 	}
 
 	serviceError := &serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "INVALID_ATTESTATION",
-		Error:            "Invalid attestation",
-		ErrorDescription: "Failed to verify attestation",
+		Type:  serviceerror.ClientErrorType,
+		Code:  "INVALID_ATTESTATION",
+		Error: core.I18nMessage{Key: "error.test.invalid_attestation", DefaultValue: "Invalid attestation"},
+		ErrorDescription: core.I18nMessage{
+			Key: "error.test.failed_to_verify_attestation", DefaultValue: "Failed to verify attestation",
+		},
 	}
 
 	suite.mockPasskeyService.On("FinishRegistration", mock.Anything, mock.Anything).
@@ -1858,10 +1903,12 @@ func (suite *AuthenticationServiceTestSuite) TestStartPasskeyAuthentication_Succ
 
 func (suite *AuthenticationServiceTestSuite) TestStartPasskeyAuthentication_ServiceError() {
 	serviceError := &serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "USER_NOT_FOUND",
-		Error:            "User not found",
-		ErrorDescription: "No user found with the given ID",
+		Type:  serviceerror.ClientErrorType,
+		Code:  "USER_NOT_FOUND",
+		Error: core.I18nMessage{Key: "error.test.user_not_found", DefaultValue: "User not found"},
+		ErrorDescription: core.I18nMessage{
+			Key: "error.test.no_user_found_with_the_given_id", DefaultValue: "No user found with the given ID",
+		},
 	}
 
 	suite.mockPasskeyService.On(
@@ -2012,10 +2059,12 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Ser
 	}
 
 	serviceError := &serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "INVALID_SIGNATURE",
-		Error:            "Invalid signature",
-		ErrorDescription: "Failed to verify signature",
+		Type:  serviceerror.ClientErrorType,
+		Code:  "INVALID_SIGNATURE",
+		Error: core.I18nMessage{Key: "error.test.invalid_signature", DefaultValue: "Invalid signature"},
+		ErrorDescription: core.I18nMessage{
+			Key: "error.test.failed_to_verify_signature", DefaultValue: "Failed to verify signature",
+		},
 	}
 
 	suite.mockAuthnProvider.On(

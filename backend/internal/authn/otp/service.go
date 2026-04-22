@@ -30,6 +30,7 @@ import (
 	"github.com/asgardeo/thunder/internal/notification"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -155,11 +156,15 @@ func (s *otpAuthnService) handleOTPServiceError(svcErr *serviceerror.ServiceErro
 	logger *log.Logger) *serviceerror.ServiceError {
 	if svcErr.Type == serviceerror.ClientErrorType {
 		if isVerify {
-			return serviceerror.CustomServiceError(ErrorClientErrorFromOTPService,
-				fmt.Sprintf("Error verifying OTP: %s", svcErr.ErrorDescription))
+			return serviceerror.CustomServiceError(ErrorClientErrorFromOTPService, core.I18nMessage{
+				Key:          "error.otpauthnservice.error_verifying_otp_description",
+				DefaultValue: fmt.Sprintf("Error verifying OTP: %s", svcErr.ErrorDescription.DefaultValue),
+			})
 		} else {
-			return serviceerror.CustomServiceError(ErrorClientErrorFromOTPService,
-				fmt.Sprintf("Error sending OTP: %s", svcErr.ErrorDescription))
+			return serviceerror.CustomServiceError(ErrorClientErrorFromOTPService, core.I18nMessage{
+				Key:          "error.otpauthnservice.error_sending_otp_description",
+				DefaultValue: fmt.Sprintf("Error sending OTP: %s", svcErr.ErrorDescription.DefaultValue),
+			})
 		}
 	}
 
@@ -245,6 +250,8 @@ func (s *otpAuthnService) handleUserProviderError(upErr *entityprovider.EntityPr
 		logger.Error("Error occurred while retrieving user", log.Any("error", upErr))
 		return &serviceerror.InternalServerError
 	}
-	return serviceerror.CustomServiceError(ErrorClientErrorWhileResolvingUser,
-		fmt.Sprintf("An error occurred while retrieving user: %s", upErr.Description))
+	return serviceerror.CustomServiceError(ErrorClientErrorWhileResolvingUser, core.I18nMessage{
+		Key:          "error.otpauthnservice.error_resolving_user_description",
+		DefaultValue: fmt.Sprintf("An error occurred while retrieving user: %s", upErr.Description),
+	})
 }

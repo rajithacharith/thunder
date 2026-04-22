@@ -527,7 +527,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 				Return(&attributecache.AttributeCache{
 					ID:         testCacheID,
 					Attributes: expectedAttrs,
-				}, (*serviceerror.I18nServiceError)(nil)).Once()
+				}, (*serviceerror.ServiceError)(nil)).Once()
 
 			suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 				Return(&authzCode, nil)
@@ -715,7 +715,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 						"email":    "test@example.com",
 						"username": "testuser",
 					},
-				}, (*serviceerror.I18nServiceError)(nil)).Once()
+				}, (*serviceerror.ServiceError)(nil)).Once()
 			// Empty groups - not added to Attributes (user has no groups)
 
 			suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
@@ -976,7 +976,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_FetchUserGr
 				"username": "testuser",
 				"groups":   []string{"Admin", "Users"},
 			},
-		}, (*serviceerror.I18nServiceError)(nil))
+		}, (*serviceerror.ServiceError)(nil))
 
 	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&authzCodeWithGroups, nil)
@@ -1020,7 +1020,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_AttributeCa
 		Return(&authzCodeWithCacheID, nil)
 
 	suite.mockAttrCacheService.On("GetAttributeCache", mock.Anything, testCacheID).
-		Return((*attributecache.AttributeCache)(nil), &serviceerror.I18nServiceError{
+		Return((*attributecache.AttributeCache)(nil), &serviceerror.ServiceError{
 			Type:  serviceerror.ServerErrorType,
 			Error: core.I18nMessage{DefaultValue: "cache error"},
 		})

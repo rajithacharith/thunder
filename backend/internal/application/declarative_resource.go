@@ -72,7 +72,7 @@ func (e *applicationExporter) GetParameterizerType() string {
 func (e *applicationExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	apps, err := e.service.GetApplicationList(ctx)
 	if err != nil {
-		return nil, err
+		return nil, &serviceerror.InternalServerError
 	}
 	ids := make([]string, 0, len(apps.Applications))
 	for _, app := range apps.Applications {

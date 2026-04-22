@@ -33,6 +33,7 @@ import (
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/security"
 )
 
@@ -107,8 +108,8 @@ func (s *DCRHandlerTestSuite) TestHandleDCRRegistration_ClientError() {
 	serviceErr := &serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "invalid_client_metadata",
-		Error:            "Invalid client metadata",
-		ErrorDescription: "Invalid grant type",
+		Error:            i18ncore.I18nMessage{DefaultValue: "Invalid client metadata"},
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Invalid grant type"},
 	}
 	s.mockService.On("RegisterClient", mock.Anything, request).Return(nil, serviceErr)
 
@@ -162,8 +163,8 @@ func (s *DCRHandlerTestSuite) TestHandleDCRRegistration_UnknownErrorType() {
 	serviceErr := &serviceerror.ServiceError{
 		Type:             "UnknownErrorType",
 		Code:             "unknown_error",
-		Error:            "Unknown error",
-		ErrorDescription: "An unknown error occurred",
+		Error:            i18ncore.I18nMessage{DefaultValue: "Unknown error"},
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "An unknown error occurred"},
 	}
 	s.mockService.On("RegisterClient", mock.Anything, request).Return(nil, serviceErr)
 
@@ -253,8 +254,8 @@ func TestWriteServiceErrorResponse_DirectCall(t *testing.T) {
 			serviceError: &serviceerror.ServiceError{
 				Type:             serviceerror.ClientErrorType,
 				Code:             "test_code",
-				Error:            "Test error",
-				ErrorDescription: "Test description",
+				Error:            i18ncore.I18nMessage{DefaultValue: "Test error"},
+				ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Test description"},
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -263,8 +264,8 @@ func TestWriteServiceErrorResponse_DirectCall(t *testing.T) {
 			serviceError: &serviceerror.ServiceError{
 				Type:             serviceerror.ServerErrorType,
 				Code:             "test_code",
-				Error:            "Test error",
-				ErrorDescription: "Test description",
+				Error:            i18ncore.I18nMessage{DefaultValue: "Test error"},
+				ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Test description"},
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},
@@ -273,8 +274,8 @@ func TestWriteServiceErrorResponse_DirectCall(t *testing.T) {
 			serviceError: &serviceerror.ServiceError{
 				Type:             "UnknownType",
 				Code:             "test_code",
-				Error:            "Test error",
-				ErrorDescription: "Test description",
+				Error:            i18ncore.I18nMessage{DefaultValue: "Test error"},
+				ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Test description"},
 			},
 			expectedStatus: http.StatusBadRequest,
 		},

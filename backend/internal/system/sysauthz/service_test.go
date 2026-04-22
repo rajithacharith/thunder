@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/security"
 )
 
@@ -270,7 +271,10 @@ func (s *SystemAuthzTestSuite) TestIsActionAllowed() {
 			wantAllowed: false,
 			wantErr:     true,
 			overridePolicy: &stubPolicy{
-				actionErr: &serviceerror.ServiceError{Code: "ERR-001", Error: "policy failure"},
+				actionErr: &serviceerror.ServiceError{
+					Code:  "ERR-001",
+					Error: i18ncore.I18nMessage{DefaultValue: "policy failure"},
+				},
 			},
 		},
 	}
@@ -395,8 +399,11 @@ func (s *SystemAuthzTestSuite) TestGetAccessibleResources() {
 			resourceType: security.ResourceTypeUser,
 			wantErr:      true,
 			overridePolicy: &stubPolicy{
-				applicable:  true,
-				resourceErr: &serviceerror.ServiceError{Code: "ERR-002", Error: "resource policy error"},
+				applicable: true,
+				resourceErr: &serviceerror.ServiceError{
+					Code:  "ERR-002",
+					Error: i18ncore.I18nMessage{DefaultValue: "resource policy error"},
+				},
 			},
 		},
 	}

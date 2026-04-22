@@ -42,7 +42,7 @@ func (_m *ConsentEnforcerServiceInterfaceMock) EXPECT() *ConsentEnforcerServiceI
 }
 
 // RecordConsent provides a mock function for the type ConsentEnforcerServiceInterfaceMock
-func (_mock *ConsentEnforcerServiceInterfaceMock) RecordConsent(ctx context.Context, ouID string, appID string, userID string, decisions *consent.ConsentDecisions, sessionToken string, validityPeriod int64) (*consent0.Consent, *serviceerror.I18nServiceError) {
+func (_mock *ConsentEnforcerServiceInterfaceMock) RecordConsent(ctx context.Context, ouID string, appID string, userID string, decisions *consent.ConsentDecisions, sessionToken string, validityPeriod int64) (*consent0.Consent, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, ouID, appID, userID, decisions, sessionToken, validityPeriod)
 
 	if len(ret) == 0 {
@@ -50,8 +50,8 @@ func (_mock *ConsentEnforcerServiceInterfaceMock) RecordConsent(ctx context.Cont
 	}
 
 	var r0 *consent0.Consent
-	var r1 *serviceerror.I18nServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, *consent.ConsentDecisions, string, int64) (*consent0.Consent, *serviceerror.I18nServiceError)); ok {
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, *consent.ConsentDecisions, string, int64) (*consent0.Consent, *serviceerror.ServiceError)); ok {
 		return returnFunc(ctx, ouID, appID, userID, decisions, sessionToken, validityPeriod)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, *consent.ConsentDecisions, string, int64) *consent0.Consent); ok {
@@ -61,11 +61,11 @@ func (_mock *ConsentEnforcerServiceInterfaceMock) RecordConsent(ctx context.Cont
 			r0 = ret.Get(0).(*consent0.Consent)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string, *consent.ConsentDecisions, string, int64) *serviceerror.I18nServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string, *consent.ConsentDecisions, string, int64) *serviceerror.ServiceError); ok {
 		r1 = returnFunc(ctx, ouID, appID, userID, decisions, sessionToken, validityPeriod)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.I18nServiceError)
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
 		}
 	}
 	return r0, r1
@@ -131,18 +131,18 @@ func (_c *ConsentEnforcerServiceInterfaceMock_RecordConsent_Call) Run(run func(c
 	return _c
 }
 
-func (_c *ConsentEnforcerServiceInterfaceMock_RecordConsent_Call) Return(consent1 *consent0.Consent, i18nServiceError *serviceerror.I18nServiceError) *ConsentEnforcerServiceInterfaceMock_RecordConsent_Call {
-	_c.Call.Return(consent1, i18nServiceError)
+func (_c *ConsentEnforcerServiceInterfaceMock_RecordConsent_Call) Return(consent1 *consent0.Consent, serviceError *serviceerror.ServiceError) *ConsentEnforcerServiceInterfaceMock_RecordConsent_Call {
+	_c.Call.Return(consent1, serviceError)
 	return _c
 }
 
-func (_c *ConsentEnforcerServiceInterfaceMock_RecordConsent_Call) RunAndReturn(run func(ctx context.Context, ouID string, appID string, userID string, decisions *consent.ConsentDecisions, sessionToken string, validityPeriod int64) (*consent0.Consent, *serviceerror.I18nServiceError)) *ConsentEnforcerServiceInterfaceMock_RecordConsent_Call {
+func (_c *ConsentEnforcerServiceInterfaceMock_RecordConsent_Call) RunAndReturn(run func(ctx context.Context, ouID string, appID string, userID string, decisions *consent.ConsentDecisions, sessionToken string, validityPeriod int64) (*consent0.Consent, *serviceerror.ServiceError)) *ConsentEnforcerServiceInterfaceMock_RecordConsent_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ResolveConsent provides a mock function for the type ConsentEnforcerServiceInterfaceMock
-func (_mock *ConsentEnforcerServiceInterfaceMock) ResolveConsent(ctx context.Context, ouID string, appID string, userID string, essentialAttributes []string, optionalAttributes []string, availableAttributes *common.AttributesResponse) (*consent.ConsentPromptData, *serviceerror.I18nServiceError) {
+func (_mock *ConsentEnforcerServiceInterfaceMock) ResolveConsent(ctx context.Context, ouID string, appID string, userID string, essentialAttributes []string, optionalAttributes []string, availableAttributes *common.AttributesResponse) (*consent.ConsentPromptData, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, ouID, appID, userID, essentialAttributes, optionalAttributes, availableAttributes)
 
 	if len(ret) == 0 {
@@ -150,8 +150,8 @@ func (_mock *ConsentEnforcerServiceInterfaceMock) ResolveConsent(ctx context.Con
 	}
 
 	var r0 *consent.ConsentPromptData
-	var r1 *serviceerror.I18nServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, []string, []string, *common.AttributesResponse) (*consent.ConsentPromptData, *serviceerror.I18nServiceError)); ok {
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, []string, []string, *common.AttributesResponse) (*consent.ConsentPromptData, *serviceerror.ServiceError)); ok {
 		return returnFunc(ctx, ouID, appID, userID, essentialAttributes, optionalAttributes, availableAttributes)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, []string, []string, *common.AttributesResponse) *consent.ConsentPromptData); ok {
@@ -161,11 +161,11 @@ func (_mock *ConsentEnforcerServiceInterfaceMock) ResolveConsent(ctx context.Con
 			r0 = ret.Get(0).(*consent.ConsentPromptData)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string, []string, []string, *common.AttributesResponse) *serviceerror.I18nServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string, []string, []string, *common.AttributesResponse) *serviceerror.ServiceError); ok {
 		r1 = returnFunc(ctx, ouID, appID, userID, essentialAttributes, optionalAttributes, availableAttributes)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.I18nServiceError)
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
 		}
 	}
 	return r0, r1
@@ -231,12 +231,12 @@ func (_c *ConsentEnforcerServiceInterfaceMock_ResolveConsent_Call) Run(run func(
 	return _c
 }
 
-func (_c *ConsentEnforcerServiceInterfaceMock_ResolveConsent_Call) Return(consentPromptData *consent.ConsentPromptData, i18nServiceError *serviceerror.I18nServiceError) *ConsentEnforcerServiceInterfaceMock_ResolveConsent_Call {
-	_c.Call.Return(consentPromptData, i18nServiceError)
+func (_c *ConsentEnforcerServiceInterfaceMock_ResolveConsent_Call) Return(consentPromptData *consent.ConsentPromptData, serviceError *serviceerror.ServiceError) *ConsentEnforcerServiceInterfaceMock_ResolveConsent_Call {
+	_c.Call.Return(consentPromptData, serviceError)
 	return _c
 }
 
-func (_c *ConsentEnforcerServiceInterfaceMock_ResolveConsent_Call) RunAndReturn(run func(ctx context.Context, ouID string, appID string, userID string, essentialAttributes []string, optionalAttributes []string, availableAttributes *common.AttributesResponse) (*consent.ConsentPromptData, *serviceerror.I18nServiceError)) *ConsentEnforcerServiceInterfaceMock_ResolveConsent_Call {
+func (_c *ConsentEnforcerServiceInterfaceMock_ResolveConsent_Call) RunAndReturn(run func(ctx context.Context, ouID string, appID string, userID string, essentialAttributes []string, optionalAttributes []string, availableAttributes *common.AttributesResponse) (*consent.ConsentPromptData, *serviceerror.ServiceError)) *ConsentEnforcerServiceInterfaceMock_ResolveConsent_Call {
 	_c.Call.Return(run)
 	return _c
 }

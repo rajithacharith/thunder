@@ -623,7 +623,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_GetAttributeCacheError() {
 	mockAttrCacheService := attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
 
 	// Mock GetAttributeCache to return error
-	serverErr := &serviceerror.I18nServiceError{
+	serverErr := &serviceerror.ServiceError{
 		Type: serviceerror.ServerErrorType,
 		Code: "CACHE_NOT_FOUND",
 		Error: core.I18nMessage{
@@ -1122,7 +1122,10 @@ func (suite *UtilsTestSuite) TestBuildClientAttributes_OULookupError_ReturnsErro
 
 	ous.On("GetOrganizationUnit", context.Background(), testBCCOUID).Return(
 		ou.OrganizationUnit{},
-		&serviceerror.ServiceError{Code: "OU-0001", Error: "not found"},
+		&serviceerror.ServiceError{
+			Code:  "OU-0001",
+			Error: core.I18nMessage{Key: "error.test.not_found", DefaultValue: "not found"},
+		},
 	)
 
 	app := newOAuthAppForClientAttributes(testBCCOUID)

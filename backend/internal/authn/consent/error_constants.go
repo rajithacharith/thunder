@@ -27,7 +27,7 @@ import (
 var (
 	// ErrorConsentPurposeFetchFailed is returned when the consent service rejects the
 	// request to list consent purposes with a client error.
-	ErrorConsentPurposeFetchFailed = serviceerror.I18nServiceError{
+	ErrorConsentPurposeFetchFailed = serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "AUTH-CES-1001",
 		Error: core.I18nMessage{
@@ -42,7 +42,7 @@ var (
 
 	// ErrorConsentSearchFailed is returned when the consent service rejects the
 	// request to search for consent records with a client error.
-	ErrorConsentSearchFailed = serviceerror.I18nServiceError{
+	ErrorConsentSearchFailed = serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "AUTH-CES-1002",
 		Error: core.I18nMessage{
@@ -57,7 +57,7 @@ var (
 
 	// ErrorConsentUpdateFailed is returned when the consent service rejects the
 	// request to update an existing consent record with a client error.
-	ErrorConsentUpdateFailed = serviceerror.I18nServiceError{
+	ErrorConsentUpdateFailed = serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "AUTH-CES-1003",
 		Error: core.I18nMessage{
@@ -72,7 +72,7 @@ var (
 
 	// ErrorConsentCreateFailed is returned when the consent service rejects the
 	// request to create a new consent record with a client error.
-	ErrorConsentCreateFailed = serviceerror.I18nServiceError{
+	ErrorConsentCreateFailed = serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "AUTH-CES-1004",
 		Error: core.I18nMessage{
@@ -87,7 +87,7 @@ var (
 
 	// ErrorConsentSessionInvalid is returned when the consent session token is missing,
 	// expired, or cannot be verified.
-	ErrorConsentSessionInvalid = serviceerror.I18nServiceError{
+	ErrorConsentSessionInvalid = serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "AUTH-CES-1005",
 		Error: core.I18nMessage{
@@ -101,7 +101,7 @@ var (
 	}
 
 	// ErrorEssentialConsentDenied is returned when the user denied one or more essential consent attributes.
-	ErrorEssentialConsentDenied = serviceerror.I18nServiceError{
+	ErrorEssentialConsentDenied = serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "AUTH-CES-1006",
 		Error: core.I18nMessage{

@@ -25,6 +25,7 @@ import (
 
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -82,10 +83,10 @@ func (es *exportService) ExportResources(
 	ctx context.Context, request *ExportRequest,
 ) (*ExportResponse, *serviceerror.ServiceError) {
 	if request == nil {
-		return nil, serviceerror.CustomServiceError(
-			ErrorInvalidRequest,
-			"Export request cannot be nil",
-		)
+		return nil, serviceerror.CustomServiceError(ErrorInvalidRequest, core.I18nMessage{
+			Key:          "error.exportservice.nil_request_description",
+			DefaultValue: "Export request cannot be nil",
+		})
 	}
 
 	// Set default options if not provided
@@ -137,10 +138,10 @@ func (es *exportService) ExportResources(
 	}
 
 	if len(exportFiles) == 0 {
-		return nil, serviceerror.CustomServiceError(
-			ErrorNoResourcesFound,
-			"No valid resources found for export",
-		)
+		return nil, serviceerror.CustomServiceError(ErrorNoResourcesFound, core.I18nMessage{
+			Key:          "error.exportservice.no_valid_resources_for_export_description",
+			DefaultValue: "No valid resources found for export",
+		})
 	}
 
 	// Calculate total size
@@ -196,11 +197,11 @@ func (es *exportService) exportResourcesWithExporter(
 			logger.Warn("Failed to get resource for export",
 				log.String("resourceType", resourceType),
 				log.String("resourceID", resourceID),
-				log.String("error", svcErr.Error))
+				log.String("error", svcErr.Error.DefaultValue))
 			exportErrors = append(exportErrors, declarativeresource.ExportError{
 				ResourceType: resourceType,
 				ResourceID:   resourceID,
-				Error:        svcErr.Error,
+				Error:        svcErr.Error.DefaultValue,
 				Code:         svcErr.Code,
 			})
 			continue
