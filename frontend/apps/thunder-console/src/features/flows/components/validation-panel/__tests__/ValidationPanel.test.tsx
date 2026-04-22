@@ -92,7 +92,7 @@ const mockSetLastInteractedStepId = vi.fn();
 const mockGetNodes = vi.fn().mockReturnValue([]);
 const mockFitView = vi.fn().mockResolvedValue(true);
 
-vi.mock('../../../hooks/useFlowBuilderCore', () => ({
+vi.mock('../../../hooks/useInteractionState', () => ({
   default: () => ({
     setLastInteractedResource: mockSetLastInteractedResource,
     setLastInteractedStepId: mockSetLastInteractedStepId,
@@ -299,6 +299,77 @@ describe('ValidationPanel', () => {
 
       const infoTabPanel = document.getElementById('validation-tabpanel-2');
       expect(infoTabPanel).not.toHaveAttribute('hidden');
+    });
+  });
+
+  describe('Nested Resource Node Search', () => {
+    it('should find a node when resource is nested inside components', () => {
+      mockCurrentActiveTab = 0;
+      const notification = createNotification('1', 'Element error', NotificationType.ERROR);
+      const resource = {id: 'nested-element-1', type: 'TEXT_INPUT', category: 'INPUT'} as any;
+      notification.addResource(resource);
+      mockNotifications = [notification];
+
+      // Mock getNodes to return a node whose components contain the nested element
+      mockGetNodes.mockReturnValue([
+        {
+          id: 'step-node-1',
+          data: {
+            components: [
+              {id: 'other-element', type: 'BUTTON', components: []},
+              {id: 'wrapper', type: 'BLOCK', components: [{id: 'nested-element-1', type: 'TEXT_INPUT'}]},
+            ],
+          },
+        },
+      ]);
+
+      render(<ValidationPanel open />);
+
+      const notificationButton = screen.getByTestId('notification-1');
+      fireEvent.click(notificationButton);
+
+      expect(mockSetLastInteractedResource).toHaveBeenCalledWith(resource);
+      expect(mockSetLastInteractedStepId).toHaveBeenCalledWith('step-node-1');
+      expect(mockFitView).toHaveBeenCalledWith({nodes: [{id: 'step-node-1'}], padding: 0.5, duration: 400});
+    });
+  });
+
+  describe('Notification Click with Matching Node', () => {
+    it('should call fitView when the resource matches a direct node', () => {
+      mockCurrentActiveTab = 0;
+      const notification = createNotification('1', 'Step error', NotificationType.ERROR);
+      const resource = {id: 'step-1', type: 'VIEW', category: 'STEP'} as any;
+      notification.addResource(resource);
+      mockNotifications = [notification];
+
+      mockGetNodes.mockReturnValue([{id: 'step-1', data: {}}]);
+
+      render(<ValidationPanel open />);
+
+      const notificationButton = screen.getByTestId('notification-1');
+      fireEvent.click(notificationButton);
+
+      expect(mockSetLastInteractedStepId).toHaveBeenCalledWith('step-1');
+      expect(mockFitView).toHaveBeenCalledWith({nodes: [{id: 'step-1'}], padding: 0.5, duration: 400});
+    });
+
+    it('should not call fitView when no node matches the resource', () => {
+      mockCurrentActiveTab = 0;
+      const notification = createNotification('1', 'Orphan error', NotificationType.ERROR);
+      const resource = {id: 'missing-node', type: 'TEXT_INPUT', category: 'INPUT'} as any;
+      notification.addResource(resource);
+      mockNotifications = [notification];
+
+      mockGetNodes.mockReturnValue([{id: 'step-1', data: {components: [{id: 'other', type: 'BUTTON'}]}}]);
+
+      render(<ValidationPanel open />);
+
+      const notificationButton = screen.getByTestId('notification-1');
+      fireEvent.click(notificationButton);
+
+      expect(mockSetLastInteractedResource).toHaveBeenCalledWith(resource);
+      expect(mockSetLastInteractedStepId).not.toHaveBeenCalled();
+      expect(mockFitView).not.toHaveBeenCalled();
     });
   });
 });

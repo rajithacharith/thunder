@@ -18,7 +18,7 @@
 
 import {type PropsWithChildren, type ReactElement, useCallback, useEffect, useMemo, useState} from 'react';
 import {ValidationContext, type ValidationConfig} from './ValidationContext';
-import useFlowBuilderCore from '../hooks/useFlowBuilderCore';
+import useUIPanelState from '../hooks/useUIPanelState';
 import Notification, {NotificationType} from '../models/notification';
 
 export interface ValidationProviderProps {
@@ -41,7 +41,7 @@ function ValidationProvider({
     isRecoveryFactorValidationEnabled: false,
   },
 }: PropsWithChildren<ValidationProviderProps>): ReactElement {
-  const {setIsOpenResourcePropertiesPanel, registerCloseValidationPanel} = useFlowBuilderCore();
+  const {setIsOpenResourcePropertiesPanel, registerCloseValidationPanel} = useUIPanelState();
 
   const [notifications, setNotifications] = useState<Map<string, Notification>>(new Map());
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);

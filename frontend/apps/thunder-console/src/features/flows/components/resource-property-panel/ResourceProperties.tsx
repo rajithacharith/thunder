@@ -25,7 +25,8 @@ import merge from 'lodash-es/merge';
 import set from 'lodash-es/set';
 import {useRef, useEffect, useMemo, useCallback, memo, type ReactElement} from 'react';
 import ResourcePropertyPanelConstants from '../../constants/ResourcePropertyPanelConstants';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import useFlowConfig from '../../hooks/useFlowConfig';
+import useInteractionState from '../../hooks/useInteractionState';
 import type {Properties} from '../../models/base';
 import type {Element} from '../../models/elements';
 import {ElementTypes} from '../../models/elements';
@@ -66,12 +67,8 @@ export interface CommonResourcePropertiesPropsInterface {
  */
 function ResourceProperties(): ReactElement {
   const {updateNodeData} = useReactFlow();
-  const {
-    lastInteractedResource,
-    setLastInteractedResource,
-    ResourceProperties: ResourcePropertiesComponent,
-    lastInteractedStepId,
-  } = useFlowBuilderCore();
+  const {lastInteractedResource, setLastInteractedResource, lastInteractedStepId} = useInteractionState();
+  const {ResourceProperties: ResourcePropertiesComponent} = useFlowConfig();
 
   // Use a ref to track the current resource ID for debounced functions
   const lastInteractedResourceIdRef = useRef<string>(lastInteractedResource?.id);

@@ -49,7 +49,7 @@ import React, {
 import {useTranslation} from 'react-i18next';
 import {invalidateI18nCache} from '../../../../i18n/invalidate-i18n-cache';
 import FlowI18nConstants from '../../constants/FlowI18nConstants';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import useI18nConfig from '../../hooks/useI18nConfig';
 
 /**
  * Props interface for the language text field component.
@@ -96,7 +96,7 @@ export function I18nConfigurationCardContent({
   onCreateModeChange,
 }: I18nConfigurationCardContentProps): ReactElement {
   const {t} = useTranslation();
-  const {i18nText, i18nTextLoading} = useFlowBuilderCore();
+  const {i18nText, i18nTextLoading} = useI18nConfig();
   const updateTranslation = useUpdateTranslation({
     onMutationSuccess: () => {
       invalidateI18nCache();

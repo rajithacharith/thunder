@@ -92,7 +92,7 @@ vi.mock('@/features/flows/utils/updateTemplatePlaceholderReferences', () => ({
 const mockSetFlowCompletionConfigs = vi.fn();
 const mockEdgeStyle = 'default';
 
-vi.mock('@/features/flows/hooks/useFlowBuilderCore', () => ({
+vi.mock('@/features/flows/hooks/useFlowConfig', () => ({
   default: () => ({
     setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
     edgeStyle: mockEdgeStyle,

@@ -37,7 +37,7 @@ import {mutateComponents} from '../utils/componentMutations';
 import GradientBorderButton from '@/features/applications/components/GradientBorderButton';
 import useGetFlowById from '@/features/flows/api/useGetFlowById';
 import FlowBuilder from '@/features/flows/components/FlowBuilder';
-import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
+import useFlowConfig from '@/features/flows/hooks/useFlowConfig';
 import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
 import {StepTypes} from '@/features/flows/models/steps';
 
@@ -48,7 +48,7 @@ function LoginFlowBuilder() {
   const {t} = useTranslation();
 
   const {data: resources} = useGetLoginFlowBuilderResources();
-  const {edgeStyle, isVerboseMode} = useFlowBuilderCore();
+  const {edgeStyle, isVerboseMode} = useFlowConfig();
   const {isValid: isFlowValid, setOpenValidationPanel} = useValidationStatus();
   const updateNodeInternals = useUpdateNodeInternals();
 

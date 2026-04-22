@@ -19,8 +19,8 @@
 import {Box} from '@wso2/oxygen-ui';
 import {XIcon} from '@wso2/oxygen-ui-icons-react';
 import {BaseEdge as XYFlowBaseEdge, EdgeLabelRenderer, useReactFlow, useNodes, type EdgeProps} from '@xyflow/react';
-import {useState, useContext, type ReactElement, type SyntheticEvent} from 'react';
-import FlowBuilderCoreContext from '../../context/FlowBuilderCoreContext';
+import {useState, type ReactElement, type SyntheticEvent} from 'react';
+import useFlowConfig from '../../hooks/useFlowConfig';
 import {calculateEdgePath, type EdgeStyle} from '../../utils/calculateEdgePath';
 
 /**
@@ -55,7 +55,7 @@ function BaseEdge({
   const {deleteElements} = useReactFlow();
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const nodes = useNodes();
-  const {edgeStyle} = useContext(FlowBuilderCoreContext);
+  const {edgeStyle} = useFlowConfig();
 
   // Calculate smart path that routes around nodes with the selected edge style
   const {

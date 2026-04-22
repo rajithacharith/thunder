@@ -23,7 +23,7 @@ import {useReactFlow, type Node} from '@xyflow/react';
 import type {PropsWithChildren, ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
 import ValidationNotificationsList from './ValidationNotificationsList';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import useInteractionState from '../../hooks/useInteractionState';
 import useValidationStatus from '../../hooks/useValidationStatus';
 import type {Element} from '../../models/elements';
 import Notification, {NotificationType} from '../../models/notification';
@@ -97,7 +97,7 @@ function ValidationPanel({open = false}: ValidationPanelProps): ReactElement {
   const {t} = useTranslation();
   const {notifications, setOpenValidationPanel, setSelectedNotification, currentActiveTab, setCurrentActiveTab} =
     useValidationStatus();
-  const {setLastInteractedResource, setLastInteractedStepId} = useFlowBuilderCore();
+  const {setLastInteractedResource, setLastInteractedStepId} = useInteractionState();
   const {getNodes, fitView} = useReactFlow();
 
   const errorNotifications: Notification[] = notifications.filter(

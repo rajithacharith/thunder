@@ -23,7 +23,7 @@ import {type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
 import EdgeStyleMenu from './EdgeStyleSelector';
 import useEdgeStyleSelector from '../../hooks/useEdgeStyleSelector';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import useFlowConfig from '../../hooks/useFlowConfig';
 import getEdgeStyleIcon from '../../utils/getEdgeStyleIcon';
 
 export interface CanvasToolbarProps {
@@ -37,7 +37,7 @@ function ToolbarDivider(): ReactElement {
 export default function CanvasToolbar({onAutoLayout}: CanvasToolbarProps): ReactElement {
   const {t} = useTranslation();
   const {fitView, zoomIn, zoomOut} = useReactFlow();
-  const {edgeStyle} = useFlowBuilderCore();
+  const {edgeStyle} = useFlowConfig();
   const {anchorEl, handleClick: handleEdgeStyleClick, handleClose: handleEdgeStyleClose} = useEdgeStyleSelector();
 
   return (

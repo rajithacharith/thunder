@@ -19,10 +19,7 @@
 import {render, screen, fireEvent} from '@testing-library/react';
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';
-import type {Base} from '../../../models/base';
-import {PreviewScreenType} from '../../../models/custom-text-preference';
-import {ElementTypes} from '../../../models/elements';
+import FlowConfigContext, {type FlowConfigContextProps} from '../../../context/FlowConfigContext';
 import {EdgeStyleTypes} from '../../../models/steps';
 import EdgeStyleMenu from '../EdgeStyleSelector';
 
@@ -44,60 +41,26 @@ describe('EdgeStyleMenu', () => {
   const mockSetEdgeStyle = vi.fn();
   const mockOnClose = vi.fn();
 
-  const mockBaseResource: Base = {
-    id: '',
-    type: '',
-    category: '',
-    resourceType: '',
-    version: '1.0.0',
-    deprecated: false,
-    deletable: true,
-    display: {
-      label: '',
-      image: '',
-      showOnResourcePanel: false,
-    },
-    config: {
-      field: {name: '', type: ElementTypes},
-      styles: {},
-    },
-  };
-
-  const defaultContextValue: FlowBuilderCoreContextProps = {
-    lastInteractedResource: mockBaseResource,
-    lastInteractedStepId: '',
-    ResourceProperties: () => null,
-    resourcePropertiesPanelHeading: '',
-    primaryI18nScreen: PreviewScreenType.LOGIN,
-    isResourcePanelOpen: true,
-    isResourcePropertiesPanelOpen: false,
-    isVersionHistoryPanelOpen: false,
+  const defaultFlowConfigValue: FlowConfigContextProps = {
     ElementFactory: () => null,
-    onResourceDropOnCanvas: vi.fn(),
-    selectedAttributes: {},
-    setLastInteractedResource: vi.fn(),
-    setLastInteractedStepId: vi.fn(),
-    setResourcePropertiesPanelHeading: vi.fn(),
-    setIsResourcePanelOpen: vi.fn(),
-    setIsOpenResourcePropertiesPanel: vi.fn(),
-    registerCloseValidationPanel: vi.fn(),
-    setIsVersionHistoryPanelOpen: vi.fn(),
-    setSelectedAttributes: vi.fn(),
+    ResourceProperties: () => null,
     flowCompletionConfigs: {},
     setFlowCompletionConfigs: vi.fn(),
-    flowNodeTypes: {},
-    flowEdgeTypes: {},
-    setFlowNodeTypes: vi.fn(),
-    setFlowEdgeTypes: vi.fn(),
     isVerboseMode: false,
     setIsVerboseMode: vi.fn(),
     edgeStyle: EdgeStyleTypes.SmoothStep,
     setEdgeStyle: mockSetEdgeStyle,
+    flowNodeTypes: {},
+    flowEdgeTypes: {},
+    setFlowNodeTypes: vi.fn(),
+    setFlowEdgeTypes: vi.fn(),
   };
 
-  const createWrapper = (contextValue: FlowBuilderCoreContextProps = defaultContextValue) => {
+  const createWrapper = (overrides: Partial<FlowConfigContextProps> = {}) => {
+    const flowConfigValue: FlowConfigContextProps = {...defaultFlowConfigValue, ...overrides};
+
     function Wrapper({children}: {children: ReactNode}) {
-      return <FlowBuilderCoreContext.Provider value={contextValue}>{children}</FlowBuilderCoreContext.Provider>;
+      return <FlowConfigContext.Provider value={flowConfigValue}>{children}</FlowConfigContext.Provider>;
     }
     return Wrapper;
   };
@@ -249,10 +212,7 @@ describe('EdgeStyleMenu', () => {
 
     it('should render all edge style options with SmoothStep context', () => {
       render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
-        wrapper: createWrapper({
-          ...defaultContextValue,
-          edgeStyle: EdgeStyleTypes.SmoothStep,
-        }),
+        wrapper: createWrapper({edgeStyle: EdgeStyleTypes.SmoothStep}),
       });
 
       const menuItems = screen.getAllByRole('menuitem');
@@ -262,10 +222,7 @@ describe('EdgeStyleMenu', () => {
 
     it('should render all edge style options with Bezier context', () => {
       render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
-        wrapper: createWrapper({
-          ...defaultContextValue,
-          edgeStyle: EdgeStyleTypes.Bezier,
-        }),
+        wrapper: createWrapper({edgeStyle: EdgeStyleTypes.Bezier}),
       });
 
       const menuItems = screen.getAllByRole('menuitem');
@@ -275,10 +232,7 @@ describe('EdgeStyleMenu', () => {
 
     it('should render all edge style options with Step context', () => {
       render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
-        wrapper: createWrapper({
-          ...defaultContextValue,
-          edgeStyle: EdgeStyleTypes.Step,
-        }),
+        wrapper: createWrapper({edgeStyle: EdgeStyleTypes.Step}),
       });
 
       const menuItems = screen.getAllByRole('menuitem');
@@ -321,10 +275,7 @@ describe('EdgeStyleMenu', () => {
 
     it('should mark Bezier as selected when edgeStyle is Bezier', () => {
       render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
-        wrapper: createWrapper({
-          ...defaultContextValue,
-          edgeStyle: EdgeStyleTypes.Bezier,
-        }),
+        wrapper: createWrapper({edgeStyle: EdgeStyleTypes.Bezier}),
       });
 
       const menuItems = screen.getAllByRole('menuitem');
@@ -334,10 +285,7 @@ describe('EdgeStyleMenu', () => {
 
     it('should mark SmoothStep as selected when edgeStyle is SmoothStep', () => {
       render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
-        wrapper: createWrapper({
-          ...defaultContextValue,
-          edgeStyle: EdgeStyleTypes.SmoothStep,
-        }),
+        wrapper: createWrapper({edgeStyle: EdgeStyleTypes.SmoothStep}),
       });
 
       const menuItems = screen.getAllByRole('menuitem');
@@ -347,10 +295,7 @@ describe('EdgeStyleMenu', () => {
 
     it('should mark Step as selected when edgeStyle is Step', () => {
       render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
-        wrapper: createWrapper({
-          ...defaultContextValue,
-          edgeStyle: EdgeStyleTypes.Step,
-        }),
+        wrapper: createWrapper({edgeStyle: EdgeStyleTypes.Step}),
       });
 
       const menuItems = screen.getAllByRole('menuitem');

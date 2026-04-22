@@ -24,7 +24,7 @@ import {memo, useCallback, useMemo, type HTMLAttributes, type ReactElement, type
 import {useTranslation} from 'react-i18next';
 import ResourcePanelDraggable from './ResourcePanelDraggable';
 import ResourcePanelStatic from './ResourcePanelStatic';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import useUIPanelState from '../../hooks/useUIPanelState';
 import type {Element} from '../../models/elements';
 import type {Resource, Resources} from '../../models/resources';
 import type {Step} from '../../models/steps';
@@ -91,7 +91,7 @@ function ResourcePanel({
   ...rest
 }: ResourcePanelPropsInterface): ReactElement {
   const {t} = useTranslation();
-  const {setIsResourcePanelOpen} = useFlowBuilderCore();
+  const {setIsResourcePanelOpen} = useUIPanelState();
 
   const handleTogglePanel = useCallback((): void => {
     setIsResourcePanelOpen((prev: boolean) => !prev);

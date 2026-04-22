@@ -21,10 +21,7 @@
 import {render, screen, fireEvent} from '@testing-library/react';
 import React, {type ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';
-import type {Base} from '../../../models/base';
-import {PreviewScreenType} from '../../../models/custom-text-preference';
-import {ElementTypes} from '../../../models/elements';
+import FlowConfigContext, {type FlowConfigContextProps} from '../../../context/FlowConfigContext';
 import {EdgeStyleTypes} from '../../../models/steps';
 
 // Import after mocks are set up
@@ -125,60 +122,26 @@ vi.mock('@wso2/oxygen-ui-icons-react', () => ({
 }));
 
 describe('BaseEdge', () => {
-  const mockBaseResource: Base = {
-    id: '',
-    type: '',
-    category: '',
-    resourceType: '',
-    version: '1.0.0',
-    deprecated: false,
-    deletable: true,
-    display: {
-      label: '',
-      image: '',
-      showOnResourcePanel: false,
-    },
-    config: {
-      field: {name: '', type: ElementTypes},
-      styles: {},
-    },
-  };
-
-  const defaultContextValue: FlowBuilderCoreContextProps = {
-    lastInteractedResource: mockBaseResource,
-    lastInteractedStepId: '',
-    ResourceProperties: () => null,
-    resourcePropertiesPanelHeading: '',
-    primaryI18nScreen: PreviewScreenType.LOGIN,
-    isResourcePanelOpen: true,
-    isResourcePropertiesPanelOpen: false,
-    isVersionHistoryPanelOpen: false,
+  const defaultFlowConfigValue: FlowConfigContextProps = {
     ElementFactory: () => null,
-    onResourceDropOnCanvas: vi.fn(),
-    selectedAttributes: {},
-    setLastInteractedResource: vi.fn(),
-    setLastInteractedStepId: vi.fn(),
-    setResourcePropertiesPanelHeading: vi.fn(),
-    setIsResourcePanelOpen: vi.fn(),
-    setIsOpenResourcePropertiesPanel: vi.fn(),
-    registerCloseValidationPanel: vi.fn(),
-    setIsVersionHistoryPanelOpen: vi.fn(),
-    setSelectedAttributes: vi.fn(),
+    ResourceProperties: () => null,
     flowCompletionConfigs: {},
     setFlowCompletionConfigs: vi.fn(),
-    flowNodeTypes: {},
-    flowEdgeTypes: {},
-    setFlowNodeTypes: vi.fn(),
-    setFlowEdgeTypes: vi.fn(),
     isVerboseMode: false,
     setIsVerboseMode: vi.fn(),
     edgeStyle: EdgeStyleTypes.SmoothStep,
     setEdgeStyle: vi.fn(),
+    flowNodeTypes: {},
+    flowEdgeTypes: {},
+    setFlowNodeTypes: vi.fn(),
+    setFlowEdgeTypes: vi.fn(),
   };
 
-  const createWrapper = (contextValue: FlowBuilderCoreContextProps = defaultContextValue) => {
+  const createWrapper = (overrides: Partial<FlowConfigContextProps> = {}) => {
+    const flowConfigValue = {...defaultFlowConfigValue, ...overrides};
+
     function Wrapper({children}: {children: ReactNode}) {
-      return <FlowBuilderCoreContext.Provider value={contextValue}>{children}</FlowBuilderCoreContext.Provider>;
+      return <FlowConfigContext.Provider value={flowConfigValue}>{children}</FlowConfigContext.Provider>;
     }
     return Wrapper;
   };
@@ -416,13 +379,8 @@ describe('BaseEdge', () => {
     });
 
     it('should use edge style from context', () => {
-      const contextWithBezier = {
-        ...defaultContextValue,
-        edgeStyle: EdgeStyleTypes.Bezier,
-      };
-
       render(<BaseEdge {...defaultProps} />, {
-        wrapper: createWrapper(contextWithBezier),
+        wrapper: createWrapper({edgeStyle: EdgeStyleTypes.Bezier}),
       });
 
       expect(screen.getByTestId('base-edge-edge-1')).toBeInTheDocument();

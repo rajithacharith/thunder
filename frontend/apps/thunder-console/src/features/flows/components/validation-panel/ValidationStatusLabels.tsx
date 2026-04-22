@@ -20,7 +20,7 @@ import {Badge, Box, IconButton, Tooltip} from '@wso2/oxygen-ui';
 import {BellIcon} from '@wso2/oxygen-ui-icons-react';
 import type {ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import useUIPanelState from '../../hooks/useUIPanelState';
 import useValidationStatus from '../../hooks/useValidationStatus';
 import Notification, {NotificationType} from '../../models/notification';
 import './ValidationStatusLabels.scss';
@@ -33,7 +33,7 @@ import './ValidationStatusLabels.scss';
  */
 function ValidationStatusLabels(): ReactElement {
   const {notifications, setCurrentActiveTab, openValidationPanel, setOpenValidationPanel} = useValidationStatus();
-  const {setIsOpenResourcePropertiesPanel} = useFlowBuilderCore();
+  const {setIsOpenResourcePropertiesPanel} = useUIPanelState();
   const {t} = useTranslation();
 
   const errorCount: number =
