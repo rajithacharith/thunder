@@ -50,13 +50,9 @@ func registerRoutes(mux *http.ServeMux, exportHandler *exportHandler) {
 		AllowCredentials: true,
 	}
 
-	// YAML export endpoint - returns application/yaml
+	// JSON export endpoint
 	mux.HandleFunc(middleware.WithCORS("POST /export",
 		exportHandler.HandleExportRequest, opts))
-
-	// JSON export endpoint - returns JSON with files (for backward compatibility)
-	mux.HandleFunc(middleware.WithCORS("POST /export/json",
-		exportHandler.HandleExportJSONRequest, opts))
 
 	// ZIP export endpoint - returns application/zip with individual files
 	mux.HandleFunc(middleware.WithCORS("POST /export/zip",

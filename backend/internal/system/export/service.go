@@ -20,6 +20,8 @@ package export
 
 import (
 	"context"
+	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -28,6 +30,13 @@ import (
 	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
+
+// templateVariablePattern matches only uppercase-only parameter names in the exact forms
+// "{{.NAME}}" and "{{- range .NAME}}". This relies on the parameterizer normalizing names
+// via toSnakeCase() (which calls strings.ToUpper()) and only emitting those two template
+// forms in parameterizer.go. Adding lowercase names or new actions like "if"/"with" will
+// require updating this regex.
+var templateVariablePattern = regexp.MustCompile(`\{\{\.([A-Z0-9_]+)\}\}|\{\{\-\s*range\s+\.([A-Z0-9_]+)\s*\}\}`)
 
 const (
 	formatYAML = "yaml"
@@ -151,8 +160,16 @@ func (es *exportService) ExportResources(
 		totalSize += exportFiles[i].Size
 	}
 
+	envFile := es.generateEnvFile(exportFiles)
+
+	totalFilesCount := len(exportFiles)
+	if envFile != nil {
+		totalFilesCount++
+		totalSize += envFile.Size
+	}
+
 	summary := &ExportSummary{
-		TotalFiles:    len(exportFiles),
+		TotalFiles:    totalFilesCount,
 		TotalSize:     totalSize,
 		ExportedAt:    time.Now().UTC().Format(time.RFC3339),
 		ResourceTypes: resourceCounts,
@@ -161,8 +178,49 @@ func (es *exportService) ExportResources(
 
 	return &ExportResponse{
 		Files:   exportFiles,
+		EnvFile: envFile,
 		Summary: summary,
 	}, nil
+}
+
+// generateEnvFile extracts template variable names and builds a .env payload.
+func (es *exportService) generateEnvFile(files []ExportFile) *EnvironmentFile {
+	variablesSet := make(map[string]struct{})
+
+	for _, file := range files {
+		matches := templateVariablePattern.FindAllStringSubmatch(file.Content, -1)
+		for _, match := range matches {
+			for i := 1; i < len(match); i++ {
+				if match[i] == "" {
+					continue
+				}
+				variablesSet[match[i]] = struct{}{}
+			}
+		}
+	}
+
+	if len(variablesSet) == 0 {
+		return nil
+	}
+
+	variables := make([]string, 0, len(variablesSet))
+	for variable := range variablesSet {
+		variables = append(variables, variable)
+	}
+	sort.Strings(variables)
+
+	var contentBuilder strings.Builder
+	for _, variable := range variables {
+		contentBuilder.WriteString(variable)
+		contentBuilder.WriteString("=\n")
+	}
+
+	content := contentBuilder.String()
+	return &EnvironmentFile{
+		FileName: ".env",
+		Content:  content,
+		Size:     int64(len(content)),
+	}
 }
 
 // exportResourcesWithExporter exports resources using a registered exporter.

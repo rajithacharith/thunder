@@ -77,10 +77,24 @@ type PaginationOptions struct {
 
 // ExportResponse represents the response structure for exporting resources.
 type ExportResponse struct {
-	Files []ExportFile `json:"files"`
+	Files   []ExportFile     `json:"files"`
+	EnvFile *EnvironmentFile `json:"envFile,omitempty"`
 
 	// Summary information about the export
 	Summary *ExportSummary `json:"summary,omitempty"`
+}
+
+// JSONExportResponse represents the JSON payload returned by the export endpoints.
+type JSONExportResponse struct {
+	Resources            string `json:"resources"`
+	EnvironmentVariables string `json:"environment_variables"`
+}
+
+// EnvironmentFile represents a generated .env file containing template variables.
+type EnvironmentFile struct {
+	FileName string `json:"fileName"`
+	Content  string `json:"content"`
+	Size     int64  `json:"size,omitempty"`
 }
 
 // ExportSummary provides metadata about the export operation.

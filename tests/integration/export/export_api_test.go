@@ -79,7 +79,7 @@ func (ts *ExportAPITestSuite) TestApplicationExportYAML() {
 		URL:                       "https://exporttest.example.com",
 		LogoURL:                   "https://exporttest.example.com/logo.png",
 		IsRegistrationFlowEnabled: true,
-		Certificate: nil,
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -328,7 +328,7 @@ func (ts *ExportAPITestSuite) TestMixedResourcesExportYAML() {
 		Description:               "Test application for mixed export",
 		URL:                       "https://mixedexport.example.com",
 		IsRegistrationFlowEnabled: true,
-		Certificate: nil,
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -632,18 +632,14 @@ func (ts *ExportAPITestSuite) exportResourcesYAML(exportRequest ExportRequest) (
 		return "", fmt.Errorf("expected status 200, got %d. Response: %s", resp.StatusCode, string(responseBody))
 	}
 
-	// Verify Content-Type is application/yaml
-	contentType := resp.Header.Get("Content-Type")
-	if !strings.Contains(contentType, "application/yaml") {
-		return "", fmt.Errorf("expected Content-Type to contain 'application/yaml', got '%s'", contentType)
-	}
-
-	yamlContent, err := io.ReadAll(resp.Body)
+	// Parse JSON response
+	var jsonResponse JSONExportResponse
+	err = json.NewDecoder(resp.Body).Decode(&jsonResponse)
 	if err != nil {
-		return "", fmt.Errorf("failed to read YAML response: %w", err)
+		return "", fmt.Errorf("failed to parse JSON export response: %w", err)
 	}
 
-	return string(yamlContent), nil
+	return jsonResponse.Resources, nil
 }
 
 func (ts *ExportAPITestSuite) exportResourcesJSON(exportRequest ExportRequest) (*ExportResponse, error) {
@@ -653,7 +649,7 @@ func (ts *ExportAPITestSuite) exportResourcesJSON(exportRequest ExportRequest) (
 	}
 
 	reqBody := bytes.NewReader(reqJSON)
-	req, err := http.NewRequest("POST", testServerURL+"/export/json", reqBody)
+	req, err := http.NewRequest("POST", testServerURL+"/export", reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create export request: %w", err)
 	}
@@ -672,13 +668,57 @@ func (ts *ExportAPITestSuite) exportResourcesJSON(exportRequest ExportRequest) (
 		return nil, fmt.Errorf("expected status 200, got %d. Response: %s", resp.StatusCode, string(responseBody))
 	}
 
-	var exportResponse ExportResponse
-	err = json.NewDecoder(resp.Body).Decode(&exportResponse)
+	// Parse the new JSON response format
+	var jsonResponse JSONExportResponse
+	err = json.NewDecoder(resp.Body).Decode(&jsonResponse)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse export response: %w", err)
 	}
+	exportResponse := parseResourcesIntoExportResponse(jsonResponse.Resources)
+	return exportResponse, nil
+}
 
-	return &exportResponse, nil
+// parseResourcesIntoExportResponse parses the combined YAML resources string into individual ExportFile entries.
+func parseResourcesIntoExportResponse(resources string) *ExportResponse {
+	files := []ExportFile{}
+
+	// Split by YAML document separator
+	parts := strings.Split(resources, "\n---\n")
+
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+
+		// Extract filename from the "# File: " comment
+		lines := strings.Split(part, "\n")
+		fileName := ""
+		contentStart := 0
+
+		for i, line := range lines {
+			if strings.HasPrefix(line, "# File:") {
+				fileName = strings.TrimSpace(strings.TrimPrefix(line, "# File:"))
+				contentStart = i + 1
+				break
+			}
+		}
+
+		if fileName == "" {
+			continue
+		}
+
+		// Join remaining lines as content
+		content := strings.Join(lines[contentStart:], "\n")
+		content = strings.TrimSpace(content)
+
+		files = append(files, ExportFile{
+			FileName: fileName,
+			Content:  content,
+		})
+	}
+
+	return &ExportResponse{Files: files}
 }
 
 func (ts *ExportAPITestSuite) createIDP(idp IDP) (string, error) {

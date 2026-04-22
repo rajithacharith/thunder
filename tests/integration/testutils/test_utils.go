@@ -27,6 +27,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -265,7 +266,94 @@ func findMatchingZipFile(zipFilePattern string) ([]string, error) {
 		}
 	}
 
+	// Prefer the newest package version first to avoid selecting stale distributions.
+	sort.SliceStable(matchingFiles, func(i, j int) bool {
+		versionI := extractVersionFromZipName(filepath.Base(matchingFiles[i]))
+		versionJ := extractVersionFromZipName(filepath.Base(matchingFiles[j]))
+
+		cmp := compareVersions(versionI, versionJ)
+		if cmp != 0 {
+			return cmp > 0
+		}
+
+		infoI, errI := os.Stat(matchingFiles[i])
+		infoJ, errJ := os.Stat(matchingFiles[j])
+		if errI == nil && errJ == nil {
+			return infoI.ModTime().After(infoJ.ModTime())
+		}
+
+		return matchingFiles[i] > matchingFiles[j]
+	})
+
 	return matchingFiles, nil
+}
+
+func extractVersionFromZipName(zipName string) string {
+	parts := strings.Split(zipName, "-")
+	if len(parts) < 3 {
+		return ""
+	}
+	return strings.TrimPrefix(parts[1], "v")
+}
+
+// parseVersionSegment splits a segment like "0-rc1" into its numeric value and optional
+// pre-release suffix. A segment with no suffix has preRelease == "".
+func parseVersionSegment(seg string) (numeric int, preRelease string) {
+	if idx := strings.Index(seg, "-"); idx >= 0 {
+		if n, err := strconv.Atoi(seg[:idx]); err == nil {
+			return n, seg[idx+1:]
+		}
+	}
+	if n, err := strconv.Atoi(seg); err == nil {
+		return n, ""
+	}
+	return 0, ""
+}
+
+func compareVersions(versionA string, versionB string) int {
+	segmentsA := strings.Split(versionA, ".")
+	segmentsB := strings.Split(versionB, ".")
+
+	maxLen := len(segmentsA)
+	if len(segmentsB) > maxLen {
+		maxLen = len(segmentsB)
+	}
+
+	for i := 0; i < maxLen; i++ {
+		var segA, segB string
+		if i < len(segmentsA) {
+			segA = segmentsA[i]
+		}
+		if i < len(segmentsB) {
+			segB = segmentsB[i]
+		}
+
+		numA, preA := parseVersionSegment(segA)
+		numB, preB := parseVersionSegment(segB)
+
+		if numA != numB {
+			if numA > numB {
+				return 1
+			}
+			return -1
+		}
+
+		// Same numeric part: release (no suffix) > pre-release (has suffix).
+		if preA == "" && preB != "" {
+			return 1
+		}
+		if preA != "" && preB == "" {
+			return -1
+		}
+		if preA != preB {
+			if preA > preB {
+				return 1
+			}
+			return -1
+		}
+	}
+
+	return 0
 }
 
 func ReplaceResources(zipFilePattern string) error {
