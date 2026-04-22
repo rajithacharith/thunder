@@ -60,7 +60,7 @@ func (h *jwtAuthenticator) Authenticate(r *http.Request) (*SecurityContext, erro
 		return nil, errInvalidToken
 	}
 
-	// Step 2: Verify JWT signature.
+	// Step 2: Verify JWT.
 	// If a trusted issuer is configured, the server delegates token issuance to it
 	// and verifies tokens exclusively against its JWKS. Otherwise, verify with the
 	// server's own signing key.
@@ -69,7 +69,7 @@ func (h *jwtAuthenticator) Authenticate(r *http.Request) (*SecurityContext, erro
 			return nil, errInvalidToken
 		}
 	} else {
-		if err := h.jwtService.VerifyJWTSignature(token); err != nil {
+		if err := h.jwtService.VerifyJWT(token, "", ""); err != nil {
 			return nil, errInvalidToken
 		}
 	}
