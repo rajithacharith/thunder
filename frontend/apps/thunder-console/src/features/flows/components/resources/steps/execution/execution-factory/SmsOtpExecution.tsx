@@ -17,11 +17,9 @@
  */
 
 import {Box, Typography, useColorScheme} from '@wso2/oxygen-ui';
-import {useMemo, type ReactElement} from 'react';
-import {Trans, useTranslation} from 'react-i18next';
+import type {ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
 import type {ExecutionMinimalPropsInterface} from '../ExecutionMinimal';
-import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
-import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import resolveStaticResourcePath from '@/features/flows/utils/resolveStaticResourcePath';
 
 /**
@@ -38,31 +36,6 @@ function SmsOtpExecution({resource}: SmsOtpExecutionPropsInterface): ReactElemen
 
   const displayImage = resource.display?.image;
   const displayLabel = resource.display?.label;
-
-  const generalMessage: ReactElement = useMemo(
-    () => (
-      <Trans
-        i18nKey="flows:core.validation.fields.executor.general"
-        values={{id: resource?.id}}
-        components={[<code key="executor-id" />]}
-      >
-        {'The executor <0>{{id}}</0> is not properly configured.'}
-      </Trans>
-    ),
-    [resource?.id],
-  );
-
-  const fields: RequiredFieldInterface[] = useMemo(
-    () => [
-      {
-        errorMessage: t('flows:core.validation.fields.input.senderId'),
-        name: 'data.properties.senderId',
-      },
-    ],
-    [t],
-  );
-
-  useRequiredFields(resource, generalMessage, fields);
 
   return (
     <Box display="flex" gap={1} alignItems="center" className="flow-builder-execution">

@@ -31,10 +31,6 @@ vi.mock('react-i18next', () => ({
   Trans: ({children}: {children: ReactNode}) => children,
 }));
 
-vi.mock('@/features/flows/hooks/useRequiredFields', () => ({
-  default: vi.fn(),
-}));
-
 vi.mock('@/features/flows/utils/resolveStaticResourcePath', () => ({
   default: (path: string) => path,
 }));

@@ -173,10 +173,15 @@ function ResourceProperties(): ReactElement {
       selectedVariant = merge(selectedVariant, element);
     }
 
-    // Preserve the current label value when changing variants (for Typography elements)
-    const currentLabel = (currentResource as Element & {label?: string}).label;
-    if (currentLabel !== undefined) {
-      (selectedVariant as Element & {label?: string}).label = currentLabel;
+    // Preserve user-modified properties when changing variants.
+    // Variant definitions carry default values for these fields that would
+    // overwrite the user's customizations via the merge below.
+    const preserveKeys = ['label', 'eventType', 'action', 'startIcon', 'endIcon'] as const;
+    for (const key of preserveKeys) {
+      const currentValue = (currentResource as unknown as Record<string, unknown>)[key];
+      if (currentValue !== undefined) {
+        (selectedVariant as unknown as Record<string, unknown>)[key] = currentValue;
+      }
     }
 
     // Preserve the current text value when changing variants

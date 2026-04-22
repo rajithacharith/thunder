@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type {EdgeTypes, NodeTypes} from '@xyflow/react';
+import type {EdgeTypes, Node, NodeTypes} from '@xyflow/react';
 import type {Context, Dispatch, FunctionComponent, SetStateAction} from 'react';
 import {createContext} from 'react';
 import type {FlowCompletionConfigsInterface} from '../models/flows';
@@ -97,6 +97,16 @@ export interface FlowConfigContextProps {
    * Publishes the current flow configuration.
    */
   publishFlow?: () => Promise<boolean>;
+  /**
+   * Current React Flow nodes. Set by DecoratedVisualFlow so that
+   * ValidationProvider can compute notifications without relying on
+   * the inner ReactFlowProvider store.
+   */
+  flowNodes: Node[];
+  /**
+   * Setter to push the latest nodes into the shared context.
+   */
+  setFlowNodes: Dispatch<SetStateAction<Node[]>>;
 }
 
 const FlowConfigContext: Context<FlowConfigContextProps | undefined> = createContext<

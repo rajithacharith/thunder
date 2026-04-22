@@ -77,6 +77,8 @@ describe('useVisualFlowHandlers', () => {
     flowEdgeTypes: {},
     setFlowNodeTypes: vi.fn(),
     setFlowEdgeTypes: vi.fn(),
+    flowNodes: [],
+    setFlowNodes: vi.fn(),
   };
 
   const createWrapper = (overrides: Partial<FlowConfigContextProps> = {}) => {

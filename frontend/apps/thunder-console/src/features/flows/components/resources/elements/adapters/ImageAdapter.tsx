@@ -19,10 +19,8 @@
 import {isI18nTemplatePattern, isMetaTemplatePattern} from '@thunder/utils';
 import {Box, Typography} from '@wso2/oxygen-ui';
 import {ImageIcon} from '@wso2/oxygen-ui-icons-react';
-import {useCallback, useMemo, useState, type CSSProperties, type ReactElement} from 'react';
-import {Trans, useTranslation} from 'react-i18next';
-import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
-import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
+import {useCallback, useState, type CSSProperties, type ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 
 /**
@@ -56,31 +54,6 @@ function ImageAdapter({resource}: ImageAdapterPropsInterface): ReactElement {
   const {t} = useTranslation();
   const imageElement = resource as ImageElement;
   const [hasError, setHasError] = useState(false);
-
-  const generalMessage: ReactElement = useMemo(
-    () => (
-      <Trans
-        i18nKey="flows:core.validation.fields.image.general"
-        values={{id: resource.id}}
-        components={{code: <code />}}
-      >
-        Required fields are not properly configured for the image with ID <code>{resource.id}</code>.
-      </Trans>
-    ),
-    [resource.id],
-  );
-
-  const validationFields: RequiredFieldInterface[] = useMemo(
-    () => [
-      {
-        errorMessage: t('flows:core.validation.fields.image.src'),
-        name: 'src',
-      },
-    ],
-    [t],
-  );
-
-  useRequiredFields(resource, generalMessage, validationFields);
 
   // Check if src is empty or has errored
   const src = imageElement?.src?.trim() ?? '';

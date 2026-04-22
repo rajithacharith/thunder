@@ -19,9 +19,7 @@ import {useTemplateLiteralResolver} from '@thunder/hooks';
 import DOMPurify from 'dompurify';
 import parse from 'html-react-parser';
 import {useMemo, type ReactElement} from 'react';
-import {Trans, useTranslation} from 'react-i18next';
-import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
-import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
+import {useTranslation} from 'react-i18next';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 import './RichTextAdapter.scss';
 
@@ -38,10 +36,6 @@ import './RichTextAdapter.scss';
     }
   },
 );
-
-const RICHTEXT_VALIDATION_FIELD_NAMES = {
-  label: 'label',
-} as const;
 
 /**
  * RichText element type.
@@ -68,31 +62,6 @@ export interface RichTextAdapterPropsInterface {
  */
 function RichTextAdapter({resource}: RichTextAdapterPropsInterface): ReactElement {
   const {t} = useTranslation();
-
-  const generalMessage: ReactElement = useMemo(
-    () => (
-      <Trans
-        i18nKey="flows:core.validation.fields.richText.general"
-        values={{id: resource.id}}
-        components={{code: <code />}}
-      >
-        Required fields are not properly configured for the rich text with ID <code>{resource.id}</code>.
-      </Trans>
-    ),
-    [resource.id],
-  );
-
-  const validationFields: RequiredFieldInterface[] = useMemo(
-    () => [
-      {
-        errorMessage: t('flows:core.validation.fields.richText.label'),
-        name: RICHTEXT_VALIDATION_FIELD_NAMES.label,
-      },
-    ],
-    [t],
-  );
-
-  useRequiredFields(resource, generalMessage, validationFields);
 
   const {resolveAll} = useTemplateLiteralResolver();
 

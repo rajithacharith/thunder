@@ -18,7 +18,7 @@
 
 import {FormControl, FormLabel, MenuItem, Select} from '@wso2/oxygen-ui';
 import isEmpty from 'lodash-es/isEmpty';
-import {useMemo, type ReactElement} from 'react';
+import {memo, useCallback, useMemo, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
 import ButtonExtendedProperties from './extended-properties/ButtonExtendedProperties';
 import ExecutionExtendedProperties from './extended-properties/ExecutionExtendedProperties';
@@ -45,22 +45,23 @@ function ResourceProperties({
   onVariantChange,
 }: ResourcePropertiesProps): ReactElement | null {
   const {t} = useTranslation();
-  // Adapter to handle onChange with proper type preservation
-  const handleChange = (propertyKey: string, newValue: unknown, changedResource: unknown): void => {
-    // Preserve boolean values, objects, convert strings and numbers to string, default to empty string
-    let processedValue: string | boolean | object;
-    if (typeof newValue === 'boolean') {
-      processedValue = newValue;
-    } else if (typeof newValue === 'object' && newValue !== null) {
-      processedValue = newValue;
-    } else if (typeof newValue === 'string' || typeof newValue === 'number') {
-      processedValue = String(newValue);
-    } else {
-      processedValue = '';
-    }
+  const handleChange = useCallback(
+    (propertyKey: string, newValue: unknown, changedResource: unknown): void => {
+      let processedValue: string | boolean | object;
+      if (typeof newValue === 'boolean') {
+        processedValue = newValue;
+      } else if (typeof newValue === 'object' && newValue !== null) {
+        processedValue = newValue;
+      } else if (typeof newValue === 'string' || typeof newValue === 'number') {
+        processedValue = String(newValue);
+      } else {
+        processedValue = '';
+      }
 
-    onChange(propertyKey, processedValue, changedResource as Resource);
-  };
+      onChange(propertyKey, processedValue, changedResource as Resource);
+    },
+    [onChange],
+  );
   const selectedVariant = useMemo<Element | undefined>(() => {
     if (!resource?.variants || resource.variants.length === 0) {
       return undefined;
@@ -283,4 +284,4 @@ function ResourceProperties({
   }
 }
 
-export default ResourceProperties;
+export default memo(ResourceProperties);

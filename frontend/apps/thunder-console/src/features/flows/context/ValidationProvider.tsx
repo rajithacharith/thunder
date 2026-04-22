@@ -17,9 +17,13 @@
  */
 
 import {type PropsWithChildren, type ReactElement, useCallback, useEffect, useMemo, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {ValidationContext, type ValidationConfig} from './ValidationContext';
+import useFlowConfig from '../hooks/useFlowConfig';
 import useUIPanelState from '../hooks/useUIPanelState';
 import Notification, {NotificationType} from '../models/notification';
+import {computeValidationNotifications} from '../validation/computeValidationNotifications';
+import {VALIDATION_RULES} from '../validation/validation-rules';
 
 export interface ValidationProviderProps {
   /**
@@ -42,11 +46,33 @@ function ValidationProvider({
   },
 }: PropsWithChildren<ValidationProviderProps>): ReactElement {
   const {setIsOpenResourcePropertiesPanel, registerCloseValidationPanel} = useUIPanelState();
+  const {flowNodes} = useFlowConfig();
+  const {t} = useTranslation();
 
-  const [notifications, setNotifications] = useState<Map<string, Notification>>(new Map());
-  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  // Computed validation notifications — derived from flow node data + rule registry.
+  // This replaces the old useEffect-based approach where each adapter/executor
+  // imperatively called addNotification/removeNotification.
+  const computedNotifications = useMemo(
+    () => computeValidationNotifications(flowNodes, VALIDATION_RULES, t),
+    [flowNodes, t],
+  );
+
+  // Operational notifications (e.g. delete errors from ReorderableElement).
+  // These are NOT validation notifications — they use addNotification/removeNotification.
+  const [operationalNotifications, setOperationalNotifications] = useState<Map<string, Notification>>(new Map());
+
+  const [selectedNotificationRaw, setSelectedNotification] = useState<Notification | null>(null);
   const [openValidationPanel, setOpenValidationPanelInternal] = useState<boolean>(false);
   const [currentActiveTab, setCurrentActiveTab] = useState<number>(0);
+
+  // Merge computed validation notifications with operational notifications.
+  const mergedNotifications = useMemo(() => {
+    const merged = new Map(computedNotifications);
+
+    operationalNotifications.forEach((v, k) => merged.set(k, v));
+
+    return merged;
+  }, [computedNotifications, operationalNotifications]);
 
   /**
    * Wrapper for setOpenValidationPanel that closes the resource properties panel
@@ -75,10 +101,21 @@ function ValidationProvider({
     };
   }, [registerCloseValidationPanel]);
 
+  // Resolve the selected notification from the merged map so it always
+  // reflects the freshest computed instance (field notifications may change
+  // between re-computations while the id stays the same).
+  const selectedNotification = useMemo(
+    () => (selectedNotificationRaw ? (mergedNotifications.get(selectedNotificationRaw.getId()) ?? null) : null),
+    [selectedNotificationRaw, mergedNotifications],
+  );
+
   /**
    * Get the list of notifications.
    */
-  const notificationList: Notification[] = useMemo(() => Array.from(notifications.values()), [notifications]);
+  const notificationList: Notification[] = useMemo(
+    () => Array.from(mergedNotifications.values()),
+    [mergedNotifications],
+  );
 
   /**
    * Indicates whether the current state of the flow is valid.
@@ -89,20 +126,22 @@ function ValidationProvider({
   );
 
   /**
-   * Add a notification.
+   * Add an operational notification. Used for non-validation errors (e.g. delete failures).
    * @param notification - The notification to add.
    */
   const addNotification: (notification: Notification) => void = useCallback((notification: Notification): void => {
-    setNotifications((prev: Map<string, Notification>) => new Map(prev).set(notification.getId(), notification));
+    setOperationalNotifications((prev: Map<string, Notification>) =>
+      new Map(prev).set(notification.getId(), notification),
+    );
     setSelectedNotification(notification);
   }, []);
 
   /**
-   * Remove a notification.
+   * Remove an operational notification.
    * @param id - The ID of the notification to remove.
    */
   const removeNotification: (id: string) => void = useCallback((id: string): void => {
-    setNotifications((prev: Map<string, Notification>) => {
+    setOperationalNotifications((prev: Map<string, Notification>) => {
       const updated = new Map<string, Notification>(prev);
 
       updated.delete(id);
@@ -124,8 +163,8 @@ function ValidationProvider({
    * @returns The notification with the specified ID, or undefined if not found.
    */
   const getNotification: (id: string) => Notification | undefined = useCallback(
-    (id: string): Notification | undefined => notifications.get(id),
-    [notifications],
+    (id: string): Notification | undefined => mergedNotifications.get(id),
+    [mergedNotifications],
   );
 
   const contextValue = useMemo(

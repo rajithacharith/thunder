@@ -32,10 +32,6 @@ vi.mock('react-i18next', () => ({
   Trans: ({children}: {children: ReactNode}) => children,
 }));
 
-vi.mock('@/features/flows/hooks/useRequiredFields', () => ({
-  default: vi.fn(),
-}));
-
 describe('RichTextAdapter', () => {
   const createMockElement = (overrides: Partial<FlowElement> & Record<string, unknown> = {}): FlowElement =>
     ({
@@ -110,19 +106,6 @@ describe('RichTextAdapter', () => {
       const {container} = render(<RichTextAdapter resource={resource} />);
 
       expect(container.querySelector('.rich-text-content')).toHaveTextContent('');
-    });
-  });
-
-  describe('Validation', () => {
-    it('should call useRequiredFields with resource', async () => {
-      const useRequiredFields = await import('@/features/flows/hooks/useRequiredFields');
-      const mockUseRequiredFields = vi.mocked(useRequiredFields.default);
-
-      const resource = createMockElement();
-
-      render(<RichTextAdapter resource={resource} />);
-
-      expect(mockUseRequiredFields).toHaveBeenCalled();
     });
   });
 

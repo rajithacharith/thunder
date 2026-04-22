@@ -18,12 +18,10 @@
 
 import {useTemplateLiteralResolver} from '@thunder/hooks';
 import {Box, FormHelperText, InputLabel, OutlinedInput} from '@wso2/oxygen-ui';
-import {useMemo, type CSSProperties, type ReactElement, type ReactNode} from 'react';
-import {Trans, useTranslation} from 'react-i18next';
+import {type CSSProperties, type ReactElement, type ReactNode} from 'react';
+import {useTranslation} from 'react-i18next';
 import {Hint} from '../../hint';
 import TemplatePlaceholder, {containsTemplateLiteral} from '../TemplatePlaceholder';
-import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
-import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 
 /**
@@ -58,31 +56,6 @@ export interface OTPInputAdapterPropsInterface {
 function OTPInputAdapter({resource}: OTPInputAdapterPropsInterface): ReactElement {
   const {t} = useTranslation();
   const {resolve} = useTemplateLiteralResolver();
-
-  const generalMessage: ReactElement = useMemo(
-    () => (
-      <Trans
-        i18nKey="flows:core.validation.fields.otpInput.general"
-        values={{id: resource.id}}
-        components={{code: <code />}}
-      >
-        Required fields are not properly configured for the OTP input field with ID <code>{resource.id}</code>.
-      </Trans>
-    ),
-    [resource?.id],
-  );
-
-  const fields: RequiredFieldInterface[] = useMemo(
-    () => [
-      {
-        errorMessage: t('flows:core.validation.fields.otpInput.label'),
-        name: 'label',
-      },
-    ],
-    [t],
-  );
-
-  useRequiredFields(resource, generalMessage, fields);
 
   const otpElement = resource as OTPInputElement;
 

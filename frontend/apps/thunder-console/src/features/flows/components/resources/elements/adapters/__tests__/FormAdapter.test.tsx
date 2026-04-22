@@ -20,12 +20,7 @@ import {render, screen} from '@testing-library/react';
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import FormAdapter from '../FormAdapter';
-import {
-  ActionEventTypes,
-  ElementCategories,
-  ElementTypes,
-  type Element as FlowElement,
-} from '@/features/flows/models/elements';
+import {ElementCategories, type Element as FlowElement} from '@/features/flows/models/elements';
 
 // Mock dependencies
 vi.mock('../FormAdapter.scss', () => ({}));
@@ -35,25 +30,6 @@ vi.mock('react-i18next', () => ({
     t: (key: string) => key,
   }),
   Trans: ({children}: {children: ReactNode}) => children,
-}));
-
-const mockAddNotification = vi.fn();
-const mockRemoveNotification = vi.fn();
-
-vi.mock('@/features/flows/hooks/useValidationStatus', () => ({
-  default: () => ({
-    addNotification: mockAddNotification,
-    removeNotification: mockRemoveNotification,
-    notifications: [],
-    isValid: true,
-    selectedNotification: null,
-    openValidationPanel: false,
-    currentActiveTab: 0,
-    getNotification: vi.fn(),
-    setSelectedNotification: vi.fn(),
-    setOpenValidationPanel: vi.fn(),
-    setCurrentActiveTab: vi.fn(),
-  }),
 }));
 
 vi.mock('@/features/flows/plugins/PluginRegistry', () => ({
@@ -246,60 +222,6 @@ describe('FormAdapter', () => {
       // All components should render since our mock returns true
       expect(screen.getByTestId('reorderable-element-comp-1')).toBeInTheDocument();
       expect(screen.getByTestId('reorderable-element-comp-2')).toBeInTheDocument();
-    });
-  });
-
-  describe('Submit Button Validation', () => {
-    it('should add error notification when form has input fields but no submit button', () => {
-      const components = [
-        createMockElement({id: 'field-1', category: ElementCategories.Field, type: ElementTypes.TextInput}),
-        createMockElement({
-          id: 'action-1',
-          category: ElementCategories.Action,
-          type: ElementTypes.Action,
-          eventType: ActionEventTypes.Trigger,
-        } as Partial<FlowElement>),
-      ];
-      const resource = createMockElement({components});
-
-      render(<FormAdapter resource={resource} stepId="step-1" />);
-
-      expect(mockAddNotification).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: 'form-1_FORM_NO_SUBMIT_BUTTON',
-          type: 'error',
-        }),
-      );
-    });
-
-    it('should not add error when form has input fields and a submit button', () => {
-      const components = [
-        createMockElement({id: 'field-1', category: ElementCategories.Field, type: ElementTypes.TextInput}),
-        createMockElement({
-          id: 'action-1',
-          category: ElementCategories.Action,
-          type: ElementTypes.Action,
-          eventType: ActionEventTypes.Submit,
-        } as Partial<FlowElement>),
-      ];
-      const resource = createMockElement({components});
-
-      render(<FormAdapter resource={resource} stepId="step-1" />);
-
-      expect(mockRemoveNotification).toHaveBeenCalledWith('form-1_FORM_NO_SUBMIT_BUTTON');
-      expect(mockAddNotification).not.toHaveBeenCalled();
-    });
-
-    it('should not add error when form has no input fields', () => {
-      const components = [
-        createMockElement({id: 'action-1', category: ElementCategories.Action, type: ElementTypes.Action}),
-      ];
-      const resource = createMockElement({components});
-
-      render(<FormAdapter resource={resource} stepId="step-1" />);
-
-      expect(mockRemoveNotification).toHaveBeenCalledWith('form-1_FORM_NO_SUBMIT_BUTTON');
-      expect(mockAddNotification).not.toHaveBeenCalled();
     });
   });
 });

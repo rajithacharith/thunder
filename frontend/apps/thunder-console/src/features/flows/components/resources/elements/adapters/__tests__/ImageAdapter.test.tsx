@@ -38,10 +38,6 @@ vi.mock('react-i18next', () => ({
   Trans: ({children}: {children: ReactNode}) => children,
 }));
 
-vi.mock('@/features/flows/hooks/useRequiredFields', () => ({
-  default: vi.fn(),
-}));
-
 describe('ImageAdapter', () => {
   const createMockElement = (overrides: Partial<FlowElement> & Record<string, unknown> = {}): FlowElement =>
     ({
@@ -149,19 +145,6 @@ describe('ImageAdapter', () => {
       fireEvent.error(img);
 
       expect(screen.getByText('flows:core.placeholders.image')).toBeInTheDocument();
-    });
-  });
-
-  describe('Validation', () => {
-    it('should call useRequiredFields with resource', async () => {
-      const useRequiredFields = await import('@/features/flows/hooks/useRequiredFields');
-      const mockUseRequiredFields = vi.mocked(useRequiredFields.default);
-
-      const resource = createMockElement();
-
-      render(<ImageAdapter resource={resource} />);
-
-      expect(mockUseRequiredFields).toHaveBeenCalled();
     });
   });
 

@@ -19,7 +19,7 @@
 import {I18nDefaultConstants} from '@thunder/i18n';
 import {Stack, Typography} from '@wso2/oxygen-ui';
 import {Settings} from '@wso2/oxygen-ui-icons-react';
-import {type EdgeTypes, type NodeTypes, ReactFlowProvider} from '@xyflow/react';
+import {type EdgeTypes, type Node, type NodeTypes, ReactFlowProvider} from '@xyflow/react';
 import merge from 'lodash-es/merge';
 import startCase from 'lodash-es/startCase';
 import {
@@ -129,6 +129,7 @@ function FlowContextWrapper({
   const [flowEdgeTypes, setFlowEdgeTypes] = useState<EdgeTypes>({});
   const [isVerboseMode, setIsVerboseMode] = useState<boolean>(true);
   const [edgeStyle, setEdgeStyle] = useState<EdgeStyleTypesType>(EdgeStyleTypes.SmoothStep);
+  const [flowNodes, setFlowNodes] = useState<Node[]>([]);
 
   // ── I18n State ──
   const [language, setLanguage] = useState<string>(I18nDefaultConstants.FALLBACK_LANGUAGE);
@@ -328,6 +329,8 @@ function FlowContextWrapper({
       setFlowEdgeTypes,
       addResourceToFlow: undefined as ((resource: Resource) => void) | undefined,
       publishFlow: undefined as (() => Promise<boolean>) | undefined,
+      flowNodes,
+      setFlowNodes,
     }),
     [
       ElementFactory,
@@ -339,6 +342,7 @@ function FlowContextWrapper({
       edgeStyle,
       flowNodeTypes,
       flowEdgeTypes,
+      flowNodes,
     ],
   );
 
