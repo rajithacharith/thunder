@@ -62,7 +62,7 @@ func (is *idpService) CreateIdentityProvider(
 	ctx context.Context, idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError) {
 	logger := is.logger
 	if isDeclarativeModeEnabled() {
-		return nil, &declarativeresource.I18nErrorDeclarativeResourceCreateOperation
+		return nil, &declarativeresource.ErrorDeclarativeResourceCreateOperation
 	}
 
 	if svcErr := validateIDP(idp, logger); svcErr != nil {
@@ -168,7 +168,7 @@ func (is *idpService) UpdateIdentityProvider(ctx context.Context, idpID string, 
 	// Block updates only in declarative-only mode; allow in composite and mutable modes
 	// In composite mode, the store will check if the resource is immutable and return appropriate error
 	if isDeclarativeModeEnabled() {
-		return nil, &declarativeresource.I18nErrorDeclarativeResourceUpdateOperation
+		return nil, &declarativeresource.ErrorDeclarativeResourceUpdateOperation
 	}
 
 	if strings.TrimSpace(idpID) == "" {
@@ -232,7 +232,7 @@ func (is *idpService) DeleteIdentityProvider(ctx context.Context, idpID string) 
 	// Block deletes only in declarative-only mode; allow in composite and mutable modes
 	// In composite mode, the store will check if the resource is immutable and return appropriate error
 	if isDeclarativeModeEnabled() {
-		return &declarativeresource.I18nErrorDeclarativeResourceDeleteOperation
+		return &declarativeresource.ErrorDeclarativeResourceDeleteOperation
 	}
 
 	if strings.TrimSpace(idpID) == "" {

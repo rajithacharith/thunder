@@ -292,7 +292,7 @@ func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrideForKey_Declarati
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(declarativeresource.I18nErrorDeclarativeResourceUpdateOperation.Code, err.Code)
+	suite.Equal(declarativeresource.ErrorDeclarativeResourceUpdateOperation.Code, err.Code)
 }
 
 // ClearTranslationOverrideForKey Tests
@@ -341,7 +341,7 @@ func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrideForKey_Declara
 	err := suite.service.ClearTranslationOverrideForKey("en-US", "common", "welcome")
 
 	suite.NotNil(err)
-	suite.Equal(declarativeresource.I18nErrorDeclarativeResourceDeleteOperation.Code, err.Code)
+	suite.Equal(declarativeresource.ErrorDeclarativeResourceDeleteOperation.Code, err.Code)
 }
 
 // ResolveTranslations Tests
@@ -622,7 +622,7 @@ func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrides_Declarative() 
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(declarativeresource.I18nErrorDeclarativeResourceUpdateOperation.Code, err.Code)
+	suite.Equal(declarativeresource.ErrorDeclarativeResourceUpdateOperation.Code, err.Code)
 }
 
 // ClearTranslationOverrides Tests
@@ -663,5 +663,5 @@ func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrides_Declarative(
 	err := suite.service.ClearTranslationOverrides("en-US")
 
 	suite.NotNil(err)
-	suite.Equal(declarativeresource.I18nErrorDeclarativeResourceDeleteOperation.Code, err.Code)
+	suite.Equal(declarativeresource.ErrorDeclarativeResourceDeleteOperation.Code, err.Code)
 }
