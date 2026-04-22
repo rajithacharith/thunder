@@ -41,6 +41,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	syshttp "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
@@ -909,8 +910,11 @@ func toOAuthProcessedDTO(
 
 	if cfg.UserInfo != nil {
 		dto.UserInfo = &model.UserInfoConfig{
-			ResponseType:   cfg.UserInfo.ResponseType,
+			ResponseType:   model.UserInfoResponseType(cfg.UserInfo.ResponseType),
 			UserAttributes: cfg.UserInfo.UserAttributes,
+			SigningAlg:     cfg.UserInfo.SigningAlg,
+			EncryptionAlg:  cfg.UserInfo.EncryptionAlg,
+			EncryptionEnc:  cfg.UserInfo.EncryptionEnc,
 		}
 	}
 
@@ -1304,7 +1308,118 @@ func validateOAuthParamsForCreateAndUpdate(app *model.ApplicationDTO) (*model.In
 		}
 	}
 
+	// Validate userinfo encryption configuration
+	if err := validateUserInfoConfig(oauthAppConfig); err != nil {
+		return nil, err
+	}
+
 	return inboundAuthConfig, nil
+}
+
+// validateUserInfoConfig validates the UserInfo signing and encryption configuration.
+func validateUserInfoConfig(oauthConfig *model.OAuthAppConfigDTO) *serviceerror.ServiceError {
+	if oauthConfig.UserInfo == nil {
+		return nil
+	}
+	cfg := oauthConfig.UserInfo
+
+	if cfg.SigningAlg != "" && !slices.Contains(model.SupportedUserInfoSigningAlgs, cfg.SigningAlg) {
+		return serviceerror.CustomServiceError(
+			ErrorInvalidOAuthConfiguration,
+			core.I18nMessage{DefaultValue: "userinfo signing algorithm '" + cfg.SigningAlg + "' is not supported"},
+		)
+	}
+
+	if cfg.EncryptionEnc != "" && cfg.EncryptionAlg == "" {
+		return serviceerror.CustomServiceError(
+			ErrorInvalidOAuthConfiguration,
+			core.I18nMessage{DefaultValue: "encryptionAlg is required when encryptionEnc is set"},
+		)
+	}
+
+	if cfg.EncryptionAlg != "" {
+		if !slices.Contains(model.SupportedUserInfoEncryptionAlgs, cfg.EncryptionAlg) {
+			return serviceerror.CustomServiceError(
+				ErrorInvalidOAuthConfiguration,
+				core.I18nMessage{
+					DefaultValue: "userinfo encryption algorithm '" + cfg.EncryptionAlg + "' is not supported",
+				},
+			)
+		}
+		if cfg.EncryptionEnc == "" {
+			return serviceerror.CustomServiceError(
+				ErrorInvalidOAuthConfiguration,
+				core.I18nMessage{DefaultValue: "encryptionEnc is required when encryptionAlg is set"},
+			)
+		}
+		if !slices.Contains(model.SupportedUserInfoEncryptionEncs, cfg.EncryptionEnc) {
+			return serviceerror.CustomServiceError(
+				ErrorInvalidOAuthConfiguration,
+				core.I18nMessage{
+					DefaultValue: "userinfo content-encryption algorithm '" + cfg.EncryptionEnc + "' is not supported",
+				},
+			)
+		}
+		hasCert := oauthConfig.Certificate != nil && oauthConfig.Certificate.Type != ""
+		if !hasCert {
+			return serviceerror.CustomServiceError(
+				ErrorInvalidOAuthConfiguration,
+				core.I18nMessage{
+					DefaultValue: "a certificate (JWKS or JWKS_URI) is required when userinfo encryption is configured",
+				},
+			)
+		}
+		if oauthConfig.Certificate.Type == cert.CertificateTypeJWKSURI {
+			if err := syshttp.IsSSRFSafeURL(oauthConfig.Certificate.Value); err != nil {
+				log.GetLogger().Debug("JWKS URI rejected by SSRF policy",
+					log.String("uri", oauthConfig.Certificate.Value), log.Error(err))
+				return serviceerror.CustomServiceError(
+					ErrorInvalidOAuthConfiguration,
+					core.I18nMessage{DefaultValue: "JWKS URI must be a publicly reachable HTTPS URL"},
+				)
+			}
+		}
+	}
+
+	if cfg.ResponseType != "" {
+		switch cfg.ResponseType {
+		case model.UserInfoResponseTypeJWS:
+			if cfg.SigningAlg == "" {
+				return serviceerror.CustomServiceError(
+					ErrorInvalidOAuthConfiguration,
+					core.I18nMessage{DefaultValue: "signingAlg is required when responseType is JWS"},
+				)
+			}
+		case model.UserInfoResponseTypeJWE:
+			if cfg.EncryptionAlg == "" || cfg.EncryptionEnc == "" {
+				return serviceerror.CustomServiceError(
+					ErrorInvalidOAuthConfiguration,
+					core.I18nMessage{
+						DefaultValue: "encryptionAlg and encryptionEnc are required when responseType is JWE",
+					},
+				)
+			}
+		case model.UserInfoResponseTypeNESTEDJWT:
+			if cfg.SigningAlg == "" || cfg.EncryptionAlg == "" || cfg.EncryptionEnc == "" {
+				return serviceerror.CustomServiceError(
+					ErrorInvalidOAuthConfiguration,
+					core.I18nMessage{
+						DefaultValue: "signingAlg, encryptionAlg, and encryptionEnc are required when " +
+							"responseType is NESTED_JWT",
+					},
+				)
+			}
+		case model.UserInfoResponseTypeJSON:
+			// no additional requirements
+		default:
+			return serviceerror.CustomServiceError(
+				ErrorInvalidOAuthConfiguration,
+				core.I18nMessage{DefaultValue: "responseType '" + string(cfg.ResponseType) + "' is not supported"},
+			)
+		}
+	}
+
+	return nil
 }
 
 // validateRedirectURIs validates redirect URIs format and requirements.
@@ -1474,6 +1589,7 @@ func validateTokenEndpointAuthMethod(oauthConfig *model.OAuthAppConfigDTO) *serv
 	}
 
 	hasCert := oauthConfig.Certificate != nil && oauthConfig.Certificate.Type != ""
+	userInfoNeedsCert := oauthConfig.UserInfo != nil && oauthConfig.UserInfo.EncryptionAlg != ""
 
 	switch oauthConfig.TokenEndpointAuthMethod {
 	case oauth2const.TokenEndpointAuthMethodPrivateKeyJWT:
@@ -1490,7 +1606,7 @@ func validateTokenEndpointAuthMethod(oauthConfig *model.OAuthAppConfigDTO) *serv
 			})
 		}
 	case oauth2const.TokenEndpointAuthMethodClientSecretBasic, oauth2const.TokenEndpointAuthMethodClientSecretPost:
-		if hasCert {
+		if hasCert && !userInfoNeedsCert {
 			return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
 				Key:          "error.applicationservice.client_secret_cannot_have_certificate_description",
 				DefaultValue: "client_secret authentication methods cannot have a certificate",
@@ -1503,7 +1619,7 @@ func validateTokenEndpointAuthMethod(oauthConfig *model.OAuthAppConfigDTO) *serv
 				DefaultValue: "'none' authentication method requires the client to be a public client",
 			})
 		}
-		if hasCert || oauthConfig.ClientSecret != "" {
+		if (hasCert && !userInfoNeedsCert) || oauthConfig.ClientSecret != "" {
 			return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
 				Key:          "error.applicationservice.none_auth_method_cannot_have_cert_or_secret_description",
 				DefaultValue: "'none' authentication method cannot have a certificate or client secret",
@@ -1712,19 +1828,25 @@ func processUserInfoConfiguration(app *model.ApplicationDTO,
 		oauthInboundAuth.OAuthAppConfig.UserInfo != nil {
 		userInfoConfigInput := oauthInboundAuth.OAuthAppConfig.UserInfo
 		oauthUserInfo.UserAttributes = userInfoConfigInput.UserAttributes
-		responseType := model.UserInfoResponseType(strings.ToUpper(string(userInfoConfigInput.ResponseType)))
-
-		switch responseType {
-		case model.UserInfoResponseTypeJWS:
-			oauthUserInfo.ResponseType = responseType
-		default:
-			oauthUserInfo.ResponseType = model.UserInfoResponseTypeJSON
-		}
+		oauthUserInfo.SigningAlg = userInfoConfigInput.SigningAlg
+		oauthUserInfo.EncryptionAlg = userInfoConfigInput.EncryptionAlg
+		oauthUserInfo.EncryptionEnc = userInfoConfigInput.EncryptionEnc
 	}
 	if oauthUserInfo.UserAttributes == nil {
 		oauthUserInfo.UserAttributes = idTokenConfig.UserAttributes
 	}
-	if oauthUserInfo.ResponseType == "" {
+
+	// Always set ResponseType from algorithm fields so the runtime never has to re-derive it.
+	hasSign := oauthUserInfo.SigningAlg != ""
+	hasEnc := oauthUserInfo.EncryptionAlg != ""
+	switch {
+	case hasSign && hasEnc:
+		oauthUserInfo.ResponseType = model.UserInfoResponseTypeNESTEDJWT
+	case hasEnc:
+		oauthUserInfo.ResponseType = model.UserInfoResponseTypeJWE
+	case hasSign:
+		oauthUserInfo.ResponseType = model.UserInfoResponseTypeJWS
+	default:
 		oauthUserInfo.ResponseType = model.UserInfoResponseTypeJSON
 	}
 

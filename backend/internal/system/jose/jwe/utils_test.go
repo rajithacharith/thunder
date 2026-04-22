@@ -479,7 +479,8 @@ func (s *JEWUtilsTestSuite) TestEpkToMapEdgeCases() {
 	ecdhPub, err := privKey.PublicKey.ECDH()
 	s.NoError(err)
 
-	epkMap := epkToMap(ecdhPub)
+	epkMap, err := epkToMap(ecdhPub)
+	s.NoError(err)
 	s.NotNil(epkMap)
 	s.Equal("P-384", epkMap["crv"])
 
@@ -490,7 +491,8 @@ func (s *JEWUtilsTestSuite) TestEpkToMapEdgeCases() {
 	ecdhPub521, err := privKey521.PublicKey.ECDH()
 	s.NoError(err)
 
-	epkMap521 := epkToMap(ecdhPub521)
+	epkMap521, err := epkToMap(ecdhPub521)
+	s.NoError(err)
 	s.NotNil(epkMap521)
 	s.Equal("P-521", epkMap521["crv"])
 
@@ -498,7 +500,8 @@ func (s *JEWUtilsTestSuite) TestEpkToMapEdgeCases() {
 	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	s.NoError(err)
 
-	epkMap = epkToMap(&rsaKey.PublicKey)
+	epkMap, err = epkToMap(&rsaKey.PublicKey)
+	s.Error(err)
 	s.Nil(epkMap)
 }
 
@@ -523,7 +526,8 @@ func (s *JEWUtilsTestSuite) TestGenerateEphemeralKeyDifferentCurves() {
 			s.NotNil(ephemeralPubKey)
 
 			// Generate the EPK map for verification
-			epkMap := epkToMap(ephemeralPubKey)
+			epkMap, epkErr := epkToMap(ephemeralPubKey)
+			s.NoError(epkErr)
 			s.NotNil(epkMap)
 
 			// Verify the curve matches

@@ -67,8 +67,11 @@ type idTokenConfig struct {
 
 // userInfoConfig represents user info endpoint configuration for JSON marshaling.
 type userInfoConfig struct {
-	ResponseType   model.UserInfoResponseType `json:"response_type,omitempty"`
-	UserAttributes []string                   `json:"user_attributes,omitempty"`
+	ResponseType   string   `json:"response_type,omitempty"`
+	UserAttributes []string `json:"user_attributes,omitempty"`
+	SigningAlg     string   `json:"signing_alg,omitempty"`
+	EncryptionAlg  string   `json:"encryption_alg,omitempty"`
+	EncryptionEnc  string   `json:"encryption_enc,omitempty"`
 }
 
 // applicationConfigDAO represents the gateway configuration for an application (no identity data).
@@ -549,8 +552,11 @@ func getOAuthConfigJSONBytes(inboundAuth model.InboundAuthConfigProcessedDTO) (j
 	}
 	if oa.UserInfo != nil {
 		cfg.UserInfo = &userInfoConfig{
-			ResponseType:   oa.UserInfo.ResponseType,
+			ResponseType:   string(oa.UserInfo.ResponseType),
 			UserAttributes: oa.UserInfo.UserAttributes,
+			SigningAlg:     oa.UserInfo.SigningAlg,
+			EncryptionAlg:  oa.UserInfo.EncryptionAlg,
+			EncryptionEnc:  oa.UserInfo.EncryptionEnc,
 		}
 	}
 	data, err := json.Marshal(cfg)

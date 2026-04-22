@@ -35,7 +35,7 @@ import (
 // JWEServiceInterface defines the interface for JWE operations.
 type JWEServiceInterface interface {
 	Encrypt(payload []byte, recipientPublicKey crypto.PublicKey,
-		alg KeyEncAlgorithm, enc ContentEncAlgorithm) (string, *serviceerror.ServiceError)
+		alg KeyEncAlgorithm, enc ContentEncAlgorithm, cty string, kid string) (string, *serviceerror.ServiceError)
 	Decrypt(jweToken string) ([]byte, *serviceerror.ServiceError)
 }
 
@@ -66,11 +66,19 @@ func newJWEService(pkiService pki.PKIServiceInterface) (JWEServiceInterface, err
 }
 
 // Encrypt encrypts the payload using the recipient's public key.
+// cty is the content type placed in the JWE protected header (e.g. "json" or "JWT").
+// kid identifies the recipient's key; it is stamped in the header only when non-empty.
 func (js *jweService) Encrypt(payload []byte, recipientPublicKey crypto.PublicKey,
-	alg KeyEncAlgorithm, enc ContentEncAlgorithm) (string, *serviceerror.ServiceError) {
+	alg KeyEncAlgorithm, enc ContentEncAlgorithm, cty string, kid string) (string, *serviceerror.ServiceError) {
 	// 1. Generate CEK
 	cekSize := 0
 	switch enc {
+	case A128CBCHS256:
+		cekSize = 32
+	case A192CBCHS384:
+		cekSize = 48
+	case A256CBCHS512:
+		cekSize = 64
 	case A128GCM:
 		cekSize = 16
 	case A192GCM:
@@ -96,10 +104,15 @@ func (js *jweService) Encrypt(payload []byte, recipientPublicKey crypto.PublicKe
 
 	// 3. Create Header
 	header := map[string]interface{}{
+		"typ": "JWE",
 		"alg": string(alg),
 		"enc": string(enc),
-		"typ": "JWE",
-		"kid": js.kid,
+	}
+	if kid != "" {
+		header["kid"] = kid
+	}
+	if cty != "" {
+		header["cty"] = cty
 	}
 
 	// Add extras (like epk for ECDH-ES)

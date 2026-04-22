@@ -567,7 +567,7 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 
 			jwtService := tc.setupService()
 
-			token, iat, err := jwtService.GenerateJWT(tc.sub, tc.iss, tc.validity, tc.claims, TokenTypeJWT)
+			token, iat, err := jwtService.GenerateJWT(tc.sub, tc.iss, tc.validity, tc.claims, TokenTypeJWT, "")
 
 			if tc.expectError {
 				assert.NotNil(t, err)
@@ -1385,7 +1385,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 			name: "ValidToken",
 			setupFunc: func() string {
 				token, _, err := suite.jwtService.GenerateJWT(
-					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
+					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
 				assert.Nil(suite.T(), err)
 				return token
 			},
@@ -1414,7 +1414,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 			name: "PublicKeyNotAvailable",
 			setupFunc: func() string {
 				token, _, err := suite.jwtService.GenerateJWT(
-					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
+					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
 				assert.Nil(suite.T(), err)
 				return token
 			},
@@ -1445,7 +1445,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKey() {
 	validToken, _, err := suite.jwtService.GenerateJWT(
-		"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
+		"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
 	assert.Nil(suite.T(), err)
 
 	wrongKey, _ := rsa.GenerateKey(rand.Reader, 2048)
@@ -1483,7 +1483,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKey() {
 
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKS() {
 	token, _, err := suite.jwtService.GenerateJWT(
-		"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
+		"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
 	assert.Nil(suite.T(), err)
 
 	testServer := suite.mockJWKSServer()
@@ -1543,7 +1543,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSUsesCache() {
 	defer serverB.Close()
 
 	token, _, genErr := suite.jwtService.GenerateJWT(
-		"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
+		"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
 	assert.Nil(suite.T(), genErr)
 
 	// 1. First call against serverA — cache miss, one fetch.
@@ -1642,7 +1642,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 			},
 			setupToken: func() string {
 				token, _, _ := suite.jwtService.GenerateJWT(
-					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
+					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
 				return token
 			},
 			expectedError: ErrorFailedToGetJWKS,
@@ -1660,7 +1660,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 			},
 			setupToken: func() string {
 				token, _, _ := suite.jwtService.GenerateJWT(
-					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
+					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
 				return token
 			},
 			expectedError: ErrorFailedToParseJWKS,
@@ -1690,7 +1690,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 			},
 			setupToken: func() string {
 				token, _, _ := suite.jwtService.GenerateJWT(
-					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
+					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
 				return token
 			},
 			expectedError: ErrorNoMatchingJWKFound,
@@ -1719,7 +1719,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 			},
 			setupToken: func() string {
 				token, _, _ := suite.jwtService.GenerateJWT(
-					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
+					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
 				return token
 			},
 			expectedError: ErrorFailedToParseJWKS,
@@ -1762,7 +1762,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSNetworkError() {
 	// Test with invalid URL to trigger network error
 	token, _, err := suite.jwtService.GenerateJWT(
-		"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
+		"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
 	assert.Nil(suite.T(), err)
 
 	err = suite.jwtService.VerifyJWTSignatureWithJWKS(token, "http://localhost:99999/invalid")
@@ -1998,7 +1998,7 @@ func (suite *JWTServiceTestSuite) TestInitWithECDSAKeys() {
 
 			// Test JWT generation with ECDSA key
 			token, _, svcErr := service.GenerateJWT(
-				"test-subject", "test-iss", 3600, map[string]interface{}{"aud": "test-aud"}, TokenTypeJWT)
+				"test-subject", "test-iss", 3600, map[string]interface{}{"aud": "test-aud"}, TokenTypeJWT, "")
 			assert.Nil(t, svcErr)
 			assert.NotEmpty(t, token)
 
@@ -2061,7 +2061,7 @@ func (suite *JWTServiceTestSuite) TestInitWithEd25519Key() {
 
 	// Test JWT generation with Ed25519 key
 	token, _, svcErr := service.GenerateJWT(
-		"test-subject", "test-iss", 3600, map[string]interface{}{"aud": "test-aud"}, TokenTypeJWT)
+		"test-subject", "test-iss", 3600, map[string]interface{}{"aud": "test-aud"}, TokenTypeJWT, "")
 	assert.Nil(suite.T(), svcErr)
 	assert.NotEmpty(suite.T(), token)
 
@@ -2332,7 +2332,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKeyAlgorithmDe
 
 			// Generate token
 			token, _, err := jwtService.GenerateJWT(
-				"test-sub", "test-iss", 3600, map[string]interface{}{"aud": "test-aud"}, TokenTypeJWT)
+				"test-sub", "test-iss", 3600, map[string]interface{}{"aud": "test-aud"}, TokenTypeJWT, "")
 			assert.Nil(t, err)
 
 			// Verify with public key (should detect algorithm from header)

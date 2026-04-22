@@ -141,21 +141,9 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 	*model.ApplicationDTO, *serviceerror.ServiceError) {
 	isPublicClient := request.TokenEndpointAuthMethod == oauth2const.TokenEndpointAuthMethodNone
 
-	// Map JWKS/JWKS_URI to application-level certificate
-	var appCertificate *model.ApplicationCertificate
-	if request.JWKSUri != "" {
-		appCertificate = &model.ApplicationCertificate{
-			Type:  cert.CertificateTypeJWKSURI,
-			Value: request.JWKSUri,
-		}
-	} else if len(request.JWKS) > 0 {
-		jwksBytes, err := json.Marshal(request.JWKS)
-		if err == nil {
-			appCertificate = &model.ApplicationCertificate{
-				Type:  cert.CertificateTypeJWKS,
-				Value: string(jwksBytes),
-			}
-		}
+	appCertificate, svcErr := buildAppCertificate(request)
+	if svcErr != nil {
+		return nil, svcErr
 	}
 
 	var scopes []string
@@ -185,6 +173,7 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 		PKCERequired:                       isPublicClient,
 		RequirePushedAuthorizationRequests: request.RequirePushedAuthorizationRequests,
 		Scopes:                             scopes,
+		UserInfo:                           buildUserInfoConfig(request),
 	}
 
 	inboundAuthConfig := []model.InboundAuthConfigDTO{
@@ -207,6 +196,55 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 	}
 
 	return appDTO, nil
+}
+
+// buildAppCertificate maps JWKS/JWKS_URI from a DCR request to an ApplicationCertificate.
+func buildAppCertificate(request *DCRRegistrationRequest) (*model.ApplicationCertificate, *serviceerror.ServiceError) {
+	if request.JWKSUri != "" {
+		return &model.ApplicationCertificate{
+			Type:  cert.CertificateTypeJWKSURI,
+			Value: request.JWKSUri,
+		}, nil
+	}
+	if len(request.JWKS) > 0 {
+		jwksBytes, err := json.Marshal(request.JWKS)
+		if err != nil {
+			return nil, &ErrorServerError
+		}
+		return &model.ApplicationCertificate{
+			Type:  cert.CertificateTypeJWKS,
+			Value: string(jwksBytes),
+		}, nil
+	}
+	return nil, nil
+}
+
+// buildUserInfoConfig maps UserInfo alg fields from a DCR request to a UserInfoConfig.
+// ResponseType is derived from the algorithm fields per OIDC DCR conventions.
+func buildUserInfoConfig(request *DCRRegistrationRequest) *model.UserInfoConfig {
+	if request.UserInfoSignedResponseAlg == "" && request.UserInfoEncryptedResponseAlg == "" &&
+		request.UserInfoEncryptedResponseEnc == "" {
+		return nil
+	}
+	hasSign := request.UserInfoSignedResponseAlg != ""
+	hasEnc := request.UserInfoEncryptedResponseAlg != ""
+	var responseType model.UserInfoResponseType
+	switch {
+	case hasSign && hasEnc:
+		responseType = model.UserInfoResponseTypeNESTEDJWT
+	case hasEnc:
+		responseType = model.UserInfoResponseTypeJWE
+	case hasSign:
+		responseType = model.UserInfoResponseTypeJWS
+	default:
+		responseType = model.UserInfoResponseTypeJSON
+	}
+	return &model.UserInfoConfig{
+		ResponseType:  responseType,
+		SigningAlg:    request.UserInfoSignedResponseAlg,
+		EncryptionAlg: request.UserInfoEncryptedResponseAlg,
+		EncryptionEnc: request.UserInfoEncryptedResponseEnc,
+	}
 }
 
 // convertApplicationToDCRResponse converts Application DTO to DCR registration response.
@@ -238,6 +276,13 @@ func (ds *dcrService) convertApplicationToDCRResponse(appDTO *model.ApplicationD
 
 	scopeString := strings.Join(oauthConfig.Scopes, " ")
 
+	var userInfoSignedAlg, userInfoEncryptedAlg, userInfoEncryptedEnc string
+	if oauthConfig.UserInfo != nil {
+		userInfoSignedAlg = oauthConfig.UserInfo.SigningAlg
+		userInfoEncryptedAlg = oauthConfig.UserInfo.EncryptionAlg
+		userInfoEncryptedEnc = oauthConfig.UserInfo.EncryptionEnc
+	}
+
 	response := &DCRRegistrationResponse{
 		ClientID:                           oauthConfig.ClientID,
 		ClientSecret:                       oauthConfig.ClientSecret,
@@ -257,6 +302,9 @@ func (ds *dcrService) convertApplicationToDCRResponse(appDTO *model.ApplicationD
 		Contacts:                           appDTO.Contacts,
 		AppID:                              oauthConfig.AppID,
 		RequirePushedAuthorizationRequests: oauthConfig.RequirePushedAuthorizationRequests,
+		UserInfoSignedResponseAlg:          userInfoSignedAlg,
+		UserInfoEncryptedResponseAlg:       userInfoEncryptedAlg,
+		UserInfoEncryptedResponseEnc:       userInfoEncryptedEnc,
 	}
 
 	return response, nil
@@ -272,8 +320,8 @@ func (ds *dcrService) mapApplicationErrorToDCRError(
 	}
 
 	switch appErr.Code {
-	// Redirect URI related errors
-	case "APP-1014", "APP-1015":
+	// Redirect URI validation errors
+	case "APP-1012":
 		dcrErr.Code = ErrorInvalidRedirectURI.Code
 	// Server errors
 	case "APP-5001", "APP-5002":

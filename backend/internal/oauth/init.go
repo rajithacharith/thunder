@@ -42,6 +42,8 @@ import (
 	"github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
+	syshttp "github.com/asgardeo/thunder/internal/system/http"
+	"github.com/asgardeo/thunder/internal/system/jose/jwe"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/observability"
 )
@@ -52,6 +54,7 @@ func Initialize(
 	applicationService application.ApplicationServiceInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	jwtService jwt.JWTServiceInterface,
+	jweService jwe.JWEServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
 	pkiService pki.PKIServiceInterface,
@@ -82,8 +85,11 @@ func Initialize(
 	token.Initialize(mux, jwtService, applicationService, authnProvider, grantHandlerProvider,
 		scopeValidator, observabilitySvc, discoveryService, transactioner)
 	introspect.Initialize(mux, jwtService, applicationService, authnProvider, discoveryService)
-	userinfo.Initialize(mux, jwtService, tokenValidator, applicationService, ouService, attributeCacheSvc,
-		transactioner)
+	userinfo.Initialize(mux, jwtService, jweService,
+		syshttp.NewHTTPClientWithCheckRedirect(func(req *http.Request, _ []*http.Request) error {
+			return syshttp.IsSSRFSafeURL(req.URL.String())
+		}),
+		tokenValidator, applicationService, ouService, attributeCacheSvc, transactioner)
 	dcr.Initialize(mux, applicationService, ouService, transactioner)
 	return nil
 }

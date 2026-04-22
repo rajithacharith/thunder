@@ -59,9 +59,9 @@ func (m *MockJWTService) GenerateJWT(
 	sub, iss string,
 	validityPeriod int64,
 	claims map[string]interface{},
-	typ string,
+	typ, alg string,
 ) (string, int64, *serviceerror.ServiceError) {
-	args := m.Called(sub, iss, validityPeriod, claims, typ)
+	args := m.Called(sub, iss, validityPeriod, claims, typ, alg)
 	return args.String(0), args.Get(1).(int64), args.Get(2).(*serviceerror.ServiceError)
 }
 

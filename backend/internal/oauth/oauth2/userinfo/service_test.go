@@ -79,7 +79,7 @@ func (s *UserInfoServiceTestSuite) SetupTest() {
 	s.mockAttributeCacheService = attributecachemock.NewAttributeCacheServiceInterfaceMock(s.T())
 	s.mockTransactioner = &MockTransactioner{}
 	s.userInfoService = newUserInfoService(
-		s.mockJWTService, s.mockTokenValidator,
+		s.mockJWTService, nil, nil, s.mockTokenValidator,
 		s.mockAppService, s.mockOUService,
 		s.mockAttributeCacheService, s.mockTransactioner)
 
@@ -443,41 +443,29 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_NoAppConfig() {
 	s.mockAttributeCacheService.AssertExpectations(s.T())
 }
 
-// TestGetUserInfo_Success_AppNotFound tests successful response when app is not found
-func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_AppNotFound() {
+// TestGetUserInfo_AppNotFound_ReturnsInvalidToken tests that a stale/orphaned token returns an error
+// when the referenced client application no longer exists.
+func (s *UserInfoServiceTestSuite) TestGetUserInfo_AppNotFound_ReturnsInvalidToken() {
 	claims := map[string]interface{}{
 		"exp":       float64(time.Now().Add(time.Hour).Unix()),
 		"nbf":       float64(time.Now().Add(-time.Minute).Unix()),
 		"sub":       "user123",
 		"scope":     "openid profile",
 		"client_id": "client123",
-		"aci":       "cache-anf-123",
 	}
 	token := s.createToken(claims)
 
-	userAttrs := map[string]interface{}{
-		"name": "John Doe",
-	}
-
 	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
-	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-anf-123").Return(
-		&attributecache.AttributeCache{ID: "cache-anf-123", Attributes: userAttrs}, nil)
 	s.mockAppService.On("GetOAuthApplication", mock.Anything, "client123").Return(nil, &serviceerror.ServiceError{
 		Code:  "APP_NOT_FOUND",
 		Error: core.I18nMessage{Key: "error.test.app_not_found", DefaultValue: "App not found"},
 	})
 
-	// When app not found, continue without app config
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
-	assert.Nil(s.T(), svcErr)
-	assert.NotNil(s.T(), response)
-	assert.Equal(s.T(), appmodel.UserInfoResponseTypeJSON, response.Type)
-	assert.Equal(s.T(), "user123", response.JSONBody["sub"])
-	// No other claims because allowedUserAttributes is empty
-	assert.Len(s.T(), response.JSONBody, 1)
+	assert.Nil(s.T(), response)
+	assert.NotNil(s.T(), svcErr)
 	s.mockTokenValidator.AssertExpectations(s.T())
-	s.mockAttributeCacheService.AssertExpectations(s.T())
 	s.mockAppService.AssertExpectations(s.T())
 }
 
@@ -1079,6 +1067,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_ResponseType() {
 		Token: &appmodel.OAuthTokenConfig{},
 		UserInfo: &appmodel.UserInfoConfig{
 			ResponseType:   appmodel.UserInfoResponseTypeJWS,
+			SigningAlg:     "RS256",
 			UserAttributes: []string{"email"},
 		},
 	}
@@ -1104,6 +1093,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_ResponseType() {
 		config.GetThunderRuntime().Config.JWT.ValidityPeriod,
 		mock.Anything,
 		mock.Anything,
+		"RS256",
 	).Return("signed.jwt.token", int64(0), nil)
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
@@ -1141,6 +1131,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_GenerateJWTFailure() {
 		Token: &appmodel.OAuthTokenConfig{},
 		UserInfo: &appmodel.UserInfoConfig{
 			ResponseType:   appmodel.UserInfoResponseTypeJWS,
+			SigningAlg:     "RS256",
 			UserAttributes: []string{"email"},
 		},
 	}
@@ -1162,6 +1153,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_GenerateJWTFailure() {
 		config.GetThunderRuntime().Config.JWT.ValidityPeriod,
 		mock.Anything,
 		mock.Anything,
+		"RS256",
 	).Return("", int64(0),
 		&serviceerror.ServiceError{
 			Type: serviceerror.ServerErrorType,

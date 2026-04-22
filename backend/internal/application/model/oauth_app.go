@@ -47,8 +47,11 @@ type IDTokenConfig struct {
 
 // UserInfoConfig represents the user info endpoint configuration structure.
 type UserInfoConfig struct {
-	ResponseType   UserInfoResponseType `json:"responseType,omitempty" yaml:"response_type,omitempty"`
+	ResponseType   UserInfoResponseType `json:"responseType,omitempty"   yaml:"response_type,omitempty"   jsonschema:"UserInfo response type (JSON, JWS, JWE, NESTED_JWT). Derived from algorithm fields when not explicitly set."`
 	UserAttributes []string             `json:"userAttributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in userinfo response."`
+	SigningAlg     string               `json:"signingAlg,omitempty"     yaml:"signing_alg,omitempty"     jsonschema:"JWS algorithm for signed userinfo responses (e.g. RS256)."`
+	EncryptionAlg  string               `json:"encryptionAlg,omitempty"  yaml:"encryption_alg,omitempty"  jsonschema:"JWE key-management algorithm for encrypted userinfo responses (e.g. RSA-OAEP-256)."`
+	EncryptionEnc  string               `json:"encryptionEnc,omitempty"  yaml:"encryption_enc,omitempty"  jsonschema:"JWE content-encryption algorithm (e.g. A256GCM). Required when encryptionAlg is set."`
 }
 
 // OAuthTokenConfig represents the OAuth token configuration structure with access_token and id_token wrappers.
