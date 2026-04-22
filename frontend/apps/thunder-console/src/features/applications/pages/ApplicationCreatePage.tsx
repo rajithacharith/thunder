@@ -685,6 +685,7 @@ export default function ApplicationCreatePage(): JSX.Element {
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
                       {createFlow.isPending && <CircularProgress size={20} />}
                       <Button
+                        data-testid="application-wizard-next-button"
                         variant="contained"
                         disabled={
                           !stepReady[currentStep] ||

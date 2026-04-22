@@ -157,7 +157,7 @@ export default function ConfigureExperience({
   };
 
   return (
-    <Stack direction="column" spacing={3}>
+    <Stack direction="column" spacing={3} data-testid="application-configure-experience">
       <Stack direction="column" spacing={1}>
         <Typography variant="h1" gutterBottom>
           {t('applications:onboarding.configure.experience.title')}

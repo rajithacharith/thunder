@@ -272,7 +272,7 @@ export default function ConfigureDesign({
   }
 
   return (
-    <Stack direction="column" spacing={4}>
+    <Stack direction="column" spacing={4} data-testid="application-configure-design">
       <Stack direction="column" spacing={1}>
         <Typography variant="h1" gutterBottom>
           {t('applications:onboarding.configure.design.title')}

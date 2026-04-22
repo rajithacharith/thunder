@@ -465,7 +465,7 @@ export default function ConfigureDetails({
   }
 
   return (
-    <Stack spacing={3}>
+    <Stack spacing={3} data-testid="application-configure-details">
       <Stack direction="column" spacing={1}>
         <Typography variant="h1" gutterBottom>
           {t('applications:onboarding.configure.details.title')}
