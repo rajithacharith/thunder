@@ -169,7 +169,7 @@ func (as *applicationService) CreateApplication(ctx context.Context, app *model.
 	appEntity, sysCredsJSON, buildErr := buildAppEntity(appID, app, clientID, clientSecret)
 	if buildErr != nil {
 		as.logger.Error("Failed to build entity for create", log.Error(buildErr))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	_, epErr := as.entityProvider.CreateEntity(appEntity, sysCredsJSON)
@@ -178,7 +178,7 @@ func (as *applicationService) CreateApplication(ctx context.Context, app *model.
 			return nil, svcErr
 		}
 		as.logger.Error("Failed to create application entity", log.String("appID", appID), log.Error(epErr))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	// Create config(with compensation if it fails).
@@ -239,7 +239,7 @@ func (as *applicationService) CreateApplication(ctx context.Context, app *model.
 		as.logger.Error("Failed to create application", log.Error(err), log.String("appID", appID))
 		// Compensate: delete entity since config creation failed.
 		as.deleteEntityCompensation(appID)
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	var oauthToken *model.OAuthTokenConfig
@@ -318,7 +318,7 @@ func (as *applicationService) GetApplicationList(
 	totalCount, err := as.appStore.GetTotalApplicationCount(ctx)
 	if err != nil {
 		as.logger.Error("Failed to retrieve total application count", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	appConfigs, err := as.appStore.GetApplicationList(ctx)
@@ -328,7 +328,7 @@ func (as *applicationService) GetApplicationList(
 			return nil, &ErrorResultLimitExceeded
 		}
 		as.logger.Error("Failed to retrieve application list", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	// Batch-fetch entities to get identity data.
@@ -379,7 +379,7 @@ func (as *applicationService) GetOAuthApplication(
 		}
 		as.logger.Error("Failed to resolve clientId to entity", log.Error(epErr),
 			log.String("clientID", log.MaskString(clientID)))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 	if entityID == nil {
 		return nil, &ErrorApplicationNotFound
@@ -401,7 +401,7 @@ func (as *applicationService) GetOAuthApplication(
 	} else if getErr != nil {
 		as.logger.Error("Failed to fetch entity for OAuth app",
 			log.String("appId", *entityID), log.String("error", getErr.Error()))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	oauthProcessed := toOAuthProcessedDTO(*entityID, clientID, ouID, oauthDAO)
@@ -523,7 +523,7 @@ func (as *applicationService) UpdateApplication(ctx context.Context, appID strin
 	}
 	if err != nil {
 		as.logger.Error("Failed to update application", log.Error(err), log.String("appID", appID))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	return buildReturnApplicationDTO(appID, app, assertion, returnCert, processedDTO.Metadata,
@@ -544,7 +544,7 @@ func (as *applicationService) updateEntityDataForApplicationUpdate(
 	sysAttrsJSON, marshalErr := buildSystemAttributes(app, clientID)
 	if marshalErr != nil {
 		as.logger.Error("Failed to build entity system attributes for update", log.Error(marshalErr))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	if epErr := as.entityProvider.UpdateSystemAttributes(appID, sysAttrsJSON); epErr != nil {
@@ -552,7 +552,7 @@ func (as *applicationService) updateEntityDataForApplicationUpdate(
 			return svcErr
 		}
 		as.logger.Error("Failed to update entity system attributes", log.String("appID", appID), log.Error(epErr))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	if inboundAuthConfig == nil || inboundAuthConfig.OAuthAppConfig == nil ||
@@ -563,7 +563,7 @@ func (as *applicationService) updateEntityDataForApplicationUpdate(
 	sysCredsJSON, marshalErr := buildSystemCredentials(inboundAuthConfig.OAuthAppConfig.ClientSecret)
 	if marshalErr != nil {
 		as.logger.Error("Failed to build entity system credentials for update", log.Error(marshalErr))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	if epErr := as.entityProvider.UpdateSystemCredentials(appID, sysCredsJSON); epErr != nil {
@@ -571,7 +571,7 @@ func (as *applicationService) updateEntityDataForApplicationUpdate(
 			return svcErr
 		}
 		as.logger.Error("Failed to update entity system credentials", log.String("appID", appID), log.Error(epErr))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	return nil
@@ -644,7 +644,7 @@ func (as *applicationService) DeleteApplication(ctx context.Context, appID strin
 	}
 	if err != nil {
 		as.logger.Error("Failed to delete application", log.Error(err), log.String("appID", appID))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	// Delete entity.
@@ -653,7 +653,7 @@ func (as *applicationService) DeleteApplication(ctx context.Context, appID strin
 			return svcErr
 		}
 		as.logger.Error("Failed to delete application entity", log.String("appID", appID), log.Error(epErr))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	return nil
@@ -670,7 +670,7 @@ func (as *applicationService) isIdentifierTaken(key, value, excludeID string) (b
 		}
 		as.logger.Error("Failed to check identifier availability",
 			log.String("key", key), log.String("value", value), log.Error(epErr))
-		return false, &ErrorInternalServerError
+		return false, &serviceerror.InternalServerError
 	}
 	if entityID == nil {
 		return false, nil
@@ -699,7 +699,7 @@ func (as *applicationService) getApplication(
 			entity = nil
 		} else {
 			as.logger.Error("Failed to get entity for application", log.String("appID", appID), log.Error(epErr))
-			return nil, &ErrorInternalServerError
+			return nil, &serviceerror.InternalServerError
 		}
 	}
 
@@ -1198,7 +1198,7 @@ func (as *applicationService) validateAllowedUserTypes(
 		if svcErr != nil {
 			as.logger.Error("Failed to retrieve user schema list for validation",
 				log.String("error", svcErr.Error.DefaultValue), log.String("code", svcErr.Code))
-			return &ErrorInternalServerError
+			return &serviceerror.InternalServerError
 		}
 
 		for _, schema := range userSchemaList.Schemas {
@@ -1658,7 +1658,7 @@ func generateAndAssignClientID(inboundAuthConfig *model.InboundAuthConfigDTO) *s
 	generatedClientID, err := oauthutils.GenerateOAuth2ClientID()
 	if err != nil {
 		log.GetLogger().Error("Failed to generate OAuth client ID", log.Error(err))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 	inboundAuthConfig.OAuthAppConfig.ClientID = generatedClientID
 	return nil
@@ -1698,7 +1698,7 @@ func resolveClientSecret(
 	generatedClientSecret, err := oauthutils.GenerateOAuth2ClientSecret()
 	if err != nil {
 		log.GetLogger().Error("Failed to generate OAuth client secret", log.Error(err))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	inboundAuthConfig.OAuthAppConfig.ClientSecret = generatedClientSecret
@@ -1771,7 +1771,7 @@ func (as *applicationService) createApplicationCertificate(ctx context.Context, 
 			})
 		}
 		as.logger.Error("Failed to create application certificate", log.Any("serviceError", svcErr))
-		return nil, &ErrorCertificateServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	return &model.ApplicationCertificate{
@@ -1793,7 +1793,7 @@ func (as *applicationService) deleteApplicationCertificate(
 		}
 		as.logger.Error("Failed to delete application certificate", log.String("appID", appID),
 			log.Any("serviceError", certErr))
-		return &ErrorCertificateServerError
+		return &serviceerror.InternalServerError
 	}
 
 	return nil
@@ -1812,7 +1812,7 @@ func (as *applicationService) deleteOAuthAppCertificate(
 		}
 		as.logger.Error("Failed to delete OAuth app certificate", log.String("clientID", clientID),
 			log.Any("serviceError", certErr))
-		return &ErrorCertificateServerError
+		return &serviceerror.InternalServerError
 	}
 
 	return nil
@@ -1838,7 +1838,7 @@ func (as *applicationService) getApplicationCertificate(ctx context.Context, app
 		}
 		as.logger.Error("Failed to retrieve application certificate", log.Any("serviceError", certErr),
 			log.String("appID", appID))
-		return nil, &ErrorCertificateServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	if certificate == nil {
@@ -1867,7 +1867,7 @@ func (as *applicationService) updateApplicationCertificate(ctx context.Context, 
 		}
 		as.logger.Error("Failed to retrieve application certificate", log.Any("serviceError", certErr),
 			log.String("appID", appID))
-		return nil, &ErrorCertificateServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	var updatedCert *cert.Certificate
@@ -1897,7 +1897,7 @@ func (as *applicationService) updateApplicationCertificate(ctx context.Context, 
 				}
 				as.logger.Error("Failed to update application certificate", log.Any("serviceError", svcErr),
 					log.String("appID", appID))
-				return nil, &ErrorCertificateServerError
+				return nil, &serviceerror.InternalServerError
 			}
 		} else {
 			_, svcErr := as.certService.CreateCertificate(ctx, updatedCert)
@@ -1912,7 +1912,7 @@ func (as *applicationService) updateApplicationCertificate(ctx context.Context, 
 				}
 				as.logger.Error("Failed to create application certificate", log.Any("serviceError", svcErr),
 					log.String("appID", appID))
-				return nil, &ErrorCertificateServerError
+				return nil, &serviceerror.InternalServerError
 			}
 		}
 		returnCert = &model.ApplicationCertificate{
@@ -1935,7 +1935,7 @@ func (as *applicationService) updateApplicationCertificate(ctx context.Context, 
 				}
 				as.logger.Error("Failed to delete application certificate", log.Any("serviceError", deleteErr),
 					log.String("appID", appID))
-				return nil, &ErrorCertificateServerError
+				return nil, &serviceerror.InternalServerError
 			}
 		}
 	}
@@ -2191,7 +2191,7 @@ func (as *applicationService) mapStoreError(err error) *serviceerror.ServiceErro
 		return &ErrorApplicationNotFound
 	}
 	as.logger.Error("Failed to retrieve application", log.Error(err))
-	return &ErrorInternalServerError
+	return &serviceerror.InternalServerError
 }
 
 // wrapConsentServiceError converts an ServiceError from the consent service into a ServiceError
@@ -2211,7 +2211,7 @@ func (as *applicationService) wrapConsentServiceError(
 	}
 
 	as.logger.Error("Failed to sync consent purpose for the application changes", log.Any("error", err))
-	return &ErrorInternalServerError
+	return &serviceerror.InternalServerError
 }
 
 // extractRequestedAttributes collects all unique user attributes requested by the application

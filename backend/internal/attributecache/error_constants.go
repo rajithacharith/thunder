@@ -102,18 +102,4 @@ var (
 			DefaultValue: "Expiry time must be in the future",
 		},
 	}
-
-	// ErrorInternalServerError is returned for internal server errors.
-	ErrorInternalServerError = serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
-		Code: "ACS-2001",
-		Error: core.I18nMessage{
-			Key:          "error.attributecache.internal_server_error",
-			DefaultValue: "Internal server error",
-		},
-		ErrorDescription: core.I18nMessage{
-			Key:          "error.attributecache.internal_server_error_description",
-			DefaultValue: "An unexpected error occurred",
-		},
-	}
 )

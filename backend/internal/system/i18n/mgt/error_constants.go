@@ -130,20 +130,3 @@ var (
 		},
 	}
 )
-
-// Server errors for i18n operations.
-var (
-	// ErrorInternalServerError is the error returned when an internal server error occurs.
-	ErrorInternalServerError = serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
-		Code: "I18N-5000",
-		Error: core.I18nMessage{
-			Key:          "error.i18nservice.internal_server_error",
-			DefaultValue: "Internal server error",
-		},
-		ErrorDescription: core.I18nMessage{
-			Key:          "error.i18nservice.internal_server_error_description",
-			DefaultValue: "An unexpected error occurred while processing the request",
-		},
-	}
-)

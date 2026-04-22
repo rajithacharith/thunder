@@ -90,13 +90,13 @@ func (s *attributeCacheService) CreateAttributeCache(
 	cache.ID, err = utils.GenerateUUIDv7()
 	if err != nil {
 		logger.Error("Failed to generate UUID", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	err = s.store.CreateAttributeCache(ctx, *cache)
 	if err != nil {
 		logger.Error("Failed to create attribute cache", log.Error(err), log.String("id", cache.ID))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	logger.Debug("Successfully created attribute cache", log.String("id", cache.ID))
@@ -121,7 +121,7 @@ func (s *attributeCacheService) GetAttributeCache(
 			return nil, &ErrorAttributeCacheNotFound
 		}
 		logger.Error("Failed to retrieve attribute cache", log.Error(err), log.String("id", id))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	logger.Debug("Successfully retrieved attribute cache", log.String("id", id))
@@ -150,7 +150,7 @@ func (s *attributeCacheService) ExtendAttributeCacheTTL(
 			return &ErrorAttributeCacheNotFound
 		}
 		logger.Error("Failed to extend attribute cache TTL", log.Error(err), log.String("id", id))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	logger.Debug("Successfully extended attribute cache TTL", log.String("id", id))
@@ -175,7 +175,7 @@ func (s *attributeCacheService) DeleteAttributeCache(
 			return &ErrorAttributeCacheNotFound
 		}
 		logger.Error("Failed to delete attribute cache", log.Error(err), log.String("id", id))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	logger.Debug("Successfully deleted attribute cache", log.String("id", id))

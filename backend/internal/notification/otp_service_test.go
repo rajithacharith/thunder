@@ -179,13 +179,13 @@ func (suite *OTPServiceTestSuite) TestSendOTP_SenderServiceError() {
 	}
 
 	suite.mockSenderService.On("GetSender", mock.Anything, "sender-123").
-		Return(nil, &ErrorInternalServerError).Once()
+		Return(nil, &serviceerror.InternalServerError).Once()
 
 	result, err := suite.service.SendOTP(context.Background(), request)
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *OTPServiceTestSuite) TestVerifyOTP_EmptySessionToken() {
@@ -306,7 +306,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_GenerateOTPError() {
 
 	suite.Nil(res)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *OTPServiceTestSuite) TestSendOTP_Success() {
@@ -362,7 +362,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_SendSMSError() {
 	res, err := suite.service.SendOTP(context.Background(), req)
 	suite.Nil(res)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *OTPServiceTestSuite) TestSendOTP_GenerateJWTError() {
@@ -386,12 +386,12 @@ func (suite *OTPServiceTestSuite) TestSendOTP_GenerateJWTError() {
 	suite.service.clientProvider = cp
 
 	suite.mockJWTService.EXPECT().GenerateJWT(mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything).Return("", int64(0), &ErrorInternalServerError).Once()
+		mock.Anything, mock.Anything, mock.Anything).Return("", int64(0), &serviceerror.InternalServerError).Once()
 
 	res, err := suite.service.SendOTP(context.Background(), req)
 	suite.Nil(res)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *OTPServiceTestSuite) TestVerifyOTP_Success() {
@@ -473,13 +473,13 @@ func (suite *OTPServiceTestSuite) TestSendOTP_ClientProviderError() {
 
 	// client provider returns a service error
 	cp := newNotificationClientProviderInterfaceMock(suite.T())
-	cp.EXPECT().GetClient(mock.Anything).Return(nil, &ErrorInternalServerError).Once()
+	cp.EXPECT().GetClient(mock.Anything).Return(nil, &serviceerror.InternalServerError).Once()
 	suite.service.clientProvider = cp
 
 	res, err := suite.service.SendOTP(context.Background(), req)
 	suite.Nil(res)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *OTPServiceTestSuite) TestSendOTP_ClientChannelNotSupported() {
@@ -668,7 +668,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_TemplateRenderFailure_ReturnsInter
 	res, err := suite.service.SendOTP(context.Background(), req)
 	suite.Nil(res)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *OTPServiceTestSuite) TestVerifyAndDecode_Success() {

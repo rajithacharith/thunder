@@ -86,7 +86,7 @@ func (suite *MessageHandlerTestSuite) TestHandleSenderListRequest_ServiceError()
 	m := NewNotificationSenderMgtSvcInterfaceMock(suite.T())
 	handler := newMessageNotificationSenderHandler(m, nil)
 
-	m.On("ListSenders", mock.Anything).Return(nil, &ErrorInternalServerError).Once()
+	m.On("ListSenders", mock.Anything).Return(nil, &serviceerror.InternalServerError).Once()
 
 	req := httptest.NewRequest(http.MethodGet, "/senders", nil)
 	rr := httptest.NewRecorder()
@@ -266,7 +266,7 @@ func (suite *MessageHandlerTestSuite) TestHandleSenderGetRequest_ServiceError() 
 	m := NewNotificationSenderMgtSvcInterfaceMock(suite.T())
 	handler := newMessageNotificationSenderHandler(m, nil)
 
-	m.On("GetSender", mock.Anything, "err").Return(nil, &ErrorInternalServerError).Once()
+	m.On("GetSender", mock.Anything, "err").Return(nil, &serviceerror.InternalServerError).Once()
 	req := httptest.NewRequest(http.MethodGet, "/senders/err", nil)
 	req.SetPathValue("id", "err")
 	rr := httptest.NewRecorder()
@@ -400,10 +400,10 @@ func (suite *MessageHandlerTestSuite) TestHandleError() {
 		},
 		{
 			name:          "server error -> 500",
-			svcErr:        &ErrorInternalServerError,
+			svcErr:        &serviceerror.InternalServerError,
 			customDesc:    "internal happened",
 			expectedCode:  500,
-			expectedError: ErrorInternalServerError.Error.String(),
+			expectedError: serviceerror.InternalServerError.Error.String(),
 		},
 	}
 
@@ -435,7 +435,7 @@ func (e *errWriter) WriteHeader(statusCode int) {}
 func (suite *MessageHandlerTestSuite) TestHandleError_EncodeFailure() {
 	handler := newMessageNotificationSenderHandler(nil, nil)
 	ew := &errWriter{}
-	handler.handleError(ew, &ErrorInternalServerError, "boom")
+	handler.handleError(ew, &serviceerror.InternalServerError, "boom")
 }
 
 func (suite *MessageHandlerTestSuite) TestGetDTOFromSenderRequest() {

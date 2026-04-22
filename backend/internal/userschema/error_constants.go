@@ -205,23 +205,6 @@ var (
 	}
 )
 
-// Server errors for user schema management operations.
-var (
-	// ErrorInternalServerError is the error returned when an internal server error occurs.
-	ErrorInternalServerError = serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
-		Code: "USRS-5000",
-		Error: core.I18nMessage{
-			Key:          "error.userschemaservice.internal_server_error",
-			DefaultValue: "Internal server error",
-		},
-		ErrorDescription: core.I18nMessage{
-			Key:          "error.userschemaservice.internal_server_error_description",
-			DefaultValue: "An unexpected error occurred while processing the request",
-		},
-	}
-)
-
 // Error variables for user schema operations.
 var (
 	// ErrUserSchemaNotFound is returned when the user schema is not found in the system.

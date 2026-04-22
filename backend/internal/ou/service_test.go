@@ -122,7 +122,7 @@ func runOUPathListTests[Resp any](suite *OrganizationUnitServiceTestSuite, cfg p
 		resp, err := cfg.invoke(service, cfg.validPath, cfg.limit, cfg.offset)
 
 		suite.Require().Nil(resp)
-		suite.Require().Equal(ErrorInternalServerError, *err)
+		suite.Require().Equal(serviceerror.InternalServerError, *err)
 	})
 
 	suite.Run("success", func() {
@@ -322,7 +322,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 					Return(0, errors.New("count failed")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:   "list failure",
@@ -336,7 +336,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 					Return(nil, errors.New("list failed")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 	}
 
@@ -404,7 +404,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_CreateOrganizationU
 					Return(false, errors.New("boom")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name: "parent not found",
@@ -438,7 +438,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_CreateOrganizationU
 					Return(false, errors.New("name check failed")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:    "handle conflict",
@@ -464,7 +464,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_CreateOrganizationU
 					Return(false, errors.New("handle check failed")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:    "create failure",
@@ -480,7 +480,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_CreateOrganizationU
 					Return(errors.New("insert failed")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:    "success",
@@ -585,7 +585,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 					Return(OrganizationUnit{}, errors.New("boom")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 	}
 
@@ -640,7 +640,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 					Return(OrganizationUnit{}, errors.New("boom")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name: "success",
@@ -702,7 +702,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_IsOrganizationUnitE
 					Return(false, errors.New("boom")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 	}
 
@@ -812,7 +812,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_IsParent() {
 		result, err := service.IsParent(context.Background(), parentID, childID)
 
 		suite.Require().False(result)
-		suite.Require().Equal(ErrorInternalServerError, *err)
+		suite.Require().Equal(serviceerror.InternalServerError, *err)
 	})
 }
 
@@ -929,7 +929,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 					Return(OrganizationUnit{}, errors.New("boom")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name: "invalid handle",
@@ -969,7 +969,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 					Return(false, errors.New("boom")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name: "parent not found",
@@ -1055,7 +1055,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 					Return(false, errors.New("boom")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name: "handle conflict",
@@ -1097,7 +1097,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 					Return(false, errors.New("boom")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name: "update returns not found",
@@ -1139,7 +1139,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 					Return(errors.New("boom")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 	}
 
@@ -1203,7 +1203,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 		service := suite.newService(store, newAllowAllAuthz(suite.T()))
 		_, err := service.UpdateOrganizationUnitByPath(context.Background(), "root", request)
 
-		suite.Require().Equal(ErrorInternalServerError, *err)
+		suite.Require().Equal(serviceerror.InternalServerError, *err)
 	})
 
 	suite.Run("success", func() {
@@ -1263,7 +1263,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 					Return(false, errors.New("boom")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name: "not found",
@@ -1296,7 +1296,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 				store.On("GetOrganizationUnitChildrenCount", mock.Anything, "ou-1").
 					Return(0, errors.New("boom")).Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name: "has users",
@@ -1350,7 +1350,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 				rs.groupResolver.On("GetGroupCountByOUID", mock.Anything, "ou-1").
 					Return(0, nil).Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name: "delete not found",
@@ -1453,7 +1453,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 		service := suite.newService(store, newAllowAllAuthz(suite.T()))
 		err := service.DeleteOrganizationUnitByPath(context.Background(), "root")
 
-		suite.Require().Equal(ErrorInternalServerError, *err)
+		suite.Require().Equal(serviceerror.InternalServerError, *err)
 	})
 
 	suite.Run("cannot delete - has child OUs", func() {
@@ -1548,7 +1548,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 					Return(false, errors.New("boom")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:  "list failure",
@@ -1561,7 +1561,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 					Return(nil, errors.New("list fail")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:  "count failure",
@@ -1577,7 +1577,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 					Return(0, errors.New("count fail")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:  "success",
@@ -1669,7 +1669,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 			name:        "nil user resolver",
 			limit:       5,
 			nilResolver: true,
-			wantErr:     &ErrorInternalServerError,
+			wantErr:     &serviceerror.InternalServerError,
 		},
 		{
 			name:  "not found",
@@ -1687,7 +1687,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 				store.On("IsOrganizationUnitExists", mock.Anything, "ou-1").
 					Return(false, errors.New("boom")).Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:  "list error",
@@ -1700,7 +1700,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 				ur.On("GetUserListByOUID", mock.Anything, "ou-1", 5, 0, false).
 					Return([]User(nil), errors.New("list")).Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:  "count error",
@@ -1715,7 +1715,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 				ur.On("GetUserCountByOUID", mock.Anything, "ou-1").
 					Return(0, errors.New("count")).Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:  "success",
@@ -1878,7 +1878,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 
 	resp, err := service.GetOrganizationUnitUsers(context.Background(), "ou-1", 5, 0, false)
 	suite.Require().Nil(resp)
-	suite.Require().Equal(ErrorInternalServerError, *err)
+	suite.Require().Equal(serviceerror.InternalServerError, *err)
 }
 
 func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitChildren_AccessDenied() {
@@ -1913,7 +1913,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 
 	resp, err := service.GetOrganizationUnitChildren(context.Background(), "ou-1", 5, 0)
 	suite.Require().Nil(resp)
-	suite.Require().Equal(ErrorInternalServerError, *err)
+	suite.Require().Equal(serviceerror.InternalServerError, *err)
 }
 
 func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitGroups_AuthzError() {
@@ -1930,7 +1930,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 
 	resp, err := service.GetOrganizationUnitGroups(context.Background(), "ou-1", 5, 0)
 	suite.Require().Nil(resp)
-	suite.Require().Equal(ErrorInternalServerError, *err)
+	suite.Require().Equal(serviceerror.InternalServerError, *err)
 }
 
 // runResolverPathListTests runs common path-based list tests for user/group resolver-backed endpoints.
@@ -1967,7 +1967,7 @@ func (suite *OrganizationUnitServiceTestSuite) runResolverPathListTests(
 		service := suite.newService(store, newAllowAllAuthz(suite.T()))
 		resp, err := invoke(service, "root", 5, 0)
 		suite.Require().Nil(resp)
-		suite.Require().Equal(ErrorInternalServerError, *err)
+		suite.Require().Equal(serviceerror.InternalServerError, *err)
 	})
 
 	suite.Run("success", func() {
@@ -2062,7 +2062,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 			name:        "nil group resolver",
 			limit:       5,
 			nilResolver: true,
-			wantErr:     &ErrorInternalServerError,
+			wantErr:     &serviceerror.InternalServerError,
 		},
 		{
 			name:  "list error",
@@ -2075,7 +2075,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 				gr.On("GetGroupListByOUID", mock.Anything, "ou-1", 5, 0).
 					Return([]Group(nil), errors.New("boom")).Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:  "success",
@@ -2149,14 +2149,14 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_BuildGroupListRespo
 	resp, err := buildGroupListResponse("/organization-units", 123, 10, 5, 0)
 	suite.Nil(resp)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError, *err)
+	suite.Equal(serviceerror.InternalServerError, *err)
 }
 
 func (suite *OrganizationUnitServiceTestSuite) TestOUService_BuildOrganizationUnitListResponse_InvalidType() {
 	resp, err := buildOrganizationUnitListResponse("/organization-units", struct{}{}, 10, 5, 0)
 	suite.Nil(resp)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError, *err)
+	suite.Equal(serviceerror.InternalServerError, *err)
 }
 
 func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitGroupsByPath() {
@@ -2261,7 +2261,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_CheckCircularDepend
 		Once()
 
 	err = service3.checkCircularDependency(context.Background(), "ou-1", &parentID)
-	suite.Require().Equal(&ErrorInternalServerError, err)
+	suite.Require().Equal(&serviceerror.InternalServerError, err)
 }
 
 func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationUnit_SameParent() {
@@ -2442,10 +2442,10 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 			offset: 0,
 			setupAuthz: func(authz *sysauthzmock.SystemAuthorizationServiceInterfaceMock) {
 				authz.On("GetAccessibleResources", mock.Anything, mock.Anything, mock.Anything).
-					Return((*sysauthz.AccessibleResources)(nil), &ErrorInternalServerError).
+					Return((*sysauthz.AccessibleResources)(nil), &serviceerror.InternalServerError).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:   "filtered empty",
@@ -2560,7 +2560,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_listAccessibleOrgan
 					Return([]OrganizationUnitBasic{}, errors.New("boom")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:   "success pagination",
@@ -2648,7 +2648,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 			context.Background(), []string{"ou-1"})
 		suite.Require().Nil(result)
 		suite.Require().NotNil(svcErr)
-		suite.Equal(ErrorInternalServerError.Code, svcErr.Code)
+		suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 		store.AssertExpectations(suite.T())
 	})
 }

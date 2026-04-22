@@ -270,6 +270,6 @@ func newClientError(code, msg, desc string) *serviceerror.ServiceError {
 
 func (p *defaultAuthnProvider) logAndReturnServerError(msg string, fields ...log.Field) *serviceerror.ServiceError {
 	p.logger.Error(msg, fields...)
-	err := errorSystemError
+	err := serviceerror.InternalServerError
 	return &err
 }

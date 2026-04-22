@@ -189,7 +189,7 @@ func (suite *RoleServiceTestSuite) TestGetRoleList_StoreErrors() {
 
 			suite.Nil(result)
 			suite.NotNil(err)
-			suite.Equal(ErrorInternalServerError.Code, err.Code)
+			suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 		})
 	}
 }
@@ -325,7 +325,7 @@ func (suite *RoleServiceTestSuite) TestCreateRole_PermissionValidationErrors() {
 					"rs1", []string{"perm1"}).
 					Return([]string{}, &serviceerror.ServiceError{Code: "INTERNAL_ERROR"}).Once()
 			},
-			expectedError: &ErrorInternalServerError,
+			expectedError: &serviceerror.InternalServerError,
 		},
 		{
 			name: "EmptyResourceServerID",
@@ -493,7 +493,7 @@ func (suite *RoleServiceTestSuite) TestCreateRole_StoreError() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *RoleServiceTestSuite) TestCreateRole_NameConflict() {
@@ -536,7 +536,7 @@ func (suite *RoleServiceTestSuite) TestCreateRole_CheckNameExistsError() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 // CreateRole Declarative Mode Tests
@@ -652,7 +652,7 @@ func (suite *RoleServiceTestSuite) TestGetRole_StoreError() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 // UpdateRole Tests
@@ -726,7 +726,7 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_GetRoleError() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *RoleServiceTestSuite) TestUpdateRole_OUNotFound() {
@@ -768,7 +768,7 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_OUServiceError() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *RoleServiceTestSuite) TestUpdateRole_UpdateStoreError() {
@@ -794,7 +794,7 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_UpdateStoreError() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *RoleServiceTestSuite) TestUpdateRole_Success() {
@@ -893,7 +893,7 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_CheckNameExistsError() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *RoleServiceTestSuite) TestUpdateRole_PermissionValidationErrors() {
@@ -931,7 +931,7 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_PermissionValidationErrors() {
 					"rs1", []string{"perm1"}).
 					Return([]string{}, &serviceerror.ServiceError{Code: "INTERNAL_ERROR"}).Once()
 			},
-			expectedError: &ErrorInternalServerError,
+			expectedError: &serviceerror.InternalServerError,
 		},
 		{
 			name: "EmptyResourceServerIDOnUpdate",
@@ -1071,7 +1071,7 @@ func (suite *RoleServiceTestSuite) TestDeleteRole_GetRoleError() {
 	err := suite.service.DeleteRole(context.Background(), "role1")
 
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *RoleServiceTestSuite) TestDeleteRole_GetAssignmentsCountError() {
@@ -1083,7 +1083,7 @@ func (suite *RoleServiceTestSuite) TestDeleteRole_GetAssignmentsCountError() {
 	err := suite.service.DeleteRole(context.Background(), "role1")
 
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *RoleServiceTestSuite) TestDeleteRole_StoreError() {
@@ -1097,7 +1097,7 @@ func (suite *RoleServiceTestSuite) TestDeleteRole_StoreError() {
 	err := suite.service.DeleteRole(context.Background(), "role1")
 
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 // DeleteRole Declarative Mode Tests
@@ -1189,7 +1189,7 @@ func (suite *RoleServiceTestSuite) TestGetRoleAssignments_GetRoleError() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *RoleServiceTestSuite) TestGetRoleAssignments_CountError() {
@@ -1202,7 +1202,7 @@ func (suite *RoleServiceTestSuite) TestGetRoleAssignments_CountError() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *RoleServiceTestSuite) TestGetRoleAssignments_GetListError() {
@@ -1218,7 +1218,7 @@ func (suite *RoleServiceTestSuite) TestGetRoleAssignments_GetListError() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *RoleServiceTestSuite) TestGetRoleAssignments_WithDisplay_Success() {
@@ -1504,7 +1504,7 @@ func (suite *RoleServiceTestSuite) TestAddAssignments_GetRoleError() {
 	err := suite.service.AddAssignments(context.Background(), "role1", request)
 
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *RoleServiceTestSuite) TestAddAssignments_StoreError() {
@@ -1522,7 +1522,7 @@ func (suite *RoleServiceTestSuite) TestAddAssignments_StoreError() {
 	err := suite.service.AddAssignments(context.Background(), "role1", request)
 
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *RoleServiceTestSuite) TestAddAssignments_Success() {
@@ -1619,7 +1619,7 @@ func (suite *RoleServiceTestSuite) TestRemoveAssignments_GetRoleError() {
 	err := suite.service.RemoveAssignments(context.Background(), "role1", request)
 
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *RoleServiceTestSuite) TestRemoveAssignments_StoreError() {
@@ -1635,7 +1635,7 @@ func (suite *RoleServiceTestSuite) TestRemoveAssignments_StoreError() {
 	err := suite.service.RemoveAssignments(context.Background(), "role1", request)
 
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *RoleServiceTestSuite) TestRemoveAssignments_Success() {
@@ -1704,7 +1704,7 @@ func (suite *RoleServiceTestSuite) TestValidateAssignmentIDs_UserServiceError() 
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *RoleServiceTestSuite) TestValidateAssignmentIDs_GroupServiceError() {
@@ -1726,7 +1726,7 @@ func (suite *RoleServiceTestSuite) TestValidateAssignmentIDs_GroupServiceError()
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 // Utility functions tests
@@ -1893,7 +1893,7 @@ func (suite *RoleServiceTestSuite) TestGetAuthorizedPermissions() {
 			groups:               []string{"group1"},
 			requestedPermissions: []string{"perm1", "perm2"},
 			mockError:            errors.New("database error"),
-			expectedError:        &ErrorInternalServerError,
+			expectedError:        &serviceerror.InternalServerError,
 		},
 	}
 
@@ -1959,5 +1959,5 @@ func (suite *RoleServiceTestSuite) TestIsRoleDeclarative_StoreReturnsError() {
 
 	suite.NotNil(err)
 	suite.False(isDeclarative)
-	suite.Equal(&ErrorInternalServerError, err)
+	suite.Equal(&serviceerror.InternalServerError, err)
 }

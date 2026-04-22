@@ -81,7 +81,7 @@ func (s *otpService) SendOTP(
 		if svcErr.Code == ErrorSenderNotFound.Code {
 			return nil, &ErrorSenderNotFound
 		}
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 	if sender == nil {
 		return nil, &ErrorSenderNotFound
@@ -93,7 +93,7 @@ func (s *otpService) SendOTP(
 	otp, err := s.generateOTP()
 	if err != nil {
 		logger.Error("Failed to generate OTP", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	// Send OTP based on channel
@@ -118,7 +118,7 @@ func (s *otpService) SendOTP(
 	sessionToken, err := s.createSessionToken(sessionData)
 	if err != nil {
 		logger.Error("Failed to create session token", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	logger.Debug("OTP sent successfully", log.String("recipient", log.MaskString(otpDTO.Recipient)))
@@ -260,7 +260,7 @@ func (s *otpService) sendSMSOTP(ctx context.Context, recipient, otp string,
 	rendered, svcErr := s.templateService.Render(ctx, template.ScenarioOTP, template.TemplateTypeSMS, templateData)
 	if svcErr != nil {
 		logger.Error("Failed to render SMS OTP template", log.String("error", svcErr.Code))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	_client, clientSvcErr := s.clientProvider.GetClient(sender)
@@ -275,7 +275,7 @@ func (s *otpService) sendSMSOTP(ctx context.Context, recipient, otp string,
 	notifData := common.NotificationData{Recipient: recipient, Body: rendered.Body}
 	if err := _client.Send(common.ChannelTypeSMS, notifData); err != nil {
 		logger.Error("Failed to send SMS OTP", log.Error(err))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	return nil

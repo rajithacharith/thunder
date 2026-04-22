@@ -68,9 +68,9 @@ func newAllowAllAuthz(t *testing.T) sysauthz.SystemAuthorizationServiceInterface
 func newAuthzError(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
 	mockAuthz := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 	mockAuthz.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
-		Return(false, &ErrorInternalServerError).Maybe()
+		Return(false, &serviceerror.InternalServerError).Maybe()
 	mockAuthz.On("GetAccessibleResources", mock.Anything, mock.Anything, security.ResourceTypeOU).
-		Return((*sysauthz.AccessibleResources)(nil), &ErrorInternalServerError).Maybe()
+		Return((*sysauthz.AccessibleResources)(nil), &serviceerror.InternalServerError).Maybe()
 	return mockAuthz
 }
 
@@ -185,7 +185,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupList() {
 					Return(0, errors.New("count failure")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:   "list retrieval error",
@@ -199,7 +199,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupList() {
 					Return(nil, errors.New("list failure")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:   "filtered by OUIDs",
@@ -264,7 +264,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupList() {
 			limit:      5,
 			offset:     0,
 			authzSetup: newAuthzError,
-			wantErr:    &ErrorInternalServerError,
+			wantErr:    &serviceerror.InternalServerError,
 		},
 	}
 
@@ -448,7 +448,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 					Once()
 				return nil
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 			assertStoreCalls: func(storeMock *groupStoreInterfaceMock) {
 				storeMock.AssertNotCalled(suite.T(), "GetGroupsByOrganizationUnit",
 					mock.Anything, mock.Anything, mock.Anything, mock.Anything)
@@ -475,7 +475,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 					Once()
 				return nil
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:   "access denied",
@@ -675,7 +675,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 					Return([]string{}, nil).
 					Once()
 			},
-			expectErr: &ErrorInternalServerError,
+			expectErr: &serviceerror.InternalServerError,
 		},
 		{
 			name: "create error",
@@ -697,7 +697,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 					Return(true, nil).
 					Once()
 			},
-			expectErr: &ErrorInternalServerError,
+			expectErr: &serviceerror.InternalServerError,
 		},
 		{
 			name: "organization unit service error",
@@ -711,7 +711,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 						&serviceerror.ServiceError{Code: "OU-5000", Type: serviceerror.ServerErrorType}).
 					Once()
 			},
-			expectErr: &ErrorInternalServerError,
+			expectErr: &serviceerror.InternalServerError,
 		},
 		{
 			name: "access denied",
@@ -904,7 +904,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroup() {
 					Return(GroupDAO{}, errors.New("db error")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name: "not found",
@@ -1203,7 +1203,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 					Return(GroupDAO{}, errors.New("db error")).
 					Once()
 			},
-			expectErr: &ErrorInternalServerError,
+			expectErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:    "validate organization unit error",
@@ -1237,7 +1237,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 					Return(errors.New("db error")).
 					Once()
 			},
-			expectErr: &ErrorInternalServerError,
+			expectErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:    "update error",
@@ -1257,7 +1257,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 					Return(errors.New("update fail")).
 					Once()
 			},
-			expectErr: &ErrorInternalServerError,
+			expectErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:    "access denied on source OU",
@@ -1414,7 +1414,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 					Return(GroupDAO{}, errors.New("db error")).
 					Once()
 			},
-			expectErr: &ErrorInternalServerError,
+			expectErr: &serviceerror.InternalServerError,
 		},
 		{
 			name: "delete error",
@@ -1427,7 +1427,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 					Return(errors.New("delete fail")).
 					Once()
 			},
-			expectErr: &ErrorInternalServerError,
+			expectErr: &serviceerror.InternalServerError,
 		},
 		{
 			name: "group not found",
@@ -1569,7 +1569,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers() {
 					Return(GroupDAO{}, errors.New("db error")).
 					Once()
 			},
-			expectErr: &ErrorInternalServerError,
+			expectErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:   "count error",
@@ -1584,7 +1584,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers() {
 					Return(0, errors.New("count fail")).
 					Once()
 			},
-			expectErr: &ErrorInternalServerError,
+			expectErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:   "list error",
@@ -1602,7 +1602,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers() {
 					Return(nil, errors.New("list fail")).
 					Once()
 			},
-			expectErr: &ErrorInternalServerError,
+			expectErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:   "access denied",
@@ -1814,7 +1814,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateOUHandlesInternalEr
 	err := service.validateOU(context.Background(), "ou-1")
 
 	require.NotNil(t, err)
-	require.Equal(t, ErrorInternalServerError, *err)
+	require.Equal(t, serviceerror.InternalServerError, *err)
 }
 
 func (suite *GroupServiceTestSuite) TestGroupService_ValidateAndProcessHandlePath() {
@@ -1893,7 +1893,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateUserIDsHandlesServi
 	err := service.validateUserIDs(context.Background(), []string{"usr-001"})
 
 	require.NotNil(t, err)
-	require.Equal(t, ErrorInternalServerError, *err)
+	require.Equal(t, serviceerror.InternalServerError, *err)
 }
 
 func (suite *GroupServiceTestSuite) TestGroupService_ValidateUserIDsWithAccess() {
@@ -1926,7 +1926,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateUserIDsWithAccess()
 					Return(nil, errors.New("entity service error")).
 					Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:    "full admin skips OU scope check",
@@ -2007,7 +2007,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateUserIDsWithAccess()
 					Return([]string{}, nil).Once()
 			},
 			authzSetup: newAuthzError,
-			wantErr:    &ErrorInternalServerError,
+			wantErr:    &serviceerror.InternalServerError,
 		},
 		{
 			name:    "validate in OUs store error returns 500",
@@ -2028,7 +2028,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateUserIDsWithAccess()
 					}, (*serviceerror.ServiceError)(nil))
 				return m
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 	}
 
@@ -2088,7 +2088,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateGroupIDs() {
 					Return(nil, errors.New("db error")).
 					Once()
 			},
-			expectErr: &ErrorInternalServerError,
+			expectErr: &serviceerror.InternalServerError,
 		},
 	}
 
@@ -2179,7 +2179,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_AddGroupMembers() {
 				storeMock.On("AddGroupMembers", mock.Anything, "grp-001", mock.Anything).
 					Return(errors.New("db error")).Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:    "success",
@@ -2317,7 +2317,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_RemoveGroupMembers() {
 				storeMock.On("RemoveGroupMembers", mock.Anything, "grp-001", mock.Anything).
 					Return(errors.New("db error")).Once()
 			},
-			wantErr: &ErrorInternalServerError,
+			wantErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:    "success",

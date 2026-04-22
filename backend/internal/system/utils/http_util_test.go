@@ -21,6 +21,7 @@ package utils
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -31,6 +32,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/i18n/core"
 )
 
@@ -676,18 +678,59 @@ func (suite *HTTPUtilTestSuite) TestWriteSuccessResponse_EncodingError() {
 	suite.T().Run("UnserializableData", func(t *testing.T) {
 		w := httptest.NewRecorder()
 
-		// Channel cannot be JSON encoded, should trigger encoding error
-		unserializableData := make(chan int)
+		// Channel cannot be JSON encoded, should trigger the encoding error fallback
+		WriteSuccessResponse(w, http.StatusOK, make(chan int))
 
-		WriteSuccessResponse(w, http.StatusOK, unserializableData)
-
-		// With buffer approach, encoding fails BEFORE headers are sent
-		// So we get HTTP 500 instead of the intended 200
+		// Encoding fails before headers are sent, so we get 500
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 
-		// After encoding fails, http.Error() is called which writes the predefined error message
-		responseBody := w.Body.String()
-		assert.Contains(t, responseBody, "Encoding error")
+		// Response must be JSON, not plain text
+		assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+
+		// Body must be valid JSON containing the ErrorEncodingError fields
+		var resp apierror.ErrorResponse
+		err := json.Unmarshal(w.Body.Bytes(), &resp)
+		assert.NoError(t, err)
+		assert.Equal(t, serviceerror.ErrorEncodingError.Code, resp.Code)
+		assert.Equal(t, serviceerror.ErrorEncodingError.Error.Key, resp.Message.Key)
+		assert.Equal(t, serviceerror.ErrorEncodingError.ErrorDescription.Key, resp.Description.Key)
+	})
+}
+
+// failingWriter returns an error on the first Write call, then succeeds.
+// Used to simulate json.Encoder failing mid-stream in WriteErrorResponse.
+type failingWriter struct {
+	*httptest.ResponseRecorder
+	writes int
+}
+
+func (fw *failingWriter) Write(b []byte) (int, error) {
+	fw.writes++
+	if fw.writes == 1 {
+		return 0, errors.New("simulated write failure")
+	}
+	return fw.ResponseRecorder.Write(b)
+}
+
+func (suite *HTTPUtilTestSuite) TestWriteErrorResponse_EncodingFallback() {
+	suite.T().Run("WriterFailure", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		w := &failingWriter{ResponseRecorder: rec}
+
+		errorResp := apierror.ErrorResponse{
+			Code:        "test_error",
+			Message:     core.I18nMessage{Key: "error.test", DefaultValue: "Test error"},
+			Description: core.I18nMessage{Key: "error.test_desc", DefaultValue: "A test error"},
+		}
+		WriteErrorResponse(w, http.StatusBadRequest, errorResp)
+
+		// The fallback JSON must be valid and carry the encoding error fields
+		var resp apierror.ErrorResponse
+		err := json.Unmarshal(rec.Body.Bytes(), &resp)
+		assert.NoError(t, err)
+		assert.Equal(t, serviceerror.ErrorEncodingError.Code, resp.Code)
+		assert.Equal(t, serviceerror.ErrorEncodingError.Error.Key, resp.Message.Key)
+		assert.Equal(t, serviceerror.ErrorEncodingError.ErrorDescription.Key, resp.Description.Key)
 	})
 }
 

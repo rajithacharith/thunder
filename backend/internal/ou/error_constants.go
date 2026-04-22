@@ -199,23 +199,6 @@ var (
 	}
 )
 
-// Server errors for organization unit management operations.
-var (
-	// ErrorInternalServerError is the error returned when an internal server error occurs.
-	ErrorInternalServerError = serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
-		Code: "OU-5000",
-		Error: core.I18nMessage{
-			Key:          "error.ouservice.internal_server_error",
-			DefaultValue: "Internal server error",
-		},
-		ErrorDescription: core.I18nMessage{
-			Key:          "error.ouservice.internal_server_error_description",
-			DefaultValue: "An unexpected error occurred while processing the request",
-		},
-	}
-)
-
 // Error variables
 var (
 	// ErrOrganizationUnitNotFound is returned when the organization unit is not found in the system.

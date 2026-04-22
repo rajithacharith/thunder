@@ -315,23 +315,6 @@ var (
 	}
 )
 
-// Server errors for user management operations.
-var (
-	// ErrorInternalServerError is the error returned when an internal server error occurs.
-	ErrorInternalServerError = serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
-		Code: "USR-5000",
-		Error: core.I18nMessage{
-			Key:          "error.userservice.internal_server_error",
-			DefaultValue: "Internal server error",
-		},
-		ErrorDescription: core.I18nMessage{
-			Key:          "error.userservice.internal_server_error_description",
-			DefaultValue: "An unexpected error occurred while processing the request",
-		},
-	}
-)
-
 // Error variables
 var (
 	// ErrUserNotFound is returned when the user is not found in the system.

@@ -53,7 +53,7 @@ func (gh *groupHandler) HandleGroupListRequest(w http.ResponseWriter, r *http.Re
 
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -61,7 +61,7 @@ func (gh *groupHandler) HandleGroupListRequest(w http.ResponseWriter, r *http.Re
 
 	groupListResponse, svcErr := gh.groupService.GetGroupList(ctx, limit, offset, includeDisplay)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -86,7 +86,7 @@ func (gh *groupHandler) HandleGroupListByPathRequest(w http.ResponseWriter, r *h
 
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -94,7 +94,7 @@ func (gh *groupHandler) HandleGroupListByPathRequest(w http.ResponseWriter, r *h
 
 	groupListResponse, svcErr := gh.groupService.GetGroupsByPath(ctx, path, limit, offset, includeDisplay)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -128,7 +128,7 @@ func (gh *groupHandler) HandleGroupPostRequest(w http.ResponseWriter, r *http.Re
 	sanitizedRequest := gh.sanitizeCreateGroupRequest(createRequest)
 	createdGroup, svcErr := gh.groupService.CreateGroup(ctx, sanitizedRequest)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -163,7 +163,7 @@ func (gh *groupHandler) HandleGroupPostByPathRequest(w http.ResponseWriter, r *h
 
 	group, svcErr := gh.groupService.CreateGroupByPath(ctx, path, *createRequest)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -193,7 +193,7 @@ func (gh *groupHandler) HandleGroupGetRequest(w http.ResponseWriter, r *http.Req
 
 	group, svcErr := gh.groupService.GetGroup(ctx, id, includeDisplay)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -236,7 +236,7 @@ func (gh *groupHandler) HandleGroupPutRequest(w http.ResponseWriter, r *http.Req
 	sanitizedRequest := gh.sanitizeUpdateGroupRequest(updateRequest)
 	group, svcErr := gh.groupService.UpdateGroup(ctx, id, sanitizedRequest)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -264,7 +264,7 @@ func (gh *groupHandler) HandleGroupDeleteRequest(w http.ResponseWriter, r *http.
 
 	svcErr := gh.groupService.DeleteGroup(ctx, id)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -291,7 +291,7 @@ func (gh *groupHandler) HandleGroupMembersGetRequest(w http.ResponseWriter, r *h
 
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -299,7 +299,7 @@ func (gh *groupHandler) HandleGroupMembersGetRequest(w http.ResponseWriter, r *h
 
 	memberListResponse, svcErr := gh.groupService.GetGroupMembers(ctx, id, limit, offset, includeDisplay)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -318,13 +318,13 @@ func (gh *groupHandler) HandleGroupMembersAddRequest(w http.ResponseWriter, r *h
 
 	id := r.PathValue("id")
 	if id == "" {
-		gh.handleError(w, logger, &ErrorMissingGroupID)
+		gh.handleError(w, &ErrorMissingGroupID)
 		return
 	}
 
 	membersRequest, err := sysutils.DecodeJSONBody[MembersRequest](r)
 	if err != nil {
-		gh.handleError(w, logger, &ErrorInvalidRequestFormat)
+		gh.handleError(w, &ErrorInvalidRequestFormat)
 		return
 	}
 
@@ -332,7 +332,7 @@ func (gh *groupHandler) HandleGroupMembersAddRequest(w http.ResponseWriter, r *h
 
 	group, svcErr := gh.groupService.AddGroupMembers(ctx, id, sanitizedRequest.Members)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -347,13 +347,13 @@ func (gh *groupHandler) HandleGroupMembersRemoveRequest(w http.ResponseWriter, r
 
 	id := r.PathValue("id")
 	if id == "" {
-		gh.handleError(w, logger, &ErrorMissingGroupID)
+		gh.handleError(w, &ErrorMissingGroupID)
 		return
 	}
 
 	membersRequest, err := sysutils.DecodeJSONBody[MembersRequest](r)
 	if err != nil {
-		gh.handleError(w, logger, &ErrorInvalidRequestFormat)
+		gh.handleError(w, &ErrorInvalidRequestFormat)
 		return
 	}
 
@@ -361,7 +361,7 @@ func (gh *groupHandler) HandleGroupMembersRemoveRequest(w http.ResponseWriter, r
 
 	group, svcErr := gh.groupService.RemoveGroupMembers(ctx, id, sanitizedRequest.Members)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -370,9 +370,8 @@ func (gh *groupHandler) HandleGroupMembersRemoveRequest(w http.ResponseWriter, r
 }
 
 // handleError handles service errors and returns appropriate HTTP responses.
-func (gh *groupHandler) handleError(w http.ResponseWriter, logger *log.Logger,
-	svcErr *serviceerror.ServiceError) {
-	statusCode := http.StatusInternalServerError
+func (gh *groupHandler) handleError(w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
+	var statusCode int
 	if svcErr.Type == serviceerror.ClientErrorType {
 		switch svcErr.Code {
 		case ErrorGroupNotFound.Code:
@@ -390,13 +389,8 @@ func (gh *groupHandler) handleError(w http.ResponseWriter, logger *log.Logger,
 		default:
 			statusCode = http.StatusBadRequest
 		}
-	}
-
-	if statusCode == http.StatusInternalServerError {
-		logger.Error("Internal server error occurred", log.String("error", svcErr.Error.DefaultValue),
-			log.String("description", svcErr.ErrorDescription.DefaultValue))
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
+	} else {
+		statusCode = http.StatusInternalServerError
 	}
 
 	errResp := apierror.ErrorResponse{

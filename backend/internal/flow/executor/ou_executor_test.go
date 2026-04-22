@@ -449,7 +449,7 @@ func (suite *OUExecutorTestSuite) TestExecute_ErrorScenarios() {
 		},
 		{
 			name:            "Internal server error",
-			serviceError:    ou.ErrorInternalServerError,
+			serviceError:    serviceerror.InternalServerError,
 			expectedFailure: "failed to create organization unit",
 			expectError:     true,
 			expectNilResult: true,

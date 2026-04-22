@@ -1693,7 +1693,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_StoreError() {
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_NameConflict() {
@@ -1778,7 +1778,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_NameCheckStoreEr
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 // TestValidateApplicationForUpdate_FieldValidationErrors tests validation errors for
@@ -2115,7 +2115,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_OAuthCertError() {
 	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
 
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 // TestDeleteApplication_OAuthCertError_ClientError verifies that when OAuth app certificate deletion fails
@@ -3266,7 +3266,7 @@ func (suite *ServiceTestSuite) TestValidateApplication_StoreErrorNonNotFound() {
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 //nolint:dupl // Testing different URL validation scenarios
@@ -3409,7 +3409,7 @@ func (suite *ServiceTestSuite) runCreateApplicationStoreErrorTest() {
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorNonNotFound() {
@@ -3439,7 +3439,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorNonNotFound() {
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingName() {
@@ -3479,7 +3479,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingName(
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingClientID() {
@@ -3555,7 +3555,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingClien
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWithRollback() {
@@ -3611,7 +3611,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWithRollback() {
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 // fails with ClientErrorType (non-NotFound)
@@ -3667,7 +3667,7 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_GetCertificateSe
 
 	assert.Nil(suite.T(), returnCert)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 // TestUpdateApplicationCertificate_UpdateCertificateClientError tests when UpdateCertificateByID
@@ -3754,7 +3754,7 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_UpdateCertificat
 
 	assert.Nil(suite.T(), returnCert)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 // TestUpdateApplicationCertificate_CreateCertificateClientError tests when CreateCertificate
@@ -3829,7 +3829,7 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_CreateCertificat
 
 	assert.Nil(suite.T(), returnCert)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 // TestUpdateApplicationCertificate_DeleteCertificateClientError tests when DeleteCertificateByReference
@@ -3910,7 +3910,7 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_DeleteCertificat
 
 	assert.Nil(suite.T(), returnCert)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 // TestValidateAllowedUserTypes_EmptyString tests when an empty string is provided
@@ -4268,7 +4268,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_CertificateCreationError() 
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestCreateApplication_WithOAuthCertificate_Success() {
@@ -4444,7 +4444,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_OAuthCertificateCreationErr
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithOAuthCertRollback() {
@@ -4504,7 +4504,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithOAuthCertRoll
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithBothAppAndOAuthCertRollback() {
@@ -4572,7 +4572,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithBothAppAndOAu
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestUpdateApplication_NotFound() {
@@ -4750,7 +4750,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_AppCertificateUpdateError()
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 // TestUpdateApplicationCertificate_InvalidCertNoExistingCert verifies that when there is no existing
@@ -5216,7 +5216,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreFails_RollbackCertFail
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 // TestCreateApplication_ConsentSyncFails_AppDeleteFails verifies that when consent sync fails
@@ -5462,7 +5462,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_OAuthCertCreationError_With
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestCreateApplication_OAuthCertCreationError_WithAppCertRollbackFailure() {
@@ -5530,7 +5530,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_OAuthCertCreationError_With
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), ErrorCertificateServerError.Code, svcErr.Code)
+	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 // TestUpdateApplication_WithOAuthConfig_Success tests successful update of an application with OAuth configuration.
@@ -6246,7 +6246,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthCertUpdateError() {
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 // TestUpdateApplication_OAuthStoreErrorWithRollback tests when store update fails with OAuth cert rollback.
@@ -6353,7 +6353,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthStoreErrorWithRollback
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 // TestUpdateApplication_OAuthTokenConfigUpdate tests updating OAuth token configuration.

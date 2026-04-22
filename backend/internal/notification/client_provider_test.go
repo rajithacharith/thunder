@@ -26,6 +26,7 @@ import (
 	"github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 )
 
 type ClientProviderTestSuite struct {
@@ -168,7 +169,7 @@ func (suite *ClientProviderTestSuite) TestGetClientWithError() {
 			client, err := suite.provider.GetClient(tc.sender)
 			suite.NotNil(err)
 			if err != nil {
-				suite.Equal(ErrorInternalServerError.Code, err.Code)
+				suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 			}
 			suite.Nil(client)
 		})

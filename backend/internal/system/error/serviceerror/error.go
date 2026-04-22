@@ -92,7 +92,17 @@ var (
 		},
 	}
 
-	// EncodingError is the error returned when encoding the response.
-	ErrorEncodingError = "{Code: \"SSE-5001\",Error: \"Encoding error\"," +
-		"ErrorDescription: \"An error occurred while encoding the response\"}"
+	// ErrorEncodingError is the error returned when encoding the response fails.
+	ErrorEncodingError = ServiceError{
+		Type: ServerErrorType,
+		Code: "SSE-5001",
+		Error: core.I18nMessage{
+			Key:          "error.encoding_error",
+			DefaultValue: "Encoding error",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.encoding_error_description",
+			DefaultValue: "An error occurred while encoding the response",
+		},
+	}
 )

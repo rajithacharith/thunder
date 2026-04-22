@@ -134,9 +134,9 @@ func (eh *exportHandler) HandleExportZipRequest(w http.ResponseWriter, r *http.R
 	if err := eh.generateAndSendZipResponse(w, logger, exportResponse); err != nil {
 		logger.Error("Error generating ZIP response", log.Error(err))
 		errResp := apierror.ErrorResponse{
-			Code:        ErrorInternalServerError.Code,
-			Message:     ErrorInternalServerError.Error,
-			Description: ErrorInternalServerError.ErrorDescription,
+			Code:        serviceerror.InternalServerError.Code,
+			Message:     serviceerror.InternalServerError.Error,
+			Description: serviceerror.InternalServerError.ErrorDescription,
 		}
 		sysutils.WriteErrorResponse(w, http.StatusInternalServerError, errResp)
 		return

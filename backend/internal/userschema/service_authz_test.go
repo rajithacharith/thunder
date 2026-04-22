@@ -162,7 +162,7 @@ func (s *AuthzTestSuite) TestGetUserSchemaList_AuthzServiceError() {
 	resp, svcErr := svc.GetUserSchemaList(context.Background(), 10, 0, false)
 	s.Nil(resp)
 	s.Require().NotNil(svcErr)
-	s.Equal(ErrorInternalServerError.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *AuthzTestSuite) TestGetUserSchemaList_NilAuthzService() {
@@ -238,7 +238,7 @@ func (s *AuthzTestSuite) TestCreateUserSchema_AuthzError() {
 	})
 	s.Nil(result)
 	s.Require().NotNil(svcErr)
-	s.Equal(ErrorInternalServerError.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 // ---- GetUserSchema ----
@@ -279,7 +279,7 @@ func (s *AuthzTestSuite) TestGetUserSchema_AuthzError() {
 	result, svcErr := svc.GetUserSchema(context.Background(), "schema-1", false)
 	s.Nil(result)
 	s.Require().NotNil(svcErr)
-	s.Equal(ErrorInternalServerError.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 // ---- GetUserSchemaByName ----
@@ -320,7 +320,7 @@ func (s *AuthzTestSuite) TestGetUserSchemaByName_AuthzError() {
 	result, svcErr := svc.GetUserSchemaByName(context.Background(), "employee")
 	s.Nil(result)
 	s.Require().NotNil(svcErr)
-	s.Equal(ErrorInternalServerError.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 // ---- UpdateUserSchema ----
@@ -395,7 +395,7 @@ func (s *AuthzTestSuite) TestUpdateUserSchema_AuthzError() {
 	})
 	s.Nil(result)
 	s.Require().NotNil(svcErr)
-	s.Equal(ErrorInternalServerError.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 // ---- DeleteUserSchema ----
@@ -446,7 +446,7 @@ func (s *AuthzTestSuite) TestDeleteUserSchema_AuthzError() {
 
 	svcErr := svc.DeleteUserSchema(context.Background(), "schema-1")
 	s.Require().NotNil(svcErr)
-	s.Equal(ErrorInternalServerError.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *AuthzTestSuite) TestDeleteUserSchema_NotFound_StillChecksAuthz() {
