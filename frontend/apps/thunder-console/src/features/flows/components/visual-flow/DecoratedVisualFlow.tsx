@@ -151,8 +151,24 @@ function DecoratedVisualFlow({
   const updateNodeInternals: UpdateNodeInternals = useUpdateNodeInternals();
   const {deleteComponent} = useComponentDelete();
   const {isResourcePanelOpen, isResourcePropertiesPanelOpen} = useUIPanelState();
-  const {isFlowMetadataLoading, metadata} = useFlowConfig();
+  const {isFlowMetadataLoading, metadata, setFlowNodes} = useFlowConfig();
   const {onResourceDropOnCanvas} = useInteractionState();
+
+  // Sync controlled nodes to the shared FlowConfig context so that
+  // ValidationProvider (which sits above this ReactFlowProvider) can
+  // compute validation notifications from the current node data.
+  // Only sync when node data actually changes — skip position-only
+  // updates (drag) to avoid unnecessary validation recomputation.
+  const prevNodeDataRef = useRef<string>('');
+
+  useEffect(() => {
+    const dataFingerprint = nodes.map((n) => `${n.id}:${JSON.stringify(n.data)}`).join('|');
+
+    if (dataFingerprint !== prevNodeDataRef.current) {
+      prevNodeDataRef.current = dataFingerprint;
+      setFlowNodes(nodes);
+    }
+  }, [nodes, setFlowNodes]);
   const {generateStepElement} = useGenerateStepElement();
   const {t} = useTranslation();
   const navigate = useNavigate();

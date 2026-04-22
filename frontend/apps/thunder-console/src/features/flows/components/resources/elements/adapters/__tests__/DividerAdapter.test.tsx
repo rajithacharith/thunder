@@ -30,10 +30,6 @@ vi.mock('react-i18next', () => ({
   Trans: ({children}: {children: ReactNode}) => children,
 }));
 
-vi.mock('@/features/flows/hooks/useRequiredFields', () => ({
-  default: vi.fn(),
-}));
-
 describe('DividerAdapter', () => {
   const createMockElement = (overrides: Partial<FlowElement> & Record<string, unknown> = {}): FlowElement =>
     ({
@@ -119,19 +115,6 @@ describe('DividerAdapter', () => {
 
       const divider = container.querySelector('hr');
       expect(divider).toBeInTheDocument();
-    });
-  });
-
-  describe('Validation', () => {
-    it('should call useRequiredFields with resource', async () => {
-      const useRequiredFields = await import('@/features/flows/hooks/useRequiredFields');
-      const mockUseRequiredFields = vi.mocked(useRequiredFields.default);
-
-      const resource = createMockElement();
-
-      render(<DividerAdapter resource={resource} />);
-
-      expect(mockUseRequiredFields).toHaveBeenCalled();
     });
   });
 

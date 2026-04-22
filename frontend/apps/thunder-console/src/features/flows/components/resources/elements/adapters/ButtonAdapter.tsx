@@ -20,19 +20,12 @@ import {useTemplateLiteralResolver} from '@thunder/hooks';
 import {Button, type ButtonProps, type SxProps, type Theme} from '@wso2/oxygen-ui';
 import {Position} from '@xyflow/react';
 import {useMemo, type ReactElement, type ReactNode} from 'react';
-import {Trans, useTranslation} from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 import NodeHandle from './NodeHandle';
 import TemplatePlaceholder, {containsTemplateLiteral} from './TemplatePlaceholder';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
-import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
-import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import {ButtonVariants, type Element as FlowElement} from '@/features/flows/models/elements';
 import resolveStaticResourcePath from '@/features/flows/utils/resolveStaticResourcePath';
-
-const BUTTON_VALIDATION_FIELD_NAMES = {
-  label: 'label',
-  variant: 'variant',
-} as const;
 
 /**
  * Configuration interface for Button element.
@@ -78,35 +71,6 @@ export interface ButtonAdapterPropsInterface {
 function ButtonAdapter({resource, elementIndex = undefined}: ButtonAdapterPropsInterface): ReactElement {
   const {t} = useTranslation();
   const {resolve} = useTemplateLiteralResolver();
-
-  const generalMessage: ReactElement = useMemo(
-    () => (
-      <Trans
-        i18nKey="flows:core.validation.fields.button.general"
-        values={{id: resource.id}}
-        components={{code: <code />}}
-      >
-        Required fields are not properly configured for the button with ID <code>{resource.id}</code>.
-      </Trans>
-    ),
-    [resource?.id],
-  );
-
-  const validationFields: RequiredFieldInterface[] = useMemo(
-    () => [
-      {
-        errorMessage: t('flows:core.validation.fields.button.label'),
-        name: BUTTON_VALIDATION_FIELD_NAMES.label,
-      },
-      {
-        errorMessage: t('flows:core.validation.fields.button.variant'),
-        name: BUTTON_VALIDATION_FIELD_NAMES.variant,
-      },
-    ],
-    [t],
-  );
-
-  useRequiredFields(resource, generalMessage, validationFields);
 
   const buttonConfig = resource.config as ButtonConfig | undefined;
 

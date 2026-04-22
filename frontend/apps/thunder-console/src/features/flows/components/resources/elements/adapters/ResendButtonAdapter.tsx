@@ -19,12 +19,10 @@
 import {useTemplateLiteralResolver} from '@thunder/hooks';
 import {Button, type ButtonProps, type SxProps, type Theme} from '@wso2/oxygen-ui';
 import {Position} from '@xyflow/react';
-import {useMemo, type ReactElement} from 'react';
-import {Trans, useTranslation} from 'react-i18next';
+import type {ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
 import NodeHandle from './NodeHandle';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
-import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
-import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 
 /**
@@ -64,31 +62,6 @@ export interface ResendButtonAdapterPropsInterface {
 function ResendButtonAdapter({resource}: ResendButtonAdapterPropsInterface): ReactElement {
   const {t} = useTranslation();
   const {resolve} = useTemplateLiteralResolver();
-
-  const generalMessage: ReactElement = useMemo(
-    () => (
-      <Trans
-        i18nKey="flows:core.validation.fields.button.general"
-        values={{id: resource.id}}
-        components={{code: <code />}}
-      >
-        Required fields are not properly configured for the resend button with ID <code>{resource.id}</code>.
-      </Trans>
-    ),
-    [resource.id],
-  );
-
-  const fields: RequiredFieldInterface[] = useMemo(
-    () => [
-      {
-        errorMessage: t('flows:core.validation.fields.button.label'),
-        name: 'label',
-      },
-    ],
-    [t],
-  );
-
-  useRequiredFields(resource, generalMessage, fields);
 
   const config: ButtonProps = {
     color: 'secondary',

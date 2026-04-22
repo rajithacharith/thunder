@@ -35,10 +35,6 @@ vi.mock('@thunder/hooks', () => ({
   }),
 }));
 
-vi.mock('@/features/flows/hooks/useRequiredFields', () => ({
-  default: vi.fn(),
-}));
-
 vi.mock('@/features/flows/components/resources/elements/hint', () => ({
   Hint: ({hint}: {hint: string}) => <span data-testid="hint">{hint}</span>,
 }));
@@ -128,21 +124,6 @@ describe('SelectAdapter', () => {
       const {container} = render(<SelectAdapter resource={resource} />);
 
       expect(container.querySelector('.MuiFormControl-root')).toBeInTheDocument();
-    });
-  });
-
-  describe('Validation', () => {
-    it('should call useRequiredFields with the resource', async () => {
-      const useRequiredFields = await import('@/features/flows/hooks/useRequiredFields');
-      const resource = createMockElement();
-
-      render(<SelectAdapter resource={resource} />);
-
-      expect(useRequiredFields.default).toHaveBeenCalledWith(
-        resource,
-        expect.anything(),
-        expect.arrayContaining([expect.objectContaining({name: 'label'}), expect.objectContaining({name: 'ref'})]),
-      );
     });
   });
 });

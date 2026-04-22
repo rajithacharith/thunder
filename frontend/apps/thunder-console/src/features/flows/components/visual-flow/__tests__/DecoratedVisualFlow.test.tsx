@@ -37,6 +37,7 @@ vi.mock('../../../hooks/useFlowConfig', () => ({
   default: () => ({
     isFlowMetadataLoading: false,
     metadata: undefined,
+    setFlowNodes: vi.fn(),
   }),
 }));
 

@@ -31,10 +31,6 @@ vi.mock('react-i18next', () => ({
   Trans: ({children}: {children: ReactNode}) => children,
 }));
 
-vi.mock('@/features/flows/hooks/useRequiredFields', () => ({
-  default: vi.fn(),
-}));
-
 vi.mock('../NodeHandle', () => ({
   default: ({id, type, position}: {id: string; type: string; position: string}) => (
     <div data-testid="node-handle" data-id={id} data-type={type} data-position={position} />
@@ -157,19 +153,6 @@ describe('ResendButtonAdapter', () => {
       render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
 
       expect(screen.getByRole('button')).toHaveTextContent('');
-    });
-  });
-
-  describe('Validation', () => {
-    it('should call useRequiredFields with resource', async () => {
-      const useRequiredFields = await import('@/features/flows/hooks/useRequiredFields');
-      const mockUseRequiredFields = vi.mocked(useRequiredFields.default);
-
-      const resource = createMockElement();
-
-      render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
-
-      expect(mockUseRequiredFields).toHaveBeenCalled();
     });
   });
 });

@@ -139,6 +139,8 @@ describe('ResourceProperties', () => {
       flowEdgeTypes: {},
       setFlowNodeTypes: vi.fn(),
       setFlowEdgeTypes: vi.fn(),
+      flowNodes: [],
+      setFlowNodes: vi.fn(),
     };
 
     function Wrapper({children}: {children: ReactNode}) {
