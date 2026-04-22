@@ -146,7 +146,7 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 
 	// Include meta in the response if verbose mode is enabled
 	if ctx.Verbose && n.GetMeta() != nil {
-		nodeResp.Meta = n.GetMeta()
+		nodeResp.Meta = n.trimMetaToRequestedInputs(nodeResp.Inputs, nodeResp.Actions)
 	}
 
 	nodeResp.Status = common.NodeStatusIncomplete
@@ -260,6 +260,18 @@ func (n *promptNode) appendMissingInputs(ctx *NodeContext, nodeResp *common.Node
 	requireInputs := false
 	for _, input := range requiredInputs {
 		if _, ok := ctx.UserInputs[input.Identifier]; !ok {
+			if _, ok := ctx.RuntimeData[input.Identifier]; ok {
+				logger.Debug("Input available in runtime data, skipping",
+					log.String("identifier", input.Identifier), log.Bool("isRequired", input.Required))
+				continue
+			}
+			if value, ok := ctx.ForwardedData[input.Identifier]; ok {
+				if _, isString := value.(string); isString {
+					logger.Debug("Input available in forwarded data, skipping",
+						log.String("identifier", input.Identifier), log.Bool("isRequired", input.Required))
+					continue
+				}
+			}
 			if input.Required {
 				requireInputs = true
 			}
@@ -404,4 +416,86 @@ func (n *promptNode) getActionTypeForRef(actionRef string) string {
 		}
 	}
 	return ""
+}
+
+// trimMetaToRequestedInputs returns a copy of n.meta with the "components" list trimmed to only
+// include components matching the given inputs and actions (plus structural components like TEXT
+// and BLOCK containers that are not themselves inputs or actions).
+func (n *promptNode) trimMetaToRequestedInputs(inputs []common.Input, actions []common.Action) interface{} {
+	metaMap, ok := n.meta.(map[string]interface{})
+	if !ok {
+		return n.meta
+	}
+
+	allowedRefs := make(map[string]struct{})
+	for _, input := range inputs {
+		if input.Ref != "" {
+			allowedRefs[input.Ref] = struct{}{}
+		}
+	}
+	for _, action := range actions {
+		if action.Ref != "" {
+			allowedRefs[action.Ref] = struct{}{}
+		}
+	}
+
+	knownInputActionRefs := make(map[string]struct{})
+	for _, input := range n.getAllInputs() {
+		if input.Ref != "" {
+			knownInputActionRefs[input.Ref] = struct{}{}
+		}
+	}
+	for _, action := range n.getAllActions() {
+		if action.Ref != "" {
+			knownInputActionRefs[action.Ref] = struct{}{}
+		}
+	}
+
+	trimmed := make(map[string]interface{}, len(metaMap))
+	for k, v := range metaMap {
+		trimmed[k] = v
+	}
+	if comps, ok := metaMap["components"]; ok {
+		if compSlice, ok := comps.([]interface{}); ok {
+			trimmed["components"] = filterMetaComponents(compSlice, allowedRefs, knownInputActionRefs)
+		}
+	}
+	return trimmed
+}
+
+// filterMetaComponents filters a meta components slice, dropping satisfied input/action components
+// while keeping structural components (TEXT, BLOCK containers, etc.) and recursively trimming
+// their children.
+func filterMetaComponents(comps []interface{}, allowedRefs, knownInputActionRefs map[string]struct{}) []interface{} {
+	result := make([]interface{}, 0, len(comps))
+	for _, comp := range comps {
+		compMap, ok := comp.(map[string]interface{})
+		if !ok {
+			result = append(result, comp)
+			continue
+		}
+
+		id, _ := compMap["id"].(string)
+		if _, isKnown := knownInputActionRefs[id]; isKnown {
+			if _, isAllowed := allowedRefs[id]; isAllowed {
+				result = append(result, comp)
+			}
+			continue
+		}
+
+		// Structural component — always keep; recurse into children if present.
+		if childComps, hasChildren := compMap["components"]; hasChildren {
+			if childSlice, ok := childComps.([]interface{}); ok {
+				trimmedComp := make(map[string]interface{}, len(compMap))
+				for k, v := range compMap {
+					trimmedComp[k] = v
+				}
+				trimmedComp["components"] = filterMetaComponents(childSlice, allowedRefs, knownInputActionRefs)
+				result = append(result, trimmedComp)
+				continue
+			}
+		}
+		result = append(result, comp)
+	}
+	return result
 }
