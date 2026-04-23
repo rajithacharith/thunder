@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {SettingsCard} from '@thunder/components';
+import {SettingsCard, getInitials} from '@thunder/components';
 import {useDataGridLocaleText} from '@thunder/hooks';
 import {Box, Avatar, DataGrid, IconButton} from '@wso2/oxygen-ui';
 import {AppWindow, Trash2, User, Users} from '@wso2/oxygen-ui-icons-react';
@@ -24,7 +24,6 @@ import {useState, useMemo, type JSX, type ReactNode} from 'react';
 import {useTranslation} from 'react-i18next';
 import useGetGroupMembers from '../../../api/useGetGroupMembers';
 import type {Member} from '../../../models/group';
-import getInitials from '@/utils/getInitials';
 
 interface ManageMembersSectionProps {
   groupId: string;

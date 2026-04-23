@@ -16,16 +16,21 @@
  * under the License.
  */
 
-// Lab Components
-export {default as BuilderFloatingPanel} from './lab/BuilderLayout/BuilderFloatingPanel';
-export {default as BuilderLayout} from './lab/BuilderLayout/BuilderLayout';
-export {default as BuilderPanelHeader} from './lab/BuilderLayout/BuilderPanelHeader';
-export {default as BuilderStaticPanel} from './lab/BuilderLayout/BuilderStaticPanel';
-export {default as EmojiPicker} from './lab/EmojiPicker/EmojiPicker';
-export {default as CopyableId} from './lab/CopyableId';
-export {default as Kbd} from './lab/Kbd';
-export {default as generateIconSuggestions} from './lab/EmojiPicker/utils/generateIconSuggestions';
-export {default as ResourceAvatar} from './lab/ResourceAvatar';
-export {default as ResourceLogoDialog} from './lab/ResourceLogoDialog';
-export {default as SettingsCard} from './lab/SettingsCard';
-export {default as UnsavedChangesBar} from './lab/UnsavedChangesBar';
+/* -------------------------- LAB -------------------------- */
+
+// Components
+export {default as BuilderFloatingPanel} from './lab/components/BuilderLayout/BuilderFloatingPanel';
+export {default as BuilderLayout} from './lab/components/BuilderLayout/BuilderLayout';
+export {default as BuilderPanelHeader} from './lab/components/BuilderLayout/BuilderPanelHeader';
+export {default as BuilderStaticPanel} from './lab/components/BuilderLayout/BuilderStaticPanel';
+export {default as EmojiPicker} from './lab/components/EmojiPicker/EmojiPicker';
+export {default as CopyableId} from './lab/components/CopyableId';
+export {default as Kbd} from './lab/components/Kbd';
+export {default as generateIconSuggestions} from './lab/components/EmojiPicker/utils/generateIconSuggestions';
+export {default as ResourceAvatar} from './lab/components/ResourceAvatar';
+export {default as ResourceLogoDialog} from './lab/components/ResourceLogoDialog';
+export {default as SettingsCard} from './lab/components/SettingsCard';
+export {default as UnsavedChangesBar} from './lab/components/UnsavedChangesBar';
+
+// Utils
+export {default as getInitials} from './lab/utils/getInitials';

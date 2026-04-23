@@ -129,8 +129,8 @@ vi.mock('../../utils/getConfigurationTypeFromTemplate', () => ({
   default: vi.fn(() => 'URL'),
 }));
 
-vi.mock('../../../organization-units/api/useHasMultipleOUs', () => ({
-  default: () => ({
+vi.mock('@thunder/configure-organization-units', () => ({
+  useHasMultipleOUs: () => ({
     hasMultipleOUs: false,
     isLoading: false,
     ouList: [],

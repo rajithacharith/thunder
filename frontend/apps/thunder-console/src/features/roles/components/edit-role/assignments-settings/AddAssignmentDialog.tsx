@@ -16,7 +16,9 @@
  * under the License.
  */
 
+import {useGetUsers} from '@thunder/configure-users';
 import {useDataGridLocaleText} from '@thunder/hooks';
+import type {User} from '@thunder/types';
 import {
   Dialog,
   DialogTitle,
@@ -33,15 +35,13 @@ import {
   Tab,
   useTheme,
 } from '@wso2/oxygen-ui';
-import {AppWindow, User, Users} from '@wso2/oxygen-ui-icons-react';
+import {AppWindow, User as UserIcon, Users} from '@wso2/oxygen-ui-icons-react';
 import {useState, useMemo, useCallback, type JSX, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
 import useGetApplications from '../../../../applications/api/useGetApplications';
 import type {BasicApplication} from '../../../../applications/models/application';
 import useGetGroups from '../../../../groups/api/useGetGroups';
 import type {GroupBasic} from '../../../../groups/models/group';
-import useGetUsers from '../../../../users/api/useGetUsers';
-import type {ApiUser} from '../../../../users/models/users';
 import useGetRoleAssignments from '../../../api/useGetRoleAssignments';
 import type {RoleAssignment} from '../../../models/role';
 
@@ -155,7 +155,7 @@ export default function AddAssignmentDialog({
     [applicationsData, assignedAppIds],
   );
 
-  const userColumns: DataGrid.GridColDef<ApiUser>[] = useMemo(
+  const userColumns: DataGrid.GridColDef<User>[] = useMemo(
     () => [
       {
         field: 'avatar',
@@ -175,7 +175,7 @@ export default function AddAssignmentDialog({
                 ...theme.applyStyles('dark', {backgroundColor: theme.vars?.palette.grey[900]}),
               }}
             >
-              <User size={14} />
+              <UserIcon size={14} />
             </Avatar>
           </Box>
         ),

@@ -42,8 +42,9 @@ vi.mock('../../api/useCreateGroup', () => ({
   }),
 }));
 
-vi.mock('../../../organization-units/components/OrganizationUnitTreePicker', () => ({
-  default: ({value, onChange}: {value: string; onChange: (id: string) => void}) => (
+const mockUseHasMultipleOUs = vi.fn();
+vi.mock('@thunder/configure-organization-units', () => ({
+  OrganizationUnitTreePicker: ({value, onChange}: {value: string; onChange: (id: string) => void}) => (
     <div data-testid="ou-tree-picker">
       <span data-testid="ou-value">{value}</span>
       <button type="button" data-testid="select-ou" onClick={() => onChange('ou-123')}>
@@ -51,11 +52,7 @@ vi.mock('../../../organization-units/components/OrganizationUnitTreePicker', () 
       </button>
     </div>
   ),
-}));
-
-const mockUseHasMultipleOUs = vi.fn();
-vi.mock('../../../organization-units/api/useHasMultipleOUs', () => ({
-  default: (): unknown => mockUseHasMultipleOUs(),
+  useHasMultipleOUs: (): unknown => mockUseHasMultipleOUs(),
 }));
 
 function renderPage() {
