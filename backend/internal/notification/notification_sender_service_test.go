@@ -29,6 +29,7 @@ import (
 	"github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/notification/messagemock"
 )
@@ -122,12 +123,12 @@ func (suite *NotificationSenderServiceTestSuite) TestSendSMS_GetClientError() {
 	sender := suite.getValidSender()
 	suite.mockSenderMgtSvc.On("GetSender", mock.Anything, "sender-001").Return(sender, nil).Once()
 	suite.mockClientProvider.EXPECT().GetClient(mock.Anything).
-		Return(nil, &ErrorInternalServerError).Once()
+		Return(nil, &serviceerror.InternalServerError).Once()
 
 	err := suite.service.Send(context.Background(), common.ChannelTypeSMS, "sender-001",
 		common.NotificationData{Recipient: "+94714627887", Body: "Test message"})
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *NotificationSenderServiceTestSuite) TestSendSMS_UnsupportedChannel() {
@@ -156,5 +157,5 @@ func (suite *NotificationSenderServiceTestSuite) TestSendSMS_ClientSendError() {
 	err := suite.service.Send(context.Background(), common.ChannelTypeSMS, "sender-001",
 		common.NotificationData{Recipient: "+94714627887", Body: "Test message"})
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }

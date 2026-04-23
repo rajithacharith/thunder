@@ -72,7 +72,7 @@ func (s *notificationSenderService) Send(ctx context.Context, channel common.Cha
 
 	if err := _client.Send(channel, data); err != nil {
 		s.logger.Error("Failed to send notification", log.String("channel", string(channel)), log.Error(err))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	return nil

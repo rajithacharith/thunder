@@ -80,7 +80,7 @@ func (e *userExporter) GetAllResourceIDs(ctx context.Context) ([]string, *servic
 					ids = append(ids, user.ID)
 					continue
 				}
-				return nil, &ErrorInternalServerError
+				return nil, &serviceerror.InternalServerError
 			}
 			if !isDeclarative {
 				ids = append(ids, user.ID)

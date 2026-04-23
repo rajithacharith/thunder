@@ -97,7 +97,7 @@ func (us *userService) GetUserList(ctx context.Context, limit, offset int,
 		ctx, security.ActionListUsers, security.ResourceTypeOU)
 	if svcErr != nil {
 		logger.Error("Failed to resolve accessible resources for listing users", log.Any("error", svcErr))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	// Unfiltered path: system-level caller — return all users.
@@ -454,13 +454,13 @@ func (as *userService) GetUserGroups(ctx context.Context, userID string, limit, 
 	totalCount, err := as.entityService.GetGroupCountForEntity(ctx, userID)
 	if err != nil {
 		logger.Error("Failed to get group count for user", log.String("userID", userID), log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	entityGroups, err := as.entityService.GetEntityGroups(ctx, userID, limit, offset)
 	if err != nil {
 		logger.Error("Failed to get user groups", log.String("id", userID), log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 	path := fmt.Sprintf("/users/%s/groups", userID)
 	links := utils.BuildPaginationLinks(path, limit, offset, totalCount, "")
@@ -581,7 +581,7 @@ func (us *userService) UpdateUserAttributes(
 	// Credentials must go through UpdateUserCredentials, which enforces its own authz and validation.
 	if us.userSchemaService == nil {
 		logger.Error("User schema service is not configured for user operations")
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 	schemaCredentialAttributes, svcErr := us.userSchemaService.GetCredentialAttributes(ctx, existingUser.Type)
 	if svcErr != nil {
@@ -819,7 +819,7 @@ func (us *userService) validateOrganizationUnitForUserType(
 
 	if us.ouService == nil {
 		logger.Error("Organization unit service is not configured for user operations")
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	exists, svcErr := us.ouService.IsOrganizationUnitExists(ctx, oUID)
@@ -842,7 +842,7 @@ func (us *userService) validateOrganizationUnitForUserType(
 
 	if us.userSchemaService == nil {
 		logger.Error("User schema service is not configured for user operations")
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	userSchema, svcErr := us.userSchemaService.GetUserSchemaByName(ctx, userType)
@@ -852,12 +852,12 @@ func (us *userService) validateOrganizationUnitForUserType(
 		}
 		logger.Error("Failed to retrieve user schema",
 			log.String("userType", userType), log.Any("error", svcErr))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	if userSchema == nil {
 		logger.Error("User schema service returned nil response", log.String("userType", userType))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	if userSchema.OUID == oUID {
@@ -932,7 +932,7 @@ func logErrorAndReturnServerError(
 		fields = append(fields, log.Error(err))
 	}
 	logger.Error(message, fields...)
-	return &ErrorInternalServerError
+	return &serviceerror.InternalServerError
 }
 
 // mapEntityError maps entity service errors to user service errors.
@@ -974,13 +974,13 @@ func mapOUServiceError(
 		logFields := append([]log.Field{}, fields...)
 		logFields = append(logFields, log.Any("error", svcErr))
 		logger.Error(fmt.Sprintf("Unexpected organization unit client error while %s", context), logFields...)
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	logFields := append([]log.Field{}, fields...)
 	logFields = append(logFields, log.Any("error", svcErr))
 	logger.Error(fmt.Sprintf("Organization unit service error while %s", context), logFields...)
-	return &ErrorInternalServerError
+	return &serviceerror.InternalServerError
 }
 
 // checkUserDeclarative checks if a user is declarative and returns an error if it is.
@@ -994,7 +994,7 @@ func (us *userService) checkUserDeclarative(
 		}
 		logger.Error("Failed to check if user is declarative",
 			log.String("userID", userID), log.Error(err))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 	if isDeclarative {
 		return &ErrorCannotModifyDeclarativeResource
@@ -1013,7 +1013,7 @@ func (us *userService) checkUserAccess(
 	if svcErr != nil {
 		logger.Error("Failed to check authorization for action",
 			log.String("action", string(action)), log.Any("error", svcErr))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 	if !allowed {
 		return &serviceerror.ErrorUnauthorized

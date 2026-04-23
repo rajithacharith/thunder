@@ -630,7 +630,7 @@ func (suite *HandlerTestSuite) TestHandleExportJSONRequest_InvalidJSON() {
 // TestHandleExportJSONRequest_ServiceError tests service error handling for JSON export.
 func (suite *HandlerTestSuite) TestHandleExportJSONRequest_ServiceError() {
 	// Setup mock to return service error
-	suite.testServiceErrorResponse("POST", "/export/json", "app1", &ErrorInternalServerError, "EXP-1002")
+	suite.testServiceErrorResponse("POST", "/export/json", "app1", &serviceerror.InternalServerError, "EXP-1002")
 }
 
 // TestHandleExportZipRequest_Success tests successful ZIP export.
@@ -731,7 +731,7 @@ func (suite *HandlerTestSuite) TestHandleError_ServerError() {
 	w := httptest.NewRecorder()
 
 	// Create server error
-	serverErr := &ErrorInternalServerError
+	serverErr := &serviceerror.InternalServerError
 
 	// Execute
 	suite.handler.handleError(w, serverErr)
@@ -743,9 +743,9 @@ func (suite *HandlerTestSuite) TestHandleError_ServerError() {
 	var errResp map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &errResp)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "EXP-5001", errResp["code"])
+	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, errResp["code"])
 	assert.Equal(suite.T(), "Internal server error", errResp["message"].(map[string]interface{})["defaultValue"])
-	assert.Equal(suite.T(), "An unexpected error occurred while processing the export request",
+	assert.Equal(suite.T(), "An unexpected error occurred while processing the request",
 		errResp["description"].(map[string]interface{})["defaultValue"])
 }
 

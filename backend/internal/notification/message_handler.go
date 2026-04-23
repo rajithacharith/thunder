@@ -63,7 +63,7 @@ func (h *messageNotificationSenderHandler) HandleSenderListRequest(w http.Respon
 		senderResponse, err := getSenderResponseFromDTO(&sender)
 		if err != nil {
 			logger.Error("Failed to convert sender to response", log.String("sender", sender.Name), log.Error(err))
-			h.handleError(w, &ErrorInternalServerError, "Failed to convert sender to response: "+err.Error())
+			h.handleError(w, &serviceerror.InternalServerError, "Failed to convert sender to response: "+err.Error())
 			return
 		}
 		senderResponses = append(senderResponses, senderResponse)
@@ -85,7 +85,7 @@ func (h *messageNotificationSenderHandler) HandleSenderCreateRequest(w http.Resp
 	senderDTO, err := getDTOFromSenderRequest(sender)
 	if err != nil {
 		logger.Error("Failed to process sender request", log.Error(err))
-		h.handleError(w, &ErrorInternalServerError, "Failed to process sender request: "+err.Error())
+		h.handleError(w, &serviceerror.InternalServerError, "Failed to process sender request: "+err.Error())
 		return
 	}
 
@@ -109,7 +109,7 @@ func (h *messageNotificationSenderHandler) HandleSenderCreateRequest(w http.Resp
 	senderResponse, err := getSenderResponseFromDTO(createdSender)
 	if err != nil {
 		logger.Error("Failed to convert sender to response", log.String("sender", createdSender.Name), log.Error(err))
-		h.handleError(w, &ErrorInternalServerError, "Failed to convert sender to response: "+err.Error())
+		h.handleError(w, &serviceerror.InternalServerError, "Failed to convert sender to response: "+err.Error())
 		return
 	}
 
@@ -143,7 +143,7 @@ func (h *messageNotificationSenderHandler) HandleSenderGetRequest(w http.Respons
 	senderResponse, err := getSenderResponseFromDTO(sender)
 	if err != nil {
 		logger.Error("Failed to convert sender to response", log.String("sender", sender.Name), log.Error(err))
-		h.handleError(w, &ErrorInternalServerError, "Failed to convert sender to response: "+err.Error())
+		h.handleError(w, &serviceerror.InternalServerError, "Failed to convert sender to response: "+err.Error())
 		return
 	}
 
@@ -168,7 +168,7 @@ func (h *messageNotificationSenderHandler) HandleSenderUpdateRequest(w http.Resp
 	senderDTO, err := getDTOFromSenderRequest(sender)
 	if err != nil {
 		logger.Error("Failed to process sender request", log.Error(err))
-		h.handleError(w, &ErrorInternalServerError, "Failed to process sender request: "+err.Error())
+		h.handleError(w, &serviceerror.InternalServerError, "Failed to process sender request: "+err.Error())
 		return
 	}
 
@@ -181,7 +181,7 @@ func (h *messageNotificationSenderHandler) HandleSenderUpdateRequest(w http.Resp
 	senderResponse, err := getSenderResponseFromDTO(updatedSender)
 	if err != nil {
 		logger.Error("Failed to convert sender to response", log.String("sender", updatedSender.Name), log.Error(err))
-		h.handleError(w, &ErrorInternalServerError, "Failed to convert sender to response: "+err.Error())
+		h.handleError(w, &serviceerror.InternalServerError, "Failed to convert sender to response: "+err.Error())
 		return
 	}
 

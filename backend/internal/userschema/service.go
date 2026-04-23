@@ -238,7 +238,7 @@ func (us *userSchemaService) CreateUserSchema(
 	id, err := utils.GenerateUUIDv7()
 	if err != nil {
 		logger.Error("Failed to generate UUID", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	userSchema := UserSchema{
@@ -658,7 +658,7 @@ func (us *userSchemaService) checkUserSchemaAccess(
 	allowed, svcErr := us.authzService.IsActionAllowed(ctx, action,
 		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUserSchema, OUID: ouID})
 	if svcErr != nil {
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 	if !allowed {
 		return &serviceerror.ErrorUnauthorized
@@ -676,7 +676,7 @@ func (us *userSchemaService) getAccessibleResources(
 	accessible, svcErr := us.authzService.GetAccessibleResources(
 		ctx, action, security.ResourceTypeUserSchema)
 	if svcErr != nil {
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 	return accessible, nil
 }
@@ -689,14 +689,14 @@ func (us *userSchemaService) ensureOrganizationUnitExists(
 ) *serviceerror.ServiceError {
 	if us.ouService == nil {
 		logger.Error("Organization unit service is not configured for user schema operations")
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	exists, svcErr := us.ouService.IsOrganizationUnitExists(ctx, oUID)
 	if svcErr != nil {
 		logger.Error("Failed to verify organization unit existence",
 			log.String("oUID", oUID), log.Any("error", svcErr))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	if !exists {
@@ -791,7 +791,7 @@ func logAndReturnServerError(
 	err error,
 ) *serviceerror.ServiceError {
 	logger.Error(message, log.Error(err))
-	return &ErrorInternalServerError
+	return &serviceerror.InternalServerError
 }
 
 // validateUserSchemaDefinition validates the user schema definition without checking OU existence.
@@ -1096,5 +1096,5 @@ func wrapConsentServiceError(err *serviceerror.ServiceError, logger *log.Logger)
 	}
 
 	logger.Error("Failed to sync consent elements for the schema changes", log.Any("error", err))
-	return &ErrorInternalServerError
+	return &serviceerror.InternalServerError
 }

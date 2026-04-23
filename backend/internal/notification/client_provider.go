@@ -54,7 +54,7 @@ func (p *notificationClientProvider) GetClient(sender common.NotificationSenderD
 	}
 
 	if err != nil {
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	return _client, nil

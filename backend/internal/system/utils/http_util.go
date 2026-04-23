@@ -227,7 +227,15 @@ func WriteSuccessResponse(w http.ResponseWriter, statusCode int, data interface{
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(data); err != nil {
 		logger.Error("Failed to encode response", log.Error(err))
-		http.Error(w, serviceerror.ErrorEncodingError, http.StatusInternalServerError)
+		errResp := apierror.ErrorResponse{
+			Code:        serviceerror.ErrorEncodingError.Code,
+			Message:     serviceerror.ErrorEncodingError.Error,
+			Description: serviceerror.ErrorEncodingError.ErrorDescription,
+		}
+		b, _ := json.Marshal(errResp)
+		w.Header().Set(constants.ContentTypeHeaderName, constants.ContentTypeJSON)
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write(b)
 		return
 	}
 
@@ -245,6 +253,14 @@ func WriteErrorResponse(w http.ResponseWriter, statusCode int, errorResp apierro
 
 	if err := json.NewEncoder(w).Encode(errorResp); err != nil {
 		logger.Error("Failed to encode i18n error response", log.Error(err))
-		http.Error(w, serviceerror.ErrorEncodingError, http.StatusInternalServerError)
+		errResp := apierror.ErrorResponse{
+			Code:        serviceerror.ErrorEncodingError.Code,
+			Message:     serviceerror.ErrorEncodingError.Error,
+			Description: serviceerror.ErrorEncodingError.ErrorDescription,
+		}
+		b, _ := json.Marshal(errResp)
+		w.Header().Set(constants.ContentTypeHeaderName, constants.ContentTypeJSON)
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write(b)
 	}
 }

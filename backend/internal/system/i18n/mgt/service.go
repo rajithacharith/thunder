@@ -67,7 +67,7 @@ func (s *i18nService) ListLanguages() ([]string, *serviceerror.ServiceError) {
 	localeCodes, err := s.store.GetDistinctLanguages()
 	if err != nil {
 		s.logger.Error("Failed to get locales from store", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	// Ensure default language is always in the list
@@ -97,7 +97,7 @@ func (s *i18nService) ResolveTranslationsForKey(
 	trans, err := s.store.GetTranslationsByKey(key, namespace)
 	if err != nil {
 		s.logger.Error("Failed to get translation from store", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	if _, exists := trans[SystemLanguage]; !exists {
@@ -135,7 +135,7 @@ func (s *i18nService) ResolveTranslationsForKey(
 func (s *i18nService) SetTranslationOverrideForKey(
 	language string, namespace string, key string, value string) (
 	*TranslationResponse, *serviceerror.ServiceError) {
-	if err := declarativeresource.CheckDeclarativeUpdateI18n(); err != nil {
+	if err := declarativeresource.CheckDeclarativeUpdate(); err != nil {
 		return nil, err
 	}
 	if err := validate(language, namespace, key); err != nil {
@@ -155,7 +155,7 @@ func (s *i18nService) SetTranslationOverrideForKey(
 	// Use upsert to create or update
 	if err := s.store.UpsertTranslation(trans); err != nil {
 		s.logger.Error("Failed to set translation override", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	return &TranslationResponse{
@@ -169,7 +169,7 @@ func (s *i18nService) SetTranslationOverrideForKey(
 // ClearTranslationOverrideForKey removes the custom override for a single translation.
 func (s *i18nService) ClearTranslationOverrideForKey(
 	language string, namespace string, key string) *serviceerror.ServiceError {
-	if err := declarativeresource.CheckDeclarativeDeleteI18n(); err != nil {
+	if err := declarativeresource.CheckDeclarativeDelete(); err != nil {
 		return err
 	}
 	if err := validate(language, namespace, key); err != nil {
@@ -178,7 +178,7 @@ func (s *i18nService) ClearTranslationOverrideForKey(
 
 	if err := s.store.DeleteTranslation(language, key, namespace); err != nil {
 		s.logger.Error("Failed to clear translation override", log.Error(err))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	return nil
@@ -210,13 +210,13 @@ func (s *i18nService) ResolveTranslations(
 		allTranslations, err = s.store.GetTranslations()
 		if err != nil {
 			s.logger.Error("Failed to get translations from store", log.Error(err))
-			return nil, &ErrorInternalServerError
+			return nil, &serviceerror.InternalServerError
 		}
 	} else {
 		allTranslations, err = s.store.GetTranslationsByNamespace(namespace)
 		if err != nil {
 			s.logger.Error("Failed to get translations from store", log.Error(err))
-			return nil, &ErrorInternalServerError
+			return nil, &serviceerror.InternalServerError
 		}
 	}
 
@@ -260,7 +260,7 @@ func (s *i18nService) ResolveTranslations(
 func (s *i18nService) SetTranslationOverrides(
 	language string, translations map[string]map[string]string) (
 	*LanguageTranslationsResponse, *serviceerror.ServiceError) {
-	if err := declarativeresource.CheckDeclarativeUpdateI18n(); err != nil {
+	if err := declarativeresource.CheckDeclarativeUpdate(); err != nil {
 		return nil, err
 	}
 	if language == "" {
@@ -302,7 +302,7 @@ func (s *i18nService) SetTranslationOverrides(
 
 	if err := s.store.UpsertTranslationsByLanguage(language, flattenedTranslations); err != nil {
 		s.logger.Error("Failed to upsert translations", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	// TODO: return actual stored translations from DB
@@ -315,7 +315,7 @@ func (s *i18nService) SetTranslationOverrides(
 
 // ClearTranslationOverrides removes all custom overrides for a language.
 func (s *i18nService) ClearTranslationOverrides(language string) *serviceerror.ServiceError {
-	if err := declarativeresource.CheckDeclarativeDeleteI18n(); err != nil {
+	if err := declarativeresource.CheckDeclarativeDelete(); err != nil {
 		return err
 	}
 	if language == "" {
@@ -327,7 +327,7 @@ func (s *i18nService) ClearTranslationOverrides(language string) *serviceerror.S
 
 	if err := s.clearAllOverrides(language); err != nil {
 		s.logger.Error("Failed to clear overrides", log.Error(err))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	return nil

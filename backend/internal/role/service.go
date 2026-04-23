@@ -108,7 +108,7 @@ func (rs *roleService) GetRoleList(ctx context.Context, limit, offset int) (*Rol
 			return nil, &ResultLimitExceededInCompositeMode
 		}
 		logger.Error("Failed to get role count", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	roles, err := rs.roleStore.GetRoleList(ctx, limit, offset)
@@ -117,7 +117,7 @@ func (rs *roleService) GetRoleList(ctx context.Context, limit, offset int) (*Rol
 			return nil, &ResultLimitExceededInCompositeMode
 		}
 		logger.Error("Failed to list roles", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	response := &RoleList{
@@ -168,14 +168,14 @@ func (rs *roleService) CreateRole(
 			return nil, &ErrorOrganizationUnitNotFound
 		}
 		logger.Error("Failed to validate organization unit", log.String("error", svcErr.Error.DefaultValue))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	// Check if role name already exists in the organization unit
 	nameExists, err := rs.roleStore.CheckRoleNameExists(ctx, role.OUID, role.Name)
 	if err != nil {
 		logger.Error("Failed to check role name existence", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 	if nameExists {
 		logger.Debug("Role name already exists in organization unit",
@@ -207,7 +207,7 @@ func (rs *roleService) CreateRole(
 
 	if err != nil {
 		logger.Error("Failed to create role", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	logger.Debug("Successfully created role", log.String("id", id), log.String("name", role.Name))
@@ -231,7 +231,7 @@ func (rs *roleService) GetRoleWithPermissions(ctx context.Context, id string) (
 			return nil, &ErrorRoleNotFound
 		}
 		logger.Error("Failed to retrieve role", log.String("id", id), log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	logger.Debug("Successfully retrieved role", log.String("id", role.ID), log.String("name", role.Name))
@@ -260,7 +260,7 @@ func (rs *roleService) UpdateRoleWithPermissions(
 	exists, err := rs.roleStore.IsRoleExist(ctx, id)
 	if err != nil {
 		logger.Error("Failed to check role existence", log.String("id", id), log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 	if !exists {
 		logger.Debug("Role not found", log.String("id", id))
@@ -281,14 +281,14 @@ func (rs *roleService) UpdateRoleWithPermissions(
 			return nil, &ErrorOrganizationUnitNotFound
 		}
 		logger.Error("Failed to validate organization unit", log.String("error", svcErr.Error.DefaultValue))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	// Check if role name already exists in the organization unit (excluding the current role)
 	nameExists, err := rs.roleStore.CheckRoleNameExistsExcludingID(ctx, role.OUID, role.Name, id)
 	if err != nil {
 		logger.Error("Failed to check role name existence", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 	if nameExists {
 		logger.Debug("Role name already exists in organization unit",
@@ -302,7 +302,7 @@ func (rs *roleService) UpdateRoleWithPermissions(
 
 	if err != nil {
 		logger.Error("Failed to update role", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	logger.Debug("Successfully updated role", log.String("id", id), log.String("name", role.Name))
@@ -327,7 +327,7 @@ func (rs *roleService) DeleteRole(ctx context.Context, id string) *serviceerror.
 	exists, err := rs.roleStore.IsRoleExist(ctx, id)
 	if err != nil {
 		logger.Error("Failed to check role existence", log.String("id", id), log.Error(err))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 	if !exists {
 		logger.Debug("Role not found", log.String("id", id))
@@ -347,7 +347,7 @@ func (rs *roleService) DeleteRole(ctx context.Context, id string) *serviceerror.
 			return &ResultLimitExceededInCompositeMode
 		}
 		logger.Error("Failed to get role assignments count", log.String("id", id), log.Error(err))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	if assignmentCount > 0 {
@@ -358,7 +358,7 @@ func (rs *roleService) DeleteRole(ctx context.Context, id string) *serviceerror.
 
 	if err := rs.roleStore.DeleteRole(ctx, id); err != nil {
 		logger.Error("Failed to delete role", log.String("id", id), log.Error(err))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	logger.Debug("Successfully deleted role", log.String("id", id))
@@ -387,7 +387,7 @@ func (rs *roleService) GetRoleAssignmentsByType(ctx context.Context, id string, 
 	exists, err := rs.roleStore.IsRoleExist(ctx, id)
 	if err != nil {
 		logger.Error("Failed to check role existence", log.String("id", id), log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 	if !exists {
 		logger.Debug("Role not found", log.String("id", id))
@@ -406,7 +406,7 @@ func (rs *roleService) GetRoleAssignmentsByType(ctx context.Context, id string, 
 			return nil, &ResultLimitExceededInCompositeMode
 		}
 		logger.Error("Failed to get role assignments count", log.String("id", id), log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	if assigneeType != "" {
@@ -419,7 +419,7 @@ func (rs *roleService) GetRoleAssignmentsByType(ctx context.Context, id string, 
 			return nil, &ResultLimitExceededInCompositeMode
 		}
 		logger.Error("Failed to get role assignments", log.String("id", id), log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	// Convert to service layer assignments
@@ -468,7 +468,7 @@ func (rs *roleService) AddAssignments(
 	exists, err := rs.roleStore.IsRoleExist(ctx, id)
 	if err != nil {
 		logger.Error("Failed to check role existence", log.String("id", id), log.Error(err))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 	if !exists {
 		logger.Debug("Role not found", log.String("id", id))
@@ -492,7 +492,7 @@ func (rs *roleService) AddAssignments(
 
 	if err != nil {
 		logger.Error("Failed to add assignments to role", log.String("id", id), log.Error(err))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	logger.Debug("Successfully added assignments to role", log.String("id", id))
@@ -516,7 +516,7 @@ func (rs *roleService) RemoveAssignments(
 	exists, err := rs.roleStore.IsRoleExist(ctx, id)
 	if err != nil {
 		logger.Error("Failed to check role existence", log.String("id", id), log.Error(err))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 	if !exists {
 		logger.Debug("Role not found", log.String("id", id))
@@ -535,7 +535,7 @@ func (rs *roleService) RemoveAssignments(
 
 	if err != nil {
 		logger.Error("Failed to remove assignments from role", log.String("id", id), log.Error(err))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	logger.Debug("Successfully removed assignments from role", log.String("id", id))
@@ -571,7 +571,7 @@ func (rs *roleService) GetAuthorizedPermissions(
 			log.String("entityID", entityID),
 			log.Int("groupCount", len(groups)),
 			log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	logger.Debug("Retrieved authorized permissions",
@@ -602,7 +602,7 @@ func (rs *roleService) GetUserRoles(
 	if err != nil {
 		logger.Error("Failed to get entity roles",
 			log.String("entityID", entityID), log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	return roles, nil
@@ -612,7 +612,7 @@ func (rs *roleService) GetUserRoles(
 func (rs *roleService) IsRoleDeclarative(ctx context.Context, id string) (bool, *serviceerror.ServiceError) {
 	isDeclarative, err := rs.roleStore.IsRoleDeclarative(ctx, id)
 	if err != nil {
-		return false, &ErrorInternalServerError
+		return false, &serviceerror.InternalServerError
 	}
 
 	return isDeclarative, nil
@@ -694,7 +694,7 @@ func (rs *roleService) validateAssignmentIDs(
 		invalidIDs, err := rs.entityService.ValidateEntityIDs(ctx, entityIDs)
 		if err != nil {
 			logger.Error("Failed to validate entity IDs", log.Error(err))
-			return &ErrorInternalServerError
+			return &serviceerror.InternalServerError
 		}
 
 		if len(invalidIDs) > 0 {
@@ -711,7 +711,7 @@ func (rs *roleService) validateAssignmentIDs(
 				return &ErrorInvalidAssignmentID
 			}
 			logger.Error("Failed to validate group IDs", log.String("error", err.Error.DefaultValue))
-			return &ErrorInternalServerError
+			return &serviceerror.InternalServerError
 		}
 	}
 
@@ -898,7 +898,7 @@ func (rs *roleService) validatePermissions(
 			logger.Error("Failed to validate permissions",
 				log.String("resourceServerId", resPerm.ResourceServerID),
 				log.String("error", svcErr.Error.DefaultValue))
-			return &ErrorInternalServerError
+			return &serviceerror.InternalServerError
 		}
 
 		// If any permissions are invalid, return error

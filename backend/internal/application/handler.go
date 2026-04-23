@@ -114,9 +114,9 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 		success := ah.processInboundAuthConfig(logger, createdAppDTO, &returnApp)
 		if !success {
 			errResp := apierror.ErrorResponse{
-				Code:        ErrorInternalServerError.Code,
-				Message:     ErrorInternalServerError.Error,
-				Description: ErrorInternalServerError.ErrorDescription,
+				Code:        serviceerror.InternalServerError.Code,
+				Message:     serviceerror.InternalServerError.Error,
+				Description: serviceerror.InternalServerError.ErrorDescription,
 			}
 			sysutils.WriteErrorResponse(w, http.StatusInternalServerError, errResp)
 			return
@@ -190,9 +190,9 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 				log.String("type", string(appDTO.InboundAuthConfig[0].Type)))
 
 			errResp := apierror.ErrorResponse{
-				Code:        ErrorInternalServerError.Code,
-				Message:     ErrorInternalServerError.Error,
-				Description: ErrorInternalServerError.ErrorDescription,
+				Code:        serviceerror.InternalServerError.Code,
+				Message:     serviceerror.InternalServerError.Error,
+				Description: serviceerror.InternalServerError.ErrorDescription,
 			}
 			sysutils.WriteErrorResponse(w, http.StatusInternalServerError, errResp)
 			return
@@ -203,9 +203,9 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 			logger.Error("OAuth application configuration is nil")
 
 			errResp := apierror.ErrorResponse{
-				Code:        ErrorInternalServerError.Code,
-				Message:     ErrorInternalServerError.Error,
-				Description: ErrorInternalServerError.ErrorDescription,
+				Code:        serviceerror.InternalServerError.Code,
+				Message:     serviceerror.InternalServerError.Error,
+				Description: serviceerror.InternalServerError.ErrorDescription,
 			}
 			sysutils.WriteErrorResponse(w, http.StatusInternalServerError, errResp)
 			return
@@ -339,9 +339,9 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 		success := ah.processInboundAuthConfig(logger, updatedAppDTO, &returnApp)
 		if !success {
 			errResp := apierror.ErrorResponse{
-				Code:        ErrorInternalServerError.Code,
-				Message:     ErrorInternalServerError.Error,
-				Description: ErrorInternalServerError.ErrorDescription,
+				Code:        serviceerror.InternalServerError.Code,
+				Message:     serviceerror.InternalServerError.Error,
+				Description: serviceerror.InternalServerError.ErrorDescription,
 			}
 			sysutils.WriteErrorResponse(w, http.StatusInternalServerError, errResp)
 			return

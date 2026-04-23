@@ -169,6 +169,6 @@ func (suite *RestAuthnProviderTestSuite) TestSystemError_Decoding() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(authnprovidercm.ErrorCodeSystemError, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 	suite.Equal(serviceerror.ServerErrorType, err.Type)
 }

@@ -87,7 +87,7 @@ func (s *authorizationService) GetAuthorizedPermissions(
 			log.String("entityID", request.EntityID),
 			log.Int("groupCount", len(request.GroupIDs)),
 			log.Error(err))
-		return nil, &ErrorAuthorizationFailed
+		return nil, &serviceerror.InternalServerError
 	}
 
 	logger.Debug("Authorization evaluation completed",

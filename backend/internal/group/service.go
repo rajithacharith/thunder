@@ -116,13 +116,13 @@ func (gs *groupService) listAllGroups(ctx context.Context, limit, offset int, in
 	totalCount, err := gs.groupStore.GetGroupListCount(ctx)
 	if err != nil {
 		logger.Error("Failed to get group count", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	groups, err := gs.groupStore.GetGroupList(ctx, limit, offset)
 	if err != nil {
 		logger.Error("Failed to list groups", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	groupBasics := make([]GroupBasic, 0, len(groups))
@@ -165,7 +165,7 @@ func (gs *groupService) listGroupsByOUIDs(ctx context.Context, ouIDs []string, l
 	totalCount, err := gs.groupStore.GetGroupListCountByOUIDs(ctx, ouIDs)
 	if err != nil {
 		logger.Error("Failed to get group count by OU IDs", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	if totalCount == 0 {
@@ -181,7 +181,7 @@ func (gs *groupService) listGroupsByOUIDs(ctx context.Context, ouIDs []string, l
 	groups, err := gs.groupStore.GetGroupListByOUIDs(ctx, ouIDs, limit, offset)
 	if err != nil {
 		logger.Error("Failed to list groups by OU IDs", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	groupBasics := make([]GroupBasic, 0, len(groups))
@@ -236,13 +236,13 @@ func (gs *groupService) GetGroupsByPath(
 	totalCount, err := gs.groupStore.GetGroupsByOrganizationUnitCount(ctx, oUID)
 	if err != nil {
 		logger.Error("Failed to get group count by organization unit", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	groups, err := gs.groupStore.GetGroupsByOrganizationUnit(ctx, oUID, limit, offset)
 	if err != nil {
 		logger.Error("Failed to list groups by organization unit", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	groupBasics := make([]GroupBasic, 0, len(groups))
@@ -352,7 +352,7 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 
 	if err != nil {
 		logger.Error("Failed to create group", log.Error(err), log.String("name", request.Name))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	logger.Debug("Successfully created group", log.String("id", createdGroup.ID), log.String("name", createdGroup.Name))
@@ -408,7 +408,7 @@ func (gs *groupService) GetGroup(
 			return nil, &ErrorGroupNotFound
 		}
 		logger.Error("Failed to retrieve group", log.String("id", groupID), log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	if err := gs.checkGroupAccess(ctx, security.ActionReadGroup, groupDAO.OUID, groupID); err != nil {
@@ -528,7 +528,7 @@ func (gs *groupService) UpdateGroup(
 
 	if err != nil {
 		logger.Error("Failed to update group", log.Error(err), log.String("groupID", groupID))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	logger.Debug("Successfully updated group", log.String("id", groupID), log.String("name", request.Name))
@@ -579,7 +579,7 @@ func (gs *groupService) DeleteGroup(ctx context.Context, groupID string) *servic
 
 	if err != nil {
 		logger.Error("Failed to delete group", log.Error(err), log.String("groupID", groupID))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	logger.Debug("Successfully deleted group", log.String("id", groupID))
@@ -606,7 +606,7 @@ func (gs *groupService) GetGroupMembers(ctx context.Context, groupID string, lim
 			return nil, &ErrorGroupNotFound
 		}
 		logger.Error("Failed to retrieve group", log.String("id", groupID), log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	if err := gs.checkGroupAccess(
@@ -621,13 +621,13 @@ func (gs *groupService) GetGroupMembers(ctx context.Context, groupID string, lim
 	totalCount, err := gs.groupStore.GetGroupMemberCount(ctx, groupID)
 	if err != nil {
 		logger.Error("Failed to get group member count", log.String("groupID", groupID), log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	members, err := gs.groupStore.GetGroupMembers(ctx, groupID, limit, offset)
 	if err != nil {
 		logger.Error("Failed to get group members", log.String("groupID", groupID), log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	if includeDisplay {
@@ -829,7 +829,7 @@ func (gs *groupService) AddGroupMembers(
 
 	if err != nil {
 		logger.Error("Failed to add members to group", log.String("id", groupID), log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	updatedGroup := convertGroupDAOToGroup(updatedGroupDAO)
@@ -898,7 +898,7 @@ func (gs *groupService) RemoveGroupMembers(
 
 	if err != nil {
 		logger.Error("Failed to remove members from group", log.String("id", groupID), log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	updatedGroup := convertGroupDAOToGroup(updatedGroupDAO)
@@ -966,7 +966,7 @@ func (gs *groupService) validateOU(ctx context.Context, ouID string) *serviceerr
 	isExists, err := gs.ouService.IsOrganizationUnitExists(ctx, ouID)
 	if err != nil {
 		logger.Error("Failed to check organization unit existence", log.Any("error: ", err))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	if !isExists {
@@ -983,7 +983,7 @@ func (gs *groupService) validateUserIDs(ctx context.Context, userIDs []string) *
 	invalidUserIDs, err := gs.entityService.ValidateEntityIDs(ctx, userIDs)
 	if err != nil {
 		logger.Error("Failed to validate user IDs", log.Error(err))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	if len(invalidUserIDs) > 0 {
@@ -1025,7 +1025,7 @@ func (gs *groupService) validateUserIDsWithAccess(
 	outOfScopeIDs, err := gs.entityService.ValidateEntityIDsInOUs(ctx, userIDs, accessibleOUs.IDs)
 	if err != nil {
 		logger.Error("Failed to validate user IDs in OUs", log.Error(err))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	if len(outOfScopeIDs) > 0 {
@@ -1045,13 +1045,13 @@ func (gs *groupService) validateAppIDs(ctx context.Context, appIDs []string) *se
 
 	if gs.entityService == nil {
 		logger.Error("Entity service not configured, cannot validate app IDs")
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	invalidIDs, err := gs.entityService.ValidateEntityIDs(ctx, appIDs)
 	if err != nil {
 		logger.Error("Failed to validate app IDs", log.String("error", err.Error()))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	if len(invalidIDs) > 0 {
@@ -1110,7 +1110,7 @@ func (gs *groupService) ValidateGroupIDs(ctx context.Context, groupIDs []string)
 	invalidGroupIDs, err := gs.groupStore.ValidateGroupIDs(ctx, groupIDs)
 	if err != nil {
 		logger.Error("Failed to validate group IDs", log.Error(err))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	if len(invalidGroupIDs) > 0 {
@@ -1144,7 +1144,7 @@ func (gs *groupService) GetGroupsByIDs(
 	groupDAOs, err := gs.groupStore.GetGroupsByIDs(ctx, uniqueIDs)
 	if err != nil {
 		logger.Error("Failed to get groups by IDs", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	result := make(map[string]*Group, len(groupDAOs))
@@ -1231,7 +1231,7 @@ func (gs *groupService) checkGroupAccess(
 	hasAccess, err := gs.authzService.IsActionAllowed(ctx, action, &actionCtx)
 	if err != nil {
 		logger.Error("Failed to check authorization", log.String("err", err.Error.DefaultValue))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 	if !hasAccess {
 		return &serviceerror.ErrorUnauthorized

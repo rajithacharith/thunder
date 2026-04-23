@@ -25,6 +25,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	enginemock "github.com/asgardeo/thunder/tests/mocks/authz/engine"
 
 	"github.com/stretchr/testify/suite"
@@ -81,7 +82,7 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_Missing
 
 	suite.Nil(response)
 	suite.NotNil(err)
-	suite.Equal(ErrorAuthorizationFailed.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_MissingBothUserAndNilGroups() {
@@ -100,7 +101,7 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_Missing
 
 	suite.Nil(response)
 	suite.NotNil(err)
-	suite.Equal(ErrorAuthorizationFailed.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_EmptyRequestedPermissions() {
@@ -203,7 +204,7 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_EngineE
 
 	suite.Nil(response)
 	suite.NotNil(err)
-	suite.Equal(ErrorAuthorizationFailed.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_NoAuthorizedPermissions() {

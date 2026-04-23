@@ -64,7 +64,7 @@ func (suite *I18nHandlerTestSuite) TestHandleListLanguages_Success() {
 }
 
 func (suite *I18nHandlerTestSuite) TestHandleListLanguages_ServiceError() {
-	suite.mockService.On("ListLanguages").Return(nil, &ErrorInternalServerError)
+	suite.mockService.On("ListLanguages").Return(nil, &serviceerror.InternalServerError)
 
 	req := httptest.NewRequest(http.MethodGet, "/i18n/languages", nil)
 	w := httptest.NewRecorder()

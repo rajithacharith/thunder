@@ -77,7 +77,7 @@ func (r *ouHierarchyAdapter) IsAncestor(
 			}
 			logger.Error("Failed to traverse organization unit hierarchy during ancestry check",
 				log.Error(err))
-			return false, &ErrorInternalServerError
+			return false, &serviceerror.InternalServerError
 		}
 
 		if ou.Parent == nil {
@@ -114,7 +114,7 @@ func (r *ouHierarchyAdapter) GetAncestorOUIDs(
 		if _, ok := visited[current]; ok {
 			logger.Error("Cyclic organization unit parent chain detected while collecting ancestors",
 				log.String("ouID", current))
-			return nil, &ErrorInternalServerError
+			return nil, &serviceerror.InternalServerError
 		}
 		visited[current] = struct{}{}
 
@@ -127,7 +127,7 @@ func (r *ouHierarchyAdapter) GetAncestorOUIDs(
 			}
 			logger.Error("Failed to traverse organization unit hierarchy while collecting ancestors",
 				log.Error(err))
-			return nil, &ErrorInternalServerError
+			return nil, &serviceerror.InternalServerError
 		}
 
 		if ou.Parent == nil {

@@ -121,7 +121,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 			setup: func(t *testing.T) (*userService, testMocks) {
 				return &userService{}, testMocks{}
 			},
-			expectedErr: &ErrorInternalServerError,
+			expectedErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:     "ReturnsErrorWhenOrganizationUnitMissing",
@@ -262,9 +262,9 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 			userType: testUserType,
 			ouID:     "d9e12416-58d3-4c17-a4e4-cc4d96122598",
 			setup: func(t *testing.T) (*userService, testMocks) {
-				return setupParentCheckError(t, oupkg.ErrorInternalServerError.Code)
+				return setupParentCheckError(t, serviceerror.InternalServerError.Code)
 			},
-			expectedErr: &ErrorInternalServerError,
+			expectedErr: &serviceerror.InternalServerError,
 		},
 		{
 			name:     "ReturnsNilWhenValid",
@@ -479,7 +479,7 @@ func TestUserService_CreateUser_PropagatesStoreError(t *testing.T) {
 	created, svcErr := service.CreateUser(context.Background(), user)
 	require.Nil(t, created)
 	require.NotNil(t, svcErr)
-	require.Equal(t, ErrorInternalServerError, *svcErr)
+	require.Equal(t, serviceerror.InternalServerError, *svcErr)
 	storeMock.AssertNumberOfCalls(t, "CreateEntity", 1)
 }
 
@@ -787,7 +787,7 @@ func TestUserService_UpdateUserAttributes_NilSchemaService(t *testing.T) {
 		json.RawMessage(`{"email":"new@example.com"}`))
 	require.Nil(t, resp)
 	require.NotNil(t, err)
-	require.Equal(t, ErrorInternalServerError.Code, err.Code)
+	require.Equal(t, serviceerror.InternalServerError.Code, err.Code)
 }
 
 func TestUserService_GetUser_ReturnsUser(t *testing.T) {
@@ -1024,7 +1024,7 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 				storeMock.On("UpdateEntity", mock.Anything, userID, mock.Anything).
 					Return((*entitypkg.Entity)(nil), errors.New("db connection lost")).Once()
 			},
-			expectedError: &ErrorInternalServerError,
+			expectedError: &serviceerror.InternalServerError,
 		},
 		{
 			name:       "UpdateUser_WithoutCredentials_Success",
@@ -1075,7 +1075,7 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 				storeMock.On("GetEntity", mock.Anything, userID).
 					Return((*entitypkg.Entity)(nil), errors.New("db connection lost")).Once()
 			},
-			expectedError: &ErrorInternalServerError,
+			expectedError: &serviceerror.InternalServerError,
 		},
 	}
 
@@ -1159,7 +1159,7 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 						ResourceID:   userID,
 					}).Return(false, &serviceerror.InternalServerError).Once()
 			},
-			expectedErrorCode: ErrorInternalServerError.Code,
+			expectedErrorCode: serviceerror.InternalServerError.Code,
 		},
 		{
 			name:   "Same_OU_skips_destination_check",
@@ -1259,7 +1259,7 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 						ResourceID:   userID,
 					}).Return(false, &serviceerror.InternalServerError).Once()
 			},
-			expectedErrorCode: ErrorInternalServerError.Code,
+			expectedErrorCode: serviceerror.InternalServerError.Code,
 		},
 		{
 			name:   "Different_OU_both_allowed",
@@ -1559,7 +1559,7 @@ func TestUserService_GetUserGroups_ErrorCases(t *testing.T) {
 		mockStore.On("GetEntity", mock.Anything, "u1").Return((*entitypkg.Entity)(nil), errors.New("db error")).Once()
 		_, err := service.GetUserGroups(ctx, "u1", 10, 0)
 		require.NotNil(t, err)
-		require.Equal(t, ErrorInternalServerError.Code, err.Code)
+		require.Equal(t, serviceerror.InternalServerError.Code, err.Code)
 	})
 
 	t.Run("StoreErrorOnCount", func(t *testing.T) {
@@ -1571,7 +1571,7 @@ func TestUserService_GetUserGroups_ErrorCases(t *testing.T) {
 			Return(0, errors.New("db error")).Once()
 		_, err := service.GetUserGroups(ctx, "u1", 10, 0)
 		require.NotNil(t, err)
-		require.Equal(t, ErrorInternalServerError.Code, err.Code)
+		require.Equal(t, serviceerror.InternalServerError.Code, err.Code)
 	})
 }
 
@@ -1742,7 +1742,7 @@ func TestUserService_Validation_EdgeCases(t *testing.T) {
 	t.Run("ValidateOU_InvalidUUID", func(t *testing.T) {
 		err := service.validateOrganizationUnitForUserType(context.Background(), "customer", "invalid-uuid", logger)
 		require.NotNil(t, err)
-		require.Equal(t, ErrorInternalServerError.Code, err.Code)
+		require.Equal(t, serviceerror.InternalServerError.Code, err.Code)
 	})
 
 	t.Run("ValidateOU_EmptyOU", func(t *testing.T) {
@@ -1794,7 +1794,7 @@ func TestUserService_MoreErrorCases(t *testing.T) {
 
 		_, err := service.UpdateUser(ctx, "u1", userIn)
 		require.NotNil(t, err)
-		require.Equal(t, ErrorInternalServerError.Code, err.Code)
+		require.Equal(t, serviceerror.InternalServerError.Code, err.Code)
 	})
 
 	t.Run("DeleteUser_StoreError", func(t *testing.T) {
@@ -1805,7 +1805,7 @@ func TestUserService_MoreErrorCases(t *testing.T) {
 		storeMock.On("DeleteEntity", mock.Anything, "u1").Return(errors.New("db error")).Once()
 		err := service.DeleteUser(ctx, "u1")
 		require.NotNil(t, err)
-		require.Equal(t, ErrorInternalServerError.Code, err.Code)
+		require.Equal(t, serviceerror.InternalServerError.Code, err.Code)
 	})
 
 	t.Run("CreateUserByPath_MissingPath", func(t *testing.T) {
@@ -1897,7 +1897,7 @@ func TestUserService_UpdateUser_NilSchemaService(t *testing.T) {
 	resp, svcErr := service.UpdateUser(context.Background(), svcTestUserID1, user)
 	require.Nil(t, resp)
 	require.NotNil(t, svcErr)
-	require.Equal(t, ErrorInternalServerError, *svcErr)
+	require.Equal(t, serviceerror.InternalServerError, *svcErr)
 }
 
 func TestUserService_UpdateUser_SchemaNotFound(t *testing.T) {
@@ -1969,7 +1969,7 @@ func TestUserService_CheckUserAccess(t *testing.T) {
 			name:        "AuthzServiceError_ReturnsInternalServerError",
 			isAllowed:   false,
 			authzSvcErr: someAuthzErr,
-			wantErrCode: ErrorInternalServerError.Code,
+			wantErrCode: serviceerror.InternalServerError.Code,
 		},
 	}
 
@@ -2022,7 +2022,7 @@ func TestUserService_GetUserList_ErrorCases(t *testing.T) {
 					authzService:  authzMock,
 				}
 			},
-			wantErrCode: ErrorInternalServerError.Code,
+			wantErrCode: serviceerror.InternalServerError.Code,
 		},
 		{
 			name: "AllAllowed_GetUserListCount_Error_ReturnsInternalServerError",
@@ -2036,7 +2036,7 @@ func TestUserService_GetUserList_ErrorCases(t *testing.T) {
 					authzService:  newAllowAllAuthz(t),
 				}
 			},
-			wantErrCode: ErrorInternalServerError.Code,
+			wantErrCode: serviceerror.InternalServerError.Code,
 		},
 		{
 			name: "AllAllowed_GetUserList_Error_ReturnsInternalServerError",
@@ -2052,7 +2052,7 @@ func TestUserService_GetUserList_ErrorCases(t *testing.T) {
 					authzService:  newAllowAllAuthz(t),
 				}
 			},
-			wantErrCode: ErrorInternalServerError.Code,
+			wantErrCode: serviceerror.InternalServerError.Code,
 		},
 		{
 			name: "ScopedOUIDs_GetUserListCountByOUIDs_Error_ReturnsInternalServerError",
@@ -2069,7 +2069,7 @@ func TestUserService_GetUserList_ErrorCases(t *testing.T) {
 					authzService:  authzMock,
 				}
 			},
-			wantErrCode: ErrorInternalServerError.Code,
+			wantErrCode: serviceerror.InternalServerError.Code,
 		},
 		{
 			name: "ScopedOUIDs_GetUserListByOUIDs_Error_ReturnsInternalServerError",
@@ -2089,7 +2089,7 @@ func TestUserService_GetUserList_ErrorCases(t *testing.T) {
 					authzService:  authzMock,
 				}
 			},
-			wantErrCode: ErrorInternalServerError.Code,
+			wantErrCode: serviceerror.InternalServerError.Code,
 		},
 	}
 
@@ -2154,7 +2154,7 @@ func TestUserService_GetUsersByPath_AuthzChecks(t *testing.T) {
 					authzService: authzMock,
 				}
 			},
-			wantErrCode: ErrorInternalServerError.Code,
+			wantErrCode: serviceerror.InternalServerError.Code,
 		},
 	}
 
@@ -2202,7 +2202,7 @@ func TestUserService_CreateUser_AuthzChecks(t *testing.T) {
 					Return(false, authzErr).Once()
 				return &userService{authzService: authzMock}
 			},
-			wantErrCode: ErrorInternalServerError.Code,
+			wantErrCode: serviceerror.InternalServerError.Code,
 		},
 	}
 
@@ -2257,7 +2257,7 @@ func TestUserService_GetUser_ErrorCases(t *testing.T) {
 					authzService:  newAllowAllAuthz(t),
 				}
 			},
-			wantErrCode: ErrorInternalServerError.Code,
+			wantErrCode: serviceerror.InternalServerError.Code,
 		},
 		{
 			name: "AuthzDenied_ReturnsUnauthorized",
@@ -2299,7 +2299,7 @@ func TestUserService_GetUser_ErrorCases(t *testing.T) {
 					authzService:  authzMock,
 				}
 			},
-			wantErrCode: ErrorInternalServerError.Code,
+			wantErrCode: serviceerror.InternalServerError.Code,
 		},
 	}
 
@@ -2374,7 +2374,7 @@ func TestUserService_GetUserGroups_AuthzChecks(t *testing.T) {
 					authzService:  authzMock,
 				}
 			},
-			wantErrCode: ErrorInternalServerError.Code,
+			wantErrCode: serviceerror.InternalServerError.Code,
 		},
 	}
 
@@ -2433,7 +2433,7 @@ func TestUserService_UpdateUser_PreFetchAndAuthzChecks(t *testing.T) {
 					authzService:  newAllowAllAuthz(t),
 				}
 			},
-			wantErrCode: ErrorInternalServerError.Code,
+			wantErrCode: serviceerror.InternalServerError.Code,
 		},
 		{
 			name: "AuthzDenied_ReturnsUnauthorized",
@@ -2475,7 +2475,7 @@ func TestUserService_UpdateUser_PreFetchAndAuthzChecks(t *testing.T) {
 					authzService:  authzMock,
 				}
 			},
-			wantErrCode: ErrorInternalServerError.Code,
+			wantErrCode: serviceerror.InternalServerError.Code,
 		},
 	}
 
@@ -2520,7 +2520,7 @@ func TestUserService_UpdateUserAttributes_PreFetchAndAuthzChecks(t *testing.T) {
 					authzService:  newAllowAllAuthz(t),
 				}
 			},
-			wantErrCode: ErrorInternalServerError.Code,
+			wantErrCode: serviceerror.InternalServerError.Code,
 		},
 		{
 			// GetUser succeeds → authz check reuses the pre-fetched user's OU → authz denies.
@@ -2576,7 +2576,7 @@ func TestUserService_UpdateUserAttributes_PreFetchAndAuthzChecks(t *testing.T) {
 					authzService:      authzMock,
 				}
 			},
-			wantErrCode: ErrorInternalServerError.Code,
+			wantErrCode: serviceerror.InternalServerError.Code,
 		},
 	}
 
@@ -2620,7 +2620,7 @@ func TestUserService_UpdateUserCredentials_PreFetchAndAuthzChecks(t *testing.T) 
 					authzService:  newAllowAllAuthz(t),
 				}
 			},
-			wantErrCode: ErrorInternalServerError.Code,
+			wantErrCode: serviceerror.InternalServerError.Code,
 		},
 		{
 			name: "AuthzDenied_ReturnsUnauthorized",
@@ -2662,7 +2662,7 @@ func TestUserService_UpdateUserCredentials_PreFetchAndAuthzChecks(t *testing.T) 
 					authzService:  authzMock,
 				}
 			},
-			wantErrCode: ErrorInternalServerError.Code,
+			wantErrCode: serviceerror.InternalServerError.Code,
 		},
 	}
 
@@ -2704,7 +2704,7 @@ func TestUserService_DeleteUser_PreFetchAndAuthzChecks(t *testing.T) {
 					authzService:  newAllowAllAuthz(t),
 				}
 			},
-			wantErrCode: ErrorInternalServerError.Code,
+			wantErrCode: serviceerror.InternalServerError.Code,
 		},
 		{
 			name: "AuthzDenied_ReturnsUnauthorized",
@@ -2746,7 +2746,7 @@ func TestUserService_DeleteUser_PreFetchAndAuthzChecks(t *testing.T) {
 					authzService:  authzMock,
 				}
 			},
-			wantErrCode: ErrorInternalServerError.Code,
+			wantErrCode: serviceerror.InternalServerError.Code,
 		},
 	}
 
@@ -2819,7 +2819,7 @@ func TestUpdateUser_DeclarativeCheckError(t *testing.T) {
 
 	_, err := service.UpdateUser(context.Background(), userID, &updatedUser)
 	require.NotNil(t, err)
-	require.Equal(t, ErrorInternalServerError.Code, err.Code)
+	require.Equal(t, serviceerror.InternalServerError.Code, err.Code)
 }
 
 // TestUpdateUser_DeclarativeCheckUserNotFound tests that UpdateUser returns ErrorUserNotFound
@@ -2913,7 +2913,7 @@ func TestUpdateUserAttributes_DeclarativeCheckError(t *testing.T) {
 
 	_, err := service.UpdateUserAttributes(context.Background(), userID, attributes)
 	require.NotNil(t, err)
-	require.Equal(t, ErrorInternalServerError.Code, err.Code)
+	require.Equal(t, serviceerror.InternalServerError.Code, err.Code)
 }
 
 // TestUpdateUserCredentials_DeclarativeResource tests that UpdateUserCredentials returns
@@ -2972,7 +2972,7 @@ func TestUpdateUserCredentials_DeclarativeCheckError(t *testing.T) {
 
 	err := service.UpdateUserCredentials(context.Background(), userID, credentials)
 	require.NotNil(t, err)
-	require.Equal(t, ErrorInternalServerError.Code, err.Code)
+	require.Equal(t, serviceerror.InternalServerError.Code, err.Code)
 }
 
 // TestDeleteUser_DeclarativeResource tests that DeleteUser returns ErrorCannotModifyDeclarativeResource
@@ -3022,7 +3022,7 @@ func TestDeleteUser_DeclarativeCheckError(t *testing.T) {
 
 	err := service.DeleteUser(context.Background(), userID)
 	require.NotNil(t, err)
-	require.Equal(t, ErrorInternalServerError.Code, err.Code)
+	require.Equal(t, serviceerror.InternalServerError.Code, err.Code)
 }
 
 // populateUserDisplayNames Tests

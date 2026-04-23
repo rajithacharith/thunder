@@ -154,7 +154,7 @@ func TestCreateUserSchemaReturnsInternalErrorWhenOUValidationFails(t *testing.T)
 
 	require.Nil(t, createdSchema)
 	require.NotNil(t, svcErr)
-	require.Equal(t, ErrorInternalServerError, *svcErr)
+	require.Equal(t, serviceerror.InternalServerError, *svcErr)
 }
 
 func TestUpdateUserSchemaReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
@@ -256,7 +256,7 @@ func TestGetUserSchemaByNameReturnsInternalErrorOnStoreFailure(t *testing.T) {
 
 	require.Nil(t, userSchema)
 	require.NotNil(t, svcErr)
-	require.Equal(t, ErrorInternalServerError, *svcErr)
+	require.Equal(t, serviceerror.InternalServerError, *svcErr)
 }
 
 func TestGetUserSchemaByNameRequiresName(t *testing.T) {
@@ -316,7 +316,7 @@ func TestValidateUserReturnsInternalErrorWhenSchemaLoadFails(t *testing.T) {
 
 	require.False(t, ok)
 	require.NotNil(t, svcErr)
-	require.Equal(t, ErrorInternalServerError, *svcErr)
+	require.Equal(t, serviceerror.InternalServerError, *svcErr)
 }
 
 func TestValidateUserUniquenessReturnsTrueWhenNoConflicts(t *testing.T) {
@@ -417,7 +417,7 @@ func TestValidateUserUniquenessReturnsInternalErrorWhenSchemaLoadFails(t *testin
 
 	require.False(t, ok)
 	require.NotNil(t, svcErr)
-	require.Equal(t, ErrorInternalServerError, *svcErr)
+	require.Equal(t, serviceerror.InternalServerError, *svcErr)
 }
 
 func TestValidateUserSchemaDefinitionSuccess(t *testing.T) {
@@ -866,7 +866,7 @@ func (s *GetCredentialAttributesTestSuite) TestStoreError_ReturnsInternalError()
 
 	s.Require().Nil(fields)
 	s.Require().NotNil(svcErr)
-	s.Require().Equal(ErrorInternalServerError, *svcErr)
+	s.Require().Equal(serviceerror.InternalServerError, *svcErr)
 }
 
 type GetUniqueAttributesTestSuite struct {
@@ -1295,5 +1295,5 @@ func (s *GetDisplayAttributesByNamesTestSuite) TestStoreError_ReturnsServerError
 	_, svcErr := service.GetDisplayAttributesByNames(context.Background(), []string{"SchemaA"})
 
 	s.Require().NotNil(svcErr)
-	s.Require().Equal(ErrorInternalServerError, *svcErr)
+	s.Require().Equal(serviceerror.InternalServerError, *svcErr)
 }
