@@ -261,10 +261,6 @@ $reactSdkAppData = @{
         validityPeriod = 3600
         userAttributes = $null
     }
-    certificate = @{
-        type = "NONE"
-        value = ""
-    }
     userAttributes = @("given_name","family_name","email","groups","name")
     allowedUserTypes = @("Customer")
     inboundAuthConfig = @(
