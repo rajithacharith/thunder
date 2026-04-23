@@ -14,7 +14,7 @@ on:
 # Avoid running multiple PR builders for the same PR on subsequent pushes.
 concurrency:
   group: pr-builder-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event.action != 'labeled' }}
 
 env:
   GOFLAGS: "-mod=readonly"
@@ -29,7 +29,7 @@ jobs:
 
   security-audit:
     name: 🔒 Security Audit
-    if: ${{ (github.event_name == 'pull_request' && github.event.action != 'labeled') || github.event_name == 'merge_group' }}
+    if: ${{ (github.event_name == 'pull_request' && (github.event.action != 'labeled' || github.event.label.name == 'dependencies-approved')) || github.event_name == 'merge_group' }}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -113,7 +113,7 @@ jobs:
 
   dependency-review:
     name: 🔎 Dependency Review
-    if: ${{ (github.event_name == 'pull_request' && github.event.action != 'labeled') || github.event_name == 'merge_group' }}
+    if: ${{ (github.event_name == 'pull_request' && (github.event.action != 'labeled' || github.event.label.name == 'dependencies-approved')) || github.event_name == 'merge_group' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -133,7 +133,7 @@ jobs:
 
   verify-mocks:
     name: 🔍 Verify Mock Files
-    if: ${{ (github.event_name == 'pull_request' && github.event.action != 'labeled') || github.event_name == 'merge_group' }}
+    if: ${{ (github.event_name == 'pull_request' && (github.event.action != 'labeled' || github.event.label.name == 'dependencies-approved')) || github.event_name == 'merge_group' }}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -169,7 +169,7 @@ jobs:
   lint:
     name: 🧹 Lint Code
     needs: dependency-guard
-    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && ((github.event_name == 'pull_request' && github.event.action != 'labeled') || github.event_name == 'merge_group') }}
+    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && ((github.event_name == 'pull_request' && (github.event.action != 'labeled' || github.event.label.name == 'dependencies-approved')) || github.event_name == 'merge_group') }}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -227,7 +227,7 @@ jobs:
   build:
     name: 🛠️ Build Product
     needs: dependency-guard
-    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action != 'labeled') || github.event_name == 'merge_group') }}
+    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (github.event.action != 'labeled' || github.event.label.name == 'dependencies-approved')) || github.event_name == 'merge_group') }}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -318,7 +318,7 @@ jobs:
   test-frontend:
     name: 🧪 Frontend Tests (shard ${{ matrix.shard }}/4)
     needs: dependency-guard
-    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action != 'labeled') || github.event_name == 'merge_group') }}
+    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (github.event.action != 'labeled' || github.event.label.name == 'dependencies-approved')) || github.event_name == 'merge_group') }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -437,7 +437,7 @@ jobs:
   build_samples:
     name: 🛠️ Build Sample Apps
     needs: dependency-guard
-    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action != 'labeled') || github.event_name == 'merge_group') }}
+    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (github.event.action != 'labeled' || github.event.label.name == 'dependencies-approved')) || github.event_name == 'merge_group') }}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -789,7 +789,7 @@ jobs:
 
   detect-powershell-changes:
     name: 🔍 Detect PowerShell Changes
-    if: (github.event_name == 'pull_request' && github.event.action != 'labeled') || github.event_name == 'merge_group'
+    if: (github.event_name == 'pull_request' && (github.event.action != 'labeled' || github.event.label.name == 'dependencies-approved')) || github.event_name == 'merge_group'
     runs-on: ubuntu-latest
     outputs:
       should-run: ${{ steps.filter.outputs.powershell }}
@@ -813,7 +813,7 @@ jobs:
 
   detect-docs-changes:
     name: 🔍 Detect Documentation Changes
-    if: (github.event_name == 'pull_request' && github.event.action != 'labeled') || github.event_name == 'merge_group'
+    if: (github.event_name == 'pull_request' && (github.event.action != 'labeled' || github.event.label.name == 'dependencies-approved')) || github.event_name == 'merge_group'
     runs-on: ubuntu-latest
     outputs:
       should-run: ${{ steps.filter.outputs.docs }}
