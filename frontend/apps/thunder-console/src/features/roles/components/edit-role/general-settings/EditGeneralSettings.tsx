@@ -72,6 +72,48 @@ export default function EditGeneralSettings({role, onDeleteClick}: EditGeneralSe
         description={t('roles:edit.general.sections.organizationUnit.description')}
       >
         <Stack spacing={2}>
+          {role.ouHandle && (
+            <FormControl fullWidth>
+              <FormLabel htmlFor="ou-handle-input">
+                {t('roles:edit.general.sections.organizationUnit.handleLabel', 'Handle')}
+              </FormLabel>
+              <TextField
+                id="ou-handle-input"
+                value={role.ouHandle}
+                fullWidth
+                size="small"
+                slotProps={{
+                  input: {
+                    readOnly: true,
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <Tooltip
+                          title={
+                            copiedField === 'ouHandle'
+                              ? t('common:actions.copied')
+                              : t('roles:edit.general.sections.organizationUnit.copyHandle', 'Copy handle')
+                          }
+                        >
+                          <IconButton
+                            aria-label={t('roles:edit.general.sections.organizationUnit.copyHandle', 'Copy handle')}
+                            onClick={() => {
+                              handleCopyToClipboard(role.ouHandle!, 'ouHandle').catch(() => {
+                                /* noop */
+                              });
+                            }}
+                            edge="end"
+                          >
+                            {copiedField === 'ouHandle' ? <Check size={16} /> : <Copy size={16} />}
+                          </IconButton>
+                        </Tooltip>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+                sx={{'& input': {fontFamily: 'monospace', fontSize: '0.875rem'}}}
+              />
+            </FormControl>
+          )}
           <FormControl fullWidth>
             <FormLabel htmlFor="ou-id-input">
               {t('roles:edit.general.sections.organizationUnit.idLabel', 'ID')}

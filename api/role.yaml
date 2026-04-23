@@ -47,10 +47,12 @@ paths:
                     name: "front-desk-agent"
                     description: "Front desk agent role with booking and customer management permissions"
                     ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                    ouHandle: "default"
                   - id: "257e528f-eb24-48b6-884d-20460e190957"
                     name: "hotel-manager"
                     description: "Hotel manager with full property access"
                     ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                    ouHandle: "default"
                 links:
                   - href: "roles?offset=2&limit=2"
                     rel: "next"
@@ -136,6 +138,7 @@ paths:
                 name: "front-desk-agent"
                 description: "Front desk agent role with booking and customer management permissions"
                 ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                ouHandle: "default"
                 permissions:
                   - resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                     permissions:
@@ -234,6 +237,7 @@ paths:
                 name: "front-desk-agent"
                 description: "Front desk agent role with booking and customer management permissions"
                 ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                ouHandle: "default"
                 permissions:
                   - "create_reservation"
                   - "view_reservation"
@@ -318,6 +322,7 @@ paths:
                 name: "senior-front-desk-agent"
                 description: "Senior front desk agent with additional permissions"
                 ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                ouHandle: "default"
                 permissions:
                   - resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                     permissions:
@@ -807,6 +812,10 @@ components:
           type: string
           format: uuid
           description: "ID of the organization unit this role belongs to"
+        ouHandle:
+          type: string
+          readOnly: true
+          description: "Handle of the organization unit this role belongs to"
 
     Role:
       type: object
@@ -827,6 +836,10 @@ components:
           type: string
           format: uuid
           description: "ID of the organization unit this role belongs to"
+        ouHandle:
+          type: string
+          readOnly: true
+          description: "Handle of the organization unit this role belongs to"
         permissions:
           type: array
           items:
