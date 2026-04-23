@@ -24,10 +24,9 @@ import {useTranslation} from 'react-i18next';
 import ReorderableViewElement from './ReorderableElement';
 import Droppable from '../../../dnd/Droppable';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
+import useFlowPlugins from '@/features/flows/hooks/useFlowPlugins';
 import type {Element} from '@/features/flows/models/elements';
-import FlowEventTypes from '@/features/flows/models/extension';
 import type {StepData} from '@/features/flows/models/steps';
-import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
 import generateResourceId from '@/features/flows/utils/generateResourceId';
 
 /**
@@ -127,6 +126,7 @@ function View({
   const {t} = useTranslation();
   const stepId: string | null = useNodeId();
   const {deleteElements, getNode} = useReactFlow();
+  const {emitElementFilter} = useFlowPlugins();
 
   // Get current node - use getNode instead of useNodesData to avoid re-renders
   const currentNode = useMemo(() => (stepId ? getNode(stepId) : undefined), [stepId, getNode]);
@@ -166,15 +166,9 @@ function View({
     [onAddElement, stepId],
   );
 
-  // Filter components using PluginRegistry
-  // Note: The ref-based caching was removed because it only tracked ID changes,
-  // not property changes (variant, config, display). This caused property updates
-  // to not reflect in the UI. The memo() on View already handles preventing
-  // unnecessary re-renders by comparing data.components via JSON.stringify.
+  // Filter components using plugin interceptors.
   const components = data?.components ?? [];
-  const filteredComponents = components.filter((component: Element) =>
-    PluginRegistry.getInstance().executeSync(FlowEventTypes.ON_NODE_ELEMENT_FILTER, component),
-  );
+  const filteredComponents = components.filter((component: Element) => emitElementFilter(component));
 
   return (
     // <ValidationErrorBoundary disableErrorBoundaryOnHover={false} resource={node}>

@@ -18,13 +18,13 @@
 
 import {type Node, useReactFlow} from '@xyflow/react';
 import cloneDeep from 'lodash-es/cloneDeep';
-import {useEffect} from 'react';
+import {useCallback, useEffect} from 'react';
+import useFlowPlugins from './useFlowPlugins';
 import useGetFlowBuilderCoreResources from '../api/useGetFlowBuilderCoreResources';
 import VisualFlowConstants from '../constants/VisualFlowConstants';
+import type {Properties} from '../models/base';
 import {type Element, ElementCategories, ElementTypes} from '../models/elements';
-import FlowEventTypes from '../models/extension';
 import {ExecutionTypes, StepTypes} from '../models/steps';
-import PluginRegistry from '../plugins/PluginRegistry';
 import generateResourceId from '../utils/generateResourceId';
 
 const STATIC_CONTENT_ENABLED_PROPERTY = 'enableStaticContent';
@@ -35,33 +35,24 @@ const STATIC_CONTENT_ENABLED_PROPERTY = 'enableStaticContent';
 const useStaticContentField = (): void => {
   const {getNode, updateNodeData} = useReactFlow();
   const {data: resources} = useGetFlowBuilderCoreResources();
+  const {onPropertyChange, onPropertyPanelOpen} = useFlowPlugins();
 
-  useEffect(() => {
-    /**
-     * Adds static content to the execution node when staticContentEnabled is checked.
-     *
-     * @param args - The arguments passed to the handler:
-     *   - args[0]: propertyKey - The key of the property being changed.
-     *   - args[1]: newValue - The new value of the property.
-     *   - args[2]: element - The element being modified.
-     *   - args[3]: stepId - The ID of the step where the element is located.
-     * @returns Returns false if the static content is added/removed, true otherwise.
-     */
-    const addStaticContent = (...args: unknown[]): Promise<boolean> => {
-      const [propertyKey, newValue, currentElement, stepId] = args as [string, unknown, Element, string];
-      // Check if this is a execution step and the property is staticContentEnabled.
+  /**
+   * Adds static content to the execution node when staticContentEnabled is checked.
+   */
+  const addStaticContent = useCallback(
+    (propertyKey: string, newValue: unknown, currentElement: Element, stepId: string): boolean => {
       if (currentElement?.type === StepTypes.Execution && propertyKey === STATIC_CONTENT_ENABLED_PROPERTY) {
         updateNodeData(stepId, (node: Node) => {
           const components: Element[] = cloneDeep(node?.data?.components ?? []) as Element[];
 
           if (!newValue) {
-            // Remove static content if it exists.
             return {
               ...node.data,
               components: [],
             };
           }
-          // Add static content if it doesn't exist.
+
           if (components.length === 0) {
             const richTextElement: Element | undefined = resources?.elements?.find(
               (elem: Element) => elem.type === ElementTypes.RichText,
@@ -81,23 +72,19 @@ const useStaticContentField = (): void => {
           };
         });
 
-        return Promise.resolve(false);
+        return false;
       }
 
-      return Promise.resolve(true);
-    };
+      return true;
+    },
+    [resources, updateNodeData],
+  );
 
-    /**
-     * Adds staticContentEnabled property to the execution step property panel.
-     *
-     * @param args - The arguments passed to the handler:
-     *   - args[0]: resource - The resource element to which properties are being added.
-     *   - args[1]: properties - The properties object to which static content property will be added.
-     *   - args[2]: stepId - The ID of the step where the resource is located.
-     * @returns return true.
-     */
-    const addStaticContentProperties = (...args: unknown[]): boolean => {
-      const [resource, properties, stepId] = args as [Element, Record<string, unknown>, string];
+  /**
+   * Adds staticContentEnabled property to the execution step property panel.
+   */
+  const addStaticContentProperties = useCallback(
+    (resource: Element, properties: Properties, stepId: string): boolean => {
       const node: Node | undefined = getNode(stepId);
 
       if (!node) {
@@ -107,7 +94,6 @@ const useStaticContentField = (): void => {
       const resourceData = resource?.data as {action?: {executor?: {name?: ExecutionTypes}}} | undefined;
       const executorName = resourceData?.action?.executor?.name;
 
-      // Check if this is a execution step.
       if (
         resource?.type === StepTypes.Execution &&
         executorName &&
@@ -118,37 +104,16 @@ const useStaticContentField = (): void => {
         }
         const components: Element[] = (node?.data?.components as Element[]) || [];
 
-        properties[STATIC_CONTENT_ENABLED_PROPERTY] = components.length > 0;
+        (properties as Record<string, unknown>)[STATIC_CONTENT_ENABLED_PROPERTY] = components.length > 0;
       }
 
       return true;
-    };
+    },
+    [getNode],
+  );
 
-    (addStaticContent as unknown as Record<string, unknown>)[
-      VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
-    ] = 'addStaticContent';
-    (addStaticContentProperties as unknown as Record<string, unknown>)[
-      VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
-    ] = 'addStaticContentProperties';
-
-    PluginRegistry.getInstance().registerAsync(FlowEventTypes.ON_PROPERTY_CHANGE, addStaticContent);
-    PluginRegistry.getInstance().registerSync(FlowEventTypes.ON_PROPERTY_PANEL_OPEN, addStaticContentProperties);
-
-    return () => {
-      PluginRegistry.getInstance().unregister(
-        FlowEventTypes.ON_PROPERTY_CHANGE,
-        (addStaticContent as unknown as Record<string, unknown>)[
-          VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
-        ] as string,
-      );
-      PluginRegistry.getInstance().unregister(
-        FlowEventTypes.ON_PROPERTY_PANEL_OPEN,
-        (addStaticContentProperties as unknown as Record<string, unknown>)[
-          VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
-        ] as string,
-      );
-    };
-  }, [getNode, resources, updateNodeData]);
+  useEffect(() => onPropertyChange(addStaticContent), [onPropertyChange, addStaticContent]);
+  useEffect(() => onPropertyPanelOpen(addStaticContentProperties), [onPropertyPanelOpen, addStaticContentProperties]);
 };
 
 export default useStaticContentField;

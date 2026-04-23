@@ -21,7 +21,6 @@ import {RestrictToVerticalAxis} from '@dnd-kit/abstract/modifiers';
 import {useDragDropManager, useDragOperation} from '@dnd-kit/react';
 import {type UseSortableInput, useSortable} from '@dnd-kit/react/sortable';
 import {Box, type CSSProperties} from '@wso2/oxygen-ui';
-import {motion} from 'framer-motion';
 import {
   memo,
   type PropsWithChildren,
@@ -233,9 +232,11 @@ function Sortable({
     () => ({
       opacity: isDragging ? 0.4 : 1,
       transform: isDragging ? 'scale(1.01)' : 'none',
-      transition: isDragging ? 'none' : 'all 0.2s ease',
+      // Disable transitions for ALL sortables while a drag is active so
+      // sibling elements snap into place instantly instead of lagging behind.
+      transition: isDragActive ? 'none' : 'all 0.2s ease',
     }),
-    [isDragging],
+    [isDragging, isDragActive],
   );
 
   const dropIndicatorStyles = useMemo(
@@ -305,11 +306,9 @@ function Sortable({
   );
 
   return (
-    <motion.div layout transition={{layout: {duration: 0.2, ease: 'easeInOut'}}}>
-      <Box ref={ref} sx={dropIndicatorStyles}>
-        <MemoizedSortablePresentation elementStyle={elementStyle}>{children}</MemoizedSortablePresentation>
-      </Box>
-    </motion.div>
+    <Box ref={ref} sx={dropIndicatorStyles}>
+      <MemoizedSortablePresentation elementStyle={elementStyle}>{children}</MemoizedSortablePresentation>
+    </Box>
   );
 }
 

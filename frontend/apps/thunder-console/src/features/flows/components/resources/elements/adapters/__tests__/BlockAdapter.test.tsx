@@ -32,12 +32,23 @@ vi.mock('@/features/flows/components/resources/steps/view/ReorderableElement', (
   ),
 }));
 
-vi.mock('@/features/flows/plugins/PluginRegistry', () => ({
-  default: {
-    getInstance: () => ({
-      executeSync: () => true,
-    }),
-  },
+vi.mock('@/features/flows/hooks/useFlowPlugins', () => ({
+  default: () => ({
+    onPropertyChange: vi.fn().mockReturnValue(vi.fn()),
+    emitPropertyChange: vi.fn().mockReturnValue(true),
+    onPropertyPanelOpen: vi.fn().mockReturnValue(vi.fn()),
+    emitPropertyPanelOpen: vi.fn().mockReturnValue(true),
+    onElementFilter: vi.fn().mockReturnValue(vi.fn()),
+    emitElementFilter: vi.fn().mockReturnValue(true),
+    onEdgeDelete: vi.fn().mockReturnValue(vi.fn()),
+    emitEdgeDelete: vi.fn().mockReturnValue(true),
+    onNodeDelete: vi.fn().mockReturnValue(vi.fn()),
+    emitNodeDelete: vi.fn().mockReturnValue(true),
+    onNodeElementDelete: vi.fn().mockReturnValue(vi.fn()),
+    emitNodeElementDelete: vi.fn().mockReturnValue(true),
+    onTemplateLoad: vi.fn().mockReturnValue(vi.fn()),
+    emitTemplateLoad: vi.fn().mockReturnValue(true),
+  }),
 }));
 
 describe('BlockAdapter', () => {
@@ -146,7 +157,7 @@ describe('BlockAdapter', () => {
   });
 
   describe('Filtering', () => {
-    it('should filter components through PluginRegistry', () => {
+    it('should filter components through useFlowPlugins', () => {
       const components = [createMockElement({id: 'comp-1'}), createMockElement({id: 'comp-2'})];
       const resource = createMockElement({components});
 

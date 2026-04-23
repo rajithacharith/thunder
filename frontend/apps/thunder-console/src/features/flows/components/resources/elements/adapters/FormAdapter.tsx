@@ -24,9 +24,8 @@ import {useTranslation} from 'react-i18next';
 import Droppable from '../../../dnd/Droppable';
 import ReorderableFlowElement from '../../steps/view/ReorderableElement';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
+import useFlowPlugins from '@/features/flows/hooks/useFlowPlugins';
 import {ElementCategories, type Element as FlowElement} from '@/features/flows/models/elements';
-import FlowEventTypes from '@/features/flows/models/extension';
-import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
 import generateResourceId from '@/features/flows/utils/generateResourceId';
 import './FormAdapter.scss';
 
@@ -72,6 +71,7 @@ function FormAdapter({
   onAddElementToForm = undefined,
 }: FormAdapterPropsInterface): ReactElement {
   const {t} = useTranslation();
+  const {emitElementFilter} = useFlowPlugins();
 
   const hasInputFields = resource?.components?.some(
     (element: FlowElement) => element.category === ElementCategories.Field,
@@ -81,10 +81,8 @@ function FormAdapter({
 
   const filteredComponents = useMemo(() => {
     if (!resource?.components) return [];
-    return resource.components.filter((component: FlowElement) =>
-      PluginRegistry.getInstance().executeSync(FlowEventTypes.ON_NODE_ELEMENT_FILTER, component),
-    );
-  }, [resource?.components]);
+    return resource.components.filter((component: FlowElement) => emitElementFilter(component));
+  }, [resource?.components, emitElementFilter]);
 
   return (
     <Badge

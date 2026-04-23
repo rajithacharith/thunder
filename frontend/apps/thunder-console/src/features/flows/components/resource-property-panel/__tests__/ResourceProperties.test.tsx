@@ -45,19 +45,29 @@ vi.mock('@xyflow/react', async () => {
 });
 
 // Use vi.hoisted for plugin mock functions
-const {mockExecuteSync, mockExecuteAsync} = vi.hoisted(() => ({
-  mockExecuteSync: vi.fn().mockReturnValue(true),
-  mockExecuteAsync: vi.fn().mockResolvedValue(true),
+const {mockEmitPropertyPanelOpen, mockEmitPropertyChange} = vi.hoisted(() => ({
+  mockEmitPropertyPanelOpen: vi.fn().mockReturnValue(true),
+  mockEmitPropertyChange: vi.fn().mockReturnValue(true),
 }));
 
-// Mock PluginRegistry
-vi.mock('../../../plugins/PluginRegistry', () => ({
-  default: {
-    getInstance: () => ({
-      executeSync: mockExecuteSync,
-      executeAsync: mockExecuteAsync,
-    }),
-  },
+// Mock useFlowPlugins
+vi.mock('../../../hooks/useFlowPlugins', () => ({
+  default: () => ({
+    onPropertyChange: vi.fn().mockReturnValue(vi.fn()),
+    emitPropertyChange: mockEmitPropertyChange,
+    onPropertyPanelOpen: vi.fn().mockReturnValue(vi.fn()),
+    emitPropertyPanelOpen: mockEmitPropertyPanelOpen,
+    onElementFilter: vi.fn().mockReturnValue(vi.fn()),
+    emitElementFilter: vi.fn().mockReturnValue(true),
+    onEdgeDelete: vi.fn().mockReturnValue(vi.fn()),
+    emitEdgeDelete: vi.fn().mockReturnValue(true),
+    onNodeDelete: vi.fn().mockReturnValue(vi.fn()),
+    emitNodeDelete: vi.fn().mockReturnValue(true),
+    onNodeElementDelete: vi.fn().mockReturnValue(vi.fn()),
+    emitNodeElementDelete: vi.fn().mockReturnValue(true),
+    onTemplateLoad: vi.fn().mockReturnValue(vi.fn()),
+    emitTemplateLoad: vi.fn().mockReturnValue(true),
+  }),
 }));
 
 describe('ResourceProperties', () => {
@@ -157,8 +167,8 @@ describe('ResourceProperties', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockExecuteSync.mockReturnValue(true);
-    mockExecuteAsync.mockResolvedValue(true);
+    mockEmitPropertyPanelOpen.mockReturnValue(true);
+    mockEmitPropertyChange.mockReturnValue(true);
   });
 
   describe('Rendering', () => {
@@ -1582,7 +1592,7 @@ describe('ResourceProperties', () => {
   describe('handlePropertyChange when plugin returns false', () => {
     it('should update resource and return early when plugin handles the change (lines 208-214)', async () => {
       // Make plugin return false to indicate it handled the change
-      mockExecuteAsync.mockResolvedValue(false);
+      mockEmitPropertyChange.mockReturnValue(false);
 
       const MockComponentWithChange = vi.fn(
         ({
@@ -1624,7 +1634,7 @@ describe('ResourceProperties', () => {
     });
 
     it('should not update resource when element.id differs from lastInteractedResourceId and plugin returns false', async () => {
-      mockExecuteAsync.mockResolvedValue(false);
+      mockEmitPropertyChange.mockReturnValue(false);
 
       const differentResource: Base = {
         ...mockBaseResource,
@@ -1670,7 +1680,7 @@ describe('ResourceProperties', () => {
 
   describe('handlePropertyChange updateComponent recursive function (lines 217-235)', () => {
     it('should update matching component in updateComponent function', async () => {
-      mockExecuteAsync.mockResolvedValue(true);
+      mockEmitPropertyChange.mockReturnValue(true);
 
       // Mock updateNodeData to capture the callback and execute it
       mockUpdateNodeData.mockImplementation(
@@ -1724,7 +1734,7 @@ describe('ResourceProperties', () => {
     });
 
     it('should recursively update nested components when component has nested components (lines 227-231)', async () => {
-      mockExecuteAsync.mockResolvedValue(true);
+      mockEmitPropertyChange.mockReturnValue(true);
 
       mockUpdateNodeData.mockImplementation(
         (_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
@@ -1780,7 +1790,7 @@ describe('ResourceProperties', () => {
     });
 
     it('should return component unchanged when id does not match and no nested components (line 234)', async () => {
-      mockExecuteAsync.mockResolvedValue(true);
+      mockEmitPropertyChange.mockReturnValue(true);
 
       mockUpdateNodeData.mockImplementation(
         (_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
@@ -1868,7 +1878,7 @@ describe('ResourceProperties', () => {
 
   describe('handlePropertyChange updateNodeData callback paths (lines 240-251)', () => {
     it('should replace entire data object when propertyKey is exactly data and no components (lines 242-244)', async () => {
-      mockExecuteAsync.mockResolvedValue(true);
+      mockEmitPropertyChange.mockReturnValue(true);
 
       let capturedResult: unknown;
       mockUpdateNodeData.mockImplementation(
@@ -1923,7 +1933,7 @@ describe('ResourceProperties', () => {
     });
 
     it('should strip data. prefix and set on data object when no components (lines 246-248)', async () => {
-      mockExecuteAsync.mockResolvedValue(true);
+      mockEmitPropertyChange.mockReturnValue(true);
 
       let capturedResult: unknown;
       mockUpdateNodeData.mockImplementation(
@@ -1974,7 +1984,7 @@ describe('ResourceProperties', () => {
     });
 
     it('should set property directly on data object when no prefix and no components', async () => {
-      mockExecuteAsync.mockResolvedValue(true);
+      mockEmitPropertyChange.mockReturnValue(true);
 
       let capturedResult: unknown;
       mockUpdateNodeData.mockImplementation(
@@ -2024,7 +2034,7 @@ describe('ResourceProperties', () => {
     });
 
     it('should handle node with non-empty components array (line 240 true branch)', async () => {
-      mockExecuteAsync.mockResolvedValue(true);
+      mockEmitPropertyChange.mockReturnValue(true);
 
       let capturedResult: unknown;
       mockUpdateNodeData.mockImplementation(
@@ -2077,7 +2087,7 @@ describe('ResourceProperties', () => {
     });
 
     it('should handle node with undefined data (lines 238-241)', async () => {
-      mockExecuteAsync.mockResolvedValue(true);
+      mockEmitPropertyChange.mockReturnValue(true);
 
       let capturedResult: unknown;
       mockUpdateNodeData.mockImplementation(

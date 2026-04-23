@@ -172,8 +172,6 @@ class VisualFlowConstants {
     ElementTypes.Image,
   ];
 
-  public static readonly FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER: string = 'uniqueName';
-
   public static readonly FLOW_BUILDER_STATIC_CONTENT_ALLOWED_EXECUTION_TYPES: ExecutionTypes[] = [
     ExecutionTypes.MagicLinkExecutor,
   ];

@@ -20,41 +20,16 @@ import {type Node, useReactFlow} from '@xyflow/react';
 import cloneDeep from 'lodash-es/cloneDeep';
 import set from 'lodash-es/set';
 import {useCallback, useEffect} from 'react';
+import useFlowPlugins from './useFlowPlugins';
 import FlowBuilderElementConstants from '../constants/FlowBuilderElementConstants';
-import VisualFlowConstants from '../constants/VisualFlowConstants';
 import type {Properties} from '../models/base';
 import {BlockTypes, ElementTypes} from '../models/elements';
 import type {Element} from '../models/elements';
-import FlowEventTypes from '../models/extension';
-import PluginRegistry from '../plugins/PluginRegistry';
 import generateResourceId from '../utils/generateResourceId';
-
-/**
- * Type for async property change handler with identifier property.
- * Extends the generic plugin handler signature for compatibility with PluginRegistry.
- */
-type AsyncPropertyChangeHandler = ((...args: unknown[]) => Promise<boolean>) & {
-  [VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER]: string;
-};
-
-/**
- * Type for async node delete handler with identifier property.
- * Extends the generic plugin handler signature for compatibility with PluginRegistry.
- */
-type AsyncNodeDeleteHandler = ((...args: unknown[]) => Promise<boolean>) & {
-  [VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER]: string;
-};
-
-/**
- * Type for sync property panel handler with identifier property.
- * Extends the generic plugin handler signature for compatibility with PluginRegistry.
- */
-type SyncPropertyPanelHandler = ((...args: unknown[]) => boolean) & {
-  [VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER]: string;
-};
 
 const useConfirmPasswordField = (): void => {
   const {getNode, updateNodeData} = useReactFlow();
+  const {onPropertyChange, onPropertyPanelOpen, onNodeElementDelete} = useFlowPlugins();
 
   /**
    * Adds a confirm password field to the form when the password field's confirm checkbox is checked.
@@ -410,66 +385,16 @@ const useConfirmPasswordField = (): void => {
     [updateNodeData],
   );
 
-  useEffect(() => {
-    // Create new handler objects with the identifier property set,
-    // rather than mutating the useCallback return values.
-    const identifiedAddField = Object.assign(
-      ((...args: unknown[]) =>
-        addConfirmPasswordField(
-          ...(args as Parameters<typeof addConfirmPasswordField>),
-        )) as unknown as AsyncPropertyChangeHandler,
-      {[VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER]: 'addConfirmPasswordField'},
-    );
-    const identifiedAddFieldProperties = Object.assign(
-      ((...args: unknown[]) =>
-        addConfirmPasswordFieldProperties(
-          ...(args as Parameters<typeof addConfirmPasswordFieldProperties>),
-        )) as SyncPropertyPanelHandler,
-      {[VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER]: 'addConfirmPasswordFieldProperties'},
-    );
-    const identifiedUpdateFieldProperties = Object.assign(
-      ((...args: unknown[]) =>
-        updateConfirmPasswordFieldProperties(
-          ...(args as Parameters<typeof updateConfirmPasswordFieldProperties>),
-        )) as unknown as AsyncPropertyChangeHandler,
-      {[VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER]: 'updateConfirmPasswordFieldProperties'},
-    );
-    const identifiedDeleteField = Object.assign(
-      ((...args: unknown[]) =>
-        deleteConfirmPasswordField(
-          ...(args as Parameters<typeof deleteConfirmPasswordField>),
-        )) as unknown as AsyncNodeDeleteHandler,
-      {[VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER]: 'deleteConfirmPasswordField'},
-    );
-
-    PluginRegistry.getInstance().registerAsync(FlowEventTypes.ON_PROPERTY_CHANGE, identifiedAddField);
-    PluginRegistry.getInstance().registerAsync(FlowEventTypes.ON_PROPERTY_CHANGE, identifiedUpdateFieldProperties);
-    PluginRegistry.getInstance().registerSync(FlowEventTypes.ON_PROPERTY_PANEL_OPEN, identifiedAddFieldProperties);
-    // NOTE: renderConfirmPasswordField and skipConfirmPasswordField are not registered
-    // because the custom rendering is not fully implemented (TODO in renderConfirmPasswordField).
-    // The confirm password field will render as a normal INPUT element.
-    PluginRegistry.getInstance().registerAsync(FlowEventTypes.ON_NODE_ELEMENT_DELETE, identifiedDeleteField);
-
-    return () => {
-      PluginRegistry.getInstance().unregister(FlowEventTypes.ON_PROPERTY_CHANGE, 'addConfirmPasswordField');
-      PluginRegistry.getInstance().unregister(
-        FlowEventTypes.ON_PROPERTY_CHANGE,
-        'updateConfirmPasswordFieldProperties',
-      );
-      PluginRegistry.getInstance().unregister(
-        FlowEventTypes.ON_PROPERTY_PANEL_OPEN,
-        'addConfirmPasswordFieldProperties',
-      );
-      // NOTE: renderConfirmPasswordField and skipConfirmPasswordField are not unregistered
-      // because they were not registered (see comment above).
-      PluginRegistry.getInstance().unregister(FlowEventTypes.ON_NODE_ELEMENT_DELETE, 'deleteConfirmPasswordField');
-    };
-  }, [
-    addConfirmPasswordField,
-    addConfirmPasswordFieldProperties,
-    deleteConfirmPasswordField,
-    updateConfirmPasswordFieldProperties,
-  ]);
+  useEffect(() => onPropertyChange(addConfirmPasswordField), [onPropertyChange, addConfirmPasswordField]);
+  useEffect(
+    () => onPropertyChange(updateConfirmPasswordFieldProperties),
+    [onPropertyChange, updateConfirmPasswordFieldProperties],
+  );
+  useEffect(
+    () => onPropertyPanelOpen(addConfirmPasswordFieldProperties),
+    [onPropertyPanelOpen, addConfirmPasswordFieldProperties],
+  );
+  useEffect(() => onNodeElementDelete(deleteConfirmPasswordField), [onNodeElementDelete, deleteConfirmPasswordField]);
 };
 
 export default useConfirmPasswordField;
