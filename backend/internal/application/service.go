@@ -378,7 +378,7 @@ func (as *applicationService) GetOAuthApplication(
 			return nil, &ErrorApplicationNotFound
 		}
 		as.logger.Error("Failed to resolve clientId to entity", log.Error(epErr),
-			log.String("clientID", log.MaskString(clientID)))
+			log.MaskedString("clientID", clientID))
 		return nil, &serviceerror.InternalServerError
 	}
 	if entityID == nil {

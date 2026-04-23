@@ -149,7 +149,7 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 	}
 
 	logger.Debug("Email sent successfully",
-		log.String("recipient", log.MaskString(recipient)))
+		log.MaskedString("recipient", recipient))
 
 	execResp.AdditionalData[common.DataEmailSent] = dataValueTrue
 	execResp.Status = common.ExecComplete

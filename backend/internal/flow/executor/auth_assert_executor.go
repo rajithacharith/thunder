@@ -464,13 +464,13 @@ func (a *authAssertExecutor) getUserAttributesFromAuthnProvider(ctx context.Cont
 // getUserAttributesFromUserProvider retrieves user attributes from the user provider.
 func (a *authAssertExecutor) getUserAttributesFromUserProvider(userID string) (
 	map[string]interface{}, error) {
-	logger := a.logger.With(log.String("userID", userID))
+	logger := a.logger.With(log.MaskedString(log.LoggerKeyUserID, userID))
 
 	var jsonAttrs json.RawMessage
 	res, err := a.entityProvider.GetEntity(userID)
 	if err != nil {
 		logger.Error("Failed to fetch user attributes",
-			log.String("userID", userID), log.Any("error", err))
+			log.MaskedString(log.LoggerKeyUserID, userID), log.Any("error", err))
 		return nil, errors.New("something went wrong while fetching user attributes: " + err.Error())
 	}
 	jsonAttrs = res.Attributes
@@ -482,7 +482,7 @@ func (a *authAssertExecutor) getUserAttributesFromUserProvider(userID string) (
 
 	var attrs map[string]interface{}
 	if err := json.Unmarshal(jsonAttrs, &attrs); err != nil {
-		logger.Error("Failed to unmarshal user attributes", log.String("userID", userID),
+		logger.Error("Failed to unmarshal user attributes", log.MaskedString(log.LoggerKeyUserID, userID),
 			log.Error(err))
 		return nil, errors.New("something went wrong while unmarshalling user attributes: " + err.Error())
 	}
@@ -532,7 +532,7 @@ func (a *authAssertExecutor) fetchAllUserGroups(userID string) ([]entityprovider
 	groups, err := a.entityProvider.GetTransitiveEntityGroups(userID)
 	if err != nil {
 		a.logger.Error("Failed to fetch transitive user groups",
-			log.String("userID", userID), log.Any("error", err))
+			log.MaskedString(log.LoggerKeyUserID, userID), log.Any("error", err))
 		return nil, errors.New("something went wrong while fetching user groups: " + err.Error())
 	}
 
@@ -555,7 +555,7 @@ func (a *authAssertExecutor) appendGroupsToClaims(
 // appendRolesToClaims appends user roles to the JWT claims using pre-fetched groups for role resolution.
 func (a *authAssertExecutor) appendRolesToClaims(
 	ctx *core.NodeContext, groups []entityprovider.EntityGroup, jwtClaims map[string]interface{}) error {
-	logger := a.logger.With(log.String("userID", ctx.AuthenticatedUser.UserID))
+	logger := a.logger.With(log.MaskedString(log.LoggerKeyUserID, ctx.AuthenticatedUser.UserID))
 
 	groupIDs := make([]string, 0, len(groups))
 	for _, g := range groups {
@@ -565,7 +565,7 @@ func (a *authAssertExecutor) appendRolesToClaims(
 	roles, svcErr := a.roleService.GetUserRoles(ctx.Context, ctx.AuthenticatedUser.UserID, groupIDs)
 	if svcErr != nil {
 		logger.Error("Failed to fetch user roles",
-			log.String("userID", ctx.AuthenticatedUser.UserID),
+			log.MaskedString(log.LoggerKeyUserID, ctx.AuthenticatedUser.UserID),
 			log.Any("error", svcErr))
 		return errors.New("something went wrong while fetching user roles: " + svcErr.ErrorDescription.DefaultValue)
 	}

@@ -104,7 +104,7 @@ func (c *CustomClient) Send(channel common.ChannelType, data common.Notification
 // sendSMS sends an SMS via the custom webhook.
 func (c *CustomClient) sendSMS(data common.NotificationData) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, customClientLoggerComponentName))
-	logger.Debug("Sending SMS via custom client", log.String("to", log.MaskString(data.Recipient)))
+	logger.Debug("Sending SMS via custom client", log.MaskedString("to", data.Recipient))
 
 	var req *http.Request
 	var err error

@@ -99,7 +99,7 @@ func (c *TwilioClient) Send(channel common.ChannelType, data common.Notification
 // sendSMS sends an SMS via the Twilio API.
 func (c *TwilioClient) sendSMS(data common.NotificationData) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, twilioLoggerComponentName))
-	logger.Debug("Sending SMS via Twilio", log.String("to", log.MaskString(data.Recipient)))
+	logger.Debug("Sending SMS via Twilio", log.MaskedString("to", data.Recipient))
 
 	formData := url.Values{}
 	formData.Set("To", data.Recipient)

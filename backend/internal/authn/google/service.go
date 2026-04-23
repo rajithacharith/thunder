@@ -160,7 +160,7 @@ func (g *googleOIDCAuthnService) ValidateIDToken(
 	aud, ok := claims["aud"].(string)
 	if !ok || aud != oAuthClientConfig.ClientID {
 		logger.Debug("Invalid ID token audience", log.String("audience", aud),
-			log.String("clientId", log.MaskString(oAuthClientConfig.ClientID)))
+			log.MaskedString("clientId", oAuthClientConfig.ClientID))
 		return serviceerror.CustomServiceError(authnoidc.ErrorInvalidIDToken, core.I18nMessage{
 			Key:          "error.authnservice.google.invalid_id_token_audience_description",
 			DefaultValue: "The ID token audience does not match the expected client ID",

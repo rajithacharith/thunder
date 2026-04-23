@@ -624,7 +624,8 @@ func (rs *roleService) GetAuthorizedPermissions(
 	ctx context.Context, entityID string, groups []string, requestedPermissions []string,
 ) ([]string, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Debug("Authorizing permissions", log.String("entityID", entityID), log.Int("groupCount", len(groups)))
+	logger.Debug("Authorizing permissions",
+		log.MaskedString(log.LoggerKeyUserID, entityID), log.Int("groupCount", len(groups)))
 
 	// Handle nil groups slice
 	if groups == nil {
@@ -645,14 +646,14 @@ func (rs *roleService) GetAuthorizedPermissions(
 	authorizedPermissions, err := rs.roleStore.GetAuthorizedPermissions(ctx, entityID, groups, requestedPermissions)
 	if err != nil {
 		logger.Error("Failed to get authorized permissions",
-			log.String("entityID", entityID),
+			log.MaskedString(log.LoggerKeyUserID, entityID),
 			log.Int("groupCount", len(groups)),
 			log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
 	logger.Debug("Retrieved authorized permissions",
-		log.String("entityID", entityID),
+		log.MaskedString(log.LoggerKeyUserID, entityID),
 		log.Int("groupCount", len(groups)),
 		log.Int("requestedCount", len(requestedPermissions)),
 		log.Int("authorizedCount", len(authorizedPermissions)))
@@ -665,7 +666,7 @@ func (rs *roleService) GetUserRoles(
 	ctx context.Context, entityID string, groupIDs []string,
 ) ([]string, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Debug("Getting entity roles", log.String("entityID", entityID), log.Int("groupCount", len(groupIDs)))
+	logger.Debug("Getting entity roles", log.MaskedString("entityID", entityID), log.Int("groupCount", len(groupIDs)))
 
 	if groupIDs == nil {
 		groupIDs = []string{}
@@ -678,7 +679,7 @@ func (rs *roleService) GetUserRoles(
 	roles, err := rs.roleStore.GetUserRoles(ctx, entityID, groupIDs)
 	if err != nil {
 		logger.Error("Failed to get entity roles",
-			log.String("entityID", entityID), log.Error(err))
+			log.MaskedString("entityID", entityID), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 

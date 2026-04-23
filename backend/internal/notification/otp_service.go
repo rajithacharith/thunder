@@ -69,7 +69,7 @@ func newOTPService(notifSenderSvc NotificationSenderMgtSvcInterface,
 func (s *otpService) SendOTP(
 	ctx context.Context, otpDTO common.SendOTPDTO) (*common.SendOTPResultDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "OTPService"))
-	logger.Debug("Sending OTP", log.String("recipient", log.MaskString(otpDTO.Recipient)),
+	logger.Debug("Sending OTP", log.MaskedString("recipient", otpDTO.Recipient),
 		log.String("channel", otpDTO.Channel), log.String("senderId", otpDTO.SenderID))
 
 	if err := s.validateOTPSendRequest(otpDTO); err != nil {
@@ -121,7 +121,7 @@ func (s *otpService) SendOTP(
 		return nil, &serviceerror.InternalServerError
 	}
 
-	logger.Debug("OTP sent successfully", log.String("recipient", log.MaskString(otpDTO.Recipient)))
+	logger.Debug("OTP sent successfully", log.MaskedString("recipient", otpDTO.Recipient))
 
 	return &common.SendOTPResultDTO{
 		SessionToken: sessionToken,
