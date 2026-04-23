@@ -1440,6 +1440,7 @@ func (s *EngineTestSuite) TestHandleDisplayOnlyPromptResponse_ForwardToNextNode(
 
 	mockGraph := coremock.NewGraphInterfaceMock(t)
 	mockGraph.On("GetNode", "next-node").Return(mockNextNode, true)
+	mockGraph.On("HasSegments").Return(false)
 
 	fe := &flowEngine{
 		observabilitySvc: mockObservability,
@@ -1761,4 +1762,206 @@ func (s *EngineTestSuite) TestValidateChallengeToken_SkipValidationWhenPolicyNil
 
 	svcErr := fe.validateChallengeToken(ctx, mockNode)
 	s.Nil(svcErr)
+}
+
+func (s *EngineTestSuite) TestValidateSegmentResumePolicy_NoSegments() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+	ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: "seg-1"}
+
+	s.False(fe.validateSegmentResumePolicy(ctx, fe.logger))
+}
+
+func (s *EngineTestSuite) TestValidateSegmentResumePolicy_EmptySegmentID() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(true)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+	ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: ""}
+
+	s.False(fe.validateSegmentResumePolicy(ctx, fe.logger))
+}
+
+func (s *EngineTestSuite) TestValidateSegmentResumePolicy_SegmentNotFound() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(true)
+	mockGraph.On("GetSegmentByID", "seg-1").Return((*core.Segment)(nil))
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+	ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: "seg-1"}
+
+	s.False(fe.validateSegmentResumePolicy(ctx, fe.logger))
+}
+
+func (s *EngineTestSuite) TestValidateSegmentResumePolicy_StartNodeNotFound() {
+	t := s.T()
+	seg := &core.Segment{ID: "seg-1", StartNodeID: "task-node"}
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(true)
+	mockGraph.On("GetSegmentByID", "seg-1").Return(seg)
+	mockGraph.On("GetNode", "task-node").Return(nil, false)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+	ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: "seg-1"}
+
+	s.False(fe.validateSegmentResumePolicy(ctx, fe.logger))
+}
+
+func (s *EngineTestSuite) TestValidateSegmentResumePolicy_SetNodeExecutorFails() {
+	// Node reports TaskExecution type but NodeInterfaceMock doesn't implement
+	// ExecutorBackedNodeInterface, so the type assertion in setNodeExecutor fails.
+	t := s.T()
+	seg := &core.Segment{ID: "seg-1", StartNodeID: "task-node"}
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
+	mockNode.On("GetID").Return("task-node")
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(true)
+	mockGraph.On("GetSegmentByID", "seg-1").Return(seg)
+	mockGraph.On("GetNode", "task-node").Return(mockNode, true)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+	ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: "seg-1"}
+
+	s.False(fe.validateSegmentResumePolicy(ctx, fe.logger))
+}
+
+func (s *EngineTestSuite) TestValidateSegmentResumePolicy_NilPolicy() {
+	t := s.T()
+	seg := &core.Segment{ID: "seg-1", StartNodeID: "prompt-node"}
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetType").Return(common.NodeTypePrompt)
+	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil))
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(true)
+	mockGraph.On("GetSegmentByID", "seg-1").Return(seg)
+	mockGraph.On("GetNode", "prompt-node").Return(mockNode, true)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+	ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: "seg-1"}
+
+	s.False(fe.validateSegmentResumePolicy(ctx, fe.logger))
+}
+
+func (s *EngineTestSuite) TestValidateSegmentResumePolicy_PolicyAllowsRestartFlag() {
+	tests := []struct {
+		name          string
+		allowRestart  bool
+		expectAllowed bool
+	}{
+		{"policy disallows restart", false, false},
+		{"policy allows restart", true, true},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			t := s.T()
+			seg := &core.Segment{ID: "seg-1", StartNodeID: "task-node"}
+			policy := &core.ExecutionPolicy{SkipChallengeValidation: true, AllowSegmentRestart: tt.allowRestart}
+
+			mockNode := coremock.NewNodeInterfaceMock(t)
+			mockNode.On("GetType").Return(common.NodeTypePrompt)
+			mockNode.On("GetExecutionPolicy").Return(policy)
+
+			mockGraph := coremock.NewGraphInterfaceMock(t)
+			mockGraph.On("HasSegments").Return(true)
+			mockGraph.On("GetSegmentByID", "seg-1").Return(seg)
+			mockGraph.On("GetNode", "task-node").Return(mockNode, true)
+
+			fe := &flowEngine{
+				logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+			}
+			ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: "seg-1"}
+
+			s.Equal(tt.expectAllowed, fe.validateSegmentResumePolicy(ctx, fe.logger))
+		})
+	}
+}
+
+func (s *EngineTestSuite) TestHandleDisplayOnlyPromptResponse_ForwardToNextNode_SetsSegmentID() {
+	t := s.T()
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(false).Maybe()
+
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(t)
+	mockPromptNode.On("GetNextNode").Return("next-node")
+
+	mockNextNode := coremock.NewNodeInterfaceMock(t)
+	mockNextNode.On("GetType").Return(common.NodeTypePrompt)
+	mockNextNode.On("GetID").Return("next-node")
+
+	seg := &core.Segment{ID: "seg-1", StartNodeID: "next-node"}
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetNode", "next-node").Return(mockNextNode, true)
+	mockGraph.On("HasSegments").Return(true)
+	mockGraph.On("GetSegmentByStartNode", "next-node").Return(seg)
+
+	fe := &flowEngine{observabilitySvc: mockObservability}
+	ctx := &EngineContext{
+		CurrentNode: mockPromptNode,
+		Graph:       mockGraph,
+	}
+
+	_, complete, err := fe.handleDisplayOnlyPromptResponse(ctx, &common.NodeResponse{
+		Status: common.NodeStatusComplete,
+	}, &FlowStep{Data: FlowData{}}, nil)
+
+	s.Nil(err)
+	s.False(complete)
+	s.Equal("seg-1", ctx.CurrentSegmentID)
+}
+
+func (s *EngineTestSuite) TestHandleDisplayOnlyPromptResponse_ForwardToNextNode_SegmentNotFound_KeepsEmptyID() {
+	t := s.T()
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(false).Maybe()
+
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(t)
+	mockPromptNode.On("GetNextNode").Return("next-node")
+
+	mockNextNode := coremock.NewNodeInterfaceMock(t)
+	mockNextNode.On("GetType").Return(common.NodeTypePrompt)
+	mockNextNode.On("GetID").Return("next-node")
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetNode", "next-node").Return(mockNextNode, true)
+	mockGraph.On("HasSegments").Return(true)
+	mockGraph.On("GetSegmentByStartNode", "next-node").Return((*core.Segment)(nil))
+
+	fe := &flowEngine{observabilitySvc: mockObservability}
+	ctx := &EngineContext{
+		CurrentNode: mockPromptNode,
+		Graph:       mockGraph,
+	}
+
+	_, complete, err := fe.handleDisplayOnlyPromptResponse(ctx, &common.NodeResponse{
+		Status: common.NodeStatusComplete,
+	}, &FlowStep{Data: FlowData{}}, nil)
+
+	s.Nil(err)
+	s.False(complete)
+	s.Equal("", ctx.CurrentSegmentID)
 }

@@ -240,6 +240,12 @@ func (suite *InviteExecutorTestSuite) TestGetExecutionPolicy_VerifyMode_SkipsCha
 	assert.True(suite.T(), policy.SkipChallengeValidation)
 }
 
+func (suite *InviteExecutorTestSuite) TestGetExecutionPolicy_VerifyMode_AllowsSegmentRestart() {
+	policy := suite.executor.GetExecutionPolicy(ExecutorModeVerify)
+	assert.NotNil(suite.T(), policy)
+	assert.True(suite.T(), policy.AllowSegmentRestart)
+}
+
 func (suite *InviteExecutorTestSuite) TestGetExecutionPolicy_InvalidMode_ReturnsNil() {
 	policy := suite.executor.GetExecutionPolicy("invalid-mode")
 	assert.Nil(suite.T(), policy)
