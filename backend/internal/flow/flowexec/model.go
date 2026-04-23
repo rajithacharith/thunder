@@ -31,7 +31,8 @@ import (
 	managerpkg "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
-	"github.com/asgardeo/thunder/internal/system/crypto/config"
+	"github.com/asgardeo/thunder/internal/system/crypto"
+	"github.com/asgardeo/thunder/internal/system/crypto/runtime"
 )
 
 // EngineContext holds the overall context used by the flow engine during execution.
@@ -137,8 +138,8 @@ func (f *FlowContextDB) decrypt(ctx context.Context) error {
 	if !f.isEncrypted() {
 		return nil
 	}
-	encryptionService := config.GetEncryptionService()
-	decrypted, err := encryptionService.Decrypt(ctx, []byte(f.Context))
+	decrypted, err := runtime.GetRuntimeCryptoService().Decrypt(
+		ctx, crypto.KeyRef{}, crypto.AlgorithmAESGCM, []byte(f.Context))
 	if err != nil {
 		return err
 	}
@@ -173,8 +174,7 @@ func (c *flowContextContent) encrypt(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	encryptionService := config.GetEncryptionService()
-	encrypted, err := encryptionService.Encrypt(ctx, data)
+	encrypted, err := runtime.GetRuntimeCryptoService().Encrypt(ctx, crypto.KeyRef{}, crypto.AlgorithmAESGCM, data)
 	if err != nil {
 		return "", err
 	}
