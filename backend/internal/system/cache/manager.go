@@ -84,10 +84,16 @@ func (cm *CacheManager) Init() {
 
 	if getCacheType(cacheConfig) == cacheTypeRedis {
 		cm.redisClient = redis.NewClient(&redis.Options{
-			Addr:     cacheConfig.Redis.Address,
-			Username: cacheConfig.Redis.Username,
-			Password: cacheConfig.Redis.Password,
-			DB:       cacheConfig.Redis.DB,
+			Addr:            cacheConfig.Redis.Address,
+			Username:        cacheConfig.Redis.Username,
+			Password:        cacheConfig.Redis.Password,
+			DB:              cacheConfig.Redis.DB,
+			MaxRetries:      cacheConfig.Redis.MaxRetries,
+			MinRetryBackoff: time.Duration(cacheConfig.Redis.MinRetryBackoffMS) * time.Millisecond,
+			MaxRetryBackoff: time.Duration(cacheConfig.Redis.MaxRetryBackoffMS) * time.Millisecond,
+			DialTimeout:     time.Duration(cacheConfig.Redis.DialTimeoutMS) * time.Millisecond,
+			ReadTimeout:     time.Duration(cacheConfig.Redis.ReadTimeoutMS) * time.Millisecond,
+			WriteTimeout:    time.Duration(cacheConfig.Redis.WriteTimeoutMS) * time.Millisecond,
 		})
 		if err := cm.redisClient.Ping(context.Background()).Err(); err != nil {
 			logger.Error("Failed to connect to Redis. Cache initialization aborted.", log.Error(err))

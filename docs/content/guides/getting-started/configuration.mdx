@@ -85,6 +85,9 @@ Stores identity provider configurations, applications, and authentication flows.
 | `database.config.postgres.max_open_conns` | `500` | Maximum number of open connections |
 | `database.config.postgres.max_idle_conns` | `100` | Maximum number of idle connections |
 | `database.config.postgres.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+| `database.config.postgres.max_retries` | `3` | Maximum retry attempts for transient errors |
+| `database.config.postgres.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
+| `database.config.postgres.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
 
 **`database.config.sqlite.*`** — only read when `database.config.type: sqlite`:
 
@@ -95,6 +98,9 @@ Stores identity provider configurations, applications, and authentication flows.
 | `database.config.sqlite.max_open_conns` | `500` | Maximum number of open connections |
 | `database.config.sqlite.max_idle_conns` | `100` | Maximum number of idle connections |
 | `database.config.sqlite.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+| `database.config.sqlite.max_retries` | `3` | Maximum retry attempts for transient errors |
+| `database.config.sqlite.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
+| `database.config.sqlite.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
 
 ### Runtime Database
 
@@ -117,6 +123,9 @@ Stores runtime data like sessions, tokens, and temporary data. The runtime datab
 | `database.runtime.postgres.max_open_conns` | `500` | Maximum number of open connections |
 | `database.runtime.postgres.max_idle_conns` | `100` | Maximum number of idle connections |
 | `database.runtime.postgres.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+| `database.runtime.postgres.max_retries` | `3` | Maximum retry attempts for transient errors |
+| `database.runtime.postgres.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
+| `database.runtime.postgres.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
 
 **`database.runtime.sqlite.*`** — only read when `database.runtime.type: sqlite`:
 
@@ -127,6 +136,9 @@ Stores runtime data like sessions, tokens, and temporary data. The runtime datab
 | `database.runtime.sqlite.max_open_conns` | `500` | Maximum number of open connections |
 | `database.runtime.sqlite.max_idle_conns` | `100` | Maximum number of idle connections |
 | `database.runtime.sqlite.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+| `database.runtime.sqlite.max_retries` | `3` | Maximum retry attempts for transient errors |
+| `database.runtime.sqlite.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
+| `database.runtime.sqlite.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
 
 **`database.runtime.redis.*`** — only read when `database.runtime.type: redis`:
 
@@ -137,6 +149,12 @@ Stores runtime data like sessions, tokens, and temporary data. The runtime datab
 | `database.runtime.redis.password` | `""` | Redis password or ACL user password |
 | `database.runtime.redis.db` | `0` | Redis logical database index (0–15) |
 | `database.runtime.redis.key_prefix` | `""` | Prefix applied to all Redis keys written by Thunder, for example `thunder:` |
+| `database.runtime.redis.max_retries` | `5` | Maximum retry attempts for transient Redis network and timeout issues |
+| `database.runtime.redis.min_retry_backoff_ms` | `10` | Minimum delay before Redis retries in milliseconds |
+| `database.runtime.redis.max_retry_backoff_ms` | `100` | Maximum delay before Redis retries in milliseconds |
+| `database.runtime.redis.dial_timeout_ms` | `5000` | Redis connection (dial) timeout in milliseconds |
+| `database.runtime.redis.read_timeout_ms` | `3000` | Redis read timeout in milliseconds |
+| `database.runtime.redis.write_timeout_ms` | `3000` | Redis write timeout in milliseconds |
 
 #### Redis Connection Requirements
 
@@ -146,6 +164,15 @@ Stores runtime data like sessions, tokens, and temporary data. The runtime datab
 - Thunder does not enforce TLS at the client configuration level. To encrypt traffic, place a TLS-terminating proxy in front of Redis and point `database.runtime.redis.address` at the proxy endpoint.
 - If your Redis deployment uses Access Control Lists (ACLs), create a dedicated user and grant the following commands: `GET`, `SET`, `DEL`, `EXPIRE`, `EVAL`, `EVALSHA`. Set `database.runtime.redis.username` and `database.runtime.redis.password` accordingly.
 - Thunder calls `PING` at startup to verify connectivity. The process terminates if the Redis server is unreachable.
+
+#### Database Retry Behavior
+
+Thunder applies exponential backoff with jitter for transient failures on non-transactional SQL read operations (`Query` path). Retry behavior is configurable per database via `max_retries`, `min_retry_backoff_ms`, and `max_retry_backoff_ms` under the relevant `postgres` or `sqlite` sub-key.
+
+- Retryable classes include transient connectivity errors (`ErrBadConn`, `ErrConnDone`, connection reset/refused), timeouts, deadlocks (`40P01`), and PostgreSQL resource/availability states (`53xxx`, `57P01`, `57P02`, `57P03`, too-many-connections).
+- Non-retryable conditions include no-row outcomes (`ErrNoRows`), syntax/validation issues, and other permanent SQL conditions.
+- Write operations executed via `Execute` are not retried automatically to avoid accidental duplicate writes. If your write path is explicitly idempotent, add idempotency at the business layer (for example with deterministic IDs or upsert semantics).
+- Retry metrics are emitted through OpenTelemetry metric instruments (`thunder_db_retry_attempts_total`, `thunder_db_retry_backoff_seconds`, `thunder_db_operation_seconds`), which can be exported to Prometheus via your OpenTelemetry collector pipeline.
 
 ### User Database
 
@@ -168,6 +195,9 @@ Stores user profiles and credentials.
 | `database.user.postgres.max_open_conns` | `500` | Maximum number of open connections |
 | `database.user.postgres.max_idle_conns` | `100` | Maximum number of idle connections |
 | `database.user.postgres.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+| `database.user.postgres.max_retries` | `3` | Maximum retry attempts for transient errors |
+| `database.user.postgres.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
+| `database.user.postgres.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
 
 **`database.user.sqlite.*`** — only read when `database.user.type: sqlite`:
 
@@ -178,6 +208,9 @@ Stores user profiles and credentials.
 | `database.user.sqlite.max_open_conns` | `500` | Maximum number of open connections |
 | `database.user.sqlite.max_idle_conns` | `100` | Maximum number of idle connections |
 | `database.user.sqlite.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+| `database.user.sqlite.max_retries` | `3` | Maximum retry attempts for transient errors |
+| `database.user.sqlite.min_retry_backoff_ms` | `50` | Minimum delay before retrying in milliseconds |
+| `database.user.sqlite.max_retry_backoff_ms` | `2000` | Maximum delay before retrying in milliseconds |
 
 ## Cache Configuration
 
@@ -197,6 +230,12 @@ Thunder includes both in-memory and Redis-backed caching to improve performance.
 | `cache.redis.password` | `""` | Redis password |
 | `cache.redis.db` | `0` | Redis database index |
 | `cache.redis.key_prefix` | `thunder` | Prefix added to all Redis cache keys |
+| `cache.redis.max_retries` | `5` | Maximum retry attempts for transient Redis network and timeout issues |
+| `cache.redis.min_retry_backoff_ms` | `10` | Minimum delay before Redis retries in milliseconds |
+| `cache.redis.max_retry_backoff_ms` | `100` | Maximum delay before Redis retries in milliseconds |
+| `cache.redis.dial_timeout_ms` | `5000` | Redis connection (dial) timeout in milliseconds |
+| `cache.redis.read_timeout_ms` | `3000` | Redis read timeout in milliseconds |
+| `cache.redis.write_timeout_ms` | `3000` | Redis write timeout in milliseconds |
 
 ### Cache Property Overrides
 
@@ -251,6 +290,12 @@ cache:
     password: ""
     db: 0
     key_prefix: "thunder"
+    max_retries: 5
+    min_retry_backoff_ms: 10
+    max_retry_backoff_ms: 100
+    dial_timeout_ms: 5000
+    read_timeout_ms: 3000
+    write_timeout_ms: 3000
 ```
 
 :::note
