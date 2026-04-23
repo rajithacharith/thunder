@@ -679,6 +679,62 @@ describe('UserEditPage', () => {
       });
     });
 
+    it('hides edit button when schema has only credential fields', () => {
+      const credentialOnlySchema: ApiUserSchema = {
+        id: 'credential-only',
+        name: 'CredentialOnly',
+        schema: {
+          password: {
+            type: 'string',
+            required: true,
+            credential: true,
+          },
+          pin: {
+            type: 'number',
+            credential: true,
+          },
+        },
+      };
+
+      mockUseGetUserSchema.mockReturnValue({
+        data: credentialOnlySchema,
+        isLoading: false,
+        error: null,
+      });
+
+      render(<UserEditPage />);
+
+      expect(screen.queryByRole('button', {name: /edit/i})).not.toBeInTheDocument();
+    });
+
+    it('shows edit button when schema has at least one non-credential field', () => {
+      const mixedSchema: ApiUserSchema = {
+        id: 'mixed',
+        name: 'Mixed',
+        schema: {
+          password: {
+            type: 'string',
+            required: true,
+            credential: true,
+          },
+          email: {
+            type: 'string',
+            required: true,
+          },
+        },
+      };
+
+      mockUseGetUserSchema.mockReturnValue({
+        data: mixedSchema,
+        isLoading: false,
+        error: null,
+      });
+
+      render(<UserEditPage />);
+
+      expect(screen.getByRole('button', {name: /edit/i})).toBeInTheDocument();
+    });
+
     it('populates form fields with current user data', async () => {
       const user = userEvent.setup();
       render(<UserEditPage />);
@@ -1171,8 +1227,7 @@ describe('UserEditPage', () => {
       expect(alert).toBeInTheDocument();
     });
 
-    it('displays "No schema available for editing" when schema is null in edit mode', async () => {
-      const user = userEvent.setup();
+    it('hides edit button when schema is null', () => {
       mockUseGetUserSchema.mockReturnValue({
         data: {
           id: 'employee',
@@ -1185,11 +1240,7 @@ describe('UserEditPage', () => {
 
       render(<UserEditPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      await waitFor(() => {
-        expect(screen.getByText('No schema available for editing')).toBeInTheDocument();
-      });
+      expect(screen.queryByRole('button', {name: /edit/i})).not.toBeInTheDocument();
     });
   });
 });

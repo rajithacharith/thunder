@@ -109,6 +109,13 @@ export default function UserEditPage() {
 
   const {data: userSchema, isLoading: isSchemaLoading, error: schemaError} = useGetUserSchema(schemaId);
 
+  const hasEditableFields = useMemo(() => {
+    if (!userSchema?.schema) return false;
+    return Object.entries(userSchema.schema).some(
+      ([, fieldDef]) => !((fieldDef.type === 'string' || fieldDef.type === 'number') && fieldDef.credential),
+    );
+  }, [userSchema]);
+
   const displayName = user?.display ?? user?.id ?? '';
 
   const {
@@ -293,7 +300,7 @@ export default function UserEditPage() {
                 'View and manage user attribute values.',
               )}
               headerAction={
-                !isEditMode ? (
+                !isEditMode && hasEditableFields ? (
                   <Button variant="outlined" size="small" onClick={() => setIsEditMode(true)}>
                     {t('common:actions.edit', 'Edit')}
                   </Button>
