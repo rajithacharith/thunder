@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import type {ApiPaginationLink} from '@thunder/types';
 import type {LayoutConfig} from './layout';
 import type {Theme} from './theme';
 
@@ -45,14 +46,6 @@ export interface LayoutListItem {
 }
 
 /**
- * Pagination link
- */
-export interface Link {
-  href: string;
-  rel: string;
-}
-
-/**
  * Response for listing theme configurations
  */
 export interface ThemeListResponse {
@@ -60,7 +53,7 @@ export interface ThemeListResponse {
   startIndex: number;
   count: number;
   themes: ThemeListItem[];
-  links: Link[];
+  links: ApiPaginationLink[];
 }
 
 /**
@@ -82,7 +75,7 @@ export interface LayoutListResponse {
   startIndex: number;
   count: number;
   layouts: LayoutListItem[];
-  links: Link[];
+  links: ApiPaginationLink[];
 }
 
 /**

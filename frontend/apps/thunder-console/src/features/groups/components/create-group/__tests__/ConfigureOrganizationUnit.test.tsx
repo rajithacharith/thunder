@@ -21,8 +21,8 @@ import userEvent from '@testing-library/user-event';
 import {describe, it, expect, beforeEach, vi} from 'vitest';
 import ConfigureOrganizationUnit, {type ConfigureOrganizationUnitProps} from '../ConfigureOrganizationUnit';
 
-vi.mock('../../../../organization-units/components/OrganizationUnitTreePicker', () => ({
-  default: ({value, onChange}: {value: string; onChange: (id: string) => void}) => (
+vi.mock('@thunder/configure-organization-units', () => ({
+  OrganizationUnitTreePicker: ({value, onChange}: {value: string; onChange: (id: string) => void}) => (
     <div data-testid="ou-tree-picker">
       <span data-testid="ou-value">{value}</span>
       <button type="button" data-testid="select-ou" onClick={() => onChange('ou-123')}>

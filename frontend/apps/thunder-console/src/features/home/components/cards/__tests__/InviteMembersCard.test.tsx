@@ -47,8 +47,8 @@ vi.mock('framer-motion', async () => {
 });
 
 const mockUseGetUsers = vi.fn();
-vi.mock('../../../../users/api/useGetUsers', () => ({
-  default: (args: unknown) => mockUseGetUsers(args) as unknown,
+vi.mock('@thunder/configure-users', () => ({
+  useGetUsers: (args: unknown) => mockUseGetUsers(args) as unknown,
 }));
 
 describe('InviteMembersCard', () => {

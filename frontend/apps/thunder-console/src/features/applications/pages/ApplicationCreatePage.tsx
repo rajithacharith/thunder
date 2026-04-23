@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {useHasMultipleOUs} from '@thunder/configure-organization-units';
 import {useLogger} from '@thunder/logger/react';
 import {
   Box,
@@ -39,7 +40,6 @@ import generateFlowGraph from '../../flows/utils/generateFlowGraph';
 import useIdentityProviders from '../../integrations/api/useIdentityProviders';
 import {AuthenticatorTypes} from '../../integrations/models/authenticators';
 import {IdentityProviderTypes} from '../../integrations/models/identity-provider';
-import useHasMultipleOUs from '../../organization-units/api/useHasMultipleOUs';
 import useGetUserTypes from '../../user-types/api/useGetUserTypes';
 import useCreateApplication from '../api/useCreateApplication';
 import ConfigureSignInOptions from '../components/create-application/configure-signin-options/ConfigureSignInOptions';

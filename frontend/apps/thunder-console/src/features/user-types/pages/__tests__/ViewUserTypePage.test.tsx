@@ -77,8 +77,8 @@ vi.mock('../../api/useDeleteUserType', () => ({
 }));
 
 // Mock OrganizationUnitTreePicker
-vi.mock('../../../organization-units/components/OrganizationUnitTreePicker', () => ({
-  default: ({value, onChange}: {value: string; onChange: (id: string) => void}) => (
+vi.mock('@thunder/configure-organization-units', () => ({
+  OrganizationUnitTreePicker: ({value, onChange}: {value: string; onChange: (id: string) => void}) => (
     <div data-testid="ou-tree-picker">
       <span data-testid="ou-value">{value || ''}</span>
       <button type="button" data-testid="select-ou-root" onClick={() => onChange('root-ou')}>

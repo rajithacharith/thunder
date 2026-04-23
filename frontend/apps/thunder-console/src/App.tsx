@@ -23,6 +23,19 @@ import {
   TranslationsEditPage,
   TranslationsListPage,
 } from '@thunder/admin-translations';
+import {
+  CreateOrganizationUnitPage,
+  OrganizationUnitProvider,
+  OrganizationUnitEditPage,
+  OrganizationUnitsListPage,
+} from '@thunder/configure-organization-units';
+import {
+  UserCreateProvider,
+  UserCreatePage,
+  UserEditPage,
+  UserInvitePage,
+  UsersListPage,
+} from '@thunder/configure-users';
 import {ToastProvider} from '@thunder/contexts';
 import type {JSX} from 'react';
 import {BrowserRouter, Route, Routes} from 'react-router';
@@ -44,10 +57,6 @@ import GroupsListPage from './features/groups/pages/GroupsListPage';
 import HomePage from './features/home/pages/HomePage';
 import IntegrationsPage from './features/integrations/pages/IntegrationsPage';
 import LoginFlowBuilderPage from './features/login-flow/pages/LoginFlowPage';
-import OrganizationUnitProvider from './features/organization-units/contexts/OrganizationUnitProvider';
-import CreateOrganizationUnitPage from './features/organization-units/pages/CreateOrganizationUnitPage';
-import OrganizationUnitEditPage from './features/organization-units/pages/OrganizationUnitEditPage';
-import OrganizationUnitsListPage from './features/organization-units/pages/OrganizationUnitsListPage';
 import RoleCreateProvider from './features/roles/contexts/RoleCreate/RoleCreateProvider';
 import CreateRolePage from './features/roles/pages/CreateRolePage';
 import RoleEditPage from './features/roles/pages/RoleEditPage';
@@ -56,11 +65,6 @@ import UserTypeCreateProvider from './features/user-types/contexts/UserTypeCreat
 import CreateUserTypePage from './features/user-types/pages/CreateUserTypePage';
 import UserTypesListPage from './features/user-types/pages/UserTypesListPage';
 import ViewUserTypePage from './features/user-types/pages/ViewUserTypePage';
-import UserCreateProvider from './features/users/contexts/UserCreate/UserCreateProvider';
-import UserCreatePage from './features/users/pages/UserCreatePage';
-import UserEditPage from './features/users/pages/UserEditPage';
-import UserInvitePage from './features/users/pages/UserInvitePage';
-import UsersListPage from './features/users/pages/UsersListPage';
 import DashboardLayout from './layouts/DashboardLayout';
 import FullScreenLayout from './layouts/FullScreenLayout';
 

@@ -17,13 +17,13 @@
  */
 
 import {SettingsCard} from '@thunder/components';
+import {OrganizationUnitTreePicker} from '@thunder/configure-organization-units';
 import {useResolveDisplayName} from '@thunder/hooks';
 import {Stack, Typography, Button, Select, MenuItem} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useState, useCallback, useRef, useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import QuickCopySection from './QuickCopySection';
-import OrganizationUnitTreePicker from '../../../../organization-units/components/OrganizationUnitTreePicker';
 import type {ApiUserSchema, SchemaPropertyInput} from '../../../types/user-types';
 
 export interface EditGeneralSettingsProps {
