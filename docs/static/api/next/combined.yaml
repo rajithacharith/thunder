@@ -2825,8 +2825,8 @@ paths:
                   summary: Invalid member ID
                   value:
                     code: GRP-1007
-                    message: Invalid user member ID
-                    description: One or more user member IDs in the request do not exist
+                    message: Invalid member ID
+                    description: One or more user or app member IDs in the request do not exist or do not match the claimed type
         "404":
           description: Group not found
           content:
@@ -6966,7 +6966,7 @@ paths:
                   value:
                     code: ROL-1007
                     message: Invalid assignment ID
-                    description: One or more assignment IDs in the request do not exist
+                    description: One or more assignment IDs in the request do not exist or do not match the claimed type
                 ou-not-found:
                   summary: Organization unit not found
                   value:
@@ -7294,9 +7294,9 @@ paths:
                 invalid-type:
                   summary: Invalid assignee type parameter
                   value:
-                    code: ROL-1017
+                    code: ROL-1016
                     message: Invalid assignee type
-                    description: The type parameter must be either 'user' or 'group'
+                    description: The type parameter must be 'user', 'group', or 'app'
                 invalid-limit:
                   summary: Invalid limit parameter
                   value:
@@ -7375,7 +7375,7 @@ paths:
                   value:
                     code: ROL-1007
                     message: Invalid assignment ID
-                    description: One or more assignment IDs in the request do not exist
+                    description: One or more assignment IDs in the request do not exist or do not match the claimed type
                 empty-assignments:
                   summary: Empty assignments
                   value:
@@ -11350,6 +11350,7 @@ components:
           enum:
             - user
             - group
+            - app
         display:
           type: string
           readOnly: true
@@ -12613,13 +12614,14 @@ components:
         id:
           type: string
           format: uuid
-          description: ID of the user or group being assigned
+          description: ID of the user, app, or group being assigned
         type:
           type: string
           enum:
             - user
             - group
-          description: Type of entity being assigned (user or group)
+            - app
+          description: Type of entity being assigned (user, app, or group)
         display:
           type: string
           readOnly: true
@@ -12637,13 +12639,14 @@ components:
         id:
           type: string
           format: uuid
-          description: ID of the user or group being assigned
+          description: ID of the user, app, or group being assigned
         type:
           type: string
           enum:
             - user
             - group
-          description: Type of entity being assigned (user or group)
+            - app
+          description: Type of entity being assigned (user, app, or group)
     ResourcePermissions:
       type: object
       required:
@@ -13485,6 +13488,7 @@ components:
         enum:
           - user
           - group
+          - app
       description: >
         Filter assignments by assignee type. When omitted, assignments of all
         types are returned.

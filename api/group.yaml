@@ -476,8 +476,8 @@ paths:
                   summary: Invalid member ID
                   value:
                     code: "GRP-1007"
-                    message: "Invalid user member ID"
-                    description: "One or more user member IDs in the request do not exist"
+                    message: "Invalid member ID"
+                    description: "One or more user or app member IDs in the request do not exist or do not match the claimed type"
         "404":
           description: Group not found
           content:
@@ -834,6 +834,7 @@ components:
           enum:
             - user
             - group
+            - app
         display:
           type: string
           readOnly: true

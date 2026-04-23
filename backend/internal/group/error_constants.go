@@ -105,17 +105,18 @@ var (
 			DefaultValue: "Cannot delete group with child groups",
 		},
 	}
-	// ErrorInvalidUserMemberID is the error returned when user member ID is invalid.
-	ErrorInvalidUserMemberID = serviceerror.ServiceError{
+	// ErrorInvalidMemberID is the error returned when a user or app member ID is invalid.
+	ErrorInvalidMemberID = serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "GRP-1007",
 		Error: core.I18nMessage{
-			Key:          "error.groupservice.invalid_user_member_id",
-			DefaultValue: "Invalid user member ID",
+			Key:          "error.groupservice.invalid_member_id",
+			DefaultValue: "Invalid member ID",
 		},
 		ErrorDescription: core.I18nMessage{
-			Key:          "error.groupservice.invalid_user_member_id_description",
-			DefaultValue: "One or more user member IDs in the request do not exist",
+			Key: "error.groupservice.invalid_member_id_description",
+			DefaultValue: "One or more user or app member IDs in the request do not exist " +
+				"or do not match the claimed type",
 		},
 	}
 	// ErrorInvalidGroupMemberID is the error returned when group member ID is invalid.
@@ -168,6 +169,36 @@ var (
 		ErrorDescription: core.I18nMessage{
 			Key:          "error.groupservice.empty_members_list_description",
 			DefaultValue: "The members list cannot be empty",
+		},
+	}
+	// ErrorInvalidMemberType is the error returned when a member type is not a valid API value.
+	ErrorInvalidMemberType = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "GRP-1014",
+		Error: core.I18nMessage{
+			Key:          "error.groupservice.invalid_member_type",
+			DefaultValue: "Invalid member type",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.groupservice.invalid_member_type_description",
+			DefaultValue: "The member type must be 'user', 'group', or 'app'",
+		},
+	}
+)
+
+// Server errors for group management operations.
+var (
+	// ErrorInternalServerError is the error returned when an internal server error occurs.
+	ErrorInternalServerError = serviceerror.ServiceError{
+		Type: serviceerror.ServerErrorType,
+		Code: "GRP-5000",
+		Error: core.I18nMessage{
+			Key:          "error.groupservice.internal_server_error",
+			DefaultValue: "Internal server error",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.groupservice.internal_server_error_description",
+			DefaultValue: "An unexpected error occurred while processing the request",
 		},
 	}
 )

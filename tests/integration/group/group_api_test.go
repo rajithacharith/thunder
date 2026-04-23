@@ -624,8 +624,8 @@ func (suite *GroupAPITestSuite) TestCreateGroupWithInvalidUserID() {
 	suite.Require().NoError(err)
 
 	suite.Equal("GRP-1007", errorResp["code"])
-	suite.Equal("Invalid user member ID", errorResp["message"].(map[string]interface{})["defaultValue"])
-	suite.Contains(errorResp["description"].(map[string]interface{})["defaultValue"], "One or more user member IDs in the request do not exist")
+	suite.Equal("Invalid member ID", errorResp["message"].(map[string]interface{})["defaultValue"])
+	suite.Contains(errorResp["description"].(map[string]interface{})["defaultValue"], "One or more user or app member IDs in the request do not exist")
 }
 
 func (suite *GroupAPITestSuite) TestCreateGroupWithMixedValidInvalidUserIDs() {
@@ -673,7 +673,7 @@ func (suite *GroupAPITestSuite) TestCreateGroupWithMixedValidInvalidUserIDs() {
 	suite.Require().NoError(err)
 
 	suite.Equal("GRP-1007", errorResp["code"])
-	suite.Equal("Invalid user member ID", errorResp["message"].(map[string]interface{})["defaultValue"])
+	suite.Equal("Invalid member ID", errorResp["message"].(map[string]interface{})["defaultValue"])
 }
 
 func (suite *GroupAPITestSuite) TestCreateGroupWithEmptyUserList() {
@@ -1249,7 +1249,7 @@ func (suite *GroupAPITestSuite) TestAddGroupMembersWithInvalidUserID() {
 	suite.Require().NoError(err)
 
 	suite.Equal("GRP-1007", errorResp["code"])
-	suite.Equal("Invalid user member ID", errorResp["message"].(map[string]interface{})["defaultValue"])
+	suite.Equal("Invalid member ID", errorResp["message"].(map[string]interface{})["defaultValue"])
 }
 
 func (suite *GroupAPITestSuite) TestAddGroupMembersWithInvalidGroupID() {

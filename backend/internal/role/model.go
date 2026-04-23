@@ -20,17 +20,33 @@ package role
 
 import "github.com/asgardeo/thunder/internal/system/utils"
 
-// AssigneeType represents the type of assignee entity.
+// AssigneeType represents the type of assignee principal.
 type AssigneeType string
 
+// Public assignee types accepted in requests and returned in responses.
 const (
-	// AssigneeTypeUser is the type for users.
+	// AssigneeTypeUser is the public type for user principals.
 	AssigneeTypeUser AssigneeType = "user"
-	// AssigneeTypeGroup is the type for groups.
-	AssigneeTypeGroup AssigneeType = "group"
-	// AssigneeTypeApp is the type for applications.
+	// AssigneeTypeApp is the public type for application principals.
 	AssigneeTypeApp AssigneeType = "app"
+	// AssigneeTypeGroup is the public type for group principals.
+	AssigneeTypeGroup AssigneeType = "group"
 )
+
+// Internal assignee types used only for storage.
+const (
+	assigneeTypeEntity AssigneeType = "entity"
+)
+
+// IsEntityType reports whether t is an entity type (user, app) that maps
+// to the internal entity storage type.
+func (t AssigneeType) IsEntityType() bool {
+	switch t {
+	case AssigneeTypeUser, AssigneeTypeApp:
+		return true
+	}
+	return false
+}
 
 // AssignmentResponse represents an assignment of a role to a user or group.
 type AssignmentResponse struct {
