@@ -125,3 +125,6 @@ docs/static/api/combined.yaml
 
 # Playwright
 .playwright-cli/
+
+# Claude Code
+.claude/
