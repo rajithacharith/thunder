@@ -248,6 +248,10 @@ html[data-page='home'][data-theme='dark'] .navbar .navbar__github--link::before 
   font-weight: 500;
 }
 
+.navbar__brand .navbar__title {
+  display: none;
+}
+
 /* Right-side navbar items - add gap between nav links and icon buttons */
 .navbar__items--right {
   gap: 0.25rem;
