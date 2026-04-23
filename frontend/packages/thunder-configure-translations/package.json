@@ -1,16 +1,16 @@
 {
-  "name": "@thunder/admin-translations",
+  "name": "@thunder/configure-translations",
   "version": "0.0.0",
   "description": "Translations feature for ⚡️ Thunder applications",
   "keywords": [
     "thunder",
-    "admin",
+    "configure",
     "translations",
     "react",
     "feature",
     "wso2"
   ],
-  "homepage": "https://github.com/asgardeo/thunder/tree/main/frontend/packages/thunder-admin-translations#readme",
+  "homepage": "https://github.com/asgardeo/thunder/tree/main/frontend/packages/thunder-configure-translations#readme",
   "bugs": {
     "url": "https://github.com/asgardeo/thunder/issues"
   },

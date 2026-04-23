@@ -60,7 +60,7 @@
     "@thunder/hooks": "workspace:^",
     "@thunder/configure-users": "workspace:^",
     "@thunder/configure-organization-units": "workspace:^",
-    "@thunder/admin-translations": "workspace:^",
+    "@thunder/configure-translations": "workspace:^",
     "@thunder/utils": "workspace:^",
     "@wso2/oxygen-ui": "catalog:",
     "@wso2/oxygen-ui-icons-react": "catalog:",
