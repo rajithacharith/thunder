@@ -1370,6 +1370,30 @@ func validateGrantTypesAndResponseTypes(oauthConfig *model.OAuthAppConfigDTO) *s
 		}
 	}
 
+	if len(oauthConfig.GrantTypes) == 1 &&
+		slices.Contains(oauthConfig.GrantTypes, oauth2const.GrantTypeRefreshToken) {
+		return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+			Key:          "error.applicationservice.refresh_token_cannot_be_sole_grant_description",
+			DefaultValue: "refresh_token grant type cannot be used without another grant type",
+		})
+	}
+
+	if oauthConfig.PKCERequired &&
+		!slices.Contains(oauthConfig.GrantTypes, oauth2const.GrantTypeAuthorizationCode) {
+		return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+			Key:          "error.applicationservice.pkce_requires_authorization_code_description",
+			DefaultValue: "PKCE can only be enabled when the authorization_code grant type is selected",
+		})
+	}
+
+	if len(oauthConfig.ResponseTypes) > 0 &&
+		!slices.Contains(oauthConfig.GrantTypes, oauth2const.GrantTypeAuthorizationCode) {
+		return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+			Key:          "error.applicationservice.response_types_require_authorization_code_description",
+			DefaultValue: "Response types can only be configured with the authorization_code grant type",
+		})
+	}
+
 	return nil
 }
 

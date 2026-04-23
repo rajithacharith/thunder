@@ -420,6 +420,70 @@ func (suite *ServiceTestSuite) TestValidateGrantTypesAndResponseTypes() {
 			},
 			expectError: true,
 		},
+		{
+			name: "Refresh token grant alone",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				GrantTypes:    []oauth2const.GrantType{oauth2const.GrantTypeRefreshToken},
+				ResponseTypes: []oauth2const.ResponseType{},
+			},
+			expectError:   true,
+			errorContains: "refresh_token grant type cannot be used without another grant type",
+		},
+		{
+			name: "Refresh token with authorization code",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				GrantTypes: []oauth2const.GrantType{
+					oauth2const.GrantTypeAuthorizationCode,
+					oauth2const.GrantTypeRefreshToken,
+				},
+				ResponseTypes: []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+			},
+			expectError: false,
+		},
+		{
+			name: "PKCE required with client credentials only",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				GrantTypes:    []oauth2const.GrantType{oauth2const.GrantTypeClientCredentials},
+				ResponseTypes: []oauth2const.ResponseType{},
+				PKCERequired:  true,
+			},
+			expectError:   true,
+			errorContains: "PKCE can only be enabled when the authorization_code grant type is selected",
+		},
+		{
+			name: "PKCE required with refresh token but no authorization code",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				GrantTypes: []oauth2const.GrantType{
+					oauth2const.GrantTypeClientCredentials,
+					oauth2const.GrantTypeRefreshToken,
+				},
+				ResponseTypes: []oauth2const.ResponseType{},
+				PKCERequired:  true,
+			},
+			expectError:   true,
+			errorContains: "PKCE can only be enabled when the authorization_code grant type is selected",
+		},
+		{
+			name: "PKCE required with authorization code",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				GrantTypes:    []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+				ResponseTypes: []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+				PKCERequired:  true,
+			},
+			expectError: false,
+		},
+		{
+			name: "Response types without authorization code grant",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				GrantTypes: []oauth2const.GrantType{
+					oauth2const.GrantTypeClientCredentials,
+					oauth2const.GrantTypeRefreshToken,
+				},
+				ResponseTypes: []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+			},
+			expectError:   true,
+			errorContains: "Response types can only be configured with the authorization_code grant type",
+		},
 	}
 
 	for _, tt := range tests {
