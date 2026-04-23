@@ -35,6 +35,7 @@ import {
   type SetStateAction,
 } from 'react';
 import FlowConfigContext from './FlowConfigContext';
+import FlowEventsProvider from './FlowEventsProvider';
 import I18nContext from './I18nContext';
 import InteractionContext from './InteractionContext';
 import UIPanelContext from './UIPanelContext';
@@ -375,15 +376,17 @@ function FlowContextWrapper({
   );
 
   return (
-    <FlowConfigContext.Provider value={flowConfigValue}>
-      <I18nContext.Provider value={i18nValue}>
-        <UIPanelContext.Provider value={uiPanelValue}>
-          <InteractionContext.Provider value={interactionValue}>
-            <ValidationProvider validationConfig={validationConfig}>{children}</ValidationProvider>
-          </InteractionContext.Provider>
-        </UIPanelContext.Provider>
-      </I18nContext.Provider>
-    </FlowConfigContext.Provider>
+    <FlowEventsProvider>
+      <FlowConfigContext.Provider value={flowConfigValue}>
+        <I18nContext.Provider value={i18nValue}>
+          <UIPanelContext.Provider value={uiPanelValue}>
+            <InteractionContext.Provider value={interactionValue}>
+              <ValidationProvider validationConfig={validationConfig}>{children}</ValidationProvider>
+            </InteractionContext.Provider>
+          </UIPanelContext.Provider>
+        </I18nContext.Provider>
+      </FlowConfigContext.Provider>
+    </FlowEventsProvider>
   );
 }
 

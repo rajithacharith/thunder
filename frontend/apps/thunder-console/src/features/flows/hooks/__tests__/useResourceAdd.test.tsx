@@ -89,6 +89,12 @@ vi.mock('../../utils/autoAssignConnections', () => ({
   default: vi.fn(),
 }));
 
+vi.mock('../useFlowEvents', () => ({
+  default: () => ({
+    notifyElementAdded: vi.fn(),
+  }),
+}));
+
 describe('useResourceAdd', () => {
   const mockOnTemplateLoad = vi.fn();
   const mockOnWidgetLoad = vi.fn();
