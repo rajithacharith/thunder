@@ -465,6 +465,7 @@ func (rh *roleHandler) toHTTPCreateRoleResponse(role *RoleWithPermissionsAndAssi
 		Name:        role.Name,
 		Description: role.Description,
 		OUID:        role.OUID,
+		OUHandle:    role.OUHandle,
 		Permissions: role.Permissions,
 		Assignments: httpAssignments,
 	}

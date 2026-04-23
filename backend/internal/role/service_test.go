@@ -120,8 +120,9 @@ func (suite *RoleServiceTestSuite) TestGetRoleList_Success() {
 	}
 
 	suite.mockStore.On("GetRoleListCount", mock.Anything).Return(2, nil)
-	suite.mockStore.On("GetRoleList", mock.Anything,
-		10, 0).Return(expectedRoles, nil)
+	suite.mockStore.On("GetRoleList", mock.Anything, 10, 0).Return(expectedRoles, nil)
+	suite.mockOUService.On("GetOrganizationUnitHandlesByIDs", mock.Anything,
+		[]string{"ou1"}).Return(map[string]string{"ou1": "default"}, nil)
 
 	result, err := suite.service.GetRoleList(context.Background(), 10, 0)
 
@@ -133,8 +134,10 @@ func (suite *RoleServiceTestSuite) TestGetRoleList_Success() {
 	suite.Equal(2, len(result.Roles))
 	suite.Equal("role1", result.Roles[0].ID)
 	suite.Equal("Admin", result.Roles[0].Name)
+	suite.Equal("default", result.Roles[0].OUHandle)
 	suite.Equal("role2", result.Roles[1].ID)
 	suite.Equal("User", result.Roles[1].Name)
+	suite.Equal("default", result.Roles[1].OUHandle)
 }
 
 func (suite *RoleServiceTestSuite) TestGetRoleList_InvalidPagination() {
@@ -194,6 +197,25 @@ func (suite *RoleServiceTestSuite) TestGetRoleList_StoreErrors() {
 	}
 }
 
+func (suite *RoleServiceTestSuite) TestGetRoleList_OUHandlesError() {
+	expectedRoles := []Role{
+		{ID: "role1", Name: "Admin", OUID: "ou1"},
+	}
+
+	suite.mockStore.On("GetRoleListCount", mock.Anything).Return(1, nil)
+	suite.mockStore.On("GetRoleList", mock.Anything, 10, 0).Return(expectedRoles, nil)
+	suite.mockOUService.On("GetOrganizationUnitHandlesByIDs", mock.Anything,
+		[]string{"ou1"}).Return(nil, &serviceerror.ServiceError{Code: "INTERNAL_ERROR"})
+
+	result, err := suite.service.GetRoleList(context.Background(), 10, 0)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal(1, result.Count)
+	suite.Equal("role1", result.Roles[0].ID)
+	suite.Equal("", result.Roles[0].OUHandle)
+}
+
 // CreateRole Tests
 func (suite *RoleServiceTestSuite) TestCreateRole_Success() {
 	request := RoleCreationDetail{
@@ -206,7 +228,7 @@ func (suite *RoleServiceTestSuite) TestCreateRole_Success() {
 		},
 	}
 
-	ou := oupkg.OrganizationUnit{ID: "ou1", Name: "Test OU"}
+	ou := oupkg.OrganizationUnit{ID: "ou1", Name: "Test OU", Handle: "default"}
 	suite.mockResourceService.On("ValidatePermissions", mock.Anything,
 		"rs1", []string{"perm1", "perm2"}).Return([]string{}, nil)
 	suite.mockEntityService.On("GetEntitiesByIDs", mock.Anything,
@@ -225,6 +247,7 @@ func (suite *RoleServiceTestSuite) TestCreateRole_Success() {
 	suite.Equal("Test Role", result.Name)
 	suite.Equal("Test Description", result.Description)
 	suite.Equal("ou1", result.OUID)
+	suite.Equal("default", result.OUHandle)
 	suite.Equal(1, len(result.Permissions))
 	suite.Equal(2, len(result.Permissions[0].Permissions))
 	// Verify permission validation was called
@@ -620,8 +643,9 @@ func (suite *RoleServiceTestSuite) TestGetRole_Success() {
 		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1", "perm2"}}},
 	}
 
-	suite.mockStore.On("GetRole", mock.Anything,
-		"role1").Return(expectedRole, nil)
+	suite.mockStore.On("GetRole", mock.Anything, "role1").Return(expectedRole, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything,
+		"ou1").Return(oupkg.OrganizationUnit{ID: "ou1", Handle: "default"}, nil)
 
 	result, err := suite.service.GetRoleWithPermissions(context.Background(), "role1")
 
@@ -629,6 +653,27 @@ func (suite *RoleServiceTestSuite) TestGetRole_Success() {
 	suite.NotNil(result)
 	suite.Equal(expectedRole.ID, result.ID)
 	suite.Equal(expectedRole.Name, result.Name)
+	suite.Equal("default", result.OUHandle)
+}
+
+func (suite *RoleServiceTestSuite) TestGetRole_OUHandleError() {
+	expectedRole := RoleWithPermissions{
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
+	}
+
+	suite.mockStore.On("GetRole", mock.Anything, "role1").Return(expectedRole, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything,
+		"ou1").Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{Code: "INTERNAL_ERROR"})
+
+	result, err := suite.service.GetRoleWithPermissions(context.Background(), "role1")
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal("role1", result.ID)
+	suite.Equal("Admin", result.Name)
+	suite.Equal("", result.OUHandle)
 }
 
 func (suite *RoleServiceTestSuite) TestGetRole_MissingID() {
@@ -812,7 +857,7 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_Success() {
 		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1", "perm2"}}},
 	}
 
-	ou := oupkg.OrganizationUnit{ID: "ou1"}
+	ou := oupkg.OrganizationUnit{ID: "ou1", Handle: "default"}
 	suite.mockResourceService.On("ValidatePermissions", mock.Anything,
 		"rs1", []string{"perm1", "perm2"}).Return([]string{}, nil)
 	suite.mockStore.On("IsRoleExist", mock.Anything,
@@ -830,6 +875,7 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_Success() {
 	suite.NotNil(result)
 	suite.Equal("New Name", result.Name)
 	suite.Equal("Updated description", result.Description)
+	suite.Equal("default", result.OUHandle)
 	// Verify permission validation was called
 	suite.mockResourceService.AssertCalled(suite.T(), "ValidatePermissions", mock.Anything,
 		"rs1", []string{"perm1", "perm2"})

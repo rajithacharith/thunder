@@ -67,6 +67,7 @@ type RoleSummaryResponse struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	OUID        string `json:"ouId"`
+	OUHandle    string `json:"ouHandle,omitempty"`
 	IsReadOnly  bool   `json:"isReadOnly"`
 }
 
@@ -76,6 +77,7 @@ type RoleResponse struct {
 	Name        string                `json:"name"`
 	Description string                `json:"description,omitempty"`
 	OUID        string                `json:"ouId"`
+	OUHandle    string                `json:"ouHandle,omitempty"`
 	Permissions []ResourcePermissions `json:"permissions"`
 }
 
@@ -94,6 +96,7 @@ type CreateRoleResponse struct {
 	Name        string                `json:"name"`
 	Description string                `json:"description,omitempty"`
 	OUID        string                `json:"ouId"`
+	OUHandle    string                `json:"ouHandle,omitempty"`
 	Permissions []ResourcePermissions `json:"permissions"`
 	Assignments []AssignmentResponse  `json:"assignments,omitempty"`
 }
@@ -152,6 +155,7 @@ type RoleWithPermissionsAndAssignments struct {
 	Name        string
 	Description string
 	OUID        string
+	OUHandle    string
 	Permissions []ResourcePermissions
 	Assignments []RoleAssignment
 }
@@ -175,6 +179,7 @@ type Role struct {
 	Name        string
 	Description string
 	OUID        string
+	OUHandle    string
 	IsReadOnly  bool
 }
 
@@ -184,6 +189,7 @@ type RoleWithPermissions struct {
 	Name        string
 	Description string
 	OUID        string
+	OUHandle    string
 	Permissions []ResourcePermissions
 }
 

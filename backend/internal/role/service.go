@@ -120,6 +120,27 @@ func (rs *roleService) GetRoleList(ctx context.Context, limit, offset int) (*Rol
 		return nil, &serviceerror.InternalServerError
 	}
 
+	if len(roles) > 0 {
+		seen := make(map[string]struct{}, len(roles))
+		ouIDs := make([]string, 0, len(roles))
+		for _, r := range roles {
+			if r.OUID != "" {
+				if _, exists := seen[r.OUID]; !exists {
+					ouIDs = append(ouIDs, r.OUID)
+					seen[r.OUID] = struct{}{}
+				}
+			}
+		}
+		ouHandles, svcErr := rs.ouService.GetOrganizationUnitHandlesByIDs(ctx, ouIDs)
+		if svcErr != nil {
+			logger.Warn("Failed to resolve OU handles for roles, skipping", log.Any("error", svcErr))
+		} else {
+			for i := range roles {
+				roles[i].OUHandle = ouHandles[roles[i].OUID]
+			}
+		}
+	}
+
 	response := &RoleList{
 		TotalResults: totalCount,
 		Roles:        roles,
@@ -151,7 +172,7 @@ func (rs *roleService) CreateRole(
 	responseAssignments := role.Assignments
 
 	// Validate organization unit exists using OU service
-	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, role.OUID)
+	ou, svcErr := rs.ouService.GetOrganizationUnit(ctx, role.OUID)
 	if svcErr != nil {
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
 			logger.Debug("Organization unit not found", log.String("ouID", role.OUID))
@@ -198,6 +219,7 @@ func (rs *roleService) CreateRole(
 		Name:        role.Name,
 		Description: role.Description,
 		OUID:        role.OUID,
+		OUHandle:    ou.Handle,
 		Permissions: role.Permissions,
 		Assignments: responseAssignments,
 	}
@@ -236,6 +258,14 @@ func (rs *roleService) GetRoleWithPermissions(ctx context.Context, id string) (
 		}
 		logger.Error("Failed to retrieve role", log.String("id", id), log.Error(err))
 		return nil, &serviceerror.InternalServerError
+	}
+
+	ou, svcErr := rs.ouService.GetOrganizationUnit(ctx, role.OUID)
+	if svcErr != nil {
+		logger.Warn("Failed to resolve OU handle for role, skipping",
+			log.String("id", id), log.Any("error", svcErr))
+	} else {
+		role.OUHandle = ou.Handle
 	}
 
 	logger.Debug("Successfully retrieved role", log.String("id", role.ID), log.String("name", role.Name))
@@ -278,7 +308,7 @@ func (rs *roleService) UpdateRoleWithPermissions(
 	}
 
 	// Validate organization unit exists using OU service
-	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, role.OUID)
+	ou, svcErr := rs.ouService.GetOrganizationUnit(ctx, role.OUID)
 	if svcErr != nil {
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
 			logger.Debug("Organization unit not found", log.String("ouID", role.OUID))
@@ -315,6 +345,7 @@ func (rs *roleService) UpdateRoleWithPermissions(
 		Name:        role.Name,
 		Description: role.Description,
 		OUID:        role.OUID,
+		OUHandle:    ou.Handle,
 		Permissions: role.Permissions,
 	}, nil
 }
