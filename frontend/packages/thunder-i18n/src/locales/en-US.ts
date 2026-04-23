@@ -1286,6 +1286,13 @@ const translations = {
       'This is a confidential client (server-side app) that can securely store credentials.',
     'edit.advanced.pkce.enabled': 'PKCE is required for authorization code flow, providing additional security.',
     'edit.advanced.pkce.disabled': 'PKCE is not required. Consider enabling for public clients (SPAs, mobile apps).',
+    'edit.advanced.pkce.requiresAuthorizationCode': 'PKCE applies only to the authorization code flow.',
+    'edit.advanced.pkce.requiredForPublicClient': 'Always required for public clients.',
+    'edit.advanced.publicClient.requiresAuthorizationCode':
+      'Available only for apps using the authorization code flow.',
+    'edit.advanced.publicClient.incompatibleWithClientCredentials': 'Not available for machine-to-machine apps.',
+    'edit.advanced.responseTypes.codeRequiredHint': 'Required for the authorization code flow.',
+    'edit.advanced.responseTypes.notApplicable': 'Response types apply only to the authorization code flow.',
     'edit.advanced.tokenEndpointAuthMethod.placeholder': 'Select authentication method',
     'edit.advanced.tokenEndpointAuthMethod.hint':
       'Defines how the client authenticates at the token endpoint. Use client_secret_basic or client_secret_post for confidential clients, and none for public clients.',
