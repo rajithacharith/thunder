@@ -576,6 +576,8 @@ var defaultMessages = map[string]string{
 	"error.resourceservice.circular_dependency_detected_description": "Setting this parent would create a circular dependency",
 	"error.resourceservice.delimiter_conflict_in_handle": "Delimiter conflict in handle",
 	"error.resourceservice.delimiter_conflict_in_handle_description": "Handle cannot contain the delimiter character",
+	"error.resourceservice.delimiter_conflict_in_resource_server_handle": "Delimiter conflict in handle",
+	"error.resourceservice.delimiter_conflict_in_resource_server_handle_description": "Resource server handle cannot contain the delimiter character",
 	"error.resourceservice.handle_conflict": "Handle conflict",
 	"error.resourceservice.handle_conflict_description": "The same handle already exists within the specified resource",
 	"error.resourceservice.identifier_conflict": "Identifier conflict",

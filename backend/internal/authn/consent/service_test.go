@@ -248,7 +248,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_PromptNeeded() {
 		Return(purposes, nil)
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
-	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
+	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).Return("test-session-token", int64(0), nil)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "user1",
@@ -281,7 +281,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_RequiredAttributesF
 		Return(purposes, nil)
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
-	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
+	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).Return("test-session-token", int64(0), nil)
 
 	// Only request "email" — "phone" and "address" should be filtered out
@@ -317,7 +317,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_UserProfileFilter()
 		Return(purposes, nil)
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
-	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
+	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).Return("test-session-token", int64(0), nil)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "user1",
@@ -360,7 +360,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_PartialConsentsExis
 		Return(purposes, nil)
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return(existingConsents, nil)
-	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
+	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).Return("test-session-token", int64(0), nil)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "user1",
@@ -418,7 +418,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_CreateConsentSessio
 		Return(purposes, nil)
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
-	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
+	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
 		Return("", int64(0), &serviceerror.ServiceError{
 			Error: core.I18nMessage{Key: "error.test.jwt_generation_failed", DefaultValue: "JWT generation failed"},
@@ -437,7 +437,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestCreateConsentSessionToken_Generate
 		Purposes: []ConsentPurposePrompt{{PurposeName: "purpose-1", Essential: []string{"email"}}},
 	}
 
-	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
+	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
 		Return("", int64(0), &serviceerror.ServiceError{
 			Error: core.I18nMessage{Key: "error.test.jwt_generation_failed", DefaultValue: "JWT generation failed"},

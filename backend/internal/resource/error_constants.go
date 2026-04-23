@@ -301,6 +301,19 @@ var (
 			DefaultValue: "The total number of records exceeds the maximum limit in composite mode",
 		},
 	}
+	// ErrorDelimiterInResourceServerHandle is returned when the resource server handle contains the delimiter.
+	ErrorDelimiterInResourceServerHandle = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "RES-1022",
+		Error: core.I18nMessage{
+			Key:          "error.resourceservice.delimiter_conflict_in_resource_server_handle",
+			DefaultValue: "Delimiter conflict in handle",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.resourceservice.delimiter_conflict_in_resource_server_handle_description",
+			DefaultValue: "Resource server handle cannot contain the delimiter character",
+		},
+	}
 )
 
 // Internal error constants.

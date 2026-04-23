@@ -44,7 +44,7 @@ type RefreshTokenGrantHandlerInterface interface {
 		ctx context.Context,
 		tokenResponse *model.TokenResponseDTO,
 		oauthApp *appmodel.OAuthAppConfigProcessedDTO,
-		subject, audience, grantType string,
+		subject string, audiences []string, grantType string,
 		scopes []string,
 		claimsRequest *model.ClaimsRequest,
 		claimsLocales string,

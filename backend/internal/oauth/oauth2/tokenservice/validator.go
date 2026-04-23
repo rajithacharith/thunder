@@ -20,6 +20,7 @@ package tokenservice
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
@@ -83,7 +84,7 @@ func (tv *tokenValidator) ValidateAccessToken(token string) (*AccessTokenClaims,
 	if issErr != nil {
 		return nil, fmt.Errorf("missing required 'iss' claim in access token")
 	}
-	aud, audErr := extractStringClaim(claims, "aud")
+	auds, audErr := extractAudiences(claims)
 	if audErr != nil {
 		return nil, fmt.Errorf("missing required 'aud' claim in access token")
 	}
@@ -98,7 +99,7 @@ func (tv *tokenValidator) ValidateAccessToken(token string) (*AccessTokenClaims,
 	return &AccessTokenClaims{
 		Sub:       sub,
 		Iss:       iss,
-		Aud:       aud,
+		Aud:       auds,
 		GrantType: grantType,
 		Scopes:    scopes,
 		ClientID:  clientID,
@@ -123,7 +124,7 @@ func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*
 
 	// Extract claims
 	sub, _ := extractStringClaim(claims, "access_token_sub")
-	aud, _ := extractStringClaim(claims, "access_token_aud")
+	audiences := extractStringSliceClaim(claims, "access_token_aud")
 	grantType, _ := extractStringClaim(claims, "grant_type")
 	iat, _ := extractInt64Claim(claims, "iat")
 	scopes := extractScopesFromClaims(claims, false)
@@ -146,7 +147,7 @@ func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*
 	// Extract user type and organizational unit details if present
 	return &RefreshTokenClaims{
 		Sub:              sub,
-		Aud:              aud,
+		Audiences:        audiences,
 		GrantType:        grantType,
 		Scopes:           scopes,
 		AttributeCacheID: attributeCacheID,
@@ -193,22 +194,29 @@ func (tv *tokenValidator) ValidateSubjectToken(
 	isAuthAssertion := tv.isAuthAssertion(claims)
 
 	// Extract and validate audience claim
-	var aud string
+	var auds []string
 	if isAuthAssertion {
-		// For auth assertions, audience is required and must match config default or requesting client's app_id
-		aud, err = extractStringClaim(claims, "aud")
+		// For auth assertions, audience is required, must be a single value, and must match
+		// config default or requesting client's app_id. Multi-aud auth assertions are rejected
+		// as a defense-in-depth measure (auth assertions are a narrow control surface).
+		auds, err = extractAudiences(claims)
 		if err != nil {
 			return nil, fmt.Errorf("auth assertion is missing 'aud' claim: %w", err)
+		}
+		if len(auds) > 1 {
+			return nil, fmt.Errorf("auth assertion must have a single audience")
 		}
 
 		defaultAudience := config.GetThunderRuntime().Config.JWT.Audience
 		clientAppID := oauthApp.AppID
 
-		if aud != defaultAudience && aud != clientAppID {
+		if !slices.Contains([]string{defaultAudience, clientAppID}, auds[0]) {
 			return nil, fmt.Errorf("auth assertion audience mismatch")
 		}
 	} else {
-		aud, _ = extractStringClaim(claims, "aud")
+		// Non-assertion subject tokens tolerate missing/malformed aud; downstream code treats
+		// nil/empty Aud as "no declared audience". Auth assertions remain strict (above).
+		auds, _ = extractAudiences(claims)
 	}
 
 	// Extract scopes
@@ -226,7 +234,7 @@ func (tv *tokenValidator) ValidateSubjectToken(
 	return &SubjectTokenClaims{
 		Sub:            sub,
 		Iss:            iss,
-		Aud:            aud,
+		Aud:            auds,
 		Scopes:         scopes,
 		UserAttributes: userAttributes,
 		NestedAct:      nestedAct,
@@ -292,8 +300,8 @@ func (tv *tokenValidator) validateOAuth2RefreshClaims(claims map[string]interfac
 		return fmt.Errorf("missing or invalid 'access_token_sub' claim: %w", err)
 	}
 
-	if _, err := extractStringClaim(claims, "access_token_aud"); err != nil {
-		return fmt.Errorf("missing or invalid 'access_token_aud' claim: %w", err)
+	if auds := extractStringSliceClaim(claims, "access_token_aud"); len(auds) == 0 {
+		return fmt.Errorf("missing or invalid 'access_token_aud' claim")
 	}
 
 	if _, err := extractStringClaim(claims, "grant_type"); err != nil {

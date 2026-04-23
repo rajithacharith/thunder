@@ -316,8 +316,9 @@ func (s *consentEnforcerService) createConsentSessionToken(promptData *ConsentPr
 		consentSessionClaimKey: json.RawMessage(sessionJSON),
 	}
 
+	claims["aud"] = consentSessionTokenAudience
 	token, _, svcErr := s.jwtService.GenerateJWT(
-		"", consentSessionTokenAudience, issuer,
+		"", issuer,
 		consentSessionTokenValidityPeriod, claims, "")
 	if svcErr != nil {
 		return "", errors.New("failed to generate consent session token: " + svcErr.Error.DefaultValue)

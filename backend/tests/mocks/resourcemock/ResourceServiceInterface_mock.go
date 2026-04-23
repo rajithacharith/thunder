@@ -462,6 +462,76 @@ func (_c *ResourceServiceInterfaceMock_DeleteResourceServer_Call) RunAndReturn(r
 	return _c
 }
 
+// FindResourceServersByPermissions provides a mock function for the type ResourceServiceInterfaceMock
+func (_mock *ResourceServiceInterfaceMock) FindResourceServersByPermissions(ctx context.Context, permissions []string) ([]resource.ResourceServer, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, permissions)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindResourceServersByPermissions")
+	}
+
+	var r0 []resource.ResourceServer
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string) ([]resource.ResourceServer, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, permissions)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string) []resource.ResourceServer); ok {
+		r0 = returnFunc(ctx, permissions)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]resource.ResourceServer)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, permissions)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// ResourceServiceInterfaceMock_FindResourceServersByPermissions_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindResourceServersByPermissions'
+type ResourceServiceInterfaceMock_FindResourceServersByPermissions_Call struct {
+	*mock.Call
+}
+
+// FindResourceServersByPermissions is a helper method to define mock.On call
+//   - ctx context.Context
+//   - permissions []string
+func (_e *ResourceServiceInterfaceMock_Expecter) FindResourceServersByPermissions(ctx interface{}, permissions interface{}) *ResourceServiceInterfaceMock_FindResourceServersByPermissions_Call {
+	return &ResourceServiceInterfaceMock_FindResourceServersByPermissions_Call{Call: _e.mock.On("FindResourceServersByPermissions", ctx, permissions)}
+}
+
+func (_c *ResourceServiceInterfaceMock_FindResourceServersByPermissions_Call) Run(run func(ctx context.Context, permissions []string)) *ResourceServiceInterfaceMock_FindResourceServersByPermissions_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []string
+		if args[1] != nil {
+			arg1 = args[1].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *ResourceServiceInterfaceMock_FindResourceServersByPermissions_Call) Return(resourceServers []resource.ResourceServer, serviceError *serviceerror.ServiceError) *ResourceServiceInterfaceMock_FindResourceServersByPermissions_Call {
+	_c.Call.Return(resourceServers, serviceError)
+	return _c
+}
+
+func (_c *ResourceServiceInterfaceMock_FindResourceServersByPermissions_Call) RunAndReturn(run func(ctx context.Context, permissions []string) ([]resource.ResourceServer, *serviceerror.ServiceError)) *ResourceServiceInterfaceMock_FindResourceServersByPermissions_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetAction provides a mock function for the type ResourceServiceInterfaceMock
 func (_mock *ResourceServiceInterfaceMock) GetAction(ctx context.Context, resourceServerID string, resourceID *string, id string) (*resource.Action, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, resourceServerID, resourceID, id)
@@ -862,6 +932,76 @@ func (_c *ResourceServiceInterfaceMock_GetResourceServer_Call) Return(resourceSe
 }
 
 func (_c *ResourceServiceInterfaceMock_GetResourceServer_Call) RunAndReturn(run func(ctx context.Context, id string) (*resource.ResourceServer, *serviceerror.ServiceError)) *ResourceServiceInterfaceMock_GetResourceServer_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetResourceServerByIdentifier provides a mock function for the type ResourceServiceInterfaceMock
+func (_mock *ResourceServiceInterfaceMock) GetResourceServerByIdentifier(ctx context.Context, identifier string) (*resource.ResourceServer, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, identifier)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetResourceServerByIdentifier")
+	}
+
+	var r0 *resource.ResourceServer
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*resource.ResourceServer, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, identifier)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *resource.ResourceServer); ok {
+		r0 = returnFunc(ctx, identifier)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*resource.ResourceServer)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, identifier)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// ResourceServiceInterfaceMock_GetResourceServerByIdentifier_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetResourceServerByIdentifier'
+type ResourceServiceInterfaceMock_GetResourceServerByIdentifier_Call struct {
+	*mock.Call
+}
+
+// GetResourceServerByIdentifier is a helper method to define mock.On call
+//   - ctx context.Context
+//   - identifier string
+func (_e *ResourceServiceInterfaceMock_Expecter) GetResourceServerByIdentifier(ctx interface{}, identifier interface{}) *ResourceServiceInterfaceMock_GetResourceServerByIdentifier_Call {
+	return &ResourceServiceInterfaceMock_GetResourceServerByIdentifier_Call{Call: _e.mock.On("GetResourceServerByIdentifier", ctx, identifier)}
+}
+
+func (_c *ResourceServiceInterfaceMock_GetResourceServerByIdentifier_Call) Run(run func(ctx context.Context, identifier string)) *ResourceServiceInterfaceMock_GetResourceServerByIdentifier_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *ResourceServiceInterfaceMock_GetResourceServerByIdentifier_Call) Return(resourceServer *resource.ResourceServer, serviceError *serviceerror.ServiceError) *ResourceServiceInterfaceMock_GetResourceServerByIdentifier_Call {
+	_c.Call.Return(resourceServer, serviceError)
+	return _c
+}
+
+func (_c *ResourceServiceInterfaceMock_GetResourceServerByIdentifier_Call) RunAndReturn(run func(ctx context.Context, identifier string) (*resource.ResourceServer, *serviceerror.ServiceError)) *ResourceServiceInterfaceMock_GetResourceServerByIdentifier_Call {
 	_c.Call.Return(run)
 	return _c
 }

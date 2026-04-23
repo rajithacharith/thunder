@@ -106,6 +106,39 @@ func extractStringClaim(claims map[string]interface{}, key string) (string, erro
 	return strValue, nil
 }
 
+// extractAudiences returns the JWT "aud" claim as a []string, accepting either
+// the RFC 7519 §4.1.3 string form or the array form. Returns an error when the
+// claim is missing, empty, or has an unsupported type.
+func extractAudiences(claims map[string]interface{}) ([]string, error) {
+	value, ok := claims["aud"]
+	if !ok {
+		return nil, fmt.Errorf("missing claim: aud")
+	}
+
+	switch v := value.(type) {
+	case string:
+		if v == "" {
+			return nil, fmt.Errorf("claim aud is empty")
+		}
+		return []string{v}, nil
+	case []interface{}:
+		if len(v) == 0 {
+			return nil, fmt.Errorf("claim aud is an empty array")
+		}
+		result := make([]string, 0, len(v))
+		for _, item := range v {
+			s, ok := item.(string)
+			if !ok || s == "" {
+				return nil, fmt.Errorf("claim aud array contains a non-string or empty element")
+			}
+			result = append(result, s)
+		}
+		return result, nil
+	default:
+		return nil, fmt.Errorf("claim aud has unsupported type")
+	}
+}
+
 // extractInt64Claim safely extracts an int64 claim from a claims map.
 func extractInt64Claim(claims map[string]interface{}, key string) (int64, error) {
 	value, ok := claims[key]
@@ -123,6 +156,36 @@ func extractInt64Claim(claims map[string]interface{}, key string) (int64, error)
 		return int64(v), nil
 	default:
 		return 0, fmt.Errorf("claim %s is not a number", key)
+	}
+}
+
+// extractStringSliceClaim extracts a claim that may be a string or a JSON array of strings.
+// Returns nil if the claim is missing or not a recognized type.
+func extractStringSliceClaim(claims map[string]interface{}, key string) []string {
+	value, ok := claims[key]
+	if !ok {
+		return nil
+	}
+
+	switch v := value.(type) {
+	case string:
+		if v == "" {
+			return nil
+		}
+		return []string{v}
+	case []interface{}:
+		result := make([]string, 0, len(v))
+		for _, item := range v {
+			if s, ok := item.(string); ok && s != "" {
+				result = append(result, s)
+			}
+		}
+		if len(result) == 0 {
+			return nil
+		}
+		return result
+	default:
+		return nil
 	}
 }
 
@@ -148,20 +211,6 @@ func extractScopesFromClaims(claims map[string]interface{}, isAuthAssertion bool
 	}
 
 	return []string{}
-}
-
-// DetermineAudience determines the audience for a token based on priority.
-func DetermineAudience(audience, resource, tokenAud, defaultAudience string) string {
-	if audience != "" {
-		return audience
-	}
-	if resource != "" {
-		return resource
-	}
-	if tokenAud != "" {
-		return tokenAud
-	}
-	return defaultAudience
 }
 
 // getStandardJWTClaims returns the standard JWT claims that should be excluded from user attributes.

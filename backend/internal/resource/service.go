@@ -58,6 +58,9 @@ type ResourceServiceInterface interface {
 		ctx context.Context, id string, rs ResourceServer,
 	) (*ResourceServer, *serviceerror.ServiceError)
 	DeleteResourceServer(ctx context.Context, id string) *serviceerror.ServiceError
+	GetResourceServerByIdentifier(
+		ctx context.Context, identifier string,
+	) (*ResourceServer, *serviceerror.ServiceError)
 	IsResourceServerDeclarative(id string) bool
 
 	// Resource operations
@@ -90,6 +93,13 @@ type ResourceServiceInterface interface {
 	ValidatePermissions(
 		ctx context.Context, resourceServerID string, permissions []string,
 	) ([]string, *serviceerror.ServiceError)
+
+	// FindResourceServersByPermissions returns registered resource servers that define at least
+	// one permission in the supplied set. Used by the OAuth2 token layer to populate aud when no
+	// explicit resource parameter was supplied.
+	FindResourceServersByPermissions(
+		ctx context.Context, permissions []string,
+	) ([]ResourceServer, *serviceerror.ServiceError)
 }
 
 // resourceService is the default implementation of ResourceServiceInterface.
@@ -157,6 +167,20 @@ func (rs *resourceService) CreateResourceServer(
 		return nil, &ErrorNameConflict
 	}
 
+	// Check handle uniqueness (if provided)
+	if resourceServer.Handle != "" {
+		handleExists, err := rs.resourceStore.CheckResourceServerHandleExists(ctx, resourceServer.Handle)
+		if err != nil {
+			rs.logger.Error("Failed to check resource server handle", log.Error(err))
+			return nil, &serviceerror.InternalServerError
+		}
+		if handleExists {
+			rs.logger.Debug("Resource server handle already exists",
+				log.String("handle", resourceServer.Handle))
+			return nil, &ErrorHandleConflict
+		}
+	}
+
 	// Check identifier uniqueness (if provided)
 	if resourceServer.Identifier != "" {
 		identifierExists, err := rs.resourceStore.CheckResourceServerIdentifierExists(ctx, resourceServer.Identifier)
@@ -170,9 +194,20 @@ func (rs *resourceService) CreateResourceServer(
 			return nil, &ErrorIdentifierConflict
 		}
 	}
+
 	// Set default delimiter if not provided
 	if resourceServer.Delimiter == "" {
 		resourceServer.Delimiter = rs.defaultDelimiter
+	}
+
+	// Validate handle format and ensure it does not contain the delimiter character
+	if resourceServer.Handle != "" {
+		if svcErr := validateHandle(resourceServer.Handle, resourceServer.Delimiter); svcErr != nil {
+			if svcErr.Code == ErrorDelimiterInHandle.Code {
+				return nil, &ErrorDelimiterInResourceServerHandle
+			}
+			return nil, svcErr
+		}
 	}
 
 	id, err := utils.GenerateUUIDv7()
@@ -193,6 +228,7 @@ func (rs *resourceService) CreateResourceServer(
 			ID:          id,
 			Name:        resourceServer.Name,
 			Description: resourceServer.Description,
+			Handle:      resourceServer.Handle,
 			Identifier:  resourceServer.Identifier,
 			OUID:        resourceServer.OUID,
 			Delimiter:   resourceServer.Delimiter,
@@ -221,6 +257,28 @@ func (rs *resourceService) GetResourceServer(
 			return nil, &ErrorResourceServerNotFound
 		}
 		rs.logger.Error("Failed to get resource server", log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	}
+
+	return &resourceServer, nil
+}
+
+// GetResourceServerByIdentifier retrieves a resource server by its identifier.
+func (rs *resourceService) GetResourceServerByIdentifier(
+	ctx context.Context, identifier string,
+) (*ResourceServer, *serviceerror.ServiceError) {
+	if identifier == "" {
+		return nil, &ErrorResourceServerNotFound
+	}
+
+	resourceServer, err := rs.resourceStore.GetResourceServerByIdentifier(ctx, identifier)
+	if err != nil {
+		if errors.Is(err, errResourceServerNotFound) {
+			rs.logger.Debug("Resource server not found for identifier",
+				log.String("identifier", identifier))
+			return nil, &ErrorResourceServerNotFound
+		}
+		rs.logger.Error("Failed to get resource server by identifier", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -296,8 +354,46 @@ func (rs *resourceService) UpdateResourceServer(
 		})
 	}
 
-	// Preserve the immutable delimiter from existing record
+	// Delimiter is always preserved from the existing record
 	resourceServer.Delimiter = existingResServer.Delimiter
+
+	// Handle: preserve existing if not provided; validate and check uniqueness if changed
+	if resourceServer.Handle == "" {
+		resourceServer.Handle = existingResServer.Handle
+	} else if resourceServer.Handle != existingResServer.Handle {
+		if svcErr := validateHandle(resourceServer.Handle, resourceServer.Delimiter); svcErr != nil {
+			if svcErr.Code == ErrorDelimiterInHandle.Code {
+				return nil, &ErrorDelimiterInResourceServerHandle
+			}
+			return nil, svcErr
+		}
+		handleExists, err := rs.resourceStore.CheckResourceServerHandleExists(ctx, resourceServer.Handle)
+		if err != nil {
+			rs.logger.Error("Failed to check resource server handle", log.Error(err))
+			return nil, &serviceerror.InternalServerError
+		}
+		if handleExists {
+			rs.logger.Debug("Resource server handle already exists",
+				log.String("handle", resourceServer.Handle))
+			return nil, &ErrorHandleConflict
+		}
+	}
+
+	// Identifier: preserve existing if not provided; check uniqueness if changed
+	if resourceServer.Identifier == "" {
+		resourceServer.Identifier = existingResServer.Identifier
+	} else if resourceServer.Identifier != existingResServer.Identifier {
+		identifierExists, err := rs.resourceStore.CheckResourceServerIdentifierExists(ctx, resourceServer.Identifier)
+		if err != nil {
+			rs.logger.Error("Failed to check resource server identifier", log.Error(err))
+			return nil, &serviceerror.InternalServerError
+		}
+		if identifierExists {
+			rs.logger.Debug("Resource server identifier already exists",
+				log.String("identifier", resourceServer.Identifier))
+			return nil, &ErrorIdentifierConflict
+		}
+	}
 
 	// Validate organization unit
 	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, resourceServer.OUID)
@@ -320,18 +416,11 @@ func (rs *resourceService) UpdateResourceServer(
 		}
 	}
 
-	// Check identifier uniqueness, if provided and changed
-	if resourceServer.Identifier != "" && existingResServer.Identifier != resourceServer.Identifier {
-		identifierExists, err := rs.resourceStore.CheckResourceServerIdentifierExists(ctx, resourceServer.Identifier)
-		if err != nil {
-			rs.logger.Error("Failed to check resource server identifier", log.Error(err))
-			return nil, &serviceerror.InternalServerError
-		}
-		if identifierExists {
-			rs.logger.Debug("Resource server identifier already exists",
-				log.String("identifier", resourceServer.Identifier))
-			return nil, &ErrorIdentifierConflict
-		}
+	// When handle changes, collect all resources and actions for permission recomputation
+	handleChanged := existingResServer.Handle != resourceServer.Handle
+	permData, svcErr2 := rs.collectPermissionData(ctx, id, handleChanged)
+	if svcErr2 != nil {
+		return nil, svcErr2
 	}
 
 	var updatedRS *ResourceServer
@@ -341,10 +430,17 @@ func (rs *resourceService) UpdateResourceServer(
 			return err
 		}
 
+		if handleChanged {
+			if err := rs.recomputePermissions(txCtx, id, resourceServer, permData); err != nil {
+				return err
+			}
+		}
+
 		updatedRS = &ResourceServer{
 			ID:          id,
 			Name:        resourceServer.Name,
 			Description: resourceServer.Description,
+			Handle:      resourceServer.Handle,
 			Identifier:  resourceServer.Identifier,
 			OUID:        resourceServer.OUID,
 			Delimiter:   resourceServer.Delimiter,
@@ -355,6 +451,110 @@ func (rs *resourceService) UpdateResourceServer(
 	}
 
 	return updatedRS, nil
+}
+
+// permissionData holds the resources and actions collected for permission recomputation.
+type permissionData struct {
+	resources       []Resource
+	rsLevelActions  []Action
+	resourceActions []struct {
+		resourceID string
+		actions    []Action
+	}
+}
+
+// collectPermissionData fetches all resources and actions under a resource server when the handle changes.
+// Returns a zero-value permissionData (no store calls) when handleChanged is false.
+func (rs *resourceService) collectPermissionData(
+	ctx context.Context, rsID string, handleChanged bool,
+) (*permissionData, *serviceerror.ServiceError) {
+	if !handleChanged {
+		return &permissionData{}, nil
+	}
+
+	pd := &permissionData{}
+	var err error
+
+	pd.resources, err = rs.resourceStore.GetResourceList(ctx, rsID, serverconst.MaxPageSize, 0)
+	if err != nil {
+		rs.logger.Error("Failed to list resources for permission recomputation", log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	}
+
+	pd.rsLevelActions, err = rs.resourceStore.GetActionList(ctx, rsID, nil, serverconst.MaxPageSize, 0)
+	if err != nil {
+		rs.logger.Error("Failed to list RS-level actions for permission recomputation", log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	}
+
+	for i := range pd.resources {
+		actions, err := rs.resourceStore.GetActionList(
+			ctx, rsID, &pd.resources[i].ID, serverconst.MaxPageSize, 0,
+		)
+		if err != nil {
+			rs.logger.Error("Failed to list resource actions for permission recomputation", log.Error(err))
+			return nil, &serviceerror.InternalServerError
+		}
+		if len(actions) > 0 {
+			pd.resourceActions = append(pd.resourceActions, struct {
+				resourceID string
+				actions    []Action
+			}{resourceID: pd.resources[i].ID, actions: actions})
+		}
+	}
+
+	return pd, nil
+}
+
+// recomputePermissions updates the stored permission strings for all resources and actions
+// under a resource server whose handle has changed. Must be called inside a transaction.
+func (rs *resourceService) recomputePermissions(
+	ctx context.Context, rsID string, resourceServer ResourceServer, pd *permissionData,
+) error {
+	permByID := make(map[string]string, len(pd.resources))
+
+	for i := range pd.resources {
+		res := &pd.resources[i]
+		var parentRes *Resource
+		if res.Parent != nil {
+			if parentPerm, ok := permByID[*res.Parent]; ok {
+				parentRes = &Resource{Permission: parentPerm}
+			}
+		}
+		newPerm := derivePermission(resourceServer, parentRes, res.Handle)
+		permByID[res.ID] = newPerm
+		if err := rs.resourceStore.UpdateResourcePermission(ctx, res.ID, rsID, newPerm); err != nil {
+			rs.logger.Error("Failed to update resource permission", log.Error(err))
+			return err
+		}
+	}
+
+	for i := range pd.rsLevelActions {
+		newPerm := derivePermission(resourceServer, nil, pd.rsLevelActions[i].Handle)
+		if err := rs.resourceStore.UpdateActionPermission(
+			ctx, pd.rsLevelActions[i].ID, rsID, nil, newPerm,
+		); err != nil {
+			rs.logger.Error("Failed to update RS-level action permission", log.Error(err))
+			return err
+		}
+	}
+
+	for _, ra := range pd.resourceActions {
+		parentPerm := permByID[ra.resourceID]
+		parentRes := &Resource{Permission: parentPerm}
+		for i := range ra.actions {
+			newPerm := derivePermission(resourceServer, parentRes, ra.actions[i].Handle)
+			resID := ra.resourceID
+			if err := rs.resourceStore.UpdateActionPermission(
+				ctx, ra.actions[i].ID, rsID, &resID, newPerm,
+			); err != nil {
+				rs.logger.Error("Failed to update resource action permission", log.Error(err))
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // DeleteResourceServer deletes a resource server.
@@ -911,11 +1111,6 @@ func (rs *resourceService) UpdateAction(
 	if rs.IsResourceServerDeclarative(resourceServerID) {
 		return nil, &ErrorImmutableAction
 	}
-
-	// Check if resource server is declarative (immutable)
-	if rs.IsResourceServerDeclarative(resourceServerID) {
-		return nil, &ErrorImmutableAction
-	}
 	// Validate resource server exists
 	_, svcErr := rs.validateAndGetResourceServer(ctx, resourceServerID)
 	if svcErr != nil {
@@ -1086,6 +1281,24 @@ func (rs *resourceService) ValidatePermissions(
 	}
 
 	return invalidPermissions, nil
+}
+
+// FindResourceServersByPermissions returns registered resource servers that define at least one
+// permission in the supplied set.
+func (rs *resourceService) FindResourceServersByPermissions(
+	ctx context.Context,
+	permissions []string,
+) ([]ResourceServer, *serviceerror.ServiceError) {
+	if len(permissions) == 0 {
+		return []ResourceServer{}, nil
+	}
+
+	resourceServers, err := rs.resourceStore.FindResourceServersByPermissions(ctx, permissions)
+	if err != nil {
+		rs.logger.Error("Failed to find resource servers by permissions", log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	}
+	return resourceServers, nil
 }
 
 // Validation helper methods
@@ -1280,8 +1493,10 @@ func derivePermission(
 	handle string,
 ) string {
 	if parentResource != nil {
-		// Build permission: parent_permission + delimiter + handle
 		return parentResource.Permission + resourceServer.Delimiter + handle
 	}
-	return handle // Top-level resource - permission is just the handle
+	if resourceServer.Handle != "" {
+		return resourceServer.Handle + resourceServer.Delimiter + handle
+	}
+	return handle
 }

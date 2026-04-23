@@ -204,6 +204,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
 			constants.RequestParamResource:     "https://api.example.com/resource",
 		},
+		Resources: []string{"https://api.example.com/resource"},
 	}
 
 	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
@@ -222,6 +223,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
 			constants.RequestParamResource:     "https://mcp.example.com/mcp",
 		},
+		Resources: []string{"https://mcp.example.com/mcp"},
 	}
 
 	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
@@ -240,6 +242,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
 			constants.RequestParamResource:     "https://mcp.example.com:8443",
 		},
+		Resources: []string{"https://mcp.example.com:8443"},
 	}
 
 	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
@@ -276,6 +279,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
 			constants.RequestParamResource:     "api.example.com/resource",
 		},
+		Resources: []string{"api.example.com/resource"},
 	}
 
 	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
@@ -283,7 +287,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 
 	assert.True(suite.T(), sendErrorToApp)
 	assert.Equal(suite.T(), constants.ErrorInvalidTarget, errorCode)
-	assert.Contains(suite.T(), errorMessage, "Invalid resource parameter")
+	assert.Contains(suite.T(), errorMessage, "must be an absolute URI")
 }
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_ResourceWithFragment() {
@@ -294,6 +298,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
 			constants.RequestParamResource:     "https://api.example.com/resource#fragment",
 		},
+		Resources: []string{"https://api.example.com/resource#fragment"},
 	}
 
 	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
@@ -301,7 +306,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 
 	assert.True(suite.T(), sendErrorToApp)
 	assert.Equal(suite.T(), constants.ErrorInvalidTarget, errorCode)
-	assert.Contains(suite.T(), errorMessage, "Invalid resource parameter")
+	assert.Contains(suite.T(), errorMessage, "must not contain a fragment component")
 }
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_ResourceRelativeURI() {
@@ -312,6 +317,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
 			constants.RequestParamResource:     "/api/resource",
 		},
+		Resources: []string{"/api/resource"},
 	}
 
 	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
@@ -319,7 +325,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 
 	assert.True(suite.T(), sendErrorToApp)
 	assert.Equal(suite.T(), constants.ErrorInvalidTarget, errorCode)
-	assert.Contains(suite.T(), errorMessage, "Invalid resource parameter")
+	assert.Contains(suite.T(), errorMessage, "must be an absolute URI")
 }
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_ResourceInvalidURI() {
@@ -330,6 +336,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
 			constants.RequestParamResource:     "not a valid uri format",
 		},
+		Resources: []string{"not a valid uri format"},
 	}
 
 	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
@@ -337,7 +344,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 
 	assert.True(suite.T(), sendErrorToApp)
 	assert.Equal(suite.T(), constants.ErrorInvalidTarget, errorCode)
-	assert.Contains(suite.T(), errorMessage, "Invalid resource parameter")
+	assert.Contains(suite.T(), errorMessage, "must be an absolute URI")
 }
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_ResourceParameterWithQuery() {
@@ -349,6 +356,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
 			constants.RequestParamResource:     "https://api.example.com/resource?param=value",
 		},
+		Resources: []string{"https://api.example.com/resource?param=value"},
 	}
 
 	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(

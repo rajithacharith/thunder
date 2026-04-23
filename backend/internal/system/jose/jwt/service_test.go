@@ -256,7 +256,6 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 	testCases := []struct {
 		name               string
 		sub                string
-		aud                string
 		iss                string
 		validity           int64
 		claims             map[string]interface{}
@@ -268,12 +267,12 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 		useDefaultValidity bool
 	}{
 		{
-			name:     "Success",
+			name:     "AudAsString",
 			sub:      "test-subject",
-			aud:      testAudience,
 			iss:      testIssuer,
 			validity: 3600,
 			claims: map[string]interface{}{
+				"aud":   testAudience,
 				"name":  "John Doe",
 				"email": "john@example.com",
 			},
@@ -320,12 +319,68 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 			},
 		},
 		{
+			name:     "AudAsSlice",
+			sub:      "test-subject",
+			iss:      testIssuer,
+			validity: 3600,
+			claims: map[string]interface{}{
+				"aud": []string{testAudience, "second-audience"},
+			},
+			setupMock:    func() func() { return func() {} },
+			setupService: func() *jwtService { return suite.jwtService },
+			expectError:  false,
+			validateSuccess: func(t *testing.T, token string, iat int64) {
+				parts := strings.Split(token, ".")
+				payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[1])
+				assert.NoError(t, err)
+
+				var payload map[string]interface{}
+				err = json.Unmarshal(payloadBytes, &payload)
+				assert.NoError(t, err)
+
+				auds, ok := payload["aud"].([]interface{})
+				assert.True(t, ok)
+				assert.Len(t, auds, 2)
+				assert.Equal(t, testAudience, auds[0])
+				assert.Equal(t, "second-audience", auds[1])
+			},
+		},
+		{
+			name:     "MissingAud",
+			sub:      "test-subject",
+			iss:      testIssuer,
+			validity: 3600,
+			claims:   map[string]interface{}{"name": "no-aud"},
+			setupMock: func() func() {
+				return func() {}
+			},
+			setupService: func() *jwtService {
+				return suite.jwtService
+			},
+			expectError: true,
+			errorCode:   "SSE-5000",
+		},
+		{
+			name:     "WrongTypeAud",
+			sub:      "test-subject",
+			iss:      testIssuer,
+			validity: 3600,
+			claims:   map[string]interface{}{"aud": 12345},
+			setupMock: func() func() {
+				return func() {}
+			},
+			setupService: func() *jwtService {
+				return suite.jwtService
+			},
+			expectError: true,
+			errorCode:   "SSE-5000",
+		},
+		{
 			name:     "DefaultValidity",
 			sub:      "test-subject",
-			aud:      testAudience,
 			iss:      testIssuer,
 			validity: 0, // Should use default
-			claims:   map[string]interface{}{},
+			claims:   map[string]interface{}{"aud": testAudience},
 			setupMock: func() func() {
 				return func() {}
 			},
@@ -338,10 +393,9 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 		{
 			name:     "DefaultIssuer",
 			sub:      "test-subject",
-			aud:      testAudience,
 			iss:      "", // Should use default
 			validity: 3600,
-			claims:   map[string]interface{}{},
+			claims:   map[string]interface{}{"aud": testAudience},
 			setupMock: func() func() {
 				return func() {}
 			},
@@ -353,10 +407,9 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 		{
 			name:      "NilPrivateKey",
 			sub:       "sub",
-			aud:       "aud",
 			iss:       "iss",
 			validity:  3600,
-			claims:    nil,
+			claims:    map[string]interface{}{"aud": "aud"},
 			setupMock: func() func() { return func() {} },
 			setupService: func() *jwtService {
 				return &jwtService{
@@ -368,27 +421,11 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 			errorCode:   "SSE-5000",
 		},
 		{
-			name:     "WithEmptyClaims",
-			sub:      "test-subject",
-			aud:      testAudience,
-			iss:      testIssuer,
-			validity: 1800,
-			claims:   nil,
-			setupMock: func() func() {
-				return func() {}
-			},
-			setupService: func() *jwtService {
-				return suite.jwtService
-			},
-			expectError: false,
-		},
-		{
 			name:     "SigningError",
 			sub:      "sub",
-			aud:      "aud",
 			iss:      "iss",
 			validity: 3600,
-			claims:   nil,
+			claims:   map[string]interface{}{"aud": "aud"},
 			setupMock: func() func() {
 				return func() {}
 			},
@@ -403,10 +440,9 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 		{
 			name:     "LongValidityPeriod",
 			sub:      "test-subject",
-			aud:      testAudience,
 			iss:      testIssuer,
 			validity: 86400, // 24 hours
-			claims:   map[string]interface{}{},
+			claims:   map[string]interface{}{"aud": testAudience},
 			setupMock: func() func() {
 				return func() {}
 			},
@@ -430,10 +466,10 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 		{
 			name:     "ComplexClaims",
 			sub:      "test-subject",
-			aud:      testAudience,
 			iss:      testIssuer,
 			validity: 3600,
 			claims: map[string]interface{}{
+				"aud":    testAudience,
 				"roles":  []string{"admin", "user"},
 				"nested": map[string]interface{}{"key": "value"},
 				"number": 42,
@@ -470,10 +506,9 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 		{
 			name:     "EmptySubject",
 			sub:      "",
-			aud:      testAudience,
 			iss:      testIssuer,
 			validity: 3600,
-			claims:   nil,
+			claims:   map[string]interface{}{"aud": testAudience},
 			setupMock: func() func() {
 				return func() {}
 			},
@@ -496,10 +531,10 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 		{
 			name:     "SpecialCharactersInClaims",
 			sub:      "test-subject",
-			aud:      testAudience,
 			iss:      testIssuer,
 			validity: 3600,
 			claims: map[string]interface{}{
+				"aud":   testAudience,
 				"email": "test+special@example.com",
 				"name":  "Test User / Admin",
 			},
@@ -532,7 +567,7 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 
 			jwtService := tc.setupService()
 
-			token, iat, err := jwtService.GenerateJWT(tc.sub, tc.aud, tc.iss, tc.validity, tc.claims, TokenTypeJWT)
+			token, iat, err := jwtService.GenerateJWT(tc.sub, tc.iss, tc.validity, tc.claims, TokenTypeJWT)
 
 			if tc.expectError {
 				assert.NotNil(t, err)
@@ -1350,7 +1385,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 			name: "ValidToken",
 			setupFunc: func() string {
 				token, _, err := suite.jwtService.GenerateJWT(
-					"test-subject", testAudience, testIssuer, 3600, nil, TokenTypeJWT)
+					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
 				assert.Nil(suite.T(), err)
 				return token
 			},
@@ -1379,7 +1414,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 			name: "PublicKeyNotAvailable",
 			setupFunc: func() string {
 				token, _, err := suite.jwtService.GenerateJWT(
-					"test-subject", testAudience, testIssuer, 3600, nil, TokenTypeJWT)
+					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
 				assert.Nil(suite.T(), err)
 				return token
 			},
@@ -1410,7 +1445,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKey() {
 	validToken, _, err := suite.jwtService.GenerateJWT(
-		"test-subject", testAudience, testIssuer, 3600, nil, TokenTypeJWT)
+		"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
 	assert.Nil(suite.T(), err)
 
 	wrongKey, _ := rsa.GenerateKey(rand.Reader, 2048)
@@ -1447,7 +1482,8 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKey() {
 }
 
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKS() {
-	token, _, err := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil, TokenTypeJWT)
+	token, _, err := suite.jwtService.GenerateJWT(
+		"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
 	assert.Nil(suite.T(), err)
 
 	testServer := suite.mockJWKSServer()
@@ -1507,7 +1543,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSUsesCache() {
 	defer serverB.Close()
 
 	token, _, genErr := suite.jwtService.GenerateJWT(
-		"test-subject", testAudience, testIssuer, 3600, nil, TokenTypeJWT)
+		"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
 	assert.Nil(suite.T(), genErr)
 
 	// 1. First call against serverA — cache miss, one fetch.
@@ -1606,7 +1642,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 			},
 			setupToken: func() string {
 				token, _, _ := suite.jwtService.GenerateJWT(
-					"test-subject", testAudience, testIssuer, 3600, nil, TokenTypeJWT)
+					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
 				return token
 			},
 			expectedError: ErrorFailedToGetJWKS,
@@ -1624,7 +1660,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 			},
 			setupToken: func() string {
 				token, _, _ := suite.jwtService.GenerateJWT(
-					"test-subject", testAudience, testIssuer, 3600, nil, TokenTypeJWT)
+					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
 				return token
 			},
 			expectedError: ErrorFailedToParseJWKS,
@@ -1654,7 +1690,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 			},
 			setupToken: func() string {
 				token, _, _ := suite.jwtService.GenerateJWT(
-					"test-subject", testAudience, testIssuer, 3600, nil, TokenTypeJWT)
+					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
 				return token
 			},
 			expectedError: ErrorNoMatchingJWKFound,
@@ -1683,7 +1719,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 			},
 			setupToken: func() string {
 				token, _, _ := suite.jwtService.GenerateJWT(
-					"test-subject", testAudience, testIssuer, 3600, nil, TokenTypeJWT)
+					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
 				return token
 			},
 			expectedError: ErrorFailedToParseJWKS,
@@ -1725,7 +1761,8 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSNetworkError() {
 	// Test with invalid URL to trigger network error
-	token, _, err := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil, TokenTypeJWT)
+	token, _, err := suite.jwtService.GenerateJWT(
+		"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT)
 	assert.Nil(suite.T(), err)
 
 	err = suite.jwtService.VerifyJWTSignatureWithJWKS(token, "http://localhost:99999/invalid")
@@ -1960,7 +1997,8 @@ func (suite *JWTServiceTestSuite) TestInitWithECDSAKeys() {
 			assert.Equal(t, tc.expectedAlg, jwtSvc.jwsAlg)
 
 			// Test JWT generation with ECDSA key
-			token, _, svcErr := service.GenerateJWT("test-subject", "test-aud", "test-iss", 3600, nil, TokenTypeJWT)
+			token, _, svcErr := service.GenerateJWT(
+				"test-subject", "test-iss", 3600, map[string]interface{}{"aud": "test-aud"}, TokenTypeJWT)
 			assert.Nil(t, svcErr)
 			assert.NotEmpty(t, token)
 
@@ -2022,7 +2060,8 @@ func (suite *JWTServiceTestSuite) TestInitWithEd25519Key() {
 	assert.Equal(suite.T(), jws.EdDSA, jwtSvc.jwsAlg)
 
 	// Test JWT generation with Ed25519 key
-	token, _, svcErr := service.GenerateJWT("test-subject", "test-aud", "test-iss", 3600, nil, TokenTypeJWT)
+	token, _, svcErr := service.GenerateJWT(
+		"test-subject", "test-iss", 3600, map[string]interface{}{"aud": "test-aud"}, TokenTypeJWT)
 	assert.Nil(suite.T(), svcErr)
 	assert.NotEmpty(suite.T(), token)
 
@@ -2292,7 +2331,8 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKeyAlgorithmDe
 			}
 
 			// Generate token
-			token, _, err := jwtService.GenerateJWT("test-sub", "test-aud", "test-iss", 3600, nil, TokenTypeJWT)
+			token, _, err := jwtService.GenerateJWT(
+				"test-sub", "test-iss", 3600, map[string]interface{}{"aud": "test-aud"}, TokenTypeJWT)
 			assert.Nil(t, err)
 
 			// Verify with public key (should detect algorithm from header)

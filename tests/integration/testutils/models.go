@@ -189,6 +189,7 @@ type ResourceServer struct {
 	ID          string  `json:"id,omitempty"`
 	Name        string  `json:"name"`
 	Description string  `json:"description,omitempty"`
+	Handle      string  `json:"handle,omitempty"`
 	Identifier  string  `json:"identifier,omitempty"`
 	OUID        string  `json:"ouId"`
 	Delimiter   *string `json:"delimiter,omitempty"`
