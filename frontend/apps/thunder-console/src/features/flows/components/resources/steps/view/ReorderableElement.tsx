@@ -35,15 +35,13 @@ import ValidationErrorBoundary from '../../../validation-panel/ValidationErrorBo
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
 import useComponentDelete from '@/features/flows/hooks/useComponentDelete';
 import useFlowConfig from '@/features/flows/hooks/useFlowConfig';
+import useFlowPlugins from '@/features/flows/hooks/useFlowPlugins';
 import useInteractionState from '@/features/flows/hooks/useInteractionState';
 import useUIPanelState from '@/features/flows/hooks/useUIPanelState';
 import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
 import {BlockTypes, type Element} from '@/features/flows/models/elements';
-import FlowEventTypes from '@/features/flows/models/extension';
-import Notification, {NotificationType} from '@/features/flows/models/notification';
 import type {Resource} from '@/features/flows/models/resources';
 import type {StepData} from '@/features/flows/models/steps';
-import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
 
 /**
  * Props interface of {@link ReorderableElement}
@@ -129,6 +127,7 @@ function ReorderableElement({
   const {setLastInteractedResource, setLastInteractedStepId} = useInteractionState();
   const {setIsOpenResourcePropertiesPanel} = useUIPanelState();
   const {setOpenValidationPanel, setSelectedNotification, addNotification} = useValidationStatus();
+  const {emitNodeElementDelete} = useFlowPlugins();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
 
@@ -150,6 +149,7 @@ function ReorderableElement({
     setIsOpenResourcePropertiesPanel,
     setAnchorEl,
     updateNodeData,
+    emitNodeElementDelete,
   });
 
   // Update refs every render (minimal overhead - just assignment)
@@ -168,6 +168,7 @@ function ReorderableElement({
     setIsOpenResourcePropertiesPanel,
     setAnchorEl,
     updateNodeData,
+    emitNodeElementDelete,
   };
 
   // Store stable references to handler functions
@@ -196,22 +197,11 @@ function ReorderableElement({
 
     handleElementDelete: (): void => {
       const deps = depsRef.current;
-      PluginRegistry.getInstance()
-        .executeAsync(FlowEventTypes.ON_NODE_ELEMENT_DELETE, deps.stepId, deps.element)
-        .then(() => {
-          if (deps.stepId) {
-            deps.deleteComponent(deps.stepId, deps.element);
-          }
-          deps.setIsOpenResourcePropertiesPanel(false);
-        })
-        .catch((error: Error) => {
-          const errorNotification = new Notification(
-            `delete-element-error-${deps.element.id}`,
-            `Failed to delete element: ${error.message}`,
-            NotificationType.ERROR,
-          );
-          deps.addNotification?.(errorNotification);
-        });
+      deps.emitNodeElementDelete(deps.stepId ?? '', deps.element);
+      if (deps.stepId) {
+        deps.deleteComponent(deps.stepId, deps.element);
+      }
+      deps.setIsOpenResourcePropertiesPanel(false);
     },
 
     handleMenuOpen: (event: MouseEvent<HTMLElement>): void => {

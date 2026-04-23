@@ -51,14 +51,28 @@ vi.mock('@xyflow/react', () => ({
   },
 }));
 
-// Mock PluginRegistry
-const mockExecuteSync = vi.fn();
-vi.mock('../../plugins/PluginRegistry', () => ({
-  default: {
-    getInstance: () => ({
-      executeSync: mockExecuteSync,
-    }),
-  },
+// Mock useFlowPlugins
+const {mockEmitEdgeDelete} = vi.hoisted(() => ({
+  mockEmitEdgeDelete: vi.fn().mockReturnValue(true),
+}));
+
+vi.mock('../useFlowPlugins', () => ({
+  default: () => ({
+    onPropertyChange: vi.fn().mockReturnValue(vi.fn()),
+    emitPropertyChange: vi.fn().mockReturnValue(true),
+    onPropertyPanelOpen: vi.fn().mockReturnValue(vi.fn()),
+    emitPropertyPanelOpen: vi.fn().mockReturnValue(true),
+    onElementFilter: vi.fn().mockReturnValue(vi.fn()),
+    emitElementFilter: vi.fn().mockReturnValue(true),
+    onEdgeDelete: vi.fn().mockReturnValue(vi.fn()),
+    emitEdgeDelete: mockEmitEdgeDelete,
+    onNodeDelete: vi.fn().mockReturnValue(vi.fn()),
+    emitNodeDelete: vi.fn().mockReturnValue(true),
+    onNodeElementDelete: vi.fn().mockReturnValue(vi.fn()),
+    emitNodeElementDelete: vi.fn().mockReturnValue(true),
+    onTemplateLoad: vi.fn().mockReturnValue(vi.fn()),
+    emitTemplateLoad: vi.fn().mockReturnValue(true),
+  }),
 }));
 
 describe('useVisualFlowHandlers', () => {
@@ -293,7 +307,7 @@ describe('useVisualFlowHandlers', () => {
   });
 
   describe('handleEdgesDelete', () => {
-    it('should call PluginRegistry executeSync with ON_EDGE_DELETE event', () => {
+    it('should call emitEdgeDelete with deleted edges', () => {
       const {result} = renderHook(() => useVisualFlowHandlers({setEdges: mockSetEdges}), {
         wrapper: createWrapper(),
       });
@@ -307,7 +321,7 @@ describe('useVisualFlowHandlers', () => {
         result.current.handleEdgesDelete(deletedEdges);
       });
 
-      expect(mockExecuteSync).toHaveBeenCalledWith('onEdgeDelete', deletedEdges);
+      expect(mockEmitEdgeDelete).toHaveBeenCalledWith(deletedEdges);
     });
 
     it('should handle empty deleted edges array', () => {
@@ -319,7 +333,7 @@ describe('useVisualFlowHandlers', () => {
         result.current.handleEdgesDelete([]);
       });
 
-      expect(mockExecuteSync).toHaveBeenCalledWith('onEdgeDelete', []);
+      expect(mockEmitEdgeDelete).toHaveBeenCalledWith([]);
     });
   });
 

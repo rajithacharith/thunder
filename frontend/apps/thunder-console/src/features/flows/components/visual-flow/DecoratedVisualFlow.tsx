@@ -422,22 +422,33 @@ function DecoratedVisualFlow({
           return;
         }
 
-        updateNodeData(sourceData.stepId, (node: Node) => {
-          const unorderedComponents: Element[] = (node?.data as StepData)?.components ?? [];
+        const sourceId = source?.id;
 
-          const reorderedNested = unorderedComponents.map((component: Element) => {
-            if (component?.components) {
+        updateNodeData(sourceData.stepId, (node: Node) => {
+          const components: Element[] = (node?.data as StepData)?.components ?? [];
+
+          // Determine which level the dragged element belongs to and only
+          // apply move() at that level. Applying move() at both levels can
+          // cause the projected source.index to reorder the wrong array.
+          const isTopLevel = components.some((c: Element) => c.id === sourceId);
+
+          if (isTopLevel) {
+            return {components: move([...components], event)};
+          }
+
+          // Element is nested — apply move() only inside the container that holds it
+          return {
+            components: components.map((component: Element) => {
+              if (!component.components) return component;
+
+              const hasElement = component.components.some((c: Element) => c.id === sourceId);
+              if (!hasElement) return component;
+
               return {
                 ...component,
                 components: move([...component.components], event),
               };
-            }
-
-            return component;
-          });
-
-          return {
-            components: move(reorderedNested, event),
+            }),
           };
         });
 
