@@ -52,6 +52,7 @@ type EngineContext struct {
 	CurrentNode         core.NodeInterface
 	CurrentNodeResponse *common.NodeResponse
 	CurrentAction       string
+	CurrentSegmentID    string
 
 	Graph       core.GraphInterface
 	Application appmodel.Application
@@ -153,6 +154,7 @@ type flowContextContent struct {
 	Verbose             bool    `json:"verbose"`
 	CurrentNodeID       *string `json:"currentNodeId,omitempty"`
 	CurrentAction       *string `json:"currentAction,omitempty"`
+	CurrentSegmentID    *string `json:"currentSegmentId,omitempty"`
 	GraphID             string  `json:"graphId"`
 	RuntimeData         *string `json:"runtimeData,omitempty"`
 	ExecutionHistory    *string `json:"executionHistory,omitempty"`
@@ -290,6 +292,12 @@ func (f *FlowContextDB) ToEngineContext(ctx context.Context, graph core.GraphInt
 		currentAction = *content.CurrentAction
 	}
 
+	// Get current segment ID
+	currentSegmentID := ""
+	if content.CurrentSegmentID != nil {
+		currentSegmentID = *content.CurrentSegmentID
+	}
+
 	// Deserialize AuthUser if present
 	var authUser managerpkg.AuthUser
 	if content.AuthUser != nil {
@@ -315,6 +323,7 @@ func (f *FlowContextDB) ToEngineContext(ctx context.Context, graph core.GraphInt
 		RuntimeData:        runtimeData,
 		CurrentNode:        currentNode,
 		CurrentAction:      currentAction,
+		CurrentSegmentID:   currentSegmentID,
 		Graph:              graph,
 		AuthenticatedUser:  authenticatedUser,
 		AuthUser:           authUser,
@@ -364,6 +373,12 @@ func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
 	var currentAction *string
 	if ctx.CurrentAction != "" {
 		currentAction = &ctx.CurrentAction
+	}
+
+	// Get current segment ID
+	var currentSegmentID *string
+	if ctx.CurrentSegmentID != "" {
+		currentSegmentID = &ctx.CurrentSegmentID
 	}
 
 	// Get authenticated user ID
@@ -428,6 +443,7 @@ func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
 		Verbose:             ctx.Verbose,
 		CurrentNodeID:       currentNodeID,
 		CurrentAction:       currentAction,
+		CurrentSegmentID:    currentSegmentID,
 		GraphID:             graphID,
 		RuntimeData:         &runtimeData,
 		ExecutionHistory:    &executionHistory,

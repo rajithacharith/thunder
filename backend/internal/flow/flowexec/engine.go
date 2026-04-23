@@ -75,12 +75,14 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 		publishFlowStartedEvent(ctx, fe.observabilitySvc)
 	}
 
-	currentNode, err := fe.setCurrentExecutionNode(ctx, logger)
-	if err != nil {
+	if err := fe.setCurrentExecutionNode(ctx, logger); err != nil {
 		// Publish flow failed event before returning error
 		publishFlowFailedEvent(ctx, err, flowStartTime, time.Now().UnixMilli(), fe.observabilitySvc)
 		return flowStep, err
 	}
+
+	skipChallengeValidation := fe.validateSegmentResumePolicy(ctx, logger)
+	currentNode := ctx.CurrentNode
 
 	// Execute the graph nodes until a terminal condition is met or currentNode is nil
 	challengeTokenValidated := false
@@ -143,9 +145,11 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 		// policy against the executor
 		if !challengeTokenValidated {
 			challengeTokenValidated = true
-			if svcErr := fe.validateChallengeToken(ctx, currentNode); svcErr != nil {
-				publishFlowFailedEvent(ctx, svcErr, flowStartTime, time.Now().UnixMilli(), fe.observabilitySvc)
-				return flowStep, svcErr
+			if !skipChallengeValidation {
+				if svcErr := fe.validateChallengeToken(ctx, currentNode); svcErr != nil {
+					publishFlowFailedEvent(ctx, svcErr, flowStartTime, time.Now().UnixMilli(), fe.observabilitySvc)
+					return flowStep, svcErr
+				}
 			}
 		}
 
@@ -214,13 +218,13 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 	return flowStep, nil
 }
 
-// setCurrentExecutionNode sets the current execution node in the context and returns it.
-func (fe *flowEngine) setCurrentExecutionNode(ctx *EngineContext, logger *log.Logger) (
-	core.NodeInterface, *serviceerror.ServiceError) {
+// setCurrentExecutionNode sets the current execution node in the context.
+func (fe *flowEngine) setCurrentExecutionNode(ctx *EngineContext,
+	logger *log.Logger) *serviceerror.ServiceError {
 	graph := ctx.Graph
 	if graph == nil {
 		logger.Error("Flow graph is not initialized in the context")
-		return nil, &serviceerror.InternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	currentNode := ctx.CurrentNode
@@ -230,7 +234,7 @@ func (fe *flowEngine) setCurrentExecutionNode(ctx *EngineContext, logger *log.Lo
 		currentNode, err = graph.GetStartNode()
 		if err != nil {
 			logger.Error("Start node not found in the flow graph", log.Error(err))
-			return nil, &serviceerror.InternalServerError
+			return &serviceerror.InternalServerError
 		}
 		ctx.CurrentNode = currentNode
 	}
@@ -240,7 +244,7 @@ func (fe *flowEngine) setCurrentExecutionNode(ctx *EngineContext, logger *log.Lo
 		ctx.ExecutionHistory = make(map[string]*common.NodeExecutionRecord)
 	}
 
-	return currentNode, nil
+	return nil
 }
 
 // getNodeInputs extracts required inputs for a node.
@@ -534,10 +538,17 @@ func (fe *flowEngine) handleDisplayOnlyPromptResponse(ctx *EngineContext,
 		flowStep.Status = common.FlowStatusComplete
 		continueExecution = true
 	} else {
-		// Set current node to the next node so that the flow can resume from there in the next execution
+		// Set current node to the next node so that flow can be resumed from there in the next execution
 		ctx.CurrentNode = nextNode
 		flowStep.Status = common.FlowStatusIncomplete
 		flowStep.Type = common.StepTypeView
+
+		// Set current segment to the next node's segment if segments are defined in the graph
+		if ctx.Graph.HasSegments() {
+			if seg := ctx.Graph.GetSegmentByStartNode(nextNode.GetID()); seg != nil {
+				ctx.CurrentSegmentID = seg.ID
+			}
+		}
 	}
 
 	// Copy additional data from context
@@ -751,6 +762,38 @@ func (fe *flowEngine) resolveStepDetailsForPrompt(ctx *EngineContext, nodeResp *
 	flowStep.Status = common.FlowStatusIncomplete
 	flowStep.Type = common.StepTypeView
 	return nil
+}
+
+// validateSegmentResumePolicy checks whether the current flow is resuming inside a segment whose
+// start node allows segment restart. Returns true if challenge token validation should be skipped.
+func (fe *flowEngine) validateSegmentResumePolicy(ctx *EngineContext, logger *log.Logger) bool {
+	if !ctx.Graph.HasSegments() || ctx.CurrentSegmentID == "" {
+		return false
+	}
+
+	seg := ctx.Graph.GetSegmentByID(ctx.CurrentSegmentID)
+	if seg == nil {
+		return false
+	}
+
+	segStartNode, exists := ctx.Graph.GetNode(seg.StartNodeID)
+	if !exists {
+		return false
+	}
+
+	if svcErr := fe.setNodeExecutor(segStartNode, logger); svcErr != nil {
+		return false
+	}
+
+	policy := segStartNode.GetExecutionPolicy()
+	if policy == nil || !policy.AllowSegmentRestart {
+		return false
+	}
+
+	logger.Debug("Segment restart allowed; skipping challenge token validation for segment resume",
+		log.String("segmentID", seg.ID), log.String("segmentStartNodeID", seg.StartNodeID))
+
+	return true
 }
 
 // validateChallengeToken validates the incoming challenge token against the stored hash.

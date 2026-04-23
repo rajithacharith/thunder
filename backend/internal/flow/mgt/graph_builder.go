@@ -117,8 +117,9 @@ func (b *graphBuilder) buildGraph(flow *CompleteFlowDefinition) (core.GraphInter
 
 	// Process all nodes and build the graph structure
 	edges := make(map[string][]string)
+	boundaries := make([]segmentBoundary, 0)
 	for i := range flow.Nodes {
-		if err := b.processNode(&flow.Nodes[i], flow.Nodes, graph, edges); err != nil {
+		if err := b.processNode(&flow.Nodes[i], flow.Nodes, graph, edges, &boundaries); err != nil {
 			return nil, fmt.Errorf("failed to process node %s: %w", flow.Nodes[i].ID, err)
 		}
 	}
@@ -131,12 +132,14 @@ func (b *graphBuilder) buildGraph(flow *CompleteFlowDefinition) (core.GraphInter
 		return nil, err
 	}
 
+	b.computeSegments(graph, boundaries)
+
 	return graph, nil
 }
 
 // processNode processes a single node definition and adds it to the graph.
 func (b *graphBuilder) processNode(nodeDef *NodeDefinition, allNodes []NodeDefinition,
-	graph core.GraphInterface, edges map[string][]string) error {
+	graph core.GraphInterface, edges map[string][]string, boundaries *[]segmentBoundary) error {
 	isFinalNode := nodeDef.OnSuccess == "" &&
 		nodeDef.OnFailure == "" &&
 		len(nodeDef.Prompts) == 0 &&
@@ -160,7 +163,7 @@ func (b *graphBuilder) processNode(nodeDef *NodeDefinition, allNodes []NodeDefin
 	if err := b.configureNodePrompts(nodeDef, node, edges); err != nil {
 		return err
 	}
-	if err := b.configureDisplayOnlyProperties(nodeDef, node, edges); err != nil {
+	if err := b.configureDisplayOnlyProperties(nodeDef, node, edges, boundaries); err != nil {
 		return err
 	}
 	if err := b.configureNodeExecutor(nodeDef, node); err != nil {
@@ -356,8 +359,9 @@ func (b *graphBuilder) configureNodePrompts(nodeDef *NodeDefinition, node core.N
 }
 
 // configureDisplayOnlyProperties configures the 'next' and 'message' fields for display-only prompt nodes.
+// It also records segment boundaries for later segment computation.
 func (b *graphBuilder) configureDisplayOnlyProperties(nodeDef *NodeDefinition, node core.NodeInterface,
-	edges map[string][]string) error {
+	edges map[string][]string, boundaries *[]segmentBoundary) error {
 	logger := b.logger.With(log.String("nodeID", nodeDef.ID))
 
 	if nodeDef.Next == "" {
@@ -387,7 +391,41 @@ func (b *graphBuilder) configureDisplayOnlyProperties(nodeDef *NodeDefinition, n
 	}
 	edges[nodeDef.ID] = append(edges[nodeDef.ID], nodeDef.Next)
 
+	if boundaries != nil {
+		*boundaries = append(*boundaries, segmentBoundary{
+			boundaryNodeID: nodeDef.ID,
+			nextNodeID:     nodeDef.Next,
+		})
+	}
+
 	return nil
+}
+
+// computeSegments builds the segments slice from detected display-only prompt boundaries.
+// Segment 0 starts at the graph start node; each boundary yields a subsequent segment
+// starting at the boundary's next node.
+func (b *graphBuilder) computeSegments(g core.GraphInterface, boundaries []segmentBoundary) {
+	if len(boundaries) == 0 {
+		return
+	}
+
+	startNode, err := g.GetStartNode()
+	if err != nil {
+		return
+	}
+
+	segments := make([]core.Segment, 0, len(boundaries)+1)
+	segments = append(segments, core.Segment{
+		ID:          "seg-0",
+		StartNodeID: startNode.GetID(),
+	})
+	for i, bnd := range boundaries {
+		segments = append(segments, core.Segment{
+			ID:          fmt.Sprintf("seg-%d", i+1),
+			StartNodeID: bnd.nextNodeID,
+		})
+	}
+	g.SetSegments(segments)
 }
 
 // configureNodeExecutor configures the executor for a node.

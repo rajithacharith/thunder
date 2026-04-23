@@ -64,6 +64,7 @@ func (e *inviteExecutor) GetExecutionPolicy(mode string) *core.ExecutionPolicy {
 	if mode == ExecutorModeVerify {
 		return &core.ExecutionPolicy{
 			SkipChallengeValidation: true,
+			AllowSegmentRestart:     true,
 		}
 	}
 	return nil

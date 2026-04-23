@@ -60,7 +60,14 @@ type NodeCondition struct {
 	OnSkip string
 }
 
+// Segment represents a contiguous section of a flow graph bounded by display-only prompt nodes.
+type Segment struct {
+	ID          string
+	StartNodeID string
+}
+
 // ExecutionPolicy defines behavioral policies for node execution.
 type ExecutionPolicy struct {
 	SkipChallengeValidation bool
+	AllowSegmentRestart     bool
 }

@@ -41,6 +41,11 @@ type GraphInterface interface {
 	GetStartNode() (NodeInterface, error)
 	SetStartNode(startNodeID string) error
 	ToJSON() (string, error)
+	HasSegments() bool
+	GetSegments() []Segment
+	SetSegments(segments []Segment)
+	GetSegmentByID(segmentID string) *Segment
+	GetSegmentByStartNode(nodeID string) *Segment
 }
 
 // graph implements the GraphInterface for the flow execution
@@ -50,6 +55,7 @@ type graph struct {
 	nodes       map[string]NodeInterface
 	edges       map[string][]string
 	startNodeID string
+	segments    []Segment
 }
 
 // GetID returns the unique ID of the graph
@@ -187,6 +193,41 @@ func (g *graph) SetStartNode(startNodeID string) error {
 	g.startNodeID = startNodeID
 	node.SetAsStartNode()
 
+	return nil
+}
+
+// HasSegments returns true if the graph has multiple segments (i.e., contains display-only prompt nodes).
+func (g *graph) HasSegments() bool {
+	return len(g.segments) > 1
+}
+
+// GetSegments returns all segments in the graph.
+func (g *graph) GetSegments() []Segment {
+	return g.segments
+}
+
+// SetSegments sets the segments for the graph.
+func (g *graph) SetSegments(segments []Segment) {
+	g.segments = segments
+}
+
+// GetSegmentByID retrieves a segment by its ID.
+func (g *graph) GetSegmentByID(segmentID string) *Segment {
+	for i := range g.segments {
+		if g.segments[i].ID == segmentID {
+			return &g.segments[i]
+		}
+	}
+	return nil
+}
+
+// GetSegmentByStartNode returns the segment whose start node matches the given node ID.
+func (g *graph) GetSegmentByStartNode(nodeID string) *Segment {
+	for i := range g.segments {
+		if g.segments[i].StartNodeID == nodeID {
+			return &g.segments[i]
+		}
+	}
 	return nil
 }
 

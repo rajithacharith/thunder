@@ -948,3 +948,119 @@ func (s *ModelTestSuite) TestAvailableAttributesSerializationRoundTrip() {
 		})
 	}
 }
+
+func (s *ModelTestSuite) TestFromEngineContext_WithCurrentSegmentID() {
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetID").Return("test-graph-id")
+
+	ctx := EngineContext{
+		Context:          context.Background(),
+		ExecutionID:      "test-exec-id",
+		FlowType:         common.FlowTypeAuthentication,
+		CurrentSegmentID: "seg-1",
+		UserInputs:       map[string]string{},
+		RuntimeData:      map[string]string{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Graph:            mockGraph,
+	}
+
+	dbModel, err := FromEngineContext(ctx)
+	s.NoError(err)
+
+	content := s.getContextContent(dbModel)
+	s.NotNil(content.CurrentSegmentID)
+	s.Equal("seg-1", *content.CurrentSegmentID)
+}
+
+func (s *ModelTestSuite) TestFromEngineContext_EmptyCurrentSegmentID_OmitsField() {
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetID").Return("test-graph-id")
+
+	ctx := EngineContext{
+		Context:          context.Background(),
+		ExecutionID:      "test-exec-id",
+		FlowType:         common.FlowTypeAuthentication,
+		CurrentSegmentID: "",
+		UserInputs:       map[string]string{},
+		RuntimeData:      map[string]string{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Graph:            mockGraph,
+	}
+
+	dbModel, err := FromEngineContext(ctx)
+	s.NoError(err)
+
+	content := s.getContextContent(dbModel)
+	s.Nil(content.CurrentSegmentID)
+}
+
+func (s *ModelTestSuite) TestToEngineContext_WithCurrentSegmentID() {
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetType").Return(common.FlowTypeAuthentication)
+
+	segID := "seg-1"
+	content := flowContextContent{
+		GraphID:          "test-graph-id",
+		CurrentSegmentID: &segID,
+		UserInputs:       func() *string { v := `{}`; return &v }(),
+		RuntimeData:      func() *string { v := `{}`; return &v }(),
+		ExecutionHistory: func() *string { v := `{}`; return &v }(),
+	}
+	ctxJSON, _ := json.Marshal(content)
+	dbModel := &FlowContextDB{
+		ExecutionID: "test-exec-id",
+		Context:     string(ctxJSON),
+	}
+
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+
+	s.NoError(err)
+	s.Equal("seg-1", resultCtx.CurrentSegmentID)
+}
+
+func (s *ModelTestSuite) TestToEngineContext_MissingCurrentSegmentID_IsEmpty() {
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetType").Return(common.FlowTypeAuthentication)
+
+	content := flowContextContent{
+		GraphID:          "test-graph-id",
+		CurrentSegmentID: nil,
+		UserInputs:       func() *string { v := `{}`; return &v }(),
+		RuntimeData:      func() *string { v := `{}`; return &v }(),
+		ExecutionHistory: func() *string { v := `{}`; return &v }(),
+	}
+	ctxJSON, _ := json.Marshal(content)
+	dbModel := &FlowContextDB{
+		ExecutionID: "test-exec-id",
+		Context:     string(ctxJSON),
+	}
+
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+
+	s.NoError(err)
+	s.Equal("", resultCtx.CurrentSegmentID)
+}
+
+func (s *ModelTestSuite) TestCurrentSegmentID_RoundTrip() {
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetID").Return("test-graph-id")
+	mockGraph.On("GetType").Return(common.FlowTypeAuthentication)
+
+	ctx := EngineContext{
+		Context:          context.Background(),
+		ExecutionID:      "test-exec-id",
+		FlowType:         common.FlowTypeAuthentication,
+		CurrentSegmentID: "seg-2",
+		UserInputs:       map[string]string{},
+		RuntimeData:      map[string]string{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Graph:            mockGraph,
+	}
+
+	dbModel, err := FromEngineContext(ctx)
+	s.NoError(err)
+
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+	s.NoError(err)
+	s.Equal("seg-2", resultCtx.CurrentSegmentID)
+}
