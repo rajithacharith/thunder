@@ -454,6 +454,17 @@ vi.mock('@/features/flows/hooks/useFlowConfig', () => ({
     mockUseFlowConfig() as ReturnType<typeof getDefaultFlowConfigMock>,
 }));
 
+vi.mock('@/features/flows/hooks/useFlowEvents', () => ({
+  default: () => ({
+    triggerAutoLayout: vi.fn(),
+    onAutoLayout: vi.fn(() => vi.fn()),
+    notifyElementAdded: vi.fn(),
+    onElementAdded: vi.fn(() => vi.fn()),
+    restoreFromHistory: vi.fn(),
+    onRestoreFromHistory: vi.fn(() => vi.fn()),
+  }),
+}));
+
 // Mock useGenerateStepElement
 vi.mock('@/features/flows/hooks/useGenerateStepElement', () => ({
   default: () => ({
@@ -1314,47 +1325,6 @@ describe('Existing Flow Data Loading', () => {
 
     // Flow title should be set from existing data or default
     expect(screen.getByTestId('flow-title')).toBeInTheDocument();
-  });
-});
-
-describe('History Restoration', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockUseParams.mockReturnValue({});
-    mockUseNodesState.mockReturnValue([[], mockSetNodes, vi.fn()]);
-    mockUseEdgesState.mockReturnValue([[], mockSetEdges, vi.fn()]);
-    mockUseUpdateNodeInternals.mockReturnValue(vi.fn());
-    mockIsFlowValid.value = true;
-    mockExistingFlowData.value = null;
-  });
-
-  it('should handle restore from history event', () => {
-    render(<LoginFlowBuilder />);
-
-    // Dispatch a custom event for history restoration
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        nodes: [{id: 'restored-node', type: 'VIEW', position: {x: 0, y: 0}, data: {}}],
-        edges: [{id: 'restored-edge', source: 'a', target: 'b'}],
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
-  });
-
-  it('should not restore when nodes or edges are missing', () => {
-    render(<LoginFlowBuilder />);
-
-    // Dispatch event without nodes and edges
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {},
-    });
-
-    window.dispatchEvent(event);
-
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -3955,79 +3925,6 @@ describe('Verbose Mode Filtering Logic Tests', () => {
   });
 });
 
-describe('Restore From History Event Handler', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockUseParams.mockReturnValue({});
-    mockUseNodesState.mockReturnValue([[], mockSetNodes, vi.fn()]);
-    mockUseEdgesState.mockReturnValue([[], mockSetEdges, vi.fn()]);
-    mockUseUpdateNodeInternals.mockReturnValue(vi.fn());
-    mockIsFlowValid.value = true;
-    mockExistingFlowData.value = null;
-  });
-
-  it('should call setNodes and setEdges when restoreFromHistory event is dispatched', async () => {
-    render(<LoginFlowBuilder />);
-
-    // Dispatch a custom event for history restoration with valid nodes and edges
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        nodes: [{id: 'restored-node', type: 'VIEW', position: {x: 0, y: 0}, data: {}}],
-        edges: [{id: 'restored-edge', source: 'a', target: 'b'}],
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    // setNodes and setEdges should be called with the restored data
-    await waitFor(() => {
-      expect(mockSetNodes).toHaveBeenCalled();
-      expect(mockSetEdges).toHaveBeenCalled();
-    });
-  });
-
-  it('should not call setNodes or setEdges when event detail is missing nodes', async () => {
-    render(<LoginFlowBuilder />);
-
-    const initialSetNodesCalls = mockSetNodes.mock.calls.length;
-
-    // Dispatch event without nodes
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        edges: [{id: 'edge-1', source: 'a', target: 'b'}],
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    // setNodes should not be called for restore (only initial calls)
-    // We check that no additional calls were made
-    await waitFor(() => {
-      expect(mockSetNodes.mock.calls.length).toBe(initialSetNodesCalls);
-    });
-  });
-
-  it('should not call setNodes or setEdges when event detail is missing edges', async () => {
-    render(<LoginFlowBuilder />);
-
-    const initialSetNodesCalls = mockSetNodes.mock.calls.length;
-
-    // Dispatch event without edges
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        nodes: [{id: 'node-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}}],
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    // No additional setNodes calls for restore
-    await waitFor(() => {
-      expect(mockSetNodes.mock.calls.length).toBe(initialSetNodesCalls);
-    });
-  });
-});
-
 describe('Existing Flow Loading - useLayoutEffect', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -5542,65 +5439,6 @@ describe('Edge Style Effect', () => {
   });
 });
 
-describe('History Restoration - Edge Cases', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockUseParams.mockReturnValue({});
-    mockUseNodesState.mockReturnValue([[], mockSetNodes, vi.fn()]);
-    mockUseEdgesState.mockReturnValue([[], mockSetEdges, vi.fn()]);
-    mockUseUpdateNodeInternals.mockReturnValue(vi.fn());
-    mockIsFlowValid.value = true;
-    mockExistingFlowData.value = null;
-  });
-
-  it('should restore both nodes and edges from history event', async () => {
-    render(<LoginFlowBuilder />);
-
-    const restoredNodes = [
-      {id: 'restored-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
-      {id: 'restored-2', type: 'VIEW', position: {x: 100, y: 0}, data: {}},
-    ];
-    const restoredEdges = [{id: 'edge-1', source: 'restored-1', target: 'restored-2'}];
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {nodes: restoredNodes, edges: restoredEdges},
-    });
-
-    window.dispatchEvent(event);
-
-    // setNodes and setEdges should be called with restored data
-    await waitFor(() => {
-      expect(mockSetNodes).toHaveBeenCalledWith(restoredNodes);
-      expect(mockSetEdges).toHaveBeenCalledWith(restoredEdges);
-    });
-  });
-
-  it('should not restore when only nodes are provided without edges', () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {nodes: [{id: 'node-1', type: 'VIEW'}]},
-    });
-
-    window.dispatchEvent(event);
-
-    // Should not call setNodes without both nodes and edges
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
-  });
-
-  it('should not restore when only edges are provided without nodes', () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {edges: [{id: 'edge-1', source: 'a', target: 'b'}]},
-    });
-
-    window.dispatchEvent(event);
-
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
-  });
-});
-
 describe('Update Flow - Callbacks', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -6123,164 +5961,6 @@ describe('Verbose Mode Filtering - Component Integration with Execution Nodes', 
     expect(screen.getByTestId('nodes-count')).toHaveTextContent('3');
     // Only e3 and e4 should remain
     expect(screen.getByTestId('edges-count')).toHaveTextContent('2');
-  });
-});
-
-describe('RestoreFromHistory Event - All Branches', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockUseParams.mockReturnValue({});
-    mockUseNodesState.mockReturnValue([[], mockSetNodes, vi.fn()]);
-    mockUseEdgesState.mockReturnValue([[], mockSetEdges, vi.fn()]);
-    mockUseUpdateNodeInternals.mockReturnValue(vi.fn());
-    mockIsFlowValid.value = true;
-    mockExistingFlowData.value = null;
-    mockIsVerboseMode.value = true;
-    mockUseFlowConfig.mockImplementation(() => ({
-      setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
-      edgeStyle: mockEdgeStyle.value,
-      isVerboseMode: true,
-    }));
-  });
-
-  it('should restore nodes and edges when both are provided', async () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        nodes: [{id: 'restored-node', type: 'VIEW', position: {x: 0, y: 0}, data: {}}],
-        edges: [{id: 'restored-edge', source: 'a', target: 'b'}],
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    await waitFor(() => {
-      expect(mockSetNodes).toHaveBeenCalled();
-      expect(mockSetEdges).toHaveBeenCalled();
-    });
-  });
-
-  it('should NOT restore when only nodes are provided (edges missing)', () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        nodes: [{id: 'restored-node', type: 'VIEW', position: {x: 0, y: 0}, data: {}}],
-        // edges is missing
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    // setNodes should NOT be called because edges is missing
-    expect(mockSetNodes).not.toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({id: 'restored-node'})]),
-    );
-  });
-
-  it('should NOT restore when only edges are provided (nodes missing)', () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        // nodes is missing
-        edges: [{id: 'restored-edge', source: 'a', target: 'b'}],
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    // setEdges should NOT be called because nodes is missing
-    expect(mockSetEdges).not.toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({id: 'restored-edge'})]),
-    );
-  });
-
-  it('should NOT restore when nodes is empty array', async () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        nodes: [],
-        edges: [{id: 'restored-edge', source: 'a', target: 'b'}],
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    // Empty array is falsy in the condition check (length === 0 is truthy but empty array is truthy)
-    // Actually empty array IS truthy, so this should call setNodes
-    await waitFor(() => {
-      expect(mockSetNodes).toHaveBeenCalled();
-    });
-  });
-
-  it('should NOT restore when edges is empty array', async () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        nodes: [{id: 'restored-node', type: 'VIEW', position: {x: 0, y: 0}, data: {}}],
-        edges: [],
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    // Empty array IS truthy, so this should still call setNodes/setEdges
-    await waitFor(() => {
-      expect(mockSetNodes).toHaveBeenCalled();
-    });
-  });
-
-  it('should NOT restore when nodes is undefined', () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        nodes: undefined,
-        edges: [{id: 'restored-edge', source: 'a', target: 'b'}],
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    // undefined fails the truthy check
-    expect(mockSetNodes).not.toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({id: 'restored-node'})]),
-    );
-  });
-
-  it('should NOT restore when edges is undefined', () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        nodes: [{id: 'restored-node', type: 'VIEW', position: {x: 0, y: 0}, data: {}}],
-        edges: undefined,
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    // undefined fails the truthy check
-    expect(mockSetEdges).not.toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({id: 'restored-edge'})]),
-    );
-  });
-
-  it('should NOT restore when detail is empty object', () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {},
-    });
-
-    window.dispatchEvent(event);
-
-    // Both are undefined, so neither setter should be called with restoration data
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 

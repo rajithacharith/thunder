@@ -21,6 +21,7 @@ import {useUpdateNodeInternals} from '@xyflow/react';
 import type {UpdateNodeInternals} from '@xyflow/system';
 import cloneDeep from 'lodash-es/cloneDeep';
 import {useRef} from 'react';
+import useFlowEvents from './useFlowEvents';
 import type {Base} from '../models/base';
 import {type Element} from '../models/elements';
 import FlowEventTypes from '../models/extension';
@@ -64,6 +65,7 @@ export interface UseResourceAddProps {
 const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => void) => {
   // Get references from hooks - only ReactFlow hooks needed here
   const reactFlowInstance = useReactFlow();
+  const {notifyElementAdded} = useFlowEvents();
   const updateNodeInternals: UpdateNodeInternals = useUpdateNodeInternals();
 
   // Store ALL dependencies in refs - updated every render
@@ -71,6 +73,7 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
     props,
     reactFlowInstance,
     updateNodeInternals,
+    notifyElementAdded,
   });
 
   // Update refs every render (minimal overhead - just assignment)
@@ -78,6 +81,7 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
     props,
     reactFlowInstance,
     updateNodeInternals,
+    notifyElementAdded,
   };
 
   // Store a stable reference to the handler function itself
@@ -142,7 +146,7 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
       });
 
       // Dispatch custom event to notify about element addition (for auto-layout hint)
-      window.dispatchEvent(new CustomEvent('flowElementAdded', {detail: {type: 'template'}}));
+      depsRef.current.notifyElementAdded('template');
 
       // Don't open properties panel for templates - just track the resource without opening panel
       return;
@@ -212,7 +216,7 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
       });
 
       // Dispatch custom event to notify about element addition (for auto-layout hint)
-      window.dispatchEvent(new CustomEvent('flowElementAdded', {detail: {type: 'widget'}}));
+      depsRef.current.notifyElementAdded('widget');
 
       // Don't open properties panel for widgets - just track the resource without opening panel
       return;
@@ -238,7 +242,7 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
       onResourceDropOnCanvas(generatedStep, '');
 
       // Dispatch custom event to notify about element addition (for auto-layout hint)
-      window.dispatchEvent(new CustomEvent('flowElementAdded', {detail: {type: 'step'}}));
+      depsRef.current.notifyElementAdded('step');
       return;
     }
 

@@ -47,6 +47,17 @@ vi.mock('../../../hooks/useInteractionState', () => ({
   }),
 }));
 
+vi.mock('../../../hooks/useFlowEvents', () => ({
+  default: () => ({
+    notifyElementAdded: vi.fn(),
+    onElementAdded: vi.fn(() => vi.fn()),
+    triggerAutoLayout: vi.fn(),
+    onAutoLayout: vi.fn(() => vi.fn()),
+    restoreFromHistory: vi.fn(),
+    onRestoreFromHistory: vi.fn(() => vi.fn()),
+  }),
+}));
+
 vi.mock('../../../hooks/useComponentDelete', () => ({
   default: () => ({
     deleteComponent: vi.fn(),

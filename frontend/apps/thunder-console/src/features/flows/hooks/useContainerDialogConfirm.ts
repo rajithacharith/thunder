@@ -19,6 +19,7 @@
 import {type Edge, type Node, type XYPosition, useReactFlow} from '@xyflow/react';
 import cloneDeep from 'lodash-es/cloneDeep';
 import {useRef} from 'react';
+import useFlowEvents from './useFlowEvents';
 import type {DragSourceData, DragTargetData, DragEventWithNative} from '../models/drag-drop';
 import type {Element} from '../models/elements';
 import {BlockTypes, ElementCategories} from '../models/elements';
@@ -65,17 +66,20 @@ export interface UseContainerDialogConfirmProps {
 const useContainerDialogConfirm = (props: UseContainerDialogConfirmProps): (() => void) => {
   // Get references from ReactFlow hooks
   const reactFlowInstance = useReactFlow();
+  const {notifyElementAdded} = useFlowEvents();
 
   // Store ALL dependencies in refs - updated every render
   const depsRef = useRef({
     props,
     reactFlowInstance,
+    notifyElementAdded,
   });
 
   // Update refs every render (minimal overhead - just assignment)
   depsRef.current = {
     props,
     reactFlowInstance,
+    notifyElementAdded,
   };
 
   // Store stable reference to handler function
@@ -148,7 +152,7 @@ const useContainerDialogConfirm = (props: UseContainerDialogConfirmProps): (() =
       onResourceDropOnCanvas(generatedViewStep, '');
 
       // Dispatch custom event to notify about element addition (for auto-layout hint)
-      window.dispatchEvent(new CustomEvent('flowElementAdded', {detail: {type: 'step'}}));
+      depsRef.current.notifyElementAdded('step');
     } else if (dropScenario === 'input-on-canvas') {
       // Create a Form element containing the Input
       const formElement: Element = {
@@ -178,7 +182,7 @@ const useContainerDialogConfirm = (props: UseContainerDialogConfirmProps): (() =
       onResourceDropOnCanvas(generatedViewStep, '');
 
       // Dispatch custom event to notify about element addition (for auto-layout hint)
-      window.dispatchEvent(new CustomEvent('flowElementAdded', {detail: {type: 'step'}}));
+      depsRef.current.notifyElementAdded('step');
     } else if (dropScenario === 'input-on-view') {
       // Create a Form element containing the Input and add it to the View
       const formElement: Element = {
@@ -240,7 +244,7 @@ const useContainerDialogConfirm = (props: UseContainerDialogConfirmProps): (() =
       );
 
       // Dispatch custom event to notify about element addition (for auto-layout hint)
-      window.dispatchEvent(new CustomEvent('flowElementAdded', {detail: {type: 'widget'}}));
+      depsRef.current.notifyElementAdded('widget');
     }
 
     // Close the dialog and clear pending data

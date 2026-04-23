@@ -54,6 +54,7 @@ import useContainerDialogConfirm from '../../hooks/useContainerDialogConfirm';
 import useDeleteExecutionResource from '../../hooks/useDeleteExecutionResource';
 import useDragDropHandlers from '../../hooks/useDragDropHandlers';
 import useFlowConfig from '../../hooks/useFlowConfig';
+import useFlowEvents from '../../hooks/useFlowEvents';
 import useGenerateStepElement from '../../hooks/useGenerateStepElement';
 import useInteractionState from '../../hooks/useInteractionState';
 import useResourceAdd from '../../hooks/useResourceAdd';
@@ -151,6 +152,7 @@ function DecoratedVisualFlow({
   const updateNodeInternals: UpdateNodeInternals = useUpdateNodeInternals();
   const {deleteComponent} = useComponentDelete();
   const {isResourcePanelOpen, isResourcePropertiesPanelOpen} = useUIPanelState();
+  const {notifyElementAdded, onAutoLayout} = useFlowEvents();
   const {isFlowMetadataLoading, metadata, setFlowNodes} = useFlowConfig();
   const {onResourceDropOnCanvas} = useInteractionState();
 
@@ -299,17 +301,7 @@ function DecoratedVisualFlow({
   const autoLayoutTriggeredRef = useRef<boolean>(false);
 
   // Listen for auto-layout trigger events from parent components
-  useEffect(() => {
-    const handleTriggerAutoLayout = () => {
-      handleAutoLayout();
-    };
-
-    window.addEventListener('triggerAutoLayout', handleTriggerAutoLayout);
-
-    return () => {
-      window.removeEventListener('triggerAutoLayout', handleTriggerAutoLayout);
-    };
-  }, [handleAutoLayout]);
+  useEffect(() => onAutoLayout(handleAutoLayout), [onAutoLayout, handleAutoLayout]);
 
   // Effect to trigger auto-layout on initial load when nodes lack proper layout data
   useEffect(() => {
@@ -415,8 +407,8 @@ function DecoratedVisualFlow({
       // Check if this is a step being added to canvas (not reordering)
       const isStepDrop = sourceData.dragged?.resourceType === ResourceTypes.Step;
       if (isStepDrop && isCanvasTarget && !sourceData.isReordering) {
-        // Dispatch custom event to notify about element addition (for auto-layout hint)
-        window.dispatchEvent(new CustomEvent('flowElementAdded', {detail: {type: 'step'}}));
+        // Notify about element addition (for auto-layout hint)
+        notifyElementAdded('step');
       }
 
       // For canceled events or missing target, return early
@@ -512,6 +504,7 @@ function DecoratedVisualFlow({
       addToViewAtIndex,
       addToFormAtIndex,
       getNodes,
+      notifyElementAdded,
     ],
   );
 
