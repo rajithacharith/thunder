@@ -27,17 +27,20 @@ import (
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/resourceindicators"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
 // clientCredentialsGrantHandler handles the client credentials grant type.
 type clientCredentialsGrantHandler struct {
-	tokenBuilder tokenservice.TokenBuilderInterface
-	ouService    ou.OrganizationUnitServiceInterface
-	authzService authz.AuthorizationServiceInterface
-	entityProv   entityprovider.EntityProviderInterface
+	tokenBuilder    tokenservice.TokenBuilderInterface
+	ouService       ou.OrganizationUnitServiceInterface
+	authzService    authz.AuthorizationServiceInterface
+	entityProv      entityprovider.EntityProviderInterface
+	resourceService resource.ResourceServiceInterface
 }
 
 // newClientCredentialsGrantHandler creates a new instance of ClientCredentialsGrantHandler.
@@ -46,12 +49,14 @@ func newClientCredentialsGrantHandler(
 	ouService ou.OrganizationUnitServiceInterface,
 	authzService authz.AuthorizationServiceInterface,
 	entityProv entityprovider.EntityProviderInterface,
+	resourceService resource.ResourceServiceInterface,
 ) GrantHandlerInterface {
 	return &clientCredentialsGrantHandler{
-		tokenBuilder: tokenBuilder,
-		ouService:    ouService,
-		authzService: authzService,
-		entityProv:   entityProv,
+		tokenBuilder:    tokenBuilder,
+		ouService:       ouService,
+		authzService:    authzService,
+		entityProv:      entityProv,
+		resourceService: resourceService,
 	}
 }
 
@@ -65,6 +70,10 @@ func (h *clientCredentialsGrantHandler) ValidateGrant(ctx context.Context, token
 		}
 	}
 
+	if errResp := resourceindicators.ValidateResourceURIs(tokenRequest.Resources); errResp != nil {
+		return errResp
+	}
+
 	return nil
 }
 
@@ -75,6 +84,25 @@ func (h *clientCredentialsGrantHandler) HandleGrant(ctx context.Context, tokenRe
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ClientCredentialsGrantHandler"))
 
 	scopes := tokenservice.ParseScopes(tokenRequest.Scope)
+	hasResourceParam := len(tokenRequest.Resources) > 0
+
+	// Resolve each requested resource identifier to an internal Resource Server.
+	// Unknown identifiers cause a 400 invalid_target.
+	resolvedRSes, errResp := resourceindicators.ResolveResourceServers(ctx, h.resourceService, tokenRequest.Resources)
+	if errResp != nil {
+		return nil, errResp
+	}
+
+	// Per-RS valid scopes (intersection of requested scopes with the RS's defined permissions).
+	// Scopes not defined on any requested RS are silently dropped.
+	rsValidScopes, errResp := resourceindicators.ComputeRSValidScopes(ctx, h.resourceService, resolvedRSes, scopes)
+	if errResp != nil {
+		return nil, errResp
+	}
+
+	if hasResourceParam {
+		scopes = resourceindicators.UnionScopes(rsValidScopes)
+	}
 
 	if len(scopes) > 0 {
 		var groupIDs []string
@@ -116,7 +144,13 @@ func (h *clientCredentialsGrantHandler) HandleGrant(ctx context.Context, tokenRe
 		scopes = authzResp.AuthorizedPermissions
 	}
 
-	finalAudience := tokenservice.DetermineAudience("", tokenRequest.Resource, "", tokenRequest.ClientID)
+	// aud is composed by resourceindicators.ComposeAudiences: RS identifiers when any RS contributes
+	// (explicit resource params or implicit discovery via granted scopes), else clientID fallback.
+	audiences, errResp := resourceindicators.ComposeAudiences(ctx, h.resourceService, tokenRequest.ClientID,
+		resolvedRSes, scopes)
+	if errResp != nil {
+		return nil, errResp
+	}
 
 	clientAttributes, clientAttrErr := tokenservice.BuildClientAttributes(ctx, oauthApp, h.ouService)
 	if clientAttrErr != nil {
@@ -128,7 +162,7 @@ func (h *clientCredentialsGrantHandler) HandleGrant(ctx context.Context, tokenRe
 
 	accessToken, err := h.tokenBuilder.BuildAccessToken(&tokenservice.AccessTokenBuildContext{
 		Subject:          tokenRequest.ClientID,
-		Audience:         finalAudience,
+		Audiences:        audiences,
 		ClientID:         tokenRequest.ClientID,
 		Scopes:           scopes,
 		UserAttributes:   make(map[string]interface{}),

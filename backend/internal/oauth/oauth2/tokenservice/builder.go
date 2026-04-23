@@ -69,14 +69,13 @@ func (tb *tokenBuilder) BuildAccessToken(ctx *AccessTokenBuildContext) (*oauth2m
 		UserAttributes:   userAttributes,
 		AttributeCacheID: ctx.AttributeCacheID,
 		Subject:          ctx.Subject,
-		Audience:         ctx.Audience,
+		Audiences:        ctx.Audiences,
 		ClaimsRequest:    ctx.ClaimsRequest,
 		ClaimsLocales:    ctx.ClaimsLocales,
 	}
 
 	token, iat, err := tb.jwtService.GenerateJWT(
 		ctx.Subject,
-		ctx.Audience,
 		tokenConfig.Issuer,
 		tokenConfig.ValidityPeriod,
 		jwtClaims,
@@ -151,6 +150,12 @@ func (tb *tokenBuilder) buildAccessTokenClaims(
 		claims[constants.ClaimClaimsLocales] = ctx.ClaimsLocales
 	}
 
+	if len(ctx.Audiences) > 1 {
+		claims["aud"] = ctx.Audiences
+	} else if len(ctx.Audiences) == 1 {
+		claims["aud"] = ctx.Audiences[0]
+	}
+
 	return claims, nil
 }
 
@@ -223,13 +228,14 @@ func (tb *tokenBuilder) BuildRefreshToken(ctx *RefreshTokenBuildContext) (*oauth
 		Scopes:        ctx.Scopes,
 		ClientID:      ctx.ClientID,
 		Subject:       ctx.AccessTokenSubject,
-		Audience:      tokenConfig.Issuer,
+		Audiences:     []string{tokenConfig.Issuer},
 		ClaimsLocales: ctx.ClaimsLocales,
 	}
 
+	claims["aud"] = tokenConfig.Issuer
+
 	token, iat, err := tb.jwtService.GenerateJWT(
 		ctx.ClientID,
-		tokenConfig.Issuer,
 		tokenConfig.Issuer,
 		tokenConfig.ValidityPeriod,
 		claims,
@@ -255,7 +261,7 @@ func (tb *tokenBuilder) buildRefreshTokenClaims(ctx *RefreshTokenBuildContext) (
 	}
 
 	claims["access_token_sub"] = ctx.AccessTokenSubject
-	claims["access_token_aud"] = ctx.AccessTokenAudience
+	claims["access_token_aud"] = ctx.AccessTokenAudiences
 	claims["grant_type"] = ctx.GrantType
 
 	if ctx.AttributeCacheID != "" {
@@ -296,12 +302,13 @@ func (tb *tokenBuilder) BuildIDToken(ctx *IDTokenBuildContext) (*oauth2model.Tok
 		Scopes:    ctx.Scopes,
 		ClientID:  ctx.Audience,
 		Subject:   ctx.Subject,
-		Audience:  ctx.Audience,
+		Audiences: []string{ctx.Audience},
 	}
+
+	jwtClaims["aud"] = ctx.Audience
 
 	token, iat, err := tb.jwtService.GenerateJWT(
 		ctx.Subject,
-		ctx.Audience,
 		tokenConfig.Issuer,
 		tokenConfig.ValidityPeriod,
 		jwtClaims,

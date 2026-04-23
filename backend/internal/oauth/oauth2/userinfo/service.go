@@ -162,9 +162,10 @@ func (s *userInfoService) generateJWSUserInfo(
 	issuer := runtime.Config.JWT.Issuer
 	validity := runtime.Config.JWT.ValidityPeriod
 
+	response["aud"] = clientID
+
 	signedJWT, _, err := s.jwtService.GenerateJWT(
 		sub,
-		clientID,
 		issuer,
 		validity,
 		response,

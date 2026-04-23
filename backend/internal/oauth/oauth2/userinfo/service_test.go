@@ -1100,7 +1100,6 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_ResponseType() {
 	s.mockJWTService.On(
 		"GenerateJWT",
 		"user123",
-		"client123",
 		issuer,
 		config.GetThunderRuntime().Config.JWT.ValidityPeriod,
 		mock.Anything,
@@ -1159,7 +1158,6 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_GenerateJWTFailure() {
 	s.mockJWTService.On(
 		"GenerateJWT",
 		"user123",
-		"client123",
 		issuer,
 		config.GetThunderRuntime().Config.JWT.ValidityPeriod,
 		mock.Anything,

@@ -174,7 +174,8 @@ CREATE TABLE RESOURCE_SERVER (
     OU_ID VARCHAR(36) NOT NULL,
     NAME VARCHAR(100) NOT NULL,
     DESCRIPTION TEXT,
-    IDENTIFIER VARCHAR(100),
+    HANDLE VARCHAR(100),
+    IDENTIFIER VARCHAR(2048),
     PROPERTIES TEXT,
     CREATED_AT TEXT DEFAULT (datetime('now')),
     UPDATED_AT TEXT DEFAULT (datetime('now')),
@@ -183,6 +184,11 @@ CREATE TABLE RESOURCE_SERVER (
 
 -- Composite index for name-based resource server lookups
 CREATE INDEX idx_resource_server_name_deployment ON RESOURCE_SERVER (DEPLOYMENT_ID, NAME);
+
+-- Unique constraint: Resource server handle must be unique per deployment (when not null)
+CREATE UNIQUE INDEX uq_resource_server_handle
+    ON RESOURCE_SERVER(HANDLE, DEPLOYMENT_ID)
+    WHERE HANDLE IS NOT NULL;
 
 -- Unique constraint: Resource server identifier must be unique per deployment (when not null)
 CREATE UNIQUE INDEX uq_resource_server_identifier

@@ -90,13 +90,13 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 		CodeVerifier:       r.FormValue("code_verifier"),
 		Code:               r.FormValue("code"),
 		RedirectURI:        r.FormValue("redirect_uri"),
-		Resource:           r.FormValue(constants.RequestParamResource),
+		Resources:          r.Form[constants.RequestParamResource],
 		SubjectToken:       r.FormValue(constants.RequestParamSubjectToken),
 		SubjectTokenType:   r.FormValue(constants.RequestParamSubjectTokenType),
 		ActorToken:         r.FormValue(constants.RequestParamActorToken),
 		ActorTokenType:     r.FormValue(constants.RequestParamActorTokenType),
 		RequestedTokenType: r.FormValue(constants.RequestParamRequestedTokenType),
-		Audience:           r.FormValue(constants.RequestParamAudience),
+		Audiences:          r.Form[constants.RequestParamAudience],
 	}
 
 	// Delegate all business logic to the token service.

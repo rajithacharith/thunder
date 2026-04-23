@@ -608,6 +608,87 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_EdgeCase_VeryLong
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
+// ============================================================================
+// §1 — Auth-assertion multi-aud rejection test
+// ============================================================================
+
+func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_AuthAssertion_RejectsMultiAud() {
+	// Auth assertions with more than one audience element must be rejected (defense-in-depth;
+	// auth assertions are a narrow control surface).
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub":       "user123",
+		"iss":       "https://thunder.io",
+		"aud":       []interface{}{"a", "b"},
+		"exp":       float64(now + 3600),
+		"assurance": "high", // marks this as an auth assertion
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "auth assertion must have a single audience")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+// ============================================================================
+// §1 — Non-assertion multi-aud tests
+// ============================================================================
+
+func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_NonAssertion_AcceptsMultiAud() {
+	// Non-assertion subject tokens with a multi-value aud are accepted when at least one element
+	// matches the requesting app's AppID or the configured default audience.
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://thunder.io",
+		"aud": []interface{}{"x", "y"},
+		"exp": float64(now + 3600),
+	}
+	token := suite.createTestJWT(claims)
+
+	oauthAppWithID := &appmodel.OAuthAppConfigProcessedDTO{
+		ClientID: "test-client",
+		AppID:    "x", // Matches one element of the aud array.
+	}
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, oauthAppWithID)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), []string{"x", "y"}, result.Aud)
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_NonAssertion_ToleratesMalformedAud() {
+	// Non-assertion subject tokens with a malformed aud (wrong type) do NOT return an error;
+	// Aud is set to nil/empty for legacy tolerance. Downstream code treats nil Aud as
+	// "no declared audience".
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://thunder.io",
+		"aud": 123, // numeric — wrong type, silently ignored
+		"exp": float64(now + 3600),
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Empty(suite.T(), result.Aud)
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
 func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_Basic() {
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
@@ -631,7 +712,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_Basic() {
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "user123", result.Sub)
-	assert.Equal(suite.T(), testAppID, result.Aud)
+	assert.Equal(suite.T(), []string{testAppID}, result.Audiences)
 	assert.Equal(suite.T(), "authorization_code", result.GrantType)
 	assert.Equal(suite.T(), []string{"read", "write"}, result.Scopes)
 	assert.Equal(suite.T(), "test-cache-id", result.AttributeCacheID)
@@ -1003,7 +1084,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_WithClaim
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "user123", result.Sub)
-	assert.Equal(suite.T(), testAppID, result.Aud)
+	assert.Equal(suite.T(), []string{testAppID}, result.Audiences)
 	assert.Equal(suite.T(), "authorization_code", result.GrantType)
 	assert.Equal(suite.T(), []string{"read", "write"}, result.Scopes)
 	assert.Equal(suite.T(), "test-cache-id", result.AttributeCacheID)
@@ -1040,7 +1121,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithAppI
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "user123", result.Sub)
 	assert.Equal(suite.T(), "https://thunder.io", result.Iss)
-	assert.Equal(suite.T(), testAppID, result.Aud)
+	assert.Equal(suite.T(), []string{testAppID}, result.Aud)
 	assert.Equal(suite.T(), []string{"read:documents", "write:documents"}, result.Scopes)
 	assert.Equal(suite.T(), "person", result.UserAttributes["userType"])
 	suite.mockJWTService.AssertExpectations(suite.T())
@@ -1208,7 +1289,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithDefa
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "user123", result.Sub)
 	assert.Equal(suite.T(), "https://thunder.io", result.Iss)
-	assert.Equal(suite.T(), defaultAudience, result.Aud)
+	assert.Equal(suite.T(), []string{defaultAudience}, result.Aud)
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
@@ -1401,7 +1482,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidAud
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
-	assert.Contains(suite.T(), err.Error(), "claim aud is not a string")
+	assert.Contains(suite.T(), err.Error(), "claim aud has unsupported type")
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
@@ -1654,7 +1735,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Success() {
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "user123", result.Sub)
 	assert.Equal(suite.T(), "https://thunder.io", result.Iss)
-	assert.Equal(suite.T(), "test-app", result.Aud)
+	assert.Equal(suite.T(), []string{"test-app"}, result.Aud)
 	assert.Equal(suite.T(), "test-client", result.ClientID)
 	assert.Equal(suite.T(), "authorization_code", result.GrantType)
 	assert.Equal(suite.T(), []string{"openid", "profile"}, result.Scopes)
@@ -1680,7 +1761,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Success_MinClaims(
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "user123", result.Sub)
 	assert.Equal(suite.T(), "https://thunder.io", result.Iss)
-	assert.Equal(suite.T(), "test-app", result.Aud)
+	assert.Equal(suite.T(), []string{"test-app"}, result.Aud)
 	assert.Equal(suite.T(), "test-client", result.ClientID)
 	assert.Empty(suite.T(), result.GrantType)
 	assert.Empty(suite.T(), result.Scopes)

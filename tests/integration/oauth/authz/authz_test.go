@@ -989,6 +989,21 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithResourceParameter() {
 	// Test that resource parameter is properly stored and used as audience in access token
 	resourceURL := "https://mcp.example.com/mcp"
 
+	// Create a Resource Server with the matching identifier so the resource parameter is valid
+	rs := testutils.ResourceServer{
+		Name:       "MCP Resource Server",
+		Handle:     "mcp-server",
+		Identifier: resourceURL,
+		OUID:       testOUID,
+	}
+	rsID, err := testutils.CreateResourceServerWithActions(rs, nil)
+	ts.NoError(err, "Failed to create resource server")
+	defer func() {
+		if err := testutils.DeleteResourceServer(rsID); err != nil {
+			ts.T().Logf("Warning: Failed to delete resource server: %v", err)
+		}
+	}()
+
 	// Create test user
 	user := testutils.User{
 		OUID: testOUID,
@@ -1091,7 +1106,21 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithResourceParameter() {
 	// Verify the audience claim matches the resource parameter
 	aud, ok := claims["aud"]
 	ts.True(ok, "Audience claim should be present in access token")
-	ts.Equal(resourceURL, aud, "Audience should match the resource parameter")
+	switch audVal := aud.(type) {
+	case string:
+		ts.Equal(resourceURL, audVal, "Audience should match the resource parameter")
+	case []interface{}:
+		found := false
+		for _, a := range audVal {
+			if a == resourceURL {
+				found = true
+				break
+			}
+		}
+		ts.True(found, "Audience array should contain the resource URL")
+	default:
+		ts.Fail("Unexpected audience type")
+	}
 }
 
 // TestAuthorizationCodeFlowWithClaimsLocales tests that claims_locales parameter is accepted and stored

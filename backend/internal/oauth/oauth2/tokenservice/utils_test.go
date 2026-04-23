@@ -41,11 +41,6 @@ type UtilsTestSuite struct {
 	suite.Suite
 }
 
-const (
-	testTokenAud        = "https://token-aud.example.com" //nolint:gosec // Test data, not a real credential
-	testDefaultAudience = "default-app"
-)
-
 func TestUtilsTestSuite(t *testing.T) {
 	suite.Run(t, new(UtilsTestSuite))
 }
@@ -291,65 +286,6 @@ func (suite *UtilsTestSuite) TestJoinScopes_WithEmptySlice() {
 func (suite *UtilsTestSuite) TestJoinScopes_WithNilSlice() {
 	scopes := []string(nil)
 	result := JoinScopes(scopes)
-
-	assert.Equal(suite.T(), "", result)
-}
-
-// ============================================================================
-// DetermineAudience Tests
-// ============================================================================
-
-func (suite *UtilsTestSuite) TestDetermineAudience_WithAudience() {
-	audience := "https://api.example.com"
-	resource := "https://other-api.com"
-	tokenAud := testTokenAud
-	defaultAudience := testDefaultAudience
-
-	result := DetermineAudience(audience, resource, tokenAud, defaultAudience)
-
-	assert.Equal(suite.T(), audience, result)
-}
-
-func (suite *UtilsTestSuite) TestDetermineAudience_WithResource() {
-	audience := ""
-	resource := "https://api.example.com"
-	tokenAud := testTokenAud
-	defaultAudience := testDefaultAudience
-
-	result := DetermineAudience(audience, resource, tokenAud, defaultAudience)
-
-	assert.Equal(suite.T(), resource, result)
-}
-
-func (suite *UtilsTestSuite) TestDetermineAudience_WithTokenAud() {
-	audience := ""
-	resource := ""
-	tokenAud := testTokenAud
-	defaultAudience := testDefaultAudience
-
-	result := DetermineAudience(audience, resource, tokenAud, defaultAudience)
-
-	assert.Equal(suite.T(), tokenAud, result)
-}
-
-func (suite *UtilsTestSuite) TestDetermineAudience_WithoutResource() {
-	audience := ""
-	resource := ""
-	tokenAud := ""
-	defaultAudience := testDefaultAudience
-
-	result := DetermineAudience(audience, resource, tokenAud, defaultAudience)
-
-	assert.Equal(suite.T(), defaultAudience, result)
-}
-
-func (suite *UtilsTestSuite) TestDetermineAudience_EmptyDefault() {
-	audience := ""
-	resource := ""
-	tokenAud := ""
-	defaultAudience := ""
-
-	result := DetermineAudience(audience, resource, tokenAud, defaultAudience)
 
 	assert.Equal(suite.T(), "", result)
 }
@@ -1140,4 +1076,78 @@ func (suite *UtilsTestSuite) TestBuildClientAttributes_NilOUService_ReturnsNil()
 	claims, err := BuildClientAttributes(context.Background(), app, nil)
 	assert.NoError(suite.T(), err)
 	assert.Nil(suite.T(), claims)
+}
+
+// ============================================================================
+// §1 — extractAudiences direct unit tests
+// ============================================================================
+
+func (suite *UtilsTestSuite) TestExtractAudiences_StringValue() {
+	claims := map[string]interface{}{"aud": "x"}
+	auds, err := extractAudiences(claims)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), []string{"x"}, auds)
+}
+
+func (suite *UtilsTestSuite) TestExtractAudiences_StringSlice() {
+	claims := map[string]interface{}{"aud": []interface{}{"x", "y"}}
+	auds, err := extractAudiences(claims)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), []string{"x", "y"}, auds)
+}
+
+func (suite *UtilsTestSuite) TestExtractAudiences_SingleElementSlice() {
+	claims := map[string]interface{}{"aud": []interface{}{"x"}}
+	auds, err := extractAudiences(claims)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), []string{"x"}, auds)
+}
+
+func (suite *UtilsTestSuite) TestExtractAudiences_EmptyString_ReturnsError() {
+	claims := map[string]interface{}{"aud": ""}
+	auds, err := extractAudiences(claims)
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), auds)
+}
+
+func (suite *UtilsTestSuite) TestExtractAudiences_EmptySlice_ReturnsError() {
+	claims := map[string]interface{}{"aud": []interface{}{}}
+	auds, err := extractAudiences(claims)
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), auds)
+}
+
+func (suite *UtilsTestSuite) TestExtractAudiences_NilValue_ReturnsError() {
+	claims := map[string]interface{}{"aud": nil}
+	auds, err := extractAudiences(claims)
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), auds)
+}
+
+func (suite *UtilsTestSuite) TestExtractAudiences_MissingKey_ReturnsError() {
+	claims := map[string]interface{}{}
+	auds, err := extractAudiences(claims)
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), auds)
+}
+
+func (suite *UtilsTestSuite) TestExtractAudiences_WrongType_ReturnsError() {
+	claims := map[string]interface{}{"aud": 123}
+	auds, err := extractAudiences(claims)
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), auds)
+}
+
+func (suite *UtilsTestSuite) TestExtractAudiences_MixedSliceNonString_ReturnsError() {
+	claims := map[string]interface{}{"aud": []interface{}{"x", 42}}
+	auds, err := extractAudiences(claims)
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), auds)
+}
+
+func (suite *UtilsTestSuite) TestExtractAudiences_SliceWithEmptyString_ReturnsError() {
+	claims := map[string]interface{}{"aud": []interface{}{"x", ""}}
+	auds, err := extractAudiences(claims)
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), auds)
 }

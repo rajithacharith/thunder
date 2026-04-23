@@ -24,6 +24,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
+	"github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
@@ -36,6 +37,7 @@ import (
 func Initialize(
 	mux *http.ServeMux,
 	applicationService application.ApplicationServiceInterface,
+	resourceService resource.ResourceServiceInterface,
 	jwtService jwt.JWTServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 ) (AuthorizeServiceInterface, error) {
@@ -45,7 +47,8 @@ func Initialize(
 	}
 
 	authzService := newAuthorizeService(
-		applicationService, jwtService, flowExecService, authzCodeStore, authzReqStore, transactioner,
+		applicationService, resourceService, jwtService, flowExecService,
+		authzCodeStore, authzReqStore, transactioner,
 	)
 	authzHandler := newAuthorizeHandler(authzService)
 	registerRoutes(mux, authzHandler)

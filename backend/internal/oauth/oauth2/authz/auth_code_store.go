@@ -140,7 +140,7 @@ func (acs *authorizationCodeStore) getJSONDataBytes(authzCode AuthorizationCode)
 		jsonDataKeyScopes:              authzCode.Scopes,
 		jsonDataKeyCodeChallenge:       authzCode.CodeChallenge,
 		jsonDataKeyCodeChallengeMethod: authzCode.CodeChallengeMethod,
-		jsonDataKeyResource:            authzCode.Resource,
+		jsonDataKeyResource:            authzCode.Resources,
 		jsonDataKeyClaimsLocales:       authzCode.ClaimsLocales,
 		jsonDataKeyNonce:               authzCode.Nonce,
 	}
@@ -251,8 +251,14 @@ func appendAuthzDataJSON(row map[string]interface{}, authzCode *AuthorizationCod
 	if codeChallengeMethod, ok := authzData[jsonDataKeyCodeChallengeMethod].(string); ok {
 		authzCode.CodeChallengeMethod = codeChallengeMethod
 	}
-	if resource, ok := authzData[jsonDataKeyResource].(string); ok {
-		authzCode.Resource = resource
+	if rawResources, ok := authzData[jsonDataKeyResource].([]interface{}); ok {
+		resources := make([]string, 0, len(rawResources))
+		for _, r := range rawResources {
+			if s, ok := r.(string); ok {
+				resources = append(resources, s)
+			}
+		}
+		authzCode.Resources = resources
 	}
 	if claimsLocales, ok := authzData[jsonDataKeyClaimsLocales].(string); ok {
 		authzCode.ClaimsLocales = claimsLocales

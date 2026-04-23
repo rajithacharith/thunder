@@ -30,7 +30,7 @@ type OAuthParameters struct {
 	PermissionScopes    []string
 	CodeChallenge       string
 	CodeChallengeMethod string
-	Resource            string
+	Resources           []string
 	ClaimsRequest       *ClaimsRequest
 	ClaimsLocales       string
 	Nonce               string

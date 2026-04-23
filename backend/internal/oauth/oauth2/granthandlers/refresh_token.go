@@ -19,16 +19,19 @@
 package granthandlers
 
 import (
-	"slices"
-	"time"
-
 	"context"
+	"slices"
+	"strings"
+	"time"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/resourceindicators"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
+	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
+	"github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
@@ -41,6 +44,7 @@ type refreshTokenGrantHandler struct {
 	tokenBuilder     tokenservice.TokenBuilderInterface
 	tokenValidator   tokenservice.TokenValidatorInterface
 	attrCacheService attributecache.AttributeCacheServiceInterface
+	resourceService  resource.ResourceServiceInterface
 }
 
 // newRefreshTokenGrantHandler creates a new instance of RefreshTokenGrantHandler.
@@ -49,12 +53,14 @@ func newRefreshTokenGrantHandler(
 	tokenBuilder tokenservice.TokenBuilderInterface,
 	tokenValidator tokenservice.TokenValidatorInterface,
 	attrCacheService attributecache.AttributeCacheServiceInterface,
+	resourceService resource.ResourceServiceInterface,
 ) RefreshTokenGrantHandlerInterface {
 	return &refreshTokenGrantHandler{
 		jwtService:       jwtService,
 		tokenBuilder:     tokenBuilder,
 		tokenValidator:   tokenValidator,
 		attrCacheService: attrCacheService,
+		resourceService:  resourceService,
 	}
 }
 
@@ -80,6 +86,10 @@ func (h *refreshTokenGrantHandler) ValidateGrant(ctx context.Context, tokenReque
 		}
 	}
 
+	if errResp := resourceindicators.ValidateResourceURIs(tokenRequest.Resources); errResp != nil {
+		return errResp
+	}
+
 	return nil
 }
 
@@ -102,6 +112,46 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 	newTokenScopes, scopeErr := h.validateAndApplyScopes(tokenRequest.Scope, refreshTokenClaims.Scopes, logger)
 	if scopeErr != nil {
 		return nil, scopeErr
+	}
+
+	// Compute narrowed audiences per RFC 8707 §2.1. When the client supplies resource parameters,
+	// narrow the audience to the intersection with the original refresh-token audiences.
+	// An empty intersection is a client error (invalid_target).
+	audiences := refreshTokenClaims.Audiences
+	if len(tokenRequest.Resources) > 0 {
+		original := make(map[string]struct{}, len(refreshTokenClaims.Audiences))
+		for _, a := range refreshTokenClaims.Audiences {
+			original[a] = struct{}{}
+		}
+		narrowed := make([]string, 0, len(tokenRequest.Resources))
+		for _, r := range tokenRequest.Resources {
+			if _, ok := original[r]; ok {
+				narrowed = append(narrowed, r)
+			}
+		}
+		if len(narrowed) == 0 {
+			return nil, &model.ErrorResponse{
+				Error:            constants.ErrorInvalidTarget,
+				ErrorDescription: "Requested resources do not match any audience in the original grant",
+			}
+		}
+		audiences = narrowed
+
+		// Downscope: resolve the narrowed RSes and filter scopes to only those valid on them.
+		resolvedRSes, rsErr := resourceindicators.ResolveResourceServers(ctx, h.resourceService, narrowed)
+		if rsErr != nil {
+			return nil, rsErr
+		}
+		narrowedRSes := resourceindicators.FilterByIdentifiers(resolvedRSes, narrowed)
+		oidcScopes, nonOidcScopes := oauth2utils.SeparateOIDCAndNonOIDCScopes(
+			strings.Join(newTokenScopes, " "), oauthApp.ScopeClaims)
+		rsValidScopes, scopeErr := resourceindicators.ComputeRSValidScopes(
+			ctx, h.resourceService, narrowedRSes, nonOidcScopes)
+		if scopeErr != nil {
+			return nil, scopeErr
+		}
+		oidcScopes = append(oidcScopes, resourceindicators.UnionScopes(rsValidScopes)...)
+		newTokenScopes = oidcScopes
 	}
 
 	// Get user attributes from attribute cache.
@@ -132,7 +182,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 
 	accessToken, err := h.tokenBuilder.BuildAccessToken(&tokenservice.AccessTokenBuildContext{
 		Subject:          refreshTokenClaims.Sub,
-		Audience:         refreshTokenClaims.Aud,
+		Audiences:        audiences,
 		ClientID:         tokenRequest.ClientID,
 		Scopes:           newTokenScopes,
 		UserAttributes:   attrs,
@@ -180,11 +230,14 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 	renewRefreshToken := conf.OAuth.RefreshToken.RenewOnGrant
 
 	// Issue a new refresh token if renew_on_grant is enabled; otherwise reuse the existing one.
+	// RFC 8707 §5: the refresh token preserves the full original audience, not the narrowed one.
 	if renewRefreshToken {
 		logger.Debug("Renewing refresh token", log.String("client_id", tokenRequest.ClientID))
-		errResp := h.IssueRefreshToken(ctx, tokenResponse, oauthApp, refreshTokenClaims.Sub, refreshTokenClaims.Aud,
-			refreshTokenClaims.GrantType, newTokenScopes, refreshTokenClaims.ClaimsRequest,
-			refreshTokenClaims.ClaimsLocales, refreshTokenClaims.AttributeCacheID)
+		errResp := h.IssueRefreshToken(ctx, tokenResponse, oauthApp,
+			refreshTokenClaims.Sub, refreshTokenClaims.Audiences,
+			refreshTokenClaims.GrantType, newTokenScopes,
+			refreshTokenClaims.ClaimsRequest, refreshTokenClaims.ClaimsLocales,
+			refreshTokenClaims.AttributeCacheID)
 		if errResp != nil && errResp.Error != "" {
 			logger.Error("Failed to issue refresh token", log.String("error", errResp.Error))
 			return nil, errResp
@@ -211,22 +264,22 @@ func (h *refreshTokenGrantHandler) IssueRefreshToken(
 	ctx context.Context,
 	tokenResponse *model.TokenResponseDTO,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
-	subject, audience, grantType string,
+	subject string, audiences []string, grantType string,
 	scopes []string,
 	claimsRequest *model.ClaimsRequest,
 	claimsLocales string,
 	attributeCacheID string,
 ) *model.ErrorResponse {
 	tokenCtx := &tokenservice.RefreshTokenBuildContext{
-		ClientID:            oauthApp.ClientID,
-		Scopes:              scopes,
-		GrantType:           grantType,
-		AccessTokenSubject:  subject,
-		AccessTokenAudience: audience,
-		AttributeCacheID:    attributeCacheID,
-		OAuthApp:            oauthApp,
-		ClaimsRequest:       claimsRequest,
-		ClaimsLocales:       claimsLocales,
+		ClientID:             oauthApp.ClientID,
+		Scopes:               scopes,
+		GrantType:            grantType,
+		AccessTokenSubject:   subject,
+		AccessTokenAudiences: audiences,
+		AttributeCacheID:     attributeCacheID,
+		OAuthApp:             oauthApp,
+		ClaimsRequest:        claimsRequest,
+		ClaimsLocales:        claimsLocales,
 	}
 
 	// Build refresh token using token builder

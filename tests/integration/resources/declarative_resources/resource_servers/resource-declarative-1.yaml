@@ -1,7 +1,7 @@
 id: decl-rs-1
 name: Declarative Resource Server
 description: A declarative test resource server
-identifier: decl-rs-1
+handle: decl-rs-1
 ou_id: decl-ou-1
 delimiter: ":"
 resources:

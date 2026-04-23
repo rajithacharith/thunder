@@ -32,6 +32,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/authzmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/tokenservicemock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
+	"github.com/asgardeo/thunder/tests/mocks/resourcemock"
 )
 
 type GrantHandlerProviderTestSuite struct {
@@ -45,6 +46,7 @@ type GrantHandlerProviderTestSuite struct {
 	mockOUService        *oumock.OrganizationUnitServiceInterfaceMock
 	mockRBACAuthzService *rbacauthzmock.AuthorizationServiceInterfaceMock
 	mockEntityProvider   *entityprovidermock.EntityProviderInterfaceMock
+	mockResourceService  *resourcemock.ResourceServiceInterfaceMock
 }
 
 func TestGrantHandlerProviderSuite(t *testing.T) {
@@ -60,6 +62,7 @@ func (suite *GrantHandlerProviderTestSuite) SetupTest() {
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	suite.mockRBACAuthzService = rbacauthzmock.NewAuthorizationServiceInterfaceMock(suite.T())
 	suite.mockEntityProvider = entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
+	suite.mockResourceService = resourcemock.NewResourceServiceInterfaceMock(suite.T())
 	suite.provider = newGrantHandlerProvider(
 		suite.mockJWTService,
 		suite.authzService,
@@ -69,6 +72,7 @@ func (suite *GrantHandlerProviderTestSuite) SetupTest() {
 		suite.mockOUService,
 		suite.mockRBACAuthzService,
 		suite.mockEntityProvider,
+		suite.mockResourceService,
 	)
 }
 
@@ -82,6 +86,7 @@ func (suite *GrantHandlerProviderTestSuite) TestNewGrantHandlerProvider() {
 		suite.mockOUService,
 		suite.mockRBACAuthzService,
 		suite.mockEntityProvider,
+		suite.mockResourceService,
 	)
 	assert.NotNil(suite.T(), provider)
 	assert.Implements(suite.T(), (*GrantHandlerProviderInterface)(nil), provider)

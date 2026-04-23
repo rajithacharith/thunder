@@ -12374,6 +12374,7 @@ components:
       required:
         - id
         - name
+        - handle
         - ouId
         - delimiter
       properties:
@@ -12388,11 +12389,17 @@ components:
           type: string
           nullable: true
           description: Optional description of the resource server
+        handle:
+          type: string
+          description: Handle used as a permission-string prefix (unique in the system,
+            immutable after creation)
         identifier:
           type: string
           nullable: true
-          description: Optional identifier for authorization requests (Unique in the
-            system if provided)
+          description: Optional external identifier for the resource server. If an
+            absolute URI, the server participates in RFC 8707 as the `resource`
+            parameter value and JWT `aud` (Unique in the system if provided,
+            immutable after creation)
         ouId:
           type: string
           format: uuid
@@ -12405,6 +12412,7 @@ components:
       type: object
       required:
         - name
+        - handle
         - ouId
       properties:
         name:
@@ -12413,10 +12421,16 @@ components:
         description:
           type: string
           description: Optional description of the resource server
+        handle:
+          type: string
+          description: Handle used as a permission-string prefix (unique in the system,
+            immutable after creation)
         identifier:
           type: string
-          description: Optional identifier for authorization requests (Unique in the
-            system if provided)
+          description: Optional external identifier for the resource server. If an
+            absolute URI, the server participates in RFC 8707 as the `resource`
+            parameter value and JWT `aud` (Unique in the system if provided,
+            immutable after creation)
         ouId:
           type: string
           format: uuid
@@ -12437,10 +12451,16 @@ components:
         description:
           type: string
           description: Optional description of the resource server
+        handle:
+          type: string
+          description: >
+            Short handle for the resource server used in permission strings.
+            If omitted the existing value is preserved.
         identifier:
           type: string
-          description: Optional identifier for authorization requests (Unique in the
-            system if provided)
+          description: >
+            URI identifier for the resource server (e.g. an OAuth2 audience value).
+            If omitted the existing value is preserved.
         ouId:
           type: string
           format: uuid

@@ -29,6 +29,7 @@ import (
 	oauth2authz "github.com/asgardeo/thunder/internal/oauth/oauth2/authz"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 )
 
@@ -44,8 +45,11 @@ func Initialize(
 	ouService ou.OrganizationUnitServiceInterface,
 	authzService authz.AuthorizationServiceInterface,
 	entityProv entityprovider.EntityProviderInterface,
+	resourceService resource.ResourceServiceInterface,
 ) (GrantHandlerProviderInterface, error) {
-	oauthAuthzService, err := oauth2authz.Initialize(mux, applicationService, jwtService, flowExecService)
+	oauthAuthzService, err := oauth2authz.Initialize(
+		mux, applicationService, resourceService, jwtService, flowExecService,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -58,6 +62,7 @@ func Initialize(
 		ouService,
 		authzService,
 		entityProv,
+		resourceService,
 	)
 	return grantHandlerProvider, nil
 }
