@@ -21,6 +21,7 @@ package executor
 import (
 	authngithub "github.com/asgardeo/thunder/internal/authn/github"
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
+	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/idp"
@@ -41,6 +42,7 @@ func newGithubOAuthExecutor(
 	idpService idp.IDPServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 	authService authngithub.GithubOAuthAuthnServiceInterface,
+	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 ) oAuthExecutorInterface {
 	oauthSvcCast, ok := authService.(authnoauth.OAuthAuthnCoreServiceInterface)
 	if !ok {
@@ -48,7 +50,7 @@ func newGithubOAuthExecutor(
 	}
 
 	base := newOAuthExecutor(ExecutorNameGitHubAuth, []common.Input{}, []common.Input{},
-		flowFactory, idpService, userSchemaService, oauthSvcCast)
+		flowFactory, idpService, userSchemaService, oauthSvcCast, authnProvider, idp.IDPTypeGitHub)
 
 	return &githubOAuthExecutor{
 		oAuthExecutorInterface: base,

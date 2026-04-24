@@ -49,6 +49,13 @@ type AuthnBasicResult struct {
 	UserID   string
 	OUID     string
 	UserType string
+
+	// Federated authentication fields. Set when the authentication flow is federated
+	// and no internal user was found (IsExistingUser = false).
+	ExternalSub     string
+	ExternalClaims  map[string]interface{}
+	IsExistingUser  bool
+	IsAmbiguousUser bool
 }
 
 func (a *AuthUser) setIdentity(userID, userType, ouID string) {

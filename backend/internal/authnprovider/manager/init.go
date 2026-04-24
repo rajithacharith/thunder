@@ -19,15 +19,18 @@
 package manager
 
 import (
+	authncommon "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/otp"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
 	"github.com/asgardeo/thunder/internal/authnprovider/provider"
 	"github.com/asgardeo/thunder/internal/entity"
+	"github.com/asgardeo/thunder/internal/idp"
 )
 
 // InitializeAuthnProviderManager initializes and returns an AuthnProviderManagerInterface.
 func InitializeAuthnProviderManager(entitySvc entity.EntityServiceInterface,
-	passkeySvc passkey.PasskeyServiceInterface, otpSvc otp.OTPAuthnServiceInterface) AuthnProviderManagerInterface {
-	p := provider.InitializeAuthnProvider(entitySvc, passkeySvc, otpSvc)
+	passkeySvc passkey.PasskeyServiceInterface, otpSvc otp.OTPAuthnServiceInterface,
+	federatedAuths map[idp.IDPType]authncommon.FederatedAuthenticator) AuthnProviderManagerInterface {
+	p := provider.InitializeAuthnProvider(entitySvc, passkeySvc, otpSvc, federatedAuths)
 	return newAuthnProviderManager(p)
 }

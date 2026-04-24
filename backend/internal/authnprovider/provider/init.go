@@ -21,9 +21,11 @@ package provider
 import (
 	"time"
 
+	authncommon "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/otp"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
 	"github.com/asgardeo/thunder/internal/entity"
+	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/config"
 	systemhttp "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -34,13 +36,14 @@ func InitializeAuthnProvider(
 	entitySvc entity.EntityServiceInterface,
 	passkeySvc passkey.PasskeyServiceInterface,
 	otpSvc otp.OTPAuthnServiceInterface,
+	federatedAuths map[idp.IDPType]authncommon.FederatedAuthenticator,
 ) AuthnProviderInterface {
 	authnProviderConfig := config.GetThunderRuntime().Config.AuthnProvider
 	switch authnProviderConfig.Type {
 	case "rest":
 		return initializeRestAuthnProvider()
 	default:
-		return initializeDefaultAuthnProvider(entitySvc, passkeySvc, otpSvc)
+		return initializeDefaultAuthnProvider(entitySvc, passkeySvc, otpSvc, federatedAuths)
 	}
 }
 
@@ -49,8 +52,9 @@ func initializeDefaultAuthnProvider(
 	entitySvc entity.EntityServiceInterface,
 	passkeySvc passkey.PasskeyServiceInterface,
 	otpSvc otp.OTPAuthnServiceInterface,
+	federatedAuths map[idp.IDPType]authncommon.FederatedAuthenticator,
 ) AuthnProviderInterface {
-	return newDefaultAuthnProvider(entitySvc, passkeySvc, otpSvc)
+	return newDefaultAuthnProvider(entitySvc, passkeySvc, otpSvc, federatedAuths)
 }
 
 // initializeRestAuthnProvider initializes the REST authentication provider.

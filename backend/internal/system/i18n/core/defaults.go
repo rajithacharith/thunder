@@ -171,6 +171,8 @@ var defaultMessages = map[string]string{
 	"error.authnservice.empty_session_token_description": "The provided session token is empty",
 	"error.authnservice.error_retrieving_idp": "Error retrieving identity provider",
 	"error.authnservice.error_retrieving_idp_description": "An error occurred while retrieving the identity provider",
+	"error.authnservice.federated_authentication_failed": "Federated authentication failed",
+	"error.authnservice.federated_authentication_failed_description": "The federated authentication attempt failed",
 	"error.authnservice.google.invalid_id_token_audience_description": "The ID token audience does not match the expected client ID",
 	"error.authnservice.google.invalid_id_token_exp_claim_description": "The ID token expiration claim is missing or invalid",
 	"error.authnservice.google.invalid_id_token_expired_description": "The ID token has expired",

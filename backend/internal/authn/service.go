@@ -44,7 +44,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
-	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
 const svcLoggerComponentName = "AuthenticationService"
@@ -320,25 +319,33 @@ func (as *authenticationService) FinishIDPAuthentication(ctx context.Context, re
 		return nil, svcErr
 	}
 
-	// Route to appropriate service based on IDP type from session
-	var user *entityprovider.Entity
-	switch sessionData.IDPType {
-	case idp.IDPTypeOAuth:
-		_, user, svcErr = as.finishOAuthAuthentication(ctx, sessionData.IDPID, code, logger)
-	case idp.IDPTypeOIDC:
-		_, user, svcErr = as.finishOIDCAuthentication(ctx, sessionData.IDPID, code, logger)
-	case idp.IDPTypeGoogle:
-		_, user, svcErr = as.finishGoogleAuthentication(ctx, sessionData.IDPID, code, logger)
-	case idp.IDPTypeGitHub:
-		_, user, svcErr = as.finishGithubAuthentication(ctx, sessionData.IDPID, code, logger)
-	default:
-		logger.Error("Unsupported IDP type in session", log.String("idpId", sessionData.IDPID),
-			log.String("type", string(sessionData.IDPType)))
+	credentials := map[string]interface{}{
+		"federated": &common.FederatedAuthCredential{
+			IDPID:   sessionData.IDPID,
+			IDPType: sessionData.IDPType,
+			Code:    code,
+		},
+	}
+	_, basicResult, svcErr := as.authnProvider.AuthenticateUser(
+		ctx, nil, credentials, nil, nil, authnprovidermgr.AuthUser{})
+	if svcErr != nil {
+		return nil, as.mapFederatedAuthnError(svcErr, logger)
+	}
+	if basicResult == nil {
+		logger.Error("Federated authenticate response is nil")
 		return nil, &serviceerror.InternalServerError
 	}
+	if basicResult.IsAmbiguousUser {
+		return nil, &common.ErrorUserNotFound
+	}
+	if !basicResult.IsExistingUser {
+		return nil, &common.ErrorUserNotFound
+	}
 
-	if svcErr != nil {
-		return nil, svcErr
+	user := &entityprovider.Entity{
+		ID:   basicResult.UserID,
+		Type: basicResult.UserType,
+		OUID: basicResult.OUID,
 	}
 
 	authResponse := &common.AuthenticationResponse{
@@ -506,114 +513,21 @@ func (as *authenticationService) extractClaimsFromAssertion(assertion string,
 	return &assuranceCtx, sub, nil
 }
 
-// finishOAuthAuthentication handles OAuth authentication completion.
-func (as *authenticationService) finishOAuthAuthentication(ctx context.Context, idpID, code string,
-	logger *log.Logger) (string, *entityprovider.Entity, *serviceerror.ServiceError) {
-	tokenResp, svcErr := as.oauthService.ExchangeCodeForToken(ctx, idpID, code, true)
-	if svcErr != nil {
-		return "", nil, svcErr
+// mapFederatedAuthnError maps provider manager errors to federated-authentication-specific service errors.
+func (as *authenticationService) mapFederatedAuthnError(svcErr *serviceerror.ServiceError,
+	logger *log.Logger) *serviceerror.ServiceError {
+	switch svcErr.Code {
+	case authnprovidermgr.ErrorAuthenticationFailed.Code:
+		return &ErrorFederatedAuthenticationFailed
+	case authnprovidermgr.ErrorUserNotFound.Code:
+		return &ErrorFederatedAuthenticationFailed
+	case authnprovidermgr.ErrorInvalidRequest.Code:
+		return &ErrorFederatedAuthenticationFailed
+	default:
+		logger.Error("Error occurred while performing federated authentication",
+			log.String("errorCode", svcErr.Code), log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
+		return &serviceerror.InternalServerError
 	}
-
-	userInfo, svcErr := as.oauthService.FetchUserInfo(ctx, idpID, tokenResp.AccessToken)
-	if svcErr != nil {
-		return "", nil, svcErr
-	}
-
-	sub, svcErr := as.getSubClaim(userInfo, logger)
-	if svcErr != nil {
-		return "", nil, svcErr
-	}
-
-	user, svcErr := as.oauthService.GetInternalUser(sub)
-	if svcErr != nil {
-		return "", nil, svcErr
-	}
-
-	return sub, user, nil
-}
-
-// finishOIDCAuthentication handles OIDC authentication completion.
-func (as *authenticationService) finishOIDCAuthentication(ctx context.Context, idpID, code string,
-	logger *log.Logger) (string, *entityprovider.Entity, *serviceerror.ServiceError) {
-	tokenResp, svcErr := as.oidcService.ExchangeCodeForToken(ctx, idpID, code, true)
-	if svcErr != nil {
-		return "", nil, svcErr
-	}
-
-	claims, svcErr := as.oidcService.GetIDTokenClaims(tokenResp.IDToken)
-	if svcErr != nil {
-		return "", nil, svcErr
-	}
-
-	// TODO: Fetch user info if more claims are needed. Implement when the IDP requested attribute
-	//  support is added
-
-	sub, svcErr := as.getSubClaim(claims, logger)
-	if svcErr != nil {
-		return "", nil, svcErr
-	}
-
-	user, svcErr := as.oidcService.GetInternalUser(sub)
-	if svcErr != nil {
-		return "", nil, svcErr
-	}
-
-	return sub, user, nil
-}
-
-// finishGoogleAuthentication handles Google authentication completion.
-func (as *authenticationService) finishGoogleAuthentication(ctx context.Context, idpID, code string,
-	logger *log.Logger) (string, *entityprovider.Entity, *serviceerror.ServiceError) {
-	tokenResp, svcErr := as.googleService.ExchangeCodeForToken(ctx, idpID, code, true)
-	if svcErr != nil {
-		return "", nil, svcErr
-	}
-
-	claims, svcErr := as.googleService.GetIDTokenClaims(tokenResp.IDToken)
-	if svcErr != nil {
-		return "", nil, svcErr
-	}
-
-	// TODO: Fetch user info if more claims are needed. Implement when the IDP requested attribute
-	//  support is added
-
-	sub, svcErr := as.getSubClaim(claims, logger)
-	if svcErr != nil {
-		return "", nil, svcErr
-	}
-
-	user, svcErr := as.googleService.GetInternalUser(sub)
-	if svcErr != nil {
-		return "", nil, svcErr
-	}
-
-	return sub, user, nil
-}
-
-// finishGithubAuthentication handles GitHub authentication completion.
-func (as *authenticationService) finishGithubAuthentication(ctx context.Context, idpID, code string,
-	logger *log.Logger) (string, *entityprovider.Entity, *serviceerror.ServiceError) {
-	tokenResp, svcErr := as.githubService.ExchangeCodeForToken(ctx, idpID, code, true)
-	if svcErr != nil {
-		return "", nil, svcErr
-	}
-
-	userInfo, svcErr := as.githubService.FetchUserInfo(ctx, idpID, tokenResp.AccessToken)
-	if svcErr != nil {
-		return "", nil, svcErr
-	}
-
-	sub, svcErr := as.getSubClaim(userInfo, logger)
-	if svcErr != nil {
-		return "", nil, svcErr
-	}
-
-	user, svcErr := as.githubService.GetInternalUser(sub)
-	if svcErr != nil {
-		return "", nil, svcErr
-	}
-
-	return sub, user, nil
 }
 
 // mapCredentialsAuthnError maps provider manager errors to credentials-specific service errors.
@@ -742,28 +656,6 @@ func (as *authenticationService) verifyAndDecodeSessionToken(token string, logge
 	}
 
 	return &sessionData, nil
-}
-
-// getSubClaim extracts the 'sub' claim from user info claims.
-func (as *authenticationService) getSubClaim(userClaims map[string]interface{}, logger *log.Logger) (
-	string, *serviceerror.ServiceError) {
-	sub, ok := userClaims["sub"]
-	if ok && sub != nil {
-		if subStr, ok := sub.(string); ok && subStr != "" {
-			return subStr, nil
-		}
-	}
-
-	// Try 'id' field as fallback
-	id, ok := userClaims["id"]
-	if ok && id != nil {
-		if idStr := sysutils.ConvertInterfaceValueToString(id); idStr != "" {
-			return idStr, nil
-		}
-	}
-
-	logger.Debug("sub claim not found in user info claims")
-	return "", &common.ErrorSubClaimNotFound
 }
 
 // StartPasskeyRegistration starts the passkey registration process.

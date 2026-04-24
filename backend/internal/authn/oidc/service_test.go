@@ -28,7 +28,6 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -434,11 +433,6 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseValidateIDToken
 func (suite *OIDCAuthnServiceTestSuite) TestNewOIDCAuthnService_HttpClientFallback() {
 	svc := NewOIDCAuthnService(nil, suite.mockIdpService, suite.mockEntityProvider, suite.mockJWTService)
 	suite.NotNil(svc)
-	// type assert to concrete to inspect metadata
-	if concrete, ok := svc.(*oidcAuthnService); ok {
-		meta := concrete.getMetadata()
-		suite.Equal(authncm.AuthenticatorOIDC, meta.Name)
-	}
 }
 
 func (suite *OIDCAuthnServiceTestSuite) TestGetIDTokenClaimsMalformedToken() {
