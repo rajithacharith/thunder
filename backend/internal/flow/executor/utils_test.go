@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
@@ -84,4 +85,75 @@ func createMockAuthExecutor(t *testing.T, executorName string) core.ExecutorInte
 			return false
 		}).Maybe()
 	return mockExec
+}
+
+func (s *UtilsTestSuite) TestGetUserAttribute() {
+	tests := []struct {
+		name         string
+		user         *entityprovider.Entity
+		attributeKey string
+		expectedVal  string
+		expectError  bool
+	}{
+		{
+			name: "Success case",
+			user: &entityprovider.Entity{
+				Attributes: []byte(`{"email":"user@example.com"}`),
+			},
+			attributeKey: "email",
+			expectedVal:  "user@example.com",
+			expectError:  false,
+		},
+		{
+			name:         "Nil user",
+			user:         nil,
+			attributeKey: "email",
+			expectError:  true,
+		},
+		{
+			name: "Empty attributes",
+			user: &entityprovider.Entity{
+				Attributes: []byte(``),
+			},
+			attributeKey: "email",
+			expectError:  true,
+		},
+		{
+			name: "Invalid JSON attributes",
+			user: &entityprovider.Entity{
+				Attributes: []byte(`invalid-json`),
+			},
+			attributeKey: "email",
+			expectError:  true,
+		},
+		{
+			name: "Attribute not found",
+			user: &entityprovider.Entity{
+				Attributes: []byte(`{"other":"data"}`),
+			},
+			attributeKey: "email",
+			expectError:  true,
+		},
+		{
+			name: "Non-string attribute value",
+			user: &entityprovider.Entity{
+				Attributes: []byte(`{"email":123}`),
+			},
+			attributeKey: "email",
+			expectError:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			val, err := GetUserAttribute(tt.user, tt.attributeKey)
+			if tt.expectError {
+				s.Error(err)
+				s.Empty(val)
+			} else {
+				s.NoError(err)
+				s.Equal(tt.expectedVal, val)
+			}
+		})
+	}
 }
