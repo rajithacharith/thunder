@@ -18,17 +18,17 @@
 
 import {ProtectedRoute} from '@asgardeo/react-router';
 import {
-  TranslationCreateProvider,
-  TranslationCreatePage,
-  TranslationsEditPage,
-  TranslationsListPage,
-} from '@thunder/admin-translations';
-import {
   CreateOrganizationUnitPage,
   OrganizationUnitProvider,
   OrganizationUnitEditPage,
   OrganizationUnitsListPage,
 } from '@thunder/configure-organization-units';
+import {
+  TranslationCreateProvider,
+  TranslationCreatePage,
+  TranslationsEditPage,
+  TranslationsListPage,
+} from '@thunder/configure-translations';
 import {
   UserCreateProvider,
   UserCreatePage,
