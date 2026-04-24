@@ -164,6 +164,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_DefaultOptions() {
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result.Files, 1)
+	assert.Nil(suite.T(), result.EnvFile)
 	assert.Equal(suite.T(), 1, result.Summary.TotalFiles)
 	assert.Contains(suite.T(), result.Summary.ResourceTypes, "application")
 }
@@ -262,6 +263,11 @@ func (suite *ExportServiceTestSuite) TestExportResources_CompleteOAuthApplicatio
 	assert.Contains(suite.T(), file.Content, "client_secret: {{.O_AUTH_TEST_APP_CLIENT_SECRET}}")
 	assert.Contains(suite.T(), file.Content, "redirect_uris:")
 	assert.Contains(suite.T(), file.Content, "{{- range .O_AUTH_TEST_APP_REDIRECT_URIS}}")
+	assert.NotNil(suite.T(), result.EnvFile)
+	assert.Equal(suite.T(), ".env", result.EnvFile.FileName)
+	assert.Contains(suite.T(), result.EnvFile.Content, "O_AUTH_TEST_APP_CLIENT_ID=\n")
+	assert.Contains(suite.T(), result.EnvFile.Content, "O_AUTH_TEST_APP_CLIENT_SECRET=\n")
+	assert.Contains(suite.T(), result.EnvFile.Content, "O_AUTH_TEST_APP_REDIRECT_URIS=\n")
 
 	assert.Equal(suite.T(), 1, result.Summary.ResourceTypes["application"])
 	assert.Equal(suite.T(), int64(len(file.Content)), file.Size)
@@ -516,7 +522,8 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Succes
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result.Files, 1)
-	assert.Equal(suite.T(), 1, result.Summary.TotalFiles)
+	assert.NotNil(suite.T(), result.EnvFile)
+	assert.Equal(suite.T(), 2, result.Summary.TotalFiles)
 	assert.Contains(suite.T(), result.Summary.ResourceTypes, "identity_provider")
 	assert.Equal(suite.T(), "Test_IDP.yaml", result.Files[0].FileName)
 	assert.Equal(suite.T(), "identity_provider", result.Files[0].ResourceType)
@@ -593,7 +600,8 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Wildca
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result.Files, 2)
-	assert.Equal(suite.T(), 2, result.Summary.TotalFiles)
+	assert.NotNil(suite.T(), result.EnvFile)
+	assert.Equal(suite.T(), 3, result.Summary.TotalFiles)
 }
 
 // TestExportResources_Mixed_ApplicationsAndIDPs tests exporting both applications and IDPs.
@@ -628,7 +636,8 @@ func (suite *ExportServiceTestSuite) TestExportResources_Mixed_ApplicationsAndID
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result.Files, 2) // 1 app + 1 IDP
-	assert.Equal(suite.T(), 2, result.Summary.TotalFiles)
+	assert.NotNil(suite.T(), result.EnvFile)
+	assert.Equal(suite.T(), 3, result.Summary.TotalFiles)
 	assert.Contains(suite.T(), result.Summary.ResourceTypes, "application")
 	assert.Contains(suite.T(), result.Summary.ResourceTypes, "identity_provider")
 	assert.Equal(suite.T(), 1, result.Summary.ResourceTypes["application"])
@@ -705,7 +714,8 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Wildca
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result.Files, 2) // 2 successful exports
-	assert.Equal(suite.T(), 2, result.Summary.TotalFiles)
+	assert.NotNil(suite.T(), result.EnvFile)
+	assert.Equal(suite.T(), 3, result.Summary.TotalFiles)
 	assert.Equal(suite.T(), 2, result.Summary.ResourceTypes["identity_provider"])
 	assert.Len(suite.T(), result.Summary.Errors, 1) // One error recorded
 	assert.Equal(suite.T(), "identity_provider", result.Summary.Errors[0].ResourceType)
@@ -982,7 +992,8 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Partia
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result.Files, 2) // Two successful exports
-	assert.Equal(suite.T(), 2, result.Summary.TotalFiles)
+	assert.NotNil(suite.T(), result.EnvFile)
+	assert.Equal(suite.T(), 3, result.Summary.TotalFiles)
 
 	// Verify error details
 	assert.Len(suite.T(), result.Summary.Errors, 1)
@@ -1047,7 +1058,8 @@ func (suite *ExportServiceTestSuite) TestExportResources_MixedResources_WithErro
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result.Files, 2) // One app + one IDP
-	assert.Equal(suite.T(), 2, result.Summary.TotalFiles)
+	assert.NotNil(suite.T(), result.EnvFile)
+	assert.Equal(suite.T(), 3, result.Summary.TotalFiles)
 
 	// Verify resource type counts
 	assert.Equal(suite.T(), 1, result.Summary.ResourceTypes["application"])
@@ -1297,7 +1309,8 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_Success() {
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result.Files, 1)
-	assert.Equal(suite.T(), 1, result.Summary.TotalFiles)
+	assert.NotNil(suite.T(), result.EnvFile)
+	assert.Equal(suite.T(), 2, result.Summary.TotalFiles)
 	assert.Contains(suite.T(), result.Summary.ResourceTypes, "notification_sender")
 	assert.Equal(suite.T(), "Test_Sender.yaml", result.Files[0].FileName)
 	assert.Equal(suite.T(), "notification_sender", result.Files[0].ResourceType)
@@ -1371,7 +1384,8 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_Wildcard() {
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result.Files, 2)
-	assert.Equal(suite.T(), 2, result.Summary.TotalFiles)
+	assert.NotNil(suite.T(), result.EnvFile)
+	assert.Equal(suite.T(), 3, result.Summary.TotalFiles)
 }
 
 // TestExportNotificationSenders_NotFound tests error handling when sender not found.
@@ -1481,7 +1495,8 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_WildcardParti
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result.Files, 2)
-	assert.Equal(suite.T(), 2, result.Summary.TotalFiles)
+	assert.NotNil(suite.T(), result.EnvFile)
+	assert.Equal(suite.T(), 3, result.Summary.TotalFiles)
 	assert.Equal(suite.T(), 2, result.Summary.ResourceTypes["notification_sender"])
 }
 
@@ -1747,7 +1762,11 @@ func (suite *ExportServiceTestSuite) assertMultipleResourcesExport(
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result.Files, expectedCount)
-	assert.Equal(suite.T(), expectedCount, result.Summary.TotalFiles)
+	expectedTotalFiles := expectedCount
+	if result.EnvFile != nil {
+		expectedTotalFiles++
+	}
+	assert.Equal(suite.T(), expectedTotalFiles, result.Summary.TotalFiles)
 	assert.Equal(suite.T(), expectedCount, result.Summary.ResourceTypes[resourceTypeKey])
 }
 

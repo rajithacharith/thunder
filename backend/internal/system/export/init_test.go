@@ -139,8 +139,8 @@ func (suite *InitTestSuite) TestRegisterRoutes() {
 	})
 }
 
-// TestRegisterRoutes_YAMLEndpoint tests the YAML export endpoint registration
-func (suite *InitTestSuite) TestRegisterRoutes_YAMLEndpoint() {
+// TestRegisterRoutes_JSONEndpoint tests the JSON export endpoint registration.
+func (suite *InitTestSuite) TestRegisterRoutes_JSONEndpoint() {
 	mux := http.NewServeMux()
 	exporters := createTestExporters(suite.mockAppService, suite.mockIDPService,
 		suite.mockNotificationService, suite.mockUserSchemaService)
@@ -155,27 +155,6 @@ func (suite *InitTestSuite) TestRegisterRoutes_YAMLEndpoint() {
 	w := httptest.NewRecorder()
 
 	// The mux should handle the request (even if it fails due to invalid request body)
-	mux.ServeHTTP(w, req)
-
-	// Should not be 404 (route exists)
-	assert.NotEqual(suite.T(), http.StatusNotFound, w.Code)
-}
-
-// TestRegisterRoutes_JSONEndpoint tests the JSON export endpoint registration
-func (suite *InitTestSuite) TestRegisterRoutes_JSONEndpoint() {
-	mux := http.NewServeMux()
-	exporters := createTestExporters(suite.mockAppService, suite.mockIDPService,
-		suite.mockNotificationService, suite.mockUserSchemaService)
-	mockService := newExportService(exporters, newParameterizer(templatingRules{}))
-	exportHandler := newExportHandler(mockService)
-
-	registerRoutes(mux, exportHandler)
-
-	// Test POST /export/json endpoint
-	req := httptest.NewRequest("POST", "/export/json", strings.NewReader(`{}`))
-	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-
 	mux.ServeHTTP(w, req)
 
 	// Should not be 404 (route exists)
@@ -446,7 +425,6 @@ func TestRouteHandling_Standalone(t *testing.T) {
 		expectNotFound bool
 	}{
 		{"POST", "/export", false},
-		{"POST", "/export/json", false},
 		{"POST", "/export/zip", false},
 		{"OPTIONS", "/export", false},
 		{"GET", "/export", true},   // Should be method not allowed, not not found
