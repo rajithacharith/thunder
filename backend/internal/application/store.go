@@ -33,17 +33,18 @@ import (
 
 // oAuthConfig is the internal structure for marshaling/unmarshaling the OAUTH_CONFIG JSON column.
 type oAuthConfig struct {
-	RedirectURIs            []string                      `json:"redirect_uris"`
-	GrantTypes              []string                      `json:"grant_types"`
-	ResponseTypes           []string                      `json:"response_types"`
-	TokenEndpointAuthMethod string                        `json:"token_endpoint_auth_method"`
-	PKCERequired            bool                          `json:"pkce_required"`
-	PublicClient            bool                          `json:"public_client"`
-	Token                   *oAuthTokenConfig             `json:"token,omitempty"`
-	Scopes                  []string                      `json:"scopes,omitempty"`
-	UserInfo                *userInfoConfig               `json:"user_info,omitempty"`
-	ScopeClaims             map[string][]string           `json:"scope_claims,omitempty"`
-	Certificate             *model.ApplicationCertificate `json:"certificate,omitempty"`
+	RedirectURIs                       []string                      `json:"redirect_uris"`
+	GrantTypes                         []string                      `json:"grant_types"`
+	ResponseTypes                      []string                      `json:"response_types"`
+	TokenEndpointAuthMethod            string                        `json:"token_endpoint_auth_method"`
+	PKCERequired                       bool                          `json:"pkce_required"`
+	PublicClient                       bool                          `json:"public_client"`
+	RequirePushedAuthorizationRequests bool                          `json:"require_pushed_authorization_requests"`
+	Token                              *oAuthTokenConfig             `json:"token,omitempty"`
+	Scopes                             []string                      `json:"scopes,omitempty"`
+	UserInfo                           *userInfoConfig               `json:"user_info,omitempty"`
+	ScopeClaims                        map[string][]string           `json:"scope_claims,omitempty"`
+	Certificate                        *model.ApplicationCertificate `json:"certificate,omitempty"`
 }
 
 // oAuthTokenConfig represents the OAuth token configuration for JSON marshaling.
@@ -520,15 +521,16 @@ func getOAuthConfigJSONBytes(inboundAuth model.InboundAuthConfigProcessedDTO) (j
 	}
 	oa := inboundAuth.OAuthAppConfig
 	cfg := oAuthConfig{
-		RedirectURIs:            oa.RedirectURIs,
-		GrantTypes:              utils.ConvertToStringSlice(oa.GrantTypes),
-		ResponseTypes:           utils.ConvertToStringSlice(oa.ResponseTypes),
-		TokenEndpointAuthMethod: string(oa.TokenEndpointAuthMethod),
-		PKCERequired:            oa.PKCERequired,
-		PublicClient:            oa.PublicClient,
-		Scopes:                  oa.Scopes,
-		ScopeClaims:             oa.ScopeClaims,
-		Certificate:             oa.Certificate,
+		RedirectURIs:                       oa.RedirectURIs,
+		GrantTypes:                         utils.ConvertToStringSlice(oa.GrantTypes),
+		ResponseTypes:                      utils.ConvertToStringSlice(oa.ResponseTypes),
+		TokenEndpointAuthMethod:            string(oa.TokenEndpointAuthMethod),
+		PKCERequired:                       oa.PKCERequired,
+		PublicClient:                       oa.PublicClient,
+		RequirePushedAuthorizationRequests: oa.RequirePushedAuthorizationRequests,
+		Scopes:                             oa.Scopes,
+		ScopeClaims:                        oa.ScopeClaims,
+		Certificate:                        oa.Certificate,
 	}
 	if oa.Token != nil {
 		cfg.Token = &oAuthTokenConfig{}

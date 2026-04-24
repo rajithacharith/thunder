@@ -33,6 +33,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/granthandlers"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/introspect"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/par"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/token"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/userinfo"
@@ -68,14 +69,16 @@ func Initialize(
 
 	jwks.Initialize(mux, pkiService)
 	tokenBuilder, tokenValidator := tokenservice.Initialize(jwtService)
+	scopeValidator := scope.Initialize()
+	discoveryService := discovery.Initialize(mux, pkiService)
+	parService := par.Initialize(mux, applicationService, authnProvider, jwtService, discoveryService,
+		resourceService)
 	grantHandlerProvider, err := granthandlers.Initialize(
 		mux, jwtService, applicationService, flowExecService, tokenBuilder, tokenValidator,
-		attributeCacheSvc, ouService, authzService, entityProvider, resourceService)
+		attributeCacheSvc, ouService, authzService, entityProvider, resourceService, parService)
 	if err != nil {
 		return err
 	}
-	scopeValidator := scope.Initialize()
-	discoveryService := discovery.Initialize(mux, pkiService)
 	token.Initialize(mux, jwtService, applicationService, authnProvider, grantHandlerProvider,
 		scopeValidator, observabilitySvc, discoveryService, transactioner)
 	introspect.Initialize(mux, jwtService, applicationService, authnProvider, discoveryService)

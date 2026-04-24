@@ -503,6 +503,133 @@ func ObtainAccessTokenWithPassword(clientID, redirectURI, scope, username, passw
 	return tokenResult.Token, nil
 }
 
+// ObtainAccessTokenWithPAR performs the complete OAuth authorization code flow using a Pushed
+// Authorization Request (RFC 9126) and returns a TokenResponse with the access token and expiry
+// information. clientSecret is optional and can be provided for confidential clients; when set, it
+// is used to authenticate both the PAR submission and the token request (via client_secret_post).
+func ObtainAccessTokenWithPAR(clientID, redirectURI, scope, username, password string,
+	usePKCE bool, optionalParams ...string) (*TokenResponse, error) {
+	clientSecret := ""
+	if len(optionalParams) > 0 {
+		clientSecret = optionalParams[0]
+	}
+
+	var codeVerifier string
+	parParams := map[string]string{
+		"response_type": "code",
+		"redirect_uri":  redirectURI,
+		"scope":         scope,
+		"state":         "par-test-state",
+	}
+
+	if usePKCE {
+		var err error
+		codeVerifier, err = generateCodeVerifier()
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate code verifier: %w", err)
+		}
+		parParams["code_challenge"] = generateCodeChallenge(codeVerifier)
+		parParams["code_challenge_method"] = "S256"
+	}
+
+	// Step 1: Submit PAR request to obtain request_uri.
+	parResult, err := SubmitPARRequest(clientID, clientSecret, parParams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to submit PAR request: %w", err)
+	}
+	if parResult.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("PAR request failed with status %d: %s",
+			parResult.StatusCode, string(parResult.Body))
+	}
+	if parResult.PAR == nil {
+		return nil, fmt.Errorf("no request_uri in PAR response")
+	}
+
+	// Step 2: Initiate authorization flow with request_uri.
+	resp, err := InitiateAuthorizationFlowWithRequestURI(clientID, parResult.PAR.RequestURI)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initiate authorization: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusFound && resp.StatusCode != http.StatusSeeOther &&
+		resp.StatusCode != http.StatusTemporaryRedirect {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("expected redirect response, got status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	location := resp.Header.Get("Location")
+	if location == "" {
+		return nil, fmt.Errorf("no Location header in authorization response")
+	}
+
+	// Step 3: Extract auth ID and flow ID.
+	authID, executionId, err := ExtractAuthData(location)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract auth ID: %w", err)
+	}
+
+	// Step 4: Execute initial authentication flow step (to get to the login prompt).
+	initialStep, err := ExecuteAuthenticationFlow(executionId, nil, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute initial authentication flow: %w", err)
+	}
+
+	// Step 5: Execute authentication flow with credentials, forwarding the challenge token.
+	flowStep, err := ExecuteAuthenticationFlow(executionId, map[string]string{
+		"username": username,
+		"password": password,
+	}, "action_001", initialStep.ChallengeToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute authentication flow: %w", err)
+	}
+
+	if flowStep.FlowStatus != "COMPLETE" {
+		stepJSON, _ := json.Marshal(flowStep)
+		return nil, fmt.Errorf("authentication flow not complete: status=%s, failureReason=%s, step=%s",
+			flowStep.FlowStatus, flowStep.FailureReason, string(stepJSON))
+	}
+
+	if flowStep.Assertion == "" {
+		return nil, fmt.Errorf("no assertion returned from authentication flow")
+	}
+
+	// Step 6: Complete authorization with assertion.
+	authzResp, err := CompleteAuthorization(authID, flowStep.Assertion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to complete authorization: %w", err)
+	}
+
+	// Step 7: Extract authorization code.
+	code, err := ExtractAuthorizationCode(authzResp.RedirectURI)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract authorization code: %w", err)
+	}
+
+	// Step 8: Exchange code for token.
+	var tokenResult *TokenHTTPResult
+	if usePKCE {
+		tokenResult, err = RequestTokenWithPKCE(clientID, clientSecret, code, redirectURI,
+			"authorization_code", codeVerifier)
+	} else {
+		tokenResult, err = RequestToken(clientID, clientSecret, code, redirectURI, "authorization_code")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to request token: %w", err)
+	}
+
+	if tokenResult.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("token request failed with status %d: %s", tokenResult.StatusCode,
+			string(tokenResult.Body))
+	}
+
+	if tokenResult.Token == nil {
+		return nil, fmt.Errorf("no token in response")
+	}
+
+	return tokenResult.Token, nil
+}
+
 // RefreshAccessToken uses the refresh token to obtain a new access token
 // client credentials are sent via HTTP Basic Auth header.
 func RefreshAccessToken(clientID, clientSecret, refreshToken string) (*TokenResponse, error) {
@@ -577,6 +704,166 @@ func refreshAccessToken(clientID, clientSecret, refreshToken string, tokenAuthIn
 	}
 
 	return &tokenResponse, nil
+}
+
+// PARResponse represents the response from the PAR endpoint.
+type PARResponse struct {
+	RequestURI string `json:"request_uri"`
+	ExpiresIn  int64  `json:"expires_in"`
+}
+
+// PARErrorResponse represents an error response from the PAR endpoint.
+type PARErrorResponse struct {
+	Error            string `json:"error"`
+	ErrorDescription string `json:"error_description"`
+}
+
+// PARHTTPResult captures raw HTTP response details from the PAR endpoint.
+type PARHTTPResult struct {
+	StatusCode int
+	Body       []byte
+	PAR        *PARResponse
+	Error      *PARErrorResponse
+}
+
+// SubmitPARRequest sends a pushed authorization request to the PAR endpoint.
+func SubmitPARRequest(clientID, clientSecret string, params map[string]string) (*PARHTTPResult, error) {
+	parURL := TestServerURL + "/oauth2/par"
+	formData := url.Values{}
+	for k, v := range params {
+		formData.Set(k, v)
+	}
+
+	formData.Set("client_id", clientID)
+	if clientSecret != "" {
+		formData.Set("client_secret", clientSecret)
+	}
+
+	req, err := http.NewRequest("POST", parURL, bytes.NewBufferString(formData.Encode()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create PAR request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send PAR request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read PAR response body: %w", err)
+	}
+
+	result := &PARHTTPResult{
+		StatusCode: resp.StatusCode,
+		Body:       body,
+	}
+
+	if resp.StatusCode == http.StatusCreated {
+		var parResp PARResponse
+		if err := json.Unmarshal(body, &parResp); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal PAR response: %w", err)
+		}
+		result.PAR = &parResp
+	} else {
+		var errResp PARErrorResponse
+		if err := json.Unmarshal(body, &errResp); err == nil {
+			result.Error = &errResp
+		}
+	}
+
+	return result, nil
+}
+
+// SubmitPARRequestWithoutAuth sends a PAR request without client authentication.
+func SubmitPARRequestWithoutAuth(params map[string]string) (*PARHTTPResult, error) {
+	parURL := TestServerURL + "/oauth2/par"
+	formData := url.Values{}
+	for k, v := range params {
+		formData.Set(k, v)
+	}
+
+	req, err := http.NewRequest("POST", parURL, bytes.NewBufferString(formData.Encode()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create PAR request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send PAR request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read PAR response body: %w", err)
+	}
+
+	result := &PARHTTPResult{
+		StatusCode: resp.StatusCode,
+		Body:       body,
+	}
+
+	var errResp PARErrorResponse
+	if err := json.Unmarshal(body, &errResp); err == nil {
+		result.Error = &errResp
+	}
+
+	return result, nil
+}
+
+// InitiateAuthorizationFlowWithRequestURI starts the OAuth2 authorization flow using a PAR request_uri.
+func InitiateAuthorizationFlowWithRequestURI(clientID, requestURI string) (*http.Response, error) {
+	authURL := TestServerURL + "/oauth2/authorize"
+	params := url.Values{}
+	params.Set("client_id", clientID)
+	params.Set("request_uri", requestURI)
+
+	req, err := http.NewRequest("GET", authURL+"?"+params.Encode(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create authorization request: %w", err)
+	}
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send authorization request: %w", err)
+	}
+
+	return resp, nil
+}
+
+// GenerateCodeVerifier generates a PKCE code verifier (exported for PAR tests).
+func GenerateCodeVerifier() (string, error) {
+	return generateCodeVerifier()
+}
+
+// GenerateCodeChallenge generates a PKCE code challenge from a verifier (exported for PAR tests).
+func GenerateCodeChallenge(verifier string) string {
+	return generateCodeChallenge(verifier)
 }
 
 // generateCodeVerifier generates a cryptographically secure random code verifier for PKCE (RFC 7636).

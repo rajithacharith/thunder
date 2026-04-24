@@ -24,6 +24,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/par"
 	"github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/constants"
@@ -40,6 +41,7 @@ func Initialize(
 	resourceService resource.ResourceServiceInterface,
 	jwtService jwt.JWTServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
+	parService par.PARServiceInterface,
 ) (AuthorizeServiceInterface, error) {
 	authzCodeStore, authzReqStore, transactioner, err := initializeAuthorizationStores()
 	if err != nil {
@@ -48,7 +50,7 @@ func Initialize(
 
 	authzService := newAuthorizeService(
 		applicationService, resourceService, jwtService, flowExecService,
-		authzCodeStore, authzReqStore, transactioner,
+		authzCodeStore, authzReqStore, parService, transactioner,
 	)
 	authzHandler := newAuthorizeHandler(authzService)
 	registerRoutes(mux, authzHandler)

@@ -379,6 +379,48 @@ func (s *DCRServiceTestSuite) TestRegisterClient_WithScope() {
 	s.Equal("read write admin", response.Scope)
 }
 
+func (s *DCRServiceTestSuite) TestRegisterClient_RequirePushedAuthorizationRequests() {
+	request := &DCRRegistrationRequest{
+		OUID:                               "test-ou-1",
+		RedirectURIs:                       []string{"https://client.example.com/callback"},
+		GrantTypes:                         []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+		ClientName:                         "Test Client",
+		RequirePushedAuthorizationRequests: true,
+	}
+
+	appDTO := &model.ApplicationDTO{
+		ID:   "app-id",
+		Name: "Test Client",
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigDTO{
+					ClientID:                           "client-id",
+					ClientSecret:                       "client-secret",
+					Scopes:                             []string{},
+					RequirePushedAuthorizationRequests: true,
+				},
+			},
+		},
+	}
+
+	s.mockAppService.On(
+		"CreateApplication", mock.Anything,
+		mock.MatchedBy(func(dto *model.ApplicationDTO) bool {
+			if len(dto.InboundAuthConfig) == 0 || dto.InboundAuthConfig[0].OAuthAppConfig == nil {
+				return false
+			}
+			return dto.InboundAuthConfig[0].OAuthAppConfig.RequirePushedAuthorizationRequests
+		}),
+	).Return(appDTO, (*serviceerror.ServiceError)(nil))
+
+	response, err := s.service.RegisterClient(context.Background(), request)
+
+	s.NotNil(response)
+	s.Nil(err)
+	s.True(response.RequirePushedAuthorizationRequests)
+}
+
 func (s *DCRServiceTestSuite) TestRegisterClient_EmptyInboundAuthConfig() {
 	request := &DCRRegistrationRequest{
 		OUID:         "test-ou-1",
