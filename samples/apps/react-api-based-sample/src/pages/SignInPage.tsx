@@ -40,8 +40,8 @@ interface AuthResponse {
 
 interface ApiError {
   code: string;
-  message: string;
-  description?: string;
+  message: { defaultValue?: string };
+  description?: { defaultValue?: string };
 }
 
 function SignInPage() {
@@ -87,7 +87,7 @@ function SignInPage() {
 
       if (!response.ok) {
         const errorData: ApiError = await response.json();
-        throw new Error(errorData.message || "Authentication failed");
+        throw new Error(errorData.message?.defaultValue || "Authentication failed");
       }
 
       const authResponse: AuthResponse = await response.json();
