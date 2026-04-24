@@ -371,6 +371,10 @@ const translations = {
     'manageUser.title': 'Manage User',
     'manageUser.subtitle': 'View and manage user information',
     'manageUser.back': 'Back to Users',
+    'manageUser.sections.quickCopy.title': 'Quick Copy',
+    'manageUser.sections.quickCopy.description': 'Copy user identifiers for use in your application.',
+    'manageUser.sections.quickCopy.userId': 'User ID',
+    'manageUser.sections.quickCopy.copyUserId': 'Copy User ID',
 
     // Create page
     'createUser.title': 'Create User',
@@ -1282,6 +1286,13 @@ const translations = {
       'This is a confidential client (server-side app) that can securely store credentials.',
     'edit.advanced.pkce.enabled': 'PKCE is required for authorization code flow, providing additional security.',
     'edit.advanced.pkce.disabled': 'PKCE is not required. Consider enabling for public clients (SPAs, mobile apps).',
+    'edit.advanced.pkce.requiresAuthorizationCode': 'PKCE applies only to the authorization code flow.',
+    'edit.advanced.pkce.requiredForPublicClient': 'Always required for public clients.',
+    'edit.advanced.publicClient.requiresAuthorizationCode':
+      'Available only for apps using the authorization code flow.',
+    'edit.advanced.publicClient.incompatibleWithClientCredentials': 'Not available for machine-to-machine apps.',
+    'edit.advanced.responseTypes.codeRequiredHint': 'Required for the authorization code flow.',
+    'edit.advanced.responseTypes.notApplicable': 'Response types apply only to the authorization code flow.',
     'edit.advanced.tokenEndpointAuthMethod.placeholder': 'Select authentication method',
     'edit.advanced.tokenEndpointAuthMethod.hint':
       'Defines how the client authenticates at the token endpoint. Use client_secret_basic or client_secret_post for confidential clients, and none for public clients.',
@@ -1348,6 +1359,10 @@ const translations = {
     'edit.general.sections.dangerZone.regenerateSecret.description':
       'Regenerating the client secret will immediately invalidate the current client secret and cannot be undone.',
     'edit.general.sections.dangerZone.regenerateSecret.button': 'Regenerate Client Secret',
+    'edit.general.sections.dangerZone.deleteApplication.title': 'Delete Application',
+    'edit.general.sections.dangerZone.deleteApplication.description':
+      'Permanently delete this application and all associated data. This action cannot be undone.',
+    'edit.general.sections.dangerZone.deleteApplication.button': 'Delete Application',
 
     // Flows section
     'edit.flows.labels.authFlow': 'Authentication Flow',
@@ -1751,6 +1766,8 @@ const translations = {
     // Placeholders
     'core.placeholders.image': 'No image source',
     'core.placeholders.image.dynamicSrc': 'Resolved at runtime',
+    'core.placeholders.customComponent': 'Custom',
+    'core.placeholders.customComponent.identifier': 'Identifier: {{id}}',
 
     // Validation messages - rich text
     'core.validation.fields.richText.general':

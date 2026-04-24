@@ -158,6 +158,14 @@ vi.mock('../adapters/TimerAdapter', () => ({
   ),
 }));
 
+vi.mock('../adapters/CustomAdapter', () => ({
+  default: ({resource}: {resource: Element}) => (
+    <div data-testid="custom-adapter" data-resource-id={resource.id}>
+      Custom Adapter
+    </div>
+  ),
+}));
+
 describe('CommonElementFactory', () => {
   const createMockElement = (overrides: Partial<Element> = {}): Element =>
     ({
@@ -453,6 +461,19 @@ describe('CommonElementFactory', () => {
 
       expect(screen.getByTestId('timer-adapter')).toBeInTheDocument();
       expect(screen.getByTestId('timer-adapter')).toHaveAttribute('data-resource-id', 'element-1');
+    });
+  });
+
+  describe('Custom Element', () => {
+    it('should render CustomAdapter for Custom type', () => {
+      const customElement = createMockElement({
+        type: ElementTypes.Custom,
+      });
+
+      render(<CommonElementFactory stepId="step-1" resource={customElement} />);
+
+      expect(screen.getByTestId('custom-adapter')).toBeInTheDocument();
+      expect(screen.getByTestId('custom-adapter')).toHaveAttribute('data-resource-id', 'element-1');
     });
   });
 

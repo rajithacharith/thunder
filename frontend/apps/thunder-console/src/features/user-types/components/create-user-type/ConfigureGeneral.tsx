@@ -16,12 +16,11 @@
  * under the License.
  */
 
+import {OrganizationUnitTreePicker, useHasMultipleOUs} from '@thunder/configure-organization-units';
 import {Typography, Stack, FormControl, FormLabel, Checkbox, FormControlLabel} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
-import useHasMultipleOUs from '../../../organization-units/api/useHasMultipleOUs';
-import OrganizationUnitTreePicker from '../../../organization-units/components/OrganizationUnitTreePicker';
 
 /**
  * Props for the {@link ConfigureGeneral} component.

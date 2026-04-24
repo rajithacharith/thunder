@@ -264,7 +264,23 @@ func (d *dbProvider) initializeClient(clientPtr *DBClientInterface, dataSource c
 		}
 	}
 
-	*clientPtr = NewDBClient(model.NewDB(db), dbConfig.driverName, dbName)
+	var rc retryConfig
+	switch dataSource.Type {
+	case dataSourceTypePostgres:
+		rc = retryConfig{
+			MaxAttempts: dataSource.Postgres.MaxRetries,
+			MinBackoff:  time.Duration(dataSource.Postgres.MinRetryBackoffMS) * time.Millisecond,
+			MaxBackoff:  time.Duration(dataSource.Postgres.MaxRetryBackoffMS) * time.Millisecond,
+		}
+	case dataSourceTypeSQLite:
+		rc = retryConfig{
+			MaxAttempts: dataSource.SQLite.MaxRetries,
+			MinBackoff:  time.Duration(dataSource.SQLite.MinRetryBackoffMS) * time.Millisecond,
+			MaxBackoff:  time.Duration(dataSource.SQLite.MaxRetryBackoffMS) * time.Millisecond,
+		}
+	}
+
+	*clientPtr = NewDBClient(model.NewDB(db), dbConfig.driverName, dbName, rc)
 	return nil
 }
 

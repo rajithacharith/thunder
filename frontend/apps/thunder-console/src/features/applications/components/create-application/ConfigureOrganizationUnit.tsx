@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import {OrganizationUnitTreePicker} from '@thunder/configure-organization-units';
 import {Stack, Typography, FormControl, FormLabel} from '@wso2/oxygen-ui';
 import {useEffect} from 'react';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import OrganizationUnitTreePicker from '../../../organization-units/components/OrganizationUnitTreePicker';
 
 export interface ConfigureOrganizationUnitProps {
   selectedOuId: string;
@@ -42,7 +42,7 @@ export default function ConfigureOrganizationUnit({
   }, [selectedOuId, onReadyChange]);
 
   return (
-    <Stack direction="column" spacing={4}>
+    <Stack direction="column" spacing={4} data-testid="application-configure-organization-unit">
       <Typography variant="h1" gutterBottom>
         {t('applications:onboarding.organizationUnit.title')}
       </Typography>

@@ -171,7 +171,7 @@ func (fms *flowMetaService) populateTypeMetadata(
 
 		fms.logger.Error("Failed to get application",
 			log.String("appID", id),
-			log.String("error", svcErr.Error),
+			log.String("error", svcErr.Error.DefaultValue),
 			log.String("code", svcErr.Code))
 		return "", &ErrorApplicationFetchFailed
 	}
@@ -194,7 +194,7 @@ func (fms *flowMetaService) populateTypeMetadata(
 		}
 
 		fms.logger.Error("Failed to get root organization unit",
-			log.String("error", ouErr.Error),
+			log.String("error", ouErr.Error.DefaultValue),
 			log.String("code", ouErr.Code))
 		return "", &ErrorOUFetchFailed
 	}
@@ -223,7 +223,7 @@ func (fms *flowMetaService) populateOUMetadata(
 
 		fms.logger.Error("Failed to get organization unit",
 			log.String("ouID", ouID),
-			log.String("error", svcErr.Error),
+			log.String("error", svcErr.Error.DefaultValue),
 			log.String("code", svcErr.Code))
 		return &ErrorOUFetchFailed
 	}
@@ -261,7 +261,7 @@ func (fms *flowMetaService) populateDesignMetadata(
 		fms.logger.Debug("Failed to get design configuration",
 			log.String("type", string(designType)),
 			log.String("id", designID),
-			log.String("error", svcErr.Error))
+			log.String("error", svcErr.Error.DefaultValue))
 		return
 	}
 

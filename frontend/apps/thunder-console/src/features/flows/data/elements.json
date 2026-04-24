@@ -440,5 +440,15 @@
       "showOnResourcePanel": true
     },
     "label": "Time remaining: {time}"
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "MISCELLANEOUS",
+    "type": "CUSTOM",
+    "display": {
+      "label": "Custom",
+      "image": "Puzzle",
+      "showOnResourcePanel": true
+    }
   }
 ]

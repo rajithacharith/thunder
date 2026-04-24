@@ -45,6 +45,7 @@ describe('SignIn', () => {
     vi.clearAllMocks();
     mockUseDesign.mockReturnValue({
       isDesignEnabled: false,
+      isLoading: false,
     });
   });
 
@@ -58,9 +59,10 @@ describe('SignIn', () => {
     expect(screen.getByTestId('signin-box')).toBeInTheDocument();
   });
 
-  it('shows SignInSlogan when design is not enabled', () => {
+  it('shows SignInSlogan when design is not enabled and not loading', () => {
     mockUseDesign.mockReturnValue({
       isDesignEnabled: false,
+      isLoading: false,
     });
     render(<SignIn />);
     expect(screen.getByTestId('signin-slogan')).toBeInTheDocument();
@@ -69,6 +71,16 @@ describe('SignIn', () => {
   it('hides SignInSlogan when design is enabled', () => {
     mockUseDesign.mockReturnValue({
       isDesignEnabled: true,
+      isLoading: false,
+    });
+    render(<SignIn />);
+    expect(screen.queryByTestId('signin-slogan')).not.toBeInTheDocument();
+  });
+
+  it('hides SignInSlogan while design is loading', () => {
+    mockUseDesign.mockReturnValue({
+      isDesignEnabled: false,
+      isLoading: true,
     });
     render(<SignIn />);
     expect(screen.queryByTestId('signin-slogan')).not.toBeInTheDocument();

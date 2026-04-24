@@ -141,7 +141,7 @@ func (e *smsExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, 
 		return nil, fmt.Errorf("SMS send failed: %s", notifSvcErr.ErrorDescription)
 	}
 
-	logger.Debug("SMS sent successfully", log.String("recipient", log.MaskString(recipient)))
+	logger.Debug("SMS sent successfully", log.MaskedString("recipient", recipient))
 
 	execResp.AdditionalData[common.DataSMSSent] = dataValueTrue
 	execResp.Status = common.ExecComplete

@@ -63,7 +63,8 @@ func (m *mockLayoutService) GetLayout(id string) (*Layout, *serviceerror.Service
 	return m.getLayoutFunc(id)
 }
 
-func (m *mockLayoutService) UpdateLayout(id string, layout UpdateLayoutRequest) (*Layout, *serviceerror.ServiceError) {
+func (m *mockLayoutService) UpdateLayout(
+	id string, layout UpdateLayoutRequest) (*Layout, *serviceerror.ServiceError) {
 	return m.updateLayoutFunc(id, layout)
 }
 

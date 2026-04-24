@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {useHasMultipleOUs} from '@thunder/configure-organization-units';
 import {useLogger} from '@thunder/logger/react';
 import {
   Box,
@@ -33,7 +34,6 @@ import {useState, useCallback, useMemo} from 'react';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
-import useHasMultipleOUs from '../../organization-units/api/useHasMultipleOUs';
 import useCreateGroup from '../api/useCreateGroup';
 import ConfigureName from '../components/create-group/ConfigureName';
 import ConfigureOrganizationUnit from '../components/create-group/ConfigureOrganizationUnit';

@@ -71,7 +71,7 @@ func (s *GraphBuilderTestSuite) TestGetGraph_NilFlow() {
 	s.Nil(graph)
 	s.NotNil(err)
 	s.Equal(ErrorInvalidFlowData.Code, err.Code)
-	s.Contains(err.ErrorDescription, "Flow definition is nil or has no nodes")
+	s.Contains(err.ErrorDescription.DefaultValue, "Flow definition is nil or has no nodes")
 }
 
 func (s *GraphBuilderTestSuite) TestGetGraph_EmptyNodes() {
@@ -88,7 +88,7 @@ func (s *GraphBuilderTestSuite) TestGetGraph_EmptyNodes() {
 	s.Nil(graph)
 	s.NotNil(err)
 	s.Equal(ErrorInvalidFlowData.Code, err.Code)
-	s.Contains(err.ErrorDescription, "Flow definition is nil or has no nodes")
+	s.Contains(err.ErrorDescription.DefaultValue, "Flow definition is nil or has no nodes")
 }
 
 func (s *GraphBuilderTestSuite) TestGetGraph_CacheHit() {
@@ -184,7 +184,7 @@ func (s *GraphBuilderTestSuite) TestGetGraph_BuildFailure() {
 	s.Nil(graph)
 	s.NotNil(err)
 	s.Equal(ErrorGraphBuildFailure.Code, err.Code)
-	s.Contains(err.ErrorDescription, "node creation error")
+	s.Contains(err.ErrorDescription.DefaultValue, "node creation error")
 }
 
 func (s *GraphBuilderTestSuite) TestGetGraph_CacheSetError() {
@@ -1138,7 +1138,7 @@ func (s *GraphBuilderTestSuite) TestConfigureDisplayOnlyProperties_NoNextNodeDef
 
 	edges := map[string][]string{}
 
-	err := s.builder.configureDisplayOnlyProperties(nodeDef, mockPromptNode, edges)
+	err := s.builder.configureDisplayOnlyProperties(nodeDef, mockPromptNode, edges, nil)
 
 	s.Nil(err)
 	// SetNextNode should not be called
@@ -1157,7 +1157,7 @@ func (s *GraphBuilderTestSuite) TestConfigureDisplayOnlyProperties_WithNextNode(
 
 	edges := map[string][]string{}
 
-	err := s.builder.configureDisplayOnlyProperties(nodeDef, mockPromptNode, edges)
+	err := s.builder.configureDisplayOnlyProperties(nodeDef, mockPromptNode, edges, nil)
 
 	s.Nil(err)
 	// Verify edge is added
@@ -1180,7 +1180,7 @@ func (s *GraphBuilderTestSuite) TestConfigureDisplayOnlyProperties_WithMessage()
 
 	edges := map[string][]string{}
 
-	err := s.builder.configureDisplayOnlyProperties(nodeDef, mockPromptNode, edges)
+	err := s.builder.configureDisplayOnlyProperties(nodeDef, mockPromptNode, edges, nil)
 
 	s.Nil(err)
 	s.Len(edges["prompt-1"], 1)
@@ -1199,7 +1199,7 @@ func (s *GraphBuilderTestSuite) TestConfigureDisplayOnlyProperties_OnNonPromptNo
 
 	edges := map[string][]string{}
 
-	err := s.builder.configureDisplayOnlyProperties(nodeDef, mockTaskNode, edges)
+	err := s.builder.configureDisplayOnlyProperties(nodeDef, mockTaskNode, edges, nil)
 
 	s.NotNil(err)
 	s.Contains(err.Error(), "'next' field is only valid on PROMPT nodes")
@@ -1224,7 +1224,7 @@ func (s *GraphBuilderTestSuite) TestConfigureDisplayOnlyProperties_WithPromptsCo
 
 	edges := map[string][]string{}
 
-	err := s.builder.configureDisplayOnlyProperties(nodeDef, mockPromptNode, edges)
+	err := s.builder.configureDisplayOnlyProperties(nodeDef, mockPromptNode, edges, nil)
 
 	s.NotNil(err)
 	s.Contains(err.Error(), "has both 'prompts' and 'next'; these are mutually exclusive")
@@ -1255,7 +1255,7 @@ func (s *GraphBuilderTestSuite) TestProcessNode_IsFinalNode_WithNextField() {
 	allNodes := []NodeDefinition{*nodeDef}
 	edges := map[string][]string{}
 
-	err := s.builder.processNode(nodeDef, allNodes, mockGraph, edges)
+	err := s.builder.processNode(nodeDef, allNodes, mockGraph, edges, nil)
 
 	s.Nil(err)
 }
@@ -1336,4 +1336,111 @@ func (s *GraphBuilderTestSuite) TestConfigureNodePrompts_WithMultipleActionsWith
 	err := s.builder.configureNodePrompts(nodeDef, mockPromptNode, edges)
 
 	s.Nil(err)
+}
+
+func (s *GraphBuilderTestSuite) TestConfigureDisplayOnlyProperties_RecordsBoundary() {
+	t := s.T()
+	nodeDef := &NodeDefinition{
+		ID:   "prompt-1",
+		Type: "PROMPT",
+		Next: "task-1",
+	}
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(t)
+	mockPromptNode.EXPECT().SetNextNode("task-1")
+
+	edges := map[string][]string{}
+	boundaries := make([]segmentBoundary, 0)
+
+	err := s.builder.configureDisplayOnlyProperties(nodeDef, mockPromptNode, edges, &boundaries)
+
+	s.Nil(err)
+	s.Len(boundaries, 1)
+	s.Equal("prompt-1", boundaries[0].boundaryNodeID)
+	s.Equal("task-1", boundaries[0].nextNodeID)
+}
+
+func (s *GraphBuilderTestSuite) TestConfigureDisplayOnlyProperties_RecordsMultipleBoundaries() {
+	t := s.T()
+	edges := map[string][]string{}
+	boundaries := make([]segmentBoundary, 0)
+
+	for _, tc := range []struct{ id, next string }{
+		{"prompt-1", "task-1"},
+		{"prompt-2", "task-2"},
+	} {
+		nodeDef := &NodeDefinition{ID: tc.id, Type: "PROMPT", Next: tc.next}
+		mockPN := coremock.NewPromptNodeInterfaceMock(t)
+		mockPN.EXPECT().SetNextNode(tc.next)
+		err := s.builder.configureDisplayOnlyProperties(nodeDef, mockPN, edges, &boundaries)
+		s.Nil(err)
+	}
+
+	s.Len(boundaries, 2)
+	s.Equal("prompt-1", boundaries[0].boundaryNodeID)
+	s.Equal("prompt-2", boundaries[1].boundaryNodeID)
+}
+
+func (s *GraphBuilderTestSuite) TestConfigureDisplayOnlyProperties_NilBoundariesDoesNotPanic() {
+	t := s.T()
+	nodeDef := &NodeDefinition{ID: "prompt-1", Type: "PROMPT", Next: "task-1"}
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(t)
+	mockPromptNode.EXPECT().SetNextNode("task-1")
+
+	edges := map[string][]string{}
+
+	// nil boundaries must not panic
+	err := s.builder.configureDisplayOnlyProperties(nodeDef, mockPromptNode, edges, nil)
+	s.Nil(err)
+}
+
+func (s *GraphBuilderTestSuite) TestComputeSegments_NoBoundaries() {
+	// computeSegments returns early with no boundaries; SetSegments/GetStartNode must NOT be called
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+
+	s.builder.computeSegments(mockGraph, []segmentBoundary{})
+}
+
+func (s *GraphBuilderTestSuite) TestComputeSegments_OneBoundary() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockStartNode := coremock.NewNodeInterfaceMock(t)
+	mockStartNode.On("GetID").Return("node-start")
+	mockGraph.On("GetStartNode").Return(mockStartNode, nil)
+	mockGraph.On("SetSegments", []core.Segment{
+		{ID: "seg-0", StartNodeID: "node-start"},
+		{ID: "seg-1", StartNodeID: "node-task"},
+	}).Return()
+
+	s.builder.computeSegments(mockGraph, []segmentBoundary{
+		{boundaryNodeID: "node-prompt", nextNodeID: "node-task"},
+	})
+}
+
+func (s *GraphBuilderTestSuite) TestComputeSegments_TwoBoundaries() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockStartNode := coremock.NewNodeInterfaceMock(t)
+	mockStartNode.On("GetID").Return("node-start")
+	mockGraph.On("GetStartNode").Return(mockStartNode, nil)
+	mockGraph.On("SetSegments", []core.Segment{
+		{ID: "seg-0", StartNodeID: "node-start"},
+		{ID: "seg-1", StartNodeID: "node-task-1"},
+		{ID: "seg-2", StartNodeID: "node-task-2"},
+	}).Return()
+
+	s.builder.computeSegments(mockGraph, []segmentBoundary{
+		{boundaryNodeID: "node-prompt-1", nextNodeID: "node-task-1"},
+		{boundaryNodeID: "node-prompt-2", nextNodeID: "node-task-2"},
+	})
+}
+
+func (s *GraphBuilderTestSuite) TestComputeSegments_GetStartNodeFails() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetStartNode").Return(nil, errors.New("start node not set"))
+
+	// SetSegments must NOT be called when GetStartNode fails
+	s.builder.computeSegments(mockGraph, []segmentBoundary{
+		{boundaryNodeID: "prompt", nextNodeID: "task"},
+	})
 }

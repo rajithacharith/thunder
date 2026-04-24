@@ -159,7 +159,7 @@ func (ts *GetUserSchemaTestSuite) TestGetUserSchemaNotFound() {
 	}
 
 	ts.Assert().NotEmpty(errorResp.Code, "Error should have code")
-	ts.Assert().NotEmpty(errorResp.Message, "Error should have message")
+	ts.Assert().NotEmpty(errorResp.Message.DefaultValue, "Error should have message")
 }
 
 // TestGetUserSchemaWithInvalidID tests GET /user-schemas/{id} with invalid ID formats
@@ -240,7 +240,7 @@ func (ts *GetUserSchemaTestSuite) TestGetUserSchemaWithInvalidID() {
 				}
 
 				ts.Assert().NotEmpty(errorResp.Code, "Error should have code")
-				ts.Assert().NotEmpty(errorResp.Message, "Error should have message")
+				ts.Assert().NotEmpty(errorResp.Message.DefaultValue, "Error should have message")
 			}
 		})
 	}

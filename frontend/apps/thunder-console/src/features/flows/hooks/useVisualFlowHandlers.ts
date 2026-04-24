@@ -30,10 +30,9 @@ import {
   getOutgoers,
   useReactFlow,
 } from '@xyflow/react';
-import {useRef, useContext} from 'react';
-import FlowBuilderCoreContext from '../context/FlowBuilderCoreContext';
-import FlowEventTypes from '../models/extension';
-import PluginRegistry from '../plugins/PluginRegistry';
+import {useRef} from 'react';
+import useFlowConfig from './useFlowConfig';
+import useFlowPlugins from './useFlowPlugins';
 
 /**
  * Props interface for useVisualFlowHandlers hook
@@ -63,13 +62,16 @@ export interface UseVisualFlowHandlersReturn {
 const useVisualFlowHandlers = (props: UseVisualFlowHandlersProps): UseVisualFlowHandlersReturn => {
   // Get references from ReactFlow hooks
   const reactFlowInstance = useReactFlow();
-  const {edgeStyle} = useContext(FlowBuilderCoreContext);
+  const {edgeStyle} = useFlowConfig();
+
+  const {emitEdgeDelete} = useFlowPlugins();
 
   // Store ALL dependencies in refs - updated every render
   const depsRef = useRef({
     props,
     reactFlowInstance,
     edgeStyle,
+    emitEdgeDelete,
   });
 
   // Update refs every render (minimal overhead - just assignment)
@@ -77,6 +79,7 @@ const useVisualFlowHandlers = (props: UseVisualFlowHandlersProps): UseVisualFlow
     props,
     reactFlowInstance,
     edgeStyle,
+    emitEdgeDelete,
   };
 
   // Store stable references to handler functions
@@ -140,7 +143,7 @@ const useVisualFlowHandlers = (props: UseVisualFlowHandlersProps): UseVisualFlow
     },
 
     handleEdgesDelete: (deletedEdges: Edge[]): void => {
-      PluginRegistry.getInstance().executeSync(FlowEventTypes.ON_EDGE_DELETE, deletedEdges);
+      depsRef.current.emitEdgeDelete(deletedEdges);
     },
   };
 

@@ -209,10 +209,14 @@ func (ts *tokenService) ProcessTokenRequest(
 			}
 		}
 
+		refreshAudiences := tokenRespDTO.AccessToken.Audiences
+		if len(tokenRespDTO.AccessToken.OriginalAudiences) > 0 {
+			refreshAudiences = tokenRespDTO.AccessToken.OriginalAudiences
+		}
 		refreshTokenError := refreshGrantHandlerTyped.IssueRefreshToken(
 			ctx,
 			tokenRespDTO, oauthApp,
-			tokenRespDTO.AccessToken.Subject, tokenRespDTO.AccessToken.Audience,
+			tokenRespDTO.AccessToken.Subject, refreshAudiences,
 			grantTypeStr, tokenRespDTO.AccessToken.Scopes, tokenRespDTO.AccessToken.ClaimsRequest,
 			tokenRespDTO.AccessToken.ClaimsLocales, tokenRespDTO.AccessToken.AttributeCacheID,
 		)

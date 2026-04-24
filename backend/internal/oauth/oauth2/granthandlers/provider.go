@@ -26,6 +26,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 )
 
@@ -52,15 +53,17 @@ func newGrantHandlerProvider(
 	ouService ou.OrganizationUnitServiceInterface,
 	rbacAuthzService rbacauthz.AuthorizationServiceInterface,
 	entityProv entityprovider.EntityProviderInterface,
+	resourceService resource.ResourceServiceInterface,
 ) GrantHandlerProviderInterface {
 	return &GrantHandlerProvider{
 		clientCredentialsGrantHandler: newClientCredentialsGrantHandler(
-			tokenBuilder, ouService, rbacAuthzService, entityProv),
+			tokenBuilder, ouService, rbacAuthzService, entityProv, resourceService),
 		authorizationCodeGrantHandler: newAuthorizationCodeGrantHandler(
-			authzService, tokenBuilder, attrCacheService),
+			authzService, tokenBuilder, attrCacheService, resourceService),
 		refreshTokenGrantHandler: newRefreshTokenGrantHandler(
-			jwtService, tokenBuilder, tokenValidator, attrCacheService),
-		tokenExchangeGrantHandler: newTokenExchangeGrantHandler(tokenBuilder, tokenValidator),
+			jwtService, tokenBuilder, tokenValidator, attrCacheService, resourceService),
+		tokenExchangeGrantHandler: newTokenExchangeGrantHandler(
+			tokenBuilder, tokenValidator, resourceService),
 	}
 }
 

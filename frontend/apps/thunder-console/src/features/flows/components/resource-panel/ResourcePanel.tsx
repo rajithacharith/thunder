@@ -20,12 +20,11 @@ import {BuilderLayout, BuilderPanelHeader} from '@thunder/components';
 import {Accordion, AccordionDetails, AccordionSummary, Box, Stack, Typography} from '@wso2/oxygen-ui';
 import {BoxesIcon, BoxIcon, ChevronDownIcon, CogIcon, LayoutTemplate, ZapIcon} from '@wso2/oxygen-ui-icons-react';
 import kebabCase from 'lodash-es/kebabCase';
-import {memo, useCallback, useMemo, type HTMLAttributes, type ReactElement} from 'react';
+import {memo, useCallback, useMemo, type HTMLAttributes, type ReactElement, type ReactNode} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useNavigate} from 'react-router';
 import ResourcePanelDraggable from './ResourcePanelDraggable';
 import ResourcePanelStatic from './ResourcePanelStatic';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import useUIPanelState from '../../hooks/useUIPanelState';
 import type {Element} from '../../models/elements';
 import type {Resource, Resources} from '../../models/resources';
 import type {Step} from '../../models/steps';
@@ -67,6 +66,10 @@ export interface ResourcePanelPropsInterface extends HTMLAttributes<HTMLDivEleme
    * Callback to be triggered when flow title changes.
    */
   onFlowTitleChange?: (newTitle: string) => void;
+  /**
+   * Optional right-hand side panel content rendered via BuilderLayout.
+   */
+  rightPanel?: ReactNode;
 }
 
 /**
@@ -84,16 +87,11 @@ function ResourcePanel({
   flowTitle = '',
   flowHandle = '',
   onFlowTitleChange = undefined,
+  rightPanel = undefined,
   ...rest
 }: ResourcePanelPropsInterface): ReactElement {
   const {t} = useTranslation();
-  const navigate = useNavigate();
-  const {setIsResourcePanelOpen} = useFlowBuilderCore();
-
-  const handleBackToFlows = useCallback((): void => {
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    navigate('/flows');
-  }, [navigate]);
+  const {setIsResourcePanelOpen} = useUIPanelState();
 
   const handleTogglePanel = useCallback((): void => {
     setIsResourcePanelOpen((prev: boolean) => !prev);
@@ -133,10 +131,8 @@ function ResourcePanel({
       <BuilderPanelHeader
         title={flowTitle}
         handle={flowHandle}
-        onBack={handleBackToFlows}
         onPanelToggle={handleTogglePanel}
         onTitleChange={onFlowTitleChange}
-        backLabel={t('flows:core.headerPanel.goBack')}
         hidePanelTooltip={t('flows:core.resourcePanel.hideResources')}
         editTitleTooltip={t('flows:core.headerPanel.editTitle')}
         saveTitleTooltip={t('flows:core.headerPanel.saveTitle')}
@@ -441,6 +437,14 @@ function ResourcePanel({
       onPanelToggle={handleTogglePanel}
       expandTooltip={t('flows:core.resourcePanel.showResources')}
       panelContent={panelContent}
+      panelPaperSx={{
+        overflow: 'hidden auto',
+        display: 'flex',
+        flexDirection: 'column',
+        borderRight: '1px solid',
+        borderColor: 'divider',
+      }}
+      rightPanel={rightPanel}
       {...rest}
     >
       {children}

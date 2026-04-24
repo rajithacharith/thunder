@@ -30,7 +30,7 @@ import (
 )
 
 // emailExecutor sends emails based on the configured email template and runtime context data.
-// When email is not configured (emailClient is nil), it completes as a no-op with emailSent=false.
+// When email is not configured (emailClient is nil), it returns a failure status.
 type emailExecutor struct {
 	core.ExecutorInterface
 	logger          *log.Logger
@@ -39,7 +39,6 @@ type emailExecutor struct {
 }
 
 // newEmailExecutor creates a new instance of the email executor.
-// emailClient may be nil if SMTP is not configured; the executor completes as a no-op in that case.
 func newEmailExecutor(flowFactory core.FlowFactoryInterface, emailClient email.EmailClientInterface,
 	templateService template.TemplateServiceInterface) *emailExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "EmailExecutor"))
@@ -70,7 +69,7 @@ func (e *emailExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse
 }
 
 // executeSend resolves the email template, constructs the email, and sends it.
-// If the email client is not configured, it completes without sending (no-op).
+// If the email client is not configured, it returns a failure status.
 func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := e.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing email executor in send mode")
@@ -80,11 +79,11 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 		RuntimeData:    make(map[string]string),
 	}
 
-	// If email client is not configured, complete as a no-op.
 	if e.emailClient == nil {
 		execResp.AdditionalData[common.DataEmailSent] = dataValueFalse
-		logger.Debug("Email client not configured, skipping email send")
-		execResp.Status = common.ExecComplete
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = "Email service is not configured"
+		logger.Debug("Email client not configured")
 		return execResp, nil
 	}
 
@@ -140,7 +139,8 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 	}
 
 	if err := e.emailClient.Send(emailData); err != nil {
-		if isEmailClientError(err) {
+		if isEmailError(err) {
+			logger.Error("Error sending mail : ", log.Error(err))
 			execResp.Status = common.ExecFailure
 			execResp.FailureReason = "Failed to send email"
 			return execResp, nil
@@ -149,7 +149,7 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 	}
 
 	logger.Debug("Email sent successfully",
-		log.String("recipient", log.MaskString(recipient)))
+		log.MaskedString("recipient", recipient))
 
 	execResp.AdditionalData[common.DataEmailSent] = dataValueTrue
 	execResp.Status = common.ExecComplete
@@ -167,13 +167,16 @@ func resolveRecipientEmail(ctx *core.NodeContext) string {
 	return ""
 }
 
-// isEmailClientError returns true if the error is a client-side validation error
-// (e.g., invalid recipient, invalid sender) rather than a server-side transport error.
-func isEmailClientError(err error) bool {
+// isEmailError returns true if the error originated from the email subsystem,
+// covering both client-side validation errors and server-side SMTP transport errors.
+func isEmailError(err error) bool {
 	return errors.Is(err, email.ErrorInvalidRecipient) ||
 		errors.Is(err, email.ErrorInvalidSender) ||
 		errors.Is(err, email.ErrorInvalidSubject) ||
 		errors.Is(err, email.ErrorInvalidHost) ||
 		errors.Is(err, email.ErrorInvalidPort) ||
-		errors.Is(err, email.ErrorInvalidCredentials)
+		errors.Is(err, email.ErrorInvalidCredentials) ||
+		errors.Is(err, email.ErrorSMTPConnection) ||
+		errors.Is(err, email.ErrorSMTPAuth) ||
+		errors.Is(err, email.ErrorEmailSendFailed)
 }

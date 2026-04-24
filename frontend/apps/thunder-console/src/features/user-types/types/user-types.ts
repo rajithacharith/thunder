@@ -16,6 +16,8 @@
  * under the License.
  */
 
+import type {ApiPaginationLink} from '@thunder/types';
+
 /**
  * TypeScript types and interfaces for User Types (User Schemas) feature
  * Based on the OpenAPI specification for UserSchema endpoints
@@ -132,14 +134,6 @@ export interface UserSchemaListItem {
 }
 
 /**
- * Link object for pagination
- */
-export interface Link {
-  rel: string;
-  href: string;
-}
-
-/**
  * Response for GET /user-schemas (list with pagination)
  */
 export interface UserSchemaListResponse {
@@ -147,7 +141,7 @@ export interface UserSchemaListResponse {
   startIndex: number;
   count: number;
   schemas: UserSchemaListItem[];
-  links?: Link[];
+  links?: ApiPaginationLink[];
 }
 
 /**

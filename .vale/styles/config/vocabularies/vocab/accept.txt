@@ -58,3 +58,7 @@ Rolldown
 JWTs
 ACL
 ACLs
+[Bb]ackoff
+[Rr]etryable
+[Uu]psert
+[Ii]dempotency

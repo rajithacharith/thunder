@@ -488,7 +488,7 @@ func (suite *LayoutServiceTestSuite) TestDeleteLayout_InUse() {
 
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), "LAY-1008", err.Code)
-	assert.Contains(suite.T(), err.ErrorDescription, "5 application(s)")
+	assert.Contains(suite.T(), err.ErrorDescription.DefaultValue, "5 application(s)")
 }
 
 // Test DeleteLayout - Store Error

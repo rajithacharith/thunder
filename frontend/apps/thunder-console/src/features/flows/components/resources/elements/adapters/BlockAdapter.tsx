@@ -20,9 +20,8 @@ import {Box} from '@wso2/oxygen-ui';
 import classNames from 'classnames';
 import {useMemo, type ReactElement} from 'react';
 import {ReorderableElement} from '../../steps/view/ReorderableElement';
+import useFlowPlugins from '@/features/flows/hooks/useFlowPlugins';
 import {type Element as FlowElement} from '@/features/flows/models/elements';
-import FlowEventTypes from '@/features/flows/models/extension';
-import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
 import './BlockAdapter.scss';
 
 /**
@@ -58,12 +57,12 @@ function BlockAdapter({
   availableElements = [],
   onAddElementToForm = undefined,
 }: BlockAdapterPropsInterface): ReactElement {
+  const {emitElementFilter} = useFlowPlugins();
+
   const filteredComponents = useMemo(() => {
     if (!resource?.components) return [];
-    return resource.components.filter((component: FlowElement) =>
-      PluginRegistry.getInstance().executeSync(FlowEventTypes.ON_NODE_ELEMENT_FILTER, component),
-    );
-  }, [resource?.components]);
+    return resource.components.filter((component: FlowElement) => emitElementFilter(component));
+  }, [resource?.components, emitElementFilter]);
 
   return (
     <Box className="adapter block-adapter">

@@ -53,9 +53,9 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-// Mock useFlowBuilderCore
+// Mock useUIPanelState
 const mockSetIsResourcePanelOpen = vi.fn();
-vi.mock('../../../hooks/useFlowBuilderCore', () => ({
+vi.mock('../../../hooks/useUIPanelState', () => ({
   default: () => ({
     setIsResourcePanelOpen: mockSetIsResourcePanelOpen,
   }),
@@ -294,13 +294,10 @@ describe('ResourcePanel', () => {
   });
 
   describe('Navigation', () => {
-    it('should navigate to flows page when back button is clicked', () => {
+    it('should not render back button in panel header (moved to top bar)', () => {
       render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open flowTitle="Test" />);
 
-      const backButton = screen.getByText('Back');
-      fireEvent.click(backButton);
-
-      expect(mockNavigate).toHaveBeenCalledWith('/flows');
+      expect(screen.queryByText('Back')).not.toBeInTheDocument();
     });
   });
 

@@ -28,11 +28,11 @@ vi.mock('@xyflow/react', () => ({
   useNodeId: (): string | null => mockUseNodeId(),
 }));
 
-// Mock useFlowBuilderCore
+// Mock useInteractionState
 const mockSetLastInteractedResource = vi.fn();
 const mockSetLastInteractedStepId = vi.fn();
 
-vi.mock('@/features/flows/hooks/useFlowBuilderCore', () => ({
+vi.mock('@/features/flows/hooks/useInteractionState', () => ({
   default: () => ({
     setLastInteractedResource: mockSetLastInteractedResource,
     setLastInteractedStepId: mockSetLastInteractedStepId,

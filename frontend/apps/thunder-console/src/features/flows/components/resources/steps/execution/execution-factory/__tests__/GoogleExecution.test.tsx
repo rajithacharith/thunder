@@ -21,9 +21,6 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import GoogleExecution from '../GoogleExecution';
 import type {Step} from '@/features/flows/models/steps';
 
-// Use vi.hoisted to define mock function before vi.mock hoisting
-const mockUseRequiredFields = vi.hoisted(() => vi.fn());
-
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -37,11 +34,6 @@ vi.mock('react-i18next', () => ({
 // Mock resolveStaticResourcePath
 vi.mock('@/features/flows/utils/resolveStaticResourcePath', () => ({
   default: (path: string) => `/static/${path}`,
-}));
-
-// Mock useRequiredFields
-vi.mock('@/features/flows/hooks/useRequiredFields', () => ({
-  default: mockUseRequiredFields,
 }));
 
 // Create mock resource
@@ -102,53 +94,6 @@ describe('GoogleExecution', () => {
     });
   });
 
-  describe('Required Fields Validation', () => {
-    it('should call useRequiredFields with resource and idpId field', () => {
-      const resource = createMockResource();
-      render(<GoogleExecution resource={resource} />);
-
-      expect(mockUseRequiredFields).toHaveBeenCalledWith(
-        resource,
-        expect.anything(),
-        expect.arrayContaining([
-          expect.objectContaining({
-            name: 'data.properties.idpId',
-            errorMessage: 'flows:core.validation.fields.input.idpId',
-          }),
-        ]),
-      );
-    });
-
-    it('should pass generalMessage as ReactElement to useRequiredFields', () => {
-      const resource = createMockResource({id: 'test-google-id'});
-      render(<GoogleExecution resource={resource} />);
-
-      expect(mockUseRequiredFields).toHaveBeenCalledWith(
-        resource,
-        expect.objectContaining({
-          props: expect.objectContaining({
-            i18nKey: 'flows:core.validation.fields.executor.general',
-          }) as Record<string, unknown>,
-        }),
-        expect.any(Array),
-      );
-    });
-
-    it('should memoize fields array', () => {
-      const resource = createMockResource();
-      const {rerender} = render(<GoogleExecution resource={resource} />);
-
-      const firstCallFields = mockUseRequiredFields.mock.calls[0][2] as unknown[];
-
-      rerender(<GoogleExecution resource={resource} />);
-
-      const secondCallFields = mockUseRequiredFields.mock.calls[1][2] as unknown[];
-
-      // Fields should be the same reference due to memoization
-      expect(firstCallFields).toBe(secondCallFields);
-    });
-  });
-
   describe('Resource Handling', () => {
     it('should handle resource with idpId configured', () => {
       const resource = createMockResource({
@@ -200,38 +145,6 @@ describe('GoogleExecution', () => {
 
       // Resource has display.label = 'Google'
       expect(screen.getByText('Google')).toBeInTheDocument();
-    });
-  });
-
-  describe('Memoization', () => {
-    it('should memoize generalMessage based on resource.id', () => {
-      const resource = createMockResource({id: 'google-1'});
-      const {rerender} = render(<GoogleExecution resource={resource} />);
-
-      const firstCallMessage = mockUseRequiredFields.mock.calls[0][1] as unknown;
-
-      rerender(<GoogleExecution resource={resource} />);
-
-      const secondCallMessage = mockUseRequiredFields.mock.calls[1][1] as unknown;
-
-      // Message should be the same reference due to memoization
-      expect(firstCallMessage).toBe(secondCallMessage);
-    });
-
-    it('should update generalMessage when resource.id changes', () => {
-      const resource1 = createMockResource({id: 'google-1'});
-      const resource2 = createMockResource({id: 'google-2'});
-
-      const {rerender} = render(<GoogleExecution resource={resource1} />);
-
-      const firstCallMessage = mockUseRequiredFields.mock.calls[0][1] as unknown;
-
-      rerender(<GoogleExecution resource={resource2} />);
-
-      const secondCallMessage = mockUseRequiredFields.mock.calls[1][1] as unknown;
-
-      // Message should be different due to different resource.id
-      expect(firstCallMessage).not.toBe(secondCallMessage);
     });
   });
 });

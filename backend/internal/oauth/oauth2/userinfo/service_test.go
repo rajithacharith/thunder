@@ -40,6 +40,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/attributecachemock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
@@ -214,7 +215,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_ErrorFetchingUserAttributes()
 	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-err-123").Return(
-		nil, &serviceerror.InternalServerErrorWithI18n)
+		nil, &serviceerror.InternalServerError)
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.NotNil(s.T(), svcErr)
@@ -244,7 +245,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_ErrorFetchingGroups() {
 	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-groups-123").Return(
-		nil, &serviceerror.InternalServerErrorWithI18n)
+		nil, &serviceerror.InternalServerError)
 	s.mockAppService.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
@@ -464,7 +465,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_AppNotFound() {
 		&attributecache.AttributeCache{ID: "cache-anf-123", Attributes: userAttrs}, nil)
 	s.mockAppService.On("GetOAuthApplication", mock.Anything, "client123").Return(nil, &serviceerror.ServiceError{
 		Code:  "APP_NOT_FOUND",
-		Error: "App not found",
+		Error: core.I18nMessage{Key: "error.test.app_not_found", DefaultValue: "App not found"},
 	})
 
 	// When app not found, continue without app config
@@ -827,7 +828,8 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_ClientCredentialsGrant_Reject
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.NotNil(s.T(), svcErr)
 	assert.Equal(s.T(), errorClientCredentialsNotSupported.Code, svcErr.Code)
-	assert.Equal(s.T(), errorClientCredentialsNotSupported.ErrorDescription, svcErr.ErrorDescription)
+	assert.Equal(s.T(), errorClientCredentialsNotSupported.ErrorDescription.DefaultValue,
+		svcErr.ErrorDescription.DefaultValue)
 	assert.Nil(s.T(), response)
 	s.mockTokenValidator.AssertExpectations(s.T())
 }
@@ -922,7 +924,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_MissingOpenIDScope_WithOtherS
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.NotNil(s.T(), svcErr)
 	assert.Equal(s.T(), "insufficient_scope", svcErr.Code)
-	assert.Contains(s.T(), svcErr.ErrorDescription, "openid")
+	assert.Contains(s.T(), svcErr.ErrorDescription.DefaultValue, "openid")
 	assert.Nil(s.T(), response)
 	s.mockTokenValidator.AssertExpectations(s.T())
 }
@@ -1098,7 +1100,6 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_ResponseType() {
 	s.mockJWTService.On(
 		"GenerateJWT",
 		"user123",
-		"client123",
 		issuer,
 		config.GetThunderRuntime().Config.JWT.ValidityPeriod,
 		mock.Anything,
@@ -1157,17 +1158,20 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_GenerateJWTFailure() {
 	s.mockJWTService.On(
 		"GenerateJWT",
 		"user123",
-		"client123",
 		issuer,
 		config.GetThunderRuntime().Config.JWT.ValidityPeriod,
 		mock.Anything,
 		mock.Anything,
 	).Return("", int64(0),
 		&serviceerror.ServiceError{
-			Type:             serviceerror.ServerErrorType,
-			Code:             "JWT_SIGNING_FAILED",
-			Error:            "JWT signing failed",
-			ErrorDescription: "JWT signing failed",
+			Type: serviceerror.ServerErrorType,
+			Code: "JWT_SIGNING_FAILED",
+			Error: core.I18nMessage{
+				Key: "error.test.jwt_signing_failed", DefaultValue: "JWT signing failed",
+			},
+			ErrorDescription: core.I18nMessage{
+				Key: "error.test.jwt_signing_failed", DefaultValue: "JWT signing failed",
+			},
 		})
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)

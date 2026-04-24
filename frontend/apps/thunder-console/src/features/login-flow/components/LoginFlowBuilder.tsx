@@ -37,7 +37,8 @@ import {mutateComponents} from '../utils/componentMutations';
 import GradientBorderButton from '@/features/applications/components/GradientBorderButton';
 import useGetFlowById from '@/features/flows/api/useGetFlowById';
 import FlowBuilder from '@/features/flows/components/FlowBuilder';
-import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
+import useFlowConfig from '@/features/flows/hooks/useFlowConfig';
+import useFlowEvents from '@/features/flows/hooks/useFlowEvents';
 import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
 import {StepTypes} from '@/features/flows/models/steps';
 
@@ -48,7 +49,8 @@ function LoginFlowBuilder() {
   const {t} = useTranslation();
 
   const {data: resources} = useGetLoginFlowBuilderResources();
-  const {edgeStyle, isVerboseMode} = useFlowBuilderCore();
+  const {edgeStyle, isVerboseMode} = useFlowConfig();
+  const {triggerAutoLayout, onRestoreFromHistory, onElementAdded} = useFlowEvents();
   const {isValid: isFlowValid, setOpenValidationPanel} = useValidationStatus();
   const updateNodeInternals = useUpdateNodeInternals();
 
@@ -76,11 +78,10 @@ function LoginFlowBuilder() {
     handleCloseInfoSnackbar,
   } = useSnackbarNotifications();
 
-  // Callback to trigger auto-layout from the snackbar via custom event
   const handleAutoLayoutClick = useCallback(() => {
-    window.dispatchEvent(new CustomEvent('triggerAutoLayout'));
+    triggerAutoLayout();
     handleCloseInfoSnackbar();
-  }, [handleCloseInfoSnackbar]);
+  }, [triggerAutoLayout, handleCloseInfoSnackbar]);
 
   // Edge generation hook
   const {generateEdges, validateEdges} = useEdgeGeneration({
@@ -143,39 +144,25 @@ function LoginFlowBuilder() {
   const onNodesChange = defaultOnNodesChange;
 
   // Handle restore from history event
-  useEffect(() => {
-    const handleRestoreFromHistory = (event: CustomEvent) => {
-      const {nodes: restoredNodes, edges: restoredEdges} = event.detail as {nodes?: Node[]; edges?: Edge[]};
-
-      if (restoredNodes && restoredEdges) {
+  useEffect(
+    () =>
+      onRestoreFromHistory((restoredNodes, restoredEdges) => {
         setNodes(restoredNodes);
         setEdges(restoredEdges);
-      }
-    };
-
-    window.addEventListener('restoreFromHistory', handleRestoreFromHistory as EventListener);
-
-    return () => {
-      window.removeEventListener('restoreFromHistory', handleRestoreFromHistory as EventListener);
-    };
-  }, [setNodes, setEdges]);
+      }),
+    [onRestoreFromHistory, setNodes, setEdges],
+  );
 
   // Listen for element added events to show auto-layout hint
-  useEffect(() => {
-    const handleElementAdded = (event: CustomEvent<{type: string}>) => {
-      const {type} = event.detail;
-      // Only show hint for steps, widgets, and templates (not individual components)
-      if (type === 'step' || type === 'widget' || type === 'template') {
-        showInfo(t('flows:core.canvas.hints.autoLayout'));
-      }
-    };
-
-    window.addEventListener('flowElementAdded', handleElementAdded as EventListener);
-
-    return () => {
-      window.removeEventListener('flowElementAdded', handleElementAdded as EventListener);
-    };
-  }, [showInfo, t]);
+  useEffect(
+    () =>
+      onElementAdded((type) => {
+        if (type === 'step' || type === 'widget' || type === 'template') {
+          showInfo(t('flows:core.canvas.hints.autoLayout'));
+        }
+      }),
+    [onElementAdded, showInfo, t],
+  );
 
   // Update edge types when edge style changes
   useEffect(() => {

@@ -29,6 +29,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/security"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/tests/mocks/consentmock"
@@ -45,9 +46,12 @@ func newAuthzError(t interface {
 	Cleanup(func())
 }) *sysauthzmock.SystemAuthorizationServiceInterfaceMock {
 	svcErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ServerErrorType,
-		Code:  "SSE-5000",
-		Error: "authz failure",
+		Type: serviceerror.ServerErrorType,
+		Code: "SSE-5000",
+		Error: core.I18nMessage{
+			Key:          "error.sysauthz.authorization_failure",
+			DefaultValue: "authz failure",
+		},
 	}
 	m := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 	m.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
@@ -158,7 +162,7 @@ func (s *AuthzTestSuite) TestGetUserSchemaList_AuthzServiceError() {
 	resp, svcErr := svc.GetUserSchemaList(context.Background(), 10, 0, false)
 	s.Nil(resp)
 	s.Require().NotNil(svcErr)
-	s.Equal(ErrorInternalServerError.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *AuthzTestSuite) TestGetUserSchemaList_NilAuthzService() {
@@ -234,7 +238,7 @@ func (s *AuthzTestSuite) TestCreateUserSchema_AuthzError() {
 	})
 	s.Nil(result)
 	s.Require().NotNil(svcErr)
-	s.Equal(ErrorInternalServerError.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 // ---- GetUserSchema ----
@@ -275,7 +279,7 @@ func (s *AuthzTestSuite) TestGetUserSchema_AuthzError() {
 	result, svcErr := svc.GetUserSchema(context.Background(), "schema-1", false)
 	s.Nil(result)
 	s.Require().NotNil(svcErr)
-	s.Equal(ErrorInternalServerError.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 // ---- GetUserSchemaByName ----
@@ -316,7 +320,7 @@ func (s *AuthzTestSuite) TestGetUserSchemaByName_AuthzError() {
 	result, svcErr := svc.GetUserSchemaByName(context.Background(), "employee")
 	s.Nil(result)
 	s.Require().NotNil(svcErr)
-	s.Equal(ErrorInternalServerError.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 // ---- UpdateUserSchema ----
@@ -391,7 +395,7 @@ func (s *AuthzTestSuite) TestUpdateUserSchema_AuthzError() {
 	})
 	s.Nil(result)
 	s.Require().NotNil(svcErr)
-	s.Equal(ErrorInternalServerError.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 // ---- DeleteUserSchema ----
@@ -442,7 +446,7 @@ func (s *AuthzTestSuite) TestDeleteUserSchema_AuthzError() {
 
 	svcErr := svc.DeleteUserSchema(context.Background(), "schema-1")
 	s.Require().NotNil(svcErr)
-	s.Equal(ErrorInternalServerError.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *AuthzTestSuite) TestDeleteUserSchema_NotFound_StillChecksAuthz() {

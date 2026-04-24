@@ -22,7 +22,7 @@ import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/application"
-	"github.com/asgardeo/thunder/internal/authnprovider"
+	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
@@ -31,7 +31,7 @@ import (
 
 // ClientAuthMiddleware authenticates OAuth2 clients and attaches client info to request context.
 func ClientAuthMiddleware(appService application.ApplicationServiceInterface,
-	authnProvider authnprovider.AuthnProviderInterface,
+	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	jwtService jwt.JWTServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {

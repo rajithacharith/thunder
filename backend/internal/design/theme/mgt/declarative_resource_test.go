@@ -30,6 +30,7 @@ import (
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 
 	"github.com/stretchr/testify/suite"
@@ -121,7 +122,7 @@ func (s *ThemeDeclarativeSuite) TestThemeExporter_GetAllResourceIDs_Success() {
 
 func (s *ThemeDeclarativeSuite) TestThemeExporter_GetAllResourceIDs_ServiceError() {
 	// Arrange
-	serviceErr := &serviceerror.ServiceError{Error: "Database error"}
+	serviceErr := &serviceerror.ServiceError{Error: i18ncore.I18nMessage{DefaultValue: "Database error"}}
 	mockService := NewThemeMgtServiceInterfaceMock(s.T())
 	mockService.EXPECT().GetThemeList(100, 0).Return(&ThemeList{}, serviceErr).Once()
 	exporter := &themeExporter{service: mockService}
@@ -179,7 +180,7 @@ func (s *ThemeDeclarativeSuite) TestThemeExporter_GetResourceByID_Success() {
 
 func (s *ThemeDeclarativeSuite) TestThemeExporter_GetResourceByID_NotFound() {
 	// Arrange
-	serviceErr := &serviceerror.ServiceError{Error: "Theme not found"}
+	serviceErr := &serviceerror.ServiceError{Error: i18ncore.I18nMessage{DefaultValue: "Theme not found"}}
 	mockService := NewThemeMgtServiceInterfaceMock(s.T())
 	mockService.EXPECT().GetTheme("non-existent").Return(&Theme{}, serviceErr).Once()
 	exporter := &themeExporter{service: mockService}

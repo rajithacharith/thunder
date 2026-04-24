@@ -16,15 +16,18 @@
  * under the License.
  */
 
-import {BuilderFloatingPanel} from '@thunder/components';
+import {BuilderStaticPanel} from '@thunder/components';
 import {Box, IconButton, Stack, Tab, Tabs, Typography} from '@wso2/oxygen-ui';
 import {BellIcon, CircleXIcon, InfoIcon, TriangleAlertIcon, X} from '@wso2/oxygen-ui-icons-react';
+import {useReactFlow, type Node} from '@xyflow/react';
 import type {PropsWithChildren, ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
 import ValidationNotificationsList from './ValidationNotificationsList';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import useInteractionState from '../../hooks/useInteractionState';
 import useValidationStatus from '../../hooks/useValidationStatus';
+import type {Element} from '../../models/elements';
 import Notification, {NotificationType} from '../../models/notification';
+import type {StepData} from '../../models/steps';
 
 /**
  * Props interface for TabPanel component.
@@ -80,23 +83,22 @@ const getNotificationIcon = (type: NotificationType): ReactElement => {
   }
 };
 
+export interface ValidationPanelProps {
+  open?: boolean;
+}
+
 /**
  * Component to render the notification panel with tabbed notifications.
  *
  * @param props - Props injected to the component.
  * @returns The ValidationPanel component.
  */
-function ValidationPanel(): ReactElement {
+function ValidationPanel({open = false}: ValidationPanelProps): ReactElement {
   const {t} = useTranslation();
-  const {
-    notifications,
-    openValidationPanel: open,
-    setOpenValidationPanel,
-    setSelectedNotification,
-    currentActiveTab,
-    setCurrentActiveTab,
-  } = useValidationStatus();
-  const {setLastInteractedResource} = useFlowBuilderCore();
+  const {notifications, setOpenValidationPanel, setSelectedNotification, currentActiveTab, setCurrentActiveTab} =
+    useValidationStatus();
+  const {setLastInteractedResource, setLastInteractedStepId} = useInteractionState();
+  const {getNodes, fitView} = useReactFlow();
 
   const errorNotifications: Notification[] = notifications.filter(
     (notification: Notification) => notification.getType() === NotificationType.ERROR,
@@ -108,53 +110,70 @@ function ValidationPanel(): ReactElement {
     (notification: Notification) => notification.getType() === NotificationType.WARNING,
   );
 
-  /**
-   * Handle tab change event.
-   *
-   * @param event - Tab change event.
-   * @param newValue - New tab value.
-   */
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number): void => {
     setCurrentActiveTab?.(newValue);
   };
 
-  /**
-   * Handle close event.
-   */
   const handleClose = (): void => {
     setOpenValidationPanel?.(false);
   };
 
   /**
-   * Handle notification click event.
-   *
-   * @param notification - The notification that was clicked.
+   * Finds the React Flow node that contains the given resource id.
+   * For steps, the node id matches directly. For elements, searches
+   * the node's components tree for a matching element id.
    */
+  const findNodeForResource = (resourceId: string): Node | undefined => {
+    const nodes = getNodes();
+
+    // Direct match — resource is a step node itself
+    const directMatch = nodes.find((node) => node.id === resourceId);
+    if (directMatch) return directMatch;
+
+    // Search inside node components for elements
+    return nodes.find((node) => {
+      const components = (node.data as StepData)?.components;
+      if (!components) return false;
+
+      const containsElement = (elements: Element[]): boolean =>
+        elements.some((el) => el.id === resourceId || (el.components && containsElement(el.components)));
+
+      return containsElement(components);
+    });
+  };
+
   const handleNotificationClick = (notification: Notification): void => {
     setSelectedNotification?.(notification);
     setOpenValidationPanel?.(false);
     if (notification.getResources().length === 1) {
-      setLastInteractedResource(notification.getResources()[0]);
+      const resource = notification.getResources()[0];
+      setLastInteractedResource(resource);
+
+      const targetNode = findNodeForResource(resource.id);
+      if (targetNode) {
+        setLastInteractedStepId(targetNode.id);
+        void fitView({nodes: [{id: targetNode.id}], padding: 0.5, duration: 400});
+      }
     }
   };
 
   return (
-    <BuilderFloatingPanel
-      open={open ?? false}
-      onClose={handleClose}
-      container={document.getElementById('drawer-container')}
+    <BuilderStaticPanel
+      open={open}
+      width={350}
+      anchor="right"
+      header={
+        <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%'}}>
+          <Stack direction="row" gap={1} alignItems="center">
+            <BellIcon size={16} />
+            <Typography variant="h6">{t('flows:core.notificationPanel.header')}</Typography>
+          </Stack>
+          <IconButton onClick={handleClose} size="small" aria-label="Close notifications panel">
+            <X height={16} width={16} />
+          </IconButton>
+        </Box>
+      }
     >
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Stack direction="row" gap={1} alignItems="center">
-          <BellIcon />
-          <Typography variant="h5">{t('flows:core.notificationPanel.header')}</Typography>
-        </Stack>
-        <IconButton onClick={handleClose}>
-          <X height={16} width={16} />
-        </IconButton>
-      </Box>
-
       {/* Tabs */}
       <Box
         sx={{
@@ -162,7 +181,6 @@ function ValidationPanel(): ReactElement {
           bgcolor: 'background.paper',
           borderBottom: '1px solid',
           borderColor: 'divider',
-          mt: 2,
         }}
       >
         <Tabs
@@ -218,7 +236,8 @@ function ValidationPanel(): ReactElement {
       <Box
         sx={{
           p: 2,
-          height: 'calc(100% - 120px)',
+          flex: 1,
+          minHeight: 0,
           overflowY: 'auto',
           overflowX: 'hidden',
           '&::-webkit-scrollbar': {width: '6px'},
@@ -273,7 +292,7 @@ function ValidationPanel(): ReactElement {
           />
         </TabPanel>
       </Box>
-    </BuilderFloatingPanel>
+    </BuilderStaticPanel>
   );
 }
 

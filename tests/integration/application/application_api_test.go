@@ -51,10 +51,7 @@ var (
 		URL:                       "https://testapp.example.com",
 		LogoURL:                   "https://testapp.example.com/logo.png",
 		IsRegistrationFlowEnabled: false,
-		Certificate: &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		},
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -79,10 +76,7 @@ var (
 		Template:                  "spa",
 		URL:                       "https://apptocreate.example.com",
 		LogoURL:                   "https://apptocreate.example.com/logo.png",
-		Certificate: &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		},
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -107,10 +101,7 @@ var (
 		Template:                  "mobile",
 		URL:                       "https://appToUpdate.example.com",
 		LogoURL:                   "https://appToUpdate.example.com/logo.png",
-		Certificate: &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		},
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -275,10 +266,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationListingWithLogoURL() {
 		IsRegistrationFlowEnabled: false,
 		URL:                       "https://appwithlogo.example.com",
 		LogoURL:                   "https://appwithlogo.example.com/logo.png",
-		Certificate: &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		},
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -304,10 +292,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationListingWithLogoURL() {
 		RegistrationFlowID:        defaultRegistrationFlowID,
 		IsRegistrationFlowEnabled: false,
 		URL:                       "https://appwithoutlogo.example.com",
-		Certificate: &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		},
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -547,13 +532,6 @@ func retrieveAndValidateApplicationDetails(ts *ApplicationAPITestSuite, expected
 		appForComparison.InboundAuthConfig[0].OAuthAppConfig.ClientSecret = ""
 	}
 
-	// Ensure certificate is set in expected app if it's null
-	if appForComparison.Certificate == nil {
-		appForComparison.Certificate = &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		}
-	}
 	appForComparison.AuthFlowID = defaultAuthFlowID
 	appForComparison.RegistrationFlowID = defaultRegistrationFlowID
 
@@ -658,10 +636,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithDefaults() {
 		IsRegistrationFlowEnabled: false,
 		AuthFlowID:                defaultAuthFlowID,
 		RegistrationFlowID:        defaultRegistrationFlowID,
-		Certificate: &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		},
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -732,10 +707,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithInvalidTokenEndpoi
 		AuthFlowID:                defaultAuthFlowID,
 		RegistrationFlowID:        defaultRegistrationFlowID,
 		IsRegistrationFlowEnabled: false,
-		Certificate: &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		},
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -767,10 +739,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithInvalidTokenEndpoi
 		AuthFlowID:                defaultAuthFlowID,
 		RegistrationFlowID:        defaultRegistrationFlowID,
 		IsRegistrationFlowEnabled: false,
-		Certificate: &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		},
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -839,10 +808,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithPartialDefaults() 
 		AuthFlowID:                defaultAuthFlowID,
 		RegistrationFlowID:        defaultRegistrationFlowID,
 		IsRegistrationFlowEnabled: false,
-		Certificate: &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		},
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -980,7 +946,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithPrivateKeyJWT() {
 			expectedCertValue: jwksJSON,
 		},
 		{
-			name: "failure - private_key_jwt without certificate (NONE type)",
+			name: "failure - private_key_jwt with empty certificate type",
 			app: Application{
 				OUID:                      testOUID,
 				Name:                      "Private Key JWT No Cert App",
@@ -990,7 +956,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithPrivateKeyJWT() {
 				RegistrationFlowID:        defaultRegistrationFlowID,
 				IsRegistrationFlowEnabled: false,
 				Certificate: &ApplicationCert{
-					Type:  "NONE",
+					Type:  "",
 					Value: "",
 				},
 				InboundAuthConfig: []InboundAuthConfig{
@@ -1471,7 +1437,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCertificateUpdate() {
 		Name:        "Certificate Update Test App",
 		Description: "Test certificate updates",
 		URL:         "https://certupdate.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -1528,7 +1494,7 @@ func (ts *ApplicationAPITestSuite) TestOAuthAppCertificateUpdate() {
 		Name:        "OAuth Cert Update Test",
 		Description: "Test OAuth certificate updates",
 		URL:         "https://oauthcertupdate.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -1651,7 +1617,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationPublicClientValidations() {
 		Name:        "Public Client Invalid Auth",
 		Description: "Test public client validations",
 		URL:         "https://publicclienttest.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -1687,7 +1653,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationOAuthConfigValidations() {
 		Name:        "OAuth Config No RedirectURIs",
 		Description: "Test OAuth config validations",
 		URL:         "https://oauthconfigtest.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -1728,7 +1694,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithTokenConfiguration() {
 		Name:        "Token Config Test App",
 		Description: "Test application with token configuration",
 		URL:         "https://tokenconfig.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -1777,7 +1743,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithIDTokenScopeClaims() {
 		Name:        "ID Token Scope Claims Test",
 		Description: "Test ID token scope claims",
 		URL:         "https://idtokenclaims.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -1824,7 +1790,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithTokenConfigChanges()
 		Name:        "Token Config Update Test",
 		Description: "Test token config updates",
 		URL:         "https://tokenconfigupdate.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -1888,7 +1854,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithPKCERequired() {
 		Name:        "PKCE Required Test",
 		Description: "Test PKCE required configuration",
 		URL:         "https://pkce.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -1927,7 +1893,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationListRetrievesMultiple() {
 			Name:        fmt.Sprintf("List Test App %d", i),
 			Description: fmt.Sprintf("Test application %d", i),
 			URL:         fmt.Sprintf("https://listtest%d.example.com", i),
-			Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+			Certificate: nil,
 			InboundAuthConfig: []InboundAuthConfig{
 				{
 					Type: "oauth2",
@@ -1976,7 +1942,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateCompleteOAuthConfig() {
 		Name:        "Complete OAuth Update Test",
 		Description: "Test complete OAuth config update",
 		URL:         "https://completeoauth.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -2067,7 +2033,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyAccessToken() {
 		Name:        "Only Access Token Test",
 		Description: "Test with only access token config",
 		URL:         "https://accesstokenonly.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -2109,7 +2075,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyIDToken() {
 		Name:        "Only ID Token Test",
 		Description: "Test with only ID token config",
 		URL:         "https://idtokenonly.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -2155,7 +2121,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithBothTokenTypes() {
 		Name:        "Both Token Types Test",
 		Description: "Test with both access and ID tokens",
 		URL:         "https://bothtokens.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -2206,7 +2172,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateRemoveOAuthConfig() {
 		Name:        "Remove OAuth Config Test",
 		Description: "Test removing OAuth config",
 		URL:         "https://removeoauth.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -2251,7 +2217,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithMultipleGrantAndResponseTy
 		Name:        "Multiple Grant Types Test",
 		Description: "Test with multiple grant and response types",
 		URL:         "https://multiplegrants.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -2295,7 +2261,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithMinimalTokenConfig() {
 		Name:        "Minimal Token Config Test",
 		Description: "Test with minimal token config",
 		URL:         "https://minimaltoken.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -2330,7 +2296,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithComplexScopeClaims() {
 		Name:        "Complex Scope Claims Test",
 		Description: "Test with complex scope claims",
 		URL:         "https://complexscopes.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -2418,7 +2384,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationGetByName() {
 		Name:        uniqueName,
 		Description: "Test get by name",
 		URL:         "https://getbyname.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -2484,7 +2450,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationValidationGrantTypeResponseTyp
 		Name:        "Grant Response Incompat Test",
 		Description: "Test incompatible grant and response types",
 		URL:         "https://grantresponseincompat.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -2510,7 +2476,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationMultipleRedirectURIValidation(
 		Name:        "Multiple Redirect URI Validation Test",
 		Description: "Test validation of multiple redirect URIs",
 		URL:         "https://multiredirect.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -2541,7 +2507,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateAddOAuthConfig() {
 		Name:              "Add OAuth Config Test",
 		Description:       "Test adding OAuth config via update",
 		URL:               "https://addoauth.example.com",
-		Certificate:       &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate:       nil,
 		InboundAuthConfig: []InboundAuthConfig{}, // No OAuth initially
 	}
 
@@ -2591,7 +2557,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationTotalCountRetrieval() {
 			Name:        fmt.Sprintf("Count Test App %d", i),
 			Description: "Test count",
 			URL:         fmt.Sprintf("https://counttest%d.example.com", i),
-			Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+			Certificate: nil,
 			InboundAuthConfig: []InboundAuthConfig{
 				{
 					Type: "oauth2",
@@ -2641,7 +2607,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithCompleteMetadata() {
 		TosURI:      "https://completemeta.example.com/tos",
 		PolicyURI:   "https://completemeta.example.com/privacy",
 		Contacts:    []string{"admin@completemeta.example.com", "support@completemeta.example.com"},
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		Assertion: &AssertionConfig{
 			ValidityPeriod: 7200,
 			UserAttributes: []string{"email", "username", "groups"},
@@ -2728,7 +2694,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyRootToken() {
 		OUID:        testOUID,
 		Name:        "Root Token Only App",
 		Description: "App with only root token",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		Assertion: &AssertionConfig{
 			ValidityPeriod: 5400,
 		},
@@ -2751,7 +2717,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateMetadataFields() {
 		OUID:        testOUID,
 		Name:        "Update Metadata App",
 		Description: "Initial description",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -2804,7 +2770,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationPublicClientWithoutSecret() {
 		OUID:        testOUID,
 		Name:        "Public Client No Secret",
 		Description: "Public client without secret",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -2838,7 +2804,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationPublicClientPKCEValidation() {
 		OUID:        testOUID,
 		Name:        "Public Client PKCE Validation",
 		Description: "Public client with PKCE explicitly set to false should fail",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -2868,7 +2834,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithRefreshTokenGrant() {
 		OUID:        testOUID,
 		Name:        "Refresh Token App",
 		Description: "App with refresh token grant",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -2900,7 +2866,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateTokenConfiguration() {
 		OUID:        testOUID,
 		Name:        "Update Token Config App",
 		Description: "App to update token config",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		Assertion: &AssertionConfig{
 			ValidityPeriod: 3600,
 		},
@@ -2951,7 +2917,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithEmptyContacts() {
 		OUID:        testOUID,
 		Name:        "Empty Contacts App",
 		Description: "App with empty contacts",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		Contacts:    []string{},
 	}
 
@@ -2970,7 +2936,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationClientCredentialsGrant() {
 		OUID:        testOUID,
 		Name:        "Client Credentials App",
 		Description: "App with client credentials grant",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -3000,7 +2966,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithIDTokenScopeClaimsOnly() {
 		OUID:        testOUID,
 		Name:        "ID Token Scope Claims App",
 		Description: "App with ID token scope claims only",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -3049,7 +3015,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithMultipleRedirectURIsAndSco
 		OUID:        testOUID,
 		Name:        "Multiple URIs and Scopes App",
 		Description: "App with multiple redirect URIs and scopes",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -3088,7 +3054,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateNonExistent() {
 		OUID:        testOUID,
 		Name:        "Non-Existent App Update",
 		Description: "Attempting to update non-existent app",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 
 	appJSON, err := json.Marshal(updateApp)
@@ -3134,7 +3100,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidAuthFlowID() {
 		Name:        "Invalid Auth Flow App",
 		Description: "App with invalid auth flow ID",
 		AuthFlowID:  "edc013d0-e893-4dc0-990c-3e1d203e005b",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 
 	_, err := createApplication(app)
@@ -3149,7 +3115,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidRegistrationFlowID(
 		Description:               "App with invalid registration flow ID",
 		RegistrationFlowID:        "80024fb3-29ed-4c33-aa48-8aee5e96d522",
 		IsRegistrationFlowEnabled: true,
-		Certificate:               &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate:               nil,
 	}
 
 	_, err := createApplication(app)
@@ -3162,7 +3128,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithDuplicateName() {
 		OUID:        testOUID,
 		Name:        "Duplicate Name Test App",
 		Description: "First app with this name",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 
 	appID1, err := createApplication(app)
@@ -3174,7 +3140,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithDuplicateName() {
 		OUID:        testOUID,
 		Name:        "Duplicate Name Test App", // Same name
 		Description: "Second app with duplicate name",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 
 	_, err = createApplication(app2)
@@ -3187,7 +3153,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithEmptyName() {
 		OUID:        testOUID,
 		Name:        "", // Empty name
 		Description: "App with empty name",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 
 	_, err := createApplication(app)
@@ -3206,7 +3172,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithVeryLongName() {
 		OUID:        testOUID,
 		Name:        longName,
 		Description: "App with very long name",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 
 	appID, err := createApplication(app)
@@ -3226,7 +3192,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithSpecialCharactersInName() 
 		OUID:        testOUID,
 		Name:        "Test App with 特殊文字 and émojis 🚀",
 		Description: "App with unicode and special characters",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 
 	appID, err := createApplication(app)
@@ -3245,7 +3211,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithEmptyOAuthGrantTypes() {
 		OUID:        testOUID,
 		Name:        "Empty Grant Types App",
 		Description: "App with empty OAuth grant types",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -3277,7 +3243,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateInvalidAuthFlow() {
 		OUID:        testOUID,
 		Name:        "Update Auth Flow Test App",
 		Description: "App to test auth flow update",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 
 	appID, err := createApplication(app)
@@ -3290,7 +3256,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateInvalidAuthFlow() {
 		Name:        "Updated with Invalid Auth Flow",
 		Description: "Updated description",
 		AuthFlowID:  "edc013d0-e893-4dc0-990c-3e1d203e005b",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 
 	appJSON, err := json.Marshal(updateApp)
@@ -3342,7 +3308,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithNullOptionalFields() {
 		Description: "", // Empty description (optional)
 		URL:         "", // Empty URL (optional)
 		LogoURL:     "", // Empty logo URL (optional)
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 
 	appID, err := createApplication(app)
@@ -3361,7 +3327,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithEmptyAppID() {
 		OUID:        testOUID,
 		Name:        "Update Test",
 		Description: "Test update with empty app ID",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 
 	appJSON, err := json.Marshal(updateApp)
@@ -3393,7 +3359,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithEmptyName() {
 		OUID:        testOUID,
 		Name:        "", // Empty name
 		Description: "Updated description",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 
 	appJSON, err := json.Marshal(updateApp)
@@ -3421,7 +3387,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithDuplicateName() {
 		OUID:        testOUID,
 		Name:        "Duplicate Name Update Test App 1",
 		Description: "First app",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 	appID1, err := createApplication(app1)
 	ts.Require().NoError(err)
@@ -3432,7 +3398,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithDuplicateName() {
 		OUID:        testOUID,
 		Name:        "Duplicate Name Update Test App 2",
 		Description: "Second app",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 	appID2, err := createApplication(app2)
 	ts.Require().NoError(err)
@@ -3443,7 +3409,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithDuplicateName() {
 		OUID:        testOUID,
 		Name:        "Duplicate Name Update Test App 1", // Same as app1
 		Description: "Updated description",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 
 	appJSON, err := json.Marshal(updateApp)
@@ -3476,7 +3442,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidURL() {
 		Name:        "Update Invalid URL",
 		Description: "Test update with invalid URL",
 		URL:         "://invalid-url", // Invalid URL
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 
 	appJSON, err := json.Marshal(updateApp)
@@ -3509,7 +3475,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidLogoURL() {
 		Name:        "Update Invalid LogoURL",
 		Description: "Test update with invalid LogoURL",
 		LogoURL:     "://invalid-logo-url", // Invalid URL
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 
 	appJSON, err := json.Marshal(updateApp)
@@ -3538,7 +3504,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithClientIDGeneration()
 		Name:              "Client ID Generation Test",
 		Description:       "Test client ID generation during update",
 		URL:               "https://clientidgen.example.com",
-		Certificate:       &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate:       nil,
 		InboundAuthConfig: []InboundAuthConfig{}, // No OAuth initially
 	}
 
@@ -3594,7 +3560,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithClientIDChange() {
 		Name:        "Client ID Change Test",
 		Description: "Test client ID change during update",
 		URL:         "https://clientidchange.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -3649,7 +3615,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithDuplicateClientID() 
 		OUID:        testOUID,
 		Name:        "Duplicate Client ID Test App 1",
 		Description: "First app",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -3672,7 +3638,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithDuplicateClientID() 
 		OUID:        testOUID,
 		Name:        "Duplicate Client ID Test App 2",
 		Description: "Second app",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -3717,7 +3683,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreateWithDefaultAuthFlowID() 
 		OUID:        testOUID,
 		Name:        "Default Auth Flow Test",
 		Description: "Test default auth flow ID",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		// AuthFlowID not set - should use default
 	}
 
@@ -3742,7 +3708,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreateWithInferredRegistration
 		IsRegistrationFlowEnabled: true,
 		AuthFlowID:                defaultAuthFlowID,
 		// RegistrationFlowID not set - should be inferred from auth flow
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 
 	appID, err := createApplication(app)
@@ -3780,7 +3746,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateRemoveCertificate() {
 		OUID:        testOUID,
 		Name:        "Remove Certificate Test",
 		Description: "Updated description",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""}, // Remove certificate
+		Certificate: nil, // Remove certificate
 	}
 
 	appJSON, err := json.Marshal(updateApp)
@@ -3805,8 +3771,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateRemoveCertificate() {
 	ts.Require().NoError(err)
 
 	// Verify certificate was removed
-	ts.Assert().Equal("NONE", updatedApp.Certificate.Type)
-	ts.Assert().Equal("", updatedApp.Certificate.Value)
+	ts.Assert().Nil(updatedApp.Certificate)
 }
 
 // TestApplicationCreateWithDuplicateClientID tests creating application with duplicate client ID
@@ -3816,7 +3781,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreateWithDuplicateClientID() 
 		OUID:        testOUID,
 		Name:        "Duplicate Client ID Create Test App 1",
 		Description: "First app",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -3839,7 +3804,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreateWithDuplicateClientID() 
 		OUID:        testOUID,
 		Name:        "Duplicate Client ID Create Test App 2",
 		Description: "Second app with duplicate client ID",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -3865,7 +3830,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreateWithInvalidURL() {
 		Name:        "Invalid URL Create Test",
 		Description: "Test create with invalid URL",
 		URL:         "://invalid-url", // Invalid URL
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 
 	appJSON, err := json.Marshal(app)
@@ -3893,7 +3858,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreateWithInvalidLogoURL() {
 		Name:        "Invalid LogoURL Create Test",
 		Description: "Test create with invalid LogoURL",
 		LogoURL:     "://invalid-logo-url", // Invalid URL
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 	}
 
 	appJSON, err := json.Marshal(app)
@@ -4108,7 +4073,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithThemeAndLayoutID() {
 		Description: "Application with theme and layout configuration",
 		ThemeID:     themeID,
 		LayoutID:    layoutID,
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -4140,7 +4105,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidThemeAndLayoutID() 
 		Name:        "App With Invalid Theme",
 		Description: "Application with invalid theme ID",
 		ThemeID:     "00000000-0000-0000-0000-000000000000",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -4214,7 +4179,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithThemeAndLayout() {
 		OUID:        testOUID,
 		Name:        "App To Update Design",
 		Description: "Application to update with theme and layout",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -4264,7 +4229,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidThemeAndLayou
 		OUID:        testOUID,
 		Name:        "App To Update Invalid Design",
 		Description: "Application to update with invalid theme/layout",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -4335,7 +4300,7 @@ func (ts *ApplicationAPITestSuite) TestThemeAndLayoutCannotDeleteWhenAssociatedW
 		Name:        "App Preventing Theme Delete",
 		Description: "Application that prevents theme deletion",
 		ThemeID:     themeID,
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		Certificate: nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -4433,10 +4398,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithAllowedUserTypes() {
 		Description:               "Application with allowed user types",
 		IsRegistrationFlowEnabled: false,
 		AllowedUserTypes:          []string{"employee", "customer"},
-		Certificate: &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		},
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -4477,10 +4439,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidAllowedUserTypes() 
 		Description:               "Application with invalid user types",
 		IsRegistrationFlowEnabled: false,
 		AllowedUserTypes:          []string{"nonexistent_type_1", "nonexistent_type_2"},
-		Certificate: &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		},
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -4517,14 +4476,14 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidAllowedUserTypes() 
 
 	// Verify error response
 	var errorResp struct {
-		Code        string `json:"code"`
-		Message     string `json:"message"`
-		Description string `json:"description"`
+		Code        string                `json:"code"`
+		Message     testutils.I18nMessage `json:"message"`
+		Description testutils.I18nMessage `json:"description"`
 	}
 	err = json.NewDecoder(resp.Body).Decode(&errorResp)
 	ts.Require().NoError(err)
 	ts.Assert().Equal("APP-1025", errorResp.Code, "Error code should be APP-1025")
-	ts.Assert().Contains(errorResp.Message, "Invalid user type", "Error message should mention invalid user type")
+	ts.Assert().Contains(errorResp.Message.DefaultValue, "Invalid user type", "Error message should mention invalid user type")
 }
 
 // TestApplicationUpdateWithAllowedUserTypes tests updating an application with allowed_user_types
@@ -4571,10 +4530,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithAllowedUserTypes() {
 		Name:                      "App To Update With User Types",
 		Description:               "Application to update",
 		IsRegistrationFlowEnabled: false,
-		Certificate: &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		},
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -4635,10 +4591,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidAllowedUserTy
 		Name:                      "App To Update With Invalid Types",
 		Description:               "Application to update",
 		IsRegistrationFlowEnabled: false,
-		Certificate: &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		},
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -4688,9 +4641,9 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidAllowedUserTy
 
 	// Verify error response
 	var errorResp struct {
-		Code        string `json:"code"`
-		Message     string `json:"message"`
-		Description string `json:"description"`
+		Code        string                `json:"code"`
+		Message     testutils.I18nMessage `json:"message"`
+		Description testutils.I18nMessage `json:"description"`
 	}
 	err = json.NewDecoder(resp.Body).Decode(&errorResp)
 	ts.Require().NoError(err)
@@ -4705,10 +4658,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithEmptyAllowedUserTypes() {
 		Description:               "Application with empty allowed user types",
 		IsRegistrationFlowEnabled: false,
 		AllowedUserTypes:          []string{},
-		Certificate: &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		},
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -4771,10 +4721,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithPartialInvalidAllowedUserT
 		Description:               "Application with mix of valid and invalid user types",
 		IsRegistrationFlowEnabled: false,
 		AllowedUserTypes:          []string{"valid_user_type", "invalid_user_type"},
-		Certificate: &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		},
+		Certificate:               nil,
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
@@ -4811,9 +4758,9 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithPartialInvalidAllowedUserT
 
 	// Verify error response
 	var errorResp struct {
-		Code        string `json:"code"`
-		Message     string `json:"message"`
-		Description string `json:"description"`
+		Code        string                `json:"code"`
+		Message     testutils.I18nMessage `json:"message"`
+		Description testutils.I18nMessage `json:"description"`
 	}
 	err = json.NewDecoder(resp.Body).Decode(&errorResp)
 	ts.Require().NoError(err)

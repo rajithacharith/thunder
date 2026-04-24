@@ -35,6 +35,7 @@ import (
 	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
@@ -159,7 +160,10 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Mi
 }
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_InvalidClient() {
-	notFound := &serviceerror.ServiceError{Type: serviceerror.ClientErrorType, Error: "Application not found"}
+	notFound := &serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Error: i18ncore.I18nMessage{DefaultValue: "Application not found"},
+	}
 	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "invalid-client").Return(nil, notFound)
 
 	msg := &OAuthMessage{

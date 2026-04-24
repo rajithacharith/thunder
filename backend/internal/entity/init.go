@@ -50,5 +50,6 @@ func initializeStore() (entityStoreInterface, transaction.Transactioner, error) 
 	if err != nil {
 		return nil, nil, err
 	}
-	return newEntityCompositeStore(fileStore, dbStore), transactioner, nil
+	cacheBackedEntityStore := newCacheBackedEntityStore(dbStore)
+	return newEntityCompositeStore(fileStore, cacheBackedEntityStore), transactioner, nil
 }

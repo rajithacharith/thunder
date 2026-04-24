@@ -29,6 +29,7 @@ type OAuthMessage struct {
 	RequestType        string
 	AuthID             string
 	RequestQueryParams map[string]string
+	Resources          []string
 	RequestBodyParams  map[string]string
 }
 
@@ -46,7 +47,7 @@ type AuthorizationCode struct {
 	State               string
 	CodeChallenge       string
 	CodeChallengeMethod string
-	Resource            string
+	Resources           []string
 	ClaimsRequest       *oauth2model.ClaimsRequest
 	ClaimsLocales       string
 	Nonce               string

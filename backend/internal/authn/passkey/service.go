@@ -72,14 +72,11 @@ type passkeyService struct {
 func newPasskeyService(
 	entitySvc entity.EntityServiceInterface, sessionStore sessionStoreInterface,
 ) PasskeyServiceInterface {
-	service := &passkeyService{
+	return &passkeyService{
 		entityService: entitySvc,
 		sessionStore:  sessionStore,
 		logger:        log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
 	}
-	common.RegisterAuthenticator(service.getMetadata())
-
-	return service
 }
 
 // StartRegistration initiates passkey credential registration for a user.
@@ -92,7 +89,7 @@ func (w *passkeyService) StartRegistration(
 
 	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Starting passkey credential registration",
-		log.String("userID", log.MaskString(req.UserID)),
+		log.MaskedString("userID", req.UserID),
 		log.String("relyingPartyID", req.RelyingPartyID))
 
 	// Validate input
@@ -120,7 +117,7 @@ func (w *passkeyService) StartRegistration(
 	}
 
 	logger.Debug("Retrieved existing credentials",
-		log.String("entityID", log.MaskString(req.UserID)),
+		log.MaskedString("entityID", req.UserID),
 		log.Int("credentialCount", len(credentials)))
 
 	// Create passkey user
@@ -148,12 +145,12 @@ func (w *passkeyService) StartRegistration(
 	// Store session data in cache with TTL
 	sessionToken, svcErr := w.storeSessionData(sessionData)
 	if svcErr != nil {
-		logger.Error("Failed to store session data", log.String("error", svcErr.Error))
+		logger.Error("Failed to store session data", log.String("error", svcErr.Error.DefaultValue))
 		return nil, svcErr
 	}
 
 	logger.Debug("Passkey credential creation options generated successfully",
-		log.String("userID", log.MaskString(req.UserID)),
+		log.MaskedString("userID", req.UserID),
 		log.Int("credentialsCount", len(credentials)))
 
 	// Convert to custom structure with properly encoded challenge
@@ -222,7 +219,7 @@ func (w *passkeyService) FinishRegistration(ctx context.Context, req *PasskeyReg
 	// Retrieve session data from cache
 	sessionData, userID, relyingPartyID, svcErr := w.retrieveSessionData(req.SessionToken)
 	if svcErr != nil {
-		logger.Error("Failed to retrieve session data", log.String("error", svcErr.Error))
+		logger.Error("Failed to retrieve session data", log.String("error", svcErr.Error.DefaultValue))
 		return nil, svcErr
 	}
 
@@ -240,7 +237,7 @@ func (w *passkeyService) FinishRegistration(ctx context.Context, req *PasskeyReg
 	credentials := w.decodePasskeyCredentials(userID, entries)
 
 	logger.Debug("Retrieved existing credentials for entity",
-		log.String("entityID", log.MaskString(userID)),
+		log.MaskedString("entityID", userID),
 		log.Int("credentialCount", len(credentials)))
 
 	// Create WebAuthn user from entity
@@ -303,7 +300,7 @@ func (w *passkeyService) StartAuthentication(ctx context.Context, req *PasskeyAu
 			log.String("relyingPartyID", req.RelyingPartyID))
 	} else {
 		logger.Debug("Starting passkey authentication",
-			log.String("userID", log.MaskString(req.UserID)),
+			log.MaskedString("userID", req.UserID),
 			log.String("relyingPartyID", req.RelyingPartyID))
 	}
 
@@ -344,11 +341,11 @@ func (w *passkeyService) StartAuthentication(ctx context.Context, req *PasskeyAu
 		credentials := w.decodePasskeyCredentials(req.UserID, entries)
 
 		logger.Debug("Retrieved credentials for authentication",
-			log.String("entityID", log.MaskString(req.UserID)),
+			log.MaskedString("entityID", req.UserID),
 			log.Int("credentialCount", len(credentials)))
 
 		if len(credentials) == 0 {
-			logger.Debug("No credentials found for entity", log.String("entityID", log.MaskString(req.UserID)))
+			logger.Debug("No credentials found for entity", log.MaskedString("entityID", req.UserID))
 			return nil, &ErrorNoCredentialsFound
 		}
 
@@ -367,7 +364,7 @@ func (w *passkeyService) StartAuthentication(ctx context.Context, req *PasskeyAu
 	// Store session data in cache with TTL
 	sessionToken, svcErr := w.storeSessionData(sessionData)
 	if svcErr != nil {
-		logger.Error("Failed to store session data", log.String("error", svcErr.Error))
+		logger.Error("Failed to store session data", log.String("error", svcErr.Error.DefaultValue))
 		return nil, svcErr
 	}
 
@@ -401,7 +398,7 @@ func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyA
 	// Retrieve session data from cache
 	sessionData, sessionUserID, relyingPartyID, svcErr := w.retrieveSessionData(req.SessionToken)
 	if svcErr != nil {
-		logger.Error("Failed to retrieve session data", log.String("error", svcErr.Error))
+		logger.Error("Failed to retrieve session data", log.String("error", svcErr.Error.DefaultValue))
 		return nil, svcErr
 	}
 
@@ -430,12 +427,12 @@ func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyA
 
 		userID = string(userHandleBytes)
 		logger.Debug("Resolved userID from userHandle for usernameless authentication",
-			log.String("userID", log.MaskString(userID)))
+			log.MaskedString("userID", userID))
 	} else {
 		// Username-based flow: Use userID from session
 		userID = sessionUserID
 		logger.Debug("Processing passkey authentication",
-			log.String("userID", log.MaskString(userID)),
+			log.MaskedString("userID", userID),
 			log.String("relyingPartyID", relyingPartyID))
 	}
 
@@ -452,11 +449,11 @@ func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyA
 	credentials := w.decodePasskeyCredentials(userID, entries)
 
 	logger.Debug("Retrieved credentials for authentication verification",
-		log.String("entityID", log.MaskString(userID)),
+		log.MaskedString("entityID", userID),
 		log.Int("credentialCount", len(credentials)))
 
 	if len(credentials) == 0 {
-		logger.Debug("No credentials found for entity", log.String("entityID", log.MaskString(userID)))
+		logger.Debug("No credentials found for entity", log.MaskedString("entityID", userID))
 		return nil, &ErrorNoCredentialsFound
 	}
 
@@ -513,7 +510,7 @@ func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyA
 	}
 
 	logger.Debug("Updated credential sign count in database",
-		log.String("userID", log.MaskString(userID)),
+		log.MaskedString("userID", userID),
 		log.String("credentialID", base64.StdEncoding.EncodeToString(credential.ID)),
 		log.Any("newSignCount", credential.Authenticator.SignCount))
 
@@ -528,17 +525,9 @@ func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyA
 	}
 
 	logger.Debug("Passkey authentication completed successfully",
-		log.String("entityID", log.MaskString(userID)))
+		log.MaskedString("entityID", userID))
 
 	return authResponse, nil
-}
-
-// getMetadata returns the metadata for passkey authenticator.
-func (w *passkeyService) getMetadata() common.AuthenticatorMeta {
-	return common.AuthenticatorMeta{
-		Name:    common.AuthenticatorPasskey,
-		Factors: []common.AuthenticationFactor{common.FactorPossession, common.FactorInherence},
-	}
 }
 
 // getEntity retrieves an entity by ID, mapping entity-layer errors to passkey service errors.
@@ -550,7 +539,7 @@ func (w *passkeyService) getEntity(
 	e, err := w.entityService.GetEntity(ctx, entityID)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
-			logger.Debug("Entity not found", log.String("entityID", log.MaskString(entityID)))
+			logger.Debug("Entity not found", log.MaskedString("entityID", entityID))
 			return nil, &ErrorUserNotFound
 		}
 		logger.Error("Failed to retrieve entity", log.Error(err))
@@ -569,7 +558,7 @@ func (w *passkeyService) getStoredPasskeyEntries(
 	entries, err := w.entityService.GetCredentialsByType(ctx, entityID, passkeyCredentialType)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
-			logger.Debug("Entity not found", log.String("entityID", log.MaskString(entityID)))
+			logger.Debug("Entity not found", log.MaskedString("entityID", entityID))
 			return nil, &ErrorUserNotFound
 		}
 		logger.Error("Failed to retrieve passkey credentials", log.Error(err))
@@ -588,13 +577,13 @@ func (w *passkeyService) decodePasskeyCredentials(
 	credentials := make([]webauthnCredential, 0, len(entries))
 	for _, entry := range entries {
 		if entry.Value == "" {
-			logger.Error("Empty credential value", log.String("entityID", log.MaskString(entityID)))
+			logger.Error("Empty credential value", log.MaskedString("entityID", entityID))
 			continue
 		}
 		var credential webauthnCredential
 		if err := json.Unmarshal([]byte(entry.Value), &credential); err != nil {
 			logger.Error("Failed to unmarshal passkey credential",
-				log.String("entityID", log.MaskString(entityID)),
+				log.MaskedString("entityID", entityID),
 				log.Error(err))
 			continue
 		}
@@ -612,14 +601,14 @@ func (w *passkeyService) storePasskeyCredential(
 	credentialJSON, err := json.Marshal(credential)
 	if err != nil {
 		logger.Error("Failed to marshal credential",
-			log.String("entityID", log.MaskString(entityID)),
+			log.MaskedString("entityID", entityID),
 			log.Error(err))
 		return fmt.Errorf("failed to marshal credential: %w", err)
 	}
 
 	existingEntries, svcErr := w.getStoredPasskeyEntries(ctx, entityID)
 	if svcErr != nil {
-		return fmt.Errorf("failed to load existing passkey credentials: %s", svcErr.Error)
+		return fmt.Errorf("failed to load existing passkey credentials: %s", svcErr.Error.DefaultValue)
 	}
 
 	existingEntries = append(existingEntries, entity.StoredCredential{
@@ -634,13 +623,13 @@ func (w *passkeyService) storePasskeyCredential(
 	}
 	if err := w.entityService.UpdateSystemCredentials(ctx, entityID, payload); err != nil {
 		logger.Error("Failed to update passkey credentials",
-			log.String("entityID", log.MaskString(entityID)),
+			log.MaskedString("entityID", entityID),
 			log.Error(err))
 		return fmt.Errorf("failed to update passkey credentials: %w", err)
 	}
 
 	logger.Debug("Successfully stored passkey credential in database",
-		log.String("entityID", log.MaskString(entityID)),
+		log.MaskedString("entityID", entityID),
 		log.String("credentialID", base64.StdEncoding.EncodeToString(credential.ID)))
 
 	return nil
@@ -655,7 +644,7 @@ func (w *passkeyService) updatePasskeyCredential(
 
 	existingEntries, svcErr := w.getStoredPasskeyEntries(ctx, entityID)
 	if svcErr != nil {
-		return fmt.Errorf("failed to load existing passkey credentials: %s", svcErr.Error)
+		return fmt.Errorf("failed to load existing passkey credentials: %s", svcErr.Error.DefaultValue)
 	}
 
 	found := false
@@ -665,7 +654,7 @@ func (w *passkeyService) updatePasskeyCredential(
 		var credential webauthnCredential
 		if err := json.Unmarshal([]byte(entry.Value), &credential); err != nil {
 			logger.Warn("Failed to unmarshal credential, keeping original",
-				log.String("entityID", log.MaskString(entityID)),
+				log.MaskedString("entityID", entityID),
 				log.Error(err))
 			updatedEntries = append(updatedEntries, entry)
 			continue
@@ -675,7 +664,7 @@ func (w *passkeyService) updatePasskeyCredential(
 			credentialJSON, marshalErr := json.Marshal(updatedCredential)
 			if marshalErr != nil {
 				logger.Error("Failed to marshal updated credential",
-					log.String("entityID", log.MaskString(entityID)),
+					log.MaskedString("entityID", entityID),
 					log.Error(marshalErr))
 				return fmt.Errorf("failed to marshal updated credential: %w", marshalErr)
 			}
@@ -687,7 +676,7 @@ func (w *passkeyService) updatePasskeyCredential(
 			found = true
 
 			logger.Debug("Updated credential in memory",
-				log.String("entityID", log.MaskString(entityID)),
+				log.MaskedString("entityID", entityID),
 				log.String("credentialID", base64.StdEncoding.EncodeToString(updatedCredential.ID)),
 				log.Any("newSignCount", updatedCredential.Authenticator.SignCount))
 		} else {
@@ -697,7 +686,7 @@ func (w *passkeyService) updatePasskeyCredential(
 
 	if !found {
 		logger.Warn("Passkey credential not found for update",
-			log.String("entityID", log.MaskString(entityID)),
+			log.MaskedString("entityID", entityID),
 			log.String("credentialID", base64.StdEncoding.EncodeToString(updatedCredential.ID)))
 		return fmt.Errorf("credential not found for update")
 	}
@@ -710,13 +699,13 @@ func (w *passkeyService) updatePasskeyCredential(
 	}
 	if err := w.entityService.UpdateSystemCredentials(ctx, entityID, payload); err != nil {
 		logger.Error("Failed to update credentials",
-			log.String("entityID", log.MaskString(entityID)),
+			log.MaskedString("entityID", entityID),
 			log.Error(err))
 		return fmt.Errorf("failed to update passkey credentials: %w", err)
 	}
 
 	logger.Debug("Successfully updated passkey credential in database",
-		log.String("entityID", log.MaskString(entityID)),
+		log.MaskedString("entityID", entityID),
 		log.String("credentialID", base64.StdEncoding.EncodeToString(updatedCredential.ID)),
 		log.Any("newSignCount", updatedCredential.Authenticator.SignCount))
 

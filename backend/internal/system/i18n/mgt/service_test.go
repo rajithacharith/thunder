@@ -27,11 +27,12 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 )
 
 const (
-	testErrKey = "error.i18nservice.internal_server_error"
-	testErrVal = "Internal server error"
+	testErrKey = "error.i18nservice.invalid_language"
+	testErrVal = "Invalid language tag format"
 )
 
 type I18nMgtServiceTestSuite struct {
@@ -80,7 +81,7 @@ func (suite *I18nMgtServiceTestSuite) TestListLanguages_StoreError() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *I18nMgtServiceTestSuite) TestListLanguages_AddsSystemLanguage() {
@@ -154,7 +155,7 @@ func (suite *I18nMgtServiceTestSuite) TestResolveTranslationsForKey_StoreError()
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *I18nMgtServiceTestSuite) TestResolveTranslationsForKey_UsesSystemDefault_WhenKeyMissingInDB() {
@@ -277,7 +278,7 @@ func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrideForKey_StoreErro
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrideForKey_Declarative() {
@@ -291,7 +292,7 @@ func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrideForKey_Declarati
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(declarativeresource.I18nErrorDeclarativeResourceUpdateOperation.Code, err.Code)
+	suite.Equal(declarativeresource.ErrorDeclarativeResourceUpdateOperation.Code, err.Code)
 }
 
 // ClearTranslationOverrideForKey Tests
@@ -327,7 +328,7 @@ func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrideForKey_StoreEr
 	err := suite.service.ClearTranslationOverrideForKey("en-US", "common", "welcome")
 
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrideForKey_Declarative() {
@@ -340,7 +341,7 @@ func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrideForKey_Declara
 	err := suite.service.ClearTranslationOverrideForKey("en-US", "common", "welcome")
 
 	suite.NotNil(err)
-	suite.Equal(declarativeresource.I18nErrorDeclarativeResourceDeleteOperation.Code, err.Code)
+	suite.Equal(declarativeresource.ErrorDeclarativeResourceDeleteOperation.Code, err.Code)
 }
 
 // ResolveTranslations Tests
@@ -384,7 +385,7 @@ func (suite *I18nMgtServiceTestSuite) TestResolveTranslations_StoreError() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *I18nMgtServiceTestSuite) TestResolveTranslations_UsesSystemDefaults_WhenKeyMissingInDB() {
@@ -514,7 +515,7 @@ func (suite *I18nMgtServiceTestSuite) TestResolveTranslations_AllNamespaces_Stor
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *I18nMgtServiceTestSuite) TestCompareLangs() {
@@ -603,7 +604,7 @@ func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrides_StoreError() {
 	result, err := suite.service.SetTranslationOverrides("en-US", translations)
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrides_Declarative() {
@@ -621,7 +622,7 @@ func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrides_Declarative() 
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(declarativeresource.I18nErrorDeclarativeResourceUpdateOperation.Code, err.Code)
+	suite.Equal(declarativeresource.ErrorDeclarativeResourceUpdateOperation.Code, err.Code)
 }
 
 // ClearTranslationOverrides Tests
@@ -639,7 +640,7 @@ func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrides_StoreError()
 	err := suite.service.ClearTranslationOverrides("en-US")
 
 	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError.Code, err.Code)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrides_ValidationErrors() {
@@ -662,5 +663,5 @@ func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrides_Declarative(
 	err := suite.service.ClearTranslationOverrides("en-US")
 
 	suite.NotNil(err)
-	suite.Equal(declarativeresource.I18nErrorDeclarativeResourceDeleteOperation.Code, err.Code)
+	suite.Equal(declarativeresource.ErrorDeclarativeResourceDeleteOperation.Code, err.Code)
 }

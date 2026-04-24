@@ -18,12 +18,10 @@
 
 import {useTemplateLiteralResolver} from '@thunder/hooks';
 import {FormHelperText, TextField} from '@wso2/oxygen-ui';
-import {useMemo, type ReactElement, type ReactNode} from 'react';
-import {Trans, useTranslation} from 'react-i18next';
+import {type ReactElement, type ReactNode} from 'react';
+import {useTranslation} from 'react-i18next';
 import {Hint} from '../../hint';
 import TemplatePlaceholder, {containsTemplateLiteral} from '../TemplatePlaceholder';
-import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
-import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 
 /**
@@ -56,31 +54,6 @@ export interface PhoneNumberInputAdapterPropsInterface {
 function PhoneNumberInputAdapter({resource}: PhoneNumberInputAdapterPropsInterface): ReactElement {
   const {t} = useTranslation();
   const {resolve} = useTemplateLiteralResolver();
-
-  const generalMessage: ReactElement = useMemo(
-    () => (
-      <Trans i18nKey="flows:core.validation.fields.phoneNumberInput.general" values={{id: resource.id}}>
-        Required fields are not properly configured for the phone number field with ID <code>{resource.id}</code>.
-      </Trans>
-    ),
-    [resource?.id],
-  );
-
-  const fields: RequiredFieldInterface[] = useMemo(
-    () => [
-      {
-        errorMessage: t('flows:core.validation.fields.phoneNumberInput.label'),
-        name: 'label',
-      },
-      {
-        errorMessage: t('flows:core.validation.fields.phoneNumberInput.ref'),
-        name: 'ref',
-      },
-    ],
-    [t],
-  );
-
-  useRequiredFields(resource, generalMessage, fields);
 
   const phoneElement = resource as PhoneNumberInputElement;
 

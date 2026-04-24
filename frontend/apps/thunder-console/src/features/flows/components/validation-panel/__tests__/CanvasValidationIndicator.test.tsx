@@ -63,7 +63,7 @@ vi.mock('../../../hooks/useValidationStatus', () => ({
   }),
 }));
 
-vi.mock('../../../hooks/useFlowBuilderCore', () => ({
+vi.mock('../../../hooks/useUIPanelState', () => ({
   default: () => ({
     setIsOpenResourcePropertiesPanel: mockSetIsOpenResourcePropertiesPanel,
     isResourcePropertiesPanelOpen: mockIsResourcePropertiesPanelOpen,

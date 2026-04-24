@@ -217,12 +217,6 @@ describe('GroupEditPage', () => {
     expect(screen.getByText('A test group')).toBeInTheDocument();
   });
 
-  it('should render group ID', () => {
-    renderWithProviders(<GroupEditPage />);
-
-    expect(screen.getByText('g1')).toBeInTheDocument();
-  });
-
   it('should render back button and navigate on click', async () => {
     const user = userEvent.setup();
     renderWithProviders(<GroupEditPage />);
@@ -469,39 +463,6 @@ describe('GroupEditPage', () => {
     await waitFor(() => {
       expect(screen.getByText('No description')).toBeInTheDocument();
     });
-  });
-
-  it('should copy group ID to clipboard on click', async () => {
-    renderWithProviders(<GroupEditPage />);
-
-    const groupIdElement = screen.getByText('g1');
-    const copyButton = groupIdElement.closest('[role="button"]');
-    expect(copyButton).toBeTruthy();
-    fireEvent.click(copyButton!);
-
-    await waitFor(() => {
-      expect(mockWriteText).toHaveBeenCalledWith('g1');
-    });
-  });
-
-  it('should copy group ID on keyboard Enter', () => {
-    renderWithProviders(<GroupEditPage />);
-
-    const groupIdElement = screen.getByText('g1');
-    const copyButton = groupIdElement.closest('[role="button"]');
-    fireEvent.keyDown(copyButton!, {key: 'Enter'});
-
-    expect(mockWriteText).toHaveBeenCalledWith('g1');
-  });
-
-  it('should copy group ID on keyboard Space', () => {
-    renderWithProviders(<GroupEditPage />);
-
-    const groupIdElement = screen.getByText('g1');
-    const copyButton = groupIdElement.closest('[role="button"]');
-    fireEvent.keyDown(copyButton!, {key: ' '});
-
-    expect(mockWriteText).toHaveBeenCalledWith('g1');
   });
 
   it('should save changes when save button is clicked', async () => {

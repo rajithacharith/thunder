@@ -75,7 +75,7 @@ func (s *sessionStore) storeSession(sessionKey string, session *sessionData, exp
 
 	if s.logger.IsDebugEnabled() {
 		s.logger.Debug("Storing session data",
-			log.String("sessionKey", log.MaskString(sessionKey)),
+			log.MaskedString("sessionKey", sessionKey),
 			log.String("jsonDataLength", fmt.Sprintf("%d bytes", len(jsonDataBytes))))
 	}
 
@@ -87,7 +87,7 @@ func (s *sessionStore) storeSession(sessionKey string, session *sessionData, exp
 	}
 
 	s.logger.Debug("WebAuthn session stored successfully",
-		log.String("sessionKey", log.MaskString(sessionKey)))
+		log.MaskedString("sessionKey", sessionKey))
 
 	return nil
 }
@@ -114,7 +114,7 @@ func (s *sessionStore) retrieveSession(sessionKey string) (*sessionData, error) 
 
 	if len(results) == 0 {
 		s.logger.Debug("WebAuthn session not found or expired",
-			log.String("sessionKey", log.MaskString(sessionKey)))
+			log.MaskedString("sessionKey", sessionKey))
 		return nil, nil
 	}
 
@@ -122,7 +122,7 @@ func (s *sessionStore) retrieveSession(sessionKey string) (*sessionData, error) 
 
 	if s.logger.IsDebugEnabled() {
 		s.logger.Debug("Retrieved session row from database",
-			log.String("sessionKey", log.MaskString(sessionKey)),
+			log.MaskedString("sessionKey", sessionKey),
 			log.String("rowKeys", fmt.Sprintf("%v", getMapKeys(row))))
 	}
 
@@ -133,7 +133,7 @@ func (s *sessionStore) retrieveSession(sessionKey string) (*sessionData, error) 
 	}
 
 	s.logger.Debug("WebAuthn session retrieved successfully",
-		log.String("sessionKey", log.MaskString(sessionKey)))
+		log.MaskedString("sessionKey", sessionKey))
 
 	return sessionData, nil
 }
@@ -157,7 +157,7 @@ func (s *sessionStore) deleteSession(sessionKey string) error {
 	}
 
 	s.logger.Debug("WebAuthn session deleted successfully",
-		log.String("sessionKey", log.MaskString(sessionKey)))
+		log.MaskedString("sessionKey", sessionKey))
 
 	return nil
 }

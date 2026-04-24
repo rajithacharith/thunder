@@ -17,11 +17,13 @@
  */
 
 import {SettingsCard} from '@thunder/components';
+import {OrganizationUnitTreePicker} from '@thunder/configure-organization-units';
 import {useResolveDisplayName} from '@thunder/hooks';
 import {Stack, Typography, Button, Select, MenuItem} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
+import {useState, useCallback, useRef, useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
-import OrganizationUnitTreePicker from '../../../../organization-units/components/OrganizationUnitTreePicker';
+import QuickCopySection from './QuickCopySection';
 import type {ApiUserSchema, SchemaPropertyInput} from '../../../types/user-types';
 
 export interface EditGeneralSettingsProps {
@@ -49,6 +51,28 @@ export default function EditGeneralSettings({
 }: EditGeneralSettingsProps): JSX.Element {
   const {t} = useTranslation();
   const {resolveDisplayName} = useResolveDisplayName({handlers: {t}});
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    },
+    [],
+  );
+
+  const handleCopyToClipboard = useCallback(async (text: string, fieldName: string): Promise<void> => {
+    await navigator.clipboard.writeText(text);
+    setCopiedField(fieldName);
+    if (copyTimeoutRef.current) {
+      clearTimeout(copyTimeoutRef.current);
+    }
+    copyTimeoutRef.current = setTimeout(() => {
+      setCopiedField(null);
+    }, 2000);
+  }, []);
 
   const effectiveOuId = editedOuId ?? userType.ouId;
   const effectiveAllowSelfRegistration = editedAllowSelfRegistration ?? userType.allowSelfRegistration;
@@ -56,6 +80,8 @@ export default function EditGeneralSettings({
 
   return (
     <Stack spacing={3}>
+      <QuickCopySection userType={userType} copiedField={copiedField} onCopyToClipboard={handleCopyToClipboard} />
+
       {/* Organization Unit */}
       <SettingsCard
         title={t('userTypes:edit.general.organizationUnit.title', 'Organization Unit')}

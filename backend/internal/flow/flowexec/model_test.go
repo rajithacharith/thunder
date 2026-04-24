@@ -19,13 +19,14 @@
 package flowexec
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/authnprovider"
+	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
@@ -58,8 +59,10 @@ func TestModelTestSuite(t *testing.T) {
 }
 
 func (s *ModelTestSuite) getContextContent(dbModel *FlowContextDB) flowContextContent {
+	err := dbModel.decrypt(context.Background())
+	s.NoError(err)
 	var content flowContextContent
-	err := json.Unmarshal([]byte(dbModel.Context), &content)
+	err = json.Unmarshal([]byte(dbModel.Context), &content)
 	s.NoError(err)
 	return content
 }
@@ -71,6 +74,7 @@ func (s *ModelTestSuite) TestFromEngineContext_WithToken() {
 	mockGraph.On("GetID").Return("test-graph-id")
 
 	ctx := EngineContext{
+		Context:     context.Background(),
 		ExecutionID: "test-flow-id",
 		AppID:       "test-app-id",
 		Verbose:     true,
@@ -108,12 +112,9 @@ func (s *ModelTestSuite) TestFromEngineContext_WithToken() {
 	s.NotNil(content.UserID)
 	s.Equal("user-123", *content.UserID)
 
-	// Verify token is encrypted (not equal to original)
+	// Verify token is stored in decrypted context
 	s.NotNil(content.Token)
-	s.NotEqual(testToken, *content.Token)
-
-	// Verify token can be decrypted back
-	s.Greater(len(*content.Token), 0)
+	s.Equal(testToken, *content.Token)
 }
 
 func (s *ModelTestSuite) TestFromEngineContext_WithoutToken() {
@@ -122,6 +123,7 @@ func (s *ModelTestSuite) TestFromEngineContext_WithoutToken() {
 	mockGraph.On("GetID").Return("test-graph-id")
 
 	ctx := EngineContext{
+		Context:     context.Background(),
 		ExecutionID: "test-flow-id",
 		AppID:       "test-app-id",
 		Verbose:     false,
@@ -161,6 +163,7 @@ func (s *ModelTestSuite) TestFromEngineContext_WithEmptyAuthenticatedUser() {
 	mockGraph.On("GetID").Return("test-graph-id")
 
 	ctx := EngineContext{
+		Context:           context.Background(),
 		ExecutionID:       "test-flow-id",
 		AppID:             "test-app-id",
 		Verbose:           false,
@@ -194,6 +197,7 @@ func (s *ModelTestSuite) TestToEngineContext_WithToken() {
 
 	// Create the context and convert to DB model to get encrypted token
 	ctx := EngineContext{
+		Context:     context.Background(),
 		ExecutionID: "test-flow-id",
 		AppID:       "test-app-id",
 		FlowType:    common.FlowTypeAuthentication,
@@ -217,7 +221,7 @@ func (s *ModelTestSuite) TestToEngineContext_WithToken() {
 	s.NotNil(content.Token)
 
 	// Execute - Convert back to EngineContext
-	resultCtx, err := dbModel.ToEngineContext(mockGraph)
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
 
 	// Verify
 	s.NoError(err)
@@ -260,7 +264,7 @@ func (s *ModelTestSuite) TestToEngineContext_WithoutToken() {
 	}
 
 	// Execute
-	resultCtx, err := dbModel.ToEngineContext(mockGraph)
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
 
 	// Verify
 	s.NoError(err)
@@ -289,6 +293,7 @@ func (s *ModelTestSuite) TestTokenEncryptionDecryptionRoundTrip() {
 		s.Run("Token: "+testToken[:min(20, len(testToken))], func() {
 			// Create context with token
 			ctx := EngineContext{
+				Context:     context.Background(),
 				ExecutionID: "test-flow-id",
 				AppID:       "test-app-id",
 				FlowType:    common.FlowTypeAuthentication,
@@ -304,17 +309,16 @@ func (s *ModelTestSuite) TestTokenEncryptionDecryptionRoundTrip() {
 				Graph:            mockGraph,
 			}
 
-			// Convert to DB model (encrypts token)
+			// Convert to DB model (encrypts entire context)
 			dbModel, err := FromEngineContext(ctx)
 			s.NoError(err)
-			content := s.getContextContent(dbModel)
-			s.NotNil(content.Token)
 
-			// Verify token is encrypted
-			s.NotEqual(testToken, *content.Token)
+			// Verify context is encrypted (contains ciphertext envelope)
+			s.Contains(dbModel.Context, `"ct"`, "context should be encrypted")
 
-			// Convert back to EngineContext (decrypts token)
-			resultCtx, err := dbModel.ToEngineContext(mockGraph)
+			// Decrypt and convert back to EngineContext
+			s.NoError(dbModel.decrypt(context.Background()))
+			resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
 			s.NoError(err)
 
 			// Verify original token is restored
@@ -323,37 +327,237 @@ func (s *ModelTestSuite) TestTokenEncryptionDecryptionRoundTrip() {
 	}
 }
 
-func (s *ModelTestSuite) TestToEngineContext_WithInvalidEncryptedToken() {
-	// Setup - Create a DB model with invalid encrypted token
-	mockGraph := coremock.NewGraphInterfaceMock(s.T())
-
-	invalidToken := "invalid-encrypted-data" //nolint:gosec // G101: This is test data, not a real credential
-	userInputs := `{}`
-	runtimeData := `{}`
-	userAttributes := `{}`
-	executionHistory := `{}`
-
-	content := flowContextContent{
-		AppID:            "test-app-id",
-		GraphID:          "test-graph-id",
-		IsAuthenticated:  true,
-		UserInputs:       &userInputs,
-		RuntimeData:      &runtimeData,
-		UserAttributes:   &userAttributes,
-		ExecutionHistory: &executionHistory,
-		Token:            &invalidToken,
+func (s *ModelTestSuite) TestDecrypt_WithInvalidCiphertext() {
+	// Context is valid JSON with the encrypted envelope structure but has corrupted ciphertext.
+	testCases := []struct {
+		name    string
+		context string
+	}{
+		{
+			name:    "invalid base64 in ct field",
+			context: `{"alg":"AES-GCM","ct":"not-valid-base64!!!","kid":"key-1"}`,
+		},
+		{
+			name:    "empty ct field",
+			context: `{"alg":"AES-GCM","ct":"","kid":"key-1"}`,
+		},
+		{
+			name:    "ct too short to contain nonce",
+			context: `{"alg":"AES-GCM","ct":"dGVzdA==","kid":"key-1"}`,
+		},
 	}
-	contextJSON, _ := json.Marshal(content)
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			dbModel := &FlowContextDB{ExecutionID: "test-flow-id", Context: tc.context}
+			err := dbModel.decrypt(context.Background())
+			s.Error(err)
+		})
+	}
+}
+
+func (s *ModelTestSuite) TestGetGraphID_WithDecryptionFailure() {
+	// Verifies that GetGraphID propagates a decryption error when the context
+	// looks encrypted but cannot be decrypted.
 	dbModel := &FlowContextDB{
 		ExecutionID: "test-flow-id",
-		Context:     string(contextJSON),
+		Context:     `{"alg":"AES-GCM","ct":"not-valid-base64!!!","kid":"key-1"}`,
 	}
 
-	// Execute
-	_, err := dbModel.ToEngineContext(mockGraph)
-
-	// Verify - Should return error for invalid encrypted token
+	graphID, err := dbModel.GetGraphID(context.Background())
 	s.Error(err)
+	s.Empty(graphID)
+}
+
+func (s *ModelTestSuite) TestToEngineContext_WithDecryptionFailure() {
+	// Verifies that ToEngineContext propagates a decryption error when the context
+	// looks encrypted but cannot be decrypted.
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+
+	dbModel := &FlowContextDB{
+		ExecutionID: "test-flow-id",
+		Context:     `{"alg":"AES-GCM","ct":"not-valid-base64!!!","kid":"key-1"}`,
+	}
+
+	result, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+	s.Error(err)
+	s.Equal(EngineContext{}, result)
+}
+
+func (s *ModelTestSuite) TestDecrypt_WithDecryptionFailure() {
+	// Verifies that decrypt returns an error (and does not panic) when
+	// the context looks encrypted but the ciphertext is invalid.
+	dbModel := &FlowContextDB{
+		ExecutionID: "test-flow-id",
+		Context:     `{"alg":"AES-GCM","ct":"not-valid-base64!!!","kid":"key-1"}`,
+	}
+
+	s.True(dbModel.isEncrypted(), "context should be detected as encrypted before attempt")
+
+	err := dbModel.decrypt(context.Background())
+	s.Error(err)
+	// Context should remain unchanged (still in its original encrypted form)
+	s.True(dbModel.isEncrypted(), "context should remain encrypted after failed decryption")
+}
+
+func (s *ModelTestSuite) TestContextEncryptionRoundTrip() {
+	// Tests that the entire context JSON is encrypted and all fields survive the round trip.
+	testCases := []struct {
+		name    string
+		appID   string
+		userID  string
+		inputs  map[string]string
+		runtime map[string]string
+	}{
+		{
+			name:    "full context",
+			appID:   "app-full-context",
+			userID:  "user-full-context",
+			inputs:  map[string]string{"username": "testuser", "password": "secret"},
+			runtime: map[string]string{"state": "abc123", "nonce": "xyz789"},
+		},
+		{
+			name:    "minimal context",
+			appID:   "app-minimal",
+			userID:  "",
+			inputs:  map[string]string{},
+			runtime: map[string]string{},
+		},
+	}
+
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetID").Return("test-graph-id").Maybe()
+	mockGraph.On("GetType").Return(common.FlowTypeAuthentication).Maybe()
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			ctx := EngineContext{
+				ExecutionID: "test-flow-id",
+				AppID:       tc.appID,
+				FlowType:    common.FlowTypeAuthentication,
+				AuthenticatedUser: authncm.AuthenticatedUser{
+					IsAuthenticated: tc.userID != "",
+					UserID:          tc.userID,
+					Attributes:      map[string]interface{}{},
+				},
+				UserInputs:       tc.inputs,
+				RuntimeData:      tc.runtime,
+				ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+				Graph:            mockGraph,
+			}
+
+			// Encrypt
+			dbModel, err := FromEngineContext(ctx)
+			s.NoError(err)
+
+			// Verify context is encrypted: ciphertext envelope present, plain fields hidden
+			s.Contains(dbModel.Context, `"ct"`, "encrypted context should contain ciphertext field")
+			s.NotContains(dbModel.Context, tc.appID, "appId should not be visible in encrypted context")
+
+			// Decrypt and verify all fields are restored
+			err = dbModel.decrypt(context.Background())
+			s.NoError(err)
+			s.NotContains(dbModel.Context, `"ct"`, "decrypted context should not contain ciphertext field")
+			s.Contains(dbModel.Context, `"appId"`, "decrypted context should expose plain appId field")
+
+			resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+			s.NoError(err)
+			s.Equal(tc.appID, resultCtx.AppID)
+			s.Equal(tc.userID, resultCtx.AuthenticatedUser.UserID)
+			s.Equal(len(tc.inputs), len(resultCtx.UserInputs))
+			s.Equal(len(tc.runtime), len(resultCtx.RuntimeData))
+		})
+	}
+}
+
+func (s *ModelTestSuite) TestIsEncrypted() {
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetID").Return("test-graph-id")
+
+	ctx := EngineContext{
+		ExecutionID: "test-flow-id",
+		AppID:       "test-app-id",
+		FlowType:    common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			Attributes: map[string]interface{}{},
+		},
+		UserInputs:       map[string]string{},
+		RuntimeData:      map[string]string{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Graph:            mockGraph,
+	}
+
+	dbModel, err := FromEngineContext(ctx)
+	s.NoError(err)
+
+	// Freshly created DB model should have encrypted context
+	s.True(dbModel.isEncrypted(), "freshly encrypted context should be detected as encrypted")
+
+	// After decryption, should no longer be detected as encrypted
+	err = dbModel.decrypt(context.Background())
+	s.NoError(err)
+	s.False(dbModel.isEncrypted(), "decrypted context should not be detected as encrypted")
+
+	// Plain JSON without "alg" field should not be detected as encrypted
+	plainModel := &FlowContextDB{
+		ExecutionID: "plain-id",
+		Context:     `{"appId":"test","graphId":"graph-1","isAuthenticated":false}`,
+	}
+	s.False(plainModel.isEncrypted(), "plain JSON context should not be detected as encrypted")
+
+	// Non-JSON string should not be detected as encrypted
+	invalidModel := &FlowContextDB{ExecutionID: "invalid-id", Context: "not-json-at-all"}
+	s.False(invalidModel.isEncrypted(), "non-JSON string should not be detected as encrypted")
+}
+
+func (s *ModelTestSuite) TestDecrypt_WithEncryptedContext() {
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetID").Return("test-graph-id")
+	mockGraph.On("GetType").Return(common.FlowTypeAuthentication)
+
+	ctx := EngineContext{
+		ExecutionID: "test-flow-id",
+		AppID:       "ensure-decrypt-app",
+		FlowType:    common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "user-ensure",
+			Token:           "ensure-token",
+			Attributes:      map[string]interface{}{},
+		},
+		UserInputs:       map[string]string{},
+		RuntimeData:      map[string]string{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Graph:            mockGraph,
+	}
+
+	dbModel, err := FromEngineContext(ctx)
+	s.NoError(err)
+	s.True(dbModel.isEncrypted())
+
+	err = dbModel.decrypt(context.Background())
+	s.NoError(err)
+	s.False(dbModel.isEncrypted(), "context should be decrypted after decrypt")
+
+	// Verify context is usable after decrypt
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+	s.NoError(err)
+	s.Equal("ensure-decrypt-app", resultCtx.AppID)
+	s.Equal("user-ensure", resultCtx.AuthenticatedUser.UserID)
+	s.Equal("ensure-token", resultCtx.AuthenticatedUser.Token)
+}
+
+func (s *ModelTestSuite) TestDecrypt_WithPlainContext() {
+	// Plain JSON context should pass through decrypt unchanged
+	plainJSON := `{"appId":"test-app","graphId":"graph-1","isAuthenticated":false}`
+	dbModel := &FlowContextDB{ExecutionID: "test-flow-id", Context: plainJSON}
+
+	s.False(dbModel.isEncrypted())
+	originalContext := dbModel.Context
+
+	err := dbModel.decrypt(context.Background())
+	s.NoError(err)
+	s.Equal(originalContext, dbModel.Context, "plain context should be unchanged by decrypt")
 }
 
 func (s *ModelTestSuite) TestFromEngineContext_PreservesOtherFields() {
@@ -364,6 +568,7 @@ func (s *ModelTestSuite) TestFromEngineContext_PreservesOtherFields() {
 
 	currentAction := "test-action"
 	ctx := EngineContext{
+		Context:       context.Background(),
 		ExecutionID:   "flow-123",
 		AppID:         "app-123",
 		Verbose:       true,
@@ -421,25 +626,26 @@ func (s *ModelTestSuite) TestFromEngineContext_PreservesOtherFields() {
 
 func (s *ModelTestSuite) TestFromEngineContext_WithAvailableAttributes() {
 	// Setup
-	testAvailableAttributes := &authnprovider.AvailableAttributes{
-		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+	testAvailableAttributes := &authnprovidercm.AttributesResponse{
+		Attributes: map[string]*authnprovidercm.AttributeResponse{
 			"email": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: true,
 				},
 			},
 			"phoneNumber": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: false,
 				},
 			},
 		},
-		Verifications: map[string]*authnprovider.VerificationResponse{},
+		Verifications: map[string]*authnprovidercm.VerificationResponse{},
 	}
 	mockGraph := coremock.NewGraphInterfaceMock(s.T())
 	mockGraph.On("GetID").Return("test-graph-id")
 
 	ctx := EngineContext{
+		Context:     context.Background(),
 		ExecutionID: "test-flow-id",
 		AppID:       "test-app-id",
 		Verbose:     true,
@@ -492,6 +698,7 @@ func (s *ModelTestSuite) TestFromEngineContext_WithoutAvailableAttributes() {
 	mockGraph.On("GetID").Return("test-graph-id")
 
 	ctx := EngineContext{
+		Context:     context.Background(),
 		ExecutionID: "test-flow-id",
 		AppID:       "test-app-id",
 		Verbose:     false,
@@ -527,20 +734,20 @@ func (s *ModelTestSuite) TestFromEngineContext_WithoutAvailableAttributes() {
 
 func (s *ModelTestSuite) TestToEngineContext_WithAvailableAttributes() {
 	// Setup
-	testAvailableAttributes := &authnprovider.AvailableAttributes{
-		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+	testAvailableAttributes := &authnprovidercm.AttributesResponse{
+		Attributes: map[string]*authnprovidercm.AttributeResponse{
 			"email": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: true,
 				},
 			},
 			"address": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: false,
 				},
 			},
 		},
-		Verifications: map[string]*authnprovider.VerificationResponse{},
+		Verifications: map[string]*authnprovidercm.VerificationResponse{},
 	}
 	mockGraph := coremock.NewGraphInterfaceMock(s.T())
 	mockGraph.On("GetID").Return("test-graph-id")
@@ -548,6 +755,7 @@ func (s *ModelTestSuite) TestToEngineContext_WithAvailableAttributes() {
 
 	// Create the context and convert to DB model to get serialized available attributes
 	ctx := EngineContext{
+		Context:     context.Background(),
 		ExecutionID: "test-flow-id",
 		AppID:       "test-app-id",
 		FlowType:    common.FlowTypeAuthentication,
@@ -571,7 +779,7 @@ func (s *ModelTestSuite) TestToEngineContext_WithAvailableAttributes() {
 	s.NotNil(content.AvailableAttributes)
 
 	// Execute - Convert back to EngineContext
-	resultCtx, err := dbModel.ToEngineContext(mockGraph)
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
 
 	// Verify
 	s.NoError(err)
@@ -619,7 +827,7 @@ func (s *ModelTestSuite) TestToEngineContext_WithoutAvailableAttributes() {
 	}
 
 	// Execute
-	resultCtx, err := dbModel.ToEngineContext(mockGraph)
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
 
 	// Verify
 	s.NoError(err)
@@ -635,60 +843,60 @@ func (s *ModelTestSuite) TestAvailableAttributesSerializationRoundTrip() {
 	// Setup
 	testCases := []struct {
 		name       string
-		attributes *authnprovider.AvailableAttributes
+		attributes *authnprovidercm.AttributesResponse
 	}{
 		{
 			name: "Single attribute",
-			attributes: &authnprovider.AvailableAttributes{
-				Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+			attributes: &authnprovidercm.AttributesResponse{
+				Attributes: map[string]*authnprovidercm.AttributeResponse{
 					"email": {
-						AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+						AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 							IsVerified: true,
 						},
 					},
 				},
-				Verifications: map[string]*authnprovider.VerificationResponse{},
+				Verifications: map[string]*authnprovidercm.VerificationResponse{},
 			},
 		},
 		{
 			name: "Multiple attributes",
-			attributes: &authnprovider.AvailableAttributes{
-				Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+			attributes: &authnprovidercm.AttributesResponse{
+				Attributes: map[string]*authnprovidercm.AttributeResponse{
 					"email": {
-						AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+						AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 							IsVerified: true,
 						},
 					},
 					"phone": {
-						AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+						AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 							IsVerified: false,
 						},
 					},
 					"address": {
-						AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+						AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 							IsVerified: true,
 						},
 					},
 				},
-				Verifications: map[string]*authnprovider.VerificationResponse{},
+				Verifications: map[string]*authnprovidercm.VerificationResponse{},
 			},
 		},
 		{
 			name: "Special characters in names",
-			attributes: &authnprovider.AvailableAttributes{
-				Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+			attributes: &authnprovidercm.AttributesResponse{
+				Attributes: map[string]*authnprovidercm.AttributeResponse{
 					"custom-attr-1": {
-						AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+						AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 							IsVerified: true,
 						},
 					},
 					"attr_with_underscore": {
-						AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+						AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 							IsVerified: false,
 						},
 					},
 				},
-				Verifications: map[string]*authnprovider.VerificationResponse{},
+				Verifications: map[string]*authnprovidercm.VerificationResponse{},
 			},
 		},
 	}
@@ -701,6 +909,7 @@ func (s *ModelTestSuite) TestAvailableAttributesSerializationRoundTrip() {
 		s.Run(tc.name, func() {
 			// Create context with available attributes
 			ctx := EngineContext{
+				Context:     context.Background(),
 				ExecutionID: "test-flow-id",
 				AppID:       "test-app-id",
 				FlowType:    common.FlowTypeAuthentication,
@@ -723,7 +932,7 @@ func (s *ModelTestSuite) TestAvailableAttributesSerializationRoundTrip() {
 			s.NotNil(content.AvailableAttributes)
 
 			// Convert back to EngineContext (deserializes available attributes)
-			resultCtx, err := dbModel.ToEngineContext(mockGraph)
+			resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
 			s.NoError(err)
 
 			// Verify original available attributes are restored
@@ -738,4 +947,120 @@ func (s *ModelTestSuite) TestAvailableAttributesSerializationRoundTrip() {
 			}
 		})
 	}
+}
+
+func (s *ModelTestSuite) TestFromEngineContext_WithCurrentSegmentID() {
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetID").Return("test-graph-id")
+
+	ctx := EngineContext{
+		Context:          context.Background(),
+		ExecutionID:      "test-exec-id",
+		FlowType:         common.FlowTypeAuthentication,
+		CurrentSegmentID: "seg-1",
+		UserInputs:       map[string]string{},
+		RuntimeData:      map[string]string{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Graph:            mockGraph,
+	}
+
+	dbModel, err := FromEngineContext(ctx)
+	s.NoError(err)
+
+	content := s.getContextContent(dbModel)
+	s.NotNil(content.CurrentSegmentID)
+	s.Equal("seg-1", *content.CurrentSegmentID)
+}
+
+func (s *ModelTestSuite) TestFromEngineContext_EmptyCurrentSegmentID_OmitsField() {
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetID").Return("test-graph-id")
+
+	ctx := EngineContext{
+		Context:          context.Background(),
+		ExecutionID:      "test-exec-id",
+		FlowType:         common.FlowTypeAuthentication,
+		CurrentSegmentID: "",
+		UserInputs:       map[string]string{},
+		RuntimeData:      map[string]string{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Graph:            mockGraph,
+	}
+
+	dbModel, err := FromEngineContext(ctx)
+	s.NoError(err)
+
+	content := s.getContextContent(dbModel)
+	s.Nil(content.CurrentSegmentID)
+}
+
+func (s *ModelTestSuite) TestToEngineContext_WithCurrentSegmentID() {
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetType").Return(common.FlowTypeAuthentication)
+
+	segID := "seg-1"
+	content := flowContextContent{
+		GraphID:          "test-graph-id",
+		CurrentSegmentID: &segID,
+		UserInputs:       func() *string { v := `{}`; return &v }(),
+		RuntimeData:      func() *string { v := `{}`; return &v }(),
+		ExecutionHistory: func() *string { v := `{}`; return &v }(),
+	}
+	ctxJSON, _ := json.Marshal(content)
+	dbModel := &FlowContextDB{
+		ExecutionID: "test-exec-id",
+		Context:     string(ctxJSON),
+	}
+
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+
+	s.NoError(err)
+	s.Equal("seg-1", resultCtx.CurrentSegmentID)
+}
+
+func (s *ModelTestSuite) TestToEngineContext_MissingCurrentSegmentID_IsEmpty() {
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetType").Return(common.FlowTypeAuthentication)
+
+	content := flowContextContent{
+		GraphID:          "test-graph-id",
+		CurrentSegmentID: nil,
+		UserInputs:       func() *string { v := `{}`; return &v }(),
+		RuntimeData:      func() *string { v := `{}`; return &v }(),
+		ExecutionHistory: func() *string { v := `{}`; return &v }(),
+	}
+	ctxJSON, _ := json.Marshal(content)
+	dbModel := &FlowContextDB{
+		ExecutionID: "test-exec-id",
+		Context:     string(ctxJSON),
+	}
+
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+
+	s.NoError(err)
+	s.Equal("", resultCtx.CurrentSegmentID)
+}
+
+func (s *ModelTestSuite) TestCurrentSegmentID_RoundTrip() {
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetID").Return("test-graph-id")
+	mockGraph.On("GetType").Return(common.FlowTypeAuthentication)
+
+	ctx := EngineContext{
+		Context:          context.Background(),
+		ExecutionID:      "test-exec-id",
+		FlowType:         common.FlowTypeAuthentication,
+		CurrentSegmentID: "seg-2",
+		UserInputs:       map[string]string{},
+		RuntimeData:      map[string]string{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Graph:            mockGraph,
+	}
+
+	dbModel, err := FromEngineContext(ctx)
+	s.NoError(err)
+
+	resultCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+	s.NoError(err)
+	s.Equal("seg-2", resultCtx.CurrentSegmentID)
 }

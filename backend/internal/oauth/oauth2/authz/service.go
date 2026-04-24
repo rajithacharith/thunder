@@ -36,6 +36,7 @@ import (
 	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
+	"github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
@@ -56,6 +57,7 @@ type AuthorizeServiceInterface interface {
 // authorizeService implements the AuthorizeService for managing OAuth2 authorization flows.
 type authorizeService struct {
 	appService      application.ApplicationServiceInterface
+	resourceService resource.ResourceServiceInterface
 	authZValidator  AuthorizationValidatorInterface
 	authCodeStore   AuthorizationCodeStoreInterface
 	authReqStore    authorizationRequestStoreInterface
@@ -68,6 +70,7 @@ type authorizeService struct {
 // newAuthorizeService creates a new instance of authorizeService with injected dependencies.
 func newAuthorizeService(
 	appService application.ApplicationServiceInterface,
+	resourceService resource.ResourceServiceInterface,
 	jwtService jwt.JWTServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 	authCodeStore AuthorizationCodeStoreInterface,
@@ -76,6 +79,7 @@ func newAuthorizeService(
 ) AuthorizeServiceInterface {
 	return &authorizeService{
 		appService:      appService,
+		resourceService: resourceService,
 		authZValidator:  newAuthorizationValidator(),
 		authCodeStore:   authCodeStore,
 		authReqStore:    authReqStore,
@@ -135,8 +139,7 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 	codeChallenge := msg.RequestQueryParams[oauth2const.RequestParamCodeChallenge]
 	codeChallengeMethod := msg.RequestQueryParams[oauth2const.RequestParamCodeChallengeMethod]
 
-	// Extract resource parameter.
-	resource := msg.RequestQueryParams[oauth2const.RequestParamResource]
+	resources := msg.Resources
 
 	// Extract claims parameter.
 	claimsParam := msg.RequestQueryParams[oauth2const.RequestParamClaims]
@@ -205,7 +208,40 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 		return nil, authErr
 	}
 
+	// Resolve each resource identifier to its registered Resource Server; unknown identifiers
+	// cause a 400 invalid_target.
+	resolvedRSes := make([]*resource.ResourceServer, 0, len(resources))
+	for _, identifier := range resources {
+		rs, svcErr := as.resourceService.GetResourceServerByIdentifier(ctx, identifier)
+		if svcErr != nil {
+			return nil, &AuthorizationError{
+				Code:              oauth2const.ErrorInvalidTarget,
+				Message:           "The resource parameter does not match any registered resource server",
+				SendErrorToClient: true,
+				ClientRedirectURI: redirectURI,
+				State:             state,
+			}
+		}
+		resolvedRSes = append(resolvedRSes, rs)
+	}
+
 	oidcScopes, nonOidcScopes := oauth2utils.SeparateOIDCAndNonOIDCScopes(scope, app.ScopeClaims)
+
+	// Downscope non-OIDC scopes against the union of permissions defined on the requested
+	// Resource Servers. Scopes not defined on any RS are silently dropped.
+	if len(resolvedRSes) > 0 && len(nonOidcScopes) > 0 {
+		downscoped, svcErr := as.downscopeAgainstResourceServers(ctx, resolvedRSes, nonOidcScopes)
+		if svcErr != nil {
+			return nil, &AuthorizationError{
+				Code:              oauth2const.ErrorServerError,
+				Message:           "Failed to validate permissions",
+				SendErrorToClient: true,
+				ClientRedirectURI: redirectURI,
+				State:             state,
+			}
+		}
+		nonOidcScopes = downscoped
+	}
 
 	// Construct authorization request context.
 	oauthParams := oauth2model.OAuthParameters{
@@ -217,7 +253,7 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 		PermissionScopes:    nonOidcScopes,
 		CodeChallenge:       codeChallenge,
 		CodeChallengeMethod: codeChallengeMethod,
-		Resource:            resource,
+		Resources:           resources,
 		ClaimsRequest:       claimsRequest,
 		ClaimsLocales:       claimsLocales,
 		Nonce:               nonce,
@@ -499,7 +535,7 @@ func (as *authorizeService) loadAuthRequestContext(ctx context.Context, authID s
 // verifyAssertion verifies the JWT assertion.
 func (as *authorizeService) verifyAssertion(assertion string) error {
 	if err := as.jwtService.VerifyJWT(assertion, "", ""); err != nil {
-		as.logger.Debug("Invalid assertion signature", log.String("error", err.Error))
+		as.logger.Debug("Invalid assertion signature", log.String("error", err.Error.DefaultValue))
 		return errors.New("invalid assertion signature")
 	}
 	return nil
@@ -587,7 +623,7 @@ func createAuthorizationCode(
 	standardScopes := authRequestCtx.OAuthParameters.StandardScopes
 	permissionScopes := authRequestCtx.OAuthParameters.PermissionScopes
 	allScopes := append(append([]string{}, standardScopes...), permissionScopes...)
-	resource := authRequestCtx.OAuthParameters.Resource
+	resources := authRequestCtx.OAuthParameters.Resources
 
 	oauthConfig := config.GetThunderRuntime().Config.OAuth
 	validityPeriod := oauthConfig.AuthorizationCode.ValidityPeriod
@@ -616,11 +652,46 @@ func createAuthorizationCode(
 		State:               AuthCodeStateActive,
 		CodeChallenge:       authRequestCtx.OAuthParameters.CodeChallenge,
 		CodeChallengeMethod: authRequestCtx.OAuthParameters.CodeChallengeMethod,
-		Resource:            resource,
+		Resources:           resources,
 		ClaimsRequest:       authRequestCtx.OAuthParameters.ClaimsRequest,
 		ClaimsLocales:       authRequestCtx.OAuthParameters.ClaimsLocales,
 		Nonce:               authRequestCtx.OAuthParameters.Nonce,
 	}, nil
+}
+
+// downscopeAgainstResourceServers returns the subset of requested non-OIDC scopes that are
+// defined as permissions on at least one of the supplied Resource Servers. Scopes not defined
+// on any RS are silently dropped.
+func (as *authorizeService) downscopeAgainstResourceServers(
+	ctx context.Context, resolvedRSes []*resource.ResourceServer, requestedScopes []string,
+) ([]string, error) {
+	if len(requestedScopes) == 0 || len(resolvedRSes) == 0 {
+		return requestedScopes, nil
+	}
+	allowed := make(map[string]struct{}, len(requestedScopes))
+	for _, rs := range resolvedRSes {
+		invalid, valErr := as.resourceService.ValidatePermissions(ctx, rs.ID, requestedScopes)
+		if valErr != nil {
+			return nil, errors.New("failed to validate permissions")
+		}
+		invalidSet := make(map[string]struct{}, len(invalid))
+		for _, p := range invalid {
+			invalidSet[p] = struct{}{}
+		}
+		for _, s := range requestedScopes {
+			if _, isInvalid := invalidSet[s]; !isInvalid {
+				allowed[s] = struct{}{}
+			}
+		}
+	}
+	out := make([]string, 0, len(allowed))
+	for _, s := range requestedScopes {
+		if _, ok := allowed[s]; ok {
+			out = append(out, s)
+			delete(allowed, s)
+		}
+	}
+	return out, nil
 }
 
 // getRequiredAttributes determines the essential and optional user attributes required based on OIDC scopes,

@@ -16,13 +16,16 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {AuthPageLayout} from '@thunder/design';
 import type {JSX} from 'react';
 import SignUpBox from './SignUpBox';
 
 export default function SignUp(): JSX.Element {
+  const {isMetaLoading} = useAsgardeo();
+
   return (
-    <AuthPageLayout variant="SignUp">
+    <AuthPageLayout isLoading={isMetaLoading} variant="SignUp">
       <SignUpBox />
     </AuthPageLayout>
   );

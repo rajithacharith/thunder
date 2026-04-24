@@ -113,14 +113,14 @@ func (o *ouExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, e
 			case ou.ErrorOrganizationUnitHandleConflict.Code:
 				execResp.FailureReason = "An organization unit with the same handle already exists."
 			default:
-				execResp.FailureReason = "Failed to create organization unit: " + svcErr.ErrorDescription
+				execResp.FailureReason = "Failed to create organization unit: " + svcErr.ErrorDescription.DefaultValue
 			}
 
 			return execResp, nil
 		}
 
 		logger.Error("Error occurred while creating organization unit: ", log.String("errorCode", svcErr.Code),
-			log.String("errorDescription", svcErr.ErrorDescription))
+			log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
 		return nil, errors.New("failed to create organization unit")
 	}
 

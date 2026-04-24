@@ -229,6 +229,33 @@ func (suite *InviteExecutorTestSuite) TestExecute_InvalidMode() {
 	assert.Contains(suite.T(), err.Error(), "invalid executor mode for InviteExecutor")
 }
 
+func (suite *InviteExecutorTestSuite) TestGetExecutionPolicy_GenerateMode_ReturnsNil() {
+	policy := suite.executor.GetExecutionPolicy(ExecutorModeGenerate)
+	assert.Nil(suite.T(), policy)
+}
+
+func (suite *InviteExecutorTestSuite) TestGetExecutionPolicy_VerifyMode_SkipsChallengeValidation() {
+	policy := suite.executor.GetExecutionPolicy(ExecutorModeVerify)
+	assert.NotNil(suite.T(), policy)
+	assert.True(suite.T(), policy.SkipChallengeValidation)
+}
+
+func (suite *InviteExecutorTestSuite) TestGetExecutionPolicy_VerifyMode_AllowsSegmentRestart() {
+	policy := suite.executor.GetExecutionPolicy(ExecutorModeVerify)
+	assert.NotNil(suite.T(), policy)
+	assert.True(suite.T(), policy.AllowSegmentRestart)
+}
+
+func (suite *InviteExecutorTestSuite) TestGetExecutionPolicy_InvalidMode_ReturnsNil() {
+	policy := suite.executor.GetExecutionPolicy("invalid-mode")
+	assert.Nil(suite.T(), policy)
+}
+
+func (suite *InviteExecutorTestSuite) TestGetExecutionPolicy_EmptyMode_ReturnsNil() {
+	policy := suite.executor.GetExecutionPolicy("")
+	assert.Nil(suite.T(), policy)
+}
+
 func TestInviteExecutorSuite(t *testing.T) {
 	suite.Run(t, new(InviteExecutorTestSuite))
 }

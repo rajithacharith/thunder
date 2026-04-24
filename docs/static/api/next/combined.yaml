@@ -1794,6 +1794,7 @@ paths:
                 summary: Subsequent request
                 value:
                   executionId: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
+                  challengeToken: a3f2e1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2
                   actionId: basic_auth
                   inputs:
                     username: thor
@@ -1815,6 +1816,7 @@ paths:
                     executionId: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
                     flowStatus: PROMPT_ONLY
                     stepId: 3071b6c6-0119-465c-b00b-3a0e6f88a730
+                    challengeToken: a3f2e1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2
                     type: VIEW
                     data:
                       inputs:
@@ -2823,8 +2825,8 @@ paths:
                   summary: Invalid member ID
                   value:
                     code: GRP-1007
-                    message: Invalid user member ID
-                    description: One or more user member IDs in the request do not exist
+                    message: Invalid member ID
+                    description: One or more user or app member IDs in the request do not exist or do not match the claimed type
         "404":
           description: Group not found
           content:
@@ -6964,7 +6966,7 @@ paths:
                   value:
                     code: ROL-1007
                     message: Invalid assignment ID
-                    description: One or more assignment IDs in the request do not exist
+                    description: One or more assignment IDs in the request do not exist or do not match the claimed type
                 ou-not-found:
                   summary: Organization unit not found
                   value:
@@ -7292,9 +7294,9 @@ paths:
                 invalid-type:
                   summary: Invalid assignee type parameter
                   value:
-                    code: ROL-1017
+                    code: ROL-1016
                     message: Invalid assignee type
-                    description: The type parameter must be either 'user' or 'group'
+                    description: The type parameter must be 'user', 'group', or 'app'
                 invalid-limit:
                   summary: Invalid limit parameter
                   value:
@@ -7373,7 +7375,7 @@ paths:
                   value:
                     code: ROL-1007
                     message: Invalid assignment ID
-                    description: One or more assignment IDs in the request do not exist
+                    description: One or more assignment IDs in the request do not exist or do not match the claimed type
                 empty-assignments:
                   summary: Empty assignments
                   value:
@@ -9294,7 +9296,6 @@ components:
           type: string
           description: The type of the certificate.
           enum:
-            - NONE
             - JWKS
             - JWKS_URI
           example: JWKS_URI
@@ -10207,6 +10208,10 @@ components:
           type: string
           description: Identifier of an existing flow execution
           example: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
+        challengeToken:
+          type: string
+          description: Per-step challenge token received from the previous flow response
+          example: a3f2e1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2
         actionId:
           type: string
           description: Identifier of the action to execute in the flow
@@ -10237,6 +10242,10 @@ components:
           type: string
           description: Identifier of the current flow step
           example: 3071b6c6-0119-465c-b00b-3a0e6f88a730
+        challengeToken:
+          type: string
+          description: Per-step challenge token to be included in the next request
+          example: a3f2e1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2
         type:
           type: string
           description: Type of flow step response
@@ -11341,6 +11350,7 @@ components:
           enum:
             - user
             - group
+            - app
         display:
           type: string
           readOnly: true
@@ -12364,6 +12374,7 @@ components:
       required:
         - id
         - name
+        - handle
         - ouId
         - delimiter
       properties:
@@ -12378,11 +12389,17 @@ components:
           type: string
           nullable: true
           description: Optional description of the resource server
+        handle:
+          type: string
+          description: Handle used as a permission-string prefix (unique in the system,
+            immutable after creation)
         identifier:
           type: string
           nullable: true
-          description: Optional identifier for authorization requests (Unique in the
-            system if provided)
+          description: Optional external identifier for the resource server. If an
+            absolute URI, the server participates in RFC 8707 as the `resource`
+            parameter value and JWT `aud` (Unique in the system if provided,
+            immutable after creation)
         ouId:
           type: string
           format: uuid
@@ -12395,6 +12412,7 @@ components:
       type: object
       required:
         - name
+        - handle
         - ouId
       properties:
         name:
@@ -12403,10 +12421,16 @@ components:
         description:
           type: string
           description: Optional description of the resource server
+        handle:
+          type: string
+          description: Handle used as a permission-string prefix (unique in the system,
+            immutable after creation)
         identifier:
           type: string
-          description: Optional identifier for authorization requests (Unique in the
-            system if provided)
+          description: Optional external identifier for the resource server. If an
+            absolute URI, the server participates in RFC 8707 as the `resource`
+            parameter value and JWT `aud` (Unique in the system if provided,
+            immutable after creation)
         ouId:
           type: string
           format: uuid
@@ -12427,10 +12451,16 @@ components:
         description:
           type: string
           description: Optional description of the resource server
+        handle:
+          type: string
+          description: >
+            Short handle for the resource server used in permission strings.
+            If omitted the existing value is preserved.
         identifier:
           type: string
-          description: Optional identifier for authorization requests (Unique in the
-            system if provided)
+          description: >
+            URI identifier for the resource server (e.g. an OAuth2 audience value).
+            If omitted the existing value is preserved.
         ouId:
           type: string
           format: uuid
@@ -12604,13 +12634,14 @@ components:
         id:
           type: string
           format: uuid
-          description: ID of the user or group being assigned
+          description: ID of the user, app, or group being assigned
         type:
           type: string
           enum:
             - user
             - group
-          description: Type of entity being assigned (user or group)
+            - app
+          description: Type of entity being assigned (user, app, or group)
         display:
           type: string
           readOnly: true
@@ -12628,13 +12659,14 @@ components:
         id:
           type: string
           format: uuid
-          description: ID of the user or group being assigned
+          description: ID of the user, app, or group being assigned
         type:
           type: string
           enum:
             - user
             - group
-          description: Type of entity being assigned (user or group)
+            - app
+          description: Type of entity being assigned (user, app, or group)
     ResourcePermissions:
       type: object
       required:
@@ -13476,6 +13508,7 @@ components:
         enum:
           - user
           - group
+          - app
       description: >
         Filter assignments by assignee type. When omitted, assignments of all
         types are returned.

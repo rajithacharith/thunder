@@ -376,7 +376,7 @@ func (ts *ClaimsParameterTestSuite) getTokenWithClaims(
 	}
 
 	// Step 3: Initiate authentication flow
-	_, err = testutils.ExecuteAuthenticationFlow(flowID, nil, "")
+	initialStep, err := testutils.ExecuteAuthenticationFlow(flowID, nil, "")
 	if err != nil {
 		return "", "", fmt.Errorf("failed to initiate authentication flow: %w", err)
 	}
@@ -386,7 +386,7 @@ func (ts *ClaimsParameterTestSuite) getTokenWithClaims(
 		"username": "claims_test_user",
 		"password": "SecurePass123!",
 	}
-	flowStep, err := testutils.ExecuteAuthenticationFlow(flowID, authInputs, "action_001")
+	flowStep, err := testutils.ExecuteAuthenticationFlow(flowID, authInputs, "action_001", initialStep.ChallengeToken)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to execute authentication flow: %w", err)
 	}
@@ -506,7 +506,7 @@ func (ts *ClaimsParameterTestSuite) getTokensWithClaims(
 	}
 
 	// Step 3: Initiate authentication flow
-	_, err = testutils.ExecuteAuthenticationFlow(flowID, nil, "")
+	initialStep, err := testutils.ExecuteAuthenticationFlow(flowID, nil, "")
 	if err != nil {
 		return "", "", fmt.Errorf("failed to initiate authentication flow: %w", err)
 	}
@@ -516,7 +516,7 @@ func (ts *ClaimsParameterTestSuite) getTokensWithClaims(
 		"username": "claims_test_user",
 		"password": "SecurePass123!",
 	}
-	flowStep, err := testutils.ExecuteAuthenticationFlow(flowID, authInputs, "action_001")
+	flowStep, err := testutils.ExecuteAuthenticationFlow(flowID, authInputs, "action_001", initialStep.ChallengeToken)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to execute authentication flow: %w", err)
 	}

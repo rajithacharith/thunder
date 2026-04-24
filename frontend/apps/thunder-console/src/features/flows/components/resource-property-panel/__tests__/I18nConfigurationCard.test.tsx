@@ -19,11 +19,8 @@
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';
-import type {Base} from '../../../models/base';
+import I18nContext, {type I18nContextProps} from '../../../context/I18nContext';
 import {PreviewScreenType} from '../../../models/custom-text-preference';
-import {ElementTypes} from '../../../models/elements';
-import {EdgeStyleTypes} from '../../../models/steps';
 import I18nConfigurationCard from '../I18nConfigurationCard';
 
 // Mock react-i18next
@@ -85,25 +82,6 @@ describe('I18nConfigurationCard', () => {
     mockMutate.mockReset();
   });
 
-  const mockBaseResource: Base = {
-    id: 'resource-1',
-    resourceType: 'ELEMENT',
-    type: 'TEXT_INPUT',
-    category: 'FIELD',
-    version: '1.0.0',
-    deprecated: false,
-    deletable: true,
-    display: {
-      label: 'Test Resource',
-      image: '',
-      showOnResourcePanel: false,
-    },
-    config: {
-      field: {name: '', type: ElementTypes},
-      styles: {},
-    },
-  };
-
   const mockI18nText = {
     [PreviewScreenType.LOGIN]: {
       'login.title': 'Sign In',
@@ -116,44 +94,20 @@ describe('I18nConfigurationCard', () => {
     },
   };
 
-  const createContextValue = (overrides: Partial<FlowBuilderCoreContextProps> = {}): FlowBuilderCoreContextProps => ({
-    lastInteractedResource: mockBaseResource,
-    lastInteractedStepId: 'step-1',
-    ResourceProperties: () => null,
-    resourcePropertiesPanelHeading: 'Test Panel Heading',
+  const defaultI18nValue: I18nContextProps = {
     primaryI18nScreen: PreviewScreenType.LOGIN,
-    isResourcePanelOpen: true,
-    isResourcePropertiesPanelOpen: false,
-    isVersionHistoryPanelOpen: false,
-    ElementFactory: () => null,
-    onResourceDropOnCanvas: vi.fn(),
-    selectedAttributes: {},
-    setLastInteractedResource: vi.fn(),
-    setLastInteractedStepId: vi.fn(),
-    setResourcePropertiesPanelHeading: vi.fn(),
-    setIsResourcePanelOpen: vi.fn(),
-    setIsOpenResourcePropertiesPanel: vi.fn(),
-    registerCloseValidationPanel: vi.fn(),
-    setIsVersionHistoryPanelOpen: vi.fn(),
-    setSelectedAttributes: vi.fn(),
-    flowCompletionConfigs: {},
-    setFlowCompletionConfigs: vi.fn(),
-    flowNodeTypes: {},
-    flowEdgeTypes: {},
-    setFlowNodeTypes: vi.fn(),
-    setFlowEdgeTypes: vi.fn(),
-    isVerboseMode: false,
-    setIsVerboseMode: vi.fn(),
-    edgeStyle: EdgeStyleTypes.SmoothStep,
-    setEdgeStyle: vi.fn(),
     i18nText: mockI18nText,
     i18nTextLoading: false,
+  };
+
+  const createContextValue = (overrides: Partial<I18nContextProps> = {}): I18nContextProps => ({
+    ...defaultI18nValue,
     ...overrides,
   });
 
-  const createWrapper = (contextValue: FlowBuilderCoreContextProps = createContextValue()) =>
+  const createWrapper = (i18nValue: I18nContextProps = createContextValue()) =>
     function Wrapper({children}: {children: ReactNode}) {
-      return <FlowBuilderCoreContext.Provider value={contextValue}>{children}</FlowBuilderCoreContext.Provider>;
+      return <I18nContext.Provider value={i18nValue}>{children}</I18nContext.Provider>;
     };
 
   beforeEach(() => {

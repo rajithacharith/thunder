@@ -16,7 +16,9 @@
  * under the License.
  */
 
+import {useGetUsers} from '@thunder/configure-users';
 import {useDataGridLocaleText} from '@thunder/hooks';
+import type {User} from '@thunder/types';
 import {
   Dialog,
   DialogTitle,
@@ -33,13 +35,11 @@ import {
   Tab,
   useTheme,
 } from '@wso2/oxygen-ui';
-import {AppWindow, User} from '@wso2/oxygen-ui-icons-react';
+import {AppWindow, User as UserIcon} from '@wso2/oxygen-ui-icons-react';
 import {useState, useMemo, useCallback, type JSX, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
 import useGetApplications from '../../../../applications/api/useGetApplications';
 import type {BasicApplication} from '../../../../applications/models/application';
-import useGetUsers from '../../../../users/api/useGetUsers';
-import type {ApiUser} from '../../../../users/models/users';
 import type {Member} from '../../../models/group';
 
 interface AddMemberDialogProps {
@@ -85,10 +85,10 @@ export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogP
   const {data: usersData, isLoading: usersLoading, error: usersError} = useGetUsers(usersParams);
   const {data: appsData, isLoading: appsLoading, error: appsError} = useGetApplications(appsParams);
 
-  const users: ApiUser[] = useMemo(() => usersData?.users ?? [], [usersData]);
+  const users: User[] = useMemo(() => usersData?.users ?? [], [usersData]);
   const applications: BasicApplication[] = useMemo(() => appsData?.applications ?? [], [appsData]);
 
-  const userColumns: DataGrid.GridColDef<ApiUser>[] = useMemo(
+  const userColumns: DataGrid.GridColDef<User>[] = useMemo(
     () => [
       {
         field: 'avatar',
@@ -117,7 +117,7 @@ export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogP
                 }),
               }}
             >
-              <User size={14} />
+              <UserIcon size={14} />
             </Avatar>
           </Box>
         ),
@@ -127,7 +127,7 @@ export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogP
         headerName: t('groups:addMember.columns.displayName'),
         flex: 1,
         minWidth: 200,
-        renderCell: (params: DataGrid.GridRenderCellParams<ApiUser>): JSX.Element => (
+        renderCell: (params: DataGrid.GridRenderCellParams<User>): JSX.Element => (
           <Box
             sx={{
               display: 'flex',
@@ -155,7 +155,7 @@ export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogP
         field: 'type',
         headerName: t('groups:addMember.columns.userType'),
         width: 150,
-        renderCell: (params: DataGrid.GridRenderCellParams<ApiUser>): JSX.Element => (
+        renderCell: (params: DataGrid.GridRenderCellParams<User>): JSX.Element => (
           <Chip label={params.row.type} size="small" variant="outlined" sx={{textTransform: 'capitalize'}} />
         ),
       },
@@ -240,7 +240,7 @@ export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogP
       <DialogTitle>{t('groups:addMember.title')}</DialogTitle>
       <DialogContent>
         <Tabs value={activeTab} onChange={handleTabChange} sx={{mb: 2}}>
-          <Tab icon={<User size={16} />} iconPosition="start" label={t('groups:addMember.tabs.users')} />
+          <Tab icon={<UserIcon size={16} />} iconPosition="start" label={t('groups:addMember.tabs.users')} />
           <Tab icon={<AppWindow size={16} />} iconPosition="start" label={t('groups:addMember.tabs.apps')} />
         </Tabs>
 

@@ -174,7 +174,7 @@ func (i *identifyingExecutor) executeIdentify(ctx *core.NodeContext,
 	execResp.Status = common.ExecComplete
 
 	logger.Debug("Identifying executor completed successfully",
-		log.String("userID", log.MaskString(*userID)))
+		log.MaskedString(log.LoggerKeyUserID, *userID))
 
 	return execResp, nil
 }
@@ -215,7 +215,7 @@ func (i *identifyingExecutor) executeResolve(ctx *core.NodeContext,
 		execResp.RuntimeData[userAttributeUserID] = candidates[0].ID
 		execResp.Status = common.ExecComplete
 		logger.Debug("User resolved successfully",
-			log.String("userID", log.MaskString(candidates[0].ID)))
+			log.MaskedString("userID", candidates[0].ID))
 		return execResp, nil
 	default:
 		return i.handleAmbiguousCandidates(candidates, execResp, logger)

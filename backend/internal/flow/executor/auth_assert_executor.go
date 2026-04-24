@@ -30,8 +30,8 @@ import (
 	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/authn/assert"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	authncreds "github.com/asgardeo/thunder/internal/authn/credentials"
-	"github.com/asgardeo/thunder/internal/authnprovider"
+	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
+	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
@@ -54,7 +54,7 @@ type authAssertExecutor struct {
 	jwtService          jwt.JWTServiceInterface
 	ouService           ou.OrganizationUnitServiceInterface
 	authAssertGenerator assert.AuthAssertGeneratorInterface
-	credsAuthSvc        authncreds.CredentialsAuthnServiceInterface
+	authnProvider       authnprovidermgr.AuthnProviderManagerInterface
 	entityProvider      entityprovider.EntityProviderInterface
 	attributeCacheSvc   attributecache.AttributeCacheServiceInterface
 	roleService         role.RoleServiceInterface
@@ -69,7 +69,7 @@ func newAuthAssertExecutor(
 	jwtService jwt.JWTServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	assertGenerator assert.AuthAssertGeneratorInterface,
-	credsAuthSvc authncreds.CredentialsAuthnServiceInterface,
+	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	entityProvider entityprovider.EntityProviderInterface,
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	roleService role.RoleServiceInterface,
@@ -85,7 +85,7 @@ func newAuthAssertExecutor(
 		jwtService:          jwtService,
 		ouService:           ouService,
 		authAssertGenerator: assertGenerator,
-		credsAuthSvc:        credsAuthSvc,
+		authnProvider:       authnProvider,
 		entityProvider:      entityProvider,
 		attributeCacheSvc:   attributeCacheSvc,
 		roleService:         roleService,
@@ -151,10 +151,10 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 		if svcErr != nil {
 			if svcErr.Type == serviceerror.ServerErrorType {
 				logger.Error("Failed to generate auth assertion",
-					log.String("error", svcErr.Error))
+					log.String("error", svcErr.Error.DefaultValue))
 				return "", errors.New("something went wrong while generating auth assertion")
 			}
-			return "", errors.New("failed to generate auth assertion: " + svcErr.Error)
+			return "", errors.New("failed to generate auth assertion: " + svcErr.Error.DefaultValue)
 		}
 
 		jwtClaims["assurance"] = assertionResult.Context
@@ -205,10 +205,11 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 		}
 	}
 
-	token, _, err := a.jwtService.GenerateJWT(tokenSub, ctx.AppID, iss, validityPeriod, jwtClaims, jwt.TokenTypeJWT)
+	jwtClaims["aud"] = ctx.AppID
+	token, _, err := a.jwtService.GenerateJWT(tokenSub, iss, validityPeriod, jwtClaims, jwt.TokenTypeJWT)
 	if err != nil {
-		logger.Error("Failed to generate JWT token", log.String("error", err.Error))
-		return "", errors.New("failed to generate JWT token: " + err.Error)
+		logger.Error("Failed to generate JWT token", log.String("error", err.Error.DefaultValue))
+		return "", errors.New("failed to generate JWT token: " + err.Error.DefaultValue)
 	}
 
 	return token, nil
@@ -356,10 +357,10 @@ func (a *authAssertExecutor) resolveUserAttributes(ctx *core.NodeContext, reques
 		// Fetch from user/authentication provider
 		if ctx.AuthenticatedUser.UserID != "" && fetchedAttributes == nil {
 			var err error
-			if ctx.AuthenticatedUser.Token != "" {
+			if ctx.AuthUser.IsAuthenticated() {
 				metadata := a.buildGetAttributesMetadata(ctx)
 				fetchedAttributes, err = a.getUserAttributesFromAuthnProvider(ctx.Context,
-					ctx.AuthenticatedUser.Token, requestedAttributes, metadata)
+					requestedAttributes, metadata, ctx.AuthUser)
 			} else {
 				fetchedAttributes, err = a.getUserAttributesFromUserProvider(ctx.AuthenticatedUser.UserID)
 			}
@@ -429,29 +430,30 @@ func (a *authAssertExecutor) appendComputedAttributes(
 }
 
 // getUserAttributesFromAuthnProvider retrieves user attributes from the authentication provider.
-func (a *authAssertExecutor) getUserAttributesFromAuthnProvider(ctx context.Context, token string,
-	requestedAttributes []string, metadata *authnprovider.GetAttributesMetadata) (map[string]interface{}, error) {
+func (a *authAssertExecutor) getUserAttributesFromAuthnProvider(ctx context.Context,
+	requestedAttributes []string, metadata *authnprovidercm.GetAttributesMetadata,
+	authUser authnprovidermgr.AuthUser) (map[string]interface{}, error) {
 	// Convert requested attributes from []string to *RequestedAttributes
-	reqAttrs := &authnprovider.RequestedAttributes{
-		Attributes:    make(map[string]*authnprovider.AttributeMetadataRequest),
+	reqAttrs := &authnprovidercm.RequestedAttributes{
+		Attributes:    make(map[string]*authnprovidercm.AttributeMetadataRequest),
 		Verifications: nil,
 	}
 	for _, attrName := range requestedAttributes {
 		reqAttrs.Attributes[attrName] = nil
 	}
 
-	res, svcErr := a.credsAuthSvc.GetAttributes(ctx, token, reqAttrs, metadata)
+	_, res, svcErr := a.authnProvider.GetUserAttributes(ctx, reqAttrs, metadata, authUser)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ServerErrorType {
 			return nil, errors.New("something went wrong while fetching user attributes")
 		}
-		return nil, errors.New("failed to fetch user attributes: " + svcErr.ErrorDescription)
+		return nil, errors.New("failed to fetch user attributes: " + svcErr.ErrorDescription.DefaultValue)
 	}
 
 	// Extract attribute values from AttributesResponse
 	attrs := make(map[string]interface{})
-	if res.AttributesResponse != nil && res.AttributesResponse.Attributes != nil {
-		for attrName, attrResp := range res.AttributesResponse.Attributes {
+	if res != nil && res.Attributes != nil {
+		for attrName, attrResp := range res.Attributes {
 			if attrResp != nil {
 				attrs[attrName] = attrResp.Value
 			}
@@ -463,13 +465,13 @@ func (a *authAssertExecutor) getUserAttributesFromAuthnProvider(ctx context.Cont
 // getUserAttributesFromUserProvider retrieves user attributes from the user provider.
 func (a *authAssertExecutor) getUserAttributesFromUserProvider(userID string) (
 	map[string]interface{}, error) {
-	logger := a.logger.With(log.String("userID", userID))
+	logger := a.logger.With(log.MaskedString(log.LoggerKeyUserID, userID))
 
 	var jsonAttrs json.RawMessage
 	res, err := a.entityProvider.GetEntity(userID)
 	if err != nil {
 		logger.Error("Failed to fetch user attributes",
-			log.String("userID", userID), log.Any("error", err))
+			log.MaskedString(log.LoggerKeyUserID, userID), log.Any("error", err))
 		return nil, errors.New("something went wrong while fetching user attributes: " + err.Error())
 	}
 	jsonAttrs = res.Attributes
@@ -481,7 +483,7 @@ func (a *authAssertExecutor) getUserAttributesFromUserProvider(userID string) (
 
 	var attrs map[string]interface{}
 	if err := json.Unmarshal(jsonAttrs, &attrs); err != nil {
-		logger.Error("Failed to unmarshal user attributes", log.String("userID", userID),
+		logger.Error("Failed to unmarshal user attributes", log.MaskedString(log.LoggerKeyUserID, userID),
 			log.Error(err))
 		return nil, errors.New("something went wrong while unmarshalling user attributes: " + err.Error())
 	}
@@ -499,7 +501,8 @@ func (a *authAssertExecutor) appendOUDetailsToClaims(
 	if svcErr != nil {
 		logger.Error("Failed to fetch organization unit details",
 			log.String(ouIDKey, ouID), log.Any("error", svcErr))
-		return errors.New("something went wrong while fetching organization unit: " + svcErr.ErrorDescription)
+		return errors.New("something went wrong while fetching organization unit: " +
+			svcErr.ErrorDescription.DefaultValue)
 	}
 
 	// Only add ouId if configured
@@ -530,7 +533,7 @@ func (a *authAssertExecutor) fetchAllUserGroups(userID string) ([]entityprovider
 	groups, err := a.entityProvider.GetTransitiveEntityGroups(userID)
 	if err != nil {
 		a.logger.Error("Failed to fetch transitive user groups",
-			log.String("userID", userID), log.Any("error", err))
+			log.MaskedString(log.LoggerKeyUserID, userID), log.Any("error", err))
 		return nil, errors.New("something went wrong while fetching user groups: " + err.Error())
 	}
 
@@ -553,7 +556,7 @@ func (a *authAssertExecutor) appendGroupsToClaims(
 // appendRolesToClaims appends user roles to the JWT claims using pre-fetched groups for role resolution.
 func (a *authAssertExecutor) appendRolesToClaims(
 	ctx *core.NodeContext, groups []entityprovider.EntityGroup, jwtClaims map[string]interface{}) error {
-	logger := a.logger.With(log.String("userID", ctx.AuthenticatedUser.UserID))
+	logger := a.logger.With(log.MaskedString(log.LoggerKeyUserID, ctx.AuthenticatedUser.UserID))
 
 	groupIDs := make([]string, 0, len(groups))
 	for _, g := range groups {
@@ -563,9 +566,9 @@ func (a *authAssertExecutor) appendRolesToClaims(
 	roles, svcErr := a.roleService.GetUserRoles(ctx.Context, ctx.AuthenticatedUser.UserID, groupIDs)
 	if svcErr != nil {
 		logger.Error("Failed to fetch user roles",
-			log.String("userID", ctx.AuthenticatedUser.UserID),
+			log.MaskedString(log.LoggerKeyUserID, ctx.AuthenticatedUser.UserID),
 			log.Any("error", svcErr))
-		return errors.New("something went wrong while fetching user roles: " + svcErr.ErrorDescription)
+		return errors.New("something went wrong while fetching user roles: " + svcErr.ErrorDescription.DefaultValue)
 	}
 
 	if len(roles) > 0 {
@@ -576,8 +579,8 @@ func (a *authAssertExecutor) appendRolesToClaims(
 }
 
 // buildGetAttributesMetadata constructs the metadata for fetching user attributes.
-func (a *authAssertExecutor) buildGetAttributesMetadata(ctx *core.NodeContext) *authnprovider.GetAttributesMetadata {
-	metadata := &authnprovider.GetAttributesMetadata{
+func (a *authAssertExecutor) buildGetAttributesMetadata(ctx *core.NodeContext) *authnprovidercm.GetAttributesMetadata {
+	metadata := &authnprovidercm.GetAttributesMetadata{
 		AppMetadata: make(map[string]interface{}),
 	}
 

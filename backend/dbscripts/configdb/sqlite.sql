@@ -44,11 +44,11 @@ CREATE TABLE ROLE_PERMISSION (
 -- Index for resource server queries with deployment isolation on ROLE_PERMISSION
 CREATE INDEX idx_role_permission_resource_server ON ROLE_PERMISSION (RESOURCE_SERVER_ID, DEPLOYMENT_ID);
 
--- Table to store Role assignments (to users and groups)
+-- Table to store Role assignments (to entities and groups)
 CREATE TABLE ROLE_ASSIGNMENT (
     DEPLOYMENT_ID       VARCHAR(255) NOT NULL,
     ROLE_ID         VARCHAR(36) NOT NULL,
-    ASSIGNEE_TYPE   VARCHAR(5)  NOT NULL CHECK (ASSIGNEE_TYPE IN ('user', 'group', 'app')),
+    ASSIGNEE_TYPE   VARCHAR(6)  NOT NULL CHECK (ASSIGNEE_TYPE IN ('entity', 'group')),
     ASSIGNEE_ID     VARCHAR(36) NOT NULL,
     CREATED_AT      TEXT DEFAULT (datetime('now')),
     UPDATED_AT      TEXT DEFAULT (datetime('now')),
@@ -174,7 +174,8 @@ CREATE TABLE RESOURCE_SERVER (
     OU_ID VARCHAR(36) NOT NULL,
     NAME VARCHAR(100) NOT NULL,
     DESCRIPTION TEXT,
-    IDENTIFIER VARCHAR(100),
+    HANDLE VARCHAR(100),
+    IDENTIFIER VARCHAR(2048),
     PROPERTIES TEXT,
     CREATED_AT TEXT DEFAULT (datetime('now')),
     UPDATED_AT TEXT DEFAULT (datetime('now')),
@@ -183,6 +184,11 @@ CREATE TABLE RESOURCE_SERVER (
 
 -- Composite index for name-based resource server lookups
 CREATE INDEX idx_resource_server_name_deployment ON RESOURCE_SERVER (DEPLOYMENT_ID, NAME);
+
+-- Unique constraint: Resource server handle must be unique per deployment (when not null)
+CREATE UNIQUE INDEX uq_resource_server_handle
+    ON RESOURCE_SERVER(HANDLE, DEPLOYMENT_ID)
+    WHERE HANDLE IS NOT NULL;
 
 -- Unique constraint: Resource server identifier must be unique per deployment (when not null)
 CREATE UNIQUE INDEX uq_resource_server_identifier

@@ -34,6 +34,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 )
 
 const (
@@ -55,12 +56,12 @@ func (m *MockJWTService) GetPublicKey() crypto.PublicKey {
 }
 
 func (m *MockJWTService) GenerateJWT(
-	sub, aud, iss string,
+	sub, iss string,
 	validityPeriod int64,
 	claims map[string]interface{},
 	typ string,
 ) (string, int64, *serviceerror.ServiceError) {
-	args := m.Called(sub, aud, iss, validityPeriod, claims, typ)
+	args := m.Called(sub, iss, validityPeriod, claims, typ)
 	return args.String(0), args.Get(1).(int64), args.Get(2).(*serviceerror.ServiceError)
 }
 
@@ -189,7 +190,7 @@ func (suite *TokenVerifierTestSuite) TestNewTokenVerifier_JWTVerificationFailed(
 
 	// Mock JWT verification to fail
 	mockJWTService.On("VerifyJWT", testToken, mcpURL, issuer).Return(&serviceerror.ServiceError{
-		ErrorDescription: "invalid token",
+		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "invalid token"},
 	})
 
 	// Create token verifier

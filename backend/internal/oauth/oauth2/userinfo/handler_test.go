@@ -29,6 +29,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 )
 
 type UserInfoHandlerTestSuite struct {
@@ -107,15 +108,18 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_ServerError() {
 	rr := httptest.NewRecorder()
 
 	expectedError := serviceerror.CustomServiceError(serviceerror.InternalServerError,
-		"An error occurred while fetching user attributes or groups")
+		core.I18nMessage{
+			Key:          "error.test.fetch_userinfo_attributes_or_groups",
+			DefaultValue: "An error occurred while fetching user attributes or groups",
+		})
 	s.mockService.On("GetUserInfo", mock.Anything, "token123").Return(nil, expectedError)
 
 	s.handler.HandleUserInfo(rr, req)
 
 	assert.Equal(s.T(), http.StatusInternalServerError, rr.Code)
 	assert.Contains(s.T(), rr.Body.String(), "server_error")
-	assert.Contains(s.T(), rr.Body.String(), serviceerror.InternalServerError.Error)
-	assert.NotContains(s.T(), rr.Body.String(), expectedError.ErrorDescription)
+	assert.Contains(s.T(), rr.Body.String(), serviceerror.InternalServerError.Error.DefaultValue)
+	assert.NotContains(s.T(), rr.Body.String(), expectedError.ErrorDescription.DefaultValue)
 	// Server errors should not include WWW-Authenticate
 	assert.Empty(s.T(), rr.Header().Get("WWW-Authenticate"))
 	s.mockService.AssertExpectations(s.T())
@@ -284,7 +288,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_EncodingError() {
 	// With buffer approach, encoding fails BEFORE headers are sent, so we get HTTP 500
 	assert.Equal(s.T(), http.StatusInternalServerError, rr.Code)
 	// Verify that encoding error message is returned
-	assert.Contains(s.T(), rr.Body.String(), serviceerror.ErrorEncodingError)
+	assert.Contains(s.T(), rr.Body.String(), serviceerror.ErrorEncodingError.Code)
 	s.mockService.AssertExpectations(s.T())
 }
 
@@ -296,9 +300,11 @@ func (s *UserInfoHandlerTestSuite) TestWriteServiceErrorResponse_DefaultCase() {
 
 	// Create a service error with an unknown type (not ClientErrorType or ServerErrorType)
 	unknownError := &serviceerror.ServiceError{
-		Type:             "UnknownErrorType", // Unknown type
-		Code:             "unknown_error",
-		ErrorDescription: "An unknown error occurred",
+		Type: "UnknownErrorType", // Unknown type
+		Code: "unknown_error",
+		ErrorDescription: core.I18nMessage{
+			Key: "error.test.an_unknown_error_occurred", DefaultValue: "An unknown error occurred",
+		},
 	}
 	s.mockService.On("GetUserInfo", mock.Anything, "token123").Return(nil, unknownError)
 
@@ -329,7 +335,7 @@ func (s *UserInfoHandlerTestSuite) assertServiceErrorResponse(
 
 	assert.Equal(s.T(), expectedStatus, rr.Code)
 	assert.Contains(s.T(), rr.Body.String(), svcErr.Code)
-	assert.Contains(s.T(), rr.Body.String(), svcErr.ErrorDescription)
+	assert.Contains(s.T(), rr.Body.String(), svcErr.ErrorDescription.DefaultValue)
 	// RFC 6750 §3: WWW-Authenticate header must be present on error responses
 	wwwAuth := rr.Header().Get("WWW-Authenticate")
 	assert.Contains(s.T(), wwwAuth, "Bearer")

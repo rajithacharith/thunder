@@ -19,6 +19,8 @@
 package executor
 
 import (
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"context"
 	"testing"
 
@@ -246,7 +248,9 @@ func TestAuthorizationExecutor_Execute_ServiceError(t *testing.T) {
 		[]entityprovider.EntityGroup{}, nil)
 
 	mockAuthzService.On("GetAuthorizedPermissions", mock.Anything, mock.Anything).Return(
-		nil, &serviceerror.ServiceError{Error: "service error"})
+		nil, &serviceerror.ServiceError{
+			Error: i18ncore.I18nMessage{Key: "error.test.service_error", DefaultValue: "service error"},
+		})
 
 	// Execute
 	resp, err := executor.Execute(ctx)

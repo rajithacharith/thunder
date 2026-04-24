@@ -29,6 +29,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
@@ -431,8 +432,8 @@ func (suite *OUExecutorTestSuite) TestExecute_ErrorScenarios() {
 			serviceError: serviceerror.ServiceError{
 				Type:             serviceerror.ClientErrorType,
 				Code:             "OU-9999",
-				Error:            "Test Error",
-				ErrorDescription: "Test error description",
+				Error:            i18ncore.I18nMessage{DefaultValue: "Test Error"},
+				ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Test error description"},
 			},
 			expectedFailure: "Failed to create organization unit: Test error description",
 			expectError:     false,
@@ -448,7 +449,7 @@ func (suite *OUExecutorTestSuite) TestExecute_ErrorScenarios() {
 		},
 		{
 			name:            "Internal server error",
-			serviceError:    ou.ErrorInternalServerError,
+			serviceError:    serviceerror.InternalServerError,
 			expectedFailure: "failed to create organization unit",
 			expectError:     true,
 			expectNilResult: true,

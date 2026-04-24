@@ -213,12 +213,12 @@ func (o *oidcAuthExecutor) GetIDTokenClaims(execResp *common.ExecutorResponse,
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = svcErr.ErrorDescription
+			execResp.FailureReason = svcErr.ErrorDescription.DefaultValue
 			return nil, nil
 		}
 
 		logger.Error("Failed to extract claims from the ID token", log.String("errorCode", svcErr.Code),
-			log.String("errorDescription", svcErr.ErrorDescription))
+			log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
 		return nil, errors.New("failed to extract claims from the ID token")
 	}
 
@@ -253,12 +253,12 @@ func (o *oidcAuthExecutor) getContextUserAttributes(ctx *core.NodeContext, execR
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure
 			execResp.FailureReason = fmt.Sprintf("failed to retrieve OAuth client configuration: %s",
-				svcErr.ErrorDescription)
+				svcErr.ErrorDescription.DefaultValue)
 			return nil, nil
 		}
 
 		logger.Error("Failed to retrieve OAuth client configuration", log.String("errorCode", svcErr.Code),
-			log.String("errorDescription", svcErr.ErrorDescription))
+			log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
 		return nil, errors.New("failed to retrieve OAuth client configuration")
 	}
 

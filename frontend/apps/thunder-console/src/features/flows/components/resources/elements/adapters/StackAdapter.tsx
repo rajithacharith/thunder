@@ -26,9 +26,8 @@ import Droppable from '../../../dnd/Droppable';
 import Handle from '../../../dnd/Handle';
 import ReorderableFlowElement from '../../steps/view/ReorderableElement';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
+import useFlowPlugins from '@/features/flows/hooks/useFlowPlugins';
 import {type Element as FlowElement} from '@/features/flows/models/elements';
-import FlowEventTypes from '@/features/flows/models/extension';
-import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
 import generateResourceId from '@/features/flows/utils/generateResourceId';
 
 /**
@@ -144,6 +143,7 @@ function StackAdapter({
   const isRow = (stackElement?.direction ?? 'row') === 'row';
 
   const {updateNodeData} = useReactFlow();
+  const {emitElementFilter} = useFlowPlugins();
 
   const handleMove = useCallback(
     (componentId: string, delta: -1 | 1): void => {
@@ -175,10 +175,8 @@ function StackAdapter({
 
   const filteredComponents = useMemo(() => {
     if (!resource?.components) return [];
-    return resource.components.filter((component: FlowElement) =>
-      PluginRegistry.getInstance().executeSync(FlowEventTypes.ON_NODE_ELEMENT_FILTER, component),
-    );
-  }, [resource?.components]);
+    return resource.components.filter((component: FlowElement) => emitElementFilter(component));
+  }, [resource?.components, emitElementFilter]);
 
   // In grid mode: always fill defined slots — show placeholders for every unoccupied slot.
   // In flex mode: show a single placeholder only when there are no children.
@@ -218,7 +216,7 @@ function StackAdapter({
         ...VisualFlowConstants.FLOW_BUILDER_STACK_ALLOWED_RESOURCE_TYPES,
       ]}
       sx={layoutSx}
-      bottomZoneMinHeight={0}
+      hideDropZones
     >
       {filteredComponents.map((component: FlowElement, index: number) => {
         const isFirst = index === 0;

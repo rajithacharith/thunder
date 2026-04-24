@@ -16,5 +16,11 @@
  * under the License.
  */
 
-export {type ApiError} from './api/api-error';
-export {type RecursivePartial} from './primitives/recursive-partial';
+// Concept Types: These types represent core domain concepts and are intended for use across multiple packages to ensure consistency in how key entities are represented.
+export {type User} from './concepts/user';
+
+// Primitive Types: These types represent fundamental data structures or patterns that can be widely reused across the codebase, such as error representations or utility types.
+export {type ApiError} from './primitives/ApiError';
+export {type ApiFilteringParams} from './primitives/ApiFilteringParams';
+export {type ApiPaginationLink} from './primitives/ApiPaginationLink';
+export {type RecursivePartial} from './primitives/RecursivePartial';

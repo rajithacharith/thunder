@@ -394,7 +394,9 @@ func (ts *UserFilterTestSuite) TestInvalidFilterFormats() {
 		err = json.NewDecoder(resp.Body).Decode(&errorResp)
 		if err == nil {
 			ts.Equal("USR-1020", errorResp["code"], "Expected error code USR-1020")
-			ts.Contains(errorResp["message"], "Invalid filter parameter", "Expected filter error message")
+			message, ok := errorResp["message"].(map[string]interface{})
+			ts.True(ok, "Expected message to be an i18n object")
+			ts.Contains(message["defaultValue"], "Invalid filter parameter", "Expected filter error message")
 		}
 
 		resp.Body.Close()

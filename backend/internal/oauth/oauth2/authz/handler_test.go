@@ -134,6 +134,60 @@ func (suite *AuthorizeHandlerTestSuite) TestGetOAuthMessageForGetRequest_WithCla
 	}
 }
 
+// §8 — only the resource parameter is permitted to be repeated.
+
+func (suite *AuthorizeHandlerTestSuite) TestGetOAuthMessageForGetRequest_DuplicateNonResourceParam() {
+	// Repeated client_id must be rejected with an error.
+	req := httptest.NewRequest(http.MethodGet, "/auth?client_id=a&client_id=b", nil)
+
+	msg, err := suite.handler.getOAuthMessageForGetRequest(req)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), msg)
+	assert.Contains(suite.T(), err.Error(), "client_id")
+}
+
+func (suite *AuthorizeHandlerTestSuite) TestGetOAuthMessageForGetRequest_MultipleResourceValues() {
+	// Repeated resource is allowed; both values must appear in msg.Resources.
+	req := httptest.NewRequest(http.MethodGet,
+		"/auth?client_id=test-client&resource=https%3A%2F%2Frs1.example.com&resource=https%3A%2F%2Frs2.example.com",
+		nil)
+
+	msg, err := suite.handler.getOAuthMessageForGetRequest(req)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), msg)
+	if msg != nil {
+		assert.Equal(suite.T(), 2, len(msg.Resources))
+		assert.Contains(suite.T(), msg.Resources, "https://rs1.example.com")
+		assert.Contains(suite.T(), msg.Resources, "https://rs2.example.com")
+		assert.Equal(suite.T(), "test-client", msg.RequestQueryParams["client_id"])
+	}
+}
+
+func (suite *AuthorizeHandlerTestSuite) TestGetOAuthMessageForGetRequest_DuplicateScopeParam() {
+	// Repeated scope must be rejected — only resource may repeat.
+	req := httptest.NewRequest(http.MethodGet,
+		"/auth?client_id=test-client&resource=https%3A%2F%2Frs1.example.com&scope=openid&scope=profile",
+		nil)
+
+	msg, err := suite.handler.getOAuthMessageForGetRequest(req)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), msg)
+	assert.Contains(suite.T(), err.Error(), "scope")
+}
+
+func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizeGetRequest_DuplicateNonResourceParamReturns400() {
+	// End-to-end: repeated non-resource query param must produce HTTP 400 invalid_request.
+	req := httptest.NewRequest("GET", "/oauth2/authorize?client_id=a&client_id=b", nil)
+	rr := httptest.NewRecorder()
+
+	suite.handler.HandleAuthorizeGetRequest(rr, req)
+
+	assert.Equal(suite.T(), http.StatusBadRequest, rr.Code)
+}
+
 func (suite *AuthorizeHandlerTestSuite) TestGetOAuthMessageForPostRequest_MissingAuthID() {
 	postData := AuthZPostRequest{
 		AuthID:    "",

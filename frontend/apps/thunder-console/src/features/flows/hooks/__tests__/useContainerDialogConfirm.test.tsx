@@ -58,6 +58,12 @@ vi.mock('../../utils/generateResourceId', () => ({
   default: vi.fn((prefix: string) => `${prefix}-generated-id`),
 }));
 
+vi.mock('../useFlowEvents', () => ({
+  default: () => ({
+    notifyElementAdded: vi.fn(),
+  }),
+}));
+
 // Mock autoAssignConnections
 vi.mock('../../utils/autoAssignConnections', () => ({
   default: vi.fn(),

@@ -22,26 +22,61 @@ import type {Node} from '@xyflow/react';
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {ElementTypes} from '../../models/elements';
-import FlowEventTypes from '../../models/extension';
 import {StepTypes, ExecutionTypes} from '../../models/steps';
 import useStaticContentField from '../useStaticContentField';
 
 // Use vi.hoisted to define mocks that need to be referenced in vi.mock
-const {mockGetNode, mockUpdateNodeData, mockRegisterAsync, mockRegisterSync, mockUnregister} = vi.hoisted(() => ({
+const {mockGetNode, mockUpdateNodeData} = vi.hoisted(() => ({
   mockGetNode: vi.fn(),
   mockUpdateNodeData: vi.fn(),
-  mockRegisterAsync: vi.fn(),
-  mockRegisterSync: vi.fn(),
-  mockUnregister: vi.fn(),
 }));
 
 // Store registered handlers for testing
 const registeredHandlers: {
-  async: Record<string, ((...args: unknown[]) => Promise<boolean>)[]>;
-  sync: Record<string, ((...args: unknown[]) => boolean)[]>;
+  onPropertyChange: ((...args: unknown[]) => boolean)[];
+  onPropertyPanelOpen: ((...args: unknown[]) => boolean)[];
 } = {
-  async: {},
-  sync: {},
+  onPropertyChange: [],
+  onPropertyPanelOpen: [],
+};
+
+const mockUnsubscribes: {
+  onPropertyChange: ReturnType<typeof vi.fn>[];
+  onPropertyPanelOpen: ReturnType<typeof vi.fn>[];
+} = {
+  onPropertyChange: [],
+  onPropertyPanelOpen: [],
+};
+
+const mockOnPropertyChange = vi.fn().mockImplementation((handler: (...args: unknown[]) => boolean) => {
+  registeredHandlers.onPropertyChange.push(handler);
+  const unsub = vi.fn();
+  mockUnsubscribes.onPropertyChange.push(unsub);
+  return unsub;
+});
+
+const mockOnPropertyPanelOpen = vi.fn().mockImplementation((handler: (...args: unknown[]) => boolean) => {
+  registeredHandlers.onPropertyPanelOpen.push(handler);
+  const unsub = vi.fn();
+  mockUnsubscribes.onPropertyPanelOpen.push(unsub);
+  return unsub;
+});
+
+const mockFlowPlugins = {
+  onPropertyChange: mockOnPropertyChange,
+  emitPropertyChange: vi.fn().mockReturnValue(true),
+  onPropertyPanelOpen: mockOnPropertyPanelOpen,
+  emitPropertyPanelOpen: vi.fn().mockReturnValue(true),
+  onElementFilter: vi.fn().mockReturnValue(vi.fn()),
+  emitElementFilter: vi.fn().mockReturnValue(true),
+  onEdgeDelete: vi.fn().mockReturnValue(vi.fn()),
+  emitEdgeDelete: vi.fn().mockReturnValue(true),
+  onNodeDelete: vi.fn().mockReturnValue(vi.fn()),
+  emitNodeDelete: vi.fn().mockReturnValue(true),
+  onNodeElementDelete: vi.fn().mockReturnValue(vi.fn()),
+  emitNodeElementDelete: vi.fn().mockReturnValue(true),
+  onTemplateLoad: vi.fn().mockReturnValue(vi.fn()),
+  emitTemplateLoad: vi.fn().mockReturnValue(true),
 };
 
 // Mock @xyflow/react
@@ -73,27 +108,9 @@ vi.mock('../../api/useGetFlowBuilderCoreResources', () => ({
   }),
 }));
 
-// Mock PluginRegistry - capture handlers for testing
-vi.mock('../../plugins/PluginRegistry', () => ({
-  default: {
-    getInstance: () => ({
-      registerAsync: (eventType: string, handler: (...args: unknown[]) => Promise<boolean>) => {
-        mockRegisterAsync(eventType, handler);
-        if (!registeredHandlers.async[eventType]) {
-          registeredHandlers.async[eventType] = [];
-        }
-        registeredHandlers.async[eventType].push(handler);
-      },
-      registerSync: (eventType: string, handler: (...args: unknown[]) => boolean) => {
-        mockRegisterSync(eventType, handler);
-        if (!registeredHandlers.sync[eventType]) {
-          registeredHandlers.sync[eventType] = [];
-        }
-        registeredHandlers.sync[eventType].push(handler);
-      },
-      unregister: mockUnregister,
-    }),
-  },
+// Mock useFlowPlugins - capture handlers for testing
+vi.mock('../useFlowPlugins', () => ({
+  default: () => mockFlowPlugins,
 }));
 
 // Mock generateResourceId
@@ -112,11 +129,22 @@ describe('useStaticContentField', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Clear registered handlers
-    Object.keys(registeredHandlers.async).forEach((key) => {
-      delete registeredHandlers.async[key];
+    registeredHandlers.onPropertyChange = [];
+    registeredHandlers.onPropertyPanelOpen = [];
+    mockUnsubscribes.onPropertyChange = [];
+    mockUnsubscribes.onPropertyPanelOpen = [];
+    // Re-wire the capture implementations after clearAllMocks
+    mockOnPropertyChange.mockImplementation((handler: (...args: unknown[]) => boolean) => {
+      registeredHandlers.onPropertyChange.push(handler);
+      const unsub = vi.fn();
+      mockUnsubscribes.onPropertyChange.push(unsub);
+      return unsub;
     });
-    Object.keys(registeredHandlers.sync).forEach((key) => {
-      delete registeredHandlers.sync[key];
+    mockOnPropertyPanelOpen.mockImplementation((handler: (...args: unknown[]) => boolean) => {
+      registeredHandlers.onPropertyPanelOpen.push(handler);
+      const unsub = vi.fn();
+      mockUnsubscribes.onPropertyPanelOpen.push(unsub);
+      return unsub;
     });
   });
 
@@ -126,29 +154,29 @@ describe('useStaticContentField', () => {
         wrapper: createWrapper(),
       });
 
-      expect(mockRegisterAsync).toHaveBeenCalledWith(FlowEventTypes.ON_PROPERTY_CHANGE, expect.any(Function));
-      expect(mockRegisterSync).toHaveBeenCalledWith(FlowEventTypes.ON_PROPERTY_PANEL_OPEN, expect.any(Function));
+      expect(mockOnPropertyChange).toHaveBeenCalledWith(expect.any(Function));
+      expect(mockOnPropertyPanelOpen).toHaveBeenCalledWith(expect.any(Function));
     });
 
-    it('should unregister event handlers on unmount', () => {
+    it('should call unsubscribe functions on unmount', () => {
       const {unmount} = renderHook(() => useStaticContentField(), {
         wrapper: createWrapper(),
       });
 
       unmount();
 
-      expect(mockUnregister).toHaveBeenCalledWith(FlowEventTypes.ON_PROPERTY_CHANGE, 'addStaticContent');
-      expect(mockUnregister).toHaveBeenCalledWith(FlowEventTypes.ON_PROPERTY_PANEL_OPEN, 'addStaticContentProperties');
+      mockUnsubscribes.onPropertyChange.forEach((unsub) => expect(unsub).toHaveBeenCalled());
+      mockUnsubscribes.onPropertyPanelOpen.forEach((unsub) => expect(unsub).toHaveBeenCalled());
     });
   });
 
   describe('addStaticContent Handler', () => {
-    it('should return true for non-execution step types', async () => {
+    it('should return true for non-execution step types', () => {
       renderHook(() => useStaticContentField(), {
         wrapper: createWrapper(),
       });
 
-      const addStaticContentHandler = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE]?.[0];
+      const addStaticContentHandler = registeredHandlers.onPropertyChange?.[0];
       expect(addStaticContentHandler).toBeDefined();
 
       const element = {
@@ -156,27 +184,27 @@ describe('useStaticContentField', () => {
         type: StepTypes.View,
       };
 
-      const result = await addStaticContentHandler('enableStaticContent', true, element, 'step-1');
+      const result = addStaticContentHandler('enableStaticContent', true, element, 'step-1');
       expect(result).toBe(true);
     });
 
-    it('should return true for properties other than enableStaticContent', async () => {
+    it('should return true for properties other than enableStaticContent', () => {
       renderHook(() => useStaticContentField(), {
         wrapper: createWrapper(),
       });
 
-      const addStaticContentHandler = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE]?.[0];
+      const addStaticContentHandler = registeredHandlers.onPropertyChange?.[0];
 
       const element = {
         id: 'execution-1',
         type: StepTypes.Execution,
       };
 
-      const result = await addStaticContentHandler('someOtherProperty', true, element, 'step-1');
+      const result = addStaticContentHandler('someOtherProperty', true, element, 'step-1');
       expect(result).toBe(true);
     });
 
-    it('should add static content when enableStaticContent is true', async () => {
+    it('should add static content when enableStaticContent is true', () => {
       const executionNode: Node = {
         id: 'execution-1',
         type: StepTypes.Execution,
@@ -192,19 +220,19 @@ describe('useStaticContentField', () => {
         wrapper: createWrapper(),
       });
 
-      const addStaticContentHandler = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE]?.[0];
+      const addStaticContentHandler = registeredHandlers.onPropertyChange?.[0];
 
       const element = {
         id: 'execution-1',
         type: StepTypes.Execution,
       };
 
-      const result = await addStaticContentHandler('enableStaticContent', true, element, 'execution-1');
+      const result = addStaticContentHandler('enableStaticContent', true, element, 'execution-1');
       expect(result).toBe(false);
       expect(mockUpdateNodeData).toHaveBeenCalled();
     });
 
-    it('should remove static content when enableStaticContent is false', async () => {
+    it('should remove static content when enableStaticContent is false', () => {
       const executionNode: Node = {
         id: 'execution-1',
         type: StepTypes.Execution,
@@ -220,19 +248,19 @@ describe('useStaticContentField', () => {
         wrapper: createWrapper(),
       });
 
-      const addStaticContentHandler = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE]?.[0];
+      const addStaticContentHandler = registeredHandlers.onPropertyChange?.[0];
 
       const element = {
         id: 'execution-1',
         type: StepTypes.Execution,
       };
 
-      const result = await addStaticContentHandler('enableStaticContent', false, element, 'execution-1');
+      const result = addStaticContentHandler('enableStaticContent', false, element, 'execution-1');
       expect(result).toBe(false);
       expect(mockUpdateNodeData).toHaveBeenCalled();
     });
 
-    it('should call updateNodeData callback correctly when adding content', async () => {
+    it('should call updateNodeData callback correctly when adding content', () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
       mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
         capturedCallback = callback;
@@ -242,14 +270,14 @@ describe('useStaticContentField', () => {
         wrapper: createWrapper(),
       });
 
-      const addStaticContentHandler = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE]?.[0];
+      const addStaticContentHandler = registeredHandlers.onPropertyChange?.[0];
 
       const element = {
         id: 'execution-1',
         type: StepTypes.Execution,
       };
 
-      await addStaticContentHandler('enableStaticContent', true, element, 'execution-1');
+      addStaticContentHandler('enableStaticContent', true, element, 'execution-1');
 
       // Execute the captured callback
       const mockNode: Node = {
@@ -264,7 +292,7 @@ describe('useStaticContentField', () => {
       expect(result.components).toBeDefined();
     });
 
-    it('should call updateNodeData callback correctly when removing content', async () => {
+    it('should call updateNodeData callback correctly when removing content', () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
       mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
         capturedCallback = callback;
@@ -274,14 +302,14 @@ describe('useStaticContentField', () => {
         wrapper: createWrapper(),
       });
 
-      const addStaticContentHandler = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE]?.[0];
+      const addStaticContentHandler = registeredHandlers.onPropertyChange?.[0];
 
       const element = {
         id: 'execution-1',
         type: StepTypes.Execution,
       };
 
-      await addStaticContentHandler('enableStaticContent', false, element, 'execution-1');
+      addStaticContentHandler('enableStaticContent', false, element, 'execution-1');
 
       // Execute the captured callback
       const mockNode: Node = {
@@ -307,7 +335,7 @@ describe('useStaticContentField', () => {
         wrapper: createWrapper(),
       });
 
-      const addPropertiesHandler = registeredHandlers.sync[FlowEventTypes.ON_PROPERTY_PANEL_OPEN]?.[0];
+      const addPropertiesHandler = registeredHandlers.onPropertyPanelOpen?.[0];
       expect(addPropertiesHandler).toBeDefined();
 
       const resource = {
@@ -340,7 +368,7 @@ describe('useStaticContentField', () => {
         wrapper: createWrapper(),
       });
 
-      const addPropertiesHandler = registeredHandlers.sync[FlowEventTypes.ON_PROPERTY_PANEL_OPEN]?.[0];
+      const addPropertiesHandler = registeredHandlers.onPropertyPanelOpen?.[0];
 
       const resource = {
         id: 'view-1',
@@ -369,7 +397,7 @@ describe('useStaticContentField', () => {
         wrapper: createWrapper(),
       });
 
-      const addPropertiesHandler = registeredHandlers.sync[FlowEventTypes.ON_PROPERTY_PANEL_OPEN]?.[0];
+      const addPropertiesHandler = registeredHandlers.onPropertyPanelOpen?.[0];
 
       // SendEmailOTP is not in the allowed types list
       const resource = {
@@ -405,7 +433,7 @@ describe('useStaticContentField', () => {
         wrapper: createWrapper(),
       });
 
-      const addPropertiesHandler = registeredHandlers.sync[FlowEventTypes.ON_PROPERTY_PANEL_OPEN]?.[0];
+      const addPropertiesHandler = registeredHandlers.onPropertyPanelOpen?.[0];
 
       // SendEmailOTP is not in the allowed types list
       const resource = {
@@ -441,7 +469,7 @@ describe('useStaticContentField', () => {
         wrapper: createWrapper(),
       });
 
-      const addPropertiesHandler = registeredHandlers.sync[FlowEventTypes.ON_PROPERTY_PANEL_OPEN]?.[0];
+      const addPropertiesHandler = registeredHandlers.onPropertyPanelOpen?.[0];
 
       const resource = {
         id: 'execution-1',
@@ -475,7 +503,7 @@ describe('useStaticContentField', () => {
         wrapper: createWrapper(),
       });
 
-      const addPropertiesHandler = registeredHandlers.sync[FlowEventTypes.ON_PROPERTY_PANEL_OPEN]?.[0];
+      const addPropertiesHandler = registeredHandlers.onPropertyPanelOpen?.[0];
 
       const resource = {
         id: 'execution-1',
@@ -508,7 +536,7 @@ describe('useStaticContentField', () => {
         wrapper: createWrapper(),
       });
 
-      const addPropertiesHandler = registeredHandlers.sync[FlowEventTypes.ON_PROPERTY_PANEL_OPEN]?.[0];
+      const addPropertiesHandler = registeredHandlers.onPropertyPanelOpen?.[0];
 
       const resource = {
         id: 'execution-1',

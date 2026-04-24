@@ -25,6 +25,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -76,22 +77,30 @@ func validateIDPProperties(idpType IDPType, properties []cmodels.Property, logge
 	for _, prop := range properties {
 		propName := prop.GetName()
 		if strings.TrimSpace(propName) == "" {
-			return nil, serviceerror.CustomServiceError(ErrorInvalidIDPProperty,
-				"property names cannot be empty")
+			return nil, serviceerror.CustomServiceError(ErrorInvalidIDPProperty, core.I18nMessage{
+				Key:          "error.idpservice.property_name_empty_description",
+				DefaultValue: "property names cannot be empty",
+			})
 		}
 		if !slices.Contains(allowedProps, propName) {
-			return nil, serviceerror.CustomServiceError(ErrorUnsupportedIDPProperty,
-				fmt.Sprintf("property '%s' is not supported for IDP type '%s'", propName, idpType))
+			return nil, serviceerror.CustomServiceError(ErrorUnsupportedIDPProperty, core.I18nMessage{
+				Key:          "error.idpservice.property_not_supported_for_type_description",
+				DefaultValue: fmt.Sprintf("property '%s' is not supported for IDP type '%s'", propName, idpType),
+			})
 		}
 
 		propertyValue, err := prop.GetValue()
 		if err != nil {
-			return nil, serviceerror.CustomServiceError(ErrorInvalidIDPProperty,
-				fmt.Sprintf("failed to get value for property '%s': %v", propName, err))
+			return nil, serviceerror.CustomServiceError(ErrorInvalidIDPProperty, core.I18nMessage{
+				Key:          "error.idpservice.property_value_get_failed_description",
+				DefaultValue: fmt.Sprintf("failed to get value for property '%s': %v", propName, err),
+			})
 		}
 		if strings.TrimSpace(propertyValue) == "" {
-			return nil, serviceerror.CustomServiceError(ErrorInvalidIDPProperty,
-				fmt.Sprintf("value cannot be empty for property '%s'", propName))
+			return nil, serviceerror.CustomServiceError(ErrorInvalidIDPProperty, core.I18nMessage{
+				Key:          "error.idpservice.property_value_empty_description",
+				DefaultValue: fmt.Sprintf("value cannot be empty for property '%s'", propName),
+			})
 		}
 
 		filteredPropsMap[propName] = prop
@@ -101,8 +110,10 @@ func validateIDPProperties(idpType IDPType, properties []cmodels.Property, logge
 	// Check for required properties
 	for _, requiredProp := range config.Required {
 		if !slices.Contains(filteredPropKeys, requiredProp) {
-			return nil, serviceerror.CustomServiceError(ErrorInvalidIDPProperty,
-				fmt.Sprintf("required property '%s' is missing for IDP type '%s'", requiredProp, idpType))
+			return nil, serviceerror.CustomServiceError(ErrorInvalidIDPProperty, core.I18nMessage{
+				Key:          "error.idpservice.required_property_missing_description",
+				DefaultValue: fmt.Sprintf("required property '%s' is missing for IDP type '%s'", requiredProp, idpType),
+			})
 		}
 	}
 
@@ -138,8 +149,10 @@ func ensureOpenIDScope(propertyMap map[string]cmodels.Property, logger *log.Logg
 
 	scopesValue, err := scopesProp.GetValue()
 	if err != nil {
-		return serviceerror.CustomServiceError(ErrorInvalidIDPProperty,
-			fmt.Sprintf("failed to get scopes value: %v", err))
+		return serviceerror.CustomServiceError(ErrorInvalidIDPProperty, core.I18nMessage{
+			Key:          "error.idpservice.scopes_value_get_failed_description",
+			DefaultValue: fmt.Sprintf("failed to get scopes value: %v", err),
+		})
 	}
 
 	scopes := sysutils.ParseStringArray(scopesValue, ",")

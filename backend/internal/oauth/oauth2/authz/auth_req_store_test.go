@@ -81,7 +81,7 @@ func (suite *AuthorizationRequestStoreTestSuite) SetupTest() {
 			PermissionScopes:    []string{"read", "write"},
 			CodeChallenge:       "test-challenge",
 			CodeChallengeMethod: "S256",
-			Resource:            "https://api.example.com/resource",
+			Resources:           []string{"https://api.example.com/resource"},
 		},
 	}
 }
@@ -184,7 +184,7 @@ func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_Success() {
 		"permission_scopes":     []interface{}{"read", "write"},
 		"code_challenge":        "test-challenge",
 		"code_challenge_method": "S256",
-		"resource":              "https://api.example.com/resource",
+		"resource":              []interface{}{"https://api.example.com/resource"},
 	}
 	requestDataJSON, _ := json.Marshal(requestData)
 
@@ -213,7 +213,7 @@ func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_Success() {
 	assert.Equal(suite.T(), []string{"read", "write"}, result.OAuthParameters.PermissionScopes)
 	assert.Equal(suite.T(), "test-challenge", result.OAuthParameters.CodeChallenge)
 	assert.Equal(suite.T(), "S256", result.OAuthParameters.CodeChallengeMethod)
-	assert.Equal(suite.T(), "https://api.example.com/resource", result.OAuthParameters.Resource)
+	assert.Equal(suite.T(), []string{"https://api.example.com/resource"}, result.OAuthParameters.Resources)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
 	suite.mockDBClient.AssertExpectations(suite.T())

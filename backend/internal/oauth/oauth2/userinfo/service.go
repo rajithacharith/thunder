@@ -120,7 +120,7 @@ func (s *userInfoService) GetUserInfo(
 	userAttributes, err := tokenservice.FetchUserAttributes(ctx, s.attributeCacheSvc,
 		allowedUserAttributes, attributeCacheID)
 	if err != nil {
-		s.logger.Error("Failed to fetch user attributes", log.String("userID", sub), log.Error(err))
+		s.logger.Error("Failed to fetch user attributes", log.MaskedString(log.LoggerKeyUserID, sub), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -162,9 +162,10 @@ func (s *userInfoService) generateJWSUserInfo(
 	issuer := runtime.Config.JWT.Issuer
 	validity := runtime.Config.JWT.ValidityPeriod
 
+	response["aud"] = clientID
+
 	signedJWT, _, err := s.jwtService.GenerateJWT(
 		sub,
-		clientID,
 		issuer,
 		validity,
 		response,

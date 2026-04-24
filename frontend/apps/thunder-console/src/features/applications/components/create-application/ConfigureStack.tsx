@@ -231,7 +231,7 @@ export default function ConfigureStack({
   };
 
   return (
-    <Stack direction="column" spacing={3}>
+    <Stack direction="column" spacing={3} data-testid="application-configure-stack">
       {stackTypes.technology && (
         <>
           <Stack direction="column" spacing={1}>

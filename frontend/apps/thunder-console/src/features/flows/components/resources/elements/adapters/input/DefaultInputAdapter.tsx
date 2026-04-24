@@ -18,18 +18,11 @@
 
 import {useTemplateLiteralResolver} from '@thunder/hooks';
 import {TextField} from '@wso2/oxygen-ui';
-import {useMemo, type CSSProperties, type ReactElement, type ReactNode} from 'react';
-import {Trans, useTranslation} from 'react-i18next';
+import {type CSSProperties, type ReactElement, type ReactNode} from 'react';
+import {useTranslation} from 'react-i18next';
 import {Hint} from '../../hint';
 import TemplatePlaceholder, {containsTemplateLiteral} from '../TemplatePlaceholder';
-import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
-import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
-
-const INPUT_VALIDATION_FIELD_NAMES = {
-  label: 'label',
-  ref: 'ref',
-} as const;
 
 /**
  * Input element type with properties at top level.
@@ -67,31 +60,6 @@ export interface DefaultInputAdapterPropsInterface {
 function DefaultInputAdapter({resource}: DefaultInputAdapterPropsInterface): ReactElement {
   const {t} = useTranslation();
   const {resolve} = useTemplateLiteralResolver();
-
-  const generalMessage: ReactElement = useMemo(
-    () => (
-      <Trans i18nKey="flows:core.validation.fields.input.general" values={{id: resource.id}}>
-        Required fields are not properly configured for the input field with ID <code>{resource.id}</code>.
-      </Trans>
-    ),
-    [resource?.id],
-  );
-
-  const validationFields: RequiredFieldInterface[] = useMemo(
-    () => [
-      {
-        errorMessage: t('flows:core.validation.fields.input.label'),
-        name: INPUT_VALIDATION_FIELD_NAMES.label,
-      },
-      {
-        errorMessage: t('flows:core.validation.fields.input.ref'),
-        name: INPUT_VALIDATION_FIELD_NAMES.ref,
-      },
-    ],
-    [t],
-  );
-
-  useRequiredFields(resource, generalMessage, validationFields);
 
   const inputElement = resource as InputElement;
 

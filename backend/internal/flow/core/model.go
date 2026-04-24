@@ -23,6 +23,7 @@ import (
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
+	"github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/flow/common"
 )
 
@@ -46,6 +47,7 @@ type NodeContext struct {
 
 	Application       appmodel.Application
 	AuthenticatedUser authncm.AuthenticatedUser
+	AuthUser          manager.AuthUser
 	ExecutionHistory  map[string]*common.NodeExecutionRecord
 }
 
@@ -56,4 +58,16 @@ type NodeCondition struct {
 	Key    string
 	Value  string
 	OnSkip string
+}
+
+// Segment represents a contiguous section of a flow graph bounded by display-only prompt nodes.
+type Segment struct {
+	ID          string
+	StartNodeID string
+}
+
+// ExecutionPolicy defines behavioral policies for node execution.
+type ExecutionPolicy struct {
+	SkipChallengeValidation bool
+	AllowSegmentRestart     bool
 }

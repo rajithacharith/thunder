@@ -90,7 +90,8 @@ func (s *oidcAuthnService) GetOAuthClientConfig(ctx context.Context, idpID strin
 }
 
 // BuildAuthorizeURL constructs the authorization request URL for the external identity provider.
-func (s *oidcAuthnService) BuildAuthorizeURL(ctx context.Context, idpID string) (string, *serviceerror.ServiceError) {
+func (s *oidcAuthnService) BuildAuthorizeURL(
+	ctx context.Context, idpID string) (string, *serviceerror.ServiceError) {
 	return s.internal.BuildAuthorizeURL(ctx, idpID)
 }
 
@@ -166,7 +167,7 @@ func (s *oidcAuthnService) ValidateIDToken(ctx context.Context, idpID, idToken s
 	if oAuthClientConfig.OAuthEndpoints.JwksEndpoint != "" {
 		err := s.jwtService.VerifyJWTWithJWKS(idToken, oAuthClientConfig.OAuthEndpoints.JwksEndpoint, "", "")
 		if err != nil {
-			logger.Debug("ID token signature validation failed", log.String("error", err.Error))
+			logger.Debug("ID token signature validation failed", log.String("error", err.Error.DefaultValue))
 			return &ErrorInvalidIDTokenSignature
 		}
 	} else {

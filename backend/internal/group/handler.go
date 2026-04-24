@@ -26,6 +26,7 @@ import (
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -52,7 +53,7 @@ func (gh *groupHandler) HandleGroupListRequest(w http.ResponseWriter, r *http.Re
 
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -60,7 +61,7 @@ func (gh *groupHandler) HandleGroupListRequest(w http.ResponseWriter, r *http.Re
 
 	groupListResponse, svcErr := gh.groupService.GetGroupList(ctx, limit, offset, includeDisplay)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -85,7 +86,7 @@ func (gh *groupHandler) HandleGroupListByPathRequest(w http.ResponseWriter, r *h
 
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -93,7 +94,7 @@ func (gh *groupHandler) HandleGroupListByPathRequest(w http.ResponseWriter, r *h
 
 	groupListResponse, svcErr := gh.groupService.GetGroupsByPath(ctx, path, limit, offset, includeDisplay)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -114,9 +115,11 @@ func (gh *groupHandler) HandleGroupPostRequest(w http.ResponseWriter, r *http.Re
 	createRequest, err := sysutils.DecodeJSONBody[CreateGroupRequest](r)
 	if err != nil {
 		errResp := apierror.ErrorResponse{
-			Code:        ErrorInvalidRequestFormat.Code,
-			Message:     ErrorInvalidRequestFormat.Error,
-			Description: "Failed to parse request body: " + err.Error(),
+			Code:    ErrorInvalidRequestFormat.Code,
+			Message: ErrorInvalidRequestFormat.Error,
+			Description: core.I18nMessage{
+				Key:          "error.groupservice.create_group_request_parse_failed_description",
+				DefaultValue: "Failed to parse request body: " + err.Error()},
 		}
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, errResp)
 		return
@@ -125,7 +128,7 @@ func (gh *groupHandler) HandleGroupPostRequest(w http.ResponseWriter, r *http.Re
 	sanitizedRequest := gh.sanitizeCreateGroupRequest(createRequest)
 	createdGroup, svcErr := gh.groupService.CreateGroup(ctx, sanitizedRequest)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -148,9 +151,11 @@ func (gh *groupHandler) HandleGroupPostByPathRequest(w http.ResponseWriter, r *h
 	createRequest, err := sysutils.DecodeJSONBody[CreateGroupByPathRequest](r)
 	if err != nil {
 		errResp := apierror.ErrorResponse{
-			Code:        ErrorInvalidRequestFormat.Code,
-			Message:     ErrorInvalidRequestFormat.Error,
-			Description: "Failed to parse request body: " + err.Error(),
+			Code:    ErrorInvalidRequestFormat.Code,
+			Message: ErrorInvalidRequestFormat.Error,
+			Description: core.I18nMessage{
+				Key:          "error.groupservice.create_group_by_path_request_parse_failed_description",
+				DefaultValue: "Failed to parse request body: " + err.Error()},
 		}
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, errResp)
 		return
@@ -158,7 +163,7 @@ func (gh *groupHandler) HandleGroupPostByPathRequest(w http.ResponseWriter, r *h
 
 	group, svcErr := gh.groupService.CreateGroupByPath(ctx, path, *createRequest)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -188,7 +193,7 @@ func (gh *groupHandler) HandleGroupGetRequest(w http.ResponseWriter, r *http.Req
 
 	group, svcErr := gh.groupService.GetGroup(ctx, id, includeDisplay)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -217,9 +222,12 @@ func (gh *groupHandler) HandleGroupPutRequest(w http.ResponseWriter, r *http.Req
 	updateRequest, err := sysutils.DecodeJSONBody[UpdateGroupRequest](r)
 	if err != nil {
 		errResp := apierror.ErrorResponse{
-			Code:        ErrorInvalidRequestFormat.Code,
-			Message:     ErrorInvalidRequestFormat.Error,
-			Description: "Failed to parse request body: " + err.Error(),
+			Code:    ErrorInvalidRequestFormat.Code,
+			Message: ErrorInvalidRequestFormat.Error,
+			Description: core.I18nMessage{
+				Key:          "error.groupservice.update_group_request_parse_failed_description",
+				DefaultValue: "Failed to parse request body: " + err.Error(),
+			},
 		}
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, errResp)
 		return
@@ -228,7 +236,7 @@ func (gh *groupHandler) HandleGroupPutRequest(w http.ResponseWriter, r *http.Req
 	sanitizedRequest := gh.sanitizeUpdateGroupRequest(updateRequest)
 	group, svcErr := gh.groupService.UpdateGroup(ctx, id, sanitizedRequest)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -256,7 +264,7 @@ func (gh *groupHandler) HandleGroupDeleteRequest(w http.ResponseWriter, r *http.
 
 	svcErr := gh.groupService.DeleteGroup(ctx, id)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -283,7 +291,7 @@ func (gh *groupHandler) HandleGroupMembersGetRequest(w http.ResponseWriter, r *h
 
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -291,7 +299,7 @@ func (gh *groupHandler) HandleGroupMembersGetRequest(w http.ResponseWriter, r *h
 
 	memberListResponse, svcErr := gh.groupService.GetGroupMembers(ctx, id, limit, offset, includeDisplay)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -310,13 +318,13 @@ func (gh *groupHandler) HandleGroupMembersAddRequest(w http.ResponseWriter, r *h
 
 	id := r.PathValue("id")
 	if id == "" {
-		gh.handleError(w, logger, &ErrorMissingGroupID)
+		gh.handleError(w, &ErrorMissingGroupID)
 		return
 	}
 
 	membersRequest, err := sysutils.DecodeJSONBody[MembersRequest](r)
 	if err != nil {
-		gh.handleError(w, logger, &ErrorInvalidRequestFormat)
+		gh.handleError(w, &ErrorInvalidRequestFormat)
 		return
 	}
 
@@ -324,7 +332,7 @@ func (gh *groupHandler) HandleGroupMembersAddRequest(w http.ResponseWriter, r *h
 
 	group, svcErr := gh.groupService.AddGroupMembers(ctx, id, sanitizedRequest.Members)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -339,13 +347,13 @@ func (gh *groupHandler) HandleGroupMembersRemoveRequest(w http.ResponseWriter, r
 
 	id := r.PathValue("id")
 	if id == "" {
-		gh.handleError(w, logger, &ErrorMissingGroupID)
+		gh.handleError(w, &ErrorMissingGroupID)
 		return
 	}
 
 	membersRequest, err := sysutils.DecodeJSONBody[MembersRequest](r)
 	if err != nil {
-		gh.handleError(w, logger, &ErrorInvalidRequestFormat)
+		gh.handleError(w, &ErrorInvalidRequestFormat)
 		return
 	}
 
@@ -353,7 +361,7 @@ func (gh *groupHandler) HandleGroupMembersRemoveRequest(w http.ResponseWriter, r
 
 	group, svcErr := gh.groupService.RemoveGroupMembers(ctx, id, sanitizedRequest.Members)
 	if svcErr != nil {
-		gh.handleError(w, logger, svcErr)
+		gh.handleError(w, svcErr)
 		return
 	}
 
@@ -362,9 +370,8 @@ func (gh *groupHandler) HandleGroupMembersRemoveRequest(w http.ResponseWriter, r
 }
 
 // handleError handles service errors and returns appropriate HTTP responses.
-func (gh *groupHandler) handleError(w http.ResponseWriter, logger *log.Logger,
-	svcErr *serviceerror.ServiceError) {
-	statusCode := http.StatusInternalServerError
+func (gh *groupHandler) handleError(w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
+	var statusCode int
 	if svcErr.Type == serviceerror.ClientErrorType {
 		switch svcErr.Code {
 		case ErrorGroupNotFound.Code:
@@ -374,21 +381,16 @@ func (gh *groupHandler) handleError(w http.ResponseWriter, logger *log.Logger,
 		case ErrorInvalidOUID.Code, ErrorCannotDeleteGroup.Code,
 			ErrorInvalidRequestFormat.Code, ErrorMissingGroupID.Code,
 			ErrorInvalidLimit.Code, ErrorInvalidOffset.Code,
-			ErrorEmptyMembers.Code, ErrorInvalidUserMemberID.Code,
-			ErrorInvalidGroupMemberID.Code:
+			ErrorEmptyMembers.Code, ErrorInvalidMemberType.Code,
+			ErrorInvalidMemberID.Code, ErrorInvalidGroupMemberID.Code:
 			statusCode = http.StatusBadRequest
 		case serviceerror.ErrorUnauthorized.Code:
 			statusCode = http.StatusForbidden
 		default:
 			statusCode = http.StatusBadRequest
 		}
-	}
-
-	if statusCode == http.StatusInternalServerError {
-		logger.Error("Internal server error occurred", log.String("error", svcErr.Error),
-			log.String("description", svcErr.ErrorDescription))
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
+	} else {
+		statusCode = http.StatusInternalServerError
 	}
 
 	errResp := apierror.ErrorResponse{
@@ -477,9 +479,12 @@ func extractAndValidatePath(w http.ResponseWriter, r *http.Request) (string, boo
 	path := r.PathValue("path")
 	if path == "" {
 		errResp := apierror.ErrorResponse{
-			Code:        ErrorInvalidRequestFormat.Code,
-			Message:     ErrorInvalidRequestFormat.Error,
-			Description: "Handle path is required",
+			Code:    ErrorInvalidRequestFormat.Code,
+			Message: ErrorInvalidRequestFormat.Error,
+			Description: core.I18nMessage{
+				Key:          "error.groupservice.handle_path_required_description",
+				DefaultValue: "Handle path is required",
+			},
 		}
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, errResp)
 		return "", true

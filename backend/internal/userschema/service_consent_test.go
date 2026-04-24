@@ -112,7 +112,7 @@ func (s *UserSchemaServiceConsentTestSuite) TestWrapConsentServiceError_Nil() {
 }
 
 func (s *UserSchemaServiceConsentTestSuite) TestWrapConsentServiceError_ClientError() {
-	clientErr := &serviceerror.I18nServiceError{
+	clientErr := &serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "CSE-1007",
 	}
@@ -125,7 +125,7 @@ func (s *UserSchemaServiceConsentTestSuite) TestWrapConsentServiceError_ClientEr
 }
 
 func (s *UserSchemaServiceConsentTestSuite) TestWrapConsentServiceError_ServerError() {
-	serverErr := &serviceerror.I18nServiceError{
+	serverErr := &serviceerror.ServiceError{
 		Type: serviceerror.ServerErrorType,
 		Code: "CSE-500",
 	}
@@ -185,7 +185,7 @@ func (s *UserSchemaServiceConsentTestSuite) TestCreateMissingConsentElements_Val
 
 	names := []string{"email"}
 	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", names).
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result := svc.createMissingConsentElements(context.Background(), "default", names, log.GetLogger())
 
@@ -201,7 +201,7 @@ func (s *UserSchemaServiceConsentTestSuite) TestCreateMissingConsentElements_Cre
 	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", names).
 		Return([]string{}, nil)
 	cMock.EXPECT().CreateConsentElements(mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result := svc.createMissingConsentElements(context.Background(), "default", names, log.GetLogger())
 
@@ -226,7 +226,7 @@ func (s *UserSchemaServiceConsentTestSuite) TestDeleteConsentElements() {
 	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "email").
 		Return([]consent.ConsentElement{{ID: "e1", Name: "email"}}, nil)
 	cMock.EXPECT().DeleteConsentElement(mock.Anything, "default", "e1").
-		Return((*serviceerror.I18nServiceError)(nil))
+		Return((*serviceerror.ServiceError)(nil))
 
 	result := svc.deleteConsentElements(context.Background(), []string{"email"}, log.GetLogger())
 
@@ -267,7 +267,7 @@ func (s *UserSchemaServiceConsentTestSuite) TestDeleteConsentElements_OtherDelet
 	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "email").
 		Return([]consent.ConsentElement{{ID: "e1", Name: "email"}}, nil)
 	cMock.EXPECT().DeleteConsentElement(mock.Anything, "default", "e1").
-		Return(&serviceerror.InternalServerErrorWithI18n)
+		Return(&serviceerror.InternalServerError)
 
 	result := svc.deleteConsentElements(context.Background(), []string{"email"}, log.GetLogger())
 
@@ -279,7 +279,7 @@ func (s *UserSchemaServiceConsentTestSuite) TestDeleteConsentElements_ListError(
 	svc := newTestSchemaServiceWithConsent(cMock)
 
 	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "email").
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result := svc.deleteConsentElements(context.Background(), []string{"email"}, log.GetLogger())
 
@@ -293,12 +293,12 @@ func (s *UserSchemaServiceConsentTestSuite) TestDeleteConsentElements_MultipleAt
 	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "email").
 		Return([]consent.ConsentElement{{ID: "e1", Name: "email"}}, nil)
 	cMock.EXPECT().DeleteConsentElement(mock.Anything, "default", "e1").
-		Return((*serviceerror.I18nServiceError)(nil))
+		Return((*serviceerror.ServiceError)(nil))
 
 	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "phone").
 		Return([]consent.ConsentElement{{ID: "e2", Name: "phone"}}, nil)
 	cMock.EXPECT().DeleteConsentElement(mock.Anything, "default", "e2").
-		Return((*serviceerror.I18nServiceError)(nil))
+		Return((*serviceerror.ServiceError)(nil))
 
 	result := svc.deleteConsentElements(context.Background(), []string{"email", "phone"}, log.GetLogger())
 
@@ -347,7 +347,7 @@ func (s *UserSchemaServiceConsentTestSuite) TestSyncConsentElementsOnCreate_Crea
 
 	schema := json.RawMessage(`{"email":{}}`)
 	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result := svc.syncConsentElementsOnCreate(context.Background(), schema, log.GetLogger())
 
@@ -402,7 +402,7 @@ func (s *UserSchemaServiceConsentTestSuite) TestSyncConsentElementsOnUpdate_Attr
 	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "phone").
 		Return([]consent.ConsentElement{{ID: "e2", Name: "phone"}}, nil)
 	cMock.EXPECT().DeleteConsentElement(mock.Anything, "default", "e2").
-		Return((*serviceerror.I18nServiceError)(nil))
+		Return((*serviceerror.ServiceError)(nil))
 
 	result := svc.syncConsentElementsOnUpdate(context.Background(), oldSchema, newSchema, log.GetLogger())
 
@@ -441,7 +441,7 @@ func (s *UserSchemaServiceConsentTestSuite) TestSyncConsentElementsOnUpdate_Crea
 	newSchema := json.RawMessage(`{"email":{},"phone":{}}`)
 
 	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result := svc.syncConsentElementsOnUpdate(context.Background(), oldSchema, newSchema, log.GetLogger())
 
@@ -458,7 +458,7 @@ func (s *UserSchemaServiceConsentTestSuite) TestSyncConsentElementsOnUpdate_Dele
 	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", mock.Anything).
 		Return([]string{"email"}, nil)
 	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "phone").
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	result := svc.syncConsentElementsOnUpdate(context.Background(), oldSchema, newSchema, log.GetLogger())
 
@@ -495,7 +495,7 @@ func (s *UserSchemaServiceConsentTestSuite) TestCreateUserSchema_ConsentSyncFail
 	// Consent sync fails.
 	cMock.On("IsEnabled").Return(true)
 	cMock.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 	// Compensation: schema must be deleted.
 	storeMock.On("DeleteUserSchemaByID", mock.Anything, mock.Anything).Return(nil).Maybe()
 
@@ -551,7 +551,7 @@ func (s *UserSchemaServiceConsentTestSuite) TestUpdateUserSchema_ConsentSyncFail
 	// Consent sync fails: ValidateConsentElements returns an I18n error.
 	cMock.On("IsEnabled").Return(true)
 	cMock.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+		Return(nil, &serviceerror.InternalServerError)
 
 	request := UpdateUserSchemaRequest{
 		Name:   "test-schema",
@@ -602,9 +602,9 @@ func (s *UserSchemaServiceConsentTestSuite) TestDeleteUserSchema_ConsentEnabled_
 	storeMock.On("DeleteUserSchemaByID", mock.Anything, "schema-id").Return(nil)
 	// Consent element cleanup: ListConsentElements → found → DeleteConsentElement
 	cMock.On("ListConsentElements", mock.Anything, "default", consent.NamespaceAttribute, "email").
-		Return([]consent.ConsentElement{{ID: "elem-1", Name: "email"}}, (*serviceerror.I18nServiceError)(nil))
+		Return([]consent.ConsentElement{{ID: "elem-1", Name: "email"}}, (*serviceerror.ServiceError)(nil))
 	cMock.On("DeleteConsentElement", mock.Anything, "default", "elem-1").
-		Return((*serviceerror.I18nServiceError)(nil))
+		Return((*serviceerror.ServiceError)(nil))
 
 	svcErr := svc.DeleteUserSchema(context.Background(), "schema-id")
 

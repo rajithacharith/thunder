@@ -24,8 +24,10 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/authnprovider"
+	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
 	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/system/crypto/token"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/observability/observabilitymock"
@@ -1152,20 +1154,20 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_RetainsTokenAndAvail
 	}
 
 	previousToken := "previous-auth-token"
-	previousAvailableAttrs := &authnprovider.AvailableAttributes{
-		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+	previousAvailableAttrs := &authnprovidercm.AttributesResponse{
+		Attributes: map[string]*authnprovidercm.AttributeResponse{
 			"email": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: true,
 				},
 			},
 			"phone": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: false,
 				},
 			},
 		},
-		Verifications: map[string]*authnprovider.VerificationResponse{},
+		Verifications: map[string]*authnprovidercm.VerificationResponse{},
 	}
 
 	ctx := &EngineContext{
@@ -1229,32 +1231,32 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_UpdatesTokenAndAvail
 	}
 
 	previousToken := "previous-auth-token"
-	previousAvailableAttrs := &authnprovider.AvailableAttributes{
-		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+	previousAvailableAttrs := &authnprovidercm.AttributesResponse{
+		Attributes: map[string]*authnprovidercm.AttributeResponse{
 			"email": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: true,
 				},
 			},
 		},
-		Verifications: map[string]*authnprovider.VerificationResponse{},
+		Verifications: map[string]*authnprovidercm.VerificationResponse{},
 	}
 
 	newToken := "new-auth-token" //nolint:gosec // G101: This is test data, not a real credential
-	newAvailableAttrs := &authnprovider.AvailableAttributes{
-		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+	newAvailableAttrs := &authnprovidercm.AttributesResponse{
+		Attributes: map[string]*authnprovidercm.AttributeResponse{
 			"phone": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: true,
 				},
 			},
 			"address": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: false,
 				},
 			},
 		},
-		Verifications: map[string]*authnprovider.VerificationResponse{},
+		Verifications: map[string]*authnprovidercm.VerificationResponse{},
 	}
 
 	ctx := &EngineContext{
@@ -1353,15 +1355,15 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_TokenSetButAvailable
 		observabilitySvc: mockObservability,
 	}
 
-	previousAvailableAttrs := &authnprovider.AvailableAttributes{
-		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+	previousAvailableAttrs := &authnprovidercm.AttributesResponse{
+		Attributes: map[string]*authnprovidercm.AttributeResponse{
 			"email": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: true,
 				},
 			},
 		},
-		Verifications: map[string]*authnprovider.VerificationResponse{},
+		Verifications: map[string]*authnprovidercm.VerificationResponse{},
 	}
 
 	ctx := &EngineContext{
@@ -1438,6 +1440,7 @@ func (s *EngineTestSuite) TestHandleDisplayOnlyPromptResponse_ForwardToNextNode(
 
 	mockGraph := coremock.NewGraphInterfaceMock(t)
 	mockGraph.On("GetNode", "next-node").Return(mockNextNode, true)
+	mockGraph.On("HasSegments").Return(false)
 
 	fe := &flowEngine{
 		observabilitySvc: mockObservability,
@@ -1597,4 +1600,368 @@ func (s *EngineTestSuite) TestHandleDisplayOnlyPromptResponse_MergesAdditionalDa
 	s.Nil(nextNode)
 	// Verify merged data
 	s.Equal(common.FlowStatusComplete, flowStep.Status)
+}
+
+func (s *EngineTestSuite) TestValidateChallengeToken_EmptyTokenHashSkipsValidation() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+	ctx := &EngineContext{
+		ExecutionID:        "test-exec-id",
+		ChallengeTokenIn:   "some-token",
+		ChallengeTokenHash: "",
+	}
+
+	svcErr := fe.validateChallengeToken(ctx, mockNode)
+	s.Nil(svcErr)
+}
+
+func (s *EngineTestSuite) TestValidateChallengeToken_SkipValidationWhenPolicyAllows() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetExecutionPolicy").Return(&core.ExecutionPolicy{
+		SkipChallengeValidation: true,
+	})
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	// Generate a token and hash it
+	tokenStr, err := token.GenerateSecureToken()
+	s.NoError(err)
+	tokenHash := token.HashToken(tokenStr)
+
+	ctx := &EngineContext{
+		ExecutionID:        "test-exec-id",
+		ChallengeTokenIn:   "wrong-token",
+		ChallengeTokenHash: tokenHash,
+	}
+
+	svcErr := fe.validateChallengeToken(ctx, mockNode)
+	s.Nil(svcErr)
+}
+
+func (s *EngineTestSuite) TestValidateChallengeToken_ReturnsErrorWhenTokenEmpty() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetExecutionPolicy").Return(nil)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	// Generate a token and hash it
+	tokenStr, err := token.GenerateSecureToken()
+	s.NoError(err)
+	tokenHash := token.HashToken(tokenStr)
+
+	ctx := &EngineContext{
+		ExecutionID:        "test-exec-id",
+		ChallengeTokenIn:   "", // Empty token
+		ChallengeTokenHash: tokenHash,
+	}
+
+	svcErr := fe.validateChallengeToken(ctx, mockNode)
+	s.NotNil(svcErr)
+	s.Equal("FES-1009", svcErr.Code)
+}
+
+func (s *EngineTestSuite) TestValidateChallengeToken_ReturnsErrorWhenTokenInvalid() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetExecutionPolicy").Return(nil)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	// Generate a token and hash it
+	tokenStr, err := token.GenerateSecureToken()
+	s.NoError(err)
+	tokenHash := token.HashToken(tokenStr)
+
+	ctx := &EngineContext{
+		ExecutionID:        "test-exec-id",
+		ChallengeTokenIn:   "invalid-token",
+		ChallengeTokenHash: tokenHash,
+	}
+
+	svcErr := fe.validateChallengeToken(ctx, mockNode)
+	s.NotNil(svcErr)
+	s.Equal("FES-1009", svcErr.Code)
+}
+
+func (s *EngineTestSuite) TestValidateChallengeToken_SucceedsWhenTokenValid() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetExecutionPolicy").Return(nil)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	// Generate a token and hash it
+	tokenStr, err := token.GenerateSecureToken()
+	s.NoError(err)
+	tokenHash := token.HashToken(tokenStr)
+
+	ctx := &EngineContext{
+		ExecutionID:        "test-exec-id",
+		ChallengeTokenIn:   tokenStr,
+		ChallengeTokenHash: tokenHash,
+	}
+
+	svcErr := fe.validateChallengeToken(ctx, mockNode)
+	s.Nil(svcErr)
+}
+
+func (s *EngineTestSuite) TestValidateChallengeToken_SkipValidationWhenNodeNil() {
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	// Generate a token and hash it
+	tokenStr, err := token.GenerateSecureToken()
+	s.NoError(err)
+	tokenHash := token.HashToken(tokenStr)
+
+	ctx := &EngineContext{
+		ExecutionID:        "test-exec-id",
+		ChallengeTokenIn:   "wrong-token",
+		ChallengeTokenHash: tokenHash,
+	}
+
+	svcErr := fe.validateChallengeToken(ctx, nil)
+	s.NotNil(svcErr)
+	s.Equal("FES-1009", svcErr.Code)
+}
+
+func (s *EngineTestSuite) TestValidateChallengeToken_SkipValidationWhenPolicyNil() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetExecutionPolicy").Return(nil)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	// Generate a token and hash it
+	tokenStr, err := token.GenerateSecureToken()
+	s.NoError(err)
+	tokenHash := token.HashToken(tokenStr)
+
+	ctx := &EngineContext{
+		ExecutionID:        "test-exec-id",
+		ChallengeTokenIn:   tokenStr,
+		ChallengeTokenHash: tokenHash,
+	}
+
+	svcErr := fe.validateChallengeToken(ctx, mockNode)
+	s.Nil(svcErr)
+}
+
+func (s *EngineTestSuite) TestValidateSegmentResumePolicy_NoSegments() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+	ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: "seg-1"}
+
+	s.False(fe.validateSegmentResumePolicy(ctx, fe.logger))
+}
+
+func (s *EngineTestSuite) TestValidateSegmentResumePolicy_EmptySegmentID() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(true)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+	ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: ""}
+
+	s.False(fe.validateSegmentResumePolicy(ctx, fe.logger))
+}
+
+func (s *EngineTestSuite) TestValidateSegmentResumePolicy_SegmentNotFound() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(true)
+	mockGraph.On("GetSegmentByID", "seg-1").Return((*core.Segment)(nil))
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+	ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: "seg-1"}
+
+	s.False(fe.validateSegmentResumePolicy(ctx, fe.logger))
+}
+
+func (s *EngineTestSuite) TestValidateSegmentResumePolicy_StartNodeNotFound() {
+	t := s.T()
+	seg := &core.Segment{ID: "seg-1", StartNodeID: "task-node"}
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(true)
+	mockGraph.On("GetSegmentByID", "seg-1").Return(seg)
+	mockGraph.On("GetNode", "task-node").Return(nil, false)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+	ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: "seg-1"}
+
+	s.False(fe.validateSegmentResumePolicy(ctx, fe.logger))
+}
+
+func (s *EngineTestSuite) TestValidateSegmentResumePolicy_SetNodeExecutorFails() {
+	// Node reports TaskExecution type but NodeInterfaceMock doesn't implement
+	// ExecutorBackedNodeInterface, so the type assertion in setNodeExecutor fails.
+	t := s.T()
+	seg := &core.Segment{ID: "seg-1", StartNodeID: "task-node"}
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
+	mockNode.On("GetID").Return("task-node")
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(true)
+	mockGraph.On("GetSegmentByID", "seg-1").Return(seg)
+	mockGraph.On("GetNode", "task-node").Return(mockNode, true)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+	ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: "seg-1"}
+
+	s.False(fe.validateSegmentResumePolicy(ctx, fe.logger))
+}
+
+func (s *EngineTestSuite) TestValidateSegmentResumePolicy_NilPolicy() {
+	t := s.T()
+	seg := &core.Segment{ID: "seg-1", StartNodeID: "prompt-node"}
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetType").Return(common.NodeTypePrompt)
+	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil))
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(true)
+	mockGraph.On("GetSegmentByID", "seg-1").Return(seg)
+	mockGraph.On("GetNode", "prompt-node").Return(mockNode, true)
+
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+	ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: "seg-1"}
+
+	s.False(fe.validateSegmentResumePolicy(ctx, fe.logger))
+}
+
+func (s *EngineTestSuite) TestValidateSegmentResumePolicy_PolicyAllowsRestartFlag() {
+	tests := []struct {
+		name          string
+		allowRestart  bool
+		expectAllowed bool
+	}{
+		{"policy disallows restart", false, false},
+		{"policy allows restart", true, true},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			t := s.T()
+			seg := &core.Segment{ID: "seg-1", StartNodeID: "task-node"}
+			policy := &core.ExecutionPolicy{SkipChallengeValidation: true, AllowSegmentRestart: tt.allowRestart}
+
+			mockNode := coremock.NewNodeInterfaceMock(t)
+			mockNode.On("GetType").Return(common.NodeTypePrompt)
+			mockNode.On("GetExecutionPolicy").Return(policy)
+
+			mockGraph := coremock.NewGraphInterfaceMock(t)
+			mockGraph.On("HasSegments").Return(true)
+			mockGraph.On("GetSegmentByID", "seg-1").Return(seg)
+			mockGraph.On("GetNode", "task-node").Return(mockNode, true)
+
+			fe := &flowEngine{
+				logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+			}
+			ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: "seg-1"}
+
+			s.Equal(tt.expectAllowed, fe.validateSegmentResumePolicy(ctx, fe.logger))
+		})
+	}
+}
+
+func (s *EngineTestSuite) TestHandleDisplayOnlyPromptResponse_ForwardToNextNode_SetsSegmentID() {
+	t := s.T()
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(false).Maybe()
+
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(t)
+	mockPromptNode.On("GetNextNode").Return("next-node")
+
+	mockNextNode := coremock.NewNodeInterfaceMock(t)
+	mockNextNode.On("GetType").Return(common.NodeTypePrompt)
+	mockNextNode.On("GetID").Return("next-node")
+
+	seg := &core.Segment{ID: "seg-1", StartNodeID: "next-node"}
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetNode", "next-node").Return(mockNextNode, true)
+	mockGraph.On("HasSegments").Return(true)
+	mockGraph.On("GetSegmentByStartNode", "next-node").Return(seg)
+
+	fe := &flowEngine{observabilitySvc: mockObservability}
+	ctx := &EngineContext{
+		CurrentNode: mockPromptNode,
+		Graph:       mockGraph,
+	}
+
+	_, complete, err := fe.handleDisplayOnlyPromptResponse(ctx, &common.NodeResponse{
+		Status: common.NodeStatusComplete,
+	}, &FlowStep{Data: FlowData{}}, nil)
+
+	s.Nil(err)
+	s.False(complete)
+	s.Equal("seg-1", ctx.CurrentSegmentID)
+}
+
+func (s *EngineTestSuite) TestHandleDisplayOnlyPromptResponse_ForwardToNextNode_SegmentNotFound_KeepsEmptyID() {
+	t := s.T()
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(false).Maybe()
+
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(t)
+	mockPromptNode.On("GetNextNode").Return("next-node")
+
+	mockNextNode := coremock.NewNodeInterfaceMock(t)
+	mockNextNode.On("GetType").Return(common.NodeTypePrompt)
+	mockNextNode.On("GetID").Return("next-node")
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetNode", "next-node").Return(mockNextNode, true)
+	mockGraph.On("HasSegments").Return(true)
+	mockGraph.On("GetSegmentByStartNode", "next-node").Return((*core.Segment)(nil))
+
+	fe := &flowEngine{observabilitySvc: mockObservability}
+	ctx := &EngineContext{
+		CurrentNode: mockPromptNode,
+		Graph:       mockGraph,
+	}
+
+	_, complete, err := fe.handleDisplayOnlyPromptResponse(ctx, &common.NodeResponse{
+		Status: common.NodeStatusComplete,
+	}, &FlowStep{Data: FlowData{}}, nil)
+
+	s.Nil(err)
+	s.False(complete)
+	s.Equal("", ctx.CurrentSegmentID)
 }

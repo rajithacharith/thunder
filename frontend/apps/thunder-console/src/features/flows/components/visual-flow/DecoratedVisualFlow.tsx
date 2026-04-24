@@ -19,7 +19,8 @@
 import {CollisionPriority} from '@dnd-kit/abstract';
 import {move} from '@dnd-kit/helpers';
 import {DragDropProvider, type DragDropEventHandlers} from '@dnd-kit/react';
-import {Box} from '@wso2/oxygen-ui';
+import {Box, Button, Tooltip} from '@wso2/oxygen-ui';
+import {ArrowLeft, Save} from '@wso2/oxygen-ui-icons-react';
 import {
   type Connection,
   type Edge,
@@ -30,7 +31,6 @@ import {
   useUpdateNodeInternals,
 } from '@xyflow/react';
 import type {UpdateNodeInternals} from '@xyflow/system';
-import classNames from 'classnames';
 import {
   type Dispatch,
   useCallback,
@@ -41,7 +41,11 @@ import {
   type ReactElement,
   type SetStateAction,
 } from 'react';
+import {useTranslation} from 'react-i18next';
+import {useNavigate} from 'react-router';
+import CanvasToolbar from './CanvasToolbar';
 import FormRequiresViewDialog from './FormRequiresViewDialog';
+import ValidationBadge from './ValidationBadge';
 import VisualFlow, {type VisualFlowPropsInterface} from './VisualFlow';
 import VisualFlowConstants from '../../constants/VisualFlowConstants';
 import useComponentDelete from '../../hooks/useComponentDelete';
@@ -49,14 +53,19 @@ import useConfirmPasswordField from '../../hooks/useConfirmPasswordField';
 import useContainerDialogConfirm from '../../hooks/useContainerDialogConfirm';
 import useDeleteExecutionResource from '../../hooks/useDeleteExecutionResource';
 import useDragDropHandlers from '../../hooks/useDragDropHandlers';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import useFlowConfig from '../../hooks/useFlowConfig';
+import useFlowEvents from '../../hooks/useFlowEvents';
 import useGenerateStepElement from '../../hooks/useGenerateStepElement';
+import useInteractionState from '../../hooks/useInteractionState';
 import useResourceAdd from '../../hooks/useResourceAdd';
 import useStaticContentField from '../../hooks/useStaticContentField';
+import useUIPanelState from '../../hooks/useUIPanelState';
+import useValidationStatus from '../../hooks/useValidationStatus';
 import useVisualFlowHandlers from '../../hooks/useVisualFlowHandlers';
 import type {DragSourceData, DragTargetData, DragEventWithNative} from '../../models/drag-drop';
 import {BlockTypes, ElementTypes, type Element} from '../../models/elements';
 import type {MetadataInterface} from '../../models/metadata';
+import Notification, {NotificationType} from '../../models/notification';
 import {ResourceTypes, type Resource, type Resources} from '../../models/resources';
 import {type Step, type StepData} from '../../models/steps';
 import {type Template} from '../../models/templates';
@@ -75,7 +84,7 @@ import useNotificationSenders from '@/features/notification-senders/api/useNotif
 /**
  * Props interface of {@link DecoratedVisualFlow}
  */
-export interface DecoratedVisualFlowPropsInterface extends Omit<VisualFlowPropsInterface, 'edgeTypes' | 'onSave'> {
+export interface DecoratedVisualFlowPropsInterface extends Omit<VisualFlowPropsInterface, 'edgeTypes'> {
   resources: Resources;
   edgeTypes?: VisualFlowPropsInterface['edgeTypes'];
   onEdgeResolve?: (connection: Connection, nodes: Node[]) => Edge;
@@ -142,9 +151,45 @@ function DecoratedVisualFlow({
   const {toObject, getNodes, getEdges, updateNodeData, fitView} = useReactFlow();
   const updateNodeInternals: UpdateNodeInternals = useUpdateNodeInternals();
   const {deleteComponent} = useComponentDelete();
-  const {isResourcePanelOpen, isResourcePropertiesPanelOpen, isFlowMetadataLoading, metadata, onResourceDropOnCanvas} =
-    useFlowBuilderCore();
+  const {isResourcePanelOpen, isResourcePropertiesPanelOpen} = useUIPanelState();
+  const {notifyElementAdded, onAutoLayout} = useFlowEvents();
+  const {isFlowMetadataLoading, metadata, setFlowNodes} = useFlowConfig();
+  const {onResourceDropOnCanvas} = useInteractionState();
+
+  // Sync controlled nodes to the shared FlowConfig context so that
+  // ValidationProvider (which sits above this ReactFlowProvider) can
+  // compute validation notifications from the current node data.
+  // Only sync when node data actually changes — skip position-only
+  // updates (drag) to avoid unnecessary validation recomputation.
+  const prevNodeDataRef = useRef<string>('');
+
+  useEffect(() => {
+    const dataFingerprint = nodes.map((n) => `${n.id}:${JSON.stringify(n.data)}`).join('|');
+
+    if (dataFingerprint !== prevNodeDataRef.current) {
+      prevNodeDataRef.current = dataFingerprint;
+      setFlowNodes(nodes);
+    }
+  }, [nodes, setFlowNodes]);
   const {generateStepElement} = useGenerateStepElement();
+  const {t} = useTranslation();
+  const navigate = useNavigate();
+  const {notifications, openValidationPanel} = useValidationStatus();
+
+  const {errorCount, warningCount} = useMemo(() => {
+    let errors = 0;
+    let warnings = 0;
+
+    notifications?.forEach((notification: Notification) => {
+      const type = notification.getType();
+      if (type === NotificationType.ERROR) errors += 1;
+      else if (type === NotificationType.WARNING) warnings += 1;
+    });
+
+    return {errorCount: errors, warningCount: warnings};
+  }, [notifications]);
+
+  const hasErrors = errorCount > 0;
 
   // Fetch identity providers and notification senders to compute executor connections
   const {data: identityProviders} = useIdentityProviders();
@@ -256,17 +301,7 @@ function DecoratedVisualFlow({
   const autoLayoutTriggeredRef = useRef<boolean>(false);
 
   // Listen for auto-layout trigger events from parent components
-  useEffect(() => {
-    const handleTriggerAutoLayout = () => {
-      handleAutoLayout();
-    };
-
-    window.addEventListener('triggerAutoLayout', handleTriggerAutoLayout);
-
-    return () => {
-      window.removeEventListener('triggerAutoLayout', handleTriggerAutoLayout);
-    };
-  }, [handleAutoLayout]);
+  useEffect(() => onAutoLayout(handleAutoLayout), [onAutoLayout, handleAutoLayout]);
 
   // Effect to trigger auto-layout on initial load when nodes lack proper layout data
   useEffect(() => {
@@ -372,8 +407,8 @@ function DecoratedVisualFlow({
       // Check if this is a step being added to canvas (not reordering)
       const isStepDrop = sourceData.dragged?.resourceType === ResourceTypes.Step;
       if (isStepDrop && isCanvasTarget && !sourceData.isReordering) {
-        // Dispatch custom event to notify about element addition (for auto-layout hint)
-        window.dispatchEvent(new CustomEvent('flowElementAdded', {detail: {type: 'step'}}));
+        // Notify about element addition (for auto-layout hint)
+        notifyElementAdded('step');
       }
 
       // For canceled events or missing target, return early
@@ -387,22 +422,33 @@ function DecoratedVisualFlow({
           return;
         }
 
-        updateNodeData(sourceData.stepId, (node: Node) => {
-          const unorderedComponents: Element[] = (node?.data as StepData)?.components ?? [];
+        const sourceId = source?.id;
 
-          const reorderedNested = unorderedComponents.map((component: Element) => {
-            if (component?.components) {
+        updateNodeData(sourceData.stepId, (node: Node) => {
+          const components: Element[] = (node?.data as StepData)?.components ?? [];
+
+          // Determine which level the dragged element belongs to and only
+          // apply move() at that level. Applying move() at both levels can
+          // cause the projected source.index to reorder the wrong array.
+          const isTopLevel = components.some((c: Element) => c.id === sourceId);
+
+          if (isTopLevel) {
+            return {components: move([...components], event)};
+          }
+
+          // Element is nested — apply move() only inside the container that holds it
+          return {
+            components: components.map((component: Element) => {
+              if (!component.components) return component;
+
+              const hasElement = component.components.some((c: Element) => c.id === sourceId);
+              if (!hasElement) return component;
+
               return {
                 ...component,
                 components: move([...component.components], event),
               };
-            }
-
-            return component;
-          });
-
-          return {
-            components: move(reorderedNested, event),
+            }),
           };
         });
 
@@ -469,6 +515,7 @@ function DecoratedVisualFlow({
       addToViewAtIndex,
       addToFormAtIndex,
       getNodes,
+      notifyElementAdded,
     ],
   );
 
@@ -518,21 +565,62 @@ function DecoratedVisualFlow({
     [updateNodeData, updateNodeInternals],
   );
 
+  const handleBackToFlows = useCallback((): void => {
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    navigate('/flows');
+  }, [navigate]);
+
   return (
     <Box
-      className={classNames('decorated-visual-flow', 'react-flow-container')}
-      sx={(theme) => ({
+      sx={() => ({
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: 'var(--xy-background-color-default)',
-        p: 1,
-        ...theme.applyStyles('dark', {
-          backgroundColor: 'var(--xy-background-color-default)',
-        }),
+        '& .react-flow__edges': {zIndex: 9999},
+        '& .react-flow__node': {zIndex: '0 !important'},
+        '& .react-flow__handle': {
+          width: 10,
+          height: 10,
+          zIndex: 10000,
+          '&:hover': {borderColor: 'var(--oxygen-palette-primary-main)'},
+        },
       })}
     >
-      <Box sx={{flexGrow: 1, minHeight: 0}}>
+      {/* ── Top bar: back button | toolbar | save button ── */}
+      <Box sx={{display: 'flex', alignItems: 'center', px: 2, py: 1, flexShrink: 0}}>
+        <Button
+          variant="text"
+          size="small"
+          startIcon={<ArrowLeft size={14} />}
+          onClick={handleBackToFlows}
+          sx={{textTransform: 'none', fontSize: '0.8rem', color: 'text.secondary', whiteSpace: 'nowrap'}}
+        >
+          {t('flows:core.headerPanel.goBack')}
+        </Button>
+
+        {/* Centered toolbar */}
+        <Box sx={{flex: 1, display: 'flex', justifyContent: 'center'}}>
+          <CanvasToolbar onAutoLayout={handleAutoLayout} />
+        </Box>
+
+        <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+          <ValidationBadge errorCount={errorCount} warningCount={warningCount} />
+          <Tooltip
+            title={
+              hasErrors ? t('flows:core.headerPanel.saveDisabledTooltip', 'Fix validation errors before saving') : ''
+            }
+          >
+            <span>
+              <Button variant="contained" disabled={hasErrors} startIcon={<Save size={18} />} onClick={handleSave}>
+                {t('flows:core.headerPanel.save')}
+              </Button>
+            </span>
+          </Tooltip>
+        </Box>
+      </Box>
+
+      {/* ── Three-column builder area ── */}
+      <Box sx={{flex: 1, overflow: 'hidden', p: 1, pt: 0}}>
         <DragDropProvider onDragEnd={handleDragEnd} onDragOver={handleDragOver}>
           <ResourcePanel
             resources={resources}
@@ -542,31 +630,36 @@ function DecoratedVisualFlow({
             flowTitle={flowTitle}
             flowHandle={flowHandle}
             onFlowTitleChange={onFlowTitleChange}
-          >
-            <ResourcePropertyPanel open={isResourcePropertiesPanelOpen} onComponentDelete={deleteComponent}>
-              <Droppable
-                id={generateResourceId(VisualFlowConstants.FLOW_BUILDER_CANVAS_ID)}
-                type={VisualFlowConstants.FLOW_BUILDER_DROPPABLE_CANVAS_ID}
-                accept={[...VisualFlowConstants.FLOW_BUILDER_CANVAS_ALLOWED_RESOURCE_TYPES]}
-                collisionPriority={CollisionPriority.Low}
-              >
-                <VisualFlow
-                  nodes={nodes}
-                  onNodesChange={onNodesChange}
-                  edges={edges}
-                  edgeTypes={edgeTypes}
-                  onEdgesChange={onEdgesChange}
-                  onConnect={handleConnect}
-                  onNodesDelete={handleNodesDelete}
-                  onEdgesDelete={handleEdgesDelete}
-                  onNodeDragStop={handleNodeDragStop}
-                  handleAutoLayout={handleAutoLayout}
-                  onSave={handleSave}
-                  {...rest}
+            rightPanel={
+              <Box marginLeft={1} display="flex" flexDirection="row">
+                <ResourcePropertyPanel
+                  open={isResourcePropertiesPanelOpen && !openValidationPanel}
+                  onComponentDelete={deleteComponent}
                 />
-              </Droppable>
-              <ValidationPanel />
-            </ResourcePropertyPanel>
+                <ValidationPanel open={openValidationPanel ?? false} />
+              </Box>
+            }
+          >
+            <Droppable
+              id={generateResourceId(VisualFlowConstants.FLOW_BUILDER_CANVAS_ID)}
+              type={VisualFlowConstants.FLOW_BUILDER_DROPPABLE_CANVAS_ID}
+              accept={[...VisualFlowConstants.FLOW_BUILDER_CANVAS_ALLOWED_RESOURCE_TYPES]}
+              hideDropZones
+              collisionPriority={CollisionPriority.Low}
+            >
+              <VisualFlow
+                nodes={nodes}
+                onNodesChange={onNodesChange}
+                edges={edges}
+                edgeTypes={edgeTypes}
+                onEdgesChange={onEdgesChange}
+                onConnect={handleConnect}
+                onNodesDelete={handleNodesDelete}
+                onEdgesDelete={handleEdgesDelete}
+                onNodeDragStop={handleNodeDragStop}
+                {...rest}
+              />
+            </Droppable>
           </ResourcePanel>
         </DragDropProvider>
       </Box>

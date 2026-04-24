@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -62,7 +63,7 @@ func (suite *EmailExecutorTestSuite) SetupTest() {
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UserInviteTemplate_Success() {
 	ctx := &core.NodeContext{
-		ExecutionID:  "test-flow-id",
+		ExecutionID:  "test-execution-id",
 		FlowType:     common.FlowTypeUserOnboarding,
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
@@ -108,7 +109,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UserInviteTemplate_Suc
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_InviteLinkNotExposed() {
 	ctx := &core.NodeContext{
-		ExecutionID:  "test-flow-id",
+		ExecutionID:  "test-execution-id",
 		FlowType:     common.FlowTypeRegistration,
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
@@ -149,7 +150,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_Invit
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UsesUserInputOverRuntimeRecipient() {
 	ctx := &core.NodeContext{
-		ExecutionID:  "test-flow-id",
+		ExecutionID:  "test-execution-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
@@ -191,7 +192,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UsesUserInputOverRunti
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmailFromRuntimeData() {
 	ctx := &core.NodeContext{
-		ExecutionID:  "test-flow-id",
+		ExecutionID:  "test-execution-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs:   make(map[string]string),
 		RuntimeData: map[string]string{
@@ -231,7 +232,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmailFromRuntimeData()
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingRecipient() {
 	ctx := &core.NodeContext{
-		ExecutionID:  "test-flow-id",
+		ExecutionID:  "test-execution-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs:   make(map[string]string),
 		RuntimeData: map[string]string{
@@ -252,7 +253,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingRecipient() {
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingInviteLink() {
 	ctx := &core.NodeContext{
-		ExecutionID:  "test-flow-id",
+		ExecutionID:  "test-execution-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
@@ -273,7 +274,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingInviteLink() {
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_MissingInviteLink() {
 	ctx := &core.NodeContext{
-		ExecutionID:  "test-flow-id",
+		ExecutionID:  "test-execution-id",
 		FlowType:     common.FlowTypeRegistration,
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
@@ -295,7 +296,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_Missi
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingTemplateProperty_DefaultsToUserInvite() {
 	ctx := &core.NodeContext{
-		ExecutionID:  "test-flow-id",
+		ExecutionID:  "test-execution-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
@@ -335,7 +336,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingTemplatePropert
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmptyTemplateString_DefaultsToUserInvite() {
 	ctx := &core.NodeContext{
-		ExecutionID:  "test-flow-id",
+		ExecutionID:  "test-execution-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
@@ -376,7 +377,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmptyTemplateString_De
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_InvalidTemplateType_ReturnsError() {
 	ctx := &core.NodeContext{
-		ExecutionID:  "test-flow-id",
+		ExecutionID:  "test-execution-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
@@ -398,7 +399,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_InvalidTemplateType_Re
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_TemplateRenderError() {
 	ctx := &core.NodeContext{
-		ExecutionID:  "test-flow-id",
+		ExecutionID:  "test-execution-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
@@ -416,7 +417,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_TemplateRenderError() 
 		template.ScenarioUserInvite,
 		template.TemplateTypeEmail,
 		mock.Anything,
-	).Return(nil, &serviceerror.I18nServiceError{Code: "TMP-5000"})
+	).Return(nil, &serviceerror.ServiceError{Code: "TMP-5000"})
 
 	resp, err := suite.executor.Execute(ctx)
 	if suite.Error(err) {
@@ -441,7 +442,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilTemplateService() {
 	noServiceExecutor := newEmailExecutor(mockFactory, suite.mockEmailClient, nil)
 
 	ctx := &core.NodeContext{
-		ExecutionID:  "test-flow-id",
+		ExecutionID:  "test-execution-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
@@ -463,7 +464,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilTemplateService() {
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ClientError() {
 	ctx := &core.NodeContext{
-		ExecutionID:  "test-flow-id",
+		ExecutionID:  "test-execution-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
@@ -496,9 +497,60 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ClientError() {
 	suite.Equal("Failed to send email", resp.FailureReason)
 }
 
-func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ServerError() {
+func (suite *EmailExecutorTestSuite) TestExecute_SendMode_KnownSMTPErrors() {
+	cases := []struct {
+		name    string
+		sendErr error
+	}{
+		{"SMTPConnectionError", email.ErrorSMTPConnection},
+		{"SMTPAuthError", email.ErrorSMTPAuth},
+		{"EmailSendFailedError", email.ErrorEmailSendFailed},
+	}
+
+	for _, tc := range cases {
+		suite.Run(tc.name, func() {
+			suite.SetupTest()
+
+			ctx := &core.NodeContext{
+				ExecutionID:  "test-execution-id",
+				ExecutorMode: ExecutorModeSend,
+				UserInputs: map[string]string{
+					"email": "user@example.com",
+				},
+				RuntimeData: map[string]string{
+					common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
+				},
+				NodeProperties: map[string]interface{}{
+					"emailTemplate": "USER_INVITE",
+				},
+			}
+
+			suite.mockTemplateService.On("Render",
+				mock.Anything,
+				template.ScenarioUserInvite,
+				template.TemplateTypeEmail,
+				mock.Anything,
+			).Return(&template.RenderedTemplate{
+				Subject: "You're Invited to Register",
+				Body:    "<html><body>Complete Registration</body></html>",
+				IsHTML:  true,
+			}, nil)
+
+			suite.mockEmailClient.On("Send", mock.Anything).Return(tc.sendErr)
+
+			resp, err := suite.executor.Execute(ctx)
+
+			suite.NoError(err)
+			suite.Equal(common.ExecFailure, resp.Status)
+			suite.Equal("Failed to send email", resp.FailureReason)
+			suite.Empty(resp.AdditionalData[common.DataEmailSent])
+		})
+	}
+}
+
+func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UnexpectedError() {
 	ctx := &core.NodeContext{
-		ExecutionID:  "test-flow-id",
+		ExecutionID:  "test-execution-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
@@ -522,7 +574,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ServerError() {
 		IsHTML:  true,
 	}, nil)
 
-	suite.mockEmailClient.On("Send", mock.Anything).Return(email.ErrorSMTPConnection)
+	suite.mockEmailClient.On("Send", mock.Anything).Return(fmt.Errorf("unexpected internal error"))
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -530,8 +582,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ServerError() {
 	suite.Nil(resp)
 }
 
-func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_NoOp() {
-	// Create executor with nil email client (SMTP not configured)
+func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_ReturnsFailure() {
 	mockBaseExecutor := coremock.NewExecutorInterfaceMock(suite.T())
 	mockFactory := coremock.NewFlowFactoryInterfaceMock(suite.T())
 	mockFactory.On("CreateExecutor",
@@ -546,7 +597,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_NoOp() 
 	noEmailExecutor := newEmailExecutor(mockFactory, nil, suite.mockTemplateService)
 
 	ctx := &core.NodeContext{
-		ExecutionID:  "test-flow-id",
+		ExecutionID:  "test-execution-id",
 		FlowType:     common.FlowTypeUserOnboarding,
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
@@ -563,39 +614,14 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_NoOp() 
 	resp, err := noEmailExecutor.Execute(ctx)
 
 	suite.NoError(err)
-	suite.Equal(common.ExecComplete, resp.Status)
+	suite.Equal(common.ExecFailure, resp.Status)
 	suite.Equal(dataValueFalse, resp.AdditionalData[common.DataEmailSent])
-}
-
-func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_SelfRegistration_InviteLinkNotExposed() {
-	noEmailExecutor := newEmailExecutor(suite.mockFlowFactory, nil, suite.mockTemplateService)
-
-	ctx := &core.NodeContext{
-		ExecutionID:  "test-flow-id",
-		FlowType:     common.FlowTypeRegistration,
-		ExecutorMode: ExecutorModeSend,
-		UserInputs: map[string]string{
-			"email": "user@example.com",
-		},
-		RuntimeData: map[string]string{
-			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
-		},
-		NodeProperties: map[string]interface{}{
-			"emailTemplate": "SELF_REGISTRATION",
-		},
-	}
-
-	resp, err := noEmailExecutor.Execute(ctx)
-
-	suite.NoError(err)
-	suite.Equal(common.ExecComplete, resp.Status)
-	suite.Equal(dataValueFalse, resp.AdditionalData[common.DataEmailSent])
-	suite.Empty(resp.AdditionalData[common.DataInviteLink])
+	suite.Equal("Email service is not configured", resp.FailureReason)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_InvalidMode() {
 	ctx := &core.NodeContext{
-		ExecutionID:  "test-flow-id",
+		ExecutionID:  "test-execution-id",
 		ExecutorMode: "invalid",
 		UserInputs:   make(map[string]string),
 		RuntimeData:  make(map[string]string),

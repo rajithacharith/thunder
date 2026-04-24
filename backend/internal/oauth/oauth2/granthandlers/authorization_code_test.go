@@ -34,6 +34,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
+	"github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/i18n/core"
@@ -41,6 +42,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/authzmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/tokenservicemock"
+	"github.com/asgardeo/thunder/tests/mocks/resourcemock"
 )
 
 const (
@@ -79,6 +81,7 @@ type AuthorizationCodeGrantHandlerTestSuite struct {
 	mockTokenBuilder     *tokenservicemock.TokenBuilderInterfaceMock
 	mockAuthzService     *authzmock.AuthorizeServiceInterfaceMock
 	mockAttrCacheService *attributecachemock.AttributeCacheServiceInterfaceMock
+	mockResourceService  *resourcemock.ResourceServiceInterfaceMock
 	oauthApp             *appmodel.OAuthAppConfigProcessedDTO
 	testAuthzCode        authz.AuthorizationCode
 	testTokenReq         *model.TokenRequest
@@ -101,11 +104,24 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) SetupTest() {
 	suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
 	suite.mockAuthzService = authzmock.NewAuthorizeServiceInterfaceMock(suite.T())
 	suite.mockAttrCacheService = attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
+	suite.mockResourceService = resourcemock.NewResourceServiceInterfaceMock(suite.T())
+
+	suite.mockResourceService.On("GetResourceServerByIdentifier", mock.Anything, mock.Anything).
+		Return(func(_ context.Context, identifier string) *resource.ResourceServer {
+			return &resource.ResourceServer{ID: identifier, Identifier: identifier}
+		}, func(_ context.Context, _ string) *serviceerror.ServiceError {
+			return nil
+		}).Maybe()
+	suite.mockResourceService.On("ValidatePermissions", mock.Anything, mock.Anything, mock.Anything).
+		Return([]string{}, nil).Maybe()
+	suite.mockResourceService.On("FindResourceServersByPermissions", mock.Anything, mock.Anything).
+		Return([]resource.ResourceServer{}, nil).Maybe()
 
 	suite.handler = &authorizationCodeGrantHandler{
-		tokenBuilder:   suite.mockTokenBuilder,
-		authzService:   suite.mockAuthzService,
-		attributeCache: suite.mockAttrCacheService,
+		tokenBuilder:    suite.mockTokenBuilder,
+		authzService:    suite.mockAuthzService,
+		attributeCache:  suite.mockAttrCacheService,
+		resourceService: suite.mockResourceService,
 	}
 
 	suite.oauthApp = &appmodel.OAuthAppConfigProcessedDTO{
@@ -145,7 +161,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) SetupTest() {
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestNewAuthorizationCodeGrantHandler() {
 	handler := newAuthorizationCodeGrantHandler(
-		suite.mockAuthzService, suite.mockTokenBuilder, suite.mockAttrCacheService)
+		suite.mockAuthzService, suite.mockTokenBuilder, suite.mockAttrCacheService, suite.mockResourceService)
 	assert.NotNil(suite.T(), handler)
 	assert.Implements(suite.T(), (*GrantHandlerInterface)(nil), handler)
 }
@@ -224,7 +240,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_MissingRe
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_Success() {
 	// Create authorization code with resource
 	authCodeWithResource := suite.testAuthzCode
-	authCodeWithResource.Resource = testResourceURL
+	authCodeWithResource.Resources = []string{testResourceURL}
 
 	// Mock authorization code store to return valid code with resource
 	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
@@ -233,7 +249,8 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_Success() {
 	// Mock token builder to generate access token
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
 		return ctx.Subject == testUserID &&
-			ctx.Audience == testResourceURL &&
+			len(ctx.Audiences) == 1 &&
+			ctx.Audiences[0] == testResourceURL &&
 			ctx.ClientID == testClientID &&
 			ctx.GrantType == string(constants.GrantTypeAuthorizationCode)
 	})).Return(&model.TokenDTO{
@@ -244,12 +261,12 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_Success() {
 		Scopes:    []string{"read", "write"},
 		ClientID:  testClientID,
 		Subject:   testUserID,
-		Audience:  testResourceURL,
+		Audiences: []string{testResourceURL},
 	}, nil)
 
 	// Create token request with matching resource
 	tokenReqWithResource := *suite.testTokenReq
-	tokenReqWithResource.Resource = testResourceURL
+	tokenReqWithResource.Resources = []string{testResourceURL}
 
 	result, err := suite.handler.HandleGrant(context.Background(), &tokenReqWithResource, suite.oauthApp)
 
@@ -263,7 +280,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_Success() {
 
 	// Check token attributes
 	assert.Equal(suite.T(), testUserID, result.AccessToken.Subject)
-	assert.Equal(suite.T(), testResourceURL, result.AccessToken.Audience)
+	assert.Contains(suite.T(), result.AccessToken.Audiences, testResourceURL)
 
 	suite.mockAuthzService.AssertExpectations(suite.T())
 	suite.mockTokenBuilder.AssertExpectations(suite.T())
@@ -276,7 +293,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_InvalidAuth
 
 	// Create token request with matching resource
 	tokenReqWithResource := *suite.testTokenReq
-	tokenReqWithResource.Resource = testResourceURL
+	tokenReqWithResource.Resources = []string{testResourceURL}
 
 	result, err := suite.handler.HandleGrant(context.Background(), &tokenReqWithResource, suite.oauthApp)
 
@@ -298,7 +315,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_JWTGenerati
 
 	// Create token request with matching resource
 	tokenReqWithResource := *suite.testTokenReq
-	tokenReqWithResource.Resource = testResourceURL
+	tokenReqWithResource.Resources = []string{testResourceURL}
 
 	result, err := suite.handler.HandleGrant(context.Background(), &tokenReqWithResource, suite.oauthApp)
 
@@ -330,7 +347,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_EmptyScopes
 
 	// Create token request with matching resource
 	tokenReqWithResource := *suite.testTokenReq
-	tokenReqWithResource.Resource = testResourceURL
+	tokenReqWithResource.Resources = []string{testResourceURL}
 
 	result, err := suite.handler.HandleGrant(context.Background(), &tokenReqWithResource, suite.oauthApp)
 
@@ -355,12 +372,12 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NilTokenAtt
 		Scopes:    []string{"read", "write"},
 		ClientID:  testClientID,
 		Subject:   testUserID,
-		Audience:  testClientID,
+		Audiences: []string{testClientID},
 	}, nil)
 
 	// Create token request with matching resource
 	tokenReqWithResource := *suite.testTokenReq
-	tokenReqWithResource.Resource = testResourceURL
+	tokenReqWithResource.Resources = []string{testResourceURL}
 
 	result, err := suite.handler.HandleGrant(context.Background(), &tokenReqWithResource, suite.oauthApp)
 
@@ -369,7 +386,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NilTokenAtt
 
 	// Check token attributes
 	assert.Equal(suite.T(), testUserID, result.AccessToken.Subject)
-	assert.Equal(suite.T(), testClientID, result.AccessToken.Audience)
+	assert.Contains(suite.T(), result.AccessToken.Audiences, testClientID)
 
 	suite.mockAuthzService.AssertExpectations(suite.T())
 	suite.mockTokenBuilder.AssertExpectations(suite.T())
@@ -465,10 +482,14 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 			suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 			suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
 			suite.mockAttrCacheService = attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
+			suite.mockResourceService = resourcemock.NewResourceServiceInterfaceMock(suite.T())
+			suite.mockResourceService.On("FindResourceServersByPermissions", mock.Anything, mock.Anything).
+				Return([]resource.ResourceServer{}, nil).Maybe()
 			suite.handler = &authorizationCodeGrantHandler{
-				tokenBuilder:   suite.mockTokenBuilder,
-				authzService:   suite.mockAuthzService,
-				attributeCache: suite.mockAttrCacheService,
+				tokenBuilder:    suite.mockTokenBuilder,
+				authzService:    suite.mockAuthzService,
+				attributeCache:  suite.mockAttrCacheService,
+				resourceService: suite.mockResourceService,
 			}
 
 			accessTokenAttrs := []string{"email", "username"}
@@ -527,7 +548,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 				Return(&attributecache.AttributeCache{
 					ID:         testCacheID,
 					Attributes: expectedAttrs,
-				}, (*serviceerror.I18nServiceError)(nil)).Once()
+				}, (*serviceerror.ServiceError)(nil)).Once()
 
 			suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 				Return(&authzCode, nil)
@@ -658,10 +679,14 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 			suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 			suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
 			suite.mockAttrCacheService = attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
+			suite.mockResourceService = resourcemock.NewResourceServiceInterfaceMock(suite.T())
+			suite.mockResourceService.On("FindResourceServersByPermissions", mock.Anything, mock.Anything).
+				Return([]resource.ResourceServer{}, nil).Maybe()
 			suite.handler = &authorizationCodeGrantHandler{
-				tokenBuilder:   suite.mockTokenBuilder,
-				authzService:   suite.mockAuthzService,
-				attributeCache: suite.mockAttrCacheService,
+				tokenBuilder:    suite.mockTokenBuilder,
+				authzService:    suite.mockAuthzService,
+				attributeCache:  suite.mockAttrCacheService,
+				resourceService: suite.mockResourceService,
 			}
 
 			accessTokenAttrs := []string{"email", "username"}
@@ -715,7 +740,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 						"email":    "test@example.com",
 						"username": "testuser",
 					},
-				}, (*serviceerror.I18nServiceError)(nil)).Once()
+				}, (*serviceerror.ServiceError)(nil)).Once()
 			// Empty groups - not added to Attributes (user has no groups)
 
 			suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
@@ -799,14 +824,14 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_ResourceParameterMismatch() {
 	// Set up auth code with different resource than token request
 	authCodeWithResource := suite.testAuthzCode
-	authCodeWithResource.Resource = "https://api.example.com/resource"
+	authCodeWithResource.Resources = []string{"https://api.example.com/resource"}
 
 	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&authCodeWithResource, nil)
 
 	// Create token request with different resource
 	tokenReqWithResource := *suite.testTokenReq
-	tokenReqWithResource.Resource = testResourceURL
+	tokenReqWithResource.Resources = []string{testResourceURL}
 
 	result, err := suite.handler.HandleGrant(context.Background(), &tokenReqWithResource, suite.oauthApp)
 
@@ -819,14 +844,14 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_ResourcePar
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_ResourceParameterMatch() {
 	// Set up auth code with resource parameter
 	authCodeWithResource := suite.testAuthzCode
-	authCodeWithResource.Resource = testResourceURL
+	authCodeWithResource.Resources = []string{testResourceURL}
 
 	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&authCodeWithResource, nil)
 
-	var capturedAudience string
+	var capturedAudiences []string
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		capturedAudience = ctx.Audience
+		capturedAudiences = ctx.Audiences
 		return true
 	})).Return(&model.TokenDTO{
 		Token:     "mock-jwt-token",
@@ -839,23 +864,24 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_ResourcePar
 
 	// Create token request with matching resource
 	tokenReqWithResource := *suite.testTokenReq
-	tokenReqWithResource.Resource = testResourceURL
+	tokenReqWithResource.Resources = []string{testResourceURL}
 
 	result, err := suite.handler.HandleGrant(context.Background(), &tokenReqWithResource, suite.oauthApp)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), testResourceURL, capturedAudience)
+	assert.Equal(suite.T(), []string{testResourceURL}, capturedAudiences)
 }
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NoResourceParameter() {
-	// Auth code without resource parameter
+	// Auth code without resource parameter, token request also sends no resource.
+	// Audience falls back to clientID (no RS contributes).
 	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&suite.testAuthzCode, nil)
 
-	var capturedAudience string
+	var capturedAudiences []string
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		capturedAudience = ctx.Audience
+		capturedAudiences = ctx.Audiences
 		return true
 	})).Return(&model.TokenDTO{
 		Token:     "mock-jwt-token",
@@ -866,17 +892,14 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NoResourceP
 		ClientID:  testClientID,
 	}, nil)
 
-	// Create token request with matching resource
-	tokenReqWithResource := *suite.testTokenReq
-	tokenReqWithResource.Resource = testResourceURL
-
-	result, err := suite.handler.HandleGrant(context.Background(), &tokenReqWithResource, suite.oauthApp)
+	// Token request sends no resource parameter.
+	result, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 
-	// Verify audience defaults to client ID when no resource parameter
-	assert.Equal(suite.T(), testClientID, capturedAudience)
+	// Audience falls back to clientID when no RS contributes.
+	assert.Equal(suite.T(), []string{testClientID}, capturedAudiences)
 }
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_FetchUserOUFailed() {
@@ -924,12 +947,12 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_ResourceW
 		ClientID:    testClientID,
 		Code:        "test-code",
 		RedirectURI: "https://client.example.com/callback",
-		Resource:    "https://api.example.com/resource#fragment", // Fragment not allowed
+		Resources:   []string{"https://api.example.com/resource#fragment"}, // Fragment not allowed
 	}
 
 	err := suite.handler.ValidateGrant(context.Background(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
+	assert.Equal(suite.T(), constants.ErrorInvalidTarget, err.Error)
 	assert.Contains(suite.T(), err.ErrorDescription, "fragment component")
 }
 
@@ -940,12 +963,12 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_ResourceP
 		ClientID:    testClientID,
 		Code:        "test-code",
 		RedirectURI: "https://client.example.com/callback",
-		Resource:    "://invalid-uri", // Invalid URI format
+		Resources:   []string{"://invalid-uri"}, // Invalid URI format
 	}
 
 	err := suite.handler.ValidateGrant(context.Background(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
+	assert.Equal(suite.T(), constants.ErrorInvalidTarget, err.Error)
 }
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_FetchUserGroupsError() {
@@ -976,7 +999,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_FetchUserGr
 				"username": "testuser",
 				"groups":   []string{"Admin", "Users"},
 			},
-		}, (*serviceerror.I18nServiceError)(nil))
+		}, (*serviceerror.ServiceError)(nil))
 
 	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&authzCodeWithGroups, nil)
@@ -1020,7 +1043,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_AttributeCa
 		Return(&authzCodeWithCacheID, nil)
 
 	suite.mockAttrCacheService.On("GetAttributeCache", mock.Anything, testCacheID).
-		Return((*attributecache.AttributeCache)(nil), &serviceerror.I18nServiceError{
+		Return((*attributecache.AttributeCache)(nil), &serviceerror.ServiceError{
 			Type:  serviceerror.ServerErrorType,
 			Error: core.I18nMessage{DefaultValue: "cache error"},
 		})
@@ -1129,13 +1152,13 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestRetrieveAndValidateAuth
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCode_ResourceMismatch() {
 	// Test resource parameter mismatch
 	authCodeWithResource := suite.testAuthzCode
-	authCodeWithResource.Resource = "https://api.example.com/resource"
+	authCodeWithResource.Resources = []string{"https://api.example.com/resource"}
 	authCodeWithResource.RedirectURI = testClientCallbackURL
 
 	tokenReq := &model.TokenRequest{
 		ClientID:    testClientID,
 		RedirectURI: "https://client.example.com/callback", // Must match auth code
-		Resource:    testResourceURL,                       // Different resource
+		Resources:   []string{testResourceURL},             // Different resource
 	}
 
 	err := validateAuthorizationCode(tokenReq, authCodeWithResource)
@@ -1147,13 +1170,13 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCo
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCode_ResourceMatch() {
 	// Test resource parameter match
 	authCodeWithResource := suite.testAuthzCode
-	authCodeWithResource.Resource = testResourceURL
+	authCodeWithResource.Resources = []string{testResourceURL}
 	authCodeWithResource.RedirectURI = testClientCallbackURL // Must match
 
 	tokenReq := &model.TokenRequest{
 		ClientID:    testClientID,
 		RedirectURI: "https://client.example.com/callback", // Must match auth code
-		Resource:    testResourceURL,                       // Matching resource
+		Resources:   []string{testResourceURL},             // Matching resource
 	}
 
 	err := validateAuthorizationCode(tokenReq, authCodeWithResource)
@@ -1162,15 +1185,173 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCo
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCode_EmptyResourceInCode() {
 	authCodeWithEmptyResource := suite.testAuthzCode
-	authCodeWithEmptyResource.Resource = ""
+	authCodeWithEmptyResource.Resources = nil
 	authCodeWithEmptyResource.RedirectURI = "https://client.example.com/callback" // Must match
 
 	tokenReq := &model.TokenRequest{
 		ClientID:    testClientID,
 		RedirectURI: "https://client.example.com/callback", // Must match auth code
-		Resource:    testResourceURL,                       // Any resource should be OK
+		Resources:   []string{testResourceURL},             // Any resource should be OK
 	}
 
 	err := validateAuthorizationCode(tokenReq, authCodeWithEmptyResource)
 	assert.Nil(suite.T(), err)
+}
+
+// §3 — token-request resource subset narrows the issued aud (RFC 8707 §2.1).
+
+const testResourceURL2 = "https://api2.example.com/api"
+
+func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_TokenRequestNarrowsResourceSubset() {
+	// Authz code has two resources; token request sends only one.
+	// Issued aud must contain only the narrowed RS, not both.
+	authCodeWithTwoResources := suite.testAuthzCode
+	authCodeWithTwoResources.Resources = []string{testResourceURL, testResourceURL2}
+
+	suite.mockResourceService.On("GetResourceServerByIdentifier", mock.Anything, testResourceURL2).
+		Return(&resource.ResourceServer{ID: testResourceURL2, Identifier: testResourceURL2}, nil).Maybe()
+
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
+		Return(&authCodeWithTwoResources, nil)
+
+	var capturedAudiences []string
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+		capturedAudiences = ctx.Audiences
+		return true
+	})).Return(&model.TokenDTO{
+		Token:     "mock-jwt-token",
+		TokenType: constants.TokenTypeBearer,
+		IssuedAt:  time.Now().Unix(),
+		ExpiresIn: 3600,
+		Scopes:    []string{"read", "write"},
+		ClientID:  testClientID,
+	}, nil)
+
+	tokenReq := *suite.testTokenReq
+	tokenReq.Resources = []string{testResourceURL}
+
+	result, err := suite.handler.HandleGrant(context.Background(), &tokenReq, suite.oauthApp)
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), []string{testResourceURL}, capturedAudiences)
+}
+
+func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_TokenRequestNoResourceUsesBothFromCode() {
+	// Authz code has two resources; token request sends no resource.
+	// Issued aud must contain both RS identifiers from the auth code.
+	authCodeWithTwoResources := suite.testAuthzCode
+	authCodeWithTwoResources.Resources = []string{testResourceURL, testResourceURL2}
+
+	suite.mockResourceService.On("GetResourceServerByIdentifier", mock.Anything, testResourceURL2).
+		Return(&resource.ResourceServer{ID: testResourceURL2, Identifier: testResourceURL2}, nil).Maybe()
+
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
+		Return(&authCodeWithTwoResources, nil)
+
+	var capturedAudiences []string
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+		capturedAudiences = ctx.Audiences
+		return true
+	})).Return(&model.TokenDTO{
+		Token:     "mock-jwt-token",
+		TokenType: constants.TokenTypeBearer,
+		IssuedAt:  time.Now().Unix(),
+		ExpiresIn: 3600,
+		Scopes:    []string{"read", "write"},
+		ClientID:  testClientID,
+	}, nil)
+
+	result, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), 2, len(capturedAudiences))
+	assert.Contains(suite.T(), capturedAudiences, testResourceURL)
+	assert.Contains(suite.T(), capturedAudiences, testResourceURL2)
+}
+
+func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_TokenRequestNarrows_ScopesDownscoped() {
+	// Authz code has two resources [rs1, rs2] with scopes ["read", "write"].
+	// Token request narrows to rs1 only; rs1 only supports "read" (ValidatePermissions returns "write" as invalid).
+	// Access token must carry only "read" (scope downscoped) and aud=[rs1].
+	// OriginalAudiences must carry both [rs1, rs2] for the refresh token.
+	authCodeWithTwoResources := suite.testAuthzCode
+	authCodeWithTwoResources.Resources = []string{testResourceURL, testResourceURL2}
+	authCodeWithTwoResources.Scopes = "read write"
+
+	suite.mockResourceService.ExpectedCalls = nil
+	suite.mockResourceService.On("GetResourceServerByIdentifier", mock.Anything, testResourceURL).
+		Return(&resource.ResourceServer{ID: testResourceURL, Identifier: testResourceURL}, nil)
+	suite.mockResourceService.On("GetResourceServerByIdentifier", mock.Anything, testResourceURL2).
+		Return(&resource.ResourceServer{ID: testResourceURL2, Identifier: testResourceURL2}, nil)
+	// rs1 only supports "read"; "write" is invalid.
+	suite.mockResourceService.On("ValidatePermissions", mock.Anything, testResourceURL, mock.Anything).
+		Return([]string{"write"}, nil)
+	suite.mockResourceService.On("FindResourceServersByPermissions", mock.Anything, mock.Anything).
+		Return([]resource.ResourceServer{}, nil).Maybe()
+
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
+		Return(&authCodeWithTwoResources, nil)
+
+	var capturedAudiences []string
+	var capturedScopes []string
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+		capturedAudiences = ctx.Audiences
+		capturedScopes = ctx.Scopes
+		return true
+	})).Return(func(ctx *tokenservice.AccessTokenBuildContext) (*model.TokenDTO, error) {
+		return &model.TokenDTO{
+			Token:     "mock-jwt-token",
+			TokenType: constants.TokenTypeBearer,
+			IssuedAt:  time.Now().Unix(),
+			ExpiresIn: 3600,
+			Scopes:    ctx.Scopes,
+			ClientID:  testClientID,
+		}, nil
+	})
+
+	tokenReq := *suite.testTokenReq
+	tokenReq.Resources = []string{testResourceURL}
+
+	result, err := suite.handler.HandleGrant(context.Background(), &tokenReq, suite.oauthApp)
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), []string{testResourceURL}, capturedAudiences)
+	assert.Equal(suite.T(), []string{"read"}, capturedScopes)
+	assert.Equal(suite.T(), []string{testResourceURL, testResourceURL2}, result.AccessToken.OriginalAudiences)
+}
+
+func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_TokenRequestNarrowsFromImplicitAllRSSet() {
+	// When the auth code carried no resources, all registered RSes are implicitly authorized.
+	// The token request may then narrow to any registered RS; unknown RS identifiers are rejected
+	// upstream by ResolveResourceServers with invalid_target.
+	authCodeNoResources := suite.testAuthzCode
+	authCodeNoResources.Resources = nil
+
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
+		Return(&authCodeNoResources, nil)
+
+	var capturedAudiences []string
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+		capturedAudiences = ctx.Audiences
+		return true
+	})).Return(&model.TokenDTO{
+		Token:     "mock-jwt-token",
+		TokenType: constants.TokenTypeBearer,
+		IssuedAt:  time.Now().Unix(),
+		ExpiresIn: 3600,
+		Scopes:    []string{"read", "write"},
+		ClientID:  testClientID,
+	}, nil)
+
+	tokenReq := *suite.testTokenReq
+	tokenReq.Resources = []string{testResourceURL}
+
+	result, err := suite.handler.HandleGrant(context.Background(), &tokenReq, suite.oauthApp)
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), []string{testResourceURL}, capturedAudiences)
 }

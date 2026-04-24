@@ -45,12 +45,13 @@ const (
 
 type TokenExchangeTestSuite struct {
 	suite.Suite
-	applicationID  string
-	userID         string
-	oUID           string
-	userSchemaID   string
-	client         *http.Client
-	assertionToken string
+	applicationID    string
+	userID           string
+	oUID             string
+	userSchemaID     string
+	resourceServerID string
+	client           *http.Client
+	assertionToken   string
 }
 
 var (
@@ -96,9 +97,28 @@ func (ts *TokenExchangeTestSuite) SetupSuite() {
 
 	// Authenticate user to get assertion token for tests
 	ts.assertionToken = ts.getUserAssertion()
+
+	// Create resource server for resource parameter tests
+	rs := testutils.ResourceServer{
+		Name:       "Token Exchange Test RS",
+		Handle:     "te-resource-server",
+		Identifier: "https://resource.example.com",
+		OUID:       ts.oUID,
+	}
+	rsID, err := testutils.CreateResourceServerWithActions(rs, []testutils.Action{})
+	ts.Require().NoError(err, "Failed to create test resource server")
+	ts.resourceServerID = rsID
+	ts.T().Logf("Created test resource server with ID: %s", rsID)
 }
 
 func (ts *TokenExchangeTestSuite) TearDownSuite() {
+	// Clean up resource server
+	if ts.resourceServerID != "" {
+		if err := testutils.DeleteResourceServer(ts.resourceServerID); err != nil {
+			ts.T().Logf("Failed to delete resource server during teardown: %v", err)
+		}
+	}
+
 	// Clean up application
 	if ts.applicationID != "" {
 		ts.deleteApplication(ts.applicationID)
@@ -299,6 +319,30 @@ func (ts *TokenExchangeTestSuite) getUserAssertion() string {
 	return authResponse.Assertion
 }
 
+// assertAudienceContains verifies that the JWT audience claim (string or array) contains the expected value.
+func (ts *TokenExchangeTestSuite) assertAudienceContains(claims *testutils.JWTClaims, expected string) {
+	ts.T().Helper()
+
+	rawAud, ok := claims.Additional["aud"]
+	ts.Require().True(ok, "JWT should contain an aud claim")
+
+	switch aud := rawAud.(type) {
+	case string:
+		ts.Equal(expected, aud, "Audience should match expected value")
+	case []interface{}:
+		found := false
+		for _, v := range aud {
+			if s, ok := v.(string); ok && s == expected {
+				found = true
+				break
+			}
+		}
+		ts.True(found, "Audience array should contain %q, got %v", expected, aud)
+	default:
+		ts.Failf("unexpected aud type", "expected string or []interface{}, got %T", rawAud)
+	}
+}
+
 func (ts *TokenExchangeTestSuite) exchangeToken(requestBody string, authHeader string) (*TokenExchangeResponse, int, error) {
 	req, err := http.NewRequest("POST", testutils.TestServerURL+"/oauth2/token", strings.NewReader(requestBody))
 	if err != nil {
@@ -383,10 +427,10 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_WithAudience() {
 	ts.Equal(http.StatusOK, statusCode)
 	ts.NotEmpty(resp.AccessToken)
 
-	// Verify audience in JWT
+	// Verify audience in JWT contains the requested audience
 	claims, err := testutils.DecodeJWT(resp.AccessToken)
 	ts.Require().NoError(err)
-	ts.Equal("https://api.example.com", claims.Aud, "Audience should match requested audience")
+	ts.assertAudienceContains(claims, "https://api.example.com")
 }
 
 // TestTokenExchange_WithResource tests token exchange with resource parameter
@@ -407,7 +451,7 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_WithResource() {
 	// Verify resource is used as audience
 	claims, err := testutils.DecodeJWT(resp.AccessToken)
 	ts.Require().NoError(err)
-	ts.Equal("https://resource.example.com", claims.Aud, "Audience should match resource parameter")
+	ts.assertAudienceContains(claims, "https://resource.example.com")
 }
 
 // TestTokenExchange_WithRequestedTokenType tests token exchange with requested_token_type

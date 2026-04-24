@@ -25,11 +25,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
+	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
+	"github.com/asgardeo/thunder/tests/mocks/oumock"
 )
 
 type HTTPRequestExecutorTestSuite struct {
@@ -42,9 +49,20 @@ func TestHTTPRequestExecutorTestSuite(t *testing.T) {
 	suite.Run(t, new(HTTPRequestExecutorTestSuite))
 }
 
+func (suite *HTTPRequestExecutorTestSuite) SetupSuite() {
+	_ = config.InitializeThunderRuntime("test", &config.Config{})
+}
+
+func (suite *HTTPRequestExecutorTestSuite) TearDownSuite() {
+	config.ResetThunderRuntime()
+}
+
 func (suite *HTTPRequestExecutorTestSuite) SetupTest() {
-	flowFactory, _ := core.Initialize()
-	suite.executor = newHTTPRequestExecutor(flowFactory)
+	mockFlowFactory := coremock.NewFlowFactoryInterfaceMock(suite.T())
+	mockFlowFactory.On("CreateExecutor", ExecutorNameHTTPRequest, common.ExecutorTypeUtility,
+		[]common.Input{}, []common.Input{}).
+		Return(newMockExecutor(ExecutorNameHTTPRequest, common.ExecutorTypeUtility, []common.Input{}, []common.Input{}))
+	suite.executor = newHTTPRequestExecutor(mockFlowFactory, nil)
 }
 
 func (suite *HTTPRequestExecutorTestSuite) TearDownTest() {
@@ -689,4 +707,274 @@ func (suite *HTTPRequestExecutorTestSuite) TestExecute_ResponseStatusExtraction(
 	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
 	assert.Equal(suite.T(), "123", execResp.RuntimeData["resourceId"])
 	assert.Equal(suite.T(), "201", execResp.RuntimeData["statusCode"])
+}
+
+func (suite *HTTPRequestExecutorTestSuite) TestEnrichOURuntimeData_OUIDFromAuthenticatedUser() {
+	// When AuthenticatedUser.OUID is set, it should be used to fetch OU details
+	// and ouHandle/ouName should be enriched into RuntimeData before placeholder resolution.
+	var receivedBody map[string]interface{}
+
+	suite.mockServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := json.NewDecoder(r.Body).Decode(&receivedBody)
+		if err != nil {
+			receivedBody = nil
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+	mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-auth-123").
+		Return(ou.OrganizationUnit{
+			ID:          "ou-auth-123",
+			Handle:      "acme-corp",
+			Name:        "Acme Corporation",
+			Description: "Acme Corporation description",
+		}, nil)
+
+	mockFlowFactory := coremock.NewFlowFactoryInterfaceMock(suite.T())
+	mockFlowFactory.On("CreateExecutor", ExecutorNameHTTPRequest, common.ExecutorTypeUtility,
+		[]common.Input{}, []common.Input{}).
+		Return(newMockExecutor(ExecutorNameHTTPRequest, common.ExecutorTypeUtility, []common.Input{}, []common.Input{}))
+	executor := newHTTPRequestExecutor(mockFlowFactory, mockOUService)
+
+	ctx := &core.NodeContext{
+		ExecutionID: "test-flow",
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			OUID: "ou-auth-123",
+		},
+		RuntimeData: map[string]string{},
+		UserInputs:  map[string]string{},
+		NodeProperties: map[string]interface{}{
+			"url":    suite.mockServer.URL + "/api/enrich",
+			"method": "POST",
+			"body": map[string]interface{}{
+				"orgHandle":      "{{ context.ouHandle }}",
+				"orgName":        "{{ context.ouName }}",
+				"orgDescription": "{{ context.ouDescription }}",
+			},
+		},
+	}
+
+	execResp, err := executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), "acme-corp", receivedBody["orgHandle"])
+	assert.Equal(suite.T(), "Acme Corporation", receivedBody["orgName"])
+	assert.Equal(suite.T(), "Acme Corporation description", receivedBody["orgDescription"])
+}
+
+func (suite *HTTPRequestExecutorTestSuite) TestEnrichOURuntimeData_FallbackToRuntimeData() {
+	// When AuthenticatedUser.OUID is absent, RuntimeData["ouId"] should be used to fetch OU details.
+	var receivedBody map[string]interface{}
+
+	suite.mockServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := json.NewDecoder(r.Body).Decode(&receivedBody)
+		if err != nil {
+			receivedBody = nil
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+	mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-runtime-456").
+		Return(ou.OrganizationUnit{
+			ID:          "ou-runtime-456",
+			Handle:      "beta-org",
+			Name:        "Beta Organization",
+			Description: "Beta Organization description",
+		}, nil)
+
+	mockFlowFactory := coremock.NewFlowFactoryInterfaceMock(suite.T())
+	mockFlowFactory.On("CreateExecutor", ExecutorNameHTTPRequest, common.ExecutorTypeUtility,
+		[]common.Input{}, []common.Input{}).
+		Return(newMockExecutor(ExecutorNameHTTPRequest, common.ExecutorTypeUtility, []common.Input{}, []common.Input{}))
+	executor := newHTTPRequestExecutor(mockFlowFactory, mockOUService)
+
+	ctx := &core.NodeContext{
+		ExecutionID:       "test-flow",
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			// OUID is empty — falls back to RuntimeData["ouId"]
+		},
+		RuntimeData: map[string]string{
+			"ouId": "ou-runtime-456",
+		},
+		UserInputs: map[string]string{},
+		NodeProperties: map[string]interface{}{
+			"url":    suite.mockServer.URL + "/api/enrich",
+			"method": "POST",
+			"body": map[string]interface{}{
+				"handle":      "{{ context.ouHandle }}",
+				"name":        "{{ context.ouName }}",
+				"description": "{{ context.ouDescription }}",
+			},
+		},
+	}
+
+	execResp, err := executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), "beta-org", receivedBody["handle"])
+	assert.Equal(suite.T(), "Beta Organization", receivedBody["name"])
+	assert.Equal(suite.T(), "Beta Organization description", receivedBody["description"])
+}
+
+func (suite *HTTPRequestExecutorTestSuite) TestEnrichOURuntimeData_AuthenticatedUserOUIDPreferredOverRuntimeData() {
+	// When both AuthenticatedUser.OUID and RuntimeData["ouId"] are set,
+	// AuthenticatedUser.OUID should be preferred.
+	var receivedBody map[string]interface{}
+
+	suite.mockServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := json.NewDecoder(r.Body).Decode(&receivedBody)
+		if err != nil {
+			receivedBody = nil
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+	// Only the AuthenticatedUser.OUID should trigger a lookup — not the RuntimeData fallback.
+	mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-auth-primary").
+		Return(ou.OrganizationUnit{
+			ID:     "ou-auth-primary",
+			Handle: "primary-handle",
+			Name:   "Primary Org",
+		}, nil)
+
+	mockFlowFactory := coremock.NewFlowFactoryInterfaceMock(suite.T())
+	mockFlowFactory.On("CreateExecutor", ExecutorNameHTTPRequest, common.ExecutorTypeUtility,
+		[]common.Input{}, []common.Input{}).
+		Return(newMockExecutor(ExecutorNameHTTPRequest, common.ExecutorTypeUtility, []common.Input{}, []common.Input{}))
+	executor := newHTTPRequestExecutor(mockFlowFactory, mockOUService)
+
+	ctx := &core.NodeContext{
+		ExecutionID: "test-flow",
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			OUID: "ou-auth-primary",
+		},
+		RuntimeData: map[string]string{
+			"ouId": "ou-runtime-fallback", // should NOT be used
+		},
+		UserInputs: map[string]string{},
+		NodeProperties: map[string]interface{}{
+			"url":    suite.mockServer.URL + "/api/enrich",
+			"method": "POST",
+			"body": map[string]interface{}{
+				"handle": "{{ context.ouHandle }}",
+			},
+		},
+	}
+
+	execResp, err := executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	assert.Equal(suite.T(), "primary-handle", receivedBody["handle"])
+	// The mock expectation for "ou-auth-primary" (not "ou-runtime-fallback") asserts the correct OU was fetched.
+	mockOUService.AssertNotCalled(suite.T(), "GetOrganizationUnit", mock.Anything, "ou-runtime-fallback")
+}
+
+func (suite *HTTPRequestExecutorTestSuite) TestEnrichOURuntimeData_OverwritesExistingRuntimeData() {
+	// When ctx.RuntimeData["ouHandle"] is pre-populated, enrichOURuntimeData must overwrite it
+	// with the value fetched from the OU service.
+	var receivedBody map[string]interface{}
+
+	suite.mockServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := json.NewDecoder(r.Body).Decode(&receivedBody)
+		if err != nil {
+			receivedBody = nil
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+	mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-overwrite-test").
+		Return(ou.OrganizationUnit{
+			ID:     "ou-overwrite-test",
+			Handle: "fetched-handle",
+			Name:   "Fetched Org",
+		}, nil)
+
+	mockFlowFactory := coremock.NewFlowFactoryInterfaceMock(suite.T())
+	mockFlowFactory.On("CreateExecutor", ExecutorNameHTTPRequest, common.ExecutorTypeUtility,
+		[]common.Input{}, []common.Input{}).
+		Return(newMockExecutor(ExecutorNameHTTPRequest, common.ExecutorTypeUtility, []common.Input{}, []common.Input{}))
+	executor := newHTTPRequestExecutor(mockFlowFactory, mockOUService)
+
+	ctx := &core.NodeContext{
+		ExecutionID: "test-flow",
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			OUID: "ou-overwrite-test",
+		},
+		RuntimeData: map[string]string{
+			"ouHandle": "stale-handle", // pre-populated — must be overwritten
+		},
+		UserInputs: map[string]string{},
+		NodeProperties: map[string]interface{}{
+			"url":    suite.mockServer.URL + "/api/enrich",
+			"method": "POST",
+			"body": map[string]interface{}{
+				"handle": "{{ context.ouHandle }}",
+			},
+		},
+	}
+
+	execResp, err := executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	// The fetched value must overwrite the stale preset value.
+	assert.Equal(suite.T(), "fetched-handle", receivedBody["handle"])
+}
+
+func (suite *HTTPRequestExecutorTestSuite) TestEnrichOURuntimeData_OULookupFailure_GracefulDegradation() {
+	// When OU lookup fails, execution should continue (graceful degradation):
+	// a warning is logged but the executor completes, leaving placeholders unresolved.
+	var receivedBody map[string]interface{}
+
+	suite.mockServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := json.NewDecoder(r.Body).Decode(&receivedBody)
+		if err != nil {
+			receivedBody = nil
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+	mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-not-found").
+		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
+			Error:            i18ncore.I18nMessage{DefaultValue: "ou_not_found"},
+			ErrorDescription: i18ncore.I18nMessage{DefaultValue: "organization unit not found"},
+		})
+
+	mockFlowFactory := coremock.NewFlowFactoryInterfaceMock(suite.T())
+	mockFlowFactory.On("CreateExecutor", ExecutorNameHTTPRequest, common.ExecutorTypeUtility,
+		[]common.Input{}, []common.Input{}).
+		Return(newMockExecutor(ExecutorNameHTTPRequest, common.ExecutorTypeUtility, []common.Input{}, []common.Input{}))
+	executor := newHTTPRequestExecutor(mockFlowFactory, mockOUService)
+
+	ctx := &core.NodeContext{
+		ExecutionID: "test-flow",
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			OUID: "ou-not-found",
+		},
+		RuntimeData: map[string]string{},
+		UserInputs:  map[string]string{},
+		NodeProperties: map[string]interface{}{
+			"url":    suite.mockServer.URL + "/api/enrich",
+			"method": "POST",
+			"body": map[string]interface{}{
+				"orgHandle": "{{ context.ouHandle }}",
+			},
+		},
+	}
+
+	execResp, err := executor.Execute(ctx)
+
+	// Execution must complete despite the OU lookup failure.
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+	// ouHandle placeholder remains unresolved because enrichment failed.
+	assert.Equal(suite.T(), "{{ context.ouHandle }}", receivedBody["orgHandle"])
 }

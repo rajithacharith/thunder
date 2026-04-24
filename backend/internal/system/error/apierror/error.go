@@ -23,17 +23,8 @@ import (
 	"github.com/asgardeo/thunder/internal/system/i18n/core"
 )
 
-// ErrorResponse defines a generic API error response.
+// ErrorResponse defines an API error response with i18n support.
 type ErrorResponse struct {
-	Code        string `json:"code"`
-	Message     string `json:"message"`
-	Description string `json:"description"`
-}
-
-// I18nErrorResponse defines an API error response with i18n support.
-// This is the new error response type that should be used for services being migrated to i18n.
-// Translatable fields use core.Message instead of plain strings.
-type I18nErrorResponse struct {
 	Code        string           `json:"code"`
 	Message     core.I18nMessage `json:"message"`
 	Description core.I18nMessage `json:"description"`

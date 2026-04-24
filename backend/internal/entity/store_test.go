@@ -432,6 +432,18 @@ func (s *DBStoreTestSuite) TestIdentifyEntity_HybridQuery_IndexedAndNonIndexed()
 	s.Equal("e1", *got)
 }
 
+func (s *DBStoreTestSuite) TestIdentifyEntity_FastPath_Empty_FallbackSearchesBothColumns() {
+	s.expectClient()
+	// Fast path (ENTITY_IDENTIFIER table) returns nothing.
+	s.onQueryAny([]map[string]interface{}{}, nil).Once()
+	// Fallback COALESCE query (searches both ATTRIBUTES and SYSTEM_ATTRIBUTES) finds the entity.
+	s.onQueryAny([]map[string]interface{}{{"id": "app-entity-1"}}, nil).Once()
+
+	got, err := s.store.IdentifyEntity(s.ctx, map[string]interface{}{"clientId": "my-client"})
+	s.NoError(err)
+	s.Equal("app-entity-1", *got)
+}
+
 func (s *DBStoreTestSuite) TestGetEntityListCount_ProviderError() {
 	s.expectClientError()
 	_, err := s.store.GetEntityListCount(s.ctx, "user", nil)
@@ -853,22 +865,6 @@ func (s *StoreHelpersTestSuite) TestParseJSONColumn_UnknownType() {
 	row := map[string]interface{}{"col": 12345}
 	v := parseJSONColumn(row, "col")
 	s.Nil(v)
-}
-
-func (s *StoreHelpersTestSuite) TestMaskMapValues_StringValues() {
-	input := map[string]interface{}{"email": "user@example.com", "name": "John"}
-	masked := maskMapValues(input)
-	for k := range input {
-		s.NotEqual(input[k], masked[k])
-	}
-}
-
-func (s *StoreHelpersTestSuite) TestMaskMapValues_NonStringValues() {
-	input := map[string]interface{}{"count": 42, "flag": true}
-	masked := maskMapValues(input)
-	for _, v := range masked {
-		s.Equal("***", v)
-	}
 }
 
 func (s *StoreHelpersTestSuite) TestPrepareIdentifierQuery_NoIndexedAttrs() {

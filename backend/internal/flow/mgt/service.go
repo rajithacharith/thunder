@@ -30,6 +30,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/executor"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/transaction"
 	"github.com/asgardeo/thunder/internal/system/utils"
@@ -547,11 +548,15 @@ func validateFlowDefinition(flowDef *FlowDefinition) *serviceerror.ServiceError 
 	}
 
 	if len(flowDef.Nodes) < 2 {
-		return serviceerror.CustomServiceError(ErrorInvalidFlowData,
-			"Flow definition must contain at least a start and an end node")
+		return serviceerror.CustomServiceError(ErrorInvalidFlowData, i18ncore.I18nMessage{
+			Key:          "error.flowmgtservice.flow_requires_start_and_end_nodes_description",
+			DefaultValue: "Flow definition must contain at least a start and an end node",
+		})
 	} else if len(flowDef.Nodes) == 2 {
-		return serviceerror.CustomServiceError(ErrorInvalidFlowData,
-			"Flow definition must contain nodes between start and end nodes")
+		return serviceerror.CustomServiceError(ErrorInvalidFlowData, i18ncore.I18nMessage{
+			Key:          "error.flowmgtservice.flow_requires_intermediate_nodes_description",
+			DefaultValue: "Flow definition must contain nodes between start and end nodes",
+		})
 	}
 
 	return nil

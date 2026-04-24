@@ -37,7 +37,16 @@ import {
 import {Lock} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import type {ApplicationTemplate} from '../../../models/application-templates';
-import type {OAuth2Config} from '../../../models/oauth';
+import {OAuth2ResponseTypes, TokenEndpointAuthMethods, type OAuth2Config} from '../../../models/oauth';
+import {
+  applyGrantTypesChange,
+  applyPublicClientChange,
+  applyTokenEndpointAuthMethodChange,
+  deriveOAuth2Flags,
+  getPkceCaption,
+  getPublicClientCaption,
+  isGrantItemDisabled,
+} from '../../../utils/oauth2Rules';
 
 interface OidcDiscovery {
   grant_types_supported?: string[];
@@ -159,6 +168,15 @@ export default function OAuth2ConfigSection({
   const effectiveTokenMethod =
     tokenMethodConstraint?.value ?? (oauth2Config.publicClient ? 'none' : (oauth2Config.tokenEndpointAuthMethod ?? ''));
 
+  const grantTypes = oauth2Config.grantTypes ?? [];
+  const flags = deriveOAuth2Flags(oauth2Config);
+  const {
+    hasAuthorizationCodeGrant,
+    isPkceDisabledByGrants,
+    isPkceForcedByPublicClient,
+    isPublicClientDisabledByGrants,
+  } = flags;
+
   return (
     <SettingsCard
       title={t('applications:edit.advanced.labels.oauth2Config')}
@@ -174,8 +192,8 @@ export default function OAuth2ConfigSection({
             multiple
             displayEmpty
             disabled={!isEditable}
-            value={oauth2Config.grantTypes ?? []}
-            onChange={(e) => onOAuth2ConfigChange?.({grantTypes: e.target.value as string[]})}
+            value={grantTypes}
+            onChange={(e) => onOAuth2ConfigChange?.(applyGrantTypesChange(oauth2Config, e.target.value as string[]))}
             renderValue={(selected) =>
               selected.length === 0 ? (
                 <Typography color="text.secondary" variant="body2">
@@ -191,8 +209,8 @@ export default function OAuth2ConfigSection({
             }
           >
             {availableGrantTypes.map((grant) => (
-              <MenuItem key={grant} value={grant}>
-                <Checkbox checked={(oauth2Config.grantTypes ?? []).includes(grant)} size="small" />
+              <MenuItem key={grant} value={grant} disabled={isGrantItemDisabled(grant, grantTypes)}>
+                <Checkbox checked={grantTypes.includes(grant)} size="small" />
                 <ListItemText primary={grant} />
               </MenuItem>
             ))}
@@ -209,7 +227,7 @@ export default function OAuth2ConfigSection({
             id="response_types"
             multiple
             displayEmpty
-            disabled={!isEditable}
+            disabled={!isEditable || !hasAuthorizationCodeGrant}
             value={oauth2Config.responseTypes ?? []}
             onChange={(e) => onOAuth2ConfigChange?.({responseTypes: e.target.value as string[]})}
             renderValue={(selected) =>
@@ -227,12 +245,23 @@ export default function OAuth2ConfigSection({
             }
           >
             {availableResponseTypes.map((rt) => (
-              <MenuItem key={rt} value={rt}>
+              <MenuItem key={rt} value={rt} disabled={rt === OAuth2ResponseTypes.CODE && hasAuthorizationCodeGrant}>
                 <Checkbox checked={(oauth2Config.responseTypes ?? []).includes(rt)} size="small" />
                 <ListItemText primary={rt} />
               </MenuItem>
             ))}
           </Select>
+          <Typography variant="caption" color="text.secondary" sx={{mt: 0.5}}>
+            {hasAuthorizationCodeGrant
+              ? t(
+                  'applications:edit.advanced.responseTypes.codeRequiredHint',
+                  'Required for the authorization code flow.',
+                )
+              : t(
+                  'applications:edit.advanced.responseTypes.notApplicable',
+                  'Response types apply only to the authorization code flow.',
+                )}
+          </Typography>
         </FormControl>
 
         {/* Token Endpoint Auth Method */}
@@ -245,7 +274,7 @@ export default function OAuth2ConfigSection({
             displayEmpty
             disabled={!isEditable || isTokenMethodLocked}
             value={effectiveTokenMethod}
-            onChange={(e) => onOAuth2ConfigChange?.({tokenEndpointAuthMethod: e.target.value})}
+            onChange={(e) => onOAuth2ConfigChange?.(applyTokenEndpointAuthMethodChange(oauth2Config, e.target.value))}
             renderValue={(selected) =>
               !selected ? (
                 <Typography color="text.secondary" variant="body2">
@@ -257,7 +286,11 @@ export default function OAuth2ConfigSection({
             }
           >
             {availableTokenEndpointAuthMethods.map((method) => (
-              <MenuItem key={method} value={method}>
+              <MenuItem
+                key={method}
+                value={method}
+                disabled={method === TokenEndpointAuthMethods.NONE && isPublicClientDisabledByGrants}
+              >
                 {method}
               </MenuItem>
             ))}
@@ -283,14 +316,8 @@ export default function OAuth2ConfigSection({
             control={
               <Switch
                 checked={oauth2Config.publicClient ?? false}
-                disabled={!isEditable || isPublicClientLocked}
-                onChange={(e) => {
-                  const updates: Partial<OAuth2Config> = {publicClient: e.target.checked};
-                  if (e.target.checked) {
-                    updates.tokenEndpointAuthMethod = 'none';
-                  }
-                  onOAuth2ConfigChange?.(updates);
-                }}
+                disabled={!isEditable || isPublicClientLocked || isPublicClientDisabledByGrants}
+                onChange={(e) => onOAuth2ConfigChange?.(applyPublicClientChange(oauth2Config, e.target.checked))}
                 inputProps={{'aria-label': t('applications:edit.advanced.labels.publicClient')}}
               />
             }
@@ -306,9 +333,7 @@ export default function OAuth2ConfigSection({
             }
           />
           <Typography variant="caption" color="text.secondary" sx={{display: 'block', ml: '52px'}}>
-            {oauth2Config.publicClient
-              ? t('applications:edit.advanced.publicClient.public')
-              : t('applications:edit.advanced.publicClient.confidential')}
+            {t(...getPublicClientCaption(flags, oauth2Config))}
           </Typography>
         </Box>
 
@@ -317,8 +342,8 @@ export default function OAuth2ConfigSection({
           <FormControlLabel
             control={
               <Switch
-                checked={oauth2Config.pkceRequired ?? false}
-                disabled={!isEditable || isPkceLocked}
+                checked={isPkceForcedByPublicClient ? true : (oauth2Config.pkceRequired ?? false)}
+                disabled={!isEditable || isPkceLocked || isPkceDisabledByGrants || isPkceForcedByPublicClient}
                 onChange={(e) => onOAuth2ConfigChange?.({pkceRequired: e.target.checked})}
                 inputProps={{'aria-label': t('applications:edit.advanced.labels.pkceRequired')}}
               />
@@ -335,9 +360,7 @@ export default function OAuth2ConfigSection({
             }
           />
           <Typography variant="caption" color="text.secondary" sx={{display: 'block', ml: '52px'}}>
-            {oauth2Config.pkceRequired
-              ? t('applications:edit.advanced.pkce.enabled')
-              : t('applications:edit.advanced.pkce.disabled')}
+            {t(...getPkceCaption(flags, oauth2Config))}
           </Typography>
         </Box>
       </Stack>

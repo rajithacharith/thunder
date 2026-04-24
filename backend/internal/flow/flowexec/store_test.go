@@ -28,9 +28,11 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/authnprovider"
+	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
+	managerpkg "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/system/config"
+	cryptoconfig "github.com/asgardeo/thunder/internal/system/crypto/config"
 
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
@@ -62,8 +64,10 @@ func TestStoreTestSuite(t *testing.T) {
 }
 
 func (s *StoreTestSuite) getContextContent(dbModel *FlowContextDB) flowContextContent {
+	err := dbModel.decrypt(context.Background())
+	s.NoError(err)
 	var content flowContextContent
-	err := json.Unmarshal([]byte(dbModel.Context), &content)
+	err = json.Unmarshal([]byte(dbModel.Context), &content)
 	s.NoError(err)
 	return content
 }
@@ -234,6 +238,9 @@ func (s *StoreTestSuite) TestGetFlowContext_WithToken() {
 	dbModel, err := FromEngineContext(ctx)
 	s.NoError(err)
 
+	// Save encrypted context before getContextContent decrypts it in place
+	encryptedContext := dbModel.Context
+
 	content := s.getContextContent(dbModel)
 	s.NotNil(content.Token)
 
@@ -244,7 +251,7 @@ func (s *StoreTestSuite) TestGetFlowContext_WithToken() {
 	results := []map[string]interface{}{
 		{
 			"flow_id":     "test-flow-id",
-			"context":     dbModel.Context,
+			"context":     encryptedContext,
 			"expiry_time": expiryTime,
 		},
 	}
@@ -266,13 +273,12 @@ func (s *StoreTestSuite) TestGetFlowContext_WithToken() {
 	s.NotNil(result)
 	s.Equal("test-flow-id", result.ExecutionID)
 
+	// getContextContent decrypts result in place; ToEngineContext works on the decrypted context
 	content = s.getContextContent(result)
 	s.True(content.IsAuthenticated)
 	s.NotNil(content.Token)
-	s.Equal(dbModel.Context, result.Context) // JSON should match
 
-	// Verify we can decrypt it back to original
-	restoredCtx, err := result.ToEngineContext(mockGraph)
+	restoredCtx, err := result.ToEngineContext(context.Background(), mockGraph)
 	s.NoError(err)
 	s.Equal(testToken, restoredCtx.AuthenticatedUser.Token)
 
@@ -287,18 +293,21 @@ func (s *StoreTestSuite) TestGetFlowContext_WithoutToken() {
 
 	expiryTime := time.Now().Add(30 * time.Minute)
 
-	// Create serialized context
+	// Create and encrypt context
 	contextJSON, err := json.Marshal(flowContextContent{
 		AppID:           "test-app-id",
 		IsAuthenticated: false,
 		GraphID:         "test-graph-id",
 	})
 	s.NoError(err)
+	encryptedContextBytes, err := cryptoconfig.GetEncryptionService().Encrypt(context.Background(), contextJSON)
+	s.NoError(err)
+	encryptedContext := string(encryptedContextBytes)
 
 	results := []map[string]interface{}{
 		{
 			"flow_id":     "test-flow-id",
-			"context":     string(contextJSON),
+			"context":     encryptedContext,
 			"expiry_time": expiryTime,
 		},
 	}
@@ -330,7 +339,7 @@ func (s *StoreTestSuite) TestGetFlowContext_WithoutToken() {
 
 func (s *StoreTestSuite) TestStoreAndRetrieve_TokenRoundTrip() {
 	// This is an integration-style test that simulates the full round trip
-	// of storing and retrieving a flow context with an encrypted token
+	// of storing and retrieving a flow context with a token
 
 	// Setup
 	originalToken := "integration-test-token-secret"
@@ -367,21 +376,25 @@ func (s *StoreTestSuite) TestStoreAndRetrieve_TokenRoundTrip() {
 		Graph: mockGraph,
 	}
 
-	// Step 1: Convert to DB model (encrypts token)
+	// Step 1: Convert to DB model (encrypts entire context)
 	dbModel, err := FromEngineContext(originalCtx)
 	s.NoError(err)
 	s.NotNil(dbModel)
 
-	content := s.getContextContent(dbModel)
-	s.NotNil(content.Token)
-	s.NotEqual(originalToken, *content.Token, "Token should be encrypted")
+	// Verify the context is encrypted
+	s.Contains(dbModel.Context, `"ct"`, "context should be encrypted")
 
 	// Step 2: Simulate storing and retrieving from DB
 	// In a real scenario, this would be inserted into DB and read back
 	// For this test, we'll directly use the dbModel
 
-	// Step 3: Convert back to EngineContext (decrypts token)
-	retrievedCtx, err := dbModel.ToEngineContext(mockGraph)
+	// Step 3: Decrypt context and read the content
+	content := s.getContextContent(dbModel)
+	s.NotNil(content.Token)
+	s.Equal(originalToken, *content.Token)
+
+	// Step 4: Convert to EngineContext (context already decrypted by getContextContent)
+	retrievedCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
 	s.NoError(err)
 
 	// Step 4: Verify all data is preserved correctly
@@ -399,6 +412,77 @@ func (s *StoreTestSuite) TestStoreAndRetrieve_TokenRoundTrip() {
 	// Verify other fields
 	s.Equal(len(originalCtx.UserInputs), len(retrievedCtx.UserInputs))
 	s.Equal(len(originalCtx.RuntimeData), len(retrievedCtx.RuntimeData))
+	s.Equal(len(originalCtx.ExecutionHistory), len(retrievedCtx.ExecutionHistory))
+}
+
+func (s *StoreTestSuite) TestStoreAndRetrieve_ContextEncryptionRoundTrip() {
+	// Verifies that the entire context is encrypted (not just the token field),
+	// so that no sensitive fields are readable in the raw stored value.
+	sensitiveAppID := "app-sensitive-12345"
+	sensitiveUserID := "user-sensitive-67890"
+	sensitiveInput := "sensitive-input-value"
+	sensitiveRuntimeData := "sensitive-runtime-value"
+
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetID").Return("context-enc-graph-id")
+	mockGraph.On("GetType").Return(common.FlowTypeAuthentication)
+
+	originalCtx := EngineContext{
+		ExecutionID: "context-enc-flow-id",
+		AppID:       sensitiveAppID,
+		Verbose:     false,
+		FlowType:    common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          sensitiveUserID,
+			OUID:            "org-sensitive",
+			Attributes:      map[string]interface{}{"email": "sensitive@test.com"},
+		},
+		UserInputs:  map[string]string{"input_key": sensitiveInput},
+		RuntimeData: map[string]string{"runtime_key": sensitiveRuntimeData},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{
+			"node-enc-1": {NodeID: "node-enc-1"},
+		},
+		Graph: mockGraph,
+	}
+
+	// Step 1: Convert to DB model (encrypts entire context)
+	dbModel, err := FromEngineContext(originalCtx)
+	s.NoError(err)
+	s.NotNil(dbModel)
+
+	// Step 2: Verify entire context is encrypted — no plain fields visible
+	s.Contains(dbModel.Context, `"ct"`, "encrypted context should contain ciphertext field")
+	s.NotContains(dbModel.Context, sensitiveAppID, "appId should not be visible in encrypted context")
+	s.NotContains(dbModel.Context, sensitiveUserID, "userId should not be visible in encrypted context")
+	s.NotContains(dbModel.Context, sensitiveInput, "userInputs should not be visible in encrypted context")
+	s.NotContains(dbModel.Context, sensitiveRuntimeData, "runtimeData should not be visible in encrypted context")
+
+	// Step 3: Decrypt and verify all fields are restored
+	content := s.getContextContent(dbModel)
+	s.Equal(sensitiveAppID, content.AppID)
+	s.NotNil(content.UserID)
+	s.Equal(sensitiveUserID, *content.UserID)
+	s.NotNil(content.UserInputs)
+
+	var userInputs map[string]string
+	s.NoError(json.Unmarshal([]byte(*content.UserInputs), &userInputs))
+	s.Equal(sensitiveInput, userInputs["input_key"])
+	s.NotNil(content.RuntimeData)
+	var runtimeData map[string]string
+	s.NoError(json.Unmarshal([]byte(*content.RuntimeData), &runtimeData))
+	s.Equal(sensitiveRuntimeData, runtimeData["runtime_key"])
+
+	// Step 4: Convert to EngineContext and verify all data is preserved
+	retrievedCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+	s.NoError(err)
+	s.Equal(originalCtx.ExecutionID, retrievedCtx.ExecutionID)
+	s.Equal(originalCtx.AppID, retrievedCtx.AppID)
+	s.Equal(originalCtx.AuthenticatedUser.IsAuthenticated, retrievedCtx.AuthenticatedUser.IsAuthenticated)
+	s.Equal(originalCtx.AuthenticatedUser.UserID, retrievedCtx.AuthenticatedUser.UserID)
+	s.Equal(originalCtx.AuthenticatedUser.OUID, retrievedCtx.AuthenticatedUser.OUID)
+	s.Equal(sensitiveInput, retrievedCtx.UserInputs["input_key"])
+	s.Equal(sensitiveRuntimeData, retrievedCtx.RuntimeData["runtime_key"])
 	s.Equal(len(originalCtx.ExecutionHistory), len(retrievedCtx.ExecutionHistory))
 }
 
@@ -491,20 +575,20 @@ func (s *StoreTestSuite) TestBuildFlowContextFromResultRow_WithByteToken() {
 
 func (s *StoreTestSuite) TestStoreFlowContext_WithAvailableAttributes() {
 	// Setup
-	testAvailableAttributes := &authnprovider.AvailableAttributes{
-		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+	testAvailableAttributes := &authnprovidercm.AttributesResponse{
+		Attributes: map[string]*authnprovidercm.AttributeResponse{
 			"email": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: true,
 				},
 			},
 			"phone": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: false,
 				},
 			},
 		},
-		Verifications: map[string]*authnprovider.VerificationResponse{},
+		Verifications: map[string]*authnprovidercm.VerificationResponse{},
 	}
 	mockDBProvider := providermock.NewDBProviderInterfaceMock(s.T())
 	mockDBClient := providermock.NewDBClientInterfaceMock(s.T())
@@ -550,20 +634,20 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithAvailableAttributes() {
 
 func (s *StoreTestSuite) TestUpdateFlowContext_WithAvailableAttributes() {
 	// Setup
-	testAvailableAttributes := &authnprovider.AvailableAttributes{
-		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+	testAvailableAttributes := &authnprovidercm.AttributesResponse{
+		Attributes: map[string]*authnprovidercm.AttributeResponse{
 			"email": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: true,
 				},
 			},
 			"address": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: false,
 				},
 			},
 		},
-		Verifications: map[string]*authnprovider.VerificationResponse{},
+		Verifications: map[string]*authnprovidercm.VerificationResponse{},
 	}
 	mockDBProvider := providermock.NewDBProviderInterfaceMock(s.T())
 	mockDBClient := providermock.NewDBClientInterfaceMock(s.T())
@@ -608,20 +692,20 @@ func (s *StoreTestSuite) TestUpdateFlowContext_WithAvailableAttributes() {
 
 func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
 	// Setup
-	testAvailableAttributes := &authnprovider.AvailableAttributes{
-		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+	testAvailableAttributes := &authnprovidercm.AttributesResponse{
+		Attributes: map[string]*authnprovidercm.AttributeResponse{
 			"email": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: true,
 				},
 			},
 			"phone": {
-				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+				AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
 					IsVerified: false,
 				},
 			},
 		},
-		Verifications: map[string]*authnprovider.VerificationResponse{},
+		Verifications: map[string]*authnprovidercm.VerificationResponse{},
 	}
 	mockGraph := coremock.NewGraphInterfaceMock(s.T())
 	mockGraph.On("GetID").Return("test-graph-id")
@@ -649,6 +733,9 @@ func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
 	dbModel, err := FromEngineContext(ctx)
 	s.NoError(err)
 
+	// Save encrypted context before getContextContent decrypts it in place
+	encryptedContext := dbModel.Context
+
 	content := s.getContextContent(dbModel)
 	s.NotNil(content.AvailableAttributes)
 
@@ -659,7 +746,7 @@ func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
 	results := []map[string]interface{}{
 		{
 			"flow_id":     "test-flow-id",
-			"context":     dbModel.Context,
+			"context":     encryptedContext,
 			"expiry_time": expiryTime,
 		},
 	}
@@ -681,13 +768,13 @@ func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
 	s.NotNil(result)
 	s.Equal("test-flow-id", result.ExecutionID)
 
+	// getContextContent decrypts result in place; ToEngineContext works on the decrypted context
 	content = s.getContextContent(result)
 	s.True(content.IsAuthenticated)
 	s.NotNil(content.AvailableAttributes)
-	s.Equal(dbModel.Context, result.Context) // Serialized context should match
 
 	// Verify we can deserialize it back to original
-	restoredCtx, err := result.ToEngineContext(mockGraph)
+	restoredCtx, err := result.ToEngineContext(context.Background(), mockGraph)
 	s.NoError(err)
 	s.NotNil(restoredCtx.AuthenticatedUser.AvailableAttributes)
 	s.Len(restoredCtx.AuthenticatedUser.AvailableAttributes.Attributes, 2)
@@ -698,4 +785,42 @@ func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
 
 	mockDBProvider.AssertExpectations(s.T())
 	mockDBClient.AssertExpectations(s.T())
+}
+
+func (s *StoreTestSuite) TestEngineContextRoundTrip_WithAuthUser() {
+	var authUser managerpkg.AuthUser
+	err := json.Unmarshal([]byte(`{"userId":"au-user-1","userType":"person","ouId":"ou-1","providersAuthData":{}}`),
+		&authUser)
+	s.NoError(err)
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetID").Return("test-graph-id")
+	mockGraph.On("GetType").Return(common.FlowTypeAuthentication)
+
+	originalCtx := EngineContext{
+		ExecutionID: "authuser-flow-id",
+		AppID:       "authuser-app-id",
+		FlowType:    common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "au-user-1",
+			Attributes:      map[string]interface{}{},
+		},
+		AuthUser:         authUser,
+		UserInputs:       map[string]string{},
+		RuntimeData:      map[string]string{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Graph:            mockGraph,
+	}
+
+	dbModel, err := FromEngineContext(originalCtx)
+	s.NoError(err)
+	s.NotNil(dbModel)
+
+	// Token encryption is handled inside AuthUser.MarshalJSON; verify the JSON blob is present
+	content := s.getContextContent(dbModel)
+	s.NotNil(content.AuthUser)
+
+	restoredCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+	s.NoError(err)
+	s.True(restoredCtx.AuthUser.IsAuthenticated())
 }

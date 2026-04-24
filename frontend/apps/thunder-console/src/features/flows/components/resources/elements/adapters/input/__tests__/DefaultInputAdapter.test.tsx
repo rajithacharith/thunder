@@ -30,10 +30,6 @@ vi.mock('react-i18next', () => ({
   Trans: ({children}: {children: ReactNode}) => children,
 }));
 
-vi.mock('@/features/flows/hooks/useRequiredFields', () => ({
-  default: vi.fn(),
-}));
-
 vi.mock('@/features/flows/components/resources/elements/hint', () => ({
   Hint: ({hint}: {hint: string}) => <span data-testid="hint">{hint}</span>,
 }));
@@ -254,19 +250,6 @@ describe('DefaultInputAdapter', () => {
       const {container} = render(<DefaultInputAdapter resource={resource} />);
 
       expect(container.querySelector('.MuiTextField-root')).toBeInTheDocument();
-    });
-  });
-
-  describe('Validation', () => {
-    it('should call useRequiredFields with resource', async () => {
-      const useRequiredFields = await import('@/features/flows/hooks/useRequiredFields');
-      const mockUseRequiredFields = vi.mocked(useRequiredFields.default);
-
-      const resource = createMockElement();
-
-      render(<DefaultInputAdapter resource={resource} />);
-
-      expect(mockUseRequiredFields).toHaveBeenCalled();
     });
   });
 });

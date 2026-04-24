@@ -23,11 +23,25 @@ import Notification, {NotificationType} from '../../models/notification';
 import {ValidationContext} from '../ValidationContext';
 import ValidationProvider from '../ValidationProvider';
 
-// Mock useFlowBuilderCore
+// Mock useFlowConfig — returns empty flowNodes by default (no validation notifications)
+vi.mock('../../hooks/useFlowConfig', () => ({
+  default: () => ({
+    flowNodes: [],
+  }),
+}));
+
+// Mock react-i18next
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
+}));
+
+// Mock useUIPanelState
 const mockSetIsOpenResourcePropertiesPanel = vi.fn();
 const mockRegisterCloseValidationPanel = vi.fn();
 
-vi.mock('../../hooks/useFlowBuilderCore', () => ({
+vi.mock('../../hooks/useUIPanelState', () => ({
   default: () => ({
     setIsOpenResourcePropertiesPanel: mockSetIsOpenResourcePropertiesPanel,
     registerCloseValidationPanel: mockRegisterCloseValidationPanel,

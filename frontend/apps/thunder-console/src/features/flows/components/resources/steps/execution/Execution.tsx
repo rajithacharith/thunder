@@ -23,7 +23,7 @@ import ValidationErrorBoundary from '../../../validation-panel/ValidationErrorBo
 import type {CommonStepFactoryPropsInterface} from '../CommonStepFactory';
 import View from '../view/View';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
-import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
+import useInteractionState from '@/features/flows/hooks/useInteractionState';
 import type {Element} from '@/features/flows/models/elements';
 import {ResourceTypes} from '@/features/flows/models/resources';
 import {type StepAction, type Step, StepCategories} from '@/features/flows/models/steps';
@@ -45,7 +45,7 @@ export type ExecutionPropsInterface = CommonStepFactoryPropsInterface;
  */
 function Execution({data, resources}: ExecutionPropsInterface): ReactElement | null {
   const stepId: string | null = useNodeId();
-  const {setLastInteractedResource, setLastInteractedStepId} = useFlowBuilderCore();
+  const {setLastInteractedResource, setLastInteractedStepId} = useInteractionState();
 
   const executorName = (data?.action as StepAction | undefined)?.executor?.name ?? 'Executor';
   // Get display metadata from data (set by resolveStepMetadata)

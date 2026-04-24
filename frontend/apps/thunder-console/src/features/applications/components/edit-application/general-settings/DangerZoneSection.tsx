@@ -17,7 +17,7 @@
  */
 
 import {SettingsCard} from '@thunder/components';
-import {Typography, Button} from '@wso2/oxygen-ui';
+import {Typography, Button, Divider} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 
@@ -28,34 +28,69 @@ interface DangerZoneSectionProps {
   /**
    * Callback function to open the regenerate client secret confirmation dialog
    */
-  onRegenerateClick: () => void;
+  onRegenerateClick?: () => void;
+  /**
+   * Whether to show the regenerate client secret section (only for confidential clients)
+   */
+  showRegenerateSecret?: boolean;
+  /**
+   * Callback function to open the delete application confirmation dialog
+   */
+  onDeleteClick: () => void;
 }
 
 /**
  * Section component displaying the danger zone with destructive actions.
  *
- * Displays a regenerate client secret button for rotating the application's client secret.
- * This action will invalidate the current client secret and all existing tokens.
+ * Displays a regenerate client secret button (for confidential clients) and a
+ * delete application button. These actions are irreversible.
  *
  * @param props - Component props
  * @returns Danger zone UI within a SettingsCard
  */
-export default function DangerZoneSection({onRegenerateClick}: DangerZoneSectionProps): JSX.Element {
+export default function DangerZoneSection({
+  onRegenerateClick = undefined,
+  showRegenerateSecret = false,
+  onDeleteClick,
+}: DangerZoneSectionProps): JSX.Element {
   const {t} = useTranslation();
 
   return (
     <SettingsCard
-      title={t('applications:edit.general.sections.dangerZone.title')}
-      description={t('applications:edit.general.sections.dangerZone.description')}
+      title={t('applications:edit.general.sections.dangerZone.title', 'Danger Zone')}
+      description={t(
+        'applications:edit.general.sections.dangerZone.description',
+        'Actions in this section are irreversible. Proceed with caution.',
+      )}
     >
+      {showRegenerateSecret && (
+        <>
+          <Typography variant="h6" gutterBottom color="error">
+            {t('applications:edit.general.sections.dangerZone.regenerateSecret.title', 'Regenerate Client Secret')}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{mb: 3}}>
+            {t(
+              'applications:edit.general.sections.dangerZone.regenerateSecret.description',
+              'Regenerating the client secret will immediately invalidate the current client secret and cannot be undone.',
+            )}
+          </Typography>
+          <Button variant="contained" color="error" onClick={onRegenerateClick}>
+            {t('applications:edit.general.sections.dangerZone.regenerateSecret.button', 'Regenerate Client Secret')}
+          </Button>
+          <Divider sx={{my: 3}} />
+        </>
+      )}
       <Typography variant="h6" gutterBottom color="error">
-        {t('applications:edit.general.sections.dangerZone.regenerateSecret.title')}
+        {t('applications:edit.general.sections.dangerZone.deleteApplication.title', 'Delete Application')}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{mb: 3}}>
-        {t('applications:edit.general.sections.dangerZone.regenerateSecret.description')}
+        {t(
+          'applications:edit.general.sections.dangerZone.deleteApplication.description',
+          'Permanently delete this application and all associated data. This action cannot be undone.',
+        )}
       </Typography>
-      <Button variant="contained" color="error" onClick={onRegenerateClick}>
-        {t('applications:edit.general.sections.dangerZone.regenerateSecret.button')}
+      <Button data-testid="delete-application-button" variant="contained" color="error" onClick={onDeleteClick}>
+        {t('applications:edit.general.sections.dangerZone.deleteApplication.button', 'Delete Application')}
       </Button>
     </SettingsCard>
   );

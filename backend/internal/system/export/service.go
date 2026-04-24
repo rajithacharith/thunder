@@ -20,13 +20,23 @@ package export
 
 import (
 	"context"
+	"regexp"
+	"sort"
 	"strings"
 	"time"
 
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
+
+// templateVariablePattern matches only uppercase-only parameter names in the exact forms
+// "{{.NAME}}" and "{{- range .NAME}}". This relies on the parameterizer normalizing names
+// via toSnakeCase() (which calls strings.ToUpper()) and only emitting those two template
+// forms in parameterizer.go. Adding lowercase names or new actions like "if"/"with" will
+// require updating this regex.
+var templateVariablePattern = regexp.MustCompile(`\{\{\.([A-Z0-9_]+)\}\}|\{\{\-\s*range\s+\.([A-Z0-9_]+)\s*\}\}`)
 
 const (
 	formatYAML = "yaml"
@@ -82,10 +92,10 @@ func (es *exportService) ExportResources(
 	ctx context.Context, request *ExportRequest,
 ) (*ExportResponse, *serviceerror.ServiceError) {
 	if request == nil {
-		return nil, serviceerror.CustomServiceError(
-			ErrorInvalidRequest,
-			"Export request cannot be nil",
-		)
+		return nil, serviceerror.CustomServiceError(ErrorInvalidRequest, core.I18nMessage{
+			Key:          "error.exportservice.nil_request_description",
+			DefaultValue: "Export request cannot be nil",
+		})
 	}
 
 	// Set default options if not provided
@@ -137,10 +147,10 @@ func (es *exportService) ExportResources(
 	}
 
 	if len(exportFiles) == 0 {
-		return nil, serviceerror.CustomServiceError(
-			ErrorNoResourcesFound,
-			"No valid resources found for export",
-		)
+		return nil, serviceerror.CustomServiceError(ErrorNoResourcesFound, core.I18nMessage{
+			Key:          "error.exportservice.no_valid_resources_for_export_description",
+			DefaultValue: "No valid resources found for export",
+		})
 	}
 
 	// Calculate total size
@@ -150,8 +160,16 @@ func (es *exportService) ExportResources(
 		totalSize += exportFiles[i].Size
 	}
 
+	envFile := es.generateEnvFile(exportFiles)
+
+	totalFilesCount := len(exportFiles)
+	if envFile != nil {
+		totalFilesCount++
+		totalSize += envFile.Size
+	}
+
 	summary := &ExportSummary{
-		TotalFiles:    len(exportFiles),
+		TotalFiles:    totalFilesCount,
 		TotalSize:     totalSize,
 		ExportedAt:    time.Now().UTC().Format(time.RFC3339),
 		ResourceTypes: resourceCounts,
@@ -160,8 +178,49 @@ func (es *exportService) ExportResources(
 
 	return &ExportResponse{
 		Files:   exportFiles,
+		EnvFile: envFile,
 		Summary: summary,
 	}, nil
+}
+
+// generateEnvFile extracts template variable names and builds a .env payload.
+func (es *exportService) generateEnvFile(files []ExportFile) *EnvironmentFile {
+	variablesSet := make(map[string]struct{})
+
+	for _, file := range files {
+		matches := templateVariablePattern.FindAllStringSubmatch(file.Content, -1)
+		for _, match := range matches {
+			for i := 1; i < len(match); i++ {
+				if match[i] == "" {
+					continue
+				}
+				variablesSet[match[i]] = struct{}{}
+			}
+		}
+	}
+
+	if len(variablesSet) == 0 {
+		return nil
+	}
+
+	variables := make([]string, 0, len(variablesSet))
+	for variable := range variablesSet {
+		variables = append(variables, variable)
+	}
+	sort.Strings(variables)
+
+	var contentBuilder strings.Builder
+	for _, variable := range variables {
+		contentBuilder.WriteString(variable)
+		contentBuilder.WriteString("=\n")
+	}
+
+	content := contentBuilder.String()
+	return &EnvironmentFile{
+		FileName: ".env",
+		Content:  content,
+		Size:     int64(len(content)),
+	}
 }
 
 // exportResourcesWithExporter exports resources using a registered exporter.
@@ -196,11 +255,11 @@ func (es *exportService) exportResourcesWithExporter(
 			logger.Warn("Failed to get resource for export",
 				log.String("resourceType", resourceType),
 				log.String("resourceID", resourceID),
-				log.String("error", svcErr.Error))
+				log.String("error", svcErr.Error.DefaultValue))
 			exportErrors = append(exportErrors, declarativeresource.ExportError{
 				ResourceType: resourceType,
 				ResourceID:   resourceID,
-				Error:        svcErr.Error,
+				Error:        svcErr.Error.DefaultValue,
 				Code:         svcErr.Code,
 			})
 			continue

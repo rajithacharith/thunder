@@ -16,14 +16,14 @@
  * under the License.
  */
 
+import {getInitials} from '@thunder/components';
+import {useGetUsers} from '@thunder/configure-users';
 import {Avatar, Box, Skeleton, Stack, Typography} from '@wso2/oxygen-ui';
 import {UsersRound} from '@wso2/oxygen-ui-icons-react';
 import {motion} from 'framer-motion';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import HomeNextStepCard from './HomeNextStepCard';
-import useGetUsers from '../../../users/api/useGetUsers';
-import getInitials from '@/utils/getInitials';
 
 const AVATAR_LIMIT = 5;
 

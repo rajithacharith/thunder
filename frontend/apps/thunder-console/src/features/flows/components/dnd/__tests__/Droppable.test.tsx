@@ -288,6 +288,155 @@ describe('Droppable', () => {
     });
   });
 
+  describe('isTargetInside Logic', () => {
+    it('should return cached state when target has no element property', async () => {
+      const {useDroppable, useDragOperation} = await import('@dnd-kit/react');
+
+      const droppableElement = document.createElement('div');
+
+      vi.mocked(useDragOperation).mockReturnValue({
+        source: {id: 'drag-1'},
+        target: {id: 'target-1'}, // no element property
+      } as ReturnType<typeof useDragOperation>);
+
+      vi.mocked(useDroppable).mockReturnValue({
+        ref: mockDroppableRef,
+        droppable: {accepts: vi.fn(() => true), element: droppableElement},
+        isDropTarget: false,
+      } as unknown as ReturnType<typeof useDroppable>);
+
+      const {container} = render(
+        <Droppable id="test-drop">
+          <div>Content</div>
+        </Droppable>,
+      );
+
+      expect(container.firstChild).toBeInTheDocument();
+    });
+
+    it('should detect target inside droppable element', async () => {
+      const {useDroppable, useDragOperation} = await import('@dnd-kit/react');
+
+      const droppableElement = document.createElement('div');
+      const targetElement = document.createElement('span');
+      droppableElement.appendChild(targetElement);
+
+      vi.mocked(useDragOperation).mockReturnValue({
+        source: {id: 'drag-1'},
+        target: {id: 'target-1', element: targetElement},
+      } as unknown as ReturnType<typeof useDragOperation>);
+
+      vi.mocked(useDroppable).mockReturnValue({
+        ref: mockDroppableRef,
+        droppable: {accepts: vi.fn(() => true), element: droppableElement},
+        isDropTarget: true,
+      } as unknown as ReturnType<typeof useDroppable>);
+
+      const {container} = render(
+        <Droppable id="test-drop">
+          <div>Content</div>
+        </Droppable>,
+      );
+
+      // data-drop-active should be present since target is inside and source exists
+      expect(container.firstChild).toHaveAttribute('data-drop-active');
+    });
+
+    it('should handle ancestor target when not a drop target', async () => {
+      const {useDroppable, useDragOperation} = await import('@dnd-kit/react');
+
+      const ancestorElement = document.createElement('div');
+      const droppableElement = document.createElement('span');
+      ancestorElement.appendChild(droppableElement);
+
+      vi.mocked(useDragOperation).mockReturnValue({
+        source: {id: 'drag-1'},
+        target: {id: 'target-1', element: ancestorElement},
+      } as unknown as ReturnType<typeof useDragOperation>);
+
+      vi.mocked(useDroppable).mockReturnValue({
+        ref: mockDroppableRef,
+        droppable: {accepts: vi.fn(() => true), element: droppableElement},
+        isDropTarget: false,
+      } as unknown as ReturnType<typeof useDroppable>);
+
+      const {container} = render(
+        <Droppable id="test-drop">
+          <div>Content</div>
+        </Droppable>,
+      );
+
+      // Not a drop target, so no highlight
+      expect(container.firstChild).not.toHaveAttribute('data-drop-active');
+    });
+
+    it('should use cached state for ancestor target when still a drop target', async () => {
+      const {useDroppable, useDragOperation} = await import('@dnd-kit/react');
+
+      const ancestorElement = document.createElement('div');
+      const droppableElement = document.createElement('span');
+      ancestorElement.appendChild(droppableElement);
+
+      vi.mocked(useDragOperation).mockReturnValue({
+        source: {id: 'drag-1'},
+        target: {id: 'target-1', element: ancestorElement},
+      } as unknown as ReturnType<typeof useDragOperation>);
+
+      vi.mocked(useDroppable).mockReturnValue({
+        ref: mockDroppableRef,
+        droppable: {accepts: vi.fn(() => true), element: droppableElement},
+        isDropTarget: true,
+      } as unknown as ReturnType<typeof useDroppable>);
+
+      const {container} = render(
+        <Droppable id="test-drop">
+          <div>Content</div>
+        </Droppable>,
+      );
+
+      expect(container.firstChild).toBeInTheDocument();
+    });
+
+    it('should return false when target and droppable have no element', async () => {
+      const {useDroppable, useDragOperation} = await import('@dnd-kit/react');
+
+      vi.mocked(useDragOperation).mockReturnValue({
+        source: {id: 'drag-1'},
+        target: null,
+      } as ReturnType<typeof useDragOperation>);
+
+      vi.mocked(useDroppable).mockReturnValue({
+        ref: mockDroppableRef,
+        droppable: {accepts: vi.fn(() => true), element: null},
+        isDropTarget: false,
+      } as unknown as ReturnType<typeof useDroppable>);
+
+      const {container} = render(
+        <Droppable id="test-drop">
+          <div>Content</div>
+        </Droppable>,
+      );
+
+      expect(container.firstChild).not.toHaveAttribute('data-drop-active');
+    });
+  });
+
+  describe('hideDropZones', () => {
+    it('should hide drop zones when hideDropZones is true', async () => {
+      const {useSortable} = await import('@dnd-kit/react/sortable');
+
+      render(
+        <Droppable id="test-drop" hideDropZones>
+          <div>Content</div>
+        </Droppable>,
+      );
+
+      // DropZone uses useSortable. With hideDropZones, DropZone should not be rendered.
+      // The number of useSortable calls should be 0 when zones are hidden
+      expect(useSortable).not.toHaveBeenCalled();
+    });
+  });
+
   describe('BottomZone Integration', () => {
     it('should create BottomZone with correct id', async () => {
       const {useSortable} = await import('@dnd-kit/react/sortable');

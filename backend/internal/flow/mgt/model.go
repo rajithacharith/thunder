@@ -256,3 +256,11 @@ type updateFlowInput struct {
 	Name  string           `json:"name" jsonschema:"Display name for the flow. Required for PUT."`
 	Nodes []NodeDefinition `json:"nodes" jsonschema:"Array of nodes defining the flow steps. Required for PUT."`
 }
+
+// segmentBoundary holds the parameters of a segment boundary, which is identified by a display-only prompt node.
+// It contains the ID of the display-only prompt node that serves as the boundary, and the ID of the next node
+// which is the start node of the next segment.
+type segmentBoundary struct {
+	boundaryNodeID string
+	nextNodeID     string
+}

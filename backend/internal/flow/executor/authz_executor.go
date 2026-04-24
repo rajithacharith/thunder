@@ -108,7 +108,7 @@ func (a *authorizationExecutor) Execute(ctx *core.NodeContext) (*common.Executor
 	}
 
 	logger.Debug("Calling authorization service",
-		log.String("userID", userID),
+		log.MaskedString(log.LoggerKeyUserID, userID),
 		log.Int("groupCount", len(groupIDs)),
 		log.Int("permissionCount", len(requestedPerms)))
 
@@ -121,7 +121,7 @@ func (a *authorizationExecutor) Execute(ctx *core.NodeContext) (*common.Executor
 
 	authzResp, svcErr := a.authzService.GetAuthorizedPermissions(ctx.Context, authzReq)
 	if svcErr != nil {
-		logger.Error("Authorization service call failed", log.String("error", svcErr.Error))
+		logger.Error("Authorization service call failed", log.String("error", svcErr.Error.DefaultValue))
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Authorization validation failure"
 		return execResp, nil
@@ -184,7 +184,7 @@ func (a *authorizationExecutor) extractGroupIDs(ctx *core.NodeContext) ([]string
 	// If no groups found in context, fetch transitive groups from entity provider
 	if a.entityProvider != nil && ctx.AuthenticatedUser.UserID != "" {
 		a.logger.Debug("Groups not found in context, fetching transitive groups from entity provider",
-			log.String("userID", ctx.AuthenticatedUser.UserID))
+			log.MaskedString(log.LoggerKeyUserID, ctx.AuthenticatedUser.UserID))
 
 		groups, err := a.entityProvider.GetTransitiveEntityGroups(ctx.AuthenticatedUser.UserID)
 		if err != nil {

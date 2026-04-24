@@ -192,12 +192,6 @@ These variables are used to manage tokens and authentication state. These will b
 | `accessToken` | Access token for management API calls |
 | `refreshToken` | Refresh token for token renewal |
 | `expiresAt` | Token expiration timestamp |
-| `codeVerifier` | PKCE code verifier |
-| `codeChallenge` | PKCE code challenge |
-| `authId` | Authentication session ID |
-| `executionId` | Flow execution ID |
-| `assertion` | Authentication assertion |
-| `authCode` | Authorization code |
 
 ## Collection Variables (Auto-populated)
 
@@ -213,6 +207,7 @@ These variables are automatically populated during the demo execution:
 | `github_session_token` | GitHub authentication session token |
 | `asgardeo_session_token` | Asgardeo authentication session token |
 | `exec_flow_id` | Flow execution ID for flow-native APIs |
+| `exec_challenge_token` | Challenge token for flow execution |
 | `auth_std_auth_id` | OAuth standard flow auth ID |
 | `auth_std_flow_id` | OAuth standard flow flow exec ID |
 | `auth_std_assertion` | OAuth standard flow assertion |

@@ -87,8 +87,8 @@ func (s *IDPUtilsTestSuite) TestValidateIDPProperties_OAuth_MissingRequired() {
 	s.NotNil(err)
 	s.Nil(result)
 	s.Equal(ErrorInvalidIDPProperty.Code, err.Code)
-	s.Contains(err.ErrorDescription, "required property")
-	s.Contains(err.ErrorDescription, "missing")
+	s.Contains(err.ErrorDescription.DefaultValue, "required property")
+	s.Contains(err.ErrorDescription.DefaultValue, "missing")
 }
 
 func (s *IDPUtilsTestSuite) TestValidateIDPProperties_OIDC_AllRequired() {
@@ -271,7 +271,7 @@ func (s *IDPUtilsTestSuite) TestValidateIDPProperties_EmptyPropertyName() {
 	s.NotNil(err)
 	s.Nil(result)
 	s.Equal(ErrorInvalidIDPProperty.Code, err.Code)
-	s.Contains(err.ErrorDescription, "property names cannot be empty")
+	s.Contains(err.ErrorDescription.DefaultValue, "property names cannot be empty")
 }
 
 func (s *IDPUtilsTestSuite) TestValidateIDPProperties_EmptyPropertyValue() {
@@ -284,7 +284,7 @@ func (s *IDPUtilsTestSuite) TestValidateIDPProperties_EmptyPropertyValue() {
 	s.NotNil(err)
 	s.Nil(result)
 	s.Equal(ErrorInvalidIDPProperty.Code, err.Code)
-	s.Contains(err.ErrorDescription, "value cannot be empty")
+	s.Contains(err.ErrorDescription.DefaultValue, "value cannot be empty")
 }
 
 func (s *IDPUtilsTestSuite) TestValidateIDPProperties_UnsupportedProperty() {
@@ -298,8 +298,8 @@ func (s *IDPUtilsTestSuite) TestValidateIDPProperties_UnsupportedProperty() {
 	s.NotNil(err)
 	s.Nil(result)
 	s.Equal(ErrorUnsupportedIDPProperty.Code, err.Code)
-	s.Contains(err.ErrorDescription, "unsupported_prop")
-	s.Contains(err.ErrorDescription, "not supported")
+	s.Contains(err.ErrorDescription.DefaultValue, "unsupported_prop")
+	s.Contains(err.ErrorDescription.DefaultValue, "not supported")
 }
 
 func (s *IDPUtilsTestSuite) TestValidateIDPProperties_InvalidIDPType() {
@@ -502,7 +502,7 @@ func (s *IDPUtilsTestSuite) TestValidateIDPProperties_WithWhitespacePropertyName
 	s.NotNil(err)
 	s.Nil(result)
 	s.Equal(ErrorInvalidIDPProperty.Code, err.Code)
-	s.Contains(err.ErrorDescription, "property names cannot be empty")
+	s.Contains(err.ErrorDescription.DefaultValue, "property names cannot be empty")
 }
 
 func (s *IDPUtilsTestSuite) TestValidateIDPProperties_WithWhitespacePropertyValue() {
@@ -515,7 +515,7 @@ func (s *IDPUtilsTestSuite) TestValidateIDPProperties_WithWhitespacePropertyValu
 	s.NotNil(err)
 	s.Nil(result)
 	s.Equal(ErrorInvalidIDPProperty.Code, err.Code)
-	s.Contains(err.ErrorDescription, "value cannot be empty")
+	s.Contains(err.ErrorDescription.DefaultValue, "value cannot be empty")
 }
 
 func (s *IDPUtilsTestSuite) TestCreateAndAppendProperty_Success() {

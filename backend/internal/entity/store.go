@@ -502,18 +502,16 @@ func (es *entityDBStore) IdentifyEntity(ctx context.Context,
 
 	if len(results) == 0 {
 		if es.logger.IsDebugEnabled() {
-			maskedFilters := maskMapValues(filters)
-			es.logger.Debug("Entity not found with the provided filters", log.Any("filters", maskedFilters))
+			es.logger.Debug("Entity not found with the provided filters", log.MaskedMap("filters", filters))
 		}
 		return nil, ErrEntityNotFound
 	}
 
 	if len(results) != 1 {
 		if es.logger.IsDebugEnabled() {
-			maskedFilters := maskMapValues(filters)
 			es.logger.Debug(
 				"Unexpected number of results for the provided filters",
-				log.Any("filters", maskedFilters),
+				log.MaskedMap("filters", filters),
 				log.Int("result_count", len(results)),
 			)
 		}
@@ -969,18 +967,6 @@ func executeCountQuery(dbClient provider.DBClientInterface, ctx context.Context,
 	}
 
 	return totalCount, nil
-}
-
-func maskMapValues(input map[string]interface{}) map[string]interface{} {
-	masked := make(map[string]interface{})
-	for key, value := range input {
-		if strValue, ok := value.(string); ok {
-			masked[key] = log.MaskString(strValue)
-		} else {
-			masked[key] = "***"
-		}
-	}
-	return masked
 }
 
 func prepareIdentifierQuery(

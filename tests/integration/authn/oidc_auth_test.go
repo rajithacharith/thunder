@@ -50,7 +50,7 @@ var oidcUserSchema = testutils.UserSchema{
 			"type": "string",
 		},
 		"password": map[string]interface{}{
-			"type": "string",
+			"type":       "string",
 			"credential": true,
 		},
 		"sub": map[string]interface{}{
@@ -126,9 +126,9 @@ func (suite *OIDCAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err)
 
 	user := testutils.User{
-		Type:             oidcUserSchema.Name,
-		OUID:             suite.ouID,
-		Attributes:       json.RawMessage(attributesJSON),
+		Type:       oidcUserSchema.Name,
+		OUID:       suite.ouID,
+		Attributes: json.RawMessage(attributesJSON),
 	}
 
 	userID, err := testutils.CreateUser(user)
@@ -270,7 +270,7 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthStartInvalidIDPID() {
 	err = json.NewDecoder(resp.Body).Decode(&errorResponse)
 	suite.Require().NoError(err)
 	suite.NotEmpty(errorResponse.Code)
-	suite.NotEmpty(errorResponse.Message)
+	suite.NotEmpty(errorResponse.Message.DefaultValue)
 }
 
 func (suite *OIDCAuthTestSuite) TestOIDCAuthStartMissingIDPID() {
@@ -320,7 +320,7 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthCompleteFlowSuccess() {
 
 	finishRequest := map[string]interface{}{
 		"sessionToken": sessionToken,
-		"code":          authCode,
+		"code":         authCode,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -349,7 +349,7 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthCompleteFlowSuccess() {
 func (suite *OIDCAuthTestSuite) TestOIDCAuthFinishInvalidSessionToken() {
 	finishRequest := map[string]interface{}{
 		"sessionToken": "invalid-session-token",
-		"code":          "some-auth-code",
+		"code":         "some-auth-code",
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -454,7 +454,7 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthCompleteFlowWithSkipAssertionFalse()
 
 	finishRequest := map[string]interface{}{
 		"sessionToken":  sessionToken,
-		"code":           authCode,
+		"code":          authCode,
 		"skipAssertion": false,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
@@ -512,7 +512,7 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthCompleteFlowWithSkipAssertionTrue() 
 
 	finishRequest := map[string]interface{}{
 		"sessionToken":  sessionToken,
-		"code":           authCode,
+		"code":          authCode,
 		"skipAssertion": true,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
@@ -570,7 +570,7 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthWithAssuranceLevelAAL1() {
 
 	finishRequest := map[string]interface{}{
 		"sessionToken":  sessionToken,
-		"code":           authCode,
+		"code":          authCode,
 		"skipAssertion": false,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
@@ -631,7 +631,7 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthWithSkipAssertion() {
 
 	finishRequest := map[string]interface{}{
 		"sessionToken":  sessionToken,
-		"code":           authCode,
+		"code":          authCode,
 		"skipAssertion": true,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)

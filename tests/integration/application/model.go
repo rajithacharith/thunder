@@ -212,15 +212,11 @@ func (app *Application) equals(expectedApp Application) bool {
 		return false
 	}
 
-	// Check certificate - allow nil in expected if actual has default empty certificate
-	if (app.Certificate != nil) && (expectedApp.Certificate == nil) {
-		// If expected has no certificate but actual does, check if it's the default empty one
-		if app.Certificate.Type != "NONE" || app.Certificate.Value != "" {
-			return false
-		}
-	} else if (app.Certificate == nil) && (expectedApp.Certificate != nil) {
+	// Check certificate
+	if (app.Certificate == nil) != (expectedApp.Certificate == nil) {
 		return false
-	} else if app.Certificate != nil && expectedApp.Certificate != nil {
+	}
+	if app.Certificate != nil && expectedApp.Certificate != nil {
 		if app.Certificate.Type != expectedApp.Certificate.Type ||
 			app.Certificate.Value != expectedApp.Certificate.Value {
 			return false
@@ -295,14 +291,11 @@ func (app *Application) equals(expectedApp Application) bool {
 				}
 				// If expected UserInfo is nil, we accept any value in actual (including empty object)
 
-				// Compare OAuth certificate - allow nil expected when actual is default empty
-				if oauth.Certificate != nil && expectedOAuth.Certificate == nil {
-					if oauth.Certificate.Type != "NONE" || oauth.Certificate.Value != "" {
-						return false
-					}
-				} else if oauth.Certificate == nil && expectedOAuth.Certificate != nil {
+				// Compare OAuth certificate
+				if (oauth.Certificate == nil) != (expectedOAuth.Certificate == nil) {
 					return false
-				} else if oauth.Certificate != nil && expectedOAuth.Certificate != nil {
+				}
+				if oauth.Certificate != nil && expectedOAuth.Certificate != nil {
 					if oauth.Certificate.Type != expectedOAuth.Certificate.Type ||
 						oauth.Certificate.Value != expectedOAuth.Certificate.Value {
 						return false

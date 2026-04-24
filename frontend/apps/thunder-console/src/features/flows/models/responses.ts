@@ -16,21 +16,8 @@
  * under the License.
  */
 
+import type {ApiPaginationLink} from '@thunder/types';
 import type {FlowNodeType, FlowType} from './flows';
-
-/**
- * Navigation link for pagination.
- */
-export interface Link {
-  /**
-   * The URI of the link
-   */
-  href: string;
-  /**
-   * The link relation type (first, next, previous, last)
-   */
-  rel: string;
-}
 
 /**
  * Basic flow definition returned in list responses.
@@ -92,7 +79,7 @@ export interface FlowListResponse {
   /**
    * Navigation links for pagination
    */
-  links?: Link[];
+  links?: ApiPaginationLink[];
 }
 
 /**

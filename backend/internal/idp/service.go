@@ -58,7 +58,8 @@ func newIDPService(idpStore idpStoreInterface, transactioner transaction.Transac
 }
 
 // CreateIdentityProvider creates a new Identity Provider.
-func (is *idpService) CreateIdentityProvider(ctx context.Context, idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError) {
+func (is *idpService) CreateIdentityProvider(
+	ctx context.Context, idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError) {
 	logger := is.logger
 	if isDeclarativeModeEnabled() {
 		return nil, &declarativeresource.ErrorDeclarativeResourceCreateOperation

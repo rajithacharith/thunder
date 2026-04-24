@@ -27,6 +27,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/observability/observabilitymock"
 )
@@ -151,9 +152,9 @@ func TestPublishFlowFailedEvent(t *testing.T) {
 		}
 
 		svcErr := &serviceerror.ServiceError{
-			Error:            "flow_execution_failed",
+			Error:            i18ncore.I18nMessage{DefaultValue: "flow_execution_failed"},
 			Code:             "FLOW_ERR_001",
-			ErrorDescription: "Authentication failed due to invalid credentials",
+			ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Authentication failed due to invalid credentials"},
 		}
 
 		flowStartTime := int64(1000)
@@ -176,7 +177,7 @@ func TestPublishFlowFailedEvent(t *testing.T) {
 		}
 
 		svcErr := &serviceerror.ServiceError{
-			Error: "generic_error",
+			Error: i18ncore.I18nMessage{DefaultValue: "generic_error"},
 			Code:  "ERR_002",
 		}
 
@@ -314,9 +315,9 @@ func TestPublishNodeExecutionCompletedEvent(t *testing.T) {
 		}
 
 		svcErr := &serviceerror.ServiceError{
-			Error:            "node_execution_failed",
+			Error:            i18ncore.I18nMessage{DefaultValue: "node_execution_failed"},
 			Code:             "NODE_ERR_001",
-			ErrorDescription: "Task execution failed",
+			ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Task execution failed"},
 		}
 
 		executionStartTime := int64(1000)

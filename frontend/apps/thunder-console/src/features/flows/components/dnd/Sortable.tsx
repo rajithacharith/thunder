@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {CollisionPriority} from '@dnd-kit/abstract';
 import {RestrictToVerticalAxis} from '@dnd-kit/abstract/modifiers';
 import {useDragDropManager, useDragOperation} from '@dnd-kit/react';
 import {type UseSortableInput, useSortable} from '@dnd-kit/react/sortable';
@@ -175,6 +176,7 @@ function Sortable({
 }: PropsWithChildren<SortableProps>) {
   const {ref, sortable, isDragging, isDropTarget} = useSortable({
     collisionDetector,
+    collisionPriority: CollisionPriority.High,
     handle: handleRef,
     id,
     index,
@@ -208,19 +210,20 @@ function Sortable({
     const showDropIndicator = isDragActive && isDropTarget && !isDragging && canAcceptDrop;
 
     // Determine indicator position (before or after this element)
-    // For reordering: If dragging from below (higher index) to above (lower index), show indicator at top
-    // For new items from resource panel: Always show indicator at top (insert before)
+    // For reordering: position based on drag direction (source index vs target index)
+    // For new items from resource panel: show indicator after (below) the detected element
+    // so hovering over Text shows the indicator between Text and Form
     const indicatorBefore =
-      showDropIndicator &&
-      (isReorderingOperation
-        ? typeof dragSourceIndex === 'number' && typeof index === 'number' && dragSourceIndex > index
-        : true); // For new items, always show before
-    const indicatorAfter =
       showDropIndicator &&
       isReorderingOperation &&
       typeof dragSourceIndex === 'number' &&
       typeof index === 'number' &&
-      dragSourceIndex < index;
+      dragSourceIndex > index;
+    const indicatorAfter =
+      showDropIndicator &&
+      (isReorderingOperation
+        ? typeof dragSourceIndex === 'number' && typeof index === 'number' && dragSourceIndex < index
+        : true); // For new items, always show after
 
     return {showIndicatorBefore: indicatorBefore, showIndicatorAfter: indicatorAfter};
   }, [isDragActive, isDropTarget, isDragging, isReorderingOperation, dragSourceIndex, index, canAcceptDrop]);
@@ -229,16 +232,19 @@ function Sortable({
     () => ({
       opacity: isDragging ? 0.4 : 1,
       transform: isDragging ? 'scale(1.01)' : 'none',
-      transition: isDragging ? 'none' : 'all 0.2s ease',
+      // Disable transitions for ALL sortables while a drag is active so
+      // sibling elements snap into place instantly instead of lagging behind.
+      transition: isDragActive ? 'none' : 'all 0.2s ease',
     }),
-    [isDragging],
+    [isDragging, isDragActive],
   );
 
   const dropIndicatorStyles = useMemo(
     () => ({
       position: 'relative' as const,
-      marginTop: '4px',
-      marginBottom: '4px',
+      paddingTop: isDragActive && !isDragging ? '14px' : '6px',
+      paddingBottom: isDragActive && !isDragging ? '14px' : '6px',
+      transition: 'padding 0.2s ease',
       ...(showIndicatorBefore && {
         '&::before': {
           content: '""',
@@ -296,7 +302,7 @@ function Sortable({
         }),
       ...DROP_INDICATOR_KEYFRAMES,
     }),
-    [showIndicatorBefore, showIndicatorAfter],
+    [showIndicatorBefore, showIndicatorAfter, isDragActive, isDragging],
   );
 
   return (

@@ -21,12 +21,7 @@ import {ReactFlowProvider} from '@xyflow/react';
 import type {Node} from '@xyflow/react';
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../context/FlowBuilderCoreContext';
-import type {Base} from '../../models/base';
-import {PreviewScreenType} from '../../models/custom-text-preference';
-import {ElementTypes} from '../../models/elements';
-import FlowEventTypes from '../../models/extension';
-import {EdgeStyleTypes} from '../../models/steps';
+import UIPanelContext, {type UIPanelContextProps} from '../../context/UIPanelContext';
 
 // Import after mocks
 import useDeleteExecutionResource from '../useDeleteExecutionResource';
@@ -38,21 +33,61 @@ const {
   mockUpdateNodeData,
   mockSetNodes,
   mockSetIsOpenResourcePropertiesPanel,
-  mockRegisterAsync,
-  mockUnregister,
-  mockExecuteAsync,
   registeredHandlers,
+  mockUnsubscribes,
 } = vi.hoisted(() => ({
   mockGetEdges: vi.fn().mockReturnValue([]),
   mockGetNodes: vi.fn().mockReturnValue([]),
   mockUpdateNodeData: vi.fn(),
   mockSetNodes: vi.fn(),
   mockSetIsOpenResourcePropertiesPanel: vi.fn(),
-  mockRegisterAsync: vi.fn(),
-  mockUnregister: vi.fn(),
-  mockExecuteAsync: vi.fn().mockResolvedValue(true),
   registeredHandlers: {} as Record<string, ((...args: unknown[]) => Promise<boolean>)[]>,
+  mockUnsubscribes: {} as Record<string, ReturnType<typeof vi.fn>[]>,
 }));
+
+const mockOnNodeDelete = vi.fn().mockImplementation((handler: (...args: unknown[]) => Promise<boolean>) => {
+  if (!registeredHandlers.onNodeDelete) registeredHandlers.onNodeDelete = [];
+  registeredHandlers.onNodeDelete.push(handler);
+  const unsub = vi.fn();
+  if (!mockUnsubscribes.onNodeDelete) mockUnsubscribes.onNodeDelete = [];
+  mockUnsubscribes.onNodeDelete.push(unsub);
+  return unsub;
+});
+
+const mockOnNodeElementDelete = vi.fn().mockImplementation((handler: (...args: unknown[]) => Promise<boolean>) => {
+  if (!registeredHandlers.onNodeElementDelete) registeredHandlers.onNodeElementDelete = [];
+  registeredHandlers.onNodeElementDelete.push(handler);
+  const unsub = vi.fn();
+  if (!mockUnsubscribes.onNodeElementDelete) mockUnsubscribes.onNodeElementDelete = [];
+  mockUnsubscribes.onNodeElementDelete.push(unsub);
+  return unsub;
+});
+
+const mockOnEdgeDelete = vi.fn().mockImplementation((handler: (...args: unknown[]) => Promise<boolean>) => {
+  if (!registeredHandlers.onEdgeDelete) registeredHandlers.onEdgeDelete = [];
+  registeredHandlers.onEdgeDelete.push(handler);
+  const unsub = vi.fn();
+  if (!mockUnsubscribes.onEdgeDelete) mockUnsubscribes.onEdgeDelete = [];
+  mockUnsubscribes.onEdgeDelete.push(unsub);
+  return unsub;
+});
+
+const mockFlowPlugins = {
+  onPropertyChange: vi.fn().mockReturnValue(vi.fn()),
+  emitPropertyChange: vi.fn().mockReturnValue(true),
+  onPropertyPanelOpen: vi.fn().mockReturnValue(vi.fn()),
+  emitPropertyPanelOpen: vi.fn().mockReturnValue(true),
+  onElementFilter: vi.fn().mockReturnValue(vi.fn()),
+  emitElementFilter: vi.fn().mockReturnValue(true),
+  onEdgeDelete: mockOnEdgeDelete,
+  emitEdgeDelete: vi.fn().mockReturnValue(true),
+  onNodeDelete: mockOnNodeDelete,
+  emitNodeDelete: vi.fn().mockReturnValue(true),
+  onNodeElementDelete: mockOnNodeElementDelete,
+  emitNodeElementDelete: vi.fn().mockReturnValue(true),
+  onTemplateLoad: vi.fn().mockReturnValue(vi.fn()),
+  emitTemplateLoad: vi.fn().mockReturnValue(true),
+};
 
 // Mock @xyflow/react
 vi.mock('@xyflow/react', async () => {
@@ -68,80 +103,29 @@ vi.mock('@xyflow/react', async () => {
   };
 });
 
-// Mock PluginRegistry - capture handlers for testing
-vi.mock('../../plugins/PluginRegistry', () => ({
-  default: {
-    getInstance: () => ({
-      registerAsync: (eventType: string, handler: (...args: unknown[]) => Promise<boolean>) => {
-        mockRegisterAsync(eventType, handler);
-        if (!registeredHandlers[eventType]) {
-          registeredHandlers[eventType] = [];
-        }
-        registeredHandlers[eventType].push(handler);
-      },
-      unregister: mockUnregister,
-      executeAsync: mockExecuteAsync,
-    }),
-  },
+// Mock useFlowPlugins - capture handlers for testing
+vi.mock('../useFlowPlugins', () => ({
+  default: () => mockFlowPlugins,
 }));
 
 describe('useDeleteExecutionResource', () => {
-  const mockBaseResource: Base = {
-    id: '',
-    type: '',
-    category: '',
-    resourceType: '',
-    version: '1.0.0',
-    deprecated: false,
-    deletable: true,
-    display: {
-      label: '',
-      image: '',
-      showOnResourcePanel: false,
-    },
-    config: {
-      field: {name: '', type: ElementTypes},
-      styles: {},
-    },
-  } as unknown as Base;
-
-  const defaultContextValue: FlowBuilderCoreContextProps = {
-    lastInteractedResource: mockBaseResource,
-    lastInteractedStepId: '',
-    ResourceProperties: () => null,
-    resourcePropertiesPanelHeading: '',
-    primaryI18nScreen: PreviewScreenType.LOGIN,
+  const defaultContextValue: UIPanelContextProps = {
     isResourcePanelOpen: true,
     isResourcePropertiesPanelOpen: false,
     isVersionHistoryPanelOpen: false,
-    ElementFactory: () => null,
-    onResourceDropOnCanvas: vi.fn(),
-    selectedAttributes: {},
-    setLastInteractedResource: vi.fn(),
-    setLastInteractedStepId: vi.fn(),
-    setResourcePropertiesPanelHeading: vi.fn(),
+    resourcePropertiesPanelHeading: '',
     setIsResourcePanelOpen: vi.fn(),
     setIsOpenResourcePropertiesPanel: mockSetIsOpenResourcePropertiesPanel,
-    registerCloseValidationPanel: vi.fn(),
     setIsVersionHistoryPanelOpen: vi.fn(),
-    setSelectedAttributes: vi.fn(),
-    flowCompletionConfigs: {},
-    setFlowCompletionConfigs: vi.fn(),
-    flowNodeTypes: {},
-    flowEdgeTypes: {},
-    setFlowNodeTypes: vi.fn(),
-    setFlowEdgeTypes: vi.fn(),
-    isVerboseMode: false,
-    setIsVerboseMode: vi.fn(),
-    edgeStyle: EdgeStyleTypes.SmoothStep,
-    setEdgeStyle: vi.fn(),
+    setResourcePropertiesPanelHeading: vi.fn(),
+    registerCloseValidationPanel: vi.fn(),
   };
 
-  const createWrapper = (contextValue: FlowBuilderCoreContextProps = defaultContextValue) => {
+  const createWrapper = (contextValue: UIPanelContextProps = defaultContextValue) => {
     function Wrapper({children}: {children: ReactNode}) {
       return (
         <ReactFlowProvider>
-          <FlowBuilderCoreContext.Provider value={contextValue}>{children}</FlowBuilderCoreContext.Provider>
+          <UIPanelContext.Provider value={contextValue}>{children}</UIPanelContext.Provider>
         </ReactFlowProvider>
       );
     }
@@ -154,6 +138,34 @@ describe('useDeleteExecutionResource', () => {
     Object.keys(registeredHandlers).forEach((key) => {
       delete registeredHandlers[key];
     });
+    Object.keys(mockUnsubscribes).forEach((key) => {
+      delete mockUnsubscribes[key];
+    });
+    // Re-wire capture implementations after clearAllMocks
+    mockOnNodeDelete.mockImplementation((handler: (...args: unknown[]) => Promise<boolean>) => {
+      if (!registeredHandlers.onNodeDelete) registeredHandlers.onNodeDelete = [];
+      registeredHandlers.onNodeDelete.push(handler);
+      const unsub = vi.fn();
+      if (!mockUnsubscribes.onNodeDelete) mockUnsubscribes.onNodeDelete = [];
+      mockUnsubscribes.onNodeDelete.push(unsub);
+      return unsub;
+    });
+    mockOnNodeElementDelete.mockImplementation((handler: (...args: unknown[]) => Promise<boolean>) => {
+      if (!registeredHandlers.onNodeElementDelete) registeredHandlers.onNodeElementDelete = [];
+      registeredHandlers.onNodeElementDelete.push(handler);
+      const unsub = vi.fn();
+      if (!mockUnsubscribes.onNodeElementDelete) mockUnsubscribes.onNodeElementDelete = [];
+      mockUnsubscribes.onNodeElementDelete.push(unsub);
+      return unsub;
+    });
+    mockOnEdgeDelete.mockImplementation((handler: (...args: unknown[]) => Promise<boolean>) => {
+      if (!registeredHandlers.onEdgeDelete) registeredHandlers.onEdgeDelete = [];
+      registeredHandlers.onEdgeDelete.push(handler);
+      const unsub = vi.fn();
+      if (!mockUnsubscribes.onEdgeDelete) mockUnsubscribes.onEdgeDelete = [];
+      mockUnsubscribes.onEdgeDelete.push(unsub);
+      return unsub;
+    });
   });
 
   describe('Plugin Registration', () => {
@@ -163,22 +175,22 @@ describe('useDeleteExecutionResource', () => {
       });
 
       // Check that handlers are registered
-      expect(mockRegisterAsync).toHaveBeenCalledWith(FlowEventTypes.ON_NODE_DELETE, expect.any(Function));
-      expect(mockRegisterAsync).toHaveBeenCalledWith(FlowEventTypes.ON_NODE_ELEMENT_DELETE, expect.any(Function));
-      expect(mockRegisterAsync).toHaveBeenCalledWith(FlowEventTypes.ON_EDGE_DELETE, expect.any(Function));
+      expect(mockOnNodeDelete).toHaveBeenCalledWith(expect.any(Function));
+      expect(mockOnNodeElementDelete).toHaveBeenCalledWith(expect.any(Function));
+      expect(mockOnEdgeDelete).toHaveBeenCalledWith(expect.any(Function));
     });
 
-    it('should unregister event handlers on unmount', () => {
+    it('should call unsubscribe functions on unmount', () => {
       const {unmount} = renderHook(() => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
       unmount();
 
-      // Check that handlers are unregistered
-      expect(mockUnregister).toHaveBeenCalledWith(FlowEventTypes.ON_NODE_DELETE, 'deleteExecutionActionNode');
-      expect(mockUnregister).toHaveBeenCalledWith(FlowEventTypes.ON_NODE_ELEMENT_DELETE, 'deleteExecutionNode');
-      expect(mockUnregister).toHaveBeenCalledWith(FlowEventTypes.ON_EDGE_DELETE, 'deleteComponentAndNode');
+      // Check that unsubscribe functions are called
+      mockUnsubscribes.onNodeDelete?.forEach((unsub) => expect(unsub).toHaveBeenCalled());
+      mockUnsubscribes.onNodeElementDelete?.forEach((unsub) => expect(unsub).toHaveBeenCalled());
+      mockUnsubscribes.onEdgeDelete?.forEach((unsub) => expect(unsub).toHaveBeenCalled());
     });
   });
 
@@ -189,7 +201,7 @@ describe('useDeleteExecutionResource', () => {
       });
 
       // The handler should be registered with the correct event type
-      expect(mockRegisterAsync).toHaveBeenCalledWith(FlowEventTypes.ON_NODE_DELETE, expect.any(Function));
+      expect(mockOnNodeDelete).toHaveBeenCalledWith(expect.any(Function));
     });
 
     it('should set up nodes and edges getters for the handler', () => {
@@ -220,7 +232,7 @@ describe('useDeleteExecutionResource', () => {
       });
 
       // Verify the hook registered with the plugin registry
-      expect(mockRegisterAsync).toHaveBeenCalled();
+      expect(mockOnNodeDelete).toHaveBeenCalled();
     });
   });
 
@@ -230,7 +242,7 @@ describe('useDeleteExecutionResource', () => {
         wrapper: createWrapper(),
       });
 
-      expect(mockRegisterAsync).toHaveBeenCalledWith(FlowEventTypes.ON_NODE_ELEMENT_DELETE, expect.any(Function));
+      expect(mockOnNodeElementDelete).toHaveBeenCalledWith(expect.any(Function));
     });
   });
 
@@ -240,7 +252,7 @@ describe('useDeleteExecutionResource', () => {
         wrapper: createWrapper(),
       });
 
-      expect(mockRegisterAsync).toHaveBeenCalledWith(FlowEventTypes.ON_EDGE_DELETE, expect.any(Function));
+      expect(mockOnEdgeDelete).toHaveBeenCalledWith(expect.any(Function));
     });
 
     it('should set up nodes getter for edge deletion handler', () => {
@@ -267,7 +279,7 @@ describe('useDeleteExecutionResource', () => {
       });
 
       // Verify the hook registered with the plugin registry
-      expect(mockRegisterAsync).toHaveBeenCalledWith(FlowEventTypes.ON_EDGE_DELETE, expect.any(Function));
+      expect(mockOnEdgeDelete).toHaveBeenCalledWith(expect.any(Function));
     });
   });
 
@@ -278,7 +290,9 @@ describe('useDeleteExecutionResource', () => {
       });
 
       // The hook should have access to context
-      expect(mockRegisterAsync).toHaveBeenCalledTimes(3);
+      expect(mockOnNodeDelete).toHaveBeenCalledTimes(1);
+      expect(mockOnNodeElementDelete).toHaveBeenCalledTimes(1);
+      expect(mockOnEdgeDelete).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -298,7 +312,7 @@ describe('useDeleteExecutionResource', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteNodeHandler = registeredHandlers[FlowEventTypes.ON_NODE_DELETE]?.[0];
+      const deleteNodeHandler = registeredHandlers.onNodeDelete?.[0];
       expect(deleteNodeHandler).toBeDefined();
 
       // Delete a non-execution node
@@ -340,7 +354,7 @@ describe('useDeleteExecutionResource', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteNodeHandler = registeredHandlers[FlowEventTypes.ON_NODE_DELETE]?.[0];
+      const deleteNodeHandler = registeredHandlers.onNodeDelete?.[0];
       expect(deleteNodeHandler).toBeDefined();
 
       const result = await deleteNodeHandler([executionNode]);
@@ -364,7 +378,7 @@ describe('useDeleteExecutionResource', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteNodeHandler = registeredHandlers[FlowEventTypes.ON_NODE_DELETE]?.[0];
+      const deleteNodeHandler = registeredHandlers.onNodeDelete?.[0];
       const result = await deleteNodeHandler([executionNode]);
       expect(result).toBe(true);
     });
@@ -378,7 +392,7 @@ describe('useDeleteExecutionResource', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteElementHandler = registeredHandlers[FlowEventTypes.ON_NODE_ELEMENT_DELETE]?.[0];
+      const deleteElementHandler = registeredHandlers.onNodeElementDelete?.[0];
       expect(deleteElementHandler).toBeDefined();
 
       const element = {
@@ -405,7 +419,7 @@ describe('useDeleteExecutionResource', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteElementHandler = registeredHandlers[FlowEventTypes.ON_NODE_ELEMENT_DELETE]?.[0];
+      const deleteElementHandler = registeredHandlers.onNodeElementDelete?.[0];
       expect(deleteElementHandler).toBeDefined();
 
       const element = {
@@ -430,7 +444,7 @@ describe('useDeleteExecutionResource', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteElementHandler = registeredHandlers[FlowEventTypes.ON_NODE_ELEMENT_DELETE]?.[0];
+      const deleteElementHandler = registeredHandlers.onNodeElementDelete?.[0];
 
       const element = {
         id: 'button-1',
@@ -461,7 +475,7 @@ describe('useDeleteExecutionResource', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteEdgeHandler = registeredHandlers[FlowEventTypes.ON_EDGE_DELETE]?.[0];
+      const deleteEdgeHandler = registeredHandlers.onEdgeDelete?.[0];
       expect(deleteEdgeHandler).toBeDefined();
 
       const edges = [
@@ -500,7 +514,7 @@ describe('useDeleteExecutionResource', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteEdgeHandler = registeredHandlers[FlowEventTypes.ON_EDGE_DELETE]?.[0];
+      const deleteEdgeHandler = registeredHandlers.onEdgeDelete?.[0];
       expect(deleteEdgeHandler).toBeDefined();
 
       const edges = [
@@ -552,7 +566,7 @@ describe('useDeleteExecutionResource', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteEdgeHandler = registeredHandlers[FlowEventTypes.ON_EDGE_DELETE]?.[0];
+      const deleteEdgeHandler = registeredHandlers.onEdgeDelete?.[0];
 
       const edges = [
         {
@@ -588,7 +602,7 @@ describe('useDeleteExecutionResource', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteEdgeHandler = registeredHandlers[FlowEventTypes.ON_EDGE_DELETE]?.[0];
+      const deleteEdgeHandler = registeredHandlers.onEdgeDelete?.[0];
 
       const edges = [
         {
@@ -635,7 +649,7 @@ describe('useDeleteExecutionResource', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteEdgeHandler = registeredHandlers[FlowEventTypes.ON_EDGE_DELETE]?.[0];
+      const deleteEdgeHandler = registeredHandlers.onEdgeDelete?.[0];
 
       const edges = [
         {
@@ -697,7 +711,7 @@ describe('useDeleteExecutionResource', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteNodeHandler = registeredHandlers[FlowEventTypes.ON_NODE_DELETE]?.[0];
+      const deleteNodeHandler = registeredHandlers.onNodeDelete?.[0];
       await deleteNodeHandler([executionNode]);
 
       expect(mockUpdateNodeData).toHaveBeenCalledWith('action-1', expect.any(Function));
@@ -739,7 +753,7 @@ describe('useDeleteExecutionResource', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteNodeHandler = registeredHandlers[FlowEventTypes.ON_NODE_DELETE]?.[0];
+      const deleteNodeHandler = registeredHandlers.onNodeDelete?.[0];
       await deleteNodeHandler([executionNode]);
 
       expect(mockSetIsOpenResourcePropertiesPanel).toHaveBeenCalledWith(false);
@@ -774,7 +788,7 @@ describe('useDeleteExecutionResource', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteElementHandler = registeredHandlers[FlowEventTypes.ON_NODE_ELEMENT_DELETE]?.[0];
+      const deleteElementHandler = registeredHandlers.onNodeElementDelete?.[0];
 
       const element = {
         id: 'button-1',
@@ -825,7 +839,7 @@ describe('useDeleteExecutionResource', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteElementHandler = registeredHandlers[FlowEventTypes.ON_NODE_ELEMENT_DELETE]?.[0];
+      const deleteElementHandler = registeredHandlers.onNodeElementDelete?.[0];
 
       const element = {
         id: 'button-1',

@@ -70,13 +70,24 @@ vi.mock('@xyflow/react', async () => {
   };
 });
 
-// Mock PluginRegistry
-vi.mock('../../plugins/PluginRegistry', () => ({
-  default: {
-    getInstance: () => ({
-      executeSync: mockExecuteSync,
-    }),
-  },
+// Mock useFlowPlugins
+vi.mock('../useFlowPlugins', () => ({
+  default: () => ({
+    onPropertyChange: vi.fn().mockReturnValue(vi.fn()),
+    emitPropertyChange: vi.fn().mockReturnValue(true),
+    onPropertyPanelOpen: vi.fn().mockReturnValue(vi.fn()),
+    emitPropertyPanelOpen: vi.fn().mockReturnValue(true),
+    onElementFilter: vi.fn().mockReturnValue(vi.fn()),
+    emitElementFilter: vi.fn().mockReturnValue(true),
+    onEdgeDelete: vi.fn().mockReturnValue(vi.fn()),
+    emitEdgeDelete: vi.fn().mockReturnValue(true),
+    onNodeDelete: vi.fn().mockReturnValue(vi.fn()),
+    emitNodeDelete: vi.fn().mockReturnValue(true),
+    onNodeElementDelete: vi.fn().mockReturnValue(vi.fn()),
+    emitNodeElementDelete: vi.fn().mockReturnValue(true),
+    onTemplateLoad: vi.fn().mockReturnValue(vi.fn()),
+    emitTemplateLoad: mockExecuteSync,
+  }),
 }));
 
 // Mock generateResourceId
@@ -87,6 +98,12 @@ vi.mock('../../utils/generateResourceId', () => ({
 // Mock autoAssignConnections
 vi.mock('../../utils/autoAssignConnections', () => ({
   default: vi.fn(),
+}));
+
+vi.mock('../useFlowEvents', () => ({
+  default: () => ({
+    notifyElementAdded: vi.fn(),
+  }),
 }));
 
 describe('useResourceAdd', () => {

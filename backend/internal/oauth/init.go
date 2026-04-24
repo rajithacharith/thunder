@@ -24,7 +24,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/attributecache"
-	"github.com/asgardeo/thunder/internal/authnprovider"
+	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/authz"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
@@ -38,6 +38,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/userinfo"
 	"github.com/asgardeo/thunder/internal/oauth/scope"
 	"github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
@@ -48,7 +49,7 @@ import (
 func Initialize(
 	mux *http.ServeMux,
 	applicationService application.ApplicationServiceInterface,
-	authnProvider authnprovider.AuthnProviderInterface,
+	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	jwtService jwt.JWTServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
@@ -57,6 +58,7 @@ func Initialize(
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	authzService authz.AuthorizationServiceInterface,
 	entityProvider entityprovider.EntityProviderInterface,
+	resourceService resource.ResourceServiceInterface,
 ) error {
 	// Fetch runtime transactioner for OAuth services.
 	transactioner, err := provider.GetDBProvider().GetRuntimeDBTransactioner()
@@ -68,7 +70,7 @@ func Initialize(
 	tokenBuilder, tokenValidator := tokenservice.Initialize(jwtService)
 	grantHandlerProvider, err := granthandlers.Initialize(
 		mux, jwtService, applicationService, flowExecService, tokenBuilder, tokenValidator,
-		attributeCacheSvc, ouService, authzService, entityProvider)
+		attributeCacheSvc, ouService, authzService, entityProvider, resourceService)
 	if err != nil {
 		return err
 	}

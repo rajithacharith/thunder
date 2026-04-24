@@ -19,6 +19,8 @@
 package executor
 
 import (
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -188,7 +190,10 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_SchemaServiceErr
 	}
 
 	suite.mockUserSchemaService.On("GetUniqueAttributes", mock.Anything, testUniquenessUserType).
-		Return([]string(nil), &serviceerror.ServiceError{Code: "schema_not_found", Error: "schema not found"})
+		Return([]string(nil), &serviceerror.ServiceError{
+			Code:  "schema_not_found",
+			Error: i18ncore.I18nMessage{Key: "error.test.schema_not_found", DefaultValue: "schema not found"},
+		})
 
 	resp, err := suite.executor.Execute(ctx)
 

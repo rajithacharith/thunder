@@ -19,14 +19,13 @@
 package authz
 
 import (
-	"fmt"
-	"net/url"
 	"slices"
 	"strings"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/pkce"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/resourceindicators"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -109,34 +108,11 @@ func (av *authorizationValidator) validateInitialAuthorizationRequest(msg *OAuth
 		return true, constants.ErrorInvalidRequest, "nonce exceeds maximum allowed length"
 	}
 
-	// Validate resource parameter if present
-	resource := msg.RequestQueryParams[constants.RequestParamResource]
-	if resource != "" {
-		if err := validateResourceParameter(resource); err != nil {
-			return true, constants.ErrorInvalidTarget, "Invalid resource parameter"
-		}
+	if errResp := resourceindicators.ValidateResourceURIs(msg.Resources); errResp != nil {
+		return true, errResp.Error, errResp.ErrorDescription
 	}
 
 	return false, "", ""
-}
-
-// validateResourceParameter validates the resource parameter.
-// TODO: Need to add other validations after introducing resources.
-func validateResourceParameter(resource string) error {
-	parsedURL, err := url.Parse(resource)
-	if err != nil {
-		return fmt.Errorf("resource parameter must be a valid absolute URI: %w", err)
-	}
-
-	if parsedURL.Scheme == "" {
-		return fmt.Errorf("resource parameter must be an absolute URI with a scheme")
-	}
-
-	if parsedURL.Fragment != "" {
-		return fmt.Errorf("resource parameter must not include a fragment component")
-	}
-
-	return nil
 }
 
 // validatePromptParameter validates the OIDC prompt parameter.

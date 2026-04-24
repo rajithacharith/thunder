@@ -32,6 +32,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/tests/mocks/crypto/pki/pkimock"
 )
 
@@ -125,7 +126,10 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_EdDSA_Success() {
 
 func (suite *JWKSServiceTestSuite) TestGetJWKS_CertParseError() {
 	// Mock parse error
-	parseErr := serviceerror.CustomServiceError(serviceerror.InternalServerError, "parse error")
+	parseErr := serviceerror.CustomServiceError(serviceerror.InternalServerError, core.I18nMessage{
+		Key:          "error.test.parse_error",
+		DefaultValue: "parse error",
+	})
 	suite.pkiMock.EXPECT().GetAllX509Certificates().Return(nil, parseErr)
 
 	resp, svcErr := suite.jwksService.GetJWKS()
@@ -133,7 +137,7 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_CertParseError() {
 	assert.NotNil(suite.T(), svcErr)
 	// The error is passed through from PKI service, so we expect the PKI error code
 	assert.Equal(suite.T(), parseErr.Code, svcErr.Code)
-	assert.Equal(suite.T(), parseErr.ErrorDescription, svcErr.ErrorDescription)
+	assert.Equal(suite.T(), parseErr.ErrorDescription.DefaultValue, svcErr.ErrorDescription.DefaultValue)
 }
 
 func (suite *JWKSServiceTestSuite) TestGetJWKS_NoCertificatesFound() {

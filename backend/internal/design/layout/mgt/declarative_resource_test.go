@@ -30,6 +30,7 @@ import (
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 
 	"github.com/stretchr/testify/suite"
@@ -121,7 +122,7 @@ func (s *DeclarativeResourceTestSuite) TestLayoutExporter_GetAllResourceIDs_Succ
 
 func (s *DeclarativeResourceTestSuite) TestLayoutExporter_GetAllResourceIDs_ServiceError() {
 	// Arrange
-	serviceErr := &serviceerror.ServiceError{Error: "Database error"}
+	serviceErr := &serviceerror.ServiceError{Error: i18ncore.I18nMessage{DefaultValue: "Database error"}}
 	mockService := NewLayoutMgtServiceInterfaceMock(s.T())
 	mockService.EXPECT().GetLayoutList(100, 0).Return(&LayoutList{}, serviceErr).Once()
 	exporter := &layoutExporter{service: mockService}
@@ -179,7 +180,7 @@ func (s *DeclarativeResourceTestSuite) TestLayoutExporter_GetResourceByID_Succes
 
 func (s *DeclarativeResourceTestSuite) TestLayoutExporter_GetResourceByID_NotFound() {
 	// Arrange
-	serviceErr := &serviceerror.ServiceError{Error: "Layout not found"}
+	serviceErr := &serviceerror.ServiceError{Error: i18ncore.I18nMessage{DefaultValue: "Layout not found"}}
 	mockService := NewLayoutMgtServiceInterfaceMock(s.T())
 	mockService.EXPECT().GetLayout("non-existent").Return(&Layout{}, serviceErr).Once()
 	exporter := &layoutExporter{service: mockService}

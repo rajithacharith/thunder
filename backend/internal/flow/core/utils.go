@@ -53,6 +53,17 @@ func ResolvePlaceholder(ctx *NodeContext, value string) string {
 			return match // Keep placeholder if not found
 		}
 
+		// Special handling for ouId - only resolve from runtime data or authenticated user
+		if key == "ouId" {
+			if ctx.AuthenticatedUser.OUID != "" {
+				return ctx.AuthenticatedUser.OUID
+			}
+			if runtimeValue, ok := ctx.RuntimeData["ouId"]; ok && runtimeValue != "" {
+				return runtimeValue
+			}
+			return match // Keep placeholder if not found
+		}
+
 		// Check runtime data first
 		if runtimeValue, ok := ctx.RuntimeData[key]; ok && runtimeValue != "" {
 			return runtimeValue

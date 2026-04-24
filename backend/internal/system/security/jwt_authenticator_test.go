@@ -31,6 +31,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 )
 
@@ -123,7 +124,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 			name:       "Successful authentication with system scope",
 			authHeader: "Bearer " + validToken,
 			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
-				m.On("VerifyJWTSignature", validToken).Return(nil)
+				m.On("VerifyJWT", validToken, "", "").Return(nil)
 			},
 			expectedError: nil,
 			validateResult: func(t *testing.T, ctx *SecurityContext) {
@@ -154,11 +155,24 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 			name:       "Invalid JWT signature",
 			authHeader: "Bearer invalid.jwt.token",
 			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
-				m.On("VerifyJWTSignature", "invalid.jwt.token").Return(&serviceerror.ServiceError{
+				m.On("VerifyJWT", "invalid.jwt.token", "", "").Return(&serviceerror.ServiceError{
 					Type:             serviceerror.ServerErrorType,
 					Code:             "INVALID_SIGNATURE",
-					Error:            "Invalid signature",
-					ErrorDescription: "The JWT signature is invalid",
+					Error:            i18ncore.I18nMessage{DefaultValue: "Invalid signature"},
+					ErrorDescription: i18ncore.I18nMessage{DefaultValue: "The JWT signature is invalid"},
+				})
+			},
+			expectedError: errInvalidToken,
+		},
+		{
+			name:       "Expired JWT token",
+			authHeader: "Bearer expired.jwt.token",
+			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
+				m.On("VerifyJWT", "expired.jwt.token", "", "").Return(&serviceerror.ServiceError{
+					Type:             serviceerror.ClientErrorType,
+					Code:             "JWT-60005",
+					Error:            i18ncore.I18nMessage{DefaultValue: "Token has expired"},
+					ErrorDescription: i18ncore.I18nMessage{DefaultValue: "The JWT token has expired"},
 				})
 			},
 			expectedError: errInvalidToken,
@@ -167,7 +181,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 			name:       "Invalid JWT format - decoding error",
 			authHeader: "Bearer invalidjwtformat", // Not 3 parts separated by dots
 			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
-				m.On("VerifyJWTSignature", "invalidjwtformat").Return(nil)
+				m.On("VerifyJWT", "invalidjwtformat", "", "").Return(nil)
 			},
 			expectedError: errInvalidToken,
 		},
@@ -175,7 +189,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 			name:       "Invalid JWT payload - malformed base64",
 			authHeader: "Bearer eyJhbGciOiJIUzI1NiJ9.invalid!base64!payload.signature",
 			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
-				m.On("VerifyJWTSignature", "eyJhbGciOiJIUzI1NiJ9.invalid!base64!payload.signature").Return(nil)
+				m.On("VerifyJWT", "eyJhbGciOiJIUzI1NiJ9.invalid!base64!payload.signature", "", "").Return(nil)
 			},
 			expectedError: errInvalidToken,
 		},
@@ -183,7 +197,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 			name:       "Invalid JWT payload - malformed JSON",
 			authHeader: "Bearer eyJhbGciOiJIUzI1NiJ9.bm90X3ZhbGlkX2pzb24.signature", // "not_valid_json" base64 encoded
 			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
-				m.On("VerifyJWTSignature", "eyJhbGciOiJIUzI1NiJ9.bm90X3ZhbGlkX2pzb24.signature").Return(nil)
+				m.On("VerifyJWT", "eyJhbGciOiJIUzI1NiJ9.bm90X3ZhbGlkX2pzb24.signature", "", "").Return(nil)
 			},
 			expectedError: errInvalidToken,
 		},
@@ -563,7 +577,7 @@ func (suite *JWTAuthenticatorTestSuite) TestVerifyFederatedToken_JWKSVerificatio
 	mockJWT.On("VerifyJWTWithJWKS", token, jwksURL, audience, issuer).Return(&serviceerror.ServiceError{
 		Type:  serviceerror.ServerErrorType,
 		Code:  "JWKS_ERROR",
-		Error: "JWKS verification failed",
+		Error: i18ncore.I18nMessage{DefaultValue: "JWKS verification failed"},
 	})
 	auth := newJWTAuthenticator(mockJWT)
 
@@ -768,7 +782,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate_FederatedTokenFailure()
 	mockJWT.On("VerifyJWTWithJWKS", token, jwksURL, audience, issuer).Return(&serviceerror.ServiceError{
 		Type:  serviceerror.ServerErrorType,
 		Code:  "JWKS_ERROR",
-		Error: "JWKS verification failed",
+		Error: i18ncore.I18nMessage{DefaultValue: "JWKS verification failed"},
 	})
 	auth := newJWTAuthenticator(mockJWT)
 

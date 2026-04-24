@@ -88,7 +88,7 @@ func (suite *TemplateServiceTestSuite) TestRender_StoreError() {
 
 	res, err := suite.service.Render(context.Background(), ScenarioUserInvite, TemplateTypeEmail, TemplateData{})
 	suite.NotNil(err)
-	suite.Equal(&serviceerror.InternalServerErrorWithI18n, err)
+	suite.Equal(&serviceerror.InternalServerError, err)
 	suite.Nil(res)
 }
 

@@ -27,10 +27,12 @@ import (
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/authnprovider"
+	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
+	managerpkg "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
-	"github.com/asgardeo/thunder/internal/system/crypto/encrypt"
+	"github.com/asgardeo/thunder/internal/system/crypto"
+	"github.com/asgardeo/thunder/internal/system/crypto/runtime"
 )
 
 // EngineContext holds the overall context used by the flow engine during execution.
@@ -50,24 +52,30 @@ type EngineContext struct {
 	CurrentNode         core.NodeInterface
 	CurrentNodeResponse *common.NodeResponse
 	CurrentAction       string
+	CurrentSegmentID    string
 
 	Graph       core.GraphInterface
 	Application appmodel.Application
 
 	AuthenticatedUser authncm.AuthenticatedUser
+	AuthUser          managerpkg.AuthUser
 	Assertion         string
 	ExecutionHistory  map[string]*common.NodeExecutionRecord
+
+	ChallengeTokenIn   string
+	ChallengeTokenHash string
 }
 
 // FlowStep represents the outcome of a individual flow step
 type FlowStep struct {
-	ExecutionID   string
-	StepID        string
-	Type          common.FlowStepType
-	Status        common.FlowStatus
-	Data          FlowData
-	Assertion     string
-	FailureReason string
+	ExecutionID    string
+	StepID         string
+	Type           common.FlowStepType
+	Status         common.FlowStatus
+	ChallengeToken string
+	Data           FlowData
+	Assertion      string
+	FailureReason  string
 }
 
 // FlowData holds the data returned by a flow execution step
@@ -81,23 +89,25 @@ type FlowData struct {
 
 // FlowResponse represents the flow execution API response body
 type FlowResponse struct {
-	ExecutionID   string   `json:"executionId"`
-	StepID        string   `json:"stepId,omitempty"`
-	FlowStatus    string   `json:"flowStatus"`
-	Type          string   `json:"type,omitempty"`
-	Data          FlowData `json:"data,omitempty"`
-	Assertion     string   `json:"assertion,omitempty"`
-	FailureReason string   `json:"failureReason,omitempty"`
+	ExecutionID    string   `json:"executionId"`
+	StepID         string   `json:"stepId,omitempty"`
+	FlowStatus     string   `json:"flowStatus"`
+	Type           string   `json:"type,omitempty"`
+	ChallengeToken string   `json:"challengeToken,omitempty"`
+	Data           FlowData `json:"data,omitempty"`
+	Assertion      string   `json:"assertion,omitempty"`
+	FailureReason  string   `json:"failureReason,omitempty"`
 }
 
 // FlowRequest represents the flow execution API request body
 type FlowRequest struct {
-	ApplicationID string            `json:"applicationId"`
-	FlowType      string            `json:"flowType"`
-	Verbose       bool              `json:"verbose,omitempty"`
-	ExecutionID   string            `json:"executionId"`
-	Action        string            `json:"action"`
-	Inputs        map[string]string `json:"inputs"`
+	ApplicationID  string            `json:"applicationId"`
+	FlowType       string            `json:"flowType"`
+	Verbose        bool              `json:"verbose,omitempty"`
+	ExecutionID    string            `json:"executionId"`
+	ChallengeToken string            `json:"challengeToken,omitempty"`
+	Action         string            `json:"action"`
+	Inputs         map[string]string `json:"inputs"`
 }
 
 // FlowInitContext represents the context for initiating a new flow with runtime data
@@ -116,12 +126,35 @@ type FlowContextDB struct {
 	UpdatedAt   time.Time
 }
 
+// isEncrypted reports whether the Context field is still in encrypted form.
+func (f *FlowContextDB) isEncrypted() bool {
+	var encCheck struct {
+		Algorithm string `json:"alg"`
+	}
+	return json.Unmarshal([]byte(f.Context), &encCheck) == nil && encCheck.Algorithm != ""
+}
+
+// decrypt decrypts the Context field in-place if it is still encrypted.
+func (f *FlowContextDB) decrypt(ctx context.Context) error {
+	if !f.isEncrypted() {
+		return nil
+	}
+	decrypted, err := runtime.GetRuntimeCryptoService().Decrypt(
+		ctx, crypto.KeyRef{}, crypto.AlgorithmAESGCM, []byte(f.Context))
+	if err != nil {
+		return err
+	}
+	f.Context = string(decrypted)
+	return nil
+}
+
 // flowContextContent holds all flow state serialized into the CONTEXT JSON column.
 type flowContextContent struct {
 	AppID               string  `json:"appId"`
 	Verbose             bool    `json:"verbose"`
 	CurrentNodeID       *string `json:"currentNodeId,omitempty"`
 	CurrentAction       *string `json:"currentAction,omitempty"`
+	CurrentSegmentID    *string `json:"currentSegmentId,omitempty"`
 	GraphID             string  `json:"graphId"`
 	RuntimeData         *string `json:"runtimeData,omitempty"`
 	ExecutionHistory    *string `json:"executionHistory,omitempty"`
@@ -133,10 +166,28 @@ type flowContextContent struct {
 	UserAttributes      *string `json:"userAttributes,omitempty"`
 	Token               *string `json:"token,omitempty"`
 	AvailableAttributes *string `json:"availableAttributes,omitempty"`
+	AuthUser            *string `json:"authUser,omitempty"`
+	ChallengeTokenHash  *string `json:"challengeTokenHash,omitempty"`
+}
+
+// encrypt marshals and encrypts the content, returning the encrypted string.
+func (c *flowContextContent) encrypt(ctx context.Context) (string, error) {
+	data, err := json.Marshal(c)
+	if err != nil {
+		return "", err
+	}
+	encrypted, err := runtime.GetRuntimeCryptoService().Encrypt(ctx, crypto.KeyRef{}, crypto.AlgorithmAESGCM, data)
+	if err != nil {
+		return "", err
+	}
+	return string(encrypted), nil
 }
 
 // GetGraphID extracts the graph ID from the context JSON.
-func (f *FlowContextDB) GetGraphID() (string, error) {
+func (f *FlowContextDB) GetGraphID(ctx context.Context) (string, error) {
+	if err := f.decrypt(ctx); err != nil {
+		return "", err
+	}
 	var content flowContextContent
 	if err := json.Unmarshal([]byte(f.Context), &content); err != nil {
 		return "", err
@@ -145,7 +196,11 @@ func (f *FlowContextDB) GetGraphID() (string, error) {
 }
 
 // ToEngineContext converts the database model to the flow engine context.
-func (f *FlowContextDB) ToEngineContext(graph core.GraphInterface) (EngineContext, error) {
+func (f *FlowContextDB) ToEngineContext(ctx context.Context, graph core.GraphInterface) (EngineContext, error) {
+	// Ensure context is decrypted before parsing
+	if err := f.decrypt(ctx); err != nil {
+		return EngineContext{}, err
+	}
 	var content flowContextContent
 	if err := json.Unmarshal([]byte(f.Context), &content); err != nil {
 		return EngineContext{}, err
@@ -180,21 +235,15 @@ func (f *FlowContextDB) ToEngineContext(graph core.GraphInterface) (EngineContex
 		userAttributes = make(map[string]interface{})
 	}
 
-	// Decrypt token if present
 	var token string
-	if content.Token != nil && *content.Token != "" {
-		encryptionService := encrypt.GetEncryptionService()
-		decrypted, err := encryptionService.DecryptString(*content.Token)
-		if err != nil {
-			return EngineContext{}, err
-		}
-		token = decrypted
+	if content.Token != nil {
+		token = *content.Token
 	}
 
 	// Parse available attributes
-	var availableAttributes *authnprovider.AvailableAttributes
+	var availableAttributes *authnprovidercm.AttributesResponse
 	if content.AvailableAttributes != nil && strings.TrimSpace(*content.AvailableAttributes) != "" {
-		var attrs authnprovider.AvailableAttributes
+		var attrs authnprovidercm.AttributesResponse
 		if err := json.Unmarshal([]byte(*content.AvailableAttributes), &attrs); err != nil {
 			return EngineContext{}, err
 		}
@@ -243,19 +292,43 @@ func (f *FlowContextDB) ToEngineContext(graph core.GraphInterface) (EngineContex
 		currentAction = *content.CurrentAction
 	}
 
+	// Get current segment ID
+	currentSegmentID := ""
+	if content.CurrentSegmentID != nil {
+		currentSegmentID = *content.CurrentSegmentID
+	}
+
+	// Deserialize AuthUser if present
+	var authUser managerpkg.AuthUser
+	if content.AuthUser != nil {
+		if err := json.Unmarshal([]byte(*content.AuthUser), &authUser); err != nil {
+			return EngineContext{}, err
+		}
+	}
+
+	// Get challenge token hash from JSON content
+	challengeTokenHash := ""
+	if content.ChallengeTokenHash != nil {
+		challengeTokenHash = *content.ChallengeTokenHash
+	}
+
 	return EngineContext{
-		ExecutionID:       f.ExecutionID,
-		TraceID:           "", // TraceID is transient and set from request context
-		FlowType:          graph.GetType(),
-		AppID:             content.AppID,
-		Verbose:           content.Verbose,
-		UserInputs:        userInputs,
-		RuntimeData:       runtimeData,
-		CurrentNode:       currentNode,
-		CurrentAction:     currentAction,
-		Graph:             graph,
-		AuthenticatedUser: authenticatedUser,
-		ExecutionHistory:  executionHistory,
+		Context:            ctx,
+		ExecutionID:        f.ExecutionID,
+		TraceID:            "", // TraceID is transient and set from request context
+		FlowType:           graph.GetType(),
+		AppID:              content.AppID,
+		Verbose:            content.Verbose,
+		UserInputs:         userInputs,
+		RuntimeData:        runtimeData,
+		CurrentNode:        currentNode,
+		CurrentAction:      currentAction,
+		CurrentSegmentID:   currentSegmentID,
+		Graph:              graph,
+		AuthenticatedUser:  authenticatedUser,
+		AuthUser:           authUser,
+		ExecutionHistory:   executionHistory,
+		ChallengeTokenHash: challengeTokenHash,
 	}, nil
 }
 
@@ -302,6 +375,12 @@ func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
 		currentAction = &ctx.CurrentAction
 	}
 
+	// Get current segment ID
+	var currentSegmentID *string
+	if ctx.CurrentSegmentID != "" {
+		currentSegmentID = &ctx.CurrentSegmentID
+	}
+
 	// Get authenticated user ID
 	var authenticatedUserID *string
 	if ctx.AuthenticatedUser.UserID != "" {
@@ -320,15 +399,9 @@ func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
 		userType = &ctx.AuthenticatedUser.UserType
 	}
 
-	// Encrypt and store token if present
-	var encryptedToken *string
+	var token *string
 	if ctx.AuthenticatedUser.Token != "" {
-		encryptionService := encrypt.GetEncryptionService()
-		encrypted, err := encryptionService.EncryptString(ctx.AuthenticatedUser.Token)
-		if err != nil {
-			return nil, err
-		}
-		encryptedToken = &encrypted
+		token = &ctx.AuthenticatedUser.Token
 	}
 
 	// Serialize available attributes
@@ -342,17 +415,35 @@ func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
 		availableAttributes = &availableAttrsStr
 	}
 
+	// Serialize AuthUser if present
+	var authUserStr *string
+	if ctx.AuthUser.IsAuthenticated() {
+		authUserJSON, err := json.Marshal(&ctx.AuthUser)
+		if err != nil {
+			return nil, err
+		}
+		s := string(authUserJSON)
+		authUserStr = &s
+	}
+
 	// Get graph ID
 	if ctx.Graph == nil || ctx.Graph.GetID() == "" {
 		return nil, fmt.Errorf("graph with a valid ID is required to persist engine context")
 	}
 	graphID := ctx.Graph.GetID()
 
+	// Get challenge token hash
+	var challengeTokenHash *string
+	if ctx.ChallengeTokenHash != "" {
+		challengeTokenHash = &ctx.ChallengeTokenHash
+	}
+
 	content := flowContextContent{
 		AppID:               ctx.AppID,
 		Verbose:             ctx.Verbose,
 		CurrentNodeID:       currentNodeID,
 		CurrentAction:       currentAction,
+		CurrentSegmentID:    currentSegmentID,
 		GraphID:             graphID,
 		RuntimeData:         &runtimeData,
 		ExecutionHistory:    &executionHistory,
@@ -362,17 +453,19 @@ func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
 		UserType:            userType,
 		UserInputs:          &userInputs,
 		UserAttributes:      &userAttributes,
-		Token:               encryptedToken,
+		Token:               token,
 		AvailableAttributes: availableAttributes,
+		AuthUser:            authUserStr,
+		ChallengeTokenHash:  challengeTokenHash,
 	}
 
-	contextJSON, err := json.Marshal(content)
+	encryptedContext, err := content.encrypt(ctx.Context)
 	if err != nil {
 		return nil, err
 	}
 
 	return &FlowContextDB{
 		ExecutionID: ctx.ExecutionID,
-		Context:     string(contextJSON),
+		Context:     encryptedContext,
 	}, nil
 }

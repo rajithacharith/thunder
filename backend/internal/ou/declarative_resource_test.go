@@ -66,7 +66,8 @@ func (s *DeclarativeResourceTestSuite) TestGetResourceByID() {
 		Parent:      nil,
 	}
 
-	s.mockService.EXPECT().GetOrganizationUnit(mock.Anything, "test-ou-1").Return(ou, (*serviceerror.ServiceError)(nil))
+	s.mockService.EXPECT().GetOrganizationUnit(mock.Anything, "test-ou-1").
+		Return(ou, (*serviceerror.ServiceError)(nil))
 
 	resource, name, err := s.exporter.GetResourceByID(context.Background(), "test-ou-1")
 	assert.Nil(s.T(), err)

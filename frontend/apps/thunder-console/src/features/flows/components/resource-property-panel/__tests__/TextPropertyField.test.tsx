@@ -67,6 +67,14 @@ vi.mock('@thunder/i18n', () => ({
   }),
 }));
 
+// Mock useI18nConfig used by I18nConfigurationCard
+vi.mock('../../../hooks/useI18nConfig', () => ({
+  default: () => ({
+    i18nText: {},
+    i18nTextLoading: false,
+  }),
+}));
+
 describe('TextPropertyField', () => {
   const mockOnChange = vi.fn();
 

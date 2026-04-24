@@ -30,10 +30,6 @@ vi.mock('react-i18next', () => ({
   Trans: ({children}: {children: ReactNode}) => children,
 }));
 
-vi.mock('@/features/flows/hooks/useRequiredFields', () => ({
-  default: vi.fn(),
-}));
-
 vi.mock('../PlaceholderComponent', () => ({
   default: ({value}: {value: string}) => <span data-testid="placeholder">{value}</span>,
 }));
@@ -192,19 +188,6 @@ describe('TypographyAdapter', () => {
       const {container} = render(<TypographyAdapter resource={resource} stepId="step-1" />);
 
       expect(container.querySelector('.MuiTypography-root')).toBeInTheDocument();
-    });
-  });
-
-  describe('Validation', () => {
-    it('should call useRequiredFields with resource', async () => {
-      const useRequiredFields = await import('@/features/flows/hooks/useRequiredFields');
-      const mockUseRequiredFields = vi.mocked(useRequiredFields.default);
-
-      const resource = createMockElement();
-
-      render(<TypographyAdapter resource={resource} stepId="step-1" />);
-
-      expect(mockUseRequiredFields).toHaveBeenCalled();
     });
   });
 });

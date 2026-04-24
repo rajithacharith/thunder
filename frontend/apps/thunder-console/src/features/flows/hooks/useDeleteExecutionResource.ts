@@ -18,13 +18,12 @@
 
 import {type Edge, type Node, useReactFlow} from '@xyflow/react';
 import {useEffect} from 'react';
-import useFlowBuilderCore from './useFlowBuilderCore';
+import useFlowPlugins from './useFlowPlugins';
+import useUIPanelState from './useUIPanelState';
 import VisualFlowConstants from '../constants/VisualFlowConstants';
 import {ActionTypes} from '../models/actions';
 import {type Element, ElementCategories} from '../models/elements';
-import FlowEventTypes from '../models/extension';
 import {StepTypes} from '../models/steps';
-import PluginRegistry from '../plugins/PluginRegistry';
 
 /**
  * Custom hook to handle the deletion of execution resources in the flow builder.
@@ -33,8 +32,9 @@ import PluginRegistry from '../plugins/PluginRegistry';
  * any associated execution action nodes are also deleted when an execution node is removed.
  */
 const useDeleteExecutionResource = (): void => {
-  const {setIsOpenResourcePropertiesPanel} = useFlowBuilderCore();
+  const {setIsOpenResourcePropertiesPanel} = useUIPanelState();
   const {getEdges, getNodes, updateNodeData, setNodes} = useReactFlow();
+  const {onNodeDelete, onNodeElementDelete, onEdgeDelete} = useFlowPlugins();
 
   /**
    * Deletes associated execution components when execution nodes are removed.
@@ -162,53 +162,12 @@ const useDeleteExecutionResource = (): void => {
     return true;
   }
 
-  useEffect(() => {
-    // Attach unique identifiers to the functions for plugin registration
-    (deleteComponentAndNode as typeof deleteComponentAndNode & Record<string, string>)[
-      VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
-    ] = 'deleteComponentAndNode';
-    (deleteExecutionNode as typeof deleteExecutionNode & Record<string, string>)[
-      VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
-    ] = 'deleteExecutionNode';
-    (deleteExecutionActionNode as typeof deleteExecutionActionNode & Record<string, string>)[
-      VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
-    ] = 'deleteExecutionActionNode';
-
-    PluginRegistry.getInstance().registerAsync(
-      FlowEventTypes.ON_NODE_DELETE,
-      deleteExecutionActionNode as unknown as (...args: unknown[]) => Promise<boolean>,
-    );
-    PluginRegistry.getInstance().registerAsync(
-      FlowEventTypes.ON_NODE_ELEMENT_DELETE,
-      deleteExecutionNode as unknown as (...args: unknown[]) => Promise<boolean>,
-    );
-    PluginRegistry.getInstance().registerAsync(
-      FlowEventTypes.ON_EDGE_DELETE,
-      deleteComponentAndNode as unknown as (...args: unknown[]) => Promise<boolean>,
-    );
-
-    return () => {
-      PluginRegistry.getInstance().unregister(
-        FlowEventTypes.ON_NODE_DELETE,
-        (deleteExecutionActionNode as typeof deleteExecutionActionNode & Record<string, string>)[
-          VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
-        ],
-      );
-      PluginRegistry.getInstance().unregister(
-        FlowEventTypes.ON_NODE_ELEMENT_DELETE,
-        (deleteExecutionNode as typeof deleteExecutionNode & Record<string, string>)[
-          VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
-        ],
-      );
-      PluginRegistry.getInstance().unregister(
-        FlowEventTypes.ON_EDGE_DELETE,
-        (deleteComponentAndNode as typeof deleteComponentAndNode & Record<string, string>)[
-          VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
-        ],
-      );
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- handlers use state-getter pattern (getNodes, getEdges) so they're safe with empty deps
+  useEffect(() => onNodeDelete(deleteExecutionActionNode), [onNodeDelete]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => onNodeElementDelete(deleteExecutionNode), [onNodeElementDelete]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => onEdgeDelete(deleteComponentAndNode), [onEdgeDelete]);
 };
 
 export default useDeleteExecutionResource;

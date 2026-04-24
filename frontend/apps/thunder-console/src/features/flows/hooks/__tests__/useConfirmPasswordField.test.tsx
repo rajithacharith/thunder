@@ -24,25 +24,72 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import FlowBuilderElementConstants from '../../constants/FlowBuilderElementConstants';
 import {ElementTypes, BlockTypes} from '../../models/elements';
 import type {Element} from '../../models/elements';
-import FlowEventTypes from '../../models/extension';
 import useConfirmPasswordField from '../useConfirmPasswordField';
 
 // Use vi.hoisted to define mocks
-const {mockGetNode, mockUpdateNodeData, mockRegisterAsync, mockRegisterSync, mockUnregister} = vi.hoisted(() => ({
+const {mockGetNode, mockUpdateNodeData} = vi.hoisted(() => ({
   mockGetNode: vi.fn(),
   mockUpdateNodeData: vi.fn(),
-  mockRegisterAsync: vi.fn(),
-  mockRegisterSync: vi.fn(),
-  mockUnregister: vi.fn(),
 }));
 
 // Store registered handlers for testing
 const registeredHandlers: {
-  async: Record<string, ((...args: unknown[]) => Promise<boolean>)[]>;
-  sync: Record<string, ((...args: unknown[]) => boolean)[]>;
+  onPropertyChange: ((...args: unknown[]) => boolean)[];
+  onPropertyPanelOpen: ((...args: unknown[]) => boolean)[];
+  onNodeElementDelete: ((...args: unknown[]) => boolean)[];
 } = {
-  async: {},
-  sync: {},
+  onPropertyChange: [],
+  onPropertyPanelOpen: [],
+  onNodeElementDelete: [],
+};
+
+// Unsubscribe functions for each registration
+const mockUnsubscribes: {
+  onPropertyChange: ReturnType<typeof vi.fn>[];
+  onPropertyPanelOpen: ReturnType<typeof vi.fn>[];
+  onNodeElementDelete: ReturnType<typeof vi.fn>[];
+} = {
+  onPropertyChange: [],
+  onPropertyPanelOpen: [],
+  onNodeElementDelete: [],
+};
+
+const mockOnPropertyChange = vi.fn().mockImplementation((handler: (...args: unknown[]) => boolean) => {
+  registeredHandlers.onPropertyChange.push(handler);
+  const unsub = vi.fn();
+  mockUnsubscribes.onPropertyChange.push(unsub);
+  return unsub;
+});
+
+const mockOnPropertyPanelOpen = vi.fn().mockImplementation((handler: (...args: unknown[]) => boolean) => {
+  registeredHandlers.onPropertyPanelOpen.push(handler);
+  const unsub = vi.fn();
+  mockUnsubscribes.onPropertyPanelOpen.push(unsub);
+  return unsub;
+});
+
+const mockOnNodeElementDelete = vi.fn().mockImplementation((handler: (...args: unknown[]) => boolean) => {
+  registeredHandlers.onNodeElementDelete.push(handler);
+  const unsub = vi.fn();
+  mockUnsubscribes.onNodeElementDelete.push(unsub);
+  return unsub;
+});
+
+const mockFlowPlugins = {
+  onPropertyChange: mockOnPropertyChange,
+  emitPropertyChange: vi.fn().mockReturnValue(true),
+  onPropertyPanelOpen: mockOnPropertyPanelOpen,
+  emitPropertyPanelOpen: vi.fn().mockReturnValue(true),
+  onElementFilter: vi.fn().mockReturnValue(vi.fn()),
+  emitElementFilter: vi.fn().mockReturnValue(true),
+  onEdgeDelete: vi.fn().mockReturnValue(vi.fn()),
+  emitEdgeDelete: vi.fn().mockReturnValue(true),
+  onNodeDelete: vi.fn().mockReturnValue(vi.fn()),
+  emitNodeDelete: vi.fn().mockReturnValue(true),
+  onNodeElementDelete: mockOnNodeElementDelete,
+  emitNodeElementDelete: vi.fn().mockReturnValue(true),
+  onTemplateLoad: vi.fn().mockReturnValue(vi.fn()),
+  emitTemplateLoad: vi.fn().mockReturnValue(true),
 };
 
 // Mock @xyflow/react
@@ -57,27 +104,9 @@ vi.mock('@xyflow/react', async () => {
   };
 });
 
-// Mock PluginRegistry - capture handlers for testing
-vi.mock('../../plugins/PluginRegistry', () => ({
-  default: {
-    getInstance: () => ({
-      registerAsync: (eventType: string, handler: (...args: unknown[]) => Promise<boolean>) => {
-        mockRegisterAsync(eventType, handler);
-        if (!registeredHandlers.async[eventType]) {
-          registeredHandlers.async[eventType] = [];
-        }
-        registeredHandlers.async[eventType].push(handler);
-      },
-      registerSync: (eventType: string, handler: (...args: unknown[]) => boolean) => {
-        mockRegisterSync(eventType, handler);
-        if (!registeredHandlers.sync[eventType]) {
-          registeredHandlers.sync[eventType] = [];
-        }
-        registeredHandlers.sync[eventType].push(handler);
-      },
-      unregister: mockUnregister,
-    }),
-  },
+// Mock useFlowPlugins - capture handlers for testing
+vi.mock('../useFlowPlugins', () => ({
+  default: () => mockFlowPlugins,
 }));
 
 // Mock generateResourceId
@@ -96,11 +125,30 @@ describe('useConfirmPasswordField', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Clear registered handlers
-    Object.keys(registeredHandlers.async).forEach((key) => {
-      delete registeredHandlers.async[key];
+    registeredHandlers.onPropertyChange = [];
+    registeredHandlers.onPropertyPanelOpen = [];
+    registeredHandlers.onNodeElementDelete = [];
+    mockUnsubscribes.onPropertyChange = [];
+    mockUnsubscribes.onPropertyPanelOpen = [];
+    mockUnsubscribes.onNodeElementDelete = [];
+    // Re-wire the capture implementations after clearAllMocks
+    mockOnPropertyChange.mockImplementation((handler: (...args: unknown[]) => boolean) => {
+      registeredHandlers.onPropertyChange.push(handler);
+      const unsub = vi.fn();
+      mockUnsubscribes.onPropertyChange.push(unsub);
+      return unsub;
     });
-    Object.keys(registeredHandlers.sync).forEach((key) => {
-      delete registeredHandlers.sync[key];
+    mockOnPropertyPanelOpen.mockImplementation((handler: (...args: unknown[]) => boolean) => {
+      registeredHandlers.onPropertyPanelOpen.push(handler);
+      const unsub = vi.fn();
+      mockUnsubscribes.onPropertyPanelOpen.push(unsub);
+      return unsub;
+    });
+    mockOnNodeElementDelete.mockImplementation((handler: (...args: unknown[]) => boolean) => {
+      registeredHandlers.onNodeElementDelete.push(handler);
+      const unsub = vi.fn();
+      mockUnsubscribes.onNodeElementDelete.push(unsub);
+      return unsub;
     });
   });
 
@@ -110,60 +158,50 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      // Should register two async handlers for ON_PROPERTY_CHANGE
-      expect(mockRegisterAsync).toHaveBeenCalledWith(FlowEventTypes.ON_PROPERTY_CHANGE, expect.any(Function));
-      expect(mockRegisterSync).toHaveBeenCalledWith(FlowEventTypes.ON_PROPERTY_PANEL_OPEN, expect.any(Function));
-      expect(mockRegisterAsync).toHaveBeenCalledWith(FlowEventTypes.ON_NODE_ELEMENT_DELETE, expect.any(Function));
+      // Should register two handlers for onPropertyChange
+      expect(mockOnPropertyChange).toHaveBeenCalledWith(expect.any(Function));
+      expect(mockOnPropertyPanelOpen).toHaveBeenCalledWith(expect.any(Function));
+      expect(mockOnNodeElementDelete).toHaveBeenCalledWith(expect.any(Function));
     });
 
-    it('should unregister event handlers on unmount', () => {
+    it('should call unsubscribe functions on unmount', () => {
       const {unmount} = renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
       unmount();
 
-      expect(mockUnregister).toHaveBeenCalledWith(FlowEventTypes.ON_PROPERTY_CHANGE, 'addConfirmPasswordField');
-      expect(mockUnregister).toHaveBeenCalledWith(
-        FlowEventTypes.ON_PROPERTY_CHANGE,
-        'updateConfirmPasswordFieldProperties',
-      );
-      expect(mockUnregister).toHaveBeenCalledWith(
-        FlowEventTypes.ON_PROPERTY_PANEL_OPEN,
-        'addConfirmPasswordFieldProperties',
-      );
-      expect(mockUnregister).toHaveBeenCalledWith(FlowEventTypes.ON_NODE_ELEMENT_DELETE, 'deleteConfirmPasswordField');
+      // All unsubscribe functions should have been called
+      mockUnsubscribes.onPropertyChange.forEach((unsub) => expect(unsub).toHaveBeenCalled());
+      mockUnsubscribes.onPropertyPanelOpen.forEach((unsub) => expect(unsub).toHaveBeenCalled());
+      mockUnsubscribes.onNodeElementDelete.forEach((unsub) => expect(unsub).toHaveBeenCalled());
     });
   });
 
   describe('addConfirmPasswordField Handler', () => {
-    it('should return true for non-password input types', async () => {
+    it('should return true for non-password input types', () => {
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
-      const addConfirmPasswordFieldHandler = handlers?.find(
-        (h) =>
-          (h as unknown as Record<string, string>).__FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER ===
-            'addConfirmPasswordField' || handlers.indexOf(h) === 0,
-      );
+      const handlers = registeredHandlers.onPropertyChange;
+      const addConfirmPasswordFieldHandler = handlers?.[0];
 
       const element = {
         id: 'text-input-1',
         type: ElementTypes.TextInput,
       } as Element;
 
-      const result = await addConfirmPasswordFieldHandler!('requireConfirmation', true, element, 'step-1');
+      const result = addConfirmPasswordFieldHandler('requireConfirmation', true, element, 'step-1');
       expect(result).toBe(true);
     });
 
-    it('should return true for properties other than requireConfirmation', async () => {
+    it('should return true for properties other than requireConfirmation', () => {
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const addConfirmPasswordFieldHandler = handlers?.[0];
 
       const element = {
@@ -171,11 +209,11 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      const result = await addConfirmPasswordFieldHandler('someOtherProperty', true, element, 'step-1');
+      const result = addConfirmPasswordFieldHandler('someOtherProperty', true, element, 'step-1');
       expect(result).toBe(true);
     });
 
-    it('should add confirm password field when requireConfirmation is true', async () => {
+    it('should add confirm password field when requireConfirmation is true', () => {
       const stepNode: Node = {
         id: 'step-1',
         type: 'VIEW',
@@ -197,7 +235,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const addConfirmPasswordFieldHandler = handlers?.[0];
 
       const element = {
@@ -205,12 +243,12 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      const result = await addConfirmPasswordFieldHandler('requireConfirmation', true, element, 'step-1');
+      const result = addConfirmPasswordFieldHandler('requireConfirmation', true, element, 'step-1');
       expect(result).toBe(false);
       expect(mockUpdateNodeData).toHaveBeenCalled();
     });
 
-    it('should remove confirm password field when requireConfirmation is false', async () => {
+    it('should remove confirm password field when requireConfirmation is false', () => {
       const stepNode: Node = {
         id: 'step-1',
         type: 'VIEW',
@@ -239,7 +277,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const addConfirmPasswordFieldHandler = handlers?.[0];
 
       const element = {
@@ -247,12 +285,12 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      const result = await addConfirmPasswordFieldHandler('requireConfirmation', false, element, 'step-1');
+      const result = addConfirmPasswordFieldHandler('requireConfirmation', false, element, 'step-1');
       expect(result).toBe(false);
       expect(mockUpdateNodeData).toHaveBeenCalled();
     });
 
-    it('should execute updateNodeData callback correctly when adding confirm field', async () => {
+    it('should execute updateNodeData callback correctly when adding confirm field', () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
       mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
         capturedCallback = callback;
@@ -262,7 +300,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const addConfirmPasswordFieldHandler = handlers?.[0];
 
       const element = {
@@ -270,7 +308,7 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      await addConfirmPasswordFieldHandler('requireConfirmation', true, element, 'step-1');
+      addConfirmPasswordFieldHandler('requireConfirmation', true, element, 'step-1');
 
       expect(capturedCallback).not.toBeNull();
 
@@ -293,7 +331,7 @@ describe('useConfirmPasswordField', () => {
       expect(result.components).toBeDefined();
     });
 
-    it('should return empty object when node has no components', async () => {
+    it('should return empty object when node has no components', () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
       mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
         capturedCallback = callback;
@@ -303,7 +341,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const addConfirmPasswordFieldHandler = handlers?.[0];
 
       const element = {
@@ -311,7 +349,7 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      await addConfirmPasswordFieldHandler('requireConfirmation', true, element, 'step-1');
+      addConfirmPasswordFieldHandler('requireConfirmation', true, element, 'step-1');
 
       const mockNode: Node = {
         id: 'step-1',
@@ -324,7 +362,7 @@ describe('useConfirmPasswordField', () => {
       expect(result).toEqual({});
     });
 
-    it('should execute callback to add confirm password field after password field', async () => {
+    it('should execute callback to add confirm password field after password field', () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
       mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
         capturedCallback = callback;
@@ -334,7 +372,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const addConfirmPasswordFieldHandler = handlers?.[0];
 
       const element = {
@@ -342,7 +380,7 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      await addConfirmPasswordFieldHandler('requireConfirmation', true, element, 'step-1');
+      addConfirmPasswordFieldHandler('requireConfirmation', true, element, 'step-1');
 
       const mockNode: Node = {
         id: 'step-1',
@@ -374,7 +412,7 @@ describe('useConfirmPasswordField', () => {
       );
     });
 
-    it('should not add confirm field when password is not in a form', async () => {
+    it('should not add confirm field when password is not in a form', () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
       mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
         capturedCallback = callback;
@@ -384,7 +422,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const addConfirmPasswordFieldHandler = handlers?.[0];
 
       const element = {
@@ -392,7 +430,7 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      await addConfirmPasswordFieldHandler('requireConfirmation', true, element, 'step-1');
+      addConfirmPasswordFieldHandler('requireConfirmation', true, element, 'step-1');
 
       // Node with components that are not forms
       const mockNode: Node = {
@@ -413,7 +451,7 @@ describe('useConfirmPasswordField', () => {
       expect((result.components as Element[]).length).toBe(2);
     });
 
-    it('should execute callback to remove confirm password field when unchecking', async () => {
+    it('should execute callback to remove confirm password field when unchecking', () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
       mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
         capturedCallback = callback;
@@ -423,7 +461,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const addConfirmPasswordFieldHandler = handlers?.[0];
 
       const element = {
@@ -431,7 +469,7 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      await addConfirmPasswordFieldHandler('requireConfirmation', false, element, 'step-1');
+      addConfirmPasswordFieldHandler('requireConfirmation', false, element, 'step-1');
 
       const mockNode: Node = {
         id: 'step-1',
@@ -464,7 +502,7 @@ describe('useConfirmPasswordField', () => {
       expect(form.components?.[0].id).toBe('password-1');
     });
 
-    it('should not remove confirm field if not found', async () => {
+    it('should not remove confirm field if not found', () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
       mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
         capturedCallback = callback;
@@ -474,7 +512,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const addConfirmPasswordFieldHandler = handlers?.[0];
 
       const element = {
@@ -482,7 +520,7 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      await addConfirmPasswordFieldHandler('requireConfirmation', false, element, 'step-1');
+      addConfirmPasswordFieldHandler('requireConfirmation', false, element, 'step-1');
 
       const mockNode: Node = {
         id: 'step-1',
@@ -517,7 +555,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const addPropertiesHandler = registeredHandlers.sync[FlowEventTypes.ON_PROPERTY_PANEL_OPEN]?.[0];
+      const addPropertiesHandler = registeredHandlers.onPropertyPanelOpen?.[0];
 
       const resource = {
         id: 'text-input-1',
@@ -535,7 +573,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const addPropertiesHandler = registeredHandlers.sync[FlowEventTypes.ON_PROPERTY_PANEL_OPEN]?.[0];
+      const addPropertiesHandler = registeredHandlers.onPropertyPanelOpen?.[0];
 
       const resource = {
         id: 'password-1',
@@ -584,7 +622,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const addPropertiesHandler = registeredHandlers.sync[FlowEventTypes.ON_PROPERTY_PANEL_OPEN]?.[0];
+      const addPropertiesHandler = registeredHandlers.onPropertyPanelOpen?.[0];
 
       const resource = {
         id: 'password-1',
@@ -629,7 +667,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const addPropertiesHandler = registeredHandlers.sync[FlowEventTypes.ON_PROPERTY_PANEL_OPEN]?.[0];
+      const addPropertiesHandler = registeredHandlers.onPropertyPanelOpen?.[0];
 
       const resource = {
         id: 'password-1',
@@ -671,7 +709,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const addPropertiesHandler = registeredHandlers.sync[FlowEventTypes.ON_PROPERTY_PANEL_OPEN]?.[0];
+      const addPropertiesHandler = registeredHandlers.onPropertyPanelOpen?.[0];
 
       const resource = {
         id: 'password-1',
@@ -688,12 +726,12 @@ describe('useConfirmPasswordField', () => {
   });
 
   describe('updateConfirmPasswordFieldProperties Handler', () => {
-    it('should return true for non-password input types', async () => {
+    it('should return true for non-password input types', () => {
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const updatePropertiesHandler = handlers?.[1];
 
       const element = {
@@ -701,16 +739,16 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.TextInput,
       } as Element;
 
-      const result = await updatePropertiesHandler('confirmHint', 'New hint', element, 'step-1');
+      const result = updatePropertiesHandler('confirmHint', 'New hint', element, 'step-1');
       expect(result).toBe(true);
     });
 
-    it('should update confirm password field properties', async () => {
+    it('should update confirm password field properties', () => {
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const updatePropertiesHandler = handlers?.[1];
 
       const element = {
@@ -718,17 +756,17 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      const result = await updatePropertiesHandler('confirmHint', 'New hint', element, 'step-1');
+      const result = updatePropertiesHandler('confirmHint', 'New hint', element, 'step-1');
       expect(result).toBe(false);
       expect(mockUpdateNodeData).toHaveBeenCalled();
     });
 
-    it('should update confirmLabel property', async () => {
+    it('should update confirmLabel property', () => {
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const updatePropertiesHandler = handlers?.[1];
 
       const element = {
@@ -736,16 +774,16 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      const result = await updatePropertiesHandler('confirmLabel', 'New label', element, 'step-1');
+      const result = updatePropertiesHandler('confirmLabel', 'New label', element, 'step-1');
       expect(result).toBe(false);
     });
 
-    it('should update confirmPlaceholder property', async () => {
+    it('should update confirmPlaceholder property', () => {
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const updatePropertiesHandler = handlers?.[1];
 
       const element = {
@@ -753,16 +791,16 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      const result = await updatePropertiesHandler('confirmPlaceholder', 'New placeholder', element, 'step-1');
+      const result = updatePropertiesHandler('confirmPlaceholder', 'New placeholder', element, 'step-1');
       expect(result).toBe(false);
     });
 
-    it('should return true for required property (not return false)', async () => {
+    it('should return true for required property (not return false)', () => {
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const updatePropertiesHandler = handlers?.[1];
 
       const element = {
@@ -770,17 +808,17 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      const result = await updatePropertiesHandler('required', true, element, 'step-1');
+      const result = updatePropertiesHandler('required', true, element, 'step-1');
       expect(result).toBe(true);
       expect(mockUpdateNodeData).toHaveBeenCalled();
     });
 
-    it('should return true for other properties', async () => {
+    it('should return true for other properties', () => {
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const updatePropertiesHandler = handlers?.[1];
 
       const element = {
@@ -788,11 +826,11 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      const result = await updatePropertiesHandler('someOtherProperty', 'value', element, 'step-1');
+      const result = updatePropertiesHandler('someOtherProperty', 'value', element, 'step-1');
       expect(result).toBe(true);
     });
 
-    it('should execute updateNodeData callback to update confirmHint on confirm field', async () => {
+    it('should execute updateNodeData callback to update confirmHint on confirm field', () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
       mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
         capturedCallback = callback;
@@ -802,7 +840,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const updatePropertiesHandler = handlers?.[1];
 
       const element = {
@@ -810,7 +848,7 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      await updatePropertiesHandler('confirmHint', 'New hint value', element, 'step-1');
+      updatePropertiesHandler('confirmHint', 'New hint value', element, 'step-1');
 
       expect(capturedCallback).not.toBeNull();
 
@@ -848,7 +886,7 @@ describe('useConfirmPasswordField', () => {
       expect(confirmField?.hint).toBe('New hint value');
     });
 
-    it('should execute updateNodeData callback to update confirmLabel on confirm field', async () => {
+    it('should execute updateNodeData callback to update confirmLabel on confirm field', () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
       mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
         capturedCallback = callback;
@@ -858,7 +896,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const updatePropertiesHandler = handlers?.[1];
 
       const element = {
@@ -866,7 +904,7 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      await updatePropertiesHandler('confirmLabel', 'New Label', element, 'step-1');
+      updatePropertiesHandler('confirmLabel', 'New Label', element, 'step-1');
 
       const mockNode: Node = {
         id: 'step-1',
@@ -901,7 +939,7 @@ describe('useConfirmPasswordField', () => {
       expect(confirmField?.label).toBe('New Label');
     });
 
-    it('should execute updateNodeData callback to update confirmPlaceholder on confirm field', async () => {
+    it('should execute updateNodeData callback to update confirmPlaceholder on confirm field', () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
       mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
         capturedCallback = callback;
@@ -911,7 +949,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const updatePropertiesHandler = handlers?.[1];
 
       const element = {
@@ -919,7 +957,7 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      await updatePropertiesHandler('confirmPlaceholder', 'New Placeholder', element, 'step-1');
+      updatePropertiesHandler('confirmPlaceholder', 'New Placeholder', element, 'step-1');
 
       const mockNode: Node = {
         id: 'step-1',
@@ -954,7 +992,7 @@ describe('useConfirmPasswordField', () => {
       expect(confirmField?.placeholder).toBe('New Placeholder');
     });
 
-    it('should execute updateNodeData callback to update required on confirm field', async () => {
+    it('should execute updateNodeData callback to update required on confirm field', () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
       mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
         capturedCallback = callback;
@@ -964,7 +1002,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const updatePropertiesHandler = handlers?.[1];
 
       const element = {
@@ -972,7 +1010,7 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      await updatePropertiesHandler('required', true, element, 'step-1');
+      updatePropertiesHandler('required', true, element, 'step-1');
 
       const mockNode: Node = {
         id: 'step-1',
@@ -1007,7 +1045,7 @@ describe('useConfirmPasswordField', () => {
       expect(confirmField?.required).toBe(true);
     });
 
-    it('should return empty object when node has no components during update', async () => {
+    it('should return empty object when node has no components during update', () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
       mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
         capturedCallback = callback;
@@ -1017,7 +1055,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const updatePropertiesHandler = handlers?.[1];
 
       const element = {
@@ -1025,7 +1063,7 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      await updatePropertiesHandler('confirmHint', 'New hint', element, 'step-1');
+      updatePropertiesHandler('confirmHint', 'New hint', element, 'step-1');
 
       const mockNode: Node = {
         id: 'step-1',
@@ -1038,7 +1076,7 @@ describe('useConfirmPasswordField', () => {
       expect(result).toEqual({});
     });
 
-    it('should not update non-form components during property update', async () => {
+    it('should not update non-form components during property update', () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
       mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
         capturedCallback = callback;
@@ -1048,7 +1086,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
+      const handlers = registeredHandlers.onPropertyChange;
       const updatePropertiesHandler = handlers?.[1];
 
       const element = {
@@ -1056,7 +1094,7 @@ describe('useConfirmPasswordField', () => {
         type: ElementTypes.PasswordInput,
       } as Element;
 
-      await updatePropertiesHandler('confirmHint', 'New hint', element, 'step-1');
+      updatePropertiesHandler('confirmHint', 'New hint', element, 'step-1');
 
       const mockNode: Node = {
         id: 'step-1',
@@ -1077,28 +1115,28 @@ describe('useConfirmPasswordField', () => {
   });
 
   describe('deleteConfirmPasswordField Handler', () => {
-    it('should return true for non-password input types', async () => {
+    it('should return true for non-password input types', () => {
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
-      const deleteHandler = registeredHandlers.async[FlowEventTypes.ON_NODE_ELEMENT_DELETE]?.[0];
+      const deleteHandler = registeredHandlers.onNodeElementDelete?.[0];
 
       const element = {
         id: 'text-input-1',
         type: ElementTypes.TextInput,
       } as Element;
 
-      const result = await deleteHandler('step-1', element);
+      const result = deleteHandler('step-1', element);
       expect(result).toBe(true);
     });
 
-    it('should return true for password without PASSWORD_IDENTIFIER', async () => {
+    it('should return true for password without PASSWORD_IDENTIFIER', () => {
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
-      const deleteHandler = registeredHandlers.async[FlowEventTypes.ON_NODE_ELEMENT_DELETE]?.[0];
+      const deleteHandler = registeredHandlers.onNodeElementDelete?.[0];
 
       const element = {
         id: 'password-1',
@@ -1106,16 +1144,16 @@ describe('useConfirmPasswordField', () => {
         identifier: 'OTHER_IDENTIFIER',
       } as Element & {identifier?: string};
 
-      const result = await deleteHandler('step-1', element);
+      const result = deleteHandler('step-1', element);
       expect(result).toBe(true);
     });
 
-    it('should delete confirm password field when password field is deleted', async () => {
+    it('should delete confirm password field when password field is deleted', () => {
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
-      const deleteHandler = registeredHandlers.async[FlowEventTypes.ON_NODE_ELEMENT_DELETE]?.[0];
+      const deleteHandler = registeredHandlers.onNodeElementDelete?.[0];
 
       const element = {
         id: 'password-1',
@@ -1123,12 +1161,12 @@ describe('useConfirmPasswordField', () => {
         identifier: FlowBuilderElementConstants.PASSWORD_IDENTIFIER,
       } as Element & {identifier?: string};
 
-      const result = await deleteHandler('step-1', element);
+      const result = deleteHandler('step-1', element);
       expect(result).toBe(true);
       expect(mockUpdateNodeData).toHaveBeenCalled();
     });
 
-    it('should execute updateNodeData callback correctly when deleting', async () => {
+    it('should execute updateNodeData callback correctly when deleting', () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
       mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
         capturedCallback = callback;
@@ -1138,7 +1176,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteHandler = registeredHandlers.async[FlowEventTypes.ON_NODE_ELEMENT_DELETE]?.[0];
+      const deleteHandler = registeredHandlers.onNodeElementDelete?.[0];
 
       const element = {
         id: 'password-1',
@@ -1146,7 +1184,7 @@ describe('useConfirmPasswordField', () => {
         identifier: FlowBuilderElementConstants.PASSWORD_IDENTIFIER,
       } as Element & {identifier?: string};
 
-      await deleteHandler('step-1', element);
+      deleteHandler('step-1', element);
 
       expect(capturedCallback).not.toBeNull();
 
@@ -1176,7 +1214,7 @@ describe('useConfirmPasswordField', () => {
       expect(result.components).toBeDefined();
     });
 
-    it('should return empty object when node has no components', async () => {
+    it('should return empty object when node has no components', () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
       mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
         capturedCallback = callback;
@@ -1186,7 +1224,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteHandler = registeredHandlers.async[FlowEventTypes.ON_NODE_ELEMENT_DELETE]?.[0];
+      const deleteHandler = registeredHandlers.onNodeElementDelete?.[0];
 
       const element = {
         id: 'password-1',
@@ -1194,7 +1232,7 @@ describe('useConfirmPasswordField', () => {
         identifier: FlowBuilderElementConstants.PASSWORD_IDENTIFIER,
       } as Element & {identifier?: string};
 
-      await deleteHandler('step-1', element);
+      deleteHandler('step-1', element);
 
       const mockNode: Node = {
         id: 'step-1',
@@ -1207,7 +1245,7 @@ describe('useConfirmPasswordField', () => {
       expect(result).toEqual({});
     });
 
-    it('should execute callback to properly remove confirm password field from form', async () => {
+    it('should execute callback to properly remove confirm password field from form', () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
       mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
         capturedCallback = callback;
@@ -1217,7 +1255,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteHandler = registeredHandlers.async[FlowEventTypes.ON_NODE_ELEMENT_DELETE]?.[0];
+      const deleteHandler = registeredHandlers.onNodeElementDelete?.[0];
 
       const element = {
         id: 'password-1',
@@ -1225,7 +1263,7 @@ describe('useConfirmPasswordField', () => {
         identifier: FlowBuilderElementConstants.PASSWORD_IDENTIFIER,
       } as Element & {identifier?: string};
 
-      await deleteHandler('step-1', element);
+      deleteHandler('step-1', element);
 
       const mockNode: Node = {
         id: 'step-1',
@@ -1266,7 +1304,7 @@ describe('useConfirmPasswordField', () => {
       ).toBeUndefined();
     });
 
-    it('should not modify form if no confirm password field exists during delete', async () => {
+    it('should not modify form if no confirm password field exists during delete', () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
       mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
         capturedCallback = callback;
@@ -1276,7 +1314,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteHandler = registeredHandlers.async[FlowEventTypes.ON_NODE_ELEMENT_DELETE]?.[0];
+      const deleteHandler = registeredHandlers.onNodeElementDelete?.[0];
 
       const element = {
         id: 'password-1',
@@ -1284,7 +1322,7 @@ describe('useConfirmPasswordField', () => {
         identifier: FlowBuilderElementConstants.PASSWORD_IDENTIFIER,
       } as Element & {identifier?: string};
 
-      await deleteHandler('step-1', element);
+      deleteHandler('step-1', element);
 
       const mockNode: Node = {
         id: 'step-1',
@@ -1311,7 +1349,7 @@ describe('useConfirmPasswordField', () => {
       expect(form.components?.length).toBe(2);
     });
 
-    it('should not modify non-form components during delete', async () => {
+    it('should not modify non-form components during delete', () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
       mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
         capturedCallback = callback;
@@ -1321,7 +1359,7 @@ describe('useConfirmPasswordField', () => {
         wrapper: createWrapper(),
       });
 
-      const deleteHandler = registeredHandlers.async[FlowEventTypes.ON_NODE_ELEMENT_DELETE]?.[0];
+      const deleteHandler = registeredHandlers.onNodeElementDelete?.[0];
 
       const element = {
         id: 'password-1',
@@ -1329,7 +1367,7 @@ describe('useConfirmPasswordField', () => {
         identifier: FlowBuilderElementConstants.PASSWORD_IDENTIFIER,
       } as Element & {identifier?: string};
 
-      await deleteHandler('step-1', element);
+      deleteHandler('step-1', element);
 
       const mockNode: Node = {
         id: 'step-1',

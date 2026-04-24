@@ -22,7 +22,7 @@ import {Handle, Position, useNodeId, useReactFlow} from '@xyflow/react';
 import {memo, useCallback, useMemo, useRef, type DragEvent, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {CommonStepFactoryPropsInterface} from '../CommonStepFactory';
-import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
+import useInteractionState from '@/features/flows/hooks/useInteractionState';
 import type {Resource} from '@/features/flows/models/resources';
 import './Rule.scss';
 
@@ -42,7 +42,7 @@ function Rule({data, id}: RulePropsInterface): ReactElement {
   const nodeId: string | null = useNodeId();
   // The `data` and `id` props already contain the node's data, passed down from React Flow
   const {deleteElements} = useReactFlow();
-  const {setLastInteractedResource} = useFlowBuilderCore();
+  const {setLastInteractedResource} = useInteractionState();
 
   const ref = useRef<HTMLDivElement>(null);
 

@@ -30,12 +30,23 @@ vi.mock('@xyflow/react', () => ({
   }),
 }));
 
-vi.mock('@/features/flows/plugins/PluginRegistry', () => ({
-  default: {
-    getInstance: () => ({
-      executeSync: () => true,
-    }),
-  },
+vi.mock('@/features/flows/hooks/useFlowPlugins', () => ({
+  default: () => ({
+    onPropertyChange: vi.fn().mockReturnValue(vi.fn()),
+    emitPropertyChange: vi.fn().mockReturnValue(true),
+    onPropertyPanelOpen: vi.fn().mockReturnValue(vi.fn()),
+    emitPropertyPanelOpen: vi.fn().mockReturnValue(true),
+    onElementFilter: vi.fn().mockReturnValue(vi.fn()),
+    emitElementFilter: vi.fn().mockReturnValue(true),
+    onEdgeDelete: vi.fn().mockReturnValue(vi.fn()),
+    emitEdgeDelete: vi.fn().mockReturnValue(true),
+    onNodeDelete: vi.fn().mockReturnValue(vi.fn()),
+    emitNodeDelete: vi.fn().mockReturnValue(true),
+    onNodeElementDelete: vi.fn().mockReturnValue(vi.fn()),
+    emitNodeElementDelete: vi.fn().mockReturnValue(true),
+    onTemplateLoad: vi.fn().mockReturnValue(vi.fn()),
+    emitTemplateLoad: vi.fn().mockReturnValue(true),
+  }),
 }));
 
 vi.mock('@/features/flows/utils/generateResourceId', () => ({
@@ -414,8 +425,8 @@ describe('StackAdapter', () => {
   });
 
   describe('Plugin filtering', () => {
-    it('should filter components through PluginRegistry', () => {
-      // PluginRegistry mock returns true for all, so all children render
+    it('should filter components through useFlowPlugins', () => {
+      // useFlowPlugins mock returns true for all, so all children render
       const resource = createMockElement({
         components: [createChildElement('child-1'), createChildElement('child-2')],
       });

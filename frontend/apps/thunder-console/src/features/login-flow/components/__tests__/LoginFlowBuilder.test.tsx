@@ -50,8 +50,8 @@ const {
   mockExistingFlowData,
   mockIsVerboseMode,
   mockEdgeStyle,
-  mockUseFlowBuilderCore,
-  getDefaultFlowBuilderCoreMock,
+  mockUseFlowConfig,
+  getDefaultFlowConfigMock,
 } = vi.hoisted(() => {
   const setFlowCompletionConfigsFn = vi.fn();
   const isVerboseModeObj = {value: true};
@@ -77,9 +77,9 @@ const {
     mockIsVerboseMode: isVerboseModeObj,
     mockEdgeStyle: edgeStyleObj,
     // Note: This mock reads values dynamically at call time
-    mockUseFlowBuilderCore: vi.fn(),
+    mockUseFlowConfig: vi.fn(),
     // Helper to get the default implementation that reads current values
-    getDefaultFlowBuilderCoreMock: () => ({
+    getDefaultFlowConfigMock: () => ({
       setFlowCompletionConfigs: setFlowCompletionConfigsFn,
       edgeStyle: edgeStyleObj.value,
       isVerboseMode: isVerboseModeObj.value,
@@ -448,10 +448,21 @@ vi.mock('../../hooks/useEdgeGeneration', () => ({
   }),
 }));
 
-// Mock useFlowBuilderCore - uses vi.fn so we can control return value per-test
-vi.mock('@/features/flows/hooks/useFlowBuilderCore', () => ({
-  default: (): ReturnType<typeof getDefaultFlowBuilderCoreMock> =>
-    mockUseFlowBuilderCore() as ReturnType<typeof getDefaultFlowBuilderCoreMock>,
+// Mock useFlowConfig - uses vi.fn so we can control return value per-test
+vi.mock('@/features/flows/hooks/useFlowConfig', () => ({
+  default: (): ReturnType<typeof getDefaultFlowConfigMock> =>
+    mockUseFlowConfig() as ReturnType<typeof getDefaultFlowConfigMock>,
+}));
+
+vi.mock('@/features/flows/hooks/useFlowEvents', () => ({
+  default: () => ({
+    triggerAutoLayout: vi.fn(),
+    onAutoLayout: vi.fn(() => vi.fn()),
+    notifyElementAdded: vi.fn(),
+    onElementAdded: vi.fn(() => vi.fn()),
+    restoreFromHistory: vi.fn(),
+    onRestoreFromHistory: vi.fn(() => vi.fn()),
+  }),
 }));
 
 // Mock useGenerateStepElement
@@ -536,8 +547,8 @@ describe('LoginFlowBuilder', () => {
     mockUseNodesState.mockReturnValue([[], mockSetNodes, vi.fn()]);
     mockUseEdgesState.mockReturnValue([[], mockSetEdges, vi.fn()]);
     mockUseUpdateNodeInternals.mockReturnValue(vi.fn());
-    // Reset useFlowBuilderCore to default implementation that reads current values
-    mockUseFlowBuilderCore.mockImplementation(() => getDefaultFlowBuilderCoreMock());
+    // Reset useFlowConfig to default implementation that reads current values
+    mockUseFlowConfig.mockImplementation(() => getDefaultFlowConfigMock());
   });
 
   describe('Rendering', () => {
@@ -1314,47 +1325,6 @@ describe('Existing Flow Data Loading', () => {
 
     // Flow title should be set from existing data or default
     expect(screen.getByTestId('flow-title')).toBeInTheDocument();
-  });
-});
-
-describe('History Restoration', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockUseParams.mockReturnValue({});
-    mockUseNodesState.mockReturnValue([[], mockSetNodes, vi.fn()]);
-    mockUseEdgesState.mockReturnValue([[], mockSetEdges, vi.fn()]);
-    mockUseUpdateNodeInternals.mockReturnValue(vi.fn());
-    mockIsFlowValid.value = true;
-    mockExistingFlowData.value = null;
-  });
-
-  it('should handle restore from history event', () => {
-    render(<LoginFlowBuilder />);
-
-    // Dispatch a custom event for history restoration
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        nodes: [{id: 'restored-node', type: 'VIEW', position: {x: 0, y: 0}, data: {}}],
-        edges: [{id: 'restored-edge', source: 'a', target: 'b'}],
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
-  });
-
-  it('should not restore when nodes or edges are missing', () => {
-    render(<LoginFlowBuilder />);
-
-    // Dispatch event without nodes and edges
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {},
-    });
-
-    window.dispatchEvent(event);
-
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -3440,7 +3410,7 @@ describe('Edge Style Update Effect - Component Integration', () => {
     mockUseUpdateNodeInternals.mockReturnValue(vi.fn());
     mockIsFlowValid.value = true;
     mockExistingFlowData.value = null;
-    mockUseFlowBuilderCore.mockReturnValue({
+    mockUseFlowConfig.mockReturnValue({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: 'default',
       isVerboseMode: true,
@@ -3462,7 +3432,7 @@ describe('Edge Style Update Effect - Component Integration', () => {
   });
 
   it('should update edge types when edgeStyle value changes', () => {
-    mockUseFlowBuilderCore.mockReturnValue({
+    mockUseFlowConfig.mockReturnValue({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: 'bezier',
       isVerboseMode: true,
@@ -3488,7 +3458,7 @@ describe('StepsByType Ref Update Effect - Component Integration', () => {
     mockUseUpdateNodeInternals.mockReturnValue(vi.fn());
     mockIsFlowValid.value = true;
     mockExistingFlowData.value = null;
-    mockUseFlowBuilderCore.mockReturnValue({
+    mockUseFlowConfig.mockReturnValue({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: 'default',
       isVerboseMode: true,
@@ -3513,7 +3483,7 @@ describe('NodeTypes and StaticStepFactory Creation - Component Integration', () 
     mockUseUpdateNodeInternals.mockReturnValue(vi.fn());
     mockIsFlowValid.value = true;
     mockExistingFlowData.value = null;
-    mockUseFlowBuilderCore.mockReturnValue({
+    mockUseFlowConfig.mockReturnValue({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: 'default',
       isVerboseMode: true,
@@ -3538,7 +3508,7 @@ describe('Snackbar State Management - Close Handlers', () => {
     mockUseUpdateNodeInternals.mockReturnValue(vi.fn());
     mockIsFlowValid.value = true;
     mockExistingFlowData.value = null;
-    mockUseFlowBuilderCore.mockReturnValue({
+    mockUseFlowConfig.mockReturnValue({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: 'default',
       isVerboseMode: true,
@@ -3955,79 +3925,6 @@ describe('Verbose Mode Filtering Logic Tests', () => {
   });
 });
 
-describe('Restore From History Event Handler', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockUseParams.mockReturnValue({});
-    mockUseNodesState.mockReturnValue([[], mockSetNodes, vi.fn()]);
-    mockUseEdgesState.mockReturnValue([[], mockSetEdges, vi.fn()]);
-    mockUseUpdateNodeInternals.mockReturnValue(vi.fn());
-    mockIsFlowValid.value = true;
-    mockExistingFlowData.value = null;
-  });
-
-  it('should call setNodes and setEdges when restoreFromHistory event is dispatched', async () => {
-    render(<LoginFlowBuilder />);
-
-    // Dispatch a custom event for history restoration with valid nodes and edges
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        nodes: [{id: 'restored-node', type: 'VIEW', position: {x: 0, y: 0}, data: {}}],
-        edges: [{id: 'restored-edge', source: 'a', target: 'b'}],
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    // setNodes and setEdges should be called with the restored data
-    await waitFor(() => {
-      expect(mockSetNodes).toHaveBeenCalled();
-      expect(mockSetEdges).toHaveBeenCalled();
-    });
-  });
-
-  it('should not call setNodes or setEdges when event detail is missing nodes', async () => {
-    render(<LoginFlowBuilder />);
-
-    const initialSetNodesCalls = mockSetNodes.mock.calls.length;
-
-    // Dispatch event without nodes
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        edges: [{id: 'edge-1', source: 'a', target: 'b'}],
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    // setNodes should not be called for restore (only initial calls)
-    // We check that no additional calls were made
-    await waitFor(() => {
-      expect(mockSetNodes.mock.calls.length).toBe(initialSetNodesCalls);
-    });
-  });
-
-  it('should not call setNodes or setEdges when event detail is missing edges', async () => {
-    render(<LoginFlowBuilder />);
-
-    const initialSetNodesCalls = mockSetNodes.mock.calls.length;
-
-    // Dispatch event without edges
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        nodes: [{id: 'node-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}}],
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    // No additional setNodes calls for restore
-    await waitFor(() => {
-      expect(mockSetNodes.mock.calls.length).toBe(initialSetNodesCalls);
-    });
-  });
-});
-
 describe('Existing Flow Loading - useLayoutEffect', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -4366,7 +4263,7 @@ describe('Edge Style Effect - setEdges Callback Execution', () => {
     mockUseUpdateNodeInternals.mockReturnValue(vi.fn());
     mockIsFlowValid.value = true;
     mockExistingFlowData.value = null;
-    mockUseFlowBuilderCore.mockReturnValue({
+    mockUseFlowConfig.mockReturnValue({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: 'smoothstep',
       isVerboseMode: true,
@@ -4444,7 +4341,7 @@ describe('Verbose Mode Filtering - Component Integration', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    mockUseFlowBuilderCore.mockReturnValue({
+    mockUseFlowConfig.mockReturnValue({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: 'default',
       isVerboseMode: true,
@@ -5542,65 +5439,6 @@ describe('Edge Style Effect', () => {
   });
 });
 
-describe('History Restoration - Edge Cases', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockUseParams.mockReturnValue({});
-    mockUseNodesState.mockReturnValue([[], mockSetNodes, vi.fn()]);
-    mockUseEdgesState.mockReturnValue([[], mockSetEdges, vi.fn()]);
-    mockUseUpdateNodeInternals.mockReturnValue(vi.fn());
-    mockIsFlowValid.value = true;
-    mockExistingFlowData.value = null;
-  });
-
-  it('should restore both nodes and edges from history event', async () => {
-    render(<LoginFlowBuilder />);
-
-    const restoredNodes = [
-      {id: 'restored-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
-      {id: 'restored-2', type: 'VIEW', position: {x: 100, y: 0}, data: {}},
-    ];
-    const restoredEdges = [{id: 'edge-1', source: 'restored-1', target: 'restored-2'}];
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {nodes: restoredNodes, edges: restoredEdges},
-    });
-
-    window.dispatchEvent(event);
-
-    // setNodes and setEdges should be called with restored data
-    await waitFor(() => {
-      expect(mockSetNodes).toHaveBeenCalledWith(restoredNodes);
-      expect(mockSetEdges).toHaveBeenCalledWith(restoredEdges);
-    });
-  });
-
-  it('should not restore when only nodes are provided without edges', () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {nodes: [{id: 'node-1', type: 'VIEW'}]},
-    });
-
-    window.dispatchEvent(event);
-
-    // Should not call setNodes without both nodes and edges
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
-  });
-
-  it('should not restore when only edges are provided without nodes', () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {edges: [{id: 'edge-1', source: 'a', target: 'b'}]},
-    });
-
-    window.dispatchEvent(event);
-
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
-  });
-});
-
 describe('Update Flow - Callbacks', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -5779,7 +5617,7 @@ describe('Verbose Mode Filtering Integration', () => {
     // Set verbose mode to false BEFORE render to trigger filtering
     mockIsVerboseMode.value = false;
     // Override the mock implementation
-    mockUseFlowBuilderCore.mockImplementation(() => ({
+    mockUseFlowConfig.mockImplementation(() => ({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: mockEdgeStyle.value,
       isVerboseMode: false,
@@ -5811,7 +5649,7 @@ describe('Verbose Mode Filtering Integration', () => {
     // Set verbose mode to true (already set in beforeEach, but being explicit)
     mockIsVerboseMode.value = true;
     // Override the mock implementation
-    mockUseFlowBuilderCore.mockImplementation(() => ({
+    mockUseFlowConfig.mockImplementation(() => ({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: mockEdgeStyle.value,
       isVerboseMode: true,
@@ -5837,7 +5675,7 @@ describe('Snackbar Display and Close - Branch Coverage', () => {
     mockValidateFlowGraph.mockReturnValue([]);
     // Reset verbose mode to default
     mockIsVerboseMode.value = true;
-    mockUseFlowBuilderCore.mockImplementation(() => ({
+    mockUseFlowConfig.mockImplementation(() => ({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: mockEdgeStyle.value,
       isVerboseMode: true,
@@ -6047,7 +5885,7 @@ describe('Verbose Mode Filtering - Component Integration with Execution Nodes', 
 
     // Set verbose mode to false
     mockIsVerboseMode.value = false;
-    mockUseFlowBuilderCore.mockImplementation(() => ({
+    mockUseFlowConfig.mockImplementation(() => ({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: mockEdgeStyle.value,
       isVerboseMode: false,
@@ -6078,7 +5916,7 @@ describe('Verbose Mode Filtering - Component Integration with Execution Nodes', 
 
     // Set verbose mode to true
     mockIsVerboseMode.value = true;
-    mockUseFlowBuilderCore.mockImplementation(() => ({
+    mockUseFlowConfig.mockImplementation(() => ({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: mockEdgeStyle.value,
       isVerboseMode: true,
@@ -6111,7 +5949,7 @@ describe('Verbose Mode Filtering - Component Integration with Execution Nodes', 
 
     // Set verbose mode to false
     mockIsVerboseMode.value = false;
-    mockUseFlowBuilderCore.mockImplementation(() => ({
+    mockUseFlowConfig.mockImplementation(() => ({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: mockEdgeStyle.value,
       isVerboseMode: false,
@@ -6126,164 +5964,6 @@ describe('Verbose Mode Filtering - Component Integration with Execution Nodes', 
   });
 });
 
-describe('RestoreFromHistory Event - All Branches', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockUseParams.mockReturnValue({});
-    mockUseNodesState.mockReturnValue([[], mockSetNodes, vi.fn()]);
-    mockUseEdgesState.mockReturnValue([[], mockSetEdges, vi.fn()]);
-    mockUseUpdateNodeInternals.mockReturnValue(vi.fn());
-    mockIsFlowValid.value = true;
-    mockExistingFlowData.value = null;
-    mockIsVerboseMode.value = true;
-    mockUseFlowBuilderCore.mockImplementation(() => ({
-      setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
-      edgeStyle: mockEdgeStyle.value,
-      isVerboseMode: true,
-    }));
-  });
-
-  it('should restore nodes and edges when both are provided', async () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        nodes: [{id: 'restored-node', type: 'VIEW', position: {x: 0, y: 0}, data: {}}],
-        edges: [{id: 'restored-edge', source: 'a', target: 'b'}],
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    await waitFor(() => {
-      expect(mockSetNodes).toHaveBeenCalled();
-      expect(mockSetEdges).toHaveBeenCalled();
-    });
-  });
-
-  it('should NOT restore when only nodes are provided (edges missing)', () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        nodes: [{id: 'restored-node', type: 'VIEW', position: {x: 0, y: 0}, data: {}}],
-        // edges is missing
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    // setNodes should NOT be called because edges is missing
-    expect(mockSetNodes).not.toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({id: 'restored-node'})]),
-    );
-  });
-
-  it('should NOT restore when only edges are provided (nodes missing)', () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        // nodes is missing
-        edges: [{id: 'restored-edge', source: 'a', target: 'b'}],
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    // setEdges should NOT be called because nodes is missing
-    expect(mockSetEdges).not.toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({id: 'restored-edge'})]),
-    );
-  });
-
-  it('should NOT restore when nodes is empty array', async () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        nodes: [],
-        edges: [{id: 'restored-edge', source: 'a', target: 'b'}],
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    // Empty array is falsy in the condition check (length === 0 is truthy but empty array is truthy)
-    // Actually empty array IS truthy, so this should call setNodes
-    await waitFor(() => {
-      expect(mockSetNodes).toHaveBeenCalled();
-    });
-  });
-
-  it('should NOT restore when edges is empty array', async () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        nodes: [{id: 'restored-node', type: 'VIEW', position: {x: 0, y: 0}, data: {}}],
-        edges: [],
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    // Empty array IS truthy, so this should still call setNodes/setEdges
-    await waitFor(() => {
-      expect(mockSetNodes).toHaveBeenCalled();
-    });
-  });
-
-  it('should NOT restore when nodes is undefined', () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        nodes: undefined,
-        edges: [{id: 'restored-edge', source: 'a', target: 'b'}],
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    // undefined fails the truthy check
-    expect(mockSetNodes).not.toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({id: 'restored-node'})]),
-    );
-  });
-
-  it('should NOT restore when edges is undefined', () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {
-        nodes: [{id: 'restored-node', type: 'VIEW', position: {x: 0, y: 0}, data: {}}],
-        edges: undefined,
-      },
-    });
-
-    window.dispatchEvent(event);
-
-    // undefined fails the truthy check
-    expect(mockSetEdges).not.toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({id: 'restored-edge'})]),
-    );
-  });
-
-  it('should NOT restore when detail is empty object', () => {
-    render(<LoginFlowBuilder />);
-
-    const event = new CustomEvent('restoreFromHistory', {
-      detail: {},
-    });
-
-    window.dispatchEvent(event);
-
-    // Both are undefined, so neither setter should be called with restoration data
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
-  });
-});
-
 describe('isEditingExistingFlow Branch Coverage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -6293,7 +5973,7 @@ describe('isEditingExistingFlow Branch Coverage', () => {
     mockIsFlowValid.value = true;
     mockValidateFlowGraph.mockReturnValue([]);
     mockIsVerboseMode.value = true;
-    mockUseFlowBuilderCore.mockImplementation(() => ({
+    mockUseFlowConfig.mockImplementation(() => ({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: mockEdgeStyle.value,
       isVerboseMode: true,
@@ -6391,7 +6071,7 @@ describe('Verbose Mode - Empty Arrays Edge Cases', () => {
     mockUseEdgesState.mockReturnValue([[], mockSetEdges, vi.fn()]);
 
     mockIsVerboseMode.value = false;
-    mockUseFlowBuilderCore.mockImplementation(() => ({
+    mockUseFlowConfig.mockImplementation(() => ({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: mockEdgeStyle.value,
       isVerboseMode: false,
@@ -6414,7 +6094,7 @@ describe('Verbose Mode - Empty Arrays Edge Cases', () => {
     mockUseEdgesState.mockReturnValue([edges, mockSetEdges, vi.fn()]);
 
     mockIsVerboseMode.value = false;
-    mockUseFlowBuilderCore.mockImplementation(() => ({
+    mockUseFlowConfig.mockImplementation(() => ({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: mockEdgeStyle.value,
       isVerboseMode: false,
@@ -6439,7 +6119,7 @@ describe('Verbose Mode - Empty Arrays Edge Cases', () => {
     mockUseEdgesState.mockReturnValue([edges, mockSetEdges, vi.fn()]);
 
     mockIsVerboseMode.value = false;
-    mockUseFlowBuilderCore.mockImplementation(() => ({
+    mockUseFlowConfig.mockImplementation(() => ({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: mockEdgeStyle.value,
       isVerboseMode: false,
@@ -6463,7 +6143,7 @@ describe('Edge Style Effect - Branch Coverage', () => {
     mockIsFlowValid.value = true;
     mockExistingFlowData.value = null;
     mockIsVerboseMode.value = true;
-    mockUseFlowBuilderCore.mockImplementation(() => ({
+    mockUseFlowConfig.mockImplementation(() => ({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: 'smoothstep',
       isVerboseMode: true,
@@ -6504,7 +6184,7 @@ describe('Snackbar onClose Handlers - Direct Coverage', () => {
     mockExistingFlowData.value = null;
     mockValidateFlowGraph.mockReturnValue([]);
     mockIsVerboseMode.value = true;
-    mockUseFlowBuilderCore.mockImplementation(() => ({
+    mockUseFlowConfig.mockImplementation(() => ({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: mockEdgeStyle.value,
       isVerboseMode: true,
@@ -6581,7 +6261,7 @@ describe('Verbose Mode Node and Edge Filtering', () => {
     mockUseNodesState.mockReturnValue([mixedNodes, mockSetNodes, vi.fn()]);
     mockUseEdgesState.mockReturnValue([edges, mockSetEdges, vi.fn()]);
     mockIsVerboseMode.value = false;
-    mockUseFlowBuilderCore.mockImplementation(() => ({
+    mockUseFlowConfig.mockImplementation(() => ({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: mockEdgeStyle.value,
       isVerboseMode: false,
@@ -6599,7 +6279,7 @@ describe('Verbose Mode Node and Edge Filtering', () => {
     mockUseNodesState.mockReturnValue([executionOnlyNodes, mockSetNodes, vi.fn()]);
     mockUseEdgesState.mockReturnValue([edges, mockSetEdges, vi.fn()]);
     mockIsVerboseMode.value = false;
-    mockUseFlowBuilderCore.mockImplementation(() => ({
+    mockUseFlowConfig.mockImplementation(() => ({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: mockEdgeStyle.value,
       isVerboseMode: false,
@@ -6624,7 +6304,7 @@ describe('Verbose Mode Node and Edge Filtering', () => {
     mockUseNodesState.mockReturnValue([nodes, mockSetNodes, vi.fn()]);
     mockUseEdgesState.mockReturnValue([edges, mockSetEdges, vi.fn()]);
     mockIsVerboseMode.value = false;
-    mockUseFlowBuilderCore.mockImplementation(() => ({
+    mockUseFlowConfig.mockImplementation(() => ({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: mockEdgeStyle.value,
       isVerboseMode: false,
@@ -6649,7 +6329,7 @@ describe('Verbose Mode Node and Edge Filtering', () => {
     mockUseNodesState.mockReturnValue([nodes, mockSetNodes, vi.fn()]);
     mockUseEdgesState.mockReturnValue([edges, mockSetEdges, vi.fn()]);
     mockIsVerboseMode.value = false;
-    mockUseFlowBuilderCore.mockImplementation(() => ({
+    mockUseFlowConfig.mockImplementation(() => ({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: mockEdgeStyle.value,
       isVerboseMode: false,
@@ -6669,7 +6349,7 @@ describe('Verbose Mode Node and Edge Filtering', () => {
     mockUseNodesState.mockReturnValue([nodes, mockSetNodes, vi.fn()]);
     mockUseEdgesState.mockReturnValue([[], mockSetEdges, vi.fn()]);
     mockIsVerboseMode.value = true;
-    mockUseFlowBuilderCore.mockImplementation(() => ({
+    mockUseFlowConfig.mockImplementation(() => ({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: mockEdgeStyle.value,
       isVerboseMode: true,
@@ -6687,7 +6367,7 @@ describe('Verbose Mode Node and Edge Filtering', () => {
     mockUseNodesState.mockReturnValue([nodes, mockSetNodes, vi.fn()]);
     mockUseEdgesState.mockReturnValue([edges, mockSetEdges, vi.fn()]);
     mockIsVerboseMode.value = true;
-    mockUseFlowBuilderCore.mockImplementation(() => ({
+    mockUseFlowConfig.mockImplementation(() => ({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: mockEdgeStyle.value,
       isVerboseMode: true,

@@ -51,7 +51,7 @@ var githubUserSchema = testutils.UserSchema{
 			"type": "string",
 		},
 		"password": map[string]interface{}{
-			"type": "string",
+			"type":       "string",
 			"credential": true,
 		},
 		"sub": map[string]interface{}{
@@ -130,9 +130,9 @@ func (suite *GithubAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err)
 
 	user := testutils.User{
-		Type:             githubUserSchema.Name,
-		OUID:             suite.ouID,
-		Attributes:       json.RawMessage(attributesJSON),
+		Type:       githubUserSchema.Name,
+		OUID:       suite.ouID,
+		Attributes: json.RawMessage(attributesJSON),
 	}
 
 	userID, err := testutils.CreateUser(user)
@@ -266,7 +266,7 @@ func (suite *GithubAuthTestSuite) TestGithubAuthStartInvalidIDPID() {
 	err = json.NewDecoder(resp.Body).Decode(&errorResponse)
 	suite.Require().NoError(err)
 	suite.NotEmpty(errorResponse.Code)
-	suite.NotEmpty(errorResponse.Message)
+	suite.NotEmpty(errorResponse.Message.DefaultValue)
 }
 
 func (suite *GithubAuthTestSuite) TestGithubAuthStartMissingIDPID() {
@@ -319,7 +319,7 @@ func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowSuccess() {
 	// Step 3: Finish authentication
 	finishRequest := map[string]interface{}{
 		"sessionToken": sessionToken,
-		"code":          authCode,
+		"code":         authCode,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -348,7 +348,7 @@ func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowSuccess() {
 func (suite *GithubAuthTestSuite) TestGithubAuthFinishInvalidSessionToken() {
 	finishRequest := map[string]interface{}{
 		"sessionToken": "invalid-session-token",
-		"code":          "some-auth-code",
+		"code":         "some-auth-code",
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -418,7 +418,7 @@ func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowWithSkipAssertionFal
 	// Step 3: Finish authentication with skip_assertion=false
 	finishRequest := map[string]interface{}{
 		"sessionToken":  sessionToken,
-		"code":           authCode,
+		"code":          authCode,
 		"skipAssertion": false,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
@@ -479,7 +479,7 @@ func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowWithSkipAssertionTru
 	// Step 3: Finish authentication with skip_assertion=true
 	finishRequest := map[string]interface{}{
 		"sessionToken":  sessionToken,
-		"code":           authCode,
+		"code":          authCode,
 		"skipAssertion": true,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
@@ -534,7 +534,7 @@ func (suite *GithubAuthTestSuite) TestGithubAuthWithAssuranceLevelAAL1() {
 	// Step 2: Finish authentication
 	finishRequest := map[string]interface{}{
 		"sessionToken": sessionToken,
-		"code":          authCode,
+		"code":         authCode,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)

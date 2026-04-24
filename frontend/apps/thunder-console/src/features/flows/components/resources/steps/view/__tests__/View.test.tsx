@@ -58,13 +58,24 @@ vi.mock('@xyflow/react', () => ({
   }),
 }));
 
-// Mock PluginRegistry
-vi.mock('@/features/flows/plugins/PluginRegistry', () => ({
-  default: {
-    getInstance: () => ({
-      executeSync: () => true,
-    }),
-  },
+// Mock useFlowPlugins
+vi.mock('@/features/flows/hooks/useFlowPlugins', () => ({
+  default: () => ({
+    onPropertyChange: vi.fn().mockReturnValue(vi.fn()),
+    emitPropertyChange: vi.fn().mockReturnValue(true),
+    onPropertyPanelOpen: vi.fn().mockReturnValue(vi.fn()),
+    emitPropertyPanelOpen: vi.fn().mockReturnValue(true),
+    onElementFilter: vi.fn().mockReturnValue(vi.fn()),
+    emitElementFilter: vi.fn().mockReturnValue(true),
+    onEdgeDelete: vi.fn().mockReturnValue(vi.fn()),
+    emitEdgeDelete: vi.fn().mockReturnValue(true),
+    onNodeDelete: vi.fn().mockReturnValue(vi.fn()),
+    emitNodeDelete: vi.fn().mockReturnValue(true),
+    onNodeElementDelete: vi.fn().mockReturnValue(vi.fn()),
+    emitNodeElementDelete: vi.fn().mockReturnValue(true),
+    onTemplateLoad: vi.fn().mockReturnValue(vi.fn()),
+    emitTemplateLoad: vi.fn().mockReturnValue(true),
+  }),
 }));
 
 // Mock generateResourceId
@@ -89,9 +100,6 @@ vi.mock('../ReorderableElement', () => ({
     </div>
   ),
 }));
-
-// Mock SCSS
-vi.mock('../View.scss', () => ({}));
 
 describe('View', () => {
   beforeEach(() => {
@@ -337,9 +345,8 @@ describe('View', () => {
       const onDoubleClick = vi.fn();
       render(<View onActionPanelDoubleClick={onDoubleClick} />);
 
-      const actionPanel = screen.getByText('View').closest('.flow-builder-step-action-panel');
-      expect(actionPanel).not.toBeNull();
-      fireEvent.doubleClick(actionPanel!);
+      const actionPanel = screen.getByTestId('step-action-panel');
+      fireEvent.doubleClick(actionPanel);
       expect(onDoubleClick).toHaveBeenCalled();
     });
   });

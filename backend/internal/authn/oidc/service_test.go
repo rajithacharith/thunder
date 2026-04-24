@@ -19,6 +19,8 @@
 package oidc
 
 import (
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"context"
 	"testing"
 
@@ -128,7 +130,7 @@ func (suite *OIDCAuthnServiceTestSuite) TestBuildAuthorizeURLSuccess() {
 func (suite *OIDCAuthnServiceTestSuite) TestBuildAuthorizeURLError() {
 	svcErr := &serviceerror.ServiceError{
 		Code:             "ERROR",
-		ErrorDescription: "Failed to build URL",
+		ErrorDescription: core.I18nMessage{Key: "error.test.failed_to_build_url", DefaultValue: "Failed to build URL"},
 	}
 	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, testOIDCIDPID).Return("", svcErr)
 
@@ -419,8 +421,8 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseValidateIDToken
 		Return(&serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
 			Code:             "SIGNATURE_INVALID",
-			Error:            "Signature invalid",
-			ErrorDescription: "signature invalid",
+			Error:            core.I18nMessage{Key: "error.test.signature_invalid", DefaultValue: "Signature invalid"},
+			ErrorDescription: core.I18nMessage{Key: "error.test.signature_invalid", DefaultValue: "signature invalid"},
 		})
 
 	tokenResp := &oauth.TokenResponse{AccessToken: "access", IDToken: "id_token"}

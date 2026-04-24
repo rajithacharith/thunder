@@ -30,6 +30,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	sysContext "github.com/asgardeo/thunder/internal/system/context"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/observability"
 	"github.com/asgardeo/thunder/internal/system/observability/event"
@@ -41,7 +42,7 @@ import (
 // entry point for flow execution
 type FlowExecServiceInterface interface {
 	Execute(ctx context.Context, appID, executionID, flowType string, verbose bool,
-		action string, inputs map[string]string) (*FlowStep, *serviceerror.ServiceError)
+		action string, inputs map[string]string, challengeToken string) (*FlowStep, *serviceerror.ServiceError)
 	InitiateFlow(ctx context.Context, initContext *FlowInitContext) (string, *serviceerror.ServiceError)
 }
 
@@ -78,23 +79,24 @@ func newFlowExecService(flowMgtService flowmgt.FlowMgtServiceInterface,
 
 // Execute executes a flow with the given data
 func (s *flowExecService) Execute(ctx context.Context,
-	appID, executionID, flowType string, verbose bool, action string, inputs map[string]string) (
+	appID, executionID, flowType string, verbose bool,
+	action string, inputs map[string]string, challengeToken string) (
 	*FlowStep, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowExecService"))
 
 	// Get trace ID from context
 	traceID := sysContext.GetTraceID(ctx)
 
-	var context *EngineContext
+	var engineCtx *EngineContext
 	var loadErr *serviceerror.ServiceError
 
 	if isNewFlow(executionID) {
-		context, loadErr = s.loadNewContext(ctx, appID, flowType, verbose, action, inputs, logger)
+		engineCtx, loadErr = s.loadNewContext(ctx, appID, flowType, verbose, action, inputs, logger)
 		if loadErr != nil {
 			logger.Error("Failed to load new flow context",
 				log.String("appID", appID),
 				log.String("flowType", flowType),
-				log.String("error", loadErr.Error))
+				log.String("error", loadErr.Error.DefaultValue))
 
 			if s.observabilitySvc.IsEnabled() {
 				evt := event.NewEvent(
@@ -105,37 +107,39 @@ func (s *flowExecService) Execute(ctx context.Context,
 					WithStatus(event.StatusFailure).
 					WithData(event.DataKey.AppID, appID).
 					WithData(event.DataKey.FlowType, flowType).
-					WithData(event.DataKey.Error, loadErr.Error).
+					WithData(event.DataKey.Error, loadErr.Error.DefaultValue).
 					WithData(event.DataKey.ErrorCode, loadErr.Code).
 					WithData(event.DataKey.ErrorType, string(loadErr.Type))
 
-				if loadErr.ErrorDescription != "" {
-					evt.WithData(event.DataKey.Message, loadErr.ErrorDescription)
+				if loadErr.ErrorDescription.DefaultValue != "" {
+					evt.WithData(event.DataKey.Message, loadErr.ErrorDescription.DefaultValue)
 				}
 				s.observabilitySvc.PublishEvent(evt)
 			}
 			return nil, loadErr
 		}
 	} else {
-		context, loadErr = s.loadPrevContext(ctx, executionID, action, inputs, logger)
+		engineCtx, loadErr = s.loadPrevContext(ctx, executionID, action, inputs, logger)
 		if loadErr != nil {
 			logger.Error("Failed to load previous flow context",
 				log.String(log.LoggerKeyExecutionID, executionID),
-				log.String("error", loadErr.Error))
+				log.String("error", loadErr.Error.DefaultValue))
 			return nil, loadErr
 		}
+		// Set the incoming challenge token on the context so the engine can validate it
+		engineCtx.ChallengeTokenIn = challengeToken
 	}
 
 	// Set trace ID to engine context (request context is already set during context loading)
-	context.TraceID = traceID
+	engineCtx.TraceID = traceID
 
-	flowStep, flowErr := s.flowEngine.Execute(context)
+	flowStep, flowErr := s.flowEngine.Execute(engineCtx)
 
 	if flowErr != nil {
-		if !isNewFlow(executionID) {
-			if removeErr := s.removeContext(ctx, context.ExecutionID, logger); removeErr != nil {
+		if !isNewFlow(executionID) && flowErr.Code != ErrorInvalidChallengeToken.Code {
+			if removeErr := s.removeContext(ctx, engineCtx.ExecutionID, logger); removeErr != nil {
 				logger.Error("Failed to remove flow context after engine failure",
-					log.String(log.LoggerKeyExecutionID, context.ExecutionID), log.Error(removeErr))
+					log.String(log.LoggerKeyExecutionID, engineCtx.ExecutionID), log.Error(removeErr))
 				return nil, &serviceerror.InternalServerError
 			}
 		}
@@ -144,23 +148,23 @@ func (s *flowExecService) Execute(ctx context.Context,
 
 	if isComplete(flowStep) {
 		if !isNewFlow(executionID) {
-			if removeErr := s.removeContext(ctx, context.ExecutionID, logger); removeErr != nil {
+			if removeErr := s.removeContext(ctx, engineCtx.ExecutionID, logger); removeErr != nil {
 				logger.Error("Failed to remove flow context after completion",
-					log.String(log.LoggerKeyExecutionID, context.ExecutionID), log.Error(removeErr))
+					log.String(log.LoggerKeyExecutionID, engineCtx.ExecutionID), log.Error(removeErr))
 				return nil, &serviceerror.InternalServerError
 			}
 		}
 	} else {
 		if isNewFlow(executionID) {
-			if storeErr := s.storeContext(ctx, context, logger); storeErr != nil {
+			if storeErr := s.storeContext(ctx, engineCtx, logger); storeErr != nil {
 				logger.Error("Failed to store initial flow context",
-					log.String(log.LoggerKeyExecutionID, context.ExecutionID), log.Error(storeErr))
+					log.String(log.LoggerKeyExecutionID, engineCtx.ExecutionID), log.Error(storeErr))
 				return nil, &serviceerror.InternalServerError
 			}
 		} else {
-			if updateErr := s.updateContext(ctx, context, &flowStep, logger); updateErr != nil {
-				logger.Error("Failed to update flow context", log.String(log.LoggerKeyExecutionID, context.ExecutionID),
-					log.Error(updateErr))
+			if updateErr := s.updateContext(ctx, engineCtx, &flowStep, logger); updateErr != nil {
+				logger.Error("Failed to update flow context",
+					log.String(log.LoggerKeyExecutionID, engineCtx.ExecutionID), log.Error(updateErr))
 				return nil, &serviceerror.InternalServerError
 			}
 		}
@@ -206,7 +210,7 @@ func (s *flowExecService) initContext(ctx context.Context, appID string, flowTyp
 	graph, svcErr := s.flowMgtService.GetGraph(ctx, graphID)
 	if svcErr != nil {
 		logger.Error("Error retrieving flow graph from flow management service",
-			log.String("graphID", graphID), log.String("error", svcErr.Error))
+			log.String("graphID", graphID), log.String("error", svcErr.Error.DefaultValue))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -258,19 +262,12 @@ func (s *flowExecService) loadContextFromStore(ctx context.Context, executionID 
 		return nil, &ErrorInvalidExecutionID
 	}
 
-	dbModel, err := s.flowStore.GetFlowContext(ctx, executionID)
-	if err != nil {
-		logger.Error("Error retrieving flow context from store",
-			log.String(log.LoggerKeyExecutionID, executionID),
-			log.Error(err))
-		return nil, &serviceerror.InternalServerError
+	dbModel, flowCtxErr := s.getFlowContext(ctx, executionID, logger)
+	if flowCtxErr != nil {
+		return nil, flowCtxErr
 	}
 
-	if dbModel == nil {
-		return nil, &ErrorInvalidExecutionID
-	}
-
-	graphID, err := dbModel.GetGraphID()
+	graphID, err := dbModel.GetGraphID(ctx)
 	if err != nil {
 		logger.Error("Failed to extract graph ID from flow context",
 			log.String(log.LoggerKeyExecutionID, executionID), log.Error(err))
@@ -280,19 +277,16 @@ func (s *flowExecService) loadContextFromStore(ctx context.Context, executionID 
 	graph, svcErr := s.flowMgtService.GetGraph(ctx, graphID)
 	if svcErr != nil {
 		logger.Error("Error retrieving flow graph from flow management service",
-			log.String("graphID", graphID), log.String("error", svcErr.Error))
+			log.String("graphID", graphID), log.String("error", svcErr.Error.DefaultValue))
 		return nil, &serviceerror.InternalServerError
 	}
 
-	engineContext, err := dbModel.ToEngineContext(graph)
+	engineContext, err := dbModel.ToEngineContext(ctx, graph)
 	if err != nil {
 		logger.Error("Failed to convert flow context from database format",
 			log.String(log.LoggerKeyExecutionID, executionID), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
-
-	// Embed the request context so downstream helpers can read it from engineContext.Context.
-	engineContext.Context = ctx
 
 	// Set application context if required
 	if err := s.setApplicationToContext(&engineContext, logger); err != nil {
@@ -317,13 +311,14 @@ func (s *flowExecService) setApplicationToContext(engineCtx *EngineContext,
 			return &ErrorInvalidAppID
 		}
 		if err.Type == serviceerror.ClientErrorType {
-			svcErr := &ErrorApplicationRetrievalClientError
-			svcErr.ErrorDescription = fmt.Sprintf("Error while retrieving application: %s", err.ErrorDescription)
-			return svcErr
+			return serviceerror.CustomServiceError(ErrorApplicationRetrievalClientError, core.I18nMessage{
+				Key:          "error.flowexecservice.error_retrieving_application_description",
+				DefaultValue: fmt.Sprintf("Error while retrieving application: %s", err.ErrorDescription.DefaultValue),
+			})
 		}
 
 		logger.Error("Server error while retrieving application", log.String("appID", engineCtx.AppID),
-			log.String("errorCode", err.Code), log.String("errorDescription", err.ErrorDescription))
+			log.String("errorCode", err.Code), log.String("errorDescription", err.ErrorDescription.DefaultValue))
 		return &serviceerror.InternalServerError
 	}
 	if app == nil {
@@ -421,7 +416,7 @@ func (s *flowExecService) getFlowGraph(ctx context.Context, appID string, flowTy
 		}
 
 		logger.Error("Server error while retrieving application", log.String("appID", appID),
-			log.String("errorCode", err.Code), log.String("errorDescription", err.ErrorDescription))
+			log.String("errorCode", err.Code), log.String("errorDescription", err.ErrorDescription.DefaultValue))
 		return "", &serviceerror.InternalServerError
 	}
 	if app == nil {
@@ -537,7 +532,7 @@ func (s *flowExecService) InitiateFlow(ctx context.Context,
 		logger.Error("Failed to initialize flow context",
 			log.String("appID", initContext.ApplicationID),
 			log.String("flowType", initContext.FlowType),
-			log.String("error", err.Error))
+			log.String("error", err.Error.DefaultValue))
 		return "", err
 	}
 
@@ -554,4 +549,33 @@ func (s *flowExecService) InitiateFlow(ctx context.Context,
 
 	logger.Debug("Flow initiated successfully", log.String(log.LoggerKeyExecutionID, engineCtx.ExecutionID))
 	return engineCtx.ExecutionID, nil
+}
+
+// getFlowContext retrieves the flow context from the store based on the given execution ID.
+// It also ensures that the retrieved context is decrypted before returning.
+func (s *flowExecService) getFlowContext(ctx context.Context, executionID string, logger *log.Logger) (
+	*FlowContextDB, *serviceerror.ServiceError) {
+	if executionID == "" {
+		return nil, &ErrorInvalidExecutionID
+	}
+
+	dbModel, err := s.flowStore.GetFlowContext(ctx, executionID)
+	if err != nil {
+		logger.Error("Error retrieving flow context from store",
+			log.String(log.LoggerKeyExecutionID, executionID),
+			log.String("error", err.Error()))
+		return nil, &serviceerror.InternalServerError
+	}
+
+	if dbModel == nil {
+		return nil, &ErrorInvalidExecutionID
+	}
+
+	if decryptErr := dbModel.decrypt(ctx); decryptErr != nil {
+		logger.Error("Failed to decrypt flow context",
+			log.String(log.LoggerKeyExecutionID, executionID), log.Error(decryptErr))
+		return nil, &serviceerror.InternalServerError
+	}
+
+	return dbModel, nil
 }

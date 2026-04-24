@@ -309,7 +309,7 @@ func processResourceServer(rs *ResourceServer) error {
 
 	// Process resources and compute permissions
 	for i := range rs.Resources {
-		if err := processResource(&rs.Resources[i], resourceHandleMap, delimiter); err != nil {
+		if err := processResource(&rs.Resources[i], resourceHandleMap, rs.Handle, delimiter); err != nil {
 			return err
 		}
 	}
@@ -321,16 +321,15 @@ func processResourceServer(rs *ResourceServer) error {
 func processResource(
 	res *Resource,
 	resourceHandleMap map[string]*Resource,
+	rsHandle string,
 	delimiter string,
 ) error {
-	// Build permission string from parent chain
-	permission, err := buildPermissionString(res, resourceHandleMap, delimiter)
+	permission, err := buildPermissionString(res, resourceHandleMap, rsHandle, delimiter)
 	if err != nil {
 		return err
 	}
 	res.Permission = permission
 
-	// Process actions
 	for i := range res.Actions {
 		actionPermission := permission + delimiter + res.Actions[i].Handle
 		res.Actions[i].Permission = actionPermission
@@ -340,19 +339,30 @@ func processResource(
 }
 
 // buildPermissionString constructs the permission string by traversing parent chain.
-// Returns an error if a parent handle is not found in the resourceHandleMap.
 func buildPermissionString(
 	res *Resource,
 	resourceHandleMap map[string]*Resource,
+	rsHandle string,
 	delimiter string,
 ) (string, error) {
 	var parts []string
 
-	// Build parent chain
+	if rsHandle != "" {
+		parts = append(parts, rsHandle)
+	}
+
 	parentChain := []string{}
+	visited := make(map[string]bool)
 	current := res
 	for current != nil {
 		if current.Handle != "" {
+			if visited[current.Handle] {
+				return "", fmt.Errorf(
+					"circular parent reference detected at handle '%s' for resource '%s'",
+					current.Handle, res.Handle,
+				)
+			}
+			visited[current.Handle] = true
 			parentChain = append([]string{current.Handle}, parentChain...)
 		}
 
@@ -362,7 +372,6 @@ func buildPermissionString(
 
 		parent, exists := resourceHandleMap[current.ParentHandle]
 		if !exists {
-			// Surface the missing parent handle error instead of silently breaking
 			return "", fmt.Errorf(
 				"parent resource handle '%s' not found for resource '%s': cannot resolve permission chain",
 				current.ParentHandle,
@@ -372,12 +381,10 @@ func buildPermissionString(
 		current = parent
 	}
 
-	// Add parent chain (excluding current resource)
 	if len(parentChain) > 1 {
 		parts = append(parts, parentChain[:len(parentChain)-1]...)
 	}
 
-	// Add current resource handle
 	parts = append(parts, res.Handle)
 
 	return strings.Join(parts, delimiter), nil

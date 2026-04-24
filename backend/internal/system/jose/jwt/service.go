@@ -45,7 +45,7 @@ import (
 
 // JWTServiceInterface defines the interface for JWT operations.
 type JWTServiceInterface interface {
-	GenerateJWT(sub, aud, iss string, validityPeriod int64, claims map[string]interface{}, typ string) (
+	GenerateJWT(sub, iss string, validityPeriod int64, claims map[string]interface{}, typ string) (
 		string, int64, *serviceerror.ServiceError)
 	VerifyJWT(jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError
 	VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey, expectedAud,
@@ -140,13 +140,30 @@ func newJWTService(pkiService pki.PKIServiceInterface) (JWTServiceInterface, err
 
 // GenerateJWT generates a standard JWT signed with the server's private key.
 // The typ parameter sets the JWT header "typ" field. If empty, defaults to "JWT".
+// claims["aud"] must be set by the caller as either a string or []string; omitting it
+// or providing another type is a programmer error and returns InternalServerError.
 func (js *jwtService) GenerateJWT(
-	sub, aud, iss string, validityPeriod int64, claims map[string]interface{}, typ string,
+	sub, iss string, validityPeriod int64, claims map[string]interface{}, typ string,
 ) (string, int64, *serviceerror.ServiceError) {
 	if js.privateKey == nil {
 		js.logger.Error("Private key not found for JWT generation")
 		return "", 0, &serviceerror.InternalServerError
 	}
+
+	// Validate that claims["aud"] is present and of an accepted type.
+	audValue, hasAud := claims["aud"]
+	if !hasAud {
+		js.logger.Error("GenerateJWT called without aud in claims")
+		return "", 0, &serviceerror.InternalServerError
+	}
+	switch audValue.(type) {
+	case string, []string:
+		// valid
+	default:
+		js.logger.Error("GenerateJWT called with unsupported aud type in claims")
+		return "", 0, &serviceerror.InternalServerError
+	}
+
 	thunderRuntime := config.GetThunderRuntime()
 
 	// Create the JWT header.
@@ -187,7 +204,6 @@ func (js *jwtService) GenerateJWT(
 	payload := map[string]interface{}{
 		"sub": sub,
 		"iss": tokenIssuer,
-		"aud": aud,
 		"exp": expirationTime,
 		"iat": iat.Unix(),
 		"nbf": iat.Unix(),
@@ -257,7 +273,8 @@ func (js *jwtService) VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey crypt
 }
 
 // VerifyJWTWithJWKS verifies the JWT token using a JWK Set (JWKS) endpoint.
-func (js *jwtService) VerifyJWTWithJWKS(jwtToken, jwksURL, expectedAud, expectedIss string) *serviceerror.ServiceError {
+func (js *jwtService) VerifyJWTWithJWKS(
+	jwtToken, jwksURL, expectedAud, expectedIss string) *serviceerror.ServiceError {
 	parts := strings.Split(jwtToken, ".")
 	if len(parts) != 3 {
 		return &ErrorInvalidJWTFormat
@@ -438,24 +455,6 @@ func (js *jwtService) getJWKSKeys(jwksURL string) ([]map[string]interface{}, *se
 	return jwks.Keys, nil
 }
 
-// audienceMatches checks whether the aud claim matches the expected audience.
-// Supports both string and array forms of the aud claim.
-func audienceMatches(audClaim interface{}, expectedAud string) bool {
-	switch v := audClaim.(type) {
-	case string:
-		return v == expectedAud
-	case []interface{}:
-		for _, item := range v {
-			if s, ok := item.(string); ok && s == expectedAud {
-				return true
-			}
-		}
-		return false
-	default:
-		return false
-	}
-}
-
 // verifyJWTClaims verifies the standard claims of a JWT token.
 func (js *jwtService) verifyJWTClaims(jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError {
 	// Decode the JWT payload
@@ -494,10 +493,27 @@ func (js *jwtService) verifyJWTClaims(jwtToken string, expectedAud, expectedIss 
 		}
 	}
 
-	// Validate aud claim. Supports both string and array forms.
 	if expectedAud != "" {
-		if !audienceMatches(payload["aud"], expectedAud) {
-			js.logger.Debug("Invalid audience: expected " + expectedAud)
+		switch aud := payload["aud"].(type) {
+		case string:
+			if aud != expectedAud {
+				js.logger.Debug("Invalid audience: expected " + expectedAud + ", got " + aud)
+				return &ErrorInvalidJWTFormat
+			}
+		case []interface{}:
+			found := false
+			for _, v := range aud {
+				if s, ok := v.(string); ok && s == expectedAud {
+					found = true
+					break
+				}
+			}
+			if !found {
+				js.logger.Debug("Invalid audience: expected " + expectedAud + " not found in aud array")
+				return &ErrorInvalidJWTFormat
+			}
+		default:
+			js.logger.Debug("Missing or invalid 'aud' claim")
 			return &ErrorInvalidJWTFormat
 		}
 	}

@@ -42,7 +42,8 @@ var otpUseOnlyNumericChars = true
 // OTPServiceInterface defines the interface for OTP operations.
 type OTPServiceInterface interface {
 	SendOTP(ctx context.Context, request common.SendOTPDTO) (*common.SendOTPResultDTO, *serviceerror.ServiceError)
-	VerifyOTP(ctx context.Context, request common.VerifyOTPDTO) (*common.VerifyOTPResultDTO, *serviceerror.ServiceError)
+	VerifyOTP(ctx context.Context, request common.VerifyOTPDTO) (
+		*common.VerifyOTPResultDTO, *serviceerror.ServiceError)
 }
 
 // otpService implements the OTPServiceInterface.
@@ -68,7 +69,7 @@ func newOTPService(notifSenderSvc NotificationSenderMgtSvcInterface,
 func (s *otpService) SendOTP(
 	ctx context.Context, otpDTO common.SendOTPDTO) (*common.SendOTPResultDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "OTPService"))
-	logger.Debug("Sending OTP", log.String("recipient", log.MaskString(otpDTO.Recipient)),
+	logger.Debug("Sending OTP", log.MaskedString("recipient", otpDTO.Recipient),
 		log.String("channel", otpDTO.Channel), log.String("senderId", otpDTO.SenderID))
 
 	if err := s.validateOTPSendRequest(otpDTO); err != nil {
@@ -80,7 +81,7 @@ func (s *otpService) SendOTP(
 		if svcErr.Code == ErrorSenderNotFound.Code {
 			return nil, &ErrorSenderNotFound
 		}
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 	if sender == nil {
 		return nil, &ErrorSenderNotFound
@@ -92,7 +93,7 @@ func (s *otpService) SendOTP(
 	otp, err := s.generateOTP()
 	if err != nil {
 		logger.Error("Failed to generate OTP", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
 	// Send OTP based on channel
@@ -117,10 +118,10 @@ func (s *otpService) SendOTP(
 	sessionToken, err := s.createSessionToken(sessionData)
 	if err != nil {
 		logger.Error("Failed to create session token", log.Error(err))
-		return nil, &ErrorInternalServerError
+		return nil, &serviceerror.InternalServerError
 	}
 
-	logger.Debug("OTP sent successfully", log.String("recipient", log.MaskString(otpDTO.Recipient)))
+	logger.Debug("OTP sent successfully", log.MaskedString("recipient", otpDTO.Recipient))
 
 	return &common.SendOTPResultDTO{
 		SessionToken: sessionToken,
@@ -259,7 +260,7 @@ func (s *otpService) sendSMSOTP(ctx context.Context, recipient, otp string,
 	rendered, svcErr := s.templateService.Render(ctx, template.ScenarioOTP, template.TemplateTypeSMS, templateData)
 	if svcErr != nil {
 		logger.Error("Failed to render SMS OTP template", log.String("error", svcErr.Code))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	_client, clientSvcErr := s.clientProvider.GetClient(sender)
@@ -274,7 +275,7 @@ func (s *otpService) sendSMSOTP(ctx context.Context, recipient, otp string,
 	notifData := common.NotificationData{Recipient: recipient, Body: rendered.Body}
 	if err := _client.Send(common.ChannelTypeSMS, notifData); err != nil {
 		logger.Error("Failed to send SMS OTP", log.Error(err))
-		return &ErrorInternalServerError
+		return &serviceerror.InternalServerError
 	}
 
 	return nil
@@ -290,8 +291,9 @@ func (s *otpService) createSessionToken(sessionData common.OTPSessionData) (stri
 	validityPeriod := (sessionData.ExpiryTime - time.Now().UnixMilli()) / 1000
 	jwtConfig := config.GetThunderRuntime().Config.JWT
 
+	claims["aud"] = "otp-svc"
 	token, _, err := s.jwtService.GenerateJWT(
-		"otp-svc", "otp-svc", jwtConfig.Issuer, validityPeriod, claims, jwt.TokenTypeJWT)
+		"otp-svc", jwtConfig.Issuer, validityPeriod, claims, jwt.TokenTypeJWT)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate JWT token: %v", err)
 	}
@@ -306,7 +308,7 @@ func (s *otpService) verifyAndDecodeSessionToken(token string, logger *log.Logge
 	jwtConfig := config.GetThunderRuntime().Config.JWT
 	svcErr := s.jwtService.VerifyJWT(token, "otp-svc", jwtConfig.Issuer)
 	if svcErr != nil {
-		logger.Debug("Invalid session token", log.String("error", svcErr.Error))
+		logger.Debug("Invalid session token", log.String("error", svcErr.Error.DefaultValue))
 		return nil, &ErrorInvalidSessionToken
 	}
 

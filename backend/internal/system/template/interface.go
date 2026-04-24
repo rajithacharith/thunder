@@ -32,7 +32,7 @@ type TemplateServiceInterface interface {
 		ctx context.Context,
 		scenario ScenarioType,
 		tmplType TemplateType,
-	) (*TemplateDTO, *serviceerror.I18nServiceError)
+	) (*TemplateDTO, *serviceerror.ServiceError)
 
 	// Render renders a template with the provided data.
 	Render(
@@ -40,5 +40,5 @@ type TemplateServiceInterface interface {
 		scenario ScenarioType,
 		tmplType TemplateType,
 		data TemplateData,
-	) (*RenderedTemplate, *serviceerror.I18nServiceError)
+	) (*RenderedTemplate, *serviceerror.ServiceError)
 }

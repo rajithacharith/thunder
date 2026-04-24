@@ -37,7 +37,8 @@ type CertificateServiceInterface interface {
 	GetCertificateByReference(ctx context.Context, refType CertificateReferenceType, refID string) (
 		*Certificate, *serviceerror.ServiceError)
 	CreateCertificate(ctx context.Context, cert *Certificate) (*Certificate, *serviceerror.ServiceError)
-	UpdateCertificateByID(ctx context.Context, id string, cert *Certificate) (*Certificate, *serviceerror.ServiceError)
+	UpdateCertificateByID(ctx context.Context, id string, cert *Certificate) (
+		*Certificate, *serviceerror.ServiceError)
 	UpdateCertificateByReference(ctx context.Context, refType CertificateReferenceType, refID string,
 		cert *Certificate) (*Certificate, *serviceerror.ServiceError)
 	DeleteCertificateByID(ctx context.Context, id string) *serviceerror.ServiceError
@@ -305,7 +306,7 @@ func isValidReferenceType(refType CertificateReferenceType) bool {
 // isValidCertificateType checks if the provided certificate type is valid.
 func isValidCertificateType(certType CertificateType) bool {
 	switch certType {
-	case CertificateTypeNone, CertificateTypeJWKS, CertificateTypeJWKSURI:
+	case CertificateTypeJWKS, CertificateTypeJWKSURI:
 		return true
 	default:
 		return false

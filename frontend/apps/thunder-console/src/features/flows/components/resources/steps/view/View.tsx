@@ -19,18 +19,15 @@
 import {Box, FormGroup, IconButton, Menu, MenuItem, Paper, Tooltip, Typography, type Theme} from '@wso2/oxygen-ui';
 import {CogIcon, PlusIcon, TrashIcon} from '@wso2/oxygen-ui-icons-react';
 import {Handle, Position, useNodeId, useReactFlow} from '@xyflow/react';
-import classNames from 'classnames';
 import {memo, useCallback, useMemo, useState, type HTMLAttributes, type MouseEvent, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
 import ReorderableViewElement from './ReorderableElement';
 import Droppable from '../../../dnd/Droppable';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
+import useFlowPlugins from '@/features/flows/hooks/useFlowPlugins';
 import type {Element} from '@/features/flows/models/elements';
-import FlowEventTypes from '@/features/flows/models/extension';
 import type {StepData} from '@/features/flows/models/steps';
-import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
 import generateResourceId from '@/features/flows/utils/generateResourceId';
-import './View.scss';
 
 /**
  * Props interface of {@link View}
@@ -129,6 +126,7 @@ function View({
   const {t} = useTranslation();
   const stepId: string | null = useNodeId();
   const {deleteElements, getNode} = useReactFlow();
+  const {emitElementFilter} = useFlowPlugins();
 
   // Get current node - use getNode instead of useNodesData to avoid re-renders
   const currentNode = useMemo(() => (stepId ? getNode(stepId) : undefined), [stepId, getNode]);
@@ -168,29 +166,32 @@ function View({
     [onAddElement, stepId],
   );
 
-  // Filter components using PluginRegistry
-  // Note: The ref-based caching was removed because it only tracked ID changes,
-  // not property changes (variant, config, display). This caused property updates
-  // to not reflect in the UI. The memo() on View already handles preventing
-  // unnecessary re-renders by comparing data.components via JSON.stringify.
+  // Filter components using plugin interceptors.
   const components = data?.components ?? [];
-  const filteredComponents = components.filter((component: Element) =>
-    PluginRegistry.getInstance().executeSync(FlowEventTypes.ON_NODE_ELEMENT_FILTER, component),
-  );
+  const filteredComponents = components.filter((component: Element) => emitElementFilter(component));
 
   return (
     // <ValidationErrorBoundary disableErrorBoundaryOnHover={false} resource={node}>
     <Box
-      className={classNames('flow-builder-step', className)}
-      sx={{
+      className={`flow-builder-step ${className ?? ''}`.trim()}
+      sx={(theme: Theme) => ({
         overflow: 'hidden',
-      }}
+        borderRadius: 2,
+        ...theme.applyStyles('light', {
+          boxShadow:
+            '0 10px 22px 0 rgba(6,6,14,0.1), 0 24px 48px 0 rgba(199,211,234,0.05) inset, 0 1px 1px 0 rgba(199,211,234,0.12) inset',
+        }),
+        ...theme.applyStyles('dark', {
+          boxShadow:
+            '0 24px 32px 0 rgba(6,6,14,0.7), 0 24px 48px 0 rgba(199,211,234,0.05) inset, 0 1px 1px 0 rgba(199,211,234,0.12) inset',
+        }),
+      })}
     >
       <Box
+        data-testid="step-action-panel"
         display="flex"
         justifyContent="space-between"
         alignItems="center"
-        className="flow-builder-step-action-panel"
         onDoubleClick={onActionPanelDoubleClick}
         sx={{
           backgroundColor: 'secondary.main',
@@ -201,7 +202,6 @@ function View({
       >
         <Typography
           variant="body2"
-          className="flow-builder-step-id"
           sx={{
             color: 'text.primary',
             fontWeight: 500,
@@ -215,7 +215,6 @@ function View({
               <IconButton
                 size="small"
                 onClick={handleMenuOpen}
-                className="flow-builder-step-action"
                 sx={(theme: Theme) => ({
                   color: 'text.secondary',
                   '&:hover': {
@@ -241,7 +240,6 @@ function View({
                 onClick={() => {
                   onConfigure?.();
                 }}
-                className="flow-builder-step-action"
                 sx={(theme: Theme) => ({
                   color: 'text.secondary',
                   '&:hover': {
@@ -270,7 +268,6 @@ function View({
                     deleteElements({nodes: [{id: stepId}]});
                   }
                 }}
-                className="flow-builder-step-action"
                 sx={(theme: Theme) => ({
                   color: 'text.secondary',
                   '&:hover': {
@@ -326,16 +323,26 @@ function View({
       </Menu>
 
       <Handle type="target" position={Position.Left} />
-      <Box className="flow-builder-step-content">
+      <Box
+        className="flow-builder-step-content"
+        sx={{
+          display: 'flex',
+          flexFlow: 'column nowrap',
+          alignContent: 'center',
+          justifyContent: 'center',
+          alignItems: 'center',
+          textAlign: 'left',
+        }}
+      >
         <Paper
-          className="flow-builder-step-content-box"
           elevation={0}
           sx={{
             backgroundColor: 'background.paper',
-            borderRadius: 0,
+            borderRadius: '0 0 8px 8px',
             border: 'none',
             width: 350,
-            minHeight: 100,
+            minHeight: 50,
+            cursor: 'auto',
           }}
         >
           <Box className="flow-builder-step-content-form">
@@ -345,6 +352,7 @@ function View({
                 type={VisualFlowConstants.FLOW_BUILDER_DROPPABLE_VIEW_ID}
                 accept={droppableAllowedTypes ?? VisualFlowConstants.FLOW_BUILDER_VIEW_ALLOWED_RESOURCE_TYPES}
                 data={droppableData}
+                sx={{p: 1}}
               >
                 {filteredComponents.map((component: Element, index: number) => (
                   <ReorderableViewElement
@@ -352,7 +360,6 @@ function View({
                     id={component.id}
                     index={index}
                     element={component}
-                    className={classNames('flow-builder-step-content-form-field')}
                     accept={droppableAllowedTypes ?? VisualFlowConstants.FLOW_BUILDER_VIEW_ALLOWED_RESOURCE_TYPES}
                     availableElements={availableElements}
                     onAddElementToForm={onAddElementToForm}

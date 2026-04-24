@@ -227,7 +227,15 @@ func WriteSuccessResponse(w http.ResponseWriter, statusCode int, data interface{
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(data); err != nil {
 		logger.Error("Failed to encode response", log.Error(err))
-		http.Error(w, serviceerror.ErrorEncodingError, http.StatusInternalServerError)
+		errResp := apierror.ErrorResponse{
+			Code:        serviceerror.ErrorEncodingError.Code,
+			Message:     serviceerror.ErrorEncodingError.Error,
+			Description: serviceerror.ErrorEncodingError.ErrorDescription,
+		}
+		b, _ := json.Marshal(errResp)
+		w.Header().Set(constants.ContentTypeHeaderName, constants.ContentTypeJSON)
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write(b)
 		return
 	}
 
@@ -237,33 +245,22 @@ func WriteSuccessResponse(w http.ResponseWriter, statusCode int, data interface{
 	_, _ = w.Write(buf.Bytes())
 }
 
-// WriteErrorResponse writes a JSON error response with the given status code and error details.
+// WriteErrorResponse writes a JSON i18n error response with the given status code and error details.
 func WriteErrorResponse(w http.ResponseWriter, statusCode int, errorResp apierror.ErrorResponse) {
-	logger := log.GetLogger()
-
-	// Encode to buffer first to ensure encoding succeeds before sending headers
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(errorResp); err != nil {
-		logger.Error("Failed to encode error response", log.Error(err))
-		http.Error(w, serviceerror.ErrorEncodingError, http.StatusInternalServerError)
-		return
-	}
-
-	// Encoding succeeded, now safe to send headers and write response
-	w.Header().Set(constants.ContentTypeHeaderName, constants.ContentTypeJSON)
-	w.WriteHeader(statusCode)
-	_, _ = w.Write(buf.Bytes())
-}
-
-// WriteI18nErrorResponse writes a JSON i18n error response with the given status code and error details.
-// This function should be used for services that have been migrated to use I18nErrorResponse.
-func WriteI18nErrorResponse(w http.ResponseWriter, statusCode int, errorResp apierror.I18nErrorResponse) {
 	logger := log.GetLogger()
 	w.Header().Set(constants.ContentTypeHeaderName, constants.ContentTypeJSON)
 	w.WriteHeader(statusCode)
 
 	if err := json.NewEncoder(w).Encode(errorResp); err != nil {
 		logger.Error("Failed to encode i18n error response", log.Error(err))
-		http.Error(w, serviceerror.ErrorEncodingError, http.StatusInternalServerError)
+		errResp := apierror.ErrorResponse{
+			Code:        serviceerror.ErrorEncodingError.Code,
+			Message:     serviceerror.ErrorEncodingError.Error,
+			Description: serviceerror.ErrorEncodingError.ErrorDescription,
+		}
+		b, _ := json.Marshal(errResp)
+		w.Header().Set(constants.ContentTypeHeaderName, constants.ContentTypeJSON)
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write(b)
 	}
 }

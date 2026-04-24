@@ -19,6 +19,8 @@
 package executor
 
 import (
+	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"context"
 	"testing"
 
@@ -338,7 +340,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_Serv
 	svcErr := &serviceerror.ServiceError{
 		Type:  serviceerror.ServerErrorType,
 		Code:  "OU-50001",
-		Error: "internal error",
+		Error: i18ncore.I18nMessage{Key: "error.test.internal_error", DefaultValue: "internal error"},
 	}
 	suite.mockOUService.On("IsParent", mock.Anything, parentOUID, selectedOUID).
 		Return(false, svcErr)
@@ -371,7 +373,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_Clie
 	svcErr := &serviceerror.ServiceError{
 		Type:  serviceerror.ClientErrorType,
 		Code:  "OU-40001",
-		Error: "not found",
+		Error: i18ncore.I18nMessage{Key: "error.test.not_found", DefaultValue: "not found"},
 	}
 	suite.mockOUService.On("IsParent", mock.Anything, parentOUID, selectedOUID).
 		Return(false, svcErr)
@@ -453,7 +455,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_GetChildrenError_Re
 	svcErr := &serviceerror.ServiceError{
 		Type:  serviceerror.ServerErrorType,
 		Code:  "OU-50001",
-		Error: "internal error",
+		Error: i18ncore.I18nMessage{Key: "error.test.internal_error", DefaultValue: "internal error"},
 	}
 	suite.mockOUService.On("GetOrganizationUnitChildren", mock.Anything, parentOUID, 1, 0).
 		Return((*ou.OrganizationUnitListResponse)(nil), svcErr)
@@ -557,7 +559,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_ServiceError() {
 	svcErr := &serviceerror.ServiceError{
 		Type:  serviceerror.ServerErrorType,
 		Code:  "OU-50001",
-		Error: "internal error",
+		Error: i18ncore.I18nMessage{Key: "error.test.internal_error", DefaultValue: "internal error"},
 	}
 	suite.mockOUService.On("IsOrganizationUnitExists", mock.Anything, selectedOUID).
 		Return(false, svcErr)

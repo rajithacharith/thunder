@@ -218,7 +218,7 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 			Description: "Permission to write documents",
 		},
 	}
-	scopeTestResourceServer, err := testutils.CreateResourceServerWithActions(resourceServer, actions)
+	scopeTestResourceServer, err = testutils.CreateResourceServerWithActions(resourceServer, actions)
 	if err != nil {
 		ts.T().Fatalf("Failed to create resource server with actions: %v", err)
 	}

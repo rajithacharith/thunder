@@ -264,7 +264,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithDuplicateName() {
 	}
 
 	ts.Assert().NotEmpty(errorResp.Code, "Error should have code")
-	ts.Assert().NotEmpty(errorResp.Message, "Error should have message")
+	ts.Assert().NotEmpty(errorResp.Message.DefaultValue, "Error should have message")
 }
 
 // TestCreateUserSchemasWithSharedOUID ensures multiple schemas can share the same OU.
@@ -383,7 +383,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithInvalidData() {
 			}
 
 			ts.Assert().NotEmpty(errorResp.Code, "Error should have code")
-			ts.Assert().NotEmpty(errorResp.Message, "Error should have message")
+			ts.Assert().NotEmpty(errorResp.Message.DefaultValue, "Error should have message")
 		})
 	}
 }

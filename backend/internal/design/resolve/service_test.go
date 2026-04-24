@@ -19,6 +19,8 @@
 package resolve
 
 import (
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
+
 	"context"
 	"encoding/json"
 	"testing"
@@ -127,7 +129,7 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_InvalidApplicationID() {
 func (suite *ResolveServiceTestSuite) TestResolveDesign_ApplicationServiceError() {
 	svcErr := &serviceerror.ServiceError{
 		Code:  "APP-9999",
-		Error: "unexpected error",
+		Error: core.I18nMessage{Key: "error.test.unexpected_error", DefaultValue: "unexpected error"},
 	}
 	suite.mockAppService.On("GetApplication", mock.Anything, "00000000-0000-0000-0000-000000000001").Return(nil, svcErr)
 
@@ -136,7 +138,7 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_ApplicationServiceError(
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), "APP-9999", err.Code)
+	assert.Equal(suite.T(), svcErr.Code, err.Code)
 }
 
 // Test ResolveDesign - Application has no design
@@ -271,7 +273,7 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_ThemeServiceError() {
 	}
 	svcErr := &serviceerror.ServiceError{
 		Code:  "THM-9999",
-		Error: "unexpected error",
+		Error: core.I18nMessage{Key: "error.test.unexpected_error", DefaultValue: "unexpected error"},
 	}
 	suite.mockAppService.On("GetApplication", mock.Anything, "00000000-0000-0000-0000-000000000001").Return(app, nil)
 	suite.mockThemeService.On("GetTheme", "theme-123").Return(nil, svcErr)
@@ -333,7 +335,7 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_LayoutServiceError() {
 	}
 	svcErr := &serviceerror.ServiceError{
 		Code:  "LAY-9999",
-		Error: "unexpected error",
+		Error: core.I18nMessage{Key: "error.test.unexpected_error", DefaultValue: "unexpected error"},
 	}
 	suite.mockAppService.On("GetApplication", mock.Anything, "00000000-0000-0000-0000-000000000001").Return(app, nil)
 	suite.mockLayoutService.On("GetLayout", "layout-123").Return(nil, svcErr)

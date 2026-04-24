@@ -334,7 +334,8 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowSuccess() {
 		"password": userAttrs["password"].(string),
 	}
 
-	completeFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001")
+	completeFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001",
+		flowStep.ChallengeToken)
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow: %v", err)
 	}
@@ -420,7 +421,8 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowWithTwoStepInput() {
 		"username": userAttrs["username"].(string),
 	}
 
-	intermediateFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001")
+	intermediateFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001",
+		flowStep.ChallengeToken)
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow with missing credentials: %v", err)
 	}
@@ -441,7 +443,8 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowWithTwoStepInput() {
 		"password": userAttrs["password"].(string),
 	}
 
-	completeFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001")
+	completeFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001",
+		intermediateFlowStep.ChallengeToken)
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow: %v", err)
 	}
@@ -484,7 +487,8 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidCredentials() {
 		"password": "wrong_password",
 	}
 
-	completeFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001")
+	completeFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001",
+		flowStep.ChallengeToken)
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow with invalid credentials: %v", err)
 	}
@@ -521,7 +525,8 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowRetryAfterInvalidCredentials(
 		"password": "wrong_password",
 	}
 
-	retryFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, invalidInputs, "action_001")
+	retryFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, invalidInputs, "action_001",
+		flowStep.ChallengeToken)
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow with invalid credentials: %v", err)
 	}
@@ -536,7 +541,8 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowRetryAfterInvalidCredentials(
 		"password": "testpassword",
 	}
 
-	successFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, validInputs, "action_001")
+	successFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, validInputs, "action_001",
+		retryFlowStep.ChallengeToken)
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow after retry: %v", err)
 	}
@@ -557,8 +563,8 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidAppID() {
 
 	// Verify the error response
 	ts.Require().Equal("FES-1003", errorResp.Code, "Expected error code for invalid app ID")
-	ts.Require().Equal("Invalid request", errorResp.Message, "Expected error message for invalid request")
-	ts.Require().Equal("Invalid app ID provided in the request", errorResp.Description,
+	ts.Require().Equal("Invalid request", errorResp.Message.DefaultValue, "Expected error message for invalid request")
+	ts.Require().Equal("Invalid app ID provided in the request", errorResp.Description.DefaultValue,
 		"Expected error description for invalid app ID")
 }
 
@@ -581,15 +587,15 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidFlowID() {
 		"password": "somepassword",
 	}
 
-	errorResp, err := common.CompleteAuthFlowWithError("invalid-flow-id", inputs)
+	errorResp, err := common.CompleteAuthFlowWithError("invalid-flow-id", inputs, flowStep.ChallengeToken)
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow: %v", err)
 	}
 
 	// Verify the error response
 	ts.Require().Equal("FES-1004", errorResp.Code, "Expected error code for invalid flow ID")
-	ts.Require().Equal("Invalid request", errorResp.Message, "Expected error message for invalid request")
-	ts.Require().Equal("Invalid flow execution ID provided in the request", errorResp.Description,
+	ts.Require().Equal("Invalid request", errorResp.Message.DefaultValue, "Expected error message for invalid request")
+	ts.Require().Equal("Invalid flow execution ID provided in the request", errorResp.Description.DefaultValue,
 		"Expected error description for invalid flow ID")
 }
 

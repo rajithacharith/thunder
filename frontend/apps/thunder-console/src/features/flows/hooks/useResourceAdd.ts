@@ -21,15 +21,15 @@ import {useUpdateNodeInternals} from '@xyflow/react';
 import type {UpdateNodeInternals} from '@xyflow/system';
 import cloneDeep from 'lodash-es/cloneDeep';
 import {useRef} from 'react';
+import useFlowEvents from './useFlowEvents';
+import useFlowPlugins from './useFlowPlugins';
 import type {Base} from '../models/base';
 import {type Element} from '../models/elements';
-import FlowEventTypes from '../models/extension';
 import type {MetadataInterface} from '../models/metadata';
 import {ResourceTypes, type Resource} from '../models/resources';
 import {StepTypes, type Step, type StepData} from '../models/steps';
 import {type Template} from '../models/templates';
 import type {Widget} from '../models/widget';
-import PluginRegistry from '../plugins/PluginRegistry';
 import autoAssignConnections from '../utils/autoAssignConnections';
 import generateResourceId from '../utils/generateResourceId';
 
@@ -64,6 +64,8 @@ export interface UseResourceAddProps {
 const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => void) => {
   // Get references from hooks - only ReactFlow hooks needed here
   const reactFlowInstance = useReactFlow();
+  const {notifyElementAdded} = useFlowEvents();
+  const {emitTemplateLoad} = useFlowPlugins();
   const updateNodeInternals: UpdateNodeInternals = useUpdateNodeInternals();
 
   // Store ALL dependencies in refs - updated every render
@@ -71,6 +73,8 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
     props,
     reactFlowInstance,
     updateNodeInternals,
+    notifyElementAdded,
+    emitTemplateLoad,
   });
 
   // Update refs every render (minimal overhead - just assignment)
@@ -78,6 +82,8 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
     props,
     reactFlowInstance,
     updateNodeInternals,
+    notifyElementAdded,
+    emitTemplateLoad,
   };
 
   // Store a stable reference to the handler function itself
@@ -105,7 +111,7 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
     // Handle templates
     if (resource.resourceType === ResourceTypes.Template) {
       const template = clonedResource as Template;
-      PluginRegistry.getInstance().executeSync(FlowEventTypes.ON_TEMPLATE_LOAD, template);
+      depsRef.current.emitTemplateLoad(template);
 
       const [newNodes, newEdges] = onTemplateLoad(template);
 
@@ -142,7 +148,7 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
       });
 
       // Dispatch custom event to notify about element addition (for auto-layout hint)
-      window.dispatchEvent(new CustomEvent('flowElementAdded', {detail: {type: 'template'}}));
+      depsRef.current.notifyElementAdded('template');
 
       // Don't open properties panel for templates - just track the resource without opening panel
       return;
@@ -212,7 +218,7 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
       });
 
       // Dispatch custom event to notify about element addition (for auto-layout hint)
-      window.dispatchEvent(new CustomEvent('flowElementAdded', {detail: {type: 'widget'}}));
+      depsRef.current.notifyElementAdded('widget');
 
       // Don't open properties panel for widgets - just track the resource without opening panel
       return;
@@ -238,7 +244,7 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
       onResourceDropOnCanvas(generatedStep, '');
 
       // Dispatch custom event to notify about element addition (for auto-layout hint)
-      window.dispatchEvent(new CustomEvent('flowElementAdded', {detail: {type: 'step'}}));
+      depsRef.current.notifyElementAdded('step');
       return;
     }
 

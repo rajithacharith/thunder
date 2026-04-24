@@ -17,8 +17,7 @@
  */
 
 import {FormControl, FormLabel, MenuItem, Select} from '@wso2/oxygen-ui';
-import isEmpty from 'lodash-es/isEmpty';
-import {useState, type ReactElement} from 'react';
+import {memo, useCallback, useMemo, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
 import ButtonExtendedProperties from './extended-properties/ButtonExtendedProperties';
 import ExecutionExtendedProperties from './extended-properties/ExecutionExtendedProperties';
@@ -26,6 +25,7 @@ import FieldExtendedProperties from './extended-properties/FieldExtendedProperti
 import RulesProperties from './nodes/RulesProperties';
 import ResourcePropertyFactory from './ResourcePropertyFactory';
 import TextPropertyField from '@/features/flows/components/resource-property-panel/TextPropertyField';
+import VariantSelect from '@/features/flows/components/resource-property-panel/VariantSelect';
 import type {ResourcePropertiesProps} from '@/features/flows/context/FlowBuilderCoreProvider';
 import type {FieldKey, FieldValue} from '@/features/flows/models/base';
 import {ElementCategories, ElementTypes, type Element} from '@/features/flows/models/elements';
@@ -45,50 +45,35 @@ function ResourceProperties({
   onVariantChange,
 }: ResourcePropertiesProps): ReactElement | null {
   const {t} = useTranslation();
-  // Adapter to handle onChange with proper type preservation
-  const handleChange = (propertyKey: string, newValue: unknown, changedResource: unknown): void => {
-    // Preserve boolean values, objects, convert strings and numbers to string, default to empty string
-    let processedValue: string | boolean | object;
-    if (typeof newValue === 'boolean') {
-      processedValue = newValue;
-    } else if (typeof newValue === 'object' && newValue !== null) {
-      processedValue = newValue;
-    } else if (typeof newValue === 'string' || typeof newValue === 'number') {
-      processedValue = String(newValue);
-    } else {
-      processedValue = '';
-    }
+  const handleChange = useCallback(
+    (propertyKey: string, newValue: unknown, changedResource: unknown): void => {
+      let processedValue: string | boolean | object;
+      if (typeof newValue === 'boolean') {
+        processedValue = newValue;
+      } else if (typeof newValue === 'object' && newValue !== null) {
+        processedValue = newValue;
+      } else if (typeof newValue === 'string' || typeof newValue === 'number') {
+        processedValue = String(newValue);
+      } else {
+        processedValue = '';
+      }
 
-    onChange(propertyKey, processedValue, changedResource as Resource);
-  };
-  const [selectedVariant, setSelectedVariant] = useState<Element | undefined>(() => {
+      onChange(propertyKey, processedValue, changedResource as Resource);
+    },
+    [onChange],
+  );
+  const selectedVariant = useMemo<Element | undefined>(() => {
     if (!resource?.variants || resource.variants.length === 0) {
       return undefined;
     }
-    // Find the variant that matches the resource's current variant, or fall back to the first one
     const currentVariant = resource.variants.find((v: Element) => v.variant === (resource as Element).variant) as
       | Element
       | undefined;
     return currentVariant ?? (resource.variants[0] as Element);
-  });
-
-  // Sync selectedVariant when resource changes (e.g., clicking on a different element)
-  const [prevResource, setPrevResource] = useState(resource);
-  if (resource !== prevResource) {
-    setPrevResource(resource);
-    if (!resource?.variants || resource.variants.length === 0) {
-      setSelectedVariant(undefined);
-    } else {
-      const currentVariant = resource.variants.find((v: Element) => v.variant === (resource as Element).variant) as
-        | Element
-        | undefined;
-      setSelectedVariant(currentVariant ?? (resource.variants[0] as Element));
-    }
-  }
+  }, [resource]);
 
   const renderElementId = (): ReactElement => (
     <ResourcePropertyFactory
-      InputProps={{readOnly: true}}
       key={`${resource.id}-$id`}
       resource={resource}
       propertyKey="id"
@@ -98,31 +83,9 @@ function ResourceProperties({
   );
 
   const renderElementPropertyFactory = () => {
-    const hasVariants = !isEmpty(resource?.variants);
-
     return (
       <>
-        {hasVariants && (
-          <div>
-            <FormLabel htmlFor="variant-select">Variant</FormLabel>
-            <Select
-              id="variant-select"
-              value={selectedVariant?.variant ?? ''}
-              onChange={(e) => {
-                const newVariant = resource?.variants?.find((variant: Element) => variant.variant === e.target.value);
-                onVariantChange?.((newVariant?.variant as string) ?? '');
-                setSelectedVariant(newVariant);
-              }}
-              fullWidth
-            >
-              {resource?.variants?.map((variant: Element) => (
-                <MenuItem key={variant.variant as string} value={variant.variant as string}>
-                  {variant.variant as string}
-                </MenuItem>
-              ))}
-            </Select>
-          </div>
-        )}
+        <VariantSelect resource={resource} selectedVariant={selectedVariant} onVariantChange={onVariantChange} />
         {properties &&
           Object.entries(properties)?.map(([key, value]: [FieldKey, FieldValue]) => (
             <ResourcePropertyFactory
@@ -202,34 +165,10 @@ function ResourceProperties({
       );
     case ElementCategories.Display:
       if (resource.type === ElementTypes.Text) {
-        const hasVariants = !isEmpty(resource?.variants);
-
         return (
           <>
             {renderElementId()}
-            {hasVariants && (
-              <div>
-                <FormLabel htmlFor="variant-select">Variant</FormLabel>
-                <Select
-                  id="variant-select"
-                  value={selectedVariant?.variant ?? ''}
-                  onChange={(e) => {
-                    const newVariant = resource?.variants?.find(
-                      (variant: Element) => variant.variant === e.target.value,
-                    );
-                    onVariantChange?.((newVariant?.variant as string) ?? '');
-                    setSelectedVariant(newVariant);
-                  }}
-                  fullWidth
-                >
-                  {resource?.variants?.map((variant: Element) => (
-                    <MenuItem key={variant.variant as string} value={variant.variant as string}>
-                      {variant.variant as string}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </div>
-            )}
+            <VariantSelect resource={resource} selectedVariant={selectedVariant} onVariantChange={onVariantChange} />
             <TextPropertyField
               resource={resource}
               propertyKey="label"
@@ -301,4 +240,4 @@ function ResourceProperties({
   }
 }
 
-export default ResourceProperties;
+export default memo(ResourceProperties);

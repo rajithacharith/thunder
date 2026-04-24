@@ -29,6 +29,7 @@ import (
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
@@ -85,7 +86,7 @@ func (uh *userHandler) HandleUserListRequest(w http.ResponseWriter, r *http.Requ
 		log.Int("limit", limit), log.Int("offset", offset),
 		log.Int("totalResults", userListResponse.TotalResults),
 		log.Int("count", userListResponse.Count),
-		log.Any("filters", filters))
+		log.MaskedMap("filters", filters))
 }
 
 // HandleUserPostRequest handles the user request.
@@ -114,7 +115,7 @@ func (uh *userHandler) HandleUserPostRequest(w http.ResponseWriter, r *http.Requ
 	sysutils.WriteSuccessResponse(w, http.StatusCreated, createdUser)
 
 	// Log the user creation response.
-	logger.Debug("User POST response sent", log.String("user id", createdUser.ID))
+	logger.Debug("User POST response sent", log.MaskedString(log.LoggerKeyUserID, createdUser.ID))
 }
 
 // HandleUserGetRequest handles the user request.
@@ -146,7 +147,7 @@ func (uh *userHandler) HandleUserGetRequest(w http.ResponseWriter, r *http.Reque
 	sysutils.WriteSuccessResponse(w, http.StatusOK, user)
 
 	// Log the user response.
-	logger.Debug("User GET response sent", log.String("user id", id))
+	logger.Debug("User GET response sent", log.MaskedString(log.LoggerKeyUserID, id))
 }
 
 // HandleUserGroupsGetRequest handles the get user groups request.
@@ -178,7 +179,7 @@ func (ah *userHandler) HandleUserGroupsGetRequest(w http.ResponseWriter, r *http
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, groupListResponse)
 
-	logger.Debug("Successfully retrieved user groups", log.String("user id", id),
+	logger.Debug("Successfully retrieved user groups", log.MaskedString(log.LoggerKeyUserID, id),
 		log.Int("limit", limit), log.Int("offset", offset),
 		log.Int("totalResults", groupListResponse.TotalResults),
 		log.Int("count", groupListResponse.Count))
@@ -222,7 +223,7 @@ func (uh *userHandler) HandleUserPutRequest(w http.ResponseWriter, r *http.Reque
 	sysutils.WriteSuccessResponse(w, http.StatusOK, user)
 
 	// Log the user response.
-	logger.Debug("User PUT response sent", log.String("user id", id))
+	logger.Debug("User PUT response sent", log.MaskedString(log.LoggerKeyUserID, id))
 }
 
 // HandleUserDeleteRequest handles the delete user request.
@@ -251,7 +252,7 @@ func (uh *userHandler) HandleUserDeleteRequest(w http.ResponseWriter, r *http.Re
 	sysutils.WriteSuccessResponse(w, http.StatusNoContent, nil)
 
 	// Log the user response.
-	logger.Debug("User DELETE response sent", log.String("user id", id))
+	logger.Debug("User DELETE response sent", log.MaskedString(log.LoggerKeyUserID, id))
 }
 
 // HandleUserListByPathRequest handles the list users by OU path request.
@@ -295,7 +296,7 @@ func (uh *userHandler) HandleUserListByPathRequest(w http.ResponseWriter, r *htt
 		log.Int("limit", limit), log.Int("offset", offset),
 		log.Int("totalResults", userListResponse.TotalResults),
 		log.Int("count", userListResponse.Count),
-		log.Any("filters", filters))
+		log.MaskedMap("filters", filters))
 }
 
 // HandleUserPostByPathRequest handles the create user by OU path request.
@@ -311,9 +312,12 @@ func (uh *userHandler) HandleUserPostByPathRequest(w http.ResponseWriter, r *htt
 	createRequest, err := sysutils.DecodeJSONBody[CreateUserByPathRequest](r)
 	if err != nil {
 		errResp := apierror.ErrorResponse{
-			Code:        ErrorInvalidRequestFormat.Code,
-			Message:     ErrorInvalidRequestFormat.Error,
-			Description: "Failed to parse request body: " + err.Error(),
+			Code:    ErrorInvalidRequestFormat.Code,
+			Message: ErrorInvalidRequestFormat.Error,
+			Description: core.I18nMessage{
+				Key:          "error.userservice.invalid_request_format_description",
+				DefaultValue: "Failed to parse request body: " + err.Error(),
+			},
 		}
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, errResp)
 		return
@@ -352,7 +356,7 @@ func (uh *userHandler) HandleSelfUserGetRequest(w http.ResponseWriter, r *http.R
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, user)
 
-	logger.Debug("Self user GET response sent", log.String("user id", userID))
+	logger.Debug("Self user GET response sent", log.MaskedString(log.LoggerKeyUserID, userID))
 }
 
 // HandleSelfUserPutRequest handles the self user update.
@@ -385,7 +389,7 @@ func (uh *userHandler) HandleSelfUserPutRequest(w http.ResponseWriter, r *http.R
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, updatedUser)
 
-	logger.Debug("Self user PUT response sent", log.String("user id", userID))
+	logger.Debug("Self user PUT response sent", log.MaskedString(log.LoggerKeyUserID, userID))
 }
 
 // HandleSelfUserCredentialUpdateRequest handles the credential update for the authenticated user.
@@ -416,7 +420,7 @@ func (uh *userHandler) HandleSelfUserCredentialUpdateRequest(w http.ResponseWrit
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusNoContent, nil)
-	logger.Debug("Self user credential update response sent", log.String("user id", userID))
+	logger.Debug("Self user credential update response sent", log.MaskedString(log.LoggerKeyUserID, userID))
 }
 
 // parsePaginationParams parses limit and offset query parameters from the request.
