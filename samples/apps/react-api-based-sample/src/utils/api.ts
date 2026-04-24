@@ -165,8 +165,8 @@ export interface VerifyOTPResponse {
 
 export interface ApiError {
   code: string;
-  message: string;
-  description?: string;
+  message: { defaultValue?: string };
+  description?: { defaultValue?: string };
 }
 
 /**
@@ -198,7 +198,7 @@ export async function sendSMSOTP(
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
         const errorData: ApiError = await response.json();
-        errorMessage = errorData.message || errorMessage;
+        errorMessage = errorData.message?.defaultValue || errorMessage;
       } else {
         errorMessage = `HTTP ${response.status}: ${response.statusText}`;
       }
@@ -243,7 +243,7 @@ export async function verifySMSOTP(
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
         const errorData: ApiError = await response.json();
-        errorMessage = errorData.message || errorMessage;
+        errorMessage = errorData.message?.defaultValue || errorMessage;
       } else {
         errorMessage = `HTTP ${response.status}: ${response.statusText}`;
       }

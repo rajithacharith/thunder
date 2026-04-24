@@ -41,8 +41,8 @@ interface UserResponse {
 
 interface ApiError {
   code: string;
-  message: string;
-  description?: string;
+  message: { defaultValue?: string };
+  description?: { defaultValue?: string };
 }
 
 function SignUpPage() {
@@ -101,7 +101,7 @@ function SignUpPage() {
       if (!response.ok) {
         const errorData: ApiError = await response.json();
         throw new Error(
-          errorData.description || errorData.message || "Registration failed"
+          errorData.description?.defaultValue || errorData.message?.defaultValue || "Registration failed"
         );
       }
 

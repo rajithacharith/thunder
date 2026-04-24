@@ -302,11 +302,11 @@ export const initiateNativeAuthFlow = async (flowType: 'LOGIN' | 'REGISTRATION' 
     });
 
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({})) as { message?: string };
+        const errorData = await response.json().catch(() => ({})) as { message?: { defaultValue?: string } };
         const flowTypeName = flowType === 'REGISTRATION' ? 'registration' : 'authentication';
         const message = response.status === 400
             ? `Error initiating native ${flowTypeName} request.`
-            : errorData?.message || 'Server error occurred.';
+            : errorData?.message?.defaultValue || 'Server error occurred.';
         throw new Error(message);
     }
 
@@ -353,11 +353,11 @@ export const initiateNativeAuthFlowWithData = async (flowType: 'LOGIN' | 'REGIST
     });
 
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({})) as { message?: string };
+        const errorData = await response.json().catch(() => ({})) as { message?: { defaultValue?: string } };
         const flowTypeName = flowType === 'REGISTRATION' ? 'registration' : 'authentication';
         const message = response.status === 400
             ? `Error initiating native ${flowTypeName} request.`
-            : errorData?.message || 'Server error occurred.';
+            : errorData?.message?.defaultValue || 'Server error occurred.';
         throw new Error(message);
     }
 
@@ -399,10 +399,10 @@ export const submitAuthDecision = async (executionId: string, actionId: string, 
     });
 
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({})) as { message?: string };
+        const errorData = await response.json().catch(() => ({})) as { message?: { defaultValue?: string } };
         const message = response.status === 400
             ? 'Error processing authentication option.'
-            : errorData?.message || 'Server error occurred.';
+            : errorData?.message?.defaultValue || 'Server error occurred.';
         throw new Error(message);
     }
 
@@ -467,10 +467,10 @@ export const submitNativeAuth = async (
     });
 
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({})) as { message?: string };
+        const errorData = await response.json().catch(() => ({})) as { message?: { defaultValue?: string } };
         const message = response.status === 400
             ? 'Login failed. Please check your credentials.'
-            : errorData?.message || 'Server error occurred.';
+            : errorData?.message?.defaultValue || 'Server error occurred.';
         throw new Error(message);
     }
 
