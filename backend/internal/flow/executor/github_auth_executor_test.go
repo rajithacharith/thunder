@@ -27,6 +27,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/tests/mocks/authn/githubmock"
 	"github.com/asgardeo/thunder/tests/mocks/authn/oauthmock"
+	"github.com/asgardeo/thunder/tests/mocks/authnprovider/managermock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
@@ -39,6 +40,7 @@ type GithubAuthExecutorTestSuite struct {
 	mockUserSchemaService *userschemamock.UserSchemaServiceInterfaceMock
 	mockGithubService     *githubmock.GithubOAuthAuthnServiceInterfaceMock
 	mockOAuthService      *oauthmock.OAuthAuthnCoreServiceInterfaceMock
+	mockAuthnProvider     *managermock.AuthnProviderManagerInterfaceMock
 }
 
 func TestGithubAuthExecutorTestSuite(t *testing.T) {
@@ -51,6 +53,7 @@ func (suite *GithubAuthExecutorTestSuite) SetupTest() {
 	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
 	suite.mockGithubService = githubmock.NewGithubOAuthAuthnServiceInterfaceMock(suite.T())
 	suite.mockOAuthService = oauthmock.NewOAuthAuthnCoreServiceInterfaceMock(suite.T())
+	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
 }
 
 func (suite *GithubAuthExecutorTestSuite) TestNewGithubOAuthExecutor_Success() {
@@ -72,7 +75,7 @@ func (suite *GithubAuthExecutorTestSuite) TestNewGithubOAuthExecutor_Success() {
 	}
 
 	executor := newGithubOAuthExecutor(suite.mockFlowFactory, suite.mockIDPService,
-		suite.mockUserSchemaService, mockGithubSvc)
+		suite.mockUserSchemaService, mockGithubSvc, suite.mockAuthnProvider)
 
 	suite.NotNil(executor)
 	githubExec, ok := executor.(*githubOAuthExecutor)

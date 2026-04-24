@@ -20,7 +20,12 @@ package executor
 
 import (
 	"github.com/asgardeo/thunder/internal/attributecache"
-	"github.com/asgardeo/thunder/internal/authn"
+	"github.com/asgardeo/thunder/internal/authn/assert"
+	"github.com/asgardeo/thunder/internal/authn/consent"
+	"github.com/asgardeo/thunder/internal/authn/github"
+	"github.com/asgardeo/thunder/internal/authn/google"
+	"github.com/asgardeo/thunder/internal/authn/oauth"
+	"github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/authn/otp"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
 	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
@@ -48,7 +53,8 @@ func Initialize(
 	idpService idp.IDPServiceInterface,
 	notifSenderSvc notification.NotificationSenderServiceInterface,
 	jwtService jwt.JWTServiceInterface,
-	authRegistry *authn.AuthServiceRegistry,
+	authAssertGen assert.AuthAssertGeneratorInterface,
+	consentEnforcer consent.ConsentEnforcerServiceInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	otpService otp.OTPAuthnServiceInterface,
 	passkeyService passkey.PasskeyServiceInterface,
@@ -61,6 +67,10 @@ func Initialize(
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	emailClient email.EmailClientInterface,
 	templateService template.TemplateServiceInterface,
+	oauthSvc oauth.OAuthAuthnServiceInterface,
+	oidcSvc oidc.OIDCAuthnServiceInterface,
+	githubSvc github.GithubOAuthAuthnServiceInterface,
+	googleSvc google.GoogleOIDCAuthnServiceInterface,
 ) ExecutorRegistryInterface {
 	reg := newExecutorRegistry()
 	reg.RegisterExecutor(ExecutorNameBasicAuth, newBasicAuthExecutor(
@@ -72,14 +82,14 @@ func Initialize(
 
 	reg.RegisterExecutor(ExecutorNameOAuth, newOAuthExecutor(
 		"", []common.Input{}, []common.Input{}, flowFactory, idpService, userSchemaService,
-		authRegistry.OAuthAuthnService))
+		oauthSvc, authnProvider, idp.IDPTypeOAuth))
 	reg.RegisterExecutor(ExecutorNameOIDCAuth, newOIDCAuthExecutor(
 		"", []common.Input{}, []common.Input{}, flowFactory, idpService, userSchemaService,
-		authRegistry.OIDCAuthnService))
+		oidcSvc, authnProvider, idp.IDPTypeOIDC))
 	reg.RegisterExecutor(ExecutorNameGitHubAuth, newGithubOAuthExecutor(
-		flowFactory, idpService, userSchemaService, authRegistry.GithubOAuthAuthnService))
+		flowFactory, idpService, userSchemaService, githubSvc, authnProvider))
 	reg.RegisterExecutor(ExecutorNameGoogleAuth, newGoogleOIDCAuthExecutor(
-		flowFactory, idpService, userSchemaService, authRegistry.GoogleOIDCAuthnService))
+		flowFactory, idpService, userSchemaService, googleSvc, authnProvider))
 
 	reg.RegisterExecutor(ExecutorNameProvisioning, newProvisioningExecutor(flowFactory,
 		groupService, roleService, entityProvider))
@@ -87,7 +97,7 @@ func Initialize(
 
 	reg.RegisterExecutor(ExecutorNameAttributeCollect, newAttributeCollector(flowFactory, entityProvider))
 	reg.RegisterExecutor(ExecutorNameAuthAssert, newAuthAssertExecutor(flowFactory, jwtService,
-		ouService, authRegistry.AuthAssertGenerator, authnProvider, entityProvider,
+		ouService, authAssertGen, authnProvider, entityProvider,
 		attributeCacheSvc, roleService))
 	reg.RegisterExecutor(ExecutorNameAuthorization, newAuthorizationExecutor(flowFactory, authZService, entityProvider))
 	reg.RegisterExecutor(ExecutorNameHTTPRequest, newHTTPRequestExecutor(flowFactory, ouService))
@@ -99,7 +109,7 @@ func Initialize(
 	reg.RegisterExecutor(ExecutorNameIdentifying, newIdentifyingExecutor(
 		"", []common.Input{{Identifier: userAttributeUsername, Type: "string", Required: true}}, []common.Input{},
 		flowFactory, entityProvider))
-	reg.RegisterExecutor(ExecutorNameConsent, newConsentExecutor(flowFactory, authRegistry.ConsentEnforcerService))
+	reg.RegisterExecutor(ExecutorNameConsent, newConsentExecutor(flowFactory, consentEnforcer))
 	reg.RegisterExecutor(ExecutorNameOUResolver, newOUResolverExecutor(flowFactory, ouService))
 	reg.RegisterExecutor(ExecutorNameAttributeUniquenessValidator, newAttributeUniquenessValidator(
 		flowFactory, userSchemaService, entityProvider))

@@ -25,6 +25,13 @@ import (
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/authn"
+	authnAssert "github.com/asgardeo/thunder/internal/authn/assert"
+	authncm "github.com/asgardeo/thunder/internal/authn/common"
+	authnConsent "github.com/asgardeo/thunder/internal/authn/consent"
+	"github.com/asgardeo/thunder/internal/authn/github"
+	"github.com/asgardeo/thunder/internal/authn/google"
+	authnOAuth "github.com/asgardeo/thunder/internal/authn/oauth"
+	authnOIDC "github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/authn/otp"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
 	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
@@ -198,15 +205,29 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// Initialize otp core service
 	otpCoreService := otp.Initialize(otpService, entityProvider)
 
+	// Initialize federated authentication services.
+	oauthAuthnService := authnOAuth.Initialize(idpService, entityProvider)
+	oidcAuthnService := authnOIDC.Initialize(idpService, entityProvider, jwtService)
+	googleAuthnService := google.Initialize(idpService, entityProvider, jwtService)
+	githubAuthnService := github.Initialize(idpService, entityProvider)
+
+	federatedAuths := map[idp.IDPType]authncm.FederatedAuthenticator{
+		idp.IDPTypeOAuth:  oauthAuthnService,
+		idp.IDPTypeOIDC:   oidcAuthnService,
+		idp.IDPTypeGoogle: googleAuthnService,
+		idp.IDPTypeGitHub: githubAuthnService,
+	}
+
 	// Initialize authn provider
-	authnProvider := authnprovidermgr.InitializeAuthnProviderManager(entityService, passkeyService, otpCoreService)
+	authnProvider := authnprovidermgr.InitializeAuthnProviderManager(entityService, passkeyService, otpCoreService,
+		federatedAuths)
 
 	// Initialize authentication services.
-	_, authSvcRegistry := authn.Initialize(
-		mux, mcpServer, idpService, jwtService,
-		entityProvider, authnProvider, consentService,
-		passkeyService, otpCoreService,
-	)
+	authAssertGen := authnAssert.Initialize()
+	consentEnforcer := authnConsent.Initialize(consentService, jwtService)
+
+	authn.Initialize(mux, mcpServer, idpService, jwtService, authnProvider, authAssertGen, passkeyService,
+		otpCoreService, oauthAuthnService, oidcAuthnService, googleAuthnService, githubAuthnService)
 
 	attributeCacheService := attributecache.Initialize()
 
@@ -219,11 +240,10 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 			"EmailExecutor will be registered but will not send emails.", log.Error(err))
 		emailClient = nil
 	}
-	execRegistry := executor.Initialize(flowFactory, ouService,
-		idpService, notifSenderSvc, jwtService, authSvcRegistry, authnProvider, otpCoreService,
-		passkeyService, authZService,
-		userSchemaService, observabilitySvc, groupService, roleService, entityProvider, attributeCacheService,
-		emailClient, templateService)
+	execRegistry := executor.Initialize(flowFactory, ouService, idpService, notifSenderSvc, jwtService, authAssertGen,
+		consentEnforcer, authnProvider, otpCoreService, passkeyService, authZService, userSchemaService,
+		observabilitySvc, groupService, roleService, entityProvider, attributeCacheService, emailClient,
+		templateService, oauthAuthnService, oidcAuthnService, githubAuthnService, googleAuthnService)
 
 	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(mux, mcpServer, flowFactory, execRegistry, graphCache)
 	if err != nil {

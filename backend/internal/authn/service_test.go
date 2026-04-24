@@ -30,7 +30,6 @@ import (
 
 	"github.com/asgardeo/thunder/internal/authn/assert"
 	"github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
 	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
 	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
@@ -768,30 +767,27 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationJWTGenera
 	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
-func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationOAuthSuccess() {
-	testUser := &entityprovider.Entity{
-		ID:   testUserID,
-		Type: "person",
-		OUID: testOrgUnit,
-	}
-	tokenResp := &oauth.TokenResponse{
-		AccessToken: testToken,
-		TokenType:   "Bearer",
-	}
-	userInfo := map[string]interface{}{
-		"sub": testUserID,
-	}
-
-	sessionToken := suite.createSessionToken(idp.IDPTypeOAuth)
+func (suite *AuthenticationServiceTestSuite) mockFederatedAuthnSuccess(idpType idp.IDPType) string {
+	sessionToken := suite.createSessionToken(idpType)
 	suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil)
-	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, testIDPID, testAuthCode, true).
-		Return(tokenResp, nil)
-	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, testIDPID, testToken).Return(userInfo, nil)
-	suite.mockOAuthService.On("GetInternalUser", testUserID).Return(testUser, nil)
+	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
+		mock.MatchedBy(func(creds map[string]interface{}) bool {
+			_, ok := creds["federated"]
+			return ok
+		}), mock.Anything, mock.Anything, mock.Anything).
+		Return(authnprovidermgr.AuthUser{}, &authnprovidermgr.AuthnBasicResult{
+			UserID:         testUserID,
+			UserType:       "person",
+			OUID:           testOrgUnit,
+			IsExistingUser: true,
+		}, nil).Once()
+	return sessionToken
+}
 
+func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationOAuthSuccess() {
+	sessionToken := suite.mockFederatedAuthnSuccess(idp.IDPTypeOAuth)
 	result, err := suite.service.FinishIDPAuthentication(context.Background(), idp.IDPTypeOAuth, sessionToken, true, "",
 		testAuthCode)
-
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal(testUserID, result.ID)
@@ -799,34 +795,33 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationOAuthSuc
 }
 
 func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationOIDCSuccess() {
-	suite.testFinishOIDCBasedAuth(idp.IDPTypeOIDC, suite.mockOIDCService)
+	sessionToken := suite.mockFederatedAuthnSuccess(idp.IDPTypeOIDC)
+	result, err := suite.service.FinishIDPAuthentication(context.Background(), idp.IDPTypeOIDC, sessionToken, true, "",
+		testAuthCode)
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal(testUserID, result.ID)
 }
 
 func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationGoogleSuccess() {
-	suite.testFinishOIDCBasedAuth(idp.IDPTypeGoogle, suite.mockGoogleService)
+	sessionToken := suite.mockFederatedAuthnSuccess(idp.IDPTypeGoogle)
+	result, err := suite.service.FinishIDPAuthentication(
+		context.Background(), idp.IDPTypeGoogle, sessionToken, true, "", testAuthCode)
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal(testUserID, result.ID)
 }
 
 func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationGitHubSuccess() {
-	userInfo := map[string]interface{}{
-		"sub": testUserID,
-	}
-	suite.testFinishOAuthBasedAuth(idp.IDPTypeGitHub, suite.mockGithubService, userInfo)
+	sessionToken := suite.mockFederatedAuthnSuccess(idp.IDPTypeGitHub)
+	result, err := suite.service.FinishIDPAuthentication(
+		context.Background(), idp.IDPTypeGitHub, sessionToken, true, "", testAuthCode)
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal(testUserID, result.ID)
 }
 
 func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationWithAssertion() {
-	testUser := &entityprovider.Entity{
-		ID:   testUserID,
-		Type: "person",
-		OUID: testOrgUnit,
-	}
-	tokenResp := &oauth.TokenResponse{
-		AccessToken: testToken,
-		TokenType:   "Bearer",
-	}
-	userInfo := map[string]interface{}{
-		"sub": testUserID,
-	}
-
 	testCases := []struct {
 		name              string
 		skipAssertion     bool
@@ -841,11 +836,17 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationWithAsse
 			setupMocks: func() {
 				sessionToken := suite.createSessionToken(idp.IDPTypeOAuth)
 				suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil).Once()
-				suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, testIDPID, testAuthCode, true).
-					Return(tokenResp, nil).Once()
-				suite.mockOAuthService.On("FetchUserInfo", mock.Anything, testIDPID, testToken).
-					Return(userInfo, nil).Once()
-				suite.mockOAuthService.On("GetInternalUser", testUserID).Return(testUser, nil).Once()
+				suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
+					mock.MatchedBy(func(creds map[string]interface{}) bool {
+						_, ok := creds["federated"]
+						return ok
+					}), mock.Anything, mock.Anything, mock.Anything).
+					Return(authnprovidermgr.AuthUser{}, &authnprovidermgr.AuthnBasicResult{
+						UserID:         testUserID,
+						UserType:       "person",
+						OUID:           testOrgUnit,
+						IsExistingUser: true,
+					}, nil).Once()
 				suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything).Return(
 					&assert.AssertionResult{
 						Context: &assert.AssuranceContext{
@@ -869,11 +870,17 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationWithAsse
 				existingAssertion := suite.createTestAssertion(testUserID)
 				suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil).Once()
 				suite.mockJWTService.On("VerifyJWT", existingAssertion, "", mock.Anything).Return(nil).Once()
-				suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, testIDPID, testAuthCode, true).
-					Return(tokenResp, nil).Once()
-				suite.mockOAuthService.On("FetchUserInfo", mock.Anything, testIDPID, testToken).
-					Return(userInfo, nil).Once()
-				suite.mockOAuthService.On("GetInternalUser", testUserID).Return(testUser, nil).Once()
+				suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
+					mock.MatchedBy(func(creds map[string]interface{}) bool {
+						_, ok := creds["federated"]
+						return ok
+					}), mock.Anything, mock.Anything, mock.Anything).
+					Return(authnprovidermgr.AuthUser{}, &authnprovidermgr.AuthnBasicResult{
+						UserID:         testUserID,
+						UserType:       "person",
+						OUID:           testOrgUnit,
+						IsExistingUser: true,
+					}, nil).Once()
 				suite.mockAssertGenerator.On("UpdateAssertion", mock.Anything, mock.Anything).Return(
 					&assert.AssertionResult{
 						Context: &assert.AssuranceContext{
@@ -883,7 +890,6 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationWithAsse
 					}, nil).Once()
 				suite.mockJWTService.On("GenerateJWT", testUserID, mock.Anything, mock.Anything,
 					mock.MatchedBy(func(claims map[string]interface{}) bool {
-						// Verify that assurance claims are present for MFA
 						_, hasAssurance := claims["assurance"]
 						return hasAssurance
 					}), mock.Anything).Return("new_jwt_token_with_mfa", int64(3600), nil).Once()
@@ -964,20 +970,17 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationTypeMism
 	suite.Equal(common.ErrorInvalidIDPType.Code, err.Code)
 }
 
-func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationSubClaimNotFound() {
-	tokenResp := &oauth.TokenResponse{
-		AccessToken: testToken,
-		TokenType:   "Bearer",
-	}
-	userInfo := map[string]interface{}{
-		"name": "Test User",
-	}
-
+func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationUserNotFound() {
 	sessionToken := suite.createSessionToken(idp.IDPTypeOAuth)
 	suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil)
-	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, testIDPID, testAuthCode, true).
-		Return(tokenResp, nil)
-	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, testIDPID, testToken).Return(userInfo, nil)
+	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
+		mock.MatchedBy(func(creds map[string]interface{}) bool {
+			_, ok := creds["federated"]
+			return ok
+		}), mock.Anything, mock.Anything, mock.Anything).
+		Return(authnprovidermgr.AuthUser{}, &authnprovidermgr.AuthnBasicResult{
+			IsExistingUser: false,
+		}, nil).Once()
 
 	result, err := suite.service.FinishIDPAuthentication(
 		context.Background(), idp.IDPTypeOAuth, sessionToken, false, "",
@@ -985,14 +988,26 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationSubClaim
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(common.ErrorSubClaimNotFound.Code, err.Code)
+	suite.Equal(common.ErrorUserNotFound.Code, err.Code)
 }
 
-func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationSubClaimFallbackToID() {
-	userInfo := map[string]interface{}{
-		"id": testUserID,
-	}
-	suite.testFinishOAuthBasedAuth(idp.IDPTypeOAuth, suite.mockOAuthService, userInfo)
+func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationProviderAuthFailure() {
+	sessionToken := suite.createSessionToken(idp.IDPTypeOAuth)
+	suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil)
+	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
+		mock.MatchedBy(func(creds map[string]interface{}) bool {
+			_, ok := creds["federated"]
+			return ok
+		}), mock.Anything, mock.Anything, mock.Anything).
+		Return(authnprovidermgr.AuthUser{}, nil, &authnprovidermgr.ErrorAuthenticationFailed).Once()
+
+	result, err := suite.service.FinishIDPAuthentication(
+		context.Background(), idp.IDPTypeOAuth, sessionToken, false, "",
+		testAuthCode)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(ErrorFederatedAuthenticationFailed.Code, err.Code)
 }
 
 func (suite *AuthenticationServiceTestSuite) TestValidateIDPTypeExactMatch() {
@@ -1018,52 +1033,6 @@ func (suite *AuthenticationServiceTestSuite) TestValidateIDPTypeMismatch() {
 	err := suite.service.validateIDPType(idp.IDPTypeGoogle, idp.IDPTypeGitHub, logger)
 	suite.NotNil(err)
 	suite.Equal(common.ErrorInvalidIDPType.Code, err.Code)
-}
-
-func (suite *AuthenticationServiceTestSuite) TestGetSubClaimFromSub() {
-	userClaims := map[string]interface{}{
-		"sub": testUserID,
-	}
-
-	result, err := suite.service.getSubClaim(userClaims, nil)
-
-	suite.Nil(err)
-	suite.Equal(testUserID, result)
-}
-
-func (suite *AuthenticationServiceTestSuite) TestGetSubClaimFromID() {
-	userClaims := map[string]interface{}{
-		"id": testUserID,
-	}
-
-	result, err := suite.service.getSubClaim(userClaims, nil)
-
-	suite.Nil(err)
-	suite.Equal(testUserID, result)
-}
-
-func (suite *AuthenticationServiceTestSuite) TestGetSubClaimFromIDNumeric() {
-	userClaims := map[string]interface{}{
-		"id": 12345,
-	}
-
-	result, err := suite.service.getSubClaim(userClaims, nil)
-
-	suite.Nil(err)
-	suite.Equal("12345", result)
-}
-
-func (suite *AuthenticationServiceTestSuite) TestGetSubClaimNotFound() {
-	logger := log.GetLogger()
-	userClaims := map[string]interface{}{
-		"name": "Test User",
-	}
-
-	result, err := suite.service.getSubClaim(userClaims, logger)
-
-	suite.Empty(result)
-	suite.NotNil(err)
-	suite.Equal(common.ErrorSubClaimNotFound.Code, err.Code)
 }
 
 func (suite *AuthenticationServiceTestSuite) TestHandleIDPServiceErrorServerError() {
@@ -1142,144 +1111,22 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationBuildURLE
 	suite.Equal(svcErr.Code, err.Code)
 }
 
-func (suite *AuthenticationServiceTestSuite) TestFinishOIDCAuthenticationFetchUserInfoError() {
-	tokenResp := &oauth.TokenResponse{
-		AccessToken: testToken,
-		IDToken:     "id_token_123",
-		TokenType:   "Bearer",
-	}
-	svcErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
-		Code:  "FETCH_ERROR",
-		Error: core.I18nMessage{Key: "error.test.fetch_error", DefaultValue: "Fetch error"},
-		ErrorDescription: core.I18nMessage{
-			Key: "error.test.failed_to_fetch_id_token_claims", DefaultValue: "Failed to fetch ID token claims",
-		},
-	}
-
+func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationProviderServerError() {
 	sessionToken := suite.createSessionToken(idp.IDPTypeOIDC)
 	suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil)
-	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, testIDPID, testAuthCode, true).
-		Return(tokenResp, nil)
-	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_123").Return(nil, svcErr)
+	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
+		mock.MatchedBy(func(creds map[string]interface{}) bool {
+			_, ok := creds["federated"]
+			return ok
+		}), mock.Anything, mock.Anything, mock.Anything).
+		Return(authnprovidermgr.AuthUser{}, nil, &serviceerror.InternalServerError).Once()
 
 	result, err := suite.service.FinishIDPAuthentication(context.Background(), idp.IDPTypeOIDC, sessionToken, true, "",
 		testAuthCode)
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(svcErr.Code, err.Code)
-}
-
-func (suite *AuthenticationServiceTestSuite) TestFinishGoogleAuthenticationGetInternalUserError() {
-	tokenResp := &oauth.TokenResponse{
-		AccessToken: testToken,
-		IDToken:     "id_token_123",
-		TokenType:   "Bearer",
-	}
-	claims := map[string]interface{}{
-		"sub": testUserID,
-	}
-	svcErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
-		Code:  "USER_NOT_FOUND",
-		Error: core.I18nMessage{Key: "error.test.user_not_found", DefaultValue: "User not found"},
-		ErrorDescription: core.I18nMessage{
-			Key: "error.test.internal_user_not_found", DefaultValue: "Internal user not found",
-		},
-	}
-
-	sessionToken := suite.createSessionToken(idp.IDPTypeGoogle)
-	suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil)
-	suite.mockGoogleService.On("ExchangeCodeForToken", mock.Anything, testIDPID, testAuthCode, true).
-		Return(tokenResp, nil)
-	suite.mockGoogleService.On("GetIDTokenClaims", "id_token_123").Return(claims, nil)
-	suite.mockGoogleService.On("GetInternalUser", testUserID).Return(nil, svcErr)
-
-	result, err := suite.service.FinishIDPAuthentication(
-		context.Background(), idp.IDPTypeGoogle, sessionToken, true, "",
-		testAuthCode)
-
-	suite.Nil(result)
-	suite.NotNil(err)
-	suite.Equal(svcErr.Code, err.Code)
-}
-
-func (suite *AuthenticationServiceTestSuite) testFinishOIDCBasedAuth(
-	idpType idp.IDPType,
-	mockService interface{},
-) {
-	testUser := &entityprovider.Entity{
-		ID:   testUserID,
-		Type: "person",
-		OUID: testOrgUnit,
-	}
-	tokenResp := &oauth.TokenResponse{
-		AccessToken: testToken,
-		IDToken:     "id_token_123",
-		TokenType:   "Bearer",
-	}
-	claims := map[string]interface{}{
-		"sub": testUserID,
-	}
-
-	sessionToken := suite.createSessionToken(idpType)
-	suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil)
-
-	switch service := mockService.(type) {
-	case *oidcmock.OIDCAuthnServiceInterfaceMock:
-		service.On("ExchangeCodeForToken", mock.Anything, testIDPID, testAuthCode, true).Return(tokenResp, nil)
-		service.On("GetIDTokenClaims", "id_token_123").Return(claims, nil)
-		service.On("GetInternalUser", testUserID).Return(testUser, nil)
-	case *googlemock.GoogleOIDCAuthnServiceInterfaceMock:
-		service.On("ExchangeCodeForToken", mock.Anything, testIDPID, testAuthCode, true).Return(tokenResp, nil)
-		service.On("GetIDTokenClaims", "id_token_123").Return(claims, nil)
-		service.On("GetInternalUser", testUserID).Return(testUser, nil)
-	}
-
-	result, err := suite.service.FinishIDPAuthentication(context.Background(), idpType, sessionToken, true, "",
-		testAuthCode)
-
-	suite.Nil(err)
-	suite.NotNil(result)
-	suite.Equal(testUserID, result.ID)
-}
-
-func (suite *AuthenticationServiceTestSuite) testFinishOAuthBasedAuth(
-	idpType idp.IDPType,
-	mockService interface{},
-	userInfo map[string]interface{},
-) {
-	testUser := &entityprovider.Entity{
-		ID:   testUserID,
-		Type: "person",
-		OUID: testOrgUnit,
-	}
-	tokenResp := &oauth.TokenResponse{
-		AccessToken: testToken,
-		TokenType:   "Bearer",
-	}
-
-	sessionToken := suite.createSessionToken(idpType)
-	suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil)
-
-	switch service := mockService.(type) {
-	case *githubmock.GithubOAuthAuthnServiceInterfaceMock:
-		service.On("ExchangeCodeForToken", mock.Anything, testIDPID, testAuthCode, true).Return(tokenResp, nil)
-		service.On("FetchUserInfo", mock.Anything, testIDPID, testToken).Return(userInfo, nil)
-		service.On("GetInternalUser", testUserID).Return(testUser, nil)
-	case *oauthmock.OAuthAuthnServiceInterfaceMock:
-		service.On("ExchangeCodeForToken", mock.Anything, testIDPID, testAuthCode, true).Return(tokenResp, nil)
-		service.On("FetchUserInfo", mock.Anything, testIDPID, testToken).Return(userInfo, nil)
-		service.On("GetInternalUser", testUserID).Return(testUser, nil)
-	}
-
-	result, err := suite.service.FinishIDPAuthentication(context.Background(), idpType, sessionToken, true, "",
-		testAuthCode)
-
-	suite.Nil(err)
-	suite.NotNil(result)
-	suite.Equal(testUserID, result.ID)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *AuthenticationServiceTestSuite) createSessionToken(idpType idp.IDPType) string {
@@ -1336,26 +1183,19 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionE
 }
 
 func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationAssertionGenerationError() {
-	testUser := &entityprovider.Entity{
-		ID:   testUserID,
-		Type: "person",
-		OUID: testOrgUnit,
-	}
-	tokenResp := &oauth.TokenResponse{
-		AccessToken: testToken,
-		TokenType:   "Bearer",
-	}
-	userInfo := map[string]interface{}{
-		"sub": testUserID,
-	}
-
 	sessionToken := suite.createSessionToken(idp.IDPTypeOAuth)
 	suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil).Once()
-
-	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, testIDPID, testAuthCode, true).
-		Return(tokenResp, nil).Once()
-	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, testIDPID, testToken).Return(userInfo, nil).Once()
-	suite.mockOAuthService.On("GetInternalUser", testUserID).Return(testUser, nil).Once()
+	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
+		mock.MatchedBy(func(creds map[string]interface{}) bool {
+			_, ok := creds["federated"]
+			return ok
+		}), mock.Anything, mock.Anything, mock.Anything).
+		Return(authnprovidermgr.AuthUser{}, &authnprovidermgr.AuthnBasicResult{
+			UserID:         testUserID,
+			UserType:       "person",
+			OUID:           testOrgUnit,
+			IsExistingUser: true,
+		}, nil).Once()
 
 	// Create invalid existing assertion that will fail JWT verification
 	suite.mockJWTService.On("VerifyJWT", invalidAssertion, "", mock.Anything).

@@ -59,6 +59,7 @@ func (s *ManagerTestSuite) TestAuthenticateUser_Success() {
 			Token:                     "tok",
 			IsAttributeValuesIncluded: false,
 			AttributesResponse:        nil,
+			IsExistingUser:            true,
 		}, (*serviceerror.ServiceError)(nil))
 
 	returnedAuthUser, result, svcErr := s.mgr.AuthenticateUser(context.Background(), identifiers, credentials,
@@ -79,6 +80,34 @@ func (s *ManagerTestSuite) TestAuthenticateUser_Success() {
 	s.True(ok)
 	s.Equal("tok", pd.token)
 	s.False(pd.isAttributeValuesIncluded)
+}
+
+func (s *ManagerTestSuite) TestAuthenticateUser_FederatedNewUser() {
+	identifiers := map[string]interface{}{}
+	credentials := map[string]interface{}{"federated": "token"}
+	meta := &authnprovidercm.AuthnMetadata{}
+
+	s.mockProvider.On("Authenticate", context.Background(), identifiers, credentials, meta).
+		Return(&authnprovidercm.AuthnResult{
+			IsExistingUser:  false,
+			IsAmbiguousUser: false,
+			ExternalSub:     "ext-sub-123",
+			ExternalClaims:  map[string]interface{}{"email": "new@example.com"},
+		}, (*serviceerror.ServiceError)(nil))
+
+	returnedAuthUser, result, svcErr := s.mgr.AuthenticateUser(context.Background(), identifiers, credentials,
+		nil, meta, AuthUser{})
+
+	s.Nil(svcErr)
+	s.NotNil(result)
+	s.False(result.IsExistingUser)
+	s.False(result.IsAmbiguousUser)
+	s.Equal("ext-sub-123", result.ExternalSub)
+	s.Equal(map[string]interface{}{"email": "new@example.com"}, result.ExternalClaims)
+
+	s.False(returnedAuthUser.IsAuthenticated())
+	_, ok := returnedAuthUser.getProviderData(defaultProvider)
+	s.False(ok)
 }
 
 func (s *ManagerTestSuite) TestAuthenticateUser_ClientError() {
@@ -177,10 +206,10 @@ func (s *ManagerTestSuite) TestAuthenticateUser_ReAuth() {
 	meta := &authnprovidercm.AuthnMetadata{}
 
 	firstResult := &authnprovidercm.AuthnResult{
-		UserID: "user-1", UserType: "customer", OUID: "ou-1", Token: "tok-first",
+		UserID: "user-1", UserType: "customer", OUID: "ou-1", Token: "tok-first", IsExistingUser: true,
 	}
 	secondResult := &authnprovidercm.AuthnResult{
-		UserID: "user-1", UserType: "customer", OUID: "ou-1", Token: "tok-second",
+		UserID: "user-1", UserType: "customer", OUID: "ou-1", Token: "tok-second", IsExistingUser: true,
 	}
 
 	s.mockProvider.On("Authenticate", context.Background(), identifiers, credentials, meta).

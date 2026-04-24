@@ -39,6 +39,13 @@ type AuthnResult struct {
 	Token                     string              `json:"token"`
 	IsAttributeValuesIncluded bool                `json:"isAttributeValuesIncluded"`
 	AttributesResponse        *AttributesResponse `json:"attributesResponse,omitempty"`
+
+	// Federated authentication fields. Set when the authentication flow is federated
+	// and no internal user was found (IsExistingUser = false).
+	ExternalSub     string                 `json:"externalSub,omitempty"`
+	ExternalClaims  map[string]interface{} `json:"externalClaims,omitempty"`
+	IsExistingUser  bool                   `json:"isExistingUser"`
+	IsAmbiguousUser bool                   `json:"isAmbiguousUser"`
 }
 
 // GetAttributesMetadata contains metadata for fetching attributes.

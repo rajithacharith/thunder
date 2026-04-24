@@ -33,10 +33,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/entityprovider"
-	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -384,11 +382,6 @@ func (suite *GithubOAuthAuthnServiceTestSuite) TestShouldFetchEmailAndGetMetadat
 
 	// shouldFetchEmail false
 	suite.False(gsvc.shouldFetchEmail([]string{"openid", "profile"}))
-
-	// getMetadata
-	meta := gsvc.getMetadata()
-	suite.Equal(authncm.AuthenticatorGithub, meta.Name)
-	suite.Equal(idp.IDPTypeGitHub, meta.AssociatedIDP)
 }
 
 func (suite *GithubOAuthAuthnServiceTestSuite) TestGetOAuthClientConfig() {

@@ -26,6 +26,7 @@ import (
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
+	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
@@ -60,13 +61,8 @@ type oAuthExecutorInterface interface {
 	core.ExecutorInterface
 	BuildAuthorizeFlow(ctx *core.NodeContext, execResp *common.ExecutorResponse) error
 	ProcessAuthFlowResponse(ctx *core.NodeContext, execResp *common.ExecutorResponse) error
-	ExchangeCodeForToken(ctx *core.NodeContext, execResp *common.ExecutorResponse,
-		code string) (*OAuthTokenResponse, error)
-	GetUserInfo(ctx *core.NodeContext, execResp *common.ExecutorResponse,
-		accessToken string) (map[string]string, error)
-	GetInternalUser(sub string, execResp *common.ExecutorResponse) (*entityprovider.Entity, error)
 	ResolveContextUser(ctx *core.NodeContext, execResp *common.ExecutorResponse,
-		sub string, internalUser *entityprovider.Entity) (*authncm.AuthenticatedUser, error)
+		sub string, internalUser *entityprovider.Entity, isAmbiguous bool) (*authncm.AuthenticatedUser, error)
 	GetIdpID(ctx *core.NodeContext) (string, error)
 }
 
@@ -74,6 +70,8 @@ type oAuthExecutorInterface interface {
 type oAuthExecutor struct {
 	core.ExecutorInterface
 	authService       authnoauth.OAuthAuthnCoreServiceInterface
+	authnProvider     authnprovidermgr.AuthnProviderManagerInterface
+	idpType           idp.IDPType
 	idpService        idp.IDPServiceInterface
 	userSchemaService userschema.UserSchemaServiceInterface
 	logger            *log.Logger
@@ -89,6 +87,8 @@ func newOAuthExecutor(
 	idpService idp.IDPServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 	authService authnoauth.OAuthAuthnCoreServiceInterface,
+	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
+	idpType idp.IDPType,
 ) oAuthExecutorInterface {
 	if name == "" {
 		name = ExecutorNameOAuth
@@ -111,6 +111,8 @@ func newOAuthExecutor(
 	return &oAuthExecutor{
 		ExecutorInterface: base,
 		authService:       authService,
+		authnProvider:     authnProvider,
+		idpType:           idpType,
 		idpService:        idpService,
 		userSchemaService: userSchemaService,
 		logger:            logger,
@@ -206,48 +208,51 @@ func (o *oAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 		return nil
 	}
 
-	tokenResp, err := o.ExchangeCodeForToken(ctx, execResp, code)
+	idpID, err := o.GetIdpID(ctx)
 	if err != nil {
 		return err
 	}
-	if execResp.Status == common.ExecFailure {
-		return nil
-	}
 
-	if tokenResp.Scope == "" {
-		logger.Error("Scopes are empty in the token response")
-		execResp.Status = common.ExecFailure
-		execResp.AuthenticatedUser = authncm.AuthenticatedUser{
-			IsAuthenticated: false,
+	credentials := map[string]interface{}{
+		"federated": &authncm.FederatedAuthCredential{
+			IDPID:   idpID,
+			IDPType: o.idpType,
+			Code:    code,
+		},
+	}
+	newAuthUser, basicResult, svcErr := o.authnProvider.AuthenticateUser(
+		ctx.Context, nil, credentials, nil, nil, ctx.AuthUser)
+	if svcErr != nil {
+		if svcErr.Type == serviceerror.ClientErrorType {
+			execResp.Status = common.ExecFailure
+			execResp.FailureReason = svcErr.ErrorDescription.DefaultValue
+			return nil
 		}
-		return nil
+
+		logger.Error("Federated authentication failed", log.String("errorCode", svcErr.Code),
+			log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
+		return errors.New("federated authentication failed")
 	}
 
-	userInfo, err := o.GetUserInfo(ctx, execResp, tokenResp.AccessToken)
-	if err != nil {
-		return err
-	}
-	if execResp.Status == common.ExecFailure {
-		return nil
+	sub := basicResult.ExternalSub
+
+	if basicResult.IsAmbiguousUser {
+		if execResp.RuntimeData == nil {
+			execResp.RuntimeData = make(map[string]string)
+		}
+		execResp.RuntimeData[common.RuntimeKeyUserAmbiguous] = dataValueTrue
 	}
 
-	// Extract sub claim from user info
-	sub, ok := userInfo[userAttributeSub]
-	if !ok || sub == "" {
-		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "sub claim not found in the response."
-		return nil
+	var internalUser *entityprovider.Entity
+	if basicResult.IsExistingUser {
+		internalUser = &entityprovider.Entity{
+			ID:   basicResult.UserID,
+			OUID: basicResult.OUID,
+			Type: basicResult.UserType,
+		}
 	}
 
-	internalUser, err := o.GetInternalUser(sub, execResp)
-	if err != nil {
-		return err
-	}
-	if execResp.Status == common.ExecFailure {
-		return nil
-	}
-
-	contextUser, err := o.ResolveContextUser(ctx, execResp, sub, internalUser)
+	contextUser, err := o.ResolveContextUser(ctx, execResp, sub, internalUser, basicResult.IsAmbiguousUser)
 	if err != nil {
 		return err
 	}
@@ -259,8 +264,10 @@ func (o *oAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 		return errors.New("unexpected error occurred while resolving user")
 	}
 
+	userInfo := systemutils.ConvertInterfaceMapToStringMap(basicResult.ExternalClaims)
 	contextUser.Attributes = o.getContextUserAttributes(execResp, userInfo)
 	execResp.AuthenticatedUser = *contextUser
+	execResp.AuthUser = newAuthUser
 
 	return nil
 }
@@ -273,67 +280,6 @@ func (o *oAuthExecutor) HasRequiredInputs(ctx *core.NodeContext, execResp *commo
 	}
 
 	return o.ExecutorInterface.HasRequiredInputs(ctx, execResp)
-}
-
-// ExchangeCodeForToken exchanges the authorization code for an access token.
-func (o *oAuthExecutor) ExchangeCodeForToken(ctx *core.NodeContext, execResp *common.ExecutorResponse,
-	code string) (*OAuthTokenResponse, error) {
-	logger := o.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
-	logger.Debug("Exchanging authorization code for a token")
-
-	idpID, err := o.GetIdpID(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	tokenResp, svcErr := o.authService.ExchangeCodeForToken(ctx.Context, idpID, code, true)
-	if svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
-			execResp.Status = common.ExecFailure
-			execResp.FailureReason = svcErr.ErrorDescription.DefaultValue
-			return nil, nil
-		}
-
-		logger.Error("Failed to exchange code for a token", log.String("errorCode", svcErr.Code),
-			log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
-		return nil, errors.New("failed to exchange code for token")
-	}
-
-	return &OAuthTokenResponse{
-		AccessToken:  tokenResp.AccessToken,
-		TokenType:    tokenResp.TokenType,
-		Scope:        tokenResp.Scope,
-		RefreshToken: tokenResp.RefreshToken,
-		IDToken:      tokenResp.IDToken,
-		ExpiresIn:    tokenResp.ExpiresIn,
-	}, nil
-}
-
-// GetUserInfo fetches user information from the OAuth provider using the access token.
-func (o *oAuthExecutor) GetUserInfo(ctx *core.NodeContext, execResp *common.ExecutorResponse,
-	accessToken string) (map[string]string, error) {
-	logger := o.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
-	logger.Debug("Fetching user info from OAuth provider")
-
-	idpID, err := o.GetIdpID(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	userInfo, svcErr := o.authService.FetchUserInfo(ctx.Context, idpID, accessToken)
-	if svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
-			execResp.Status = common.ExecFailure
-			execResp.FailureReason = svcErr.ErrorDescription.DefaultValue
-			return nil, nil
-		}
-
-		logger.Error("Failed to fetch user info", log.String("errorCode", svcErr.Code),
-			log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
-		return nil, errors.New("failed to fetch user information")
-	}
-
-	return systemutils.ConvertInterfaceMapToStringMap(userInfo), nil
 }
 
 // GetIdpID retrieves the identity provider ID from the node properties.
@@ -367,59 +313,19 @@ func (o *oAuthExecutor) getIDPName(ctx context.Context, idpID string) (string, e
 	return idp.Name, nil
 }
 
-// GetInternalUser retrieves the internal user for the given sub claim. Returns the user if found,
-// nil if not found, or an error on failure.
-func (o *oAuthExecutor) GetInternalUser(
-	sub string, execResp *common.ExecutorResponse,
-) (*entityprovider.Entity, error) {
-	logger := o.logger
-	logger.Debug("Resolving internal user with the given sub claim")
-
-	user, svcErr := o.authService.GetInternalUser(sub)
-	if svcErr != nil {
-		if svcErr.Code == authncm.ErrorUserNotFound.Code {
-			return nil, nil
-		}
-		if svcErr.Code == authncm.ErrorAmbiguousUser.Code {
-			// Signal ambiguity via RuntimeData rather than a sentinel error. This follows the
-			// same pattern used for userEligibleForProvisioning and is consumed by
-			// getContextUserForAuthentication within the same executor call, so RuntimeData
-			// cannot be reset between the write and the read.
-			if execResp.RuntimeData == nil {
-				execResp.RuntimeData = make(map[string]string)
-			}
-			execResp.RuntimeData[common.RuntimeKeyUserAmbiguous] = dataValueTrue
-			return nil, nil
-		}
-		if svcErr.Type == serviceerror.ClientErrorType {
-			execResp.Status = common.ExecFailure
-			execResp.FailureReason = svcErr.ErrorDescription.DefaultValue
-			return nil, nil
-		}
-		logger.Error("Error while retrieving internal user", log.String("errorCode", svcErr.Code),
-			log.String("description", svcErr.ErrorDescription.DefaultValue))
-		return nil, errors.New("error while retrieving internal user")
-	}
-	if user == nil || user.ID == "" {
-		return nil, nil
-	}
-
-	return user, nil
-}
-
 // ResolveContextUser resolves the authenticated user in context with the attributes.
 func (o *oAuthExecutor) ResolveContextUser(ctx *core.NodeContext,
-	execResp *common.ExecutorResponse, sub string, internalUser *entityprovider.Entity) (
+	execResp *common.ExecutorResponse, sub string, internalUser *entityprovider.Entity, isAmbiguous bool) (
 	*authncm.AuthenticatedUser, error) {
 	if ctx.FlowType == common.FlowTypeAuthentication {
-		return o.getContextUserForAuthentication(ctx, execResp, sub, internalUser)
+		return o.getContextUserForAuthentication(ctx, execResp, sub, internalUser, isAmbiguous)
 	}
-	return o.getContextUserForRegistration(ctx, execResp, sub, internalUser)
+	return o.getContextUserForRegistration(ctx, execResp, sub, internalUser, isAmbiguous)
 }
 
 // getContextUserForAuthentication resolves the authenticated user in context for authentication flows.
 func (o *oAuthExecutor) getContextUserForAuthentication(ctx *core.NodeContext,
-	execResp *common.ExecutorResponse, sub string, internalUser *entityprovider.Entity) (
+	execResp *common.ExecutorResponse, sub string, internalUser *entityprovider.Entity, isAmbiguous bool) (
 	*authncm.AuthenticatedUser, error) {
 	logger := o.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
@@ -436,7 +342,6 @@ func (o *oAuthExecutor) getContextUserForAuthentication(ctx *core.NodeContext,
 			if execResp.RuntimeData == nil {
 				execResp.RuntimeData = make(map[string]string)
 			}
-			isAmbiguous := execResp.RuntimeData[common.RuntimeKeyUserAmbiguous] == dataValueTrue
 
 			if isAmbiguous {
 				// Ambiguous user: exists in multiple OUs. Set sub for downstream
@@ -496,9 +401,16 @@ func (o *oAuthExecutor) getContextUserForAuthentication(ctx *core.NodeContext,
 
 // getContextUserForRegistration resolves the authenticated user in context for registration flows.
 func (o *oAuthExecutor) getContextUserForRegistration(ctx *core.NodeContext,
-	execResp *common.ExecutorResponse, sub string, internalUser *entityprovider.Entity) (
+	execResp *common.ExecutorResponse, sub string, internalUser *entityprovider.Entity, isAmbiguous bool) (
 	*authncm.AuthenticatedUser, error) {
 	logger := o.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
+
+	if isAmbiguous {
+		logger.Debug("Ambiguous user detected in registration flow, cannot proceed with registration")
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = "User identity is ambiguous and cannot be registered."
+		return nil, nil
+	}
 
 	// If no local user is found, proceed with registration
 	if internalUser == nil {
