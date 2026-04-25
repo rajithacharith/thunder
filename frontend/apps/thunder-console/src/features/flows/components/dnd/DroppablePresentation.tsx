@@ -26,7 +26,6 @@ export interface DroppablePresentationProps {
   children: ReactNode;
   className?: string;
   sx?: BoxProps['sx'];
-  isDragActive?: boolean;
 }
 
 /**
@@ -38,12 +37,7 @@ export interface DroppablePresentationProps {
  * @param props - Props injected to the component.
  * @returns DroppablePresentation component.
  */
-function DroppablePresentation({
-  children,
-  className = undefined,
-  sx = {},
-  isDragActive = false,
-}: DroppablePresentationProps): ReactElement {
+function DroppablePresentation({children, className = undefined, sx = {}}: DroppablePresentationProps): ReactElement {
   return (
     <Box
       className={className}
@@ -53,11 +47,6 @@ function DroppablePresentation({
         height: '100%',
         width: '100%',
         ...sx,
-        // Applied after sx spread so drag-active padding isn't overridden
-        // by caller shorthands like `p`.
-        paddingTop: isDragActive ? '20px' : '0px',
-        paddingBottom: isDragActive ? '20px' : '0px',
-        transition: 'padding 0.2s ease',
       }}
     >
       {children}
