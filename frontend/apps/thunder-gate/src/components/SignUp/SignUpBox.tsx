@@ -27,19 +27,17 @@ import {Box, Button, Alert, Typography, AlertTitle, CircularProgress} from '@wso
 import type {JSX} from 'react';
 import {useState} from 'react';
 import {Trans, useTranslation} from 'react-i18next';
-import {useNavigate, useSearchParams} from 'react-router';
+import {useNavigate} from 'react-router';
 import ROUTES from '../../constants/routes';
 
 export default function SignUpBox(): JSX.Element {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const {resolveFlowTemplateLiterals: resolve} = useAsgardeo();
   const {t} = useTranslation();
   const {isDesignEnabled} = useDesign();
   const [flowError, setFlowError] = useState<string | null>(null);
 
-  const currentParams = searchParams.toString();
-  const signInUrl = currentParams ? `${ROUTES.AUTH.SIGN_IN}?${currentParams}` : ROUTES.AUTH.SIGN_IN;
+  const signInUrl = ROUTES.AUTH.SIGN_IN;
 
   const renderFlowContent = (
     components: EmbeddedFlowComponent[],
