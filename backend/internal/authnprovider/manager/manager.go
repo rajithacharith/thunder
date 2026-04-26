@@ -73,6 +73,14 @@ func (m *authnProviderManager) AuthenticateUser(ctx context.Context, identifiers
 			})
 		}
 	}
+	if !result.IsExistingUser {
+		return authUser, &AuthnBasicResult{
+			ExternalSub:     result.ExternalSub,
+			ExternalClaims:  result.ExternalClaims,
+			IsExistingUser:  false,
+			IsAmbiguousUser: result.IsAmbiguousUser,
+		}, nil
+	}
 	authUser.setIdentity(result.UserID, result.UserType, result.OUID)
 	authUser.setProviderData(defaultProvider, providerData{
 		token:                     result.Token,
@@ -80,9 +88,12 @@ func (m *authnProviderManager) AuthenticateUser(ctx context.Context, identifiers
 		isAttributeValuesIncluded: result.IsAttributeValuesIncluded,
 	})
 	return authUser, &AuthnBasicResult{
-		UserID:   result.UserID,
-		OUID:     result.OUID,
-		UserType: result.UserType,
+		UserID:         result.UserID,
+		OUID:           result.OUID,
+		UserType:       result.UserType,
+		IsExistingUser: true,
+		ExternalSub:    result.ExternalSub,
+		ExternalClaims: result.ExternalClaims,
 	}, nil
 }
 

@@ -117,6 +117,10 @@
     },
     "dcr": {
       "insecure": false
+    },
+    "par": {
+      "require_par": false,
+      "expires_in": 60
     }
   },
   "flow": {

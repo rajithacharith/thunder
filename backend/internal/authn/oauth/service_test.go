@@ -612,14 +612,6 @@ func (suite *OAuthAuthnServiceTestSuite) TestGetInternalUserWithServiceError() {
 	}
 }
 
-func (suite *OAuthAuthnServiceTestSuite) TestGetMetadata() {
-	svcImpl, ok := suite.service.(*oAuthAuthnService)
-	suite.True(ok)
-
-	meta := svcImpl.getMetadata()
-	suite.Equal(common.AuthenticatorOAuth, meta.Name)
-}
-
 func (suite *OAuthAuthnServiceTestSuite) TestValidateTokenResponseSuccess() {
 	tokenResp := &TokenResponse{
 		AccessToken: "access_token_123",

@@ -18,8 +18,8 @@
 
 import {CollisionPriority} from '@dnd-kit/abstract';
 import {move} from '@dnd-kit/helpers';
-import {DragDropProvider, type DragDropEventHandlers} from '@dnd-kit/react';
-import {Box, Button, Tooltip} from '@wso2/oxygen-ui';
+import {DragDropProvider, DragOverlay, type DragDropEventHandlers} from '@dnd-kit/react';
+import {Box, Button, Card, CardContent, Tooltip, Typography} from '@wso2/oxygen-ui';
 import {ArrowLeft, Save} from '@wso2/oxygen-ui-icons-react';
 import {
   type Connection,
@@ -161,13 +161,27 @@ function DecoratedVisualFlow({
   // compute validation notifications from the current node data.
   // Only sync when node data actually changes — skip position-only
   // updates (drag) to avoid unnecessary validation recomputation.
-  const prevNodeDataRef = useRef<string>('');
+  // Track data references instead of JSON.stringify to avoid O(n) serialization per render.
+  const prevNodeDataRefsRef = useRef<Map<string, unknown>>(new Map());
 
   useEffect(() => {
-    const dataFingerprint = nodes.map((n) => `${n.id}:${JSON.stringify(n.data)}`).join('|');
+    let dataChanged = nodes.length !== prevNodeDataRefsRef.current.size;
 
-    if (dataFingerprint !== prevNodeDataRef.current) {
-      prevNodeDataRef.current = dataFingerprint;
+    if (!dataChanged) {
+      for (const node of nodes) {
+        if (prevNodeDataRefsRef.current.get(node.id) !== node.data) {
+          dataChanged = true;
+          break;
+        }
+      }
+    }
+
+    if (dataChanged) {
+      const newRefs = new Map<string, unknown>();
+      for (const node of nodes) {
+        newRefs.set(node.id, node.data);
+      }
+      prevNodeDataRefsRef.current = newRefs;
       setFlowNodes(nodes);
     }
   }, [nodes, setFlowNodes]);
@@ -335,19 +349,15 @@ function DecoratedVisualFlow({
   const handleNodeDragStop = useCallback((): void => {
     const currentNodes = getNodes();
     const resolvedNodes = resolveCollisions(currentNodes, {
-      maxIterations: 50,
+      maxIterations: 10,
       overlapThreshold: 0.5,
       margin: 50,
     });
 
-    // Check if any nodes were moved by collision resolution
-    const hasChanges = resolvedNodes.some(
-      (resolvedNode: Node, index: number) =>
-        resolvedNode.position.x !== currentNodes[index].position.x ||
-        resolvedNode.position.y !== currentNodes[index].position.y,
-    );
-
-    if (hasChanges) {
+    // Only update if collision resolution moved any nodes.
+    // resolveCollisions returns the original node reference for unmoved nodes,
+    // so a reference check is sufficient and avoids iterating positions.
+    if (resolvedNodes !== currentNodes && resolvedNodes.some((n, i) => n !== currentNodes[i])) {
       setNodes(resolvedNodes);
     }
   }, [getNodes, setNodes]);
@@ -485,6 +495,13 @@ function DecoratedVisualFlow({
 
       // Handle dropping on an existing element (at specific position)
       if (targetData.isReordering && targetData.stepId && typeof target?.id === 'string') {
+        // Check if this is a gap drop zone (between elements)
+        const insertBeforeId = (targetData as {insertBeforeElementId?: string}).insertBeforeElementId;
+        if (insertBeforeId) {
+          addToViewAtIndex(sourceData, targetData.stepId, insertBeforeId);
+          return;
+        }
+
         // Dropping on an existing sortable element - insert at that position
         const targetElementId = target.id;
 
@@ -661,6 +678,35 @@ function DecoratedVisualFlow({
               />
             </Droppable>
           </ResourcePanel>
+          <DragOverlay>
+            {(source) => {
+              const data = source?.data as DragSourceData | undefined;
+
+              if (!data?.isReordering || !data.resource) return null;
+
+              const label = (data.resource as Resource)?.display?.label ?? (data.resource as Resource)?.type;
+
+              return (
+                <Card
+                  elevation={3}
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    minWidth: 120,
+                    maxWidth: 280,
+                    cursor: 'grabbing',
+                    bgcolor: 'background.paper',
+                  }}
+                >
+                  <CardContent sx={{p: 0, '&:last-child': {pb: 0}}}>
+                    <Typography variant="body2" fontWeight={500} noWrap>
+                      {label}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              );
+            }}
+          </DragOverlay>
         </DragDropProvider>
       </Box>
 

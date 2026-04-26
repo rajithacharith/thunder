@@ -33,7 +33,6 @@ import (
 	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/cert"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/jose/jws"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
@@ -43,6 +42,7 @@ import (
 
 // authenticate authenticates the OAuth2 client from the request.
 // It extracts credentials, validates them, and returns OAuthClientInfo on success.
+// The endpointURL is used as the expected audience when validating client assertion JWTs.
 // Returns an authError on failure.
 func authenticate(
 	ctx context.Context,
@@ -50,7 +50,7 @@ func authenticate(
 	appService application.ApplicationServiceInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	jwtService jwt.JWTServiceInterface,
-	discoveryService discovery.DiscoveryServiceInterface,
+	endpointURL string,
 ) (*OAuthClientInfo, *authError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ClientAuthMiddleware"))
 
@@ -143,7 +143,7 @@ func authenticate(
 	switch detectedMethod {
 	// TODO: Move this to authnProvider.Authenticate
 	case constants.TokenEndpointAuthMethodPrivateKeyJWT:
-		if err := validateClientAssertion(ctx, oauthApp, jwtService, discoveryService, clientID,
+		if err := validateClientAssertion(oauthApp, jwtService, endpointURL, clientID,
 			clientAssertion); err != nil {
 			logger.Debug("Invalid client assertion: " + err.Error())
 			return nil, errInvalidClientAssertion
@@ -227,21 +227,18 @@ func extractClientIDFromAssertion(assertion string) (string, *authError) {
 }
 
 // validateClientAssertion validates the provided client assertion JWT using the configured certificate and JWT service.
+// The endpointURL is used as the expected audience for JWT validation.
 func validateClientAssertion(
-	ctx context.Context,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
 	jwtService jwt.JWTServiceInterface,
-	discoveryService discovery.DiscoveryServiceInterface,
+	endpointURL string,
 	clientID, clientAssertion string) error {
 	if oauthApp.Certificate == nil {
 		return fmt.Errorf("no certificate configured for client assertion validation")
 	}
 
-	// Get token endpoint from discovery service for aud validation
-	tokenEndpoint := discoveryService.GetOAuth2AuthorizationServerMetadata(ctx).TokenEndpoint
-
 	if oauthApp.Certificate.Type == cert.CertificateTypeJWKSURI {
-		if err := jwtService.VerifyJWTWithJWKS(clientAssertion, oauthApp.Certificate.Value, tokenEndpoint,
+		if err := jwtService.VerifyJWTWithJWKS(clientAssertion, oauthApp.Certificate.Value, endpointURL,
 			clientID); err != nil {
 			return fmt.Errorf("client assertion verification with JWKS URI failed: %v", err.Error)
 		}
@@ -280,7 +277,7 @@ func validateClientAssertion(
 		return fmt.Errorf("failed to convert JWK to public key: %w", err)
 	}
 
-	if err := jwtService.VerifyJWTWithPublicKey(clientAssertion, pubKey, tokenEndpoint, clientID); err != nil {
+	if err := jwtService.VerifyJWTWithPublicKey(clientAssertion, pubKey, endpointURL, clientID); err != nil {
 		return fmt.Errorf("client assertion verification failed: %v", err.Error)
 	}
 

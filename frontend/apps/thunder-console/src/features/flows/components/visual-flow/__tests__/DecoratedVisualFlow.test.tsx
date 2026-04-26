@@ -195,6 +195,9 @@ vi.mock('@dnd-kit/react', () => ({
       </div>
     );
   },
+  DragOverlay: ({children}: {children: React.ReactNode | ((source: unknown) => React.ReactNode)}) => (
+    <div data-testid="drag-overlay">{typeof children === 'function' ? null : children}</div>
+  ),
 }));
 
 // Mock @dnd-kit/helpers
@@ -730,7 +733,7 @@ describe('DecoratedVisualFlow', () => {
 
       // Verify resolveCollisions was called with correct options
       expect(mockResolveCollisions).toHaveBeenCalledWith(nodes, {
-        maxIterations: 50,
+        maxIterations: 10,
         overlapThreshold: 0.5,
         margin: 50,
       });

@@ -131,6 +131,7 @@ paths:
                     tokenEndpointAuthMethod: "client_secret_basic"
                     pkceRequired: false
                     publicClient: false
+                    requirePushedAuthorizationRequests: false
                     scopes:
                       - "openid"
                       - "profile"
@@ -197,6 +198,7 @@ paths:
                       tokenEndpointAuthMethod: "client_secret_basic"
                       pkceRequired: false
                       publicClient: false
+                      requirePushedAuthorizationRequests: false
                       scopes:
                         - "openid"
                         - "profile"
@@ -313,6 +315,7 @@ paths:
                       tokenEndpointAuthMethod: "client_secret_basic"
                       pkceRequired: false
                       publicClient: false
+                      requirePushedAuthorizationRequests: false
                       scopes:
                         - "openid"
                         - "profile"
@@ -490,6 +493,7 @@ paths:
                       tokenEndpointAuthMethod: "client_secret_basic"
                       pkceRequired: false
                       publicClient: false
+                      requirePushedAuthorizationRequests: false
                       scopes:
                         - "openid"
                         - "profile"
@@ -1139,6 +1143,11 @@ components:
           description: Whether the application is a public client (Mobile apps, SPAs, etc.), which cannot store secrets securely.
           example: false
           default: false
+        requirePushedAuthorizationRequests:
+          type: boolean
+          description: Whether Pushed Authorization Requests (PAR) per RFC 9126 are required for this application.
+          example: false
+          default: false
         scopes:
           type: array
           items:
@@ -1210,6 +1219,11 @@ components:
         publicClient:
           type: boolean
           description: Whether the application is a public client (Mobile apps, SPAs, etc.), which cannot store secrets securely.
+          example: false
+          default: false
+        requirePushedAuthorizationRequests:
+          type: boolean
+          description: Whether Pushed Authorization Requests (PAR) per RFC 9126 are required for this application.
           example: false
           default: false
         scopes:

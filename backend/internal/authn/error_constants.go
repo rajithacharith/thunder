@@ -104,4 +104,17 @@ var (
 			DefaultValue: "The passkey authentication attempt failed",
 		},
 	}
+	// ErrorFederatedAuthenticationFailed is the error when federated authentication fails.
+	ErrorFederatedAuthenticationFailed = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "AUTHN-FED-1001",
+		Error: core.I18nMessage{
+			Key:          "error.authnservice.federated_authentication_failed",
+			DefaultValue: "Federated authentication failed",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.authnservice.federated_authentication_failed_description",
+			DefaultValue: "The federated authentication attempt failed",
+		},
+	}
 )

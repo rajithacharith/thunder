@@ -25,7 +25,6 @@ import (
 
 	"github.com/asgardeo/thunder/internal/authn/assert"
 	"github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/authn/consent"
 	"github.com/asgardeo/thunder/internal/authn/github"
 	"github.com/asgardeo/thunder/internal/authn/google"
 	"github.com/asgardeo/thunder/internal/authn/oauth"
@@ -34,22 +33,10 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/passkey"
 	"github.com/asgardeo/thunder/internal/authn/reactsdk"
 	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
-	consentmgt "github.com/asgardeo/thunder/internal/consent"
-	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
-
-// AuthServiceRegistry holds references to all authentication services.
-type AuthServiceRegistry struct {
-	OAuthAuthnService       oauth.OAuthAuthnServiceInterface
-	OIDCAuthnService        oidc.OIDCAuthnServiceInterface
-	GithubOAuthAuthnService github.GithubOAuthAuthnServiceInterface
-	GoogleOIDCAuthnService  google.GoogleOIDCAuthnServiceInterface
-	AuthAssertGenerator     assert.AuthAssertGeneratorInterface
-	ConsentEnforcerService  consent.ConsentEnforcerServiceInterface
-}
 
 // Initialize initializes the authentication service and registers its routes.
 func Initialize(
@@ -57,45 +44,15 @@ func Initialize(
 	mcpServer *mcp.Server,
 	idpSvc idp.IDPServiceInterface,
 	jwtSvc jwt.JWTServiceInterface,
-	entityProvider entityprovider.EntityProviderInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
-	consentSvc consentmgt.ConsentServiceInterface,
+	authAssertGen assert.AuthAssertGeneratorInterface,
 	passkeySvc passkey.PasskeyServiceInterface,
 	otpSvc otp.OTPAuthnServiceInterface,
-) (AuthenticationServiceInterface, *AuthServiceRegistry) {
-	authServiceRegistry := createAuthServiceRegistry(idpSvc, jwtSvc,
-		entityProvider, consentSvc)
-	authnService := newAuthenticationService(
-		idpSvc,
-		jwtSvc,
-		authServiceRegistry.AuthAssertGenerator,
-		authnProvider,
-		otpSvc,
-		authServiceRegistry.OAuthAuthnService,
-		authServiceRegistry.OIDCAuthnService,
-		authServiceRegistry.GoogleOIDCAuthnService,
-		authServiceRegistry.GithubOAuthAuthnService,
-		passkeySvc,
-	)
-
-	authnHandler := newAuthenticationHandler(authnService)
-	registerRoutes(mux, authnHandler)
-
-	// Register MCP tools
-	if mcpServer != nil {
-		reactsdk.RegisterTools(mcpServer)
-	}
-
-	return authnService, authServiceRegistry
-}
-
-// createAuthServiceRegistry creates and returns an AuthServiceRegistry instance.
-func createAuthServiceRegistry(
-	idpSvc idp.IDPServiceInterface,
-	jwtSvc jwt.JWTServiceInterface,
-	entityProvider entityprovider.EntityProviderInterface,
-	consentSvc consentmgt.ConsentServiceInterface,
-) *AuthServiceRegistry {
+	oauthSvc oauth.OAuthAuthnServiceInterface,
+	oidcSvc oidc.OIDCAuthnServiceInterface,
+	googleSvc google.GoogleOIDCAuthnServiceInterface,
+	githubSvc github.GithubOAuthAuthnServiceInterface,
+) AuthenticationServiceInterface {
 	common.RegisterAuthenticator(common.AuthenticatorMeta{
 		Name:    common.AuthenticatorCredentials,
 		Factors: []common.AuthenticationFactor{common.FactorKnowledge},
@@ -108,14 +65,49 @@ func createAuthServiceRegistry(
 		Name:    common.AuthenticatorPasskey,
 		Factors: []common.AuthenticationFactor{common.FactorPossession, common.FactorInherence},
 	})
-	return &AuthServiceRegistry{
-		OAuthAuthnService:       oauth.Initialize(idpSvc, entityProvider),
-		OIDCAuthnService:        oidc.Initialize(idpSvc, entityProvider, jwtSvc),
-		GithubOAuthAuthnService: github.Initialize(idpSvc, entityProvider),
-		GoogleOIDCAuthnService:  google.Initialize(idpSvc, entityProvider, jwtSvc),
-		AuthAssertGenerator:     assert.Initialize(),
-		ConsentEnforcerService:  consent.Initialize(consentSvc, jwtSvc),
+	common.RegisterAuthenticator(common.AuthenticatorMeta{
+		Name:          common.AuthenticatorOAuth,
+		Factors:       []common.AuthenticationFactor{common.FactorKnowledge},
+		AssociatedIDP: idp.IDPTypeOAuth,
+	})
+	common.RegisterAuthenticator(common.AuthenticatorMeta{
+		Name:          common.AuthenticatorOIDC,
+		Factors:       []common.AuthenticationFactor{common.FactorKnowledge},
+		AssociatedIDP: idp.IDPTypeOIDC,
+	})
+	common.RegisterAuthenticator(common.AuthenticatorMeta{
+		Name:          common.AuthenticatorGithub,
+		Factors:       []common.AuthenticationFactor{common.FactorKnowledge},
+		AssociatedIDP: idp.IDPTypeGitHub,
+	})
+	common.RegisterAuthenticator(common.AuthenticatorMeta{
+		Name:          common.AuthenticatorGoogle,
+		Factors:       []common.AuthenticationFactor{common.FactorKnowledge},
+		AssociatedIDP: idp.IDPTypeGoogle,
+	})
+
+	authnService := newAuthenticationService(
+		idpSvc,
+		jwtSvc,
+		authAssertGen,
+		authnProvider,
+		otpSvc,
+		oauthSvc,
+		oidcSvc,
+		googleSvc,
+		githubSvc,
+		passkeySvc,
+	)
+
+	authnHandler := newAuthenticationHandler(authnService)
+	registerRoutes(mux, authnHandler)
+
+	// Register MCP tools
+	if mcpServer != nil {
+		reactsdk.RegisterTools(mcpServer)
 	}
+
+	return authnService
 }
 
 // registerRoutes registers the routes for the authentication.

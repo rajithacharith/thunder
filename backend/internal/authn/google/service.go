@@ -59,14 +59,11 @@ func newGoogleOIDCAuthnService(idpSvc idp.IDPServiceInterface, entityProvider en
 	httpClient := syshttp.NewHTTPClient()
 	internal := authnoidc.NewOIDCAuthnService(httpClient, idpSvc, entityProvider, jwtSvc)
 
-	service := &googleOIDCAuthnService{
+	return &googleOIDCAuthnService{
 		internal:   internal,
 		jwtService: jwtSvc,
 		logger:     log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
 	}
-	common.RegisterAuthenticator(service.getMetadata())
-
-	return service
 }
 
 // BuildAuthorizeURL constructs the authorization request URL for Google OIDC authentication.
@@ -246,11 +243,50 @@ func (g *googleOIDCAuthnService) GetOAuthClientConfig(ctx context.Context, idpID
 	return g.internal.GetOAuthClientConfig(ctx, idpID)
 }
 
-// getMetadata returns the authenticator metadata for Google OIDC authenticator.
-func (g *googleOIDCAuthnService) getMetadata() common.AuthenticatorMeta {
-	return common.AuthenticatorMeta{
-		Name:          common.AuthenticatorGoogle,
-		Factors:       []common.AuthenticationFactor{common.FactorKnowledge},
-		AssociatedIDP: idp.IDPTypeGoogle,
+// Authenticate performs the full Google OIDC authentication flow: exchanges the code for a token,
+// extracts ID token claims, and resolves the internal user.
+// A missing internal user is NOT an error — the caller decides how to handle it.
+func (g *googleOIDCAuthnService) Authenticate(ctx context.Context, idpID, code string) (
+	*common.FederatedAuthResult, *serviceerror.ServiceError) {
+	logger := g.logger.With(log.String("idpId", idpID))
+	logger.Debug("Performing federated Google OIDC authentication")
+
+	tokenResp, svcErr := g.ExchangeCodeForToken(ctx, idpID, code, true)
+	if svcErr != nil {
+		return nil, svcErr
 	}
+
+	claims, svcErr := g.GetIDTokenClaims(tokenResp.IDToken)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
+	sub := ""
+	if subVal, ok := claims["sub"]; ok && subVal != nil {
+		if subStr, ok := subVal.(string); ok && subStr != "" {
+			sub = subStr
+		}
+	}
+	if sub == "" {
+		logger.Debug("sub claim not found in ID token")
+		return nil, &common.ErrorSubClaimNotFound
+	}
+
+	result := &common.FederatedAuthResult{
+		Sub:    sub,
+		Claims: claims,
+	}
+	user, svcErr := g.GetInternalUser(sub)
+	if svcErr != nil {
+		if svcErr.Code == common.ErrorUserNotFound.Code {
+			return result, nil
+		}
+		if svcErr.Code == common.ErrorAmbiguousUser.Code {
+			result.IsAmbiguousUser = true
+			return result, nil
+		}
+		return nil, svcErr
+	}
+	result.InternalEntity = user
+	return result, nil
 }

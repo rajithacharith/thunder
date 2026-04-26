@@ -110,9 +110,11 @@ function Droppable({
     return inside;
   }, [id, source, target, droppable.element, isDropTarget]);
 
+  const isReordering = (source?.data as {isReordering?: boolean} | undefined)?.isReordering === true;
+
   const showDropHighlight = useMemo(
-    () => Boolean(source && (isDropTarget || isTargetInside)),
-    [source, isDropTarget, isTargetInside],
+    () => Boolean(source && !isReordering && (isDropTarget || isTargetInside)),
+    [source, isReordering, isDropTarget, isTargetInside],
   );
 
   const dropStyles = useMemo(() => {
@@ -154,10 +156,7 @@ function Droppable({
       }}
       {...(showDropHighlight ? {'data-drop-active': ''} : {})}
     >
-      {!hideDropZones && <DropZone id={id} index={-1} position="start" accept={accept} droppableData={data} />}
-      <DroppablePresentation sx={sx} isDragActive={!hideDropZones && showDropHighlight}>
-        {children}
-      </DroppablePresentation>
+      <DroppablePresentation sx={sx}>{children}</DroppablePresentation>
       {!hideDropZones && <DropZone id={id} index={count} position="end" accept={accept} droppableData={data} />}
     </Box>
   );

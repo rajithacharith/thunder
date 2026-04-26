@@ -64,7 +64,7 @@ var (
 	)
 	errUnauthorizedAuthMethod = newAuthError(
 		constants.ErrorUnauthorizedClient,
-		"Client is not allowed to use the specified token endpoint authentication method",
+		"Client is not allowed to use the specified authentication method",
 		http.StatusBadRequest,
 	)
 	errClientIDMismatch = newAuthError(

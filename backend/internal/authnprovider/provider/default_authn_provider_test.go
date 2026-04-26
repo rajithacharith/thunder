@@ -39,7 +39,7 @@ type DefaultAuthnProviderTestSuite struct {
 
 func (suite *DefaultAuthnProviderTestSuite) SetupTest() {
 	suite.mockService = entitymock.NewEntityServiceInterfaceMock(suite.T())
-	suite.provider = newDefaultAuthnProvider(suite.mockService, nil, nil)
+	suite.provider = newDefaultAuthnProvider(suite.mockService, nil, nil, nil)
 }
 
 func TestDefaultAuthnProviderTestSuite(t *testing.T) {

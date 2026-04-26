@@ -7,6 +7,7 @@ package oidcmock
 import (
 	"context"
 
+	"github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -38,6 +39,82 @@ type OIDCAuthnServiceInterfaceMock_Expecter struct {
 
 func (_m *OIDCAuthnServiceInterfaceMock) EXPECT() *OIDCAuthnServiceInterfaceMock_Expecter {
 	return &OIDCAuthnServiceInterfaceMock_Expecter{mock: &_m.Mock}
+}
+
+// Authenticate provides a mock function for the type OIDCAuthnServiceInterfaceMock
+func (_mock *OIDCAuthnServiceInterfaceMock) Authenticate(ctx context.Context, idpID string, code string) (*common.FederatedAuthResult, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, idpID, code)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Authenticate")
+	}
+
+	var r0 *common.FederatedAuthResult
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*common.FederatedAuthResult, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, idpID, code)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *common.FederatedAuthResult); ok {
+		r0 = returnFunc(ctx, idpID, code)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*common.FederatedAuthResult)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, idpID, code)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// OIDCAuthnServiceInterfaceMock_Authenticate_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Authenticate'
+type OIDCAuthnServiceInterfaceMock_Authenticate_Call struct {
+	*mock.Call
+}
+
+// Authenticate is a helper method to define mock.On call
+//   - ctx context.Context
+//   - idpID string
+//   - code string
+func (_e *OIDCAuthnServiceInterfaceMock_Expecter) Authenticate(ctx interface{}, idpID interface{}, code interface{}) *OIDCAuthnServiceInterfaceMock_Authenticate_Call {
+	return &OIDCAuthnServiceInterfaceMock_Authenticate_Call{Call: _e.mock.On("Authenticate", ctx, idpID, code)}
+}
+
+func (_c *OIDCAuthnServiceInterfaceMock_Authenticate_Call) Run(run func(ctx context.Context, idpID string, code string)) *OIDCAuthnServiceInterfaceMock_Authenticate_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *OIDCAuthnServiceInterfaceMock_Authenticate_Call) Return(federatedAuthResult *common.FederatedAuthResult, serviceError *serviceerror.ServiceError) *OIDCAuthnServiceInterfaceMock_Authenticate_Call {
+	_c.Call.Return(federatedAuthResult, serviceError)
+	return _c
+}
+
+func (_c *OIDCAuthnServiceInterfaceMock_Authenticate_Call) RunAndReturn(run func(ctx context.Context, idpID string, code string) (*common.FederatedAuthResult, *serviceerror.ServiceError)) *OIDCAuthnServiceInterfaceMock_Authenticate_Call {
+	_c.Call.Return(run)
+	return _c
 }
 
 // BuildAuthorizeURL provides a mock function for the type OIDCAuthnServiceInterfaceMock

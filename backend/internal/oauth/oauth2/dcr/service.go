@@ -176,14 +176,15 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 	}
 
 	oauthAppConfig := &model.OAuthAppConfigDTO{
-		ClientID:                clientID,
-		RedirectURIs:            request.RedirectURIs,
-		GrantTypes:              request.GrantTypes,
-		ResponseTypes:           request.ResponseTypes,
-		TokenEndpointAuthMethod: request.TokenEndpointAuthMethod,
-		PublicClient:            isPublicClient,
-		PKCERequired:            isPublicClient,
-		Scopes:                  scopes,
+		ClientID:                           clientID,
+		RedirectURIs:                       request.RedirectURIs,
+		GrantTypes:                         request.GrantTypes,
+		ResponseTypes:                      request.ResponseTypes,
+		TokenEndpointAuthMethod:            request.TokenEndpointAuthMethod,
+		PublicClient:                       isPublicClient,
+		PKCERequired:                       isPublicClient,
+		RequirePushedAuthorizationRequests: request.RequirePushedAuthorizationRequests,
+		Scopes:                             scopes,
 	}
 
 	inboundAuthConfig := []model.InboundAuthConfigDTO{
@@ -238,23 +239,24 @@ func (ds *dcrService) convertApplicationToDCRResponse(appDTO *model.ApplicationD
 	scopeString := strings.Join(oauthConfig.Scopes, " ")
 
 	response := &DCRRegistrationResponse{
-		ClientID:                oauthConfig.ClientID,
-		ClientSecret:            oauthConfig.ClientSecret,
-		ClientSecretExpiresAt:   ClientSecretExpiresAtNever,
-		RedirectURIs:            oauthConfig.RedirectURIs,
-		GrantTypes:              oauthConfig.GrantTypes,
-		ResponseTypes:           oauthConfig.ResponseTypes,
-		ClientName:              clientName,
-		ClientURI:               appDTO.URL,
-		LogoURI:                 appDTO.LogoURL,
-		TokenEndpointAuthMethod: oauthConfig.TokenEndpointAuthMethod,
-		JWKSUri:                 jwksURI,
-		JWKS:                    jwks,
-		Scope:                   scopeString,
-		TosURI:                  appDTO.TosURI,
-		PolicyURI:               appDTO.PolicyURI,
-		Contacts:                appDTO.Contacts,
-		AppID:                   oauthConfig.AppID,
+		ClientID:                           oauthConfig.ClientID,
+		ClientSecret:                       oauthConfig.ClientSecret,
+		ClientSecretExpiresAt:              ClientSecretExpiresAtNever,
+		RedirectURIs:                       oauthConfig.RedirectURIs,
+		GrantTypes:                         oauthConfig.GrantTypes,
+		ResponseTypes:                      oauthConfig.ResponseTypes,
+		ClientName:                         clientName,
+		ClientURI:                          appDTO.URL,
+		LogoURI:                            appDTO.LogoURL,
+		TokenEndpointAuthMethod:            oauthConfig.TokenEndpointAuthMethod,
+		JWKSUri:                            jwksURI,
+		JWKS:                               jwks,
+		Scope:                              scopeString,
+		TosURI:                             appDTO.TosURI,
+		PolicyURI:                          appDTO.PolicyURI,
+		Contacts:                           appDTO.Contacts,
+		AppID:                              oauthConfig.AppID,
+		RequirePushedAuthorizationRequests: oauthConfig.RequirePushedAuthorizationRequests,
 	}
 
 	return response, nil

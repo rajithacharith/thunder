@@ -117,11 +117,8 @@ function FormAdapter({
               element={component}
               className={classNames('flow-builder-step-content-form-field')}
               group={resource.id}
-              type={VisualFlowConstants.FLOW_BUILDER_DRAGGABLE_ID}
-              accept={[
-                VisualFlowConstants.FLOW_BUILDER_DRAGGABLE_ID,
-                ...VisualFlowConstants.FLOW_BUILDER_FORM_ALLOWED_RESOURCE_TYPES,
-              ]}
+              type={resource.id}
+              accept={[resource.id, ...VisualFlowConstants.FLOW_BUILDER_FORM_ALLOWED_RESOURCE_TYPES]}
               availableElements={availableElements}
               onAddElementToForm={onAddElementToForm}
             />

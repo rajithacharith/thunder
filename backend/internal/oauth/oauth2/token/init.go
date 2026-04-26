@@ -19,6 +19,7 @@
 package token
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/application"
@@ -66,7 +67,8 @@ func registerRoutes(
 		AllowCredentials: true,
 	}
 
-	clientAuthMiddleware := clientauth.ClientAuthMiddleware(appService, authnProvider, jwtService, discoveryService)
+	endpointURL := discoveryService.GetOAuth2AuthorizationServerMetadata(context.Background()).TokenEndpoint
+	clientAuthMiddleware := clientauth.ClientAuthMiddleware(appService, authnProvider, jwtService, endpointURL)
 	handler := clientAuthMiddleware(http.HandlerFunc(tokenHandler.HandleTokenRequest))
 
 	pattern, wrappedHandler := middleware.WithCORS(
