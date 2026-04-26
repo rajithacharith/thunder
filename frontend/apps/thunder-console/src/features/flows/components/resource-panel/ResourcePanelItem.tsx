@@ -107,7 +107,7 @@ function ResourcePanelItem({
       <Card
         elevation={0}
         sx={{
-          transition: 'all 0.2s ease-in-out',
+          transition: 'background-color 0.2s ease-in-out',
           cursor: type === 'draggable' ? 'grab' : 'default',
           '&:hover': {
             backgroundColor: 'action.hover',

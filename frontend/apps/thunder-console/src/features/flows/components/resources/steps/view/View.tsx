@@ -19,10 +19,20 @@
 import {Box, FormGroup, IconButton, Menu, MenuItem, Paper, Tooltip, Typography, type Theme} from '@wso2/oxygen-ui';
 import {CogIcon, PlusIcon, TrashIcon} from '@wso2/oxygen-ui-icons-react';
 import {Handle, Position, useNodeId, useReactFlow} from '@xyflow/react';
-import {memo, useCallback, useMemo, useState, type HTMLAttributes, type MouseEvent, type ReactElement} from 'react';
+import {
+  Fragment,
+  memo,
+  useCallback,
+  useMemo,
+  useState,
+  type HTMLAttributes,
+  type MouseEvent,
+  type ReactElement,
+} from 'react';
 import {useTranslation} from 'react-i18next';
 import ReorderableViewElement from './ReorderableElement';
 import Droppable from '../../../dnd/Droppable';
+import GapDropZone from '../../../dnd/GapDropZone';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
 import useFlowPlugins from '@/features/flows/hooks/useFlowPlugins';
 import type {Element} from '@/features/flows/models/elements';
@@ -355,15 +365,28 @@ function View({
                 sx={{p: 1}}
               >
                 {filteredComponents.map((component: Element, index: number) => (
-                  <ReorderableViewElement
-                    key={component.id}
-                    id={component.id}
-                    index={index}
-                    element={component}
-                    accept={droppableAllowedTypes ?? VisualFlowConstants.FLOW_BUILDER_VIEW_ALLOWED_RESOURCE_TYPES}
-                    availableElements={availableElements}
-                    onAddElementToForm={onAddElementToForm}
-                  />
+                  <Fragment key={component.id}>
+                    {index > 0 && (
+                      <GapDropZone
+                        id={`${stepId}-gap-${index}`}
+                        accept={droppableAllowedTypes ?? VisualFlowConstants.FLOW_BUILDER_VIEW_ALLOWED_RESOURCE_TYPES}
+                        data={{...droppableData, isReordering: true, insertBeforeElementId: component.id}}
+                      />
+                    )}
+                    <ReorderableViewElement
+                      id={component.id}
+                      index={index}
+                      element={component}
+                      group={stepId ?? undefined}
+                      type={stepId ?? VisualFlowConstants.FLOW_BUILDER_DRAGGABLE_ID}
+                      accept={[
+                        stepId ?? VisualFlowConstants.FLOW_BUILDER_DRAGGABLE_ID,
+                        ...(droppableAllowedTypes ?? VisualFlowConstants.FLOW_BUILDER_VIEW_ALLOWED_RESOURCE_TYPES),
+                      ]}
+                      availableElements={availableElements}
+                      onAddElementToForm={onAddElementToForm}
+                    />
+                  </Fragment>
                 ))}
               </Droppable>
             </FormGroup>

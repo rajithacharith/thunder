@@ -142,7 +142,7 @@ function BaseEdge({
               borderRadius: '50%',
               cursor: 'pointer',
               boxShadow: 2,
-              transition: 'all 0.2s ease',
+              transition: 'background-color 0.2s ease, transform 0.2s ease',
               zIndex: 10000,
               '&:hover, &:focus': {
                 backgroundColor: 'error.dark',
