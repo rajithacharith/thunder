@@ -279,6 +279,15 @@ packages:
       filename: "{{.InterfaceName}}_mock.go"
     interfaces:
       ApplicationServiceInterface:
+
+  github.com/asgardeo/thunder/internal/inboundclient:
+    config:
+      dir: tests/mocks/inboundclientmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: inboundclientmock
+      filename: "{{.InterfaceName}}_mock.go"
+    interfaces:
+      InboundClientServiceInterface:
   
   github.com/asgardeo/thunder/internal/ou:
     config:

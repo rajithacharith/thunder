@@ -237,6 +237,14 @@ packages:
       pkgname: application
       filename: "{{.InterfaceName}}_mock_test.go"
 
+  github.com/asgardeo/thunder/internal/inboundclient:
+    config:
+      all: true
+      dir: internal/inboundclient
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: inboundclient
+      filename: "{{.InterfaceName}}_mock_test.go"
+
   github.com/asgardeo/thunder/internal/cert:
     config:
       all: true
