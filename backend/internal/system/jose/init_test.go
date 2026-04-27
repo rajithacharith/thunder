@@ -71,9 +71,9 @@ func (suite *JOSEInitTestSuite) TearDownTest() {
 }
 
 func (suite *JOSEInitTestSuite) TestInitialize_Success() {
-	// Setup mock expectations for successful initialization
-	// Both JWT and JWE services will try to get private key and cert thumbprint with "test-key-id"
-	suite.mockPKIService.On("GetPrivateKey", "test-key-id").Return(suite.testPrivateKey, nil).Twice()
+	// Setup mock expectations for successful initialization.
+	// JWT calls GetPrivateKey and GetCertThumbprint; JWE calls only GetCertThumbprint.
+	suite.mockPKIService.On("GetPrivateKey", "test-key-id").Return(suite.testPrivateKey, nil).Once()
 	suite.mockPKIService.On("GetCertThumbprint", "test-key-id").Return("test-thumbprint").Twice()
 
 	jwtService, jweService, err := Initialize(suite.mockPKIService)
@@ -94,29 +94,6 @@ func (suite *JOSEInitTestSuite) TestInitialize_JWTInitializationFailure() {
 		Type:             serviceerror.ServerErrorType,
 		Error:            i18ncore.I18nMessage{DefaultValue: "private key not found"},
 		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "The requested private key could not be found"},
-	}
-	suite.mockPKIService.On("GetPrivateKey", "test-key-id").Return(nil, expectedErr).Once()
-
-	jwtService, jweService, err := Initialize(suite.mockPKIService)
-
-	assert.Error(suite.T(), err)
-	assert.Nil(suite.T(), jwtService)
-	assert.Nil(suite.T(), jweService)
-	assert.Contains(suite.T(), err.Error(), "failed to retrieve private key")
-}
-
-func (suite *JOSEInitTestSuite) TestInitialize_JWEInitializationFailure() {
-	// Test case where JWT succeeds but JWE fails
-	// JWT will succeed with first call
-	suite.mockPKIService.On("GetPrivateKey", "test-key-id").Return(suite.testPrivateKey, nil).Once()
-	suite.mockPKIService.On("GetCertThumbprint", "test-key-id").Return("test-thumbprint").Once()
-
-	// JWE will fail with second call
-	expectedErr := &serviceerror.ServiceError{
-		Code:             "PKI-002",
-		Type:             serviceerror.ServerErrorType,
-		Error:            i18ncore.I18nMessage{DefaultValue: "certificate error"},
-		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "The certificate could not be processed"},
 	}
 	suite.mockPKIService.On("GetPrivateKey", "test-key-id").Return(nil, expectedErr).Once()
 
@@ -201,8 +178,9 @@ func (suite *JOSEInitTestSuite) TestInitialize_PKIServiceGetPrivateKeyError() {
 }
 
 func (suite *JOSEInitTestSuite) TestInitialize_ValidatesServiceInterfaces() {
-	// Test that Initialize returns valid service interfaces
-	suite.mockPKIService.On("GetPrivateKey", "test-key-id").Return(suite.testPrivateKey, nil).Twice()
+	// Test that Initialize returns valid service interfaces.
+	// JWT calls GetPrivateKey and GetCertThumbprint; JWE calls only GetCertThumbprint.
+	suite.mockPKIService.On("GetPrivateKey", "test-key-id").Return(suite.testPrivateKey, nil).Once()
 	suite.mockPKIService.On("GetCertThumbprint", "test-key-id").Return("test-thumbprint").Twice()
 
 	jwtService, jweService, err := Initialize(suite.mockPKIService)

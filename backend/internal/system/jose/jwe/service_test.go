@@ -19,17 +19,18 @@
 package jwe
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
+	"context"
+	"crypto/ecdh"
 	"crypto/rand"
-	"crypto/rsa"
 	"encoding/base64"
-	"strings"
+	"errors"
 	"testing"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	syscrypto "github.com/asgardeo/thunder/internal/system/crypto"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/tests/mocks/crypto/cryptomock"
 	"github.com/asgardeo/thunder/tests/mocks/crypto/pki/pkimock"
 
 	"github.com/stretchr/testify/assert"
@@ -39,10 +40,9 @@ import (
 
 type JWEServiceTestSuite struct {
 	suite.Suite
-	jweService        *jweService
-	testRSAPrivateKey *rsa.PrivateKey
-	testECPrivateKey  *ecdsa.PrivateKey
-	pkiMock           *pkimock.PKIServiceInterfaceMock
+	jweService *jweService
+	pkiMock    *pkimock.PKIServiceInterfaceMock
+	cryptoMock *cryptomock.RuntimeCryptoProviderMock
 }
 
 func TestJWEServiceSuite(t *testing.T) {
@@ -52,12 +52,7 @@ func TestJWEServiceSuite(t *testing.T) {
 func (suite *JWEServiceTestSuite) SetupTest() {
 	config.ResetThunderRuntime()
 	suite.pkiMock = pkimock.NewPKIServiceInterfaceMock(suite.T())
-
-	rsaKey, _ := rsa.GenerateKey(rand.Reader, 2048)
-	suite.testRSAPrivateKey = rsaKey
-
-	ecKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	suite.testECPrivateKey = ecKey
+	suite.cryptoMock = cryptomock.NewRuntimeCryptoProviderMock(suite.T())
 
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
@@ -69,50 +64,138 @@ func (suite *JWEServiceTestSuite) SetupTest() {
 
 func (suite *JWEServiceTestSuite) TestEncryptDecrypt_RSA() {
 	suite.jweService = &jweService{
-		privateKey: suite.testRSAPrivateKey,
-		kid:        "test-kid",
-		logger:     log.GetLogger(),
+		kid:            "test-kid",
+		cryptoProvider: suite.cryptoMock,
+		logger:         log.GetLogger(),
 	}
 
 	payload := []byte("Hello, RSA JWE!")
-	recipientPublicKey := &suite.testRSAPrivateKey.PublicKey
+	testCases := []struct {
+		enc    ContentEncAlgorithm
+		cekLen int
+	}{
+		{A128GCM, 16},
+		{A192GCM, 24},
+		{A256GCM, 32},
+	}
 
-	// RSA-OAEP-256 with different content encryption algorithms
-	encAlgs := []ContentEncAlgorithm{A128GCM, A192GCM, A256GCM}
-	for _, enc := range encAlgs {
-		jweToken, sErr := suite.jweService.Encrypt(payload, recipientPublicKey, RSAOAEP256, enc)
+	xorBytes := func(in []byte) []byte {
+		out := make([]byte, len(in))
+		for i, b := range in {
+			out[i] = b ^ 0xFF
+		}
+		return out
+	}
+
+	for _, tc := range testCases {
+		fixedCEK := make([]byte, tc.cekLen)
+		_, _ = rand.Read(fixedCEK)
+
+		suite.cryptoMock.EXPECT().Encrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(xorBytes(fixedCEK), &syscrypto.CryptoDetails{CEK: fixedCEK}, nil).Once()
+
+		suite.cryptoMock.EXPECT().Decrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			RunAndReturn(func(_ context.Context, _ syscrypto.KeyRef,
+				_ syscrypto.AlgorithmParams, wrapped []byte,
+			) ([]byte, error) {
+				return xorBytes(wrapped), nil
+			}).Once()
+
+		token, sErr := suite.jweService.Encrypt(context.Background(), payload, "test-kid", RSAOAEP256, tc.enc)
 		assert.Nil(suite.T(), sErr)
-		decrypted, sErr := suite.jweService.Decrypt(jweToken)
+		decrypted, sErr := suite.jweService.Decrypt(context.Background(), token)
 		assert.Nil(suite.T(), sErr)
 		assert.Equal(suite.T(), payload, decrypted)
 	}
 }
 
-func (suite *JWEServiceTestSuite) TestEncryptDecrypt_ECDH() {
+func (suite *JWEServiceTestSuite) TestEncryptDecrypt_ECDHES_Direct() {
 	suite.jweService = &jweService{
-		privateKey: suite.testECPrivateKey,
-		kid:        "test-kid",
-		logger:     log.GetLogger(),
+		kid:            "test-kid",
+		cryptoProvider: suite.cryptoMock,
+		logger:         log.GetLogger(),
 	}
 
-	payload := []byte("Hello, ECDH JWE!")
-	recipientPublicKey := &suite.testECPrivateKey.PublicKey
+	payload := []byte("Hello, ECDH-ES JWE!")
+
+	// A real ephemeral public key is required so that epkToMap / JWKToECPublicKey round-trips.
+	ephKey, err := ecdh.P256().GenerateKey(rand.Reader)
+	assert.NoError(suite.T(), err)
+	fakeEPK := ephKey.PublicKey()
 
 	testCases := []struct {
-		alg KeyEncAlgorithm
-		enc ContentEncAlgorithm
+		enc    ContentEncAlgorithm
+		cekLen int
 	}{
-		{ECDHES, A128GCM},
-		{ECDHES, A192GCM},
-		{ECDHES, A256GCM},
-		{ECDHESA128KW, A128GCM},
-		{ECDHESA256KW, A256GCM},
+		{A128GCM, 16},
+		{A192GCM, 24},
+		{A256GCM, 32},
 	}
 
 	for _, tc := range testCases {
-		jweToken, sErr := suite.jweService.Encrypt(payload, recipientPublicKey, tc.alg, tc.enc)
+		fixedCEK := make([]byte, tc.cekLen)
+		_, _ = rand.Read(fixedCEK)
+
+		suite.cryptoMock.EXPECT().Encrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(nil, &syscrypto.CryptoDetails{EPK: fakeEPK, CEK: fixedCEK}, nil).Once()
+		suite.cryptoMock.EXPECT().Decrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(fixedCEK, nil).Once()
+
+		token, sErr := suite.jweService.Encrypt(context.Background(), payload, "test-kid", ECDHES, tc.enc)
 		assert.Nil(suite.T(), sErr)
-		decrypted, sErr := suite.jweService.Decrypt(jweToken)
+		decrypted, sErr := suite.jweService.Decrypt(context.Background(), token)
+		assert.Nil(suite.T(), sErr)
+		assert.Equal(suite.T(), payload, decrypted)
+	}
+}
+
+func (suite *JWEServiceTestSuite) TestEncryptDecrypt_ECDHESKW() {
+	suite.jweService = &jweService{
+		kid:            "test-kid",
+		cryptoProvider: suite.cryptoMock,
+		logger:         log.GetLogger(),
+	}
+
+	payload := []byte("Hello, ECDH-ES+KW JWE!")
+
+	ephKey, err := ecdh.P256().GenerateKey(rand.Reader)
+	assert.NoError(suite.T(), err)
+	fakeEPK := ephKey.PublicKey()
+
+	testCases := []struct {
+		alg    KeyEncAlgorithm
+		enc    ContentEncAlgorithm
+		cekLen int
+	}{
+		{ECDHESA128KW, A128GCM, 16},
+		{ECDHESA256KW, A256GCM, 32},
+	}
+
+	for _, tc := range testCases {
+		xorAABytes := func(in []byte) []byte {
+			out := make([]byte, len(in))
+			for i, b := range in {
+				out[i] = b ^ 0xAA
+			}
+			return out
+		}
+
+		fixedCEK := make([]byte, tc.cekLen)
+		_, _ = rand.Read(fixedCEK)
+
+		suite.cryptoMock.EXPECT().Encrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(xorAABytes(fixedCEK), &syscrypto.CryptoDetails{EPK: fakeEPK, CEK: fixedCEK}, nil).Once()
+
+		suite.cryptoMock.EXPECT().Decrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			RunAndReturn(func(_ context.Context, _ syscrypto.KeyRef,
+				_ syscrypto.AlgorithmParams, wrapped []byte,
+			) ([]byte, error) {
+				return xorAABytes(wrapped), nil
+			}).Once()
+
+		token, sErr := suite.jweService.Encrypt(context.Background(), payload, "test-kid", tc.alg, tc.enc)
+		assert.Nil(suite.T(), sErr)
+		decrypted, sErr := suite.jweService.Decrypt(context.Background(), token)
 		assert.Nil(suite.T(), sErr)
 		assert.Equal(suite.T(), payload, decrypted)
 	}
@@ -120,121 +203,133 @@ func (suite *JWEServiceTestSuite) TestEncryptDecrypt_ECDH() {
 
 func (suite *JWEServiceTestSuite) TestEncrypt_Errors() {
 	suite.jweService = &jweService{
-		privateKey: suite.testRSAPrivateKey,
-		kid:        "test-kid",
-		logger:     log.GetLogger(),
+		kid:            "test-kid",
+		cryptoProvider: suite.cryptoMock,
+		logger:         log.GetLogger(),
 	}
 
-	// Unsupported Encryption algorithm
-	_, sErr := suite.jweService.Encrypt([]byte("p"), &suite.testRSAPrivateKey.PublicKey, RSAOAEP256, "INVALID")
+	// Unsupported content encryption algorithm.
+	_, sErr := suite.jweService.Encrypt(context.Background(), []byte("p"), "key-id", RSAOAEP256, "INVALID")
 	assert.NotNil(suite.T(), sErr)
 	assert.Equal(suite.T(), ErrorUnsupportedEncryptionAlgorithm, *sErr)
 
-	// EncryptKey failure (RSA with EC key)
-	_, sErr = suite.jweService.Encrypt([]byte("p"), &suite.testECPrivateKey.PublicKey, RSAOAEP256, A128GCM)
+	// Provider returns any error (including unsupported algorithm) → server error.
+	suite.cryptoMock.EXPECT().Encrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, nil, errors.New("unsupported algorithm: INVALID_ALG")).Once()
+	_, sErr = suite.jweService.Encrypt(context.Background(), []byte("p"), "key-id", "INVALID_ALG", A128GCM)
+	assert.NotNil(suite.T(), sErr)
+	assert.Equal(suite.T(), serviceerror.InternalServerError, *sErr)
+
+	// Provider returns nil error but nil details (missing CEK) → unsupported algorithm error.
+	suite.cryptoMock.EXPECT().Encrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, nil, nil).Once()
+	_, sErr = suite.jweService.Encrypt(context.Background(), []byte("p"), "key-id", RSAOAEP256, A128GCM)
 	assert.NotNil(suite.T(), sErr)
 	assert.Equal(suite.T(), ErrorUnsupportedJWEAlgorithm, *sErr)
+
+	// RuntimeCryptoProvider returns error for ECDH-ES.
+	suite.cryptoMock.EXPECT().Encrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, nil, errors.New("crypto error")).Once()
+	_, sErr = suite.jweService.Encrypt(context.Background(), []byte("p"), "key-id", ECDHES, A128GCM)
+	assert.NotNil(suite.T(), sErr)
+	assert.Equal(suite.T(), serviceerror.InternalServerError, *sErr)
+
+	// RuntimeCryptoProvider returns error for ECDH-ES+KW.
+	suite.cryptoMock.EXPECT().Encrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, nil, errors.New("crypto error")).Once()
+	_, sErr = suite.jweService.Encrypt(context.Background(), []byte("p"), "key-id", ECDHESA128KW, A128GCM)
+	assert.NotNil(suite.T(), sErr)
+	assert.Equal(suite.T(), serviceerror.InternalServerError, *sErr)
+
+	// RuntimeCryptoProvider returns error for RSA-OAEP-256.
+	suite.cryptoMock.EXPECT().Encrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, nil, errors.New("crypto error")).Once()
+	_, sErr = suite.jweService.Encrypt(context.Background(), []byte("p"), "key-id", RSAOAEP256, A128GCM)
+	assert.NotNil(suite.T(), sErr)
+	assert.Equal(suite.T(), serviceerror.InternalServerError, *sErr)
 }
 
 func (suite *JWEServiceTestSuite) TestDecrypt_Errors() {
 	suite.jweService = &jweService{
-		privateKey: suite.testRSAPrivateKey,
-		kid:        "test-kid",
-		logger:     log.GetLogger(),
+		kid:            "test-kid",
+		cryptoProvider: suite.cryptoMock,
+		logger:         log.GetLogger(),
 	}
 
-	// Invalid JWE format
-	_, sErr := suite.jweService.Decrypt("invalid.jwe")
+	// Invalid JWE format.
+	_, sErr := suite.jweService.Decrypt(context.Background(), "invalid.jwe")
 	assert.NotNil(suite.T(), sErr)
 	assert.Equal(suite.T(), ErrorDecodingJWE, *sErr)
 
-	// DecryptKey failure (tampered encrypted key)
-	payload := []byte("data")
-	jweToken, _ := suite.jweService.Encrypt(payload, &suite.testRSAPrivateKey.PublicKey, RSAOAEP256, A128GCM)
+	// Build a valid RSA JWE token, then have the crypto provider fail on decrypt.
+	fixedCEK1 := make([]byte, 16)
+	suite.cryptoMock.EXPECT().Encrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return([]byte("wrapped-cek"), &syscrypto.CryptoDetails{CEK: fixedCEK1}, nil).Once()
+	token, _ := suite.jweService.Encrypt(context.Background(), []byte("data"), "test-kid", RSAOAEP256, A128GCM)
 
-	suite.jweService.privateKey = suite.testECPrivateKey // Wrong key type for RSA-OAEP-256
-	_, sErr = suite.jweService.Decrypt(jweToken)
+	suite.cryptoMock.EXPECT().Decrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, errors.New("key not found")).Once()
+	_, sErr = suite.jweService.Decrypt(context.Background(), token)
 	assert.NotNil(suite.T(), sErr)
 	assert.Equal(suite.T(), ErrorJWEDecryptionFailed, *sErr)
 
-	// DecryptContent failure (tampered ciphertext)
-	suite.jweService.privateKey = suite.testRSAPrivateKey
-	parts := strings.Split(jweToken, ".")
-	// jwe is header.key.iv.ct.tag
-	// Let's tamper tag (part 4)
-	parts[4] = base64.RawURLEncoding.EncodeToString([]byte("wrong-tag"))
-	tamperedToken := strings.Join(parts, ".")
-	_, sErr = suite.jweService.Decrypt(tamperedToken)
+	// Crypto provider returns wrong CEK → decryptContent authentication tag mismatch.
+	fixedCEK2 := make([]byte, 16)
+	_, _ = rand.Read(fixedCEK2)
+	suite.cryptoMock.EXPECT().Encrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return([]byte("wrapped-cek"), &syscrypto.CryptoDetails{CEK: fixedCEK2}, nil).Once()
+	validToken, _ := suite.jweService.Encrypt(context.Background(), []byte("data"), "test-kid", RSAOAEP256, A128GCM)
+
+	wrongCEK := make([]byte, 16)
+	suite.cryptoMock.EXPECT().Decrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(wrongCEK, nil).Once()
+	_, sErr = suite.jweService.Decrypt(context.Background(), validToken)
+	assert.NotNil(suite.T(), sErr)
+	assert.Equal(suite.T(), ErrorJWEDecryptionFailed, *sErr)
+}
+
+func (suite *JWEServiceTestSuite) TestDecrypt_EdgeCases() {
+	suite.jweService = &jweService{
+		kid:            "test-kid",
+		cryptoProvider: suite.cryptoMock,
+		logger:         log.GetLogger(),
+	}
+
+	// Malformed JWE (wrong number of parts).
+	_, sErr := suite.jweService.Decrypt(context.Background(), "malformed.jwe")
+	assert.NotNil(suite.T(), sErr)
+	assert.Equal(suite.T(), ErrorDecodingJWE, *sErr)
+
+	// Invalid base64 data in header.
+	_, sErr = suite.jweService.Decrypt(context.Background(), "invalid-base64.key.iv.ciphertext.tag")
+	assert.NotNil(suite.T(), sErr)
+	assert.Equal(suite.T(), ErrorDecodingJWE, *sErr)
+
+	// Invalid JSON in header.
+	invalidHeader := base64.RawURLEncoding.EncodeToString([]byte("{invalid json"))
+	_, sErr = suite.jweService.Decrypt(context.Background(), invalidHeader+".key.iv.ciphertext.tag")
+	assert.NotNil(suite.T(), sErr)
+	assert.Equal(suite.T(), ErrorDecodingJWE, *sErr)
+
+	// Missing alg field in header.
+	headerMissingAlg := base64.RawURLEncoding.EncodeToString([]byte(`{"enc":"A128GCM"}`))
+	_, sErr = suite.jweService.Decrypt(context.Background(), headerMissingAlg+".key.iv.ciphertext.tag")
+	assert.NotNil(suite.T(), sErr)
+	assert.Equal(suite.T(), ErrorUnsupportedJWEAlgorithm, *sErr)
+
+	// ECDH-ES header missing epk field → provider call with nil EPK → returns error.
+	suite.cryptoMock.EXPECT().Decrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, errors.New("EPK required")).Once()
+	headerMissingEPK := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"ECDH-ES","enc":"A128GCM"}`))
+	_, sErr = suite.jweService.Decrypt(context.Background(), headerMissingEPK+".key.iv.ciphertext.tag")
 	assert.NotNil(suite.T(), sErr)
 	assert.Equal(suite.T(), ErrorJWEDecryptionFailed, *sErr)
 }
 
 func (suite *JWEServiceTestSuite) TestInitialize() {
-	suite.pkiMock.EXPECT().GetPrivateKey(mock.Anything).Return(suite.testRSAPrivateKey, nil)
 	suite.pkiMock.EXPECT().GetCertThumbprint(mock.Anything).Return("test-kid")
 
 	service, err := Initialize(suite.pkiMock)
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), service)
-
-	// Failure case
-	suite.pkiMock = pkimock.NewPKIServiceInterfaceMock(suite.T())
-	suite.pkiMock.EXPECT().GetPrivateKey(mock.Anything).Return(nil, &serviceerror.InternalServerError)
-	_, err = Initialize(suite.pkiMock)
-	assert.Error(suite.T(), err)
-}
-
-func (suite *JWEServiceTestSuite) TestEncrypt_ErrorCases() {
-	suite.jweService = &jweService{
-		privateKey: suite.testRSAPrivateKey,
-		kid:        "test-kid",
-		logger:     log.GetLogger(),
-	}
-
-	// Test CEK generation error simulation by testing with extremely large payload
-	// that would cause memory issues if CEK generation failed
-	payload := []byte("test data")
-
-	// Test header marshaling with problematic values - JSON marshaling should not fail with standard values
-	// but we can test other error paths
-
-	// Test with nil recipient key
-	_, sErr := suite.jweService.Encrypt(payload, nil, RSAOAEP256, A128GCM)
-	assert.NotNil(suite.T(), sErr)
-
-	// Test with unsupported key type (e.g., string instead of crypto key)
-	// This will be caught in EncryptKey and return InvalidKeyTypeForAlgorithm
-	fakeKey := "not-a-real-key"
-	_, sErr = suite.jweService.Encrypt(payload, fakeKey, RSAOAEP256, A128GCM)
-	assert.NotNil(suite.T(), sErr)
-}
-
-func (suite *JWEServiceTestSuite) TestDecrypt_EdgeCases() {
-	suite.jweService = &jweService{
-		privateKey: suite.testRSAPrivateKey,
-		kid:        "test-kid",
-		logger:     log.GetLogger(),
-	}
-
-	// Test with malformed JWE (wrong number of parts)
-	_, sErr := suite.jweService.Decrypt("malformed.jwe")
-	assert.NotNil(suite.T(), sErr)
-	assert.Equal(suite.T(), ErrorDecodingJWE, *sErr)
-
-	// Test with invalid base64 in header
-	_, sErr = suite.jweService.Decrypt("invalid-base64.key.iv.ciphertext.tag")
-	assert.NotNil(suite.T(), sErr)
-	assert.Equal(suite.T(), ErrorDecodingJWE, *sErr)
-
-	// Test with invalid JSON in header
-	invalidHeader := base64.RawURLEncoding.EncodeToString([]byte("{invalid json"))
-	_, sErr = suite.jweService.Decrypt(invalidHeader + ".key.iv.ciphertext.tag")
-	assert.NotNil(suite.T(), sErr)
-	assert.Equal(suite.T(), ErrorDecodingJWE, *sErr)
-
-	// Test with missing required header fields
-	headerMissingAlg := base64.RawURLEncoding.EncodeToString([]byte(`{"enc":"A128GCM"}`))
-	_, sErr = suite.jweService.Decrypt(headerMissingAlg + ".key.iv.ciphertext.tag")
-	assert.NotNil(suite.T(), sErr)
-	assert.Equal(suite.T(), ErrorUnsupportedJWEAlgorithm, *sErr)
 }
