@@ -36,19 +36,20 @@ const (
 
 // OAuth2AuthorizationServerMetadata represents OAuth2 Authorization Server Metadata (RFC 8414)
 type OAuth2AuthorizationServerMetadata struct {
-	Issuer                            string   `json:"issuer"`
-	AuthorizationEndpoint             string   `json:"authorization_endpoint"`
-	TokenEndpoint                     string   `json:"token_endpoint"`
-	UserInfoEndpoint                  string   `json:"userinfo_endpoint,omitempty"`
-	JWKSUri                           string   `json:"jwks_uri"`
-	RevocationEndpoint                string   `json:"revocation_endpoint,omitempty"`
-	IntrospectionEndpoint             string   `json:"introspection_endpoint,omitempty"`
-	RegistrationEndpoint              string   `json:"registration_endpoint,omitempty"`
-	ScopesSupported                   []string `json:"scopes_supported"`
-	ResponseTypesSupported            []string `json:"response_types_supported"`
-	GrantTypesSupported               []string `json:"grant_types_supported"`
-	TokenEndpointAuthMethodsSupported []string `json:"token_endpoint_auth_methods_supported"`
-	CodeChallengeMethodsSupported     []string `json:"code_challenge_methods_supported,omitempty"`
+	Issuer                                     string   `json:"issuer"`
+	AuthorizationEndpoint                      string   `json:"authorization_endpoint"`
+	TokenEndpoint                              string   `json:"token_endpoint"`
+	UserInfoEndpoint                           string   `json:"userinfo_endpoint,omitempty"`
+	JWKSUri                                    string   `json:"jwks_uri"`
+	RevocationEndpoint                         string   `json:"revocation_endpoint,omitempty"`
+	IntrospectionEndpoint                      string   `json:"introspection_endpoint,omitempty"`
+	RegistrationEndpoint                       string   `json:"registration_endpoint,omitempty"`
+	ScopesSupported                            []string `json:"scopes_supported"`
+	ResponseTypesSupported                     []string `json:"response_types_supported"`
+	GrantTypesSupported                        []string `json:"grant_types_supported"`
+	TokenEndpointAuthMethodsSupported          []string `json:"token_endpoint_auth_methods_supported"`
+	CodeChallengeMethodsSupported              []string `json:"code_challenge_methods_supported,omitempty"`
+	AuthorizationResponseIssParameterSupported bool     `json:"authorization_response_iss_parameter_supported"`
 }
 
 // OIDCProviderMetadata represents OpenID Connect Provider Metadata (OIDC Discovery 1.0)
@@ -136,6 +137,10 @@ func (ts *DiscoveryTestSuite) TestOAuth2AuthorizationServerMetadata_GET_Success(
 	// Verify supported scopes
 	ts.NotEmpty(metadata.ScopesSupported, "ScopesSupported should not be empty")
 	ts.Contains(metadata.ScopesSupported, "openid", "Should support openid scope")
+
+	// Verify RFC 9207 issuer identification support
+	ts.True(metadata.AuthorizationResponseIssParameterSupported,
+		"authorization_response_iss_parameter_supported must be true (RFC 9207)")
 }
 
 // TestOAuth2AuthorizationServerMetadata_OPTIONS_Success tests OPTIONS request for CORS
@@ -197,6 +202,10 @@ func (ts *DiscoveryTestSuite) TestOIDCDiscovery_GET_Success() {
 
 	// Verify not implemented endpoints are empty
 	ts.Empty(metadata.EndSessionEndpoint, "EndSessionEndpoint should be empty (not implemented)")
+
+	// Verify RFC 9207 issuer identification support
+	ts.True(metadata.AuthorizationResponseIssParameterSupported,
+		"authorization_response_iss_parameter_supported must be true (RFC 9207)")
 }
 
 // TestOIDCDiscovery_OPTIONS_Success tests OPTIONS request for CORS

@@ -516,7 +516,8 @@ func (as *authorizeService) HandleAuthorizationCallback(ctx context.Context, aut
 
 		// Construct the redirect URI with the authorization code.
 		queryParams := map[string]string{
-			"code": authzCode.Code,
+			"code":                      authzCode.Code,
+			oauth2const.RequestParamIss: config.GetThunderRuntime().Config.JWT.Issuer,
 		}
 		if authRequestCtx.OAuthParameters.State != "" {
 			queryParams[oauth2const.RequestParamState] = authRequestCtx.OAuthParameters.State

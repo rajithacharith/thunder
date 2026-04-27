@@ -70,6 +70,9 @@ func (suite *AuthorizeHandlerTestSuite) BeforeTest(suiteName, testName string) {
 				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
+		JWT: config.JWTConfig{
+			Issuer: "https://localhost:8090",
+		},
 		OAuth: config.OAuthConfig{
 			AuthorizationCode: config.AuthorizationCodeConfig{
 				ValidityPeriod: 600,
@@ -308,6 +311,30 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizeGetRequest_ServiceErr
 	location := rr.Header().Get("Location")
 	assert.Contains(suite.T(), location, "error=invalid_request")
 	assert.Contains(suite.T(), location, "state=test-state")
+	assert.Contains(suite.T(), location, "iss=https%3A%2F%2Flocalhost%3A8090")
+}
+
+func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizeGetRequest_IssAlwaysPresent() {
+	// RFC 9207 §2: iss is unconditional. State is absent here to confirm iss appears regardless.
+	authErr := &AuthorizationError{
+		Code:              oauth2const.ErrorInvalidRequest,
+		Message:           "Invalid response type",
+		SendErrorToClient: true,
+		ClientRedirectURI: "https://client.example.com/callback",
+	}
+	suite.mockAuthzService.EXPECT().HandleInitialAuthorizationRequest(mock.Anything, mock.Anything).Return(nil, authErr)
+
+	reqURL := "/oauth2/authorize?client_id=test-client" +
+		"&redirect_uri=https://client.example.com/callback&response_type=invalid"
+	req := httptest.NewRequest("GET", reqURL, nil)
+	rr := httptest.NewRecorder()
+
+	suite.handler.HandleAuthorizeGetRequest(rr, req)
+
+	assert.Equal(suite.T(), http.StatusFound, rr.Code)
+	location := rr.Header().Get("Location")
+	assert.Contains(suite.T(), location, "iss=https%3A%2F%2Flocalhost%3A8090")
+	assert.NotContains(suite.T(), location, "state=")
 }
 
 func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizeGetRequest_GetOAuthMessageReturnsNil() {
@@ -404,6 +431,40 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_Servic
 	assert.Contains(suite.T(), resp.RedirectURI, "https://client.example.com/callback")
 	assert.Contains(suite.T(), resp.RedirectURI, "error=server_error")
 	assert.Contains(suite.T(), resp.RedirectURI, "state=test-state")
+	assert.Contains(suite.T(), resp.RedirectURI, "iss=https%3A%2F%2Flocalhost%3A8090")
+}
+
+func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_ClientErrorIssAlwaysPresent() {
+	// RFC 9207 §2: iss is unconditional. Confirm iss is present even when state is absent.
+	authErr := &AuthorizationError{
+		Code:              oauth2const.ErrorServerError,
+		Message:           "Failed to process authorization request",
+		SendErrorToClient: true,
+		ClientRedirectURI: "https://client.example.com/callback",
+	}
+	suite.mockAuthzService.EXPECT().HandleAuthorizationCallback(mock.Anything, testAuthID, "test-assertion").
+		Return("", authErr)
+
+	postData := AuthZPostRequest{
+		AuthID:    testAuthID,
+		Assertion: "test-assertion",
+	}
+	jsonData, _ := json.Marshal(postData)
+
+	req := httptest.NewRequest(http.MethodPost, "/oauth2/auth/callback", bytes.NewReader(jsonData))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	suite.handler.HandleAuthCallbackPostRequest(rr, req)
+
+	assert.Equal(suite.T(), http.StatusOK, rr.Code)
+	var resp AuthZPostResponse
+	err := json.NewDecoder(rr.Body).Decode(&resp)
+	assert.NoError(suite.T(), err)
+	assert.Contains(suite.T(), resp.RedirectURI, "https://client.example.com/callback")
+	assert.Contains(suite.T(), resp.RedirectURI, "error=server_error")
+	assert.Contains(suite.T(), resp.RedirectURI, "iss=https%3A%2F%2Flocalhost%3A8090")
+	assert.NotContains(suite.T(), resp.RedirectURI, "state=")
 }
 
 func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_InvalidRequestType() {

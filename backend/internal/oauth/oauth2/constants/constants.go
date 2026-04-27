@@ -43,6 +43,7 @@ const (
 	RequestParamRefreshToken        string = "refresh_token"
 	RequestParamResponseType        string = "response_type"
 	RequestParamState               string = "state"
+	RequestParamIss                 string = "iss"
 	RequestParamResource            string = "resource"
 	RequestParamError               string = "error"
 	RequestParamErrorDescription    string = "error_description"
