@@ -45,8 +45,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "AUTH-CRED-1001"
-                message: "Empty attributes or credentials"
-                description: "The user attributes or credentials cannot be empty"
+                message:
+                  key: "error.authnservice.empty_attributes_or_credentials"
+                  defaultValue: "Empty attributes or credentials"
+                description:
+                  key: "error.authnservice.empty_attributes_or_credentials_description"
+                  defaultValue: "The user attributes or credentials cannot be empty"
         "401":
           description: 'Unauthorized: Authentication failed'
           content:
@@ -55,8 +59,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "AUTH-CRED-1002"
-                message: "Invalid credentials"
-                description: "The provided credentials are invalid"
+                message:
+                  key: "error.authnservice.invalid_credentials"
+                  defaultValue: "Invalid credentials"
+                description:
+                  key: "error.authnservice.invalid_credentials_description"
+                  defaultValue: "The provided credentials are invalid"
         "404":
           description: 'Not Found: The user could not be found'
           content:
@@ -65,8 +73,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "AUTHN-1008"
-                message: "User not found"
-                description: "No user found with the provided attributes"
+                message:
+                  key: "error.authnservice.user_not_found"
+                  defaultValue: "User not found"
+                description:
+                  key: "error.authnservice.user_not_found_description"
+                  defaultValue: "No user found with the provided attributes"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request'
           content:
@@ -102,8 +114,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "AUTHN-OTP-1002"
-                message: "Invalid recipient"
-                description: "The provided recipient is invalid or empty"
+                message:
+                  key: "error.authnotpservice.invalid_recipient"
+                  defaultValue: "Invalid recipient"
+                description:
+                  key: "error.authnotpservice.invalid_recipient_description"
+                  defaultValue: "The provided recipient is invalid or empty"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request'
           content:
@@ -139,8 +155,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "AUTHN-OTP-1005"
-                message: "Invalid OTP"
-                description: "The provided OTP is invalid or empty"
+                message:
+                  key: "error.authnotpservice.invalid_otp"
+                  defaultValue: "Invalid OTP"
+                description:
+                  key: "error.authnotpservice.invalid_otp_description"
+                  defaultValue: "The provided OTP is invalid or empty"
         "401":
           description: 'Unauthorized: OTP verification failed'
           content:
@@ -149,8 +169,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "AUTHN-OTP-1006"
-                message: "Incorrect OTP"
-                description: "The provided OTP is incorrect or has expired"
+                message:
+                  key: "error.authnotpservice.incorrect_otp"
+                  defaultValue: "Incorrect OTP"
+                description:
+                  key: "error.authnotpservice.incorrect_otp_description"
+                  defaultValue: "The provided OTP is incorrect or has expired"
         "404":
           description: 'Not Found: The user could not be found'
           content:
@@ -159,8 +183,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "AUTHN-1008"
-                message: "User not found"
-                description: "No user found with the provided attributes"
+                message:
+                  key: "error.authnservice.user_not_found"
+                  defaultValue: "User not found"
+                description:
+                  key: "error.authnservice.user_not_found_description"
+                  defaultValue: "No user found with the provided attributes"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request'
           content:
@@ -199,8 +227,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "AUTHN-1001"
-                message: "Invalid identity provider ID"
-                description: "The provided identity provider ID is invalid or empty"
+                message:
+                  key: "error.authnservice.invalid_idp_id"
+                  defaultValue: "Invalid identity provider ID"
+                description:
+                  key: "error.authnservice.invalid_idp_id_description"
+                  defaultValue: "The provided identity provider ID is invalid or empty"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request.'
           content:
@@ -236,8 +268,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "AUTHN-1003"
-                message: "Authorization code is required"
-                description: "The authorization code must be provided to complete authentication"
+                message:
+                  key: "error.authnservice.empty_auth_code"
+                  defaultValue: "Authorization code is required"
+                description:
+                  key: "error.authnservice.empty_auth_code_description"
+                  defaultValue: "The authorization code must be provided to complete authentication"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request.'
           content:
@@ -276,8 +312,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "AUTHN-1001"
-                message: "Invalid identity provider ID"
-                description: "The provided identity provider ID is invalid or empty"
+                message:
+                  key: "error.authnservice.invalid_idp_id"
+                  defaultValue: "Invalid identity provider ID"
+                description:
+                  key: "error.authnservice.invalid_idp_id_description"
+                  defaultValue: "The provided identity provider ID is invalid or empty"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request.'
           content:
@@ -313,8 +353,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "AUTHN-1003"
-                message: "Authorization code is required"
-                description: "The authorization code must be provided to complete authentication"
+                message:
+                  key: "error.authnservice.empty_auth_code"
+                  defaultValue: "Authorization code is required"
+                description:
+                  key: "error.authnservice.empty_auth_code_description"
+                  defaultValue: "The authorization code must be provided to complete authentication"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request.'
           content:
@@ -353,8 +397,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "AUTHN-1001"
-                message: "Invalid identity provider ID"
-                description: "The provided identity provider ID is invalid or empty"
+                message:
+                  key: "error.authnservice.invalid_idp_id"
+                  defaultValue: "Invalid identity provider ID"
+                description:
+                  key: "error.authnservice.invalid_idp_id_description"
+                  defaultValue: "The provided identity provider ID is invalid or empty"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request.'
           content:
@@ -390,8 +438,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "AUTHN-1003"
-                message: "Authorization code is required"
-                description: "The authorization code must be provided to complete authentication"
+                message:
+                  key: "error.authnservice.empty_auth_code"
+                  defaultValue: "Authorization code is required"
+                description:
+                  key: "error.authnservice.empty_auth_code_description"
+                  defaultValue: "The authorization code must be provided to complete authentication"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request.'
           content:
@@ -427,8 +479,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "AUTHN-1011"
-                message: "Empty username"
-                description: "The username is required to start WebAuthn authentication"
+                message:
+                  key: "error.passkeyservice.empty_user_identifier"
+                  defaultValue: "Empty username"
+                description:
+                  key: "error.passkeyservice.empty_user_identifier_description"
+                  defaultValue: "The username is required to start WebAuthn authentication"
         "404":
           description: 'Not Found: The user could not be found'
           content:
@@ -437,8 +493,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "AUTHN-1008"
-                message: "User not found"
-                description: "No user found with the provided User ID"
+                message:
+                  key: "error.passkeyservice.user_not_found"
+                  defaultValue: "User not found"
+                description:
+                  key: "error.passkeyservice.user_not_found_description"
+                  defaultValue: "No user found with the provided User ID"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request'
           content:
@@ -476,23 +536,39 @@ paths:
                 emptyCredentialId:
                   value:
                     code: "AUTHN-1012"
-                    message: "Empty credential ID"
-                    description: "The credential ID is required to complete WebAuthn authentication"
+                    message:
+                      key: "error.passkeyservice.empty_credential_id"
+                      defaultValue: "Empty credential ID"
+                    description:
+                      key: "error.passkeyservice.empty_credential_id_description"
+                      defaultValue: "The credential ID is required to complete WebAuthn authentication"
                 emptyCredentialType:
                   value:
                     code: "AUTHN-1013"
-                    message: "Empty credential type"
-                    description: "The credential type is required to complete WebAuthn authentication"
+                    message:
+                      key: "error.passkeyservice.empty_credential_type"
+                      defaultValue: "Empty credential type"
+                    description:
+                      key: "error.passkeyservice.empty_credential_type_description"
+                      defaultValue: "The credential type is required to complete WebAuthn authentication"
                 invalidAuthenticatorResponse:
                   value:
                     code: "AUTHN-1014"
-                    message: "Invalid authenticator response"
-                    description: "The authenticator response is missing required fields (clientDataJSON, authenticatorData, or signature)"
+                    message:
+                      key: "error.passkeyservice.invalid_authenticator_response"
+                      defaultValue: "Invalid authenticator response"
+                    description:
+                      key: "error.passkeyservice.invalid_authenticator_response_description"
+                      defaultValue: "The authenticator response is missing required fields (clientDataJSON, authenticatorData, or signature)"
                 emptySessionToken:
                   value:
                     code: "AUTHN-1004"
-                    message: "Empty session token"
-                    description: "The provided session token is empty"
+                    message:
+                      key: "error.passkeyservice.empty_session_token"
+                      defaultValue: "Empty session token"
+                    description:
+                      key: "error.passkeyservice.empty_session_token_description"
+                      defaultValue: "The provided session token is empty"
         "401":
           description: 'Unauthorized: WebAuthn authentication failed'
           content:
@@ -501,8 +577,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "WEBAUTHN-1008"
-                message: "Invalid signature"
-                description: "The WebAuthn signature verification failed"
+                message:
+                  key: "error.passkeyservice.invalid_signature"
+                  defaultValue: "Invalid signature"
+                description:
+                  key: "error.passkeyservice.invalid_signature_description"
+                  defaultValue: "The WebAuthn signature verification failed"
         "404":
           description: 'Not Found: The user or credential could not be found'
           content:
@@ -511,8 +591,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "AUTHN-1008"
-                message: "User not found"
-                description: "No user found for the provided credential"
+                message:
+                  key: "error.passkeyservice.user_not_found"
+                  defaultValue: "User not found"
+                description:
+                  key: "error.passkeyservice.user_not_found_description"
+                  defaultValue: "No user found for the provided credential"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request'
           content:
@@ -835,11 +919,9 @@ components:
           type: string
           description: Error code
         message:
-          type: string
-          description: Error message
+          $ref: '#/components/schemas/I18nMessage'
         description:
-          type: string
-          description: Detailed error description
+          $ref: '#/components/schemas/I18nMessage'
 
     ClientErrorResponse:
       allOf:
@@ -852,5 +934,23 @@ components:
         - type: object
       example:
         code: "AUTHN-5000"
-        message: "Internal server error"
-        description: "An unexpected error occurred while processing the request"
+        message:
+          key: "error.internal_server_error"
+          defaultValue: "Internal server error"
+        description:
+          key: "error.internal_server_error_description"
+          defaultValue: "An unexpected error occurred while processing the request"
+
+    I18nMessage:
+      type: object
+      description: Internationalized message with translation key and default value.
+      required:
+        - key
+        - defaultValue
+      properties:
+        key:
+          type: string
+          description: Translation key for fetching localized message.
+        defaultValue:
+          type: string
+          description: Default message in English (fallback).

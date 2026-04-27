@@ -542,8 +542,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
                 code: "DSR-1004"
-                message: "Application not found"
-                description: "The application with the specified id does not exist"
+                message:
+                  key: "design.resolve.error.app_not_found"
+                  defaultValue: "Application not found"
+                description:
+                  key: "design.resolve.error.app_not_found_description"
+                  defaultValue: "The application with the specified id does not exist"
         "500":
           $ref: '#/components/responses/InternalServerError'
 
@@ -908,13 +912,23 @@ components:
           description: Error code
           example: "DSR-1001"
         message:
-          type: string
-          description: Error message
-          example: "Invalid request format"
+          $ref: '#/components/schemas/I18nMessage'
         description:
+          $ref: '#/components/schemas/I18nMessage'
+
+    I18nMessage:
+      type: object
+      description: Internationalized message with translation key and default value.
+      required:
+        - key
+        - defaultValue
+      properties:
+        key:
           type: string
-          description: Detailed error description
-          example: "The 'type' query parameter is required and must be either 'APP' or 'OU'"
+          description: Translation key for fetching localized message.
+        defaultValue:
+          type: string
+          description: Default message in English (fallback).
 
   responses:
     BadRequest:
@@ -925,8 +939,12 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
           example:
             code: "DSR-1001"
-            message: "Invalid request format"
-            description: "The request contains invalid parameters"
+            message:
+              key: "error.designservice.invalid_request"
+              defaultValue: "Invalid request format"
+            description:
+              key: "error.designservice.invalid_request_description"
+              defaultValue: "The request contains invalid parameters"
 
     Unauthorized:
       description: Unauthorized
@@ -936,8 +954,12 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
           example:
             code: "AUTH-4001"
-            message: "Unauthorized"
-            description: "Authentication is required to access this resource"
+            message:
+              key: "error.unauthorized"
+              defaultValue: "Unauthorized"
+            description:
+              key: "error.unauthorized_description"
+              defaultValue: "Authentication is required to access this resource"
 
     NotFound:
       description: Resource not found
@@ -947,8 +969,12 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
           example:
             code: "DSR-1004"
-            message: "Resource not found"
-            description: "The requested resource does not exist"
+            message:
+              key: "error.designservice.resource_not_found"
+              defaultValue: "Resource not found"
+            description:
+              key: "error.designservice.resource_not_found_description"
+              defaultValue: "The requested resource does not exist"
 
     Conflict:
       description: Conflict - resource cannot be deleted as it's in use
@@ -958,8 +984,12 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
           example:
             code: "THM-1004"
-            message: "Cannot delete theme"
-            description: "Cannot delete theme configuration that is currently associated with one or more applications"
+            message:
+              key: "error.designservice.cannot_delete_theme"
+              defaultValue: "Cannot delete theme"
+            description:
+              key: "error.designservice.cannot_delete_theme_description"
+              defaultValue: "Cannot delete theme configuration that is currently associated with one or more applications"
 
     InternalServerError:
       description: Internal server error
@@ -969,5 +999,9 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
           example:
             code: "SSE-5000"
-            message: "Internal server error"
-            description: "An unexpected error occurred while processing the request"
+            message:
+              key: "error.internal_server_error"
+              defaultValue: "Internal server error"
+            description:
+              key: "error.internal_server_error_description"
+              defaultValue: "An unexpected error occurred while processing the request"

@@ -99,8 +99,12 @@ paths:
                 $ref: '#/components/schemas/ClientError'
               example:
                 code: "FMS-1001"
-                message: "Invalid pagination parameter"
-                description: "The limit parameter must be between 1 and 100"
+                message:
+                  key: "error.flowmgtservice.invalid_request_format"
+                  defaultValue: "Invalid pagination parameter"
+                description:
+                  key: "error.flowmgtservice.invalid_request_format_description"
+                  defaultValue: "The limit parameter must be between 1 and 100"
         '500':
           description: Internal server error
           content:
@@ -136,8 +140,12 @@ paths:
                 $ref: '#/components/schemas/ClientError'
               example:
                 code: "FMS-1001"
-                message: "Invalid request format"
-                description: "The request body is malformed or contains invalid data"
+                message:
+                  key: "error.flowmgtservice.invalid_request_format"
+                  defaultValue: "Invalid request format"
+                description:
+                  key: "error.flowmgtservice.invalid_request_format_description"
+                  defaultValue: "The request body is malformed or contains invalid data"
         '500':
           description: Internal server error
           content:
@@ -174,8 +182,12 @@ paths:
                 $ref: '#/components/schemas/ClientError'
               example:
                 code: "FMS-1006"
-                message: "Flow not found"
-                description: "The flow with the specified ID does not exist"
+                message:
+                  key: "error.flowmgtservice.flow_not_found"
+                  defaultValue: "Flow not found"
+                description:
+                  key: "error.flowmgtservice.flow_not_found_description"
+                  defaultValue: "The flow with the specified ID does not exist"
         '500':
           description: Internal server error
           content:
@@ -217,8 +229,12 @@ paths:
                 $ref: '#/components/schemas/ClientError'
               example:
                 code: "FMS-1001"
-                message: "Invalid request format"
-                description: "The request body is malformed or contains invalid data"
+                message:
+                  key: "error.flowmgtservice.invalid_request_format"
+                  defaultValue: "Invalid request format"
+                description:
+                  key: "error.flowmgtservice.invalid_request_format_description"
+                  defaultValue: "The request body is malformed or contains invalid data"
         '404':
           description: Flow not found
           content:
@@ -227,8 +243,12 @@ paths:
                 $ref: '#/components/schemas/ClientError'
               example:
                 code: "FMS-1006"
-                message: "Flow not found"
-                description: "The flow with the specified ID does not exist"
+                message:
+                  key: "error.flowmgtservice.flow_not_found"
+                  defaultValue: "Flow not found"
+                description:
+                  key: "error.flowmgtservice.flow_not_found_description"
+                  defaultValue: "The flow with the specified ID does not exist"
         '500':
           description: Internal server error
           content:
@@ -260,8 +280,12 @@ paths:
                 $ref: '#/components/schemas/ClientError'
               example:
                 code: "FMS-1002"
-                message: "Invalid flow ID"
-                description: "The provided flow ID is not a valid UUID"
+                message:
+                  key: "error.flowmgtservice.invalid_flow_id"
+                  defaultValue: "Invalid flow ID"
+                description:
+                  key: "error.flowmgtservice.invalid_flow_id_description"
+                  defaultValue: "The provided flow ID is not a valid UUID"
         '409':
           description: Flow cannot be deleted (e.g., it's a default flow or currently in use)
           content:
@@ -270,8 +294,12 @@ paths:
                 $ref: '#/components/schemas/ClientError'
               example:
                 code: "FMS-1007"
-                message: "Flow cannot be deleted"
-                description: "Cannot delete a default flow or a flow that is currently in use"
+                message:
+                  key: "error.flowmgtservice.flow_cannot_be_deleted"
+                  defaultValue: "Flow cannot be deleted"
+                description:
+                  key: "error.flowmgtservice.flow_cannot_be_deleted_description"
+                  defaultValue: "Cannot delete a default flow or a flow that is currently in use"
         '500':
           description: Internal server error
           content:
@@ -309,8 +337,12 @@ paths:
                 $ref: '#/components/schemas/ClientError'
               example:
                 code: "FMS-1006"
-                message: "Flow not found"
-                description: "The flow with the specified ID does not exist"
+                message:
+                  key: "error.flowmgtservice.flow_not_found"
+                  defaultValue: "Flow not found"
+                description:
+                  key: "error.flowmgtservice.flow_not_found_description"
+                  defaultValue: "The flow with the specified ID does not exist"
         '500':
           description: Internal server error
           content:
@@ -354,8 +386,12 @@ paths:
                 $ref: '#/components/schemas/ClientError'
               example:
                 code: "FMS-1006"
-                message: "Version not found"
-                description: "The specified version does not exist for this flow"
+                message:
+                  key: "error.flowmgtservice.flow_not_found"
+                  defaultValue: "Version not found"
+                description:
+                  key: "error.flowmgtservice.flow_not_found_description"
+                  defaultValue: "The specified version does not exist for this flow"
         '500':
           description: Internal server error
           content:
@@ -400,8 +436,12 @@ paths:
                 $ref: '#/components/schemas/ClientError'
               example:
                 code: "FMS-1001"
-                message: "Invalid version"
-                description: "The specified version number is invalid"
+                message:
+                  key: "error.flowmgtservice.invalid_request_format"
+                  defaultValue: "Invalid version"
+                description:
+                  key: "error.flowmgtservice.invalid_request_format_description"
+                  defaultValue: "The specified version number is invalid"
         '404':
           description: Flow or version not found
           content:
@@ -410,8 +450,12 @@ paths:
                 $ref: '#/components/schemas/ClientError'
               example:
                 code: "FMS-1006"
-                message: "Version not found"
-                description: "The specified version does not exist for this flow"
+                message:
+                  key: "error.flowmgtservice.flow_not_found"
+                  defaultValue: "Version not found"
+                description:
+                  key: "error.flowmgtservice.flow_not_found_description"
+                  defaultValue: "The specified version does not exist for this flow"
         '500':
           description: Internal server error
           content:
@@ -1200,13 +1244,9 @@ components:
           description: The error code
           example: "FMS-1001"
         message:
-          type: string
-          description: The error message
-          example: "Invalid request format"
+          $ref: '#/components/schemas/I18nMessage'
         description:
-          type: string
-          description: A detailed description of the error
-          example: "The request body is malformed or contains invalid data"
+          $ref: '#/components/schemas/I18nMessage'
     
     ServerError:
       type: object
@@ -1216,10 +1256,20 @@ components:
           description: The server error code
           example: "SSE-5000"
         message:
-          type: string
-          description: The server error message
-          example: "Internal server error"
+          $ref: '#/components/schemas/I18nMessage'
         description:
+          $ref: '#/components/schemas/I18nMessage'
+
+    I18nMessage:
+      type: object
+      description: Internationalized message with translation key and default value.
+      required:
+        - key
+        - defaultValue
+      properties:
+        key:
           type: string
-          description: A detailed description of the server error
-          example: "An unexpected error occurred while processing the request"
+          description: Translation key for fetching localized message.
+        defaultValue:
+          type: string
+          description: Default message in English (fallback).

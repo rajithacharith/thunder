@@ -45,8 +45,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "AUTHN-1011"
-                message: "Empty user ID"
-                description: "The user ID is required to start registration"
+                message:
+                  key: "error.passkeyservice.empty_user_identifier"
+                  defaultValue: "Empty user ID"
+                description:
+                  key: "error.passkeyservice.empty_user_identifier_description"
+                  defaultValue: "The user ID is required to start registration"
         "404":
           description: 'Not Found: The user could not be found'
           content:
@@ -55,8 +59,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "AUTHN-1008"
-                message: "User not found"
-                description: "No user found with the provided User ID"
+                message:
+                  key: "error.passkeyservice.user_not_found"
+                  defaultValue: "User not found"
+                description:
+                  key: "error.passkeyservice.user_not_found_description"
+                  defaultValue: "No user found with the provided User ID"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request'
           content:
@@ -65,8 +73,12 @@ paths:
                 $ref: '#/components/schemas/ServerErrorResponse'
               example:
                 code: "SSE-5000"
-                message: "Internal server error"
-                description: "An unexpected error occurred while processing the request"
+                message:
+                  key: "error.internal_server_error"
+                  defaultValue: "Internal server error"
+                description:
+                  key: "error.internal_server_error_description"
+                  defaultValue: "An unexpected error occurred while processing the request"
 
   /register/passkey/finish:
     post:
@@ -98,23 +110,39 @@ paths:
                 emptyCredentialId:
                   value:
                     code: "AUTHN-1012"
-                    message: "Empty credential ID"
-                    description: "The credential ID is required to complete registration"
+                    message:
+                      key: "error.passkeyservice.empty_credential_id"
+                      defaultValue: "Empty credential ID"
+                    description:
+                      key: "error.passkeyservice.empty_credential_id_description"
+                      defaultValue: "The credential ID is required to complete registration"
                 emptyCredentialType:
                   value:
                     code: "AUTHN-1013"
-                    message: "Empty credential type"
-                    description: "The credential type is required to complete registration"
+                    message:
+                      key: "error.passkeyservice.empty_credential_type"
+                      defaultValue: "Empty credential type"
+                    description:
+                      key: "error.passkeyservice.empty_credential_type_description"
+                      defaultValue: "The credential type is required to complete registration"
                 invalidAttestationResponse:
                   value:
                     code: "AUTHN-1015"
-                    message: "Invalid attestation response"
-                    description: "The attestation response is missing required fields (clientDataJSON or attestationObject)"
+                    message:
+                      key: "error.passkeyservice.invalid_attestation_response"
+                      defaultValue: "Invalid attestation response"
+                    description:
+                      key: "error.passkeyservice.invalid_attestation_response_description"
+                      defaultValue: "The attestation response is missing required fields (clientDataJSON or attestationObject)"
                 emptySessionToken:
                   value:
                     code: "AUTHN-1004"
-                    message: "Empty session token"
-                    description: "The provided session token is empty"
+                    message:
+                      key: "error.passkeyservice.empty_session_token"
+                      defaultValue: "Empty session token"
+                    description:
+                      key: "error.passkeyservice.empty_session_token_description"
+                      defaultValue: "The provided session token is empty"
         "401":
           description: 'Unauthorized: Passkey registration verification failed'
           content:
@@ -123,8 +151,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "PASS-1009"
-                message: "Invalid attestation"
-                description: "The Passkey attestation verification failed"
+                message:
+                  key: "error.passkeyservice.invalid_attestation_response"
+                  defaultValue: "Invalid attestation"
+                description:
+                  key: "error.passkeyservice.invalid_attestation_response_description"
+                  defaultValue: "The Passkey attestation verification failed"
         "404":
           description: 'Not Found: The user could not be found'
           content:
@@ -133,8 +165,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "AUTHN-1008"
-                message: "User not found"
-                description: "No user found for the provided session"
+                message:
+                  key: "error.passkeyservice.user_not_found"
+                  defaultValue: "User not found"
+                description:
+                  key: "error.passkeyservice.user_not_found_description"
+                  defaultValue: "No user found for the provided session"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request'
           content:
@@ -143,8 +179,12 @@ paths:
                 $ref: '#/components/schemas/ServerErrorResponse'
               example:
                 code: "SSE-5000"
-                message: "Internal server error"
-                description: "An unexpected error occurred while processing the request"
+                message:
+                  key: "error.internal_server_error"
+                  defaultValue: "Internal server error"
+                description:
+                  key: "error.internal_server_error_description"
+                  defaultValue: "An unexpected error occurred while processing the request"
 
 components:
   schemas:
@@ -440,11 +480,9 @@ components:
           type: string
           description: Error code
         message:
-          type: string
-          description: Error message
+          $ref: '#/components/schemas/I18nMessage'
         description:
-          type: string
-          description: Detailed error description
+          $ref: '#/components/schemas/I18nMessage'
 
     ClientErrorResponse:
       allOf:
@@ -457,6 +495,24 @@ components:
         - type: object
       example:
         code: "SSE-5000"
-        message: "Internal server error"
-        description: "An unexpected error occurred while processing the request"
+        message:
+          key: "error.internal_server_error"
+          defaultValue: "Internal server error"
+        description:
+          key: "error.internal_server_error_description"
+          defaultValue: "An unexpected error occurred while processing the request"
+
+    I18nMessage:
+      type: object
+      description: Internationalized message with translation key and default value.
+      required:
+        - key
+        - defaultValue
+      properties:
+        key:
+          type: string
+          description: Translation key for fetching localized message.
+        defaultValue:
+          type: string
+          description: Default message in English (fallback).
 

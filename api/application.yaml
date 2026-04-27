@@ -67,8 +67,12 @@ paths:
                   summary: Invalid limit parameter
                   value:
                     code: "APP-1001"
-                    message: "Invalid pagination parameter"
-                    description: "The limit parameter must be a positive integer"
+                    message:
+                      key: "error.applicationservice.invalid_limit_parameter"
+                      defaultValue: "Invalid pagination parameter"
+                    description:
+                      key: "error.applicationservice.invalid_limit_parameter_description"
+                      defaultValue: "The limit parameter must be a positive integer"
         "500":
           description: Internal server error
           content:
@@ -77,8 +81,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "APP-5001"
-                message: "Internal server error"
-                description: "An unexpected error occurred while processing the request"
+                message:
+                  key: "error.internal_server_error"
+                  defaultValue: "Internal server error"
+                description:
+                  key: "error.internal_server_error_description"
+                  defaultValue: "An unexpected error occurred while processing the request"
 
     post:
       tags:
@@ -226,20 +234,32 @@ paths:
                   summary: Invalid request format
                   value:
                     code: "APP-1001"
-                    message: "Invalid request format"
-                    description: "The request body is malformed or contains invalid data"
+                    message:
+                      key: "error.applicationservice.invalid_request_format"
+                      defaultValue: "Invalid request format"
+                    description:
+                      key: "error.applicationservice.invalid_request_format_description"
+                      defaultValue: "The request body is malformed or contains invalid data"
                 invalid-redirect-uri:
                   summary: Invalid redirect URI
                   value:
                     code: "APP-1002"
-                    message: "Invalid redirect URI"
-                    description: "One or more redirect URIs are not valid"
+                    message:
+                      key: "error.applicationservice.invalid_redirect_uri"
+                      defaultValue: "Invalid redirect URI"
+                    description:
+                      key: "error.applicationservice.invalid_redirect_uri_description"
+                      defaultValue: "One or more redirect URIs are not valid"
                 invalid-grant-type:
                   summary: Invalid grant type
                   value:
                     code: "APP-1003"
-                    message: "Invalid grant type"
-                    description: "One or more grant types are not supported"
+                    message:
+                      key: "error.applicationservice.invalid_grant_type"
+                      defaultValue: "Invalid grant type"
+                    description:
+                      key: "error.applicationservice.invalid_grant_type_description"
+                      defaultValue: "One or more grant types are not supported"
         "500":
           description: Internal server error
           content:
@@ -248,8 +268,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "APP-5001"
-                message: "Internal server error"
-                description: "An unexpected error occurred while processing the request"
+                message:
+                  key: "error.internal_server_error"
+                  defaultValue: "Internal server error"
+                description:
+                  key: "error.internal_server_error_description"
+                  defaultValue: "An unexpected error occurred while processing the request"
 
   /applications/{id}:
     get:
@@ -340,8 +364,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "APP-1001"
-                message: "Invalid request format"
-                description: "The request contains invalid data"
+                message:
+                  key: "error.applicationservice.invalid_request_format"
+                  defaultValue: "Invalid request format"
+                description:
+                  key: "error.applicationservice.invalid_request_format_description"
+                  defaultValue: "The request contains invalid data"
         "404":
           description: Application not found
           content:
@@ -350,8 +378,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "APP-1004"
-                message: "Application not found"
-                description: "The application with the specified ID does not exist"
+                message:
+                  key: "error.applicationservice.application_not_found"
+                  defaultValue: "Application not found"
+                description:
+                  key: "error.applicationservice.application_not_found_description"
+                  defaultValue: "The application with the specified ID does not exist"
         "500":
           description: Internal server error
           content:
@@ -360,8 +392,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "APP-5001"
-                message: "Internal server error"
-                description: "An unexpected error occurred while processing the request"
+                message:
+                  key: "error.internal_server_error"
+                  defaultValue: "Internal server error"
+                description:
+                  key: "error.internal_server_error_description"
+                  defaultValue: "An unexpected error occurred while processing the request"
 
     put:
       tags:
@@ -521,14 +557,22 @@ paths:
                   summary: Invalid request format
                   value:
                     code: "APP-1001"
-                    message: "Invalid request format"
-                    description: "The request body is malformed or contains invalid data"
+                    message:
+                      key: "error.applicationservice.invalid_request_format"
+                      defaultValue: "Invalid request format"
+                    description:
+                      key: "error.applicationservice.invalid_request_format_description"
+                      defaultValue: "The request body is malformed or contains invalid data"
                 invalid-redirect-uri:
                   summary: Invalid redirect URI
                   value:
                     code: "APP-1002"
-                    message: "Invalid redirect URI"
-                    description: "One or more redirect URIs are not valid"
+                    message:
+                      key: "error.applicationservice.invalid_redirect_uri"
+                      defaultValue: "Invalid redirect URI"
+                    description:
+                      key: "error.applicationservice.invalid_redirect_uri_description"
+                      defaultValue: "One or more redirect URIs are not valid"
         "404":
           description: Application not found
           content:
@@ -537,8 +581,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "APP-1004"
-                message: "Application not found"
-                description: "The application with the specified ID does not exist"
+                message:
+                  key: "error.applicationservice.application_not_found"
+                  defaultValue: "Application not found"
+                description:
+                  key: "error.applicationservice.application_not_found_description"
+                  defaultValue: "The application with the specified ID does not exist"
         "500":
           description: Internal server error
           content:
@@ -547,8 +595,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "APP-5001"
-                message: "Internal server error"
-                description: "An unexpected error occurred while processing the request"
+                message:
+                  key: "error.internal_server_error"
+                  defaultValue: "Internal server error"
+                description:
+                  key: "error.internal_server_error_description"
+                  defaultValue: "An unexpected error occurred while processing the request"
 
     delete:
       tags:
@@ -575,8 +627,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "APP-1001"
-                message: "Invalid request format"
-                description: "The request contains invalid data"
+                message:
+                  key: "error.applicationservice.invalid_request_format"
+                  defaultValue: "Invalid request format"
+                description:
+                  key: "error.applicationservice.invalid_request_format_description"
+                  defaultValue: "The request contains invalid data"
         "500":
           description: Internal server error
           content:
@@ -585,8 +641,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "APP-5001"
-                message: "Internal server error"
-                description: "An unexpected error occurred while processing the request"
+                message:
+                  key: "error.internal_server_error"
+                  defaultValue: "Internal server error"
+                description:
+                  key: "error.internal_server_error_description"
+                  defaultValue: "An unexpected error occurred while processing the request"
 
 components:
   securitySchemes:
@@ -1261,10 +1321,20 @@ components:
           description: The error code.
           example: "APP-1001"
         message:
-          type: string
-          description: The error message.
-          example: "Invalid request format"
+          $ref: '#/components/schemas/I18nMessage'
         description:
+          $ref: '#/components/schemas/I18nMessage'
+
+    I18nMessage:
+      type: object
+      description: Internationalized message with translation key and default value.
+      required:
+        - key
+        - defaultValue
+      properties:
+        key:
           type: string
-          description: A detailed description of the error.
-          example: "The request body is malformed or contains invalid data"
+          description: Translation key for fetching localized message.
+        defaultValue:
+          type: string
+          description: Default message in English (fallback).

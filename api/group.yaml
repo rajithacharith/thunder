@@ -68,20 +68,32 @@ paths:
                   summary: Invalid request format
                   value:
                     code: "GRP-1001"
-                    message: "Invalid request format"
-                    description: "The request body is malformed or contains invalid data"
+                    message:
+                      key: "error.groupservice.invalid_request_format"
+                      defaultValue: "Invalid request format"
+                    description:
+                      key: "error.groupservice.invalid_request_format_description"
+                      defaultValue: "The request body is malformed or contains invalid data"
                 invalid-limit:
                   summary: Invalid limit parameter
                   value:
                     code: "GRP-1011"
-                    message: "Invalid limit parameter"
-                    description: "The limit parameter must be a positive integer"
+                    message:
+                      key: "error.groupservice.invalid_limit_parameter"
+                      defaultValue: "Invalid limit parameter"
+                    description:
+                      key: "error.groupservice.invalid_limit_parameter_description"
+                      defaultValue: "The limit parameter must be a positive integer"
                 invalid-offset:
                   summary: Invalid offset parameter
                   value:
                     code: "GRP-1012"
-                    message: "Invalid offset parameter"
-                    description: "The offset parameter must be a non-negative integer"
+                    message:
+                      key: "error.groupservice.invalid_offset_parameter"
+                      defaultValue: "Invalid offset parameter"
+                    description:
+                      key: "error.groupservice.invalid_offset_parameter_description"
+                      defaultValue: "The offset parameter must be a non-negative integer"
         "500":
           description: Internal server error
           content:
@@ -134,20 +146,32 @@ paths:
                   summary: Invalid request format
                   value:
                     code: "GRP-1001"
-                    message: "Invalid request format"
-                    description: "The request body is malformed or contains invalid data"
+                    message:
+                      key: "error.groupservice.invalid_request_format"
+                      defaultValue: "Invalid request format"
+                    description:
+                      key: "error.groupservice.invalid_request_format_description"
+                      defaultValue: "The request body is malformed or contains invalid data"
                 invalid-user-id:
                   summary: Invalid member ID
                   value:
                     code: "GRP-1007"
-                    message: "Invalid member ID"
-                    description: "One or more member IDs in the request do not exist"
+                    message:
+                      key: "error.groupservice.invalid_member_id"
+                      defaultValue: "Invalid member ID"
+                    description:
+                      key: "error.groupservice.invalid_member_id_description"
+                      defaultValue: "One or more member IDs in the request do not exist"
                 ou-not-found:
                   summary: Organization unit not found
                   value:
                     code: "GRP-1005"
-                    message: "Organization unit not found"
-                    description: "Organization unit not found"
+                    message:
+                      key: "error.groupservice.invalid_ou_id"
+                      defaultValue: "Organization unit not found"
+                    description:
+                      key: "error.groupservice.invalid_ou_id_description"
+                      defaultValue: "Organization unit not found"
         "409":
           description: Conflict
           content:
@@ -156,8 +180,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "GRP-1004"
-                message: "Group name conflict"
-                description: "A group with the same name exists under the same organization unit"
+                message:
+                  key: "error.groupservice.group_name_conflict"
+                  defaultValue: "Group name conflict"
+                description:
+                  key: "error.groupservice.group_name_conflict_description"
+                  defaultValue: "A group with the same name exists under the same organization unit"
         "500":
           description: Internal server error
           content:
@@ -199,8 +227,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "GRP-1002"
-                message: "Invalid request format"
-                description: "Group ID is required"
+                message:
+                  key: "error.groupservice.missing_group_id"
+                  defaultValue: "Invalid request format"
+                description:
+                  key: "error.groupservice.missing_group_id_description"
+                  defaultValue: "Group ID is required"
         "404":
           description: Group not found
           content:
@@ -209,8 +241,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "GRP-1003"
-                message: "Group not found"
-                description: "The group with the specified id does not exist"
+                message:
+                  key: "error.groupservice.group_not_found"
+                  defaultValue: "Group not found"
+                description:
+                  key: "error.groupservice.group_not_found_description"
+                  defaultValue: "The group with the specified id does not exist"
         "500":
           description: Internal server error
           content:
@@ -263,20 +299,32 @@ paths:
                   summary: Missing group ID
                   value:
                     code: "GRP-1002"
-                    message: "Invalid request format"
-                    description: "Group ID is required"
+                    message:
+                      key: "error.groupservice.missing_group_id"
+                      defaultValue: "Invalid request format"
+                    description:
+                      key: "error.groupservice.missing_group_id_description"
+                      defaultValue: "Group ID is required"
                 invalid-request-format:
                   summary: Invalid request format
                   value:
                     code: "GRP-1001"
-                    message: "Invalid request format"
-                    description: "The request body is malformed or contains invalid data"
+                    message:
+                      key: "error.groupservice.invalid_request_format"
+                      defaultValue: "Invalid request format"
+                    description:
+                      key: "error.groupservice.invalid_request_format_description"
+                      defaultValue: "The request body is malformed or contains invalid data"
                 ou-not-found:
                   summary: Organization unit not found
                   value:
                     code: "GRP-1005"
-                    message: "Organization unit not found"
-                    description: "Organization unit not found"
+                    message:
+                      key: "error.groupservice.invalid_ou_id"
+                      defaultValue: "Organization unit not found"
+                    description:
+                      key: "error.groupservice.invalid_ou_id_description"
+                      defaultValue: "Organization unit not found"
         "404":
           description: Group not found
           content:
@@ -285,8 +333,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "GRP-1003"
-                message: "Group not found"
-                description: "The group with the specified id does not exist"
+                message:
+                  key: "error.groupservice.group_not_found"
+                  defaultValue: "Group not found"
+                description:
+                  key: "error.groupservice.group_not_found_description"
+                  defaultValue: "The group with the specified id does not exist"
         "409":
           description: Conflict
           content:
@@ -295,8 +347,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "GRP-1004"
-                message: "Group name conflict"
-                description: "A group with the same name exists under the same organization unit"
+                message:
+                  key: "error.groupservice.group_name_conflict"
+                  defaultValue: "Group name conflict"
+                description:
+                  key: "error.groupservice.group_name_conflict_description"
+                  defaultValue: "A group with the same name exists under the same organization unit"
         "500":
           description: Internal server error
           content:
@@ -330,14 +386,22 @@ paths:
                   summary: Missing group ID
                   value:
                     code: "GRP-1002"
-                    message: "Invalid request format"
-                    description: "Group ID is required"
+                    message:
+                      key: "error.groupservice.missing_group_id"
+                      defaultValue: "Invalid request format"
+                    description:
+                      key: "error.groupservice.missing_group_id_description"
+                      defaultValue: "Group ID is required"
                 cannot-delete-group:
                   summary: Cannot delete group
                   value:
                     code: "GRP-1006"
-                    message: "Cannot delete group"
-                    description: "Cannot delete group with child groups"
+                    message:
+                      key: "error.groupservice.cannot_delete_group"
+                      defaultValue: "Cannot delete group"
+                    description:
+                      key: "error.groupservice.cannot_delete_group_description"
+                      defaultValue: "Cannot delete group with child groups"
         "500":
           description: Internal server error
           content:
@@ -391,14 +455,22 @@ paths:
                   summary: Invalid limit parameter
                   value:
                     code: "GRP-1011"
-                    message: "Invalid limit parameter"
-                    description: "The limit parameter must be a positive integer"
+                    message:
+                      key: "error.groupservice.invalid_limit_parameter"
+                      defaultValue: "Invalid limit parameter"
+                    description:
+                      key: "error.groupservice.invalid_limit_parameter_description"
+                      defaultValue: "The limit parameter must be a positive integer"
                 invalid-offset:
                   summary: Invalid offset parameter
                   value:
                     code: "GRP-1012"
-                    message: "Invalid offset parameter"
-                    description: "The offset parameter must be a non-negative integer"
+                    message:
+                      key: "error.groupservice.invalid_offset_parameter"
+                      defaultValue: "Invalid offset parameter"
+                    description:
+                      key: "error.groupservice.invalid_offset_parameter_description"
+                      defaultValue: "The offset parameter must be a non-negative integer"
         "404":
           description: Group not found
           content:
@@ -407,8 +479,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "GRP-1003"
-                message: "Group not found"
-                description: "The group with the specified id does not exist"
+                message:
+                  key: "error.groupservice.group_not_found"
+                  defaultValue: "Group not found"
+                description:
+                  key: "error.groupservice.group_not_found_description"
+                  defaultValue: "The group with the specified id does not exist"
         "500":
           description: Internal server error
           content:
@@ -464,20 +540,32 @@ paths:
                   summary: Invalid request format
                   value:
                     code: "GRP-1001"
-                    message: "Invalid request format"
-                    description: "The request body is malformed or contains invalid data"
+                    message:
+                      key: "error.groupservice.invalid_request_format"
+                      defaultValue: "Invalid request format"
+                    description:
+                      key: "error.groupservice.invalid_request_format_description"
+                      defaultValue: "The request body is malformed or contains invalid data"
                 empty-members:
                   summary: Empty members list
                   value:
                     code: "GRP-1013"
-                    message: "Empty members list"
-                    description: "The members list cannot be empty"
+                    message:
+                      key: "error.groupservice.empty_members_list"
+                      defaultValue: "Empty members list"
+                    description:
+                      key: "error.groupservice.empty_members_list_description"
+                      defaultValue: "The members list cannot be empty"
                 invalid-member-id:
                   summary: Invalid member ID
                   value:
                     code: "GRP-1007"
-                    message: "Invalid member ID"
-                    description: "One or more user or app member IDs in the request do not exist or do not match the claimed type"
+                    message:
+                      key: "error.groupservice.invalid_member_id"
+                      defaultValue: "Invalid member ID"
+                    description:
+                      key: "error.groupservice.invalid_member_id_description"
+                      defaultValue: "One or more user or app member IDs in the request do not exist or do not match the claimed type"
         "404":
           description: Group not found
           content:
@@ -486,8 +574,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "GRP-1003"
-                message: "Group not found"
-                description: "The group with the specified id does not exist"
+                message:
+                  key: "error.groupservice.group_not_found"
+                  defaultValue: "Group not found"
+                description:
+                  key: "error.groupservice.group_not_found_description"
+                  defaultValue: "The group with the specified id does not exist"
         "500":
           description: Internal server error
           content:
@@ -541,14 +633,22 @@ paths:
                   summary: Invalid request format
                   value:
                     code: "GRP-1001"
-                    message: "Invalid request format"
-                    description: "The request body is malformed or contains invalid data"
+                    message:
+                      key: "error.groupservice.invalid_request_format"
+                      defaultValue: "Invalid request format"
+                    description:
+                      key: "error.groupservice.invalid_request_format_description"
+                      defaultValue: "The request body is malformed or contains invalid data"
                 empty-members:
                   summary: Empty members list
                   value:
                     code: "GRP-1013"
-                    message: "Empty members list"
-                    description: "The members list cannot be empty"
+                    message:
+                      key: "error.groupservice.empty_members_list"
+                      defaultValue: "Empty members list"
+                    description:
+                      key: "error.groupservice.empty_members_list_description"
+                      defaultValue: "The members list cannot be empty"
         "404":
           description: Group not found
           content:
@@ -557,8 +657,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "GRP-1003"
-                message: "Group not found"
-                description: "The group with the specified id does not exist"
+                message:
+                  key: "error.groupservice.group_not_found"
+                  defaultValue: "Group not found"
+                description:
+                  key: "error.groupservice.group_not_found_description"
+                  defaultValue: "The group with the specified id does not exist"
         "500":
           description: Internal server error
           content:
@@ -623,14 +727,22 @@ paths:
                   summary: Invalid limit parameter
                   value:
                     code: "GRP-1011"
-                    message: "Invalid limit parameter"
-                    description: "The limit parameter must be a positive integer"
+                    message:
+                      key: "error.groupservice.invalid_limit_parameter"
+                      defaultValue: "Invalid limit parameter"
+                    description:
+                      key: "error.groupservice.invalid_limit_parameter_description"
+                      defaultValue: "The limit parameter must be a positive integer"
                 invalid-offset:
                   summary: Invalid offset parameter
                   value:
                     code: "GRP-1012"
-                    message: "Invalid offset parameter"
-                    description: "The offset parameter must be a non-negative integer"
+                    message:
+                      key: "error.groupservice.invalid_offset_parameter"
+                      defaultValue: "Invalid offset parameter"
+                    description:
+                      key: "error.groupservice.invalid_offset_parameter_description"
+                      defaultValue: "The offset parameter must be a non-negative integer"
         "404":
           description: Organization unit not found
           content:
@@ -642,14 +754,22 @@ paths:
                   summary: Handle path not found
                   value:
                     code: "GRP-1008"
-                    message: "Organization unit not found"
-                    description: "The organization unit with the specified handle path does not exist"
+                    message:
+                      key: "error.groupservice.invalid_group_member_id"
+                      defaultValue: "Organization unit not found"
+                    description:
+                      key: "error.groupservice.invalid_group_member_id_description"
+                      defaultValue: "The organization unit with the specified handle path does not exist"
                 invalid-path:
                   summary: Invalid path structure
                   value:
                     code: "GRP-1009"
-                    message: "Invalid handle path"
-                    description: "The handle path does not represent a valid organizational hierarchy"
+                    message:
+                      key: "error.groupservice.invalid_handle_path"
+                      defaultValue: "Invalid handle path"
+                    description:
+                      key: "error.groupservice.invalid_handle_path_description"
+                      defaultValue: "The handle path does not represent a valid organizational hierarchy"
         "500":
           description: Internal server error
           content:
@@ -716,20 +836,32 @@ paths:
                   summary: Invalid request format
                   value:
                     code: "GRP-1001"
-                    message: "Invalid request format"
-                    description: "The request body is malformed or contains invalid data"
+                    message:
+                      key: "error.groupservice.invalid_request_format"
+                      defaultValue: "Invalid request format"
+                    description:
+                      key: "error.groupservice.invalid_request_format_description"
+                      defaultValue: "The request body is malformed or contains invalid data"
                 invalid-member-id:
                   summary: Invalid member ID
                   value:
                     code: "GRP-1007"
-                    message: "Invalid member ID"
-                    description: "One or more member IDs in the request do not exist"
+                    message:
+                      key: "error.groupservice.invalid_member_id"
+                      defaultValue: "Invalid member ID"
+                    description:
+                      key: "error.groupservice.invalid_member_id_description"
+                      defaultValue: "One or more member IDs in the request do not exist"
                 parent-path-not-found:
                   summary: Organization unit path not found
                   value:
                     code: "GRP-1008"
-                    message: "Organization unit handle path not found"
-                    description: "The specified organization unit handle path does not exist"
+                    message:
+                      key: "error.groupservice.invalid_ou_id"
+                      defaultValue: "Organization unit handle path not found"
+                    description:
+                      key: "error.groupservice.invalid_ou_id_description"
+                      defaultValue: "The specified organization unit handle path does not exist"
         "404":
           description: Organization unit not found
           content:
@@ -741,14 +873,22 @@ paths:
                   summary: Handle path not found
                   value:
                     code: "GRP-1008"
-                    message: "Organization unit not found"
-                    description: "The organization unit with the specified handle path does not exist"
+                    message:
+                      key: "error.groupservice.invalid_group_member_id"
+                      defaultValue: "Organization unit not found"
+                    description:
+                      key: "error.groupservice.invalid_group_member_id_description"
+                      defaultValue: "The organization unit with the specified handle path does not exist"
                 invalid-path:
                   summary: Invalid path structure
                   value:
                     code: "GRP-1009"
-                    message: "Invalid handle path"
-                    description: "The handle path does not represent a valid organizational hierarchy"
+                    message:
+                      key: "error.groupservice.invalid_handle_path"
+                      defaultValue: "Invalid handle path"
+                    description:
+                      key: "error.groupservice.invalid_handle_path_description"
+                      defaultValue: "The handle path does not represent a valid organizational hierarchy"
         "409":
           description: Conflict
           content:
@@ -757,8 +897,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "GRP-1004"
-                message: "Group name conflict"
-                description: "A group with the same name exists under the same organization unit"
+                message:
+                  key: "error.groupservice.group_name_conflict"
+                  defaultValue: "Group name conflict"
+                description:
+                  key: "error.groupservice.group_name_conflict_description"
+                  defaultValue: "A group with the same name exists under the same organization unit"
         "500":
           description: Internal server error
           content:
@@ -988,10 +1132,20 @@ components:
           description: Error code
           example: "GRP-1001"
         message:
-          type: string
-          description: Error message
-          example: "Invalid request format"
+          $ref: '#/components/schemas/I18nMessage'
         description:
+          $ref: '#/components/schemas/I18nMessage'
+
+    I18nMessage:
+      type: object
+      description: Internationalized message with translation key and default value.
+      required:
+        - key
+        - defaultValue
+      properties:
+        key:
           type: string
-          description: Detailed error description
-          example: "The request body is malformed or contains invalid data"
+          description: Translation key for fetching localized message.
+        defaultValue:
+          type: string
+          description: Default message in English (fallback).
