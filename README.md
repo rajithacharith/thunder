@@ -1,4 +1,4 @@
-# WSO2 Thunder ⚡
+# Thunder ⚡
 
 ### Identity Management Suite
 

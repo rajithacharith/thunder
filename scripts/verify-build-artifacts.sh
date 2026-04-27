@@ -1,6 +1,6 @@
 #!/bin/bash
 # verify-build-artifacts.sh
-# Verifies that all expected Thunder build artifacts were created for all platforms
+# Verifies that all expected product build artifacts were created for all platforms
 #
 # Usage: ./scripts/verify-build-artifacts.sh
 #

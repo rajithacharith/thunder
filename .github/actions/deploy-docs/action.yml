@@ -1,5 +1,5 @@
 name: '📚 Deploy Documentation to GitHub Pages'
-description: 'Deploy Thunder documentation to GitHub Pages'
+description: 'Deploy documentation to GitHub Pages'
 author: 'WSO2'
 inputs:
   docs-artifact-name:

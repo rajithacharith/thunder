@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Export API
   version: "1.0"
-  description: This API exports Thunder resources as combined YAML in JSON responses or as ZIP archives.
+  description: This API exports Resources as combined YAML in JSON responses or as ZIP archives.
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
@@ -55,7 +55,7 @@ paths:
                 with-env-file:
                   summary: Export that includes template variables
                   value:
-                    resources: "# File: google-idp.yaml\napiVersion: thunder/v1\nkind: IdentityProvider\n..."
+                    resources: "# File: google-idp.yaml\napiVersion: v1\nkind: IdentityProvider\n..."
                     environment_variables: "GOOGLE_CLIENT_ID=\nGOOGLE_CLIENT_SECRET=\n"
         "400":
           description: Bad request
@@ -323,7 +323,7 @@ components:
       example:
         files:
           - fileName: "google-idp.yaml"
-            content: "apiVersion: thunder/v1\nkind: IdentityProvider\n..."
+            content: "apiVersion: v1\nkind: IdentityProvider\n..."
             size: 128
         envFile:
           fileName: ".env"

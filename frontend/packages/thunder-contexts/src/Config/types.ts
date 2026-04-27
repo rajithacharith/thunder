@@ -175,7 +175,7 @@ export interface TrustedIssuerConfig {
  * settings for Thunder applications.
  *
  * This interface defines the complete structure of the runtime configuration
- * that can be loaded from `window.__THUNDER_RUNTIME_CONFIG__` or provided
+ * that can be loaded from window object or provided
  * as default values.
  *
  * @public

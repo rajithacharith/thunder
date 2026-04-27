@@ -26,11 +26,11 @@ type ClassValue = string | false | null | undefined | 0;
  * Sets the global class name prefix used by `cn()`.
  *
  * Should be called once at app bootstrap, typically using the product name
- * from `config.js` (e.g., `window.__THUNDER_RUNTIME_CONFIG__.brand.product_name`).
+ * from `config.js`.
  *
  * @example
  * ```ts
- * setCnPrefix(window.__THUNDER_RUNTIME_CONFIG__?.brand?.product_name ?? 'Thunder');
+ * setCnPrefix('<PRODUCT_NAME>');
  * ```
  *
  * @param newPrefix - The prefix to use for all class names

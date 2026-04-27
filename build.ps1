@@ -134,7 +134,7 @@ if ($SAMPLE_DIST_ARCH -eq "amd64") {
     $SAMPLE_DIST_ARCH = "x64"
 }
 
-# --- Thunder Package Distribution details ---
+# --- Package Distribution details ---
 $GO_PACKAGE_OS = $GO_OS
 $GO_PACKAGE_ARCH = $GO_ARCH
 
@@ -1568,7 +1568,7 @@ function Run {
         Run-Consent
     }
 
-    # Save original THUNDER_SKIP_SECURITY value and temporarily set to true
+    # Save original skip security value and temporarily set to true
     $script:ORIGINAL_THUNDER_SKIP_SECURITY = $env:THUNDER_SKIP_SECURITY
     $env:THUNDER_SKIP_SECURITY = "true"
     Run-Backend -ShowFinalOutput $false
@@ -1628,7 +1628,7 @@ function Run {
     }
 
     Write-Host "🔒 Restoring security setting and restarting backend..."
-    # Restore original THUNDER_SKIP_SECURITY value
+    # Restore original skip security value
     if (![string]::IsNullOrEmpty($script:ORIGINAL_THUNDER_SKIP_SECURITY)) {
         $env:THUNDER_SKIP_SECURITY = $script:ORIGINAL_THUNDER_SKIP_SECURITY
     }
