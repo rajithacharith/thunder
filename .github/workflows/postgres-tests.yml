@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       distribution-url:
-        description: 'URL to download Thunder distribution (optional, will build if not provided)'
+        description: 'URL to download Distribution (optional, will build if not provided)'
         required: false
         type: string
       version:

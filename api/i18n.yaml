@@ -1,6 +1,7 @@
 openapi: 3.0.3
+
 info:
-  title: Thunder i18n API
+  title: Internationalization (i18n) API
   version: "1.0"
   description: API to manage internationalization (i18n) translations organized by language, namespace, and key.
   license:

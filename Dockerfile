@@ -16,7 +16,7 @@
 # under the License.
 # ----------------------------------------------------------------------------
 
-# WSO2 Thunder Docker Image
+# Thunder Docker Image
 # Build stage - compile the Go binary and build frontend for the target architecture
 FROM golang:1.26-alpine3.23 AS builder
 
@@ -83,13 +83,13 @@ RUN apk add --no-cache \
     curl \
     unzip
 
-# Create thunder user and group
+# Create user and group
 RUN addgroup -S thunder -g 10001 && adduser -S thunder -u 10001 -G thunder
 
 # Create application directory
 WORKDIR /opt/thunder
 
-# Copy and extract the thunder package from builder stage
+# Copy and extract the package from builder stage
 # TARGETARCH is automatically set by Docker during multi-arch builds
 ARG TARGETARCH
 COPY --from=builder /app/target/dist/ /tmp/dist/
@@ -113,7 +113,7 @@ RUN chown -R thunder:thunder /opt/thunder && \
 # Expose the default port
 EXPOSE 8090
 
-# Switch to thunder user
+# Switch to user
 USER thunder
 
 # Set environment variables

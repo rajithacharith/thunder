@@ -94,7 +94,7 @@ function createTestQueryClient() {
 function Providers({children, queryClient = undefined, config = undefined}: ProvidersProps) {
   const testConfig = config ?? currentConfig;
 
-  // Setup window.__THUNDER_RUNTIME_CONFIG__ for tests
+  // Setup window runtime configuration for tests
   if (typeof window !== 'undefined' && !window.__THUNDER_RUNTIME_CONFIG__) {
     // eslint-disable-next-line react-hooks/immutability
     window.__THUNDER_RUNTIME_CONFIG__ = {

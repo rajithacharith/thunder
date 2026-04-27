@@ -27,7 +27,7 @@ import {ThunderConfig} from './types';
  */
 export interface ConfigContextType {
   /**
-   * The complete Thunder configuration object loaded from window.__THUNDER_RUNTIME_CONFIG__
+   * The complete Thunder configuration object loaded from window object
    * or default values if not available
    */
   config: ThunderConfig;
@@ -118,7 +118,7 @@ export interface ConfigContextType {
 /**
  * React context for accessing Thunder runtime configuration throughout the application.
  *
- * This context provides access to the configuration loaded from `window.__THUNDER_RUNTIME_CONFIG__`
+ * This context provides access to the configuration loaded from window object.
  * or falls back to default values. It should be used within a `ConfigProvider` component.
  *
  * @example

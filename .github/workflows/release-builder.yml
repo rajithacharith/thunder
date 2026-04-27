@@ -381,7 +381,7 @@ jobs:
           show-cert-info: 'true'
 
       - name: 🔨 Build Thunder Release Artifacts
-        uses: ./.github/actions/build-thunder-multiplatform
+        uses: ./.github/actions/build-multiplatform
 
       - name: 📝 Read Updated Version
         id: version

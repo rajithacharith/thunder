@@ -1,11 +1,11 @@
-name: 'Build Thunder Multi-Platform'
-description: 'Builds Thunder frontend and backend for all supported platforms'
+name: 'Build Multi-Platform'
+description: 'Builds product frontend and backend for all supported platforms'
 author: 'WSO2'
 
 runs:
   using: composite
   steps:
-    - name: 🔨 Build Thunder for All Platforms
+    - name: 🔨 Build product for all platforms
       shell: bash
       run: |
         # Define platform matrix
@@ -17,7 +17,7 @@ runs:
           "darwin:arm64"
         )
 
-        echo "🏗️ Building Thunder for ${#PLATFORMS[@]} platforms..."
+        echo "🏗️ Building product for ${#PLATFORMS[@]} platforms..."
 
         # Build frontend once (platform-agnostic)
         echo "🔨 Building frontend..."
@@ -27,9 +27,9 @@ runs:
         for platform in "${PLATFORMS[@]}"; do
           OS="${platform%%:*}"
           ARCH="${platform#*:}"
-          echo "🔨 Building Thunder backend for $OS/$ARCH..."
+          echo "🔨 Building product backend for $OS/$ARCH..."
           make build_backend OS=$OS ARCH=$ARCH
           sleep 1
         done
 
-        echo "✅ Thunder built for all platforms successfully!"
+        echo "✅ Product built for all platforms successfully!"

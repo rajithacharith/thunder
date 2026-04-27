@@ -76,7 +76,7 @@ if [ "$SAMPLE_DIST_ARCH" = "amd64" ]; then
     SAMPLE_DIST_ARCH=x64
 fi
 
-# --- Thunder Package Distribution details ---
+# --- Package Distribution details ---
 GO_PACKAGE_OS=$GO_OS
 GO_PACKAGE_ARCH=$GO_ARCH
 
@@ -992,7 +992,7 @@ function run() {
         run_consent
     fi
 
-    # Save original THUNDER_SKIP_SECURITY value and temporarily set to true
+    # Save original skip security value and temporarily set to true
     ORIGINAL_THUNDER_SKIP_SECURITY="${THUNDER_SKIP_SECURITY:-}"
     export THUNDER_SKIP_SECURITY=true
     run_backend false

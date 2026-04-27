@@ -44,8 +44,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-modules-
 
-      - name: 🔨 Build Thunder for All Platforms
-        uses: ./.github/actions/build-thunder-multiplatform
+      - name: 🔨 Build product for All Platforms
+        uses: ./.github/actions/build-multiplatform
 
       - name: 🔐 Generate and Upload Certificates
         uses: ./.github/actions/generate-certificates

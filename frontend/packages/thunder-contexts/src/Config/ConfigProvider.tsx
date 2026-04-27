@@ -20,8 +20,6 @@ import {useMemo, PropsWithChildren} from 'react';
 import ConfigContext, {ConfigContextType} from './ConfigContext';
 import {ThunderConfig} from './types';
 
-/* eslint-disable no-underscore-dangle */
-
 /**
  * Props for the ConfigProvider component.
  *
@@ -30,7 +28,7 @@ import {ThunderConfig} from './types';
 export type ConfigProviderProps = PropsWithChildren;
 
 /**
- * Loads configuration from window.__THUNDER_RUNTIME_CONFIG__ or uses default values.
+ * Loads configuration from window object or uses default values.
  *
  * This function safely accesses the global window object and merges any runtime
  * configuration with the default configuration values. It performs a deep merge
@@ -52,7 +50,7 @@ function loadConfig(): ThunderConfig {
  * React context provider component that provides Thunder runtime configuration
  * to all child components.
  *
- * This component loads configuration from `window.__THUNDER_RUNTIME_CONFIG__` at
+ * This component loads configuration from window object at
  * initialization time and provides it through React context. If the global
  * configuration is not available, it falls back to default values.
  *
