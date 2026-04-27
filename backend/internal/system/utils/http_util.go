@@ -25,6 +25,7 @@ import (
 	"html"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 	"unicode"
 
@@ -65,6 +66,104 @@ func ParseURL(urlStr string) (*url.URL, error) {
 		return nil, err
 	}
 	return parsedURL, nil
+}
+
+// MatchURIPattern reports whether incoming matches pattern.
+// pattern may contain * (exactly one path segment) or ** (zero or more path segments)
+// only in the path component. Scheme, host, and query must match exactly (case-insensitive
+// scheme and host per RFC 3986). Both paths are cleaned (resolving . and .. segments)
+// before matching to prevent path traversal. Returns (false, error) for malformed inputs,
+// (false, nil) for no match, (true, nil) for a match.
+func MatchURIPattern(pattern, incoming string) (bool, error) {
+	patternURL, err := url.Parse(pattern)
+	if err != nil || patternURL.Scheme == "" || patternURL.Host == "" {
+		return false, errors.New("invalid pattern URI: missing scheme or host")
+	}
+	incomingURL, err := url.Parse(incoming)
+	if err != nil || incomingURL.Scheme == "" || incomingURL.Host == "" {
+		return false, errors.New("invalid incoming URI: missing scheme or host")
+	}
+
+	if !strings.EqualFold(patternURL.Scheme, incomingURL.Scheme) {
+		return false, nil
+	}
+	if !strings.EqualFold(patternURL.Host, incomingURL.Host) {
+		return false, nil
+	}
+	if patternURL.RawQuery != incomingURL.RawQuery {
+		return false, nil
+	}
+	if patternURL.Fragment != "" || incomingURL.Fragment != "" {
+		return false, nil
+	}
+	return matchPathPattern(path.Clean(patternURL.Path), path.Clean(incomingURL.Path)), nil
+}
+
+// matchPathPattern reports whether incomingPath matches patternPath.
+// Wildcards * (one segment) and ** (zero or more segments) are supported in patternPath.
+func matchPathPattern(patternPath, incomingPath string) bool {
+	patSegs := strings.Split(patternPath, "/")
+	incSegs := strings.Split(incomingPath, "/")
+	memo := make(map[[2]int]bool)
+	return matchSegs(patSegs, incSegs, 0, 0, memo)
+}
+
+// matchSegs is a memoized entry point for the recursive segment matching.
+func matchSegs(patSegs, incSegs []string, i, j int, memo map[[2]int]bool) bool {
+	key := [2]int{i, j}
+	if cached, ok := memo[key]; ok {
+		return cached
+	}
+	result := matchSegsImpl(patSegs, incSegs, i, j, memo)
+	memo[key] = result
+	return result
+}
+
+// matchSegsImpl performs the actual recursive segment matching logic.
+func matchSegsImpl(patSegs, incSegs []string, i, j int, memo map[[2]int]bool) bool {
+	// Both exhausted.
+	if i == len(patSegs) && j == len(incSegs) {
+		return true
+	}
+	// Pattern exhausted but incoming still has segments.
+	if i == len(patSegs) {
+		return false
+	}
+	// Incoming exhausted but pattern still has segments:
+	// only true if all remaining pattern segments are "**".
+	if j == len(incSegs) {
+		for k := i; k < len(patSegs); k++ {
+			if patSegs[k] != "**" {
+				return false
+			}
+		}
+		return true
+	}
+
+	pSeg := patSegs[i]
+
+	if pSeg == "**" {
+		// Try consuming zero incoming segments (advance pattern only).
+		if matchSegs(patSegs, incSegs, i+1, j, memo) {
+			return true
+		}
+		// Try consuming one incoming segment (keep pattern position).
+		return matchSegs(patSegs, incSegs, i, j+1, memo)
+	}
+
+	if pSeg == "*" {
+		// Must match exactly one non-empty segment.
+		if incSegs[j] == "" {
+			return false
+		}
+		return matchSegs(patSegs, incSegs, i+1, j+1, memo)
+	}
+
+	// Literal segment: must match exactly.
+	if pSeg != incSegs[j] {
+		return false
+	}
+	return matchSegs(patSegs, incSegs, i+1, j+1, memo)
 }
 
 // IsValidURI checks if the provided URI is valid.

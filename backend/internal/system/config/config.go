@@ -217,6 +217,9 @@ type OAuthConfig struct {
 	AuthorizationCode AuthorizationCodeConfig `yaml:"authorization_code" json:"authorization_code"`
 	DCR               DCRConfig               `yaml:"dcr" json:"dcr"`
 	PAR               PARConfig               `yaml:"par" json:"par"`
+	// AllowWildcardRedirectURI enables wildcard pattern matching for redirect URIs.
+	// When false (default), only exact redirect URI matching is performed.
+	AllowWildcardRedirectURI bool `yaml:"allow_wildcard_redirect_uri" json:"allow_wildcard_redirect_uri"`
 }
 
 // FlowConfig holds the configuration details for the flow service.

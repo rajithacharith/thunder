@@ -152,7 +152,7 @@ To rotate the client secret, open the application's **OAuth** tab and click **Re
 Redirect URIs are the URLs Thunder sends the authorization code (or token) to after a successful sign-in. You must register every URI your application uses.
 
 - Register all environments separately (for example, `http://localhost:3000/callback` for development and `https://yourapp.example.com/callback` for production).
-- Wildcard URIs are not supported. Register each URI exactly.
+- Wildcard patterns (`*`, `**`) in the path are supported when `oauth.allow_wildcard_redirect_uri` is enabled. Otherwise, each URI must match exactly. See [Use Wildcard Redirect URIs](/docs/next/guides/guides/applications/application-settings#use-wildcard-redirect-uris).
 - For mobile apps, register deep link URIs (for example, `com.example.app://auth/callback`) or universal link URIs.
 
 ### Grant Types

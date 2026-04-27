@@ -3,8 +3,8 @@
 Thunder is a lightweight user and identity management product. Go backend + React frontend in a monorepo. It provides authentication and authorization via OAuth2/OIDC, flexible orchestration flows, and individual auth mechanisms (password, passwordless, social login).
 
 - [ARCHITECTURE.md](ARCHITECTURE.md)
-- For build and running - Makefile and README.md.
-- Documentation at /docs/content.
+- For build and running - [Makefile](Makefile) and [README.md](README.md)
+- Documentation at [docs/content](docs/content)
 
 Thunder's login gate leverages v2 of the [Asgardeo JavaScript SDK](https://github.com/asgardeo/javascript), consumed via its published package in typical setups.
 Clone the SDK repository only if you are developing or debugging the SDK itself, or testing Thunder against unreleased SDK changes.

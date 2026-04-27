@@ -95,4 +95,7 @@ cat >> tests/integration/resources/deployment.yaml <<EOF
 
 flow:
   max_version_history: 3
+
+oauth:
+  allow_wildcard_redirect_uri: true
 EOF

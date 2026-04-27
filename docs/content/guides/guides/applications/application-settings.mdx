@@ -26,6 +26,60 @@ Under **Access** on the General tab, you can restrict which users can authentica
 | **Application URL** | The homepage URL of your application. |
 | **Authorized Redirect URIs** | The URLs Thunder sends users back to after authentication. Register every URI your application uses.
 
+## Use Wildcard Redirect URIs
+
+Thunder supports wildcard patterns in the path component of registered redirect URIs. This lets you register a single pattern that covers a range of valid callback paths, rather than listing every exact URI.
+
+:::note
+Wildcard redirect URI support is disabled by default. A Thunder administrator must set `oauth.allow_wildcard_redirect_uri: true` in `deployment.yaml` before you can register wildcard patterns. See [Configuration](/docs/next/guides/getting-started/configuration) for details.
+:::
+
+### Wildcard Syntax
+
+| Wildcard | Matches | Example pattern | Matches | Does not match |
+|----------|---------|-----------------|---------|----------------|
+| `*` | Exactly one path segment (no slashes) | `https://example.com/cb/*` | `https://example.com/cb/v1` | `https://example.com/cb/v1/extra` |
+| `**` | Zero or more path segments | `https://example.com/app/**/cb` | `https://example.com/app/cb`, `https://example.com/app/tenant/region/cb` | `https://example.com/app` (missing trailing `cb`) |
+
+### Wildcard Placement Rules
+
+Wildcards are only permitted in the **path** component of a URI.
+
+| URI Component | Wildcards Allowed |
+|---------------|-------------------|
+| Scheme (e.g., `https`) | No |
+| Host / domain (e.g., `example.com`) | No |
+| Path (e.g., `/callback/*`) | Yes |
+| Query string (e.g., `?foo=bar`) | No |
+| Fragment | Not allowed in redirect URIs |
+
+Only `*` and `**` are supported. Full regular expression syntax (e.g., `[a-z]+`) is rejected.
+
+### Matching Rules at Authorization Time
+
+When Thunder receives an authorization request, it evaluates the incoming `redirect_uri` against each registered URI in registration order. The first match wins.
+
+- **Scheme and host** must match exactly (case-insensitive per RFC 3986).
+- **Query string** must match exactly. A mismatch in query parameters causes the request to be rejected.
+- **Path wildcards** are expanded as described above.
+- If `redirect_uri` is omitted from the request and the single registered URI contains a wildcard, the request is rejected — a wildcard pattern cannot serve as a concrete redirect target.
+
+### Token Request Behavior
+
+The `redirect_uri` in a token request is always validated with exact matching per [RFC 6749 §4.1.3](https://www.rfc-editor.org/rfc/rfc6749#section-4.1.3). Wildcard expansion does not apply. The value must exactly match the `redirect_uri` sent in the original authorization request.
+
+### Deep Link Support
+
+Wildcard patterns work for deep link URIs used in mobile applications. Wildcards are permitted only in the path, not in the scheme.
+
+```
+# Valid deep link pattern
+myapp://callback/*
+
+# Invalid — wildcard in scheme
+my*app://callback
+```
+
 ## Configure Sign-In and Registration Flows
 
 On the **Flows** tab, choose the flows that drive sign-in and sign-up for this application.

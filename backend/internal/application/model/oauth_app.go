@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"net/url"
 	"slices"
+	"strings"
 
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -209,6 +210,10 @@ func validateRedirectURI(redirectURIs []string, redirectURI string) error {
 		if len(redirectURIs) != 1 {
 			return fmt.Errorf("redirect URI is required in the authorization request")
 		}
+		// AC-12: A wildcard pattern cannot serve as a concrete redirect target.
+		if strings.Contains(redirectURIs[0], "*") {
+			return fmt.Errorf("redirect URI is required in the authorization request")
+		}
 		// Check if only a part of the redirect uri is registered.
 		parsed, err := url.Parse(redirectURIs[0])
 		if err != nil || parsed.Scheme == "" || parsed.Host == "" {
@@ -219,8 +224,8 @@ func validateRedirectURI(redirectURIs []string, redirectURI string) error {
 		return nil
 	}
 
-	// Check if the redirect URI is registered.
-	if !slices.Contains(redirectURIs, redirectURI) {
+	// Check if the redirect URI matches any registered URI or pattern.
+	if !matchAnyRedirectURIPattern(redirectURIs, redirectURI) {
 		return fmt.Errorf("your application's redirect URL does not match with the registered redirect URLs")
 	}
 
@@ -236,4 +241,27 @@ func validateRedirectURI(redirectURIs []string, redirectURI string) error {
 	}
 
 	return nil
+}
+
+// matchAnyRedirectURIPattern checks incoming against each registered URI or pattern.
+// Exact URIs are compared directly; patterns containing * use wildcard path matching.
+// First match wins (AC-11). Wildcard matching is skipped when the feature flag is off.
+func matchAnyRedirectURIPattern(patterns []string, redirectURI string) bool {
+	wildcardEnabled := config.GetThunderRuntime().Config.OAuth.AllowWildcardRedirectURI
+	for _, pattern := range patterns {
+		if !wildcardEnabled || !strings.Contains(pattern, "*") {
+			if pattern == redirectURI {
+				return true
+			}
+			continue
+		}
+		matched, err := utils.MatchURIPattern(pattern, redirectURI)
+		if err != nil {
+			continue
+		}
+		if matched {
+			return true
+		}
+	}
+	return false
 }

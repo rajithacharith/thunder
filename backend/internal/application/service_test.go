@@ -278,6 +278,13 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 }
 
 func (suite *ServiceTestSuite) TestValidateRedirectURIs() {
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", &config.Config{
+		OAuth: config.OAuthConfig{AllowWildcardRedirectURI: true},
+	})
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
 	tests := []struct {
 		name        string
 		oauthConfig *model.OAuthAppConfigDTO
@@ -337,6 +344,185 @@ func (suite *ServiceTestSuite) TestValidateRedirectURIs() {
 				RedirectURIs: []string{"https:///callback"},
 			},
 			expectError: true,
+		},
+		{
+			name: "Wildcard in scheme rejected",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"myapp*://callback"},
+			},
+			expectError: true,
+			errorMsg:    "wildcards in the scheme",
+		},
+		{
+			name: "Wildcard in protocol rejected",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"http*://example.com/callback"},
+			},
+			expectError: true,
+			errorMsg:    "wildcards in the scheme",
+		},
+		{
+			name: "Wildcard in host rejected",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://*.example.com/callback"},
+			},
+			expectError: true,
+			errorMsg:    "wildcards in the host",
+		},
+		{
+			name: "Wildcard in query string rejected",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://example.com/callback?q=*"},
+			},
+			expectError: true,
+			errorMsg:    "wildcards in the query string",
+		},
+		{
+			name: "Wildcard in path only accepted",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://example.com/callback/*"},
+			},
+			expectError: false,
+		},
+		{
+			name: "Double star wildcard in path accepted",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://example.com/**/callback"},
+			},
+			expectError: false,
+		},
+		{
+			name: "Regex bracket syntax in path rejected",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://example.com/callback/[a-z]+"},
+			},
+			expectError: true,
+			errorMsg:    "regex syntax",
+		},
+		{
+			name: "Regex parenthesis in path rejected",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://example.com/(foo|bar)"},
+			},
+			expectError: true,
+			errorMsg:    "regex syntax",
+		},
+		{
+			name: "Dot in path accepted",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://example.com/callback.html"},
+			},
+			expectError: false,
+		},
+		{
+			name: "Wildcard suffix in segment rejected",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://example.com/callback*"},
+			},
+			expectError: true,
+			errorMsg:    "regex syntax",
+		},
+		{
+			name: "Wildcard prefix in segment rejected",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://example.com/*callback"},
+			},
+			expectError: true,
+			errorMsg:    "regex syntax",
+		},
+		{
+			name: "Double star prefix in segment rejected",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://example.com/**callback"},
+			},
+			expectError: true,
+			errorMsg:    "regex syntax",
+		},
+		{
+			name: "Triple star in segment rejected",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://example.com/***/callback"},
+			},
+			expectError: true,
+			errorMsg:    "regex syntax",
+		},
+		{
+			name: "Deeplink wildcard in path accepted",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"myapp://callback/*"},
+			},
+			expectError: false,
+		},
+		{
+			name: "Deeplink wildcard in scheme rejected",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"my*app://callback"},
+			},
+			expectError: true,
+			errorMsg:    "wildcards in the scheme",
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			err := validateRedirectURIs(tt.oauthConfig)
+
+			if tt.expectError {
+				assert.NotNil(suite.T(), err)
+				if tt.errorMsg != "" {
+					assert.Contains(suite.T(), err.ErrorDescription.DefaultValue, tt.errorMsg)
+				}
+			} else {
+				assert.Nil(suite.T(), err)
+			}
+		})
+	}
+}
+
+func (suite *ServiceTestSuite) TestValidateRedirectURIs_WildcardDisabled() {
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", &config.Config{
+		OAuth: config.OAuthConfig{AllowWildcardRedirectURI: false},
+	})
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	tests := []struct {
+		name        string
+		oauthConfig *model.OAuthAppConfigDTO
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name: "Wildcard in path rejected when flag off",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://example.com/callback/*"},
+			},
+			expectError: true,
+			errorMsg:    "Wildcard redirect URIs are not supported",
+		},
+		{
+			name: "Double star in path rejected when flag off",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://example.com/**/callback"},
+			},
+			expectError: true,
+			errorMsg:    "Wildcard redirect URIs are not supported",
+		},
+		{
+			name: "Deeplink wildcard in path rejected when flag off",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"myapp://callback/*"},
+			},
+			expectError: true,
+			errorMsg:    "Wildcard redirect URIs are not supported",
+		},
+		{
+			name: "Exact redirect URI still accepted when flag off",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://example.com/callback"},
+			},
+			expectError: false,
 		},
 	}
 
