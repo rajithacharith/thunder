@@ -30,7 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
@@ -46,7 +46,7 @@ type TokenValidatorTestSuite struct {
 	suite.Suite
 	mockJWTService *jwtmock.JWTServiceInterfaceMock
 	validator      *tokenValidator
-	oauthApp       *appmodel.OAuthAppConfigProcessedDTO
+	oauthApp       *inboundmodel.OAuthClient
 }
 
 func TestTokenValidatorTestSuite(t *testing.T) {
@@ -71,7 +71,7 @@ func (suite *TokenValidatorTestSuite) SetupTest() {
 		jwtService: suite.mockJWTService,
 	}
 
-	suite.oauthApp = &appmodel.OAuthAppConfigProcessedDTO{
+	suite.oauthApp = &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 	}
 }
@@ -140,9 +140,9 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_BasicToke
 
 func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithTokenConfig() {
 	// App with token config should still validate using Thunder-level issuer from config
-	customOAuthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	customOAuthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token:    &appmodel.OAuthTokenConfig{},
+		Token:    &inboundmodel.OAuthTokenConfig{},
 	}
 
 	now := time.Now().Unix()
@@ -401,10 +401,10 @@ func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Success_T
 
 func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Success_WithTokenConfig() {
 	// App with token config should still use Thunder-level issuer for signature verification
-	customApp := &appmodel.OAuthAppConfigProcessedDTO{
+	customApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{},
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{},
 		},
 	}
 	token := testJWTTokenString
@@ -496,10 +496,10 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_FailFastOnUntrusted
 
 func (suite *TokenValidatorTestSuite) TestFederationScenario_OnlyThunderIssuerIsValid() {
 	// Only the Thunder-level issuer from config is accepted; app-level issuers are no longer supported
-	appWithTokenConfig := &appmodel.OAuthAppConfigProcessedDTO{
+	appWithTokenConfig := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{},
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{},
 		},
 	}
 
@@ -651,7 +651,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_NonAssertion_Acce
 	}
 	token := suite.createTestJWT(claims)
 
-	oauthAppWithID := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthAppWithID := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 		AppID:    "x", // Matches one element of the aud array.
 	}

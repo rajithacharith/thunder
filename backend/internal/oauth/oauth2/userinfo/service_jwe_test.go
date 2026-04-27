@@ -37,6 +37,7 @@ import (
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	certmodel "github.com/asgardeo/thunder/internal/cert"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jose/jwe"
@@ -85,20 +86,20 @@ func (s *JWEUserInfoTestSuite) TestGenerateJWEUserInfo_Success() {
 	).Return("compact.jwe.token", (*serviceerror.ServiceError)(nil))
 
 	svc := &userInfoService{jweService: mockJWE, logger: log.GetLogger()}
-	cfg := &appmodel.UserInfoConfig{EncryptionAlg: "RSA-OAEP-256", EncryptionEnc: "A256GCM"}
+	cfg := &inboundmodel.UserInfoConfig{EncryptionAlg: "RSA-OAEP-256", EncryptionEnc: "A256GCM"}
 	cert := &appmodel.ApplicationCertificate{Type: certmodel.CertificateTypeJWKS, Value: pubJWKS}
 
 	result, svcErr := svc.generateJWEUserInfo(context.Background(), map[string]interface{}{"sub": "user1"}, cfg, cert)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), result)
-	assert.Equal(s.T(), appmodel.UserInfoResponseTypeJWE, result.Type)
+	assert.Equal(s.T(), inboundmodel.UserInfoResponseTypeJWE, result.Type)
 	assert.Equal(s.T(), "compact.jwe.token", result.JWTBody)
 }
 
 // TestGenerateJWEUserInfo_NoCert verifies missing cert returns server error.
 func (s *JWEUserInfoTestSuite) TestGenerateJWEUserInfo_NoCert() {
 	svc := &userInfoService{jweService: jwemock.NewJWEServiceInterfaceMock(s.T()), logger: log.GetLogger()}
-	cfg := &appmodel.UserInfoConfig{EncryptionAlg: "RSA-OAEP-256", EncryptionEnc: "A256GCM"}
+	cfg := &inboundmodel.UserInfoConfig{EncryptionAlg: "RSA-OAEP-256", EncryptionEnc: "A256GCM"}
 
 	result, svcErr := svc.generateJWEUserInfo(context.Background(), map[string]interface{}{"sub": "user1"}, cfg, nil)
 	assert.Nil(s.T(), result)
@@ -121,7 +122,7 @@ func (s *JWEUserInfoTestSuite) TestGenerateJWEUserInfo_EncryptFailure() {
 	).Return("", &serviceerror.InternalServerError)
 
 	svc := &userInfoService{jweService: mockJWE, logger: log.GetLogger()}
-	cfg := &appmodel.UserInfoConfig{EncryptionAlg: "RSA-OAEP-256", EncryptionEnc: "A256GCM"}
+	cfg := &inboundmodel.UserInfoConfig{EncryptionAlg: "RSA-OAEP-256", EncryptionEnc: "A256GCM"}
 	cert := &appmodel.ApplicationCertificate{Type: certmodel.CertificateTypeJWKS, Value: pubJWKS}
 
 	result, svcErr := svc.generateJWEUserInfo(context.Background(), map[string]interface{}{"sub": "user1"}, cfg, cert)
@@ -306,7 +307,7 @@ func (s *JWEUserInfoTestSuite) TestGenerateNestedJWTUserInfo_Success() {
 		logger:     log.GetLogger(),
 	}
 
-	cfg := &appmodel.UserInfoConfig{SigningAlg: "RS256", EncryptionAlg: "RSA-OAEP-256", EncryptionEnc: "A256GCM"}
+	cfg := &inboundmodel.UserInfoConfig{SigningAlg: "RS256", EncryptionAlg: "RSA-OAEP-256", EncryptionEnc: "A256GCM"}
 	cert := &appmodel.ApplicationCertificate{Type: certmodel.CertificateTypeJWKS, Value: pubJWKS}
 
 	result, svcErr := svc.generateNestedJWTUserInfo(
@@ -319,7 +320,7 @@ func (s *JWEUserInfoTestSuite) TestGenerateNestedJWTUserInfo_Success() {
 	)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), result)
-	assert.Equal(s.T(), appmodel.UserInfoResponseTypeNESTEDJWT, result.Type)
+	assert.Equal(s.T(), inboundmodel.UserInfoResponseTypeNESTEDJWT, result.Type)
 	assert.Equal(s.T(), "nested.jwe.token", result.JWTBody)
 }
 
@@ -340,7 +341,7 @@ func (s *JWEUserInfoTestSuite) TestGenerateJWEUserInfo_EncryptErrorPropagated() 
 	).Return("", unsupportedErr)
 
 	svc := &userInfoService{jweService: mockJWE, logger: log.GetLogger()}
-	cfg := &appmodel.UserInfoConfig{EncryptionAlg: "RSA-OAEP-256", EncryptionEnc: "A256GCM"}
+	cfg := &inboundmodel.UserInfoConfig{EncryptionAlg: "RSA-OAEP-256", EncryptionEnc: "A256GCM"}
 	cert := &appmodel.ApplicationCertificate{Type: certmodel.CertificateTypeJWKS, Value: pubJWKS}
 
 	result, svcErr := svc.generateJWEUserInfo(context.Background(), map[string]interface{}{"sub": "user1"}, cfg, cert)
@@ -359,7 +360,7 @@ func (s *JWEUserInfoTestSuite) TestGenerateJWSUserInfo_UnsupportedAlg() {
 	).Return("", int64(0), &jwt.ErrorUnsupportedJWSAlgorithm)
 
 	svc := &userInfoService{jwtService: mockJWT, logger: log.GetLogger()}
-	cfg := &appmodel.UserInfoConfig{SigningAlg: "ES256"}
+	cfg := &inboundmodel.UserInfoConfig{SigningAlg: "ES256"}
 
 	result, svcErr := svc.generateJWSUserInfo(
 		"user1",

@@ -30,7 +30,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/clientauth"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -67,7 +67,7 @@ func (s *HandlerTestSuite) TestHandlePAR_Success() {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	// Set authenticated client in context.
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 	}
 	clientInfo := &clientauth.OAuthClientInfo{
@@ -112,7 +112,7 @@ func (s *HandlerTestSuite) TestHandlePAR_ValidationError() {
 	req := httptest.NewRequest(http.MethodPost, "/oauth2/par", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	app := &appmodel.OAuthAppConfigProcessedDTO{ClientID: "test-client"}
+	app := &inboundmodel.OAuthClient{ClientID: "test-client"}
 	clientInfo := &clientauth.OAuthClientInfo{ClientID: "test-client", OAuthApp: app}
 	ctx := context.WithValue(req.Context(), clientauth.OAuthClientKey, clientInfo)
 	req = req.WithContext(ctx)
@@ -138,7 +138,7 @@ func (s *HandlerTestSuite) TestHandlePAR_ServerError() {
 	req := httptest.NewRequest(http.MethodPost, "/oauth2/par", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	app := &appmodel.OAuthAppConfigProcessedDTO{ClientID: "test-client"}
+	app := &inboundmodel.OAuthClient{ClientID: "test-client"}
 	clientInfo := &clientauth.OAuthClientInfo{ClientID: "test-client", OAuthApp: app}
 	ctx := context.WithValue(req.Context(), clientauth.OAuthClientKey, clientInfo)
 	req = req.WithContext(ctx)

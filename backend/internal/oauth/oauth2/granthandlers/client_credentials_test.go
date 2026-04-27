@@ -30,9 +30,9 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/authz"
 	"github.com/asgardeo/thunder/internal/entityprovider"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
@@ -61,7 +61,7 @@ type ClientCredentialsGrantHandlerTestSuite struct {
 	mockEntityProv      *entityprovidermock.EntityProviderInterfaceMock
 	mockResourceService *resourcemock.ResourceServiceInterfaceMock
 	handler             *clientCredentialsGrantHandler
-	oauthApp            *appmodel.OAuthAppConfigProcessedDTO
+	oauthApp            *inboundmodel.OAuthClient
 }
 
 func TestClientCredentialsGrantHandlerSuite(t *testing.T) {
@@ -106,7 +106,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) SetupTest() {
 	suite.mockEntityProv.On("GetTransitiveEntityGroups", mock.Anything).
 		Return([]entityprovider.EntityGroup{}, nil).Maybe()
 
-	suite.oauthApp = &appmodel.OAuthAppConfigProcessedDTO{
+	suite.oauthApp = &inboundmodel.OAuthClient{
 		AppID:                   "app123",
 		ClientID:                testClientID,
 		RedirectURIs:            []string{"https://example.com/callback"},
@@ -360,7 +360,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_ClientAttri
 		Scope:        "read",
 	}
 
-	oauthAppWithOU := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthAppWithOU := &inboundmodel.OAuthClient{
 		AppID:                   "app123",
 		ClientID:                testClientID,
 		OUID:                    "ou-456",

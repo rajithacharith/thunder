@@ -28,15 +28,15 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowexecmock"
+	"github.com/asgardeo/thunder/tests/mocks/inboundclientmock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/resourcemock"
 )
 
 type InitTestSuite struct {
 	suite.Suite
-	mockAppService      *applicationmock.ApplicationServiceInterfaceMock
+	mockInboundClient   *inboundclientmock.InboundClientServiceInterfaceMock
 	mockResourceService *resourcemock.ResourceServiceInterfaceMock
 	mockJWTService      *jwtmock.JWTServiceInterfaceMock
 	mockFlowExecService *flowexecmock.FlowExecServiceInterfaceMock
@@ -72,7 +72,7 @@ func (suite *InitTestSuite) SetupTest() {
 	}
 	_ = config.InitializeThunderRuntime("", testConfig)
 
-	suite.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
+	suite.mockInboundClient = inboundclientmock.NewInboundClientServiceInterfaceMock(suite.T())
 	suite.mockResourceService = resourcemock.NewResourceServiceInterfaceMock(suite.T())
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.mockFlowExecService = flowexecmock.NewFlowExecServiceInterfaceMock(suite.T())
@@ -86,7 +86,7 @@ func (suite *InitTestSuite) TestInitialize() {
 	mux := http.NewServeMux()
 
 	service, err := Initialize(
-		mux, suite.mockAppService, suite.mockResourceService,
+		mux, suite.mockInboundClient, suite.mockResourceService,
 		suite.mockJWTService, suite.mockFlowExecService, nil,
 	)
 
@@ -99,7 +99,7 @@ func (suite *InitTestSuite) TestInitialize_RegistersRoutes() {
 	mux := http.NewServeMux()
 
 	_, err := Initialize(
-		mux, suite.mockAppService, suite.mockResourceService,
+		mux, suite.mockInboundClient, suite.mockResourceService,
 		suite.mockJWTService, suite.mockFlowExecService, nil,
 	)
 	assert.NoError(suite.T(), err)
@@ -120,7 +120,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSConfiguration() {
 	mux := http.NewServeMux()
 
 	_, err := Initialize(
-		mux, suite.mockAppService, suite.mockResourceService,
+		mux, suite.mockInboundClient, suite.mockResourceService,
 		suite.mockJWTService, suite.mockFlowExecService, nil,
 	)
 	assert.NoError(suite.T(), err)
@@ -170,7 +170,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSHeaders() {
 	mux := http.NewServeMux()
 
 	_, err := Initialize(
-		mux, suite.mockAppService, suite.mockResourceService,
+		mux, suite.mockInboundClient, suite.mockResourceService,
 		suite.mockJWTService, suite.mockFlowExecService, nil,
 	)
 	assert.NoError(suite.T(), err)

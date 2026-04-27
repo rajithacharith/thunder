@@ -22,8 +22,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/asgardeo/thunder/internal/application"
 	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
+	"github.com/asgardeo/thunder/internal/inboundclient"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/clientauth"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
 	"github.com/asgardeo/thunder/internal/resource"
@@ -37,7 +37,7 @@ import (
 // Returns the PARServiceInterface so the authorization endpoint can resolve request_uri parameters.
 func Initialize(
 	mux *http.ServeMux,
-	appService application.ApplicationServiceInterface,
+	inboundClient inboundclient.InboundClientServiceInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	jwtService jwt.JWTServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
@@ -46,7 +46,7 @@ func Initialize(
 	store := initializePARStore()
 	parSvc := newPARService(store, resourceService)
 	handler := newPARHandler(parSvc)
-	registerRoutes(mux, handler, appService, authnProvider, jwtService, discoveryService)
+	registerRoutes(mux, handler, inboundClient, authnProvider, jwtService, discoveryService)
 	return parSvc
 }
 
@@ -64,7 +64,7 @@ func initializePARStore() parStoreInterface {
 func registerRoutes(
 	mux *http.ServeMux,
 	handler parHandlerInterface,
-	appService application.ApplicationServiceInterface,
+	inboundClient inboundclient.InboundClientServiceInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	jwtService jwt.JWTServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
@@ -77,7 +77,7 @@ func registerRoutes(
 
 	metadata := discoveryService.GetOAuth2AuthorizationServerMetadata(context.Background())
 	endpointURL := metadata.PushedAuthorizationRequestEndpoint
-	clientAuthMiddleware := clientauth.ClientAuthMiddleware(appService, authnProvider, jwtService, endpointURL)
+	clientAuthMiddleware := clientauth.ClientAuthMiddleware(inboundClient, authnProvider, jwtService, endpointURL)
 	wrappedHandler := clientAuthMiddleware(http.HandlerFunc(handler.HandlePARRequest))
 
 	pattern, corsHandler := middleware.WithCORS(

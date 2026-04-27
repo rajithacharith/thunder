@@ -22,7 +22,7 @@ import (
 	"context"
 	"strings"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz/requestvalidator"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
@@ -40,7 +40,7 @@ const requestURIPrefix = "urn:ietf:params:oauth:request_uri:"
 type PARServiceInterface interface {
 	HandlePushedAuthorizationRequest(
 		ctx context.Context, params map[string]string, resources []string,
-		oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+		oauthApp *inboundmodel.OAuthClient,
 	) (*parResponse, string, string)
 	ResolvePushedAuthorizationRequest(
 		ctx context.Context, requestURI string, clientID string,
@@ -69,7 +69,7 @@ func newPARService(
 // Returns the response on success, or (errorCode, errorDescription) on failure.
 func (s *parService) HandlePushedAuthorizationRequest(
 	ctx context.Context, params map[string]string, resources []string,
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	oauthApp *inboundmodel.OAuthClient,
 ) (*parResponse, string, string) {
 	// The request MUST NOT contain a request_uri parameter.
 	if params[oauth2const.RequestParamRequestURI] != "" {

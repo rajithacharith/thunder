@@ -31,7 +31,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
@@ -60,7 +60,7 @@ type TokenExchangeGrantHandlerTestSuite struct {
 	mockTokenValidator  *tokenservicemock.TokenValidatorInterfaceMock
 	mockResourceService *resourcemock.ResourceServiceInterfaceMock
 	handler             *tokenExchangeGrantHandler
-	oauthApp            *appmodel.OAuthAppConfigProcessedDTO
+	oauthApp            *inboundmodel.OAuthClient
 }
 
 func TestTokenExchangeGrantHandlerSuite(t *testing.T) {
@@ -98,15 +98,15 @@ func (suite *TokenExchangeGrantHandlerTestSuite) SetupTest() {
 		resourceService: suite.mockResourceService,
 	}
 
-	suite.oauthApp = &appmodel.OAuthAppConfigProcessedDTO{
+	suite.oauthApp = &inboundmodel.OAuthClient{
 		AppID:                   "app123",
 		ClientID:                testClientID,
 		RedirectURIs:            []string{"https://example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeTokenExchange},
 		ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
 		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretBasic,
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				ValidityPeriod: 7200,
 			},
 		},
@@ -1026,7 +1026,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_UsesDefaultConf
 	}
 
 	// Use app without custom token config
-	oauthAppNoConfig := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthAppNoConfig := &inboundmodel.OAuthClient{
 		ClientID:   testClientID,
 		GrantTypes: []constants.GrantType{constants.GrantTypeTokenExchange},
 	}

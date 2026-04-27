@@ -980,6 +980,68 @@ func translateOAuthValidationError(err error) *serviceerror.ServiceError {
 			DefaultValue: "Public clients must have PKCE required set to true",
 		})
 	default:
+		return translateUserInfoValidationError(err)
+	}
+}
+
+func translateUserInfoValidationError(err error) *serviceerror.ServiceError {
+	switch {
+	case errors.Is(err, inboundclient.ErrOAuthUserInfoUnsupportedSigningAlg):
+		return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+			Key:          "error.applicationservice.userinfo_unsupported_signing_alg_description",
+			DefaultValue: "userinfo signing algorithm is not supported",
+		})
+	case errors.Is(err, inboundclient.ErrOAuthUserInfoUnsupportedEncryptionAlg):
+		return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+			Key:          "error.applicationservice.userinfo_unsupported_encryption_alg_description",
+			DefaultValue: "userinfo encryption algorithm is not supported",
+		})
+	case errors.Is(err, inboundclient.ErrOAuthUserInfoUnsupportedEncryptionEnc):
+		return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+			Key:          "error.applicationservice.userinfo_unsupported_encryption_enc_description",
+			DefaultValue: "userinfo content-encryption algorithm is not supported",
+		})
+	case errors.Is(err, inboundclient.ErrOAuthUserInfoEncryptionAlgRequiresEnc):
+		return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+			Key:          "error.applicationservice.userinfo_encryption_alg_requires_enc_description",
+			DefaultValue: "encryptionEnc is required when encryptionAlg is set",
+		})
+	case errors.Is(err, inboundclient.ErrOAuthUserInfoEncryptionEncRequiresAlg):
+		return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+			Key:          "error.applicationservice.userinfo_encryption_enc_requires_alg_description",
+			DefaultValue: "encryptionAlg is required when encryptionEnc is set",
+		})
+	case errors.Is(err, inboundclient.ErrOAuthUserInfoEncryptionRequiresCertificate):
+		return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+			Key:          "error.applicationservice.userinfo_encryption_requires_certificate_description",
+			DefaultValue: "a certificate (JWKS or JWKS_URI) is required when userinfo encryption is configured",
+		})
+	case errors.Is(err, inboundclient.ErrOAuthUserInfoJWKSURINotSSRFSafe):
+		return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+			Key:          "error.applicationservice.userinfo_jwks_uri_not_ssrf_safe_description",
+			DefaultValue: "JWKS URI must be a publicly reachable HTTPS URL",
+		})
+	case errors.Is(err, inboundclient.ErrOAuthUserInfoUnsupportedResponseType):
+		return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+			Key:          "error.applicationservice.userinfo_unsupported_response_type_description",
+			DefaultValue: "userinfo responseType is not supported",
+		})
+	case errors.Is(err, inboundclient.ErrOAuthUserInfoJWSRequiresSigningAlg):
+		return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+			Key:          "error.applicationservice.userinfo_jws_requires_signing_alg_description",
+			DefaultValue: "signingAlg is required when responseType is JWS",
+		})
+	case errors.Is(err, inboundclient.ErrOAuthUserInfoJWERequiresEncryption):
+		return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+			Key:          "error.applicationservice.userinfo_jwe_requires_encryption_description",
+			DefaultValue: "encryptionAlg and encryptionEnc are required when responseType is JWE",
+		})
+	case errors.Is(err, inboundclient.ErrOAuthUserInfoNestedJWTRequiresAll):
+		return serviceerror.CustomServiceError(ErrorInvalidOAuthConfiguration, core.I18nMessage{
+			Key:          "error.applicationservice.userinfo_nested_jwt_requires_all_description",
+			DefaultValue: "signingAlg, encryptionAlg, and encryptionEnc are required when responseType is NESTED_JWT",
+		})
+	default:
 		return nil
 	}
 }

@@ -1206,7 +1206,7 @@ func (ts *ApplicationAPITestSuite) TestCreateApplicationCertLifecycle() {
 //     after the first has committed and never enters the transaction – no cert written.
 //   - Mid-transaction DB failure: if the second request passes the pre-check (read
 //     before the first transaction commits) and enters the transaction, its cert INSERT
-//     succeeds but the APP_OAUTH_INBOUND_CONFIG INSERT fails on the PRIMARY KEY
+//     succeeds but the OAUTH_INBOUND_PROFILE INSERT fails on the PRIMARY KEY
 //     constraint; the transaction is rolled back, removing the cert row.
 //
 // In either path the end-state invariant is the same: the CERTIFICATE table must

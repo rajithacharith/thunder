@@ -570,3 +570,8 @@ func (suite *InboundClientStoreTestSuite) TestGetOAuthProfileByEntityID() {
 		suite.ErrorIs(err, ErrInboundClientNotFound)
 	})
 }
+
+func (suite *InboundClientStoreTestSuite) TestIsDeclarative_AlwaysFalse() {
+	suite.False(suite.store.IsDeclarative(context.Background(), "any-id"))
+	suite.False(suite.store.IsDeclarative(context.Background(), ""))
+}

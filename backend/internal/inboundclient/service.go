@@ -38,6 +38,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	syshttp "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
 	"github.com/asgardeo/thunder/internal/system/transaction"
@@ -605,6 +606,68 @@ func validateOAuthProfile(p *inboundmodel.OAuthProfileData, hasClientSecret bool
 			return err
 		}
 	}
+	if err := validateUserInfoConfig(p); err != nil {
+		return err
+	}
+	return nil
+}
+
+// validateUserInfoConfig validates the UserInfo signing and encryption configuration.
+func validateUserInfoConfig(p *inboundmodel.OAuthProfileData) error {
+	if p.UserInfo == nil {
+		return nil
+	}
+	cfg := p.UserInfo
+
+	if cfg.SigningAlg != "" && !slices.Contains(inboundmodel.SupportedUserInfoSigningAlgs, cfg.SigningAlg) {
+		return ErrOAuthUserInfoUnsupportedSigningAlg
+	}
+
+	if cfg.EncryptionEnc != "" && cfg.EncryptionAlg == "" {
+		return ErrOAuthUserInfoEncryptionEncRequiresAlg
+	}
+
+	if cfg.EncryptionAlg != "" {
+		if !slices.Contains(inboundmodel.SupportedUserInfoEncryptionAlgs, cfg.EncryptionAlg) {
+			return ErrOAuthUserInfoUnsupportedEncryptionAlg
+		}
+		if cfg.EncryptionEnc == "" {
+			return ErrOAuthUserInfoEncryptionAlgRequiresEnc
+		}
+		if !slices.Contains(inboundmodel.SupportedUserInfoEncryptionEncs, cfg.EncryptionEnc) {
+			return ErrOAuthUserInfoUnsupportedEncryptionEnc
+		}
+		hasCert := p.Certificate != nil && p.Certificate.Type != ""
+		if !hasCert {
+			return ErrOAuthUserInfoEncryptionRequiresCertificate
+		}
+		if p.Certificate.Type == cert.CertificateTypeJWKSURI {
+			if err := syshttp.IsSSRFSafeURL(p.Certificate.Value); err != nil {
+				return ErrOAuthUserInfoJWKSURINotSSRFSafe
+			}
+		}
+	}
+
+	if cfg.ResponseType != "" {
+		switch cfg.ResponseType {
+		case inboundmodel.UserInfoResponseTypeJWS:
+			if cfg.SigningAlg == "" {
+				return ErrOAuthUserInfoJWSRequiresSigningAlg
+			}
+		case inboundmodel.UserInfoResponseTypeJWE:
+			if cfg.EncryptionAlg == "" || cfg.EncryptionEnc == "" {
+				return ErrOAuthUserInfoJWERequiresEncryption
+			}
+		case inboundmodel.UserInfoResponseTypeNESTEDJWT:
+			if cfg.SigningAlg == "" || cfg.EncryptionAlg == "" || cfg.EncryptionEnc == "" {
+				return ErrOAuthUserInfoNestedJWTRequiresAll
+			}
+		case inboundmodel.UserInfoResponseTypeJSON:
+			// no additional requirements
+		default:
+			return ErrOAuthUserInfoUnsupportedResponseType
+		}
+	}
 	return nil
 }
 
@@ -707,6 +770,7 @@ func validateTokenEndpointAuthMethod(p *inboundmodel.OAuthProfileData, hasClient
 		return ErrOAuthInvalidTokenEndpointAuthMethod
 	}
 	hasCert := p.Certificate != nil && p.Certificate.Type != ""
+	userInfoNeedsCert := p.UserInfo != nil && p.UserInfo.EncryptionAlg != ""
 
 	switch method {
 	case oauth2const.TokenEndpointAuthMethodPrivateKeyJWT:
@@ -717,14 +781,14 @@ func validateTokenEndpointAuthMethod(p *inboundmodel.OAuthProfileData, hasClient
 			return ErrOAuthPrivateKeyJWTCannotHaveClientSecret
 		}
 	case oauth2const.TokenEndpointAuthMethodClientSecretBasic, oauth2const.TokenEndpointAuthMethodClientSecretPost:
-		if hasCert {
+		if hasCert && !userInfoNeedsCert {
 			return ErrOAuthClientSecretCannotHaveCertificate
 		}
 	case oauth2const.TokenEndpointAuthMethodNone:
 		if !p.PublicClient {
 			return ErrOAuthNoneAuthRequiresPublicClient
 		}
-		if hasCert || hasClientSecret {
+		if (hasCert && !userInfoNeedsCert) || hasClientSecret {
 			return ErrOAuthNoneAuthCannotHaveCertOrSecret
 		}
 		if slices.Contains(p.GrantTypes, string(oauth2const.GrantTypeClientCredentials)) {
@@ -961,23 +1025,30 @@ func resolveOAuthTokens(in *inboundmodel.OAuthTokenConfig,
 }
 
 // resolveUserInfo resolves user info config, defaulting user attributes to the ID token config.
+// ResponseType is always derived from the algorithm fields so the runtime never has to re-derive it.
 func resolveUserInfo(in *inboundmodel.UserInfoConfig,
 	idToken *inboundmodel.IDTokenConfig) *inboundmodel.UserInfoConfig {
 	out := &inboundmodel.UserInfoConfig{}
 	if in != nil {
 		out.UserAttributes = in.UserAttributes
-		responseType := inboundmodel.UserInfoResponseType(strings.ToUpper(string(in.ResponseType)))
-		switch responseType {
-		case inboundmodel.UserInfoResponseTypeJWS:
-			out.ResponseType = responseType
-		default:
-			out.ResponseType = inboundmodel.UserInfoResponseTypeJSON
-		}
+		out.SigningAlg = in.SigningAlg
+		out.EncryptionAlg = in.EncryptionAlg
+		out.EncryptionEnc = in.EncryptionEnc
 	}
 	if out.UserAttributes == nil && idToken != nil {
 		out.UserAttributes = idToken.UserAttributes
 	}
-	if out.ResponseType == "" {
+
+	hasSign := out.SigningAlg != ""
+	hasEnc := out.EncryptionAlg != ""
+	switch {
+	case hasSign && hasEnc:
+		out.ResponseType = inboundmodel.UserInfoResponseTypeNESTEDJWT
+	case hasEnc:
+		out.ResponseType = inboundmodel.UserInfoResponseTypeJWE
+	case hasSign:
+		out.ResponseType = inboundmodel.UserInfoResponseTypeJWS
+	default:
 		out.ResponseType = inboundmodel.UserInfoResponseTypeJSON
 	}
 	return out

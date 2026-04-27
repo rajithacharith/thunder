@@ -21,8 +21,8 @@ package userinfo
 import (
 	"net/http"
 
-	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/attributecache"
+	"github.com/asgardeo/thunder/internal/inboundclient"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/ou"
@@ -40,13 +40,13 @@ func Initialize(
 	jweService jwe.JWEServiceInterface,
 	httpClient syshttp.HTTPClientInterface,
 	tokenValidator tokenservice.TokenValidatorInterface,
-	applicationService application.ApplicationServiceInterface,
+	inboundClient inboundclient.InboundClientServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	transactioner transaction.Transactioner,
 ) userInfoServiceInterface {
 	userInfoService := newUserInfoService(jwtService, jweService, httpClient, tokenValidator,
-		applicationService, ouService, attributeCacheSvc, transactioner)
+		inboundClient, ouService, attributeCacheSvc, transactioner)
 	userInfoHandler := newUserInfoHandler(userInfoService)
 	registerRoutes(mux, userInfoHandler)
 	return userInfoService

@@ -27,10 +27,10 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/asgardeo/thunder/internal/application"
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/attributecache"
 	certmodel "github.com/asgardeo/thunder/internal/cert"
+	"github.com/asgardeo/thunder/internal/inboundclient"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
@@ -55,15 +55,15 @@ type userInfoServiceInterface interface {
 
 // userInfoService implements the userInfoServiceInterface.
 type userInfoService struct {
-	jwtService         jwt.JWTServiceInterface
-	jweService         jwe.JWEServiceInterface
-	httpClient         syshttp.HTTPClientInterface
-	tokenValidator     tokenservice.TokenValidatorInterface
-	applicationService application.ApplicationServiceInterface
-	ouService          ou.OrganizationUnitServiceInterface
-	attributeCacheSvc  attributecache.AttributeCacheServiceInterface
-	transactioner      transaction.Transactioner
-	logger             *log.Logger
+	jwtService        jwt.JWTServiceInterface
+	jweService        jwe.JWEServiceInterface
+	httpClient        syshttp.HTTPClientInterface
+	tokenValidator    tokenservice.TokenValidatorInterface
+	inboundClient     inboundclient.InboundClientServiceInterface
+	ouService         ou.OrganizationUnitServiceInterface
+	attributeCacheSvc attributecache.AttributeCacheServiceInterface
+	transactioner     transaction.Transactioner
+	logger            *log.Logger
 }
 
 // newUserInfoService creates a new userInfoService instance.
@@ -72,21 +72,21 @@ func newUserInfoService(
 	jweService jwe.JWEServiceInterface,
 	httpClient syshttp.HTTPClientInterface,
 	tokenValidator tokenservice.TokenValidatorInterface,
-	applicationService application.ApplicationServiceInterface,
+	inboundClient inboundclient.InboundClientServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	transactioner transaction.Transactioner,
 ) userInfoServiceInterface {
 	return &userInfoService{
-		jwtService:         jwtService,
-		jweService:         jweService,
-		httpClient:         httpClient,
-		tokenValidator:     tokenValidator,
-		applicationService: applicationService,
-		ouService:          ouService,
-		attributeCacheSvc:  attributeCacheSvc,
-		transactioner:      transactioner,
-		logger:             log.GetLogger().With(log.String(log.LoggerKeyComponentName, serviceLoggerComponentName)),
+		jwtService:        jwtService,
+		jweService:        jweService,
+		httpClient:        httpClient,
+		tokenValidator:    tokenValidator,
+		inboundClient:     inboundClient,
+		ouService:         ouService,
+		attributeCacheSvc: attributeCacheSvc,
+		transactioner:     transactioner,
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, serviceLoggerComponentName)),
 	}
 }
 
@@ -117,10 +117,7 @@ func (s *userInfoService) GetUserInfo(
 		return nil, svcErr
 	}
 
-	oauthApp, svcErr := s.getOAuthApp(ctx, tokenClaims)
-	if svcErr != nil {
-		return nil, svcErr
-	}
+	oauthApp := s.getOAuthApp(ctx, tokenClaims)
 
 	// Extract allowed user attributes
 	var allowedUserAttributes []string
@@ -146,26 +143,26 @@ func (s *userInfoService) GetUserInfo(
 		return nil, svcErr
 	}
 
-	var userInfoCfg *appmodel.UserInfoConfig
-	var certificate *appmodel.ApplicationCertificate
+	var userInfoCfg *inboundmodel.UserInfoConfig
+	var certificate *inboundmodel.Certificate
 	if oauthApp != nil {
 		userInfoCfg = oauthApp.UserInfo
 		certificate = oauthApp.Certificate
 	}
 
-	responseType := appmodel.UserInfoResponseTypeJSON
+	responseType := inboundmodel.UserInfoResponseTypeJSON
 	if userInfoCfg != nil {
 		responseType = userInfoCfg.ResponseType
 	}
 	switch responseType {
-	case appmodel.UserInfoResponseTypeNESTEDJWT:
+	case inboundmodel.UserInfoResponseTypeNESTEDJWT:
 		return s.generateNestedJWTUserInfo(ctx, sub, tokenClaims, response, userInfoCfg, certificate)
-	case appmodel.UserInfoResponseTypeJWE:
+	case inboundmodel.UserInfoResponseTypeJWE:
 		return s.generateJWEUserInfo(ctx, response, userInfoCfg, certificate)
-	case appmodel.UserInfoResponseTypeJWS:
+	case inboundmodel.UserInfoResponseTypeJWS:
 		return s.generateJWSUserInfo(sub, tokenClaims, response, userInfoCfg)
 	default:
-		return &UserInfoResponse{Type: appmodel.UserInfoResponseTypeJSON, JSONBody: response}, nil
+		return &UserInfoResponse{Type: inboundmodel.UserInfoResponseTypeJSON, JSONBody: response}, nil
 	}
 }
 
@@ -173,7 +170,7 @@ func (s *userInfoService) GetUserInfo(
 // It returns the public key and the kid from the matching JWK entry (empty string when absent).
 // encryptionAlg is the key-management algorithm (e.g. "RSA-OAEP-256") used to filter incompatible keys.
 func (s *userInfoService) resolveRPPublicKey(
-	ctx context.Context, certificate *appmodel.ApplicationCertificate, encryptionAlg string,
+	ctx context.Context, certificate *inboundmodel.Certificate, encryptionAlg string,
 ) (crypto.PublicKey, string, *serviceerror.ServiceError) {
 	if certificate == nil || certificate.Type == "" {
 		s.logger.Error("No certificate configured for userinfo encryption")
@@ -275,8 +272,8 @@ func (s *userInfoService) parseEncryptionKeyFromJWKS(
 func (s *userInfoService) generateJWEUserInfo(
 	ctx context.Context,
 	response map[string]interface{},
-	cfg *appmodel.UserInfoConfig,
-	certificate *appmodel.ApplicationCertificate,
+	cfg *inboundmodel.UserInfoConfig,
+	certificate *inboundmodel.Certificate,
 ) (*UserInfoResponse, *serviceerror.ServiceError) {
 	rpKey, rpKID, svcErr := s.resolveRPPublicKey(ctx, certificate, cfg.EncryptionAlg)
 	if svcErr != nil {
@@ -301,7 +298,7 @@ func (s *userInfoService) generateJWEUserInfo(
 		return nil, svcErr
 	}
 
-	return &UserInfoResponse{Type: appmodel.UserInfoResponseTypeJWE, JWTBody: compact}, nil
+	return &UserInfoResponse{Type: inboundmodel.UserInfoResponseTypeJWE, JWTBody: compact}, nil
 }
 
 // generateNestedJWTUserInfo creates a sign-then-encrypt Nested JWT UserInfo response (AC-7a–7c).
@@ -310,8 +307,8 @@ func (s *userInfoService) generateNestedJWTUserInfo(
 	sub string,
 	tokenClaims map[string]interface{},
 	response map[string]interface{},
-	cfg *appmodel.UserInfoConfig,
-	certificate *appmodel.ApplicationCertificate,
+	cfg *inboundmodel.UserInfoConfig,
+	certificate *inboundmodel.Certificate,
 ) (*UserInfoResponse, *serviceerror.ServiceError) {
 	jwsResp, svcErr := s.generateJWSUserInfo(sub, tokenClaims, response, cfg)
 	if svcErr != nil {
@@ -335,7 +332,7 @@ func (s *userInfoService) generateNestedJWTUserInfo(
 		return nil, svcErr
 	}
 
-	return &UserInfoResponse{Type: appmodel.UserInfoResponseTypeNESTEDJWT, JWTBody: compact}, nil
+	return &UserInfoResponse{Type: inboundmodel.UserInfoResponseTypeNESTEDJWT, JWTBody: compact}, nil
 }
 
 // generateJWSUserInfo creates a signed JWT UserInfo response
@@ -344,7 +341,7 @@ func (s *userInfoService) generateJWSUserInfo(
 	sub string,
 	tokenClaims map[string]interface{},
 	response map[string]interface{},
-	cfg *appmodel.UserInfoConfig,
+	cfg *inboundmodel.UserInfoConfig,
 ) (*UserInfoResponse, *serviceerror.ServiceError) {
 	clientID := ""
 	if cid, ok := tokenClaims["client_id"].(string); ok {
@@ -382,7 +379,7 @@ func (s *userInfoService) generateJWSUserInfo(
 	}
 
 	return &UserInfoResponse{
-		Type:    appmodel.UserInfoResponseTypeJWS,
+		Type:    inboundmodel.UserInfoResponseTypeJWS,
 		JWTBody: signedJWT,
 	}, nil
 }
@@ -433,29 +430,22 @@ func (s *userInfoService) validateOpenIDScope(scopes []string) *serviceerror.Ser
 	return nil
 }
 
-// getOAuthApp retrieves the OAuth application configuration if client_id is present in claims.
-// Returns (nil, nil) when no client_id is present — plain JSON is acceptable.
-// Returns (nil, err) on a DB/service error — caller must propagate.
-// Returns (nil, errorInvalidAccessToken) when the app is not found — stale or orphaned token.
+// getOAuthApp retrieves the OAuth client configuration if client_id is present in claims.
+// Returns nil when no client_id is present, on error, or when the app is not found.
 func (s *userInfoService) getOAuthApp(
 	ctx context.Context, claims map[string]interface{},
-) (*appmodel.OAuthAppConfigProcessedDTO, *serviceerror.ServiceError) {
+) *inboundmodel.OAuthClient {
 	clientID, ok := claims["client_id"].(string)
 	if !ok || clientID == "" {
-		return nil, nil
+		return nil
 	}
 
-	app, err := s.applicationService.GetOAuthApplication(ctx, clientID)
-	if err != nil {
-		s.logger.Error("Failed to retrieve OAuth application for UserInfo",
-			log.String("code", err.Code), log.String("error", err.Error.DefaultValue))
-		return nil, &errorUserInfoInternalError
-	}
-	if app == nil {
-		return nil, &errorInvalidAccessToken
+	app, err := s.inboundClient.GetOAuthClientByClientID(ctx, clientID)
+	if err != nil || app == nil {
+		return nil
 	}
 
-	return app, nil
+	return app
 }
 
 // buildUserInfoResponse builds the final UserInfo response from sub, scopes, and user attributes.
@@ -464,7 +454,7 @@ func (s *userInfoService) buildUserInfoResponse(
 	sub string,
 	scopes []string,
 	userAttributes map[string]interface{},
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	oauthApp *inboundmodel.OAuthClient,
 	tokenClaims map[string]interface{},
 ) (map[string]interface{}, *serviceerror.ServiceError) {
 	response := map[string]interface{}{

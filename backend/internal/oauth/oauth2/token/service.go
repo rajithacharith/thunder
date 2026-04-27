@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/granthandlers"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
@@ -43,7 +43,7 @@ type TokenServiceInterface interface {
 	ProcessTokenRequest(
 		ctx context.Context,
 		tokenRequest *model.TokenRequest,
-		oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+		oauthApp *inboundmodel.OAuthClient,
 	) (*model.TokenResponse, *model.ErrorResponse)
 }
 
@@ -74,7 +74,7 @@ func newTokenService(
 func (ts *tokenService) ProcessTokenRequest(
 	ctx context.Context,
 	tokenRequest *model.TokenRequest,
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	oauthApp *inboundmodel.OAuthClient,
 ) (*model.TokenResponse, *model.ErrorResponse) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "TokenService"))
 

@@ -104,6 +104,34 @@ var (
 	ErrCertInvalidJWKSURI = errors.New("invalid JWKS URI")
 	// ErrCertInvalidType is returned when the certificate type is invalid.
 	ErrCertInvalidType = errors.New("invalid certificate type")
+
+	// ErrOAuthUserInfoUnsupportedSigningAlg is returned when the userinfo signing algorithm is not supported.
+	ErrOAuthUserInfoUnsupportedSigningAlg = errors.New("unsupported userinfo signing algorithm")
+	// ErrOAuthUserInfoUnsupportedEncryptionAlg is returned when the userinfo encryption algorithm is not supported.
+	ErrOAuthUserInfoUnsupportedEncryptionAlg = errors.New("unsupported userinfo encryption algorithm")
+	// ErrOAuthUserInfoUnsupportedEncryptionEnc is returned when the userinfo content-encryption alg is not supported.
+	ErrOAuthUserInfoUnsupportedEncryptionEnc = errors.New("unsupported userinfo content-encryption algorithm")
+	// ErrOAuthUserInfoEncryptionAlgRequiresEnc is returned when encryptionAlg is set without encryptionEnc.
+	ErrOAuthUserInfoEncryptionAlgRequiresEnc = errors.New(
+		"userinfo encryptionEnc is required when encryptionAlg is set")
+	// ErrOAuthUserInfoEncryptionEncRequiresAlg is returned when encryptionEnc is set without encryptionAlg.
+	ErrOAuthUserInfoEncryptionEncRequiresAlg = errors.New(
+		"userinfo encryptionAlg is required when encryptionEnc is set")
+	// ErrOAuthUserInfoEncryptionRequiresCertificate is returned when userinfo encryption has no certificate.
+	ErrOAuthUserInfoEncryptionRequiresCertificate = errors.New(
+		"userinfo encryption requires a certificate (JWKS or JWKS_URI)")
+	// ErrOAuthUserInfoJWKSURINotSSRFSafe is returned when the JWKS URI fails SSRF safety checks.
+	ErrOAuthUserInfoJWKSURINotSSRFSafe = errors.New("userinfo JWKS URI must be a publicly reachable HTTPS URL")
+	// ErrOAuthUserInfoUnsupportedResponseType is returned when an unsupported userinfo response type is specified.
+	ErrOAuthUserInfoUnsupportedResponseType = errors.New("unsupported userinfo response type")
+	// ErrOAuthUserInfoJWSRequiresSigningAlg is returned when responseType is JWS but signingAlg is not set.
+	ErrOAuthUserInfoJWSRequiresSigningAlg = errors.New("signingAlg is required when userinfo responseType is JWS")
+	// ErrOAuthUserInfoJWERequiresEncryption is returned when responseType is JWE but encryption fields are missing.
+	ErrOAuthUserInfoJWERequiresEncryption = errors.New(
+		"encryptionAlg and encryptionEnc are required when userinfo responseType is JWE")
+	// ErrOAuthUserInfoNestedJWTRequiresAll is returned when responseType is NESTED_JWT but fields are missing.
+	ErrOAuthUserInfoNestedJWTRequiresAll = errors.New(
+		"signingAlg, encryptionAlg, and encryptionEnc are required when userinfo responseType is NESTED_JWT")
 )
 
 // Certificate operation labels used in CertOperationError.

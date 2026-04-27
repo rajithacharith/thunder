@@ -259,11 +259,14 @@ func (st *store) UpdateInboundClient(ctx context.Context, client inboundmodel.In
 		return marshalErr
 	}
 
-	_, err = dbClient.ExecuteContext(ctx, queryUpdateInboundClientByEntityID,
+	rowsAffected, err := dbClient.ExecuteContext(ctx, queryUpdateInboundClientByEntityID,
 		client.ID, client.AuthFlowID, client.RegistrationFlowID, isRegEnabledStr,
 		themeID, layoutID, propsBytes, st.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to update inbound client: %w", err)
+	}
+	if rowsAffected == 0 {
+		return ErrInboundClientNotFound
 	}
 	return nil
 }
@@ -282,10 +285,13 @@ func (st *store) UpdateOAuthProfile(ctx context.Context, entityID string,
 		return err
 	}
 
-	_, err = dbClient.ExecuteContext(ctx, queryUpdateOAuthProfileByEntityID,
+	rowsAffected, err := dbClient.ExecuteContext(ctx, queryUpdateOAuthProfileByEntityID,
 		entityID, profileJSON, st.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to update OAuth profile: %w", err)
+	}
+	if rowsAffected == 0 {
+		return ErrInboundClientNotFound
 	}
 	return nil
 }

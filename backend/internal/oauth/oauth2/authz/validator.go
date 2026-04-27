@@ -19,7 +19,7 @@
 package authz
 
 import (
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz/requestvalidator"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/resourceindicators"
@@ -28,7 +28,7 @@ import (
 
 // AuthorizationValidatorInterface defines the interface for validating OAuth2 authorization requests.
 type AuthorizationValidatorInterface interface {
-	validateInitialAuthorizationRequest(msg *OAuthMessage, oauthApp *appmodel.OAuthAppConfigProcessedDTO) (
+	validateInitialAuthorizationRequest(msg *OAuthMessage, oauthApp *inboundmodel.OAuthClient) (
 		bool, string, string)
 }
 
@@ -42,7 +42,7 @@ func newAuthorizationValidator() AuthorizationValidatorInterface {
 
 // validateInitialAuthorizationRequest validates the initial authorization request parameters.
 func (av *authorizationValidator) validateInitialAuthorizationRequest(msg *OAuthMessage,
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO) (bool, string, string) {
+	oauthApp *inboundmodel.OAuthClient) (bool, string, string) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "AuthorizationValidator"))
 
 	clientID := msg.RequestQueryParams[constants.RequestParamClientID]

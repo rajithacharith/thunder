@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/attributecache"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -66,7 +66,7 @@ func (suite *UtilsTestSuite) TestGetValidIssuers_WithNilOAuthApp() {
 }
 
 func (suite *UtilsTestSuite) TestGetValidIssuers_WithOnlyDefaultIssuer() {
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 	}
 
@@ -79,9 +79,9 @@ func (suite *UtilsTestSuite) TestGetValidIssuers_WithOnlyDefaultIssuer() {
 
 func (suite *UtilsTestSuite) TestGetValidIssuers_WithTokenConfig() {
 	// OAuthApp with a Token config should still use Thunder-level issuer from config
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token:    &appmodel.OAuthTokenConfig{},
+		Token:    &inboundmodel.OAuthTokenConfig{},
 	}
 
 	validIssuers := getValidIssuers(oauthApp)
@@ -93,10 +93,10 @@ func (suite *UtilsTestSuite) TestGetValidIssuers_WithTokenConfig() {
 
 func (suite *UtilsTestSuite) TestGetValidIssuers_WithAccessTokenConfig() {
 	// OAuthApp with Token and AccessToken config should still use Thunder-level issuer from config
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				ValidityPeriod: 7200,
 			},
 		},
@@ -111,10 +111,10 @@ func (suite *UtilsTestSuite) TestGetValidIssuers_WithAccessTokenConfig() {
 
 func (suite *UtilsTestSuite) TestGetValidIssuers_WithIDTokenConfig() {
 	// OAuthApp with Token and IDToken config should still use Thunder-level issuer from config
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			IDToken: &appmodel.IDTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				ValidityPeriod: 3600,
 			},
 		},
@@ -129,10 +129,10 @@ func (suite *UtilsTestSuite) TestGetValidIssuers_WithIDTokenConfig() {
 
 func (suite *UtilsTestSuite) TestGetValidIssuers_AlwaysUsesThunderIssuer() {
 	// Valid issuers always come from Thunder config, never empty strings
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{},
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{},
 		},
 	}
 
@@ -148,7 +148,7 @@ func (suite *UtilsTestSuite) TestGetValidIssuers_AlwaysUsesThunderIssuer() {
 // ============================================================================
 
 func (suite *UtilsTestSuite) TestvalidateIssuer_WithValidDefaultIssuer() {
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 	}
 
@@ -159,9 +159,9 @@ func (suite *UtilsTestSuite) TestvalidateIssuer_WithValidDefaultIssuer() {
 
 func (suite *UtilsTestSuite) TestvalidateIssuer_WithThunderIssuerAndTokenConfig() {
 	// Thunder-level issuer is always valid regardless of token config presence
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token:    &appmodel.OAuthTokenConfig{},
+		Token:    &inboundmodel.OAuthTokenConfig{},
 	}
 
 	err := validateIssuer("https://thunder.io", oauthApp)
@@ -171,10 +171,10 @@ func (suite *UtilsTestSuite) TestvalidateIssuer_WithThunderIssuerAndTokenConfig(
 
 func (suite *UtilsTestSuite) TestvalidateIssuer_WithThunderIssuerAndAccessTokenConfig() {
 	// Thunder-level issuer is always valid regardless of access token config presence
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				ValidityPeriod: 3600,
 			},
 		},
@@ -186,7 +186,7 @@ func (suite *UtilsTestSuite) TestvalidateIssuer_WithThunderIssuerAndAccessTokenC
 }
 
 func (suite *UtilsTestSuite) TestvalidateIssuer_WithInvalidIssuer() {
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 	}
 
@@ -198,7 +198,7 @@ func (suite *UtilsTestSuite) TestvalidateIssuer_WithInvalidIssuer() {
 }
 
 func (suite *UtilsTestSuite) TestvalidateIssuer_WithEmptyIssuer() {
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 	}
 
@@ -224,10 +224,10 @@ func (suite *UtilsTestSuite) TestvalidateIssuer_WithNilOAuthAppInvalidIssuer() {
 
 func (suite *UtilsTestSuite) TestFederationScenario_OnlyThunderIssuerIsValid() {
 	// Only the Thunder-level issuer from config is accepted; app-level issuers are no longer supported
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{},
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{},
 		},
 	}
 
@@ -249,7 +249,7 @@ func (suite *UtilsTestSuite) TestFederationScenario_FutureExternalIssuerSupport(
 	// TODO: When external issuer support is added, update GetValidIssuers to include
 	// external federated issuers from configuration
 
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 	}
 
@@ -741,7 +741,7 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithServerLevel
 	}
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 	}
 
@@ -768,7 +768,7 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithoutServerLe
 	}
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 	}
 
@@ -820,9 +820,9 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithTokenConfig
 	}
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token:    &appmodel.OAuthTokenConfig{},
+		Token:    &inboundmodel.OAuthTokenConfig{},
 	}
 
 	result := ResolveTokenConfig(oauthApp, TokenTypeRefresh)
@@ -861,7 +861,7 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_AccessToken_WithNilToken() {
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	// oauthApp.Token is nil - should use default config
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 		Token:    nil,
 	}
@@ -883,10 +883,10 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_AccessToken_WithAppLevelConf
 	}
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				ValidityPeriod: 7200,
 			},
 		},
@@ -927,7 +927,7 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_IDToken_WithNilToken() {
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	// oauthApp.Token is nil - should use default config
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 		Token:    nil,
 	}
@@ -949,10 +949,10 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_IDToken_WithAppLevelConfig()
 	}
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			IDToken: &appmodel.IDTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				ValidityPeriod: 1800,
 			},
 		},
@@ -992,9 +992,9 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_WithTokenConfig_UsesThunderI
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	// OAuthApp with token config always uses Thunder-level issuer from config
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token:    &appmodel.OAuthTokenConfig{},
+		Token:    &inboundmodel.OAuthTokenConfig{},
 	}
 
 	result := ResolveTokenConfig(oauthApp, TokenTypeAccess)
@@ -1008,8 +1008,8 @@ const (
 	testBCCOUID  = "ou-456"
 )
 
-func newOAuthAppForClientAttributes(ouID string) *appmodel.OAuthAppConfigProcessedDTO {
-	return &appmodel.OAuthAppConfigProcessedDTO{
+func newOAuthAppForClientAttributes(ouID string) *inboundmodel.OAuthClient {
+	return &inboundmodel.OAuthClient{
 		AppID: testBCCAppID,
 		OUID:  ouID,
 	}

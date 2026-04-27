@@ -28,18 +28,17 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	flowcm "github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowexecmock"
+	"github.com/asgardeo/thunder/tests/mocks/inboundclientmock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 )
 
@@ -60,7 +59,7 @@ const (
 
 type AuthorizeServiceTestSuite struct {
 	suite.Suite
-	mockAppService      *applicationmock.ApplicationServiceInterfaceMock
+	mockInboundClient   *inboundclientmock.InboundClientServiceInterfaceMock
 	mockJWTService      *jwtmock.JWTServiceInterfaceMock
 	mockAuthzCodeStore  *AuthorizationCodeStoreInterfaceMock
 	mockAuthReqStore    *authorizationRequestStoreInterfaceMock
@@ -97,7 +96,7 @@ func (suite *AuthorizeServiceTestSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (suite *AuthorizeServiceTestSuite) SetupTest() {
-	suite.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
+	suite.mockInboundClient = inboundclientmock.NewInboundClientServiceInterfaceMock(suite.T())
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.mockAuthzCodeStore = NewAuthorizationCodeStoreInterfaceMock(suite.T())
 	suite.mockAuthReqStore = newAuthorizationRequestStoreInterfaceMock(suite.T())
@@ -108,7 +107,7 @@ func (suite *AuthorizeServiceTestSuite) SetupTest() {
 // newService builds an authorizeService with all mocked dependencies.
 func (suite *AuthorizeServiceTestSuite) newService() *authorizeService {
 	return &authorizeService{
-		appService:      suite.mockAppService,
+		inboundClient:   suite.mockInboundClient,
 		authZValidator:  suite.mockValidator,
 		authCodeStore:   suite.mockAuthzCodeStore,
 		authReqStore:    suite.mockAuthReqStore,
@@ -120,8 +119,8 @@ func (suite *AuthorizeServiceTestSuite) newService() *authorizeService {
 }
 
 // testApp returns a minimal OAuthAppConfigProcessedDTO for use in tests.
-func (suite *AuthorizeServiceTestSuite) testApp() *appmodel.OAuthAppConfigProcessedDTO {
-	return &appmodel.OAuthAppConfigProcessedDTO{
+func (suite *AuthorizeServiceTestSuite) testApp() *inboundmodel.OAuthClient {
+	return &inboundmodel.OAuthClient{
 		AppID:        "test-app-id",
 		ClientID:     "test-client-id",
 		RedirectURIs: []string{"https://client.example.com/callback"},
@@ -163,11 +162,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Mi
 }
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_InvalidClient() {
-	notFound := &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
-		Error: i18ncore.I18nMessage{DefaultValue: "Application not found"},
-	}
-	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "invalid-client").Return(nil, notFound)
+	suite.mockInboundClient.EXPECT().GetOAuthClientByClientID(mock.Anything, "invalid-client").Return(nil, nil)
 
 	msg := &OAuthMessage{
 		RequestType: oauth2const.TypeInitialAuthorizationRequest,
@@ -188,7 +183,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_In
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_InvalidClaimsParameter() {
 	app := suite.testApp()
-	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
+	suite.mockInboundClient.EXPECT().GetOAuthClientByClientID(mock.Anything, "test-client-id").Return(app, nil)
 
 	msg := &OAuthMessage{
 		RequestType: oauth2const.TypeInitialAuthorizationRequest,
@@ -209,7 +204,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_In
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_ValidationError_NoClientRedirect() {
 	app := suite.testApp()
-	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
+	suite.mockInboundClient.EXPECT().GetOAuthClientByClientID(mock.Anything, "test-client-id").Return(app, nil)
 
 	// Validator rejects; sendErrorToApp=false → error goes to error page, not client.
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
@@ -228,7 +223,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Va
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_ValidationError_SendToClient() {
 	app := suite.testApp()
-	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
+	suite.mockInboundClient.EXPECT().GetOAuthClientByClientID(mock.Anything, "test-client-id").Return(app, nil)
 
 	// sendErrorToApp=true + redirect_uri present → error forwarded to client.
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
@@ -248,7 +243,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Va
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_FlowInitError() {
 	app := suite.testApp()
-	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
+	suite.mockInboundClient.EXPECT().GetOAuthClientByClientID(mock.Anything, "test-client-id").Return(app, nil)
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
 	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything, mock.Anything).
@@ -267,7 +262,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Fl
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Success() {
 	app := suite.testApp()
-	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
+	suite.mockInboundClient.EXPECT().GetOAuthClientByClientID(mock.Anything, "test-client-id").Return(app, nil)
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
 	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything, mock.Anything).Return("test-flow-id", nil)
@@ -286,7 +281,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Su
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_InsecureRedirectURI() {
 	app := suite.testApp()
 	app.RedirectURIs = []string{"http://client.example.com/callback"}
-	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
+	suite.mockInboundClient.EXPECT().GetOAuthClientByClientID(mock.Anything, "test-client-id").Return(app, nil)
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
 	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything, mock.Anything).Return("test-flow-id", nil)
@@ -312,7 +307,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_In
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_EmptyRedirectURIUsesAppDefault() {
 	app := suite.testApp() // RedirectURIs: ["https://client.example.com/callback"]
-	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
+	suite.mockInboundClient.EXPECT().GetOAuthClientByClientID(mock.Anything, "test-client-id").Return(app, nil)
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
 	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything, mock.Anything).Return("test-flow-id", nil)
@@ -337,7 +332,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Em
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_WithClaimsLocales() {
 	app := suite.testApp()
-	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
+	suite.mockInboundClient.EXPECT().GetOAuthClientByClientID(mock.Anything, "test-client-id").Return(app, nil)
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
 	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything, mock.Anything).Return("test-flow-id", nil)
@@ -363,19 +358,19 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Wi
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_SetsRuntimeRequiredAttrs() {
 	app := suite.testApp()
-	app.Token = &appmodel.OAuthTokenConfig{
-		AccessToken: &appmodel.AccessTokenConfig{
+	app.Token = &inboundmodel.OAuthTokenConfig{
+		AccessToken: &inboundmodel.AccessTokenConfig{
 			UserAttributes: []string{"user_id"},
 		},
-		IDToken: &appmodel.IDTokenConfig{
+		IDToken: &inboundmodel.IDTokenConfig{
 			UserAttributes: []string{"email"},
 		},
 	}
-	app.UserInfo = &appmodel.UserInfoConfig{
+	app.UserInfo = &inboundmodel.UserInfoConfig{
 		UserAttributes: []string{"phone_number"},
 	}
 
-	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
+	suite.mockInboundClient.EXPECT().GetOAuthClientByClientID(mock.Anything, "test-client-id").Return(app, nil)
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
 	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything,
@@ -732,7 +727,7 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_NilApp() {
 }
 
 func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_NilTokenConfig() {
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
 		Token:    nil,
@@ -751,11 +746,11 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_NilTokenCon
 }
 
 func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_AccessTokenClaimsOnly() {
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				UserAttributes: []string{"user_id", "org_id", "role"},
 			},
 		},
@@ -777,18 +772,18 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_AccessToken
 }
 
 func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_NoOpenIDScope() {
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				UserAttributes: []string{"user_id"},
 			},
-			IDToken: &appmodel.IDTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				UserAttributes: []string{"email", "name"},
 			},
 		},
-		UserInfo: &appmodel.UserInfoConfig{
+		UserInfo: &inboundmodel.UserInfoConfig{
 			UserAttributes: []string{"email", "name"},
 		},
 	}
@@ -808,15 +803,15 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_NoOpenIDSco
 }
 
 func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_StandardOIDCScopes_CodeFlow() {
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			IDToken: &appmodel.IDTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				UserAttributes: []string{"email", "email_verified", "name"},
 			},
 		},
-		UserInfo: &appmodel.UserInfoConfig{
+		UserInfo: &inboundmodel.UserInfoConfig{
 			UserAttributes: []string{"email", "email_verified", "name", "picture"},
 		},
 	}
@@ -837,15 +832,15 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_StandardOID
 }
 
 func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_StandardOIDCScopes_ImplicitFlow() {
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			IDToken: &appmodel.IDTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				UserAttributes: []string{"email", "email_verified", "name"},
 			},
 		},
-		UserInfo: &appmodel.UserInfoConfig{
+		UserInfo: &inboundmodel.UserInfoConfig{
 			UserAttributes: []string{"email", "email_verified", "name", "picture"},
 		},
 	}
@@ -873,11 +868,11 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_ClaimsParam
 		},
 	}
 
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			IDToken: &appmodel.IDTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				UserAttributes: []string{"email", "name", "picture"},
 			},
 		},
@@ -905,11 +900,11 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_ClaimsParam
 		},
 	}
 
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token:    &appmodel.OAuthTokenConfig{}, // Need Token config for the method to process claims
-		UserInfo: &appmodel.UserInfoConfig{
+		Token:    &inboundmodel.OAuthTokenConfig{}, // Need Token config for the method to process claims
+		UserInfo: &inboundmodel.UserInfoConfig{
 			UserAttributes: []string{"email", "name", "picture"},
 		},
 	}
@@ -937,11 +932,11 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_ClaimsParam
 		},
 	}
 
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			IDToken: &appmodel.IDTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				UserAttributes: []string{"email", "name"}, // not_found is not allowed
 			},
 		},
@@ -964,15 +959,15 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_ClaimsParam
 }
 
 func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_CustomScopeMapping() {
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			IDToken: &appmodel.IDTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				UserAttributes: []string{"org_id", "org_name", "department"},
 			},
 		},
-		UserInfo: &appmodel.UserInfoConfig{
+		UserInfo: &inboundmodel.UserInfoConfig{
 			UserAttributes: []string{"org_id", "org_name", "department"},
 		},
 		ScopeClaims: map[string][]string{
@@ -997,15 +992,15 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_CustomScope
 
 func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_CustomScopeOverridesStandardScope() {
 	// If app defines custom mapping for a standard scope, it should override
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			IDToken: &appmodel.IDTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				UserAttributes: []string{"custom_email", "email"},
 			},
 		},
-		UserInfo: &appmodel.UserInfoConfig{
+		UserInfo: &inboundmodel.UserInfoConfig{
 			UserAttributes: []string{"custom_email", "email"},
 		},
 		ScopeClaims: map[string][]string{
@@ -1030,18 +1025,18 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_CustomScope
 }
 
 func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_MultipleScopesCodeFlow() {
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				UserAttributes: []string{"user_id"},
 			},
-			IDToken: &appmodel.IDTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				UserAttributes: []string{"email", "email_verified", "name", "picture"},
 			},
 		},
-		UserInfo: &appmodel.UserInfoConfig{
+		UserInfo: &inboundmodel.UserInfoConfig{
 			UserAttributes: []string{"email", "email_verified", "name", "picture", "phone_number"},
 		},
 	}
@@ -1079,18 +1074,18 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_CompleteSce
 		},
 	}
 
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				UserAttributes: []string{"user_id", "role"},
 			},
-			IDToken: &appmodel.IDTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				UserAttributes: []string{"email", "email_verified", "name"},
 			},
 		},
-		UserInfo: &appmodel.UserInfoConfig{
+		UserInfo: &inboundmodel.UserInfoConfig{
 			UserAttributes: []string{"email", "email_verified", "name", "picture", "phone_number"},
 		},
 		ScopeClaims: map[string][]string{
@@ -1121,15 +1116,15 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_CompleteSce
 }
 
 func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_EmptyAllowedSets() {
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			IDToken: &appmodel.IDTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				UserAttributes: []string{}, // Empty allowed set
 			},
 		},
-		UserInfo: &appmodel.UserInfoConfig{
+		UserInfo: &inboundmodel.UserInfoConfig{
 			UserAttributes: []string{}, // Empty allowed set
 		},
 	}
@@ -1159,7 +1154,7 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_NilApp() {
 }
 
 func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_NilTokenConfig() {
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
 		Token:    nil,
@@ -1177,11 +1172,11 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_NilTokenConfig
 }
 
 func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_AccessTokenOnly() {
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				UserAttributes: []string{"user_id", "role"},
 			},
 		},
@@ -1204,18 +1199,18 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_AccessTokenOnl
 }
 
 func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_CodeFlowWithScopes() {
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				UserAttributes: []string{"user_id"},
 			},
-			IDToken: &appmodel.IDTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				UserAttributes: []string{"email", "email_verified", "name"},
 			},
 		},
-		UserInfo: &appmodel.UserInfoConfig{
+		UserInfo: &inboundmodel.UserInfoConfig{
 			UserAttributes: []string{"email", "email_verified", "name", "picture"},
 		},
 	}
@@ -1239,11 +1234,11 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_CodeFlowWithSc
 }
 
 func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_ImplicitFlowWithScopes() {
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			IDToken: &appmodel.IDTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				UserAttributes: []string{"email", "email_verified", "name"},
 			},
 		},
@@ -1276,18 +1271,18 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_WithClaimsPara
 		},
 	}
 
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				UserAttributes: []string{"user_id"},
 			},
-			IDToken: &appmodel.IDTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				UserAttributes: []string{"email", "name"},
 			},
 		},
-		UserInfo: &appmodel.UserInfoConfig{
+		UserInfo: &inboundmodel.UserInfoConfig{
 			UserAttributes: []string{"email", "phone_number"},
 		},
 	}
@@ -1321,18 +1316,18 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_ClaimsParamete
 		},
 	}
 
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				UserAttributes: []string{"email", "role"},
 			},
-			IDToken: &appmodel.IDTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				UserAttributes: []string{"email", "name"},
 			},
 		},
-		UserInfo: &appmodel.UserInfoConfig{
+		UserInfo: &inboundmodel.UserInfoConfig{
 			UserAttributes: []string{"email", "phone_number"},
 		},
 	}
@@ -1361,18 +1356,18 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_DeduplicatesCl
 		},
 	}
 
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				UserAttributes: []string{"email"}, // Same claim in access token too
 			},
-			IDToken: &appmodel.IDTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				UserAttributes: []string{"email"},
 			},
 		},
-		UserInfo: &appmodel.UserInfoConfig{
+		UserInfo: &inboundmodel.UserInfoConfig{
 			UserAttributes: []string{"email"},
 		},
 	}
@@ -1390,15 +1385,15 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_DeduplicatesCl
 }
 
 func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_CustomScopeMapping() {
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			IDToken: &appmodel.IDTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				UserAttributes: []string{"org_id", "org_name"},
 			},
 		},
-		UserInfo: &appmodel.UserInfoConfig{
+		UserInfo: &inboundmodel.UserInfoConfig{
 			UserAttributes: []string{"org_id", "org_name"},
 		},
 		ScopeClaims: map[string][]string{
@@ -1432,18 +1427,18 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_ComplexScenari
 		},
 	}
 
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				UserAttributes: []string{"user_id", "role"},
 			},
-			IDToken: &appmodel.IDTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				UserAttributes: []string{"email", "email_verified", "name"},
 			},
 		},
-		UserInfo: &appmodel.UserInfoConfig{
+		UserInfo: &inboundmodel.UserInfoConfig{
 			UserAttributes: []string{"email", "email_verified", "name", "picture", "phone_number"},
 		},
 		ScopeClaims: map[string][]string{
@@ -1476,14 +1471,14 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_ComplexScenari
 }
 
 func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_NoOpenIDScope() {
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		AppID:    "test-app",
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				UserAttributes: []string{"user_id"},
 			},
-			IDToken: &appmodel.IDTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				UserAttributes: []string{"email", "name"},
 			},
 		},
@@ -1519,13 +1514,13 @@ func (suite *AuthorizeServiceTestSuite) TestResolveAttrCacheTTL_RefreshAllowed_U
 		},
 	})
 
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		GrantTypes: []oauth2const.GrantType{
 			oauth2const.GrantTypeAuthorizationCode,
 			oauth2const.GrantTypeRefreshToken,
 		},
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{ValidityPeriod: 3600},
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{ValidityPeriod: 3600},
 		},
 	}
 
@@ -1543,13 +1538,13 @@ func (suite *AuthorizeServiceTestSuite) TestResolveAttrCacheTTL_RefreshTokenAllo
 		},
 	})
 
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		GrantTypes: []oauth2const.GrantType{
 			oauth2const.GrantTypeAuthorizationCode,
 			oauth2const.GrantTypeRefreshToken,
 		},
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{ValidityPeriod: 7200},
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{ValidityPeriod: 7200},
 		},
 	}
 
@@ -1568,7 +1563,7 @@ func (suite *AuthorizeServiceTestSuite) TestResolveUserAttributesCacheTTL_Refres
 		},
 	})
 
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		GrantTypes: []oauth2const.GrantType{
 			oauth2const.GrantTypeAuthorizationCode,
 			oauth2const.GrantTypeRefreshToken,
@@ -1580,10 +1575,10 @@ func (suite *AuthorizeServiceTestSuite) TestResolveUserAttributesCacheTTL_Refres
 }
 
 func (suite *AuthorizeServiceTestSuite) TestResolveAttrCacheTTL_RefreshTokenNotAllowed_UsesAccessTokenValidity() {
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		GrantTypes: []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{ValidityPeriod: 3600},
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{ValidityPeriod: 3600},
 		},
 	}
 
@@ -1600,11 +1595,11 @@ func (suite *AuthorizeServiceTestSuite) TestResolveAttrCacheTTL_NoRefreshToken_Z
 		},
 	})
 
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		GrantTypes: []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-		Token: &appmodel.OAuthTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
 			// ValidityPeriod 0 is treated as unset by ResolveTokenConfig → falls back to global JWT validity.
-			AccessToken: &appmodel.AccessTokenConfig{ValidityPeriod: 0},
+			AccessToken: &inboundmodel.AccessTokenConfig{ValidityPeriod: 0},
 		},
 	}
 
@@ -1621,7 +1616,7 @@ func (suite *AuthorizeServiceTestSuite) TestResolveAttrCacheTTL_NoRefreshToken_N
 		},
 	})
 
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		GrantTypes: []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
 		Token:      nil,
 	}
@@ -1639,9 +1634,9 @@ func (suite *AuthorizeServiceTestSuite) TestResolveAttrCacheTTL_NoRefreshToken_N
 		},
 	})
 
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		GrantTypes: []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-		Token:      &appmodel.OAuthTokenConfig{AccessToken: nil},
+		Token:      &inboundmodel.OAuthTokenConfig{AccessToken: nil},
 	}
 
 	// JWT fallback (900) + authCode(600) + buffer(60) = 1560.
@@ -1651,7 +1646,7 @@ func (suite *AuthorizeServiceTestSuite) TestResolveAttrCacheTTL_NoRefreshToken_N
 // determineClaimsForTokens is a test helper retained to keep existing token-claim tests readable.
 // It mirrors the token-specific split (access_token / id_token / userinfo) on top of current helper functions.
 func determineClaimsForTokens(oidcScopes []string, claimsRequest *oauth2model.ClaimsRequest,
-	responseType string, app *appmodel.OAuthAppConfigProcessedDTO) (
+	responseType string, app *inboundmodel.OAuthClient) (
 	map[string]bool, map[string]bool, map[string]bool) {
 	accessTokenClaims := make(map[string]bool)
 	idTokenClaims := make(map[string]bool)

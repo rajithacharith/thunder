@@ -27,8 +27,8 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	sysconfig "github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/cache"
+	sysconfig "github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/tests/mocks/cachemock"
 )
 
@@ -289,4 +289,56 @@ func (suite *CacheBackedStoreTestSuite) TestIsDeclarative_Delegates() {
 	suite.mockStore.EXPECT().IsDeclarative(mock.Anything, "c1").Return(true)
 
 	suite.True(suite.cachedStore.IsDeclarative(ctx, "c1"))
+}
+
+// ----- cache helper edge cases -----
+
+func (suite *CacheBackedStoreTestSuite) TestCacheInboundClient_NilNoOp() {
+	suite.cachedStore.cacheInboundClient(context.Background(), nil)
+}
+
+func (suite *CacheBackedStoreTestSuite) TestCacheInboundClient_EmptyIDNoOp() {
+	suite.cachedStore.cacheInboundClient(context.Background(), &inboundmodel.InboundClient{})
+}
+
+func (suite *CacheBackedStoreTestSuite) TestCacheInboundClient_LogsOnSetError() {
+	client := &inboundmodel.InboundClient{ID: "c1"}
+	suite.clientCache.EXPECT().Set(mock.Anything, cache.CacheKey{Key: "c1"}, client).
+		Return(errors.New("cache down"))
+	suite.cachedStore.cacheInboundClient(context.Background(), client)
+}
+
+func (suite *CacheBackedStoreTestSuite) TestCacheOAuthProfile_NilNoOp() {
+	suite.cachedStore.cacheOAuthProfile(context.Background(), nil)
+}
+
+func (suite *CacheBackedStoreTestSuite) TestCacheOAuthProfile_EmptyAppIDNoOp() {
+	suite.cachedStore.cacheOAuthProfile(context.Background(), &inboundmodel.OAuthProfile{})
+}
+
+func (suite *CacheBackedStoreTestSuite) TestCacheOAuthProfile_LogsOnSetError() {
+	profile := &inboundmodel.OAuthProfile{AppID: "a1"}
+	suite.profileCache.EXPECT().Set(mock.Anything, cache.CacheKey{Key: "a1"}, profile).
+		Return(errors.New("cache down"))
+	suite.cachedStore.cacheOAuthProfile(context.Background(), profile)
+}
+
+func (suite *CacheBackedStoreTestSuite) TestInvalidateInboundClient_EmptyIDNoOp() {
+	suite.cachedStore.invalidateInboundClient(context.Background(), "")
+}
+
+func (suite *CacheBackedStoreTestSuite) TestInvalidateInboundClient_LogsOnDeleteError() {
+	suite.clientCache.EXPECT().Delete(mock.Anything, cache.CacheKey{Key: "x"}).
+		Return(errors.New("cache down"))
+	suite.cachedStore.invalidateInboundClient(context.Background(), "x")
+}
+
+func (suite *CacheBackedStoreTestSuite) TestInvalidateOAuthProfile_EmptyIDNoOp() {
+	suite.cachedStore.invalidateOAuthProfile(context.Background(), "")
+}
+
+func (suite *CacheBackedStoreTestSuite) TestInvalidateOAuthProfile_LogsOnDeleteError() {
+	suite.profileCache.EXPECT().Delete(mock.Anything, cache.CacheKey{Key: "y"}).
+		Return(errors.New("cache down"))
+	suite.cachedStore.invalidateOAuthProfile(context.Background(), "y")
 }

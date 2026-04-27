@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
+	"github.com/asgardeo/thunder/internal/inboundclient"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/par"
 	"github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -37,7 +37,7 @@ import (
 // Initialize initializes the authorization handler and registers its routes.
 func Initialize(
 	mux *http.ServeMux,
-	applicationService application.ApplicationServiceInterface,
+	inboundClient inboundclient.InboundClientServiceInterface,
 	resourceService resource.ResourceServiceInterface,
 	jwtService jwt.JWTServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
@@ -49,7 +49,7 @@ func Initialize(
 	}
 
 	authzService := newAuthorizeService(
-		applicationService, resourceService, jwtService, flowExecService,
+		inboundClient, resourceService, jwtService, flowExecService,
 		authzCodeStore, authzReqStore, parService, transactioner,
 	)
 	authzHandler := newAuthorizeHandler(authzService)

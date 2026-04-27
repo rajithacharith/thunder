@@ -23,7 +23,7 @@ import (
 	"slices"
 	"time"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -34,7 +34,7 @@ import (
 type TokenValidatorInterface interface {
 	ValidateAccessToken(token string) (*AccessTokenClaims, error)
 	ValidateRefreshToken(token string, clientID string) (*RefreshTokenClaims, error)
-	ValidateSubjectToken(token string, oauthApp *appmodel.OAuthAppConfigProcessedDTO) (*SubjectTokenClaims, error)
+	ValidateSubjectToken(token string, oauthApp *inboundmodel.OAuthClient) (*SubjectTokenClaims, error)
 }
 
 // TokenValidator implements TokenValidatorInterface.
@@ -160,7 +160,7 @@ func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*
 // ValidateSubjectToken validates a subject token for token exchange.
 func (tv *tokenValidator) ValidateSubjectToken(
 	token string,
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	oauthApp *inboundmodel.OAuthClient,
 ) (*SubjectTokenClaims, error) {
 	claims, err := jwt.DecodeJWTPayload(token)
 	if err != nil {
@@ -245,7 +245,7 @@ func (tv *tokenValidator) ValidateSubjectToken(
 func (tv *tokenValidator) verifyTokenSignatureByIssuer(
 	token string,
 	issuer string,
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	oauthApp *inboundmodel.OAuthClient,
 ) error {
 	issuers := getValidIssuers(oauthApp)
 	if issuers[issuer] {

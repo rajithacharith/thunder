@@ -24,8 +24,8 @@ import (
 	"slices"
 	"strings"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/attributecache"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/ou"
@@ -56,7 +56,7 @@ func JoinScopes(scopes []string) string {
 }
 
 // ResolveTokenConfig resolves the token configuration from the OAuth app or falls back to global config.
-func ResolveTokenConfig(oauthApp *appmodel.OAuthAppConfigProcessedDTO, tokenType TokenType) *TokenConfig {
+func ResolveTokenConfig(oauthApp *inboundmodel.OAuthClient, tokenType TokenType) *TokenConfig {
 	conf := config.GetThunderRuntime().Config
 
 	tokenConfig := &TokenConfig{
@@ -244,7 +244,7 @@ func ExtractUserAttributes(claims map[string]interface{}) map[string]interface{}
 }
 
 // getValidIssuers collects all valid/trusted issuers for the given OAuth application.
-func getValidIssuers(oauthApp *appmodel.OAuthAppConfigProcessedDTO) map[string]bool {
+func getValidIssuers(oauthApp *inboundmodel.OAuthClient) map[string]bool {
 	validIssuers := make(map[string]bool)
 
 	tokenConfig := ResolveTokenConfig(oauthApp, TokenTypeAccess)
@@ -255,7 +255,7 @@ func getValidIssuers(oauthApp *appmodel.OAuthAppConfigProcessedDTO) map[string]b
 }
 
 // validateIssuer validates that a token issuer is trusted by checking against configured issuers.
-func validateIssuer(issuer string, oauthApp *appmodel.OAuthAppConfigProcessedDTO) error {
+func validateIssuer(issuer string, oauthApp *inboundmodel.OAuthClient) error {
 	validIssuers := getValidIssuers(oauthApp)
 	if !validIssuers[issuer] {
 		return fmt.Errorf("token issuer '%s' is not supported", issuer)
@@ -440,7 +440,7 @@ func buildClaimsFromRequest(
 // to an access token for the given OAuth application.
 func BuildClientAttributes(
 	ctx context.Context,
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	oauthApp *inboundmodel.OAuthClient,
 	ouService ou.OrganizationUnitServiceInterface,
 ) (map[string]interface{}, error) {
 	claims := make(map[string]interface{})
@@ -463,7 +463,7 @@ func BuildClientAttributes(
 // (ouId, ouName, ouHandle) when the app has an associated OU.
 func resolveClientOUAttributes(
 	ctx context.Context,
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	oauthApp *inboundmodel.OAuthClient,
 	ouService ou.OrganizationUnitServiceInterface,
 ) (map[string]interface{}, error) {
 	if oauthApp == nil || oauthApp.OUID == "" {

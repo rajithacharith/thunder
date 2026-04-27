@@ -29,6 +29,8 @@ import (
 
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/jose/jwe"
+	"github.com/asgardeo/thunder/internal/system/jose/jws"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -75,8 +77,11 @@ type IDTokenConfig struct {
 
 // UserInfoConfig is the user info endpoint configuration.
 type UserInfoConfig struct {
-	ResponseType   UserInfoResponseType `json:"responseType,omitempty" yaml:"response_type,omitempty"`
+	ResponseType   UserInfoResponseType `json:"responseType,omitempty"   yaml:"response_type,omitempty"   jsonschema:"UserInfo response type (JSON, JWS, JWE, NESTED_JWT). Derived from algorithm fields when not explicitly set."`
 	UserAttributes []string             `json:"userAttributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in the userinfo response."`
+	SigningAlg     string               `json:"signingAlg,omitempty"     yaml:"signing_alg,omitempty"     jsonschema:"JWS algorithm for signed userinfo responses (e.g. RS256)."`
+	EncryptionAlg  string               `json:"encryptionAlg,omitempty"  yaml:"encryption_alg,omitempty"  jsonschema:"JWE key-management algorithm for encrypted userinfo responses (e.g. RSA-OAEP-256)."`
+	EncryptionEnc  string               `json:"encryptionEnc,omitempty"  yaml:"encryption_enc,omitempty"  jsonschema:"JWE content-encryption algorithm (e.g. A256GCM). Required when encryptionAlg is set."`
 }
 
 // UserInfoResponseType is the response format of the UserInfo endpoint.
@@ -85,9 +90,26 @@ type UserInfoResponseType string
 const (
 	// UserInfoResponseTypeJSON is the JSON userinfo response type.
 	UserInfoResponseTypeJSON UserInfoResponseType = "JSON"
-	// UserInfoResponseTypeJWS is the JWS userinfo response type.
+	// UserInfoResponseTypeJWS is the signed JWT (JWS) userinfo response type.
 	UserInfoResponseTypeJWS UserInfoResponseType = "JWS"
+	// UserInfoResponseTypeJWE is the encrypted (JWE) userinfo response type.
+	UserInfoResponseTypeJWE UserInfoResponseType = "JWE"
+	// UserInfoResponseTypeNESTEDJWT is the signed-then-encrypted (Nested JWT) userinfo response type.
+	UserInfoResponseTypeNESTEDJWT UserInfoResponseType = "NESTED_JWT"
 )
+
+// SupportedUserInfoSigningAlgs lists JWS algorithms supported for userinfo signing.
+var SupportedUserInfoSigningAlgs = []string{
+	string(jws.RS256), string(jws.RS512), string(jws.PS256),
+	string(jws.ES256), string(jws.ES384), string(jws.ES512),
+	string(jws.EdDSA),
+}
+
+// SupportedUserInfoEncryptionAlgs lists JWE key-management algorithms supported for userinfo encryption.
+var SupportedUserInfoEncryptionAlgs = []string{string(jwe.RSAOAEP), string(jwe.RSAOAEP256)}
+
+// SupportedUserInfoEncryptionEncs lists JWE content-encryption algorithms supported for userinfo encryption.
+var SupportedUserInfoEncryptionEncs = []string{string(jwe.A128CBCHS256), string(jwe.A256GCM)}
 
 // OAuthClient is the resolved OAuth-client view used by the OAuth machinery (token
 // issuance, grant handlers, userinfo, authz, dcr). Both application and agent services

@@ -25,13 +25,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 )
 
 type AuthzValidationTestSuite struct {
 	suite.Suite
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO
+	oauthApp *inboundmodel.OAuthClient
 }
 
 func TestAuthzValidationTestSuite(t *testing.T) {
@@ -39,7 +39,7 @@ func TestAuthzValidationTestSuite(t *testing.T) {
 }
 
 func (suite *AuthzValidationTestSuite) SetupTest() {
-	suite.oauthApp = &appmodel.OAuthAppConfigProcessedDTO{
+	suite.oauthApp = &inboundmodel.OAuthClient{
 		ClientID:                "test-client-id",
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
@@ -84,7 +84,7 @@ func (suite *AuthzValidationTestSuite) TestValidateParams_UnsupportedResponseTyp
 }
 
 func (suite *AuthzValidationTestSuite) TestValidateParams_GrantTypeNotAllowed() {
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		ClientID:                "test-client-id",
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeClientCredentials},
@@ -99,7 +99,7 @@ func (suite *AuthzValidationTestSuite) TestValidateParams_GrantTypeNotAllowed() 
 }
 
 func (suite *AuthzValidationTestSuite) TestValidateParams_PKCERequired_MissingCodeChallenge() {
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		ClientID:                "test-client-id",
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
@@ -116,7 +116,7 @@ func (suite *AuthzValidationTestSuite) TestValidateParams_PKCERequired_MissingCo
 }
 
 func (suite *AuthzValidationTestSuite) TestValidateParams_PKCERequired_InvalidCodeChallenge() {
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		ClientID:                "test-client-id",
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
@@ -134,7 +134,7 @@ func (suite *AuthzValidationTestSuite) TestValidateParams_PKCERequired_InvalidCo
 }
 
 func (suite *AuthzValidationTestSuite) TestValidateParams_PKCERequired_ValidPKCE() {
-	app := &appmodel.OAuthAppConfigProcessedDTO{
+	app := &inboundmodel.OAuthClient{
 		ClientID:                "test-client-id",
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},

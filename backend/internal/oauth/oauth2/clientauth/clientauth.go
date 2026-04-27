@@ -28,10 +28,10 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/asgardeo/thunder/internal/application"
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/cert"
+	"github.com/asgardeo/thunder/internal/inboundclient"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/jose/jws"
@@ -47,7 +47,7 @@ import (
 func authenticate(
 	ctx context.Context,
 	r *http.Request,
-	appService application.ApplicationServiceInterface,
+	inboundClient inboundclient.InboundClientServiceInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	jwtService jwt.JWTServiceInterface,
 	endpointURL string,
@@ -130,8 +130,12 @@ func authenticate(
 		return nil, errClientIDMismatch
 	}
 
-	oauthApp, err := appService.GetOAuthApplication(ctx, clientID)
-	if err != nil || oauthApp == nil {
+	oauthApp, err := inboundClient.GetOAuthClientByClientID(ctx, clientID)
+	if err != nil {
+		logger.Error("Failed to retrieve OAuth client", log.Error(err), log.MaskedString("clientID", clientID))
+		return nil, errInvalidClientCredentials
+	}
+	if oauthApp == nil {
 		return nil, errInvalidClientCredentials
 	}
 
@@ -229,7 +233,7 @@ func extractClientIDFromAssertion(assertion string) (string, *authError) {
 // validateClientAssertion validates the provided client assertion JWT using the configured certificate and JWT service.
 // The endpointURL is used as the expected audience for JWT validation.
 func validateClientAssertion(
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	oauthApp *inboundmodel.OAuthClient,
 	jwtService jwt.JWTServiceInterface,
 	endpointURL string,
 	clientID, clientAssertion string) error {

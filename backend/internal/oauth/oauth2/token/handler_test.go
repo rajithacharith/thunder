@@ -31,7 +31,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	applicationmodel "github.com/asgardeo/thunder/internal/application/model"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/clientauth"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
@@ -64,7 +64,7 @@ func (suite *TokenHandlerTestSuite) buildRequest(formData url.Values) *http.Requ
 
 // withClientContext injects a fake OAuth client info into the request context.
 func (suite *TokenHandlerTestSuite) withClientContext(
-	req *http.Request, oauthApp *applicationmodel.OAuthAppConfigProcessedDTO,
+	req *http.Request, oauthApp *inboundmodel.OAuthClient,
 ) *http.Request {
 	clientInfo := &clientauth.OAuthClientInfo{
 		ClientID:     "test-client-id",
@@ -146,7 +146,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_ServiceErrors() {
 		suite.Run(tc.name, func() {
 			mockSvc := NewTokenServiceInterfaceMock(suite.T())
 			handler := newTokenHandler(mockSvc, nil).(*tokenHandler)
-			mockApp := &applicationmodel.OAuthAppConfigProcessedDTO{ClientID: "test-client-id"}
+			mockApp := &inboundmodel.OAuthClient{ClientID: "test-client-id"}
 			formData := url.Values{}
 			formData.Set("grant_type", tc.grantType)
 			req := suite.withClientContext(suite.buildRequest(formData), mockApp)
@@ -172,7 +172,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_ServiceErrors() {
 
 func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_ServiceErrorServerError() {
 	handler := suite.newHandler()
-	mockApp := &applicationmodel.OAuthAppConfigProcessedDTO{ClientID: "test-client-id"}
+	mockApp := &inboundmodel.OAuthClient{ClientID: "test-client-id"}
 	formData := url.Values{}
 	formData.Set("grant_type", "authorization_code")
 	formData.Set("code", "test-code")
@@ -197,7 +197,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_ServiceErrorServerErr
 
 func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_Success() {
 	handler := suite.newHandler()
-	mockApp := &applicationmodel.OAuthAppConfigProcessedDTO{ClientID: "test-client-id"}
+	mockApp := &inboundmodel.OAuthClient{ClientID: "test-client-id"}
 	formData := url.Values{}
 	formData.Set("grant_type", "authorization_code")
 	formData.Set("code", "test-code")
@@ -233,7 +233,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_Success() {
 
 func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_SuccessWithIssuedTokenType() {
 	handler := suite.newHandler()
-	mockApp := &applicationmodel.OAuthAppConfigProcessedDTO{ClientID: "test-client-id"}
+	mockApp := &inboundmodel.OAuthClient{ClientID: "test-client-id"}
 	formData := url.Values{}
 	formData.Set("grant_type", string(constants.GrantTypeTokenExchange))
 	formData.Set("requested_token_type", string(constants.TokenTypeIdentifierAccessToken))
