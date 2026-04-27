@@ -66,8 +66,3 @@ func isDeclarativeModeEnabled() bool {
 func getAppIndexedAttributes() []string {
 	return []string{"name", "clientId"}
 }
-
-// isWildcardRedirectURIEnabled checks if wildcard redirect URI support is enabled.
-func isWildcardRedirectURIEnabled() bool {
-	return config.GetThunderRuntime().Config.OAuth.AllowWildcardRedirectURI
-}

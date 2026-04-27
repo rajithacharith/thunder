@@ -50,6 +50,7 @@ import (
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	"github.com/asgardeo/thunder/internal/group"
 	"github.com/asgardeo/thunder/internal/idp"
+	"github.com/asgardeo/thunder/internal/inboundclient"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/oauth"
 	"github.com/asgardeo/thunder/internal/ou"
@@ -86,7 +87,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 		logger.Fatal("Failed to initialize certificate service", log.Error(err))
 	}
 
-	jwtService, jweService, err := jose.Initialize(pkiService)
+	jwtService, _, err := jose.Initialize(pkiService)
 	if err != nil {
 		logger.Fatal("Failed to initialize JOSE services", log.Error(err))
 	}
@@ -268,10 +269,16 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	}
 	exporters = append(exporters, layoutExporter)
 
+	inboundClientService, err := inboundclient.Initialize(
+		certservice, entityProvider,
+		themeMgtService, layoutMgtService, flowMgtService, userSchemaService, consentService)
+	if err != nil {
+		logger.Fatal("Failed to initialize InboundClientService", log.Error(err))
+	}
+
 	// TODO: Remove entityService dependency after finalizing declarative resource loading pattern
 	applicationService, applicationExporter, err := application.Initialize(
-		mux, mcpServer, entityProvider, entityService, ouService, certservice, flowMgtService, themeMgtService,
-		layoutMgtService, userSchemaService, consentService)
+		mux, mcpServer, entityProvider, entityService, inboundClientService, ouService)
 	if err != nil {
 		logger.Fatal("Failed to initialize ApplicationService", log.Error(err))
 	}
@@ -293,7 +300,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	}
 
 	// Initialize OAuth services.
-	err = oauth.Initialize(mux, applicationService, authnProvider, jwtService, jweService, flowExecService,
+	err = oauth.Initialize(mux, applicationService, inboundClientService, authnProvider, jwtService, flowExecService,
 		observabilitySvc, pkiService, ouService, attributeCacheService, authZService, entityProvider, resourceService)
 	if err != nil {
 		logger.Fatal("Failed to initialize OAuth services", log.Error(err))

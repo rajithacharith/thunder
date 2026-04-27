@@ -35,6 +35,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/certmock"
 	"github.com/asgardeo/thunder/tests/mocks/entitymock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
+	"github.com/asgardeo/thunder/tests/mocks/inboundclientmock"
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 
 	"github.com/stretchr/testify/assert"
@@ -63,7 +64,7 @@ func newTestDBConfig() config.DatabaseConfig {
 	}
 }
 
-// createTestApplicationTables creates the APPLICATION and APP_OAUTH_INBOUND_CONFIG tables
+// createTestApplicationTables creates the INBOUND_CLIENT and OAUTH_INBOUND_PROFILE tables
 // in the in-memory SQLite config database so that newApplicationStore can verify the table.
 func createTestApplicationTables(t testing.TB) {
 	t.Helper()
@@ -72,36 +73,33 @@ func createTestApplicationTables(t testing.TB) {
 	if err != nil {
 		t.Fatalf("failed to get config db client: %v", err)
 	}
-	createAppTable := dbmodel.DBQuery{
-		ID: "TEST-CREATE-APP-TABLE",
-		Query: `CREATE TABLE IF NOT EXISTS APPLICATION (
+	createInboundClientTable := dbmodel.DBQuery{
+		ID: "TEST-CREATE-INBOUND-CLIENT-TABLE",
+		Query: `CREATE TABLE IF NOT EXISTS INBOUND_CLIENT (
 			DEPLOYMENT_ID VARCHAR(255) NOT NULL,
-			ID VARCHAR(36) PRIMARY KEY,
-			AUTH_FLOW_ID VARCHAR(100) NOT NULL,
-			REGISTRATION_FLOW_ID VARCHAR(100) NOT NULL,
+			ENTITY_ID VARCHAR(36) PRIMARY KEY,
+			AUTH_FLOW_ID VARCHAR(100),
+			REGISTRATION_FLOW_ID VARCHAR(100),
 			IS_REGISTRATION_FLOW_ENABLED CHAR(1) DEFAULT '1',
 			THEME_ID VARCHAR(36),
 			LAYOUT_ID VARCHAR(36),
-			ASSERTION TEXT,
-			LOGIN_CONSENT TEXT,
-			ALLOWED_ENTITY_TYPES TEXT,
 			PROPERTIES TEXT
 		)`,
 	}
-	createOAuthTable := dbmodel.DBQuery{
-		ID: "TEST-CREATE-OAUTH-TABLE",
-		Query: `CREATE TABLE IF NOT EXISTS APP_OAUTH_INBOUND_CONFIG (
+	createOAuthProfileTable := dbmodel.DBQuery{
+		ID: "TEST-CREATE-OAUTH-PROFILE-TABLE",
+		Query: `CREATE TABLE IF NOT EXISTS OAUTH_INBOUND_PROFILE (
 			DEPLOYMENT_ID VARCHAR(255) NOT NULL,
-			APP_ID VARCHAR(36) NOT NULL,
+			ENTITY_ID VARCHAR(36) NOT NULL,
 			OAUTH_CONFIG TEXT,
-			PRIMARY KEY (APP_ID, DEPLOYMENT_ID)
+			PRIMARY KEY (ENTITY_ID, DEPLOYMENT_ID)
 		)`,
 	}
-	if _, err := client.ExecuteContext(context.Background(), createAppTable); err != nil {
-		t.Fatalf("failed to create APPLICATION table: %v", err)
+	if _, err := client.ExecuteContext(context.Background(), createInboundClientTable); err != nil {
+		t.Fatalf("failed to create INBOUND_CLIENT table: %v", err)
 	}
-	if _, err := client.ExecuteContext(context.Background(), createOAuthTable); err != nil {
-		t.Fatalf("failed to create APP_OAUTH_INBOUND_CONFIG table: %v", err)
+	if _, err := client.ExecuteContext(context.Background(), createOAuthProfileTable); err != nil {
+		t.Fatalf("failed to create OAUTH_INBOUND_PROFILE table: %v", err)
 	}
 }
 
@@ -158,13 +156,8 @@ func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled() {
 		nil,
 		nil, // entityProvider - not needed for this test
 		mockEntityService,
+		inboundclientmock.NewInboundClientServiceInterfaceMock(suite.T()),
 		nil, // ouService - not needed for this test
-		suite.mockCertService,
-		suite.mockFlowMgtService,
-		nil, // themeMgtService - not needed for this test
-		nil, // layoutMgtService - not needed for this test
-		suite.mockUserSchemaService,
-		nil, // consentService - not needed for this test
 	)
 
 	// Assert
@@ -204,13 +197,8 @@ func (suite *InitTestSuite) TestInitialize_WithMCPServer() {
 		mcpServer,
 		nil, // entityProvider - not needed for this test
 		mockEntityService,
+		inboundclientmock.NewInboundClientServiceInterfaceMock(suite.T()),
 		nil, // ouService - not needed for this test
-		suite.mockCertService,
-		suite.mockFlowMgtService,
-		nil, // themeMgtService - not needed for this test
-		nil, // layoutMgtService - not needed for this test
-		suite.mockUserSchemaService,
-		nil, // consentService - not needed for this test
 	)
 
 	// Assert
@@ -595,9 +583,6 @@ func TestInitialize_Standalone(t *testing.T) {
 	defer config.ResetThunderRuntime() // Clean up after test
 
 	mux := http.NewServeMux()
-	mockCertService := certmock.NewCertificateServiceInterfaceMock(t)
-	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(t)
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	mockEntityService := entitymock.NewEntityServiceInterfaceMock(t)
 	mockEntityService.On("LoadIndexedAttributes", mock.Anything).Return(nil)
 
@@ -607,13 +592,8 @@ func TestInitialize_Standalone(t *testing.T) {
 		nil,
 		nil, // entityProvider - not needed for this test
 		mockEntityService,
+		inboundclientmock.NewInboundClientServiceInterfaceMock(t),
 		nil, // ouService - not needed for this test
-		mockCertService,
-		mockFlowMgtService,
-		nil, // themeMgtService - not needed for this test
-		nil, // layoutMgtService - not needed for this test
-		mockUserSchemaService,
-		nil, // consentService - not needed for this test
 	)
 
 	// Assert
@@ -649,12 +629,11 @@ func TestInitialize_WithDeclarativeResources_Standalone(t *testing.T) {
 	defer config.ResetThunderRuntime() // Clean up after test
 
 	mux := http.NewServeMux()
-	mockCertService := certmock.NewCertificateServiceInterfaceMock(t)
-	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(t)
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	mockEntityService := entitymock.NewEntityServiceInterfaceMock(t)
 	mockEntityService.On("LoadIndexedAttributes", mock.Anything).Return(nil)
 	mockEntityService.On("LoadDeclarativeResources", mock.Anything).Return(nil)
+	mockInboundClient := inboundclientmock.NewInboundClientServiceInterfaceMock(t)
+	mockInboundClient.EXPECT().LoadDeclarativeResources(mock.Anything, mock.Anything).Return(nil)
 
 	// Execute
 	service, _, err := Initialize(
@@ -662,13 +641,8 @@ func TestInitialize_WithDeclarativeResources_Standalone(t *testing.T) {
 		nil,
 		nil, // entityProvider - not needed for this test
 		mockEntityService,
+		mockInboundClient,
 		nil, // ouService - not needed for this test
-		mockCertService,
-		mockFlowMgtService,
-		nil, // themeMgtService - not needed for this test
-		nil, // layoutMgtService - not needed for this test
-		mockUserSchemaService,
-		nil, // consentService - not needed for this test
 	)
 
 	// Assert

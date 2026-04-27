@@ -100,3 +100,13 @@ func (p *disabledEntityProvider) GetEntitiesByIDs(
 	_ []string) ([]Entity, *EntityProviderError) {
 	return nil, errNotImplemented
 }
+
+func (p *disabledEntityProvider) GetEntityListCount(
+	_ EntityCategory, _ map[string]interface{}) (int, *EntityProviderError) {
+	return 0, errNotImplemented
+}
+
+func (p *disabledEntityProvider) GetEntityList(
+	_ EntityCategory, _, _ int, _ map[string]interface{}) ([]Entity, *EntityProviderError) {
+	return nil, errNotImplemented
+}

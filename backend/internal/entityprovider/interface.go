@@ -68,4 +68,11 @@ type EntityProviderInterface interface {
 
 	// GetEntitiesByIDs retrieves multiple entities by their IDs.
 	GetEntitiesByIDs(entityIDs []string) ([]Entity, *EntityProviderError)
+
+	// GetEntityListCount returns the total number of entities in the given category.
+	GetEntityListCount(category EntityCategory, filters map[string]interface{}) (int, *EntityProviderError)
+
+	// GetEntityList returns a page of entities in the given category.
+	GetEntityList(category EntityCategory, limit, offset int,
+		filters map[string]interface{}) ([]Entity, *EntityProviderError)
 }

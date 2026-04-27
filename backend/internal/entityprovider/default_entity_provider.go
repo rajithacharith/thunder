@@ -230,6 +230,34 @@ func (p *defaultEntityProvider) GetEntitiesByIDs(
 	return result, nil
 }
 
+// GetEntityListCount returns the total number of entities in the given category.
+func (p *defaultEntityProvider) GetEntityListCount(
+	category EntityCategory, filters map[string]interface{},
+) (int, *EntityProviderError) {
+	ctx := security.WithRuntimeContext(context.Background())
+	count, err := p.entitySvc.GetEntityListCount(ctx, entity.EntityCategory(category), filters)
+	if err != nil {
+		return 0, mapEntityError(err)
+	}
+	return count, nil
+}
+
+// GetEntityList returns a page of entities in the given category.
+func (p *defaultEntityProvider) GetEntityList(
+	category EntityCategory, limit, offset int, filters map[string]interface{},
+) ([]Entity, *EntityProviderError) {
+	ctx := security.WithRuntimeContext(context.Background())
+	entities, err := p.entitySvc.GetEntityList(ctx, entity.EntityCategory(category), limit, offset, filters)
+	if err != nil {
+		return nil, mapEntityError(err)
+	}
+	result := make([]Entity, len(entities))
+	for i := range entities {
+		result[i] = *toProviderEntity(&entities[i])
+	}
+	return result, nil
+}
+
 // toProviderEntity converts an entity service Entity to a provider Entity.
 func toProviderEntity(e *entity.Entity) *Entity {
 	if e == nil {

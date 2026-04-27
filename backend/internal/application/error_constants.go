@@ -19,17 +19,9 @@
 package application
 
 import (
-	"errors"
-
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/i18n/core"
-)
-
-// Store-level errors for application operations.
-var (
-	// errResultLimitExceededInCompositeMode is returned when the result limit is exceeded in composite mode.
-	errResultLimitExceededInCompositeMode = errors.New("result limit exceeded in composite mode")
 )
 
 // Client errors for application operations.

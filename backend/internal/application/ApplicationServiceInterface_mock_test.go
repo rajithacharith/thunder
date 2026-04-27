@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/asgardeo/thunder/internal/application/model"
+	model0 "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -303,23 +304,23 @@ func (_c *ApplicationServiceInterfaceMock_GetApplicationList_Call) RunAndReturn(
 }
 
 // GetOAuthApplication provides a mock function for the type ApplicationServiceInterfaceMock
-func (_mock *ApplicationServiceInterfaceMock) GetOAuthApplication(ctx context.Context, clientID string) (*model.OAuthAppConfigProcessedDTO, *serviceerror.ServiceError) {
+func (_mock *ApplicationServiceInterfaceMock) GetOAuthApplication(ctx context.Context, clientID string) (*model0.OAuthClient, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, clientID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetOAuthApplication")
 	}
 
-	var r0 *model.OAuthAppConfigProcessedDTO
+	var r0 *model0.OAuthClient
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*model.OAuthAppConfigProcessedDTO, *serviceerror.ServiceError)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*model0.OAuthClient, *serviceerror.ServiceError)); ok {
 		return returnFunc(ctx, clientID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *model.OAuthAppConfigProcessedDTO); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *model0.OAuthClient); ok {
 		r0 = returnFunc(ctx, clientID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.OAuthAppConfigProcessedDTO)
+			r0 = ret.Get(0).(*model0.OAuthClient)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
@@ -362,12 +363,12 @@ func (_c *ApplicationServiceInterfaceMock_GetOAuthApplication_Call) Run(run func
 	return _c
 }
 
-func (_c *ApplicationServiceInterfaceMock_GetOAuthApplication_Call) Return(oAuthAppConfigProcessedDTO *model.OAuthAppConfigProcessedDTO, serviceError *serviceerror.ServiceError) *ApplicationServiceInterfaceMock_GetOAuthApplication_Call {
-	_c.Call.Return(oAuthAppConfigProcessedDTO, serviceError)
+func (_c *ApplicationServiceInterfaceMock_GetOAuthApplication_Call) Return(oAuthClient *model0.OAuthClient, serviceError *serviceerror.ServiceError) *ApplicationServiceInterfaceMock_GetOAuthApplication_Call {
+	_c.Call.Return(oAuthClient, serviceError)
 	return _c
 }
 
-func (_c *ApplicationServiceInterfaceMock_GetOAuthApplication_Call) RunAndReturn(run func(ctx context.Context, clientID string) (*model.OAuthAppConfigProcessedDTO, *serviceerror.ServiceError)) *ApplicationServiceInterfaceMock_GetOAuthApplication_Call {
+func (_c *ApplicationServiceInterfaceMock_GetOAuthApplication_Call) RunAndReturn(run func(ctx context.Context, clientID string) (*model0.OAuthClient, *serviceerror.ServiceError)) *ApplicationServiceInterfaceMock_GetOAuthApplication_Call {
 	_c.Call.Return(run)
 	return _c
 }
