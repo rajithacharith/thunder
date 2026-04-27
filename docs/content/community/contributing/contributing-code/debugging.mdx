@@ -7,7 +7,7 @@ hide_table_of_contents: false
 
 # Debugging Guide
 
-This guide covers setting up a local debugging environment for Thunder's backend, Gate app, Develop app, and React SDK sample application.
+This guide covers setting up a local debugging environment for Thunder's backend, Gate app, Console app, and React SDK sample application.
 
 ## Introduction
 
@@ -17,7 +17,7 @@ Thunder consists of the following components:
 |-----------|-------------|------|
 | Backend | Go-based API server | 8090 |
 | Gate App | React-based authentication gateway | 5190 |
-| Develop App | React-based developer console | 5191 |
+| Console App | React-based developer console | 5191 |
 | React SDK Sample | Sample app demonstrating OAuth integration | 3000 |
 
 This guide focuses on local development and debugging with SQLite for database storage.
@@ -86,7 +86,7 @@ In a **new terminal**, seed data (one-time only):
 ```bash
 THUNDER_API_BASE="https://localhost:8090" \
   backend/cmd/server/bootstrap/01-default-resources.sh \
-  --develop-redirect-uris "https://localhost:5191/develop"
+  --console-redirect-uris "https://localhost:5191/console"
 
 THUNDER_API_BASE="https://localhost:8090" \
   backend/cmd/server/bootstrap/02-sample-resources.sh
@@ -132,11 +132,11 @@ npm run dev
 
 ## Connect Debuggers
 
-### Connect to Develop App (Browser DevTools)
+### Connect to Console App (Browser DevTools)
 
-1. Open [https://localhost:5191/develop](https://localhost:5191/develop) in Chrome
+1. Open [https://localhost:5191/console](https://localhost:5191/console) in Chrome
 2. Open DevTools (`Cmd+Option+I` on macOS, `F12` on Windows/Linux)
-3. Navigate to **Sources** → `top` → `localhost:5191` → `develop` → `src`
+3. Navigate to **Sources** → `top` → `localhost:5191` → `console` → `src`
 4. Click on a line number to set a breakpoint
 5. When that line executes, Chrome pauses execution and lets you inspect variables
 
@@ -173,7 +173,7 @@ npm run dev
 
 This walks through debugging the user creation flow from the UI to database storage.
 
-### 1. Set Develop App Breakpoints
+### 1. Set Console App Breakpoints
 
 In Chrome DevTools, open:
 
@@ -189,7 +189,7 @@ In VS Code, open these files and set breakpoints:
 
 ### 3. Trigger the Flow
 
-1. Navigate to [https://localhost:5191/develop](https://localhost:5191/develop)
+1. Navigate to [https://localhost:5191/console](https://localhost:5191/console)
 2. Log in with admin credentials (`admin` / `admin`)
 3. Go to **Users** section
 4. Click **Add User**

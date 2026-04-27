@@ -24,7 +24,7 @@ Building from source produces a distributable `.zip` file at `THUNDER_ROOT/targe
 
 - Compiles the Go backend binary
 - Initializes SQLite databases (config, runtime, user)
-- Builds the frontend React apps (Thunder Gate + Thunder Develop)
+- Builds the frontend React apps (Thunder Gate + Thunder Console)
 - Builds the documentation
 - Builds sample apps
 
@@ -82,14 +82,14 @@ This command will automatically set up your complete development environment:
 - Initializes SQLite databases
 - Starts the backend server
 - Runs the bootstrap script which creates:
-  - The `Develop` application with the correct redirect URIs
+  - The `Console` application with the correct redirect URIs
   - The default admin user (`admin` / `admin`)
 
 **Services that start:**
 
 - **Backend server**: [https://localhost:8090](https://localhost:8090)
 - **Thunder Gate** (Login/Register): [https://localhost:5190/gate](https://localhost:5190/gate)
-- **Thunder Develop** (Admin Console): [https://localhost:5191/develop](https://localhost:5191/develop)
+- **Thunder Console** (Admin Console): [https://localhost:5191/console](https://localhost:5191/console)
 :::
 
 ### Option B: Separate terminals (for debugging independently)
@@ -124,17 +124,17 @@ Use this approach when you need to debug the backend and frontend independently.
   <CodeBlock lang="bash" label="Linux/macOS">
     {`THUNDER_SKIP_SECURITY=true THUNDER_API_BASE="https://localhost:8090" \\
   backend/cmd/server/bootstrap/01-default-resources.sh \\
-  --develop-redirect-uris "https://localhost:5191/develop"`}
+  --console-redirect-uris "https://localhost:5191/console"`}
   </CodeBlock>
   <CodeBlock lang="powershell" label="Windows">
     {`$env:THUNDER_SKIP_SECURITY = "true"
 $env:THUNDER_API_BASE = "https://localhost:8090"
 & backend\\cmd\\server\\bootstrap\\01-default-resources.ps1 \`
-  --develop-redirect-uris "https://localhost:5191/develop"`}
+  --console-redirect-uris "https://localhost:5191/console"`}
   </CodeBlock>
 </CodeGroup>
 
-This creates the `Develop` application and the default admin user (`admin` / `admin`). You only need to do this once — the data persists in the SQLite databases.
+This creates the `Console` application and the default admin user (`admin` / `admin`). You only need to do this once — the data persists in the SQLite databases.
 
 :::warning
 Don't use `./setup.sh` here. That script is designed for the packaged distribution zip and expects a compiled `./thunder` binary at the project root. From source code, always use the bootstrap script directly as shown above, or use `make run` (Option A) which handles everything for you.
@@ -158,7 +158,7 @@ For development environments, `make run` executes the `backend/cmd/server/bootst
 - Admin user (`admin` / `admin`)
 - System resource server with system actions and permissions
 - Administrator role and role assignment
-- `DEVELOP` application
+- `Console` application
 
 ### Full Bootstrap (`./setup.sh`)
 
