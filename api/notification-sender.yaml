@@ -67,8 +67,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "MNS-1006"
-                message: "Invalid request format"
-                description: "The request body is malformed or contains invalid data"
+                message:
+                  key: "error.notificationservice.invalid_request_format"
+                  defaultValue: "Invalid request format"
+                description:
+                  key: "error.notificationservice.invalid_request_format_description"
+                  defaultValue: "The request body is malformed or contains invalid data"
         "409":
           description: 'Conflict: A message notification sender with the same name already exists'
           content:
@@ -77,8 +81,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "MNS-1005"
-                message: "Duplicate sender name"
-                description: "A sender with the same name already exists"
+                message:
+                  key: "error.notificationservice.duplicate_sender_name"
+                  defaultValue: "Duplicate sender name"
+                description:
+                  key: "error.notificationservice.duplicate_sender_name_description"
+                  defaultValue: "A sender with the same name already exists"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request'
           content:
@@ -114,8 +122,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "MNS-1002"
-                message: "Invalid sender ID"
-                description: "The provided sender ID is invalid"
+                message:
+                  key: "error.notificationservice.invalid_sender_id"
+                  defaultValue: "Invalid sender ID"
+                description:
+                  key: "error.notificationservice.invalid_sender_id_description"
+                  defaultValue: "The provided sender ID is invalid"
         "404":
           description: 'Not Found: The specified message notification sender does not exist'
           content:
@@ -124,8 +136,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "MNS-1001"
-                message: "Sender not found"
-                description: "The requested notification sender could not be found"
+                message:
+                  key: "error.notificationservice.sender_not_found"
+                  defaultValue: "Sender not found"
+                description:
+                  key: "error.notificationservice.sender_not_found_description"
+                  defaultValue: "The requested notification sender could not be found"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request'
           content:
@@ -167,8 +183,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "MNS-1002"
-                message: "Invalid sender ID"
-                description: "The provided sender ID is invalid"
+                message:
+                  key: "error.notificationservice.invalid_sender_id"
+                  defaultValue: "Invalid sender ID"
+                description:
+                  key: "error.notificationservice.invalid_sender_id_description"
+                  defaultValue: "The provided sender ID is invalid"
         "404":
           description: 'Not Found: The specified message notification sender does not exist'
           content:
@@ -177,8 +197,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "MNS-1001"
-                message: "Sender not found"
-                description: "The requested notification sender could not be found"
+                message:
+                  key: "error.notificationservice.sender_not_found"
+                  defaultValue: "Sender not found"
+                description:
+                  key: "error.notificationservice.sender_not_found_description"
+                  defaultValue: "The requested notification sender could not be found"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request'
           content:
@@ -209,8 +233,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "MNS-1002"
-                message: "Invalid sender ID"
-                description: "The provided sender ID is invalid"
+                message:
+                  key: "error.notificationservice.invalid_sender_id"
+                  defaultValue: "Invalid sender ID"
+                description:
+                  key: "error.notificationservice.invalid_sender_id_description"
+                  defaultValue: "The provided sender ID is invalid"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request'
           content:
@@ -438,13 +466,9 @@ components:
           description: Error code
           example: "MNS-1006"
         message:
-          type: string
-          description: Error message
-          example: "Invalid request format"
+          $ref: '#/components/schemas/I18nMessage'
         description:
-          type: string
-          description: Detailed error description
-          example: "The request body is malformed or contains invalid data"
+          $ref: '#/components/schemas/I18nMessage'
 
     ServerErrorResponse:
       type: object
@@ -454,10 +478,20 @@ components:
           description: Error code
           example: "MNS-5001"
         message:
-          type: string
-          description: Error message
-          example: "Internal server error"
+          $ref: '#/components/schemas/I18nMessage'
         description:
+          $ref: '#/components/schemas/I18nMessage'
+
+    I18nMessage:
+      type: object
+      description: Internationalized message with translation key and default value.
+      required:
+        - key
+        - defaultValue
+      properties:
+        key:
           type: string
-          description: Detailed error description
-          example: "An unexpected error occurred while processing the request"
+          description: Translation key for fetching localized message.
+        defaultValue:
+          type: string
+          description: Default message in English (fallback).

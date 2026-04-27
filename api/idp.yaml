@@ -67,8 +67,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "IDP-1007"
-                message: "Invalid request format"
-                description: "The request body is malformed or contains invalid data"
+                message:
+                  key: "error.idpservice.invalid_request_format"
+                  defaultValue: "Invalid request format"
+                description:
+                  key: "error.idpservice.invalid_request_format_description"
+                  defaultValue: "The request body is malformed or contains invalid data"
         "409":
           description: 'Conflict: An identity provider with the same name already exists.'
           content:
@@ -77,8 +81,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "IDP-1004"
-                message: "Identity provider already exists"
-                description: "An identity provider with the same name already exists"
+                message:
+                  key: "error.idpservice.idp_already_exists"
+                  defaultValue: "Identity provider already exists"
+                description:
+                  key: "error.idpservice.idp_already_exists_description"
+                  defaultValue: "An identity provider with the same name already exists"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request.'
           content:
@@ -114,8 +122,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "IDP-1002"
-                message: "Invalid identity provider ID"
-                description: "The provided identity provider ID is invalid or empty"
+                message:
+                  key: "error.idpservice.invalid_idp_id"
+                  defaultValue: "Invalid identity provider ID"
+                description:
+                  key: "error.idpservice.invalid_idp_id_description"
+                  defaultValue: "The provided identity provider ID is invalid or empty"
         "404":
           description: 'Not Found: The identity provider with the specified ID does not exist.'
           content:
@@ -124,8 +136,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "IDP-1001"
-                message: "Identity provider not found"
-                description: "The requested identity provider could not be found"
+                message:
+                  key: "error.idpservice.idp_not_found"
+                  defaultValue: "Identity provider not found"
+                description:
+                  key: "error.idpservice.idp_not_found_description"
+                  defaultValue: "The requested identity provider could not be found"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request.'
           content:
@@ -167,8 +183,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "IDP-1002"
-                message: "Invalid identity provider ID"
-                description: "The provided identity provider ID is invalid or empty"
+                message:
+                  key: "error.idpservice.invalid_idp_id"
+                  defaultValue: "Invalid identity provider ID"
+                description:
+                  key: "error.idpservice.invalid_idp_id_description"
+                  defaultValue: "The provided identity provider ID is invalid or empty"
         "404":
           description: 'Not Found: The identity provider with the specified ID does not exist.'
           content:
@@ -177,8 +197,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "IDP-1001"
-                message: "Identity provider not found"
-                description: "The requested identity provider could not be found"
+                message:
+                  key: "error.idpservice.idp_not_found"
+                  defaultValue: "Identity provider not found"
+                description:
+                  key: "error.idpservice.idp_not_found_description"
+                  defaultValue: "The requested identity provider could not be found"
         "409":
           description: 'Conflict: An identity provider with the same name already exists.'
           content:
@@ -187,8 +211,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "IDP-1004"
-                message: "Identity provider already exists"
-                description: "An identity provider with the same name already exists"
+                message:
+                  key: "error.idpservice.idp_already_exists"
+                  defaultValue: "Identity provider already exists"
+                description:
+                  key: "error.idpservice.idp_already_exists_description"
+                  defaultValue: "An identity provider with the same name already exists"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request.'
           content:
@@ -219,8 +247,12 @@ paths:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
                 code: "IDP-1002"
-                message: "Invalid identity provider ID"
-                description: "The provided identity provider ID is invalid or empty"
+                message:
+                  key: "error.idpservice.invalid_idp_id"
+                  defaultValue: "Invalid identity provider ID"
+                description:
+                  key: "error.idpservice.invalid_idp_id_description"
+                  defaultValue: "The provided identity provider ID is invalid or empty"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request.'
           content:
@@ -381,11 +413,9 @@ components:
           type: string
           description: Error code
         message:
-          type: string
-          description: Error message
+          $ref: '#/components/schemas/I18nMessage'
         description:
-          type: string
-          description: Detailed error description
+          $ref: '#/components/schemas/I18nMessage'
 
     ClientErrorResponse:
       allOf:
@@ -395,9 +425,13 @@ components:
             code:
               example: "IDP-1001"
             message:
-              example: "Identity provider not found"
+              example:
+                key: "error.idpservice.idp_not_found"
+                defaultValue: "Identity provider not found"
             description:
-              example: "The requested identity provider could not be found"
+              example:
+                key: "error.idpservice.idp_not_found_description"
+                defaultValue: "The requested identity provider could not be found"
 
     ServerErrorResponse:
       allOf:
@@ -407,6 +441,24 @@ components:
             code:
               example: "SSE-5000"
             message:
-              example: "Internal server error"
+              example:
+                key: "error.internal_server_error"
+                defaultValue: "Internal server error"
             description:
-              example: "An unexpected error occurred while processing the request"
+              example:
+                key: "error.internal_server_error_description"
+                defaultValue: "An unexpected error occurred while processing the request"
+
+    I18nMessage:
+      type: object
+      description: Internationalized message with translation key and default value.
+      required:
+        - key
+        - defaultValue
+      properties:
+        key:
+          type: string
+          description: Translation key for fetching localized message.
+        defaultValue:
+          type: string
+          description: Default message in English (fallback).

@@ -313,13 +313,23 @@ components:
           description: Error code
           example: "FLM-1001"
         message:
-          type: string
-          description: Error message
-          example: "Invalid request"
+          $ref: '#/components/schemas/I18nMessage'
         description:
+          $ref: '#/components/schemas/I18nMessage'
+
+    I18nMessage:
+      type: object
+      description: Internationalized message with translation key and default value.
+      required:
+        - key
+        - defaultValue
+      properties:
+        key:
           type: string
-          description: Detailed error description
-          example: "The 'type' parameter must be either 'APP' or 'OU'"
+          description: Translation key for fetching localized message.
+        defaultValue:
+          type: string
+          description: Default message in English (fallback).
 
   responses:
     BadRequest:
@@ -333,20 +343,32 @@ components:
               summary: Invalid type parameter
               value:
                 code: "FLM-1001"
-                message: "Invalid request"
-                description: "The 'type' parameter must be either 'APP' or 'OU'"
+                message:
+                  key: "error.flowmetaservice.invalid_request"
+                  defaultValue: "Invalid request"
+                description:
+                  key: "error.flowmetaservice.invalid_type_description"
+                  defaultValue: "The 'type' parameter must be either 'APP' or 'OU'"
             missing-type:
               summary: Missing type parameter
               value:
                 code: "FLM-1004"
-                message: "Missing required parameter"
-                description: "The 'type' query parameter is required"
+                message:
+                  key: "error.flowmetaservice.missing_required_parameter"
+                  defaultValue: "Missing required parameter"
+                description:
+                  key: "error.flowmetaservice.missing_type_description"
+                  defaultValue: "The 'type' query parameter is required"
             missing-id:
               summary: Missing id parameter
               value:
                 code: "FLM-1005"
-                message: "Missing required parameter"
-                description: "The 'id' query parameter is required"
+                message:
+                  key: "error.flowmetaservice.missing_id_parameter"
+                  defaultValue: "Missing required parameter"
+                description:
+                  key: "error.flowmetaservice.missing_id_description"
+                  defaultValue: "The 'id' query parameter is required"
 
     NotFound:
       description: Resource not found
@@ -359,14 +381,22 @@ components:
               summary: Application not found
               value:
                 code: "FLM-1002"
-                message: "Resource not found"
-                description: "The specified application does not exist"
+                message:
+                  key: "error.flowmetaservice.resource_not_found"
+                  defaultValue: "Resource not found"
+                description:
+                  key: "error.flowmetaservice.application_not_found_description"
+                  defaultValue: "The specified application does not exist"
             ou-not-found:
               summary: Organization unit not found
               value:
                 code: "FLM-1003"
-                message: "Resource not found"
-                description: "The specified organization unit does not exist"
+                message:
+                  key: "error.flowmetaservice.ou_not_found"
+                  defaultValue: "Resource not found"
+                description:
+                  key: "error.flowmetaservice.ou_not_found_description"
+                  defaultValue: "The specified organization unit does not exist"
 
     InternalServerError:
       description: Internal server error
@@ -379,11 +409,19 @@ components:
               summary: Application fetch failed
               value:
                 code: "FLM-5001"
-                message: "Internal server error"
-                description: "Failed to retrieve application information"
+                message:
+                  key: "error.flowmetaservice.internal_server_error"
+                  defaultValue: "Internal server error"
+                description:
+                  key: "error.flowmetaservice.application_fetch_failed_description"
+                  defaultValue: "Failed to retrieve application information"
             ou-fetch-failed:
               summary: Organization unit fetch failed
               value:
                 code: "FLM-5002"
-                message: "Internal server error"
-                description: "Failed to retrieve organization unit information"
+                message:
+                  key: "error.flowmetaservice.internal_server_error"
+                  defaultValue: "Internal server error"
+                description:
+                  key: "error.flowmetaservice.ou_fetch_failed_description"
+                  defaultValue: "Failed to retrieve organization unit information"

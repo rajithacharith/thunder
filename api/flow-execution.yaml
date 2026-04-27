@@ -342,13 +342,9 @@ components:
           description: Error code
           example: "FES-1003"
         message:
-          type: string
-          description: Error message
-          example: "Invalid request"
+          $ref: '#/components/schemas/I18nMessage'
         description:
-          type: string
-          description: Detailed error description
-          example: "Invalid app ID provided in the request"
+          $ref: '#/components/schemas/I18nMessage'
 
     ServerErrorResponse:
       type: object
@@ -358,10 +354,20 @@ components:
           description: Error code
           example: "SSE-5000"
         message:
-          type: string
-          description: Error message
-          example: "Internal server error"
+          $ref: '#/components/schemas/I18nMessage'
         description:
+          $ref: '#/components/schemas/I18nMessage'
+
+    I18nMessage:
+      type: object
+      description: Internationalized message with translation key and default value.
+      required:
+        - key
+        - defaultValue
+      properties:
+        key:
           type: string
-          description: Detailed error description
-          example: "An unexpected error occurred while processing the request"
+          description: Translation key for fetching localized message.
+        defaultValue:
+          type: string
+          description: Default message in English (fallback).

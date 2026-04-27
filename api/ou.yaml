@@ -69,14 +69,22 @@ paths:
                   summary: Invalid limit parameter
                   value:
                     code: "OU-1011"
-                    message: "Invalid pagination parameter"
-                    description: "The limit parameter must be a positive integer"
+                    message:
+                      key: "error.ouservice.invalid_limit_parameter"
+                      defaultValue: "Invalid pagination parameter"
+                    description:
+                      key: "error.ouservice.invalid_limit_parameter_description"
+                      defaultValue: "The limit parameter must be a positive integer"
                 invalid-offset:
                   summary: Invalid offset parameter
                   value:
                     code: "OU-1012"
-                    message: "Invalid pagination parameter"
-                    description: "The offset parameter must be a non-negative integer"
+                    message:
+                      key: "error.ouservice.invalid_offset_parameter"
+                      defaultValue: "Invalid pagination parameter"
+                    description:
+                      key: "error.ouservice.invalid_offset_parameter_description"
+                      defaultValue: "The offset parameter must be a non-negative integer"
         "500":
           description: Internal server error
 
@@ -140,20 +148,32 @@ paths:
                   summary: Invalid request format
                   value:
                     code: "OU-1001"
-                    message: "Invalid request format"
-                    description: "The request body is malformed, contains invalid data, or required fields are missing/empty"
+                    message:
+                      key: "error.ouservice.invalid_request_format"
+                      defaultValue: "Invalid request format"
+                    description:
+                      key: "error.ouservice.invalid_request_format_description"
+                      defaultValue: "The request body is malformed, contains invalid data, or required fields are missing/empty"
                 parent-not-found:
                   summary: Parent organization unit not found
                   value:
                     code: "OU-1005"
-                    message: "Parent organization unit not found"
-                    description: "Parent organization unit not found"
+                    message:
+                      key: "error.ouservice.parent_organization_unit_not_found"
+                      defaultValue: "Parent organization unit not found"
+                    description:
+                      key: "error.ouservice.parent_organization_unit_not_found_description"
+                      defaultValue: "Parent organization unit not found"
                 circular-dependency:
                   summary: Circular dependency detected
                   value:
                     code: "OU-1007"
-                    message: "Circular dependency detected"
-                    description: "Setting this parent would create a circular dependency"
+                    message:
+                      key: "error.ouservice.circular_dependency_detected"
+                      defaultValue: "Circular dependency detected"
+                    description:
+                      key: "error.ouservice.circular_dependency_detected_description"
+                      defaultValue: "Setting this parent would create a circular dependency"
         "409":
           description: Organization unit name conflict
           content:
@@ -162,8 +182,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "OU-1004"
-                message: "Organization unit name conflict"
-                description: "An organization unit with the same name exists under the same parent"
+                message:
+                  key: "error.ouservice.organization_unit_name_conflict"
+                  defaultValue: "Organization unit name conflict"
+                description:
+                  key: "error.ouservice.organization_unit_name_conflict_description"
+                  defaultValue: "An organization unit with the same name exists under the same parent"
         "500":
           description: Internal server error
 
@@ -200,8 +224,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "OU-1003"
-                message: "Organization unit not found"
-                description: "The organization unit with the specified id does not exist"
+                message:
+                  key: "error.ouservice.organization_unit_not_found"
+                  defaultValue: "Organization unit not found"
+                description:
+                  key: "error.ouservice.organization_unit_not_found_description"
+                  defaultValue: "The organization unit with the specified id does not exist"
         "500":
           description: Internal server error
 
@@ -251,20 +279,32 @@ paths:
                   summary: Invalid request format
                   value:
                     code: "OU-1001"
-                    message: "Invalid request format"
-                    description: "The request body is malformed, contains invalid data, or required fields are missing/empty"
+                    message:
+                      key: "error.ouservice.invalid_request_format"
+                      defaultValue: "Invalid request format"
+                    description:
+                      key: "error.ouservice.invalid_request_format_description"
+                      defaultValue: "The request body is malformed, contains invalid data, or required fields are missing/empty"
                 parent-not-found:
                   summary: Parent organization unit not found
                   value:
                     code: "OU-1005"
-                    message: "Parent organization unit not found"
-                    description: "Parent organization unit not found"
+                    message:
+                      key: "error.ouservice.parent_organization_unit_not_found"
+                      defaultValue: "Parent organization unit not found"
+                    description:
+                      key: "error.ouservice.parent_organization_unit_not_found_description"
+                      defaultValue: "Parent organization unit not found"
                 circular-dependency:
                   summary: Circular dependency detected
                   value:
                     code: "OU-1007"
-                    message: "Circular dependency detected"
-                    description: "Setting this parent would create a circular dependency"
+                    message:
+                      key: "error.ouservice.circular_dependency_detected"
+                      defaultValue: "Circular dependency detected"
+                    description:
+                      key: "error.ouservice.circular_dependency_detected_description"
+                      defaultValue: "Setting this parent would create a circular dependency"
         "404":
           description: Organization unit not found
           content:
@@ -273,8 +313,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "OU-1003"
-                message: "Organization unit not found"
-                description: "The organization unit with the specified id does not exist"
+                message:
+                  key: "error.ouservice.organization_unit_not_found"
+                  defaultValue: "Organization unit not found"
+                description:
+                  key: "error.ouservice.organization_unit_not_found_description"
+                  defaultValue: "The organization unit with the specified id does not exist"
         "409":
           description: Organization unit name conflict
           content:
@@ -283,8 +327,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "OU-1004"
-                message: "Organization unit name conflict"
-                description: "An organization unit with the same name exists under the same parent"
+                message:
+                  key: "error.ouservice.organization_unit_name_conflict"
+                  defaultValue: "Organization unit name conflict"
+                description:
+                  key: "error.ouservice.organization_unit_name_conflict_description"
+                  defaultValue: "An organization unit with the same name exists under the same parent"
         "500":
           description: Internal server error
 
@@ -313,8 +361,12 @@ paths:
                   summary: Organization unit has children
                   value:
                     code: "OU-1006"
-                    message: "Organization unit has sub resources"
-                    description: "Cannot delete organization unit with children or users or groups"
+                    message:
+                      key: "error.ouservice.organization_unit_has_children"
+                      defaultValue: "Organization unit has sub resources"
+                    description:
+                      key: "error.ouservice.organization_unit_has_children_description"
+                      defaultValue: "Cannot delete organization unit with children or users or groups"
         "500":
           description: Internal server error
 
@@ -368,14 +420,22 @@ paths:
                   summary: Invalid limit parameter
                   value:
                     code: "OU-1011"
-                    message: "Invalid pagination parameter"
-                    description: "The limit parameter must be a positive integer"
+                    message:
+                      key: "error.ouservice.invalid_limit_parameter"
+                      defaultValue: "Invalid pagination parameter"
+                    description:
+                      key: "error.ouservice.invalid_limit_parameter_description"
+                      defaultValue: "The limit parameter must be a positive integer"
                 invalid-offset:
                   summary: Invalid offset parameter
                   value:
                     code: "OU-1012"
-                    message: "Invalid pagination parameter"
-                    description: "The offset parameter must be a non-negative integer"
+                    message:
+                      key: "error.ouservice.invalid_offset_parameter"
+                      defaultValue: "Invalid pagination parameter"
+                    description:
+                      key: "error.ouservice.invalid_offset_parameter_description"
+                      defaultValue: "The offset parameter must be a non-negative integer"
         "404":
           description: Organization unit not found
           content:
@@ -384,8 +444,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "OU-1003"
-                message: "Organization unit not found"
-                description: "The organization unit with the specified id does not exist"
+                message:
+                  key: "error.ouservice.organization_unit_not_found"
+                  defaultValue: "Organization unit not found"
+                description:
+                  key: "error.ouservice.organization_unit_not_found_description"
+                  defaultValue: "The organization unit with the specified id does not exist"
         "500":
           description: Internal server error
 
@@ -434,14 +498,22 @@ paths:
                   summary: Invalid limit parameter
                   value:
                     code: "OU-1011"
-                    message: "Invalid pagination parameter"
-                    description: "The limit parameter must be a positive integer"
+                    message:
+                      key: "error.ouservice.invalid_limit_parameter"
+                      defaultValue: "Invalid pagination parameter"
+                    description:
+                      key: "error.ouservice.invalid_limit_parameter_description"
+                      defaultValue: "The limit parameter must be a positive integer"
                 invalid-offset:
                   summary: Invalid offset parameter
                   value:
                     code: "OU-1012"
-                    message: "Invalid pagination parameter"
-                    description: "The offset parameter must be a non-negative integer"
+                    message:
+                      key: "error.ouservice.invalid_offset_parameter"
+                      defaultValue: "Invalid pagination parameter"
+                    description:
+                      key: "error.ouservice.invalid_offset_parameter_description"
+                      defaultValue: "The offset parameter must be a non-negative integer"
         "404":
           description: Organization unit not found
           content:
@@ -450,8 +522,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "OU-1003"
-                message: "Organization unit not found"
-                description: "The organization unit with the specified id does not exist"
+                message:
+                  key: "error.ouservice.organization_unit_not_found"
+                  defaultValue: "Organization unit not found"
+                description:
+                  key: "error.ouservice.organization_unit_not_found_description"
+                  defaultValue: "The organization unit with the specified id does not exist"
         "500":
           description: Internal server error
 
@@ -500,14 +576,22 @@ paths:
                   summary: Invalid limit parameter
                   value:
                     code: "OU-1011"
-                    message: "Invalid pagination parameter"
-                    description: "The limit parameter must be a positive integer"
+                    message:
+                      key: "error.ouservice.invalid_limit_parameter"
+                      defaultValue: "Invalid pagination parameter"
+                    description:
+                      key: "error.ouservice.invalid_limit_parameter_description"
+                      defaultValue: "The limit parameter must be a positive integer"
                 invalid-offset:
                   summary: Invalid offset parameter
                   value:
                     code: "OU-1012"
-                    message: "Invalid pagination parameter"
-                    description: "The offset parameter must be a non-negative integer"
+                    message:
+                      key: "error.ouservice.invalid_offset_parameter"
+                      defaultValue: "Invalid pagination parameter"
+                    description:
+                      key: "error.ouservice.invalid_offset_parameter_description"
+                      defaultValue: "The offset parameter must be a non-negative integer"
         "404":
           description: Organization unit not found
           content:
@@ -516,8 +600,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "OU-1003"
-                message: "Organization unit not found"
-                description: "The organization unit with the specified id does not exist"
+                message:
+                  key: "error.ouservice.organization_unit_not_found"
+                  defaultValue: "Organization unit not found"
+                description:
+                  key: "error.ouservice.organization_unit_not_found_description"
+                  defaultValue: "The organization unit with the specified id does not exist"
         "500":
           description: Internal server error
 
@@ -576,14 +664,22 @@ paths:
                   summary: Handle path not found
                   value:
                     code: "OU-1003"
-                    message: "Organization unit not found"
-                    description: "The organization unit with the specified handle path does not exist"
+                    message:
+                      key: "error.ouservice.invalid_handle_path"
+                      defaultValue: "Organization unit not found"
+                    description:
+                      key: "error.ouservice.invalid_handle_path_description"
+                      defaultValue: "The organization unit with the specified handle path does not exist"
                 invalid-path:
                   summary: Invalid path structure
                   value:
                     code: "OU-1008"
-                    message: "Invalid handle path"
-                    description: "The handle path does not represent a valid organizational hierarchy"
+                    message:
+                      key: "error.ouservice.invalid_handle_path"
+                      defaultValue: "Invalid handle path"
+                    description:
+                      key: "error.ouservice.invalid_handle_path_description"
+                      defaultValue: "The handle path does not represent a valid organizational hierarchy"
         "500":
           description: Internal server error
 
@@ -660,14 +756,22 @@ paths:
                   summary: Invalid request format
                   value:
                     code: "OU-1001"
-                    message: "Invalid request format"
-                    description: "The request body is malformed, contains invalid data, or required fields are missing/empty"
+                    message:
+                      key: "error.ouservice.invalid_request_format"
+                      defaultValue: "Invalid request format"
+                    description:
+                      key: "error.ouservice.invalid_request_format_description"
+                      defaultValue: "The request body is malformed, contains invalid data, or required fields are missing/empty"
                 handle-conflict:
                   summary: Handle already exists under parent
                   value:
                     code: "OU-1010"
-                    message: "Handle conflict"
-                    description: "An organization unit with the same handle already exists under the same parent"
+                    message:
+                      key: "error.ouservice.organization_unit_handle_conflict"
+                      defaultValue: "Handle conflict"
+                    description:
+                      key: "error.ouservice.organization_unit_handle_conflict_description"
+                      defaultValue: "An organization unit with the same handle already exists under the same parent"
         "404":
           description: Organization unit not found
           content:
@@ -679,14 +783,22 @@ paths:
                   summary: Handle path not found
                   value:
                     code: "OU-1003"
-                    message: "Organization unit not found"
-                    description: "The organization unit with the specified handle path does not exist"
+                    message:
+                      key: "error.ouservice.invalid_handle_path"
+                      defaultValue: "Organization unit not found"
+                    description:
+                      key: "error.ouservice.invalid_handle_path_description"
+                      defaultValue: "The organization unit with the specified handle path does not exist"
                 invalid-path:
                   summary: Invalid path structure
                   value:
                     code: "OU-1008"
-                    message: "Invalid handle path"
-                    description: "The handle path does not represent a valid organizational hierarchy"
+                    message:
+                      key: "error.ouservice.invalid_handle_path"
+                      defaultValue: "Invalid handle path"
+                    description:
+                      key: "error.ouservice.invalid_handle_path_description"
+                      defaultValue: "The handle path does not represent a valid organizational hierarchy"
         "409":
           description: Organization unit name conflict
           content:
@@ -695,8 +807,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "OU-1004"
-                message: "Organization unit name conflict"
-                description: "An organization unit with the same name exists under the same parent"
+                message:
+                  key: "error.ouservice.organization_unit_name_conflict"
+                  defaultValue: "Organization unit name conflict"
+                description:
+                  key: "error.ouservice.organization_unit_name_conflict_description"
+                  defaultValue: "An organization unit with the same name exists under the same parent"
         "500":
           description: Internal server error
 
@@ -733,8 +849,12 @@ paths:
                   summary: Organization unit has children
                   value:
                     code: "OU-1006"
-                    message: "Organization unit has sub resources"
-                    description: "Cannot delete organization unit with children or users or groups"
+                    message:
+                      key: "error.ouservice.organization_unit_has_children"
+                      defaultValue: "Organization unit has sub resources"
+                    description:
+                      key: "error.ouservice.organization_unit_has_children_description"
+                      defaultValue: "Cannot delete organization unit with children or users or groups"
         "404":
           description: Organization unit not found
           content:
@@ -746,14 +866,22 @@ paths:
                   summary: Handle path not found
                   value:
                     code: "OU-1003"
-                    message: "Organization unit not found"
-                    description: "The organization unit with the specified handle path does not exist"
+                    message:
+                      key: "error.ouservice.invalid_handle_path"
+                      defaultValue: "Organization unit not found"
+                    description:
+                      key: "error.ouservice.invalid_handle_path_description"
+                      defaultValue: "The organization unit with the specified handle path does not exist"
                 invalid-path:
                   summary: Invalid path structure
                   value:
                     code: "OU-1008"
-                    message: "Invalid handle path"
-                    description: "The handle path does not represent a valid organizational hierarchy"
+                    message:
+                      key: "error.ouservice.invalid_handle_path"
+                      defaultValue: "Invalid handle path"
+                    description:
+                      key: "error.ouservice.invalid_handle_path_description"
+                      defaultValue: "The handle path does not represent a valid organizational hierarchy"
         "500":
           description: Internal server error
 
@@ -829,20 +957,32 @@ paths:
                   summary: Invalid request format
                   value:
                     code: "OU-1001"
-                    message: "Invalid request format"
-                    description: "The request body is malformed, contains invalid data, or required fields are missing/empty"
+                    message:
+                      key: "error.ouservice.invalid_request_format"
+                      defaultValue: "Invalid request format"
+                    description:
+                      key: "error.ouservice.invalid_request_format_description"
+                      defaultValue: "The request body is malformed, contains invalid data, or required fields are missing/empty"
                 invalid-parent-path:
                   summary: Parent path not found
                   value:
                     code: "OU-1009"
-                    message: "Parent handle path not found"
-                    description: "The specified parent handle path does not exist"
+                    message:
+                      key: "error.ouservice.invalid_handle_path"
+                      defaultValue: "Parent handle path not found"
+                    description:
+                      key: "error.ouservice.invalid_handle_path_description"
+                      defaultValue: "The specified parent handle path does not exist"
                 handle-conflict:
                   summary: Handle already exists under parent
                   value:
                     code: "OU-1010"
-                    message: "Handle conflict"
-                    description: "An organization unit with the same handle already exists under the specified parent path"
+                    message:
+                      key: "error.ouservice.organization_unit_handle_conflict"
+                      defaultValue: "Handle conflict"
+                    description:
+                      key: "error.ouservice.organization_unit_handle_conflict_description"
+                      defaultValue: "An organization unit with the same handle already exists under the specified parent path"
         "404":
           description: Parent organization unit not found
           content:
@@ -851,8 +991,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "OU-1009"
-                message: "Parent handle path not found"
-                description: "The specified parent handle path does not exist"
+                message:
+                  key: "error.ouservice.invalid_handle_path"
+                  defaultValue: "Parent handle path not found"
+                description:
+                  key: "error.ouservice.invalid_handle_path_description"
+                  defaultValue: "The specified parent handle path does not exist"
         "500":
           description: Internal server error
 
@@ -912,14 +1056,22 @@ paths:
                   summary: Invalid limit parameter
                   value:
                     code: "OU-1011"
-                    message: "Invalid pagination parameter"
-                    description: "The limit parameter must be a positive integer"
+                    message:
+                      key: "error.ouservice.invalid_limit_parameter"
+                      defaultValue: "Invalid pagination parameter"
+                    description:
+                      key: "error.ouservice.invalid_limit_parameter_description"
+                      defaultValue: "The limit parameter must be a positive integer"
                 invalid-offset:
                   summary: Invalid offset parameter
                   value:
                     code: "OU-1012"
-                    message: "Invalid pagination parameter"
-                    description: "The offset parameter must be a non-negative integer"
+                    message:
+                      key: "error.ouservice.invalid_offset_parameter"
+                      defaultValue: "Invalid pagination parameter"
+                    description:
+                      key: "error.ouservice.invalid_offset_parameter_description"
+                      defaultValue: "The offset parameter must be a non-negative integer"
         "404":
           description: Organization unit not found
           content:
@@ -931,14 +1083,22 @@ paths:
                   summary: Handle path not found
                   value:
                     code: "OU-1003"
-                    message: "Organization unit not found"
-                    description: "The organization unit with the specified handle path does not exist"
+                    message:
+                      key: "error.ouservice.invalid_handle_path"
+                      defaultValue: "Organization unit not found"
+                    description:
+                      key: "error.ouservice.invalid_handle_path_description"
+                      defaultValue: "The organization unit with the specified handle path does not exist"
                 invalid-path:
                   summary: Invalid path structure
                   value:
                     code: "OU-1008"
-                    message: "Invalid handle path"
-                    description: "The handle path does not represent a valid organizational hierarchy"
+                    message:
+                      key: "error.ouservice.invalid_handle_path"
+                      defaultValue: "Invalid handle path"
+                    description:
+                      key: "error.ouservice.invalid_handle_path_description"
+                      defaultValue: "The handle path does not represent a valid organizational hierarchy"
         "500":
           description: Internal server error
 
@@ -994,14 +1154,22 @@ paths:
                   summary: Invalid limit parameter
                   value:
                     code: "OU-1011"
-                    message: "Invalid pagination parameter"
-                    description: "The limit parameter must be a positive integer"
+                    message:
+                      key: "error.ouservice.invalid_limit_parameter"
+                      defaultValue: "Invalid pagination parameter"
+                    description:
+                      key: "error.ouservice.invalid_limit_parameter_description"
+                      defaultValue: "The limit parameter must be a positive integer"
                 invalid-offset:
                   summary: Invalid offset parameter
                   value:
                     code: "OU-1012"
-                    message: "Invalid pagination parameter"
-                    description: "The offset parameter must be a non-negative integer"
+                    message:
+                      key: "error.ouservice.invalid_offset_parameter"
+                      defaultValue: "Invalid pagination parameter"
+                    description:
+                      key: "error.ouservice.invalid_offset_parameter_description"
+                      defaultValue: "The offset parameter must be a non-negative integer"
         "404":
           description: Organization unit not found
           content:
@@ -1013,14 +1181,22 @@ paths:
                   summary: Handle path not found
                   value:
                     code: "OU-1003"
-                    message: "Organization unit not found"
-                    description: "The organization unit with the specified handle path does not exist"
+                    message:
+                      key: "error.ouservice.invalid_handle_path"
+                      defaultValue: "Organization unit not found"
+                    description:
+                      key: "error.ouservice.invalid_handle_path_description"
+                      defaultValue: "The organization unit with the specified handle path does not exist"
                 invalid-path:
                   summary: Invalid path structure
                   value:
                     code: "OU-1008"
-                    message: "Invalid handle path"
-                    description: "The handle path does not represent a valid organizational hierarchy"
+                    message:
+                      key: "error.ouservice.invalid_handle_path"
+                      defaultValue: "Invalid handle path"
+                    description:
+                      key: "error.ouservice.invalid_handle_path_description"
+                      defaultValue: "The handle path does not represent a valid organizational hierarchy"
         "500":
           description: Internal server error
 
@@ -1076,14 +1252,22 @@ paths:
                   summary: Invalid limit parameter
                   value:
                     code: "OU-1011"
-                    message: "Invalid pagination parameter"
-                    description: "The limit parameter must be a positive integer"
+                    message:
+                      key: "error.ouservice.invalid_limit_parameter"
+                      defaultValue: "Invalid pagination parameter"
+                    description:
+                      key: "error.ouservice.invalid_limit_parameter_description"
+                      defaultValue: "The limit parameter must be a positive integer"
                 invalid-offset:
                   summary: Invalid offset parameter
                   value:
                     code: "OU-1012"
-                    message: "Invalid pagination parameter"
-                    description: "The offset parameter must be a non-negative integer"
+                    message:
+                      key: "error.ouservice.invalid_offset_parameter"
+                      defaultValue: "Invalid pagination parameter"
+                    description:
+                      key: "error.ouservice.invalid_offset_parameter_description"
+                      defaultValue: "The offset parameter must be a non-negative integer"
         "404":
           description: Organization unit not found
           content:
@@ -1095,14 +1279,22 @@ paths:
                   summary: Handle path not found
                   value:
                     code: "OU-1003"
-                    message: "Organization unit not found"
-                    description: "The organization unit with the specified handle path does not exist"
+                    message:
+                      key: "error.ouservice.invalid_handle_path"
+                      defaultValue: "Organization unit not found"
+                    description:
+                      key: "error.ouservice.invalid_handle_path_description"
+                      defaultValue: "The organization unit with the specified handle path does not exist"
                 invalid-path:
                   summary: Invalid path structure
                   value:
                     code: "OU-1008"
-                    message: "Invalid handle path"
-                    description: "The handle path does not represent a valid organizational hierarchy"
+                    message:
+                      key: "error.ouservice.invalid_handle_path"
+                      defaultValue: "Invalid handle path"
+                    description:
+                      key: "error.ouservice.invalid_handle_path_description"
+                      defaultValue: "The handle path does not represent a valid organizational hierarchy"
         "500":
           description: Internal server error
 
@@ -1408,6 +1600,20 @@ components:
         code:
           type: string
         message:
-          type: string
+          $ref: '#/components/schemas/I18nMessage'
         description:
+          $ref: '#/components/schemas/I18nMessage'
+
+    I18nMessage:
+      type: object
+      description: Internationalized message with translation key and default value.
+      required:
+        - key
+        - defaultValue
+      properties:
+        key:
           type: string
+          description: Translation key for fetching localized message.
+        defaultValue:
+          type: string
+          description: Default message in English (fallback).
