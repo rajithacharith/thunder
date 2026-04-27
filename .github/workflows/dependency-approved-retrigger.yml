@@ -1,0 +1,41 @@
+# Re-runs the PR Builder workflow when the `dependencies-approved` label is added.
+# The PR Builder intentionally does not trigger on `labeled` events to avoid
+# skipping all checks when unrelated labels are added.
+
+name: 🔄 Re-run PR Builder on Dependency Approval
+
+on:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  retrigger:
+    name: 🔄 Re-trigger PR Builder
+    if: github.event.label.name == 'dependencies-approved'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Re-run latest PR Builder
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'pr-builder.yml',
+              head_sha: context.payload.pull_request.head.sha,
+              per_page: 1
+            });
+
+            if (runs.data.workflow_runs.length > 0) {
+              const run = runs.data.workflow_runs[0];
+              core.info(`Re-running PR Builder run #${run.id} (${run.status})`);
+              await github.rest.actions.reRunWorkflow({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: run.id
+              });
+            } else {
+              core.warning('No PR Builder run found for this commit. The PR Builder will run on the next push.');
+            }
