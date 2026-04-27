@@ -22,7 +22,7 @@ import ResourceProperties from '../ResourceProperties';
 import {ElementCategories, ElementTypes} from '@/features/flows/models/elements';
 import type {Element} from '@/features/flows/models/elements';
 import type {Resource} from '@/features/flows/models/resources';
-import {StepCategories, StepTypes, ExecutionTypes} from '@/features/flows/models/steps';
+import {StepCategories, StepTypes} from '@/features/flows/models/steps';
 
 // Mock dependencies
 vi.mock('../ResourcePropertyFactory', () => ({
@@ -339,33 +339,6 @@ describe('ResourceProperties', () => {
       );
 
       expect(screen.getByTestId('execution-extended-properties')).toBeInTheDocument();
-    });
-
-    it('should render ConfirmationCode execution type differently', () => {
-      const resource = createMockResource({
-        category: StepCategories.Workflow,
-        type: StepTypes.Execution,
-        data: {
-          action: {
-            executor: {
-              name: ExecutionTypes.ConfirmationCode,
-            },
-          },
-        },
-      } as Partial<Resource>);
-
-      render(
-        <ResourceProperties
-          resource={resource}
-          properties={{prop1: 'value1'}}
-          onChange={mockOnChange}
-          onVariantChange={mockOnVariantChange}
-        />,
-      );
-
-      // ConfirmationCode renders property factories instead of ExecutionExtendedProperties
-      expect(screen.queryByTestId('execution-extended-properties')).not.toBeInTheDocument();
-      expect(screen.getByTestId('resource-property-factory-prop1')).toBeInTheDocument();
     });
   });
 
@@ -1139,7 +1112,7 @@ describe('ResourceProperties', () => {
       const triggerButton = screen.getByTestId('trigger-change-enabled');
       fireEvent.click(triggerButton);
 
-      expect(mockOnChange).toHaveBeenCalledWith('enabled', true, resource);
+      expect(mockOnChange).toHaveBeenCalledWith('enabled', true, resource, undefined);
     });
 
     it('should preserve object values and call onChange with object', () => {
@@ -1161,7 +1134,7 @@ describe('ResourceProperties', () => {
       const triggerButton = screen.getByTestId('trigger-change-config');
       fireEvent.click(triggerButton);
 
-      expect(mockOnChange).toHaveBeenCalledWith('config', objectValue, resource);
+      expect(mockOnChange).toHaveBeenCalledWith('config', objectValue, resource, undefined);
     });
 
     it('should convert string values to string in onChange', () => {
@@ -1181,7 +1154,7 @@ describe('ResourceProperties', () => {
       const triggerButton = screen.getByTestId('trigger-change-label');
       fireEvent.click(triggerButton);
 
-      expect(mockOnChange).toHaveBeenCalledWith('label', 'test string', resource);
+      expect(mockOnChange).toHaveBeenCalledWith('label', 'test string', resource, undefined);
     });
 
     it('should convert number values to string in onChange', () => {
@@ -1201,7 +1174,7 @@ describe('ResourceProperties', () => {
       const triggerButton = screen.getByTestId('trigger-change-maxLength');
       fireEvent.click(triggerButton);
 
-      expect(mockOnChange).toHaveBeenCalledWith('maxLength', '100', resource);
+      expect(mockOnChange).toHaveBeenCalledWith('maxLength', '100', resource, undefined);
     });
 
     it('should convert null values to empty string in onChange', () => {
@@ -1221,7 +1194,7 @@ describe('ResourceProperties', () => {
       const triggerButton = screen.getByTestId('trigger-change-optionalProp');
       fireEvent.click(triggerButton);
 
-      expect(mockOnChange).toHaveBeenCalledWith('optionalProp', '', resource);
+      expect(mockOnChange).toHaveBeenCalledWith('optionalProp', '', resource, undefined);
     });
 
     it('should convert undefined values to empty string in onChange', () => {
@@ -1241,7 +1214,7 @@ describe('ResourceProperties', () => {
       const triggerButton = screen.getByTestId('trigger-change-undefinedProp');
       fireEvent.click(triggerButton);
 
-      expect(mockOnChange).toHaveBeenCalledWith('undefinedProp', '', resource);
+      expect(mockOnChange).toHaveBeenCalledWith('undefinedProp', '', resource, undefined);
     });
   });
 });

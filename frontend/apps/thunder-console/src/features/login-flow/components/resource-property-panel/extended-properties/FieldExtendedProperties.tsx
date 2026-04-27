@@ -103,7 +103,7 @@ function FieldExtendedProperties({resource, onChange}: FieldExtendedPropertiesPr
           // Handle free-form input (when user types a custom value)
           if (reason === 'input') {
             setLocalSelectedValue(value);
-            onChange('ref', value, resource);
+            onChange('ref', value, resource, true);
           }
         }}
       />

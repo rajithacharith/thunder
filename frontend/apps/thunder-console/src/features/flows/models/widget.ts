@@ -41,15 +41,10 @@ export type WidgetCategories = (typeof WidgetCategories)[keyof typeof WidgetCate
 
 export const WidgetTypes = {
   IdentifierPassword: 'IDENTIFIER_PASSWORD',
-  EmailOTP: 'EMAIL_OTP',
   SMSOTP: 'SMS_OTP',
   GoogleFederation: 'GOOGLE_FEDERATION',
-  AppleFederation: 'APPLE_FEDERATION',
-  FacebookFederation: 'FACEBOOK_FEDERATION',
-  MicrosoftFederation: 'MICROSOFT_FEDERATION',
   GithubFederation: 'GITHUB_FEDERATION',
   PasskeyAuthentication: 'PASSKEY_AUTHENTICATION',
-  MagicLink: 'MAGIC_LINK',
   SelfSignUpLink: 'SELF_SIGN_UP_LINK',
 } as const;
 

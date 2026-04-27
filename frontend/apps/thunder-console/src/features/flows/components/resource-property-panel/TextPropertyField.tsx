@@ -59,7 +59,7 @@ export interface TextPropertyFieldPropsInterface {
    * @param newValue - The new value of the property.
    * @param resource - The resource associated with the property.
    */
-  onChange: (propertyKey: string, newValue: string, resource: Resource) => void;
+  onChange: (propertyKey: string, newValue: string, resource: Resource, debounce?: boolean) => void;
   /**
    * Additional props.
    */
@@ -151,7 +151,7 @@ function TextPropertyField({
           error={!!errorMessage}
           onChange={(e: ChangeEvent<HTMLInputElement>) => {
             setLocalValue(e.target.value);
-            onChange(propertyKey, e.target.value, resource);
+            onChange(propertyKey, e.target.value, resource, true);
           }}
           placeholder={t('flows:core.elements.textPropertyField.placeholder', {propertyName: startCase(propertyKey)})}
           sx={

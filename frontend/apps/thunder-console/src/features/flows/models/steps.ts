@@ -93,18 +93,25 @@ export const StaticStepTypes = {
 
 export const ExecutionTypes = {
   GoogleFederation: 'GoogleOIDCAuthExecutor',
-  AppleFederation: 'AppleExecutor',
-  FacebookFederation: 'FacebookExecutor',
-  MicrosoftFederation: 'Office365Executor',
   GithubFederation: 'GithubOAuthExecutor',
+  OAuthExecutor: 'OAuthExecutor',
+  OIDCAuthExecutor: 'OIDCAuthExecutor',
   PasskeyAuth: 'PasskeyAuthExecutor',
-  ConfirmationCode: 'ConfirmationCodeValidationExecutor',
   MagicLinkExecutor: 'MagicLinkExecutor',
-  SendEmailOTP: 'SendEmailOTPExecutor',
-  VerifyEmailOTP: 'VerifyEmailOTPExecutor',
   SMSOTPAuth: 'SMSOTPAuthExecutor',
   ConsentExecutor: 'ConsentExecutor',
   IdentifyingExecutor: 'IdentifyingExecutor',
+  OUResolverExecutor: 'OUResolverExecutor',
+  InviteExecutor: 'InviteExecutor',
+  EmailExecutor: 'EmailExecutor',
+  SMSExecutor: 'SMSExecutor',
+  CredentialSetter: 'CredentialSetter',
+  AttributeUniquenessValidator: 'AttributeUniquenessValidator',
+  PermissionValidator: 'PermissionValidator',
+  ProvisioningExecutor: 'ProvisioningExecutor',
+  HTTPRequestExecutor: 'HTTPRequestExecutor',
+  OUExecutor: 'OUExecutor',
+  UserTypeResolver: 'UserTypeResolver',
 } as const;
 
 export const ExecutionStepViewTypes = {

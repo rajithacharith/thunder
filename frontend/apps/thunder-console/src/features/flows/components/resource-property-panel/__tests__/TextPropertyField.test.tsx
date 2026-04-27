@@ -174,7 +174,7 @@ describe('TextPropertyField', () => {
       const textField = screen.getByRole('textbox');
       fireEvent.change(textField, {target: {value: 'New Value'}});
 
-      expect(mockOnChange).toHaveBeenCalledWith('label', 'New Value', mockResource);
+      expect(mockOnChange).toHaveBeenCalledWith('label', 'New Value', mockResource, true);
     });
 
     it('should pass the correct resource to onChange', () => {
@@ -192,7 +192,7 @@ describe('TextPropertyField', () => {
       const textField = screen.getByRole('textbox');
       fireEvent.change(textField, {target: {value: 'Test'}});
 
-      expect(mockOnChange).toHaveBeenCalledWith('description', 'Test', specificResource);
+      expect(mockOnChange).toHaveBeenCalledWith('description', 'Test', specificResource, true);
     });
   });
 

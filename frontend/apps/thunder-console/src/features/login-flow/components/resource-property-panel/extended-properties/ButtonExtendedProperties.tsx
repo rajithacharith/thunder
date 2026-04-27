@@ -63,13 +63,13 @@ function ButtonExtendedProperties({resource, onChange}: ButtonExtendedProperties
   // Handle startIcon change - update local state immediately, propagate via onChange (debounced)
   const handleStartIconChange = (value: string): void => {
     setStartIconValue(value);
-    onChange('startIcon', value, resource);
+    onChange('startIcon', value, resource, true);
   };
 
   // Handle endIcon change - update local state immediately, propagate via onChange (debounced)
   const handleEndIconChange = (value: string): void => {
     setEndIconValue(value);
-    onChange('endIcon', value, resource);
+    onChange('endIcon', value, resource, true);
   };
 
   return (

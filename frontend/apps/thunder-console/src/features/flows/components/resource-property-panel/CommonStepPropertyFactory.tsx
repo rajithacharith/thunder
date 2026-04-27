@@ -45,7 +45,7 @@ export interface CommonStepPropertyFactoryPropsInterface {
    * @param newValue - The new value of the property.
    * @param resource - The resource associated with the property.
    */
-  onChange: (propertyKey: string, newValue: string | boolean, resource: Resource) => void;
+  onChange: (propertyKey: string, newValue: string | boolean, resource: Resource, debounce?: boolean) => void;
   /**
    * Additional props.
    */
@@ -69,7 +69,7 @@ function CommonStepPropertyFactory({
     if (resource.type === ElementTypes.RichText) {
       return (
         <RichTextWithTranslation
-          onChange={(html: string) => onChange(propertyKey, html, resource)}
+          onChange={(html: string) => onChange(propertyKey, html, resource, true)}
           resource={resource}
           {...rest}
         />
@@ -95,7 +95,7 @@ function CommonStepPropertyFactory({
         <TextField
           fullWidth
           defaultValue={propertyValue}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(propertyKey, e.target.value, resource)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(propertyKey, e.target.value, resource, true)}
           placeholder={`Enter ${startCase(propertyKey)}`}
           {...rest}
         />

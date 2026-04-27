@@ -79,7 +79,7 @@ interface IconPickerFieldProps {
   resource: Resource;
   propertyKey: string;
   propertyValue: unknown;
-  onChange: (propertyKey: string, newValue: unknown, resource: Resource) => void;
+  onChange: (propertyKey: string, newValue: unknown, resource: Resource, debounce?: boolean) => void;
 }
 
 function IconPickerField({resource, propertyKey, propertyValue, onChange}: IconPickerFieldProps): ReactElement {
@@ -176,7 +176,7 @@ export interface CommonElementPropertyFactoryPropsInterface {
   resource: Resource;
   propertyKey: string;
   propertyValue: unknown;
-  onChange: (propertyKey: string, newValue: unknown, resource: Resource) => void;
+  onChange: (propertyKey: string, newValue: unknown, resource: Resource, debounce?: boolean) => void;
   [key: string]: unknown;
 }
 
@@ -198,7 +198,7 @@ function CommonElementPropertyFactory({
     if (resource.type === ElementTypes.RichText) {
       return (
         <RichTextWithTranslation
-          onChange={(html: string) => onChange(propertyKey, html, resource)}
+          onChange={(html: string) => onChange(propertyKey, html, resource, true)}
           resource={resource}
           {...rest}
         />
@@ -254,7 +254,7 @@ function CommonElementPropertyFactory({
         resource={resource}
         propertyKey={propertyKey}
         propertyValue={String(propertyValue)}
-        onChange={(key, value, res) => onChange(key, value !== '' ? Number(value) : 0, res)}
+        onChange={(key, value, res) => onChange(key, value !== '' ? Number(value) : 0, res, true)}
         {...rest}
       />
     );

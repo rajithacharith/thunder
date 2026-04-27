@@ -38,7 +38,12 @@ export interface FlowConfigContextProps {
   ResourceProperties: FunctionComponent<{
     properties?: Record<string, unknown>;
     resource: Resource;
-    onChange: (propertyKey: string, newValue: string | boolean | object, resource: Resource) => void;
+    onChange: (
+      propertyKey: string,
+      newValue: string | boolean | object,
+      resource: Resource,
+      debounce?: boolean,
+    ) => void;
     onVariantChange?: (variant: string, resource?: Partial<Resource>) => void;
   }>;
   /**

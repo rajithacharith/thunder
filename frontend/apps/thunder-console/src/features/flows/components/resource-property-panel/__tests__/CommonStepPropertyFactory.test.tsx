@@ -79,7 +79,7 @@ describe('CommonStepPropertyFactory', () => {
       const button = screen.getByText('Rich Text Editor');
       fireEvent.click(button);
 
-      expect(mockOnChange).toHaveBeenCalledWith('text', '<p>Updated content</p>', richTextResource);
+      expect(mockOnChange).toHaveBeenCalledWith('text', '<p>Updated content</p>', richTextResource, true);
     });
 
     it('should not render RichTextWithTranslation for non-text properties on RichText', () => {
@@ -283,7 +283,7 @@ describe('CommonStepPropertyFactory', () => {
       const textField = screen.getByRole('textbox');
       fireEvent.change(textField, {target: {value: 'Updated Value'}});
 
-      expect(mockOnChange).toHaveBeenCalledWith('name', 'Updated Value', resource);
+      expect(mockOnChange).toHaveBeenCalledWith('name', 'Updated Value', resource, true);
     });
   });
 

@@ -37,6 +37,21 @@ import type {StepData} from '../../models/steps';
 /**
  * Props interface of {@link ResourceProperties}
  */
+/**
+ * Callback signature for property changes in the flow builder property panel.
+ * @param propertyKey - Dot-path key to the property (e.g. 'data.properties.idpId').
+ * @param newValue - The new value.
+ * @param resource - The resource being changed.
+ * @param debounce - When true, batches the update with a 300ms delay. Use for continuous
+ *                   inputs (text fields, number inputs). Defaults to false (immediate).
+ */
+export type PropertyChangeHandler = (
+  propertyKey: string,
+  newValue: unknown,
+  resource: Resource,
+  debounce?: boolean,
+) => void;
+
 export interface CommonResourcePropertiesPropsInterface {
   properties?: Properties;
   /**
@@ -44,12 +59,10 @@ export interface CommonResourcePropertiesPropsInterface {
    */
   resource: Resource;
   /**
-   * The event handler for the property change.
-   * @param propertyKey - The key of the property.
-   * @param newValue - The new value of the property.
-   * @param resource - The element associated with the property.
+   * The event handler for the property change. Applies immediately by default.
+   * Pass `true` as the 4th argument for text/number inputs to enable 300ms debouncing.
    */
-  onChange: (propertyKey: string, newValue: unknown, resource: Resource) => void;
+  onChange: PropertyChangeHandler;
   /**
    * The event handler for the variant change.
    * @param variant - The variant of the element.
@@ -58,12 +71,6 @@ export interface CommonResourcePropertiesPropsInterface {
   onVariantChange?: (variant: string, resource?: Partial<Resource>) => void;
 }
 
-/**
- * Component to generate the properties panel for the selected resource.
- *
- * @param props - Props injected to the component.
- * @returns The ResourceProperties component.
- */
 /**
  * Top-level properties that users can edit directly on a resource.
  * Used for property extraction, variant preservation, and resource updates.
@@ -218,15 +225,19 @@ function ResourceProperties(): ReactElement {
   }, []);
 
   /**
-   * Create debounced handler using a ref initialized in an effect to avoid
-   * accessing refs during render.
+   * Core property change logic shared by both debounced and immediate paths.
+   * Handles plugin interception, ReactFlow node updates, and interaction state sync.
    */
-  const handlePropertyChangeDebouncedRef = useRef<
+  const applyPropertyChangeRef = useRef<
     ((propertyKey: string, newValue: string | boolean | object, element: Element) => void) | null
   >(null);
 
   useEffect(() => {
-    const debouncedFn = debounce((propertyKey: string, newValue: string | boolean | object, element: Element): void => {
+    applyPropertyChangeRef.current = (
+      propertyKey: string,
+      newValue: string | boolean | object,
+      element: Element,
+    ): void => {
       const currentStepId = lastInteractedStepIdRef.current;
       const currentResource = lastInteractedResourceRef.current;
 
@@ -300,6 +311,20 @@ function ResourceProperties(): ReactElement {
         }
         setLastInteractedResourceRef.current(updatedResource);
       }
+    };
+  }, [emitPropertyChange]);
+
+  /**
+   * Debounced handler for continuous inputs (text fields, number inputs, rich text).
+   * Batches rapid keystrokes with a 300ms delay before committing to ReactFlow state.
+   */
+  const handlePropertyChangeDebouncedRef = useRef<
+    ((propertyKey: string, newValue: string | boolean | object, element: Element) => void) | null
+  >(null);
+
+  useEffect(() => {
+    const debouncedFn = debounce((propertyKey: string, newValue: string | boolean | object, element: Element): void => {
+      applyPropertyChangeRef.current?.(propertyKey, newValue, element);
     }, 300);
 
     handlePropertyChangeDebouncedRef.current = debouncedFn;
@@ -307,11 +332,22 @@ function ResourceProperties(): ReactElement {
     return () => {
       debouncedFn.cancel();
     };
-  }, [emitPropertyChange]);
+  }, []);
 
+  /**
+   * Unified property change handler.
+   * - Default (debounce=false): applies immediately for discrete inputs (dropdowns, checkboxes).
+   * - debounce=true: batches with 300ms delay for continuous inputs (text fields, number inputs).
+   */
   const handlePropertyChange = useCallback(
-    (propertyKey: string, newValue: string | boolean | object, element: Element) => {
-      void handlePropertyChangeDebouncedRef.current?.(propertyKey, newValue, element);
+    (propertyKey: string, newValue: string | boolean | object, element: Element, shouldDebounce?: boolean) => {
+      if (shouldDebounce) {
+        void handlePropertyChangeDebouncedRef.current?.(propertyKey, newValue, element);
+      } else {
+        // Flush any pending debounced change to prevent it from overwriting this immediate change
+        (handlePropertyChangeDebouncedRef.current as ReturnType<typeof debounce> | null)?.flush();
+        applyPropertyChangeRef.current?.(propertyKey, newValue, element);
+      }
     },
     [],
   );

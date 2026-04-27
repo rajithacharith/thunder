@@ -201,7 +201,7 @@ describe('FieldExtendedProperties', () => {
       const input = screen.getByRole('combobox');
       fireEvent.change(input, {target: {value: 'customAttribute'}});
 
-      expect(mockOnChange).toHaveBeenCalledWith('ref', 'customAttribute', resource);
+      expect(mockOnChange).toHaveBeenCalledWith('ref', 'customAttribute', resource, true);
     });
   });
 
