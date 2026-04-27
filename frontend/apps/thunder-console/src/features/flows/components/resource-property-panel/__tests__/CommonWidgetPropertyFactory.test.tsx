@@ -37,18 +37,6 @@ describe('CommonWidgetPropertyFactory', () => {
       expect(container.firstChild).toBeNull();
     });
 
-    it('should return null for EmailOTP widget', () => {
-      const resource: Resource = {
-        id: 'widget-2',
-        type: WidgetTypes.EmailOTP,
-        config: {},
-      } as Resource;
-
-      const {container} = render(<CommonWidgetPropertyFactory resource={resource} />);
-
-      expect(container.firstChild).toBeNull();
-    });
-
     it('should return null for GoogleFederation widget', () => {
       const resource: Resource = {
         id: 'widget-3',
@@ -73,42 +61,6 @@ describe('CommonWidgetPropertyFactory', () => {
       expect(container.firstChild).toBeNull();
     });
 
-    it('should return null for AppleFederation widget', () => {
-      const resource: Resource = {
-        id: 'widget-5',
-        type: WidgetTypes.AppleFederation,
-        config: {},
-      } as Resource;
-
-      const {container} = render(<CommonWidgetPropertyFactory resource={resource} />);
-
-      expect(container.firstChild).toBeNull();
-    });
-
-    it('should return null for FacebookFederation widget', () => {
-      const resource: Resource = {
-        id: 'widget-6',
-        type: WidgetTypes.FacebookFederation,
-        config: {},
-      } as Resource;
-
-      const {container} = render(<CommonWidgetPropertyFactory resource={resource} />);
-
-      expect(container.firstChild).toBeNull();
-    });
-
-    it('should return null for MicrosoftFederation widget', () => {
-      const resource: Resource = {
-        id: 'widget-7',
-        type: WidgetTypes.MicrosoftFederation,
-        config: {},
-      } as Resource;
-
-      const {container} = render(<CommonWidgetPropertyFactory resource={resource} />);
-
-      expect(container.firstChild).toBeNull();
-    });
-
     it('should return null for GithubFederation widget', () => {
       const resource: Resource = {
         id: 'widget-8',
@@ -125,18 +77,6 @@ describe('CommonWidgetPropertyFactory', () => {
       const resource: Resource = {
         id: 'widget-9',
         type: WidgetTypes.PasskeyAuthentication,
-        config: {},
-      } as Resource;
-
-      const {container} = render(<CommonWidgetPropertyFactory resource={resource} />);
-
-      expect(container.firstChild).toBeNull();
-    });
-
-    it('should return null for MagicLink widget', () => {
-      const resource: Resource = {
-        id: 'widget-10',
-        type: WidgetTypes.MagicLink,
         config: {},
       } as Resource;
 

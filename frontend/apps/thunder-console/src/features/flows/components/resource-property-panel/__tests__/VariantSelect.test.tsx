@@ -18,9 +18,9 @@
 
 import {render, screen, fireEvent} from '@testing-library/react';
 import {describe, it, expect, vi} from 'vitest';
-import VariantSelect from '../VariantSelect';
 import type {Element} from '../../../models/elements';
 import type {Resource} from '../../../models/resources';
+import VariantSelect from '../VariantSelect';
 
 describe('VariantSelect', () => {
   const createResource = (variants?: Element[]): Resource =>

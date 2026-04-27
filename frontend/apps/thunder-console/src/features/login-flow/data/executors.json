@@ -75,7 +75,7 @@
       "header": "OAuth Executor",
       "label": "OAuth",
       "image": "assets/images/icons/link.svg",
-      "showOnResourcePanel": false
+      "showOnResourcePanel": true
     },
     "data": {
       "action": {
@@ -88,7 +88,10 @@
         "onIncomplete": ""
       },
       "properties": {
-        "idpId": "{{IDP_ID}}"
+        "idpId": "{{IDP_ID}}",
+        "allowAuthenticationWithoutLocalUser": false,
+        "allowRegistrationWithExistingUser": false,
+        "allowCrossOUProvisioning": false
       }
     }
   },
@@ -100,7 +103,7 @@
       "header": "OIDC Auth Executor",
       "label": "OIDC Auth",
       "image": "assets/images/icons/link.svg",
-      "showOnResourcePanel": false
+      "showOnResourcePanel": true
     },
     "data": {
       "action": {
@@ -113,7 +116,10 @@
         "onIncomplete": ""
       },
       "properties": {
-        "idpId": "{{IDP_ID}}"
+        "idpId": "{{IDP_ID}}",
+        "allowAuthenticationWithoutLocalUser": false,
+        "allowRegistrationWithExistingUser": false,
+        "allowCrossOUProvisioning": false
       }
     }
   },
@@ -138,7 +144,10 @@
         "onIncomplete": ""
       },
       "properties": {
-        "idpId": "{{IDP_ID}}"
+        "idpId": "{{IDP_ID}}",
+        "allowAuthenticationWithoutLocalUser": false,
+        "allowRegistrationWithExistingUser": false,
+        "allowCrossOUProvisioning": false
       }
     }
   },
@@ -163,7 +172,10 @@
         "onIncomplete": ""
       },
       "properties": {
-        "idpId": "{{IDP_ID}}"
+        "idpId": "{{IDP_ID}}",
+        "allowAuthenticationWithoutLocalUser": false,
+        "allowRegistrationWithExistingUser": false,
+        "allowCrossOUProvisioning": false
       }
     }
   },
@@ -353,6 +365,11 @@
         "onSuccess": "",
         "onFailure": "",
         "onIncomplete": ""
+      },
+      "properties": {
+        "allowCrossOUProvisioning": false,
+        "assignGroup": "",
+        "assignRole": ""
       }
     }
   },
@@ -419,6 +436,9 @@
         "onSuccess": "",
         "onFailure": "",
         "onIncomplete": ""
+      },
+      "properties": {
+        "parentOuId": ""
       }
     }
   },
@@ -430,7 +450,7 @@
       "header": "HTTP Request Executor",
       "label": "HTTP Request",
       "image": "assets/images/icons/link.svg",
-      "showOnResourcePanel": false
+      "showOnResourcePanel": true
     },
     "data": {
       "action": {
@@ -440,6 +460,19 @@
         },
         "onSuccess": "",
         "onFailure": ""
+      },
+      "properties": {
+        "url": "",
+        "method": "GET",
+        "headers": {},
+        "body": {},
+        "timeout": 10,
+        "responseMapping": {},
+        "errorHandling": {
+          "failOnError": false,
+          "retryCount": 0,
+          "retryDelay": 0
+        }
       }
     }
   },
@@ -462,81 +495,9 @@
         "onSuccess": "",
         "onFailure": "",
         "onIncomplete": ""
-      }
-    }
-  },
-  {
-    "resourceType": "STEP",
-    "category": "EXECUTOR",
-    "type": "TASK_EXECUTION",
-    "display": {
-      "header": "Apple Executor",
-      "label": "Apple",
-      "image": "assets/images/icons/apple.svg",
-      "showOnResourcePanel": false
-    },
-    "data": {
-      "action": {
-        "type": "EXECUTOR",
-        "executor": {
-          "name": "AppleExecutor"
-        },
-        "onSuccess": "",
-        "onFailure": "",
-        "onIncomplete": ""
       },
       "properties": {
-        "idpId": "{{IDP_ID}}"
-      }
-    }
-  },
-  {
-    "resourceType": "STEP",
-    "category": "EXECUTOR",
-    "type": "TASK_EXECUTION",
-    "display": {
-      "header": "Facebook Executor",
-      "label": "Facebook",
-      "image": "assets/images/icons/facebook.svg",
-      "showOnResourcePanel": false
-    },
-    "data": {
-      "action": {
-        "type": "EXECUTOR",
-        "executor": {
-          "name": "FacebookExecutor"
-        },
-        "onSuccess": "",
-        "onFailure": "",
-        "onIncomplete": ""
-      },
-      "properties": {
-        "idpId": "{{IDP_ID}}"
-      }
-    }
-  },
-  {
-    "resourceType": "STEP",
-    "category": "EXECUTOR",
-    "type": "TASK_EXECUTION",
-    "display": {
-      "header": "Microsoft Executor",
-      "label": "Microsoft",
-      "image": "assets/images/icons/microsoft.svg",
-      "showOnResourcePanel": false
-    },
-    "data": {
-      "action": {
-        "type": "EXECUTOR",
-        "executor": {
-          "name": "Office365Executor"
-        },
-        "onSuccess": "",
-        "onFailure": "",
-        "onIncomplete": ""
-      },
-      "properties": {
-        "idpId": "{{IDP_ID}}"
+        "allowedUserTypes": []
       }
     }
   },
@@ -555,72 +516,6 @@
         "type": "EXECUTOR",
         "executor": {
           "name": "MagicLinkExecutor"
-        },
-        "onSuccess": "",
-        "onFailure": "",
-        "onIncomplete": ""
-      }
-    }
-  },
-  {
-    "resourceType": "STEP",
-    "category": "EXECUTOR",
-    "type": "TASK_EXECUTION",
-    "display": {
-      "header": "Confirmation Code Executor",
-      "label": "Confirmation Code",
-      "image": "assets/images/icons/check-mark-inside-a-black-box.svg",
-      "showOnResourcePanel": false
-    },
-    "data": {
-      "action": {
-        "type": "EXECUTOR",
-        "executor": {
-          "name": "ConfirmationCodeValidationExecutor"
-        },
-        "onSuccess": "",
-        "onFailure": "",
-        "onIncomplete": ""
-      }
-    }
-  },
-  {
-    "resourceType": "STEP",
-    "category": "EXECUTOR",
-    "type": "TASK_EXECUTION",
-    "display": {
-      "header": "Email OTP Executor",
-      "label": "Send Email OTP",
-      "image": "assets/images/icons/email.svg",
-      "showOnResourcePanel": false
-    },
-    "data": {
-      "action": {
-        "type": "EXECUTOR",
-        "executor": {
-          "name": "SendEmailOTPExecutor"
-        },
-        "onSuccess": "",
-        "onFailure": "",
-        "onIncomplete": ""
-      }
-    }
-  },
-  {
-    "resourceType": "STEP",
-    "category": "EXECUTOR",
-    "type": "TASK_EXECUTION",
-    "display": {
-      "header": "Email OTP Executor",
-      "label": "Verify Email OTP",
-      "image": "assets/images/icons/email.svg",
-      "showOnResourcePanel": false
-    },
-    "data": {
-      "action": {
-        "type": "EXECUTOR",
-        "executor": {
-          "name": "VerifyEmailOTPExecutor"
         },
         "onSuccess": "",
         "onFailure": "",
@@ -695,6 +590,198 @@
         "onSuccess": "",
         "onFailure": "",
         "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "OU Resolver Executor",
+      "label": "Resolve OU",
+      "image": "assets/images/icons/magnifying-glass.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "OUResolverExecutor"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      },
+      "properties": {
+        "resolveFrom": "caller"
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Invite Executor",
+      "label": "Generate Invite",
+      "image": "assets/images/icons/link.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "InviteExecutor",
+          "mode": "generate"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Invite Executor",
+      "label": "Verify Invite",
+      "image": "assets/images/icons/link.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "InviteExecutor",
+          "mode": "verify"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Email Executor",
+      "label": "Send Email",
+      "image": "assets/images/icons/email.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "EmailExecutor",
+          "mode": "send"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      },
+      "properties": {
+        "emailTemplate": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "SMS Executor",
+      "label": "Send SMS",
+      "image": "assets/images/icons/mobile-message.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "SMSExecutor"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      },
+      "properties": {
+        "smsTemplate": "",
+        "senderId": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Credential Setter",
+      "label": "Set Credentials",
+      "image": "assets/images/icons/password.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "CredentialSetter"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Attribute Uniqueness Validator",
+      "label": "Validate Attribute Uniqueness",
+      "image": "assets/images/icons/checkbox-check.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "AttributeUniquenessValidator"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Permission Validator",
+      "label": "Validate Permission",
+      "image": "assets/images/icons/stamp.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "PermissionValidator"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      },
+      "properties": {
+        "requiredScopes": ["system"]
       }
     }
   }

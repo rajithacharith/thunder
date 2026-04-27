@@ -343,7 +343,7 @@ describe('useStaticContentField', () => {
         type: StepTypes.Execution,
         data: {
           action: {
-            executor: {name: ExecutionTypes.SendEmailOTP},
+            executor: {name: ExecutionTypes.SMSOTPAuth},
           },
         },
       };
@@ -399,13 +399,13 @@ describe('useStaticContentField', () => {
 
       const addPropertiesHandler = registeredHandlers.onPropertyPanelOpen?.[0];
 
-      // SendEmailOTP is not in the allowed types list
+      // SMSOTPAuth is not in the allowed types list
       const resource = {
         id: 'execution-1',
         type: StepTypes.Execution,
         data: {
           action: {
-            executor: {name: ExecutionTypes.SendEmailOTP},
+            executor: {name: ExecutionTypes.SMSOTPAuth},
           },
         },
       };
@@ -413,7 +413,7 @@ describe('useStaticContentField', () => {
       const properties: Record<string, unknown> = {};
       const result = addPropertiesHandler(resource, properties, 'execution-1');
       expect(result).toBe(true);
-      // Property not set because SendEmailOTP is not in allowed types
+      // Property not set because SMSOTPAuth is not in allowed types
       expect(properties.enableStaticContent).toBeUndefined();
     });
 
@@ -435,13 +435,13 @@ describe('useStaticContentField', () => {
 
       const addPropertiesHandler = registeredHandlers.onPropertyPanelOpen?.[0];
 
-      // SendEmailOTP is not in the allowed types list
+      // SMSOTPAuth is not in the allowed types list
       const resource = {
         id: 'execution-1',
         type: StepTypes.Execution,
         data: {
           action: {
-            executor: {name: ExecutionTypes.SendEmailOTP},
+            executor: {name: ExecutionTypes.SMSOTPAuth},
           },
         },
       };
@@ -449,7 +449,7 @@ describe('useStaticContentField', () => {
       const properties: Record<string, unknown> = {};
       const result = addPropertiesHandler(resource, properties, 'execution-1');
       expect(result).toBe(true);
-      // Property not set because SendEmailOTP is not in allowed types
+      // Property not set because SMSOTPAuth is not in allowed types
       expect(properties.enableStaticContent).toBeUndefined();
     });
 

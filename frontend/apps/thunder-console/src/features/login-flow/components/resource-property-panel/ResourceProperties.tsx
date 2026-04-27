@@ -30,7 +30,7 @@ import type {ResourcePropertiesProps} from '@/features/flows/context/FlowBuilder
 import type {FieldKey, FieldValue} from '@/features/flows/models/base';
 import {ElementCategories, ElementTypes, type Element} from '@/features/flows/models/elements';
 import type {Resource} from '@/features/flows/models/resources';
-import {ExecutionTypes, StepCategories, StepTypes} from '@/features/flows/models/steps';
+import {StepCategories, StepTypes} from '@/features/flows/models/steps';
 
 /**
  * Factory to generate the property configurator for the given password recovery flow resource.
@@ -38,6 +38,19 @@ import {ExecutionTypes, StepCategories, StepTypes} from '@/features/flows/models
  * @param props - Props injected to the component.
  * @returns The ResourceProperties component.
  */
+const coerceValue = (newValue: unknown): string | boolean | object => {
+  if (typeof newValue === 'boolean') {
+    return newValue;
+  }
+  if (typeof newValue === 'object' && newValue !== null) {
+    return newValue;
+  }
+  if (typeof newValue === 'string' || typeof newValue === 'number') {
+    return String(newValue);
+  }
+  return '';
+};
+
 function ResourceProperties({
   properties,
   resource,
@@ -45,20 +58,10 @@ function ResourceProperties({
   onVariantChange,
 }: ResourcePropertiesProps): ReactElement | null {
   const {t} = useTranslation();
-  const handleChange = useCallback(
-    (propertyKey: string, newValue: unknown, changedResource: unknown): void => {
-      let processedValue: string | boolean | object;
-      if (typeof newValue === 'boolean') {
-        processedValue = newValue;
-      } else if (typeof newValue === 'object' && newValue !== null) {
-        processedValue = newValue;
-      } else if (typeof newValue === 'string' || typeof newValue === 'number') {
-        processedValue = String(newValue);
-      } else {
-        processedValue = '';
-      }
 
-      onChange(propertyKey, processedValue, changedResource as Resource);
+  const handleChange = useCallback(
+    (propertyKey: string, newValue: unknown, changedResource: unknown, debounce?: boolean): void => {
+      onChange(propertyKey, coerceValue(newValue), changedResource as Resource, debounce);
     },
     [onChange],
   );
@@ -143,19 +146,6 @@ function ResourceProperties({
 
       return null;
     case StepCategories.Workflow:
-      if (
-        resource.type === StepTypes.Execution &&
-        (resource?.data as {action?: {executor?: {name?: string}}})?.action?.executor?.name ===
-          ExecutionTypes.ConfirmationCode
-      ) {
-        return (
-          <>
-            {renderElementId()}
-            {/* <ConfirmationCodeProperties resource={resource} onChange={onChange} /> */}
-            {renderElementPropertyFactory()}
-          </>
-        );
-      }
       return (
         <>
           {renderElementId()}
@@ -173,7 +163,7 @@ function ResourceProperties({
               resource={resource}
               propertyKey="label"
               propertyValue={(resource as Element & {label?: string}).label ?? ''}
-              onChange={(_key, value, res) => handleChange('label', value, res)}
+              onChange={(_key, value, res) => handleChange('label', value, res, true)}
             />
             <FormControl fullWidth size="small">
               <FormLabel htmlFor="align-select">{t('flows:core.elements.text.align.label')}</FormLabel>
@@ -200,25 +190,25 @@ function ResourceProperties({
               resource={resource}
               propertyKey="src"
               propertyValue={(resource as Element & {src?: string}).src ?? ''}
-              onChange={(_key, value, res) => handleChange('src', value, res)}
+              onChange={(_key, value, res) => handleChange('src', value, res, true)}
             />
             <TextPropertyField
               resource={resource}
               propertyKey="alt"
               propertyValue={(resource as Element & {alt?: string}).alt ?? ''}
-              onChange={(_key, value, res) => handleChange('alt', value, res)}
+              onChange={(_key, value, res) => handleChange('alt', value, res, true)}
             />
             <TextPropertyField
               resource={resource}
               propertyKey="width"
               propertyValue={(resource as Element & {width?: string}).width ?? ''}
-              onChange={(_key, value, res) => handleChange('width', value, res)}
+              onChange={(_key, value, res) => handleChange('width', value, res, true)}
             />
             <TextPropertyField
               resource={resource}
               propertyKey="height"
               propertyValue={(resource as Element & {height?: string}).height ?? ''}
-              onChange={(_key, value, res) => handleChange('height', value, res)}
+              onChange={(_key, value, res) => handleChange('height', value, res, true)}
             />
           </>
         );

@@ -90,40 +90,24 @@ describe('steps models', () => {
       expect(ExecutionTypes.GoogleFederation).toBe('GoogleOIDCAuthExecutor');
     });
 
-    it('should have AppleFederation type', () => {
-      expect(ExecutionTypes.AppleFederation).toBe('AppleExecutor');
-    });
-
-    it('should have FacebookFederation type', () => {
-      expect(ExecutionTypes.FacebookFederation).toBe('FacebookExecutor');
-    });
-
-    it('should have MicrosoftFederation type', () => {
-      expect(ExecutionTypes.MicrosoftFederation).toBe('Office365Executor');
-    });
-
     it('should have GithubFederation type', () => {
       expect(ExecutionTypes.GithubFederation).toBe('GithubOAuthExecutor');
+    });
+
+    it('should have OAuthExecutor type', () => {
+      expect(ExecutionTypes.OAuthExecutor).toBe('OAuthExecutor');
+    });
+
+    it('should have OIDCAuthExecutor type', () => {
+      expect(ExecutionTypes.OIDCAuthExecutor).toBe('OIDCAuthExecutor');
     });
 
     it('should have PasskeyAuth type', () => {
       expect(ExecutionTypes.PasskeyAuth).toBe('PasskeyAuthExecutor');
     });
 
-    it('should have ConfirmationCode type', () => {
-      expect(ExecutionTypes.ConfirmationCode).toBe('ConfirmationCodeValidationExecutor');
-    });
-
     it('should have MagicLinkExecutor type', () => {
       expect(ExecutionTypes.MagicLinkExecutor).toBe('MagicLinkExecutor');
-    });
-
-    it('should have SendEmailOTP type', () => {
-      expect(ExecutionTypes.SendEmailOTP).toBe('SendEmailOTPExecutor');
-    });
-
-    it('should have VerifyEmailOTP type', () => {
-      expect(ExecutionTypes.VerifyEmailOTP).toBe('VerifyEmailOTPExecutor');
     });
 
     it('should have SMSOTPAuth type', () => {
@@ -138,8 +122,52 @@ describe('steps models', () => {
       expect(ExecutionTypes.IdentifyingExecutor).toBe('IdentifyingExecutor');
     });
 
-    it('should have exactly 13 execution types', () => {
-      expect(Object.keys(ExecutionTypes)).toHaveLength(13);
+    it('should have OUResolverExecutor type', () => {
+      expect(ExecutionTypes.OUResolverExecutor).toBe('OUResolverExecutor');
+    });
+
+    it('should have InviteExecutor type', () => {
+      expect(ExecutionTypes.InviteExecutor).toBe('InviteExecutor');
+    });
+
+    it('should have EmailExecutor type', () => {
+      expect(ExecutionTypes.EmailExecutor).toBe('EmailExecutor');
+    });
+
+    it('should have SMSExecutor type', () => {
+      expect(ExecutionTypes.SMSExecutor).toBe('SMSExecutor');
+    });
+
+    it('should have CredentialSetter type', () => {
+      expect(ExecutionTypes.CredentialSetter).toBe('CredentialSetter');
+    });
+
+    it('should have AttributeUniquenessValidator type', () => {
+      expect(ExecutionTypes.AttributeUniquenessValidator).toBe('AttributeUniquenessValidator');
+    });
+
+    it('should have PermissionValidator type', () => {
+      expect(ExecutionTypes.PermissionValidator).toBe('PermissionValidator');
+    });
+
+    it('should have ProvisioningExecutor type', () => {
+      expect(ExecutionTypes.ProvisioningExecutor).toBe('ProvisioningExecutor');
+    });
+
+    it('should have HTTPRequestExecutor type', () => {
+      expect(ExecutionTypes.HTTPRequestExecutor).toBe('HTTPRequestExecutor');
+    });
+
+    it('should have OUExecutor type', () => {
+      expect(ExecutionTypes.OUExecutor).toBe('OUExecutor');
+    });
+
+    it('should have UserTypeResolver type', () => {
+      expect(ExecutionTypes.UserTypeResolver).toBe('UserTypeResolver');
+    });
+
+    it('should have exactly 20 execution types', () => {
+      expect(Object.keys(ExecutionTypes)).toHaveLength(20);
     });
   });
 

@@ -29,7 +29,7 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {
       const translations: Record<string, string> = {
-        'common:loading': 'Loading...',
+        'common:status.loading': 'Loading...',
         'flows:core.executions.smsOtp.description': 'Configure SMS OTP settings',
         'flows:core.executions.smsOtp.mode.label': 'Mode',
         'flows:core.executions.smsOtp.mode.placeholder': 'Select mode',
@@ -57,6 +57,18 @@ vi.mock('react-i18next', () => ({
         'flows:core.executions.consent.timeout.placeholder': '0',
         'flows:core.executions.consent.timeout.hint':
           'Time in seconds before the consent request expires. Use 0 for no timeout.',
+        'flows:core.executions.federation.connection.description':
+          'Select a connection from the following list to link it with the login flow.',
+        'flows:core.executions.federation.connection.label': 'Connection',
+        'flows:core.executions.federation.connection.placeholder': 'Select a connection',
+        'flows:core.executions.federation.connection.required': 'Connection is required and must be selected.',
+        'flows:core.executions.federation.connection.noConnections':
+          'No connections available. Please create a connection to link with the login flow.',
+        'flows:core.executions.identifying.description': 'Configure the identifying executor mode.',
+        'flows:core.executions.identifying.mode.label': 'Mode',
+        'flows:core.executions.identifying.mode.placeholder': 'Select a mode',
+        'flows:core.executions.identifying.mode.identify': 'Identify',
+        'flows:core.executions.identifying.mode.resolve': 'Resolve (Disambiguation)',
       };
       return translations[key] || key;
     },
@@ -884,11 +896,13 @@ describe('ExecutionExtendedProperties', () => {
         'data.properties.relyingPartyId',
         'localhost',
         resourceWithChallengeMode,
+        true,
       );
       expect(mockOnChange).toHaveBeenCalledWith(
         'data.properties.relyingPartyName',
         'Thunder',
         resourceWithChallengeMode,
+        true,
       );
     });
 
@@ -990,7 +1004,7 @@ describe('ExecutionExtendedProperties', () => {
         target: {value: '45'},
       });
 
-      expect(mockOnChange).toHaveBeenLastCalledWith('data.properties.timeout', '45', consentResourceWithTimeout);
+      expect(mockOnChange).toHaveBeenLastCalledWith('data.properties.timeout', '45', consentResourceWithTimeout, true);
     });
 
     it('should normalize empty timeout to 0', () => {
@@ -999,7 +1013,7 @@ describe('ExecutionExtendedProperties', () => {
       const timeoutInput = screen.getByLabelText('Consent Timeout (seconds)');
       fireEvent.change(timeoutInput, {target: {value: ''}});
 
-      expect(mockOnChange).toHaveBeenLastCalledWith('data.properties.timeout', '0', consentResource);
+      expect(mockOnChange).toHaveBeenLastCalledWith('data.properties.timeout', '0', consentResource, true);
     });
 
     it('should clamp negative timeout to 0', () => {
@@ -1008,7 +1022,7 @@ describe('ExecutionExtendedProperties', () => {
       const timeoutInput = screen.getByLabelText('Consent Timeout (seconds)');
       fireEvent.change(timeoutInput, {target: {value: '-5'}});
 
-      expect(mockOnChange).toHaveBeenLastCalledWith('data.properties.timeout', '0', consentResource);
+      expect(mockOnChange).toHaveBeenLastCalledWith('data.properties.timeout', '0', consentResource, true);
     });
 
     it('should floor decimal timeout to integer', () => {
@@ -1017,7 +1031,7 @@ describe('ExecutionExtendedProperties', () => {
       const timeoutInput = screen.getByLabelText('Consent Timeout (seconds)');
       fireEvent.change(timeoutInput, {target: {value: '3.7'}});
 
-      expect(mockOnChange).toHaveBeenLastCalledWith('data.properties.timeout', '3', consentResource);
+      expect(mockOnChange).toHaveBeenLastCalledWith('data.properties.timeout', '3', consentResource, true);
     });
   });
 
