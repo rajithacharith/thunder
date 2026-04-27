@@ -96,7 +96,8 @@ function FederationProperties({resource, onChange}: CommonResourcePropertiesProp
 
   const isFederatedExecutor = executorName != null && FEDERATED_EXECUTORS.has(executorName);
   const hasConnections = availableConnections.length > 0;
-  const showError = isPlaceholder || !!errorMessage;
+  // Only show the error when the user can actually fix it (connections available but none selected)
+  const showError = hasConnections && (isPlaceholder || !!errorMessage);
 
   return (
     <Stack gap={2}>

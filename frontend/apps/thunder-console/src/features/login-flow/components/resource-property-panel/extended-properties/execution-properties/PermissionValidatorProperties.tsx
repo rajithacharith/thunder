@@ -19,8 +19,8 @@
 import {FormHelperText, FormLabel, Stack, TextField, Typography} from '@wso2/oxygen-ui';
 import {useEffect, useMemo, useState, type ReactNode} from 'react';
 import {useTranslation} from 'react-i18next';
-import {parseCommaSeparated} from './utils';
 import type {CommonResourcePropertiesPropsInterface} from './types';
+import {parseCommaSeparated} from './utils';
 import type {StepData} from '@/features/flows/models/steps';
 
 function PermissionValidatorProperties({resource, onChange}: CommonResourcePropertiesPropsInterface): ReactNode {

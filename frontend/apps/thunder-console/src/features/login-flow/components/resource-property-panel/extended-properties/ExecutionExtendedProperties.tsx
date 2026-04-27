@@ -88,6 +88,7 @@ function ExecutionExtendedProperties({resource, onChange}: ExecutionExtendedProp
       return <HttpRequestProperties resource={resource} onChange={onChange} />;
     case ExecutionTypes.CredentialSetter:
     case ExecutionTypes.AttributeUniquenessValidator:
+    case ExecutionTypes.MagicLinkExecutor:
       return <NoConfigProperties />;
     default:
       break;

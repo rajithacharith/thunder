@@ -1035,6 +1035,712 @@ describe('ExecutionExtendedProperties', () => {
     });
   });
 
+  describe('Email Executor', () => {
+    const emailResource = {
+      id: 'email-executor-1',
+      data: {
+        action: {
+          executor: {
+            name: ExecutionTypes.EmailExecutor,
+            mode: 'send',
+          },
+        },
+        properties: {
+          emailTemplate: '',
+        },
+      },
+    } as unknown as Resource;
+
+    it('should render email template configuration', () => {
+      render(<ExecutionExtendedProperties resource={emailResource} onChange={mockOnChange} />);
+
+      expect(screen.getByText('flows:core.executions.email.description')).toBeInTheDocument();
+      expect(screen.getByLabelText('flows:core.executions.email.emailTemplate.label')).toBeInTheDocument();
+    });
+
+    it('should call onChange with debounce when email template changes', () => {
+      render(<ExecutionExtendedProperties resource={emailResource} onChange={mockOnChange} />);
+
+      fireEvent.change(screen.getByLabelText('flows:core.executions.email.emailTemplate.label'), {
+        target: {value: 'welcome-email'},
+      });
+
+      expect(mockOnChange).toHaveBeenCalledWith('data.properties.emailTemplate', 'welcome-email', emailResource, true);
+    });
+
+    it('should display existing email template value', () => {
+      const resourceWithTemplate = {
+        ...emailResource,
+        data: {
+          ...(emailResource as unknown as {data: object}).data,
+          properties: {emailTemplate: 'reset-password'},
+        },
+      } as unknown as Resource;
+
+      render(<ExecutionExtendedProperties resource={resourceWithTemplate} onChange={mockOnChange} />);
+
+      expect(screen.getByLabelText('flows:core.executions.email.emailTemplate.label')).toHaveValue('reset-password');
+    });
+  });
+
+  describe('SMS Executor', () => {
+    const smsResource = {
+      id: 'sms-executor-1',
+      data: {
+        action: {
+          executor: {
+            name: ExecutionTypes.SMSExecutor,
+            mode: 'send',
+          },
+        },
+        properties: {
+          smsTemplate: '',
+          senderId: '',
+        },
+      },
+    } as unknown as Resource;
+
+    it('should render SMS template and sender configuration', () => {
+      mockNotificationSenders.mockReturnValue({
+        data: [{id: 'sender-1', name: 'Twilio'}],
+        isLoading: false,
+      });
+
+      render(<ExecutionExtendedProperties resource={smsResource} onChange={mockOnChange} />);
+
+      expect(screen.getByText('flows:core.executions.sms.description')).toBeInTheDocument();
+      expect(screen.getByLabelText('flows:core.executions.sms.smsTemplate.label')).toBeInTheDocument();
+      expect(screen.getByText('Sender')).toBeInTheDocument();
+    });
+
+    it('should call onChange with debounce when SMS template changes', () => {
+      mockNotificationSenders.mockReturnValue({
+        data: [],
+        isLoading: false,
+      });
+
+      render(<ExecutionExtendedProperties resource={smsResource} onChange={mockOnChange} />);
+
+      fireEvent.change(screen.getByLabelText('flows:core.executions.sms.smsTemplate.label'), {
+        target: {value: 'otp-message'},
+      });
+
+      expect(mockOnChange).toHaveBeenCalledWith('data.properties.smsTemplate', 'otp-message', smsResource, true);
+    });
+
+    it('should show warning when no senders are available', () => {
+      mockNotificationSenders.mockReturnValue({
+        data: [],
+        isLoading: false,
+      });
+
+      render(<ExecutionExtendedProperties resource={smsResource} onChange={mockOnChange} />);
+
+      expect(screen.getByText('No SMS senders configured')).toBeInTheDocument();
+    });
+  });
+
+  describe('OU Resolver Executor', () => {
+    const ouResolverResource = {
+      id: 'ou-resolver-1',
+      data: {
+        action: {
+          executor: {
+            name: ExecutionTypes.OUResolverExecutor,
+          },
+        },
+        properties: {
+          resolveFrom: 'caller',
+        },
+      },
+    } as unknown as Resource;
+
+    it('should render OU resolver configuration', () => {
+      render(<ExecutionExtendedProperties resource={ouResolverResource} onChange={mockOnChange} />);
+
+      expect(screen.getByText('flows:core.executions.ouResolver.description')).toBeInTheDocument();
+      expect(screen.getByText('flows:core.executions.ouResolver.resolveFrom.label')).toBeInTheDocument();
+    });
+
+    it('should show resolve from options', async () => {
+      const user = userEvent.setup();
+
+      render(<ExecutionExtendedProperties resource={ouResolverResource} onChange={mockOnChange} />);
+
+      const select = screen.getByRole('combobox');
+      await user.click(select);
+
+      // 'caller' appears twice: once in the selected trigger and once in the dropdown menu item
+      expect(screen.getAllByText('flows:core.executions.ouResolver.resolveFrom.caller')).toHaveLength(2);
+      expect(screen.getByText('flows:core.executions.ouResolver.resolveFrom.prompt')).toBeInTheDocument();
+      expect(screen.getByText('flows:core.executions.ouResolver.resolveFrom.promptAll')).toBeInTheDocument();
+    });
+
+    it('should call onChange when resolve from is changed', async () => {
+      const user = userEvent.setup();
+
+      render(<ExecutionExtendedProperties resource={ouResolverResource} onChange={mockOnChange} />);
+
+      const select = screen.getByRole('combobox');
+      await user.click(select);
+      await user.click(screen.getByText('flows:core.executions.ouResolver.resolveFrom.prompt'));
+
+      expect(mockOnChange).toHaveBeenCalledWith('data.properties.resolveFrom', 'prompt', ouResolverResource);
+    });
+  });
+
+  describe('Invite Executor', () => {
+    const inviteResource = {
+      id: 'invite-executor-1',
+      data: {
+        action: {
+          executor: {
+            name: ExecutionTypes.InviteExecutor,
+            mode: '',
+          },
+        },
+        display: {
+          label: 'Invite',
+        },
+      },
+    } as unknown as Resource;
+
+    it('should render invite mode configuration', () => {
+      render(<ExecutionExtendedProperties resource={inviteResource} onChange={mockOnChange} />);
+
+      expect(screen.getByText('flows:core.executions.invite.description')).toBeInTheDocument();
+      expect(screen.getByText('flows:core.executions.invite.mode.label')).toBeInTheDocument();
+    });
+
+    it('should show mode options', async () => {
+      const user = userEvent.setup();
+
+      render(<ExecutionExtendedProperties resource={inviteResource} onChange={mockOnChange} />);
+
+      const select = screen.getByRole('combobox');
+      await user.click(select);
+
+      expect(screen.getByText('flows:core.executions.invite.mode.generate')).toBeInTheDocument();
+      expect(screen.getByText('flows:core.executions.invite.mode.verify')).toBeInTheDocument();
+    });
+
+    it('should call onChange with updated data when mode is selected', async () => {
+      const user = userEvent.setup();
+
+      render(<ExecutionExtendedProperties resource={inviteResource} onChange={mockOnChange} />);
+
+      const select = screen.getByRole('combobox');
+      await user.click(select);
+      await user.click(screen.getByText('flows:core.executions.invite.mode.generate'));
+
+      expect(mockOnChange).toHaveBeenCalledWith(
+        'data',
+        expect.objectContaining({
+          action: expect.objectContaining({
+            executor: expect.objectContaining({
+              mode: 'generate',
+            }) as unknown,
+          }) as unknown,
+          display: expect.objectContaining({
+            label: 'Generate Invite',
+          }) as unknown,
+        }),
+        inviteResource,
+      );
+    });
+  });
+
+  describe('Permission Validator Executor', () => {
+    const permissionResource = {
+      id: 'permission-validator-1',
+      data: {
+        action: {
+          executor: {
+            name: ExecutionTypes.PermissionValidator,
+          },
+        },
+        properties: {
+          requiredScopes: [],
+        },
+      },
+    } as unknown as Resource;
+
+    it('should render permission validator configuration', () => {
+      render(<ExecutionExtendedProperties resource={permissionResource} onChange={mockOnChange} />);
+
+      expect(screen.getByText('flows:core.executions.permissionValidator.description')).toBeInTheDocument();
+      expect(
+        screen.getByLabelText('flows:core.executions.permissionValidator.requiredScopes.label'),
+      ).toBeInTheDocument();
+    });
+
+    it('should commit scopes on blur', () => {
+      render(<ExecutionExtendedProperties resource={permissionResource} onChange={mockOnChange} />);
+
+      const input = screen.getByLabelText('flows:core.executions.permissionValidator.requiredScopes.label');
+      fireEvent.change(input, {target: {value: 'read, write'}});
+      fireEvent.blur(input);
+
+      expect(mockOnChange).toHaveBeenCalledWith(
+        'data.properties.requiredScopes',
+        ['read', 'write'],
+        permissionResource,
+      );
+    });
+
+    it('should display existing scopes as comma-separated string', () => {
+      const resourceWithScopes = {
+        ...permissionResource,
+        data: {
+          ...(permissionResource as unknown as {data: object}).data,
+          properties: {requiredScopes: ['openid', 'profile']},
+        },
+      } as unknown as Resource;
+
+      render(<ExecutionExtendedProperties resource={resourceWithScopes} onChange={mockOnChange} />);
+
+      expect(screen.getByLabelText('flows:core.executions.permissionValidator.requiredScopes.label')).toHaveValue(
+        'openid, profile',
+      );
+    });
+  });
+
+  describe('Provisioning Executor', () => {
+    const provisioningResource = {
+      id: 'provisioning-executor-1',
+      data: {
+        action: {
+          executor: {
+            name: ExecutionTypes.ProvisioningExecutor,
+          },
+        },
+        properties: {
+          allowCrossOUProvisioning: false,
+          assignGroup: '',
+          assignRole: '',
+        },
+      },
+    } as unknown as Resource;
+
+    it('should render provisioning configuration', () => {
+      render(<ExecutionExtendedProperties resource={provisioningResource} onChange={mockOnChange} />);
+
+      expect(screen.getByText('flows:core.executions.provisioning.description')).toBeInTheDocument();
+      expect(screen.getByText('flows:core.executions.federation.allowCrossOUProvisioning.label')).toBeInTheDocument();
+      expect(screen.getByLabelText('flows:core.executions.provisioning.assignGroup.label')).toBeInTheDocument();
+      expect(screen.getByLabelText('flows:core.executions.provisioning.assignRole.label')).toBeInTheDocument();
+    });
+
+    it('should call onChange without debounce when checkbox is toggled', () => {
+      render(<ExecutionExtendedProperties resource={provisioningResource} onChange={mockOnChange} />);
+
+      const checkbox = screen.getByRole('checkbox');
+      fireEvent.click(checkbox);
+
+      expect(mockOnChange).toHaveBeenCalledWith('data.properties.allowCrossOUProvisioning', true, provisioningResource);
+    });
+
+    it('should call onChange with debounce when assignGroup changes', () => {
+      render(<ExecutionExtendedProperties resource={provisioningResource} onChange={mockOnChange} />);
+
+      fireEvent.change(screen.getByLabelText('flows:core.executions.provisioning.assignGroup.label'), {
+        target: {value: 'admin-group'},
+      });
+
+      expect(mockOnChange).toHaveBeenCalledWith(
+        'data.properties.assignGroup',
+        'admin-group',
+        provisioningResource,
+        true,
+      );
+    });
+
+    it('should call onChange with debounce when assignRole changes', () => {
+      render(<ExecutionExtendedProperties resource={provisioningResource} onChange={mockOnChange} />);
+
+      fireEvent.change(screen.getByLabelText('flows:core.executions.provisioning.assignRole.label'), {
+        target: {value: 'editor-role'},
+      });
+
+      expect(mockOnChange).toHaveBeenCalledWith(
+        'data.properties.assignRole',
+        'editor-role',
+        provisioningResource,
+        true,
+      );
+    });
+  });
+
+  describe('OU Executor', () => {
+    const ouResource = {
+      id: 'ou-executor-1',
+      data: {
+        action: {
+          executor: {
+            name: ExecutionTypes.OUExecutor,
+          },
+        },
+        properties: {
+          parentOuId: '',
+        },
+      },
+    } as unknown as Resource;
+
+    it('should render OU executor configuration', () => {
+      render(<ExecutionExtendedProperties resource={ouResource} onChange={mockOnChange} />);
+
+      expect(screen.getByText('flows:core.executions.ouExecutor.description')).toBeInTheDocument();
+      expect(screen.getByLabelText('flows:core.executions.ouExecutor.parentOuId.label')).toBeInTheDocument();
+    });
+
+    it('should call onChange with debounce when parentOuId changes', () => {
+      render(<ExecutionExtendedProperties resource={ouResource} onChange={mockOnChange} />);
+
+      fireEvent.change(screen.getByLabelText('flows:core.executions.ouExecutor.parentOuId.label'), {
+        target: {value: 'ou-123'},
+      });
+
+      expect(mockOnChange).toHaveBeenCalledWith('data.properties.parentOuId', 'ou-123', ouResource, true);
+    });
+
+    it('should display existing parentOuId value', () => {
+      const resourceWithOuId = {
+        ...ouResource,
+        data: {
+          ...(ouResource as unknown as {data: object}).data,
+          properties: {parentOuId: 'existing-ou'},
+        },
+      } as unknown as Resource;
+
+      render(<ExecutionExtendedProperties resource={resourceWithOuId} onChange={mockOnChange} />);
+
+      expect(screen.getByLabelText('flows:core.executions.ouExecutor.parentOuId.label')).toHaveValue('existing-ou');
+    });
+  });
+
+  describe('User Type Resolver Executor', () => {
+    const userTypeResource = {
+      id: 'user-type-resolver-1',
+      data: {
+        action: {
+          executor: {
+            name: ExecutionTypes.UserTypeResolver,
+          },
+        },
+        properties: {
+          allowedUserTypes: [],
+        },
+      },
+    } as unknown as Resource;
+
+    it('should render user type resolver configuration', () => {
+      render(<ExecutionExtendedProperties resource={userTypeResource} onChange={mockOnChange} />);
+
+      expect(screen.getByText('flows:core.executions.userTypeResolver.description')).toBeInTheDocument();
+      expect(
+        screen.getByLabelText('flows:core.executions.userTypeResolver.allowedUserTypes.label'),
+      ).toBeInTheDocument();
+    });
+
+    it('should commit allowed user types on blur', () => {
+      render(<ExecutionExtendedProperties resource={userTypeResource} onChange={mockOnChange} />);
+
+      const input = screen.getByLabelText('flows:core.executions.userTypeResolver.allowedUserTypes.label');
+      fireEvent.change(input, {target: {value: 'admin, employee'}});
+      fireEvent.blur(input);
+
+      expect(mockOnChange).toHaveBeenCalledWith(
+        'data.properties.allowedUserTypes',
+        ['admin', 'employee'],
+        userTypeResource,
+      );
+    });
+
+    it('should display existing user types as comma-separated string', () => {
+      const resourceWithTypes = {
+        ...userTypeResource,
+        data: {
+          ...(userTypeResource as unknown as {data: object}).data,
+          properties: {allowedUserTypes: ['customer', 'partner']},
+        },
+      } as unknown as Resource;
+
+      render(<ExecutionExtendedProperties resource={resourceWithTypes} onChange={mockOnChange} />);
+
+      expect(screen.getByLabelText('flows:core.executions.userTypeResolver.allowedUserTypes.label')).toHaveValue(
+        'customer, partner',
+      );
+    });
+  });
+
+  describe('HTTP Request Executor', () => {
+    const httpResource = {
+      id: 'http-executor-1',
+      data: {
+        action: {
+          executor: {
+            name: ExecutionTypes.HTTPRequestExecutor,
+          },
+        },
+        properties: {
+          url: '',
+          method: 'GET',
+          headers: {},
+          body: {},
+          timeout: 10,
+          responseMapping: {},
+          errorHandling: {
+            failOnError: false,
+            retryCount: 0,
+            retryDelay: 0,
+          },
+        },
+      },
+    } as unknown as Resource;
+
+    it('should render HTTP request configuration', () => {
+      render(<ExecutionExtendedProperties resource={httpResource} onChange={mockOnChange} />);
+
+      expect(screen.getByText('flows:core.executions.httpRequest.description')).toBeInTheDocument();
+      expect(screen.getByLabelText('flows:core.executions.httpRequest.url.label')).toBeInTheDocument();
+      expect(screen.getByText('flows:core.executions.httpRequest.method.label')).toBeInTheDocument();
+      expect(screen.getByText('flows:core.executions.httpRequest.headers.label')).toBeInTheDocument();
+      expect(screen.getByLabelText('flows:core.executions.httpRequest.body.label')).toBeInTheDocument();
+      expect(screen.getByLabelText('flows:core.executions.httpRequest.timeout.label')).toBeInTheDocument();
+    });
+
+    it('should call onChange with debounce when URL changes', () => {
+      render(<ExecutionExtendedProperties resource={httpResource} onChange={mockOnChange} />);
+
+      fireEvent.change(screen.getByLabelText('flows:core.executions.httpRequest.url.label'), {
+        target: {value: 'https://api.example.com'},
+      });
+
+      expect(mockOnChange).toHaveBeenCalledWith('data.properties.url', 'https://api.example.com', httpResource, true);
+    });
+
+    it('should call onChange without debounce when method changes', async () => {
+      const user = userEvent.setup();
+
+      render(<ExecutionExtendedProperties resource={httpResource} onChange={mockOnChange} />);
+
+      const select = screen.getByRole('combobox');
+      await user.click(select);
+      await user.click(screen.getByText('POST'));
+
+      expect(mockOnChange).toHaveBeenCalledWith('data.properties.method', 'POST', httpResource);
+    });
+
+    it('should call onChange when failOnError checkbox is toggled', () => {
+      render(<ExecutionExtendedProperties resource={httpResource} onChange={mockOnChange} />);
+
+      const checkbox = screen.getByRole('checkbox');
+      fireEvent.click(checkbox);
+
+      expect(mockOnChange).toHaveBeenCalledWith(
+        'data.properties.errorHandling',
+        expect.objectContaining({failOnError: true}),
+        httpResource,
+      );
+    });
+
+    it('should call onChange with debounce when timeout changes', () => {
+      render(<ExecutionExtendedProperties resource={httpResource} onChange={mockOnChange} />);
+
+      fireEvent.change(screen.getByLabelText('flows:core.executions.httpRequest.timeout.label'), {
+        target: {value: '15'},
+      });
+
+      expect(mockOnChange).toHaveBeenCalledWith('data.properties.timeout', 15, httpResource, true);
+    });
+
+    it('should clamp timeout to max 20', () => {
+      render(<ExecutionExtendedProperties resource={httpResource} onChange={mockOnChange} />);
+
+      fireEvent.change(screen.getByLabelText('flows:core.executions.httpRequest.timeout.label'), {
+        target: {value: '99'},
+      });
+
+      expect(mockOnChange).toHaveBeenCalledWith('data.properties.timeout', 20, httpResource, true);
+    });
+
+    it('should call onChange with debounce when body changes', () => {
+      render(<ExecutionExtendedProperties resource={httpResource} onChange={mockOnChange} />);
+
+      fireEvent.change(screen.getByLabelText('flows:core.executions.httpRequest.body.label'), {
+        target: {value: 'raw body text'},
+      });
+
+      expect(mockOnChange).toHaveBeenCalledWith('data.properties.body', 'raw body text', httpResource, true);
+    });
+
+    it('should parse valid JSON body', () => {
+      render(<ExecutionExtendedProperties resource={httpResource} onChange={mockOnChange} />);
+
+      fireEvent.change(screen.getByLabelText('flows:core.executions.httpRequest.body.label'), {
+        target: {value: '{"key":"value"}'},
+      });
+
+      expect(mockOnChange).toHaveBeenCalledWith('data.properties.body', {key: 'value'}, httpResource, true);
+    });
+
+    it('should call onChange with debounce when retryCount changes', () => {
+      render(<ExecutionExtendedProperties resource={httpResource} onChange={mockOnChange} />);
+
+      fireEvent.change(screen.getByLabelText('flows:core.executions.httpRequest.errorHandling.retryCount.label'), {
+        target: {value: '3'},
+      });
+
+      expect(mockOnChange).toHaveBeenCalledWith(
+        'data.properties.errorHandling',
+        expect.objectContaining({retryCount: 3}),
+        httpResource,
+        true,
+      );
+    });
+
+    it('should call onChange with debounce when retryDelay changes', () => {
+      render(<ExecutionExtendedProperties resource={httpResource} onChange={mockOnChange} />);
+
+      fireEvent.change(screen.getByLabelText('flows:core.executions.httpRequest.errorHandling.retryDelay.label'), {
+        target: {value: '1000'},
+      });
+
+      expect(mockOnChange).toHaveBeenCalledWith(
+        'data.properties.errorHandling',
+        expect.objectContaining({retryDelay: 1000}),
+        httpResource,
+        true,
+      );
+    });
+  });
+
+  describe('Credential Setter Executor', () => {
+    const credentialSetterResource = {
+      id: 'credential-setter-1',
+      data: {
+        action: {
+          executor: {
+            name: ExecutionTypes.CredentialSetter,
+          },
+        },
+        properties: {},
+      },
+    } as unknown as Resource;
+
+    it('should render NoConfigProperties message', () => {
+      render(<ExecutionExtendedProperties resource={credentialSetterResource} onChange={mockOnChange} />);
+
+      expect(screen.getByText('flows:core.executions.noConfig.description')).toBeInTheDocument();
+    });
+  });
+
+  describe('Attribute Uniqueness Validator Executor', () => {
+    const attributeUniquenessResource = {
+      id: 'attr-uniqueness-1',
+      data: {
+        action: {
+          executor: {
+            name: ExecutionTypes.AttributeUniquenessValidator,
+          },
+        },
+        properties: {},
+      },
+    } as unknown as Resource;
+
+    it('should render NoConfigProperties message', () => {
+      render(<ExecutionExtendedProperties resource={attributeUniquenessResource} onChange={mockOnChange} />);
+
+      expect(screen.getByText('flows:core.executions.noConfig.description')).toBeInTheDocument();
+    });
+  });
+
+  describe('Identifying Executor', () => {
+    const identifyingResource = {
+      id: 'identifying-executor-1',
+      data: {
+        action: {
+          executor: {
+            name: ExecutionTypes.IdentifyingExecutor,
+            mode: '',
+          },
+        },
+        display: {
+          label: 'Identify User',
+        },
+      },
+    } as unknown as Resource;
+
+    it('should render identifying mode configuration', () => {
+      render(<ExecutionExtendedProperties resource={identifyingResource} onChange={mockOnChange} />);
+
+      expect(screen.getByText('Configure the identifying executor mode.')).toBeInTheDocument();
+      expect(screen.getByText('Mode')).toBeInTheDocument();
+    });
+
+    it('should show mode options with placeholder', async () => {
+      const user = userEvent.setup();
+
+      render(<ExecutionExtendedProperties resource={identifyingResource} onChange={mockOnChange} />);
+
+      const select = screen.getByRole('combobox');
+      await user.click(select);
+
+      expect(screen.getByText('Identify')).toBeInTheDocument();
+      expect(screen.getByText('Resolve (Disambiguation)')).toBeInTheDocument();
+    });
+
+    it('should call onChange with updated data when identify mode is selected', async () => {
+      const user = userEvent.setup();
+
+      render(<ExecutionExtendedProperties resource={identifyingResource} onChange={mockOnChange} />);
+
+      const select = screen.getByRole('combobox');
+      await user.click(select);
+      await user.click(screen.getByText('Identify'));
+
+      expect(mockOnChange).toHaveBeenCalledWith(
+        'data',
+        expect.objectContaining({
+          action: expect.objectContaining({
+            executor: expect.objectContaining({
+              mode: 'identify',
+            }) as unknown,
+          }) as unknown,
+          display: expect.objectContaining({
+            label: 'Identify User',
+          }) as unknown,
+        }),
+        identifyingResource,
+      );
+    });
+
+    it('should call onChange with updated data when resolve mode is selected', async () => {
+      const user = userEvent.setup();
+
+      render(<ExecutionExtendedProperties resource={identifyingResource} onChange={mockOnChange} />);
+
+      const select = screen.getByRole('combobox');
+      await user.click(select);
+      await user.click(screen.getByText('Resolve (Disambiguation)'));
+
+      expect(mockOnChange).toHaveBeenCalledWith(
+        'data',
+        expect.objectContaining({
+          action: expect.objectContaining({
+            executor: expect.objectContaining({
+              mode: 'resolve',
+            }) as unknown,
+          }) as unknown,
+          display: expect.objectContaining({
+            label: 'Resolve User',
+          }) as unknown,
+        }),
+        identifyingResource,
+      );
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should return null when executor name is not defined', () => {
       const resourceWithoutExecutor = {
