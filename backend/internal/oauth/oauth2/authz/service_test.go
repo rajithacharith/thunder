@@ -86,6 +86,9 @@ func (suite *AuthorizeServiceTestSuite) BeforeTest(suiteName, testName string) {
 			Config:  config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: ":memory:"}},
 			Runtime: config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: ":memory:"}},
 		},
+		JWT: config.JWTConfig{
+			Issuer: "https://localhost:8090",
+		},
 		OAuth: config.OAuthConfig{
 			AuthorizationCode: config.AuthorizationCodeConfig{ValidityPeriod: 600},
 		},
@@ -545,6 +548,8 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_Success(
 	assert.Nil(suite.T(), authErr)
 	assert.Contains(suite.T(), redirectURI, "https://client.example.com/callback")
 	assert.Contains(suite.T(), redirectURI, "code=")
+	assert.Contains(suite.T(), redirectURI, "iss=https%3A%2F%2Flocalhost%3A8090")
+	assert.NotContains(suite.T(), redirectURI, "state=")
 }
 
 func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_WithState() {
@@ -564,8 +569,9 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_WithStat
 	redirectURI, authErr := svc.HandleAuthorizationCallback(context.Background(), testAuthID, svcJWTWithIat)
 
 	assert.Nil(suite.T(), authErr)
-	assert.Contains(suite.T(), redirectURI, "state=test-state-123")
 	assert.Contains(suite.T(), redirectURI, "code=")
+	assert.Contains(suite.T(), redirectURI, "state=test-state-123")
+	assert.Contains(suite.T(), redirectURI, "iss=https%3A%2F%2Flocalhost%3A8090")
 }
 
 func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_EmptyAuthorizedPermissions() {

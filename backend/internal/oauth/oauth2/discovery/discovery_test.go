@@ -127,6 +127,9 @@ func (suite *DiscoveryTestSuite) TestOAuth2AuthorizationServerMetadata() {
 
 	// Verify only implemented response types are present
 	assert.Equal(suite.T(), []string{"code"}, metadata.ResponseTypesSupported)
+
+	// Verify RFC 9207 advertisement
+	assert.True(suite.T(), metadata.AuthorizationResponseIssParameterSupported)
 }
 
 func (suite *DiscoveryTestSuite) TestOIDCDiscovery() {
@@ -155,6 +158,9 @@ func (suite *DiscoveryTestSuite) TestOIDCDiscovery() {
 
 	// Verify claims parameter support
 	assert.True(suite.T(), metadata.ClaimsParameterSupported, "claims_parameter_supported should be true")
+
+	// Verify RFC 9207 advertisement (inherited from embedded OAuth2AuthorizationServerMetadata)
+	assert.True(suite.T(), metadata.AuthorizationResponseIssParameterSupported)
 }
 
 // TestGrantTypeIsValid tests the GrantType.IsValid() method
