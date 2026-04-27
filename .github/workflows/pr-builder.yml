@@ -827,6 +827,9 @@ jobs:
           filters: |
             docs:
               - 'docs/**'
+              - 'frontend/package.json'
+              - 'frontend/pnpm-lock.yaml'
+              - 'frontend/pnpm-workspace.yaml'
       - name: ✅ Documentation changes detected
         if: steps.filter.outputs.docs == 'true'
         run: echo "Documentation files changed - docs build will run"
