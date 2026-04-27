@@ -204,6 +204,10 @@
       "forms.phone.actions.next.label": "Next",
       "forms.sms_sent.title": "Check Your Phone",
       "forms.sms_sent.message": "We sent you a verification link via SMS. Please check your messages and click the link to continue."
+    },
+    "elements": {
+      "fields.usertype.label": "User Type",
+      "fields.usertype.placeholder": "Select User Type"
     }
   }
 }
