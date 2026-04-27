@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	sysconfig "github.com/asgardeo/thunder/internal/system/config"
 )
 
 const (
@@ -40,6 +41,18 @@ type OAuthAppConfigDTOTestSuite struct {
 
 func TestOAuthAppConfigDTOTestSuite(t *testing.T) {
 	suite.Run(t, new(OAuthAppConfigDTOTestSuite))
+}
+
+func (suite *OAuthAppConfigDTOTestSuite) SetupTest() {
+	sysconfig.ResetThunderRuntime()
+	err := sysconfig.InitializeThunderRuntime("/tmp/test", &sysconfig.Config{
+		OAuth: sysconfig.OAuthConfig{AllowWildcardRedirectURI: true},
+	})
+	suite.Require().NoError(err)
+}
+
+func (suite *OAuthAppConfigDTOTestSuite) TearDownTest() {
+	sysconfig.ResetThunderRuntime()
 }
 
 func (suite *OAuthAppConfigDTOTestSuite) TestIsAllowedGrantType_AuthorizationCode() {
@@ -362,12 +375,166 @@ func (suite *OAuthAppConfigDTOTestSuite) TestValidateRedirectURI_NilRedirectURIs
 	suite.Equal(errRedirectURIRequired, err.Error())
 }
 
+func (suite *OAuthAppConfigDTOTestSuite) TestValidateRedirectURI_WildcardPatterns() {
+	tests := []struct {
+		name           string
+		registeredURIs []string
+		incoming       string
+		expectError    bool
+		errContains    string
+	}{
+		{
+			name:           "SingleStarMatchesOneSegment",
+			registeredURIs: []string{"https://example.com/callback/*"},
+			incoming:       "https://example.com/callback/session",
+			expectError:    false,
+		},
+		{
+			name:           "SingleStarNoMatchTwoSegments",
+			registeredURIs: []string{"https://example.com/callback/*"},
+			incoming:       "https://example.com/callback/a/b",
+			expectError:    true,
+			errContains:    "does not match",
+		},
+		{
+			name:           "DoubleStarMatchesZeroSegments",
+			registeredURIs: []string{"https://example.com/callback/**"},
+			incoming:       "https://example.com/callback",
+			expectError:    false,
+		},
+		{
+			name:           "DoubleStarMatchesMultipleSegments",
+			registeredURIs: []string{"https://example.com/callback/**"},
+			incoming:       "https://example.com/callback/a/b/c",
+			expectError:    false,
+		},
+		{
+			name:           "ExactMatchStillWorksWithWildcardAlsoRegistered",
+			registeredURIs: []string{"https://example.com/exact", "https://example.com/callback/*"},
+			incoming:       "https://example.com/exact",
+			expectError:    false,
+		},
+		{
+			name:           "FirstMatchWinsAcrossMultiplePatterns",
+			registeredURIs: []string{"https://example.com/a/*", "https://example.com/b/*"},
+			incoming:       "https://example.com/b/x",
+			expectError:    false,
+		},
+		{
+			name:           "NoMatchAcrossMultiplePatterns",
+			registeredURIs: []string{"https://example.com/a/*", "https://example.com/b/*"},
+			incoming:       "https://example.com/c/x",
+			expectError:    true,
+			errContains:    "does not match",
+		},
+		{
+			name:           "DeeplinkWildcardMatch",
+			registeredURIs: []string{"myapp://callback/*"},
+			incoming:       "myapp://callback/token",
+			expectError:    false,
+		},
+		{
+			name:           "EmptyIncomingWithSingleWildcardRegisteredRejected",
+			registeredURIs: []string{"https://example.com/callback/*"},
+			incoming:       "",
+			expectError:    true,
+			errContains:    errRedirectURIRequired,
+		},
+		{
+			name:           "EmptyIncomingWithSingleExactRegisteredStillWorks",
+			registeredURIs: []string{"https://example.com/callback"},
+			incoming:       "",
+			expectError:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			config := &OAuthAppConfigDTO{RedirectURIs: tt.registeredURIs}
+			err := config.ValidateRedirectURI(tt.incoming)
+			if tt.expectError {
+				suite.Error(err)
+				if tt.errContains != "" {
+					suite.Contains(err.Error(), tt.errContains)
+				}
+			} else {
+				suite.NoError(err)
+			}
+		})
+	}
+}
+
+func (suite *OAuthAppConfigDTOTestSuite) TestValidateRedirectURI_WildcardDisabled() {
+	sysconfig.ResetThunderRuntime()
+	err := sysconfig.InitializeThunderRuntime("/tmp/test", &sysconfig.Config{
+		OAuth: sysconfig.OAuthConfig{AllowWildcardRedirectURI: false},
+	})
+	suite.Require().NoError(err)
+	defer sysconfig.ResetThunderRuntime()
+
+	tests := []struct {
+		name           string
+		registeredURIs []string
+		incoming       string
+		expectError    bool
+		errContains    string
+	}{
+		{
+			name:           "WildcardPatternNotMatchedWhenFlagOff",
+			registeredURIs: []string{"https://example.com/callback/*"},
+			incoming:       "https://example.com/callback/session",
+			expectError:    true,
+			errContains:    "does not match",
+		},
+		{
+			name:           "ExactMatchStillWorksWhenFlagOff",
+			registeredURIs: []string{"https://example.com/callback"},
+			incoming:       "https://example.com/callback",
+			expectError:    false,
+		},
+		{
+			name:           "EmptyIncomingWithSingleWildcardRegisteredRejected",
+			registeredURIs: []string{"https://example.com/callback/*"},
+			incoming:       "",
+			expectError:    true,
+			errContains:    "redirect URI is required",
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			cfg := &OAuthAppConfigDTO{RedirectURIs: tt.registeredURIs}
+			err := cfg.ValidateRedirectURI(tt.incoming)
+			if tt.expectError {
+				suite.Error(err)
+				if tt.errContains != "" {
+					suite.Contains(err.Error(), tt.errContains)
+				}
+			} else {
+				suite.NoError(err)
+			}
+		})
+	}
+}
+
 type OAuthAppConfigProcessedDTOTestSuite struct {
 	suite.Suite
 }
 
 func TestOAuthAppConfigProcessedDTOTestSuite(t *testing.T) {
 	suite.Run(t, new(OAuthAppConfigProcessedDTOTestSuite))
+}
+
+func (suite *OAuthAppConfigProcessedDTOTestSuite) SetupTest() {
+	sysconfig.ResetThunderRuntime()
+	err := sysconfig.InitializeThunderRuntime("/tmp/test", &sysconfig.Config{
+		OAuth: sysconfig.OAuthConfig{AllowWildcardRedirectURI: true},
+	})
+	suite.Require().NoError(err)
+}
+
+func (suite *OAuthAppConfigProcessedDTOTestSuite) TearDownTest() {
+	sysconfig.ResetThunderRuntime()
 }
 
 func (suite *OAuthAppConfigProcessedDTOTestSuite) TestIsAllowedGrantType_AuthorizationCode() {
@@ -732,6 +899,18 @@ type OAuthAppHelperTestSuite struct {
 
 func TestOAuthAppHelperTestSuite(t *testing.T) {
 	suite.Run(t, new(OAuthAppHelperTestSuite))
+}
+
+func (suite *OAuthAppHelperTestSuite) SetupTest() {
+	sysconfig.ResetThunderRuntime()
+	err := sysconfig.InitializeThunderRuntime("/tmp/test", &sysconfig.Config{
+		OAuth: sysconfig.OAuthConfig{AllowWildcardRedirectURI: true},
+	})
+	suite.Require().NoError(err)
+}
+
+func (suite *OAuthAppHelperTestSuite) TearDownTest() {
+	sysconfig.ResetThunderRuntime()
 }
 
 func (suite *OAuthAppHelperTestSuite) TestIsAllowedGrantType_ValidGrantType() {

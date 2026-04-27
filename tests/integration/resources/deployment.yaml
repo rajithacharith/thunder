@@ -33,3 +33,6 @@ passkey:
 
 consent:
   enabled: false
+
+oauth:
+  allow_wildcard_redirect_uri: true

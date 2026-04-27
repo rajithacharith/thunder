@@ -1310,6 +1310,19 @@ func validateOAuthParamsForCreateAndUpdate(app *model.ApplicationDTO) (*model.In
 // validateRedirectURIs validates redirect URIs format and requirements.
 func validateRedirectURIs(oauthConfig *model.OAuthAppConfigDTO) *serviceerror.ServiceError {
 	for _, redirectURI := range oauthConfig.RedirectURIs {
+		// Reject wildcards in scheme before parsing (url.Parse may error or misplace them).
+		if idx := strings.Index(redirectURI, "://"); idx != -1 {
+			if strings.ContainsRune(redirectURI[:idx], '*') {
+				return serviceerror.CustomServiceError(
+					ErrorInvalidRedirectURI,
+					core.I18nMessage{
+						Key:          "error.applicationservice.redirect_uri_wildcard_in_scheme_description",
+						DefaultValue: "Redirect URIs must not contain wildcards in the scheme",
+					},
+				)
+			}
+		}
+
 		parsedURI, err := sysutils.ParseURL(redirectURI)
 		if err != nil {
 			return &ErrorInvalidRedirectURI
@@ -1319,11 +1332,52 @@ func validateRedirectURIs(oauthConfig *model.OAuthAppConfigDTO) *serviceerror.Se
 			return &ErrorInvalidRedirectURI
 		}
 
+		if strings.ContainsRune(parsedURI.Host, '*') {
+			return serviceerror.CustomServiceError(
+				ErrorInvalidRedirectURI,
+				core.I18nMessage{
+					Key:          "error.applicationservice.redirect_uri_wildcard_in_host_description",
+					DefaultValue: "Redirect URIs must not contain wildcards in the host",
+				},
+			)
+		}
+
+		if strings.ContainsRune(parsedURI.RawQuery, '*') {
+			return serviceerror.CustomServiceError(
+				ErrorInvalidRedirectURI,
+				core.I18nMessage{
+					Key:          "error.applicationservice.redirect_uri_wildcard_in_query_description",
+					DefaultValue: "Redirect URIs must not contain wildcards in the query string",
+				},
+			)
+		}
+
 		if parsedURI.Fragment != "" {
 			return serviceerror.CustomServiceError(ErrorInvalidRedirectURI, core.I18nMessage{
 				Key:          "error.applicationservice.redirect_uri_fragment_not_allowed_description",
 				DefaultValue: "Redirect URIs must not contain a fragment component",
 			})
+		}
+
+		if containsInvalidWildcardSegment(parsedURI.Path) {
+			return serviceerror.CustomServiceError(
+				ErrorInvalidRedirectURI,
+				core.I18nMessage{
+					Key: "error.applicationservice.redirect_uri_regex_not_allowed_description",
+					DefaultValue: "Redirect URIs must not contain regex syntax; " +
+						"only * and ** wildcards are allowed in the path",
+				},
+			)
+		}
+
+		if strings.ContainsRune(parsedURI.Path, '*') && !isWildcardRedirectURIEnabled() {
+			return serviceerror.CustomServiceError(
+				ErrorInvalidRedirectURI,
+				core.I18nMessage{
+					Key:          "error.applicationservice.redirect_uri_wildcard_not_supported_description",
+					DefaultValue: "Wildcard redirect URIs are not supported",
+				},
+			)
 		}
 	}
 
@@ -1336,6 +1390,20 @@ func validateRedirectURIs(oauthConfig *model.OAuthAppConfigDTO) *serviceerror.Se
 	}
 
 	return nil
+}
+
+// containsInvalidWildcardSegment returns true if path contains regex metacharacters that are not
+// valid URI path characters, or if * appears in a segment that is not exactly * or **.
+func containsInvalidWildcardSegment(path string) bool {
+	for _, segment := range strings.Split(path, "/") {
+		if strings.ContainsRune(segment, '*') && segment != "*" && segment != "**" {
+			return true
+		}
+		if strings.ContainsAny(segment, "[](){}+?|^$\\") {
+			return true
+		}
+	}
+	return false
 }
 
 // validateGrantTypesAndResponseTypes validates grant types, response types, and their compatibility.
