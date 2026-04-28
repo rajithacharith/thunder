@@ -19,87 +19,92 @@
 package jwe
 
 import (
-	"context"
+	"crypto"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/asgardeo/thunder/internal/system/config"
-	syscrypto "github.com/asgardeo/thunder/internal/system/crypto"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
-	cryptoruntime "github.com/asgardeo/thunder/internal/system/crypto/runtime"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/jose/jws"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
 // JWEServiceInterface defines the interface for JWE operations.
 type JWEServiceInterface interface {
-	Encrypt(ctx context.Context, payload []byte, recipientKeyID string,
+	Encrypt(payload []byte, recipientPublicKey crypto.PublicKey,
 		alg KeyEncAlgorithm, enc ContentEncAlgorithm) (string, *serviceerror.ServiceError)
-	Decrypt(ctx context.Context, jweToken string) ([]byte, *serviceerror.ServiceError)
+	Decrypt(jweToken string) ([]byte, *serviceerror.ServiceError)
 }
 
 // jweService implements the JWEServiceInterface.
 type jweService struct {
-	kid            string
-	cryptoProvider syscrypto.RuntimeCryptoProvider
-	logger         *log.Logger
+	privateKey crypto.PrivateKey
+	kid        string
+	logger     *log.Logger
 }
 
 // newJWEService creates a new JWE service instance.
 func newJWEService(pkiService pki.PKIServiceInterface) (JWEServiceInterface, error) {
 	preferredKid := config.GetThunderRuntime().Config.JWT.PreferredKeyID
+
+	privateKey, err := pkiService.GetPrivateKey(preferredKid)
+	if err != nil {
+		return nil, errors.New("failed to retrieve private key for the key id: " + preferredKid)
+	}
+
 	kid := pkiService.GetCertThumbprint(preferredKid)
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWEService"))
 
 	return &jweService{
-		kid:            kid,
-		cryptoProvider: cryptoruntime.GetRuntimeCryptoService(),
-		logger:         logger,
+		privateKey: privateKey,
+		kid:        kid,
+		logger:     logger,
 	}, nil
 }
 
-// Encrypt encrypts the payload using the recipient key identified by recipientKeyID.
-func (js *jweService) Encrypt(ctx context.Context, payload []byte, recipientKeyID string,
+// Encrypt encrypts the payload using the recipient's public key.
+func (js *jweService) Encrypt(payload []byte, recipientPublicKey crypto.PublicKey,
 	alg KeyEncAlgorithm, enc ContentEncAlgorithm) (string, *serviceerror.ServiceError) {
+	// 1. Generate CEK
+	cekSize := 0
 	switch enc {
-	case A128GCM, A192GCM, A256GCM:
+	case A128GCM:
+		cekSize = 16
+	case A192GCM:
+		cekSize = 24
+	case A256GCM:
+		cekSize = 32
 	default:
 		return "", &ErrorUnsupportedEncryptionAlgorithm
 	}
 
-	keyRef := syscrypto.KeyRef{KeyID: recipientKeyID}
-	params := syscrypto.AlgorithmParams{Algorithm: syscrypto.Algorithm(alg)}
-	switch alg {
-	case RSAOAEP256:
-		params.RSAOAEP256 = syscrypto.RSAOAEP256Params{
-			ContentEncryptionAlgorithm: syscrypto.Algorithm(enc),
-		}
-	case ECDHES, ECDHESA128KW, ECDHESA256KW:
-		params.ECDHES = syscrypto.ECDHESParams{
-			ContentEncryptionAlgorithm: syscrypto.Algorithm(enc),
-		}
-	}
-
-	encryptedKey, details, err := js.cryptoProvider.Encrypt(ctx, keyRef, params, nil)
-	if err != nil {
-		js.logger.Error("Failed to establish key", log.Error(err))
+	cek := make([]byte, cekSize)
+	if _, err := rand.Read(cek); err != nil {
+		js.logger.Error("Failed to generate CEK: " + err.Error())
 		return "", &serviceerror.InternalServerError
 	}
-	if details == nil || details.CEK == nil {
+
+	// 2. Encrypt CEK
+	encryptedKey, headerExtras, err := encryptKey(cek, alg, recipientPublicKey, enc)
+	if err != nil {
+		js.logger.Error("Failed to encrypt CEK: " + err.Error())
 		return "", &ErrorUnsupportedJWEAlgorithm
 	}
 
-	// Build JWE header.
+	// 3. Create Header
 	header := map[string]interface{}{
 		"alg": string(alg),
 		"enc": string(enc),
 		"typ": "JWE",
-		"kid": recipientKeyID,
+		"kid": js.kid,
 	}
-	if details.EPK != nil {
-		header["epk"] = epkToMap(details.EPK)
+
+	// Add extras (like epk for ECDH-ES)
+	for k, v := range headerExtras {
+		header[k] = v
 	}
 
 	headerJSON, err := json.Marshal(header)
@@ -109,25 +114,27 @@ func (js *jweService) Encrypt(ctx context.Context, payload []byte, recipientKeyI
 	}
 	headerBase64 := base64.RawURLEncoding.EncodeToString(headerJSON)
 
-	// Encrypt content.
-	iv, ciphertext, tag, err := encryptContent(payload, details.CEK, enc, []byte(headerBase64))
+	// 4. Encrypt Content
+	iv, ciphertext, tag, err := encryptContent(payload, cek, enc, []byte(headerBase64))
 	if err != nil {
 		js.logger.Error("Failed to encrypt content: " + err.Error())
 		return "", &serviceerror.InternalServerError
 	}
 
-	// Build compact serialization.
-	return fmt.Sprintf("%s.%s.%s.%s.%s",
+	// 5. Build Compact Serialization
+	jweToken := fmt.Sprintf("%s.%s.%s.%s.%s",
 		headerBase64,
 		base64.RawURLEncoding.EncodeToString(encryptedKey),
 		base64.RawURLEncoding.EncodeToString(iv),
 		base64.RawURLEncoding.EncodeToString(ciphertext),
 		base64.RawURLEncoding.EncodeToString(tag),
-	), nil
+	)
+
+	return jweToken, nil
 }
 
-// Decrypt decrypts the JWE compact serialization using the server's private key via RuntimeCryptoProvider.
-func (js *jweService) Decrypt(ctx context.Context, jweToken string) ([]byte, *serviceerror.ServiceError) {
+// Decrypt decrypts the JWE compact serialization using the server's private key.
+func (js *jweService) Decrypt(jweToken string) ([]byte, *serviceerror.ServiceError) {
 	header, headerBase64, encryptedKey, iv, ciphertext, tag, err := DecodeJWE(jweToken)
 	if err != nil {
 		js.logger.Debug("Failed to decode JWE: " + err.Error())
@@ -143,35 +150,18 @@ func (js *jweService) Decrypt(ctx context.Context, jweToken string) ([]byte, *se
 		return nil, &ErrorUnsupportedEncryptionAlgorithm
 	}
 
-	kidStr, _ := header["kid"].(string)
-	if kidStr == "" {
-		kidStr = js.kid
-	}
-	keyRef := syscrypto.KeyRef{KeyID: kidStr}
-	params := syscrypto.AlgorithmParams{Algorithm: syscrypto.Algorithm(algStr)}
 	alg := KeyEncAlgorithm(algStr)
-	if alg == ECDHES {
-		params.ECDHES.ContentEncryptionAlgorithm = syscrypto.Algorithm(encStr)
-	}
-	switch alg {
-	case ECDHES, ECDHESA128KW, ECDHESA256KW:
-		if epkMap, ok := header["epk"].(map[string]interface{}); ok {
-			ephemeralPub, epkErr := jws.JWKToECPublicKey(epkMap)
-			if epkErr != nil {
-				js.logger.Error("Failed to extract EPK from JWE header: " + epkErr.Error())
-				return nil, &ErrorJWEDecryptionFailed
-			}
-			params.ECDHES.EPK = ephemeralPub
-		}
-	}
+	enc := ContentEncAlgorithm(encStr)
 
-	cek, err := js.cryptoProvider.Decrypt(ctx, keyRef, params, encryptedKey)
+	// 1. Decrypt CEK
+	cek, err := decryptKey(encryptedKey, alg, js.privateKey, header, enc)
 	if err != nil {
 		js.logger.Error("Failed to decrypt CEK: " + err.Error())
 		return nil, &ErrorJWEDecryptionFailed
 	}
 
-	payload, err := decryptContent(ciphertext, iv, tag, cek, ContentEncAlgorithm(encStr), []byte(headerBase64))
+	// 2. Decrypt Content
+	payload, err := decryptContent(ciphertext, iv, tag, cek, enc, []byte(headerBase64))
 	if err != nil {
 		js.logger.Error("Failed to decrypt content: " + err.Error())
 		return nil, &ErrorJWEDecryptionFailed
