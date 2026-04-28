@@ -40,6 +40,7 @@ const loggerComponentName = "FlowMgtService"
 
 var (
 	errFlowHandleExists = errors.New("flow with handle already exists")
+	errFlowIDExists     = errors.New("flow with id already exists")
 	errClientValidation = errors.New("client validation failed")
 )
 
@@ -138,22 +139,32 @@ func (s *flowMgtService) ListFlows(ctx context.Context, limit, offset int, flowT
 // CreateFlow creates a new flow definition with version 1.
 func (s *flowMgtService) CreateFlow(ctx context.Context, flowDef *FlowDefinition) (
 	*CompleteFlowDefinition, *serviceerror.ServiceError) {
-	if isDeclarativeModeEnabled() {
-		return nil, &ErrorFlowDeclarativeReadOnly
-	}
-
 	if err := validateFlowDefinition(flowDef); err != nil {
 		return nil, err
 	}
 
-	flowID, genErr := utils.GenerateUUIDv7()
-	if genErr != nil {
-		s.logger.Error("Failed to generate UUID v7", log.Error(genErr))
-		return nil, &serviceerror.InternalServerError
+	flowID := flowDef.ID
+	if flowID == "" {
+		generated, genErr := utils.GenerateUUIDv7()
+		if genErr != nil {
+			s.logger.Error("Failed to generate UUID v7", log.Error(genErr))
+			return nil, &serviceerror.InternalServerError
+		}
+		flowID = generated
 	}
 
 	var createdFlow *CompleteFlowDefinition
 	txErr := s.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		if flowDef.ID != "" {
+			_, err := s.store.GetFlowByID(txCtx, flowID)
+			if err == nil {
+				return errFlowIDExists
+			}
+			if !errors.Is(err, errFlowNotFound) {
+				return err
+			}
+		}
+
 		exists, err := s.store.IsFlowExistsByHandle(txCtx, flowDef.Handle, flowDef.FlowType)
 		if err != nil {
 			return err
@@ -167,6 +178,9 @@ func (s *flowMgtService) CreateFlow(ctx context.Context, flowDef *FlowDefinition
 		return storeErr
 	})
 	if txErr != nil {
+		if errors.Is(txErr, errFlowIDExists) {
+			return nil, &ErrorDuplicateFlowID
+		}
 		if errors.Is(txErr, errFlowHandleExists) {
 			return nil, &ErrorDuplicateFlowHandle
 		}
@@ -227,10 +241,6 @@ func (s *flowMgtService) GetFlowByHandle(ctx context.Context, handle string, flo
 // Old versions are retained up to the configured max_version_history limit.
 func (s *flowMgtService) UpdateFlow(ctx context.Context, flowID string, flowDef *FlowDefinition) (
 	*CompleteFlowDefinition, *serviceerror.ServiceError) {
-	if isDeclarativeModeEnabled() {
-		return nil, &ErrorFlowDeclarativeReadOnly
-	}
-
 	if flowID == "" {
 		return nil, &ErrorMissingFlowID
 	}
@@ -240,17 +250,17 @@ func (s *flowMgtService) UpdateFlow(ctx context.Context, flowID string, flowDef 
 
 	logger := s.logger.With(log.String(logKeyFlowID, flowID))
 
-	// Prevent updating declarative (immutable) flows
-	if s.isFlowDeclarative(ctx, flowID) {
-		return nil, &ErrorFlowDeclarativeReadOnly
-	}
-
 	var updatedFlow *CompleteFlowDefinition
 	var validationSvcErr *serviceerror.ServiceError
 	txErr := s.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		existingFlow, err := s.store.GetFlowByID(txCtx, flowID)
 		if err != nil {
 			return err
+		}
+
+		if existingFlow.IsReadOnly {
+			validationSvcErr = &ErrorFlowDeclarativeReadOnly
+			return errClientValidation
 		}
 
 		// Prevent changing the flow type
@@ -290,17 +300,13 @@ func (s *flowMgtService) UpdateFlow(ctx context.Context, flowID string, flowDef 
 
 // DeleteFlow deletes a flow definition and all its version history.
 func (s *flowMgtService) DeleteFlow(ctx context.Context, flowID string) *serviceerror.ServiceError {
-	if isDeclarativeModeEnabled() {
-		return &ErrorFlowDeclarativeReadOnly
-	}
-
 	if flowID == "" {
 		return &ErrorMissingFlowID
 	}
 
 	logger := s.logger.With(log.String(logKeyFlowID, flowID))
 
-	_, err := s.store.GetFlowByID(ctx, flowID)
+	existingFlow, err := s.store.GetFlowByID(ctx, flowID)
 	if err != nil {
 		if errors.Is(err, errFlowNotFound) {
 			// Silently return if the flow does not exist
@@ -310,8 +316,7 @@ func (s *flowMgtService) DeleteFlow(ctx context.Context, flowID string) *service
 		return &serviceerror.InternalServerError
 	}
 
-	// Prevent deleting declarative (immutable) flows
-	if s.isFlowDeclarative(ctx, flowID) {
+	if existingFlow.IsReadOnly {
 		return &ErrorFlowDeclarativeReadOnly
 	}
 
@@ -393,10 +398,6 @@ func (s *flowMgtService) GetFlowVersion(ctx context.Context, flowID string, vers
 // Creates a new version by copying the configuration from the specified version.
 func (s *flowMgtService) RestoreFlowVersion(ctx context.Context, flowID string, version int) (
 	*CompleteFlowDefinition, *serviceerror.ServiceError) {
-	if isDeclarativeModeEnabled() {
-		return nil, &ErrorFlowDeclarativeReadOnly
-	}
-
 	if flowID == "" {
 		return nil, &ErrorMissingFlowID
 	}
@@ -546,6 +547,9 @@ func validateFlowDefinition(flowDef *FlowDefinition) *serviceerror.ServiceError 
 	if !isValidFlowType(flowDef.FlowType) {
 		return &ErrorInvalidFlowType
 	}
+	if flowDef.ID != "" && !utils.IsValidUUID(flowDef.ID) {
+		return &ErrorInvalidFlowIDFormat
+	}
 
 	if len(flowDef.Nodes) < 2 {
 		return serviceerror.CustomServiceError(ErrorInvalidFlowData, i18ncore.I18nMessage{
@@ -642,30 +646,4 @@ func (s *flowMgtService) hasPasskeyRegistrationModes(flowDef *FlowDefinition) bo
 	}
 
 	return hasRegStart && hasRegFinish
-}
-
-// isFlowDeclarative checks if a flow is declarative (read-only from file store).
-// Returns true only if the flow exists in the file store but NOT in the database store.
-// Database flows take precedence - if a flow exists in both stores, it's treated as mutable (not declarative).
-func (s *flowMgtService) isFlowDeclarative(ctx context.Context, flowID string) bool {
-	if s.compositeStore == nil {
-		return false
-	}
-
-	// Check DB store first - if flow exists in DB, it's mutable (not declarative)
-	if s.compositeStore.dbStore != nil {
-		_, err := s.compositeStore.dbStore.GetFlowByID(ctx, flowID)
-		if err == nil {
-			// Flow exists in DB, so it's mutable (not declarative)
-			return false
-		}
-	}
-
-	// Flow not in DB, check if it exists in file store
-	if s.compositeStore.fileStore != nil {
-		_, err := s.compositeStore.fileStore.GetFlowByID(ctx, flowID)
-		return err == nil
-	}
-
-	return false
 }

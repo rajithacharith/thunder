@@ -28,7 +28,7 @@ func IsDeclarativeModeEnabled() bool {
 	return config.GetThunderRuntime().Config.DeclarativeResources.Enabled
 }
 
-// CheckDeclarativeCreate returns an error if declarative mode is enabled and create operation is attempted.
+// CheckDeclarativeCreate returns an error when declarative read-only mode is active.
 func CheckDeclarativeCreate() *serviceerror.ServiceError {
 	if IsDeclarativeModeEnabled() {
 		return &ErrorDeclarativeResourceCreateOperation
@@ -36,7 +36,7 @@ func CheckDeclarativeCreate() *serviceerror.ServiceError {
 	return nil
 }
 
-// CheckDeclarativeUpdate returns an error if declarative mode is enabled and update operation is attempted.
+// CheckDeclarativeUpdate returns an error when declarative read-only mode is active.
 func CheckDeclarativeUpdate() *serviceerror.ServiceError {
 	if IsDeclarativeModeEnabled() {
 		return &ErrorDeclarativeResourceUpdateOperation
@@ -44,7 +44,7 @@ func CheckDeclarativeUpdate() *serviceerror.ServiceError {
 	return nil
 }
 
-// CheckDeclarativeDelete returns an error if declarative mode is enabled and delete operation is attempted.
+// CheckDeclarativeDelete returns an error when declarative read-only mode is active.
 func CheckDeclarativeDelete() *serviceerror.ServiceError {
 	if IsDeclarativeModeEnabled() {
 		return &ErrorDeclarativeResourceDeleteOperation

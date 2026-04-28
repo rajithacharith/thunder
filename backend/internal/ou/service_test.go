@@ -370,7 +370,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 
 func (suite *OrganizationUnitServiceTestSuite) TestOUService_CreateOrganizationUnit() {
 	parentID := testParentOUID
-	validRequest := OrganizationUnitRequest{
+	validRequest := OrganizationUnitRequestWithID{
 		Handle:      "finance",
 		Name:        "Finance",
 		Description: "desc",
@@ -378,23 +378,23 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_CreateOrganizationU
 
 	testCases := []struct {
 		name    string
-		request OrganizationUnitRequest
+		request OrganizationUnitRequestWithID
 		setup   func(*organizationUnitStoreInterfaceMock)
 		wantErr *serviceerror.ServiceError
 	}{
 		{
 			name:    "invalid name",
-			request: OrganizationUnitRequest{Handle: "handle", Name: "  "},
+			request: OrganizationUnitRequestWithID{Handle: "handle", Name: "  "},
 			wantErr: &ErrorInvalidRequestFormat,
 		},
 		{
 			name:    "invalid handle",
-			request: OrganizationUnitRequest{Handle: " ", Name: "Finance"},
+			request: OrganizationUnitRequestWithID{Handle: " ", Name: "Finance"},
 			wantErr: &ErrorInvalidRequestFormat,
 		},
 		{
 			name: "parent existence check error",
-			request: OrganizationUnitRequest{
+			request: OrganizationUnitRequestWithID{
 				Handle: "finance",
 				Name:   "Finance",
 				Parent: &parentID,
@@ -408,7 +408,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_CreateOrganizationU
 		},
 		{
 			name: "parent not found",
-			request: OrganizationUnitRequest{
+			request: OrganizationUnitRequestWithID{
 				Handle: "finance",
 				Name:   "Finance",
 				Parent: &parentID,
@@ -501,7 +501,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_CreateOrganizationU
 		},
 		{
 			name: "success with design fields",
-			request: OrganizationUnitRequest{
+			request: OrganizationUnitRequestWithID{
 				Handle:   "finance",
 				Name:     "Finance",
 				ThemeID:  "theme-123",
@@ -821,7 +821,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 	tests := []struct {
 		name    string
 		id      string
-		request OrganizationUnitRequest
+		request OrganizationUnitRequestWithID
 		setup   func(*organizationUnitStoreInterfaceMock)
 		wantErr *serviceerror.ServiceError
 		assert  func(OrganizationUnit)
@@ -829,7 +829,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 		{
 			name: "success",
 			id:   "ou-1",
-			request: OrganizationUnitRequest{
+			request: OrganizationUnitRequestWithID{
 				Handle:      "root",
 				Name:        "Root",
 				Description: "updated",
@@ -864,7 +864,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 		{
 			name: "success with design fields",
 			id:   "ou-1",
-			request: OrganizationUnitRequest{
+			request: OrganizationUnitRequestWithID{
 				Handle:   "root",
 				Name:     "Root",
 				ThemeID:  "theme-new",
@@ -906,7 +906,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 		{
 			name: "not found on fetch",
 			id:   "missing",
-			request: OrganizationUnitRequest{
+			request: OrganizationUnitRequestWithID{
 				Handle: "root",
 				Name:   "Root",
 			},
@@ -920,7 +920,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 		{
 			name: "fetch failure",
 			id:   "ou-1",
-			request: OrganizationUnitRequest{
+			request: OrganizationUnitRequestWithID{
 				Handle: "root",
 				Name:   "Root",
 			},
@@ -934,7 +934,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 		{
 			name: "invalid handle",
 			id:   "ou-1",
-			request: OrganizationUnitRequest{
+			request: OrganizationUnitRequestWithID{
 				Handle: " ",
 				Name:   "Root",
 			},
@@ -952,7 +952,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 		{
 			name: "parent existence check failure",
 			id:   "ou-1",
-			request: OrganizationUnitRequest{
+			request: OrganizationUnitRequestWithID{
 				Handle: "root",
 				Name:   "Root",
 				Parent: &parentID,
@@ -974,7 +974,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 		{
 			name: "parent not found",
 			id:   "ou-1",
-			request: OrganizationUnitRequest{
+			request: OrganizationUnitRequestWithID{
 				Handle: "root",
 				Name:   "Root",
 				Parent: &parentID,
@@ -996,7 +996,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 		{
 			name: "circular dependency",
 			id:   "ou-1",
-			request: OrganizationUnitRequest{
+			request: OrganizationUnitRequestWithID{
 				Handle: "root",
 				Name:   "Root",
 				Parent: &testOUID,
@@ -1018,7 +1018,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 		{
 			name: "name conflict",
 			id:   "ou-1",
-			request: OrganizationUnitRequest{
+			request: OrganizationUnitRequestWithID{
 				Handle: "root",
 				Name:   "Finance",
 			},
@@ -1039,7 +1039,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 		{
 			name: "name conflict check failure",
 			id:   "ou-1",
-			request: OrganizationUnitRequest{
+			request: OrganizationUnitRequestWithID{
 				Handle: "root",
 				Name:   "Finance",
 			},
@@ -1060,7 +1060,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 		{
 			name: "handle conflict",
 			id:   "ou-1",
-			request: OrganizationUnitRequest{
+			request: OrganizationUnitRequestWithID{
 				Handle: "finance",
 				Name:   "Root",
 			},
@@ -1081,7 +1081,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 		{
 			name: "handle conflict check failure",
 			id:   "ou-1",
-			request: OrganizationUnitRequest{
+			request: OrganizationUnitRequestWithID{
 				Handle: "finance",
 				Name:   "Root",
 			},
@@ -1102,7 +1102,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 		{
 			name: "update returns not found",
 			id:   "ou-1",
-			request: OrganizationUnitRequest{
+			request: OrganizationUnitRequestWithID{
 				Handle: "root",
 				Name:   "Root",
 			},
@@ -1123,7 +1123,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 		{
 			name: "update failure",
 			id:   "ou-1",
-			request: OrganizationUnitRequest{
+			request: OrganizationUnitRequestWithID{
 				Handle: "root",
 				Name:   "Root",
 			},
@@ -1170,7 +1170,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 }
 
 func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationUnitByPath() {
-	request := OrganizationUnitRequest{Handle: "root", Name: "Root"}
+	request := OrganizationUnitRequestWithID{Handle: "root", Name: "Root"}
 
 	suite.Run("invalid path", func() {
 		store := newOrganizationUnitStoreInterfaceMock(suite.T())
@@ -2296,7 +2296,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 			Once()
 
 		service := suite.newService(store, newAllowAllAuthz(suite.T()))
-		result, err := service.UpdateOrganizationUnit(context.Background(), testOUID, OrganizationUnitRequest{
+		result, err := service.UpdateOrganizationUnit(context.Background(), testOUID, OrganizationUnitRequestWithID{
 			Handle:      "finance",
 			Name:        "Finance",
 			Description: "updated",
@@ -2348,7 +2348,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 			Once()
 
 		service := suite.newService(store, newAllowAllAuthz(suite.T()))
-		result, err := service.UpdateOrganizationUnit(context.Background(), testOUID, OrganizationUnitRequest{
+		result, err := service.UpdateOrganizationUnit(context.Background(), testOUID, OrganizationUnitRequestWithID{
 			Handle: "finance",
 			Name:   "Finance",
 			Parent: &parentID,
@@ -2386,7 +2386,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 			Once()
 
 		service := suite.newService(store, newAllowAllAuthz(suite.T()))
-		result, err := service.UpdateOrganizationUnit(context.Background(), testOUID, OrganizationUnitRequest{
+		result, err := service.UpdateOrganizationUnit(context.Background(), testOUID, OrganizationUnitRequestWithID{
 			Handle: "finance",
 			Name:   "Finance",
 			Parent: nil,

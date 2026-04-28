@@ -32,10 +32,20 @@ import (
 
 // FlowDefinition represents the structure of a flow definition.
 type FlowDefinition struct {
+	ID       string           `json:"id,omitempty" yaml:"id,omitempty" jsonschema:"Optional explicit ID for the flow. When omitted a UUID is generated."`
 	Handle   string           `json:"handle" validate:"required" jsonschema:"Unique identifier for the flow (lowercase, alphanumeric with dashes/underscores). Example: 'basic-login', 'invite-registration'"`
 	Name     string           `json:"name" validate:"required" jsonschema:"Display name for the flow. Example: 'Basic Login Flow', 'Invite Registration'"`
 	FlowType common.FlowType  `json:"flowType" validate:"required" jsonschema:"Type of flow: 'AUTHENTICATION' for login flows or 'REGISTRATION' for signup flows"`
 	Nodes    []NodeDefinition `json:"nodes" validate:"required" jsonschema:"Array of nodes defining the flow steps. Must include START and END nodes. Use get_flow on existing flows to see node structure examples."`
+}
+
+// FlowDefinitionRequest represents the API request body for create/update flow operations.
+// ID is intentionally excluded from API payloads.
+type FlowDefinitionRequest struct {
+	Handle   string           `json:"handle" validate:"required"`
+	Name     string           `json:"name" validate:"required"`
+	FlowType common.FlowType  `json:"flowType" validate:"required"`
+	Nodes    []NodeDefinition `json:"nodes" validate:"required"`
 }
 
 // CompleteFlowDefinition represents a complete flow definition with all details.

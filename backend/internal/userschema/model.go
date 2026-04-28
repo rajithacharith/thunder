@@ -78,6 +78,17 @@ type CreateUserSchemaRequest struct {
 	Schema                json.RawMessage   `json:"schema"`
 }
 
+// CreateUserSchemaRequestWithID represents the service-level request for creating a user schema,
+// including an optional ID.
+type CreateUserSchemaRequestWithID struct {
+	ID                    string            `json:"id,omitempty" yaml:"id,omitempty"`
+	Name                  string            `json:"name"`
+	OUID                  string            `json:"ouId"`
+	AllowSelfRegistration bool              `json:"allowSelfRegistration,omitempty"`
+	SystemAttributes      *SystemAttributes `json:"systemAttributes,omitempty"`
+	Schema                json.RawMessage   `json:"schema"`
+}
+
 // UpdateUserSchemaRequest represents the request body for updating a user schema.
 type UpdateUserSchemaRequest struct {
 	Name                  string            `json:"name"`

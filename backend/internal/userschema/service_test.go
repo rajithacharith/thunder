@@ -103,7 +103,7 @@ func TestCreateUserSchemaReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
 		transactioner:   &mockTransactioner{},
 	}
 
-	request := CreateUserSchemaRequest{
+	request := CreateUserSchemaRequestWithID{
 		Name:   "test-schema",
 		OUID:   ouID,
 		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
@@ -144,7 +144,7 @@ func TestCreateUserSchemaReturnsInternalErrorWhenOUValidationFails(t *testing.T)
 		transactioner:   &mockTransactioner{},
 	}
 
-	request := CreateUserSchemaRequest{
+	request := CreateUserSchemaRequestWithID{
 		Name:   "test-schema",
 		OUID:   ouID,
 		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
@@ -1128,7 +1128,7 @@ func TestCreateUserSchemaReturnsErrorForInvalidDisplayAttribute(t *testing.T) {
 		transactioner:   &mockTransactioner{},
 	}
 
-	request := CreateUserSchemaRequest{
+	request := CreateUserSchemaRequestWithID{
 		Name:             "test-schema",
 		OUID:             testOUID1,
 		Schema:           json.RawMessage(`{"email":{"type":"string"}}`),

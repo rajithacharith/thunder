@@ -231,6 +231,10 @@ var apiPermissionEntries = []apiPermissionEntry{
 	{"GET /user-schemas/**", PermissionUserSchemaView},
 	{"PUT /user-schemas/**", PermissionUserSchema},
 	{"DELETE /user-schemas/**", PermissionUserSchema},
+
+	// Import APIs.
+	{"POST /import", SystemPermission},
+	{"POST /import/delete", SystemPermission},
 }
 
 // ---- Helper functions ----

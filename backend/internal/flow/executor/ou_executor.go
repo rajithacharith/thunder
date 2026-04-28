@@ -138,8 +138,8 @@ func (o *ouExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, e
 }
 
 // getOrganizationUnitRequest constructs an OrganizationUnitRequest from the NodeContext.
-func (o *ouExecutor) getOrganizationUnitRequest(ctx *core.NodeContext) (ou.OrganizationUnitRequest, error) {
-	ouRequest := ou.OrganizationUnitRequest{
+func (o *ouExecutor) getOrganizationUnitRequest(ctx *core.NodeContext) (ou.OrganizationUnitRequestWithID, error) {
+	ouRequest := ou.OrganizationUnitRequestWithID{
 		Name:        ctx.UserInputs[userInputOuName],
 		Handle:      ctx.UserInputs[userInputOuHandle],
 		Description: ctx.UserInputs[userInputOuDesc],

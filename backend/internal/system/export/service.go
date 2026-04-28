@@ -297,7 +297,7 @@ func (es *exportService) exportResourcesWithExporter(
 			})
 			continue
 		}
-		content = templateContent
+		content = addResourceTypeComment(templateContent, resourceType)
 
 		// Determine file name and folder path based on options
 		fileName = es.generateFileName(validatedName, resourceType, resourceID, options)
@@ -325,6 +325,14 @@ func (es *exportService) generateTemplateFromStruct(data interface{},
 		return "", err
 	}
 	return template, nil
+}
+
+func addResourceTypeComment(content, resourceType string) string {
+	commentLine := "# resource_type: " + resourceType
+	if strings.HasPrefix(content, commentLine+"\n") || content == commentLine {
+		return content
+	}
+	return commentLine + "\n" + content
 }
 
 // sanitizeFileName sanitizes a filename by removing invalid characters.

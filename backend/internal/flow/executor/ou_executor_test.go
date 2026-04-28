@@ -181,7 +181,7 @@ type ExecuteSuccessTestCase struct {
 	name             string
 	userInputs       map[string]string
 	expectedOUID     string
-	expectedRequest  ou.OrganizationUnitRequest
+	expectedRequest  ou.OrganizationUnitRequestWithID
 	expectedResponse ou.OrganizationUnit
 }
 
@@ -194,7 +194,7 @@ func (suite *OUExecutorTestSuite) TestExecute_Success() {
 				userInputOuHandle: "engineering",
 			},
 			expectedOUID: testOUID,
-			expectedRequest: ou.OrganizationUnitRequest{
+			expectedRequest: ou.OrganizationUnitRequestWithID{
 				Name:   "Engineering",
 				Handle: "engineering",
 			},
@@ -395,7 +395,7 @@ func (suite *OUExecutorTestSuite) TestExecute_ErrorScenarios() {
 		expectError     bool
 		expectNilResult bool
 		userInputs      map[string]string
-		expectedRequest ou.OrganizationUnitRequest
+		expectedRequest ou.OrganizationUnitRequestWithID
 	}{
 		{
 			name:            "OU name conflict",
@@ -407,7 +407,7 @@ func (suite *OUExecutorTestSuite) TestExecute_ErrorScenarios() {
 				userInputOuName:   "Engineering",
 				userInputOuHandle: "engineering",
 			},
-			expectedRequest: ou.OrganizationUnitRequest{
+			expectedRequest: ou.OrganizationUnitRequestWithID{
 				Name:   "Engineering",
 				Handle: "engineering",
 			},
@@ -422,7 +422,7 @@ func (suite *OUExecutorTestSuite) TestExecute_ErrorScenarios() {
 				userInputOuName:   "Engineering",
 				userInputOuHandle: "engineering",
 			},
-			expectedRequest: ou.OrganizationUnitRequest{
+			expectedRequest: ou.OrganizationUnitRequestWithID{
 				Name:   "Engineering",
 				Handle: "engineering",
 			},
@@ -442,7 +442,7 @@ func (suite *OUExecutorTestSuite) TestExecute_ErrorScenarios() {
 				userInputOuName:   "Engineering",
 				userInputOuHandle: "engineering",
 			},
-			expectedRequest: ou.OrganizationUnitRequest{
+			expectedRequest: ou.OrganizationUnitRequestWithID{
 				Name:   "Engineering",
 				Handle: "engineering",
 			},
@@ -457,7 +457,7 @@ func (suite *OUExecutorTestSuite) TestExecute_ErrorScenarios() {
 				userInputOuName:   "Engineering",
 				userInputOuHandle: "engineering",
 			},
-			expectedRequest: ou.OrganizationUnitRequest{
+			expectedRequest: ou.OrganizationUnitRequestWithID{
 				Name:   "Engineering",
 				Handle: "engineering",
 			},
@@ -513,7 +513,7 @@ func (suite *OUExecutorTestSuite) TestExecute_EmptyOUID() {
 		RuntimeData: map[string]string{},
 	}
 
-	expectedRequest := ou.OrganizationUnitRequest{
+	expectedRequest := ou.OrganizationUnitRequestWithID{
 		Name:   "Engineering",
 		Handle: "engineering",
 	}
@@ -536,13 +536,13 @@ func (suite *OUExecutorTestSuite) TestExecute_ParentOuIdProperty() {
 		name            string
 		nodeProperties  map[string]interface{}
 		runtimeData     map[string]string
-		expectedRequest ou.OrganizationUnitRequest
+		expectedRequest ou.OrganizationUnitRequestWithID
 	}{
 		{
 			name:           "parentOuId set to specific UUID",
 			nodeProperties: map[string]interface{}{"parentOuId": "specific-parent-ou-id"},
 			runtimeData:    map[string]string{},
-			expectedRequest: ou.OrganizationUnitRequest{
+			expectedRequest: ou.OrganizationUnitRequestWithID{
 				Name:   "Engineering",
 				Handle: "engineering",
 				Parent: &parentOUID,
@@ -552,7 +552,7 @@ func (suite *OUExecutorTestSuite) TestExecute_ParentOuIdProperty() {
 			name:           "parentOuId set to empty string creates root-level OU",
 			nodeProperties: map[string]interface{}{"parentOuId": ""},
 			runtimeData:    map[string]string{},
-			expectedRequest: ou.OrganizationUnitRequest{
+			expectedRequest: ou.OrganizationUnitRequestWithID{
 				Name:   "Engineering",
 				Handle: "engineering",
 			},
@@ -561,7 +561,7 @@ func (suite *OUExecutorTestSuite) TestExecute_ParentOuIdProperty() {
 			name:           "parentOuId overrides defaultOUID from RuntimeData",
 			nodeProperties: map[string]interface{}{"parentOuId": "specific-parent-ou-id"},
 			runtimeData:    map[string]string{defaultOUIDKey: "default-ou-from-runtime"},
-			expectedRequest: ou.OrganizationUnitRequest{
+			expectedRequest: ou.OrganizationUnitRequestWithID{
 				Name:   "Engineering",
 				Handle: "engineering",
 				Parent: &parentOUID,
@@ -571,7 +571,7 @@ func (suite *OUExecutorTestSuite) TestExecute_ParentOuIdProperty() {
 			name:           "empty parentOuId overrides defaultOUID from RuntimeData",
 			nodeProperties: map[string]interface{}{"parentOuId": ""},
 			runtimeData:    map[string]string{defaultOUIDKey: "default-ou-from-runtime"},
-			expectedRequest: ou.OrganizationUnitRequest{
+			expectedRequest: ou.OrganizationUnitRequestWithID{
 				Name:   "Engineering",
 				Handle: "engineering",
 			},
@@ -580,9 +580,9 @@ func (suite *OUExecutorTestSuite) TestExecute_ParentOuIdProperty() {
 			name:           "parentOuId omitted falls back to defaultOUID",
 			nodeProperties: map[string]interface{}{},
 			runtimeData:    map[string]string{defaultOUIDKey: "default-ou-from-runtime"},
-			expectedRequest: func() ou.OrganizationUnitRequest {
+			expectedRequest: func() ou.OrganizationUnitRequestWithID {
 				val := "default-ou-from-runtime"
-				return ou.OrganizationUnitRequest{
+				return ou.OrganizationUnitRequestWithID{
 					Name:   "Engineering",
 					Handle: "engineering",
 					Parent: &val,

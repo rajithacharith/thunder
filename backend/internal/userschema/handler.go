@@ -96,7 +96,13 @@ func (h *userSchemaHandler) HandleUserSchemaPostRequest(w http.ResponseWriter, r
 
 	sanitizedRequest := h.sanitizeCreateUserSchemaRequest(*createRequest)
 
-	createdUserSchema, svcErr := h.userSchemaService.CreateUserSchema(ctx, sanitizedRequest)
+	createdUserSchema, svcErr := h.userSchemaService.CreateUserSchema(ctx, CreateUserSchemaRequestWithID{
+		Name:                  sanitizedRequest.Name,
+		OUID:                  sanitizedRequest.OUID,
+		AllowSelfRegistration: sanitizedRequest.AllowSelfRegistration,
+		SystemAttributes:      sanitizedRequest.SystemAttributes,
+		Schema:                sanitizedRequest.Schema,
+	})
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return

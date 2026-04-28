@@ -623,7 +623,7 @@ func (s *FlowMgtHandlerTestSuite) TestParsePaginationParams_NegativeOffset() {
 // Test sanitizeFlowDefinitionRequest
 
 func (s *FlowMgtHandlerTestSuite) TestSanitizeFlowDefinitionRequest() {
-	input := &FlowDefinition{
+	input := &FlowDefinitionRequest{
 		Handle:   "test-handle",
 		Name:     "  Test Flow  ",
 		FlowType: common.FlowTypeAuthentication,

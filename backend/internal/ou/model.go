@@ -63,6 +63,22 @@ type OrganizationUnitRequest struct {
 	CookiePolicyURI string  `json:"cookiePolicyUri,omitempty"`
 }
 
+// OrganizationUnitRequestWithID represents the request body for creating an organization unit
+// in import/declarative paths where preserving IDs is required.
+type OrganizationUnitRequestWithID struct {
+	ID              string  `json:"id" yaml:"id"`
+	Handle          string  `json:"handle" yaml:"handle"`
+	Name            string  `json:"name" yaml:"name"`
+	Description     string  `json:"description,omitempty" yaml:"description,omitempty"`
+	Parent          *string `json:"parent" yaml:"parent"`
+	ThemeID         string  `json:"themeId,omitempty" yaml:"theme_id,omitempty"`
+	LayoutID        string  `json:"layoutId,omitempty" yaml:"layout_id,omitempty"`
+	LogoURL         string  `json:"logoUrl,omitempty" yaml:"logo_url,omitempty"`
+	TosURI          string  `json:"tosUri,omitempty" yaml:"tos_uri,omitempty"`
+	PolicyURI       string  `json:"policyUri,omitempty" yaml:"policy_uri,omitempty"`
+	CookiePolicyURI string  `json:"cookiePolicyUri,omitempty" yaml:"cookie_policy_uri,omitempty"`
+}
+
 // OrganizationUnitListResponse represents the response for listing organization units with pagination.
 type OrganizationUnitListResponse struct {
 	TotalResults      int                     `json:"totalResults"`

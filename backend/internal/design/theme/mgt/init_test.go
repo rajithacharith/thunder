@@ -45,7 +45,7 @@ func (suite *ThemeInitTestSuite) TestRegisterRoutes() {
 		getThemeListFunc: func(limit, offset int) (*ThemeList, *serviceerror.ServiceError) {
 			return &ThemeList{Themes: []Theme{}, Links: []Link{}}, nil
 		},
-		createThemeFunc: func(theme CreateThemeRequest) (*Theme, *serviceerror.ServiceError) {
+		createThemeFunc: func(theme CreateThemeRequestWithID) (*Theme, *serviceerror.ServiceError) {
 			return &Theme{}, nil
 		},
 		getThemeFunc: func(id string) (*Theme, *serviceerror.ServiceError) {

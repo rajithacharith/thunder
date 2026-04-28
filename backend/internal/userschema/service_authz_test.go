@@ -206,7 +206,7 @@ func (s *AuthzTestSuite) TestCreateUserSchema_Denied() {
 		authzService:    authzMock,
 	}
 
-	result, svcErr := svc.CreateUserSchema(context.Background(), CreateUserSchemaRequest{
+	result, svcErr := svc.CreateUserSchema(context.Background(), CreateUserSchemaRequestWithID{
 		Name:   "test-schema",
 		OUID:   testOUID1,
 		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
@@ -231,7 +231,7 @@ func (s *AuthzTestSuite) TestCreateUserSchema_AuthzError() {
 		authzService:    newAuthzError(s.T()),
 	}
 
-	result, svcErr := svc.CreateUserSchema(context.Background(), CreateUserSchemaRequest{
+	result, svcErr := svc.CreateUserSchema(context.Background(), CreateUserSchemaRequestWithID{
 		Name:   "test-schema",
 		OUID:   testOUID1,
 		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
