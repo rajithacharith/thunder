@@ -18,6 +18,9 @@
 # ----------------------------------------------------------------------------
 
 # Default settings
+PRODUCT_NAME="Thunder"
+PRODUCT_NAME_LOWERCASE="$(echo "$PRODUCT_NAME" | tr '[:upper:]' '[:lower:]')"
+BINARY_NAME="${PRODUCT_NAME_LOWERCASE}"
 BACKEND_PORT=${BACKEND_PORT:-8090}
 DEBUG_PORT=${DEBUG_PORT:-2345}
 DEBUG_MODE=${DEBUG_MODE:-false}
@@ -43,7 +46,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --help)
-            echo "Thunder Server Startup Script"
+            echo "${PRODUCT_NAME} Server Startup Script"
             echo ""
             echo "Usage: $0 [options]"
             echo ""
@@ -97,7 +100,7 @@ check_port() {
 }
 
 # Check if ports are available
-check_port $BACKEND_PORT "Thunder server"
+check_port $BACKEND_PORT "${PRODUCT_NAME} server"
 if [ "$DEBUG_MODE" = "true" ]; then
     check_port $DEBUG_PORT "Debug server"
 fi
@@ -120,11 +123,11 @@ fi
 
 # Cleanup function
 CONSENT_PID=""
-THUNDER_PID=""
+SERVER_PID=""
 cleanup() {
     echo -e "\n🛑 Stopping server..."
-    if [ -n "$THUNDER_PID" ]; then
-        kill $THUNDER_PID 2>/dev/null || true
+    if [ -n "$SERVER_PID" ]; then
+        kill $SERVER_PID 2>/dev/null || true
     fi
     if [ -n "$CONSENT_PID" ]; then
         pkill -P $CONSENT_PID 2>/dev/null || true
@@ -164,9 +167,9 @@ if [ "$WITH_CONSENT" = "true" ]; then
     fi
 fi
 
-# Run thunder
+# Run the Server
 if [ "$DEBUG_MODE" = "true" ]; then
-    echo "⚡ Starting Thunder Server in DEBUG mode..."
+    echo "⚡ Starting ${PRODUCT_NAME} Server in DEBUG mode..."
     echo "📝 Application will run on: https://localhost:$BACKEND_PORT"
     echo "🐛 Remote debugger will listen on: localhost:$DEBUG_PORT"
     echo ""
@@ -175,13 +178,13 @@ if [ "$DEBUG_MODE" = "true" ]; then
     echo ""
 
     # Run debugger
-    dlv exec --listen=:$DEBUG_PORT --headless=true --api-version=2 --accept-multiclient --continue ./thunder &
-    THUNDER_PID=$!
+    dlv exec --listen=:$DEBUG_PORT --headless=true --api-version=2 --accept-multiclient --continue ./${BINARY_NAME} &
+    SERVER_PID=$!
 else
-    echo "⚡ Starting Thunder Server ..."
+    echo "⚡ Starting ${PRODUCT_NAME} Server ..."
 
-    BACKEND_PORT=$BACKEND_PORT ./thunder &
-    THUNDER_PID=$!
+    BACKEND_PORT=$BACKEND_PORT ./${BINARY_NAME} &
+    SERVER_PID=$!
 fi
 
 # Status
@@ -190,4 +193,4 @@ echo "🚀 Server running"
 echo "Press Ctrl+C to stop the server."
 
 # Wait for background processes
-wait $THUNDER_PID
+wait $SERVER_PID

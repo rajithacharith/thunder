@@ -95,7 +95,7 @@ func (s *systemAuthorizationService) IsActionAllowed(ctx context.Context, action
 
 	// Step 1: Check if SKIP_SECURITY flag is set.
 	if security.IsSecuritySkipped(ctx) {
-		logger.Debug("Authorization skipped: THUNDER_SKIP_SECURITY is enabled",
+		logger.Debug("Authorization skipped: SKIP_SECURITY is enabled",
 			log.String("action", string(action)))
 		return true, nil
 	}
@@ -195,7 +195,7 @@ func (s *systemAuthorizationService) GetAccessibleResources(ctx context.Context,
 
 	// Step 1: Check if SKIP_SECURITY flag is set.
 	if security.IsSecuritySkipped(ctx) {
-		logger.Debug("GetAccessibleResources skipped: THUNDER_SKIP_SECURITY is enabled",
+		logger.Debug("GetAccessibleResources skipped: SKIP_SECURITY is enabled",
 			log.String("action", string(action)),
 			log.String("resourceType", string(resourceType)))
 		return &AccessibleResources{AllAllowed: true}, nil

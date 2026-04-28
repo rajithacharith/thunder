@@ -93,7 +93,7 @@ spec:
           {{- end }}
           imagePullPolicy: {{ .Values.deployment.image.pullPolicy }}
           env:
-            - name: THUNDER_SKIP_SECURITY
+            - name: SKIP_SECURITY
               value: {{ .Values.deployment.skipSecurity | quote }}
             {{- if .Values.configuration.consent.enabled }}
             - name: WITH_CONSENT

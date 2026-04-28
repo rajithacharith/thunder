@@ -20,6 +20,8 @@
 # Common functions and variables for bootstrap scripts
 # Source this file at the beginning of each bootstrap script
 
+PRODUCT_NAME="Thunder"
+
 # Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -52,12 +54,12 @@ log_debug() {
 }
 
 # API Call Helper Function
-thunder_api_call() {
+api_call() {
     local method="$1"
     local endpoint="$2"
     local data="${3:-}"
 
-    local url="${THUNDER_API_BASE}${endpoint}"
+    local url="${API_BASE}${endpoint}"
 
     log_debug "API Call: $method $url"
 
@@ -89,7 +91,7 @@ create_flow() {
     
     log_info "Creating flow: $FLOW_DISPLAY_NAME"
     
-    local RESPONSE=$(thunder_api_call POST "/flows" "$FLOW_PAYLOAD")
+    local RESPONSE=$(api_call POST "/flows" "$FLOW_PAYLOAD")
     local HTTP_CODE="${RESPONSE: -3}"
     local BODY="${RESPONSE%???}"
     
@@ -126,7 +128,7 @@ update_flow() {
     
     log_info "Updating existing flow: $FLOW_DISPLAY_NAME (ID: $FLOW_ID)"
     
-    local RESPONSE=$(thunder_api_call PUT "/flows/$FLOW_ID" "$FLOW_PAYLOAD")
+    local RESPONSE=$(api_call PUT "/flows/$FLOW_ID" "$FLOW_PAYLOAD")
     local HTTP_CODE="${RESPONSE: -3}"
     local BODY="${RESPONSE%???}"
     

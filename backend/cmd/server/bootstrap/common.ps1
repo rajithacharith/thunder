@@ -20,6 +20,8 @@
 # Common functions for bootstrap scripts
 # Dot-source this file at the beginning of each bootstrap script
 
+$PRODUCT_NAME = "Thunder"
+
 # Configure TLS to use modern protocols (required for HTTPS requests on Windows)
 try {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
@@ -57,7 +59,7 @@ function Log-Debug {
 }
 
 # API Call Helper Function
-function Invoke-ThunderApi {
+function Invoke-Api {
     param(
         [Parameter(Mandatory=$true)]
         [string]$Method,
@@ -67,7 +69,7 @@ function Invoke-ThunderApi {
         [string]$Data = $null
     )
 
-    $url = "$($env:THUNDER_API_BASE)$Endpoint"
+    $url = "$($env:API_BASE)$Endpoint"
     
     Log-Debug "API Call: $Method $url"
 
@@ -137,7 +139,7 @@ function Create-Flow {
     
     Log-Info "Creating flow: $flowDisplayName"
     
-    $response = Invoke-ThunderApi -Method POST -Endpoint "/flows" -Data $flowPayload
+    $response = Invoke-Api -Method POST -Endpoint "/flows" -Data $flowPayload
     
     if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
         $body = $response.Body | ConvertFrom-Json
@@ -177,7 +179,7 @@ function Update-Flow {
     
     Log-Info "Updating existing flow: $flowDisplayName (ID: $FlowId)"
     
-    $response = Invoke-ThunderApi -Method PUT -Endpoint "/flows/$FlowId" -Data $flowPayload
+    $response = Invoke-Api -Method PUT -Endpoint "/flows/$FlowId" -Data $flowPayload
     
     if ($response.StatusCode -eq 200) {
         Log-Success "Flow '$flowDisplayName' updated successfully"

@@ -36,7 +36,7 @@
  *
  * Prerequisites (automatically handled):
  * - Sample app running at SAMPLE_APP_URL
- * - Thunder server running at THUNDER_URL
+ * - The server running at THUNDER_URL
  * - Mock SMS server (automatically started)
  * - MFA authentication flow (automatically created)
  * - MFA registration flow
@@ -45,8 +45,8 @@
  *
  * Required environment variables:
  * - SAMPLE_APP_URL: URL of the sample app (e.g., https://localhost:3000)
- * - THUNDER_URL: URL of Thunder server (default: https://localhost:8090)
- * - SAMPLE_APP_ID: Application ID in Thunder
+ * - THUNDER_URL: URL of the server (default: https://localhost:8090)
+ * - SAMPLE_APP_ID: Application ID in the Server
  * - ADMIN_USERNAME: Admin username (default: "admin")
  * - ADMIN_PASSWORD: Admin password (default: "admin")
  * - SAMPLE_APP_USERNAME: Test user username (default: "e2e-test-user")
@@ -80,7 +80,7 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
   // Store created user IDs for cleanup
   let createdUserIds: string[] = [];
 
-  // Setup: Start mock SMS server and configure Thunder MFA before all tests
+  // Setup: Start mock SMS server and configure MFA before all tests
   test.beforeAll(async ({ request }) => {
     console.log("\n=== MFA Test Suite Setup ===");
 
@@ -97,7 +97,7 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
       throw error;
     }
 
-    // Step 2: Automated Thunder MFA Setup (if enabled)
+    // Step 2: Automated MFA Setup (if enabled)
     if (autoSetup) {
       if (!applicationId) {
         console.log("⚠️  SAMPLE_APP_ID not provided - skipping automated setup");
@@ -136,7 +136,7 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
     console.log("=========================\n");
   });
 
-  // Teardown: Stop mock SMS server and cleanup Thunder resources after all tests
+  // Teardown: Stop mock SMS server and cleanup server resources after all tests
   test.afterAll(async ({ request }) => {
     console.log("\n=== MFA Test Suite Teardown ===");
 
@@ -184,7 +184,7 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
       }
     }
 
-    // Cleanup Thunder resources
+    // Cleanup server resources
     if (setupResult && autoSetup) {
       const setup = new ThunderMFASetup(null as any, {} as any);
       await setup.cleanup(setupResult.cleanupFunctions);
