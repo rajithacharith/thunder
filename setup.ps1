@@ -17,6 +17,10 @@
 # under the License.
 # ----------------------------------------------------------------------------
 
+$PRODUCT_NAME = "Thunder"
+$PRODUCT_NAME_LOWERCASE = $PRODUCT_NAME.ToLower()
+$BINARY_NAME = $PRODUCT_NAME_LOWERCASE
+
 # Check for PowerShell Version Compatibility
 if ($PSVersionTable.PSVersion.Major -lt 7) {
     Write-Host ""
@@ -25,7 +29,7 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
     Write-Host "================================================================" -ForegroundColor Red
     Write-Host ""
     Write-Host " You are currently running PowerShell $($PSVersionTable.PSVersion.ToString())" -ForegroundColor Yellow
-    Write-Host " Thunder requires PowerShell 7 (Core) or later." -ForegroundColor Yellow
+    Write-Host " $PRODUCT_NAME requires PowerShell 7 (Core) or later." -ForegroundColor Yellow
     Write-Host ""
     Write-Host " Please install the latest version from:"
     Write-Host " https://github.com/PowerShell/PowerShell" -ForegroundColor Cyan
@@ -33,11 +37,11 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
     exit 1
 }
 
-# Thunder Setup Script
+# Product Setup Script
 # Orchestrates the complete setup lifecycle:
-# 1. Starts Thunder server with security disabled
+# 1. Starts the server with security disabled
 # 2. Executes bootstrap scripts (built-in + custom)
-# 3. Stops Thunder server
+# 3. Stops the server
 # 4. Exits cleanly
 
 # Exit on any error
@@ -87,7 +91,7 @@ function Log-Debug {
 # API Call Helper Function
 # ============================================================================
 
-function Invoke-ThunderApi {
+function Invoke-Api {
     param(
         [string]$Method,
         [string]$Endpoint,
@@ -95,14 +99,14 @@ function Invoke-ThunderApi {
     )
 
     # Get base URL from environment variable
-    $baseUrl = if ($env:THUNDER_API_BASE) {
-        $env:THUNDER_API_BASE
+    $baseUrl = if ($env:API_BASE) {
+        $env:API_BASE
     } else {
-        Log-Error "THUNDER_API_BASE is not set!"
+        Log-Error "API_BASE is not set!"
         return @{
             StatusCode = 0
             Body = ""
-            Error = "THUNDER_API_BASE not set"
+            Error = "API_BASE not set"
         }
     }
 
@@ -204,7 +208,7 @@ function Invoke-ThunderApi {
 
 function Show-Help {
     Write-Host ""
-    Write-Host "Thunder Setup Script"
+    Write-Host "$PRODUCT_NAME Setup Script"
     Write-Host ""
     Write-Host "Usage: .\setup.ps1 [options]"
     Write-Host ""
@@ -216,11 +220,11 @@ function Show-Help {
     Write-Host ""
     Write-Host "Description:"
     Write-Host "  This script performs initial setup by:"
-    Write-Host "  1. Starting Thunder server temporarily with security disabled"
+    Write-Host "  1. Starting $PRODUCT_NAME server temporarily with security disabled"
     Write-Host "  2. Running bootstrap scripts to create default resources"
     Write-Host "  3. Stopping the server cleanly"
     Write-Host ""
-    Write-Host "  After setup completes, use '.\start.ps1' to start Thunder normally."
+    Write-Host "  After setup completes, use '.\start.ps1' to start $PRODUCT_NAME normally."
     Write-Host ""
 }
 
@@ -349,18 +353,18 @@ Read-Config | Out-Null
 
 # Construct base URL (internal API endpoint)
 $BASE_URL = "$($script:PROTOCOL)://$($script:HOSTNAME):$($script:PORT)"
-$script:THUNDER_API_BASE = $BASE_URL
+$script:API_BASE = $BASE_URL
 
 # Construct public URL (external/redirect URLs), strip trailing slash to avoid double slashes in paths
 $PUBLIC_URL = if ($script:PUBLIC_URL) { $script:PUBLIC_URL.TrimEnd('/') } else { $BASE_URL }
 
 # Export environment variables for bootstrap scripts
-$env:THUNDER_API_BASE = $BASE_URL
-$env:THUNDER_PUBLIC_URL = $PUBLIC_URL
+$env:API_BASE = $BASE_URL
+$env:PUBLIC_URL = $PUBLIC_URL
 
 Write-Host ""
 Write-Host "========================================="
-Write-Host "   Thunder Setup"
+Write-Host "   $PRODUCT_NAME Setup"
 Write-Host "========================================="
 Write-Host ""
 Write-Host "Server URL: $BASE_URL" -ForegroundColor Blue
@@ -434,26 +438,26 @@ if ($DEBUG_MODE -and -not (Get-Command dlv -ErrorAction SilentlyContinue)) {
 }
 
 # ============================================================================
-# Start Thunder Server with Security Disabled
+# Start the Server with Security Disabled
 # ============================================================================
 
 Write-Host "[WARN] Starting temporary server with security disabled..." -ForegroundColor Yellow
 Write-Host ""
 
 # Export environment variable to skip security
-$hadSkipSecurity = Test-Path Env:THUNDER_SKIP_SECURITY
-$previousSkipSecurity = $env:THUNDER_SKIP_SECURITY
-$env:THUNDER_SKIP_SECURITY = "true"
+$hadSkipSecurity = Test-Path Env:SKIP_SECURITY
+$previousSkipSecurity = $env:SKIP_SECURITY
+$env:SKIP_SECURITY = "true"
 
-# Resolve thunder executable path
+# Resolve the server executable path
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $possible = @(
-    (Join-Path $scriptDir 'thunder.exe'),
-    (Join-Path $scriptDir 'thunder')
+    (Join-Path $scriptDir "${BINARY_NAME}.exe"),
+    (Join-Path $scriptDir $BINARY_NAME)
 )
-$thunderPath = $possible | Where-Object { Test-Path $_ } | Select-Object -First 1
-if (-not $thunderPath) {
-    $thunderPath = Join-Path $scriptDir 'thunder'
+$serverExecPath = $possible | Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $serverExecPath) {
+    $serverExecPath = Join-Path $scriptDir $BINARY_NAME
 }
 
 # Start Consent Server (if enabled)
@@ -508,15 +512,15 @@ try {
             '--api-version=2'
             '--accept-multiclient'
             '--continue'
-            $thunderPath
+            $serverExecPath
         )
         $proc = Start-Process -FilePath dlv -ArgumentList $dlvArgs -WorkingDirectory $scriptDir -NoNewWindow -PassThru
     }
     else {
-        $proc = Start-Process -FilePath $thunderPath -WorkingDirectory $scriptDir -NoNewWindow -PassThru
+        $proc = Start-Process -FilePath $serverExecPath -WorkingDirectory $scriptDir -NoNewWindow -PassThru
     }
 
-    $THUNDER_PID = $proc.Id
+    $SERVER_PID = $proc.Id
 
     # Cleanup function
     $cleanup = {
@@ -613,7 +617,7 @@ try {
     }
     else {
         Log-Info "========================================="
-        Log-Info "Thunder Bootstrap Process"
+        Log-Info "$PRODUCT_NAME Bootstrap Process"
         Log-Info "========================================="
         Log-Info "Bootstrap directory: $BOOTSTRAP_DIR"
         Log-Info "Fail fast: $BOOTSTRAP_FAIL_FAST"
@@ -753,7 +757,7 @@ try {
     Write-Host ""
     Write-Host "[INFO] Next steps:"
     Write-Host "   1. Start the server: .\start.ps1" -ForegroundColor Cyan
-    Write-Host "   2. Access Thunder at: $BASE_URL" -ForegroundColor Cyan
+    Write-Host "   2. Access $PRODUCT_NAME at: $BASE_URL" -ForegroundColor Cyan
     Write-Host "   3. Login with admin credentials:"
     Write-Host "      Username: admin" -ForegroundColor Cyan
     Write-Host "      Password: admin" -ForegroundColor Cyan
@@ -774,11 +778,11 @@ finally {
         } catch { }
     }
 
-    # Restore THUNDER_SKIP_SECURITY to its previous state
+    # Restore SKIP_SECURITY to its previous state
     if (-not $hadSkipSecurity) {
-        Remove-Item Env:THUNDER_SKIP_SECURITY -ErrorAction SilentlyContinue
+        Remove-Item Env:SKIP_SECURITY -ErrorAction SilentlyContinue
     } else {
-        $env:THUNDER_SKIP_SECURITY = $previousSkipSecurity
+        $env:SKIP_SECURITY = $previousSkipSecurity
     }
 }
 

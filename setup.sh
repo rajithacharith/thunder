@@ -17,11 +17,11 @@
 # under the License.
 # ----------------------------------------------------------------------------
 
-# Thunder Setup Script
+# Product Setup Script
 # Orchestrates the complete setup lifecycle:
-# 1. Starts Thunder server with security disabled
+# 1. Starts the server with security disabled
 # 2. Executes bootstrap scripts (built-in + custom)
-# 3. Stops Thunder server
+# 3. Stops the server
 # 4. Exits cleanly
 
 # Ensure the script runs with Bash even if invoked via `sh`
@@ -38,6 +38,9 @@ fi
 set -e
 
 # Default settings
+PRODUCT_NAME="Thunder"
+PRODUCT_NAME_LOWERCASE="$(echo "$PRODUCT_NAME" | tr '[:upper:]' '[:lower:]')"
+BINARY_NAME="${PRODUCT_NAME_LOWERCASE}"
 DEBUG_PORT=${DEBUG_PORT:-2345}
 DEBUG_MODE=${DEBUG_MODE:-false}
 BOOTSTRAP_FAIL_FAST=${BOOTSTRAP_FAIL_FAST:-true}
@@ -84,12 +87,12 @@ log_debug() {
 # API Call Helper Function
 # ============================================================================
 
-thunder_api_call() {
+api_call() {
     local method="$1"
     local endpoint="$2"
     local data="${3:-}"
 
-    local url="${THUNDER_API_BASE}${endpoint}"
+    local url="${API_BASE}${endpoint}"
 
     log_debug "API Call: $method $url"
 
@@ -111,7 +114,7 @@ thunder_api_call() {
 
 print_help() {
     echo ""
-    echo "Thunder Setup Script"
+    echo "${PRODUCT_NAME} Setup Script"
     echo ""
     echo "Usage: $0 [options]"
     echo ""
@@ -123,11 +126,11 @@ print_help() {
     echo ""
     echo "Description:"
     echo "  This script performs initial setup by:"
-    echo "  1. Starting Thunder server temporarily with security disabled"
+    echo "  1. Starting ${PRODUCT_NAME} server temporarily with security disabled"
     echo "  2. Running bootstrap scripts to create default resources"
     echo "  3. Stopping the server cleanly"
     echo ""
-    echo "  After setup completes, use './start.sh' to start Thunder normally."
+    echo "  After setup completes, use './start.sh' to start ${PRODUCT_NAME} normally."
     echo ""
 }
 
@@ -232,7 +235,7 @@ PUBLIC_URL="${PUBLIC_URL%/}"
 
 echo ""
 echo "========================================="
-echo "   Thunder Setup"
+echo "   ${PRODUCT_NAME} Setup"
 echo "========================================="
 echo ""
 echo -e "${BLUE}Server URL:${NC} $BASE_URL"
@@ -265,7 +268,7 @@ check_port() {
 }
 
 # Check if ports are available
-check_port $PORT "Thunder server"
+check_port $PORT "${PRODUCT_NAME} server"
 if [ "$DEBUG_MODE" = "true" ]; then
     check_port $DEBUG_PORT "Debug server"
 fi
@@ -284,15 +287,15 @@ fi
 # ============================================================================
 
 CONSENT_PID=""
-THUNDER_PID=""
+SERVER_PID=""
 
 # Cleanup function
 cleanup() {
     echo ""
     echo -e "${CYAN}🛑 Stopping temporary server...${NC}"
-    if [ -n "$THUNDER_PID" ]; then
-        kill $THUNDER_PID 2>/dev/null || true
-        wait $THUNDER_PID 2>/dev/null || true
+    if [ -n "$SERVER_PID" ]; then
+        kill $SERVER_PID 2>/dev/null || true
+        wait $SERVER_PID 2>/dev/null || true
     fi
     if [ -n "$CONSENT_PID" ]; then
         pkill -P $CONSENT_PID 2>/dev/null || true
@@ -332,21 +335,21 @@ if [ "$WITH_CONSENT" = "true" ]; then
 fi
 
 # ============================================================================
-# Start Thunder Server with Security Disabled
+# Start the Server with Security Disabled
 # ============================================================================
 
 echo -e "${YELLOW}⚠️  Starting temporary server with security disabled...${NC}"
 echo ""
 
 # Export environment variable to skip security
-export THUNDER_SKIP_SECURITY=true
+export SKIP_SECURITY=true
 
 if [ "$DEBUG_MODE" = "true" ]; then
-    dlv exec --listen=:$DEBUG_PORT --headless=true --api-version=2 --accept-multiclient --continue ./thunder &
-    THUNDER_PID=$!
+    dlv exec --listen=:$DEBUG_PORT --headless=true --api-version=2 --accept-multiclient --continue ./${BINARY_NAME} &
+    SERVER_PID=$!
 else
-    ./thunder &
-    THUNDER_PID=$!
+    ./${BINARY_NAME} &
+    SERVER_PID=$!
 fi
 
 # ============================================================================
@@ -381,8 +384,8 @@ fi
 # ============================================================================
 
 # Export variables to be used in scripts
-export THUNDER_API_BASE="${BASE_URL}"
-export THUNDER_PUBLIC_URL="${PUBLIC_URL}"
+export API_BASE="${BASE_URL}"
+export PUBLIC_URL="${PUBLIC_URL}"
 
 # Check if bootstrap directory exists
 if [ ! -d "$BOOTSTRAP_DIR" ]; then
@@ -390,7 +393,7 @@ if [ ! -d "$BOOTSTRAP_DIR" ]; then
     log_info "Skipping bootstrap execution"
 else
     log_info "========================================="
-    log_info "Thunder Bootstrap Process"
+    log_info "${PRODUCT_NAME} Bootstrap Process"
     log_info "========================================="
     log_info "Bootstrap directory: $BOOTSTRAP_DIR"
     log_info "Fail fast: $BOOTSTRAP_FAIL_FAST"

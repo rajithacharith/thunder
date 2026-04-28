@@ -99,7 +99,7 @@ func (s *SystemAuthzTestSuite) TestIsActionAllowed() {
 		overridePolicy authorizationPolicy
 	}{
 		{
-			// Step 1: THUNDER_SKIP_SECURITY flag bypasses all checks.
+			// Step 1: SKIP_SECURITY flag bypasses all checks.
 			name:        "SecuritySkipped_GrantsAccess",
 			ctx:         buildSkipSecurityCtx(),
 			action:      security.ActionReadUser,
@@ -314,7 +314,7 @@ func (s *SystemAuthzTestSuite) TestGetAccessibleResources() {
 		overridePolicy authorizationPolicy
 	}{
 		{
-			// Step 1: THUNDER_SKIP_SECURITY flag → all resources accessible.
+			// Step 1: SKIP_SECURITY flag → all resources accessible.
 			name:           "SecuritySkipped_AllAllowed",
 			ctx:            buildSkipSecurityCtx(),
 			action:         security.ActionListUsers,

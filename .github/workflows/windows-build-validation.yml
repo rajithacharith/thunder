@@ -279,7 +279,7 @@ jobs:
         shell: bash
         run: |
           cd tests/e2e/thunder-server
-          THUNDER_SKIP_SECURITY=true ./thunder.exe > thunder-server.log 2>&1 &
+          SKIP_SECURITY=true ./thunder.exe > thunder-server.log 2>&1 &
           echo "THUNDER_PID=$!" >> $GITHUB_ENV
           sleep 5
 

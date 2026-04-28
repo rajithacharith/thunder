@@ -611,7 +611,7 @@ jobs:
         run: |
           cd tests/e2e/thunder-server
           ./setup.sh
-          THUNDER_SKIP_SECURITY=true ./start.sh &
+          SKIP_SECURITY=true ./start.sh &
           THUNDER_PID=$!
           echo "THUNDER_PID=$THUNDER_PID" >> $GITHUB_ENV
           # Wait for server to be ready

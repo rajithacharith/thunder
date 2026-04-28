@@ -57,6 +57,9 @@ $TestPackage = $positionalArgs[4]
 
 $skipConsent = $WithoutConsent.IsPresent -or $withoutConsentFromArgs -or ($env:WITHOUT_CONSENT -eq "true")
 
+$PRODUCT_NAME = "Thunder"
+$PRODUCT_NAME_LOWERCASE = $PRODUCT_NAME.ToLower()
+
 # Check for PowerShell Version Compatibility
 if ($PSVersionTable.PSVersion.Major -lt 7) {
     Write-Host ""
@@ -65,7 +68,7 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
     Write-Host "================================================================" -ForegroundColor Red
     Write-Host ""
     Write-Host " You are currently running PowerShell $($PSVersionTable.PSVersion.ToString())" -ForegroundColor Yellow
-    Write-Host " Thunder requires PowerShell 7 (Core) or later." -ForegroundColor Yellow
+    Write-Host " $PRODUCT_NAME requires PowerShell 7 (Core) or later." -ForegroundColor Yellow
     Write-Host ""
     Write-Host " Please install the latest version from:"
     Write-Host " https://github.com/PowerShell/PowerShell" -ForegroundColor Cyan
@@ -153,12 +156,12 @@ if ($GO_ARCH -eq "amd64") {
 $VERSION_FILE = "version.txt"
 $VERSION = Get-Content $VERSION_FILE -Raw
 $VERSION = $VERSION.Trim()
-$THUNDER_VERSION = $VERSION
-if ($THUNDER_VERSION.StartsWith("v")) {
-    $THUNDER_VERSION = $THUNDER_VERSION.Substring(1)
+$PRODUCT_VERSION = $VERSION
+if ($PRODUCT_VERSION.StartsWith("v")) {
+    $PRODUCT_VERSION = $PRODUCT_VERSION.Substring(1)
 }
-$BINARY_NAME = "thunder"
-$PRODUCT_FOLDER = "${BINARY_NAME}-${THUNDER_VERSION}-${GO_PACKAGE_OS}-${GO_PACKAGE_ARCH}"
+$BINARY_NAME = $PRODUCT_NAME_LOWERCASE
+$PRODUCT_FOLDER = "${BINARY_NAME}-${PRODUCT_VERSION}-${GO_PACKAGE_OS}-${GO_PACKAGE_ARCH}"
 
 # --- Sample App Distribution details ---
 $SAMPLE_PACKAGE_OS = $SAMPLE_DIST_OS
@@ -1347,7 +1350,7 @@ function Ensure-Certificates {
                 & openssl req -x509 -nodes -days 365 -newkey rsa:2048 `
                     -keyout $local_key_file `
                     -out $local_cert_file `
-                    -subj "/O=WSO2/OU=Thunder/CN=localhost" 2>$null
+                    -subj "/O=WSO2/OU=$PRODUCT_NAME/CN=localhost" 2>$null
                 if ($LASTEXITCODE -ne 0) {
                     throw "Error generating certificates: OpenSSL failed with exit code $LASTEXITCODE"
                 }
@@ -1359,7 +1362,7 @@ function Ensure-Certificates {
                 try {
                     $rsa = [System.Security.Cryptography.RSA]::Create(2048)
 
-                    $subjectName = New-Object System.Security.Cryptography.X509Certificates.X500DistinguishedName("CN=localhost, O=WSO2, OU=Thunder")
+                    $subjectName = New-Object System.Security.Cryptography.X509Certificates.X500DistinguishedName("CN=localhost, O=WSO2, OU=$PRODUCT_NAME")
                     $certReq = New-Object System.Security.Cryptography.X509Certificates.CertificateRequest($subjectName, $rsa, [System.Security.Cryptography.HashAlgorithmName]::SHA256, [System.Security.Cryptography.RSASignaturePadding]::Pkcs1)
 
                     # Add standard server usages
@@ -1569,8 +1572,8 @@ function Run {
     }
 
     # Save original skip security value and temporarily set to true
-    $script:ORIGINAL_THUNDER_SKIP_SECURITY = $env:THUNDER_SKIP_SECURITY
-    $env:THUNDER_SKIP_SECURITY = "true"
+    $script:ORIGINAL_SKIP_SECURITY = $env:SKIP_SECURITY
+    $env:SKIP_SECURITY = "true"
     Run-Backend -ShowFinalOutput $false
 
     # Run initial data setup
@@ -1590,7 +1593,7 @@ function Run {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     }
     
-    Write-Host "[INFO] Waiting for Thunder server to be ready..."
+    Write-Host "[INFO] Waiting for $PRODUCT_NAME server to be ready..."
     while ($retries -lt $MAX_RETRIES) {
         try {
             $response = Invoke-WebRequest -Uri "$BASE_URL/health/readiness" -UseBasicParsing -SkipCertificateCheck -ErrorAction Stop
@@ -1606,7 +1609,7 @@ function Run {
         $retries++
         if ($retries -ge $MAX_RETRIES) {
             Write-Host "❌ Server did not become ready after $MAX_RETRIES attempts"
-            Write-Host "💡 Please ensure the Thunder server is running at $BASE_URL"
+            Write-Host "💡 Please ensure the $PRODUCT_NAME server is running at $BASE_URL"
             exit 1
         }
         
@@ -1617,7 +1620,7 @@ function Run {
     Write-Host ""
     
     # Run the bootstrap script directly with environment variable and arguments
-    $env:THUNDER_API_BASE = $BASE_URL
+    $env:API_BASE = $BASE_URL
     $bootstrapScript = Join-Path $BACKEND_BASE_DIR "cmd/server/bootstrap/01-default-resources.ps1"
     & $bootstrapScript -ConsoleRedirectUris "https://localhost:${CONSOLE_APP_DEFAULT_PORT}/console"
 
@@ -1629,11 +1632,11 @@ function Run {
 
     Write-Host "🔒 Restoring security setting and restarting backend..."
     # Restore original skip security value
-    if (![string]::IsNullOrEmpty($script:ORIGINAL_THUNDER_SKIP_SECURITY)) {
-        $env:THUNDER_SKIP_SECURITY = $script:ORIGINAL_THUNDER_SKIP_SECURITY
+    if (![string]::IsNullOrEmpty($script:ORIGINAL_SKIP_SECURITY)) {
+        $env:SKIP_SECURITY = $script:ORIGINAL_SKIP_SECURITY
     }
     else {
-        Remove-Item Env:\THUNDER_SKIP_SECURITY -ErrorAction SilentlyContinue
+        Remove-Item Env:\SKIP_SECURITY -ErrorAction SilentlyContinue
     }
     # Start backend with initial output but without final output/wait
     Start-Backend -ShowFinalOutput $false

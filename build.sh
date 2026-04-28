@@ -93,12 +93,14 @@ fi
 
 VERSION_FILE=version.txt
 VERSION=$(cat "$VERSION_FILE")
-THUNDER_VERSION=${VERSION}
-if [[ $THUNDER_VERSION == v* ]]; then
-  THUNDER_VERSION="${THUNDER_VERSION#v}"
+PRODUCT_VERSION=${VERSION}
+if [[ $PRODUCT_VERSION == v* ]]; then
+  PRODUCT_VERSION="${PRODUCT_VERSION#v}"
 fi
-BINARY_NAME=thunder
-PRODUCT_FOLDER=${BINARY_NAME}-${THUNDER_VERSION}-${GO_PACKAGE_OS}-${GO_PACKAGE_ARCH}
+PRODUCT_NAME="Thunder"
+PRODUCT_NAME_LOWERCASE="$(echo "$PRODUCT_NAME" | tr '[:upper:]' '[:lower:]')"
+BINARY_NAME="${PRODUCT_NAME_LOWERCASE}"
+PRODUCT_FOLDER=${BINARY_NAME}-${PRODUCT_VERSION}-${GO_PACKAGE_OS}-${GO_PACKAGE_ARCH}
 
 # --- Sample App Distribution details ---
 SAMPLE_PACKAGE_OS=$SAMPLE_DIST_OS
@@ -905,7 +907,7 @@ function ensure_certificates() {
             openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
                 -keyout "$local_key_file" \
                 -out "$local_cert_file" \
-                -subj "/O=WSO2/OU=Thunder/CN=localhost" \
+                -subj "/O=WSO2/OU=${PRODUCT_NAME}/CN=localhost" \
                 > /dev/null 2>&1
         )
         if [[ $? -ne 0 ]]; then
@@ -993,8 +995,8 @@ function run() {
     fi
 
     # Save original skip security value and temporarily set to true
-    ORIGINAL_THUNDER_SKIP_SECURITY="${THUNDER_SKIP_SECURITY:-}"
-    export THUNDER_SKIP_SECURITY=true
+    ORIGINAL_SKIP_SECURITY="${SKIP_SECURITY:-}"
+    export SKIP_SECURITY=true
     run_backend false
 
     # Run initial data setup
@@ -1006,7 +1008,7 @@ function run() {
     RETRY_INTERVAL=2
     retries=0
     
-    echo "[INFO] Waiting for Thunder server to be ready..."
+    echo "[INFO] Waiting for ${PRODUCT_NAME} server to be ready..."
     while [ $retries -lt $MAX_RETRIES ]; do
         if curl -k -s -f "$BASE_URL/health/readiness" > /dev/null 2>&1; then
             echo "✓ Server is ready!"
@@ -1016,7 +1018,7 @@ function run() {
         retries=$((retries + 1))
         if [ $retries -ge $MAX_RETRIES ]; then
             echo "❌ Server did not become ready after $MAX_RETRIES attempts"
-            echo "💡 Please ensure the Thunder server is running at $BASE_URL"
+            echo "💡 Please ensure the ${PRODUCT_NAME} server is running at $BASE_URL"
             exit 1
         fi
         
@@ -1027,7 +1029,7 @@ function run() {
     echo ""
     
     # Run the bootstrap script directly with environment variable and arguments
-    THUNDER_API_BASE="$BASE_URL" \
+    API_BASE="$BASE_URL" \
         "$BACKEND_BASE_DIR/cmd/server/bootstrap/01-default-resources.sh" \
         --console-redirect-uris "https://localhost:$CONSOLE_APP_DEFAULT_PORT/console"
 
@@ -1038,11 +1040,11 @@ function run() {
     fi
 
     echo "🔒 Restoring security setting and restarting backend..."
-    # Restore original THUNDER_SKIP_SECURITY value
-    if [ -n "$ORIGINAL_THUNDER_SKIP_SECURITY" ]; then
-        export THUNDER_SKIP_SECURITY="$ORIGINAL_THUNDER_SKIP_SECURITY"
+    # Restore original SKIP_SECURITY value
+    if [ -n "$ORIGINAL_SKIP_SECURITY" ]; then
+        export SKIP_SECURITY="$ORIGINAL_SKIP_SECURITY"
     else
-        unset THUNDER_SKIP_SECURITY
+        unset SKIP_SECURITY
     fi
     # Start backend with initial output but without final output/wait
     start_backend false
@@ -1281,8 +1283,8 @@ case "$1" in
         echo "Usage: ./build.sh {clean|build|build_backend|build_frontend|build_docs|test|run} [OS] [ARCH]"
         echo ""
         echo "  clean                    - Clean build artifacts"
-        echo "  build                    - Build the complete Thunder application (backend + frontend + samples)"
-        echo "  build_backend            - Build only the Thunder backend server"
+        echo "  build                    - Build the complete ${PRODUCT_NAME} application (backend + frontend + samples)"
+        echo "  build_backend            - Build only the ${PRODUCT_NAME} backend server"
         echo "  build_frontend           - Build only the Next.js frontend applications"
         echo "  build_docs               - Build only the documentation"
         echo "  build_samples            - Build the sample applications"
@@ -1290,10 +1292,10 @@ case "$1" in
         echo "  test_integration         - Run integration tests. Use -run and -package for filtering"
         echo "  merge_coverage           - Merge unit and integration test coverage reports"
         echo "  test                     - Run all tests (unit and integration)"
-        echo "  run                      - Run the Thunder server for development (with automatic initial data setup)"
-        echo "  run_backend              - Run the Thunder backend for development"
-        echo "  debug_backend            - Run the Thunder backend for development in debug mode"
-        echo "  run_frontend             - Run the Thunder frontend for development"
+        echo "  run                      - Run the ${PRODUCT_NAME} server for development (with automatic initial data setup)"
+        echo "  run_backend              - Run the ${PRODUCT_NAME} backend for development"
+        echo "  debug_backend            - Run the ${PRODUCT_NAME} backend for development in debug mode"
+        echo "  run_frontend             - Run the ${PRODUCT_NAME} frontend for development"
         echo "  run_docs                 - Run the documentation development server with live reload"
         echo ""
         echo "  --without-consent        - Skip packaging/running the consent server"

@@ -67,7 +67,7 @@ func newSecurityService(authenticators []AuthenticatorInterface, publicPaths []s
 	}
 
 	// Check if security enforcement should be skipped via environment variable
-	skipSecurity := os.Getenv("THUNDER_SKIP_SECURITY") == "true"
+	skipSecurity := os.Getenv("SKIP_SECURITY") == "true"
 
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
@@ -75,7 +75,7 @@ func newSecurityService(authenticators []AuthenticatorInterface, publicPaths []s
 		logger.Warn("============================================================")
 		logger.Warn("|       WARNING: SECURITY ENFORCEMENT DISABLED             |")
 		logger.Warn("|                                                          |")
-		logger.Warn("|        THUNDER_SKIP_SECURITY is set to 'true'            |")
+		logger.Warn("|        SKIP_SECURITY is set to 'true'            |")
 		logger.Warn("|  This is NOT RECOMMENDED for production environments!    |")
 		logger.Warn("| Endpoints accessible without auth, but tokens processed  |")
 		logger.Warn("|                                                          |")

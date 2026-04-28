@@ -20,6 +20,7 @@
 VERSION_FILE=version.txt
 VERSION=$(shell cat $(VERSION_FILE))
 BINARY_NAME=thunder
+PRODUCT_NAME=Thunder
 
 export WITHOUT_CONSENT ?= false
 
@@ -109,19 +110,19 @@ run_docs:
 	./build.sh run_docs
 
 docker-build:
-	docker build -t thunder:$(VERSION) .
+	docker build -t $(BINARY_NAME):$(VERSION) .
 
 docker-build-latest:
-	docker build -t thunder:latest .
+	docker build -t $(BINARY_NAME):latest .
 
 docker-build-multiarch:
-	docker buildx build --platform linux/amd64,linux/arm64 -t thunder:$(VERSION) .
+	docker buildx build --platform linux/amd64,linux/arm64 -t $(BINARY_NAME):$(VERSION) .
 
 docker-build-multiarch-latest:
-	docker buildx build --platform linux/amd64,linux/arm64 -t thunder:latest .
+	docker buildx build --platform linux/amd64,linux/arm64 -t $(BINARY_NAME):latest .
 
 docker-build-multiarch-push:
-	docker buildx build --platform linux/amd64,linux/arm64 -t thunder:$(VERSION) -t thunder:latest --push .
+	docker buildx build --platform linux/amd64,linux/arm64 -t $(BINARY_NAME):$(VERSION) -t $(BINARY_NAME):latest --push .
 
 lint: lint_backend lint_frontend
 
@@ -152,7 +153,7 @@ help:
 	@echo "  all                           - Clean, build, and test the project."
 	@echo "  backend                       - Clean, build, and test only the backend."
 	@echo "  clean                         - Remove build artifacts."
-	@echo "  build                         - Build Thunder (backend + frontend + samples)."
+	@echo "  build                         - Build $(PRODUCT_NAME) (backend + frontend + samples)."
 	@echo "  build_backend                 - Build the backend Go application."
 	@echo "  build_frontend                - Build the frontend applications."
 	@echo "  build_docs                    - Build the documentation."
@@ -163,9 +164,9 @@ help:
 	@echo "  build_with_coverage  		   - Build with coverage flags, run unit and integration tests, and generate combined coverage report."
 	@echo "  build_with_coverage_only      - Build with coverage instrumentation (unit tests only, no integration tests)."
 	@echo "  test                          - Run all tests (unit and integration)."
-	@echo "  run                           - Build and run the Thunder server locally."
-	@echo "  run_backend                   - Build and run the Thunder backend locally."
-	@echo "  debug_backend                 - Build and run the Thunder backend locally in debug mode."
+	@echo "  run                           - Build and run the $(PRODUCT_NAME) server locally."
+	@echo "  run_backend                   - Build and run the $(PRODUCT_NAME) backend locally."
+	@echo "  debug_backend                 - Build and run the $(PRODUCT_NAME) backend locally in debug mode."
 	@echo "  run_frontend                  - Build and run the frontend applications locally."
 	@echo "  run_docs                      - Run the documentation development server with live reload."
 	@echo "  docker-build                  - Build single-arch Docker image with version tag."

@@ -17,6 +17,10 @@
 # under the License.
 # ----------------------------------------------------------------------------
 
+$PRODUCT_NAME = "Thunder"
+$PRODUCT_NAME_LOWERCASE = $PRODUCT_NAME.ToLower()
+$BINARY_NAME = $PRODUCT_NAME_LOWERCASE
+
 # Check for PowerShell Version Compatibility
 if ($PSVersionTable.PSVersion.Major -lt 7) {
     Write-Host ""
@@ -25,7 +29,7 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
     Write-Host "================================================================" -ForegroundColor Red
     Write-Host ""
     Write-Host " You are currently running PowerShell $($PSVersionTable.PSVersion.ToString())" -ForegroundColor Yellow
-    Write-Host " Thunder requires PowerShell 7 (Core) or later." -ForegroundColor Yellow
+    Write-Host " $PRODUCT_NAME requires PowerShell 7 (Core) or later." -ForegroundColor Yellow
     Write-Host ""
     Write-Host " Please install the latest version from:"
     Write-Host " https://github.com/PowerShell/PowerShell" -ForegroundColor Cyan
@@ -77,7 +81,7 @@ while ($i -lt $args.Count) {
             break
         }
         '--help' {
-            Write-Host "Thunder Server Startup Script"
+            Write-Host "$PRODUCT_NAME Server Startup Script"
             Write-Host ""
             Write-Host "Usage: .\start.ps1 [options]"
             Write-Host ""
@@ -169,16 +173,16 @@ if ($DEBUG_MODE) {
     }
 }
 
-# Resolve thunder executable path
+# Resolve the server executable path
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $possible = @(
-    (Join-Path $scriptDir 'thunder.exe'),
-    (Join-Path $scriptDir 'thunder')
+    (Join-Path $scriptDir "${BINARY_NAME}.exe"),
+    (Join-Path $scriptDir $BINARY_NAME)
 )
-$thunderPath = $possible | Where-Object { Test-Path $_ } | Select-Object -First 1
-if (-not $thunderPath) {
-    # Fallback to ./thunder (will work if PATH or current dir has it)
-    $thunderPath = Join-Path $scriptDir 'thunder'
+$serverExecPath = $possible | Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $serverExecPath) {
+    # Fallback (will work if PATH or current dir has it)
+    $serverExecPath = Join-Path $scriptDir $BINARY_NAME
 }
 
 $proc = $null
@@ -226,7 +230,7 @@ try {
     }
 
     if ($DEBUG_MODE) {
-        Write-Host "[INFO] Starting Thunder Server in DEBUG mode..."
+        Write-Host "[INFO] Starting $PRODUCT_NAME Server in DEBUG mode..."
         Write-Host "[INFO] Application will run on: https://localhost:$BACKEND_PORT"
         Write-Host "[INFO] Remote debugger will listen on: localhost:$DEBUG_PORT"
         Write-Host ""
@@ -242,16 +246,16 @@ try {
             '--api-version=2'
             '--accept-multiclient'
             '--continue'
-            $thunderPath
+            $serverExecPath
         )
         $proc = Start-Process -FilePath dlv -ArgumentList $dlvArgs -WorkingDirectory $scriptDir -NoNewWindow -PassThru
     }
     else {
-        Write-Host "[INFO] Starting Thunder Server ..."
+        Write-Host "[INFO] Starting $PRODUCT_NAME Server ..."
 
         # Export BACKEND_PORT for the child process
         $env:BACKEND_PORT = $BACKEND_PORT
-        $proc = Start-Process -FilePath $thunderPath -WorkingDirectory $scriptDir -NoNewWindow -PassThru
+        $proc = Start-Process -FilePath $serverExecPath -WorkingDirectory $scriptDir -NoNewWindow -PassThru
     }
 
     Write-Host ""

@@ -22,6 +22,8 @@ param(
     [string]$ConsoleRedirectUris = ""
 )
 
+$PRODUCT_NAME = "Thunder"
+
 # Check for PowerShell Version Compatibility
 if ($PSVersionTable.PSVersion.Major -lt 7) {
     Write-Host ""
@@ -30,7 +32,7 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
     Write-Host "================================================================" -ForegroundColor Red
     Write-Host ""
     Write-Host " You are currently running PowerShell $($PSVersionTable.PSVersion.ToString())" -ForegroundColor Yellow
-    Write-Host " Thunder requires PowerShell 7 (Core) or later." -ForegroundColor Yellow
+    Write-Host " $PRODUCT_NAME requires PowerShell 7 (Core) or later." -ForegroundColor Yellow
     Write-Host ""
     Write-Host " Please install the latest version from:"
     Write-Host " https://github.com/PowerShell/PowerShell" -ForegroundColor Cyan
@@ -47,7 +49,7 @@ $ErrorActionPreference = 'Stop'
 # Dot-source common functions from the same directory as this script
 . "$PSScriptRoot/common.ps1"
 
-Log-Info "Creating default Thunder resources..."
+Log-Info "Creating default $PRODUCT_NAME resources..."
 Write-Host ""
 
 # ============================================================================
@@ -56,7 +58,7 @@ Write-Host ""
 
 Log-Info "Creating default organization unit..."
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/organization-units" -Data '{
+$response = Invoke-Api -Method POST -Endpoint "/organization-units" -Data '{
   "handle": "default",
   "name": "Default",
   "description": "Default organization unit",
@@ -78,7 +80,7 @@ if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
 elseif ($response.StatusCode -eq 409) {
     Log-Warning "Organization unit already exists, retrieving OU ID..."
     # Get existing OU ID by handle to ensure we get the correct "default" OU
-    $response = Invoke-ThunderApi -Method GET -Endpoint "/organization-units/tree/default"
+    $response = Invoke-Api -Method GET -Endpoint "/organization-units/tree/default"
 
     if ($response.StatusCode -eq 200) {
         $body = $response.Body | ConvertFrom-Json
@@ -184,7 +186,7 @@ $userSchemaData = ([ordered]@{
     }
 } | ConvertTo-Json -Depth 5)
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/user-schemas" -Data $userSchemaData
+$response = Invoke-Api -Method POST -Endpoint "/user-schemas" -Data $userSchemaData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
     Log-Success "User schema created successfully"
@@ -223,7 +225,7 @@ $adminUserData = ([ordered]@{
     }
 } | ConvertTo-Json -Depth 5)
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/users" -Data $adminUserData
+$response = Invoke-Api -Method POST -Endpoint "/users" -Data $adminUserData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
     Log-Success "Admin user created successfully"
@@ -244,7 +246,7 @@ elseif ($response.StatusCode -eq 409) {
     Log-Warning "Admin user already exists, retrieving user ID..."
 
     # Get existing admin user ID
-    $response = Invoke-ThunderApi -Method GET -Endpoint "/users"
+    $response = Invoke-Api -Method GET -Endpoint "/users"
 
     if ($response.StatusCode -eq 200) {
         # Parse JSON to find admin user
@@ -291,7 +293,7 @@ $resourceServerData = @{
     ouId = $DEFAULT_OU_ID
 } | ConvertTo-Json -Depth 10
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers" -Data $resourceServerData
+$response = Invoke-Api -Method POST -Endpoint "/resource-servers" -Data $resourceServerData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
     Log-Success "Resource server created successfully"
@@ -308,7 +310,7 @@ if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
 elseif ($response.StatusCode -eq 409) {
     Log-Warning "Resource server already exists, retrieving ID..."
     # Get existing resource server ID
-    $response = Invoke-ThunderApi -Method GET -Endpoint "/resource-servers"
+    $response = Invoke-Api -Method GET -Endpoint "/resource-servers"
 
     if ($response.StatusCode -eq 200) {
         $body = $response.Body | ConvertFrom-Json
@@ -366,7 +368,7 @@ $systemResourceData = @{
     handle      = "system"
 } | ConvertTo-Json -Depth 10
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $systemResourceData
+$response = Invoke-Api -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $systemResourceData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
     Log-Success "System resource created successfully (permission: system)"
@@ -382,7 +384,7 @@ if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
 }
 elseif ($response.StatusCode -eq 409) {
     Log-Warning "System resource already exists, retrieving ID..."
-    $response = Invoke-ThunderApi -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources"
+    $response = Invoke-Api -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources"
 
     if ($response.StatusCode -eq 200) {
         $body = $response.Body | ConvertFrom-Json
@@ -422,7 +424,7 @@ $ouResourceData = @{
     parent      = $SYSTEM_RESOURCE_ID
 } | ConvertTo-Json -Depth 10
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $ouResourceData
+$response = Invoke-Api -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $ouResourceData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
     Log-Success "OU resource created successfully (permission: system:ou)"
@@ -438,7 +440,7 @@ if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
 }
 elseif ($response.StatusCode -eq 409) {
     Log-Warning "OU resource already exists, retrieving ID..."
-    $response = Invoke-ThunderApi -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources?parentId=$SYSTEM_RESOURCE_ID"
+    $response = Invoke-Api -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources?parentId=$SYSTEM_RESOURCE_ID"
 
     if ($response.StatusCode -eq 200) {
         $body = $response.Body | ConvertFrom-Json
@@ -472,7 +474,7 @@ $ouViewActionData = @{
     handle      = "view"
 } | ConvertTo-Json -Depth 10
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources/$OU_RESOURCE_ID/actions" -Data $ouViewActionData
+$response = Invoke-Api -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources/$OU_RESOURCE_ID/actions" -Data $ouViewActionData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
     Log-Success "OU view action created successfully (permission: system:ou:view)"
@@ -500,7 +502,7 @@ $userResourceData = @{
     parent      = $SYSTEM_RESOURCE_ID
 } | ConvertTo-Json -Depth 10
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $userResourceData
+$response = Invoke-Api -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $userResourceData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
     Log-Success "User resource created successfully (permission: system:user)"
@@ -516,7 +518,7 @@ if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
 }
 elseif ($response.StatusCode -eq 409) {
     Log-Warning "User resource already exists, retrieving ID..."
-    $response = Invoke-ThunderApi -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources?parentId=$SYSTEM_RESOURCE_ID"
+    $response = Invoke-Api -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources?parentId=$SYSTEM_RESOURCE_ID"
 
     if ($response.StatusCode -eq 200) {
         $body = $response.Body | ConvertFrom-Json
@@ -550,7 +552,7 @@ $userViewActionData = @{
     handle      = "view"
 } | ConvertTo-Json -Depth 10
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources/$USER_RESOURCE_ID/actions" -Data $userViewActionData
+$response = Invoke-Api -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources/$USER_RESOURCE_ID/actions" -Data $userViewActionData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
     Log-Success "User view action created successfully (permission: system:user:view)"
@@ -578,7 +580,7 @@ $userSchemaResourceData = @{
     parent      = $SYSTEM_RESOURCE_ID
 } | ConvertTo-Json -Depth 10
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $userSchemaResourceData
+$response = Invoke-Api -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $userSchemaResourceData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
     Log-Success "User schema resource created successfully (permission: system:userschema)"
@@ -594,7 +596,7 @@ if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
 }
 elseif ($response.StatusCode -eq 409) {
     Log-Warning "User schema resource already exists, retrieving ID..."
-    $response = Invoke-ThunderApi -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources?parentId=$SYSTEM_RESOURCE_ID"
+    $response = Invoke-Api -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources?parentId=$SYSTEM_RESOURCE_ID"
 
     if ($response.StatusCode -eq 200) {
         $body = $response.Body | ConvertFrom-Json
@@ -628,7 +630,7 @@ $userSchemaViewActionData = @{
     handle      = "view"
 } | ConvertTo-Json -Depth 10
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources/$USER_SCHEMA_RESOURCE_ID/actions" -Data $userSchemaViewActionData
+$response = Invoke-Api -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources/$USER_SCHEMA_RESOURCE_ID/actions" -Data $userSchemaViewActionData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
     Log-Success "User schema view action created successfully (permission: system:userschema:view)"
@@ -658,7 +660,7 @@ $groupResourceData = @{
     parent      = $SYSTEM_RESOURCE_ID
 } | ConvertTo-Json -Depth 10
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $groupResourceData
+$response = Invoke-Api -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $groupResourceData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
     Log-Success "Group resource created successfully (permission: system:group)"
@@ -674,7 +676,7 @@ if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
 }
 elseif ($response.StatusCode -eq 409) {
     Log-Warning "Group resource already exists, retrieving ID..."
-    $response = Invoke-ThunderApi -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources?parentId=$SYSTEM_RESOURCE_ID"
+    $response = Invoke-Api -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources?parentId=$SYSTEM_RESOURCE_ID"
 
     if ($response.StatusCode -eq 200) {
         $body = $response.Body | ConvertFrom-Json
@@ -708,7 +710,7 @@ $groupViewActionData = @{
     handle      = "view"
 } | ConvertTo-Json -Depth 10
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources/$GROUP_RESOURCE_ID/actions" -Data $groupViewActionData
+$response = Invoke-Api -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources/$GROUP_RESOURCE_ID/actions" -Data $groupViewActionData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
     Log-Success "Group view action created successfully (permission: system:group:view)"
@@ -752,7 +754,7 @@ $administratorGroupData = @{
     )
 } | ConvertTo-Json -Depth 10
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/groups" -Data $administratorGroupData
+$response = Invoke-Api -Method POST -Endpoint "/groups" -Data $administratorGroupData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
     Log-Success "Administrator group created successfully"
@@ -768,7 +770,7 @@ if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
 }
 elseif ($response.StatusCode -eq 409) {
     Log-Warning "Administrator group already exists, retrieving ID..."
-    $response = Invoke-ThunderApi -Method GET -Endpoint "/groups/tree/default?limit=100"
+    $response = Invoke-Api -Method GET -Endpoint "/groups/tree/default?limit=100"
 
     if ($response.StatusCode -eq 200) {
         $body = $response.Body | ConvertFrom-Json
@@ -835,7 +837,7 @@ $roleData = @{
     )
 } | ConvertTo-Json -Depth 10
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/roles" -Data $roleData
+$response = Invoke-Api -Method POST -Endpoint "/roles" -Data $roleData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
     Log-Success "Admin role created and assigned to administrator group"
@@ -881,7 +883,7 @@ else {
             Log-Info "Processing authentication flows..."
             
             # Fetch existing auth flows
-            $listResponse = Invoke-ThunderApi -Method GET -Endpoint "/flows?flowType=AUTHENTICATION&limit=200"
+            $listResponse = Invoke-Api -Method GET -Endpoint "/flows?flowType=AUTHENTICATION&limit=200"
             
             # Store existing auth flows by handle in a hashtable
             $existingAuthFlows = @{}
@@ -935,7 +937,7 @@ else {
             Log-Info "Processing registration flows..."
             
             # Fetch existing registration flows
-            $listResponse = Invoke-ThunderApi -Method GET -Endpoint "/flows?flowType=REGISTRATION&limit=200"
+            $listResponse = Invoke-Api -Method GET -Endpoint "/flows?flowType=REGISTRATION&limit=200"
             
             # Store existing registration flows by handle in a hashtable
             $existingRegFlows = @{}
@@ -989,7 +991,7 @@ else {
             Log-Info "Processing user onboarding flows..."
             
             # Fetch existing user onboarding flows
-            $listResponse = Invoke-ThunderApi -Method GET -Endpoint "/flows?flowType=USER_ONBOARDING&limit=200"
+            $listResponse = Invoke-Api -Method GET -Endpoint "/flows?flowType=USER_ONBOARDING&limit=200"
             
             # Store existing onboarding flows by handle in a hashtable
             $existingOnboardingFlows = @{}
@@ -1058,7 +1060,7 @@ if (Test-Path $APPS_FLOWS_DIR) {
     Log-Info "Fetching existing flows for application flow processing..."
     
     # Get auth flows
-    $authResponse = Invoke-ThunderApi -Method GET -Endpoint "/flows?flowType=AUTHENTICATION&limit=200"
+    $authResponse = Invoke-Api -Method GET -Endpoint "/flows?flowType=AUTHENTICATION&limit=200"
     $existingAppAuthFlows = @{}
     if ($authResponse.StatusCode -eq 200) {
         $authBody = $authResponse.Body | ConvertFrom-Json
@@ -1068,7 +1070,7 @@ if (Test-Path $APPS_FLOWS_DIR) {
     }
     
     # Get registration flows
-    $regResponse = Invoke-ThunderApi -Method GET -Endpoint "/flows?flowType=REGISTRATION&limit=200"
+    $regResponse = Invoke-Api -Method GET -Endpoint "/flows?flowType=REGISTRATION&limit=200"
     $existingAppRegFlows = @{}
     if ($regResponse.StatusCode -eq 200) {
         $regBody = $regResponse.Body | ConvertFrom-Json
@@ -1109,7 +1111,7 @@ if (Test-Path $APPS_FLOWS_DIR) {
             
             # Re-fetch registration flows after creating auth flow
             if ($appAuthFlowId) {
-                $response = Invoke-ThunderApi -Method GET -Endpoint "/flows?flowType=REGISTRATION&limit=200"
+                $response = Invoke-Api -Method GET -Endpoint "/flows?flowType=REGISTRATION&limit=200"
                 if ($response.StatusCode -eq 200) {
                     $existingAppRegFlows = @{}
                     $flows = ($response.Body | ConvertFrom-Json).flows
@@ -1188,8 +1190,8 @@ if (-not $CONSOLE_REG_FLOW_ID) {
     exit 1
 }
 
-# Use THUNDER_PUBLIC_URL for redirect URIs, fallback to THUNDER_API_BASE if not set
-$PUBLIC_URL = if ($env:THUNDER_PUBLIC_URL) { $env:THUNDER_PUBLIC_URL } else { $env:THUNDER_API_BASE }
+# Use PUBLIC_URL for redirect URIs, fallback to API_BASE if not set
+$PUBLIC_URL = if ($env:PUBLIC_URL) { $env:PUBLIC_URL } else { $env:API_BASE }
 
 # Build redirect URIs array - default + custom if provided
 $redirectUrisList = @("$PUBLIC_URL/console")
@@ -1244,7 +1246,7 @@ $appData = @{
     )
 } | ConvertTo-Json -Depth 10
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/applications" -Data $appData
+$response = Invoke-Api -Method POST -Endpoint "/applications" -Data $appData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
     Log-Success "Console application created successfully"
@@ -1296,7 +1298,7 @@ else {
             $themePayload = Get-Content $themeFile.FullName -Raw
 
             Log-Info "Creating theme: $themeName (from $($themeFile.Name))"
-            $response = Invoke-ThunderApi -Method POST -Endpoint "/design/themes" -Data $themePayload
+            $response = Invoke-Api -Method POST -Endpoint "/design/themes" -Data $themePayload
 
             if ($response.StatusCode -in 200, 201) {
                 Log-Success "Theme '$themeName' created successfully"
@@ -1309,7 +1311,7 @@ else {
             }
             elseif ($response.StatusCode -eq 409 -or ($response.Body -match '"THM-1015"')) {
                 Log-Warning "Theme '$themeName' already exists, updating..."
-                $response = Invoke-ThunderApi -Method GET -Endpoint "/design/themes"
+                $response = Invoke-Api -Method GET -Endpoint "/design/themes"
                 if ($response.StatusCode -eq 200) {
                     $body = $response.Body | ConvertFrom-Json
                     $existingTheme = $body.themes | Where-Object { $_.handle -eq $themeHandle } | Select-Object -First 1
@@ -1320,7 +1322,7 @@ else {
                     exit 1
                 }
                 Log-Info "Found existing theme ID: $themeId"
-                $response = Invoke-ThunderApi -Method PUT -Endpoint "/design/themes/$themeId" -Data $themePayload
+                $response = Invoke-Api -Method PUT -Endpoint "/design/themes/$themeId" -Data $themePayload
                 if ($response.StatusCode -eq 200) {
                     Log-Success "Theme '$themeName' updated successfully"
                     $themeUpdated++
@@ -1376,7 +1378,7 @@ else {
 
             $payload = Get-Content $i18nFile.FullName -Raw
 
-            $response = Invoke-ThunderApi -Method POST -Endpoint "/i18n/languages/$language/translations" -Data $payload
+            $response = Invoke-Api -Method POST -Endpoint "/i18n/languages/$language/translations" -Data $payload
 
             if ($response.StatusCode -eq 200) {
                 $body = $response.Body | ConvertFrom-Json

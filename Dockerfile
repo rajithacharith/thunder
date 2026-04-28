@@ -16,7 +16,7 @@
 # under the License.
 # ----------------------------------------------------------------------------
 
-# Thunder Docker Image
+# Product Docker Image
 # Build stage - compile the Go binary and build frontend for the target architecture
 FROM golang:1.26-alpine3.23 AS builder
 

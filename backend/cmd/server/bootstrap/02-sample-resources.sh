@@ -18,7 +18,7 @@
 # ----------------------------------------------------------------------------
 
 # Bootstrap Script: Sample Resources Setup
-# Creates resources required to run the Thunder sample experience
+# Creates resources required to run the product sample experience
 
 set -e
 
@@ -26,7 +26,7 @@ set -e
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]:-$0}")"
 source "${SCRIPT_DIR}/common.sh"
 
-log_info "Creating sample Thunder resources..."
+log_info "Creating sample ${PRODUCT_NAME} resources..."
 echo ""
 
 # ============================================================================
@@ -46,7 +46,7 @@ read -r -d '' CUSTOMERS_OU_PAYLOAD <<JSON || true
 }
 JSON
 
-RESPONSE=$(thunder_api_call POST "/organization-units" "${CUSTOMERS_OU_PAYLOAD}")
+RESPONSE=$(api_call POST "/organization-units" "${CUSTOMERS_OU_PAYLOAD}")
 HTTP_CODE="${RESPONSE: -3}"
 BODY="${RESPONSE%???}"
 
@@ -56,7 +56,7 @@ if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
 elif [[ "$HTTP_CODE" == "409" ]]; then
     log_warning "Customers organization unit already exists, retrieving ID..."
     # Get existing OU ID by handle to ensure we get the correct "customers" OU
-    RESPONSE=$(thunder_api_call GET "/organization-units/tree/${CUSTOMER_OU_HANDLE}")
+    RESPONSE=$(api_call GET "/organization-units/tree/${CUSTOMER_OU_HANDLE}")
     HTTP_CODE="${RESPONSE: -3}"
     BODY="${RESPONSE%???}"
 
@@ -135,7 +135,7 @@ read -r -d '' CUSTOMER_USER_TYPE_PAYLOAD <<JSON || true
 }
 JSON
 
-RESPONSE=$(thunder_api_call POST "/user-schemas" "${CUSTOMER_USER_TYPE_PAYLOAD}")
+RESPONSE=$(api_call POST "/user-schemas" "${CUSTOMER_USER_TYPE_PAYLOAD}")
 HTTP_CODE="${RESPONSE: -3}"
 
 if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
@@ -200,7 +200,7 @@ read -r -d '' SAMPLE_APP_PAYLOAD <<JSON || true
 }
 JSON
 
-RESPONSE=$(thunder_api_call POST "/applications" "${SAMPLE_APP_PAYLOAD}")
+RESPONSE=$(api_call POST "/applications" "${SAMPLE_APP_PAYLOAD}")
 HTTP_CODE="${RESPONSE: -3}"
 BODY="${RESPONSE%???}"
 
@@ -279,7 +279,7 @@ read -r -d '' REACT_SDK_APP_PAYLOAD <<JSON || true
 }
 JSON
 
-RESPONSE=$(thunder_api_call POST "/applications" "${REACT_SDK_APP_PAYLOAD}")
+RESPONSE=$(api_call POST "/applications" "${REACT_SDK_APP_PAYLOAD}")
 HTTP_CODE="${RESPONSE: -3}"
 BODY="${RESPONSE%???}"
 

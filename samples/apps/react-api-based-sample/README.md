@@ -86,7 +86,7 @@ The application will be available at [https://localhost:3000](https://localhost:
 To use the sign-up functionality, you need to temporarily disable Thunder security by setting the following environment variable before starting the Thunder server:
 
 ```bash
-export THUNDER_SKIP_SECURITY=true
+export SKIP_SECURITY=true
 ```
 
 This is required because the sign-up API creates users without authentication. In a production environment, you would typically use a different approach such as:
@@ -165,7 +165,7 @@ This sample interacts with the following Thunder APIs:
 - Run the `02-sample-resources.sh` bootstrap script to create the "customers" organization unit
 
 **Issue**: Sign-up fails with authentication/authorization errors
-- Ensure `THUNDER_SKIP_SECURITY=true` is set when starting the Thunder server
+- Ensure `SKIP_SECURITY=true` is set when starting the Thunder server
 
 **Issue**: CORS errors
 - Add your application URL to "Allowed Origins" in Thunder's configuration:

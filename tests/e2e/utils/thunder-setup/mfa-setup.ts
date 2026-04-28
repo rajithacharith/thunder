@@ -17,7 +17,7 @@
  */
 
 /**
- * Thunder MFA Setup Utilities
+ * MFA Setup Utilities
  *
  * Automated setup for MFA testing prerequisites:
  * - Admin authentication
