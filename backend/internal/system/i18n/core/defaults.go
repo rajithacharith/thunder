@@ -660,6 +660,8 @@ var defaultMessages = map[string]string{
 	"error.userinfoservice.client_credentials_not_supported_description": "UserInfo endpoint is not applicable for client_credentials grant type",
 	"error.userinfoservice.insufficient_scope": "Insufficient scope",
 	"error.userinfoservice.insufficient_scope_description": "The 'openid' scope is required for this request",
+	"error.userinfoservice.internal_server_error": "Internal server error",
+	"error.userinfoservice.internal_server_error_description": "An internal server error occurred while processing the UserInfo request",
 	"error.userinfoservice.invalid_access_token": "Invalid access token",
 	"error.userinfoservice.invalid_access_token_description": "The access token is invalid, expired, or malformed",
 	"error.userinfoservice.missing_sub_claim": "Invalid access token",

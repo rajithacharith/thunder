@@ -80,7 +80,7 @@ func (suite *JWEServiceTestSuite) TestEncryptDecrypt_RSA() {
 	// RSA-OAEP-256 with different content encryption algorithms
 	encAlgs := []ContentEncAlgorithm{A128GCM, A192GCM, A256GCM}
 	for _, enc := range encAlgs {
-		jweToken, sErr := suite.jweService.Encrypt(payload, recipientPublicKey, RSAOAEP256, enc)
+		jweToken, sErr := suite.jweService.Encrypt(payload, recipientPublicKey, RSAOAEP256, enc, "", "")
 		assert.Nil(suite.T(), sErr)
 		decrypted, sErr := suite.jweService.Decrypt(jweToken)
 		assert.Nil(suite.T(), sErr)
@@ -110,7 +110,7 @@ func (suite *JWEServiceTestSuite) TestEncryptDecrypt_ECDH() {
 	}
 
 	for _, tc := range testCases {
-		jweToken, sErr := suite.jweService.Encrypt(payload, recipientPublicKey, tc.alg, tc.enc)
+		jweToken, sErr := suite.jweService.Encrypt(payload, recipientPublicKey, tc.alg, tc.enc, "", "")
 		assert.Nil(suite.T(), sErr)
 		decrypted, sErr := suite.jweService.Decrypt(jweToken)
 		assert.Nil(suite.T(), sErr)
@@ -126,12 +126,12 @@ func (suite *JWEServiceTestSuite) TestEncrypt_Errors() {
 	}
 
 	// Unsupported Encryption algorithm
-	_, sErr := suite.jweService.Encrypt([]byte("p"), &suite.testRSAPrivateKey.PublicKey, RSAOAEP256, "INVALID")
+	_, sErr := suite.jweService.Encrypt([]byte("p"), &suite.testRSAPrivateKey.PublicKey, RSAOAEP256, "INVALID", "", "")
 	assert.NotNil(suite.T(), sErr)
 	assert.Equal(suite.T(), ErrorUnsupportedEncryptionAlgorithm, *sErr)
 
 	// EncryptKey failure (RSA with EC key)
-	_, sErr = suite.jweService.Encrypt([]byte("p"), &suite.testECPrivateKey.PublicKey, RSAOAEP256, A128GCM)
+	_, sErr = suite.jweService.Encrypt([]byte("p"), &suite.testECPrivateKey.PublicKey, RSAOAEP256, A128GCM, "", "")
 	assert.NotNil(suite.T(), sErr)
 	assert.Equal(suite.T(), ErrorUnsupportedJWEAlgorithm, *sErr)
 }
@@ -150,7 +150,7 @@ func (suite *JWEServiceTestSuite) TestDecrypt_Errors() {
 
 	// DecryptKey failure (tampered encrypted key)
 	payload := []byte("data")
-	jweToken, _ := suite.jweService.Encrypt(payload, &suite.testRSAPrivateKey.PublicKey, RSAOAEP256, A128GCM)
+	jweToken, _ := suite.jweService.Encrypt(payload, &suite.testRSAPrivateKey.PublicKey, RSAOAEP256, A128GCM, "", "")
 
 	suite.jweService.privateKey = suite.testECPrivateKey // Wrong key type for RSA-OAEP-256
 	_, sErr = suite.jweService.Decrypt(jweToken)
@@ -199,13 +199,13 @@ func (suite *JWEServiceTestSuite) TestEncrypt_ErrorCases() {
 	// but we can test other error paths
 
 	// Test with nil recipient key
-	_, sErr := suite.jweService.Encrypt(payload, nil, RSAOAEP256, A128GCM)
+	_, sErr := suite.jweService.Encrypt(payload, nil, RSAOAEP256, A128GCM, "", "")
 	assert.NotNil(suite.T(), sErr)
 
 	// Test with unsupported key type (e.g., string instead of crypto key)
 	// This will be caught in EncryptKey and return InvalidKeyTypeForAlgorithm
 	fakeKey := "not-a-real-key"
-	_, sErr = suite.jweService.Encrypt(payload, fakeKey, RSAOAEP256, A128GCM)
+	_, sErr = suite.jweService.Encrypt(payload, fakeKey, RSAOAEP256, A128GCM, "", "")
 	assert.NotNil(suite.T(), sErr)
 }
 

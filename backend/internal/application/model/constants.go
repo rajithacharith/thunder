@@ -18,7 +18,12 @@
 
 package model
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/asgardeo/thunder/internal/system/jose/jwe"
+	"github.com/asgardeo/thunder/internal/system/jose/jws"
+)
 
 // InboundAuthType represents the type of inbound authentication.
 type InboundAuthType string
@@ -35,9 +40,28 @@ const (
 	// UserInfoResponseTypeJSON represents the JSON userinfo response type.
 	UserInfoResponseTypeJSON UserInfoResponseType = "JSON"
 
-	// UserInfoResponseTypeJWS represents the JWS userinfo response type.
+	// UserInfoResponseTypeJWS represents the signed JWT (JWS) userinfo response type.
 	UserInfoResponseTypeJWS UserInfoResponseType = "JWS"
+
+	// UserInfoResponseTypeJWE represents the encrypted (JWE) userinfo response type.
+	UserInfoResponseTypeJWE UserInfoResponseType = "JWE"
+
+	// UserInfoResponseTypeNESTEDJWT represents the signed-then-encrypted (Nested JWT) userinfo response type.
+	UserInfoResponseTypeNESTEDJWT UserInfoResponseType = "NESTED_JWT"
 )
+
+// SupportedUserInfoSigningAlgs lists JWS algorithms supported for userinfo signing.
+var SupportedUserInfoSigningAlgs = []string{
+	string(jws.RS256), string(jws.RS512), string(jws.PS256),
+	string(jws.ES256), string(jws.ES384), string(jws.ES512),
+	string(jws.EdDSA),
+}
+
+// SupportedUserInfoEncryptionAlgs lists JWE key-management algorithms supported for userinfo encryption.
+var SupportedUserInfoEncryptionAlgs = []string{string(jwe.RSAOAEP), string(jwe.RSAOAEP256)}
+
+// SupportedUserInfoEncryptionEncs lists JWE content-encryption algorithms supported for userinfo encryption.
+var SupportedUserInfoEncryptionEncs = []string{string(jwe.A128CBCHS256), string(jwe.A256GCM)}
 
 // ApplicationNotFoundError is the error returned when an application is not found.
 var ApplicationNotFoundError error = errors.New("application not found")

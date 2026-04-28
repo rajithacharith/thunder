@@ -293,7 +293,7 @@ func (s *otpService) createSessionToken(sessionData common.OTPSessionData) (stri
 
 	claims["aud"] = "otp-svc"
 	token, _, err := s.jwtService.GenerateJWT(
-		"otp-svc", jwtConfig.Issuer, validityPeriod, claims, jwt.TokenTypeJWT)
+		"otp-svc", jwtConfig.Issuer, validityPeriod, claims, jwt.TokenTypeJWT, "")
 	if err != nil {
 		return "", fmt.Errorf("failed to generate JWT token: %v", err)
 	}

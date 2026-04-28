@@ -86,7 +86,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 		logger.Fatal("Failed to initialize certificate service", log.Error(err))
 	}
 
-	jwtService, _, err := jose.Initialize(pkiService)
+	jwtService, jweService, err := jose.Initialize(pkiService)
 	if err != nil {
 		logger.Fatal("Failed to initialize JOSE services", log.Error(err))
 	}
@@ -293,8 +293,8 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	}
 
 	// Initialize OAuth services.
-	err = oauth.Initialize(mux, applicationService, authnProvider, jwtService, flowExecService, observabilitySvc,
-		pkiService, ouService, attributeCacheService, authZService, entityProvider, resourceService)
+	err = oauth.Initialize(mux, applicationService, authnProvider, jwtService, jweService, flowExecService,
+		observabilitySvc, pkiService, ouService, attributeCacheService, authZService, entityProvider, resourceService)
 	if err != nil {
 		logger.Fatal("Failed to initialize OAuth services", log.Error(err))
 	}

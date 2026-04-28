@@ -310,7 +310,9 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthConfigJSONBytes_WithUserInfo
 	app := suite.createTestApplication()
 	inboundAuthConfig := app.InboundAuthConfig[0]
 	inboundAuthConfig.OAuthAppConfig.UserInfo = &model.UserInfoConfig{
-		ResponseType:   "jwt",
+		SigningAlg:     "RS256",
+		EncryptionAlg:  "RSA-OAEP-256",
+		EncryptionEnc:  "A256GCM",
 		UserAttributes: []string{"email", "name"},
 	}
 
@@ -325,7 +327,9 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthConfigJSONBytes_WithUserInfo
 
 	userInfo, ok := result["user_info"].(map[string]interface{})
 	suite.True(ok)
-	suite.Equal("jwt", userInfo["response_type"])
+	suite.Equal("RS256", userInfo["signing_alg"])
+	suite.Equal("RSA-OAEP-256", userInfo["encryption_alg"])
+	suite.Equal("A256GCM", userInfo["encryption_enc"])
 
 	userAttrs, ok := userInfo["user_attributes"].([]interface{})
 	suite.True(ok)

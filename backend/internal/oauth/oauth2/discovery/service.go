@@ -21,6 +21,7 @@ package discovery
 import (
 	"context"
 
+	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/pkce"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -77,11 +78,14 @@ func (ds *discoveryService) GetOIDCMetadata(ctx context.Context) *OIDCProviderMe
 	oauth2Meta := ds.GetOAuth2AuthorizationServerMetadata(ctx)
 
 	return &OIDCProviderMetadata{
-		OAuth2AuthorizationServerMetadata: *oauth2Meta,
-		SubjectTypesSupported:             ds.getSupportedSubjectTypes(),
-		IDTokenSigningAlgValuesSupported:  ds.pkiService.GetSupportedSigningAlgorithms(),
-		ClaimsSupported:                   ds.getSupportedClaims(),
-		ClaimsParameterSupported:          true,
+		OAuth2AuthorizationServerMetadata:    *oauth2Meta,
+		SubjectTypesSupported:                ds.getSupportedSubjectTypes(),
+		IDTokenSigningAlgValuesSupported:     ds.pkiService.GetSupportedSigningAlgorithms(),
+		UserInfoSigningAlgValuesSupported:    ds.pkiService.GetSupportedSigningAlgorithms(),
+		UserInfoEncryptionAlgValuesSupported: appmodel.SupportedUserInfoEncryptionAlgs,
+		UserInfoEncryptionEncValuesSupported: appmodel.SupportedUserInfoEncryptionEncs,
+		ClaimsSupported:                      ds.getSupportedClaims(),
+		ClaimsParameterSupported:             true,
 	}
 }
 

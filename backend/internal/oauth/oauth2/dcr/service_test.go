@@ -177,8 +177,8 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ApplicationServiceError() {
 
 	appServiceErr := &serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
-		Code:             "APP-1014",
-		Error:            i18ncore.I18nMessage{DefaultValue: "Invalid URI"},
+		Code:             "APP-1012",
+		Error:            i18ncore.I18nMessage{DefaultValue: "Invalid redirect URI"},
 		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "The redirect URI is invalid"},
 	}
 
@@ -205,14 +205,19 @@ func (s *DCRServiceTestSuite) TestMapApplicationErrorToDCRError() {
 			expectedDCRCode: ErrorInvalidClientMetadata.Code,
 		},
 		{
-			name:            "Redirect URI Error APP-1014",
-			appErrCode:      "APP-1014",
+			name:            "Redirect URI Error APP-1012",
+			appErrCode:      "APP-1012",
 			expectedDCRCode: ErrorInvalidRedirectURI.Code,
 		},
 		{
-			name:            "Redirect URI Error APP-1015",
+			name:            "Certificate Type Error APP-1014",
+			appErrCode:      "APP-1014",
+			expectedDCRCode: ErrorInvalidClientMetadata.Code,
+		},
+		{
+			name:            "Certificate Value Error APP-1015",
 			appErrCode:      "APP-1015",
-			expectedDCRCode: ErrorInvalidRedirectURI.Code,
+			expectedDCRCode: ErrorInvalidClientMetadata.Code,
 		},
 		{
 			name:            "Server Error APP-5001",
@@ -246,19 +251,14 @@ func (s *DCRServiceTestSuite) TestMapApplicationErrorToDCRError() {
 }
 
 func (s *DCRServiceTestSuite) TestRegisterClient_ConvertDCRToApplicationError() {
+	// A channel value cannot be JSON-marshaled, so JWKS serialization fails and
+	// the request is rejected before reaching the application service.
 	request := &DCRRegistrationRequest{
 		OUID:         "test-ou-1",
 		RedirectURIs: []string{"https://client.example.com/callback"},
 		GrantTypes:   []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
 		JWKS:         map[string]interface{}{"keys": make(chan int)},
 	}
-
-	s.mockAppService.On(
-		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
-	).Return(nil, &serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
-		Code: "APP-5001",
-	})
 
 	response, err := s.service.RegisterClient(context.Background(), request)
 

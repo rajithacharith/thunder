@@ -19,18 +19,24 @@
 package jwe
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/ecdh"
 	"crypto/ecdsa"
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha1" //nolint:gosec // RSA-OAEP with SHA-1 is required by RFC 7518 §4.3
+	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash"
 	"strings"
 
 	cryptohash "github.com/asgardeo/thunder/internal/system/crypto/hash"
@@ -44,17 +50,28 @@ import (
 func encryptKey(cek []byte, alg KeyEncAlgorithm, recipientPubKey crypto.PublicKey,
 	enc ContentEncAlgorithm) ([]byte, map[string]interface{}, error) {
 	switch alg {
+	case RSAOAEP:
+		encryptedKey, err := encryptWithRSAOAEP(cek, recipientPubKey)
+		return encryptedKey, nil, err
+
 	case RSAOAEP256:
 		encryptedKey, err := encryptWithRSAOAEP256(cek, recipientPubKey)
+		return encryptedKey, nil, err
+
+	case A128KW, A192KW, A256KW:
+		encryptedKey, err := encryptWithAESKW(cek, recipientPubKey, alg)
 		return encryptedKey, nil, err
 
 	case ECDHES:
 		// For ECDH-ES, the CEK is directly derived from the shared secret
 		return encryptWithECDHES(cek, recipientPubKey, enc)
 
-	case ECDHESA128KW, ECDHESA256KW:
+	case ECDHESA128KW, ECDHESA192KW, ECDHESA256KW:
 		// Derive KEK using ECDH-ES, then wrap CEK
 		return encryptWithECDHESKW(cek, recipientPubKey, alg)
+
+	case A128GCMKW, A192GCMKW, A256GCMKW:
+		return encryptWithAESGCMKW(cek, recipientPubKey, alg)
 
 	default:
 		return nil, nil, fmt.Errorf("unsupported JWE algorithm: %s", alg)
@@ -62,10 +79,10 @@ func encryptKey(cek []byte, alg KeyEncAlgorithm, recipientPubKey crypto.PublicKe
 }
 
 // epkToMap converts an ephemeral public key to a JWK-like map representation.
-func epkToMap(pub crypto.PublicKey) map[string]interface{} {
+func epkToMap(pub crypto.PublicKey) (map[string]interface{}, error) {
 	ecdhPub, ok := pub.(*ecdh.PublicKey)
 	if !ok {
-		return nil
+		return nil, fmt.Errorf("unsupported ephemeral public key type: %T", pub)
 	}
 
 	raw := ecdhPub.Bytes()
@@ -86,7 +103,7 @@ func epkToMap(pub crypto.PublicKey) map[string]interface{} {
 		x = raw[1:67]
 		y = raw[67:]
 	default:
-		return nil
+		return nil, fmt.Errorf("unsupported ephemeral public key curve (raw length %d)", len(raw))
 	}
 
 	return map[string]interface{}{
@@ -94,21 +111,30 @@ func epkToMap(pub crypto.PublicKey) map[string]interface{} {
 		"crv": crv,
 		"x":   base64.RawURLEncoding.EncodeToString(x),
 		"y":   base64.RawURLEncoding.EncodeToString(y),
-	}
+	}, nil
 }
 
 // decryptKey decrypts the encrypted content encryption key (CEK) using the recipient's private key.
 func decryptKey(encryptedKey []byte, alg KeyEncAlgorithm, privateKey crypto.PrivateKey,
 	header map[string]interface{}, enc ContentEncAlgorithm) ([]byte, error) {
 	switch alg {
+	case RSAOAEP:
+		return decryptWithRSAOAEP(encryptedKey, privateKey)
+
 	case RSAOAEP256:
 		return decryptWithRSAOAEP256(encryptedKey, privateKey)
+
+	case A128KW, A192KW, A256KW:
+		return decryptWithAESKW(encryptedKey, privateKey, alg)
 
 	case ECDHES:
 		return decryptWithECDHES(privateKey, header, enc)
 
-	case ECDHESA128KW, ECDHESA256KW:
+	case ECDHESA128KW, ECDHESA192KW, ECDHESA256KW:
 		return decryptWithECDHESKW(encryptedKey, privateKey, header, alg)
+
+	case A128GCMKW, A192GCMKW, A256GCMKW:
+		return decryptWithAESGCMKW(encryptedKey, privateKey, header, alg)
 
 	default:
 		return nil, fmt.Errorf("unsupported JWE algorithm: %s", alg)
@@ -130,22 +156,41 @@ func computeSharedSecretForRecipient(priv crypto.PrivateKey, pub crypto.PublicKe
 
 // encryptContent encrypts the payload using the content encryption key (CEK).
 func encryptContent(payload []byte, cek []byte, enc ContentEncAlgorithm, aad []byte) ([]byte, []byte, []byte, error) {
+	switch enc {
+	case A128CBCHS256, A192CBCHS384, A256CBCHS512:
+		return encryptWithCBC(payload, cek, enc, aad)
+	case A128GCM, A192GCM, A256GCM:
+		return encryptWithGCM(payload, cek, enc, aad)
+	default:
+		return nil, nil, nil, fmt.Errorf("unsupported encryption algorithm: %s", enc)
+	}
+}
+
+// decryptContent decrypts the ciphertext using the content encryption key (CEK).
+func decryptContent(ciphertext, iv, tag []byte, cek []byte, enc ContentEncAlgorithm, aad []byte) ([]byte, error) {
+	switch enc {
+	case A128CBCHS256, A192CBCHS384, A256CBCHS512:
+		return decryptWithCBC(ciphertext, iv, tag, cek, enc, aad)
+	case A128GCM, A192GCM, A256GCM:
+		return decryptWithGCM(ciphertext, iv, tag, cek, aad)
+	default:
+		return nil, fmt.Errorf("unsupported encryption algorithm: %s", enc)
+	}
+}
+
+// encryptWithGCM encrypts the payload using AES-GCM.
+func encryptWithGCM(payload []byte, cek []byte, enc ContentEncAlgorithm, aad []byte) ([]byte, []byte, []byte, error) {
 	block, err := aes.NewCipher(cek)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	var gcm cipher.AEAD
-	switch enc {
-	case A128GCM, A192GCM, A256GCM:
-		gcm, err = cipher.NewGCM(block)
-	default:
-		return nil, nil, nil, fmt.Errorf("unsupported encryption algorithm: %s", enc)
-	}
-
+	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
+	_ = enc // key size already enforced by CEK length
 
 	iv := make([]byte, gcm.NonceSize())
 	if _, err := rand.Read(iv); err != nil {
@@ -160,26 +205,138 @@ func encryptContent(payload []byte, cek []byte, enc ContentEncAlgorithm, aad []b
 	return iv, ciphertext, tag, nil
 }
 
-// decryptContent decrypts the ciphertext using the content encryption key (CEK).
-func decryptContent(ciphertext, iv, tag []byte, cek []byte, enc ContentEncAlgorithm, aad []byte) ([]byte, error) {
+// decryptWithGCM decrypts the ciphertext using AES-GCM.
+func decryptWithGCM(ciphertext, iv, tag []byte, cek []byte, aad []byte) ([]byte, error) {
 	block, err := aes.NewCipher(cek)
 	if err != nil {
 		return nil, err
 	}
 
-	var gcm cipher.AEAD
-	switch enc {
-	case A128GCM, A192GCM, A256GCM:
-		gcm, err = cipher.NewGCM(block)
-	default:
-		return nil, fmt.Errorf("unsupported encryption algorithm: %s", enc)
-	}
-
+	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return nil, err
 	}
 
+	if len(iv) != gcm.NonceSize() {
+		return nil, fmt.Errorf("invalid GCM nonce length: got %d, want %d", len(iv), gcm.NonceSize())
+	}
+
 	return gcm.Open(nil, iv, append(ciphertext, tag...), aad)
+}
+
+// encryptWithCBC encrypts the payload using AES-CBC + HMAC per RFC 7518 §5.2.
+// Supports A128CBC-HS256 (32-byte CEK), A192CBC-HS384 (48-byte CEK), A256CBC-HS512 (64-byte CEK).
+func encryptWithCBC(payload []byte, cek []byte, enc ContentEncAlgorithm, aad []byte) ([]byte, []byte, []byte, error) {
+	halfLen, hashAlg, err := cbcParams(enc)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if len(cek) != halfLen*2 {
+		return nil, nil, nil, fmt.Errorf("%s requires a %d-byte CEK, got %d", enc, halfLen*2, len(cek))
+	}
+	macKey := cek[:halfLen]
+	encKey := cek[halfLen:]
+
+	iv := make([]byte, aes.BlockSize)
+	if _, err := rand.Read(iv); err != nil {
+		return nil, nil, nil, err
+	}
+
+	padded := pkcs7Pad(payload, aes.BlockSize)
+	block, err := aes.NewCipher(encKey)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	ciphertext := make([]byte, len(padded))
+	cipher.NewCBCEncrypter(block, iv).CryptBlocks(ciphertext, padded)
+
+	tag := cbcHMACTag(hashAlg, macKey, aad, iv, ciphertext, halfLen)
+	return iv, ciphertext, tag, nil
+}
+
+// decryptWithCBC decrypts AES-CBC + HMAC per RFC 7518 §5.2.
+// Supports A128CBC-HS256, A192CBC-HS384, and A256CBC-HS512.
+func decryptWithCBC(ciphertext, iv, tag []byte, cek []byte, enc ContentEncAlgorithm, aad []byte) ([]byte, error) {
+	halfLen, hashAlg, err := cbcParams(enc)
+	if err != nil {
+		return nil, err
+	}
+	if len(cek) != halfLen*2 {
+		return nil, fmt.Errorf("%s requires a %d-byte CEK, got %d", enc, halfLen*2, len(cek))
+	}
+	macKey := cek[:halfLen]
+	encKey := cek[halfLen:]
+
+	expected := cbcHMACTag(hashAlg, macKey, aad, iv, ciphertext, halfLen)
+	if !hmac.Equal(tag, expected) {
+		return nil, fmt.Errorf("%s authentication tag mismatch", enc)
+	}
+
+	block, err := aes.NewCipher(encKey)
+	if err != nil {
+		return nil, err
+	}
+	if len(iv) != aes.BlockSize {
+		return nil, fmt.Errorf("invalid CBC IV length: got %d, want %d", len(iv), aes.BlockSize)
+	}
+	if len(ciphertext)%aes.BlockSize != 0 {
+		return nil, errors.New("ciphertext length is not a multiple of AES block size")
+	}
+	plaintext := make([]byte, len(ciphertext))
+	cipher.NewCBCDecrypter(block, iv).CryptBlocks(plaintext, ciphertext)
+	return pkcs7Unpad(plaintext)
+}
+
+// cbcParams returns the half-CEK length and HMAC hash constructor for the given CBC enc algorithm.
+// Per RFC 7518 §5.2: CEK = MAC key || ENC key, each of halfLen bytes; tag = HMAC[:halfLen].
+func cbcParams(enc ContentEncAlgorithm) (halfLen int, newHash func() hash.Hash, err error) {
+	switch enc {
+	case A128CBCHS256:
+		return 16, sha256.New, nil
+	case A192CBCHS384:
+		return 24, sha512.New384, nil
+	case A256CBCHS512:
+		return 32, sha512.New, nil
+	default:
+		return 0, nil, fmt.Errorf("unsupported CBC enc algorithm: %s", enc)
+	}
+}
+
+// cbcHMACTag computes the authentication tag per RFC 7518 §5.2.2.1.
+// MAC input: AAD || IV || ciphertext || AAD_length_bits (64-bit big-endian). Tag = HMAC[:tagLen].
+func cbcHMACTag(newHash func() hash.Hash, macKey, aad, iv, ciphertext []byte, tagLen int) []byte {
+	aadLenBits := make([]byte, 8)
+	binary.BigEndian.PutUint64(aadLenBits, uint64(len(aad))*8) //nolint:gosec // G115: safe cast
+
+	mac := hmac.New(newHash, macKey)
+	mac.Write(aad)
+	mac.Write(iv)
+	mac.Write(ciphertext)
+	mac.Write(aadLenBits)
+	return mac.Sum(nil)[:tagLen]
+}
+
+// pkcs7Pad pads the data to a multiple of blockSize using PKCS#7.
+func pkcs7Pad(data []byte, blockSize int) []byte {
+	padding := blockSize - len(data)%blockSize
+	return append(data, bytes.Repeat([]byte{byte(padding)}, padding)...)
+}
+
+// pkcs7Unpad removes PKCS#7 padding.
+func pkcs7Unpad(data []byte) ([]byte, error) {
+	if len(data) == 0 {
+		return nil, errors.New("empty data for PKCS#7 unpadding")
+	}
+	padding := int(data[len(data)-1])
+	if padding == 0 || padding > aes.BlockSize {
+		return nil, errors.New("invalid PKCS#7 padding")
+	}
+	for _, b := range data[len(data)-padding:] {
+		if int(b) != padding {
+			return nil, errors.New("invalid PKCS#7 padding bytes")
+		}
+	}
+	return data[:len(data)-padding], nil
 }
 
 // DecodeJWE decodes a JWE compact serialization into its five parts.
@@ -402,6 +559,15 @@ func computeSharedSecret(privKey crypto.PrivateKey, pubKey crypto.PublicKey) ([]
 	return ecdhPriv.ECDH(ecdhPub)
 }
 
+// encryptWithRSAOAEP encrypts the CEK using RSA-OAEP with SHA-1 (RFC 7518 §4.3).
+func encryptWithRSAOAEP(cek []byte, recipientPubKey crypto.PublicKey) ([]byte, error) {
+	rsaPub, ok := recipientPubKey.(*rsa.PublicKey)
+	if !ok {
+		return nil, errors.New("unsupported public key type for JWE key encryption")
+	}
+	return rsa.EncryptOAEP(sha1.New(), rand.Reader, rsaPub, cek, nil) //nolint:gosec
+}
+
 // encryptWithRSAOAEP256 encrypts the CEK using RSA-OAEP-256 algorithm.
 func encryptWithRSAOAEP256(cek []byte, recipientPubKey crypto.PublicKey) ([]byte, error) {
 	rsaPub, ok := recipientPubKey.(*rsa.PublicKey)
@@ -413,6 +579,15 @@ func encryptWithRSAOAEP256(cek []byte, recipientPubKey crypto.PublicKey) ([]byte
 		return nil, err
 	}
 	return rsa.EncryptOAEP(h, rand.Reader, rsaPub, cek, nil)
+}
+
+// decryptWithRSAOAEP decrypts the encrypted key using RSA-OAEP with SHA-1 (RFC 7518 §4.3).
+func decryptWithRSAOAEP(encryptedKey []byte, privateKey crypto.PrivateKey) ([]byte, error) {
+	rsaPriv, ok := privateKey.(*rsa.PrivateKey)
+	if !ok {
+		return nil, errors.New("unsupported private key type for JWE key decryption")
+	}
+	return rsa.DecryptOAEP(sha1.New(), rand.Reader, rsaPriv, encryptedKey, nil) //nolint:gosec
 }
 
 // encryptWithECDHES derives the CEK using ECDH-ES algorithm.
@@ -445,7 +620,11 @@ func encryptWithECDHES(cek []byte, recipientPubKey crypto.PublicKey,
 	copy(cek, derivedKey)
 
 	// Set epk in header
-	headerExtras := map[string]interface{}{"epk": epkToMap(ephemeralPub)}
+	epkMap, err := epkToMap(ephemeralPub)
+	if err != nil {
+		return nil, nil, err
+	}
+	headerExtras := map[string]interface{}{"epk": epkMap}
 	return []byte{}, headerExtras, nil
 }
 
@@ -463,7 +642,10 @@ func encryptWithECDHESKW(cek []byte, recipientPubKey crypto.PublicKey,
 	}
 
 	kekLen := 16
-	if alg == ECDHESA256KW {
+	switch alg {
+	case ECDHESA192KW:
+		kekLen = 24
+	case ECDHESA256KW:
 		kekLen = 32
 	}
 
@@ -473,7 +655,11 @@ func encryptWithECDHESKW(cek []byte, recipientPubKey crypto.PublicKey,
 		return nil, nil, err
 	}
 
-	headerExtras := map[string]interface{}{"epk": epkToMap(ephemeralPub)}
+	epkMap, err := epkToMap(ephemeralPub)
+	if err != nil {
+		return nil, nil, err
+	}
+	headerExtras := map[string]interface{}{"epk": epkMap}
 	return wrappedKey, headerExtras, nil
 }
 
@@ -540,10 +726,155 @@ func decryptWithECDHESKW(encryptedKey []byte, privateKey crypto.PrivateKey,
 	}
 
 	kekLen := 16
-	if alg == ECDHESA256KW {
+	switch alg {
+	case ECDHESA192KW:
+		kekLen = 24
+	case ECDHESA256KW:
 		kekLen = 32
 	}
 
 	kek := concatKDF(z, string(alg), kekLen)
 	return aesKeyUnwrap(kek, encryptedKey)
+}
+
+// encryptWithAESKW wraps the CEK using the symmetric KEK via RFC 3394 AES Key Wrap (RFC 7518 §4.4).
+// The KEK is passed as a []byte stored in crypto.PublicKey.
+func encryptWithAESKW(cek []byte, kek crypto.PublicKey, alg KeyEncAlgorithm) ([]byte, error) {
+	keyBytes, ok := kek.([]byte)
+	if !ok {
+		return nil, fmt.Errorf("AES Key Wrap requires a symmetric key ([]byte), got %T", kek)
+	}
+	expectedLen := 16
+	switch alg {
+	case A192KW:
+		expectedLen = 24
+	case A256KW:
+		expectedLen = 32
+	}
+	if len(keyBytes) != expectedLen {
+		return nil, fmt.Errorf("AES Key Wrap (%s) requires a %d-byte key, got %d", alg, expectedLen, len(keyBytes))
+	}
+	return aesKeyWrap(keyBytes, cek)
+}
+
+// decryptWithAESKW unwraps the encrypted CEK using the symmetric KEK via RFC 3394 AES Key Unwrap (RFC 7518 §4.4).
+// The KEK is passed as a []byte stored in crypto.PrivateKey.
+func decryptWithAESKW(encryptedKey []byte, kek crypto.PrivateKey, alg KeyEncAlgorithm) ([]byte, error) {
+	keyBytes, ok := kek.([]byte)
+	if !ok {
+		return nil, fmt.Errorf("AES Key Wrap requires a symmetric key ([]byte), got %T", kek)
+	}
+	expectedLen := 16
+	switch alg {
+	case A192KW:
+		expectedLen = 24
+	case A256KW:
+		expectedLen = 32
+	}
+	if len(keyBytes) != expectedLen {
+		return nil, fmt.Errorf("AES Key Wrap (%s) requires a %d-byte key, got %d", alg, expectedLen, len(keyBytes))
+	}
+	return aesKeyUnwrap(keyBytes, encryptedKey)
+}
+
+// encryptWithAESGCMKW encrypts the CEK using AES-GCM key wrap (RFC 7518 §4.7).
+// The KEK is passed as a []byte stored in crypto.PublicKey.
+// The generated IV and authentication tag are returned as headerExtras ("iv" and "tag").
+func encryptWithAESGCMKW(
+	cek []byte, kek crypto.PublicKey, alg KeyEncAlgorithm,
+) ([]byte, map[string]interface{}, error) {
+	keyBytes, ok := kek.([]byte)
+	if !ok {
+		return nil, nil, fmt.Errorf("AES-GCM Key Wrap requires a symmetric key ([]byte), got %T", kek)
+	}
+	expectedLen := 16
+	switch alg {
+	case A192GCMKW:
+		expectedLen = 24
+	case A256GCMKW:
+		expectedLen = 32
+	}
+	if len(keyBytes) != expectedLen {
+		return nil, nil, fmt.Errorf(
+			"AES-GCM Key Wrap (%s) requires a %d-byte key, got %d", alg, expectedLen, len(keyBytes),
+		)
+	}
+
+	block, err := aes.NewCipher(keyBytes)
+	if err != nil {
+		return nil, nil, err
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	iv := make([]byte, gcm.NonceSize())
+	if _, err := rand.Read(iv); err != nil {
+		return nil, nil, err
+	}
+
+	sealed := gcm.Seal(nil, iv, cek, nil)
+	tagSize := gcm.Overhead()
+	encryptedKey := sealed[:len(sealed)-tagSize]
+	tag := sealed[len(sealed)-tagSize:]
+
+	headerExtras := map[string]interface{}{
+		"iv":  base64.RawURLEncoding.EncodeToString(iv),
+		"tag": base64.RawURLEncoding.EncodeToString(tag),
+	}
+	return encryptedKey, headerExtras, nil
+}
+
+// decryptWithAESGCMKW decrypts the wrapped CEK using AES-GCM key wrap (RFC 7518 §4.7).
+// The KEK is passed as a []byte stored in crypto.PrivateKey.
+// The IV and tag are read from the JWE protected header.
+func decryptWithAESGCMKW(encryptedKey []byte, kek crypto.PrivateKey,
+	header map[string]interface{}, alg KeyEncAlgorithm) ([]byte, error) {
+	keyBytes, ok := kek.([]byte)
+	if !ok {
+		return nil, fmt.Errorf("AES-GCM Key Wrap requires a symmetric key ([]byte), got %T", kek)
+	}
+	expectedLen := 16
+	switch alg {
+	case A192GCMKW:
+		expectedLen = 24
+	case A256GCMKW:
+		expectedLen = 32
+	}
+	if len(keyBytes) != expectedLen {
+		return nil, fmt.Errorf("AES-GCM Key Wrap (%s) requires a %d-byte key, got %d", alg, expectedLen, len(keyBytes))
+	}
+
+	ivStr, ok := header["iv"].(string)
+	if !ok {
+		return nil, errors.New("missing iv in header for AES-GCM Key Wrap")
+	}
+	tagStr, ok := header["tag"].(string)
+	if !ok {
+		return nil, errors.New("missing tag in header for AES-GCM Key Wrap")
+	}
+
+	iv, err := base64.RawURLEncoding.DecodeString(ivStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode iv from header: %w", err)
+	}
+	tag, err := base64.RawURLEncoding.DecodeString(tagStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode tag from header: %w", err)
+	}
+
+	block, err := aes.NewCipher(keyBytes)
+	if err != nil {
+		return nil, err
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+	if len(iv) != gcm.NonceSize() {
+		return nil, fmt.Errorf("invalid GCM nonce length for key wrap: got %d, want %d", len(iv), gcm.NonceSize())
+	}
+
+	return gcm.Open(nil, iv, append(encryptedKey, tag...), nil)
 }

@@ -1117,9 +1117,34 @@ components:
           items:
             type: string
           description: |
-            The user attributes to include in the userinfo response. 
+            The user attributes to include in the userinfo response.
             If not specified, falls back to ID token user attributes.
           example: ["email", "name", "given_name", "family_name", "picture"]
+        signingAlg:
+          type: string
+          description: |
+            JWS algorithm used to sign the UserInfo response JWT.
+            When set (without encryptionAlg), the response is a signed JWT (JWS).
+            When set together with encryptionAlg, the response is a Nested JWT (sign-then-encrypt).
+            Omit to return a plain JSON response.
+          enum: ["RS256", "RS512", "PS256", "ES256", "ES384", "ES512", "EdDSA"]
+          example: "RS256"
+        encryptionAlg:
+          type: string
+          description: |
+            JWE key-management algorithm used to encrypt the UserInfo response.
+            Must be set together with encryptionEnc and a client certificate (JWKS).
+            When set without signingAlg, the response is a JWE over the plain JSON payload.
+            When set together with signingAlg, the response is a Nested JWT (sign-then-encrypt).
+          enum: ["RSA-OAEP", "RSA-OAEP-256"]
+          example: "RSA-OAEP-256"
+        encryptionEnc:
+          type: string
+          description: |
+            JWE content-encryption algorithm used to encrypt the UserInfo response payload.
+            Required when encryptionAlg is set.
+          enum: ["A128CBC-HS256", "A256GCM"]
+          example: "A256GCM"
 
     Certificate:
       type: object

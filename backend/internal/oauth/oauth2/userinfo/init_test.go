@@ -59,7 +59,7 @@ func (suite *InitTestSuite) SetupTest() {
 func (suite *InitTestSuite) TestInitialize() {
 	mux := http.NewServeMux()
 
-	service := Initialize(mux, suite.mockJWTService,
+	service := Initialize(mux, suite.mockJWTService, nil, nil,
 		suite.mockTokenValidator, suite.mockAppService,
 		suite.mockOUService, suite.mockAttributeCacheService, suite.mockTransactioner)
 
@@ -69,7 +69,7 @@ func (suite *InitTestSuite) TestInitialize() {
 func (suite *InitTestSuite) TestInitialize_RegistersRoutes() {
 	mux := http.NewServeMux()
 
-	Initialize(mux, suite.mockJWTService,
+	Initialize(mux, suite.mockJWTService, nil, nil,
 		suite.mockTokenValidator, suite.mockAppService,
 		suite.mockOUService, suite.mockAttributeCacheService, suite.mockTransactioner)
 

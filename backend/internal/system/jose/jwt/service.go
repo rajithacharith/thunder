@@ -45,7 +45,7 @@ import (
 
 // JWTServiceInterface defines the interface for JWT operations.
 type JWTServiceInterface interface {
-	GenerateJWT(sub, iss string, validityPeriod int64, claims map[string]interface{}, typ string) (
+	GenerateJWT(sub, iss string, validityPeriod int64, claims map[string]interface{}, typ, alg string) (
 		string, int64, *serviceerror.ServiceError)
 	VerifyJWT(jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError
 	VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey, expectedAud,
@@ -138,13 +138,24 @@ func newJWTService(pkiService pki.PKIServiceInterface) (JWTServiceInterface, err
 	}
 }
 
-// GenerateJWT generates a standard JWT signed with the server's private key.
+// GenerateJWT generates a JWT signed with the server's private key.
 // The typ parameter sets the JWT header "typ" field. If empty, defaults to "JWT".
+// The alg parameter overrides the signing algorithm (e.g. "RS256"). When empty, the server's
+// default algorithm is used. When set but incompatible with the server's private key,
+// ErrorUnsupportedJWSAlgorithm is returned.
 // claims["aud"] must be set by the caller as either a string or []string; omitting it
 // or providing another type is a programmer error and returns InternalServerError.
 func (js *jwtService) GenerateJWT(
-	sub, iss string, validityPeriod int64, claims map[string]interface{}, typ string,
+	sub, iss string, validityPeriod int64, claims map[string]interface{}, typ, alg string,
 ) (string, int64, *serviceerror.ServiceError) {
+	jwsAlg := js.jwsAlg
+	if alg != "" {
+		mapped, err := jws.MapAlgorithmToSignAlg(jws.Algorithm(alg))
+		if err != nil || mapped != js.signAlg {
+			return "", 0, &ErrorUnsupportedJWSAlgorithm
+		}
+		jwsAlg = jws.Algorithm(alg)
+	}
 	if js.privateKey == nil {
 		js.logger.Error("Private key not found for JWT generation")
 		return "", 0, &serviceerror.InternalServerError
@@ -171,7 +182,7 @@ func (js *jwtService) GenerateJWT(
 		typ = TokenTypeJWT
 	}
 	header := map[string]string{
-		"alg": string(js.jwsAlg),
+		"alg": string(jwsAlg),
 		"typ": typ,
 		"kid": js.kid,
 	}

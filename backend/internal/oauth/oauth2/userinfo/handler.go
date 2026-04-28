@@ -71,11 +71,16 @@ func (h *userInfoHandler) HandleUserInfo(w http.ResponseWriter, r *http.Request)
 	w.Header().Set(serverconst.CacheControlHeaderName, serverconst.CacheControlNoStore)
 	w.Header().Set(serverconst.PragmaHeaderName, serverconst.PragmaNoCache)
 
-	if result.Type == appmodel.UserInfoResponseTypeJWS {
+	switch result.Type {
+	case appmodel.UserInfoResponseTypeJWS:
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJWT)
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(result.JWTBody))
-	} else {
+	case appmodel.UserInfoResponseTypeJWE, appmodel.UserInfoResponseTypeNESTEDJWT:
+		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJOSE)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(result.JWTBody))
+	default:
 		utils.WriteSuccessResponse(w, http.StatusOK, result.JSONBody)
 	}
 
