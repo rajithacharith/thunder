@@ -502,6 +502,14 @@ vi.mock('@/features/flows/api/useGetFlowById', () => ({
   }),
 }));
 
+vi.mock('@/features/integrations/api/useIdentityProviders', () => ({
+  default: () => ({data: [], isLoading: false}),
+}));
+
+vi.mock('@/features/notification-senders/api/useNotificationSenders', () => ({
+  default: () => ({data: [], isLoading: false}),
+}));
+
 // Mock utility functions
 vi.mock('@/features/flows/utils/generateIdsForResources', () => ({
   default: <T,>(resource: T): T => resource,

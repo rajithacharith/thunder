@@ -259,11 +259,11 @@ describe('FlowsList', () => {
         </MemoryRouter>,
       );
 
-      // Only AUTHENTICATION flows are shown (HIDE_NON_EDITABLE_FLOWS = true)
+      // All flows are shown
       expect(screen.getByText('Login Flow')).toBeInTheDocument();
       expect(screen.getByText('AUTHENTICATION')).toBeInTheDocument();
-      // REGISTRATION flows are filtered out
-      expect(screen.queryByText('Registration Flow')).not.toBeInTheDocument();
+      expect(screen.getByText('Registration Flow')).toBeInTheDocument();
+      expect(screen.getByText('REGISTRATION')).toBeInTheDocument();
     });
   });
 
@@ -337,19 +337,20 @@ describe('FlowsList', () => {
       });
     });
 
-    it('should not navigate when non-authentication flow row is clicked', () => {
+    it('should navigate when a non-authentication flow row is clicked', async () => {
       render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
       );
 
-      // REGISTRATION flows are filtered from the table (HIDE_NON_EDITABLE_FLOWS = true)
-      // Only AUTHENTICATION flow row is rendered
-      expect(screen.queryByTestId('row-flow-2')).not.toBeInTheDocument();
-      // Verify only authentication row is present and no navigation has occurred
-      expect(screen.getByTestId('row-flow-1')).toBeInTheDocument();
-      expect(mockNavigate).not.toHaveBeenCalled();
+      // All flow rows are rendered and clickable
+      const registrationFlowRow = screen.getByTestId('row-flow-2');
+      fireEvent.click(registrationFlowRow);
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/flows/signin/flow-2');
+      });
     });
   });
 
@@ -405,28 +406,28 @@ describe('FlowsList', () => {
       );
       expect(authContainer.querySelectorAll('button').length).toBeGreaterThan(0);
 
-      // REGISTRATION flow should render nothing
-      const result = actionsColumn!.renderCell!({
-        row: mockFlowsData.flows[1],
-      } as DataGrid.GridRenderCellParams<BasicFlowDefinition>);
-      expect(result).toBeNull();
+      // REGISTRATION flow should also render buttons
+      const {container: regContainer} = render(
+        actionsColumn!.renderCell!({row: mockFlowsData.flows[1]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+      );
+      expect(regContainer.querySelectorAll('button').length).toBeGreaterThan(0);
     });
   });
 
   describe('Navigation Error Handling', () => {
-    it('should not navigate when a non-AUTHENTICATION flow row is clicked', () => {
+    it('should navigate when a non-AUTHENTICATION flow row is clicked via onRowClick', async () => {
       render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
       );
 
-      // Directly invoke onRowClick with a REGISTRATION flow, bypassing the
-      // HIDE_NON_EDITABLE_FLOWS filter that prevents such rows being rendered.
-      // This covers the early-return guard in handleEditClick (FlowsList.tsx line 60).
+      // All flows navigate when clicked
       capturedOnRowClick.value?.({row: {id: 'flow-2', flowType: 'REGISTRATION'}});
 
-      expect(mockNavigate).not.toHaveBeenCalled();
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/flows/signin/flow-2');
+      });
     });
 
     it('should handle navigation errors gracefully', async () => {
@@ -469,8 +470,9 @@ describe('FlowsList', () => {
       const authFlowRow = screen.getByTestId('row-flow-1');
       // Authentication flows should have pointer cursor
       expect(authFlowRow).toHaveStyle({cursor: 'pointer'});
-      // REGISTRATION flow row is not rendered (HIDE_NON_EDITABLE_FLOWS = true)
-      expect(screen.queryByTestId('row-flow-2')).not.toBeInTheDocument();
+      // Registration flow row is also rendered
+      const regFlowRow = screen.getByTestId('row-flow-2');
+      expect(regFlowRow).toBeInTheDocument();
     });
   });
 
@@ -482,10 +484,9 @@ describe('FlowsList', () => {
         </MemoryRouter>,
       );
 
-      // Only AUTHENTICATION flow is shown (HIDE_NON_EDITABLE_FLOWS = true)
+      // All flows are shown
       expect(screen.getByText('v1')).toBeInTheDocument();
-      // flow-2 (REGISTRATION) is filtered out so v2 is not in the DOM
-      expect(screen.queryByText('v2')).not.toBeInTheDocument();
+      expect(screen.getByText('v2')).toBeInTheDocument();
     });
   });
 

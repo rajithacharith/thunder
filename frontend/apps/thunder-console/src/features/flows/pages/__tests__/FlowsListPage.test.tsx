@@ -121,7 +121,7 @@ describe('FlowsListPage', () => {
       fireEvent.click(addButton);
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/flows/signin');
+        expect(mockNavigate).toHaveBeenCalledWith('/flows/create');
       });
     });
 
@@ -176,7 +176,7 @@ describe('FlowsListPage', () => {
       fireEvent.click(addButton);
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/flows/signin');
+        expect(mockNavigate).toHaveBeenCalledWith('/flows/create');
       });
 
       // Verify that the error was caught and logged

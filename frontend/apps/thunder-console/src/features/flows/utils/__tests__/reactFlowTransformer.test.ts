@@ -416,7 +416,7 @@ describe('reactFlowTransformer', () => {
         expect(execNode?.executor?.inputs?.[0].identifier).toBe('deepField');
       });
 
-      it('should use action.onSuccess as fallback when no edge exists for action', () => {
+      it('should not use stale action.onSuccess as fallback when no edge exists for action', () => {
         const components: Element[] = [
           {
             id: 'button-1',
@@ -428,15 +428,16 @@ describe('reactFlowTransformer', () => {
 
         const canvasData: ReactFlowCanvasData = {
           nodes: [createNode('view-1', StepTypes.View, {x: 0, y: 0}, {components})],
-          edges: [], // No edge for this button, so action.onSuccess should be used
+          edges: [], // No edge — stale action.onSuccess should be ignored
         };
 
         const result = transformReactFlow(canvasData);
 
-        expect(result.nodes[0].prompts?.[0].action?.nextNode).toBe('fallback-target');
+        // Without an edge, the action should not be included (no nextNode)
+        expect(result.nodes[0].prompts).toBeUndefined();
       });
 
-      it('should handle RESEND element type in extractPrompts', () => {
+      it('should handle RESEND element type in extractPrompts with edge', () => {
         const components: Element[] = [
           {
             id: 'resend-1',
@@ -448,7 +449,7 @@ describe('reactFlowTransformer', () => {
 
         const canvasData: ReactFlowCanvasData = {
           nodes: [createNode('view-1', StepTypes.View, {x: 0, y: 0}, {components})],
-          edges: [],
+          edges: [createEdge('edge-1', 'view-1', 'resend-target', 'resend-1_NEXT')],
         };
 
         const result = transformReactFlow(canvasData);
@@ -595,7 +596,7 @@ describe('reactFlowTransformer', () => {
         expect(startNode?.onSuccess).toBe('view-1');
       });
 
-      it('should fall back to action.onSuccess for START node when no edges exist', () => {
+      it('should not use stale action.onSuccess for START node when no edges exist', () => {
         const canvasData: ReactFlowCanvasData = {
           nodes: [
             createNode(
@@ -608,13 +609,13 @@ describe('reactFlowTransformer', () => {
             ),
             createNode('fallback-view', StepTypes.View),
           ],
-          edges: [], // No edges
+          edges: [], // No edges — stale action.onSuccess should be ignored
         };
 
         const result = transformReactFlow(canvasData);
 
         const startNode = result.nodes.find((n) => n.type === 'START');
-        expect(startNode?.onSuccess).toBe('fallback-view');
+        expect(startNode?.onSuccess).toBeUndefined();
       });
 
       it('should prefer edges over action.onSuccess for button connections', () => {

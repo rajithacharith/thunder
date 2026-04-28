@@ -87,6 +87,7 @@ describe('useFlowSave', () => {
       isFlowValid: true,
       flowName: 'Test Flow',
       flowHandle: 'test-flow',
+      flowType: 'AUTHENTICATION',
       showError: mockShowError,
       showSuccess: mockShowSuccess,
       setOpenValidationPanel: mockSetOpenValidationPanel,

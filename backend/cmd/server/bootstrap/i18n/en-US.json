@@ -93,7 +93,17 @@
       "forms.password_for_registration.description": "No passkey found for your account. Enter your password to register a new passkey.",
       "forms.password_for_registration.fields.password.label": "Password",
       "forms.password_for_registration.fields.password.placeholder": "Enter your password",
-      "forms.password_for_registration.actions.submit.label": "Register Passkey"
+      "forms.password_for_registration.actions.submit.label": "Register Passkey",
+      "forms.phone.title": "Sign In with SMS",
+      "forms.phone.description": "Enter your mobile number to receive a verification code",
+      "forms.phone.fields.phone.label": "Mobile Number",
+      "forms.phone.fields.phone.placeholder": "Enter your mobile number",
+      "forms.phone.actions.submit.label": "Send Code",
+      "forms.otp.title": "Verify Your Identity",
+      "forms.otp.description": "Enter the verification code sent to your phone",
+      "forms.otp.fields.otp.label": "Verification Code",
+      "forms.otp.fields.otp.placeholder": "Enter code",
+      "forms.otp.actions.submit.label": "Verify"
     },
     "signup": {
       "images.app_logo.alt": "Application logo",
@@ -203,7 +213,12 @@
       "forms.phone.fields.phone.placeholder": "Enter your mobile number",
       "forms.phone.actions.next.label": "Next",
       "forms.sms_sent.title": "Check Your Phone",
-      "forms.sms_sent.message": "We sent you a verification link via SMS. Please check your messages and click the link to continue."
+      "forms.sms_sent.message": "We sent you a verification link via SMS. Please check your messages and click the link to continue.",
+      "forms.otp.title": "Verify Your Phone",
+      "forms.otp.description": "Enter the verification code sent to your phone",
+      "forms.otp.fields.otp.label": "Verification Code",
+      "forms.otp.fields.otp.placeholder": "Enter code",
+      "forms.otp.actions.submit.label": "Verify"
     },
     "elements": {
       "fields.usertype.label": "User Type",
