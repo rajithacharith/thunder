@@ -19,7 +19,12 @@
 package executor
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
+
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 )
 
 // getAuthnServiceName returns the authn service name for an executor.
@@ -34,4 +39,24 @@ func getAuthnServiceName(executorName string) string {
 		ExecutorNameGoogleAuth: authncm.AuthenticatorGoogle,
 	}
 	return executorToAuthnServiceMap[executorName]
+}
+
+// GetUserAttribute extracts a specific attribute value from a user entity's JSON attributes.
+func GetUserAttribute(user *entityprovider.Entity, attributeKey string) (string, error) {
+	if user == nil || len(user.Attributes) == 0 {
+		return "", errors.New("user entity or attributes are empty")
+	}
+
+	var attrs map[string]interface{}
+	if err := json.Unmarshal(user.Attributes, &attrs); err != nil {
+		return "", errors.New("failed to parse user attributes")
+	}
+
+	if val, ok := attrs[attributeKey]; ok {
+		if strVal, isString := val.(string); isString && strVal != "" {
+			return strVal, nil
+		}
+	}
+
+	return "", fmt.Errorf("attribute '%s' not found or is empty", attributeKey)
 }

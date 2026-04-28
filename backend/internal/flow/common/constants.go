@@ -193,6 +193,8 @@ const (
 	RuntimeKeyUserAttributesCacheTTLSeconds = "user_attributes_cache_ttl_seconds"
 	// RuntimeKeyInviteLink holds the generated invite link for downstream executors (e.g., EmailExecutor).
 	RuntimeKeyInviteLink = "inviteLink"
+	// RuntimeKeySkipDelivery indicates that delivery should be skipped for the current flow.
+	RuntimeKeySkipDelivery = "skipDelivery"
 	// RuntimeKeyCandidateUsers holds serialized candidate users during disambiguation in resolve mode.
 	RuntimeKeyCandidateUsers = "candidateUsers"
 )
@@ -203,6 +205,8 @@ const (
 const (
 	// InputTypeText represents a text input type.
 	InputTypeText = "TEXT_INPUT"
+	// InputTypeEmail represents an email input type.
+	InputTypeEmail = "EMAIL_INPUT"
 	// InputTypePassword represents a password credential input type.
 	InputTypePassword = "PASSWORD_INPUT"
 	// InputTypeOTP represents a one-time password input type.

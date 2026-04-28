@@ -88,6 +88,7 @@ Executors are backend operation nodes. Each Executor performs one specific opera
 | **Start Passkey Registration** | Begins the passkey registration ceremony. |
 | **Finish Passkey Registration** | Completes the passkey registration ceremony. |
 | **Auth Assertion Generator** | Generates the final authentication assertion when login succeeds. |
+| **Email Executor** | Sends email for invitation and registration flows. Supports `skipDelivery` and falls back to the user entity when the recipient is missing from the flow context. |
 | **Provisioning** | Creates or updates the user record in the store. |
 | **Attribute Collector** | Collects additional user attributes defined in the user schema. |
 | **Authorization** | Evaluates authorization policies for the current user. |
@@ -119,6 +120,7 @@ Some Executors run entirely in the background and do not need a preceding View t
 | **Auth Assertion Generator** | Last Executor before the END node in every authentication flow | User must be authenticated by prior Executors |
 | **Authorization** | After authentication Executors, before Auth Assertion Generator | User must be authenticated |
 | **Send SMS OTP** | Before the SMS OTP View | User's mobile number must be on record |
+| **Email Executor** | After the flow collects the recipient email | Recipient email input; `inviteLink` for invite and self-registration templates |
 | **Provisioning** | After identity collection in registration flows | — |
 | **Identity Resolver** | Early in the flow, after the user submits an identifier | — |
 | **User Type Resolver** | After Identity Resolver | — |
