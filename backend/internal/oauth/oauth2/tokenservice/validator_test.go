@@ -119,7 +119,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_BasicToke
 	claims := map[string]interface{}{
 		"sub":   "user123",
 		"iss":   "https://thunder.io",
-		"aud":   defaultAudience, // Use default audience for Thunder issuer
+		"aud":   defaultAudience, // Use default audience for the issuer
 		"exp":   float64(now + 3600),
 		"nbf":   float64(now - 60),
 		"scope": "read write",
@@ -171,7 +171,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithoutNb
 	claims := map[string]interface{}{
 		"sub": "user123",
 		"iss": "https://thunder.io",
-		"aud": defaultAudience, // Use default audience for Thunder issuer
+		"aud": defaultAudience, // Use default audience for the issuer
 		"exp": float64(now + 3600),
 	}
 	token := suite.createTestJWT(claims)
@@ -192,7 +192,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithEmpty
 	claims := map[string]interface{}{
 		"sub": "user123",
 		"iss": "https://thunder.io",
-		"aud": defaultAudience, // Use default audience for Thunder issuer
+		"aud": defaultAudience, // Use default audience for the issuer
 		"exp": float64(now + 3600),
 		// No scope claim
 	}
@@ -459,7 +459,7 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_DecodeBeforeVerify(
 	claims := map[string]interface{}{
 		"sub": "user123",
 		"iss": "https://thunder.io",
-		"aud": defaultAudience, // Use default audience for Thunder issuer
+		"aud": defaultAudience, // Use default audience for the issuer
 		"exp": float64(now + 3600),
 	}
 	token := suite.createTestJWT(claims)
@@ -593,7 +593,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_EdgeCase_VeryLong
 	largeClaims := map[string]interface{}{
 		"sub":   "user123",
 		"iss":   "https://thunder.io",
-		"aud":   defaultAudience, // Use default audience for Thunder issuer
+		"aud":   defaultAudience, // Use default audience for the issuer
 		"exp":   float64(now + 3600),
 		"large": string(make([]byte, 10000)), // 10KB of data
 	}
