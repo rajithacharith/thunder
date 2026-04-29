@@ -226,7 +226,9 @@ func (p *parameterizer) isFieldInRules(rules *resourceRules, fieldPath string) b
 
 	// Check Variables
 	for _, varPath := range rules.Variables {
-		normalizedVarPath := strings.ToLower(varPath)
+		// Strip [] slice notation before comparing: rules use "Foo[].Bar" but traversal
+		// produces "Foo.Bar" (index not tracked in path).
+		normalizedVarPath := strings.ToLower(strings.ReplaceAll(varPath, "[]", ""))
 		if normalizedVarPath == normalizedPath {
 			return true
 		}
@@ -234,7 +236,7 @@ func (p *parameterizer) isFieldInRules(rules *resourceRules, fieldPath string) b
 
 	// Check ArrayVariables
 	for _, arrPath := range rules.ArrayVariables {
-		normalizedArrPath := strings.ToLower(arrPath)
+		normalizedArrPath := strings.ToLower(strings.ReplaceAll(arrPath, "[]", ""))
 		if normalizedArrPath == normalizedPath {
 			return true
 		}

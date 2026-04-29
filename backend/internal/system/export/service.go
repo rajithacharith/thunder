@@ -319,8 +319,14 @@ func (es *exportService) exportResourcesWithExporter(
 
 func (es *exportService) generateTemplateFromStruct(data interface{},
 	paramResourceType string, resourceName string, exporter declarativeresource.ResourceExporter) (string, error) {
+	var rules *declarativeresource.ResourceRules
+	if pr, ok := exporter.(declarativeresource.PerResourceRuler); ok {
+		rules = pr.GetResourceRulesForResource(data)
+	} else {
+		rules = exporter.GetResourceRules()
+	}
 	template, err := es.parameterizer.ToParameterizedYAML(
-		data, paramResourceType, resourceName, exporter.GetResourceRules())
+		data, paramResourceType, resourceName, rules)
 	if err != nil {
 		return "", err
 	}
