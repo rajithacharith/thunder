@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/cors"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowexecmock"
 	"github.com/asgardeo/thunder/tests/mocks/inboundclientmock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
@@ -67,9 +68,12 @@ func (suite *InitTestSuite) SetupTest() {
 			ErrorPath: "/error",
 		},
 		CORS: config.CORSConfig{
-			AllowedOrigins: []string{"https://example.com"},
+			AllowedOrigins: cors.OriginEntries{
+				cors.LiteralEntry{Value: "https://example.com"},
+			},
 		},
 	}
+	_ = testConfig.CORS.Validate()
 	_ = config.InitializeThunderRuntime("", testConfig)
 
 	suite.mockInboundClient = inboundclientmock.NewInboundClientServiceInterfaceMock(suite.T())
@@ -80,6 +84,7 @@ func (suite *InitTestSuite) SetupTest() {
 
 func (suite *InitTestSuite) TearDownTest() {
 	config.ResetThunderRuntime()
+	cors.ResetMatcher()
 }
 
 func (suite *InitTestSuite) TestInitialize() {
@@ -197,8 +202,12 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSHeaders() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
+			// Allow-Methods/Allow-Headers are preflight-only response headers
+			// per the Fetch spec; the request must carry
+			// Access-Control-Request-Method to elicit them.
 			req := httptest.NewRequest(tc.method, tc.path, nil)
 			req.Header.Set("Origin", tc.origin)
+			req.Header.Set("Access-Control-Request-Method", "POST")
 			rec := httptest.NewRecorder()
 
 			mux.ServeHTTP(rec, req)

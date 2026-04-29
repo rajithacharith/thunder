@@ -37,9 +37,10 @@ func Initialize(mux *http.ServeMux, pkiService pki.PKIServiceInterface) JWKSServ
 // registerRoutes registers the routes for the JWKSAPIService.
 func registerRoutes(mux *http.ServeMux, jwksHandler *jwksHandler) {
 	opts := middleware.CORSOptions{
-		AllowedMethods:   "GET, OPTIONS",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"GET", "OPTIONS"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /oauth2/jwks",
 		jwksHandler.HandleJWKSRequest, opts))

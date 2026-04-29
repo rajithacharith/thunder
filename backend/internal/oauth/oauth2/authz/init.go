@@ -83,9 +83,10 @@ func registerRoutes(mux *http.ServeMux, authzHandler AuthorizeHandlerInterface) 
 		withFrameProtection(authzHandler.HandleAuthorizeGetRequest))
 
 	callbackOpts := middleware.CORSOptions{
-		AllowedMethods:   "POST",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"POST"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 
 	mux.HandleFunc(middleware.WithCORS("POST /oauth2/auth/callback",

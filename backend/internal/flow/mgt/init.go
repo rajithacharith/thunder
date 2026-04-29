@@ -149,9 +149,10 @@ func isCompositeModeEnabled() bool {
 // registerRoutes registers the HTTP routes for flow management.
 func registerRoutes(mux *http.ServeMux, handler *flowMgtHandler) {
 	opts1 := middleware.CORSOptions{
-		AllowedMethods:   "GET, POST",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"GET", "POST"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /flows", handler.listFlows, opts1))
 	mux.HandleFunc(middleware.WithCORS("POST /flows", handler.createFlow, opts1))
@@ -160,9 +161,10 @@ func registerRoutes(mux *http.ServeMux, handler *flowMgtHandler) {
 	}, opts1))
 
 	opts2 := middleware.CORSOptions{
-		AllowedMethods:   "GET, PUT, DELETE",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"GET", "PUT", "DELETE"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /flows/{flowId}", handler.getFlow, opts2))
 	mux.HandleFunc(middleware.WithCORS("PUT /flows/{flowId}", handler.updateFlow, opts2))
@@ -172,9 +174,10 @@ func registerRoutes(mux *http.ServeMux, handler *flowMgtHandler) {
 	}, opts2))
 
 	opts3 := middleware.CORSOptions{
-		AllowedMethods:   "GET",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"GET"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /flows/{flowId}/versions", handler.listFlowVersions, opts3))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /flows/{flowId}/versions",
@@ -190,9 +193,10 @@ func registerRoutes(mux *http.ServeMux, handler *flowMgtHandler) {
 	)
 
 	opts4 := middleware.CORSOptions{
-		AllowedMethods:   "POST",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"POST"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("POST /flows/{flowId}/restore", handler.restoreFlowVersion, opts4))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /flows/{flowId}/restore",

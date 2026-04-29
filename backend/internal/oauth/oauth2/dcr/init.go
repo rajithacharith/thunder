@@ -44,9 +44,10 @@ func Initialize(
 // registerRoutes registers the routes for DCR operations.
 func registerRoutes(mux *http.ServeMux, dcrHandler *dcrHandler) {
 	opts := middleware.CORSOptions{
-		AllowedMethods:   "POST, OPTIONS",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"POST", "OPTIONS"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 
 	mux.HandleFunc(middleware.WithCORS("POST /oauth2/dcr/register",

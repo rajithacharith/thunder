@@ -54,9 +54,10 @@ func registerRoutes(
 	discoveryService discovery.DiscoveryServiceInterface,
 ) {
 	opts := middleware.CORSOptions{
-		AllowedMethods:   "POST, OPTIONS",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"POST", "OPTIONS"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 
 	endpointURL := discoveryService.GetOAuth2AuthorizationServerMetadata(context.Background()).IntrospectionEndpoint

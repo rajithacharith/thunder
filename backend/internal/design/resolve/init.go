@@ -43,9 +43,10 @@ func Initialize(
 // registerRoutes registers the routes for design resolve operations.
 func registerRoutes(mux *http.ServeMux, resolveHandler *designResolveHandler) {
 	opts := middleware.CORSOptions{
-		AllowedMethods:   "GET",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"GET"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /design/resolve", resolveHandler.HandleResolveRequest, opts))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /design/resolve", func(w http.ResponseWriter, r *http.Request) {

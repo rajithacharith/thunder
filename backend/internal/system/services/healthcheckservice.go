@@ -46,9 +46,10 @@ func NewHealthCheckService(mux *http.ServeMux, svc service.HealthCheckServiceInt
 //nolint:dupl // Ignoring false positive duplicate code
 func (h *HealthCheckService) RegisterRoutes(mux *http.ServeMux) {
 	opts1 := middleware.CORSOptions{
-		AllowedMethods:   "GET",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"GET"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /health/liveness",

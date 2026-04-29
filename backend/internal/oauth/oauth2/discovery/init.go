@@ -36,9 +36,10 @@ func Initialize(mux *http.ServeMux, pkiService pki.PKIServiceInterface) Discover
 // registerRoutes registers the routes for discovery endpoints
 func registerRoutes(mux *http.ServeMux, handler discoveryHandlerInterface) {
 	opts := middleware.CORSOptions{
-		AllowedMethods:   "GET, OPTIONS",
-		AllowedHeaders:   "Content-Type",
+		AllowedMethods:   []string{"GET", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type"},
 		AllowCredentials: false,
+		MaxAge:           600,
 	}
 
 	mux.HandleFunc(middleware.WithCORS("GET /.well-known/oauth-authorization-server",
