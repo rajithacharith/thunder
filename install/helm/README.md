@@ -1,6 +1,6 @@
 # Thunder Helm Chart
 
-This repository contains the Helm chart for WSO2 Thunder, a lightweight user and identity management system designed for modern application development.
+This repository contains the Helm chart for Thunder, a lightweight user and identity management system designed for modern application development.
 
 ## Configuration Value Types
 
