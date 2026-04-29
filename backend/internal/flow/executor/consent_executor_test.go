@@ -36,6 +36,7 @@ import (
 	"github.com/asgardeo/thunder/internal/consent"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/tests/mocks/authn/consentenforcermock"
@@ -105,7 +106,7 @@ func buildConsentNodeContext() *core.NodeContext {
 		RuntimeData:    map[string]string{},
 		NodeProperties: map[string]interface{}{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{"email", "phone"},
 			},
 		},
@@ -461,7 +462,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_AllApproved_Success
 
 	ctx := buildConsentNodeContext()
 	ctx.UserInputs[userInputConsentDecisions] = string(decisionsJSON)
-	ctx.Application.LoginConsent = &appmodel.LoginConsentConfig{
+	ctx.Application.LoginConsent = &inboundmodel.LoginConsentConfig{
 		ValidityPeriod: 86400,
 	}
 

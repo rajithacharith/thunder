@@ -24,7 +24,7 @@ import (
 	"slices"
 	"strings"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/pkce"
 )
@@ -41,7 +41,7 @@ import (
 //
 // Returns (errorCode, errorDescription). Empty errorCode means validation passed.
 func ValidateAuthorizationRequestParams(
-	params map[string]string, oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	params map[string]string, oauthApp *inboundmodel.OAuthClient,
 ) (string, string) {
 	responseType := params[constants.RequestParamResponseType]
 

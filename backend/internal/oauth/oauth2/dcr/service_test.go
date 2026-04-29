@@ -27,6 +27,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/cert"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
@@ -150,7 +151,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_JWKSUriProvided() {
 				},
 			},
 		},
-		Certificate: &model.ApplicationCertificate{
+		Certificate: &inboundmodel.Certificate{
 			Type:  cert.CertificateTypeJWKSURI,
 			Value: "https://client.example.com/.well-known/jwks.json",
 		},
@@ -288,7 +289,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ConvertApplicationToDCRResponse
 				},
 			},
 		},
-		Certificate: &model.ApplicationCertificate{
+		Certificate: &inboundmodel.Certificate{
 			Type:  cert.CertificateTypeJWKS,
 			Value: "invalid json",
 		},
@@ -327,7 +328,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_WithJWKS() {
 				},
 			},
 		},
-		Certificate: &model.ApplicationCertificate{
+		Certificate: &inboundmodel.Certificate{
 			Type:  cert.CertificateTypeJWKS,
 			Value: `{"keys":[]}`,
 		},

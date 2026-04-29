@@ -29,6 +29,7 @@ import (
 	flowcommon "github.com/asgardeo/thunder/internal/flow/common"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	"github.com/asgardeo/thunder/internal/idp"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/notification/common"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
@@ -216,12 +217,12 @@ func (suite *ExportServiceTestSuite) TestExportResources_CompleteOAuthApplicatio
 		PKCERequired:            true,
 		PublicClient:            false,
 		Scopes:                  []string{"openid", "profile"},
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				ValidityPeriod: 3600,
 				UserAttributes: []string{"email", "username"},
 			},
-			IDToken: &appmodel.IDTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				ValidityPeriod: 1800,
 				UserAttributes: []string{"email"},
 			},
@@ -242,7 +243,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_CompleteOAuthApplicatio
 				OAuthAppConfig: mockOAuthConfig,
 			},
 		},
-		Assertion: &appmodel.AssertionConfig{
+		Assertion: &inboundmodel.AssertionConfig{
 			UserAttributes: []string{"email", "username"},
 		},
 	}

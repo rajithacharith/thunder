@@ -24,8 +24,8 @@ import (
 	"strings"
 	"time"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/attributecache"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/resourceindicators"
@@ -66,7 +66,7 @@ func newRefreshTokenGrantHandler(
 
 // ValidateGrant validates the refresh token grant request.
 func (h *refreshTokenGrantHandler) ValidateGrant(ctx context.Context, tokenRequest *model.TokenRequest,
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO) *model.ErrorResponse {
+	oauthApp *inboundmodel.OAuthClient) *model.ErrorResponse {
 	if constants.GrantType(tokenRequest.GrantType) != constants.GrantTypeRefreshToken {
 		return &model.ErrorResponse{
 			Error:            constants.ErrorUnsupportedGrantType,
@@ -95,7 +95,7 @@ func (h *refreshTokenGrantHandler) ValidateGrant(ctx context.Context, tokenReque
 
 // HandleGrant processes the refresh token grant request and generates a new token response.
 func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest *model.TokenRequest,
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO) (
+	oauthApp *inboundmodel.OAuthClient) (
 	*model.TokenResponseDTO, *model.ErrorResponse) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "RefreshTokenGrantHandler"))
 
@@ -263,7 +263,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 func (h *refreshTokenGrantHandler) IssueRefreshToken(
 	ctx context.Context,
 	tokenResponse *model.TokenResponseDTO,
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	oauthApp *inboundmodel.OAuthClient,
 	subject string, audiences []string, grantType string,
 	scopes []string,
 	claimsRequest *model.ClaimsRequest,
@@ -308,7 +308,7 @@ func (h *refreshTokenGrantHandler) IssueRefreshToken(
 func (h *refreshTokenGrantHandler) extendCacheTTL(
 	ctx context.Context,
 	cacheEntry *attributecache.AttributeCache,
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	oauthApp *inboundmodel.OAuthClient,
 	refreshIat, accessExpiresIn int64,
 	renewRefreshToken bool,
 	cacheID string,

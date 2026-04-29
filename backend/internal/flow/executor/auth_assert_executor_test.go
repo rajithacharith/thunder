@@ -38,6 +38,7 @@ import (
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -147,7 +148,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success(
 			},
 		},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{"userType", "ouId"},
 			},
 		},
@@ -238,7 +239,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{"email", "phone"},
 			},
 		},
@@ -540,7 +541,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{"userType", "ouId"},
 			},
 		},
@@ -574,7 +575,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithCustomTokenConfig() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				ValidityPeriod: 7200,
 			},
 		},
@@ -603,7 +604,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{"ouId", "ouName", "ouHandle"},
 			},
 		},
@@ -646,7 +647,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{"email"},
 			},
 		},
@@ -711,7 +712,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFai
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{oauth2const.ClaimOUID},
 			},
 		},
@@ -744,7 +745,7 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserA
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{"email", "phone"},
 			},
 		},
@@ -775,7 +776,7 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganiz
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{oauth2const.ClaimOUID},
 			},
 		},
@@ -812,7 +813,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
 			// Token config with user attributes configured
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{"email", "username", "given_name"},
 			},
 		},
@@ -853,7 +854,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{oauth2const.UserAttributeGroups},
 			},
 		},
@@ -897,7 +898,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_EmptyGroups() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{oauth2const.UserAttributeGroups},
 			},
 		},
@@ -932,7 +933,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_GetUserGroupsFa
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{oauth2const.UserAttributeGroups},
 			},
 		},
@@ -1023,7 +1024,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_Fallback
 		ExecutionID: "flow-123",
 		RuntimeData: map[string]string{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{UserAttributes: []string{"email", "phone"}},
+			Assertion: &inboundmodel.AssertionConfig{UserAttributes: []string{"email", "phone"}},
 		},
 	}
 
@@ -1064,7 +1065,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConsentedAttributes_Fi
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{"email", "phone", "name"},
 			},
 		},
@@ -1164,7 +1165,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_AttrsSt
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{"email", "phone"},
 			},
 		},
@@ -1220,7 +1221,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_NilUser
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: nil,
 			},
 		},
@@ -1268,7 +1269,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_OnlyRes
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{"email", "phone"},
 			},
 		},
@@ -1543,7 +1544,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_GroupsI
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{oauth2const.UserAttributeGroups},
 			},
 		},
@@ -1592,7 +1593,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_UserTyp
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{oauth2const.ClaimUserType},
 			},
 		},
@@ -1632,7 +1633,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_OUDetai
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{
+			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{oauth2const.ClaimOUID, oauth2const.ClaimOUName},
 			},
 		},
@@ -1679,7 +1680,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithRuntimeRequiredEssenti
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &appmodel.AssertionConfig{UserAttributes: []string{"email", "phone", "name"}},
+			Assertion: &inboundmodel.AssertionConfig{UserAttributes: []string{"email", "phone", "name"}},
 		},
 	}
 

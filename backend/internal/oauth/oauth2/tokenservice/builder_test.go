@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -49,7 +49,7 @@ type TokenBuilderTestSuite struct {
 	suite.Suite
 	mockJWTService *jwtmock.JWTServiceInterfaceMock
 	builder        *tokenBuilder
-	oauthApp       *appmodel.OAuthAppConfigProcessedDTO
+	oauthApp       *inboundmodel.OAuthClient
 }
 
 func TestTokenBuilderTestSuite(t *testing.T) {
@@ -71,10 +71,10 @@ func (suite *TokenBuilderTestSuite) SetupTest() {
 		jwtService: suite.mockJWTService,
 	}
 
-	suite.oauthApp = &appmodel.OAuthAppConfigProcessedDTO{
+	suite.oauthApp = &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				ValidityPeriod: 3600,
 				UserAttributes: []string{"name"}, // Configure user attributes for tests
 			},
@@ -306,10 +306,10 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_EmptyGrantType(
 }
 
 func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_CustomValidityPeriod() {
-	customOAuthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	customOAuthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				ValidityPeriod: 7200,
 			},
 		},
@@ -425,10 +425,10 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_WithClaimsLocal
 
 func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_Basic() {
 	// Create OAuth app with user attributes configured
-	oauthAppWithUserAttrs := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthAppWithUserAttrs := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				ValidityPeriod: 3600,
 				UserAttributes: []string{"name"}, // Configure user attributes
 			},
@@ -567,10 +567,10 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_EmptyScopes() 
 }
 
 func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithTokenConfig() {
-	customOAuthApp := &appmodel.OAuthAppConfigProcessedDTO{
+	customOAuthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{},
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{},
 		},
 	}
 
@@ -602,9 +602,9 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithTokenConfi
 }
 
 func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithNilAccessToken() {
-	oauthAppWithNilAccessToken := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthAppWithNilAccessToken := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
 			// Token exists but AccessToken is nil
 			AccessToken: nil,
 		},
@@ -851,10 +851,10 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_NoAuthTime() {
 }
 
 func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithScopeClaims() {
-	oauthAppWithScopeClaims := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthAppWithScopeClaims := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			IDToken: &appmodel.IDTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				ValidityPeriod: 3600,
 				UserAttributes: []string{"name", "email"},
 			},
@@ -893,10 +893,10 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithScopeClaims() {
 }
 
 func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithStandardOIDCScopes() {
-	oauthAppWithUserAttrs := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthAppWithUserAttrs := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			IDToken: &appmodel.IDTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				ValidityPeriod: 3600,
 				UserAttributes: []string{"name", "email"},
 			},
@@ -962,10 +962,10 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_NoUserAttributes() 
 }
 
 func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_EmptyUserAttributes() {
-	oauthAppWithEmptyUserAttrs := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthAppWithEmptyUserAttrs := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			IDToken: &appmodel.IDTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				UserAttributes: []string{},
 			},
 		},
@@ -1002,10 +1002,10 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_EmptyUserAttributes
 }
 
 func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_CustomValidityPeriod() {
-	oauthAppWithCustomValidity := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthAppWithCustomValidity := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			IDToken: &appmodel.IDTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
 				ValidityPeriod: 7200,
 			},
 		},

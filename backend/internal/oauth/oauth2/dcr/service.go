@@ -27,6 +27,7 @@ import (
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/cert"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	oauthutils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/ou"
@@ -141,9 +142,22 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 	*model.ApplicationDTO, *serviceerror.ServiceError) {
 	isPublicClient := request.TokenEndpointAuthMethod == oauth2const.TokenEndpointAuthMethodNone
 
-	appCertificate, svcErr := buildAppCertificate(request)
-	if svcErr != nil {
-		return nil, svcErr
+	// Map JWKS/JWKS_URI to application-level certificate
+	var appCertificate *inboundmodel.Certificate
+	if request.JWKSUri != "" {
+		appCertificate = &inboundmodel.Certificate{
+			Type:  cert.CertificateTypeJWKSURI,
+			Value: request.JWKSUri,
+		}
+	} else if len(request.JWKS) > 0 {
+		jwksBytes, err := json.Marshal(request.JWKS)
+		if err != nil {
+			return nil, &ErrorServerError
+		}
+		appCertificate = &inboundmodel.Certificate{
+			Type:  cert.CertificateTypeJWKS,
+			Value: string(jwksBytes),
+		}
 	}
 
 	var scopes []string
@@ -198,48 +212,27 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 	return appDTO, nil
 }
 
-// buildAppCertificate maps JWKS/JWKS_URI from a DCR request to an ApplicationCertificate.
-func buildAppCertificate(request *DCRRegistrationRequest) (*model.ApplicationCertificate, *serviceerror.ServiceError) {
-	if request.JWKSUri != "" {
-		return &model.ApplicationCertificate{
-			Type:  cert.CertificateTypeJWKSURI,
-			Value: request.JWKSUri,
-		}, nil
-	}
-	if len(request.JWKS) > 0 {
-		jwksBytes, err := json.Marshal(request.JWKS)
-		if err != nil {
-			return nil, &ErrorServerError
-		}
-		return &model.ApplicationCertificate{
-			Type:  cert.CertificateTypeJWKS,
-			Value: string(jwksBytes),
-		}, nil
-	}
-	return nil, nil
-}
-
 // buildUserInfoConfig maps UserInfo alg fields from a DCR request to a UserInfoConfig.
 // ResponseType is derived from the algorithm fields per OIDC DCR conventions.
-func buildUserInfoConfig(request *DCRRegistrationRequest) *model.UserInfoConfig {
+func buildUserInfoConfig(request *DCRRegistrationRequest) *inboundmodel.UserInfoConfig {
 	if request.UserInfoSignedResponseAlg == "" && request.UserInfoEncryptedResponseAlg == "" &&
 		request.UserInfoEncryptedResponseEnc == "" {
 		return nil
 	}
 	hasSign := request.UserInfoSignedResponseAlg != ""
 	hasEnc := request.UserInfoEncryptedResponseAlg != ""
-	var responseType model.UserInfoResponseType
+	var responseType inboundmodel.UserInfoResponseType
 	switch {
 	case hasSign && hasEnc:
-		responseType = model.UserInfoResponseTypeNESTEDJWT
+		responseType = inboundmodel.UserInfoResponseTypeNESTEDJWT
 	case hasEnc:
-		responseType = model.UserInfoResponseTypeJWE
+		responseType = inboundmodel.UserInfoResponseTypeJWE
 	case hasSign:
-		responseType = model.UserInfoResponseTypeJWS
+		responseType = inboundmodel.UserInfoResponseTypeJWS
 	default:
-		responseType = model.UserInfoResponseTypeJSON
+		responseType = inboundmodel.UserInfoResponseTypeJSON
 	}
-	return &model.UserInfoConfig{
+	return &inboundmodel.UserInfoConfig{
 		ResponseType:  responseType,
 		SigningAlg:    request.UserInfoSignedResponseAlg,
 		EncryptionAlg: request.UserInfoEncryptedResponseAlg,

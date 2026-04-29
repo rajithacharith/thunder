@@ -31,6 +31,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/cert"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -1380,12 +1381,12 @@ func (suite *HandlerTestSuite) TestProcessInboundAuthConfigFromRequest_WithToken
 			OAuthAppConfig: &model.OAuthAppConfigComplete{
 				ClientID:     "test-client-id",
 				ClientSecret: "test-secret",
-				Token: &model.OAuthTokenConfig{
-					AccessToken: &model.AccessTokenConfig{
+				Token: &inboundmodel.OAuthTokenConfig{
+					AccessToken: &inboundmodel.AccessTokenConfig{
 						ValidityPeriod: 3600,
 						UserAttributes: []string{"email", "name"},
 					},
-					IDToken: &model.IDTokenConfig{
+					IDToken: &inboundmodel.IDTokenConfig{
 						ValidityPeriod: 3600,
 						UserAttributes: []string{"email"},
 					},
@@ -1454,7 +1455,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_WithCertificate(
 	appRequest := model.ApplicationRequest{
 		Name:        "TestApp",
 		Description: "Test Description",
-		Certificate: &model.ApplicationCertificate{
+		Certificate: &inboundmodel.Certificate{
 			Type:  cert.CertificateTypeJWKS,
 			Value: `{"keys":[{"kty":"RSA","kid":"test"}]}`,
 		},
@@ -1464,7 +1465,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_WithCertificate(
 		ID:          "test-app-id",
 		Name:        "TestApp",
 		Description: "Test Description",
-		Certificate: &model.ApplicationCertificate{
+		Certificate: &inboundmodel.Certificate{
 			Type:  cert.CertificateTypeJWKS,
 			Value: `{"keys":[{"kty":"RSA","kid":"test"}]}`,
 		},

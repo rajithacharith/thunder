@@ -28,6 +28,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authz"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
+	"github.com/asgardeo/thunder/internal/inboundclient"
 	"github.com/asgardeo/thunder/internal/oauth/jwks"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/dcr"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
@@ -52,6 +53,7 @@ import (
 func Initialize(
 	mux *http.ServeMux,
 	applicationService application.ApplicationServiceInterface,
+	inboundClient inboundclient.InboundClientServiceInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	jwtService jwt.JWTServiceInterface,
 	jweService jwe.JWEServiceInterface,
@@ -74,22 +76,22 @@ func Initialize(
 	tokenBuilder, tokenValidator := tokenservice.Initialize(jwtService)
 	scopeValidator := scope.Initialize()
 	discoveryService := discovery.Initialize(mux, pkiService)
-	parService := par.Initialize(mux, applicationService, authnProvider, jwtService, discoveryService,
+	parService := par.Initialize(mux, inboundClient, authnProvider, jwtService, discoveryService,
 		resourceService)
 	grantHandlerProvider, err := granthandlers.Initialize(
-		mux, jwtService, applicationService, flowExecService, tokenBuilder, tokenValidator,
+		mux, jwtService, inboundClient, flowExecService, tokenBuilder, tokenValidator,
 		attributeCacheSvc, ouService, authzService, entityProvider, resourceService, parService)
 	if err != nil {
 		return err
 	}
-	token.Initialize(mux, jwtService, applicationService, authnProvider, grantHandlerProvider,
+	token.Initialize(mux, jwtService, inboundClient, authnProvider, grantHandlerProvider,
 		scopeValidator, observabilitySvc, discoveryService, transactioner)
-	introspect.Initialize(mux, jwtService, applicationService, authnProvider, discoveryService)
+	introspect.Initialize(mux, jwtService, inboundClient, authnProvider, discoveryService)
 	userinfo.Initialize(mux, jwtService, jweService,
 		syshttp.NewHTTPClientWithCheckRedirect(func(req *http.Request, _ []*http.Request) error {
 			return syshttp.IsSSRFSafeURL(req.URL.String())
 		}),
-		tokenValidator, applicationService, ouService, attributeCacheSvc, transactioner)
+		tokenValidator, inboundClient, ouService, attributeCacheSvc, transactioner)
 	dcr.Initialize(mux, applicationService, ouService, transactioner)
 	return nil
 }

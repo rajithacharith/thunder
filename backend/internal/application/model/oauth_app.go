@@ -22,43 +22,9 @@
 package model
 
 import (
-	"fmt"
-	"net/url"
-	"slices"
-	"strings"
-
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/system/utils"
 )
-
-// AccessTokenConfig represents the access token configuration structure.
-type AccessTokenConfig struct {
-	ValidityPeriod int64    `json:"validityPeriod,omitempty" yaml:"validity_period,omitempty" jsonschema:"Access token validity period in seconds."`
-	UserAttributes []string `json:"userAttributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in access token. Claims embedded in the access token for authorization decisions."`
-}
-
-// IDTokenConfig represents the ID token configuration structure.
-type IDTokenConfig struct {
-	ValidityPeriod int64    `json:"validityPeriod,omitempty" yaml:"validity_period,omitempty" jsonschema:"ID token validity period in seconds."`
-	UserAttributes []string `json:"userAttributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in ID token. Standard OIDC claims: sub, name, email, picture, etc."`
-}
-
-// UserInfoConfig represents the user info endpoint configuration structure.
-type UserInfoConfig struct {
-	ResponseType   UserInfoResponseType `json:"responseType,omitempty"   yaml:"response_type,omitempty"   jsonschema:"UserInfo response type (JSON, JWS, JWE, NESTED_JWT). Derived from algorithm fields when not explicitly set."`
-	UserAttributes []string             `json:"userAttributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in userinfo response."`
-	SigningAlg     string               `json:"signingAlg,omitempty"     yaml:"signing_alg,omitempty"     jsonschema:"JWS algorithm for signed userinfo responses (e.g. RS256)."`
-	EncryptionAlg  string               `json:"encryptionAlg,omitempty"  yaml:"encryption_alg,omitempty"  jsonschema:"JWE key-management algorithm for encrypted userinfo responses (e.g. RSA-OAEP-256)."`
-	EncryptionEnc  string               `json:"encryptionEnc,omitempty"  yaml:"encryption_enc,omitempty"  jsonschema:"JWE content-encryption algorithm (e.g. A256GCM). Required when encryptionAlg is set."`
-}
-
-// OAuthTokenConfig represents the OAuth token configuration structure with access_token and id_token wrappers.
-type OAuthTokenConfig struct {
-	AccessToken *AccessTokenConfig `json:"accessToken,omitempty" yaml:"access_token,omitempty" jsonschema:"Access token configuration. Configure validity period and user attributes for access tokens used in API authorization."`
-	IDToken     *IDTokenConfig     `json:"idToken,omitempty" yaml:"id_token,omitempty" jsonschema:"ID token configuration. Configure validity period and user attributes for OIDC ID tokens."`
-}
 
 // OAuthAppConfig represents the structure for OAuth application configuration.
 type OAuthAppConfig struct {
@@ -70,16 +36,14 @@ type OAuthAppConfig struct {
 	PKCERequired                       bool                                `json:"pkceRequired"`
 	PublicClient                       bool                                `json:"publicClient"`
 	RequirePushedAuthorizationRequests bool                                `json:"requirePushedAuthorizationRequests"`
-	Token                              *OAuthTokenConfig                   `json:"token,omitempty"`
+	Token                              *inboundmodel.OAuthTokenConfig      `json:"token,omitempty"`
 	Scopes                             []string                            `json:"scopes,omitempty"`
-	UserInfo                           *UserInfoConfig                     `json:"userInfo,omitempty"`
+	UserInfo                           *inboundmodel.UserInfoConfig        `json:"userInfo,omitempty"`
 	ScopeClaims                        map[string][]string                 `json:"scopeClaims,omitempty"`
-	Certificate                        *ApplicationCertificate             `json:"certificate,omitempty"`
+	Certificate                        *inboundmodel.Certificate           `json:"certificate,omitempty"`
 }
 
 // OAuthAppConfigComplete represents the complete structure for OAuth application configuration.
-//
-//nolint:lll
 type OAuthAppConfigComplete struct {
 	ClientID                           string                              `json:"clientId" yaml:"client_id"`
 	ClientSecret                       string                              `json:"clientSecret,omitempty" yaml:"client_secret"`
@@ -90,11 +54,11 @@ type OAuthAppConfigComplete struct {
 	PKCERequired                       bool                                `json:"pkceRequired" yaml:"pkce_required"`
 	PublicClient                       bool                                `json:"publicClient" yaml:"public_client"`
 	RequirePushedAuthorizationRequests bool                                `json:"requirePushedAuthorizationRequests" yaml:"require_pushed_authorization_requests"`
-	Token                              *OAuthTokenConfig                   `json:"token,omitempty" yaml:"token,omitempty"`
+	Token                              *inboundmodel.OAuthTokenConfig      `json:"token,omitempty" yaml:"token,omitempty"`
 	Scopes                             []string                            `json:"scopes,omitempty" yaml:"scopes,omitempty"`
-	UserInfo                           *UserInfoConfig                     `json:"userInfo,omitempty" yaml:"user_info,omitempty"`
+	UserInfo                           *inboundmodel.UserInfoConfig        `json:"userInfo,omitempty" yaml:"user_info,omitempty"`
 	ScopeClaims                        map[string][]string                 `json:"scopeClaims,omitempty" yaml:"scope_claims,omitempty"`
-	Certificate                        *ApplicationCertificate             `json:"certificate,omitempty" jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
+	Certificate                        *inboundmodel.Certificate           `json:"certificate,omitempty" jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
 }
 
 // OAuthAppConfigDTO represents the data transfer object for OAuth application configuration.
@@ -109,162 +73,29 @@ type OAuthAppConfigDTO struct {
 	PKCERequired                       bool                                `json:"pkceRequired,omitempty" jsonschema:"Require PKCE for security. Recommended for all user-interactive flows."`
 	PublicClient                       bool                                `json:"publicClient,omitempty" jsonschema:"Identify if client is public (cannot store secrets). Set true for SPA/Mobile."`
 	RequirePushedAuthorizationRequests bool                                `json:"requirePushedAuthorizationRequests,omitempty" jsonschema:"Require Pushed Authorization Requests (PAR) per RFC 9126."`
-	Token                              *OAuthTokenConfig                   `json:"token,omitempty" jsonschema:"Token configuration for access tokens and ID tokens"`
+	Token                              *inboundmodel.OAuthTokenConfig      `json:"token,omitempty" jsonschema:"Token configuration for access tokens and ID tokens"`
 	Scopes                             []string                            `json:"scopes,omitempty" jsonschema:"Allowed OAuth scopes. Add custom scopes as needed for your application."`
-	UserInfo                           *UserInfoConfig                     `json:"userInfo,omitempty" jsonschema:"UserInfo endpoint configuration. Configure user attributes returned from the OIDC userinfo endpoint."`
+	UserInfo                           *inboundmodel.UserInfoConfig        `json:"userInfo,omitempty" jsonschema:"UserInfo endpoint configuration. Configure user attributes returned from the OIDC userinfo endpoint."`
 	ScopeClaims                        map[string][]string                 `json:"scopeClaims,omitempty" jsonschema:"Scope-to-claims mapping. Maps OAuth scopes to user claims for both ID token and userinfo."`
-	Certificate                        *ApplicationCertificate             `json:"certificate,omitempty" jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
+	Certificate                        *inboundmodel.Certificate           `json:"certificate,omitempty" jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
 }
 
-// IsAllowedGrantType checks if the provided grant type is allowed.
+// IsAllowedGrantType reports whether the input DTO allows the given grant type.
 func (o *OAuthAppConfigDTO) IsAllowedGrantType(grantType oauth2const.GrantType) bool {
-	return isAllowedGrantType(o.GrantTypes, grantType)
+	return inboundmodel.IsAllowedGrantType(o.GrantTypes, grantType)
 }
 
-// IsAllowedResponseType checks if the provided response type is allowed.
+// IsAllowedResponseType reports whether the input DTO allows the given response type.
 func (o *OAuthAppConfigDTO) IsAllowedResponseType(responseType string) bool {
-	return isAllowedResponseType(o.ResponseTypes, responseType)
+	return inboundmodel.IsAllowedResponseType(o.ResponseTypes, responseType)
 }
 
-// IsAllowedTokenEndpointAuthMethod checks if the provided token endpoint authentication method is allowed.
+// IsAllowedTokenEndpointAuthMethod reports whether the input DTO uses the given auth method.
 func (o *OAuthAppConfigDTO) IsAllowedTokenEndpointAuthMethod(method oauth2const.TokenEndpointAuthMethod) bool {
 	return o.TokenEndpointAuthMethod == method
 }
 
-// ValidateRedirectURI validates the provided redirect URI against the registered redirect URIs.
+// ValidateRedirectURI validates the input DTO redirect URI against the registered list.
 func (o *OAuthAppConfigDTO) ValidateRedirectURI(redirectURI string) error {
-	return validateRedirectURI(o.RedirectURIs, redirectURI)
-}
-
-// OAuthAppConfigProcessedDTO represents the processed data transfer object for OAuth application configuration.
-type OAuthAppConfigProcessedDTO struct {
-	AppID                              string                              `yaml:"app_id,omitempty"`
-	OUID                               string                              `yaml:"ou_id,omitempty"`
-	ClientID                           string                              `yaml:"client_id,omitempty"`
-	RedirectURIs                       []string                            `yaml:"redirect_uris,omitempty"`
-	GrantTypes                         []oauth2const.GrantType             `yaml:"grant_types,omitempty"`
-	ResponseTypes                      []oauth2const.ResponseType          `yaml:"response_types,omitempty"`
-	TokenEndpointAuthMethod            oauth2const.TokenEndpointAuthMethod `yaml:"token_endpoint_auth_method,omitempty"`
-	PKCERequired                       bool                                `yaml:"pkce_required,omitempty"`
-	PublicClient                       bool                                `yaml:"public_client,omitempty"`
-	RequirePushedAuthorizationRequests bool                                `yaml:"require_pushed_authorization_requests,omitempty"`
-	Token                              *OAuthTokenConfig                   `yaml:"token,omitempty"`
-	Scopes                             []string                            `yaml:"scopes,omitempty"`
-	UserInfo                           *UserInfoConfig                     `yaml:"user_info,omitempty"`
-	ScopeClaims                        map[string][]string                 `yaml:"scope_claims,omitempty"`
-	Certificate                        *ApplicationCertificate             `yaml:"certificate,omitempty"`
-}
-
-// IsAllowedGrantType checks if the provided grant type is allowed.
-func (o *OAuthAppConfigProcessedDTO) IsAllowedGrantType(grantType oauth2const.GrantType) bool {
-	return isAllowedGrantType(o.GrantTypes, grantType)
-}
-
-// IsAllowedResponseType checks if the provided response type is allowed.
-func (o *OAuthAppConfigProcessedDTO) IsAllowedResponseType(responseType string) bool {
-	return isAllowedResponseType(o.ResponseTypes, responseType)
-}
-
-// IsAllowedTokenEndpointAuthMethod checks if the provided token endpoint authentication method is allowed.
-func (o *OAuthAppConfigProcessedDTO) IsAllowedTokenEndpointAuthMethod(
-	method oauth2const.TokenEndpointAuthMethod) bool {
-	return o.TokenEndpointAuthMethod == method
-}
-
-// ValidateRedirectURI validates the provided redirect URI against the registered redirect URIs.
-func (o *OAuthAppConfigProcessedDTO) ValidateRedirectURI(redirectURI string) error {
-	return validateRedirectURI(o.RedirectURIs, redirectURI)
-}
-
-// RequiresPKCE checks if PKCE is required for this application.
-func (o *OAuthAppConfigProcessedDTO) RequiresPKCE() bool {
-	return o.PKCERequired || o.PublicClient
-}
-
-// RequiresPAR checks if Pushed Authorization Requests are required for this application.
-// Returns true if either the client-level or global-level setting requires PAR.
-func (o *OAuthAppConfigProcessedDTO) RequiresPAR() bool {
-	return o.RequirePushedAuthorizationRequests || config.GetThunderRuntime().Config.OAuth.PAR.RequirePAR
-}
-
-// isAllowedGrantType checks if the provided grant type is in the allowed list.
-func isAllowedGrantType(grantTypes []oauth2const.GrantType, grantType oauth2const.GrantType) bool {
-	if grantType == "" {
-		return false
-	}
-	return slices.Contains(grantTypes, grantType)
-}
-
-// isAllowedResponseType checks if the provided response type is in the allowed list.
-func isAllowedResponseType(responseTypes []oauth2const.ResponseType, responseType string) bool {
-	if responseType == "" {
-		return false
-	}
-	return slices.Contains(responseTypes, oauth2const.ResponseType(responseType))
-}
-
-// validateRedirectURI checks if the provided redirect URI is valid against the registered redirect URIs.
-func validateRedirectURI(redirectURIs []string, redirectURI string) error {
-	logger := log.GetLogger()
-
-	// Check if the redirect URI is empty.
-	if redirectURI == "" {
-		// Check if multiple redirect URIs are registered.
-		if len(redirectURIs) != 1 {
-			return fmt.Errorf("redirect URI is required in the authorization request")
-		}
-		// AC-12: A wildcard pattern cannot serve as a concrete redirect target.
-		if strings.Contains(redirectURIs[0], "*") {
-			return fmt.Errorf("redirect URI is required in the authorization request")
-		}
-		// Check if only a part of the redirect uri is registered.
-		parsed, err := url.Parse(redirectURIs[0])
-		if err != nil || parsed.Scheme == "" || parsed.Host == "" {
-			return fmt.Errorf("registered redirect URI is not fully qualified")
-		}
-
-		// Valid scenario.
-		return nil
-	}
-
-	// Check if the redirect URI matches any registered URI or pattern.
-	if !matchAnyRedirectURIPattern(redirectURIs, redirectURI) {
-		return fmt.Errorf("your application's redirect URL does not match with the registered redirect URLs")
-	}
-
-	// Parse the redirect URI.
-	parsedRedirectURI, err := utils.ParseURL(redirectURI)
-	if err != nil {
-		logger.Error("Failed to parse redirect URI", log.Error(err))
-		return fmt.Errorf("invalid redirect URI: %s", err.Error())
-	}
-	// Check if it is a fragment URI.
-	if parsedRedirectURI.Fragment != "" {
-		return fmt.Errorf("redirect URI must not contain a fragment component")
-	}
-
-	return nil
-}
-
-// matchAnyRedirectURIPattern checks incoming against each registered URI or pattern.
-// Exact URIs are compared directly; patterns containing * use wildcard path matching.
-// First match wins (AC-11). Wildcard matching is skipped when the feature flag is off.
-func matchAnyRedirectURIPattern(patterns []string, redirectURI string) bool {
-	wildcardEnabled := config.GetThunderRuntime().Config.OAuth.AllowWildcardRedirectURI
-	for _, pattern := range patterns {
-		if !wildcardEnabled || !strings.Contains(pattern, "*") {
-			if pattern == redirectURI {
-				return true
-			}
-			continue
-		}
-		matched, err := utils.MatchURIPattern(pattern, redirectURI)
-		if err != nil {
-			continue
-		}
-		if matched {
-			return true
-		}
-	}
-	return false
+	return inboundmodel.ValidateRedirectURI(o.RedirectURIs, redirectURI)
 }

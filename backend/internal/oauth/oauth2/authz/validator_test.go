@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	sysconfig "github.com/asgardeo/thunder/internal/system/config"
@@ -33,7 +33,7 @@ import (
 type AuthorizationValidatorTestSuite struct {
 	suite.Suite
 	validator AuthorizationValidatorInterface
-	oauthApp  *appmodel.OAuthAppConfigProcessedDTO
+	oauthApp  *inboundmodel.OAuthClient
 }
 
 func TestAuthorizationValidatorTestSuite(t *testing.T) {
@@ -49,7 +49,7 @@ func (suite *AuthorizationValidatorTestSuite) SetupTest() {
 
 	suite.validator = newAuthorizationValidator()
 
-	suite.oauthApp = &appmodel.OAuthAppConfigProcessedDTO{
+	suite.oauthApp = &inboundmodel.OAuthClient{
 		ClientID:                "test-client-id",
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
@@ -120,7 +120,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzRequest_CodeGrantNotAllowed() {
 	// Create an app that doesn't allow authorization code grant type
-	restrictedApp := &appmodel.OAuthAppConfigProcessedDTO{
+	restrictedApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client-id",
 
 		RedirectURIs:            []string{"https://client.example.com/callback"},
@@ -163,7 +163,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_UnsupportedResponseType() {
 	// Create an app that doesn't support "code" response type
-	restrictedApp := &appmodel.OAuthAppConfigProcessedDTO{
+	restrictedApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client-id",
 
 		RedirectURIs:            []string{"https://client.example.com/callback"},
@@ -380,7 +380,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCERequired_MissingCodeChallenge() {
 	// Create an app that requires PKCE
-	pkceApp := &appmodel.OAuthAppConfigProcessedDTO{
+	pkceApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client-id",
 
 		RedirectURIs:            []string{"https://client.example.com/callback"},
@@ -409,7 +409,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCERequired_
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCERequired_InvalidCodeChallenge() {
 	// Create an app that requires PKCE
-	pkceApp := &appmodel.OAuthAppConfigProcessedDTO{
+	pkceApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client-id",
 
 		RedirectURIs:            []string{"https://client.example.com/callback"},
@@ -439,7 +439,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCERequired_
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_PKCERequired_ValidPKCE() {
 	// Create an app that requires PKCE
-	pkceApp := &appmodel.OAuthAppConfigProcessedDTO{
+	pkceApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client-id",
 
 		RedirectURIs:            []string{"https://client.example.com/callback"},
@@ -471,7 +471,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCERequired_MissingCodeChallengeMethod() {
 	// Create an app that requires PKCE
-	pkceApp := &appmodel.OAuthAppConfigProcessedDTO{
+	pkceApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client-id",
 
 		RedirectURIs:            []string{"https://client.example.com/callback"},
@@ -501,7 +501,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCERequired_
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_PKCENotRequired() {
 	// Create an app that doesn't require PKCE
-	nonPKCEApp := &appmodel.OAuthAppConfigProcessedDTO{
+	nonPKCEApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client-id",
 
 		RedirectURIs:            []string{"https://client.example.com/callback"},
@@ -530,7 +530,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCENotRequired_InvalidPKCEParams() {
 	// Create an app that doesn't require PKCE
-	nonPKCEApp := &appmodel.OAuthAppConfigProcessedDTO{
+	nonPKCEApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client-id",
 
 		RedirectURIs:            []string{"https://client.example.com/callback"},
@@ -794,7 +794,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			app := &appmodel.OAuthAppConfigProcessedDTO{
+			app := &inboundmodel.OAuthClient{
 				ClientID:                "test-client-id",
 				RedirectURIs:            tt.registeredURIs,
 				GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},

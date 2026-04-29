@@ -24,8 +24,8 @@ import (
 	"strings"
 	"time"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/attributecache"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
@@ -62,7 +62,7 @@ func newAuthorizationCodeGrantHandler(
 
 // ValidateGrant validates the authorization code grant request.
 func (h *authorizationCodeGrantHandler) ValidateGrant(ctx context.Context, tokenRequest *model.TokenRequest,
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO) *model.ErrorResponse {
+	oauthApp *inboundmodel.OAuthClient) *model.ErrorResponse {
 	if tokenRequest.GrantType == "" {
 		return &model.ErrorResponse{
 			Error:            constants.ErrorInvalidRequest,
@@ -106,7 +106,7 @@ func (h *authorizationCodeGrantHandler) ValidateGrant(ctx context.Context, token
 
 // HandleGrant processes the authorization code grant request and generates a token response.
 func (h *authorizationCodeGrantHandler) HandleGrant(ctx context.Context, tokenRequest *model.TokenRequest,
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO) (
+	oauthApp *inboundmodel.OAuthClient) (
 	*model.TokenResponseDTO, *model.ErrorResponse) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "AuthorizationCodeGrantHandler"))
 
@@ -240,7 +240,7 @@ func (h *authorizationCodeGrantHandler) HandleGrant(ctx context.Context, tokenRe
 func (h *authorizationCodeGrantHandler) retrieveAndValidateAuthCode(
 	ctx context.Context,
 	tokenRequest *model.TokenRequest,
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	oauthApp *inboundmodel.OAuthClient,
 	logger *log.Logger,
 ) (*authz.AuthorizationCode, *model.ErrorResponse) {
 	authCode, codeErr := h.authzService.GetAuthorizationCodeDetails(ctx, tokenRequest.ClientID, tokenRequest.Code)

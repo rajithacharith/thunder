@@ -289,6 +289,156 @@ func (_c *EntityProviderInterfaceMock_GetEntity_Call) RunAndReturn(run func(enti
 	return _c
 }
 
+// GetEntityList provides a mock function for the type EntityProviderInterfaceMock
+func (_mock *EntityProviderInterfaceMock) GetEntityList(category entityprovider.EntityCategory, limit int, offset int, filters map[string]interface{}) ([]entityprovider.Entity, *entityprovider.EntityProviderError) {
+	ret := _mock.Called(category, limit, offset, filters)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetEntityList")
+	}
+
+	var r0 []entityprovider.Entity
+	var r1 *entityprovider.EntityProviderError
+	if returnFunc, ok := ret.Get(0).(func(entityprovider.EntityCategory, int, int, map[string]interface{}) ([]entityprovider.Entity, *entityprovider.EntityProviderError)); ok {
+		return returnFunc(category, limit, offset, filters)
+	}
+	if returnFunc, ok := ret.Get(0).(func(entityprovider.EntityCategory, int, int, map[string]interface{}) []entityprovider.Entity); ok {
+		r0 = returnFunc(category, limit, offset, filters)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entityprovider.Entity)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(entityprovider.EntityCategory, int, int, map[string]interface{}) *entityprovider.EntityProviderError); ok {
+		r1 = returnFunc(category, limit, offset, filters)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*entityprovider.EntityProviderError)
+		}
+	}
+	return r0, r1
+}
+
+// EntityProviderInterfaceMock_GetEntityList_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetEntityList'
+type EntityProviderInterfaceMock_GetEntityList_Call struct {
+	*mock.Call
+}
+
+// GetEntityList is a helper method to define mock.On call
+//   - category entityprovider.EntityCategory
+//   - limit int
+//   - offset int
+//   - filters map[string]interface{}
+func (_e *EntityProviderInterfaceMock_Expecter) GetEntityList(category interface{}, limit interface{}, offset interface{}, filters interface{}) *EntityProviderInterfaceMock_GetEntityList_Call {
+	return &EntityProviderInterfaceMock_GetEntityList_Call{Call: _e.mock.On("GetEntityList", category, limit, offset, filters)}
+}
+
+func (_c *EntityProviderInterfaceMock_GetEntityList_Call) Run(run func(category entityprovider.EntityCategory, limit int, offset int, filters map[string]interface{})) *EntityProviderInterfaceMock_GetEntityList_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 entityprovider.EntityCategory
+		if args[0] != nil {
+			arg0 = args[0].(entityprovider.EntityCategory)
+		}
+		var arg1 int
+		if args[1] != nil {
+			arg1 = args[1].(int)
+		}
+		var arg2 int
+		if args[2] != nil {
+			arg2 = args[2].(int)
+		}
+		var arg3 map[string]interface{}
+		if args[3] != nil {
+			arg3 = args[3].(map[string]interface{})
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *EntityProviderInterfaceMock_GetEntityList_Call) Return(entitys []entityprovider.Entity, entityProviderError *entityprovider.EntityProviderError) *EntityProviderInterfaceMock_GetEntityList_Call {
+	_c.Call.Return(entitys, entityProviderError)
+	return _c
+}
+
+func (_c *EntityProviderInterfaceMock_GetEntityList_Call) RunAndReturn(run func(category entityprovider.EntityCategory, limit int, offset int, filters map[string]interface{}) ([]entityprovider.Entity, *entityprovider.EntityProviderError)) *EntityProviderInterfaceMock_GetEntityList_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetEntityListCount provides a mock function for the type EntityProviderInterfaceMock
+func (_mock *EntityProviderInterfaceMock) GetEntityListCount(category entityprovider.EntityCategory, filters map[string]interface{}) (int, *entityprovider.EntityProviderError) {
+	ret := _mock.Called(category, filters)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetEntityListCount")
+	}
+
+	var r0 int
+	var r1 *entityprovider.EntityProviderError
+	if returnFunc, ok := ret.Get(0).(func(entityprovider.EntityCategory, map[string]interface{}) (int, *entityprovider.EntityProviderError)); ok {
+		return returnFunc(category, filters)
+	}
+	if returnFunc, ok := ret.Get(0).(func(entityprovider.EntityCategory, map[string]interface{}) int); ok {
+		r0 = returnFunc(category, filters)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+	if returnFunc, ok := ret.Get(1).(func(entityprovider.EntityCategory, map[string]interface{}) *entityprovider.EntityProviderError); ok {
+		r1 = returnFunc(category, filters)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*entityprovider.EntityProviderError)
+		}
+	}
+	return r0, r1
+}
+
+// EntityProviderInterfaceMock_GetEntityListCount_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetEntityListCount'
+type EntityProviderInterfaceMock_GetEntityListCount_Call struct {
+	*mock.Call
+}
+
+// GetEntityListCount is a helper method to define mock.On call
+//   - category entityprovider.EntityCategory
+//   - filters map[string]interface{}
+func (_e *EntityProviderInterfaceMock_Expecter) GetEntityListCount(category interface{}, filters interface{}) *EntityProviderInterfaceMock_GetEntityListCount_Call {
+	return &EntityProviderInterfaceMock_GetEntityListCount_Call{Call: _e.mock.On("GetEntityListCount", category, filters)}
+}
+
+func (_c *EntityProviderInterfaceMock_GetEntityListCount_Call) Run(run func(category entityprovider.EntityCategory, filters map[string]interface{})) *EntityProviderInterfaceMock_GetEntityListCount_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 entityprovider.EntityCategory
+		if args[0] != nil {
+			arg0 = args[0].(entityprovider.EntityCategory)
+		}
+		var arg1 map[string]interface{}
+		if args[1] != nil {
+			arg1 = args[1].(map[string]interface{})
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *EntityProviderInterfaceMock_GetEntityListCount_Call) Return(n int, entityProviderError *entityprovider.EntityProviderError) *EntityProviderInterfaceMock_GetEntityListCount_Call {
+	_c.Call.Return(n, entityProviderError)
+	return _c
+}
+
+func (_c *EntityProviderInterfaceMock_GetEntityListCount_Call) RunAndReturn(run func(category entityprovider.EntityCategory, filters map[string]interface{}) (int, *entityprovider.EntityProviderError)) *EntityProviderInterfaceMock_GetEntityListCount_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetTransitiveEntityGroups provides a mock function for the type EntityProviderInterfaceMock
 func (_mock *EntityProviderInterfaceMock) GetTransitiveEntityGroups(entityID string) ([]entityprovider.EntityGroup, *entityprovider.EntityProviderError) {
 	ret := _mock.Called(entityID)

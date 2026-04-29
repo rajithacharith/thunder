@@ -21,11 +21,16 @@ package discovery
 import (
 	"context"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/pkce"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
+	"github.com/asgardeo/thunder/internal/system/jose/jwe"
+)
+
+var (
+	supportedUserInfoEncryptionAlgs = []string{string(jwe.RSAOAEP), string(jwe.RSAOAEP256)}
+	supportedUserInfoEncryptionEncs = []string{string(jwe.A128CBCHS256), string(jwe.A256GCM)}
 )
 
 // DiscoveryServiceInterface defines the interface for discovery services
@@ -82,8 +87,8 @@ func (ds *discoveryService) GetOIDCMetadata(ctx context.Context) *OIDCProviderMe
 		SubjectTypesSupported:                ds.getSupportedSubjectTypes(),
 		IDTokenSigningAlgValuesSupported:     ds.pkiService.GetSupportedSigningAlgorithms(),
 		UserInfoSigningAlgValuesSupported:    ds.pkiService.GetSupportedSigningAlgorithms(),
-		UserInfoEncryptionAlgValuesSupported: appmodel.SupportedUserInfoEncryptionAlgs,
-		UserInfoEncryptionEncValuesSupported: appmodel.SupportedUserInfoEncryptionEncs,
+		UserInfoEncryptionAlgValuesSupported: supportedUserInfoEncryptionAlgs,
+		UserInfoEncryptionEncValuesSupported: supportedUserInfoEncryptionEncs,
 		ClaimsSupported:                      ds.getSupportedClaims(),
 		ClaimsParameterSupported:             true,
 	}

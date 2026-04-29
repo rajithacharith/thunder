@@ -80,18 +80,4 @@ var (
 			DefaultValue: "The 'openid' scope is required for this request",
 		},
 	}
-
-	// errorUserInfoInternalError is returned when an internal error occurs while processing the UserInfo request
-	errorUserInfoInternalError = serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
-		Code: "server_error",
-		Error: core.I18nMessage{
-			Key:          "error.userinfoservice.internal_server_error",
-			DefaultValue: "Internal server error",
-		},
-		ErrorDescription: core.I18nMessage{
-			Key:          "error.userinfoservice.internal_server_error_description",
-			DefaultValue: "An internal server error occurred while processing the UserInfo request",
-		},
-	}
 )

@@ -94,33 +94,33 @@ CREATE INDEX idx_layout_deployment_id ON LAYOUT (DEPLOYMENT_ID);
 -- Unique index for layout handle per deployment
 CREATE UNIQUE INDEX idx_layout_handle_deployment ON LAYOUT (HANDLE, DEPLOYMENT_ID);
 
--- Table to store application gateway configuration.
-CREATE TABLE APPLICATION (
+-- Table to store inbound client configurations for an entity.
+CREATE TABLE INBOUND_CLIENT (
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
-    ID VARCHAR(36) PRIMARY KEY,
+    ENTITY_ID VARCHAR(36) PRIMARY KEY,
     AUTH_FLOW_ID VARCHAR(100) NOT NULL,
     REGISTRATION_FLOW_ID VARCHAR(100) NOT NULL,
     IS_REGISTRATION_FLOW_ENABLED CHAR(1) DEFAULT '1',
     THEME_ID VARCHAR(36),
     LAYOUT_ID VARCHAR(36),
-    APP_JSON TEXT,
+    PROPERTIES TEXT,
     FOREIGN KEY (THEME_ID) REFERENCES THEME(ID) ON DELETE RESTRICT,
     FOREIGN KEY (LAYOUT_ID) REFERENCES LAYOUT(ID) ON DELETE RESTRICT
 );
 
--- Index for efficient lookups of applications by theme.
-CREATE INDEX idx_application_theme_id ON APPLICATION(THEME_ID);
+-- Index for efficient lookups by theme.
+CREATE INDEX idx_inbound_client_theme_id ON INBOUND_CLIENT(THEME_ID);
 
--- Index for efficient lookups of applications by layout.
-CREATE INDEX idx_application_layout_id ON APPLICATION(LAYOUT_ID);
+-- Index for efficient lookups by layout.
+CREATE INDEX idx_inbound_client_layout_id ON INBOUND_CLIENT(LAYOUT_ID);
 
--- Table to store OAuth configurations for applications.
-CREATE TABLE APP_OAUTH_INBOUND_CONFIG (
+-- Table to store OAuth inbound profile for an entity.
+CREATE TABLE OAUTH_INBOUND_PROFILE (
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
-    APP_ID VARCHAR(36) NOT NULL,
+    ENTITY_ID VARCHAR(36) NOT NULL,
     OAUTH_CONFIG TEXT,
-    PRIMARY KEY (APP_ID, DEPLOYMENT_ID),
-    FOREIGN KEY (APP_ID) REFERENCES APPLICATION(ID) ON DELETE CASCADE
+    PRIMARY KEY (ENTITY_ID, DEPLOYMENT_ID),
+    FOREIGN KEY (ENTITY_ID) REFERENCES INBOUND_CLIENT(ENTITY_ID) ON DELETE CASCADE
 );
 
 -- Table to store identity providers.

@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/application/model"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/mcp/tool"
@@ -156,7 +157,7 @@ func (suite *ApplicationToolsTestSuite) TestGetApplicationByClientID_Success() {
 	mockService := NewApplicationServiceInterfaceMock(suite.T())
 	tools := &applicationTools{appService: mockService}
 
-	oauthApp := &model.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		AppID:    "app123",
 		ClientID: "client123",
 	}
@@ -208,7 +209,7 @@ func (suite *ApplicationToolsTestSuite) TestGetApplicationByClientID_AppError() 
 	mockService := NewApplicationServiceInterfaceMock(suite.T())
 	tools := &applicationTools{appService: mockService}
 
-	oauthApp := &model.OAuthAppConfigProcessedDTO{
+	oauthApp := &inboundmodel.OAuthClient{
 		AppID:    "app123",
 		ClientID: "client123",
 	}

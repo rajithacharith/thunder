@@ -28,8 +28,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/attributecache"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
@@ -82,7 +82,7 @@ type AuthorizationCodeGrantHandlerTestSuite struct {
 	mockAuthzService     *authzmock.AuthorizeServiceInterfaceMock
 	mockAttrCacheService *attributecachemock.AttributeCacheServiceInterfaceMock
 	mockResourceService  *resourcemock.ResourceServiceInterfaceMock
-	oauthApp             *appmodel.OAuthAppConfigProcessedDTO
+	oauthApp             *inboundmodel.OAuthClient
 	testAuthzCode        authz.AuthorizationCode
 	testTokenReq         *model.TokenRequest
 }
@@ -124,15 +124,15 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) SetupTest() {
 		resourceService: suite.mockResourceService,
 	}
 
-	suite.oauthApp = &appmodel.OAuthAppConfigProcessedDTO{
+	suite.oauthApp = &inboundmodel.OAuthClient{
 		ClientID: testClientID,
 
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 		ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
 		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				UserAttributes: []string{"email", "username"},
 			},
 		},
@@ -496,33 +496,33 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 			if tc.includeInAccessToken {
 				accessTokenAttrs = append(accessTokenAttrs, constants.UserAttributeGroups)
 			}
-			var idTokenConfig *appmodel.IDTokenConfig
+			var idTokenConfig *inboundmodel.IDTokenConfig
 			var scopeClaims map[string][]string
 			if tc.includeInIDToken {
 				if tc.scopeClaimsForGroups {
 					// Include groups in ID token config with scope claims mapping
-					idTokenConfig = &appmodel.IDTokenConfig{
+					idTokenConfig = &inboundmodel.IDTokenConfig{
 						UserAttributes: []string{"email", "username", constants.UserAttributeGroups},
 					}
 					scopeClaims = map[string][]string{
 						"openid": {"email", "username", constants.UserAttributeGroups},
 					}
 				} else {
-					idTokenConfig = &appmodel.IDTokenConfig{
+					idTokenConfig = &inboundmodel.IDTokenConfig{
 						UserAttributes: []string{"email", "username"},
 					}
 				}
 			}
 
-			oauthAppWithGroups := &appmodel.OAuthAppConfigProcessedDTO{
+			oauthAppWithGroups := &inboundmodel.OAuthClient{
 				ClientID: testClientID,
 
 				RedirectURIs:            []string{"https://client.example.com/callback"},
 				GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 				ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
 				TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
-				Token: &appmodel.OAuthTokenConfig{
-					AccessToken: &appmodel.AccessTokenConfig{
+				Token: &inboundmodel.OAuthTokenConfig{
+					AccessToken: &inboundmodel.AccessTokenConfig{
 						UserAttributes: accessTokenAttrs,
 					},
 					IDToken: idTokenConfig,
@@ -693,32 +693,32 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 			if tc.includeInAccessToken {
 				accessTokenAttrs = append(accessTokenAttrs, constants.UserAttributeGroups)
 			}
-			var idTokenConfig *appmodel.IDTokenConfig
+			var idTokenConfig *inboundmodel.IDTokenConfig
 			var scopeClaims map[string][]string
 			if tc.includeInIDToken {
 				if tc.scopeClaimsForGroups {
-					idTokenConfig = &appmodel.IDTokenConfig{
+					idTokenConfig = &inboundmodel.IDTokenConfig{
 						UserAttributes: []string{"email", "username", constants.UserAttributeGroups},
 					}
 					scopeClaims = map[string][]string{
 						"openid": {"email", "username", constants.UserAttributeGroups},
 					}
 				} else {
-					idTokenConfig = &appmodel.IDTokenConfig{
+					idTokenConfig = &inboundmodel.IDTokenConfig{
 						UserAttributes: []string{"email", "username"},
 					}
 				}
 			}
 
-			oauthAppWithGroups := &appmodel.OAuthAppConfigProcessedDTO{
+			oauthAppWithGroups := &inboundmodel.OAuthClient{
 				ClientID: testClientID,
 
 				RedirectURIs:            []string{"https://client.example.com/callback"},
 				GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 				ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
 				TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
-				Token: &appmodel.OAuthTokenConfig{
-					AccessToken: &appmodel.AccessTokenConfig{
+				Token: &inboundmodel.OAuthTokenConfig{
+					AccessToken: &inboundmodel.AccessTokenConfig{
 						UserAttributes: accessTokenAttrs,
 					},
 					IDToken: idTokenConfig,
@@ -974,15 +974,15 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_ResourceP
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_FetchUserGroupsError() {
 	// Test that groups are retrieved from authorization code (not fetched from DB)
 	// Create OAuth app with groups configured
-	oauthAppWithGroups := &appmodel.OAuthAppConfigProcessedDTO{
+	oauthAppWithGroups := &inboundmodel.OAuthClient{
 		ClientID: testClientID,
 
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 		ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
 		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
-		Token: &appmodel.OAuthTokenConfig{
-			AccessToken: &appmodel.AccessTokenConfig{
+		Token: &inboundmodel.OAuthTokenConfig{
+			AccessToken: &inboundmodel.AccessTokenConfig{
 				UserAttributes: []string{"email", "username", constants.UserAttributeGroups},
 			},
 		},
@@ -1056,8 +1056,8 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_AttributeCa
 }
 
 // createPKCEApp creates a test OAuth app with PKCE required
-func (suite *AuthorizationCodeGrantHandlerTestSuite) createPKCEApp() *appmodel.OAuthAppConfigProcessedDTO {
-	return &appmodel.OAuthAppConfigProcessedDTO{
+func (suite *AuthorizationCodeGrantHandlerTestSuite) createPKCEApp() *inboundmodel.OAuthClient {
+	return &inboundmodel.OAuthClient{
 		ClientID: testClientID,
 
 		RedirectURIs:            []string{testClientCallbackURL},

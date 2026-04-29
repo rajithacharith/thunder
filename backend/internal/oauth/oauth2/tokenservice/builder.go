@@ -21,7 +21,7 @@ package tokenservice
 import (
 	"fmt"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
@@ -163,7 +163,7 @@ func (tb *tokenBuilder) buildAccessTokenClaims(
 // buildAccessTokenUserAttributes builds user attributes for the access token based on app configuration.
 func (tb *tokenBuilder) buildAccessTokenUserAttributes(
 	attrs map[string]interface{},
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	oauthApp *inboundmodel.OAuthClient,
 ) map[string]interface{} {
 	accessTokenAttributes := make(map[string]interface{})
 

@@ -20,7 +20,7 @@
 package tokenservice
 
 import (
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 )
 
@@ -53,7 +53,7 @@ type AccessTokenBuildContext struct {
 	UserAttributes   map[string]interface{}
 	AttributeCacheID string
 	GrantType        string
-	OAuthApp         *appmodel.OAuthAppConfigProcessedDTO
+	OAuthApp         *inboundmodel.OAuthClient
 	ActorClaims      *SubjectTokenClaims
 	ClaimsRequest    *oauth2model.ClaimsRequest
 	ClaimsLocales    string
@@ -68,7 +68,7 @@ type RefreshTokenBuildContext struct {
 	AccessTokenSubject   string
 	AccessTokenAudiences []string
 	AttributeCacheID     string
-	OAuthApp             *appmodel.OAuthAppConfigProcessedDTO
+	OAuthApp             *inboundmodel.OAuthClient
 	ClaimsRequest        *oauth2model.ClaimsRequest
 	ClaimsLocales        string
 }
@@ -80,7 +80,7 @@ type IDTokenBuildContext struct {
 	Scopes         []string
 	UserAttributes map[string]interface{}
 	AuthTime       int64
-	OAuthApp       *appmodel.OAuthAppConfigProcessedDTO
+	OAuthApp       *inboundmodel.OAuthClient
 	ClaimsRequest  *oauth2model.ClaimsRequest
 	Nonce          string
 }

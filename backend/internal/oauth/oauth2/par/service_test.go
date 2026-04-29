@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/resource"
@@ -62,8 +62,8 @@ func (s *ServiceTestSuite) TearDownTest() {
 	config.ResetThunderRuntime()
 }
 
-func (s *ServiceTestSuite) newTestApp() *appmodel.OAuthAppConfigProcessedDTO {
-	return &appmodel.OAuthAppConfigProcessedDTO{
+func (s *ServiceTestSuite) newTestApp() *inboundmodel.OAuthClient {
+	return &inboundmodel.OAuthClient{
 		ClientID:                "test-client",
 		RedirectURIs:            []string{"https://example.com/callback"},
 		GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
