@@ -1173,7 +1173,7 @@ RESPONSE=$(api_call POST "/applications" "{
     \"config\": {
             \"clientId\": \"CONSOLE\",
             \"redirectUris\": [${REDIRECT_URIS}],
-            \"grantTypes\": [\"authorization_code\"],
+            \"grantTypes\": [\"authorization_code\", \"refresh_token\"],
             \"responseTypes\": [\"code\"],
             \"pkceRequired\": true,
             \"tokenEndpointAuthMethod\": \"none\",
