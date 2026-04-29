@@ -16,7 +16,7 @@
  * under the License.
  */
 
-// Import shared test setup from @thunder/test-utils
+// Import shared test setup from test-utils
 import '@thunder/test-utils/setup';
 import {configureTestUtils} from '@thunder/test-utils';
 

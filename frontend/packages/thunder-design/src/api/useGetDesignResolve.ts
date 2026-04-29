@@ -29,7 +29,7 @@ interface DesignResolveParams {
 }
 
 /**
- * Custom hook to resolve design configuration by type and ID from the Thunder server.
+ * Custom hook to resolve design configuration by type and ID from the server.
  * Uses the /design/resolve endpoint to fetch the merged theme and layout
  * based on application or organizational unit.
  *

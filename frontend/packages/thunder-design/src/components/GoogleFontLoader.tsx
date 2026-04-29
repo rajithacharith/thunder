@@ -16,11 +16,9 @@
  * under the License.
  */
 
+import {useConfig} from '@thunder/contexts';
 import {useEffect} from 'react';
 import {SYSTEM_FONTS} from '../constants/fonts';
-
-const FONT_LINK_ID = 'thunder-google-font';
-const FONT_OVERRIDE_ID = 'thunder-font-override';
 
 /** CSS variable set by the Asgardeo SDK when design data includes a custom font. */
 const ASGARDEO_FONT_CSS_VAR = '--asgardeo-typography-fontFamily';
@@ -61,12 +59,17 @@ export default function GoogleFontLoader({
   fontFamily: fontFamilyProp = undefined,
   targetDocument = undefined,
 }: GoogleFontLoaderProps): null {
+  const {config} = useConfig();
+  const idPrefix = config.brand.product_name.toLowerCase().replace(/\s+/g, '-');
+  const fontLinkId = `${idPrefix}-google-font`;
+  const fontOverrideId = `${idPrefix}-font-override`;
+
   // ── Inject CSS font-family override ────────────────────────────────────
   useEffect(() => {
     const doc = targetDocument ?? document;
 
     const style = doc.createElement('style');
-    style.id = FONT_OVERRIDE_ID;
+    style.id = fontOverrideId;
 
     if (fontFamilyProp) {
       // Explicit font: use the value directly.
@@ -77,19 +80,19 @@ export default function GoogleFontLoader({
       style.textContent = `${MUI_FONT_SELECTORS} { font-family: var(${ASGARDEO_FONT_CSS_VAR}), sans-serif !important; }`;
     }
 
-    doc.getElementById(FONT_OVERRIDE_ID)?.remove();
+    doc.getElementById(fontOverrideId)?.remove();
     doc.head.appendChild(style);
 
     return () => {
-      doc.getElementById(FONT_OVERRIDE_ID)?.remove();
+      doc.getElementById(fontOverrideId)?.remove();
     };
-  }, [fontFamilyProp, targetDocument]);
+  }, [fontFamilyProp, fontOverrideId, targetDocument]);
 
   // ── Load Google Font when the CSS variable resolves ────────────────────
   useEffect(() => {
     if (fontFamilyProp) {
       // Explicit font provided — load it if non-system.
-      return loadGoogleFont(fontFamilyProp, targetDocument);
+      return loadGoogleFont(fontLinkId, fontFamilyProp, targetDocument);
     }
 
     // Poll briefly for the Asgardeo CSS variable to be set, then load the font.
@@ -100,7 +103,7 @@ export default function GoogleFontLoader({
     const tryLoad = (): boolean => {
       const value = getComputedStyle(doc.documentElement).getPropertyValue(ASGARDEO_FONT_CSS_VAR).trim();
       if (value) {
-        cleanup = loadGoogleFont(value, targetDocument);
+        cleanup = loadGoogleFont(fontLinkId, value, targetDocument);
         return true;
       }
       return false;
@@ -131,7 +134,7 @@ export default function GoogleFontLoader({
     }
 
     return cleanup;
-  }, [fontFamilyProp, targetDocument]);
+  }, [fontFamilyProp, fontLinkId, targetDocument]);
 
   return null;
 }
@@ -140,21 +143,21 @@ export default function GoogleFontLoader({
  * Injects a Google Font `<link>` for the given font family if it isn't a system font.
  * Returns a cleanup function that removes the link.
  */
-function loadGoogleFont(fontFamily: string, targetDocument?: Document): (() => void) | undefined {
+function loadGoogleFont(fontLinkId: string, fontFamily: string, targetDocument?: Document): (() => void) | undefined {
   const primaryFont = fontFamily.split(',')[0].trim().replace(/['"]/g, '');
   if (!primaryFont || SYSTEM_FONTS.has(primaryFont.toLowerCase())) {
     return undefined;
   }
 
   const doc = targetDocument ?? document;
-  doc.getElementById(FONT_LINK_ID)?.remove();
+  doc.getElementById(fontLinkId)?.remove();
   const link = doc.createElement('link');
-  link.id = FONT_LINK_ID;
+  link.id = fontLinkId;
   link.rel = 'stylesheet';
   link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(primaryFont)}:wght@100;200;300;400;500;600;700;800;900&display=swap`;
   doc.head.appendChild(link);
 
   return () => {
-    doc.getElementById(FONT_LINK_ID)?.remove();
+    doc.getElementById(fontLinkId)?.remove();
   };
 }

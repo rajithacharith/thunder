@@ -23,7 +23,7 @@ import {useTranslation} from 'react-i18next';
 import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
 
 /**
- * Custom React hook to delete an organization unit from the Thunder server.
+ * Custom React hook to delete an organization unit from the server.
  *
  * This hook uses TanStack Query mutations to handle the deletion process,
  * providing loading states and error handling. Upon successful deletion, it automatically

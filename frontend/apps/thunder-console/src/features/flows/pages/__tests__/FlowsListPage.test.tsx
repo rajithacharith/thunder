@@ -21,7 +21,7 @@ import {MemoryRouter} from 'react-router';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import FlowsListPage from '../FlowsListPage';
 
-// Mock @thunder/logger/react
+// Mock logger
 const mockLoggerError = vi.fn();
 
 vi.mock('@thunder/logger/react', () => ({

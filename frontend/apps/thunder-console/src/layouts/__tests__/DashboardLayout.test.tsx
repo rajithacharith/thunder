@@ -41,7 +41,7 @@ vi.mock('@asgardeo/react', () => ({
     children({signOut: mockSignOut}),
 }));
 
-// Mock @thunder/contexts
+// Mock contexts
 vi.mock('@thunder/contexts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@thunder/contexts')>();
   return {
@@ -61,7 +61,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-// Mock @thunder/logger/react
+// Mock logger
 vi.mock('@thunder/logger/react', () => ({
   useLogger: () => ({
     error: mockLoggerError,

@@ -19,7 +19,7 @@
 /**
  * Authenticator Types
  *
- * Supported authenticator types in the Thunder platform.
+ * Supported authenticator types in the platform.
  * These represent different authentication methods and protocols.
  *
  * @public

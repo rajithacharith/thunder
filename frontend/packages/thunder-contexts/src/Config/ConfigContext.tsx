@@ -20,14 +20,14 @@ import {Context, createContext} from 'react';
 import {ThunderConfig} from './types';
 
 /**
- * Configuration context interface that provides access to Thunder runtime configuration
+ * Configuration context interface that provides access to runtime configuration
  * and utility methods for server-related operations.
  *
  * @public
  */
 export interface ConfigContextType {
   /**
-   * The complete Thunder configuration object loaded from window object
+   * The complete configuration object loaded from window object
    * or default values if not available
    */
   config: ThunderConfig;
@@ -58,7 +58,7 @@ export interface ConfigContextType {
 
   /**
    * Gets the client ID from the configuration
-   * @returns The client ID string (e.g., "CONSOLE", "thunder-admin")
+   * @returns The client ID string (e.g., "CONSOLE")
    */
   getClientId: () => string;
 
@@ -103,12 +103,12 @@ export interface ConfigContextType {
 
   /**
    * Indicates whether the configured trusted issuer is a generic OIDC provider
-   * rather than a Thunder / Asgardeo instance. When true, the console must suppress
-   * Thunder / Asgardeo specific bootstrap calls (flow metadata, branding preferences) that
+   * rather than the same type of instance. When true, the console must suppress
+   * specific bootstrap calls (flow metadata, branding preferences) that
    * would otherwise fail against a generic OIDC provider.
    *
    * Returns false when no trusted issuer is configured, and when the configured
-   * trusted issuer type is `thunder` (the default).
+   * trusted issuer type is `default`.
    *
    * @returns True if the trusted issuer is a generic OIDC provider
    */
@@ -116,7 +116,7 @@ export interface ConfigContextType {
 }
 
 /**
- * React context for accessing Thunder runtime configuration throughout the application.
+ * React context for accessing runtime configuration throughout the application.
  *
  * This context provides access to the configuration loaded from window object.
  * or falls back to default values. It should be used within a `ConfigProvider` component.

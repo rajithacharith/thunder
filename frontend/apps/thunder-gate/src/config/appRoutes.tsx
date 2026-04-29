@@ -38,7 +38,7 @@ export interface AppRoute extends Omit<RouteProps, 'children'> {
 
 /**
  * Application routes configuration.
- * Defines the routing structure for the Thunder Gate application.
+ * Defines the routing structure for the Gate application.
  *
  * @constant
  * @type {AppRoute[]}

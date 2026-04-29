@@ -23,7 +23,7 @@ import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys
 import type {OrganizationUnit} from '../models/organization-unit';
 
 /**
- * Custom React hook to fetch a single organization unit by its ID from the Thunder server.
+ * Custom React hook to fetch a single organization unit by its ID from the server.
  *
  * This hook uses TanStack Query to manage the server state and provides automatic
  * caching, refetching, and background updates.

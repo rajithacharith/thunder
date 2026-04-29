@@ -17,6 +17,7 @@
  */
 
 import {screen, cleanup} from '@testing-library/react';
+import {TEST_CN_PREFIX} from '@thunder/test-utils';
 import {describe, it, expect, afterEach} from 'vitest';
 import renderWithProviders from '../../../test/renderWithProviders';
 import AuthCardLayout from '../AuthCardLayout';
@@ -42,7 +43,7 @@ describe('AuthCardLayout', () => {
           <span>Content</span>
         </AuthCardLayout>,
       );
-      expect(container.querySelector('.ThunderSignInBox--root')).toBeTruthy();
+      expect(container.querySelector(`.${TEST_CN_PREFIX}SignInBox--root`)).toBeTruthy();
     });
 
     it('applies Thunder CSS paper class when variant is provided', () => {
@@ -51,7 +52,7 @@ describe('AuthCardLayout', () => {
           <span>Content</span>
         </AuthCardLayout>,
       );
-      expect(container.querySelector('.ThunderSignInBox--paper')).toBeTruthy();
+      expect(container.querySelector(`.${TEST_CN_PREFIX}SignInBox--paper`)).toBeTruthy();
     });
 
     it('does not apply Thunder CSS classes when variant is not provided', () => {
@@ -60,7 +61,7 @@ describe('AuthCardLayout', () => {
           <span>Content</span>
         </AuthCardLayout>,
       );
-      const allElements = container.querySelectorAll('[class*="Thunder"]');
+      const allElements = container.querySelectorAll(`[class*="${TEST_CN_PREFIX}"]`);
       expect(allElements.length).toBe(0);
     });
   });
@@ -88,7 +89,7 @@ describe('AuthCardLayout', () => {
           <span>Content</span>
         </AuthCardLayout>,
       );
-      expect(container.querySelector('.ThunderSignInBox--logo')).toBeTruthy();
+      expect(container.querySelector(`.${TEST_CN_PREFIX}SignInBox--logo`)).toBeTruthy();
     });
 
     it('uses custom alt text when provided in logo', () => {
@@ -181,7 +182,7 @@ describe('AuthCardLayout', () => {
           <span>Content</span>
         </AuthCardLayout>,
       );
-      const thunderElements = container.querySelectorAll('[class*="Thunder"]');
+      const thunderElements = container.querySelectorAll(`[class*="${TEST_CN_PREFIX}"]`);
       expect(thunderElements.length).toBe(0);
     });
   });

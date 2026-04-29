@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {useConfig} from '@thunder/contexts';
 import {useLogger} from '@thunder/logger';
 import {Box, Typography, Stack, Card, CardContent, Divider, Paper, IconButton, Tooltip} from '@wso2/oxygen-ui';
 import {Sparkles, Copy} from '@wso2/oxygen-ui-icons-react';
@@ -63,7 +64,7 @@ export interface TechnologyGuideProps {
  *
  * The displayed steps vary based on the template ID:
  * - Templates with '-embedded' suffix (e.g., 'react-embedded'): Shows 'embedded' guide for custom login UI
- * - Templates without '-embedded' suffix (e.g., 'react'): Shows 'inbuilt' guide for Thunder-hosted login
+ * - Templates without '-embedded' suffix (e.g., 'react'): Shows 'inbuilt' guide for product's hosted login
  *
  * @param props - The component props
  * @param props.guides - Integration guides structure
@@ -81,6 +82,8 @@ export default function TechnologyGuide({
 }: TechnologyGuideProps): JSX.Element | null {
   const logger = useLogger('TechnologyGuide');
   const {t} = useTranslation();
+  const {config} = useConfig();
+  const productName = config?.brand?.product_name ?? '';
 
   const [copiedStep, setCopiedStep] = useState<number | null>(null);
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
@@ -106,6 +109,10 @@ export default function TechnologyGuide({
 
   const replacePlaceholders = (text: string): string => {
     let result = text;
+
+    if (productName && productName.trim() !== '') {
+      result = result.replace(/\{\{productName\}\}/g, productName);
+    }
 
     // Replace clientId if available
     if (clientId && clientId.trim() !== '') {

@@ -33,7 +33,7 @@ import {useMemo, type ReactElement, type ReactNode} from 'react';
 import {MemoryRouter} from 'react-router';
 
 /**
- * Configuration options for Thunder test utilities
+ * Configuration options for test utilities
  */
 export interface ThunderTestConfig {
   /**
@@ -72,6 +72,12 @@ const defaultConfig: ThunderTestConfig = {
   base: '/console',
   clientId: 'CONSOLE',
 };
+
+/**
+ * The CSS class name prefix used by cn() during tests.
+ * Import this instead of hardcoding the product name in test assertions.
+ */
+export const TEST_CN_PREFIX = 'Thunder';
 
 // Store the current config
 let currentConfig: ThunderTestConfig = defaultConfig;

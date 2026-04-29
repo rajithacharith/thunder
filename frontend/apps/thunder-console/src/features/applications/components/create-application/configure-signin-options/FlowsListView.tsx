@@ -65,7 +65,7 @@ export default function FlowsListView({
 }: FlowsListViewProps): JSX.Element | null {
   const {t} = useTranslation();
 
-  // Exclude the console-app flows which is reserved for the Thunder system management console itself & default flows.
+  // Exclude the console-app flows which is reserved for the system management console itself & default flows.
   const selectableFlows: BasicFlowDefinition[] = useMemo(
     () => availableFlows.filter((flow) => !flow.handle.includes('console-app-') && !flow.handle.startsWith('default-')),
     [availableFlows],

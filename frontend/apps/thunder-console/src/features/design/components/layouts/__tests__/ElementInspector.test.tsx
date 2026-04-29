@@ -17,6 +17,8 @@
  */
 
 import {render, screen, cleanup, fireEvent, act} from '@testing-library/react';
+import {TEST_CN_PREFIX} from '@thunder/test-utils';
+import {setCnPrefix} from '@thunder/utils';
 import {describe, it, expect, vi, afterEach, beforeEach} from 'vitest';
 import ElementInspector from '../ElementInspector';
 
@@ -30,6 +32,7 @@ vi.mock('@wso2/oxygen-ui', async () => {
 const mockWriteText = vi.fn().mockResolvedValue(undefined);
 
 beforeEach(() => {
+  setCnPrefix(TEST_CN_PREFIX);
   Object.defineProperty(navigator, 'clipboard', {
     value: {writeText: mockWriteText},
     writable: true,
@@ -76,10 +79,10 @@ describe('ElementInspector', () => {
   });
 
   describe('hover inspection', () => {
-    it('shows highlight overlay when hovering over a Thunder-classed element', () => {
+    it('shows highlight overlay when hovering over a prefixed classed element', () => {
       const {container} = render(
         <ElementInspector enabled>
-          <div className="ThunderSignInBox--root">Sign in</div>
+          <div className={`${TEST_CN_PREFIX}SignInBox--root`}>Sign in</div>
         </ElementInspector>,
       );
 
@@ -115,20 +118,20 @@ describe('ElementInspector', () => {
       });
 
       // The tooltip should show the tag and class
-      expect(screen.getByText(/ThunderSignInBox--root/)).toBeTruthy();
+      expect(screen.getByText(new RegExp(`${TEST_CN_PREFIX}SignInBox--root`))).toBeTruthy();
     });
 
-    it('walks up DOM tree to find nearest Thunder-classed element', () => {
+    it('walks up DOM tree to find nearest product name prefixed classed element', () => {
       const {container} = render(
         <ElementInspector enabled>
-          <div className="ThunderSignInBox--root">
+          <div className={`${TEST_CN_PREFIX}SignInBox--root`}>
             <span data-testid="inner">Inner text</span>
           </div>
         </ElementInspector>,
       );
 
       const innerEl = screen.getByTestId('inner');
-      const thunderEl = innerEl.parentElement!;
+      const productNamePrefixedEl = innerEl.parentElement!;
       const containerEl = container.firstElementChild as HTMLElement;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
@@ -142,7 +145,7 @@ describe('ElementInspector', () => {
         bottom: 600,
         toJSON: vi.fn(),
       });
-      vi.spyOn(thunderEl, 'getBoundingClientRect').mockReturnValue({
+      vi.spyOn(productNamePrefixedEl, 'getBoundingClientRect').mockReturnValue({
         x: 10,
         y: 20,
         width: 200,
@@ -158,13 +161,13 @@ describe('ElementInspector', () => {
         fireEvent.mouseOver(innerEl);
       });
 
-      expect(screen.getByText(/ThunderSignInBox--root/)).toBeTruthy();
+      expect(screen.getByText(new RegExp(`${TEST_CN_PREFIX}SignInBox--root`))).toBeTruthy();
     });
 
     it('clears highlight when mouse leaves the container', () => {
       const {container} = render(
         <ElementInspector enabled>
-          <div className="ThunderSignInBox--root">Sign in</div>
+          <div className={`${TEST_CN_PREFIX}SignInBox--root`}>Sign in</div>
         </ElementInspector>,
       );
 
@@ -197,21 +200,21 @@ describe('ElementInspector', () => {
       act(() => {
         fireEvent.mouseOver(target);
       });
-      expect(screen.getByText(/ThunderSignInBox--root/)).toBeTruthy();
+      expect(screen.getByText(new RegExp(`${TEST_CN_PREFIX}SignInBox--root`))).toBeTruthy();
 
       // Mouse out to an element outside the container
       act(() => {
         fireEvent.mouseOut(target, {relatedTarget: document.body});
       });
-      expect(screen.queryByText(/ThunderSignInBox--root/)).toBeNull();
+      expect(screen.queryByText(new RegExp(`${TEST_CN_PREFIX}SignInBox--root`))).toBeNull();
     });
 
     it('does not clear highlight when mouse moves between elements inside container', () => {
       const {container} = render(
         <ElementInspector enabled>
-          <div className="ThunderSignInBox--root">
+          <div className={`${TEST_CN_PREFIX}SignInBox--root`}>
             <span data-testid="a">A</span>
-            <span className="ThunderFlow--text" data-testid="b">
+            <span className={`${TEST_CN_PREFIX}Flow--text`} data-testid="b">
               B
             </span>
           </div>
@@ -221,7 +224,7 @@ describe('ElementInspector', () => {
       const containerEl = container.firstElementChild as HTMLElement;
       const elA = screen.getByTestId('a');
       const elB = screen.getByTestId('b');
-      const thunderRoot = elA.parentElement!;
+      const root = elA.parentElement!;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
         x: 0,
@@ -234,7 +237,7 @@ describe('ElementInspector', () => {
         bottom: 600,
         toJSON: vi.fn(),
       });
-      vi.spyOn(thunderRoot, 'getBoundingClientRect').mockReturnValue({
+      vi.spyOn(root, 'getBoundingClientRect').mockReturnValue({
         x: 10,
         y: 20,
         width: 200,
@@ -271,13 +274,13 @@ describe('ElementInspector', () => {
       act(() => {
         fireEvent.mouseOver(elB);
       });
-      expect(screen.getByText(/ThunderFlow--text/)).toBeTruthy();
+      expect(screen.getByText(new RegExp(`${TEST_CN_PREFIX}Flow--text`))).toBeTruthy();
     });
 
     it('clears highlight when pointer moves onto empty container space', () => {
       const {container} = render(
         <ElementInspector enabled>
-          <div className="ThunderSignInBox--root">Sign in</div>
+          <div className={`${TEST_CN_PREFIX}SignInBox--root`}>Sign in</div>
         </ElementInspector>,
       );
 
@@ -307,20 +310,20 @@ describe('ElementInspector', () => {
         toJSON: vi.fn(),
       });
 
-      // First hover over a Thunder element to show highlight
+      // First hover over a product name prefixed element to show highlight
       act(() => {
         fireEvent.mouseOver(target);
       });
-      expect(screen.getByText(/ThunderSignInBox--root/)).toBeTruthy();
+      expect(screen.getByText(new RegExp(`${TEST_CN_PREFIX}SignInBox--root`))).toBeTruthy();
 
       // Then move onto the container's empty space — highlight should clear
       act(() => {
         fireEvent.mouseOver(containerEl);
       });
-      expect(screen.queryByText(/\.ThunderSignInBox--root/)).toBeNull();
+      expect(screen.queryByText(new RegExp(`\\.${TEST_CN_PREFIX}SignInBox--root`))).toBeNull();
     });
 
-    it('sets highlight to null when walk-up finds no Thunder classes', () => {
+    it('sets highlight to null when walk-up finds no product name prefixed classes', () => {
       const {container} = render(
         <ElementInspector enabled>
           <div data-testid="plain">No special classes here</div>
@@ -346,17 +349,17 @@ describe('ElementInspector', () => {
         fireEvent.mouseOver(target);
       });
 
-      // No tooltip should appear since there are no Thunder classes — look for the dot-prefixed class pattern
-      expect(screen.queryByText(/\.Thunder/)).toBeNull();
+      // No tooltip should appear since there are no product name prefixed classes — look for the dot-prefixed class pattern
+      expect(screen.queryByText(new RegExp(`\\.${TEST_CN_PREFIX}`))).toBeNull();
     });
   });
 
   describe('click to select', () => {
-    it('calls onSelectSelector with the best Thunder class on click', () => {
+    it('calls onSelectSelector with the best product name prefixed class on click', () => {
       const onSelect = vi.fn();
       const {container} = render(
         <ElementInspector enabled onSelectSelector={onSelect}>
-          <div className="ThunderSignInBox--root">Click me</div>
+          <div className={`${TEST_CN_PREFIX}SignInBox--root`}>Click me</div>
         </ElementInspector>,
       );
 
@@ -379,14 +382,14 @@ describe('ElementInspector', () => {
         fireEvent.click(target);
       });
 
-      expect(onSelect).toHaveBeenCalledWith('.ThunderSignInBox--root');
+      expect(onSelect).toHaveBeenCalledWith(`.${TEST_CN_PREFIX}SignInBox--root`);
     });
 
     it('prefers BEM modifier classes (with --) when picking best class', () => {
       const onSelect = vi.fn();
       const {container} = render(
         <ElementInspector enabled onSelectSelector={onSelect}>
-          <div className="ThunderFlow ThunderFlow--button">Click me</div>
+          <div className={`${TEST_CN_PREFIX}Flow ${TEST_CN_PREFIX}Flow--button`}>Click me</div>
         </ElementInspector>,
       );
 
@@ -409,13 +412,13 @@ describe('ElementInspector', () => {
         fireEvent.click(target);
       });
 
-      expect(onSelect).toHaveBeenCalledWith('.ThunderFlow--button');
+      expect(onSelect).toHaveBeenCalledWith(`.${TEST_CN_PREFIX}Flow--button`);
     });
 
     it('copies selector to clipboard on click', () => {
       const {container} = render(
         <ElementInspector enabled>
-          <div className="ThunderFlow--text">Click me</div>
+          <div className={`${TEST_CN_PREFIX}Flow--text`}>Click me</div>
         </ElementInspector>,
       );
 
@@ -438,13 +441,13 @@ describe('ElementInspector', () => {
         fireEvent.click(target);
       });
 
-      expect(mockWriteText).toHaveBeenCalledWith('.ThunderFlow--text');
+      expect(mockWriteText).toHaveBeenCalledWith(`.${TEST_CN_PREFIX}Flow--text`);
     });
 
     it('shows copied feedback after click', async () => {
       const {container} = render(
         <ElementInspector enabled>
-          <div className="ThunderFlow--text">Click me</div>
+          <div className={`${TEST_CN_PREFIX}Flow--text`}>Click me</div>
         </ElementInspector>,
       );
 
@@ -469,7 +472,7 @@ describe('ElementInspector', () => {
         await Promise.resolve();
       });
 
-      expect(screen.getByText(/Copied:.*\.ThunderFlow--text/)).toBeTruthy();
+      expect(screen.getByText(new RegExp(`Copied:.*\\.${TEST_CN_PREFIX}Flow--text`))).toBeTruthy();
     });
 
     it('clears copied feedback after timeout', async () => {
@@ -477,7 +480,7 @@ describe('ElementInspector', () => {
 
       const {container} = render(
         <ElementInspector enabled>
-          <div className="ThunderFlow--text">Click me</div>
+          <div className={`${TEST_CN_PREFIX}Flow--text`}>Click me</div>
         </ElementInspector>,
       );
 
@@ -501,7 +504,7 @@ describe('ElementInspector', () => {
         await Promise.resolve();
       });
 
-      expect(screen.getByText(/Copied:.*\.ThunderFlow--text/)).toBeTruthy();
+      expect(screen.getByText(new RegExp(`Copied:.*\\.${TEST_CN_PREFIX}Flow--text`))).toBeTruthy();
 
       // Advance past the 1500ms timeout
       act(() => {
@@ -518,7 +521,7 @@ describe('ElementInspector', () => {
 
       const {container} = render(
         <ElementInspector enabled>
-          <div className="ThunderFlow--text">Click me</div>
+          <div className={`${TEST_CN_PREFIX}Flow--text`}>Click me</div>
         </ElementInspector>,
       );
 
@@ -544,10 +547,10 @@ describe('ElementInspector', () => {
         await Promise.resolve();
       });
 
-      expect(screen.getByText(/Copied:.*\.ThunderFlow--text/)).toBeTruthy();
+      expect(screen.getByText(new RegExp(`Copied:.*\\.${TEST_CN_PREFIX}Flow--text`))).toBeTruthy();
     });
 
-    it('does not call onSelectSelector when clicking element with no Thunder classes', () => {
+    it('does not call onSelectSelector when clicking element with no product name prefixed classes', () => {
       const onSelect = vi.fn();
       const {container} = render(
         <ElementInspector enabled onSelectSelector={onSelect}>
@@ -577,11 +580,11 @@ describe('ElementInspector', () => {
       expect(onSelect).not.toHaveBeenCalled();
     });
 
-    it('walks up to find Thunder-classed parent when clicking a child', () => {
+    it('walks up to find product name prefixed parent when clicking a child', () => {
       const onSelect = vi.fn();
       const {container} = render(
         <ElementInspector enabled onSelectSelector={onSelect}>
-          <div className="ThunderSignInBox--root">
+          <div className={`${TEST_CN_PREFIX}SignInBox--root`}>
             <span data-testid="inner-span">Click inner</span>
           </div>
         </ElementInspector>,
@@ -606,7 +609,7 @@ describe('ElementInspector', () => {
         fireEvent.click(target);
       });
 
-      expect(onSelect).toHaveBeenCalledWith('.ThunderSignInBox--root');
+      expect(onSelect).toHaveBeenCalledWith(`.${TEST_CN_PREFIX}SignInBox--root`);
     });
   });
 
@@ -614,7 +617,7 @@ describe('ElementInspector', () => {
     it('does not show highlight when disabled', () => {
       render(
         <ElementInspector enabled={false}>
-          <div className="ThunderFlow--text">Hover me</div>
+          <div className={`${TEST_CN_PREFIX}Flow--text`}>Hover me</div>
         </ElementInspector>,
       );
 
@@ -624,13 +627,13 @@ describe('ElementInspector', () => {
         fireEvent.mouseOver(target);
       });
 
-      expect(screen.queryByText(/ThunderFlow--text/)).toBeNull();
+      expect(screen.queryByText(new RegExp(`${TEST_CN_PREFIX}Flow--text`))).toBeNull();
     });
 
     it('clears highlight and copied text when toggled from enabled to disabled', () => {
       const {container, rerender} = render(
         <ElementInspector enabled>
-          <div className="ThunderFlow--text">Content</div>
+          <div className={`${TEST_CN_PREFIX}Flow--text`}>Content</div>
         </ElementInspector>,
       );
 
@@ -663,16 +666,16 @@ describe('ElementInspector', () => {
       act(() => {
         fireEvent.mouseOver(target);
       });
-      expect(screen.getByText(/ThunderFlow--text/)).toBeTruthy();
+      expect(screen.getByText(new RegExp(`${TEST_CN_PREFIX}Flow--text`))).toBeTruthy();
 
       // Disable the inspector
       rerender(
         <ElementInspector enabled={false}>
-          <div className="ThunderFlow--text">Content</div>
+          <div className={`${TEST_CN_PREFIX}Flow--text`}>Content</div>
         </ElementInspector>,
       );
 
-      expect(screen.queryByText((t) => t.includes('ThunderFlow--text') && !t.includes('Content'))).toBeNull();
+      expect(screen.queryByText((t) => t.includes(`${TEST_CN_PREFIX}Flow--text`) && !t.includes('Content'))).toBeNull();
     });
   });
 
@@ -680,7 +683,7 @@ describe('ElementInspector', () => {
     it('shows tag name in tooltip', () => {
       const {container} = render(
         <ElementInspector enabled>
-          <div className="ThunderFlow--text">Content</div>
+          <div className={`${TEST_CN_PREFIX}Flow--text`}>Content</div>
         </ElementInspector>,
       );
 
@@ -717,13 +720,13 @@ describe('ElementInspector', () => {
       expect(screen.getByText('<div>')).toBeTruthy();
     });
 
-    it('shows "no classes" when element has no Thunder classes but is the walk-up target', () => {
-      // This scenario happens when the element IS the container child (no parent with Thunder classes)
+    it('shows "no classes" when element has no product name prefixed classes but is the walk-up target', () => {
+      // This scenario happens when the element IS the container child (no parent with product name prefixed classes)
       // The walk-up stops at container, so no highlight is shown
-      // But if an element has Thunder in its class list from the walk-up, classes are shown
+      // But if an element has product name prefixed classes in its class list from the walk-up, classes are shown
       const {container} = render(
         <ElementInspector enabled>
-          <div className="ThunderFlow--text ThunderFlow--heading">Multi-class</div>
+          <div className={`${TEST_CN_PREFIX}Flow--text ${TEST_CN_PREFIX}Flow--heading`}>Multi-class</div>
         </ElementInspector>,
       );
 
@@ -758,8 +761,8 @@ describe('ElementInspector', () => {
       });
 
       // Multiple classes should be shown joined with dots
-      expect(screen.getByText(/\.ThunderFlow--text/)).toBeTruthy();
-      expect(screen.getByText(/\.ThunderFlow--heading/)).toBeTruthy();
+      expect(screen.getByText(new RegExp(`\\.${TEST_CN_PREFIX}Flow--text`))).toBeTruthy();
+      expect(screen.getByText(new RegExp(`\\.${TEST_CN_PREFIX}Flow--heading`))).toBeTruthy();
     });
   });
 
@@ -767,7 +770,7 @@ describe('ElementInspector', () => {
     it('clears highlight when relatedTarget is null (mouse left the window)', () => {
       const {container} = render(
         <ElementInspector enabled>
-          <div className="ThunderFlow--text">Content</div>
+          <div className={`${TEST_CN_PREFIX}Flow--text`}>Content</div>
         </ElementInspector>,
       );
 
@@ -800,13 +803,13 @@ describe('ElementInspector', () => {
       act(() => {
         fireEvent.mouseOver(target);
       });
-      expect(screen.getByText(/ThunderFlow--text/)).toBeTruthy();
+      expect(screen.getByText(new RegExp(`${TEST_CN_PREFIX}Flow--text`))).toBeTruthy();
 
       // mouseOut with null relatedTarget (pointer left the browser window)
       act(() => {
         fireEvent.mouseOut(target, {relatedTarget: null});
       });
-      expect(screen.queryByText(/\.ThunderFlow--text/)).toBeNull();
+      expect(screen.queryByText(new RegExp(`\\.${TEST_CN_PREFIX}Flow--text`))).toBeNull();
     });
   });
 
@@ -815,7 +818,7 @@ describe('ElementInspector', () => {
       const onSelect = vi.fn();
       const {container} = render(
         <ElementInspector enabled onSelectSelector={onSelect}>
-          <div className="ThunderFlow--text">Content</div>
+          <div className={`${TEST_CN_PREFIX}Flow--text`}>Content</div>
         </ElementInspector>,
       );
 
@@ -834,7 +837,7 @@ describe('ElementInspector', () => {
     it('removes event listeners when enabled changes to false', () => {
       const {container, rerender} = render(
         <ElementInspector enabled>
-          <div className="ThunderFlow--text">Content</div>
+          <div className={`${TEST_CN_PREFIX}Flow--text`}>Content</div>
         </ElementInspector>,
       );
 
@@ -843,7 +846,7 @@ describe('ElementInspector', () => {
 
       rerender(
         <ElementInspector enabled={false}>
-          <div className="ThunderFlow--text">Content</div>
+          <div className={`${TEST_CN_PREFIX}Flow--text`}>Content</div>
         </ElementInspector>,
       );
 
@@ -857,7 +860,7 @@ describe('ElementInspector', () => {
     it('removes event listeners on unmount', () => {
       const {container, unmount} = render(
         <ElementInspector enabled>
-          <div className="ThunderFlow--text">Content</div>
+          <div className={`${TEST_CN_PREFIX}Flow--text`}>Content</div>
         </ElementInspector>,
       );
 
@@ -874,11 +877,11 @@ describe('ElementInspector', () => {
   });
 
   describe('pickBestClass fallback', () => {
-    it('falls back to first Thunder class when none contain --', () => {
+    it('falls back to first product name prefixed class when none contain --', () => {
       const onSelect = vi.fn();
       const {container} = render(
         <ElementInspector enabled onSelectSelector={onSelect}>
-          <div className="ThunderBase">Fallback</div>
+          <div className={`${TEST_CN_PREFIX}Base`}>Fallback</div>
         </ElementInspector>,
       );
 
@@ -901,8 +904,8 @@ describe('ElementInspector', () => {
         fireEvent.click(target);
       });
 
-      // Should use the first class (ThunderBase) as fallback since there's no -- variant
-      expect(onSelect).toHaveBeenCalledWith('.ThunderBase');
+      // Should use the first class as fallback since there's no -- variant
+      expect(onSelect).toHaveBeenCalledWith(`.${TEST_CN_PREFIX}Base`);
     });
   });
 });

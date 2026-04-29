@@ -23,7 +23,7 @@ import type {ReactNode} from 'react';
 import {describe, it, expect, beforeEach, vi} from 'vitest';
 import ConfigureDesign, {type ConfigureDesignProps} from '../ConfigureDesign';
 
-// Mock the Thunder Packages
+// Mock the Packages
 vi.mock('@thunder/components', () => ({
   generateIconSuggestions: vi.fn(() => null),
   ResourceAvatar: vi.fn(({value, fallback, onClick}: {value?: string; fallback?: ReactNode; onClick?: () => void}) => (

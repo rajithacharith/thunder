@@ -29,7 +29,7 @@ interface UpdateThemeParams {
 }
 
 /**
- * Custom hook to update an existing theme configuration in the Thunder server.
+ * Custom hook to update an existing theme configuration in the server.
  *
  * @returns TanStack Query mutation object for updating theme configurations
  */

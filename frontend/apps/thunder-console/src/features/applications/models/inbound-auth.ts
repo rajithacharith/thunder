@@ -21,7 +21,7 @@ import type {OAuth2Config} from './oauth';
 /**
  * Inbound Authentication Protocol Type
  *
- * Supported inbound authentication protocols in the Thunder platform.
+ * Supported inbound authentication protocols in the platform.
  * Currently supports OAuth2/OIDC for application authentication.
  *
  * @public
@@ -55,7 +55,7 @@ export const InboundAuthTypes = {
  *
  * @public
  * @remarks
- * Currently, Thunder supports OAuth2/OIDC as the primary inbound authentication protocol.
+ * Currently, product supports OAuth2/OIDC as the primary inbound authentication protocol.
  * This configuration is used when creating or updating an application to define:
  * - The authentication protocol type
  * - Protocol-specific configuration (OAuth2 settings)

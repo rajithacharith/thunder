@@ -22,7 +22,7 @@ import type {DesignResolveResponse} from '../../models/responses';
 import type {Theme} from '../../models/theme';
 
 /**
- * Design context interface that provides access to Thunder design configuration
+ * Design context interface that provides access to design configuration
  * and utility methods for design-related operations.
  *
  * @public
@@ -49,7 +49,7 @@ export interface DesignContextType {
   error?: Error | null;
 
   /**
-   * The Thunder theme resolved from design data (directly accessible)
+   * The theme resolved from design data (directly accessible)
    */
   theme?: Theme;
 
@@ -60,7 +60,7 @@ export interface DesignContextType {
 }
 
 /**
- * React context for accessing Thunder design configuration throughout the application.
+ * React context for accessing design configuration throughout the application.
  *
  * This context provides access to the design data loaded from the server, resolved theme,
  * and layout configuration. It should be used within a `DesignProvider` component.

@@ -16,9 +16,7 @@
  * under the License.
  */
 
-const DEFAULT_PREFIX = 'Thunder';
-
-let prefix: string = DEFAULT_PREFIX;
+let prefix = '';
 
 type ClassValue = string | false | null | undefined | 0;
 
@@ -49,21 +47,21 @@ export function getCnPrefix(): string {
 
 /**
  * Constructs a className string from conditional class values, automatically
- * prefixing each class with the configured product name (default: "Thunder").
+ * prefixing each class with the configured product name.
  *
  * Follows MUI-style BEM convention: `{Prefix}{Component}--{slot}`.
  *
  * @example
  * ```tsx
  * cn("SignIn--root")
- * // => "ThunderSignIn--root"
+ * // => "<PRODUCT_NAME>SignIn--root"
  *
  * cn("SignIn--root", isPrimary && "SignIn--primary")
- * // => "ThunderSignIn--root ThunderSignIn--primary" (when isPrimary is true)
- * // => "ThunderSignIn--root" (when isPrimary is false)
+ * // => "<PRODUCT_NAME>SignIn--root <PRODUCT_NAME>SignIn--primary" (when isPrimary is true)
+ * // => "<PRODUCT_NAME>SignIn--root" (when isPrimary is false)
  *
  * cn("SignInBox--root", "SignInBox--paper", isActive && "SignInBox--active")
- * // => "ThunderSignInBox--root ThunderSignInBox--paper ThunderSignInBox--active"
+ * // => "<PRODUCT_NAME>SignInBox--root <PRODUCT_NAME>SignInBox--paper <PRODUCT_NAME>SignInBox--active"
  * ```
  *
  * @param classes - Class name strings or falsy values for conditional classes

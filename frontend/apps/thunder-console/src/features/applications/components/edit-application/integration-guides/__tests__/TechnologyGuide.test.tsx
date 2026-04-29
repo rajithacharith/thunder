@@ -22,6 +22,14 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import type {IntegrationGuides} from '../../../../models/application-templates';
 import TechnologyGuide from '../TechnologyGuide';
 
+vi.mock('@thunder/contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/contexts')>();
+  return {
+    ...actual,
+    useConfig: () => ({config: {brand: {product_name: 'Thunder'}}}),
+  };
+});
+
 const mockIntegrationGuides: IntegrationGuides = {
   INBUILT: {
     llm_prompt: {
@@ -42,7 +50,7 @@ const mockIntegrationGuides: IntegrationGuides = {
         code: {
           language: 'bash',
           filename: 'terminal',
-          content: 'npm install @thunder/sdk',
+          content: 'npm install @awesome-product/sdk',
         },
       },
       {
@@ -211,7 +219,7 @@ describe('TechnologyGuide', () => {
       expect(codeBlocks).toHaveLength(2);
 
       // Check code content is present
-      expect(container.textContent).toContain('npm install @thunder/sdk');
+      expect(container.textContent).toContain('npm install @awesome-product/sdk');
       expect(container.textContent).toContain('const clientId = "{{clientId}}";');
     });
 
@@ -373,7 +381,7 @@ describe('TechnologyGuide', () => {
       fireEvent.click(copyCodeButton);
 
       await waitFor(() => {
-        expect(mockWriteText).toHaveBeenCalledWith('npm install @thunder/sdk');
+        expect(mockWriteText).toHaveBeenCalledWith('npm install @awesome-product/sdk');
       });
     });
 

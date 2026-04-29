@@ -17,7 +17,7 @@
  */
 
 /**
- * TypeScript type definitions for Thunder i18n
+ * TypeScript type definitions for i18n
  */
 
 import type enUS from '../locales/en-US';
@@ -32,7 +32,7 @@ export type TranslationResources = {
 };
 
 /**
- * Supported languages in Thunder applications
+ * Supported languages in applications
  */
 export type SupportedLanguage = 'en-US';
 

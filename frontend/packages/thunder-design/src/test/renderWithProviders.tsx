@@ -17,10 +17,14 @@
  */
 
 import {render, type RenderOptions} from '@testing-library/react';
+import {TEST_CN_PREFIX} from '@thunder/test-utils';
+import {setCnPrefix} from '@thunder/utils';
 import i18n from 'i18next';
 import type {ReactNode} from 'react';
 import {I18nextProvider, initReactI18next} from 'react-i18next';
 import DesignContext, {type DesignContextType} from '../contexts/Design/DesignContext';
+
+setCnPrefix(TEST_CN_PREFIX);
 
 // Minimal i18n instance — passthrough translation
 const i18nInstance = i18n.createInstance();

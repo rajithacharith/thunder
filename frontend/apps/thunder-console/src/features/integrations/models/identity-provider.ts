@@ -19,7 +19,7 @@
 /**
  * Identity Provider Types
  *
- * Supported identity provider types in the Thunder platform.
+ * Supported identity provider types in the platform.
  * These represent different authentication protocols and social login providers.
  *
  * @public

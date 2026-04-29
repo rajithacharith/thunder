@@ -21,28 +21,32 @@ import cn, {setCnPrefix, getCnPrefix} from '../cn';
 
 describe('cn', () => {
   beforeEach(() => {
-    setCnPrefix('Thunder');
+    setCnPrefix('AwesomeProduct');
   });
 
   it('should prefix a single class name with the default prefix', () => {
-    expect(cn('SignIn--root')).toBe('ThunderSignIn--root');
+    expect(cn('SignIn--root')).toBe('AwesomeProductSignIn--root');
   });
 
   it('should join multiple class names with the prefix', () => {
-    expect(cn('SignInBox--root', 'SignInBox--paper')).toBe('ThunderSignInBox--root ThunderSignInBox--paper');
+    expect(cn('SignInBox--root', 'SignInBox--paper')).toBe(
+      'AwesomeProductSignInBox--root AwesomeProductSignInBox--paper',
+    );
   });
 
   it('should filter out falsy values', () => {
     // eslint-disable-next-line no-constant-binary-expression
-    expect(cn('SignIn--root', false && 'SignIn--primary')).toBe('ThunderSignIn--root');
-    expect(cn('SignIn--root', null)).toBe('ThunderSignIn--root');
-    expect(cn('SignIn--root', undefined)).toBe('ThunderSignIn--root');
-    expect(cn('SignIn--root', 0)).toBe('ThunderSignIn--root');
+    expect(cn('SignIn--root', false && 'SignIn--primary')).toBe('AwesomeProductSignIn--root');
+    expect(cn('SignIn--root', null)).toBe('AwesomeProductSignIn--root');
+    expect(cn('SignIn--root', undefined)).toBe('AwesomeProductSignIn--root');
+    expect(cn('SignIn--root', 0)).toBe('AwesomeProductSignIn--root');
   });
 
   it('should include truthy conditional classes', () => {
     // eslint-disable-next-line no-constant-binary-expression
-    expect(cn('SignIn--root', true && 'SignIn--primary')).toBe('ThunderSignIn--root ThunderSignIn--primary');
+    expect(cn('SignIn--root', true && 'SignIn--primary')).toBe(
+      'AwesomeProductSignIn--root AwesomeProductSignIn--primary',
+    );
   });
 
   it('should return an empty string when no truthy classes are provided', () => {
@@ -56,16 +60,16 @@ describe('cn', () => {
 
 describe('setCnPrefix / getCnPrefix', () => {
   beforeEach(() => {
-    setCnPrefix('Thunder');
+    setCnPrefix('AwesomeProduct');
   });
 
   it('should change the prefix used by cn()', () => {
-    setCnPrefix('Asgardeo');
-    expect(cn('SignIn--root')).toBe('AsgardeoSignIn--root');
+    setCnPrefix('JoyUI');
+    expect(cn('SignIn--root')).toBe('JoyUISignIn--root');
   });
 
   it('should return the current prefix via getCnPrefix()', () => {
-    expect(getCnPrefix()).toBe('Thunder');
+    expect(getCnPrefix()).toBe('AwesomeProduct');
     setCnPrefix('Custom');
     expect(getCnPrefix()).toBe('Custom');
   });

@@ -57,11 +57,11 @@ async function main(): Promise<void> {
       )}\n`,
   );
 
-  // Check if we're in a Thunder workspace
+  // Check if we're in a project workspace
 
   const workspaceInfo = getWorkspaceInfo();
   if (!workspaceInfo.isThunderWorkspace) {
-    cancel(colors.red('This command must be run from a Thunder workspace.'));
+    cancel(colors.red('This command must be run from a project workspace.'));
     process.exit(1);
   }
 

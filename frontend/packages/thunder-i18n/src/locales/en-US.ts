@@ -17,12 +17,12 @@
  */
 
 /**
- * English (US) translations for Thunder applications
+ * English (US) translations for applications
  * All namespaces organized in a single file for better maintainability
  */
 const translations = {
   // ============================================================================
-  // Common namespace - Shared translations across all Thunder applications
+  // Common namespace - Shared translations across all applications
   // ============================================================================
   common: {
     // Actions
@@ -884,18 +884,6 @@ const translations = {
     noIntegrations: 'No integrations found',
     comingSoon: 'Coming Soon',
     comingSoonDescription: 'Integrations management functionality will be available soon.',
-  },
-
-  // ============================================================================
-  // Dashboard namespace - Dashboard feature translations
-  // ============================================================================
-  dashboard: {
-    welcomeMessage: 'Welcome to Thunder Console',
-    totalUsers: 'Total Users',
-    activeUsers: 'Active Users',
-    totalApplications: 'Total Applications',
-    recentActivity: 'Recent Activity',
-    quickActions: 'Quick Actions',
   },
 
   // ============================================================================

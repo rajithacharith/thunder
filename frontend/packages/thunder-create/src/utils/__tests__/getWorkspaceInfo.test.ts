@@ -37,7 +37,7 @@ describe('getWorkspaceInfo', () => {
     }
   });
 
-  it('should detect Thunder workspace from root directory', () => {
+  it('should detect workspace from root directory', () => {
     mkdirSync(join(testDir, 'frontend'), {recursive: true});
 
     writeFileSync(join(testDir, 'frontend', 'package.json'), JSON.stringify({name: '@thunder/frontend'}));
@@ -52,7 +52,7 @@ describe('getWorkspaceInfo', () => {
     expect(info.currentWorkingDirectory).toBe(testDir);
   });
 
-  it('should detect Thunder workspace from frontend directory', () => {
+  it('should detect workspace from frontend directory', () => {
     const frontendDir = join(testDir, 'frontend');
     mkdirSync(frontendDir, {recursive: true});
 
@@ -68,7 +68,7 @@ describe('getWorkspaceInfo', () => {
     expect(info.currentWorkingDirectory).toBe(frontendDir);
   });
 
-  it('should detect Thunder workspace from nested directory', () => {
+  it('should detect workspace from nested directory', () => {
     const frontendDir = join(testDir, 'frontend');
     const packagesDir = join(frontendDir, 'packages');
     const packageDir = join(packagesDir, 'my-package');
@@ -87,7 +87,7 @@ describe('getWorkspaceInfo', () => {
     expect(info.currentWorkingDirectory).toBe(packageDir);
   });
 
-  it('should return non-Thunder workspace info when not in Thunder workspace', () => {
+  it('should return non-workspace info when not in a workspace', () => {
     mkdirSync(testDir, {recursive: true});
     process.chdir(testDir);
 
@@ -151,7 +151,7 @@ describe('getWorkspaceInfo', () => {
     expect(info.appsPath).toBeNull();
   });
 
-  it('should not detect workspace with incomplete Thunder setup', () => {
+  it('should not detect workspace with incomplete setup', () => {
     const frontendDir = join(testDir, 'frontend');
 
     mkdirSync(frontendDir, {recursive: true});
@@ -166,7 +166,7 @@ describe('getWorkspaceInfo', () => {
     expect(info.isThunderWorkspace).toBe(false);
   });
 
-  it('should not detect workspace when package.json does not have thunder in name', () => {
+  it('should not detect workspace when package.json does not have product name in name', () => {
     const frontendDir = join(testDir, 'frontend');
 
     mkdirSync(frontendDir, {recursive: true});
@@ -181,7 +181,7 @@ describe('getWorkspaceInfo', () => {
     expect(info.isThunderWorkspace).toBe(false);
   });
 
-  it('should detect workspace with thunder-related package name', () => {
+  it('should detect workspace with product-related package name', () => {
     const frontendDir = join(testDir, 'frontend');
 
     mkdirSync(frontendDir, {recursive: true});

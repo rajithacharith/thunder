@@ -66,7 +66,7 @@ describe('AuthPageLayout', () => {
   });
 
   describe('variant prop', () => {
-    it('applies Thunder CSS root class when variant is provided', () => {
+    it('applies product name prefixed CSS root class when variant is provided', () => {
       renderWithProviders(
         <AuthPageLayout isLoading={false} variant="SignIn">
           <span>Content</span>

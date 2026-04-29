@@ -18,6 +18,7 @@
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {screen} from '@testing-library/react';
+import {TEST_CN_PREFIX} from '@thunder/test-utils';
 import {describe, it, expect} from 'vitest';
 import type {FlowComponent} from '../../../../models/flow';
 import renderWithProviders from '../../../../test/renderWithProviders';
@@ -27,7 +28,7 @@ describe('DividerAdapter', () => {
   it('renders a divider element', () => {
     const component: FlowComponent = {id: 'div-1', type: 'DIVIDER'};
     renderWithProviders(<DividerAdapter component={component} resolve={(s) => s} />);
-    const divider = document.querySelector('.ThunderFlow--divider');
+    const divider = document.querySelector(`.${TEST_CN_PREFIX}Flow--divider`);
     expect(divider).toBeTruthy();
   });
 
@@ -40,7 +41,7 @@ describe('DividerAdapter', () => {
   it('applies Thunder CSS class names', () => {
     const component: FlowComponent = {id: 'div-1', type: 'DIVIDER'};
     renderWithProviders(<DividerAdapter component={component} resolve={(s) => s} />);
-    const divider = document.querySelector('.ThunderDivider--root');
+    const divider = document.querySelector(`.${TEST_CN_PREFIX}Divider--root`);
     expect(divider).toBeTruthy();
   });
 });

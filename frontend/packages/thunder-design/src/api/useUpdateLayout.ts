@@ -29,7 +29,7 @@ interface UpdateLayoutParams {
 }
 
 /**
- * Custom hook to update an existing layout configuration in the Thunder server.
+ * Custom hook to update an existing layout configuration in the server.
  *
  * @returns TanStack Query mutation object for updating layout configurations
  */

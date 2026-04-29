@@ -38,7 +38,7 @@ export interface UpdateUserTypeVariables {
 }
 
 /**
- * Custom React hook to update an existing user schema (user type) in the Thunder server.
+ * Custom React hook to update an existing user schema (user type) in the server.
  *
  * @returns TanStack Query mutation object for updating user types
  */

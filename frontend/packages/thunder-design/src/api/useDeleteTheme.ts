@@ -22,7 +22,7 @@ import {useConfig} from '@thunder/contexts';
 import DesignQueryKeys from '../constants/design-query-keys';
 
 /**
- * Custom hook to delete a theme configuration from the Thunder server.
+ * Custom hook to delete a theme configuration from the server.
  *
  * @returns TanStack Query mutation object for deleting theme configurations
  */

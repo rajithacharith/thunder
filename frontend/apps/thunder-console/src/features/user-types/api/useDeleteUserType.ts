@@ -23,7 +23,7 @@ import {useTranslation} from 'react-i18next';
 import UserTypeQueryKeys from '../constants/userTypeQueryKeys';
 
 /**
- * Custom React hook to delete a user schema (user type) from the Thunder server.
+ * Custom React hook to delete a user schema (user type) from the server.
  *
  * @returns TanStack Query mutation object for deleting user types
  */

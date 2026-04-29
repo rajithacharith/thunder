@@ -21,7 +21,7 @@
  *
  * Complete organization unit information returned by the server.
  * This is the primary entity representing a hierarchical organizational unit
- * within the Thunder identity platform.
+ * within the platform.
  *
  * @public
  * @remarks

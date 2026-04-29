@@ -42,7 +42,7 @@ export interface UpdateApplicationVariables {
 }
 
 /**
- * Custom React hook to update an existing application in the Thunder server.
+ * Custom React hook to update an existing application in the server.
  *
  * This hook uses TanStack Query mutations to handle the application update process,
  * providing loading states and error handling. Upon successful update, it automatically

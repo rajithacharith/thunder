@@ -38,7 +38,7 @@ import ElementInspector from '../../features/design/components/layouts/ElementIn
 
 /**
  * MUI's extendTheme only accepts 'light' or 'dark' for defaultColorScheme.
- * Thunder stores 'system' as a runtime concept — strip it before passing to MUI.
+ * Product stores 'system' as a runtime concept — strip it before passing to MUI.
  */
 function sanitizeThemeForMui(theme: Theme): Theme {
   const raw = theme as unknown as Record<string, unknown>;
@@ -106,7 +106,7 @@ export default function IframeContent({
     const injectedIds: string[] = [];
 
     parsed.forEach((sheet) => {
-      const elementId = `thunder-preview-${sheet.id}`;
+      const elementId = `gate-preview-${sheet.id}`;
       iframeDoc.getElementById(elementId)?.remove();
 
       if (sheet.disabled) return;

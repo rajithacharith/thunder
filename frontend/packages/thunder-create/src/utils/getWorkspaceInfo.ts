@@ -20,7 +20,7 @@ import {existsSync, readFileSync} from 'fs';
 import {join, resolve, parse} from 'path';
 
 /**
- * Detects Thunder workspace structure and returns key paths and flags for CLI operations.
+ * Detects project workspace structure and returns key paths and flags for CLI operations.
  *
  * @returns WorkspaceInfo object containing workspace status and key paths
  *
@@ -43,13 +43,13 @@ export interface WorkspaceInfo {
 export default function getWorkspaceInfo(): WorkspaceInfo {
   const cwd = process.cwd();
 
-  // Look for Thunder workspace indicators by walking up the directory tree
+  // Look for project workspace indicators by walking up the directory tree
   let currentDir = cwd;
   let thunderRoot: string | null = null;
   const fsRoot = parse(cwd).root;
 
   while (currentDir !== fsRoot && currentDir !== '.') {
-    // Check for Thunder root indicators - looking for a frontend directory with nx.json
+    // Check for project root indicators - looking for a frontend directory with nx.json
     const frontendDir = join(currentDir, 'frontend');
     const frontendNxJson = join(frontendDir, 'nx.json');
     const frontendPackageJson = join(frontendDir, 'package.json');

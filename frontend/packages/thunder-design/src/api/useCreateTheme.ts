@@ -24,7 +24,7 @@ import type {CreateThemeRequest} from '../models/requests';
 import type {ThemeResponse} from '../models/responses';
 
 /**
- * Custom hook to create a new theme configuration in the Thunder server.
+ * Custom hook to create a new theme configuration in the server.
  *
  * @returns TanStack Query mutation object for creating theme configurations
  */

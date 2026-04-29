@@ -22,6 +22,7 @@ export {
   renderHook,
   getByTranslationKey,
   configureTestUtils,
+  TEST_CN_PREFIX,
 } from './test-utils';
 export type {ThunderTestConfig} from './test-utils';
 

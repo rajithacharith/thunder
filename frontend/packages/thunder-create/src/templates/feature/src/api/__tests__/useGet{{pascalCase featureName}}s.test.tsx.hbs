@@ -34,7 +34,7 @@ vi.mock('@asgardeo/react', () => ({
 
 vi.mock('@thunder/contexts', () => ({
   useConfig: () => ({
-    getServerUrl: () => 'https://api.thunder.local',
+    getServerUrl: () => 'https://api.local',
   }),
 }));
 
@@ -101,7 +101,7 @@ describe('useGet{{pascalCase featureName}}s', () => {
 
     expect(result.current.data).toEqual(mockResponse);
     expect(mockHttp.request).toHaveBeenCalledWith({
-      url: 'https://api.thunder.local/{{kebabCase featureName}}s?limit=10&offset=0',
+      url: 'https://api.local/{{kebabCase featureName}}s?limit=10&offset=0',
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -131,7 +131,7 @@ describe('useGet{{pascalCase featureName}}s', () => {
     });
 
     expect(mockHttp.request).toHaveBeenCalledWith({
-      url: 'https://api.thunder.local/{{kebabCase featureName}}s?limit=5&offset=10&search=test-{{kebabCase featureName}}',
+      url: 'https://api.local/{{kebabCase featureName}}s?limit=5&offset=10&search=test-{{kebabCase featureName}}',
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -158,7 +158,7 @@ describe('useGet{{pascalCase featureName}}s', () => {
 
     // Should not include search parameter when empty or whitespace only
     expect(mockHttp.request).toHaveBeenCalledWith({
-      url: 'https://api.thunder.local/{{kebabCase featureName}}s?limit=10&offset=0',
+      url: 'https://api.local/{{kebabCase featureName}}s?limit=10&offset=0',
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
