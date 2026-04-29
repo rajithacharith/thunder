@@ -24,7 +24,7 @@ The tests now support **automated setup** of all MFA prerequisites! Simply confi
 # 1. Configure environment variables in tests/e2e/.env
 SAMPLE_APP_URL=https://localhost:3000
 SAMPLE_APP_ID=<your-application-id>
-THUNDER_URL=https://localhost:8090
+SERVER_URL=https://localhost:8090
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=admin
 SAMPLE_APP_USERNAME=e2e-test-user
@@ -83,7 +83,7 @@ Or add directly to your `tests/e2e/.env` file:
 # Required for automated setup
 SAMPLE_APP_URL=https://localhost:3000
 SAMPLE_APP_ID=<your-application-id>
-THUNDER_URL=https://localhost:8090
+SERVER_URL=https://localhost:8090
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=admin
 SAMPLE_APP_USERNAME=e2e-test-user
@@ -524,7 +524,7 @@ USER_RESPONSE=$(curl --location 'https://localhost:8090/users' \
     "username": "e2e-test-user",
     "password": "e2e-test-password",
     "given_name": "E2E User",
-    "email": "e2e@thunder.com",
+    "email": "e2e@example.com",
     "mobileNumber": "+12345678920"
   }
 }')
@@ -570,7 +570,7 @@ curl -k -X PUT "https://localhost:8090/applications/$APP_ID" \
 |----------|----------|---------|-------------|
 | `SAMPLE_APP_URL` | Yes | - | URL of the sample app (e.g., `https://localhost:3000`) |
 | `SAMPLE_APP_ID` | Yes* | - | Application ID in Thunder (*required for automated setup) |
-| `THUNDER_URL` | No | `https://localhost:8090` | URL of Thunder server |
+| `SERVER_URL` | No | `https://localhost:8090` | URL of Thunder server |
 | `ADMIN_USERNAME` | No | `admin` | Admin username for Thunder |
 | `ADMIN_PASSWORD` | No | `admin` | Admin password for Thunder |
 | `SAMPLE_APP_USERNAME` | No | `e2e-test-user` | Test user username |
@@ -707,7 +707,7 @@ npm run test:debug tests/sample-app-authentication/sample-app-mfa-login.spec.ts
 
 ### Automated Setup Utility
 
-The `ThunderMFASetup` utility (`utils/thunder-setup/mfa-setup.ts`) automates the complete MFA configuration:
+The `MFASetup` utility (`utils/server-setup/mfa-setup.ts`) automates the complete MFA configuration:
 
 **Setup Process:**
 1. **Admin Authentication** - Obtains admin token via flow execution
@@ -849,7 +849,7 @@ The tests use a TypeScript-based mock SMS server that:
 **Issue**: `Admin authentication failed`
 
 **Solutions**:
-1. Verify Thunder server is running at `THUNDER_URL`
+1. Verify Thunder server is running at `SERVER_URL`
 2. Check `ADMIN_USERNAME` and `ADMIN_PASSWORD` are correct
 3. Verify application has basic authentication flow configured
 4. Check Thunder logs for authentication errors

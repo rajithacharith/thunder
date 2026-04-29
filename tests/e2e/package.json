@@ -1,5 +1,5 @@
 {
-  "name": "e2e-tests-thunder",
+  "name": "@thunder/e2e",
   "version": "1.0.0",
   "description": "End-to-end tests for Thunder using Playwright",
   "main": "index.js",

@@ -252,7 +252,7 @@ jobs:
       - name: 📂 Extract Server
         shell: pwsh
         run: |
-          New-Item -Path "tests/e2e/thunder-server" -ItemType Directory -Force | Out-Null
+          New-Item -Path "tests/e2e/server" -ItemType Directory -Force | Out-Null
           $zipFile = Get-ChildItem -Path "target/dist" -Filter "thunder-*.zip" | Select-Object -First 1
           if (-not $zipFile) {
             Write-Host "❌ Thunder distribution zip not found in target/dist"
@@ -260,27 +260,27 @@ jobs:
             exit 1
           }
           Write-Host "Extracting $($zipFile.FullName)..."
-          Expand-Archive -Path $zipFile.FullName -DestinationPath "tests/e2e/thunder-server" -Force
+          Expand-Archive -Path $zipFile.FullName -DestinationPath "tests/e2e/server" -Force
 
-          # Move contents from the extracted subfolder to thunder-server root
-          $extractedDir = Get-ChildItem -Path "tests/e2e/thunder-server" -Directory -Filter "thunder-*" | Select-Object -First 1
+          # Move contents from the extracted subfolder to server root
+          $extractedDir = Get-ChildItem -Path "tests/e2e/server" -Directory -Filter "thunder-*" | Select-Object -First 1
           if ($extractedDir) {
-            Get-ChildItem -Path $extractedDir.FullName -Force | Move-Item -Destination "tests/e2e/thunder-server" -Force
+            Get-ChildItem -Path $extractedDir.FullName -Force | Move-Item -Destination "tests/e2e/server" -Force
             Remove-Item -Path $extractedDir.FullName -Recurse -Force
           }
 
       - name: 🚀 Run Setup
         shell: pwsh
         run: |
-          Set-Location "tests/e2e/thunder-server"
+          Set-Location "tests/e2e/server"
           ./setup.ps1
 
       - name: 🚀 Start Thunder Server (Without Security)
         shell: bash
         run: |
-          cd tests/e2e/thunder-server
-          SKIP_SECURITY=true ./thunder.exe > thunder-server.log 2>&1 &
-          echo "THUNDER_PID=$!" >> $GITHUB_ENV
+          cd tests/e2e/server
+          SKIP_SECURITY=true ./thunder.exe > server.log 2>&1 &
+          echo "SERVER_PID=$!" >> $GITHUB_ENV
           sleep 5
 
           # Wait for server to be ready
@@ -297,7 +297,7 @@ jobs:
           # Verify server is running
           if ! curl -sk https://localhost:8090/health/liveness > /dev/null 2>&1; then
             echo "❌ Server failed to start within 2 minutes"
-            cat thunder-server.log || true
+            cat server.log || true
             exit 1
           fi
           echo "Server started successfully!"
@@ -323,12 +323,12 @@ jobs:
         shell: bash
         run: |
           echo "Stopping Thunder server..."
-          kill $THUNDER_PID || true
+          kill $SERVER_PID || true
           sleep 5
 
-          cd tests/e2e/thunder-server
-          ./thunder.exe > thunder-server-secure.log 2>&1 &
-          echo "THUNDER_PID=$!" >> $GITHUB_ENV
+          cd tests/e2e/server
+          ./thunder.exe > server-secure.log 2>&1 &
+          echo "SERVER_PID=$!" >> $GITHUB_ENV
           sleep 5
 
           # Wait for server to be ready
@@ -345,7 +345,7 @@ jobs:
           # Verify server is running
           if ! curl -sk https://localhost:8090/health/liveness > /dev/null 2>&1; then
             echo "❌ Server failed to restart within 2 minutes"
-            cat thunder-server-secure.log || true
+            cat server-secure.log || true
             exit 1
           fi
           echo "Server restarted successfully with security enabled!"
@@ -434,9 +434,9 @@ jobs:
           } else {
             Write-Host "❌ Thunder process NOT found"
             Write-Host "Server log:"
-            $logPath = "tests/e2e/thunder-server/thunder-server-secure.log"
+            $logPath = "tests/e2e/server/server-secure.log"
             if (Test-Path $logPath) { Get-Content $logPath } else { Write-Host "(no log)" }
-            $errPath = "tests/e2e/thunder-server/thunder-server-secure-err.log"
+            $errPath = "tests/e2e/server/server-secure-err.log"
             if (Test-Path $errPath) { Get-Content $errPath } else { Write-Host "(no error log)" }
           }
           try {
@@ -470,7 +470,7 @@ jobs:
           DEBUG_AUTH: ${{ vars.PLAYWRIGHT_DEBUG_AUTH || 'false' }}
           SAMPLE_APP_ID: ${{ steps.extract-app-id.outputs.sample_app_id }}
           SAMPLE_APP_URL: 'https://localhost:3000'
-          THUNDER_URL: 'https://localhost:8090'
+          SERVER_URL: 'https://localhost:8090'
           AUTO_SETUP_MFA: ${{ vars.AUTO_SETUP_MFA || 'true' }}
           MOCK_SMS_SERVER_PORT: ${{ vars.MOCK_SMS_SERVER_PORT || 8098 }}
           SAMPLE_APP_USERNAME: ${{ secrets.SAMPLE_APP_USERNAME || 'e2e-test-user' }}

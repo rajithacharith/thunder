@@ -44,13 +44,14 @@ permissions:
 env:
   GOFLAGS: "-mod=readonly"
   PRODUCT_NAME: "Thunder"
+  PRODUCT_NAME_LOWER: "thunder"
   RELEASE_BRANCH: "release"
   RELEASE_GIT_USER_NAME: "thunder-automation-bot"
   RELEASE_GIT_USER_EMAIL: "thunder-bot@wso2.com"
 
 jobs:
-  build-thunder:
-    name: ⚡ Build Thunder
+  build:
+    name: ⚡ Build
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.get_version.outputs.version }}
@@ -262,7 +263,7 @@ jobs:
           make build_with_coverage_only OS=$(go env GOOS) ARCH=$(go env GOARCH)
           
           # Find the built distribution
-          DIST_PATH=$(find target/dist -name "thunder-*.zip" | head -1)
+          DIST_PATH=$(find target/dist -name "$PRODUCT_NAME_LOWER-*.zip" | head -1)
           echo "Built distribution: $DIST_PATH"
 
       - name: 📦 Upload Built Distribution
@@ -274,7 +275,7 @@ jobs:
 
   test-integration:
     name: 🧪 Integration Tests (${{ matrix.database }})
-    needs: build-thunder
+    needs: build
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -336,13 +337,13 @@ jobs:
 
   validate-windows:
     name: 🪟 Validate Windows PowerShell
-    needs: build-thunder
+    needs: build
     uses: ./.github/workflows/windows-powershell-validation.yml
 
   build-and-package:
     name: 📦 Build and Package Release
     runs-on: ubuntu-latest
-    needs: [build-thunder, test-integration, validate-windows]
+    needs: [build, test-integration, validate-windows]
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -352,7 +353,7 @@ jobs:
 
       - name: 🏷️ Update Product Version
         run: |
-          VERSION="${{ needs.build-thunder.outputs.version }}"
+          VERSION="${{ needs.build-product.outputs.version }}"
           echo "$VERSION" > version.txt
 
       - name: ⚙️ Set up Go Environment
@@ -382,7 +383,7 @@ jobs:
           show-cert-info: 'true'
           product-name: ${{ env.PRODUCT_NAME }}
 
-      - name: 🔨 Build Thunder Release Artifacts
+      - name: 🔨 Build Release Artifacts
         uses: ./.github/actions/build-multiplatform
 
       - name: 📝 Read Updated Version
@@ -402,7 +403,7 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
 
-          TAG_VERSION="${{ needs.build-thunder.outputs.version }}"
+          TAG_VERSION="${{ needs.build-product.outputs.version }}"
           if [[ ! $TAG_VERSION == v* ]]; then
             TAG_VERSION="v$TAG_VERSION"
           fi
@@ -441,7 +442,7 @@ jobs:
           IMAGE_NAME="ghcr.io/${REPO_NAME}"
           
           # Get version without 'v' prefix for Docker tags
-          DOCKER_VERSION="${{ needs.build-thunder.outputs.version }}"
+          DOCKER_VERSION="${{ needs.build-product.outputs.version }}"
           if [[ $DOCKER_VERSION == v* ]]; then
             DOCKER_VERSION="${DOCKER_VERSION#v}"
           fi
@@ -466,7 +467,7 @@ jobs:
       - name: 🏷️ Update Helm Values Image Tag
         run: |
           # Get version without 'v' prefix
-          CHART_VERSION="${{ needs.build-thunder.outputs.version }}"
+          CHART_VERSION="${{ needs.build-product.outputs.version }}"
           if [[ $CHART_VERSION == v* ]]; then
             CHART_VERSION="${CHART_VERSION#v}"
           fi
@@ -512,7 +513,7 @@ jobs:
           HELM_REGISTRY="ghcr.io/${OWNER_NAME}"
           
           # Get version without 'v' prefix for Helm chart version
-          CHART_VERSION="${{ needs.build-thunder.outputs.version }}"
+          CHART_VERSION="${{ needs.build-product.outputs.version }}"
           if [[ $CHART_VERSION == v* ]]; then
             CHART_VERSION="${CHART_VERSION#v}"
           fi
@@ -545,7 +546,7 @@ jobs:
           OWNER_NAME=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           HELM_REGISTRY="ghcr.io/${OWNER_NAME}/helm-charts"
 
-          CHART_VERSION="${{ needs.build-thunder.outputs.version }}"
+          CHART_VERSION="${{ needs.build-product.outputs.version }}"
           if [[ $CHART_VERSION == v* ]]; then
             CHART_VERSION="${CHART_VERSION#v}"
           fi
@@ -567,7 +568,7 @@ jobs:
         id: next_version
         run: |
           # Get the current release version and remove 'v' prefix
-          RELEASE_VERSION="${{ needs.build-thunder.outputs.version }}"
+          RELEASE_VERSION="${{ needs.build-product.outputs.version }}"
           if [[ $RELEASE_VERSION == v* ]]; then
             RELEASE_VERSION="${RELEASE_VERSION#v}"
           fi
@@ -645,7 +646,7 @@ jobs:
   package-samples-linux:
     name: 📦 Package Linux & Windows Samples
     runs-on: ubuntu-latest
-    needs: [build-thunder, build-and-package]
+    needs: [build, build-and-package]
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -659,7 +660,7 @@ jobs:
       - name: 📝 Update Sample Apps Version
         uses: ./.github/actions/update-sample-versions
         with:
-          version: ${{ needs.build-thunder.outputs.version }}
+          version: ${{ needs.build-product.outputs.version }}
 
       - name: 📦 Build and Package Linux Samples
         run: |
@@ -679,7 +680,7 @@ jobs:
   package-samples-macos:
     name: 📦 Package macOS Samples
     runs-on: macos-latest
-    needs: [build-thunder, build-and-package]
+    needs: [build, build-and-package]
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -693,7 +694,7 @@ jobs:
       - name: 📝 Update Sample Apps Version
         uses: ./.github/actions/update-sample-versions
         with:
-          version: ${{ needs.build-thunder.outputs.version }}
+          version: ${{ needs.build-product.outputs.version }}
 
       - name: 📦 Build and Package macOS Samples
         run: |
@@ -710,7 +711,7 @@ jobs:
   release:
     name: 🚀 Release
     runs-on: ubuntu-latest
-    needs: [build-thunder, build-and-package, package-samples-linux, package-samples-macos]
+    needs: [build, build-and-package, package-samples-linux, package-samples-macos]
     outputs:
       release_tag: ${{ steps.release_info.outputs.release_tag }}
     steps:
@@ -762,7 +763,7 @@ jobs:
       - name: 📝 Read Version
         id: version
         run: |
-          VERSION="${{ needs.build-thunder.outputs.version }}"
+          VERSION="${{ needs.build-product.outputs.version }}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: 📝 Generate Automatic Release Notes
@@ -770,7 +771,7 @@ jobs:
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
-            const currentTag = '${{ needs.build-thunder.outputs.version }}';
+            const currentTag = '${{ needs.build-product.outputs.version }}';
             
             try {
               // Get only the 2 most recent releases (current + previous)
@@ -849,7 +850,7 @@ jobs:
         id: readme_extract
         run: |
           # Get the release version without v prefix for replacement
-          RELEASE_VERSION="${{ needs.build-thunder.outputs.version }}"
+          RELEASE_VERSION="${{ needs.build-product.outputs.version }}"
           if [[ $RELEASE_VERSION == v* ]]; then
             RELEASE_VERSION="${RELEASE_VERSION#v}"
           fi
@@ -873,31 +874,31 @@ jobs:
           INTRO=$(echo "$INTRO" | sed "s/latest release/$RELEASE_VERSION release/g")
           QUICKSTART=$(echo "$QUICKSTART" | sed "s/latest release/$RELEASE_VERSION release/g")
           # Handle other 'latest' references
-          INTRO=$(echo "$INTRO" | sed "s/latest release of Thunder/$RELEASE_VERSION release of Thunder/g")
-          QUICKSTART=$(echo "$QUICKSTART" | sed "s/latest release of Thunder/$RELEASE_VERSION release of Thunder/g")
-          
-          # Add direct download links for Thunder server - replace download instruction and example paragraph
-          # Create the Thunder downloads table with proper newlines using printf
+          INTRO=$(echo "$INTRO" | sed "s/latest release of $PRODUCT_NAME/$RELEASE_VERSION release of $PRODUCT_NAME/g")
+          QUICKSTART=$(echo "$QUICKSTART" | sed "s/latest release of $PRODUCT_NAME/$RELEASE_VERSION release of $PRODUCT_NAME/g")
+
+          # Add direct download links for $PRODUCT_NAME server - replace download instruction and example paragraph
+          # Create the $PRODUCT_NAME downloads table with proper newlines using printf
           THUNDER_TABLE=$(printf "%s\n%s\n%s\n%s\n%s\n%s\n%s" \
             "   | OS | Architecture | Download Link |" \
             "   |-------|-------------|-------------|" \
-            "   | macOS | ARM64 (Apple Silicon) | [thunder-${RELEASE_VERSION}-macos-arm64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/thunder-${RELEASE_VERSION}-macos-arm64.zip) |" \
-            "   | macOS | x64 (Intel) | [thunder-${RELEASE_VERSION}-macos-x64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/thunder-${RELEASE_VERSION}-macos-x64.zip) |" \
-            "   | Linux | x64 | [thunder-${RELEASE_VERSION}-linux-x64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/thunder-${RELEASE_VERSION}-linux-x64.zip) |" \
-            "   | Linux | ARM64 | [thunder-${RELEASE_VERSION}-linux-arm64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/thunder-${RELEASE_VERSION}-linux-arm64.zip) |" \
-            "   | Windows | x64 | [thunder-${RELEASE_VERSION}-win-x64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/thunder-${RELEASE_VERSION}-win-x64.zip) |")
-          
+            "   | macOS | ARM64 (Apple Silicon) | [${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-macos-arm64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-macos-arm64.zip) |" \
+            "   | macOS | x64 (Intel) | [${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-macos-x64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-macos-x64.zip) |" \
+            "   | Linux | x64 | [${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-linux-x64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-linux-x64.zip) |" \
+            "   | Linux | ARM64 | [${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-linux-arm64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-linux-arm64.zip) |" \
+            "   | Windows | x64 | [${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-win-x64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-win-x64.zip) |")
+
           # Replace the download instruction with the table using awk for proper handling
           QUICKSTART=$(echo "$QUICKSTART" | awk -v table="$THUNDER_TABLE" '
-            /Download `thunder-.*-<os>-<arch>\.zip` from the \[.*release\]/ {
+            /Download `'"${PRODUCT_NAME_LOWER}"'-.*-<os>-<arch>\.zip` from the \[.*release\]/ {
               print table
               next
             }
             { print }
           ')
-          
+
           # Remove the example paragraph that follows (it's now redundant with the table)
-          QUICKSTART=$(echo "$QUICKSTART" | sed '/For example, if you are using a MacOS machine with a Apple Silicon (ARM64) processor, you would download `thunder-'"$RELEASE_VERSION"'-macos-arm64\.zip`\./d')
+          QUICKSTART=$(echo "$QUICKSTART" | sed '/For example, if you are using a MacOS machine with a Apple Silicon (ARM64) processor, you would download `'"${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}"'-macos-arm64\.zip`\./d')
           
           # Create the React Vanilla Sample App downloads table with proper newlines using printf
           VANILLA_SAMPLE_TABLE=$(printf "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s" \
@@ -988,7 +989,7 @@ jobs:
           tag_name: ${{ steps.version.outputs.version }}
           name: Thunder ${{ steps.version.outputs.version }}
           draft: false
-          prerelease: ${{ needs.build-thunder.outputs.prerelease }}
+          prerelease: ${{ needs.build-product.outputs.prerelease }}
           files: target/dist/*.zip
           body: ${{ env.RELEASE_BODY }}
           generate_release_notes: false
@@ -1005,6 +1006,7 @@ jobs:
         uses: ./.github/actions/release-notification
         with:
           webhook: ${{ secrets.GOOGLE_CHAT_WEBHOOK }}
+          product-name: ${{ env.PRODUCT_NAME }}
           release-name: ${{ steps.release_info.outputs.release_name }}
           release-tag: ${{ steps.release_info.outputs.release_tag }}
           release-url: ${{ steps.release_info.outputs.release_url }}
@@ -1012,8 +1014,8 @@ jobs:
   trigger-performance-test:
     name: 🧪 Trigger Performance Test
     runs-on: ubuntu-latest
-    needs: [build-thunder, release]
-    if: ${{ needs.build-thunder.outputs.run_performance_test == 'true' }}
+    needs: [build, release]
+    if: ${{ needs.build-product.outputs.run_performance_test == 'true' }}
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -1027,7 +1029,7 @@ jobs:
           script: |
             // Construct the Thunder pack URL using the release version
             const releaseTag = '${{ needs.release.outputs.release_tag }}';
-            const thunderPackUrl = `https://github.com/${{ github.repository }}/releases/download/${releaseTag}/thunder-${releaseTag.replace('v', '')}-linux-x64.zip`;
+            const serverDistributionUrl = `https://github.com/${{ github.repository }}/releases/download/${releaseTag}/thunder-${releaseTag.replace('v', '')}-linux-x64.zip`;
             const pushBenchmarkToGitHub = ${{ github.repository == 'asgardeo/thunder' }};
 
             try {
@@ -1038,7 +1040,7 @@ jobs:
                 workflow_id: 'vm-perf-workflow.yml',
                 ref: 'main',
                 inputs: {
-                  THUNDER_PACK_URL: thunderPackUrl,
+                  THUNDER_PACK_URL: serverDistributionUrl,
                   CONCURRENCY: '50,200,500',
                   PUSH_BENCHMARKS_TO_GITHUB: pushBenchmarkToGitHub
                 }
@@ -1054,7 +1056,7 @@ jobs:
   trigger-deploy-docs:
     name: 📚 Trigger Deploy Documentation
     runs-on: ubuntu-latest
-    needs: [build-thunder, release]
+    needs: [build, release]
     steps:
       - name: 📚 Trigger Deploy Documentation Workflow
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7

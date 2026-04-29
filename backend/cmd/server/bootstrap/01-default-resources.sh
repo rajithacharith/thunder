@@ -201,7 +201,7 @@ RESPONSE=$(api_call POST "/users" '{
     "username": "admin",
     "password": "admin",
     "sub": "admin",
-    "email": "admin@thunder.dev",
+    "email": "admin@example.com",
     "email_verified": true,
     "name": "Administrator",
     "given_name": "Admin",
