@@ -45,9 +45,10 @@ func Initialize(mux *http.ServeMux, exporters []declarativeresource.ResourceExpo
 
 func registerRoutes(mux *http.ServeMux, exportHandler *exportHandler) {
 	opts := middleware.CORSOptions{
-		AllowedMethods:   "POST",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"POST"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 
 	// JSON export endpoint
@@ -59,6 +60,10 @@ func registerRoutes(mux *http.ServeMux, exportHandler *exportHandler) {
 		exportHandler.HandleExportZipRequest, opts))
 
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /export",
+		func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}, opts))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /export/zip",
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		}, opts))

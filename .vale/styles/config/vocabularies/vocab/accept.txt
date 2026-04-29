@@ -62,3 +62,4 @@ ACLs
 [Rr]etryable
 [Uu]psert
 [Ii]dempotency
+[Ss]andboxed

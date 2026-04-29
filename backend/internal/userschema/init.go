@@ -116,9 +116,10 @@ func initializeStore(storeMode serverconst.StoreMode) (userSchemaStoreInterface,
 // registerRoutes registers the routes for user schema management operations.
 func registerRoutes(mux *http.ServeMux, userSchemaHandler *userSchemaHandler) {
 	opts1 := middleware.CORSOptions{
-		AllowedMethods:   "GET, POST",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"GET", "POST"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("POST /user-schemas",
 		userSchemaHandler.HandleUserSchemaPostRequest, opts1))
@@ -130,9 +131,10 @@ func registerRoutes(mux *http.ServeMux, userSchemaHandler *userSchemaHandler) {
 		}, opts1))
 
 	opts2 := middleware.CORSOptions{
-		AllowedMethods:   "GET, PUT, DELETE",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"GET", "PUT", "DELETE"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /user-schemas/{id}",
 		userSchemaHandler.HandleUserSchemaGetRequest, opts2))

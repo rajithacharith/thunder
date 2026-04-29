@@ -36,6 +36,7 @@ import (
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
+	"github.com/asgardeo/thunder/internal/system/cors"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -63,11 +64,15 @@ type HandlerTestSuite struct {
 func (suite *HandlerTestSuite) SetupTest() {
 	// Initialize config for tests
 	config.ResetThunderRuntime()
+	cors.ResetMatcher()
 	testConfig := &config.Config{
 		CORS: config.CORSConfig{
-			AllowedOrigins: []string{"https://localhost:3000"},
+			AllowedOrigins: cors.OriginEntries{
+				cors.LiteralEntry{Value: "https://localhost:3000"},
+			},
 		},
 	}
+	suite.Require().NoError(testConfig.CORS.Validate())
 	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
 	suite.Require().NoError(err)
 
@@ -89,6 +94,7 @@ func (suite *HandlerTestSuite) SetupTest() {
 
 func (suite *HandlerTestSuite) TearDownTest() {
 	config.ResetThunderRuntime()
+	cors.ResetMatcher()
 }
 
 func TestHandlerTestSuite(t *testing.T) {
@@ -371,14 +377,21 @@ func TestGenerateAndSendZipResponse_Standalone(t *testing.T) {
 	logger := log.GetLogger()
 	// Setup config
 	config.ResetThunderRuntime()
+	cors.ResetMatcher()
 	testConfig := &config.Config{
 		CORS: config.CORSConfig{
-			AllowedOrigins: []string{"*"},
+			AllowedOrigins: cors.OriginEntries{
+				cors.LiteralEntry{Value: "https://localhost:3000"},
+			},
 		},
 	}
+	_ = testConfig.CORS.Validate()
 	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
 	assert.NoError(t, err)
-	defer config.ResetThunderRuntime()
+	defer func() {
+		config.ResetThunderRuntime()
+		cors.ResetMatcher()
+	}()
 
 	// Setup handler
 	mockAppService := applicationmock.NewApplicationServiceInterfaceMock(t)

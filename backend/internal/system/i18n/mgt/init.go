@@ -53,9 +53,10 @@ func Initialize(mux *http.ServeMux) (I18nServiceInterface, declarativeresource.R
 func registerRoutes(mux *http.ServeMux, handler *i18nHandler) {
 	// List languages (public API)
 	opts1 := middleware.CORSOptions{
-		AllowedMethods:   "GET",
-		AllowedHeaders:   "Content-Type",
+		AllowedMethods:   []string{"GET"},
+		AllowedHeaders:   []string{"Content-Type"},
 		AllowCredentials: false,
+		MaxAge:           600,
 	}
 
 	mux.HandleFunc(middleware.WithCORS("GET /i18n/languages",
@@ -67,9 +68,10 @@ func registerRoutes(mux *http.ServeMux, handler *i18nHandler) {
 
 	// Bulk translation operations
 	bulkResolveOpts := middleware.CORSOptions{
-		AllowedMethods:   "GET",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"GET"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: false,
+		MaxAge:           600,
 	}
 
 	mux.HandleFunc(middleware.WithCORS("GET /i18n/languages/{language}/translations/resolve",
@@ -80,9 +82,10 @@ func registerRoutes(mux *http.ServeMux, handler *i18nHandler) {
 		}, bulkResolveOpts))
 
 	bulkEditOpts := middleware.CORSOptions{
-		AllowedMethods:   "POST, DELETE",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"POST", "DELETE"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 
 	// Shared path for POST and DELETE
@@ -99,9 +102,10 @@ func registerRoutes(mux *http.ServeMux, handler *i18nHandler) {
 
 	// Individual translation operations
 	singleResolveOpts := middleware.CORSOptions{
-		AllowedMethods:   "GET",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"GET"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: false,
+		MaxAge:           600,
 	}
 
 	mux.HandleFunc(middleware.WithCORS(
@@ -114,9 +118,10 @@ func registerRoutes(mux *http.ServeMux, handler *i18nHandler) {
 		}, singleResolveOpts))
 
 	singleEditOpts := middleware.CORSOptions{
-		AllowedMethods:   "POST, DELETE",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"POST", "DELETE"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 
 	// Shared path for POST and DELETE

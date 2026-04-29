@@ -75,9 +75,10 @@ func Initialize(
 
 func registerRoutes(mux *http.ServeMux, appHandler *applicationHandler) {
 	opts1 := middleware.CORSOptions{
-		AllowedMethods:   "GET, POST",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"GET", "POST"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("POST /applications",
 		appHandler.HandleApplicationPostRequest, opts1))
@@ -89,9 +90,10 @@ func registerRoutes(mux *http.ServeMux, appHandler *applicationHandler) {
 		}, opts1))
 
 	opts2 := middleware.CORSOptions{
-		AllowedMethods:   "GET, PUT, DELETE",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"GET", "PUT", "DELETE"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /applications/{id}",
 		appHandler.HandleApplicationGetRequest, opts2))

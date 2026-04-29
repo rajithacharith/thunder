@@ -55,9 +55,10 @@ func Initialize(
 // registerRoutes registers the routes for the UserInfo endpoint.
 func registerRoutes(mux *http.ServeMux, userInfoHandler *userInfoHandler) {
 	opts := middleware.CORSOptions{
-		AllowedMethods:   "GET, POST, OPTIONS",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 
 	mux.HandleFunc(middleware.WithCORS("GET "+constants.OAuth2UserInfoEndpoint,

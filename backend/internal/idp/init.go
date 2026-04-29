@@ -150,9 +150,10 @@ func isDeclarativeModeEnabled() bool {
 // RegisterRoutes registers the routes for identity provider operations.
 func registerRoutes(mux *http.ServeMux, idpHandler *idpHandler) {
 	opts1 := middleware.CORSOptions{
-		AllowedMethods:   "GET, POST",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"GET", "POST"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("POST /identity-providers", idpHandler.HandleIDPPostRequest, opts1))
 	mux.HandleFunc(middleware.WithCORS("GET /identity-providers", idpHandler.HandleIDPListRequest, opts1))
@@ -162,9 +163,10 @@ func registerRoutes(mux *http.ServeMux, idpHandler *idpHandler) {
 		}, opts1))
 
 	opts2 := middleware.CORSOptions{
-		AllowedMethods:   "GET, PUT, DELETE",
-		AllowedHeaders:   "Content-Type, Authorization",
+		AllowedMethods:   []string{"GET", "PUT", "DELETE"},
+		AllowedHeaders:   middleware.DefaultAllowedHeaders,
 		AllowCredentials: true,
+		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /identity-providers/{id}",
 		idpHandler.HandleIDPGetRequest, opts2))
