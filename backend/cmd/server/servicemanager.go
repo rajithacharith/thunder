@@ -58,9 +58,11 @@ import (
 	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
+	dbprovider "github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/email"
 	"github.com/asgardeo/thunder/internal/system/export"
+	healthcheckservice "github.com/asgardeo/thunder/internal/system/healthcheck/service"
 	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	"github.com/asgardeo/thunder/internal/system/importer"
 	"github.com/asgardeo/thunder/internal/system/jose"
@@ -156,7 +158,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	exporters = append(exporters, userExporter)
 
 	groupService, ouGroupResolver, err := group.Initialize(
-		mux, ouService, entityService, userSchemaService, ouAuthzService,
+		mux, dbprovider.GetDBProvider(), ouService, entityService, userSchemaService, ouAuthzService,
 	)
 	if err != nil {
 		logger.Fatal("Failed to initialize GroupService", log.Error(err))
@@ -209,9 +211,9 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 
 	// Initialize federated authentication services.
 	oauthAuthnService := authnOAuth.Initialize(idpService, entityProvider)
-	oidcAuthnService := authnOIDC.Initialize(idpService, entityProvider, jwtService)
-	googleAuthnService := google.Initialize(idpService, entityProvider, jwtService)
-	githubAuthnService := github.Initialize(idpService, entityProvider)
+	oidcAuthnService := authnOIDC.Initialize(oauthAuthnService, jwtService)
+	googleAuthnService := google.Initialize(oidcAuthnService, jwtService)
+	githubAuthnService := github.Initialize(oauthAuthnService)
 
 	federatedAuths := map[idp.IDPType]authncm.FederatedAuthenticator{
 		idp.IDPTypeOAuth:  oauthAuthnService,
@@ -252,7 +254,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 		logger.Fatal("Failed to initialize FlowMgtService", log.Error(err))
 	}
 	exporters = append(exporters, flowMgtExporter)
-	certservice, err := cert.Initialize()
+	certservice, err := cert.Initialize(dbprovider.GetDBProvider())
 	if err != nil {
 		logger.Fatal("Failed to initialize CertificateService", log.Error(err))
 	}
@@ -324,11 +326,9 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 		logger.Fatal("Failed to initialize OAuth services", log.Error(err))
 	}
 
-	// TODO: Legacy way of initializing services. These need to be refactored in the future aligning to the
-	// dependency injection pattern used above.
-
 	// Register the health service.
-	services.NewHealthCheckService(mux)
+	healthSvc := healthcheckservice.Initialize(dbprovider.GetDBProvider(), dbprovider.GetRedisProvider())
+	services.NewHealthCheckService(mux, healthSvc)
 
 	return jwtService
 }

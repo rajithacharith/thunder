@@ -19,13 +19,12 @@
 package google
 
 import (
-	"github.com/asgardeo/thunder/internal/entityprovider"
-	"github.com/asgardeo/thunder/internal/idp"
+	authnoidc "github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 )
 
 // Initialize initializes the Google OIDC authentication service.
-func Initialize(idpSvc idp.IDPServiceInterface, entityProvider entityprovider.EntityProviderInterface,
+func Initialize(oidcSvc authnoidc.OIDCAuthnServiceInterface,
 	jwtSvc jwt.JWTServiceInterface) GoogleOIDCAuthnServiceInterface {
-	return newGoogleOIDCAuthnService(idpSvc, entityProvider, jwtSvc)
+	return newGoogleOIDCAuthnService(oidcSvc, jwtSvc)
 }

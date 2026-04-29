@@ -23,11 +23,8 @@ import (
 	"github.com/asgardeo/thunder/internal/role"
 )
 
-var authzServiceInstance AuthorizationServiceInterface
-
 // Initialize creates and initializes the authorization service with the RBAC engine.
 func Initialize(roleService role.RoleServiceInterface) AuthorizationServiceInterface {
 	rbacEngine := engine.NewRBACEngine(roleService)
-	authzServiceInstance = newAuthorizationService(rbacEngine)
-	return authzServiceInstance
+	return newAuthorizationService(rbacEngine)
 }

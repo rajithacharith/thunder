@@ -33,13 +33,13 @@ import (
 // Initialize initializes the group service and registers its routes.
 func Initialize(
 	mux *http.ServeMux,
+	dbProvider provider.DBProviderInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	entityService entity.EntityServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 	authzService sysauthz.SystemAuthorizationServiceInterface,
 ) (GroupServiceInterface, oupkg.OUGroupResolver, error) {
-	// Get transactioner from DB provider
-	transactioner, err := provider.GetDBProvider().GetUserDBTransactioner()
+	transactioner, err := dbProvider.GetUserDBTransactioner()
 	if err != nil {
 		return nil, nil, err
 	}
