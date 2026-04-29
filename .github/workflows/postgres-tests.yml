@@ -27,6 +27,8 @@ on:
 
 env:
   GOFLAGS: "-mod=readonly"
+  PRODUCT_NAME: "Thunder"
+  PRODUCT_NAME_LOWER: "thunder"
 
 jobs:
   dependency-guard:
@@ -86,7 +88,7 @@ jobs:
           make build_with_coverage_only OS=$(go env GOOS) ARCH=$(go env GOARCH)
           
           # Find the built distribution
-          DIST_PATH=$(find target/dist -name "thunder-*.zip" | head -1)
+          DIST_PATH=$(find target/dist -name "$PRODUCT_NAME_LOWER-*.zip" | head -1)
           echo "distribution-path=$DIST_PATH" >> $GITHUB_OUTPUT
           echo "Built distribution: $DIST_PATH"
 

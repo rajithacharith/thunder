@@ -493,7 +493,7 @@ setup:
   # Example:
   # secretEnv:
   #   - name: BOOTSTRAP_API_KEY
-  #     secretName: thunder-setup-secrets
+  #     secretName: server-setup-secrets
   #     secretKey: bootstrap-api-key
   #     optional: false
   secretEnv: []

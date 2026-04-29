@@ -20,7 +20,7 @@ Use the resolved URL as `{CONSOLE_URL}` in all commands below (e.g., `{CONSOLE_U
 ## Quick Start
 
 ```bash
-# Open Thunder Console (redirects to sign-in gate)
+# Open Console (redirects to sign-in gate)
 playwright-cli open {CONSOLE_URL} -s=thunder
 
 # After authenticating (see below), navigate directly

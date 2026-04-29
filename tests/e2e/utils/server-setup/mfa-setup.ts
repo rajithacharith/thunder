@@ -32,7 +32,7 @@ import mfaFlowNodesTemplate from "./mfa-flow-nodes.json";
 import mfaRegistrationFlowNodesTemplate from "./mfa-registration-flow-nodes.json";
 
 export interface SetupConfig {
-  thunderUrl: string;
+  serverUrl: string;
   mockSmsUrl: string;
   adminUsername: string;
   adminPassword: string;
@@ -62,7 +62,7 @@ export interface SetupResult {
   };
 }
 
-export class ThunderMFASetup {
+export class MFASetup {
   constructor(
     private request: APIRequestContext,
     private config: SetupConfig
@@ -72,7 +72,7 @@ export class ThunderMFASetup {
    * Perform complete MFA setup
    */
   async setup(): Promise<SetupResult> {
-    console.log("\n=== Thunder MFA Setup Started ===");
+    console.log("\n=== MFA Setup Started ===");
 
     const cleanupFunctions: Array<() => Promise<void>> = [];
     const resourcesCreated = {
@@ -138,7 +138,7 @@ export class ThunderMFASetup {
       // Step 6: Update application with MFA flows
       const actualAppId = await this.updateApplicationFlows(adminToken, actualAuthFlowId, actualRegFlowId);
       console.log(`✓ Application updated with MFA flows`);
-      console.log("=== Thunder MFA Setup Completed ===\n");
+      console.log("=== MFA Setup Completed ===\n");
 
       return {
         adminToken,
@@ -162,7 +162,7 @@ export class ThunderMFASetup {
    * Cleanup all created resources
    */
   async cleanup(cleanupFunctions: Array<() => Promise<void>>): Promise<void> {
-    console.log("\n=== Thunder MFA Cleanup Started ===");
+    console.log("\n=== MFA Cleanup Started ===");
 
     for (const cleanup of cleanupFunctions.reverse()) {
       try {
@@ -172,7 +172,7 @@ export class ThunderMFASetup {
       }
     }
 
-    console.log("=== Thunder MFA Cleanup Completed ===\n");
+    console.log("=== MFA Cleanup Completed ===\n");
   }
 
   /**
@@ -180,7 +180,7 @@ export class ThunderMFASetup {
    */
   private async getAdminToken(): Promise<string> {
     // Step 1: Start authentication flow
-    const flowResponse = await this.request.post(`${this.config.thunderUrl}/flow/execute`, {
+    const flowResponse = await this.request.post(`${this.config.serverUrl}/flow/execute`, {
       data: {
         applicationId: this.config.applicationId,
         flowType: "AUTHENTICATION",
@@ -197,7 +197,7 @@ export class ThunderMFASetup {
     const challengeToken = flowData.challengeToken;
 
     // Step 2: Submit credentials
-    const authResponse = await this.request.post(`${this.config.thunderUrl}/flow/execute`, {
+    const authResponse = await this.request.post(`${this.config.serverUrl}/flow/execute`, {
       data: {
         executionId: executionId,
         challengeToken: challengeToken,
@@ -226,7 +226,7 @@ export class ThunderMFASetup {
     const senderName = "E2E Mock SMS Sender";
 
     // Try to create the notification sender
-    const response = await this.request.post(`${this.config.thunderUrl}/notification-senders/message`, {
+    const response = await this.request.post(`${this.config.serverUrl}/notification-senders/message`, {
       data: {
         name: senderName,
         description: "Mock SMS sender for e2e MFA testing",
@@ -276,7 +276,7 @@ export class ThunderMFASetup {
    * Get existing notification sender by name
    */
   private async getExistingNotificationSender(adminToken: string, name: string): Promise<string> {
-    const response = await this.request.get(`${this.config.thunderUrl}/notification-senders/message`, {
+    const response = await this.request.get(`${this.config.serverUrl}/notification-senders/message`, {
       headers: {
         Authorization: `Bearer ${adminToken}`,
       },
@@ -304,7 +304,7 @@ export class ThunderMFASetup {
   private async createOrGetMFAAuthFlow(adminToken: string, senderId: string): Promise<string> {
     const flowHandle = "e2e-mfa-auth-flow";
 
-    const response = await this.request.post(`${this.config.thunderUrl}/flows`, {
+    const response = await this.request.post(`${this.config.serverUrl}/flows`, {
       data: {
         handle: flowHandle,
         name: "E2E MFA Authentication Flow",
@@ -340,7 +340,7 @@ export class ThunderMFASetup {
   private async createOrGetMFARegistrationFlow(adminToken: string): Promise<string> {
     const flowHandle = "e2e-mfa-reg-flow";
 
-    const response = await this.request.post(`${this.config.thunderUrl}/flows`, {
+    const response = await this.request.post(`${this.config.serverUrl}/flows`, {
       data: {
         handle: flowHandle,
         name: "E2E MFA Registration Flow",
@@ -380,7 +380,7 @@ export class ThunderMFASetup {
     }
 
     const response = await this.request.get(
-      `${this.config.thunderUrl}/flows?filter=${encodeURIComponent(filterQuery)}`,
+      `${this.config.serverUrl}/flows?filter=${encodeURIComponent(filterQuery)}`,
       {
         headers: {
           Authorization: `Bearer ${adminToken}`,
@@ -412,7 +412,7 @@ export class ThunderMFASetup {
    */
   private async createOrGetTestUser(adminToken: string): Promise<string> {
     // Get organization unit from Person user schema
-    const schemasResponse = await this.request.get(`${this.config.thunderUrl}/user-schemas`, {
+    const schemasResponse = await this.request.get(`${this.config.serverUrl}/user-schemas`, {
       headers: {
         Authorization: `Bearer ${adminToken}`,
       },
@@ -433,7 +433,7 @@ export class ThunderMFASetup {
     const defaultOuId = personSchema.ouId;
 
     // Create user
-    const response = await this.request.post(`${this.config.thunderUrl}/users`, {
+    const response = await this.request.post(`${this.config.serverUrl}/users`, {
       data: {
         type: "Person",
         ouId: defaultOuId,
@@ -472,7 +472,7 @@ export class ThunderMFASetup {
    */
   private async getExistingUser(adminToken: string): Promise<string> {
     const response = await this.request.get(
-      `${this.config.thunderUrl}/users?filter=username eq "${this.config.testUser.username}"`,
+      `${this.config.serverUrl}/users?filter=username eq "${this.config.testUser.username}"`,
       {
         headers: {
           Authorization: `Bearer ${adminToken}`,
@@ -502,7 +502,7 @@ export class ThunderMFASetup {
     registrationFlowId: string
   ): Promise<string> {
     // First, get all applications and find the one with clientId = "REACT_SDK_SAMPLE"
-    const listResponse = await this.request.get(`${this.config.thunderUrl}/applications`, {
+    const listResponse = await this.request.get(`${this.config.serverUrl}/applications`, {
       headers: {
         Authorization: `Bearer ${adminToken}`,
       },
@@ -523,7 +523,7 @@ export class ThunderMFASetup {
     const actualAppId = targetApp.id;
 
     // Get current application details
-    const getResponse = await this.request.get(`${this.config.thunderUrl}/applications/${actualAppId}`, {
+    const getResponse = await this.request.get(`${this.config.serverUrl}/applications/${actualAppId}`, {
       headers: {
         Authorization: `Bearer ${adminToken}`,
       },
@@ -544,7 +544,7 @@ export class ThunderMFASetup {
       isRegistrationFlowEnabled: true,
     };
 
-    const updateResponse = await this.request.put(`${this.config.thunderUrl}/applications/${actualAppId}`, {
+    const updateResponse = await this.request.put(`${this.config.serverUrl}/applications/${actualAppId}`, {
       data: updatedApp,
       headers: {
         Authorization: `Bearer ${adminToken}`,
@@ -572,7 +572,7 @@ export class ThunderMFASetup {
       });
 
       const response = await requestContext.delete(
-        `${this.config.thunderUrl}/notification-senders/message/${senderId}`,
+        `${this.config.serverUrl}/notification-senders/message/${senderId}`,
         {
           headers: {
             Authorization: `Bearer ${adminToken}`,
@@ -605,7 +605,7 @@ export class ThunderMFASetup {
         ignoreHTTPSErrors: true,
       });
 
-      const response = await requestContext.delete(`${this.config.thunderUrl}/flows/${flowId}`, {
+      const response = await requestContext.delete(`${this.config.serverUrl}/flows/${flowId}`, {
         headers: {
           Authorization: `Bearer ${adminToken}`,
         },
@@ -636,7 +636,7 @@ export class ThunderMFASetup {
         ignoreHTTPSErrors: true,
       });
 
-      const response = await requestContext.delete(`${this.config.thunderUrl}/users/${userId}`, {
+      const response = await requestContext.delete(`${this.config.serverUrl}/users/${userId}`, {
         headers: {
           Authorization: `Bearer ${adminToken}`,
         },
