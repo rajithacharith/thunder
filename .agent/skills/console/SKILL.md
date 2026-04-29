@@ -1,5 +1,5 @@
 ---
-name: Thunder-console
+name: console
 description: Navigate and interact with the Thunder Console UI. Use when exploring the Thunder admin console, testing UI changes, creating users/applications/roles, or debugging the frontend.
 allowed-tools: Bash(playwright-cli:*) Bash(npx:*)
 ---

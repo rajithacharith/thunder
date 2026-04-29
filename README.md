@@ -36,15 +36,15 @@ Designed for extensibility, scalability, and seamless containerized deployment, 
 
 ## ⚡ Quickstart
 
-This Quickstart guide will help you get started with WSO2 Thunder quickly. It walks you through downloading and running the product, trying out the sample app, and exploring registering a user, logging in, and using the Client Credentials flow.
+This Quickstart guide will help you get started with Thunder quickly. It walks you through downloading and running the product, trying out the sample app, and exploring registering a user, logging in, and using the Client Credentials flow.
 
-### Download and Run WSO2 Thunder
+### Download and Run Thunder
 
-You can run WSO2 Thunder either by downloading the release artifact or using the official Docker image.
+You can run Thunder either by downloading the release artifact or using the official Docker image.
 
 #### Option 1: Run from Release Artifact
 
-Follow these steps to download the latest release of WSO2 Thunder and run it locally.
+Follow these steps to download the latest release of Thunder and run it locally.
 
 1. **Download the distribution from the latest release**
 
@@ -102,7 +102,7 @@ Follow these steps to download the latest release of WSO2 Thunder and run it loc
 
 #### Option 2: Run with Docker Compose
 
-Follow these steps to run WSO2 Thunder using Docker Compose.
+Follow these steps to run Thunder using Docker Compose.
 
 1. **Download the Docker Compose file**
 

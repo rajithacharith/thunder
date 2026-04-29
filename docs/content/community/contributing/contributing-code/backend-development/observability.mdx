@@ -1,13 +1,13 @@
 ---
 title: Observability
-description: Learn how to instrument your code with observability events and understand the observability architecture in Thunder.
+description: Learn how to instrument your code with observability events and understand the observability architecture.
 hide_table_of_contents: false
 sidebar_position: 3
 ---
 
 # Observability
 
-This guide explains how to instrument your code with observability events and provides an overview of the observability architecture. It is intended for developers adding new features or components to Thunder.
+This guide explains how to instrument your code with observability events and provides an overview of the observability architecture. It is intended for developers adding new features or components to <ProductName />.
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@ This guide explains how to instrument your code with observability events and pr
 
 ## Integration Guide
 
-Thunder uses a dependency injection pattern for observability. To instrument your component:
+<ProductName /> uses a dependency injection pattern for observability. To instrument your component:
 
 ### 1. Inject the Observability Service
 
@@ -86,7 +86,7 @@ Always use predefined keys from `event.DataKey` for consistency:
 | `Error` | Error message for failures |
 | `LatencyUs` | Operation latency in microseconds |
 
-See [`event/datakeys.go`](https://github.com/asgardeo/thunder/blob/main/backend/internal/observability/event/datakeys.go) for the complete list.
+See <RepoLink path="/blob/main/backend/internal/observability/event/datakeys.go">`event/datakeys.go`</RepoLink> for the complete list.
 
 ## Distributed Tracing
 
@@ -151,4 +151,4 @@ To add a new subscriber (e.g., to send logs to a webhook):
 4.  **Add Configuration**: Update `backend/internal/system/config/config.go`.
 
 ## Further Reading
-- [Observability source code](https://github.com/asgardeo/thunder/tree/main/backend/internal/observability)
+- <RepoLink path="/tree/main/backend/internal/observability">Observability source code</RepoLink>

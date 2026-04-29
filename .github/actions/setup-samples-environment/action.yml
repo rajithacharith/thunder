@@ -18,7 +18,7 @@ inputs:
   certificate-artifact-name:
     description: 'Name of certificate artifact to download'
     required: false
-    default: 'thunder-certificates'
+    default: 'ssl-certificates'
 
 runs:
   using: composite

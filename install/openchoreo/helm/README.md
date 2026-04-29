@@ -1,6 +1,6 @@
 # Thunder Helm Chart
 
-This Helm chart deploys WSO2 Thunder Identity Management Service on the OpenChoreo platform. Thunder provides OAuth2, OpenID Connect, and other identity protocols.
+This Helm chart deploys Thunder Identity Management Service on the OpenChoreo platform. Thunder provides OAuth2, OpenID Connect, and other identity protocols.
 
 ## Overview
 
