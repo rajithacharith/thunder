@@ -365,24 +365,24 @@ docker compose down -v
             hostname: "localhost"
             port: 5432
             name: "configdb"
-            username: "asgthunder"
-            password: "asgthunder"
+            username: "dbuser"
+            password: "dbpassword"
             sslmode: "disable"
         runtime:
             type: "postgres"
             hostname: "localhost"
             port: 5432
             name: "runtimedb"
-            username: "asgthunder"
-            password: "asgthunder"
+            username: "dbuser"
+            password: "dbpassword"
             sslmode: "disable"
         user:
             type: "postgres"
             hostname: "localhost"
             port: 5432
             name: "userdb"
-            username: "asgthunder"
-            password: "asgthunder"
+            username: "dbuser"
+            password: "dbpassword"
             sslmode: "disable"
     ```
 

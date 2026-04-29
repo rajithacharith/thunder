@@ -242,8 +242,8 @@ configuration:
         hostname: "localhost"
         port: "5432"
         name: "configdb"
-        username: "asgthunder"
-        password: "asgthunder"
+        username: "dbuser"
+        password: "dbpassword"
         passwordRef:
           name: ""
           key: ""
@@ -271,8 +271,8 @@ configuration:
         hostname: "localhost"
         port: "5432"
         name: "runtimedb"
-        username: "asgthunder"
-        password: "asgthunder"
+        username: "dbuser"
+        password: "dbpassword"
         passwordRef:
           name: ""
           key: ""
@@ -308,8 +308,8 @@ configuration:
         hostname: "localhost"
         port: "5432"
         name: "userdb"
-        username: "asgthunder"
-        password: "asgthunder"
+        username: "dbuser"
+        password: "dbpassword"
         passwordRef:
           name: ""
           key: ""
@@ -398,8 +398,8 @@ configuration:
       name: "consentdb"
       host: "localhost"
       port: "5432"
-      username: "asgthunder"
-      password: "asgthunder"
+      username: "dbuser"
+      password: "dbpassword"
       sslmode: "require"
       max_open_conns: 500
       max_idle_conns: 100

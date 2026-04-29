@@ -36,12 +36,12 @@ runs:
       if: inputs.database-type == 'postgres'
       shell: bash
       run: |
-        PGPASSWORD=asgthunder psql -h localhost -p 5432 -U asgthunder -d thunderdb -c "CREATE DATABASE configdb;"
-        PGPASSWORD=asgthunder psql -h localhost -p 5432 -U asgthunder -d thunderdb -c "CREATE DATABASE runtimedb;"
-        PGPASSWORD=asgthunder psql -h localhost -p 5432 -U asgthunder -d thunderdb -c "CREATE DATABASE userdb;"
-        PGPASSWORD=asgthunder psql -h localhost -p 5432 -U asgthunder -d configdb < backend/dbscripts/configdb/postgres.sql
-        PGPASSWORD=asgthunder psql -h localhost -p 5432 -U asgthunder -d runtimedb < backend/dbscripts/runtimedb/postgres.sql
-        PGPASSWORD=asgthunder psql -h localhost -p 5432 -U asgthunder -d userdb < backend/dbscripts/userdb/postgres.sql
+        PGPASSWORD=dbpassword psql -h localhost -p 5432 -U dbuser -d thunderdb -c "CREATE DATABASE configdb;"
+        PGPASSWORD=dbpassword psql -h localhost -p 5432 -U dbuser -d thunderdb -c "CREATE DATABASE runtimedb;"
+        PGPASSWORD=dbpassword psql -h localhost -p 5432 -U dbuser -d thunderdb -c "CREATE DATABASE userdb;"
+        PGPASSWORD=dbpassword psql -h localhost -p 5432 -U dbuser -d configdb < backend/dbscripts/configdb/postgres.sql
+        PGPASSWORD=dbpassword psql -h localhost -p 5432 -U dbuser -d runtimedb < backend/dbscripts/runtimedb/postgres.sql
+        PGPASSWORD=dbpassword psql -h localhost -p 5432 -U dbuser -d userdb < backend/dbscripts/userdb/postgres.sql
 
     - name: 📝 Configure Test Database
       shell: bash
