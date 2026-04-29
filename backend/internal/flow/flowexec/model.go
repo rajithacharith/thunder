@@ -140,7 +140,7 @@ func (f *FlowContextDB) decrypt(ctx context.Context) error {
 		return nil
 	}
 	decrypted, err := runtime.GetRuntimeCryptoService().Decrypt(
-		ctx, crypto.KeyRef{}, crypto.AlgorithmAESGCM, []byte(f.Context))
+		ctx, crypto.KeyRef{}, crypto.AlgorithmParams{Algorithm: crypto.AlgorithmAESGCM}, []byte(f.Context))
 	if err != nil {
 		return err
 	}
@@ -176,7 +176,8 @@ func (c *flowContextContent) encrypt(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	encrypted, err := runtime.GetRuntimeCryptoService().Encrypt(ctx, crypto.KeyRef{}, crypto.AlgorithmAESGCM, data)
+	encrypted, _, err := runtime.GetRuntimeCryptoService().Encrypt(
+		ctx, crypto.KeyRef{}, crypto.AlgorithmParams{Algorithm: crypto.AlgorithmAESGCM}, data)
 	if err != nil {
 		return "", err
 	}
