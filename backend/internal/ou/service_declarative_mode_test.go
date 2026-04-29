@@ -63,7 +63,7 @@ func (suite *DeclarativeModeServiceTestSuite) TearDownTest() {
 }
 
 func (suite *DeclarativeModeServiceTestSuite) TestCreateOrganizationUnit_FailsInDeclarativeMode() {
-	request := OrganizationUnitRequest{
+	request := OrganizationUnitRequestWithID{
 		Name:        "Test OU",
 		Handle:      "test-ou",
 		Description: "Test Description",
@@ -86,7 +86,7 @@ func (suite *DeclarativeModeServiceTestSuite) TestUpdateOrganizationUnit_FailsIn
 	}, nil).Once()
 	suite.store.On("IsOrganizationUnitDeclarative", mock.Anything, "ou-1").Return(true).Once()
 
-	request := OrganizationUnitRequest{
+	request := OrganizationUnitRequestWithID{
 		Name:        "Updated OU",
 		Handle:      "updated-ou",
 		Description: "Updated Description",
@@ -109,7 +109,7 @@ func (suite *DeclarativeModeServiceTestSuite) TestUpdateOrganizationUnitByPath_F
 	}, nil).Once()
 	suite.store.On("IsOrganizationUnitDeclarative", mock.Anything, "ou-1").Return(true).Once()
 
-	request := OrganizationUnitRequest{
+	request := OrganizationUnitRequestWithID{
 		Name:        "Updated OU",
 		Handle:      "updated-ou",
 		Description: "Updated Description",

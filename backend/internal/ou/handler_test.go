@@ -444,11 +444,12 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			}`,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("CreateOrganizationUnit", mock.Anything, mock.MatchedBy(func(req OrganizationUnitRequest) bool {
-						return req.Handle == defaultOUHandle &&
-							req.Name == "Finance &lt;script&gt;" &&
-							req.Description == "desc"
-					})).
+					On("CreateOrganizationUnit", mock.Anything,
+						mock.MatchedBy(func(req OrganizationUnitRequestWithID) bool {
+							return req.Handle == defaultOUHandle &&
+								req.Name == "Finance &lt;script&gt;" &&
+								req.Description == "desc"
+						})).
 					Return(OrganizationUnit{ID: "ou-1", Name: "Finance &lt;script&gt;"}, nil).
 					Once()
 			},
@@ -471,13 +472,14 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			}`,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("CreateOrganizationUnit", mock.Anything, mock.MatchedBy(func(req OrganizationUnitRequest) bool {
-						return req.Handle == defaultOUHandle &&
-							req.Name == testOUNameFinance &&
-							req.ThemeID == "theme-123" &&
-							req.LayoutID == "layout-456" &&
-							req.LogoURL == "https://example.com/logo.png"
-					})).
+					On("CreateOrganizationUnit", mock.Anything,
+						mock.MatchedBy(func(req OrganizationUnitRequestWithID) bool {
+							return req.Handle == defaultOUHandle &&
+								req.Name == testOUNameFinance &&
+								req.ThemeID == "theme-123" &&
+								req.LayoutID == "layout-456" &&
+								req.LogoURL == "https://example.com/logo.png"
+						})).
 					Return(OrganizationUnit{
 						ID:       "ou-1",
 						Handle:   "finance",
@@ -510,13 +512,14 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			}`,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("CreateOrganizationUnit", mock.Anything, mock.MatchedBy(func(req OrganizationUnitRequest) bool {
-						return req.Handle == defaultOUHandle &&
-							req.Name == testOUNameFinance &&
-							req.TosURI == "https://example.com/tos" &&
-							req.PolicyURI == "https://example.com/privacy" &&
-							req.CookiePolicyURI == "https://example.com/cookie-policy"
-					})).
+					On("CreateOrganizationUnit", mock.Anything,
+						mock.MatchedBy(func(req OrganizationUnitRequestWithID) bool {
+							return req.Handle == defaultOUHandle &&
+								req.Name == testOUNameFinance &&
+								req.TosURI == "https://example.com/tos" &&
+								req.PolicyURI == "https://example.com/privacy" &&
+								req.CookiePolicyURI == "https://example.com/cookie-policy"
+						})).
 					Return(OrganizationUnit{
 						ID:              "ou-1",
 						Handle:          "finance",
@@ -542,7 +545,8 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			body: `{"handle":"finance","name":"` + testOUNameFinance + `"}`,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("CreateOrganizationUnit", mock.Anything, mock.AnythingOfType("ou.OrganizationUnitRequest")).
+					On("CreateOrganizationUnit", mock.Anything,
+						mock.AnythingOfType("ou.OrganizationUnitRequestWithID")).
 					Return(OrganizationUnit{}, &ErrorOrganizationUnitNameConflict).
 					Once()
 			},
@@ -558,7 +562,8 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			body: `{"handle":"finance","name":"` + testOUNameFinance + `"}`,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("CreateOrganizationUnit", mock.Anything, mock.AnythingOfType("ou.OrganizationUnitRequest")).
+					On("CreateOrganizationUnit", mock.Anything,
+						mock.AnythingOfType("ou.OrganizationUnitRequestWithID")).
 					Return(OrganizationUnit{}, &serviceerror.InternalServerError).
 					Once()
 			},
@@ -575,7 +580,8 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			useFlaky: true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("CreateOrganizationUnit", mock.Anything, mock.AnythingOfType("ou.OrganizationUnitRequest")).
+					On("CreateOrganizationUnit", mock.Anything,
+						mock.AnythingOfType("ou.OrganizationUnitRequestWithID")).
 					Return(OrganizationUnit{}, &serviceerror.InternalServerError).
 					Once()
 			},
@@ -590,7 +596,8 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			useFlaky: true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("CreateOrganizationUnit", mock.Anything, mock.AnythingOfType("ou.OrganizationUnitRequest")).
+					On("CreateOrganizationUnit", mock.Anything,
+						mock.AnythingOfType("ou.OrganizationUnitRequestWithID")).
 					Return(OrganizationUnit{ID: "ou-1"}, nil).
 					Once()
 			},
@@ -816,7 +823,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 				serviceMock.
 					On("UpdateOrganizationUnit", mock.Anything,
 						defaultOURequestID,
-						mock.MatchedBy(func(req OrganizationUnitRequest) bool {
+						mock.MatchedBy(func(req OrganizationUnitRequestWithID) bool {
 							return req.Handle == defaultOUHandle &&
 								req.Name == "Finance &lt;script&gt;" &&
 								req.Description == "desc"
@@ -850,7 +857,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 				serviceMock.
 					On("UpdateOrganizationUnit", mock.Anything,
 						defaultOURequestID,
-						mock.MatchedBy(func(req OrganizationUnitRequest) bool {
+						mock.MatchedBy(func(req OrganizationUnitRequestWithID) bool {
 							return req.Handle == defaultOUHandle &&
 								req.Name == testOUNameFinance &&
 								req.ThemeID == "theme-new" &&
@@ -888,7 +895,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
 					On("UpdateOrganizationUnit", mock.Anything, defaultOURequestID,
-						mock.AnythingOfType("ou.OrganizationUnitRequest")).
+						mock.AnythingOfType("ou.OrganizationUnitRequestWithID")).
 					Return(OrganizationUnit{}, &ErrorOrganizationUnitHandleConflict).
 					Once()
 			},
@@ -911,7 +918,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
 					On("UpdateOrganizationUnit", mock.Anything, defaultOURequestID,
-						mock.AnythingOfType("ou.OrganizationUnitRequest")).
+						mock.AnythingOfType("ou.OrganizationUnitRequestWithID")).
 					Return(OrganizationUnit{ID: defaultOURequestID}, nil).
 					Once()
 			},
@@ -1313,7 +1320,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutByPathRe
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
 					On("UpdateOrganizationUnitByPath", mock.Anything, defaultOUPath,
-						mock.AnythingOfType("ou.OrganizationUnitRequest")).
+						mock.AnythingOfType("ou.OrganizationUnitRequestWithID")).
 					Return(OrganizationUnit{}, &serviceerror.InternalServerError).
 					Once()
 			},
@@ -1336,7 +1343,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutByPathRe
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
 					On("UpdateOrganizationUnitByPath", mock.Anything, defaultOUPath,
-						mock.AnythingOfType("ou.OrganizationUnitRequest")).
+						mock.AnythingOfType("ou.OrganizationUnitRequestWithID")).
 					Return(OrganizationUnit{ID: defaultOURequestID}, nil).
 					Once()
 			},
@@ -1356,7 +1363,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutByPathRe
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
 					On("UpdateOrganizationUnitByPath", mock.Anything, defaultOUPath,
-						mock.AnythingOfType("ou.OrganizationUnitRequest")).
+						mock.AnythingOfType("ou.OrganizationUnitRequestWithID")).
 					Return(OrganizationUnit{ID: defaultOURequestID}, nil).
 					Once()
 			},

@@ -1,0 +1,1281 @@
+/*
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package importer
+
+import (
+	"context"
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/asgardeo/thunder/internal/application"
+	"github.com/asgardeo/thunder/internal/application/model"
+	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
+	"github.com/asgardeo/thunder/internal/flow/common"
+	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
+	"github.com/asgardeo/thunder/internal/idp"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
+	"github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/role"
+	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
+	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userschema"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func boolPtr(v bool) *bool {
+	return &v
+}
+
+func updateOUCommon(existing map[string]ou.OrganizationUnit, updated *[]ou.OrganizationUnitRequest,
+	id string, request ou.OrganizationUnitRequest) (ou.OrganizationUnit, *serviceerror.ServiceError) {
+	if _, ok := existing[id]; !ok {
+		return ou.OrganizationUnit{}, &serviceerror.ServiceError{
+			Type:  serviceerror.ClientErrorType,
+			Code:  "OU-1003",
+			Error: core.I18nMessage{DefaultValue: "not found"},
+		}
+	}
+	*updated = append(*updated, request)
+	result := ou.OrganizationUnit{
+		ID:              id,
+		Handle:          request.Handle,
+		Name:            request.Name,
+		Description:     request.Description,
+		Parent:          request.Parent,
+		ThemeID:         request.ThemeID,
+		LayoutID:        request.LayoutID,
+		LogoURL:         request.LogoURL,
+		TosURI:          request.TosURI,
+		PolicyURI:       request.PolicyURI,
+		CookiePolicyURI: request.CookiePolicyURI,
+	}
+	existing[id] = result
+	return result, nil
+}
+
+type fakeApplicationService struct {
+	created  []*model.ApplicationDTO
+	updated  []*model.ApplicationDTO
+	existing map[string]*model.Application
+}
+
+func (f *fakeApplicationService) CreateApplication(
+	_ context.Context, app *model.ApplicationDTO,
+) (*model.ApplicationDTO, *serviceerror.ServiceError) {
+	if app.ID == "" {
+		app.ID = "generated-app-id"
+	}
+	f.created = append(f.created, app)
+	if f.existing == nil {
+		f.existing = map[string]*model.Application{}
+	}
+	f.existing[app.ID] = &model.Application{ID: app.ID, Name: app.Name}
+	return app, nil
+}
+
+func (f *fakeApplicationService) ValidateApplication(
+	_ context.Context, _ *model.ApplicationDTO,
+) (*model.ApplicationProcessedDTO, *model.InboundAuthConfigDTO, *serviceerror.ServiceError) {
+	return nil, nil, nil
+}
+
+func (f *fakeApplicationService) GetApplicationList(
+	_ context.Context,
+) (*model.ApplicationListResponse, *serviceerror.ServiceError) {
+	return nil, nil
+}
+
+func (f *fakeApplicationService) GetOAuthApplication(
+	_ context.Context, _ string,
+) (*inboundmodel.OAuthClient, *serviceerror.ServiceError) {
+	return nil, nil
+}
+
+func (f *fakeApplicationService) GetApplication(
+	_ context.Context, appID string,
+) (*model.Application, *serviceerror.ServiceError) {
+	if app, ok := f.existing[appID]; ok {
+		return app, nil
+	}
+	return nil, &serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  application.ErrorApplicationNotFound.Code,
+		Error: core.I18nMessage{DefaultValue: "not found"},
+	}
+}
+
+func (f *fakeApplicationService) UpdateApplication(
+	_ context.Context, appID string, app *model.ApplicationDTO,
+) (*model.ApplicationDTO, *serviceerror.ServiceError) {
+	if _, ok := f.existing[appID]; !ok {
+		return nil, &serviceerror.ServiceError{
+			Type:  serviceerror.ClientErrorType,
+			Code:  application.ErrorApplicationNotFound.Code,
+			Error: core.I18nMessage{DefaultValue: "not found"},
+		}
+	}
+	app.ID = appID
+	f.updated = append(f.updated, app)
+	f.existing[appID] = &model.Application{ID: app.ID, Name: app.Name}
+	return app, nil
+}
+
+func (f *fakeApplicationService) DeleteApplication(_ context.Context, _ string) *serviceerror.ServiceError {
+	return nil
+}
+
+type fakeIDPService struct {
+	created []*idp.IDPDTO
+	updated []*idp.IDPDTO
+	byID    map[string]*idp.IDPDTO
+	byName  map[string]*idp.IDPDTO
+}
+
+func (f *fakeIDPService) CreateIdentityProvider(
+	_ context.Context, idpDTO *idp.IDPDTO,
+) (*idp.IDPDTO, *serviceerror.ServiceError) {
+	if idpDTO.ID == "" {
+		idpDTO.ID = "generated-idp-id"
+	}
+	f.created = append(f.created, idpDTO)
+	f.byID[idpDTO.ID] = idpDTO
+	f.byName[idpDTO.Name] = idpDTO
+	return idpDTO, nil
+}
+
+func (f *fakeIDPService) GetIdentityProvider(
+	_ context.Context, idpID string,
+) (*idp.IDPDTO, *serviceerror.ServiceError) {
+	if v, ok := f.byID[idpID]; ok {
+		return v, nil
+	}
+	return nil, &serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  "IDP-1001",
+		Error: core.I18nMessage{DefaultValue: "not found"},
+	}
+}
+
+func (f *fakeIDPService) GetIdentityProviderByName(
+	_ context.Context, name string,
+) (*idp.IDPDTO, *serviceerror.ServiceError) {
+	if v, ok := f.byName[name]; ok {
+		return v, nil
+	}
+	return nil, &serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  "IDP-1001",
+		Error: core.I18nMessage{DefaultValue: "not found"},
+	}
+}
+
+func (f *fakeIDPService) UpdateIdentityProvider(
+	_ context.Context, idpID string, idpDTO *idp.IDPDTO,
+) (*idp.IDPDTO, *serviceerror.ServiceError) {
+	if _, ok := f.byID[idpID]; !ok {
+		return nil, &serviceerror.ServiceError{
+			Type:  serviceerror.ClientErrorType,
+			Code:  "IDP-1001",
+			Error: core.I18nMessage{DefaultValue: "not found"},
+		}
+	}
+	idpDTO.ID = idpID
+	f.updated = append(f.updated, idpDTO)
+	f.byID[idpID] = idpDTO
+	f.byName[idpDTO.Name] = idpDTO
+	return idpDTO, nil
+}
+
+type fakeFlowService struct {
+	created []*flowmgt.FlowDefinition
+	updated []*flowmgt.FlowDefinition
+	byID    map[string]*flowmgt.CompleteFlowDefinition
+	byKey   map[string]*flowmgt.CompleteFlowDefinition
+}
+
+type fakeThemeService struct {
+	created  []thememgt.CreateThemeRequestWithID
+	updated  []thememgt.UpdateThemeRequest
+	byID     map[string]*thememgt.Theme
+	byHandle map[string]*thememgt.Theme
+}
+
+func (f *fakeThemeService) CreateTheme(
+	theme thememgt.CreateThemeRequestWithID,
+) (*thememgt.Theme, *serviceerror.ServiceError) {
+	id := theme.ID
+	if id == "" {
+		id = "generated-theme-id"
+	}
+
+	created := &thememgt.Theme{
+		ID:          id,
+		Handle:      theme.Handle,
+		DisplayName: theme.DisplayName,
+		Description: theme.Description,
+		Theme:       theme.Theme,
+	}
+	f.created = append(f.created, theme)
+	if f.byID == nil {
+		f.byID = map[string]*thememgt.Theme{}
+	}
+	if f.byHandle == nil {
+		f.byHandle = map[string]*thememgt.Theme{}
+	}
+	f.byID[created.ID] = created
+	f.byHandle[created.Handle] = created
+	return created, nil
+}
+
+func (f *fakeThemeService) GetTheme(id string) (*thememgt.Theme, *serviceerror.ServiceError) {
+	if existing, ok := f.byID[id]; ok {
+		return existing, nil
+	}
+
+	return nil, &serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  "THM-1003",
+		Error: core.I18nMessage{DefaultValue: "not found"},
+	}
+}
+
+func (f *fakeThemeService) UpdateTheme(
+	id string, theme thememgt.UpdateThemeRequest,
+) (*thememgt.Theme, *serviceerror.ServiceError) {
+	if _, ok := f.byID[id]; !ok {
+		return nil, &serviceerror.ServiceError{
+			Type:  serviceerror.ClientErrorType,
+			Code:  "THM-1003",
+			Error: core.I18nMessage{DefaultValue: "not found"},
+		}
+	}
+
+	updated := &thememgt.Theme{
+		ID:          id,
+		Handle:      theme.Handle,
+		DisplayName: theme.DisplayName,
+		Description: theme.Description,
+		Theme:       theme.Theme,
+	}
+	f.updated = append(f.updated, theme)
+	f.byID[id] = updated
+	f.byHandle[updated.Handle] = updated
+	return updated, nil
+}
+
+type fakeUserSchemaService struct {
+	created []userschema.CreateUserSchemaRequestWithID
+	updated []userschema.UpdateUserSchemaRequest
+	byID    map[string]*userschema.UserSchema
+	byName  map[string]*userschema.UserSchema
+}
+
+func (f *fakeUserSchemaService) CreateUserSchema(
+	_ context.Context, request userschema.CreateUserSchemaRequestWithID,
+) (*userschema.UserSchema, *serviceerror.ServiceError) {
+	id := request.ID
+	if id == "" {
+		id = "generated-user-schema-id"
+	}
+	created := &userschema.UserSchema{
+		ID:                    id,
+		Name:                  request.Name,
+		OUID:                  request.OUID,
+		AllowSelfRegistration: request.AllowSelfRegistration,
+		SystemAttributes:      request.SystemAttributes,
+		Schema:                request.Schema,
+	}
+	f.created = append(f.created, request)
+	if f.byID == nil {
+		f.byID = map[string]*userschema.UserSchema{}
+	}
+	if f.byName == nil {
+		f.byName = map[string]*userschema.UserSchema{}
+	}
+	f.byID[created.ID] = created
+	f.byName[created.Name] = created
+	return created, nil
+}
+
+func (f *fakeUserSchemaService) GetUserSchema(
+	_ context.Context, schemaID string, _ bool,
+) (*userschema.UserSchema, *serviceerror.ServiceError) {
+	if existing, ok := f.byID[schemaID]; ok {
+		return existing, nil
+	}
+
+	return nil, &serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  "USRS-1002",
+		Error: core.I18nMessage{DefaultValue: "not found"},
+	}
+}
+
+func (f *fakeUserSchemaService) GetUserSchemaByName(
+	_ context.Context, schemaName string,
+) (*userschema.UserSchema, *serviceerror.ServiceError) {
+	if existing, ok := f.byName[schemaName]; ok {
+		return existing, nil
+	}
+
+	return nil, &serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  "USRS-1002",
+		Error: core.I18nMessage{DefaultValue: "not found"},
+	}
+}
+
+func (f *fakeUserSchemaService) UpdateUserSchema(
+	_ context.Context, schemaID string, request userschema.UpdateUserSchemaRequest,
+) (*userschema.UserSchema, *serviceerror.ServiceError) {
+	if _, ok := f.byID[schemaID]; !ok {
+		return nil, &serviceerror.ServiceError{
+			Type:  serviceerror.ClientErrorType,
+			Code:  "USRS-1002",
+			Error: core.I18nMessage{DefaultValue: "not found"},
+		}
+	}
+
+	updated := &userschema.UserSchema{
+		ID:                    schemaID,
+		Name:                  request.Name,
+		OUID:                  request.OUID,
+		AllowSelfRegistration: request.AllowSelfRegistration,
+		SystemAttributes:      request.SystemAttributes,
+		Schema:                request.Schema,
+	}
+	f.updated = append(f.updated, request)
+	f.byID[schemaID] = updated
+	f.byName[updated.Name] = updated
+	return updated, nil
+}
+
+type fakeOUService struct {
+	created  []ou.OrganizationUnitRequestWithID
+	updated  []ou.OrganizationUnitRequest
+	existing map[string]ou.OrganizationUnit
+}
+
+func (f *fakeOUService) CreateOrganizationUnit(
+	_ context.Context, request ou.OrganizationUnitRequestWithID,
+) (ou.OrganizationUnit, *serviceerror.ServiceError) {
+	id := request.ID
+	if id == "" {
+		id = "generated-ou-id"
+	}
+
+	created := ou.OrganizationUnit{
+		ID:              id,
+		Handle:          request.Handle,
+		Name:            request.Name,
+		Description:     request.Description,
+		Parent:          request.Parent,
+		ThemeID:         request.ThemeID,
+		LayoutID:        request.LayoutID,
+		LogoURL:         request.LogoURL,
+		TosURI:          request.TosURI,
+		PolicyURI:       request.PolicyURI,
+		CookiePolicyURI: request.CookiePolicyURI,
+	}
+	f.created = append(f.created, request)
+	if f.existing == nil {
+		f.existing = map[string]ou.OrganizationUnit{}
+	}
+	f.existing[created.ID] = created
+	return created, nil
+}
+
+func (f *fakeOUService) GetOrganizationUnit(
+	_ context.Context, id string,
+) (ou.OrganizationUnit, *serviceerror.ServiceError) {
+	if existing, ok := f.existing[id]; ok {
+		return existing, nil
+	}
+
+	return ou.OrganizationUnit{}, &serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  "OU-1003",
+		Error: core.I18nMessage{DefaultValue: "not found"},
+	}
+}
+
+func (f *fakeOUService) UpdateOrganizationUnit(
+	_ context.Context, id string, request ou.OrganizationUnitRequestWithID,
+) (ou.OrganizationUnit, *serviceerror.ServiceError) {
+	updateReq := ou.OrganizationUnitRequest{
+		Handle:          request.Handle,
+		Name:            request.Name,
+		Description:     request.Description,
+		Parent:          request.Parent,
+		ThemeID:         request.ThemeID,
+		LayoutID:        request.LayoutID,
+		LogoURL:         request.LogoURL,
+		TosURI:          request.TosURI,
+		PolicyURI:       request.PolicyURI,
+		CookiePolicyURI: request.CookiePolicyURI,
+	}
+	return updateOUCommon(f.existing, &f.updated, id, updateReq)
+}
+
+type fakeRoleService struct {
+	updated []role.RoleUpdateDetail
+}
+
+func (f *fakeRoleService) CreateRole(
+	_ context.Context, req role.RoleCreationDetail,
+) (*role.RoleWithPermissionsAndAssignments, *serviceerror.ServiceError) {
+	return &role.RoleWithPermissionsAndAssignments{ID: "role-1", Name: req.Name}, nil
+}
+
+func (f *fakeRoleService) GetRoleWithPermissions(
+	_ context.Context, id string,
+) (*role.RoleWithPermissions, *serviceerror.ServiceError) {
+	if id == "role-1" {
+		return &role.RoleWithPermissions{ID: id, Name: "role"}, nil
+	}
+
+	return nil, &serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  "ROLE-1001",
+		Error: core.I18nMessage{DefaultValue: "not found"},
+	}
+}
+
+func (f *fakeRoleService) UpdateRoleWithPermissions(
+	_ context.Context, _ string, req role.RoleUpdateDetail,
+) (*role.RoleWithPermissions, *serviceerror.ServiceError) {
+	f.updated = append(f.updated, req)
+	return &role.RoleWithPermissions{ID: "role-1", Name: req.Name}, nil
+}
+
+type fakeUserService struct {
+	created                     []*user.User
+	updateCredentialsShouldFail bool
+	deleted                     []string
+}
+
+func (f *fakeUserService) CreateUser(
+	_ context.Context, u *user.User,
+) (*user.User, *serviceerror.ServiceError) {
+	id := u.ID
+	if id == "" {
+		id = "generated-user-id"
+	}
+	created := *u
+	created.ID = id
+	f.created = append(f.created, &created)
+	return &created, nil
+}
+
+func (f *fakeUserService) GetUser(
+	_ context.Context, _ string, _ bool,
+) (*user.User, *serviceerror.ServiceError) {
+	return nil, &serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  "USR-1003",
+		Error: core.I18nMessage{DefaultValue: "not found"},
+	}
+}
+
+func (f *fakeUserService) UpdateUser(
+	_ context.Context, userID string, u *user.User,
+) (*user.User, *serviceerror.ServiceError) {
+	updated := *u
+	updated.ID = userID
+	return &updated, nil
+}
+
+func (f *fakeUserService) DeleteUser(_ context.Context, userID string) *serviceerror.ServiceError {
+	f.deleted = append(f.deleted, userID)
+	return nil
+}
+
+func (f *fakeUserService) UpdateUserCredentials(
+	_ context.Context, _ string, _ json.RawMessage,
+) *serviceerror.ServiceError {
+	if f.updateCredentialsShouldFail {
+		return &serviceerror.ServiceError{
+			Type:  serviceerror.ClientErrorType,
+			Code:  "USR-2001",
+			Error: core.I18nMessage{DefaultValue: "bad credentials"},
+		}
+	}
+
+	return nil
+}
+
+func (f *fakeFlowService) CreateFlow(
+	_ context.Context, flowDef *flowmgt.FlowDefinition,
+) (*flowmgt.CompleteFlowDefinition, *serviceerror.ServiceError) {
+	if _, ok := f.byKey[string(flowDef.FlowType)+":"+flowDef.Handle]; ok {
+		return nil, &serviceerror.ServiceError{
+			Type:  serviceerror.ClientErrorType,
+			Code:  "FLM-1013",
+			Error: core.I18nMessage{DefaultValue: "Duplicate flow handle"},
+		}
+	}
+
+	id := flowDef.ID
+	if id == "" {
+		id = "generated-flow-id"
+	}
+	created := &flowmgt.CompleteFlowDefinition{
+		ID:       id,
+		Handle:   flowDef.Handle,
+		Name:     flowDef.Name,
+		FlowType: flowDef.FlowType,
+		Nodes:    flowDef.Nodes,
+	}
+	f.created = append(f.created, flowDef)
+	f.byID[id] = created
+	f.byKey[string(flowDef.FlowType)+":"+flowDef.Handle] = created
+	return created, nil
+}
+
+func (f *fakeFlowService) GetFlow(
+	_ context.Context, flowID string,
+) (*flowmgt.CompleteFlowDefinition, *serviceerror.ServiceError) {
+	if v, ok := f.byID[flowID]; ok {
+		return v, nil
+	}
+	return nil, &serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  "FLM-1003",
+		Error: core.I18nMessage{DefaultValue: "not found"},
+	}
+}
+
+func (f *fakeFlowService) GetFlowByHandle(
+	_ context.Context, handle string, flowType common.FlowType,
+) (*flowmgt.CompleteFlowDefinition, *serviceerror.ServiceError) {
+	if v, ok := f.byKey[string(flowType)+":"+handle]; ok {
+		return v, nil
+	}
+	return nil, &serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  "FLM-1003",
+		Error: core.I18nMessage{DefaultValue: "not found"},
+	}
+}
+
+func (f *fakeFlowService) UpdateFlow(
+	_ context.Context, flowID string, flowDef *flowmgt.FlowDefinition,
+) (*flowmgt.CompleteFlowDefinition, *serviceerror.ServiceError) {
+	if _, ok := f.byID[flowID]; !ok {
+		return nil, &serviceerror.ServiceError{
+			Type:  serviceerror.ClientErrorType,
+			Code:  "FLM-1003",
+			Error: core.I18nMessage{DefaultValue: "not found"},
+		}
+	}
+	updated := &flowmgt.CompleteFlowDefinition{
+		ID:       flowID,
+		Handle:   flowDef.Handle,
+		Name:     flowDef.Name,
+		FlowType: flowDef.FlowType,
+		Nodes:    flowDef.Nodes,
+	}
+	f.updated = append(f.updated, flowDef)
+	f.byID[flowID] = updated
+	f.byKey[string(flowDef.FlowType)+":"+flowDef.Handle] = updated
+	return updated, nil
+}
+
+func newTestImportService(appSvc *fakeApplicationService) ImportServiceInterface {
+	if appSvc == nil {
+		appSvc = &fakeApplicationService{existing: map[string]*model.Application{}}
+	}
+
+	return newImportService(
+		appSvc,
+		&fakeIDPService{byID: map[string]*idp.IDPDTO{}, byName: map[string]*idp.IDPDTO{}},
+		&fakeFlowService{
+			byID:  map[string]*flowmgt.CompleteFlowDefinition{},
+			byKey: map[string]*flowmgt.CompleteFlowDefinition{},
+		},
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	)
+}
+
+func runOAuthClientSecretImport(
+	t *testing.T,
+	content string,
+) (*fakeApplicationService, *ImportResponse, *serviceerror.ServiceError) {
+	t.Helper()
+
+	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
+	svc := newTestImportService(appSvc)
+
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
+		Content: content,
+		Options: &ImportOptions{Upsert: boolPtr(true), ContinueOnError: boolPtr(true), Target: importTargetRuntime},
+	})
+
+	return appSvc, resp, err
+}
+
+func TestImportResources_CreateApplication(t *testing.T) {
+	svc := newTestImportService(nil)
+
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
+		Content: "id: app-1\nname: My App\nauth_flow_id: flow-1\n",
+		Options: &ImportOptions{Upsert: boolPtr(true), ContinueOnError: boolPtr(true), Target: importTargetRuntime},
+	})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, 1, resp.Summary.Imported)
+	assert.Equal(t, statusSuccess, resp.Results[0].Status)
+	assert.Equal(t, operationCreate, resp.Results[0].Operation)
+}
+
+func TestImportResources_UpdateApplication(t *testing.T) {
+	svc := newTestImportService(&fakeApplicationService{
+		existing: map[string]*model.Application{
+			"app-1": {ID: "app-1", Name: "Existing App"},
+		},
+	})
+
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
+		Content: "id: app-1\nname: My App\nauth_flow_id: flow-1\n",
+		Options: &ImportOptions{Upsert: boolPtr(true), ContinueOnError: boolPtr(true), Target: importTargetRuntime},
+	})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, 1, resp.Summary.Imported)
+	assert.Equal(t, statusSuccess, resp.Results[0].Status)
+	assert.Equal(t, operationUpdate, resp.Results[0].Operation)
+}
+
+func TestImportResources_DryRunCreateApplicationWithoutWrite(t *testing.T) {
+	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
+	svc := newTestImportService(appSvc)
+
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
+		Content: "id: app-1\nname: My App\nauth_flow_id: flow-1\n",
+		DryRun:  true,
+		Options: &ImportOptions{Upsert: boolPtr(true), ContinueOnError: boolPtr(true), Target: importTargetRuntime},
+	})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, statusSuccess, resp.Results[0].Status)
+	assert.Equal(t, operationCreate, resp.Results[0].Operation)
+	assert.Len(t, appSvc.created, 0)
+	assert.Len(t, appSvc.updated, 0)
+}
+
+func TestImportResources_DryRunUpdateApplicationWithoutWrite(t *testing.T) {
+	appSvc := &fakeApplicationService{
+		existing: map[string]*model.Application{
+			"app-1": {ID: "app-1", Name: "Existing App"},
+		},
+	}
+	svc := newTestImportService(appSvc)
+
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
+		Content: "id: app-1\nname: My App\nauth_flow_id: flow-1\n",
+		DryRun:  true,
+		Options: &ImportOptions{Upsert: boolPtr(true), ContinueOnError: boolPtr(true), Target: importTargetRuntime},
+	})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, statusSuccess, resp.Results[0].Status)
+	assert.Equal(t, operationUpdate, resp.Results[0].Operation)
+	assert.Len(t, appSvc.created, 0)
+	assert.Len(t, appSvc.updated, 0)
+}
+
+func TestImportResources_DryRunValidationFailure(t *testing.T) {
+	svc := newTestImportService(nil)
+
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
+		Content: "id:\n- app-1\nname: My App\nauth_flow_id: flow-1\n",
+		DryRun:  true,
+		Options: &ImportOptions{Upsert: boolPtr(true), ContinueOnError: boolPtr(true), Target: importTargetRuntime},
+	})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, 1, resp.Summary.Failed)
+	assert.Equal(t, statusFailed, resp.Results[0].Status)
+}
+
+func TestImportResources_CreateIDPAndFlow(t *testing.T) {
+	svc := newTestImportService(nil)
+
+	content := strings.Join([]string{
+		"name: idp-one",
+		"type: GOOGLE",
+		"properties:",
+		"- name: client_id",
+		"  value: abc",
+		"---",
+		"handle: login",
+		"name: Login Flow",
+		"flowType: AUTHENTICATION",
+		"nodes: []",
+		"",
+	}, "\n")
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
+		Content: content,
+		Options: &ImportOptions{Upsert: boolPtr(true), ContinueOnError: boolPtr(true), Target: importTargetRuntime},
+	})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, 2, resp.Summary.Imported)
+	assert.Equal(t, resourceTypeIdentityProvider, resp.Results[0].ResourceType)
+	assert.Equal(t, resourceTypeFlow, resp.Results[1].ResourceType)
+}
+
+func TestImportResources_DefaultsToRuntimeTarget(t *testing.T) {
+	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
+	svc := newTestImportService(appSvc)
+
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
+		Content: "id: app-1\nname: My App\nauth_flow_id: flow-1\n",
+	})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, 1, resp.Summary.Imported)
+	assert.Len(t, appSvc.created, 1)
+	assert.Equal(t, statusSuccess, resp.Results[0].Status)
+	assert.Equal(t, operationCreate, resp.Results[0].Operation)
+}
+
+func TestImportResources_PreservesExplicitFalseOptions(t *testing.T) {
+	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
+	svc := newTestImportService(appSvc)
+
+	falseVal := false
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
+		Content: "id: app-1\nname: My App\nauth_flow_id: flow-1\n" +
+			"---\nid: app-2\nname: My App 2\nauth_flow_id: flow-1\n",
+		Options: &ImportOptions{
+			Upsert:          &falseVal,
+			ContinueOnError: &falseVal,
+			Target:          importTargetRuntime,
+		},
+	})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, 2, resp.Summary.Imported)
+	assert.Equal(t, 0, resp.Summary.Failed)
+	assert.Len(t, appSvc.created, 2)
+}
+
+func TestImportResources_ApplicationAdapterNotConfigured(t *testing.T) {
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
+		Content: "id: app-1\nname: My App\nauth_flow_id: flow-1\n",
+	})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	require.Len(t, resp.Results, 1)
+	assert.Equal(t, statusFailed, resp.Results[0].Status)
+	assert.Equal(t, ErrorAdapterNotConfigured.Code, resp.Results[0].Code)
+	assert.Equal(t, "application adapter not configured", resp.Results[0].Message)
+}
+
+func TestImportResources_RoleUpsertRejectsAssignments(t *testing.T) {
+	roleSvc := &fakeRoleService{}
+	svc := newImportService(nil, nil, nil, nil, nil, roleSvc, nil, nil, nil, nil, nil)
+
+	content := strings.Join([]string{
+		"id: role-1",
+		"name: Admin",
+		"ou_id: ou-1",
+		"permissions:",
+		"  - resource: api",
+		"    actions:",
+		"      - read",
+		"assignments:",
+		"  - type: USER",
+		"    value: u1",
+		"",
+	}, "\n")
+
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{Content: content})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	require.Len(t, resp.Results, 1)
+	assert.Equal(t, statusFailed, resp.Results[0].Status)
+	assert.Equal(t, ErrorInvalidImportRequest.Code, resp.Results[0].Code)
+	assert.Contains(t, resp.Results[0].Message, "role assignment updates are not supported")
+	assert.Len(t, roleSvc.updated, 0)
+}
+
+func TestImportResources_UserCredentialFailureRollsBackCreate(t *testing.T) {
+	userSvc := &fakeUserService{updateCredentialsShouldFail: true}
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, userSvc, nil)
+
+	content := strings.Join([]string{
+		"id: user-1",
+		"type: customer",
+		"ou_id: ou-1",
+		"attributes:",
+		"  username: alice",
+		"credentials:",
+		"  password: secret",
+		"",
+	}, "\n")
+
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{Content: content})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	require.Len(t, resp.Results, 1)
+	assert.Equal(t, statusFailed, resp.Results[0].Status)
+	assert.Contains(t, resp.Results[0].Message, "user profile updated but credential update failed")
+	assert.Empty(t, userSvc.deleted)
+}
+
+func TestImportResources_OrganizationUnitUpsertCreatePreservesID(t *testing.T) {
+	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, nil, nil, nil)
+
+	content := strings.Join([]string{
+		"id: ou-123",
+		"handle: eng",
+		"name: Engineering",
+		"description: Engineering OU",
+		"",
+	}, "\n")
+
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{Content: content})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	require.Len(t, resp.Results, 1)
+	assert.Equal(t, statusSuccess, resp.Results[0].Status)
+	assert.Equal(t, operationCreate, resp.Results[0].Operation)
+	assert.Equal(t, "ou-123", resp.Results[0].ResourceID)
+	assert.Len(t, ouSvc.created, 1)
+	assert.Equal(t, "ou-123", ouSvc.created[0].ID)
+}
+
+func TestImportResources_FlowUpsertCreatePreservesID(t *testing.T) {
+	flowSvc := &fakeFlowService{
+		byID:  map[string]*flowmgt.CompleteFlowDefinition{},
+		byKey: map[string]*flowmgt.CompleteFlowDefinition{},
+	}
+
+	svc := newImportService(nil, nil, flowSvc, nil, nil, nil, nil, nil, nil, nil, nil)
+
+	content := strings.Join([]string{
+		"id: missing-flow-id",
+		"handle: registration-flow",
+		"name: Updated Registration Flow",
+		"flowType: REGISTRATION",
+		"nodes: []",
+		"",
+	}, "\n")
+
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{Content: content})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	require.Len(t, resp.Results, 1)
+	assert.Equal(t, statusSuccess, resp.Results[0].Status)
+	assert.Equal(t, operationCreate, resp.Results[0].Operation)
+	assert.Equal(t, "missing-flow-id", resp.Results[0].ResourceID)
+	assert.Len(t, flowSvc.created, 1)
+	assert.Equal(t, "missing-flow-id", flowSvc.created[0].ID)
+	assert.Len(t, flowSvc.updated, 0)
+}
+
+func TestImportResources_FlowUpsertDuplicateHandleFallsBackToHandleUpdate(t *testing.T) {
+	flowSvc := &fakeFlowService{
+		byID: map[string]*flowmgt.CompleteFlowDefinition{
+			"existing-flow-id": {
+				ID:       "existing-flow-id",
+				Handle:   "registration-flow",
+				Name:     "Existing Registration Flow",
+				FlowType: common.FlowTypeRegistration,
+			},
+		},
+		byKey: map[string]*flowmgt.CompleteFlowDefinition{},
+	}
+	flowSvc.byKey[string(common.FlowTypeRegistration)+":registration-flow"] = flowSvc.byID["existing-flow-id"]
+
+	svc := newImportService(nil, nil, flowSvc, nil, nil, nil, nil, nil, nil, nil, nil)
+
+	content := strings.Join([]string{
+		"id: missing-flow-id",
+		"handle: registration-flow",
+		"name: Updated Registration Flow",
+		"flowType: REGISTRATION",
+		"nodes: []",
+		"",
+	}, "\n")
+
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{Content: content})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	require.Len(t, resp.Results, 1)
+	assert.Equal(t, statusSuccess, resp.Results[0].Status)
+	assert.Equal(t, operationUpdate, resp.Results[0].Operation)
+	assert.Equal(t, "existing-flow-id", resp.Results[0].ResourceID)
+	assert.Len(t, flowSvc.created, 0)
+	assert.Len(t, flowSvc.updated, 1)
+	assert.Equal(t, "registration-flow", flowSvc.updated[0].Handle)
+}
+
+func TestImportResources_ApplicationFlowReferencesAreRemappedFromFlowAlias(t *testing.T) {
+	flowSvc := &fakeFlowService{
+		byID: map[string]*flowmgt.CompleteFlowDefinition{
+			"existing-registration-flow-id": {
+				ID:       "existing-registration-flow-id",
+				Handle:   "registration-flow",
+				Name:     "Existing Registration Flow",
+				FlowType: common.FlowTypeRegistration,
+			},
+		},
+		byKey: map[string]*flowmgt.CompleteFlowDefinition{},
+	}
+	flowSvc.byKey[string(common.FlowTypeRegistration)+":registration-flow"] =
+		flowSvc.byID["existing-registration-flow-id"]
+
+	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
+	svc := newImportService(appSvc, nil, flowSvc, nil, nil, nil, nil, nil, nil, nil, nil)
+
+	content := strings.Join([]string{
+		"# resource_type: flow",
+		"id: missing-registration-flow-id",
+		"handle: registration-flow",
+		"name: Updated Registration Flow",
+		"flowType: REGISTRATION",
+		"nodes: []",
+		"",
+		"---",
+		"# resource_type: application",
+		"name: My App",
+		"auth_flow_id: auth-flow-1",
+		"registration_flow_id: missing-registration-flow-id",
+		"",
+	}, "\n")
+
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{Content: content})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	require.Len(t, resp.Results, 2)
+	assert.Equal(t, statusSuccess, resp.Results[0].Status)
+	assert.Equal(t, operationUpdate, resp.Results[0].Operation)
+	assert.Equal(t, "existing-registration-flow-id", resp.Results[0].ResourceID)
+	importedApps := append([]*model.ApplicationDTO{}, appSvc.updated...)
+	importedApps = append(importedApps, appSvc.created...)
+	require.Len(t, importedApps, 1)
+	assert.Equal(t, "existing-registration-flow-id", importedApps[0].RegistrationFlowID)
+}
+
+//nolint:dupl // Test pattern repeated across resource types to verify ID preservation behavior
+func TestImportResources_ThemeUpsertCreatePreservesID(t *testing.T) {
+	themeSvc := &fakeThemeService{byID: map[string]*thememgt.Theme{}, byHandle: map[string]*thememgt.Theme{}}
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, themeSvc, nil, nil, nil)
+
+	content := strings.Join([]string{
+		"id: thm-123",
+		"handle: default-theme",
+		"displayName: Default Theme",
+		"theme:",
+		"  colorSchemes:",
+		"    light: {}",
+		"",
+	}, "\n")
+
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{Content: content})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	require.Len(t, resp.Results, 1)
+	assert.Equal(t, statusSuccess, resp.Results[0].Status)
+	assert.Equal(t, operationCreate, resp.Results[0].Operation)
+	assert.Equal(t, "thm-123", resp.Results[0].ResourceID)
+	assert.Len(t, themeSvc.created, 1)
+	assert.Equal(t, "thm-123", themeSvc.created[0].ID)
+}
+
+//nolint:dupl // Test pattern repeated across resource types to verify ID preservation behavior
+func TestImportResources_UserSchemaUpsertCreatePreservesID(t *testing.T) {
+	userSchemaSvc := &fakeUserSchemaService{
+		byID:   map[string]*userschema.UserSchema{},
+		byName: map[string]*userschema.UserSchema{},
+	}
+	svc := newImportService(nil, nil, nil, nil, userSchemaSvc, nil, nil, nil, nil, nil, nil)
+
+	content := strings.Join([]string{
+		"id: usrs-123",
+		"name: customer",
+		"organization_unit_id: ou-1",
+		"schema:",
+		"  type: object",
+		"  properties: {}",
+		"",
+	}, "\n")
+
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{Content: content})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	require.Len(t, resp.Results, 1)
+	assert.Equal(t, statusSuccess, resp.Results[0].Status)
+	assert.Equal(t, operationCreate, resp.Results[0].Operation)
+	assert.Equal(t, "usrs-123", resp.Results[0].ResourceID)
+	assert.Len(t, userSchemaSvc.created, 1)
+	assert.Equal(t, "usrs-123", userSchemaSvc.created[0].ID)
+}
+
+func TestImportResources_UpsertCreatePreservesIDsAcrossResourceTypes(t *testing.T) {
+	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
+	themeSvc := &fakeThemeService{byID: map[string]*thememgt.Theme{}, byHandle: map[string]*thememgt.Theme{}}
+	userSchemaSvc := &fakeUserSchemaService{
+		byID:   map[string]*userschema.UserSchema{},
+		byName: map[string]*userschema.UserSchema{},
+	}
+	flowSvc := &fakeFlowService{
+		byID:  map[string]*flowmgt.CompleteFlowDefinition{},
+		byKey: map[string]*flowmgt.CompleteFlowDefinition{},
+	}
+
+	svc := newImportService(nil, nil, flowSvc, ouSvc, userSchemaSvc, nil, nil, themeSvc, nil, nil, nil)
+
+	content := strings.Join([]string{
+		"id: ou-123",
+		"handle: eng",
+		"name: Engineering",
+		"description: Engineering OU",
+		"",
+		"---",
+		"id: thm-123",
+		"handle: default-theme",
+		"displayName: Default Theme",
+		"theme:",
+		"  colorSchemes:",
+		"    light: {}",
+		"",
+		"---",
+		"id: usrs-123",
+		"name: customer",
+		"organization_unit_id: ou-123",
+		"schema:",
+		"  type: object",
+		"  properties: {}",
+		"",
+		"---",
+		"id: flow-123",
+		"handle: registration-flow",
+		"name: Registration Flow",
+		"flowType: REGISTRATION",
+		"nodes: []",
+		"",
+	}, "\n")
+
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{Content: content})
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	require.NotNil(t, resp.Summary)
+	assert.Equal(t, 4, resp.Summary.Imported)
+	assert.Equal(t, 0, resp.Summary.Failed)
+	require.Len(t, resp.Results, 4)
+
+	assert.Equal(t, "ou-123", resp.Results[0].ResourceID)
+	assert.Equal(t, statusSuccess, resp.Results[0].Status)
+	assert.Equal(t, operationCreate, resp.Results[0].Operation)
+
+	assert.Equal(t, "usrs-123", resp.Results[1].ResourceID)
+	assert.Equal(t, statusSuccess, resp.Results[1].Status)
+	assert.Equal(t, operationCreate, resp.Results[1].Operation)
+
+	assert.Equal(t, "flow-123", resp.Results[2].ResourceID)
+	assert.Equal(t, statusSuccess, resp.Results[2].Status)
+	assert.Equal(t, operationCreate, resp.Results[2].Operation)
+
+	assert.Equal(t, "thm-123", resp.Results[3].ResourceID)
+	assert.Equal(t, statusSuccess, resp.Results[3].Status)
+	assert.Equal(t, operationCreate, resp.Results[3].Operation)
+
+	require.Len(t, ouSvc.created, 1)
+	assert.Equal(t, "ou-123", ouSvc.created[0].ID)
+
+	require.Len(t, userSchemaSvc.created, 1)
+	assert.Equal(t, "usrs-123", userSchemaSvc.created[0].ID)
+
+	require.Len(t, flowSvc.created, 1)
+	assert.Equal(t, "flow-123", flowSvc.created[0].ID)
+
+	require.Len(t, themeSvc.created, 1)
+	assert.Equal(t, "thm-123", themeSvc.created[0].ID)
+}
+
+func TestImportResources_StripsClientSecretForPublicClientWithNoneAuthMethod(t *testing.T) {
+	content := strings.Join([]string{
+		"id: app-1",
+		"name: My App",
+		"auth_flow_id: flow-1",
+		"inbound_auth_config:",
+		"  - type: oauth2",
+		"    config:",
+		"      client_id: app-client",
+		"      client_secret: should-be-removed",
+		"      redirect_uris:",
+		"        - https://localhost:3000/callback",
+		"      grant_types:",
+		"        - authorization_code",
+		"      response_types:",
+		"        - code",
+		"      token_endpoint_auth_method: none",
+		"      pkce_required: true",
+		"      public_client: true",
+		"",
+	}, "\n")
+	appSvc, resp, err := runOAuthClientSecretImport(t, content)
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	require.Len(t, appSvc.created, 1)
+	require.Len(t, appSvc.created[0].InboundAuthConfig, 1)
+	require.NotNil(t, appSvc.created[0].InboundAuthConfig[0].OAuthAppConfig)
+	assert.Equal(t, "", appSvc.created[0].InboundAuthConfig[0].OAuthAppConfig.ClientSecret)
+	assert.Equal(t, statusSuccess, resp.Results[0].Status)
+}
+
+func TestImportResources_KeepsClientSecretForConfidentialClient(t *testing.T) {
+	content := strings.Join([]string{
+		"id: app-1",
+		"name: My App",
+		"auth_flow_id: flow-1",
+		"inbound_auth_config:",
+		"  - type: oauth2",
+		"    config:",
+		"      client_id: app-client",
+		"      client_secret: keep-me",
+		"      redirect_uris:",
+		"        - https://localhost:3000/callback",
+		"      grant_types:",
+		"        - authorization_code",
+		"      response_types:",
+		"        - code",
+		"      token_endpoint_auth_method: client_secret_basic",
+		"      public_client: false",
+		"",
+	}, "\n")
+	appSvc, resp, err := runOAuthClientSecretImport(t, content)
+
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	require.Len(t, appSvc.created, 1)
+	require.Len(t, appSvc.created[0].InboundAuthConfig, 1)
+	require.NotNil(t, appSvc.created[0].InboundAuthConfig[0].OAuthAppConfig)
+	assert.Equal(t, "keep-me", appSvc.created[0].InboundAuthConfig[0].OAuthAppConfig.ClientSecret)
+	assert.Equal(t, statusSuccess, resp.Results[0].Status)
+}
+
+func TestOrderDocumentsByDependencies(t *testing.T) {
+	docs := []parsedDocument{
+		{ResourceType: resourceTypeApplication, Sequence: 2},
+		{ResourceType: resourceTypeFlow, Sequence: 1},
+		{ResourceType: resourceTypeIdentityProvider, Sequence: 0},
+	}
+
+	ordered := orderDocumentsByDependencies(docs)
+	require.Len(t, ordered, 3)
+	assert.Equal(t, resourceTypeIdentityProvider, ordered[0].ResourceType)
+	assert.Equal(t, resourceTypeFlow, ordered[1].ResourceType)
+	assert.Equal(t, resourceTypeApplication, ordered[2].ResourceType)
+}
+
+func TestImportResources_FileTargetReturnsError(t *testing.T) {
+	tempHome := t.TempDir()
+
+	config.ResetThunderRuntime()
+	t.Cleanup(config.ResetThunderRuntime)
+	require.NoError(t, config.InitializeThunderRuntime(tempHome, &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: true},
+	}))
+
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+
+	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
+		Content: "id: app-1\nname: My App\nauth_flow_id: flow-1\n",
+		Options: &ImportOptions{Upsert: boolPtr(true), ContinueOnError: boolPtr(true), Target: importTargetFile},
+	})
+
+	require.Nil(t, resp)
+	require.NotNil(t, err)
+	assert.Equal(t, ErrorInvalidImportRequest.Code, err.Code)
+	assert.Contains(t, err.ErrorDescription.DefaultValue, "file target is not supported")
+}
+
+func TestDeleteResource_RemovesDeclarativeFile(t *testing.T) {
+	tempHome := t.TempDir()
+
+	config.ResetThunderRuntime()
+	t.Cleanup(config.ResetThunderRuntime)
+	require.NoError(t, config.InitializeThunderRuntime(tempHome, &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: true},
+	}))
+
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+
+	resourceDir := filepath.Join(tempHome, "repository", "resources", "applications")
+	require.NoError(t, os.MkdirAll(resourceDir, 0o750))
+	require.NoError(t, os.WriteFile(
+		filepath.Join(resourceDir, "app-1.yaml"),
+		[]byte("# resource_type: application\nid: app-1\nname: My App\nauth_flow_id: flow-1\n"),
+		0o600,
+	))
+
+	deleteResp, deleteErr := svc.DeleteResource(context.Background(), &DeleteResourceRequest{
+		ResourceType: resourceTypeApplication,
+		ResourceKey:  "app-1",
+	})
+
+	require.Nil(t, deleteErr)
+	require.NotNil(t, deleteResp)
+	assert.Equal(t, resourceTypeApplication, deleteResp.ResourceType)
+	assert.Equal(t, "app-1", deleteResp.ResourceKey)
+
+	_, statErr := os.Stat(filepath.Join(tempHome, "repository", "resources", "applications", "app-1.yaml"))
+	assert.True(t, os.IsNotExist(statErr))
+}

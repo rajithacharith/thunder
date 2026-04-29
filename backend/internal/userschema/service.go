@@ -45,7 +45,7 @@ type UserSchemaServiceInterface interface {
 	GetUserSchemaList(ctx context.Context, limit, offset int,
 		includeDisplay bool) (*UserSchemaListResponse, *serviceerror.ServiceError)
 	CreateUserSchema(
-		ctx context.Context, request CreateUserSchemaRequest,
+		ctx context.Context, request CreateUserSchemaRequestWithID,
 	) (*UserSchema, *serviceerror.ServiceError)
 	GetUserSchema(ctx context.Context, schemaID string,
 		includeDisplay bool) (*UserSchema, *serviceerror.ServiceError)
@@ -195,7 +195,7 @@ func (us *userSchemaService) listAccessibleUserSchemas(
 
 // CreateUserSchema creates a new user schema.
 func (us *userSchemaService) CreateUserSchema(
-	ctx context.Context, request CreateUserSchemaRequest,
+	ctx context.Context, request CreateUserSchemaRequestWithID,
 ) (*UserSchema, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
 
@@ -235,10 +235,13 @@ func (us *userSchemaService) CreateUserSchema(
 		return nil, logAndReturnServerError(logger, "Failed to check existing user schema", err)
 	}
 
-	id, err := utils.GenerateUUIDv7()
-	if err != nil {
-		logger.Error("Failed to generate UUID", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+	id := request.ID
+	if id == "" {
+		id, err = utils.GenerateUUIDv7()
+		if err != nil {
+			logger.Error("Failed to generate UUID", log.Error(err))
+			return nil, &serviceerror.InternalServerError
+		}
 	}
 
 	userSchema := UserSchema{

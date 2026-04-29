@@ -228,8 +228,8 @@ func (ouh *organizationUnitHandler) handleError(w http.ResponseWriter, svcErr *s
 // sanitizeOrganizationUnitRequest sanitizes the create organization unit request input.
 func (ouh *organizationUnitHandler) sanitizeOrganizationUnitRequest(
 	request OrganizationUnitRequest,
-) OrganizationUnitRequest {
-	return OrganizationUnitRequest{
+) OrganizationUnitRequestWithID {
+	return OrganizationUnitRequestWithID{
 		Handle:          sysutils.SanitizeString(request.Handle),
 		Name:            sysutils.SanitizeString(request.Name),
 		Description:     sysutils.SanitizeString(request.Description),
@@ -258,7 +258,7 @@ func extractAndValidateID(w http.ResponseWriter, r *http.Request) (string, bool)
 
 func validateUpdateRequest(
 	w http.ResponseWriter, r *http.Request, ouh *organizationUnitHandler,
-) (OrganizationUnitRequest, bool) {
+) (OrganizationUnitRequestWithID, bool) {
 	updateRequest, err := sysutils.DecodeJSONBody[OrganizationUnitRequest](r)
 	if err != nil {
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, apierror.ErrorResponse{
@@ -266,7 +266,7 @@ func validateUpdateRequest(
 			Message:     ErrorInvalidRequestFormat.Error,
 			Description: ErrorInvalidRequestFormat.ErrorDescription,
 		})
-		return OrganizationUnitRequest{}, true
+		return OrganizationUnitRequestWithID{}, true
 	}
 
 	sanitizedRequest := ouh.sanitizeOrganizationUnitRequest(*updateRequest)

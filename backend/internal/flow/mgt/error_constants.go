@@ -252,6 +252,34 @@ var (
 			DefaultValue: "Declarative flows cannot be modified or deleted",
 		},
 	}
+
+	// ErrorInvalidFlowIDFormat is the error returned when a caller-provided flow ID is not a valid UUID.
+	ErrorInvalidFlowIDFormat = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "FLM-1018",
+		Error: core.I18nMessage{
+			Key:          "error.flowmgtservice.invalid_flow_id_format",
+			DefaultValue: "Invalid flow ID format",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.flowmgtservice.invalid_flow_id_format_description",
+			DefaultValue: "The flow ID must be a valid UUID",
+		},
+	}
+
+	// ErrorDuplicateFlowID is the error returned when a flow with the same ID already exists.
+	ErrorDuplicateFlowID = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "FLM-1019",
+		Error: core.I18nMessage{
+			Key:          "error.flowmgtservice.duplicate_flow_id",
+			DefaultValue: "Duplicate flow ID",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.flowmgtservice.duplicate_flow_id_description",
+			DefaultValue: "Flow ID already exists",
+		},
+	}
 )
 
 // Internal errors

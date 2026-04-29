@@ -62,6 +62,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/email"
 	"github.com/asgardeo/thunder/internal/system/export"
 	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
+	"github.com/asgardeo/thunder/internal/system/importer"
 	"github.com/asgardeo/thunder/internal/system/jose"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -146,7 +147,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// Initialize entity provider
 	entityProvider := entityprovider.InitializeEntityProvider(entityService)
 
-	ouUserResolver, userExporter, err := user.Initialize(
+	userService, ouUserResolver, userExporter, err := user.Initialize(
 		mux, entityService, ouService, userSchemaService, ouAuthzService,
 	)
 	if err != nil {
@@ -292,6 +293,22 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 
 	// Initialize export service with collected exporters
 	_ = export.Initialize(mux, exporters)
+
+	// Initialize import service
+	_ = importer.Initialize(
+		mux,
+		applicationService,
+		idpService,
+		flowMgtService,
+		ouService,
+		userSchemaService,
+		roleService,
+		resourceService,
+		themeMgtService,
+		layoutMgtService,
+		userService,
+		i18nService,
+	)
 
 	flowExecService, err := flowexec.Initialize(mux, flowMgtService, applicationService, execRegistry,
 		observabilitySvc)

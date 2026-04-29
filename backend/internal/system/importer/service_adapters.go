@@ -1,0 +1,758 @@
+/*
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package importer
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+
+	"github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/resource"
+	"github.com/asgardeo/thunder/internal/role"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
+	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
+	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userschema"
+
+	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
+	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
+)
+
+type roleDeclarativeYAML struct {
+	ID          string                     `yaml:"id"`
+	Name        string                     `yaml:"name"`
+	Description string                     `yaml:"description,omitempty"`
+	OUID        string                     `yaml:"ou_id"`
+	Permissions []role.ResourcePermissions `yaml:"permissions"`
+	Assignments []role.RoleAssignment      `yaml:"assignments,omitempty"`
+}
+
+type userDeclarativeYAML struct {
+	ID          string                 `yaml:"id"`
+	Type        string                 `yaml:"type"`
+	OUID        string                 `yaml:"ou_id"`
+	Attributes  map[string]interface{} `yaml:"attributes"`
+	Credentials map[string]interface{} `yaml:"credentials,omitempty"`
+}
+
+type userSchemaDeclarativeYAML struct {
+	ID                    string                       `yaml:"id"`
+	Name                  string                       `yaml:"name"`
+	OUID                  string                       `yaml:"organization_unit_id"`
+	AllowSelfRegistration bool                         `yaml:"allow_self_registration,omitempty"`
+	SystemAttributes      *userschema.SystemAttributes `yaml:"system_attributes,omitempty"`
+	Schema                interface{}                  `yaml:"schema"`
+}
+
+type themeDeclarativeYAML struct {
+	ID          string      `yaml:"id"`
+	Handle      string      `yaml:"handle"`
+	DisplayName string      `yaml:"displayName"`
+	Description string      `yaml:"description,omitempty"`
+	Theme       interface{} `yaml:"theme"`
+}
+
+type layoutDeclarativeYAML struct {
+	ID          string      `yaml:"id"`
+	Handle      string      `yaml:"handle"`
+	DisplayName string      `yaml:"displayName"`
+	Description string      `yaml:"description,omitempty"`
+	Layout      interface{} `yaml:"layout"`
+}
+
+func (s *importService) importOrganizationUnit(
+	ctx context.Context, doc parsedDocument, options *ImportOptions, dryRun bool,
+) ImportItemOutcome {
+	if s.ouService == nil {
+		return unsupportedAdapterOutcome(resourceTypeOrganizationUnit, "organization unit")
+	}
+
+	var req ou.OrganizationUnit
+	if err := doc.Node.Decode(&req); err != nil {
+		return decodeErrorOutcome(resourceTypeOrganizationUnit, req.ID, req.Name, err)
+	}
+
+	createReq := ou.OrganizationUnitRequestWithID(req)
+	updateReq := ou.OrganizationUnitRequestWithID(req)
+
+	if dryRun {
+		if options.IsUpsertEnabled() && req.ID != "" {
+			_, svcErr := s.ouService.GetOrganizationUnit(ctx, req.ID)
+			if svcErr == nil {
+				return successOutcome(resourceTypeOrganizationUnit, req.ID, req.Name, operationUpdate)
+			}
+
+			if !isNotFoundServiceError(svcErr) {
+				return serviceErrorOutcome(resourceTypeOrganizationUnit, req.ID, req.Name, operationUpdate, svcErr)
+			}
+		}
+
+		return successOutcome(resourceTypeOrganizationUnit, req.ID, req.Name, operationCreate)
+	}
+
+	if options.IsUpsertEnabled() && req.ID != "" {
+		updated, svcErr := s.ouService.UpdateOrganizationUnit(ctx, req.ID, updateReq)
+		if svcErr == nil {
+			return successOutcome(resourceTypeOrganizationUnit, updated.ID, updated.Name, operationUpdate)
+		}
+
+		if !isNotFoundServiceError(svcErr) {
+			return serviceErrorOutcome(resourceTypeOrganizationUnit, req.ID, req.Name, operationUpdate, svcErr)
+		}
+
+		created, createErr := s.ouService.CreateOrganizationUnit(ctx, createReq)
+		if createErr != nil {
+			return serviceErrorOutcome(resourceTypeOrganizationUnit, req.ID, req.Name, operationCreate, createErr)
+		}
+
+		return successOutcome(resourceTypeOrganizationUnit, created.ID, created.Name, operationCreate)
+	}
+
+	created, svcErr := s.ouService.CreateOrganizationUnit(ctx, createReq)
+	if svcErr != nil {
+		return serviceErrorOutcome(resourceTypeOrganizationUnit, req.ID, req.Name, operationCreate, svcErr)
+	}
+
+	return successOutcome(resourceTypeOrganizationUnit, created.ID, created.Name, operationCreate)
+}
+
+func (s *importService) importUserSchema(
+	ctx context.Context, doc parsedDocument, options *ImportOptions, dryRun bool,
+) ImportItemOutcome {
+	if s.userSchemaService == nil {
+		return unsupportedAdapterOutcome(resourceTypeUserSchema, "user schema")
+	}
+
+	var req userSchemaDeclarativeYAML
+	if err := doc.Node.Decode(&req); err != nil {
+		return decodeErrorOutcome(resourceTypeUserSchema, req.ID, req.Name, err)
+	}
+
+	var (
+		schemaBytes []byte
+		err         error
+	)
+	switch v := req.Schema.(type) {
+	case string:
+		schemaBytes = []byte(v)
+	default:
+		schemaBytes, err = json.Marshal(v)
+		if err != nil {
+			return ImportItemOutcome{
+				ResourceType: resourceTypeUserSchema,
+				ResourceID:   req.ID,
+				ResourceName: req.Name,
+				Status:       statusFailed,
+				Code:         ErrorInvalidYAMLContent.Code,
+				Message:      fmt.Sprintf("failed to marshal schema: %v", err),
+			}
+		}
+	}
+
+	createReq := userschema.CreateUserSchemaRequestWithID{
+		ID:                    req.ID,
+		Name:                  req.Name,
+		OUID:                  req.OUID,
+		AllowSelfRegistration: req.AllowSelfRegistration,
+		SystemAttributes:      req.SystemAttributes,
+		Schema:                schemaBytes,
+	}
+	updateReq := userschema.UpdateUserSchemaRequest{
+		Name:                  createReq.Name,
+		OUID:                  createReq.OUID,
+		AllowSelfRegistration: createReq.AllowSelfRegistration,
+		SystemAttributes:      createReq.SystemAttributes,
+		Schema:                createReq.Schema,
+	}
+
+	if dryRun {
+		if options.IsUpsertEnabled() && req.ID != "" {
+			_, svcErr := s.userSchemaService.GetUserSchema(ctx, req.ID, false)
+			if svcErr == nil {
+				return successOutcome(resourceTypeUserSchema, req.ID, req.Name, operationUpdate)
+			}
+
+			if !isNotFoundServiceError(svcErr) {
+				return serviceErrorOutcome(resourceTypeUserSchema, req.ID, req.Name, operationUpdate, svcErr)
+			}
+		}
+
+		return successOutcome(resourceTypeUserSchema, req.ID, req.Name, operationCreate)
+	}
+
+	if options.IsUpsertEnabled() && req.ID != "" {
+		updated, svcErr := s.userSchemaService.UpdateUserSchema(ctx, req.ID, updateReq)
+		if svcErr == nil {
+			return successOutcome(resourceTypeUserSchema, updated.ID, updated.Name, operationUpdate)
+		}
+
+		if !isNotFoundServiceError(svcErr) {
+			return serviceErrorOutcome(resourceTypeUserSchema, req.ID, req.Name, operationUpdate, svcErr)
+		}
+
+		created, createErr := s.userSchemaService.CreateUserSchema(ctx, createReq)
+		if createErr != nil {
+			return serviceErrorOutcome(resourceTypeUserSchema, req.ID, req.Name, operationCreate, createErr)
+		}
+		return successOutcome(resourceTypeUserSchema, created.ID, created.Name, operationCreate)
+	}
+
+	created, svcErr := s.userSchemaService.CreateUserSchema(ctx, createReq)
+	if svcErr != nil {
+		return serviceErrorOutcome(resourceTypeUserSchema, req.ID, req.Name, operationCreate, svcErr)
+	}
+	return successOutcome(resourceTypeUserSchema, created.ID, created.Name, operationCreate)
+}
+
+func (s *importService) importRole(
+	ctx context.Context, doc parsedDocument, options *ImportOptions, dryRun bool,
+) ImportItemOutcome {
+	if s.roleService == nil {
+		return unsupportedAdapterOutcome(resourceTypeRole, "role")
+	}
+
+	var req roleDeclarativeYAML
+	if err := doc.Node.Decode(&req); err != nil {
+		return decodeErrorOutcome(resourceTypeRole, req.ID, req.Name, err)
+	}
+
+	createReq := role.RoleCreationDetail{
+		Name:        req.Name,
+		Description: req.Description,
+		OUID:        req.OUID,
+		Permissions: req.Permissions,
+		Assignments: req.Assignments,
+	}
+	updateReq := role.RoleUpdateDetail{
+		Name:        req.Name,
+		Description: req.Description,
+		OUID:        req.OUID,
+		Permissions: req.Permissions,
+	}
+
+	if dryRun {
+		if options.IsUpsertEnabled() && req.ID != "" {
+			_, svcErr := s.roleService.GetRoleWithPermissions(ctx, req.ID)
+			if svcErr == nil {
+				if len(req.Assignments) > 0 {
+					return ImportItemOutcome{
+						ResourceType: resourceTypeRole,
+						ResourceID:   req.ID,
+						ResourceName: req.Name,
+						Operation:    operationUpdate,
+						Status:       statusFailed,
+						Code:         ErrorInvalidImportRequest.Code,
+						Message:      "role assignment updates are not supported in upsert mode",
+					}
+				}
+				return successOutcome(resourceTypeRole, req.ID, req.Name, operationUpdate)
+			}
+
+			if !isNotFoundServiceError(svcErr) {
+				return serviceErrorOutcome(resourceTypeRole, req.ID, req.Name, operationUpdate, svcErr)
+			}
+		}
+
+		return successOutcome(resourceTypeRole, req.ID, req.Name, operationCreate)
+	}
+
+	if options.IsUpsertEnabled() && req.ID != "" {
+		_, svcErr := s.roleService.GetRoleWithPermissions(ctx, req.ID)
+		if svcErr == nil {
+			if len(req.Assignments) > 0 {
+				return ImportItemOutcome{
+					ResourceType: resourceTypeRole,
+					ResourceID:   req.ID,
+					ResourceName: req.Name,
+					Operation:    operationUpdate,
+					Status:       statusFailed,
+					Code:         ErrorInvalidImportRequest.Code,
+					Message:      "role assignment updates are not supported in upsert mode",
+				}
+			}
+
+			updated, updateErr := s.roleService.UpdateRoleWithPermissions(ctx, req.ID, updateReq)
+			if updateErr != nil {
+				return serviceErrorOutcome(resourceTypeRole, req.ID, req.Name, operationUpdate, updateErr)
+			}
+			return successOutcome(resourceTypeRole, updated.ID, updated.Name, operationUpdate)
+		}
+
+		if !isNotFoundServiceError(svcErr) {
+			return serviceErrorOutcome(resourceTypeRole, req.ID, req.Name, operationUpdate, svcErr)
+		}
+
+		// ID-preserving create is not supported; return a clear failure when ID is set but not found.
+		return ImportItemOutcome{
+			ResourceType: resourceTypeRole,
+			ResourceID:   req.ID,
+			ResourceName: req.Name,
+			Operation:    operationCreate,
+			Status:       statusFailed,
+			Code:         ErrorInvalidImportRequest.Code,
+			Message:      "role with the given ID not found; ID-preserving create is not supported",
+		}
+	}
+
+	created, svcErr := s.roleService.CreateRole(ctx, createReq)
+	if svcErr != nil {
+		return serviceErrorOutcome(resourceTypeRole, req.ID, req.Name, operationCreate, svcErr)
+	}
+	return successOutcome(resourceTypeRole, created.ID, created.Name, operationCreate)
+}
+
+func (s *importService) importResourceServer(
+	ctx context.Context, doc parsedDocument, options *ImportOptions, dryRun bool,
+) ImportItemOutcome {
+	if s.resourceService == nil {
+		return unsupportedAdapterOutcome(resourceTypeResourceServer, "resource server")
+	}
+
+	var req resource.ResourceServer
+	if err := doc.Node.Decode(&req); err != nil {
+		return decodeErrorOutcome(resourceTypeResourceServer, req.ID, req.Name, err)
+	}
+
+	if dryRun {
+		if options.IsUpsertEnabled() && req.ID != "" {
+			_, svcErr := s.resourceService.GetResourceServer(ctx, req.ID)
+			if svcErr == nil {
+				return successOutcome(resourceTypeResourceServer, req.ID, req.Name, operationUpdate)
+			}
+
+			if !isNotFoundServiceError(svcErr) {
+				return serviceErrorOutcome(resourceTypeResourceServer, req.ID, req.Name, operationUpdate, svcErr)
+			}
+		}
+
+		return successOutcome(resourceTypeResourceServer, req.ID, req.Name, operationCreate)
+	}
+
+	if options.IsUpsertEnabled() && req.ID != "" {
+		updated, svcErr := s.resourceService.UpdateResourceServer(ctx, req.ID, req)
+		if svcErr == nil {
+			return successOutcome(resourceTypeResourceServer, updated.ID, updated.Name, operationUpdate)
+		}
+
+		if !isNotFoundServiceError(svcErr) {
+			return serviceErrorOutcome(resourceTypeResourceServer, req.ID, req.Name, operationUpdate, svcErr)
+		}
+	}
+
+	created, svcErr := s.resourceService.CreateResourceServer(ctx, req)
+	if svcErr != nil {
+		return serviceErrorOutcome(resourceTypeResourceServer, req.ID, req.Name, operationCreate, svcErr)
+	}
+
+	return successOutcome(resourceTypeResourceServer, created.ID, created.Name, operationCreate)
+}
+
+//nolint:dupl // Theme and layout imports share the same upsert pattern with type-specific services.
+func (s *importService) importTheme(doc parsedDocument, options *ImportOptions, dryRun bool) ImportItemOutcome {
+	if s.themeService == nil {
+		return unsupportedAdapterOutcome(resourceTypeTheme, "theme")
+	}
+
+	var req themeDeclarativeYAML
+	if err := doc.Node.Decode(&req); err != nil {
+		return decodeErrorOutcome(resourceTypeTheme, req.ID, req.DisplayName, err)
+	}
+
+	themeBytes, err := json.Marshal(req.Theme)
+	if err != nil {
+		return ImportItemOutcome{
+			ResourceType: resourceTypeTheme,
+			ResourceID:   req.ID,
+			ResourceName: req.DisplayName,
+			Status:       statusFailed,
+			Code:         ErrorInvalidYAMLContent.Code,
+			Message:      fmt.Sprintf("failed to marshal theme: %v", err),
+		}
+	}
+
+	createReq := thememgt.CreateThemeRequestWithID{
+		ID:          req.ID,
+		Handle:      req.Handle,
+		DisplayName: req.DisplayName,
+		Description: req.Description,
+		Theme:       themeBytes,
+	}
+	updateReq := thememgt.UpdateThemeRequest{
+		Handle:      req.Handle,
+		DisplayName: req.DisplayName,
+		Description: req.Description,
+		Theme:       themeBytes,
+	}
+
+	if dryRun {
+		if options.IsUpsertEnabled() && req.ID != "" {
+			_, svcErr := s.themeService.GetTheme(req.ID)
+			if svcErr == nil {
+				return successOutcome(resourceTypeTheme, req.ID, req.DisplayName, operationUpdate)
+			}
+
+			if !isNotFoundServiceError(svcErr) {
+				return serviceErrorOutcome(resourceTypeTheme, req.ID, req.DisplayName, operationUpdate, svcErr)
+			}
+		}
+
+		return successOutcome(resourceTypeTheme, req.ID, req.DisplayName, operationCreate)
+	}
+
+	if options.IsUpsertEnabled() && req.ID != "" {
+		updated, svcErr := s.themeService.UpdateTheme(req.ID, updateReq)
+		if svcErr == nil {
+			return successOutcome(resourceTypeTheme, updated.ID, updated.DisplayName, operationUpdate)
+		}
+
+		if !isNotFoundServiceError(svcErr) {
+			return serviceErrorOutcome(resourceTypeTheme, req.ID, req.DisplayName, operationUpdate, svcErr)
+		}
+
+		created, createErr := s.themeService.CreateTheme(createReq)
+		if createErr != nil {
+			return serviceErrorOutcome(resourceTypeTheme, req.ID, req.DisplayName, operationCreate, createErr)
+		}
+
+		return successOutcome(resourceTypeTheme, created.ID, created.DisplayName, operationCreate)
+	}
+
+	created, svcErr := s.themeService.CreateTheme(createReq)
+	if svcErr != nil {
+		return serviceErrorOutcome(resourceTypeTheme, req.ID, req.DisplayName, operationCreate, svcErr)
+	}
+
+	return successOutcome(resourceTypeTheme, created.ID, created.DisplayName, operationCreate)
+}
+
+//nolint:dupl // Theme and layout imports share the same upsert pattern with type-specific services.
+func (s *importService) importLayout(doc parsedDocument, options *ImportOptions, dryRun bool) ImportItemOutcome {
+	if s.layoutService == nil {
+		return unsupportedAdapterOutcome(resourceTypeLayout, "layout")
+	}
+
+	var req layoutDeclarativeYAML
+	if err := doc.Node.Decode(&req); err != nil {
+		return decodeErrorOutcome(resourceTypeLayout, req.ID, req.DisplayName, err)
+	}
+
+	layoutBytes, err := json.Marshal(req.Layout)
+	if err != nil {
+		return ImportItemOutcome{
+			ResourceType: resourceTypeLayout,
+			ResourceID:   req.ID,
+			ResourceName: req.DisplayName,
+			Status:       statusFailed,
+			Code:         ErrorInvalidYAMLContent.Code,
+			Message:      fmt.Sprintf("failed to marshal layout: %v", err),
+		}
+	}
+
+	createReq := layoutmgt.CreateLayoutRequest{
+		Handle:      req.Handle,
+		DisplayName: req.DisplayName,
+		Description: req.Description,
+		Layout:      layoutBytes,
+	}
+	updateReq := layoutmgt.UpdateLayoutRequest(createReq)
+
+	return importDesignResource(options.IsUpsertEnabled(), dryRun, req.ID, req.DisplayName,
+		func() *serviceerror.ServiceError {
+			_, svcErr := s.layoutService.GetLayout(req.ID)
+			return svcErr
+		},
+		func() (string, string, *serviceerror.ServiceError) {
+			updated, svcErr := s.layoutService.UpdateLayout(req.ID, updateReq)
+			if svcErr != nil {
+				return "", "", svcErr
+			}
+			return updated.ID, updated.DisplayName, nil
+		},
+		func() (string, string, *serviceerror.ServiceError) {
+			created, svcErr := s.layoutService.CreateLayout(createReq)
+			if svcErr != nil {
+				return "", "", svcErr
+			}
+			return created.ID, created.DisplayName, nil
+		},
+		resourceTypeLayout,
+	)
+}
+
+func (s *importService) importUser(
+	ctx context.Context, doc parsedDocument, options *ImportOptions, dryRun bool,
+) ImportItemOutcome {
+	if s.userService == nil {
+		return unsupportedAdapterOutcome(resourceTypeUser, "user")
+	}
+
+	var req userDeclarativeYAML
+	if err := doc.Node.Decode(&req); err != nil {
+		return decodeErrorOutcome(resourceTypeUser, req.ID, "", err)
+	}
+
+	attributesJSON, err := json.Marshal(req.Attributes)
+	if err != nil {
+		return ImportItemOutcome{ResourceType: resourceTypeUser, ResourceID: req.ID, Status: statusFailed,
+			Code: ErrorInvalidYAMLContent.Code, Message: fmt.Sprintf("failed to marshal user attributes: %v", err)}
+	}
+
+	userReq := &user.User{
+		ID:         req.ID,
+		OUID:       req.OUID,
+		Type:       req.Type,
+		Attributes: attributesJSON,
+	}
+
+	credentialsJSON, err := json.Marshal(req.Credentials)
+	if err != nil {
+		return ImportItemOutcome{ResourceType: resourceTypeUser, ResourceID: req.ID, Status: statusFailed,
+			Code: ErrorInvalidYAMLContent.Code, Message: fmt.Sprintf("failed to marshal user credentials: %v", err)}
+	}
+
+	if dryRun {
+		if options.IsUpsertEnabled() && req.ID != "" {
+			_, svcErr := s.userService.GetUser(ctx, req.ID, false)
+			if svcErr == nil {
+				return successOutcome(resourceTypeUser, req.ID, "", operationUpdate)
+			}
+
+			if !isNotFoundServiceError(svcErr) {
+				return serviceErrorOutcome(resourceTypeUser, req.ID, "", operationUpdate, svcErr)
+			}
+		}
+
+		return successOutcome(resourceTypeUser, req.ID, "", operationCreate)
+	}
+
+	if options.IsUpsertEnabled() && req.ID != "" {
+		updated, svcErr := s.userService.UpdateUser(ctx, req.ID, userReq)
+		if svcErr == nil {
+			if len(credentialsJSON) > 0 && string(credentialsJSON) != "null" && string(credentialsJSON) != "{}" {
+				if credErr := s.userService.UpdateUserCredentials(
+					ctx,
+					req.ID,
+					json.RawMessage(credentialsJSON),
+				); credErr != nil {
+					// Profile is already committed; emit a clear partial-failure outcome.
+					return ImportItemOutcome{
+						ResourceType: resourceTypeUser,
+						ResourceID:   req.ID,
+						Operation:    operationUpdate,
+						Status:       statusFailed,
+						Code:         credErr.Code,
+						Message: "user profile updated but credential update failed: " +
+							credErr.Error.DefaultValue,
+					}
+				}
+			}
+			return successOutcome(resourceTypeUser, updated.ID, "", operationUpdate)
+		}
+
+		if !isNotFoundServiceError(svcErr) {
+			return serviceErrorOutcome(resourceTypeUser, req.ID, "", operationUpdate, svcErr)
+		}
+	}
+
+	created, svcErr := s.userService.CreateUser(ctx, userReq)
+	if svcErr != nil {
+		return serviceErrorOutcome(resourceTypeUser, req.ID, "", operationCreate, svcErr)
+	}
+	if len(credentialsJSON) > 0 && string(credentialsJSON) != "null" && string(credentialsJSON) != "{}" {
+		if credErr := s.userService.UpdateUserCredentials(
+			ctx,
+			created.ID,
+			json.RawMessage(credentialsJSON),
+		); credErr != nil {
+			if rollbackErr := s.userService.DeleteUser(ctx, created.ID); rollbackErr != nil {
+				combinedErr := &serviceerror.ServiceError{
+					Code: credErr.Code,
+					Type: credErr.Type,
+					Error: core.I18nMessage{
+						Key: credErr.Error.Key,
+						DefaultValue: fmt.Sprintf(
+							"user credential update failed: %s; rollback delete failed: %s",
+							credErr.Error.DefaultValue,
+							rollbackErr.Error.DefaultValue,
+						),
+					},
+					ErrorDescription: core.I18nMessage{
+						Key: credErr.ErrorDescription.Key,
+						DefaultValue: fmt.Sprintf(
+							"credential update error code %s for user %s; rollback delete error code %s",
+							credErr.Code,
+							created.ID,
+							rollbackErr.Code,
+						),
+					},
+				}
+
+				return serviceErrorOutcome(resourceTypeUser, created.ID, "", operationCreate, combinedErr)
+			}
+
+			return serviceErrorOutcome(resourceTypeUser, created.ID, "", operationCreate, credErr)
+		}
+	}
+
+	return successOutcome(resourceTypeUser, created.ID, "", operationCreate)
+}
+
+func (s *importService) importTranslation(doc parsedDocument, dryRun bool) ImportItemOutcome {
+	if s.translationService == nil {
+		return unsupportedAdapterOutcome(resourceTypeTranslation, "translation")
+	}
+
+	var req i18nmgt.LanguageTranslations
+	if err := doc.Node.Decode(&req); err != nil {
+		return decodeErrorOutcome(resourceTypeTranslation, "", req.Language, err)
+	}
+
+	if dryRun {
+		return successOutcome(resourceTypeTranslation, "", req.Language, operationUpdate)
+	}
+
+	_, i18nErr := s.translationService.SetTranslationOverrides(req.Language, req.Translations)
+	if i18nErr != nil {
+		return ImportItemOutcome{
+			ResourceType: resourceTypeTranslation,
+			ResourceName: req.Language,
+			Operation:    operationUpdate,
+			Status:       statusFailed,
+			Code:         i18nErr.Code,
+			Message:      i18nErr.Error.DefaultValue,
+		}
+	}
+
+	return successOutcome(resourceTypeTranslation, "", req.Language, operationUpdate)
+}
+
+func unsupportedAdapterOutcome(resourceType, name string) ImportItemOutcome {
+	return ImportItemOutcome{
+		ResourceType: resourceType,
+		Status:       statusFailed,
+		Code:         ErrorInvalidImportRequest.Code,
+		Message:      name + " adapter is not configured",
+	}
+}
+
+func decodeErrorOutcome(resourceType, id, name string, err error) ImportItemOutcome {
+	return ImportItemOutcome{
+		ResourceType: resourceType,
+		ResourceID:   id,
+		ResourceName: name,
+		Status:       statusFailed,
+		Code:         ErrorInvalidYAMLContent.Code,
+		Message:      fmt.Sprintf("failed to decode %s document: %v", resourceType, err),
+	}
+}
+
+func serviceErrorOutcome(
+	resourceType, id, name, operation string,
+	svcErr *serviceerror.ServiceError,
+) ImportItemOutcome {
+	return ImportItemOutcome{
+		ResourceType: resourceType,
+		ResourceID:   id,
+		ResourceName: name,
+		Operation:    operation,
+		Status:       statusFailed,
+		Code:         svcErr.Code,
+		Message:      svcErr.Error.DefaultValue,
+	}
+}
+
+func successOutcome(resourceType, id, name, operation string) ImportItemOutcome {
+	return ImportItemOutcome{
+		ResourceType: resourceType,
+		ResourceID:   id,
+		ResourceName: name,
+		Operation:    operation,
+		Status:       statusSuccess,
+	}
+}
+
+func importDesignResource(
+	upsert bool,
+	dryRun bool,
+	resourceID string,
+	resourceName string,
+	getFn func() *serviceerror.ServiceError,
+	updateFn func() (string, string, *serviceerror.ServiceError),
+	createFn func() (string, string, *serviceerror.ServiceError),
+	resourceType string,
+) ImportItemOutcome {
+	if dryRun {
+		if upsert && resourceID != "" {
+			svcErr := getFn()
+			if svcErr == nil {
+				return successOutcome(resourceType, resourceID, resourceName, operationUpdate)
+			}
+
+			if !isNotFoundServiceError(svcErr) {
+				return serviceErrorOutcome(
+					resourceType,
+					resourceID,
+					resourceName,
+					operationUpdate,
+					svcErr,
+				)
+			}
+		}
+
+		return successOutcome(resourceType, resourceID, resourceName, operationCreate)
+	}
+
+	if upsert && resourceID != "" {
+		updatedID, updatedName, svcErr := updateFn()
+		if svcErr == nil {
+			return successOutcome(resourceType, updatedID, updatedName, operationUpdate)
+		}
+
+		if !isNotFoundServiceError(svcErr) {
+			return serviceErrorOutcome(
+				resourceType,
+				resourceID,
+				resourceName,
+				operationUpdate,
+				svcErr,
+			)
+		}
+
+		// ID-preserving create is not supported; return a clear failure when ID is set but not found.
+		return ImportItemOutcome{
+			ResourceType: resourceType,
+			ResourceID:   resourceID,
+			ResourceName: resourceName,
+			Operation:    operationCreate,
+			Status:       statusFailed,
+			Code:         ErrorInvalidImportRequest.Code,
+			Message: fmt.Sprintf("%s with given ID not found; ID-preserving create not supported",
+				resourceType),
+		}
+	}
+
+	createdID, createdName, svcErr := createFn()
+	if svcErr != nil {
+		return serviceErrorOutcome(resourceType, resourceID, resourceName, operationCreate, svcErr)
+	}
+
+	return successOutcome(resourceType, createdID, createdName, operationCreate)
+}

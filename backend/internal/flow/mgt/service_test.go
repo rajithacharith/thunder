@@ -223,6 +223,39 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_ValidationError() {
 	s.Equal(&ErrorMissingFlowHandle, err)
 }
 
+func (s *FlowMgtServiceTestSuite) TestCreateFlow_InvalidProvidedFlowID() {
+	flowDef := &FlowDefinition{
+		ID:       "not-a-uuid",
+		Handle:   "test-handle",
+		Name:     "Test Flow",
+		FlowType: common.FlowTypeAuthentication,
+		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+	}
+
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
+
+	s.Nil(result)
+	s.Equal(&ErrorInvalidFlowIDFormat, err)
+}
+
+func (s *FlowMgtServiceTestSuite) TestCreateFlow_DuplicateProvidedFlowID() {
+	flowID := "550e8400-e29b-41d4-a716-446655440000"
+	flowDef := &FlowDefinition{
+		ID:       flowID,
+		Handle:   "test-handle",
+		Name:     "Test Flow",
+		FlowType: common.FlowTypeAuthentication,
+		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+	}
+
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, flowID).Return(&CompleteFlowDefinition{ID: flowID}, nil)
+
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
+
+	s.Nil(result)
+	s.Equal(&ErrorDuplicateFlowID, err)
+}
+
 func (s *FlowMgtServiceTestSuite) TestCreateFlow_InvalidHandleFormat_Uppercase() {
 	flowDef := &FlowDefinition{
 		Handle:   "Test-Handle",

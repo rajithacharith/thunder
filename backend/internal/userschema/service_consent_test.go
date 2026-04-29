@@ -499,7 +499,7 @@ func (s *UserSchemaServiceConsentTestSuite) TestCreateUserSchema_ConsentSyncFail
 	// Compensation: schema must be deleted.
 	storeMock.On("DeleteUserSchemaByID", mock.Anything, mock.Anything).Return(nil).Maybe()
 
-	request := CreateUserSchemaRequest{
+	request := CreateUserSchemaRequestWithID{
 		Name:   "test-schema",
 		OUID:   testOUID1,
 		Schema: json.RawMessage(`{"email":{"type":"string"}}`),

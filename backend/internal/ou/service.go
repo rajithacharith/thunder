@@ -42,7 +42,7 @@ type OrganizationUnitServiceInterface interface {
 		ctx context.Context, limit, offset int,
 	) (*OrganizationUnitListResponse, *serviceerror.ServiceError)
 	CreateOrganizationUnit(
-		ctx context.Context, request OrganizationUnitRequest,
+		ctx context.Context, request OrganizationUnitRequestWithID,
 	) (OrganizationUnit, *serviceerror.ServiceError)
 	GetOrganizationUnit(ctx context.Context, id string) (OrganizationUnit, *serviceerror.ServiceError)
 	GetOrganizationUnitByPath(ctx context.Context, handlePath string) (OrganizationUnit, *serviceerror.ServiceError)
@@ -50,10 +50,10 @@ type OrganizationUnitServiceInterface interface {
 	IsOrganizationUnitDeclarative(ctx context.Context, id string) bool
 	IsParent(ctx context.Context, parentID, childID string) (bool, *serviceerror.ServiceError)
 	UpdateOrganizationUnit(
-		ctx context.Context, id string, request OrganizationUnitRequest,
+		ctx context.Context, id string, request OrganizationUnitRequestWithID,
 	) (OrganizationUnit, *serviceerror.ServiceError)
 	UpdateOrganizationUnitByPath(
-		ctx context.Context, handlePath string, request OrganizationUnitRequest,
+		ctx context.Context, handlePath string, request OrganizationUnitRequestWithID,
 	) (OrganizationUnit, *serviceerror.ServiceError)
 	DeleteOrganizationUnit(ctx context.Context, id string) *serviceerror.ServiceError
 	DeleteOrganizationUnitByPath(ctx context.Context, handlePath string) *serviceerror.ServiceError
@@ -229,7 +229,7 @@ func (ous *organizationUnitService) listAccessibleOrganizationUnits(
 
 // CreateOrganizationUnit creates a new organization unit.
 func (ous *organizationUnitService) CreateOrganizationUnit(
-	ctx context.Context, request OrganizationUnitRequest,
+	ctx context.Context, request OrganizationUnitRequestWithID,
 ) (OrganizationUnit, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Creating organization unit", log.String("name", request.Name))
@@ -291,9 +291,12 @@ func (ous *organizationUnitService) CreateOrganizationUnit(
 			return errors.New("conflict")
 		}
 
-		ouID, err := utils.GenerateUUIDv7()
-		if err != nil {
-			return err
+		ouID := request.ID
+		if request.ID == "" {
+			ouID, err = utils.GenerateUUIDv7()
+			if err != nil {
+				return err
+			}
 		}
 
 		createdOU = OrganizationUnit{
@@ -433,7 +436,7 @@ func (ous *organizationUnitService) IsParent(
 
 // UpdateOrganizationUnit updates an organization unit.
 func (ous *organizationUnitService) UpdateOrganizationUnit(
-	ctx context.Context, id string, request OrganizationUnitRequest,
+	ctx context.Context, id string, request OrganizationUnitRequestWithID,
 ) (OrganizationUnit, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Updating organization unit", log.String("ouID", id))
@@ -478,7 +481,7 @@ func (ous *organizationUnitService) UpdateOrganizationUnit(
 
 // UpdateOrganizationUnitByPath updates an organization unit by hierarchical handle path.
 func (ous *organizationUnitService) UpdateOrganizationUnitByPath(
-	ctx context.Context, handlePath string, request OrganizationUnitRequest,
+	ctx context.Context, handlePath string, request OrganizationUnitRequestWithID,
 ) (OrganizationUnit, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Updating organization unit by path", log.String("path", handlePath))
@@ -536,7 +539,7 @@ func (ous *organizationUnitService) UpdateOrganizationUnitByPath(
 func (ous *organizationUnitService) updateOUInternal(
 	ctx context.Context,
 	id string,
-	request OrganizationUnitRequest,
+	request OrganizationUnitRequestWithID,
 	existingOU OrganizationUnit,
 	logger *log.Logger,
 ) (OrganizationUnit, *serviceerror.ServiceError) {

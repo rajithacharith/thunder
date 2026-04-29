@@ -101,7 +101,12 @@ func (th *themeMgtHandler) HandleThemePostRequest(w http.ResponseWriter, r *http
 		return
 	}
 
-	createdTheme, svcErr := th.themeMgtService.CreateTheme(*createRequest)
+	createdTheme, svcErr := th.themeMgtService.CreateTheme(CreateThemeRequestWithID{
+		Handle:      createRequest.Handle,
+		DisplayName: createRequest.DisplayName,
+		Description: createRequest.Description,
+		Theme:       createRequest.Theme,
+	})
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
