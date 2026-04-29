@@ -133,8 +133,8 @@ jobs:
       postgres:
         image: postgres:latest
         env:
-          POSTGRES_USER: asgthunder
-          POSTGRES_PASSWORD: asgthunder
+          POSTGRES_USER: dbuser
+          POSTGRES_PASSWORD: dbpassword
           POSTGRES_DB: thunderdb
         ports:
           - 5432:5432
