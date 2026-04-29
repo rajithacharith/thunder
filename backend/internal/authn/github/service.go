@@ -26,7 +26,6 @@ import (
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/entityprovider"
-	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	syshttp "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -49,11 +48,8 @@ type githubOAuthAuthnService struct {
 }
 
 // newGithubOAuthAuthnService creates a new instance of GitHub OAuth authenticator service.
-func newGithubOAuthAuthnService(idpSvc idp.IDPServiceInterface,
-	entityProvider entityprovider.EntityProviderInterface) GithubOAuthAuthnServiceInterface {
-	httpClient := syshttp.NewHTTPClient()
-	internal := authnoauth.NewOAuthAuthnService(httpClient, idpSvc, entityProvider)
-
+func newGithubOAuthAuthnService(internal authnoauth.OAuthAuthnServiceInterface,
+	httpClient syshttp.HTTPClientInterface) GithubOAuthAuthnServiceInterface {
 	return &githubOAuthAuthnService{
 		internal:   internal,
 		httpClient: httpClient,

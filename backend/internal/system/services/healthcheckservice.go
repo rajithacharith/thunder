@@ -22,6 +22,7 @@ import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/system/healthcheck/handler"
+	"github.com/asgardeo/thunder/internal/system/healthcheck/service"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
@@ -31,9 +32,9 @@ type HealthCheckService struct {
 }
 
 // NewHealthCheckService creates a new instance of HealthCheckService.
-func NewHealthCheckService(mux *http.ServeMux) ServiceInterface {
+func NewHealthCheckService(mux *http.ServeMux, svc service.HealthCheckServiceInterface) ServiceInterface {
 	instance := &HealthCheckService{
-		healthCheckHandler: handler.NewHealthCheckHandler(),
+		healthCheckHandler: handler.NewHealthCheckHandler(svc),
 	}
 	instance.RegisterRoutes(mux)
 
