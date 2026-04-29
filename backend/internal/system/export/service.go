@@ -57,7 +57,8 @@ const (
 // parameterizerInterface defines the interface for template parameterization.
 type parameterizerInterface interface {
 	ToParameterizedYAML(obj interface{},
-		resourceType string, resourceName string, rules *declarativeresource.ResourceRules) (string, error)
+		resourceType string, resourceName string,
+		rules *declarativeresource.ResourceRules) (string, map[string]string, error)
 }
 
 // ExportServiceInterface defines the interface for the export service.
@@ -111,6 +112,7 @@ func (es *exportService) ExportResources(
 
 	var exportFiles []ExportFile
 	var exportErrors []declarativeresource.ExportError
+	allVariables := make(map[string]string)
 	resourceCounts := make(map[string]int)
 
 	// Map resource types to their IDs from the request
@@ -140,8 +142,11 @@ func (es *exportService) ExportResources(
 			continue
 		}
 
-		files, errors := es.exportResourcesWithExporter(ctx, exporter, resourceIDs, options)
+		files, vars, errors := es.exportResourcesWithExporter(ctx, exporter, resourceIDs, options)
 		exportFiles = append(exportFiles, files...)
+		for k, v := range vars {
+			allVariables[k] = v
+		}
 		exportErrors = append(exportErrors, errors...)
 		resourceCounts[resourceType] = len(files)
 	}
@@ -160,7 +165,7 @@ func (es *exportService) ExportResources(
 		totalSize += exportFiles[i].Size
 	}
 
-	envFile := es.generateEnvFile(exportFiles)
+	envFile := es.generateEnvFile(exportFiles, allVariables)
 
 	totalFilesCount := len(exportFiles)
 	if envFile != nil {
@@ -183,8 +188,9 @@ func (es *exportService) ExportResources(
 	}, nil
 }
 
-// generateEnvFile extracts template variable names and builds a .env payload.
-func (es *exportService) generateEnvFile(files []ExportFile) *EnvironmentFile {
+// generateEnvFile extracts template variable names from exported files and builds a .env
+// payload, populating each entry with its original value where available.
+func (es *exportService) generateEnvFile(files []ExportFile, variables map[string]string) *EnvironmentFile {
 	variablesSet := make(map[string]struct{})
 
 	for _, file := range files {
@@ -203,16 +209,18 @@ func (es *exportService) generateEnvFile(files []ExportFile) *EnvironmentFile {
 		return nil
 	}
 
-	variables := make([]string, 0, len(variablesSet))
-	for variable := range variablesSet {
-		variables = append(variables, variable)
+	varNames := make([]string, 0, len(variablesSet))
+	for varName := range variablesSet {
+		varNames = append(varNames, varName)
 	}
-	sort.Strings(variables)
+	sort.Strings(varNames)
 
 	var contentBuilder strings.Builder
-	for _, variable := range variables {
-		contentBuilder.WriteString(variable)
-		contentBuilder.WriteString("=\n")
+	for _, varName := range varNames {
+		contentBuilder.WriteString(varName)
+		contentBuilder.WriteString("=")
+		contentBuilder.WriteString(variables[varName])
+		contentBuilder.WriteString("\n")
 	}
 
 	content := contentBuilder.String()
@@ -229,11 +237,12 @@ func (es *exportService) exportResourcesWithExporter(
 	exporter declarativeresource.ResourceExporter,
 	resourceIDs []string,
 	options *ExportOptions,
-) ([]ExportFile, []declarativeresource.ExportError) {
+) ([]ExportFile, map[string]string, []declarativeresource.ExportError) {
 	logger := log.GetLogger().With(log.String("component", "ExportService"))
 	resourceType := exporter.GetResourceType()
 	exportFiles := make([]ExportFile, 0, len(resourceIDs))
 	exportErrors := make([]declarativeresource.ExportError, 0, len(resourceIDs))
+	variableValues := make(map[string]string)
 	var resourceIDList []string
 	if len(resourceIDs) == 1 && resourceIDs[0] == "*" {
 		// Export all resources
@@ -241,7 +250,7 @@ func (es *exportService) exportResourcesWithExporter(
 		if err != nil {
 			logger.Warn("Failed to get all resources",
 				log.String("resourceType", resourceType), log.Any("error", err))
-			return []ExportFile{}, []declarativeresource.ExportError{}
+			return []ExportFile{}, variableValues, []declarativeresource.ExportError{}
 		}
 		resourceIDList = ids
 	} else {
@@ -282,7 +291,7 @@ func (es *exportService) exportResourcesWithExporter(
 			options.Format = formatYAML
 		}
 
-		templateContent, err := es.generateTemplateFromStruct(
+		templateContent, vars, err := es.generateTemplateFromStruct(
 			resource, exporter.GetParameterizerType(), validatedName, exporter)
 		if err != nil {
 			logger.Warn("Failed to generate template from struct",
@@ -296,6 +305,9 @@ func (es *exportService) exportResourcesWithExporter(
 				Code:         "TemplateGenerationError",
 			})
 			continue
+		}
+		for k, v := range vars {
+			variableValues[k] = v
 		}
 		content = addResourceTypeComment(templateContent, resourceType)
 
@@ -314,17 +326,24 @@ func (es *exportService) exportResourcesWithExporter(
 		exportFiles = append(exportFiles, exportFile)
 	}
 
-	return exportFiles, exportErrors
+	return exportFiles, variableValues, exportErrors
 }
 
 func (es *exportService) generateTemplateFromStruct(data interface{},
-	paramResourceType string, resourceName string, exporter declarativeresource.ResourceExporter) (string, error) {
-	template, err := es.parameterizer.ToParameterizedYAML(
-		data, paramResourceType, resourceName, exporter.GetResourceRules())
-	if err != nil {
-		return "", err
+	paramResourceType string, resourceName string,
+	exporter declarativeresource.ResourceExporter) (string, map[string]string, error) {
+	var rules *declarativeresource.ResourceRules
+	if pr, ok := exporter.(declarativeresource.PerResourceRuler); ok {
+		rules = pr.GetResourceRulesForResource(data)
+	} else {
+		rules = exporter.GetResourceRules()
 	}
-	return template, nil
+	template, vars, err := es.parameterizer.ToParameterizedYAML(
+		data, paramResourceType, resourceName, rules)
+	if err != nil {
+		return "", nil, err
+	}
+	return template, vars, nil
 }
 
 func addResourceTypeComment(content, resourceType string) string {
