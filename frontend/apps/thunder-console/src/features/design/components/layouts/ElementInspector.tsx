@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {getCnPrefix} from '@thunder/utils';
 import {Box, Typography} from '@wso2/oxygen-ui';
 import {useEffect, useRef, useState, type JSX, type ReactNode} from 'react';
 
@@ -35,20 +36,22 @@ const HIGHLIGHT_COLOR = 'rgba(59, 130, 246, 0.15)';
 const BORDER_COLOR = 'rgba(59, 130, 246, 0.7)';
 
 /**
- * Returns Thunder CSS classes from the element.
+ * Returns product name prefixed CSS classes from the element.
  * Since the preview now renders the same adapters as the Gate app,
- * Thunder classes (e.g. ThunderFlow--text) are present directly in the DOM.
+ * product name prefixed classes are present directly in the DOM.
  */
-function getThunderClasses(el: HTMLElement): string[] {
-  return Array.from(el.classList).filter((c) => c.startsWith('Thunder'));
+function getProductNamePrefixedClasses(el: HTMLElement): string[] {
+  const prefix = getCnPrefix();
+  return Array.from(el.classList).filter((c) => c.startsWith(prefix));
 }
 
 /**
- * Picks the best Thunder class to use as a CSS selector.
+ * Picks the best product name prefixed class to use as a CSS selector.
  * Prefers classes with `--` (BEM modifier pattern).
  */
 function pickBestClass(classes: string[]): string | undefined {
-  return classes.find((c) => c.startsWith('Thunder') && c.includes('--')) ?? classes[0];
+  const prefix = getCnPrefix();
+  return classes.find((c) => c.startsWith(prefix) && c.includes('--')) ?? classes[0];
 }
 
 /**
@@ -82,9 +85,9 @@ export default function ElementInspector({
         return;
       }
 
-      // Walk up to the nearest element with Thunder classes so structural
+      // Walk up to the nearest element with product name prefixed classes so structural
       // wrapper divs (Box, ThemeProvider, etc.) are skipped by the inspector.
-      while (target && target !== container && getThunderClasses(target).length === 0) {
+      while (target && target !== container && getProductNamePrefixedClasses(target).length === 0) {
         if (!target.parentElement) break;
         target = target.parentElement;
       }
@@ -93,7 +96,7 @@ export default function ElementInspector({
         return;
       }
 
-      const classes = getThunderClasses(target);
+      const classes = getProductNamePrefixedClasses(target);
       const rect = target.getBoundingClientRect();
       const containerRect = container.getBoundingClientRect();
 
@@ -115,15 +118,15 @@ export default function ElementInspector({
       e.preventDefault();
       e.stopPropagation();
 
-      // Walk up to nearest Thunder-classed element (same logic as hover)
+      // Walk up to nearest element with product name prefixed class (same logic as hover)
       let target = e.target as HTMLElement;
-      while (target && target !== container && getThunderClasses(target).length === 0) {
+      while (target && target !== container && getProductNamePrefixedClasses(target).length === 0) {
         if (!target.parentElement) break;
         target = target.parentElement;
       }
       if (!target || target === container) return;
 
-      const classes = getThunderClasses(target);
+      const classes = getProductNamePrefixedClasses(target);
       const bestClass = pickBestClass(classes);
 
       if (bestClass) {

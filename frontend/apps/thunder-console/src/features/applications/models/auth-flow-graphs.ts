@@ -18,7 +18,7 @@
 
 /**
  * Authentication flow graph identifiers that define the available authentication flows
- * supported by the Thunder identity management platform.
+ * supported by the platform.
  *
  * These graph IDs correspond to pre-configured authentication flow definitions in the backend
  * that orchestrate the authentication process based on the selected identity providers and
@@ -70,7 +70,7 @@ export const AUTH_FLOW_GRAPHS = {
 
 /**
  * Registration flow graph identifiers that define the available user registration flows
- * supported by the Thunder identity management platform.
+ * supported by the identity management platform.
  *
  * These graph IDs correspond to pre-configured registration flow definitions in the backend
  * that orchestrate the user onboarding process based on the selected registration methods

@@ -20,9 +20,15 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
 import {ConfigProvider} from '@thunder/contexts';
 import {LoggerProvider, LogLevel} from '@thunder/logger/react';
+import {setCnPrefix} from '@thunder/utils';
 import {StrictMode} from 'react';
 import * as ReactDOM from 'react-dom/client';
 import AppWithDecorators from './AppWithDecorators';
+
+// Initialize the class name prefix from runtime config (e.g., "<PRODUCT_NAME>" -> "<PRODUCT_NAME>SignIn--root")
+if (typeof window !== 'undefined') {
+  setCnPrefix(window.__THUNDER_RUNTIME_CONFIG__?.brand?.product_name ?? '');
+}
 
 const queryClient: QueryClient = new QueryClient({
   defaultOptions: {

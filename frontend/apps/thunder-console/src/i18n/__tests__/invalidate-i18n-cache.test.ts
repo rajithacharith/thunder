@@ -24,7 +24,7 @@ import {
 } from '../invalidate-i18n-cache';
 
 describe('invalidate-i18n-cache', () => {
-  const I18N_CACHE_INVALIDATE_KEY = 'thunderI18nCacheInvalidate';
+  const I18N_CACHE_INVALIDATE_KEY = '__I18nCacheInvalidate__';
 
   beforeEach(() => {
     // Clean up the global key before each test

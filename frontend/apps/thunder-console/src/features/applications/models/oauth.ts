@@ -21,7 +21,7 @@ import type {TokenConfig} from './token';
 /**
  * OAuth2 Grant Type
  *
- * Supported OAuth2 grant types in the Thunder platform.
+ * Supported OAuth2 grant types in the platform.
  *
  * @public
  */

@@ -23,7 +23,7 @@ import UserTypeQueryKeys from '../constants/userTypeQueryKeys';
 import type {ApiUserSchema} from '../types/user-types';
 
 /**
- * Custom React hook to fetch a single user schema (user type) by ID from the Thunder server.
+ * Custom React hook to fetch a single user schema (user type) by ID from the server.
  *
  * @param id - The unique identifier of the user type to fetch
  * @returns TanStack Query result object containing user type data, loading state, and error information

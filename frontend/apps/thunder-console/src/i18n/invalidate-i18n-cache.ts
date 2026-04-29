@@ -19,7 +19,7 @@
 /**
  * Global key for the i18n cache invalidation function.
  */
-const I18N_CACHE_INVALIDATE_KEY = 'thunderI18nCacheInvalidate';
+const I18N_CACHE_INVALIDATE_KEY = '__I18nCacheInvalidate__';
 
 /**
  * Type for the window with i18n cache invalidation function.

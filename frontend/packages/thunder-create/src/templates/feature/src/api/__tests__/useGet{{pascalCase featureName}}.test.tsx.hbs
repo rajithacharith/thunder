@@ -34,7 +34,7 @@ vi.mock('@asgardeo/react', () => ({
 
 vi.mock('@thunder/contexts', () => ({
   useConfig: () => ({
-    getServerUrl: () => 'https://api.thunder.local',
+    getServerUrl: () => 'https://api.local',
   }),
 }));
 
@@ -86,7 +86,7 @@ describe('useGet{{pascalCase featureName}}', () => {
 
     expect(result.current.data).toEqual(mock{{pascalCase featureName}});
     expect(mockHttp.request).toHaveBeenCalledWith({
-      url: 'https://api.thunder.local/{{kebabCase featureName}}s/test-{{kebabCase featureName}}-id',
+      url: 'https://api.local/{{kebabCase featureName}}s/test-{{kebabCase featureName}}-id',
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

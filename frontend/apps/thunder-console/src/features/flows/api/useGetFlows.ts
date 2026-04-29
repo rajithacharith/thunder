@@ -42,7 +42,7 @@ export interface UseGetFlowsParams {
 }
 
 /**
- * Custom React hook to fetch a paginated list of flows from the Thunder server.
+ * Custom React hook to fetch a paginated list of flows from the server.
  *
  * This hook uses TanStack Query to manage the server state and provides automatic
  * caching, refetching, and background updates. The query is keyed by the pagination

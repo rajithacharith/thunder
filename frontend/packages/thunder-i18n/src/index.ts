@@ -17,7 +17,7 @@
  */
 
 /**
- * Thunder i18n - Translation resources for Thunder applications
+ * i18n - Translation resources for applications
  *
  * This package provides translation resources organized by language and namespace.
  * Applications should use react-i18next directly for i18n functionality.
@@ -26,7 +26,7 @@
  * ```tsx
  * import i18n from 'i18next';
  * import { initReactI18next } from 'react-i18next';
- * import enUS from '@thunder/i18n/locales/en-US';
+ * import enUS from '@<namespace>/i18n/locales/en-US';
  *
  * i18n
  *   .use(initReactI18next)

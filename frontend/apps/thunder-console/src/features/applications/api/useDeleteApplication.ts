@@ -24,7 +24,7 @@ import {useTranslation} from 'react-i18next';
 import ApplicationQueryKeys from '../constants/application-query-keys';
 
 /**
- * Custom React hook to delete an application from the Thunder server.
+ * Custom React hook to delete an application from the server.
  *
  * This hook uses TanStack Query mutations to handle the application deletion process,
  * providing loading states and error handling. Upon successful deletion, it automatically

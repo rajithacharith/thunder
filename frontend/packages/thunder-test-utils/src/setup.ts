@@ -16,8 +16,6 @@
  * under the License.
  */
 
-/* eslint-disable max-classes-per-file */
-
 import '@testing-library/jest-dom';
 import {cleanup} from '@testing-library/react';
 import enUS from '@thunder/i18n/locales/en-US';
@@ -37,7 +35,6 @@ beforeAll(async () => {
         integrations: enUS.integrations,
         applications: enUS.applications,
         groups: enUS.groups,
-        dashboard: enUS.dashboard,
         auth: enUS.auth,
         mfa: enUS.mfa,
         social: enUS.social,
@@ -67,7 +64,7 @@ afterEach(() => {
 // This is a known issue with jsdom/cssstyle when using CSS variables like `var(--rowBorderColor)` in border shorthand
 // eslint-disable-next-line @typescript-eslint/unbound-method
 const originalSetProperty = window.CSSStyleDeclaration.prototype.setProperty;
-// eslint-disable-next-line func-names
+
 window.CSSStyleDeclaration.prototype.setProperty = function (
   this: CSSStyleDeclaration,
   property: string,
@@ -121,7 +118,6 @@ global.IntersectionObserver = class IntersectionObserver {
     return this;
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   takeRecords() {
     return [];
   }

@@ -23,7 +23,7 @@ import UserTypeQueryKeys from '../constants/userTypeQueryKeys';
 import type {UserSchemaListParams, UserSchemaListResponse} from '../types/user-types';
 
 /**
- * Custom React hook to fetch a paginated list of user schemas (user types) from the Thunder server.
+ * Custom React hook to fetch a paginated list of user schemas (user types) from the server.
  *
  * @param params - Optional pagination parameters
  * @param params.limit - Maximum number of records to return

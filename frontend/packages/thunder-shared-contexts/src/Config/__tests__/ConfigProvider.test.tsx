@@ -95,7 +95,7 @@ describe('ConfigProvider', () => {
           </ConfigProvider>,
         );
       });
-    }).toThrow('Thunder runtime configuration is not available');
+    }).toThrow('Runtime configuration is not available');
   });
 
   it('provides server URL with HTTPS when http_only is false', () => {
@@ -111,11 +111,11 @@ describe('ConfigProvider', () => {
   it('uses public_url for server URL when provided', () => {
     renderWithConfig(
       buildConfig({
-        server: {hostname: 'localhost', port: 8090, http_only: false, public_url: 'https://thunder.example.com'},
+        server: {hostname: 'localhost', port: 8090, http_only: false, public_url: 'https://example.com'},
       }),
       ConfigConsumer,
     );
-    expect(getTestId('server-url')).toBe('https://thunder.example.com');
+    expect(getTestId('server-url')).toBe('https://example.com');
   });
 
   // --- getTrustedIssuerUrl ---

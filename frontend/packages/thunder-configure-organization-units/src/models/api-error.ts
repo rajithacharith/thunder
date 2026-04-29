@@ -19,7 +19,7 @@
 /**
  * Standard API Error Structure
  *
- * Represents the error response body returned by the Thunder API
+ * Represents the error response body returned by the API
  * when an operation fails.
  *
  * @public

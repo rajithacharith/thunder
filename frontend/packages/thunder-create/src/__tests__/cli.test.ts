@@ -76,7 +76,7 @@ describe('CLI Integration', () => {
   };
 
   it.todo('should show help when no command is provided', async () => {
-    // Skipped: Requires full Thunder workspace setup
+    // Skipped: Requires full workspace setup
     const {stdout} = await runCLI('--help');
 
     expect(stdout).toContain('⚡ Thunder Create');
@@ -86,7 +86,7 @@ describe('CLI Integration', () => {
   });
 
   it.todo('should show feature command help', async () => {
-    // Skipped: Requires full Thunder workspace setup
+    // Skipped: Requires full workspace setup
     const {stdout} = await runCLI('feature --help');
 
     expect(stdout).toContain('Create a new feature module');

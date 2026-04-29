@@ -23,7 +23,7 @@ import IntegrationQueryKeys from '../constants/query-keys';
 import type {IdentityProviderListResponse} from '../models/responses';
 
 /**
- * Custom hook to fetch identity providers (integrations) from the Thunder server.
+ * Custom hook to fetch identity providers (integrations) from the server.
  *
  * @returns TanStack Query result object with identity providers data
  *

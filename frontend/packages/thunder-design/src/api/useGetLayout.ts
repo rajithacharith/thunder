@@ -23,7 +23,7 @@ import DesignQueryKeys from '../constants/design-query-keys';
 import type {LayoutResponse} from '../models/responses';
 
 /**
- * Custom hook to fetch a single layout configuration by ID from the Thunder server.
+ * Custom hook to fetch a single layout configuration by ID from the server.
  *
  * @param layoutId - The unique identifier of the layout configuration
  * @returns TanStack Query result object with layout data

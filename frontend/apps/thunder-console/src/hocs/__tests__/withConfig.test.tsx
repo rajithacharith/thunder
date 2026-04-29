@@ -290,7 +290,7 @@ describe('withConfig (console)', () => {
       expect(capturedProviderProps.signInOptions).toBeUndefined();
     });
 
-    it('does not pass preferences when the trusted issuer is a Thunder instance', () => {
+    it('does not pass preferences when the trusted issuer is a same instance', () => {
       mockConfig.trusted_issuer = {hostname: 'localhost', port: 8090, http_only: true, type: 'thunder'};
       mockIsTrustedIssuerGenericOidc.mockReturnValue(false);
       mockGetServerUrl.mockReturnValue('http://localhost:9443');
@@ -317,7 +317,7 @@ describe('withConfig (console)', () => {
       });
     });
 
-    it('leaves sendCookiesInRequests at SDK default when the trusted issuer is a Thunder instance', () => {
+    it('leaves sendCookiesInRequests at SDK default when the trusted issuer is a same instance', () => {
       mockConfig.trusted_issuer = {hostname: 'localhost', port: 8090, http_only: true, type: 'thunder'};
       mockIsTrustedIssuerGenericOidc.mockReturnValue(false);
       mockGetServerUrl.mockReturnValue('http://localhost:9443');

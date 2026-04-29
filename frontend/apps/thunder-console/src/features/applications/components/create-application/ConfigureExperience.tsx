@@ -81,8 +81,8 @@ export interface ConfigureExperienceProps {
  * application creation onboarding flow.
  *
  * This component allows users to choose between two authentication approaches:
- * 1. Inbuilt - Uses Thunder's hosted login pages for authentication
- * 2. Custom - Uses native/custom UI with Thunder as the authentication API
+ * 1. Inbuilt - Uses product's hosted login pages for authentication
+ * 2. Custom - Uses native/custom UI with product as the authentication API
  *
  * The component displays two selectable cards with radio buttons, providing
  * clear descriptions of each approach. It automatically marks the step as ready

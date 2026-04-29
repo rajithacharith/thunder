@@ -624,9 +624,6 @@ importers:
       '@thunder/logger':
         specifier: workspace:^
         version: link:../thunder-logger
-      '@thunder/test-utils':
-        specifier: workspace:^
-        version: link:../thunder-test-utils
       '@wso2/oxygen-ui':
         specifier: 'catalog:'
         version: 0.8.3(@mui/system@7.3.6(@emotion/react@11.14.0(@types/react@19.2.7)(react@19.2.3))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.7)(react@19.2.3))(@types/react@19.2.7)(react@19.2.3))(@types/react@19.2.7)(react@19.2.3))(@types/react@19.2.7)(@wso2/oxygen-ui-icons-react@0.8.3(react@19.2.3))(dayjs@1.11.18)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -655,6 +652,9 @@ importers:
       '@thunder/prettier-config':
         specifier: workspace:^
         version: link:../thunder-prettier-config
+      '@thunder/test-utils':
+        specifier: workspace:^
+        version: link:../thunder-test-utils
       '@types/node':
         specifier: 'catalog:'
         version: 24.7.2
@@ -1153,6 +1153,9 @@ importers:
       '@thunder/prettier-config':
         specifier: workspace:^
         version: link:../thunder-prettier-config
+      '@thunder/test-utils':
+        specifier: workspace:^
+        version: link:../thunder-test-utils
       '@thunder/types':
         specifier: workspace:^
         version: link:../thunder-types

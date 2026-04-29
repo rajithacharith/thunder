@@ -26,7 +26,7 @@ import type {Application} from './application';
  *
  * @public
  * @remarks
- * Applications in Thunder represent OAuth2/OIDC client applications that can
+ * Applications in the product represent OAuth2/OIDC client applications that can
  * authenticate users and access protected resources. Each application can be
  * configured with:
  * - Basic metadata (name, description, logo, URLs)

@@ -21,7 +21,7 @@ import {CircularProgress, Stack} from '@wso2/oxygen-ui';
 import type {JSX, PropsWithChildren} from 'react';
 
 export interface AuthPageLayoutProps extends PropsWithChildren {
-  /** Class name prefix for Thunder CSS (e.g. 'SignIn' → 'ThunderSignIn--root'). */
+  /** Class name prefix for product name prefixed CSS (e.g. 'SignIn' → '<PRODUCT_NAME>SignIn--root'). */
   variant?: string;
   /** Optional background CSS value (color, gradient, image). Falls back to the theme's background.default. */
   background?: string;

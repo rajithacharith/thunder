@@ -52,7 +52,7 @@ export type DesignProviderProps = PropsWithChildren<{
 }>;
 
 /**
- * React context provider component that provides Thunder design configuration
+ * React context provider component that provides design configuration
  * to all child components.
  *
  * This component loads design data from the server using the client UUID

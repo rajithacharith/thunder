@@ -23,7 +23,7 @@ import DesignContext, {DesignContextType} from './DesignContext';
 import type {Theme} from '../../models/theme';
 
 /**
- * React hook for accessing Thunder design configuration throughout the application.
+ * React hook for accessing design configuration throughout the application.
  *
  * This hook provides access to the design data loaded from the server, resolved theme,
  * and layout configuration. It must be used within a component tree wrapped by
@@ -51,7 +51,7 @@ export default function useDesign(baseTheme?: Theme): DesignContextType {
       });
 
       // MUI's extendTheme only accepts 'light' or 'dark' for defaultColorScheme.
-      // 'system' is a Thunder-level runtime concept — remove it so MUI falls
+      // 'system' is a runtime concept — remove it so MUI falls
       // back to its default.
       if ((themeOptions as Record<string, unknown>)['defaultColorScheme'] === 'system') {
         delete (themeOptions as Record<string, unknown>)['defaultColorScheme'];

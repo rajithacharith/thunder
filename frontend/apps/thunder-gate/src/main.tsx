@@ -26,9 +26,9 @@ import * as ReactDOM from 'react-dom/client';
 import AppWithDecorators from './AppWithDecorators';
 import './index.css';
 
-// Initialize the class name prefix from runtime config (e.g., "Thunder" -> "ThunderSignIn--root")
+// Initialize the class name prefix from runtime config (e.g., "<PRODUCT_NAME>" -> "<PRODUCT_NAME>SignIn--root")
 if (typeof window !== 'undefined') {
-  setCnPrefix(window.__THUNDER_RUNTIME_CONFIG__?.brand?.product_name ?? 'Thunder');
+  setCnPrefix(window.__THUNDER_RUNTIME_CONFIG__?.brand?.product_name ?? '');
 }
 
 const queryClient: QueryClient = new QueryClient({

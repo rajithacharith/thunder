@@ -26,7 +26,7 @@ import type {Application} from '../models/application';
 import type {CreateApplicationRequest} from '../models/requests';
 
 /**
- * Custom React hook to create a new application in the Thunder server.
+ * Custom React hook to create a new application in the server.
  *
  * This hook uses TanStack Query mutations to handle the application creation process,
  * providing loading states, error handling, and automatic cache invalidation. Upon

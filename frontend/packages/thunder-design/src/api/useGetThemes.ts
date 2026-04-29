@@ -28,7 +28,7 @@ interface UseGetThemesParams {
 }
 
 /**
- * Custom hook to fetch the list of theme configurations from the Thunder server.
+ * Custom hook to fetch the list of theme configurations from the server.
  *
  * @param params - Optional query parameters
  * @param params.limit - Maximum number of records to return (default: 30)

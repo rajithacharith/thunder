@@ -17,7 +17,7 @@
  */
 
 /**
- * Thunder user representation.
+ * User representation.
  *
  * Describes the core user shape shared across frontend packages
  * for identity, organizational context, and profile data.

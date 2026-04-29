@@ -25,7 +25,7 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {BasicFlowDefinition} from '../../models/responses';
 import FlowsList from '../FlowsList';
 
-// Mock @thunder/logger/react with accessible mock functions
+// Mock logger with accessible mock functions
 const mockLoggerError = vi.fn();
 vi.mock('@thunder/logger/react', () => ({
   useLogger: () => ({

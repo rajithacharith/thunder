@@ -20,7 +20,7 @@ import type {BaseConfig} from './base';
 import type {FlowTypes} from './metadata';
 
 /**
- * Enumeration of available flow types in the Thunder identity management system.
+ * Enumeration of available flow types in the platform.
  *
  * @public
  * @remarks

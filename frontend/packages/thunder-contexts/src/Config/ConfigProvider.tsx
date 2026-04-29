@@ -34,7 +34,7 @@ export type ConfigProviderProps = PropsWithChildren;
  * configuration with the default configuration values. It performs a deep merge
  * to ensure all configuration properties are properly set.
  *
- * @returns The merged Thunder configuration object
+ * @returns The merged configuration object
  *
  * @internal
  */
@@ -47,7 +47,7 @@ function loadConfig(): ThunderConfig {
 }
 
 /**
- * React context provider component that provides Thunder runtime configuration
+ * React context provider component that provides runtime configuration
  * to all child components.
  *
  * This component loads configuration from window object at

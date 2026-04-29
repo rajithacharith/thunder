@@ -33,7 +33,7 @@ const StyledPaper = styled(Paper)(({theme}) => ({
 }));
 
 export interface AuthCardLayoutProps {
-  /** Class name prefix for Thunder CSS (e.g. 'SignInBox' → 'ThunderSignInBox--root'). */
+  /** Class name prefix for product name prefixed CSS (e.g. 'SignInBox' → '<PRODUCT_NAME>SignInBox--root'). */
   variant?: string;
   /** Logo image sources for light/dark modes. */
   logo?: {

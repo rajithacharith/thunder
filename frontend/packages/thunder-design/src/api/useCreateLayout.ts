@@ -24,7 +24,7 @@ import type {CreateLayoutRequest} from '../models/requests';
 import type {LayoutResponse} from '../models/responses';
 
 /**
- * Custom hook to create a new layout configuration in the Thunder server.
+ * Custom hook to create a new layout configuration in the server.
  *
  * @returns TanStack Query mutation object for creating layout configurations
  */

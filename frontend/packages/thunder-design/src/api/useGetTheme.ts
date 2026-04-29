@@ -23,7 +23,7 @@ import DesignQueryKeys from '../constants/design-query-keys';
 import type {ThemeResponse} from '../models/responses';
 
 /**
- * Custom hook to fetch a single theme configuration by ID from the Thunder server.
+ * Custom hook to fetch a single theme configuration by ID from the server.
  *
  * @param themeId - The unique identifier of the theme configuration
  * @returns TanStack Query result object with theme data

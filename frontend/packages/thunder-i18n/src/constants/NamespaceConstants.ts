@@ -17,14 +17,14 @@
  */
 
 /**
- * i18n namespace constants for Thunder i18n translations.
+ * i18n namespace constants for i18n translations.
  *
  * @public
  * @remarks
  * These constants define the translation namespaces used for
- * Thunder i18n-related translations. Use these to reference
+ * i18n-related translations. Use these to reference
  * the correct i18n namespace when rendering or processing
- * Thunder i18n content.
+ * i18n content.
  *
  * @example
  * // Using in a translation function

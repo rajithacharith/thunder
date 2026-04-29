@@ -28,7 +28,7 @@ interface UseGetLayoutsParams {
 }
 
 /**
- * Custom hook to fetch the list of layout configurations from the Thunder server.
+ * Custom hook to fetch the list of layout configurations from the server.
  *
  * @param params - Optional query parameters
  * @param params.limit - Maximum number of records to return (default: 30)

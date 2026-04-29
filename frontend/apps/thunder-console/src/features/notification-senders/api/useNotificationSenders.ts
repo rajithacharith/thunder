@@ -23,7 +23,7 @@ import NotificationSenderQueryKeys from '../constants/query-keys';
 import type {NotificationSenderListResponse} from '../models/notification-sender';
 
 /**
- * Custom hook to fetch message notification senders from the Thunder server.
+ * Custom hook to fetch message notification senders from the server.
  *
  * @returns TanStack Query result object with notification senders data
  *
