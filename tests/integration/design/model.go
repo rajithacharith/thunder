@@ -114,6 +114,20 @@ type DesignResolveResponse struct {
 	Layout json.RawMessage `json:"layout,omitempty"`
 }
 
+// ApplicationRef represents a slim application reference returned by the usages endpoint.
+type ApplicationRef struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	ClientID string `json:"clientId,omitempty"`
+}
+
+// DesignUsagesResponse represents the response from the GET /design/usages endpoint.
+type DesignUsagesResponse struct {
+	TotalResults int              `json:"totalResults"`
+	Count        int              `json:"count"`
+	Applications []ApplicationRef `json:"applications"`
+}
+
 // Link represents a pagination link.
 type Link struct {
 	Href string `json:"href"`

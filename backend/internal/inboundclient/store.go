@@ -25,6 +25,7 @@ import (
 
 	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/system/config"
+	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/transaction"
@@ -61,6 +62,13 @@ type inboundClientStoreInterface interface {
 	// return false; file-based stores return true when the inbound client exists in their
 	// in-memory set.
 	IsDeclarative(ctx context.Context, entityID string) bool
+	// GetInboundClientsByThemeID returns all inbound clients that reference the given theme.
+	GetInboundClientsByThemeID(ctx context.Context, themeID string) ([]inboundmodel.InboundClient, error)
+	// GetInboundClientsByLayoutID returns all inbound clients that reference the given layout.
+	GetInboundClientsByLayoutID(ctx context.Context, layoutID string) ([]inboundmodel.InboundClient, error)
+	// GetInboundClientsByFlowID returns all inbound clients that use the given flow as their
+	// authentication flow or registration flow.
+	GetInboundClientsByFlowID(ctx context.Context, flowID string) ([]inboundmodel.InboundClient, error)
 }
 
 // store implements inboundClientStoreInterface using the configured config database.
@@ -355,6 +363,49 @@ func (st *store) InboundClientExists(ctx context.Context, entityID string) (bool
 // IsDeclarative returns false for the DB-backed store since all DB-backed inbound clients are mutable.
 func (st *store) IsDeclarative(_ context.Context, _ string) bool {
 	return false
+}
+
+// GetInboundClientsByThemeID returns all inbound clients that reference the given theme.
+func (st *store) GetInboundClientsByThemeID(ctx context.Context, themeID string) ([]inboundmodel.InboundClient, error) {
+	return st.queryInboundClientList(ctx, queryGetInboundClientsByThemeID, themeID, st.deploymentID)
+}
+
+// GetInboundClientsByLayoutID returns all inbound clients that reference the given layout.
+func (st *store) GetInboundClientsByLayoutID(ctx context.Context, layoutID string) ([]inboundmodel.InboundClient, error) {
+	return st.queryInboundClientList(ctx, queryGetInboundClientsByLayoutID, layoutID, st.deploymentID)
+}
+
+// GetInboundClientsByFlowID returns all inbound clients that use the given flow as their
+// authentication flow or registration flow.
+func (st *store) GetInboundClientsByFlowID(ctx context.Context, flowID string) ([]inboundmodel.InboundClient, error) {
+	return st.queryInboundClientList(ctx, queryGetInboundClientsByFlowID, flowID, st.deploymentID)
+}
+
+// queryInboundClientList is a shared helper to execute a query that returns a list of inbound clients.
+func (st *store) queryInboundClientList(
+	ctx context.Context,
+	q dbmodel.DBQuery,
+	args ...interface{},
+) ([]inboundmodel.InboundClient, error) {
+	dbClient, err := st.dbProvider.GetConfigDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	results, err := dbClient.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	clients := make([]inboundmodel.InboundClient, 0, len(results))
+	for _, row := range results {
+		c, err := buildInboundClientFromRow(row)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build inbound client from result row: %w", err)
+		}
+		clients = append(clients, *c)
+	}
+	return clients, nil
 }
 
 // --- Helper functions ---

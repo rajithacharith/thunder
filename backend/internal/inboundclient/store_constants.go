@@ -85,4 +85,30 @@ var (
 		ID:    "ASQ-APP_MGT-12",
 		Query: "SELECT COUNT(*) as count FROM INBOUND_CLIENT WHERE ENTITY_ID = $1 AND DEPLOYMENT_ID = $2",
 	}
+
+	// queryGetInboundClientsByThemeID lists all inbound clients using a specific theme.
+	queryGetInboundClientsByThemeID = dbmodel.DBQuery{
+		ID: "ASQ-APP_MGT-13",
+		Query: "SELECT app.ENTITY_ID, app.AUTH_FLOW_ID, app.REGISTRATION_FLOW_ID, " +
+			"app.IS_REGISTRATION_FLOW_ENABLED, app.THEME_ID, app.LAYOUT_ID, app.PROPERTIES " +
+			"FROM INBOUND_CLIENT app WHERE app.THEME_ID = $1 AND app.DEPLOYMENT_ID = $2",
+	}
+
+	// queryGetInboundClientsByLayoutID lists all inbound clients using a specific layout.
+	queryGetInboundClientsByLayoutID = dbmodel.DBQuery{
+		ID: "ASQ-APP_MGT-14",
+		Query: "SELECT app.ENTITY_ID, app.AUTH_FLOW_ID, app.REGISTRATION_FLOW_ID, " +
+			"app.IS_REGISTRATION_FLOW_ENABLED, app.THEME_ID, app.LAYOUT_ID, app.PROPERTIES " +
+			"FROM INBOUND_CLIENT app WHERE app.LAYOUT_ID = $1 AND app.DEPLOYMENT_ID = $2",
+	}
+
+	// queryGetInboundClientsByFlowID lists all inbound clients using a specific flow as either
+	// their authentication flow or their registration flow.
+	queryGetInboundClientsByFlowID = dbmodel.DBQuery{
+		ID: "ASQ-APP_MGT-15",
+		Query: "SELECT app.ENTITY_ID, app.AUTH_FLOW_ID, app.REGISTRATION_FLOW_ID, " +
+			"app.IS_REGISTRATION_FLOW_ENABLED, app.THEME_ID, app.LAYOUT_ID, app.PROPERTIES " +
+			"FROM INBOUND_CLIENT app " +
+			"WHERE (app.AUTH_FLOW_ID = $1 OR app.REGISTRATION_FLOW_ID = $1) AND app.DEPLOYMENT_ID = $2",
+	}
 )

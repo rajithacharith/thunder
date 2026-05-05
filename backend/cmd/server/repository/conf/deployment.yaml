@@ -51,6 +51,8 @@ jwt:
 cors:
   allowed_origins:
     - "https://localhost:3000"
+    - "https://localhost:5190"
+    - "https://localhost:5191"
     # - regex: '^https://[a-z0-9-]+\.staging\.example\.com(:[0-9]+)?$'
 
 passkey:
@@ -60,3 +62,6 @@ passkey:
 consent:
   enabled: true
   base_url: "http://localhost:9090/api/v1"
+
+gate_client:
+  port: 5190

@@ -144,6 +144,18 @@ func (c *cachedBackStore) IsDeclarative(ctx context.Context, entityID string) bo
 	return c.inner.IsDeclarative(ctx, entityID)
 }
 
+func (c *cachedBackStore) GetInboundClientsByThemeID(ctx context.Context, themeID string) ([]inboundmodel.InboundClient, error) {
+	return c.inner.GetInboundClientsByThemeID(ctx, themeID)
+}
+
+func (c *cachedBackStore) GetInboundClientsByLayoutID(ctx context.Context, layoutID string) ([]inboundmodel.InboundClient, error) {
+	return c.inner.GetInboundClientsByLayoutID(ctx, layoutID)
+}
+
+func (c *cachedBackStore) GetInboundClientsByFlowID(ctx context.Context, flowID string) ([]inboundmodel.InboundClient, error) {
+	return c.inner.GetInboundClientsByFlowID(ctx, flowID)
+}
+
 // --- Cache helpers ---
 
 func (c *cachedBackStore) cacheInboundClient(ctx context.Context, client *inboundmodel.InboundClient) {

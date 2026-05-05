@@ -408,6 +408,210 @@ func (_c *inboundClientStoreInterfaceMock_GetInboundClientList_Call) RunAndRetur
 	return _c
 }
 
+// GetInboundClientsByFlowID provides a mock function for the type inboundClientStoreInterfaceMock
+func (_mock *inboundClientStoreInterfaceMock) GetInboundClientsByFlowID(ctx context.Context, flowID string) ([]model.InboundClient, error) {
+	ret := _mock.Called(ctx, flowID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetInboundClientsByFlowID")
+	}
+
+	var r0 []model.InboundClient
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]model.InboundClient, error)); ok {
+		return returnFunc(ctx, flowID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []model.InboundClient); ok {
+		r0 = returnFunc(ctx, flowID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]model.InboundClient)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, flowID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// inboundClientStoreInterfaceMock_GetInboundClientsByFlowID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetInboundClientsByFlowID'
+type inboundClientStoreInterfaceMock_GetInboundClientsByFlowID_Call struct {
+	*mock.Call
+}
+
+// GetInboundClientsByFlowID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - flowID string
+func (_e *inboundClientStoreInterfaceMock_Expecter) GetInboundClientsByFlowID(ctx interface{}, flowID interface{}) *inboundClientStoreInterfaceMock_GetInboundClientsByFlowID_Call {
+	return &inboundClientStoreInterfaceMock_GetInboundClientsByFlowID_Call{Call: _e.mock.On("GetInboundClientsByFlowID", ctx, flowID)}
+}
+
+func (_c *inboundClientStoreInterfaceMock_GetInboundClientsByFlowID_Call) Run(run func(ctx context.Context, flowID string)) *inboundClientStoreInterfaceMock_GetInboundClientsByFlowID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *inboundClientStoreInterfaceMock_GetInboundClientsByFlowID_Call) Return(inboundClients []model.InboundClient, err error) *inboundClientStoreInterfaceMock_GetInboundClientsByFlowID_Call {
+	_c.Call.Return(inboundClients, err)
+	return _c
+}
+
+func (_c *inboundClientStoreInterfaceMock_GetInboundClientsByFlowID_Call) RunAndReturn(run func(ctx context.Context, flowID string) ([]model.InboundClient, error)) *inboundClientStoreInterfaceMock_GetInboundClientsByFlowID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetInboundClientsByLayoutID provides a mock function for the type inboundClientStoreInterfaceMock
+func (_mock *inboundClientStoreInterfaceMock) GetInboundClientsByLayoutID(ctx context.Context, layoutID string) ([]model.InboundClient, error) {
+	ret := _mock.Called(ctx, layoutID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetInboundClientsByLayoutID")
+	}
+
+	var r0 []model.InboundClient
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]model.InboundClient, error)); ok {
+		return returnFunc(ctx, layoutID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []model.InboundClient); ok {
+		r0 = returnFunc(ctx, layoutID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]model.InboundClient)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, layoutID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// inboundClientStoreInterfaceMock_GetInboundClientsByLayoutID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetInboundClientsByLayoutID'
+type inboundClientStoreInterfaceMock_GetInboundClientsByLayoutID_Call struct {
+	*mock.Call
+}
+
+// GetInboundClientsByLayoutID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - layoutID string
+func (_e *inboundClientStoreInterfaceMock_Expecter) GetInboundClientsByLayoutID(ctx interface{}, layoutID interface{}) *inboundClientStoreInterfaceMock_GetInboundClientsByLayoutID_Call {
+	return &inboundClientStoreInterfaceMock_GetInboundClientsByLayoutID_Call{Call: _e.mock.On("GetInboundClientsByLayoutID", ctx, layoutID)}
+}
+
+func (_c *inboundClientStoreInterfaceMock_GetInboundClientsByLayoutID_Call) Run(run func(ctx context.Context, layoutID string)) *inboundClientStoreInterfaceMock_GetInboundClientsByLayoutID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *inboundClientStoreInterfaceMock_GetInboundClientsByLayoutID_Call) Return(inboundClients []model.InboundClient, err error) *inboundClientStoreInterfaceMock_GetInboundClientsByLayoutID_Call {
+	_c.Call.Return(inboundClients, err)
+	return _c
+}
+
+func (_c *inboundClientStoreInterfaceMock_GetInboundClientsByLayoutID_Call) RunAndReturn(run func(ctx context.Context, layoutID string) ([]model.InboundClient, error)) *inboundClientStoreInterfaceMock_GetInboundClientsByLayoutID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetInboundClientsByThemeID provides a mock function for the type inboundClientStoreInterfaceMock
+func (_mock *inboundClientStoreInterfaceMock) GetInboundClientsByThemeID(ctx context.Context, themeID string) ([]model.InboundClient, error) {
+	ret := _mock.Called(ctx, themeID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetInboundClientsByThemeID")
+	}
+
+	var r0 []model.InboundClient
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]model.InboundClient, error)); ok {
+		return returnFunc(ctx, themeID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []model.InboundClient); ok {
+		r0 = returnFunc(ctx, themeID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]model.InboundClient)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, themeID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// inboundClientStoreInterfaceMock_GetInboundClientsByThemeID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetInboundClientsByThemeID'
+type inboundClientStoreInterfaceMock_GetInboundClientsByThemeID_Call struct {
+	*mock.Call
+}
+
+// GetInboundClientsByThemeID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - themeID string
+func (_e *inboundClientStoreInterfaceMock_Expecter) GetInboundClientsByThemeID(ctx interface{}, themeID interface{}) *inboundClientStoreInterfaceMock_GetInboundClientsByThemeID_Call {
+	return &inboundClientStoreInterfaceMock_GetInboundClientsByThemeID_Call{Call: _e.mock.On("GetInboundClientsByThemeID", ctx, themeID)}
+}
+
+func (_c *inboundClientStoreInterfaceMock_GetInboundClientsByThemeID_Call) Run(run func(ctx context.Context, themeID string)) *inboundClientStoreInterfaceMock_GetInboundClientsByThemeID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *inboundClientStoreInterfaceMock_GetInboundClientsByThemeID_Call) Return(inboundClients []model.InboundClient, err error) *inboundClientStoreInterfaceMock_GetInboundClientsByThemeID_Call {
+	_c.Call.Return(inboundClients, err)
+	return _c
+}
+
+func (_c *inboundClientStoreInterfaceMock_GetInboundClientsByThemeID_Call) RunAndReturn(run func(ctx context.Context, themeID string) ([]model.InboundClient, error)) *inboundClientStoreInterfaceMock_GetInboundClientsByThemeID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetOAuthProfileByEntityID provides a mock function for the type inboundClientStoreInterfaceMock
 func (_mock *inboundClientStoreInterfaceMock) GetOAuthProfileByEntityID(ctx context.Context, entityID string) (*model.OAuthProfile, error) {
 	ret := _mock.Called(ctx, entityID)

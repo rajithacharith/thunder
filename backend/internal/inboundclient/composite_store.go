@@ -134,6 +134,42 @@ func (c *compositeStore) IsDeclarative(ctx context.Context, entityID string) boo
 	)
 }
 
+func (c *compositeStore) GetInboundClientsByThemeID(ctx context.Context, themeID string) ([]inboundmodel.InboundClient, error) {
+	dbClients, err := c.dbStore.GetInboundClientsByThemeID(ctx, themeID)
+	if err != nil {
+		return nil, err
+	}
+	fileClients, err := c.fileStore.GetInboundClientsByThemeID(ctx, themeID)
+	if err != nil {
+		return nil, err
+	}
+	return mergeAndDeduplicateInboundClients(dbClients, fileClients), nil
+}
+
+func (c *compositeStore) GetInboundClientsByLayoutID(ctx context.Context, layoutID string) ([]inboundmodel.InboundClient, error) {
+	dbClients, err := c.dbStore.GetInboundClientsByLayoutID(ctx, layoutID)
+	if err != nil {
+		return nil, err
+	}
+	fileClients, err := c.fileStore.GetInboundClientsByLayoutID(ctx, layoutID)
+	if err != nil {
+		return nil, err
+	}
+	return mergeAndDeduplicateInboundClients(dbClients, fileClients), nil
+}
+
+func (c *compositeStore) GetInboundClientsByFlowID(ctx context.Context, flowID string) ([]inboundmodel.InboundClient, error) {
+	dbClients, err := c.dbStore.GetInboundClientsByFlowID(ctx, flowID)
+	if err != nil {
+		return nil, err
+	}
+	fileClients, err := c.fileStore.GetInboundClientsByFlowID(ctx, flowID)
+	if err != nil {
+		return nil, err
+	}
+	return mergeAndDeduplicateInboundClients(dbClients, fileClients), nil
+}
+
 // mergeAndDeduplicateInboundClients merges inbound clients from the DB and file stores,
 // deduplicating by entity ID. DB entries are marked mutable (IsReadOnly=false); file entries
 // declarative (IsReadOnly=true).

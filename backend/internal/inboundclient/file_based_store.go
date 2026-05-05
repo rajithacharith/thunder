@@ -180,3 +180,53 @@ func (f *fileBasedStore) IsDeclarative(_ context.Context, entityID string) bool 
 	_, err := f.GenericFileBasedStore.Get(entityID)
 	return err == nil
 }
+
+// GetInboundClientsByThemeID returns all declarative inbound clients using the given theme.
+func (f *fileBasedStore) GetInboundClientsByThemeID(_ context.Context, themeID string) ([]inboundmodel.InboundClient, error) {
+	if themeID == "" {
+		return []inboundmodel.InboundClient{}, nil
+	}
+	return f.filterClients(func(c *inboundmodel.InboundClient) bool {
+		return c.ThemeID == themeID
+	})
+}
+
+// GetInboundClientsByLayoutID returns all declarative inbound clients using the given layout.
+func (f *fileBasedStore) GetInboundClientsByLayoutID(_ context.Context, layoutID string) ([]inboundmodel.InboundClient, error) {
+	if layoutID == "" {
+		return []inboundmodel.InboundClient{}, nil
+	}
+	return f.filterClients(func(c *inboundmodel.InboundClient) bool {
+		return c.LayoutID == layoutID
+	})
+}
+
+// GetInboundClientsByFlowID returns all declarative inbound clients using the given flow as
+// their authentication flow or registration flow.
+func (f *fileBasedStore) GetInboundClientsByFlowID(_ context.Context, flowID string) ([]inboundmodel.InboundClient, error) {
+	if flowID == "" {
+		return []inboundmodel.InboundClient{}, nil
+	}
+	return f.filterClients(func(c *inboundmodel.InboundClient) bool {
+		return c.AuthFlowID == flowID || c.RegistrationFlowID == flowID
+	})
+}
+
+// filterClients iterates the file store and returns matching inbound clients.
+func (f *fileBasedStore) filterClients(match func(*inboundmodel.InboundClient) bool) ([]inboundmodel.InboundClient, error) {
+	list, err := f.GenericFileBasedStore.List()
+	if err != nil {
+		return nil, err
+	}
+	clients := make([]inboundmodel.InboundClient, 0)
+	for _, item := range list {
+		c, ok := item.Data.(*inboundmodel.InboundClient)
+		if !ok || !match(c) {
+			continue
+		}
+		cp := *c
+		cp.IsReadOnly = true
+		clients = append(clients, cp)
+	}
+	return clients, nil
+}

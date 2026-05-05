@@ -74,6 +74,12 @@ type InboundClientServiceInterface interface {
 	IsDeclarative(ctx context.Context, entityID string) bool
 	// LoadDeclarativeResources loads inbound client profiles from YAML resource files.
 	LoadDeclarativeResources(ctx context.Context, cfg inboundmodel.DeclarativeLoaderConfig) error
+	// GetInboundClientsByThemeID returns all applications using the given theme.
+	GetInboundClientsByThemeID(ctx context.Context, themeID string) ([]inboundmodel.InboundClient, error)
+	// GetInboundClientsByLayoutID returns all applications using the given layout.
+	GetInboundClientsByLayoutID(ctx context.Context, layoutID string) ([]inboundmodel.InboundClient, error)
+	// GetInboundClientsByFlowID returns all applications using the given flow.
+	GetInboundClientsByFlowID(ctx context.Context, flowID string) ([]inboundmodel.InboundClient, error)
 
 	// GetCertificate retrieves the certificate for the given reference type and ID.
 	GetCertificate(ctx context.Context, refType cert.CertificateReferenceType, refID string) (
@@ -469,6 +475,21 @@ func (s *inboundClientService) resolveFlowDefaults(ctx context.Context, c *inbou
 // IsDeclarative reports whether the entity's inbound profile was loaded from a declarative resource file.
 func (s *inboundClientService) IsDeclarative(ctx context.Context, entityID string) bool {
 	return s.store.IsDeclarative(ctx, entityID)
+}
+
+// GetInboundClientsByThemeID returns all applications using the given theme.
+func (s *inboundClientService) GetInboundClientsByThemeID(ctx context.Context, themeID string) ([]inboundmodel.InboundClient, error) {
+	return s.store.GetInboundClientsByThemeID(ctx, themeID)
+}
+
+// GetInboundClientsByLayoutID returns all applications using the given layout.
+func (s *inboundClientService) GetInboundClientsByLayoutID(ctx context.Context, layoutID string) ([]inboundmodel.InboundClient, error) {
+	return s.store.GetInboundClientsByLayoutID(ctx, layoutID)
+}
+
+// GetInboundClientsByFlowID returns all applications using the given flow.
+func (s *inboundClientService) GetInboundClientsByFlowID(ctx context.Context, flowID string) ([]inboundmodel.InboundClient, error) {
+	return s.store.GetInboundClientsByFlowID(ctx, flowID)
 }
 
 // LoadDeclarativeResources loads inbound client profiles from YAML resource files.

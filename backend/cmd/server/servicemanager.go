@@ -42,6 +42,7 @@ import (
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
 	"github.com/asgardeo/thunder/internal/design/resolve"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
+	usages "github.com/asgardeo/thunder/internal/design/usages"
 	"github.com/asgardeo/thunder/internal/entity"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	flowcore "github.com/asgardeo/thunder/internal/flow/core"
@@ -294,6 +295,15 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 
 	// Initialize design resolve service for theme and layout resolution
 	designResolveService := resolve.Initialize(mux, themeMgtService, layoutMgtService, applicationService)
+
+	// Initialize design usages service for reverse-lookup of resources used by applications
+	designUsageResolver := application.NewDesignUsageResolver(inboundClientService, entityProvider)
+	designExistenceChecker := &designResourceExistenceAdapter{
+		themeSvc:  themeMgtService,
+		layoutSvc: layoutMgtService,
+		flowSvc:   flowMgtService,
+	}
+	_ = usages.Initialize(mux, designUsageResolver, designExistenceChecker)
 
 	// Initialize flow metadata service
 	_ = flowmeta.Initialize(mux, applicationService, ouService, designResolveService, i18nService)
