@@ -293,7 +293,6 @@ func (suite *ResourceServerAPITestSuite) TestUpdateResourceServer() {
 	updateReq := UpdateResourceServerRequest{
 		Name:        "Updated Resource Server",
 		Description: "Updated description",
-		Handle:      "updated-handler",
 		Identifier:  "https://api.example.com/updated/",
 		OUID:        testOUID,
 	}
@@ -305,7 +304,7 @@ func (suite *ResourceServerAPITestSuite) TestUpdateResourceServer() {
 	suite.Require().NoError(err)
 	suite.Equal(updateReq.Name, rs.Name)
 	suite.Equal(updateReq.Description, rs.Description)
-	suite.Equal(updateReq.Handle, rs.Handle, "Handle should be updated")
+	suite.Equal("original-handler", rs.Handle, "Handle should remain unchanged after update")
 	suite.Equal(updateReq.Identifier, rs.Identifier, "Identifier should be updated")
 	suite.Equal("/", rs.Delimiter, "Delimiter should remain unchanged after update")
 }
@@ -334,36 +333,7 @@ func (suite *ResourceServerAPITestSuite) TestUpdateResourceServerPreservesHandle
 	suite.Equal("preserve-me", rs.Handle, "Handle should be preserved when not provided in update")
 }
 
-func (suite *ResourceServerAPITestSuite) TestUpdateResourceServerHandleConflict() {
-	rs1 := CreateResourceServerRequest{
-		Name:   "Handle Conflict RS 1",
-		Handle: "handle-conflict-1",
-		OUID:   testOUID,
-	}
-	rs2 := CreateResourceServerRequest{
-		Name:   "Handle Conflict RS 2",
-		Handle: "handle-conflict-2",
-		OUID:   testOUID,
-	}
 
-	rsID1, err := createResourceServer(rs1)
-	suite.Require().NoError(err)
-	defer deleteResourceServer(rsID1)
-
-	rsID2, err := createResourceServer(rs2)
-	suite.Require().NoError(err)
-	defer deleteResourceServer(rsID2)
-
-	updateReq := UpdateResourceServerRequest{
-		Name:   "Handle Conflict RS 2",
-		Handle: "handle-conflict-1",
-		OUID:   testOUID,
-	}
-
-	err = updateResourceServer(rsID2, updateReq)
-	suite.Error(err, "Should fail with handle conflict")
-	suite.Contains(err.Error(), "409")
-}
 
 func (suite *ResourceServerAPITestSuite) TestUpdateResourceServerNotFound() {
 	updateReq := UpdateResourceServerRequest{

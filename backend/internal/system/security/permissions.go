@@ -26,11 +26,6 @@ const (
 	maxPublicPathLength = 4096
 )
 
-// UninitializedPermissionSentinel is returned by permission-resolution functions when
-// InitSystemPermissions has not yet been called. It is intentionally unguessable so that
-// any permission check performed before initialization fails closed.
-const UninitializedPermissionSentinel = "__uninitialized__"
-
 // publicPaths defines the list of public paths using glob patterns.
 // - "*": Matches a single path segment (e.g., /a/*/b).
 // - "**": Matches zero or more path segments (subpaths) at the end of the path (e.g., /a/**).
@@ -291,12 +286,10 @@ func GetSystemPermissions() *SystemPermissions {
 }
 
 // GetSystemRootPermission returns the root system permission string.
-// Returns UninitializedPermissionSentinel if InitSystemPermissions has not been called.
+// It panics if InitSystemPermissions has not been called, which fails closed
+// rather than allowing unauthenticated access.
 func GetSystemRootPermission() string {
-	if sysPerms != nil {
-		return sysPerms.Root
-	}
-	return UninitializedPermissionSentinel
+	return sysPerms.Root
 }
 
 // ---- Action → Permission map ----

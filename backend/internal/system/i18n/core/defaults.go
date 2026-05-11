@@ -806,6 +806,8 @@ var defaultMessages = map[string]string{
 	"error.resourceservice.handle_conflict_description": "The same handle already exists within the specified resource",
 	"error.resourceservice.identifier_conflict": "Identifier conflict",
 	"error.resourceservice.identifier_conflict_description": "A resource server with the same identifier already exists",
+	"error.resourceservice.immutable_handle": "Handle is immutable",
+	"error.resourceservice.immutable_handle_description": "Resource server handle cannot be changed after creation",
 	"error.resourceservice.invalid_delimiter": "Invalid delimiter",
 	"error.resourceservice.invalid_delimiter_description": "Delimiter must be a single valid character (a-z A-Z 0-9 . _ : - /)",
 	"error.resourceservice.invalid_handle": "Invalid handle",
