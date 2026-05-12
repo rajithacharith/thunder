@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -20,6 +20,7 @@ package subscriber
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -231,13 +232,7 @@ func (o *OTelSubscriber) createSpan(evt *event.Event) error {
 
 	// Set span status based on event status
 	if evt.Status == event.StatusFailure {
-		errorMsg := o.getStringData(evt, event.DataKey.Error)
-		if errorMsg == "" {
-			errorMsg = o.getStringData(evt, event.DataKey.FailureReason)
-		}
-		if errorMsg == "" {
-			errorMsg = "unknown error"
-		}
+		errorMsg := o.extractErrorMessage(evt)
 		span.SetStatus(codes.Error, errorMsg)
 		span.RecordError(fmt.Errorf("%s", errorMsg),
 			trace.WithTimestamp(evt.Timestamp))
@@ -282,8 +277,12 @@ func (o *OTelSubscriber) convertDataToAttributes(data map[string]interface{}) []
 		case bool:
 			attrs = append(attrs, attribute.Bool(key, v))
 		default:
-			// Convert other types to string representation
-			attrs = append(attrs, attribute.String(key, fmt.Sprintf("%v", v)))
+			// Serialize complex types (maps, slices) as JSON strings
+			if jsonBytes, err := json.Marshal(v); err == nil {
+				attrs = append(attrs, attribute.String(key, string(jsonBytes)))
+			} else {
+				attrs = append(attrs, attribute.String(key, fmt.Sprintf("%v", v)))
+			}
 		}
 	}
 
@@ -298,6 +297,37 @@ func (o *OTelSubscriber) getStringData(evt *event.Event, key string) string {
 		}
 	}
 	return ""
+}
+
+// extractErrorMessage extracts a human-readable error message from an event.
+// It reads the structured error map from DataKey.Error and falls back to "unknown error".
+func (o *OTelSubscriber) extractErrorMessage(evt *event.Event) string {
+	val, ok := evt.Data[event.DataKey.Error]
+	if !ok {
+		return "unknown error"
+	}
+
+	// Error stored as a plain string.
+	if errStr, ok := val.(string); ok && errStr != "" {
+		return errStr
+	}
+
+	if errMap, ok := val.(map[string]interface{}); ok {
+		if msg, ok := errMap["message"]; ok {
+			// Flow errors: message is a map with a defaultValue key.
+			if msgMap, ok := msg.(map[string]interface{}); ok {
+				if dv, ok := msgMap["defaultValue"].(string); ok && dv != "" {
+					return dv
+				}
+			}
+			// Token errors: message is a plain string.
+			if msgStr, ok := msg.(string); ok && msgStr != "" {
+				return msgStr
+			}
+		}
+	}
+
+	return "unknown error"
 }
 
 // Close shuts down the tracer provider.

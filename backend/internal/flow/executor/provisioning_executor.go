@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -116,7 +116,7 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 	if len(identifyingAttrs) == 0 && len(credentialAttrs) == 0 {
 		logger.Debug("No user attributes provided for provisioning")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "No user attributes provided for provisioning"
+		execResp.Error = &ErrProvisioningUserAttrsMissing
 		return execResp, nil
 	}
 
@@ -124,11 +124,11 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 	if err != nil {
 		logger.Error("Failed to identify user", log.Error(err))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = failureReasonFailedToIdentifyUser
+		execResp.Error = &ErrFailedToIdentifyUser
 		return execResp, nil
 	}
 	if execResp.Status == common.ExecFailure &&
-		execResp.FailureReason == failureReasonAmbiguousUser &&
+		execResp.Error != nil && execResp.Error.Code == ErrAmbiguousUserIdentity.Code &&
 		isCrossOUProvisioningAllowed(ctx) {
 		resolved, err := p.resolveAmbiguousUserForProvisioning(ctx, identifyingAttrs)
 		if err != nil {
@@ -136,9 +136,9 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 		}
 		userID = resolved
 		execResp.Status = ""
-		execResp.FailureReason = ""
+		execResp.Error = nil
 	}
-	if execResp.Status == common.ExecFailure && execResp.FailureReason != failureReasonUserNotFound {
+	if execResp.Status == common.ExecFailure && (execResp.Error == nil || execResp.Error.Code != ErrUserNotFound.Code) {
 		return execResp, nil
 	}
 	if userID != nil && *userID != "" {
@@ -163,13 +163,13 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 	if err != nil {
 		logger.Error("Failed to create user in the store", log.Error(err))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Failed to create user"
+		execResp.Error = &ErrProvisioningFailed
 		return execResp, nil
 	}
 	if createdEntity == nil || createdEntity.ID == "" {
 		logger.Error("Created user is nil or has no ID")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Something went wrong while creating the user"
+		execResp.Error = &ErrProvisioningFailed
 		return execResp, nil
 	}
 
@@ -181,34 +181,12 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 			log.MaskedString(log.LoggerKeyUserID, createdEntity.ID),
 			log.Error(err))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Failed to assign groups and roles"
+		execResp.Error = &ErrProvisioningAssignmentFailed
 		return execResp, nil
 	}
 
-	retAttributes := make(map[string]interface{})
-	if len(createdEntity.Attributes) > 0 {
-		if err := json.Unmarshal(createdEntity.Attributes, &retAttributes); err != nil {
-			logger.Error("Failed to unmarshal user attributes", log.Error(err))
-			return nil, err
-		}
-	}
-
-	authenticatedUser := authncm.AuthenticatedUser{
-		IsAuthenticated: true,
-		UserID:          createdEntity.ID,
-		OUID:            createdEntity.OUID,
-		UserType:        createdEntity.Type,
-		Attributes:      retAttributes,
-	}
-	execResp.AuthenticatedUser = authenticatedUser
-	execResp.Status = common.ExecComplete
-
-	// Set user id in runtime data
-	execResp.RuntimeData[userAttributeUserID] = createdEntity.ID
-
-	// Set the auto-provisioned flag if it's a user auto provisioning scenario
-	if ctx.FlowType == common.FlowTypeAuthentication {
-		execResp.RuntimeData[common.RuntimeKeyUserAutoProvisioned] = dataValueTrue
+	if err := p.buildProvisioningResponse(ctx, createdEntity, execResp, logger); err != nil {
+		return nil, err
 	}
 
 	return execResp, nil
@@ -239,7 +217,7 @@ func (p *provisioningExecutor) handleExistingUser(ctx *core.NodeContext, userID 
 		} else {
 			execResp.Status = common.ExecFailure
 		}
-		execResp.FailureReason = "User already exists"
+		execResp.Error = &ErrUserAlreadyExists
 		return false, nil
 	}
 
@@ -247,7 +225,7 @@ func (p *provisioningExecutor) handleExistingUser(ctx *core.NodeContext, userID 
 	targetOUID := p.getOUID(ctx)
 	if targetOUID == "" {
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Target OU is not set for cross-OU provisioning"
+		execResp.Error = &ErrCrossOUProvisioningTargetMissing
 		return false, nil
 	}
 
@@ -263,7 +241,7 @@ func (p *provisioningExecutor) handleExistingUser(ctx *core.NodeContext, userID 
 		} else {
 			execResp.Status = common.ExecFailure
 		}
-		execResp.FailureReason = "User already exists in the target organization"
+		execResp.Error = &ErrUserAlreadyExistsInTargetOU
 		return false, nil
 	}
 
@@ -271,6 +249,33 @@ func (p *provisioningExecutor) handleExistingUser(ctx *core.NodeContext, userID 
 		log.String("existingOUID", existingUser.OUID),
 		log.String("targetOUID", targetOUID))
 	return true, nil
+}
+
+// buildProvisioningResponse populates execResp after successful user creation.
+func (p *provisioningExecutor) buildProvisioningResponse(ctx *core.NodeContext, createdEntity *entityprovider.Entity,
+	execResp *common.ExecutorResponse, logger *log.Logger) error {
+	retAttributes := make(map[string]interface{})
+	if len(createdEntity.Attributes) > 0 {
+		if err := json.Unmarshal(createdEntity.Attributes, &retAttributes); err != nil {
+			logger.Error("Failed to unmarshal user attributes", log.Error(err))
+			return err
+		}
+	}
+
+	execResp.AuthenticatedUser = authncm.AuthenticatedUser{
+		IsAuthenticated: true,
+		UserID:          createdEntity.ID,
+		OUID:            createdEntity.OUID,
+		UserType:        createdEntity.Type,
+		Attributes:      retAttributes,
+	}
+	execResp.Status = common.ExecComplete
+	execResp.RuntimeData[userAttributeUserID] = createdEntity.ID
+
+	if ctx.FlowType == common.FlowTypeAuthentication {
+		execResp.RuntimeData[common.RuntimeKeyUserAutoProvisioned] = dataValueTrue
+	}
+	return nil
 }
 
 // resolveAmbiguousUserForProvisioning is called when IdentifyUser reports ambiguity and cross-OU

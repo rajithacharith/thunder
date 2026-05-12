@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -17,7 +17,7 @@
  */
 
 import {cx} from '@emotion/css';
-import {FlowMetadataResponse, Preferences} from '@thunderid/browser';
+import {FlowExecutionError, FlowMetadataResponse, Preferences} from '@thunderid/browser';
 import {FC, ReactElement, ReactNode, useCallback, useContext, useEffect, useRef, useState} from 'react';
 import useStyles from './BaseAcceptInvite.styles';
 import ComponentRendererContext, {
@@ -50,8 +50,8 @@ export interface AcceptInviteFlowResponse {
     };
     redirectURL?: string;
   };
+  error?: FlowExecutionError;
   executionId: string;
-  failureReason?: string;
   flowStatus: 'INCOMPLETE' | 'COMPLETE' | 'ERROR';
   type?: 'VIEW' | 'REDIRECTION';
 }
@@ -328,9 +328,7 @@ const BaseAcceptInvite: FC<BaseAcceptInviteProps> = ({
    */
   const handleError: any = useCallback(
     (error: any) => {
-      // Extract error message from response failureReason or use extractErrorMessage
-      const errorMessage: string =
-        error?.failureReason || extractErrorMessage(error, t, 'components.acceptInvite.errors.generic');
+      const errorMessage: string = extractErrorMessage(error, t, 'components.acceptInvite.errors.generic');
 
       // Set the API error state
       setApiError(error instanceof Error ? error : new Error(errorMessage));
@@ -565,6 +563,11 @@ const BaseAcceptInvite: FC<BaseAcceptInviteProps> = ({
         setCurrentFlow(response);
         setFormErrors({});
         setTouchedFields({});
+
+        // Display error from INCOMPLETE response
+        if (response?.error) {
+          handleError(response);
+        }
       } catch (err) {
         handleError(err);
       } finally {
@@ -643,6 +646,11 @@ const BaseAcceptInvite: FC<BaseAcceptInviteProps> = ({
 
         // Token is valid, show the password form
         setCurrentFlow(response);
+
+        // Display error from INCOMPLETE response
+        if (response?.error) {
+          handleError(response);
+        }
       } catch (err) {
         setIsTokenInvalid(true);
         handleError(err);

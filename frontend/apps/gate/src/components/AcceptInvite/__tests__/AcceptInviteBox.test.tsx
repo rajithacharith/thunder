@@ -20,7 +20,7 @@ import userEvent from '@testing-library/user-event';
 import {DesignContext, type DesignContextType} from '@thunderid/design';
 import {render as testRender, screen, fireEvent, waitFor} from '@thunderid/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import AcceptInviteBox from '../AcceptInviteBox';
+import AcceptInviteBox, {type FlowChangeResponse} from '../AcceptInviteBox';
 
 const {mockLogger} = vi.hoisted(() => ({
   mockLogger: {
@@ -136,7 +136,7 @@ let mockAcceptInviteRenderProps: MockAcceptInviteRenderProps = createMockAcceptI
 let capturedOnGoToSignIn: (() => void) | undefined;
 let capturedOnComplete: (() => void) | undefined;
 let capturedOnError: ((error: Error) => void) | undefined;
-let capturedOnFlowChange: ((response: {failureReason?: string}) => void) | undefined;
+let capturedOnFlowChange: ((response: FlowChangeResponse) => void) | undefined;
 let capturedBaseUrl: string | undefined;
 const mockUseThunderID = vi.fn().mockReturnValue({
   resolveFlowTemplateLiterals: (template: string) => template,
@@ -160,7 +160,7 @@ vi.mock('@thunderid/react', async () => {
       onGoToSignIn?: () => void;
       onComplete?: () => void;
       onError?: (error: Error) => void;
-      onFlowChange?: (response: {failureReason?: string}) => void;
+      onFlowChange?: (response: FlowChangeResponse) => void;
     }) => {
       capturedBaseUrl = baseUrl;
       capturedOnGoToSignIn = onGoToSignIn;
@@ -1438,25 +1438,37 @@ describe('AcceptInviteBox', () => {
     expect(capturedBaseUrl).toBe(import.meta.env.VITE_THUNDER_BASE_URL as string);
   });
 
-  it('shows flowError when onFlowChange is called with a failureReason', async () => {
+  it('shows flowError when onFlowChange is called with an error', async () => {
     mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
       components: [{id: 'block', type: 'BLOCK', components: []}],
     });
     render(<AcceptInviteBox />);
 
     expect(capturedOnFlowChange).toBeDefined();
-    capturedOnFlowChange?.({failureReason: 'Flow failed due to policy'});
+    capturedOnFlowChange?.({
+      error: {
+        code: 'FEE-60001',
+        message: {key: 'flows.errors.policy', defaultValue: 'Flow failed due to policy'},
+        description: {key: 'flows.errors.policy.desc', defaultValue: 'Flow failed due to policy'},
+      },
+    });
 
     expect(await screen.findByText('Flow failed due to policy')).toBeInTheDocument();
   });
 
-  it('clears flowError when onFlowChange is called without failureReason', async () => {
+  it('clears flowError when onFlowChange is called without error', async () => {
     mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
       components: [{id: 'block', type: 'BLOCK', components: []}],
     });
     render(<AcceptInviteBox />);
 
-    capturedOnFlowChange?.({failureReason: 'Initial error'});
+    capturedOnFlowChange?.({
+      error: {
+        code: 'FEE-60001',
+        message: {key: 'flows.errors.initial', defaultValue: 'Initial error'},
+        description: {key: 'flows.errors.initial.desc', defaultValue: 'Initial error'},
+      },
+    });
     expect(await screen.findByText('Initial error')).toBeInTheDocument();
 
     capturedOnFlowChange?.({});
@@ -1472,7 +1484,13 @@ describe('AcceptInviteBox', () => {
     });
     render(<AcceptInviteBox />);
 
-    capturedOnFlowChange?.({failureReason: 'Flow error'});
+    capturedOnFlowChange?.({
+      error: {
+        code: 'FEE-60001',
+        message: {key: 'flows.errors.flow', defaultValue: 'Flow error'},
+        description: {key: 'flows.errors.flow.desc', defaultValue: 'Flow error'},
+      },
+    });
 
     expect(await screen.findByText('Flow error')).toBeInTheDocument();
     expect(screen.queryByText('SDK error')).not.toBeInTheDocument();

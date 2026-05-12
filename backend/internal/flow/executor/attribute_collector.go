@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -89,14 +89,14 @@ func (a *attributeCollector) Execute(ctx *core.NodeContext) (*common.ExecutorRes
 	if !ctx.AuthenticatedUser.IsAuthenticated {
 		logger.Debug("User is not authenticated, cannot collect attributes")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = failureReasonUserNotAuthenticated
+		execResp.Error = &ErrUserNotAuthenticated
 		return execResp, nil
 	}
 
 	if !a.ValidatePrerequisites(ctx, execResp) {
 		logger.Debug("Prerequisites validation failed for attribute collector")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Prerequisites validation failed for attribute collector"
+		execResp.Error = &ErrPrerequisitesFailed
 		return execResp, nil
 	}
 
@@ -109,7 +109,7 @@ func (a *attributeCollector) Execute(ctx *core.NodeContext) (*common.ExecutorRes
 	if err := a.updateUserInStore(ctx); err != nil {
 		logger.Error("Failed to update user attributes", log.Error(err))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Failed to update user attributes"
+		execResp.Error = &ErrAttributeCollectFailed
 		return execResp, nil
 	}
 

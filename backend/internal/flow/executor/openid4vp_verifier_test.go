@@ -119,7 +119,7 @@ func TestOpenID4VPExecutorInitiateFailure(t *testing.T) {
 	resp, err := exec.Execute(openid4vpNodeContext(nil, nil))
 	require.NoError(t, err)
 	assert.Equal(t, common.ExecFailure, resp.Status)
-	assert.Equal(t, failureReasonOpenID4VPInitiate, resp.FailureReason)
+	assert.Equal(t, ErrOpenID4VPInitiateFailed.Code, resp.Error.Code)
 }
 
 func TestOpenID4VPExecutorPollPending(t *testing.T) {
@@ -188,7 +188,8 @@ func TestOpenID4VPExecutorPollFailed(t *testing.T) {
 	resp, err := exec.Execute(openid4vpNodeContext(runtime, nil))
 	require.NoError(t, err)
 	assert.Equal(t, common.ExecFailure, resp.Status)
-	assert.Equal(t, "nonce mismatch", resp.FailureReason)
+	assert.Equal(t, ErrOpenID4VPVerificationFailed.Code, resp.Error.Code)
+	assert.Contains(t, resp.Error.ErrorDescription.DefaultValue, "nonce mismatch")
 }
 
 func TestOpenID4VPExecutorPollExpired(t *testing.T) {
@@ -202,7 +203,7 @@ func TestOpenID4VPExecutorPollExpired(t *testing.T) {
 	resp, err := exec.Execute(openid4vpNodeContext(map[string]string{common.RuntimeKeyOpenID4VPState: "gone"}, nil))
 	require.NoError(t, err)
 	assert.Equal(t, common.ExecFailure, resp.Status)
-	assert.Equal(t, failureReasonOpenID4VPExpired, resp.FailureReason)
+	assert.Equal(t, ErrOpenID4VPExpired.Code, resp.Error.Code)
 }
 
 func TestOpenID4VPExecutorNotConfigured(t *testing.T) {
@@ -210,5 +211,5 @@ func TestOpenID4VPExecutorNotConfigured(t *testing.T) {
 	resp, err := exec.Execute(openid4vpNodeContext(nil, nil))
 	require.NoError(t, err)
 	assert.Equal(t, common.ExecFailure, resp.Status)
-	assert.Equal(t, failureReasonOpenID4VPNotConfigured, resp.FailureReason)
+	assert.Equal(t, ErrOpenID4VPNotConfigured.Code, resp.Error.Code)
 }

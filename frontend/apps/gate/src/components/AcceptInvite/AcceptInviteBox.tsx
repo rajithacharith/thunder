@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -26,6 +26,14 @@ import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import ROUTES from '../../constants/routes';
+
+export interface FlowChangeResponse {
+  error?: {
+    code?: string;
+    message?: {key?: string; defaultValue?: string};
+    description?: {key?: string; defaultValue?: string};
+  };
+}
 
 export default function AcceptInviteBox(): JSX.Element {
   const navigate = useNavigate();
@@ -64,8 +72,19 @@ export default function AcceptInviteBox(): JSX.Element {
         onError={(error: Error) => {
           logger.error('Invite acceptance error:', error);
         }}
-        onFlowChange={(response: {failureReason?: string}) => {
-          setFlowError(response?.failureReason ?? null);
+        onFlowChange={(response: FlowChangeResponse) => {
+          const messageKey: string | undefined = response?.error?.message?.key;
+          if (messageKey) {
+            const translated: string = t(messageKey);
+            if (translated !== messageKey) {
+              setFlowError(translated);
+
+              return;
+            }
+          }
+          const fallback: string | undefined =
+            response?.error?.message?.defaultValue ?? response?.error?.description?.defaultValue;
+          setFlowError(fallback ?? null);
         }}
       >
         {({

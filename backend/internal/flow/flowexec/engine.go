@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -540,7 +540,7 @@ func (fe *flowEngine) processNodeResponse(ctx *EngineContext, nodeResp *common.N
 		return nextNode, true, nil
 	case common.NodeStatusFailure:
 		flowStep.Status = common.FlowStatusError
-		flowStep.FailureReason = nodeResp.FailureReason
+		flowStep.Error = nodeResp.Error
 		return nil, false, nil
 	default:
 		logger.Error("Unsupported response status returned from the node",
@@ -654,9 +654,13 @@ func (fe *flowEngine) handleIncompleteResponse(ctx *EngineContext, nodeResp *com
 func (fe *flowEngine) handleForwardResponse(ctx *EngineContext,
 	nodeResp *common.NodeResponse, logger *log.Logger) (
 	core.NodeInterface, *serviceerror.ServiceError) {
+	errorMsg := ""
+	if nodeResp.Error != nil {
+		errorMsg = nodeResp.Error.Error.DefaultValue
+	}
 	logger.Debug("Forwarding to next node",
 		log.String("nextNodeID", nodeResp.NextNodeID),
-		log.String("failureReason", nodeResp.FailureReason))
+		log.String("error", errorMsg))
 
 	nextNode, err := fe.resolveToNextNode(ctx, nodeResp)
 	if err != nil {
@@ -791,9 +795,9 @@ func (fe *flowEngine) resolveStepDetailsForPrompt(ctx *EngineContext, nodeResp *
 		}
 	}
 
-	// Set failure reason if present (e.g., when handling onFailure)
-	if nodeResp.FailureReason != "" {
-		flowStep.FailureReason = nodeResp.FailureReason
+	// Set error if present (e.g., when handling onFailure)
+	if nodeResp.Error != nil {
+		flowStep.Error = nodeResp.Error
 	}
 
 	if len(nodeResp.FieldErrors) > 0 {
@@ -1072,14 +1076,9 @@ func publishNodeExecutionCompletedEvent(ctx *EngineContext, node core.NodeInterf
 
 	// Add error or failure details
 	if nodeErr != nil {
-		evt.WithData(event.DataKey.Error, nodeErr.Error).
-			WithData(event.DataKey.ErrorCode, nodeErr.Code).
-			WithData(event.DataKey.ErrorType, string(nodeErr.Type))
-		if !nodeErr.ErrorDescription.IsEmpty() {
-			evt.WithData(event.DataKey.Message, nodeErr.ErrorDescription.String())
-		}
-	} else if nodeResp != nil && nodeResp.FailureReason != "" {
-		evt.WithData(event.DataKey.FailureReason, nodeResp.FailureReason)
+		evt.WithData(event.DataKey.Error, processServiceErrorForEventPublish(nodeErr))
+	} else if nodeResp != nil && nodeResp.Error != nil {
+		evt.WithData(event.DataKey.Error, processNodeResponseErrorForEventPublish(nodeResp))
 	}
 
 	// Add user ID if authenticated
@@ -1170,12 +1169,7 @@ func publishFlowFailedEvent(ctx *EngineContext, svcErr *serviceerror.ServiceErro
 
 	// Add error details if available
 	if svcErr != nil {
-		evt.WithData(event.DataKey.Error, svcErr.Error).
-			WithData(event.DataKey.ErrorCode, svcErr.Code).
-			WithData(event.DataKey.ErrorType, string(svcErr.Type))
-		if !svcErr.ErrorDescription.IsEmpty() {
-			evt.WithData(event.DataKey.Message, svcErr.ErrorDescription.String())
-		}
+		evt.WithData(event.DataKey.Error, processServiceErrorForEventPublish(svcErr))
 	}
 
 	// Add user ID if authenticated
@@ -1184,4 +1178,44 @@ func publishFlowFailedEvent(ctx *EngineContext, svcErr *serviceerror.ServiceErro
 	}
 
 	obsSvc.PublishEvent(evt)
+}
+
+// processServiceErrorForEventPublish processes a service error to extract relevant information
+// for observability events.
+func processServiceErrorForEventPublish(svcErr *serviceerror.ServiceError) map[string]interface{} {
+	if svcErr == nil {
+		return nil
+	}
+
+	return map[string]interface{}{
+		"code": svcErr.Code,
+		"message": map[string]string{
+			"key":          svcErr.Error.Key,
+			"defaultValue": svcErr.Error.DefaultValue,
+		},
+		"description": map[string]string{
+			"key":          svcErr.ErrorDescription.Key,
+			"defaultValue": svcErr.ErrorDescription.DefaultValue,
+		},
+	}
+}
+
+// processNodeResponseErrorForEventPublish processes the node response error to extract relevant information
+// for observability events.
+func processNodeResponseErrorForEventPublish(nodeResp *common.NodeResponse) map[string]interface{} {
+	if nodeResp == nil || nodeResp.Error == nil {
+		return nil
+	}
+
+	return map[string]interface{}{
+		"code": nodeResp.Error.Code,
+		"message": map[string]string{
+			"key":          nodeResp.Error.Error.Key,
+			"defaultValue": nodeResp.Error.Error.DefaultValue,
+		},
+		"description": map[string]string{
+			"key":          nodeResp.Error.ErrorDescription.Key,
+			"defaultValue": nodeResp.Error.ErrorDescription.DefaultValue,
+		},
+	}
 }

@@ -113,7 +113,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UserInviteTemplate_Suc
 	resp, err := suite.executor.Execute(ctx)
 
 	suite.NoError(err)
-	suite.Equal(common.ExecComplete, resp.Status, "FailureReason: "+resp.FailureReason)
+	suite.Equal(common.ExecComplete, resp.Status)
 	suite.Equal(dataValueTrue, resp.AdditionalData[common.DataEmailSent])
 }
 
@@ -160,7 +160,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_Invit
 	resp, err := suite.executor.Execute(ctx)
 
 	suite.NoError(err)
-	suite.Equal(common.ExecComplete, resp.Status, "FailureReason: "+resp.FailureReason)
+	suite.Equal(common.ExecComplete, resp.Status)
 	suite.Equal(dataValueTrue, resp.AdditionalData[common.DataEmailSent])
 	suite.Empty(resp.AdditionalData[common.DataInviteLink])
 }
@@ -209,7 +209,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UsesRuntimeRecipientOv
 	resp, err := suite.executor.Execute(ctx)
 
 	suite.NoError(err)
-	suite.Equal(common.ExecComplete, resp.Status, "FailureReason: "+resp.FailureReason)
+	suite.Equal(common.ExecComplete, resp.Status)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmailFromRuntimeData() {
@@ -254,7 +254,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmailFromRuntimeData()
 	resp, err := suite.executor.Execute(ctx)
 
 	suite.NoError(err)
-	suite.Equal(common.ExecComplete, resp.Status, "FailureReason: "+resp.FailureReason)
+	suite.Equal(common.ExecComplete, resp.Status)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingRecipient() {
@@ -277,7 +277,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingRecipient() {
 
 	suite.NoError(err)
 	suite.Equal(common.ExecFailure, resp.Status)
-	suite.Equal("Email recipient is required", resp.FailureReason)
+	suite.Equal("Email recipient is required", resp.Error.Error.DefaultValue)
 	suite.mockEmailClient.AssertNumberOfCalls(suite.T(), "Send", 0)
 }
 
@@ -555,7 +555,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ClientError() {
 
 	suite.NoError(err)
 	suite.Equal(common.ExecFailure, resp.Status)
-	suite.Equal("Failed to send email", resp.FailureReason)
+	suite.Equal(ErrEmailSendFailed.Error.DefaultValue, resp.Error.Error.DefaultValue)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_KnownSMTPErrors() {
@@ -614,7 +614,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_KnownSMTPErrors() {
 
 			suite.NoError(err)
 			suite.Equal(common.ExecFailure, resp.Status)
-			suite.Equal("Failed to send email", resp.FailureReason)
+			suite.Equal(ErrEmailSendFailed.Error.DefaultValue, resp.Error.Error.DefaultValue)
 			suite.Empty(resp.AdditionalData[common.DataEmailSent])
 		})
 	}
@@ -664,7 +664,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UnexpectedError() {
 	suite.NoError(err)
 	suite.NotNil(resp)
 	suite.Equal(common.ExecFailure, resp.Status)
-	suite.Equal("Failed to send email", resp.FailureReason)
+	suite.Equal(ErrEmailSendFailed.Error.DefaultValue, resp.Error.Error.DefaultValue)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_ReturnsFailure() {
@@ -704,7 +704,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_Returns
 	suite.NoError(err)
 	suite.Equal(common.ExecFailure, resp.Status)
 	suite.Equal(dataValueFalse, resp.AdditionalData[common.DataEmailSent])
-	suite.Equal("Email service is not configured", resp.FailureReason)
+	suite.Equal(ErrEmailServiceNotConfigured.Error.DefaultValue, resp.Error.Error.DefaultValue)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_CustomEmailIdentifier() {
@@ -992,7 +992,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ForwardedDataInvalidTy
 
 	suite.NoError(err)
 	suite.Equal(common.ExecFailure, resp.Status)
-	suite.Equal("Email recipient is required", resp.FailureReason)
+	suite.Equal(ErrEmailRecipientMissing.Error.DefaultValue, resp.Error.Error.DefaultValue)
 	suite.mockEmailClient.AssertNumberOfCalls(suite.T(), "Send", 0)
 }
 
@@ -1022,7 +1022,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EntityProviderMissingE
 
 	suite.NoError(err)
 	suite.Equal(common.ExecFailure, resp.Status)
-	suite.Equal("Email recipient is required", resp.FailureReason)
+	suite.Equal(ErrEmailRecipientMissing.Error.DefaultValue, resp.Error.Error.DefaultValue)
 	suite.mockEmailClient.AssertNumberOfCalls(suite.T(), "Send", 0)
 }
 
@@ -1089,7 +1089,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EntityProviderUserNotF
 
 	suite.NoError(err)
 	suite.Equal(common.ExecFailure, resp.Status)
-	suite.Equal("Email recipient is required", resp.FailureReason)
+	suite.Equal(ErrEmailRecipientMissing.Error.DefaultValue, resp.Error.Error.DefaultValue)
 	suite.mockEmailClient.AssertNumberOfCalls(suite.T(), "Send", 0)
 }
 
