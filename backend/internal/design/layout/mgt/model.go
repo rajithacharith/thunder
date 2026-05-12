@@ -18,7 +18,11 @@
 
 package layoutmgt
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+)
 
 // Layout represents a layout configuration.
 type Layout struct {
@@ -61,11 +65,11 @@ type UpdateLayoutRequest struct {
 
 // layoutRequestWithID represents the request structure for creating a layout from file-based config.
 type layoutRequestWithID struct {
-	ID          string      `yaml:"id"`
-	Handle      string      `yaml:"handle"`
-	DisplayName string      `yaml:"displayName"`
-	Description string      `yaml:"description,omitempty"`
-	Layout      interface{} `yaml:"layout"`
+	ID          string                           `yaml:"id"`
+	Handle      string                           `yaml:"handle"`
+	DisplayName string                           `yaml:"displayName"`
+	Description string                           `yaml:"description,omitempty"`
+	Layout      declarativeresource.JSONRawField `yaml:"layout"`
 }
 
 // LayoutListResponse represents the response for listing layout configurations with pagination.

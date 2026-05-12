@@ -28,6 +28,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/asgardeo/thunder/internal/entity"
+	"github.com/asgardeo/thunder/internal/entitytype"
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/cryptolab/hash"
@@ -43,13 +44,18 @@ const (
 
 // userExporter implements declarativeresource.ResourceExporter for users.
 type userExporter struct {
-	service       UserServiceInterface
-	entityService entity.EntityServiceInterface
+	service           UserServiceInterface
+	entityService     entity.EntityServiceInterface
+	entityTypeService entitytype.EntityTypeServiceInterface
 }
 
 // newUserExporter creates a new user exporter.
-func newUserExporter(service UserServiceInterface, entityService entity.EntityServiceInterface) *userExporter {
-	return &userExporter{service: service, entityService: entityService}
+func newUserExporter(
+	service UserServiceInterface,
+	entityService entity.EntityServiceInterface,
+	entityTypeService entitytype.EntityTypeServiceInterface,
+) *userExporter {
+	return &userExporter{service: service, entityService: entityService, entityTypeService: entityTypeService}
 }
 
 // GetResourceType returns the resource type for users.
@@ -129,14 +135,26 @@ func (e *userExporter) GetResourceByID(
 		attributesMap = make(map[string]interface{})
 	}
 
-	// Create export structure with credentials as placeholders
-	// The parameterizer will replace actual credential values with template variables
+	// Build credential placeholders by querying the entity type schema for credential attributes.
+	// Actual credential values cannot be exported (they are hashed), so we emit template variables.
+	credentials := make(map[string]interface{})
+	if credAttrs, svcErr := e.entityTypeService.GetAttributes(
+		ctx, entitytype.TypeCategoryUser, user.Type, true, false, false,
+	); svcErr == nil {
+		for _, attr := range credAttrs {
+			if attr.Credential {
+				varName := credentialVarName(username, attr.Attribute)
+				credentials[attr.Attribute] = "{{." + varName + "}}"
+			}
+		}
+	}
+
 	exportUser := &userDeclarativeResource{
 		ID:          user.ID,
 		Type:        user.Type,
 		OUID:        user.OUID,
 		Attributes:  attributesMap,
-		Credentials: make(map[string]interface{}), // Empty credentials - will be filled with placeholders
+		Credentials: credentials,
 	}
 
 	return exportUser, username, nil
@@ -176,8 +194,20 @@ func (e *userExporter) GetResourceRules() *declarativeresource.ResourceRules {
 	return &declarativeresource.ResourceRules{
 		Variables:             []string{},
 		ArrayVariables:        []string{},
-		DynamicPropertyFields: []string{"Credentials"},
+		DynamicPropertyFields: []string{},
 	}
+}
+
+// credentialVarName produces an UPPER_SNAKE_CASE template variable name for a credential field.
+// Example: username="admin", credType="password" → "ADMIN_PASSWORD".
+func credentialVarName(username, credType string) string {
+	norm := func(s string) string {
+		s = strings.ReplaceAll(s, "-", "_")
+		s = strings.ReplaceAll(s, ".", "_")
+		s = strings.ReplaceAll(s, " ", "_")
+		return strings.ToUpper(s)
+	}
+	return norm(username) + "_" + norm(credType)
 }
 
 // makeUserDeclarativeConfig creates the declarative loader configuration for user resources.

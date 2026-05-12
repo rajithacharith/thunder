@@ -613,15 +613,15 @@ var resourceDependencyOrder = []string{
 	resourceTypeOrganizationUnit,
 	resourceTypeEntityType,
 	resourceTypeResourceServer,
-	resourceTypeRole,
+	resourceTypeUser,
 	resourceTypeGroup,
+	resourceTypeRole,
 	resourceTypeIdentityProvider,
 	resourceTypeNotificationSender,
 	resourceTypeFlow,
 	resourceTypeTheme,
 	resourceTypeLayout,
 	resourceTypeApplication,
-	resourceTypeUser,
 	resourceTypeTranslation,
 }
 

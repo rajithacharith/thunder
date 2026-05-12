@@ -314,10 +314,21 @@ func (us *userService) CreateUser(ctx context.Context, user *User) (*User, *serv
 	// Schema validation and uniqueness checks are handled by entity service in CreateEntity.
 
 	var err error
-	user.ID, err = utils.GenerateUUIDv7()
-	if err != nil {
-		logger.Error("Failed to generate UUID", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+	if user.ID == "" {
+		user.ID, err = utils.GenerateUUIDv7()
+		if err != nil {
+			logger.Error("Failed to generate UUID", log.Error(err))
+			return nil, &serviceerror.InternalServerError
+		}
+	} else {
+		_, err = us.entityService.GetEntity(ctx, user.ID)
+		if err == nil {
+			logger.Debug("User ID already exists", log.MaskedString(log.LoggerKeyUserID, user.ID))
+			return nil, &ErrorAttributeConflict
+		}
+		if !errors.Is(err, entity.ErrEntityNotFound) {
+			return nil, logErrorAndReturnServerError(logger, "Failed to check user ID existence", err)
+		}
 	}
 
 	e := userToEntity(user)

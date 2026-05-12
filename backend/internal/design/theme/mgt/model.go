@@ -18,7 +18,11 @@
 
 package thememgt
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+)
 
 // Theme represents a theme configuration.
 type Theme struct {
@@ -105,11 +109,11 @@ type UpdateThemeRequest struct {
 
 // themeRequestWithID represents the request structure for creating a theme from file-based config.
 type themeRequestWithID struct {
-	ID          string      `yaml:"id"`
-	Handle      string      `yaml:"handle"`
-	DisplayName string      `yaml:"displayName"`
-	Description string      `yaml:"description,omitempty"`
-	Theme       interface{} `yaml:"theme"`
+	ID          string                           `yaml:"id"`
+	Handle      string                           `yaml:"handle"`
+	DisplayName string                           `yaml:"displayName"`
+	Description string                           `yaml:"description,omitempty"`
+	Theme       declarativeresource.JSONRawField `yaml:"theme"`
 }
 
 // ThemeListResponse represents the response for listing theme configurations with pagination.

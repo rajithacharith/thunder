@@ -167,34 +167,15 @@ func parseToThemeWrapper(data []byte) (interface{}, error) {
 func parseToTheme(data []byte) (*Theme, error) {
 	var themeRequest themeRequestWithID
 
-	err := yaml.Unmarshal(data, &themeRequest)
-	if err != nil {
+	if err := yaml.Unmarshal(data, &themeRequest); err != nil {
 		return nil, err
-	}
-
-	// Convert theme to JSON bytes
-	var themeJSON json.RawMessage
-	if themeRequest.Theme != nil {
-		// Handle both map structure and string format
-		switch v := themeRequest.Theme.(type) {
-		case string:
-			// JSON string format
-			themeJSON = []byte(v)
-		default:
-			// Map structure - marshal to JSON
-			themeBytes, err := json.Marshal(themeRequest.Theme)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal theme to JSON: %w", err)
-			}
-			themeJSON = themeBytes
-		}
 	}
 
 	theme := &Theme{
 		ID:          themeRequest.ID,
 		DisplayName: themeRequest.DisplayName,
 		Description: themeRequest.Description,
-		Theme:       themeJSON,
+		Theme:       json.RawMessage(themeRequest.Theme),
 		CreatedAt:   "",
 		UpdatedAt:   "",
 	}

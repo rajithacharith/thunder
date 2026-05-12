@@ -36,6 +36,7 @@ import (
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 )
 
 type roleDeclarativeYAML struct {
@@ -56,29 +57,29 @@ type userDeclarativeYAML struct {
 }
 
 type entityTypeDeclarativeYAML struct {
-	ID                    string                       `yaml:"id"`
-	Category              entitytype.TypeCategory      `yaml:"category,omitempty"`
-	Name                  string                       `yaml:"name"`
-	OUID                  string                       `yaml:"organization_unit_id"`
-	AllowSelfRegistration bool                         `yaml:"allow_self_registration,omitempty"`
-	SystemAttributes      *entitytype.SystemAttributes `yaml:"system_attributes,omitempty"`
-	Schema                interface{}                  `yaml:"schema"`
+	ID                    string                           `yaml:"id"`
+	Category              entitytype.TypeCategory          `yaml:"category,omitempty"`
+	Name                  string                           `yaml:"name"`
+	OUID                  string                           `yaml:"organization_unit_id"`
+	AllowSelfRegistration bool                             `yaml:"allow_self_registration,omitempty"`
+	SystemAttributes      *entitytype.SystemAttributes     `yaml:"system_attributes,omitempty"`
+	Schema                declarativeresource.JSONRawField `yaml:"schema"`
 }
 
 type themeDeclarativeYAML struct {
-	ID          string      `yaml:"id"`
-	Handle      string      `yaml:"handle"`
-	DisplayName string      `yaml:"displayName"`
-	Description string      `yaml:"description,omitempty"`
-	Theme       interface{} `yaml:"theme"`
+	ID          string                           `yaml:"id"`
+	Handle      string                           `yaml:"handle"`
+	DisplayName string                           `yaml:"displayName"`
+	Description string                           `yaml:"description,omitempty"`
+	Theme       declarativeresource.JSONRawField `yaml:"theme"`
 }
 
 type layoutDeclarativeYAML struct {
-	ID          string      `yaml:"id"`
-	Handle      string      `yaml:"handle"`
-	DisplayName string      `yaml:"displayName"`
-	Description string      `yaml:"description,omitempty"`
-	Layout      interface{} `yaml:"layout"`
+	ID          string                           `yaml:"id"`
+	Handle      string                           `yaml:"handle"`
+	DisplayName string                           `yaml:"displayName"`
+	Description string                           `yaml:"description,omitempty"`
+	Layout      declarativeresource.JSONRawField `yaml:"layout"`
 }
 
 func (s *importService) importOrganizationUnit(
@@ -149,26 +150,7 @@ func (s *importService) importEntityType(
 		return decodeErrorOutcome(resourceTypeEntityType, req.ID, req.Name, err)
 	}
 
-	var (
-		schemaBytes []byte
-		err         error
-	)
-	switch v := req.Schema.(type) {
-	case string:
-		schemaBytes = []byte(v)
-	default:
-		schemaBytes, err = json.Marshal(v)
-		if err != nil {
-			return ImportItemOutcome{
-				ResourceType: resourceTypeEntityType,
-				ResourceID:   req.ID,
-				ResourceName: req.Name,
-				Status:       statusFailed,
-				Code:         ErrorInvalidYAMLContent.Code,
-				Message:      fmt.Sprintf("failed to marshal schema: %v", err),
-			}
-		}
-	}
+	schemaBytes := json.RawMessage(req.Schema)
 
 	category := req.Category
 	if category == "" {
@@ -449,17 +431,7 @@ func (s *importService) importTheme(doc parsedDocument, options *ImportOptions, 
 		return decodeErrorOutcome(resourceTypeTheme, req.ID, req.DisplayName, err)
 	}
 
-	themeBytes, err := json.Marshal(req.Theme)
-	if err != nil {
-		return ImportItemOutcome{
-			ResourceType: resourceTypeTheme,
-			ResourceID:   req.ID,
-			ResourceName: req.DisplayName,
-			Status:       statusFailed,
-			Code:         ErrorInvalidYAMLContent.Code,
-			Message:      fmt.Sprintf("failed to marshal theme: %v", err),
-		}
-	}
+	themeBytes := json.RawMessage(req.Theme)
 
 	createReq := thememgt.CreateThemeRequestWithID{
 		ID:          req.ID,
@@ -527,17 +499,7 @@ func (s *importService) importLayout(doc parsedDocument, options *ImportOptions,
 		return decodeErrorOutcome(resourceTypeLayout, req.ID, req.DisplayName, err)
 	}
 
-	layoutBytes, err := json.Marshal(req.Layout)
-	if err != nil {
-		return ImportItemOutcome{
-			ResourceType: resourceTypeLayout,
-			ResourceID:   req.ID,
-			ResourceName: req.DisplayName,
-			Status:       statusFailed,
-			Code:         ErrorInvalidYAMLContent.Code,
-			Message:      fmt.Sprintf("failed to marshal layout: %v", err),
-		}
-	}
+	layoutBytes := json.RawMessage(req.Layout)
 
 	createReq := layoutmgt.CreateLayoutRequest{
 		Handle:      req.Handle,

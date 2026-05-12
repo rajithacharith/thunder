@@ -31,6 +31,8 @@ import (
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
+const yamlTagOmitEmpty = "omitempty"
+
 type templatingRules struct {
 	Application        *resourceRules `yaml:"Application,omitempty"`
 	IdentityProvider   *resourceRules `yaml:"IdentityProvider,omitempty"`
@@ -361,15 +363,35 @@ func (p *parameterizer) structToNodeIgnoringOmitempty(
 			continue
 		}
 
-		// Parse yaml tag to check for omitempty
+		// Parse yaml tag to check for omitempty and inline
 		tagParts := strings.Split(yamlTag, ",")
 		yamlFieldName := tagParts[0]
 		hasOmitEmpty := false
+		isInline := false
 		for _, part := range tagParts[1:] {
-			if part == "omitempty" {
+			switch part {
+			case yamlTagOmitEmpty:
 				hasOmitEmpty = true
-				break
+			case "inline":
+				isInline = true
 			}
+		}
+		if yamlFieldName == "" {
+			isInline = true
+		}
+
+		// Handle inline embedded structs: merge their fields directly into this mapping.
+		if isInline {
+			inlineNode := &yaml.Node{}
+			if err := p.structToNodeIgnoringOmitempty(
+				fieldValue.Interface(), inlineNode, rules, currentPath, resourceName,
+			); err != nil {
+				return err
+			}
+			if inlineNode.Kind == yaml.DocumentNode && len(inlineNode.Content) > 0 {
+				mappingNode.Content = append(mappingNode.Content, inlineNode.Content[0].Content...)
+			}
+			continue
 		}
 
 		// Check for forced quoting via yamlfmt tag
@@ -631,13 +653,71 @@ func (p *parameterizer) handleStructNode(
 		tagParts := strings.Split(yamlTag, ",")
 		yamlFieldName := tagParts[0]
 
-		// Check if this field has omitempty
+		// Check if this field has omitempty or inline
 		hasOmitEmpty := false
+		isInline := false
 		for _, part := range tagParts[1:] {
-			if part == "omitempty" {
+			switch part {
+			case yamlTagOmitEmpty:
 				hasOmitEmpty = true
-				break
+			case "inline":
+				isInline = true
 			}
+		}
+		if yamlFieldName == "" {
+			isInline = true
+		}
+
+		// Handle inline embedded structs: merge their fields directly into this mapping.
+		fieldValue := v.Field(i)
+		if isInline {
+			var inlineNode yaml.Node
+			inlineStruct := fieldValue
+			if inlineStruct.Kind() == reflect.Ptr {
+				if inlineStruct.IsNil() {
+					continue
+				}
+				inlineStruct = inlineStruct.Elem()
+			}
+			inlineT := inlineStruct.Type()
+			for j := 0; j < inlineStruct.NumField(); j++ {
+				inlineField := inlineT.Field(j)
+				if !inlineField.IsExported() {
+					continue
+				}
+				inlineYAMLTag := inlineField.Tag.Get("yaml")
+				if inlineYAMLTag == "" || inlineYAMLTag == "-" {
+					continue
+				}
+				inlineTagParts := strings.Split(inlineYAMLTag, ",")
+				inlineFieldName := inlineTagParts[0]
+				if inlineFieldName == "" {
+					continue
+				}
+				inlineHasOmitEmpty := false
+				for _, part := range inlineTagParts[1:] {
+					if part == yamlTagOmitEmpty {
+						inlineHasOmitEmpty = true
+						break
+					}
+				}
+				inlineFieldValue := inlineStruct.Field(j)
+				nestedPath := inlineField.Name
+				if currentPath != "" {
+					nestedPath = currentPath + "." + inlineField.Name
+				}
+				if inlineHasOmitEmpty && p.isEmptyValue(inlineFieldValue) && !p.isFieldInRules(rules, nestedPath) {
+					continue
+				}
+				kn := &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: inlineFieldName}
+				vn, err := p.fieldToNode(inlineFieldValue, rules, nestedPath, resourceName)
+				if err != nil {
+					return nil, err
+				}
+				inlineNode.Content = append(inlineNode.Content, kn, vn)
+			}
+			node.Content = append(node.Content, inlineNode.Content...)
+			continue
 		}
 
 		// Build the nested field path
@@ -647,7 +727,6 @@ func (p *parameterizer) handleStructNode(
 		}
 
 		// Skip empty fields if omitempty is set AND field is NOT in parameterization rules
-		fieldValue := v.Field(i)
 		if hasOmitEmpty && p.isEmptyValue(fieldValue) && !p.isFieldInRules(rules, nestedFieldPath) {
 			continue
 		}
@@ -720,10 +799,12 @@ func (p *parameterizer) handleJSONRawMessage(v reflect.Value) (*yaml.Node, error
 		return nil, fmt.Errorf("invalid JSON in RawMessage: %s", string(rawBytes))
 	}
 
-	// Return as a string containing the JSON
+	// Return as a literal block scalar (|) containing the JSON string.
+	// This ensures yaml.Unmarshal decodes it as a string, not a map.
 	return &yaml.Node{
 		Kind:  yaml.ScalarNode,
 		Tag:   "!!str",
+		Style: yaml.LiteralStyle,
 		Value: string(rawBytes),
 	}, nil
 }
@@ -1318,6 +1399,15 @@ func (p *parameterizer) renderMappingValue(buf *bytes.Buffer, valueNode *yaml.No
 		buf.WriteString("\n")
 		if err := p.renderNode(buf, valueNode, indent+2); err != nil {
 			return err
+		}
+	} else if valueNode.Kind == yaml.ScalarNode && valueNode.Style == yaml.LiteralStyle {
+		// Literal block scalar: render as | block (used for JSON schemas and similar strings)
+		buf.WriteString(" |\n")
+		prefix := strings.Repeat(" ", indent+2)
+		for _, line := range strings.Split(valueNode.Value, "\n") {
+			buf.WriteString(prefix)
+			buf.WriteString(line)
+			buf.WriteString("\n")
 		}
 	} else {
 		// Regular scalar value

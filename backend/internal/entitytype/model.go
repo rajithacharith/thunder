@@ -20,6 +20,8 @@ package entitytype
 
 import (
 	"encoding/json"
+
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 )
 
 // TypeCategory identifies the kind of entity that an entity type describes.
@@ -123,11 +125,11 @@ type UpdateEntityTypeRequest struct {
 // EntityTypeRequestWithID represents the request structure for creating an entity type from
 // file-based config.
 type EntityTypeRequestWithID struct {
-	ID                    string            `yaml:"id"`
-	Category              TypeCategory      `yaml:"category,omitempty"`
-	Name                  string            `yaml:"name"`
-	OUID                  string            `yaml:"organization_unit_id"`
-	AllowSelfRegistration bool              `yaml:"allow_self_registration,omitempty"`
-	SystemAttributes      *SystemAttributes `yaml:"system_attributes,omitempty"`
-	Schema                string            `yaml:"schema"`
+	ID                    string                           `yaml:"id"`
+	Category              TypeCategory                     `yaml:"category,omitempty"`
+	Name                  string                           `yaml:"name"`
+	OUID                  string                           `yaml:"organization_unit_id"`
+	AllowSelfRegistration bool                             `yaml:"allow_self_registration,omitempty"`
+	SystemAttributes      *SystemAttributes                `yaml:"system_attributes,omitempty"`
+	Schema                declarativeresource.JSONRawField `yaml:"schema"`
 }

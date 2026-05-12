@@ -28,11 +28,13 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	entitypkg "github.com/asgardeo/thunder/internal/entity"
+	"github.com/asgardeo/thunder/internal/entitytype"
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/cryptolab/hash"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/entitymock"
+	"github.com/asgardeo/thunder/tests/mocks/entitytypemock"
 )
 
 // DeclarativeResourceTestSuite tests user declarative resource parsing and export.
@@ -181,11 +183,14 @@ func (suite *DeclarativeResourceTestSuite) TestParseToUserWrapper() {
 
 func (suite *DeclarativeResourceTestSuite) TestUserExporter_GetResourceByID() {
 	mockSvc := NewUserServiceInterfaceMock(suite.T())
-	exporter := newUserExporter(mockSvc, entitymock.NewEntityServiceInterfaceMock(suite.T()))
+	entityTypeMock := entitytypemock.NewEntityTypeServiceInterfaceMock(suite.T())
+	exporter := newUserExporter(mockSvc, entitymock.NewEntityServiceInterfaceMock(suite.T()), entityTypeMock)
 
 	attrs := json.RawMessage(`{"username":"alice"}`)
 	mockSvc.On("GetUser", context.Background(), "user-1", false).
 		Return(&User{ID: "user-1", Type: "person", OUID: "ou-1", Attributes: attrs}, nil)
+	entityTypeMock.On("GetAttributes", context.Background(), entitytype.TypeCategoryUser, "person", true, false, false).
+		Return([]entitytype.AttributeInfo{{Attribute: "password", Credential: true}}, nil)
 
 	resource, name, err := exporter.GetResourceByID(context.Background(), "user-1")
 	suite.Nil(err)
@@ -193,12 +198,14 @@ func (suite *DeclarativeResourceTestSuite) TestUserExporter_GetResourceByID() {
 
 	userResource, ok := resource.(*userDeclarativeResource)
 	suite.True(ok)
-	suite.Empty(userResource.Credentials)
+	suite.Equal(map[string]interface{}{"password": "{{.ALICE_PASSWORD}}"}, userResource.Credentials)
 }
 
 func (suite *DeclarativeResourceTestSuite) TestUserExporter_Metadata() {
 	exporter := newUserExporter(
-		NewUserServiceInterfaceMock(suite.T()), entitymock.NewEntityServiceInterfaceMock(suite.T()))
+		NewUserServiceInterfaceMock(suite.T()),
+		entitymock.NewEntityServiceInterfaceMock(suite.T()),
+		entitytypemock.NewEntityTypeServiceInterfaceMock(suite.T()))
 
 	suite.Equal(resourceTypeUser, exporter.GetResourceType())
 	suite.Equal(paramTypeUser, exporter.GetParameterizerType())
@@ -208,7 +215,7 @@ func (suite *DeclarativeResourceTestSuite) TestUserExporter_GetAllResourceIDs() 
 	ctx := context.Background()
 	mockSvc := NewUserServiceInterfaceMock(suite.T())
 	entityServiceMock := entitymock.NewEntityServiceInterfaceMock(suite.T())
-	exporter := newUserExporter(mockSvc, entityServiceMock)
+	exporter := newUserExporter(mockSvc, entityServiceMock, entitytypemock.NewEntityTypeServiceInterfaceMock(suite.T()))
 
 	users := []User{{ID: "user-1"}, {ID: "user-2"}}
 	mockSvc.On("GetUserList", ctx, serverconst.MaxPageSize, 0, mock.Anything, false).
@@ -256,15 +263,19 @@ func (suite *DeclarativeResourceTestSuite) TestMakeUserParser_ParsesYAMLToEntity
 
 func (suite *DeclarativeResourceTestSuite) TestGetResourceRules_IncludesCredentials() {
 	exporter := newUserExporter(
-		NewUserServiceInterfaceMock(suite.T()), entitymock.NewEntityServiceInterfaceMock(suite.T()))
+		NewUserServiceInterfaceMock(suite.T()),
+		entitymock.NewEntityServiceInterfaceMock(suite.T()),
+		entitytypemock.NewEntityTypeServiceInterfaceMock(suite.T()))
 
 	rules := exporter.GetResourceRules()
-	suite.Contains(rules.DynamicPropertyFields, "Credentials")
+	suite.Empty(rules.DynamicPropertyFields)
 }
 
 func (suite *DeclarativeResourceTestSuite) TestValidateResource_MissingUsername() {
 	exporter := newUserExporter(
-		NewUserServiceInterfaceMock(suite.T()), entitymock.NewEntityServiceInterfaceMock(suite.T()))
+		NewUserServiceInterfaceMock(suite.T()),
+		entitymock.NewEntityServiceInterfaceMock(suite.T()),
+		entitytypemock.NewEntityTypeServiceInterfaceMock(suite.T()))
 
 	resource := &userDeclarativeResource{
 		ID:         "user-1",

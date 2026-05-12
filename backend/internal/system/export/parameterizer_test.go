@@ -1872,14 +1872,133 @@ func TestEntityTypeExportFormat(t *testing.T) {
 	yamlOutput, _, err := p.ToParameterizedYAML(schema, "EntityType", "TestSchema", nil)
 	require.NoError(t, err)
 
-	// Verify the schema field is a plain string in the YAML, not a structured object
-	// This ensures it can be imported using the string type in EntityTypeRequestWithID
-	assert.Contains(t, yamlOutput, `schema: '{"field1":"value1"}'`,
-		"Schema should be exported as a quoted JSON string")
+	// Schema must be exported as a literal block scalar (|) so that the YAML parser
+	// decodes it as a string, not a map — matching EntityTypeRequestWithID.Schema string.
+	assert.Contains(t, yamlOutput, "schema: |",
+		"Schema should be exported as a literal block scalar")
+	assert.Contains(t, yamlOutput, `{"field1":"value1"}`,
+		"Schema JSON content should be present in the output")
 	assert.NotContains(t, yamlOutput, "schema:\n  field1:",
 		"Schema should NOT be exported as a nested YAML structure")
 	assert.NotContains(t, yamlOutput, "schema:\n  - ",
 		"Schema should NOT be exported as a YAML array")
+
+	// Verify it round-trips: parsed schema value must be a string containing valid JSON.
+	type importFormat struct {
+		Schema string `yaml:"schema"`
+	}
+	var imported importFormat
+	require.NoError(t, yaml.Unmarshal([]byte(yamlOutput), &imported))
+	assert.True(t, json.Valid([]byte(imported.Schema)), "Round-tripped schema must be valid JSON")
+}
+
+// TestRenderMappingValue_LiteralBlockScalar verifies that a scalar node with
+// yaml.LiteralStyle is rendered as a YAML literal block scalar (| prefix).
+func TestRenderMappingValue_LiteralBlockScalar(t *testing.T) {
+	type SchemaHolder struct {
+		Name   string          `yaml:"name"`
+		Schema json.RawMessage `yaml:"schema"`
+	}
+
+	multiLineJSON := `{
+  "username": {
+    "type": "string",
+    "required": true
+  },
+  "email": {
+    "type": "string",
+    "required": true
+  }
+}`
+
+	obj := SchemaHolder{
+		Name:   "Person",
+		Schema: json.RawMessage(multiLineJSON),
+	}
+
+	p := newParameterizer(templatingRules{})
+	result, _, err := p.ToParameterizedYAML(obj, "EntityType", "Person", nil)
+	require.NoError(t, err)
+
+	// Must use literal block scalar marker
+	assert.Contains(t, result, "schema: |", "schema field must use literal block scalar")
+
+	// Must not use inline flow mapping syntax
+	assert.NotContains(t, result, "schema: {", "schema field must not use flow mapping syntax")
+
+	// Each JSON line must appear indented under the key
+	assert.Contains(t, result, `  "username":`, "JSON content must be indented")
+
+	// Round-trip: YAML parser must decode schema as a string, not a map
+	type importFormat struct {
+		Schema string `yaml:"schema"`
+	}
+	var imported importFormat
+	require.NoError(t, yaml.Unmarshal([]byte(result), &imported),
+		"exported YAML must be parseable")
+	assert.True(t, json.Valid([]byte(imported.Schema)),
+		"round-tripped schema must be valid JSON")
+	var originalMap, importedMap map[string]interface{}
+	require.NoError(t, json.Unmarshal(json.RawMessage(multiLineJSON), &originalMap))
+	require.NoError(t, json.Unmarshal([]byte(imported.Schema), &importedMap))
+	assert.Equal(t, originalMap, importedMap, "schema JSON content must survive round-trip")
+}
+
+// TestToParameterizedYAML_JSONRawMessage_EmitsLiteralBlock verifies that the full
+// parameterizer pipeline emits json.RawMessage fields as YAML literal block scalars,
+// not as flow mappings. This is the end-to-end regression test for the bug where
+// exported user_type schema: { ... } could not be imported because the YAML parser
+// decoded it as a map instead of a string.
+func TestToParameterizedYAML_JSONRawMessage_EmitsLiteralBlock(t *testing.T) {
+	type EntityType struct {
+		ID     string          `yaml:"id"`
+		Name   string          `yaml:"name"`
+		Schema json.RawMessage `yaml:"schema"`
+	}
+
+	tests := []struct {
+		name   string
+		schema json.RawMessage
+	}{
+		{
+			name:   "single line JSON object",
+			schema: json.RawMessage(`{"username":{"type":"string","required":true}}`),
+		},
+		{
+			name:   "multi-line JSON object",
+			schema: json.RawMessage("{\n  \"username\": {\n    \"type\": \"string\"\n  }\n}"),
+		},
+		{
+			name:   "JSON array",
+			schema: json.RawMessage(`["item1","item2"]`),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			obj := EntityType{ID: "test-id", Name: "Test", Schema: tc.schema}
+			p := newParameterizer(templatingRules{})
+			result, _, err := p.ToParameterizedYAML(obj, "EntityType", "Test", nil)
+			require.NoError(t, err)
+
+			// Must use | block scalar, never bare { or [
+			assert.Contains(t, result, "schema: |",
+				"schema must be emitted as a literal block scalar")
+			assert.NotContains(t, result, "schema: {",
+				"schema must not be emitted as a flow mapping")
+			assert.NotContains(t, result, "schema: [",
+				"schema must not be emitted as a flow sequence")
+
+			// Round-trip through YAML: decode schema as string, not map/slice
+			type importFmt struct {
+				Schema string `yaml:"schema"`
+			}
+			var imported importFmt
+			require.NoError(t, yaml.Unmarshal([]byte(result), &imported))
+			assert.True(t, json.Valid([]byte(imported.Schema)),
+				"round-tripped schema must be valid JSON")
+		})
+	}
 }
 
 // =============================================================================
@@ -1945,4 +2064,85 @@ func TestResourceServerExport_DelimiterIsQuoted(t *testing.T) {
 	require.NoError(t, yaml.Unmarshal([]byte(result), &parsed))
 	assert.Equal(t, ":", parsed.Delimiter,
 		"round-tripped delimiter should equal \":\"")
+}
+
+// =============================================================================
+// Inline Embedded Struct Tests
+// =============================================================================
+
+// TestInlineEmbeddedStruct_FieldsMergedIntoParent verifies that a struct field tagged
+// yaml:",inline" has its fields merged directly into the parent mapping, not nested
+// under an empty key (which produces a bare `:` line in YAML).
+// Regression test for Application export producing `:` instead of inlining
+// InboundAuthProfile fields.
+func TestInlineEmbeddedStruct_FieldsMergedIntoParent(t *testing.T) {
+	type InboundProfile struct {
+		AuthFlowID string `yaml:"auth_flow_id,omitempty"`
+		ThemeID    string `yaml:"theme_id,omitempty"`
+	}
+	type Application struct {
+		ID             string `yaml:"id"`
+		Name           string `yaml:"name"`
+		URL            string `yaml:"url,omitempty"`
+		InboundProfile `yaml:",inline"`
+	}
+
+	obj := Application{
+		ID:   "test-app-id",
+		Name: "Console",
+		URL:  "https://localhost:8090/console",
+		InboundProfile: InboundProfile{
+			AuthFlowID: "flow-123",
+			ThemeID:    "theme-456",
+		},
+	}
+
+	p := newParameterizer(templatingRules{})
+	result, _, err := p.ToParameterizedYAML(obj, "Application", "Console", nil)
+	require.NoError(t, err)
+
+	// Inline fields must appear at the top level, not under an empty key
+	assert.NotContains(t, result, "\n:",
+		"bare `:` line must not appear — inline fields should be merged into parent")
+	assert.Contains(t, result, "auth_flow_id: flow-123",
+		"inline auth_flow_id must be at top level")
+	assert.Contains(t, result, "theme_id: theme-456",
+		"inline theme_id must be at top level")
+
+	// Verify the output is valid YAML that round-trips correctly
+	var parsed Application
+	require.NoError(t, yaml.Unmarshal([]byte(result), &parsed))
+	assert.Equal(t, "flow-123", parsed.AuthFlowID)
+	assert.Equal(t, "theme-456", parsed.ThemeID)
+}
+
+// TestInlineEmbeddedStruct_OmitemptyInlineFields verifies that omitempty on inline
+// fields still omits empty values.
+func TestInlineEmbeddedStruct_OmitemptyInlineFields(t *testing.T) {
+	type InboundProfile struct {
+		AuthFlowID string `yaml:"auth_flow_id,omitempty"`
+		ThemeID    string `yaml:"theme_id,omitempty"`
+	}
+	type Application struct {
+		ID             string `yaml:"id"`
+		Name           string `yaml:"name"`
+		InboundProfile `yaml:",inline"`
+	}
+
+	obj := Application{
+		ID:   "test-app-id",
+		Name: "Console",
+		InboundProfile: InboundProfile{
+			AuthFlowID: "flow-123",
+			ThemeID:    "", // empty — should be omitted
+		},
+	}
+
+	p := newParameterizer(templatingRules{})
+	result, _, err := p.ToParameterizedYAML(obj, "Application", "Console", nil)
+	require.NoError(t, err)
+
+	assert.Contains(t, result, "auth_flow_id: flow-123")
+	assert.NotContains(t, result, "theme_id:", "empty omitempty inline field must be omitted")
+	assert.NotContains(t, result, "\n:", "bare `:` must not appear")
 }

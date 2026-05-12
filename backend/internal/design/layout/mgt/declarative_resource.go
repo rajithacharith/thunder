@@ -167,34 +167,15 @@ func parseToLayoutWrapper(data []byte) (interface{}, error) {
 func parseToLayout(data []byte) (*Layout, error) {
 	var layoutRequest layoutRequestWithID
 
-	err := yaml.Unmarshal(data, &layoutRequest)
-	if err != nil {
+	if err := yaml.Unmarshal(data, &layoutRequest); err != nil {
 		return nil, err
-	}
-
-	// Convert layout to JSON bytes
-	var layoutJSON json.RawMessage
-	if layoutRequest.Layout != nil {
-		// Handle both map structure and string format
-		switch v := layoutRequest.Layout.(type) {
-		case string:
-			// JSON string format
-			layoutJSON = []byte(v)
-		default:
-			// Map structure - marshal to JSON
-			layoutBytes, err := json.Marshal(layoutRequest.Layout)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal layout to JSON: %w", err)
-			}
-			layoutJSON = layoutBytes
-		}
 	}
 
 	layout := &Layout{
 		ID:          layoutRequest.ID,
 		DisplayName: layoutRequest.DisplayName,
 		Description: layoutRequest.Description,
-		Layout:      layoutJSON,
+		Layout:      json.RawMessage(layoutRequest.Layout),
 		CreatedAt:   "",
 		UpdatedAt:   "",
 	}
