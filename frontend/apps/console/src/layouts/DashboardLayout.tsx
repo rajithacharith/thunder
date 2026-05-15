@@ -233,7 +233,7 @@ export default function DashboardLayout(): ReactNode {
                   dark: `${import.meta.env.BASE_URL}/assets/images/logo-inverted.svg`,
                 }}
                 alt={{light: 'Logo (Light)', dark: 'Logo (Dark)'}}
-                height={21}
+                height={27}
                 width="auto"
                 alignItems="center"
                 marginBottom="3px"
