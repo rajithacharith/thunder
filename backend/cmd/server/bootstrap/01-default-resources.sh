@@ -45,7 +45,7 @@ echo ""
 
 # System resource server configuration from environment variables.
 SYSTEM_RS_HANDLE="${SYSTEM_RS_HANDLE:-}"
-SYSTEM_RS_IDENTIFIER="${SYSTEM_RS_IDENTIFIER:-system}"
+SYSTEM_RS_IDENTIFIER="${SYSTEM_RS_IDENTIFIER:-https://localhost:8090/mcp}"
 
 # Derive the system permission root based on the configured handle.
 if [[ -n "$SYSTEM_RS_HANDLE" ]]; then

@@ -361,9 +361,9 @@ func (suite *ApplicationToolsTestSuite) TestGetApplicationTemplates_Success() {
 	assert.Contains(suite.T(), output, "m2m")
 
 	// Verify SPA template structure
-	spaTemplate := output["spa"].(map[string]interface{})
-	assert.Equal(suite.T(), "<APP_NAME>", spaTemplate["name"])
-	assert.NotNil(suite.T(), spaTemplate["inbound_auth_config"])
+	spaTemplate := output["spa"]
+	assert.Equal(suite.T(), "<APP_NAME>", spaTemplate.Name)
+	assert.NotEmpty(suite.T(), spaTemplate.InboundAuthConfig)
 
 	mockService.AssertExpectations(suite.T())
 }
