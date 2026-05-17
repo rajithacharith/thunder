@@ -137,7 +137,7 @@ func (suite *BuiltInExecutorRegistrationTestSuite) TestResolveBuiltInExecutorNam
 }
 
 func (suite *BuiltInExecutorRegistrationTestSuite) TestResolveBuiltInExecutorNames_WhitespaceNameRejected() {
-	_, err := resolveBuiltInExecutorNames(newBuiltInExecutorRegistrars(), []string{" " + ExecutorNameBasicAuth})
+	_, err := resolveBuiltInExecutorNames(newBuiltInExecutorRegistrars(), []string{" " + ExecutorNameCredentialsAuth})
 	require.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "unknown built-in executor")
 }
@@ -175,7 +175,7 @@ func (suite *BuiltInExecutorRegistrationTestSuite) TestRegisterBuiltInExecutors_
 
 	assert.True(suite.T(), suite.registry.IsRegistered(ExecutorNamePermissionValidator))
 	assert.True(suite.T(), suite.registry.IsRegistered(ExecutorNameInviteExecutor))
-	assert.False(suite.T(), suite.registry.IsRegistered(ExecutorNameBasicAuth))
+	assert.False(suite.T(), suite.registry.IsRegistered(ExecutorNameCredentialsAuth))
 }
 
 func (suite *BuiltInExecutorRegistrationTestSuite) TestRegisterBuiltInExecutors_DedupesNames() {
@@ -197,7 +197,7 @@ func (suite *BuiltInExecutorRegistrationTestSuite) TestRegisterBuiltInExecutors_
 
 	assert.True(suite.T(), suite.registry.IsRegistered("CustomExecutor"))
 	assert.True(suite.T(), suite.registry.IsRegistered(ExecutorNamePermissionValidator))
-	assert.False(suite.T(), suite.registry.IsRegistered(ExecutorNameBasicAuth))
+	assert.False(suite.T(), suite.registry.IsRegistered(ExecutorNameCredentialsAuth))
 }
 
 func (suite *BuiltInExecutorRegistrationTestSuite) TestInitialize_EmptyConfigRegistersAllBuiltIns() {
@@ -217,7 +217,7 @@ func (suite *BuiltInExecutorRegistrationTestSuite) TestInitialize_SubsetConfig()
 	require.NoError(suite.T(), err)
 
 	assert.True(suite.T(), reg.IsRegistered(ExecutorNameInviteExecutor))
-	assert.False(suite.T(), reg.IsRegistered(ExecutorNameBasicAuth))
+	assert.False(suite.T(), reg.IsRegistered(ExecutorNameCredentialsAuth))
 }
 
 func (suite *BuiltInExecutorRegistrationTestSuite) TestInitialize_UnknownExecutorReturnsError() {
@@ -260,7 +260,7 @@ func (suite *BuiltInExecutorRegistrationTestSuite) TestFlowConfig_ExecutorsYAMLU
 	const yamlFragment = `
 flow:
   executors:
-    - BasicAuthExecutor
+    - CredentialsAuthExecutor
     - InviteExecutor
 `
 	var cfg struct {
@@ -268,11 +268,11 @@ flow:
 	}
 	err := yaml.Unmarshal([]byte(yamlFragment), &cfg)
 	require.NoError(suite.T(), err)
-	assert.Equal(suite.T(), []string{ExecutorNameBasicAuth, ExecutorNameInviteExecutor}, cfg.Flow.Executors)
+	assert.Equal(suite.T(), []string{ExecutorNameCredentialsAuth, ExecutorNameInviteExecutor}, cfg.Flow.Executors)
 
 	reg, err := Initialize(suite.depsForBuiltInRegistration(), cfg.Flow)
 	require.NoError(suite.T(), err)
-	assert.True(suite.T(), reg.IsRegistered(ExecutorNameBasicAuth))
+	assert.True(suite.T(), reg.IsRegistered(ExecutorNameCredentialsAuth))
 	assert.True(suite.T(), reg.IsRegistered(ExecutorNameInviteExecutor))
 	assert.False(suite.T(), reg.IsRegistered(ExecutorNameOAuth))
 }
