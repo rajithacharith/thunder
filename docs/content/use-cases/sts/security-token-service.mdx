@@ -1,0 +1,54 @@
+---
+title: Security Token Service
+description: Use {{ProductName}} as a Security Token Service to exchange, transform, and broker identities across service boundaries using OAuth 2.0 Token Exchange (RFC 8693).
+sidebar_position: 1
+---
+
+# Security Token Service
+
+A Security Token Service (STS) is the trust engine that lets applications exchange, transform, and broker identities across service boundaries. <ProductName /> provides STS capabilities based on OAuth 2.0 Token Exchange ([RFC 8693](https://www.rfc-editor.org/rfc/rfc8693)) — so you can issue audience-specific tokens, reduce scope for least-privilege access, broker identities across identity providers, and secure AI agent interactions without building token transformation infrastructure from scratch.
+
+## What You Can Build
+
+<div className="uc-cap-grid">
+  <article className="uc-cap-card"><h3>Service-to-Service Token Delegation</h3><p>Exchange an upstream token for one scoped to a specific downstream service without spreading raw user tokens through your infrastructure.</p></article>
+  <article className="uc-cap-card"><h3>Scope Reduction</h3><p>Narrow token permissions at each service boundary so a downstream service only receives the scopes its operation requires.</p></article>
+  <article className="uc-cap-card"><h3>Audience-Specific Token Issuance</h3><p>Bind issued tokens to the target resource server so a token for one API cannot be replayed at another.</p></article>
+  <article className="uc-cap-card"><h3>Delegated User Actions</h3><p>Record both the user's identity and the acting service's identity in the token so downstream services can distinguish delegated calls from direct user calls.</p></article>
+  <article className="uc-cap-card"><h3>Cross-IDP Trust Brokering</h3><p>Exchange tokens from external identity providers for internally issued tokens so downstream services only need to trust one issuer.</p></article>
+  <article className="uc-cap-card"><h3>Secure AI Agent Identity</h3><p>Issue short-lived, scoped tokens for AI agent actions that record both the user subject and the agent actor for downstream auditability.</p></article>
+  <article className="uc-cap-card"><h3>Token Exchange Authorization</h3><p>Control which applications can perform token exchange by requiring explicit grant type authorization per application.</p></article>
+  <article className="uc-cap-card"><h3>Token Validation Across Boundaries</h3><p>Validate signed JWTs using <ProductName />'s JWKS endpoint with consistent claims so each service does not implement its own token parsing logic.</p></article>
+</div>
+
+## When to Use This Pattern
+
+Use this pattern if your platform follows a service-oriented or microservices architecture and you need a trusted authority to issue, transform, and validate tokens across service boundaries. Specifically, choose STS when you have:
+
+- Services that call other services and need audience-scoped tokens at each hop
+- APIs that accept tokens from multiple upstream callers or external identity providers
+- Workflows where a service must act on behalf of a user with explicit delegation
+- AI agents that need short-lived, scoped credentials before performing actions
+- A requirement to enforce least-privilege access at each service boundary
+
+## How It Works
+
+In this model:
+
+- Services exchange tokens at the `POST /oauth2/token` endpoint using the `urn:ietf:params:oauth:grant-type:token-exchange` grant type.
+- <ProductName /> validates the subject token and checks that the requesting application has the token exchange grant type authorized.
+- The issued token carries the correct audience binding, reduced scope, and — when provided — actor context from the `actor_token`.
+- Downstream services validate tokens using <ProductName />'s JWKS endpoint and standard JWT claims (`iss`, `sub`, `aud`, `exp`, `iat`).
+- Scope reduction is enforced automatically: <ProductName /> grants only the intersection of requested scopes and scopes present in the subject token.
+
+## Protect Your APIs
+
+Configure your API gateway to validate <ProductName />-issued tokens at the edge.
+
+<div className="uc-cap-grid">
+  <article className="uc-cap-card"><h3>Apache APISIX</h3><p>Use the OpenID Connect plugin to validate JWTs via JWKS and enforce required scopes on any route.</p><p><a href="/docs/next/guides/guides/integrations/apim-gateways/apisix">Get started →</a></p></article>
+  <article className="uc-cap-card"><h3>KrakenD</h3><p>Configure the JWT validation middleware to verify tokens against <ProductName />'s discovery endpoint.</p><p><a href="/docs/next/use-cases/sts/krakend">Get started →</a></p></article>
+  <article className="uc-cap-card"><h3>Kong Konnect</h3><p>Attach the OpenID Connect plugin to a route to validate tokens and enforce scope-based authorization.</p><p><a href="/docs/next/use-cases/sts/kong">Get started →</a></p></article>
+  <article className="uc-cap-card"><h3>Envoy</h3><p>Use the <code>jwt_authn</code> HTTP filter to verify token signatures via the <ProductName /> JWKS endpoint.</p><p><a href="/docs/next/use-cases/sts/envoy">Get started →</a></p></article>
+  <article className="uc-cap-card"><h3>Azure API Management</h3><p>Apply the <code>validate-jwt</code> inbound policy with the <ProductName /> discovery endpoint to authenticate requests.</p><p><a href="/docs/next/use-cases/sts/azure-apim">Get started →</a></p></article>
+</div>

@@ -391,6 +391,7 @@ const sidebars: SidebarsConfig = {
           collapsible: true,
           collapsed: true,
           items: [
+            {type: 'doc', id: 'use-cases/sts/security-token-service', label: 'Security Token Service'},
             {type: 'doc', id: 'use-cases/sts/azure-apim', label: 'Protect APIs on Azure API Management'},
             {type: 'doc', id: 'use-cases/sts/envoy', label: 'Protect APIs on Envoy'},
             {type: 'doc', id: 'use-cases/sts/kong', label: 'Protect APIs on Kong Konnect'},
@@ -543,6 +544,19 @@ const sidebars: SidebarsConfig = {
                   type: 'doc',
                   id: 'guides/guides/notifications/sms-providers',
                   label: 'SMS Providers',
+                },
+              ],
+            },
+            {
+              type: 'category',
+              label: 'APIM Gateways',
+              collapsed: true,
+              collapsible: true,
+              items: [
+                {
+                  type: 'doc',
+                  id: 'guides/guides/integrations/apim-gateways/apisix',
+                  label: 'Apache APISIX',
                 },
               ],
             },
