@@ -53,6 +53,7 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
+
 function Ensure-Install {
     param([string]$Dir)
     if (-not (Test-Path (Join-Path $Dir "node_modules"))) {
@@ -76,8 +77,8 @@ if (-not (Test-Path (Join-Path "api" "wayfinder.sqlite"))) {
 function Start-Service-Process {
     param([string]$Dir, [string]$Script, [string]$Log)
     $logPath = Join-Path $ScriptDir "logs/$Log"
-    return Start-Process -FilePath "npm" `
-        -ArgumentList @("run", $Script) `
+    return Start-Process -FilePath "cmd.exe" `
+        -ArgumentList @("/c", "npm", "run", $Script) `
         -WorkingDirectory (Join-Path $ScriptDir $Dir) `
         -PassThru `
         -NoNewWindow `
