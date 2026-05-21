@@ -222,12 +222,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           label: 'Docs',
           className: 'navbar__link--docs',
         },
-        {
-          type: 'doc',
-          docId: 'apis',
-          position: 'right',
-          label: 'APIs',
-        },
+        // {
+        //   type: 'doc',
+        //   docId: 'apis',
+        //   position: 'right',
+        //   label: 'APIs',
+        // },
         {
           type: 'doc',
           docId: 'sdks/overview',

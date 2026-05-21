@@ -37,8 +37,8 @@ function PersonIcon({className}: {className?: string}) {
 
 /**
  * "Meet Wayfinder" diagram. The top card names the app; the two
- * columns below show consumers (peers, stacked) and staff (Odin at
- * the top with hierarchy connectors down to Heimdall and Baldur).
+ * columns below show consumers (peers, stacked) and staff (Alex at
+ * the top with hierarchy connectors down to Sam and Maya).
  * Hierarchy lines align with the staff icons' horizontal centres.
  */
 export function WayfinderOrganization() {
@@ -58,7 +58,7 @@ export function WayfinderOrganization() {
             Wayfinder
           </text>
           <text x="480" y="78" textAnchor="middle" className="uc-b2c-wayfinder-org__header-sub">
-            B2C Travel-Booking Application
+            Consumer Travel-Booking Application
           </text>
         </g>
 
@@ -81,43 +81,43 @@ export function WayfinderOrganization() {
           </text>
           <line x1="40" y1="78" x2="320" y2="78" className="uc-b2c-wayfinder-org__divider" />
 
-          {/* Thor (top) */}
+          {/* John Doe (top) */}
           <g transform="translate(156,95)">
             <g transform="scale(0.86)">
               <PersonIcon className="uc-b2c-wayfinder-org__icon" />
             </g>
           </g>
           <text x="180" y="171" textAnchor="middle" className="uc-b2c-wayfinder-org__cast-name">
-            Thor
+            John Doe
           </text>
           <text x="180" y="191" textAnchor="middle" className="uc-b2c-wayfinder-org__cast-role">
             Returning traveller
           </text>
 
-          {/* Sif (middle) */}
+          {/* Jane Smith (middle) */}
           <g transform="translate(156,215)">
             <g transform="scale(0.86)">
               <PersonIcon className="uc-b2c-wayfinder-org__icon" />
             </g>
           </g>
           <text x="180" y="291" textAnchor="middle" className="uc-b2c-wayfinder-org__cast-name">
-            Sif
+            Jane Smith
           </text>
           <text x="180" y="311" textAnchor="middle" className="uc-b2c-wayfinder-org__cast-role">
-            New arrival via email
+            Returning traveller
           </text>
 
-          {/* Freya (bottom) */}
+          {/* Emma Wilson (bottom) */}
           <g transform="translate(156,335)">
             <g transform="scale(0.86)">
               <PersonIcon className="uc-b2c-wayfinder-org__icon" />
             </g>
           </g>
           <text x="180" y="411" textAnchor="middle" className="uc-b2c-wayfinder-org__cast-name">
-            Freya
+            Emma Wilson
           </text>
           <text x="180" y="431" textAnchor="middle" className="uc-b2c-wayfinder-org__cast-role">
-            New arrival via Google
+            New arrival via email
           </text>
         </g>
 
@@ -132,14 +132,14 @@ export function WayfinderOrganization() {
           </text>
           <line x1="40" y1="78" x2="320" y2="78" className="uc-b2c-wayfinder-org__divider" />
 
-          {/* Odin (centered at the top of the column) */}
+          {/* Alex Carter (centered at the top of the column) */}
           <g transform="translate(156,110)">
             <g transform="scale(0.86)">
               <PersonIcon className="uc-b2c-wayfinder-org__icon uc-b2c-wayfinder-org__icon--lead" />
             </g>
           </g>
           <text x="180" y="186" textAnchor="middle" className="uc-b2c-wayfinder-org__cast-name">
-            Odin
+            Alex Carter
           </text>
           <text x="180" y="206" textAnchor="middle" className="uc-b2c-wayfinder-org__cast-role">
             Operations admin
@@ -153,27 +153,27 @@ export function WayfinderOrganization() {
             <line x1="250" y1="252" x2="250" y2="280" />
           </g>
 
-          {/* Heimdall (left report, icon centre at x=110) */}
+          {/* Sam Rivera (left report, icon centre at x=110) */}
           <g transform="translate(86,280)">
             <g transform="scale(0.86)">
               <PersonIcon className="uc-b2c-wayfinder-org__icon" />
             </g>
           </g>
           <text x="110" y="356" textAnchor="middle" className="uc-b2c-wayfinder-org__cast-name">
-            Heimdall
+            Sam Rivera
           </text>
           <text x="110" y="376" textAnchor="middle" className="uc-b2c-wayfinder-org__cast-role">
             Support agent
           </text>
 
-          {/* Baldur (right report, icon centre at x=250) */}
+          {/* Maya Patel (right report, icon centre at x=250) */}
           <g transform="translate(226,280)">
             <g transform="scale(0.86)">
               <PersonIcon className="uc-b2c-wayfinder-org__icon" />
             </g>
           </g>
           <text x="250" y="356" textAnchor="middle" className="uc-b2c-wayfinder-org__cast-name">
-            Baldur
+            Maya Patel
           </text>
           <text x="250" y="376" textAnchor="middle" className="uc-b2c-wayfinder-org__cast-role">
             Destinations curator
@@ -185,7 +185,7 @@ export function WayfinderOrganization() {
 }
 
 /**
- * Architecture diagram. Consumers (Thor, Freya) sit at the top next
+ * Architecture diagram. Consumers (John, Jane, Emma) sit at the top next
  * to the Wayfinder Web app; ThunderID and Wayfinder Server sit below
  * the app, symmetrically. Pattern-agnostic — the arrow labels do not
  * commit to redirect-based vs app-native vs direct API.
@@ -220,34 +220,34 @@ export function WayfinderArchitecture() {
             Consumers
           </text>
 
-          {/* Thor */}
+          {/* John Doe */}
           <g transform="translate(358,46)">
             <g transform="scale(0.78)">
               <PersonIcon className="uc-b2c-wayfinder-arch__icon" />
             </g>
           </g>
           <text x="380" y="116" textAnchor="middle" className="uc-b2c-wayfinder-arch__cast-name">
-            Thor
+            John
           </text>
 
-          {/* Sif */}
+          {/* Jane Smith */}
           <g transform="translate(458,46)">
             <g transform="scale(0.78)">
               <PersonIcon className="uc-b2c-wayfinder-arch__icon" />
             </g>
           </g>
           <text x="480" y="116" textAnchor="middle" className="uc-b2c-wayfinder-arch__cast-name">
-            Sif
+            Jane
           </text>
 
-          {/* Freya */}
+          {/* Emma Wilson */}
           <g transform="translate(558,46)">
             <g transform="scale(0.78)">
               <PersonIcon className="uc-b2c-wayfinder-arch__icon" />
             </g>
           </g>
           <text x="580" y="116" textAnchor="middle" className="uc-b2c-wayfinder-arch__cast-name">
-            Freya
+            Emma
           </text>
         </g>
 
@@ -341,34 +341,34 @@ export function WayfinderArchitecture() {
             Staff
           </text>
 
-          {/* Odin */}
+          {/* Alex Carter */}
           <g transform="translate(118,624)">
             <g transform="scale(0.78)">
               <PersonIcon className="uc-b2c-wayfinder-arch__icon" />
             </g>
           </g>
           <text x="140" y="694" textAnchor="middle" className="uc-b2c-wayfinder-arch__cast-name">
-            Odin
+            Alex
           </text>
 
-          {/* Heimdall */}
+          {/* Sam Rivera */}
           <g transform="translate(218,624)">
             <g transform="scale(0.78)">
               <PersonIcon className="uc-b2c-wayfinder-arch__icon" />
             </g>
           </g>
           <text x="240" y="694" textAnchor="middle" className="uc-b2c-wayfinder-arch__cast-name">
-            Heimdall
+            Sam
           </text>
 
-          {/* Baldur */}
+          {/* Maya Patel */}
           <g transform="translate(318,624)">
             <g transform="scale(0.78)">
               <PersonIcon className="uc-b2c-wayfinder-arch__icon" />
             </g>
           </g>
           <text x="340" y="694" textAnchor="middle" className="uc-b2c-wayfinder-arch__cast-name">
-            Baldur
+            Maya
           </text>
         </g>
       </svg>
@@ -652,4 +652,3 @@ export function WayfinderAgentArchitecture() {
     </div>
   );
 }
-

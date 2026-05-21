@@ -14,22 +14,20 @@ Each walkthrough on this page runs one of the use cases from [Customer Identity]
 
 ## Meet Wayfinder
 
-Wayfinder is a B2C travel-booking application. Through Wayfinder, consumers search for flights and hotels, book trips, and manage their travel profile.
-
-Wayfinder has two types of users: consumers who book travel, and staff who run the product.
+Wayfinder is a consumer travel-booking application. Through Wayfinder, consumers search for flights and hotels, book trips, and manage their travel profile.
 
 <WayfinderOrganization />
 
-Meet the cast:
+### Meet the Cast
 
 - **Consumers** book travel. They sign themselves up, sign in, manage their own profile, and recover access when they lose it.
-  - **Thor** is a returning traveller who signs in, manages his profile, and recovers his password.
-  - **Sif** is a new arrival who signs up with her email and a password.
-  - **Freya** is another new arrival who would rather use her Google account than create yet another password.
+  - **John Doe** is a returning traveller who signs in, manages his profile, and recovers his password.
+  - **Jane Smith** is another returning traveller. She and John both book trips through Wayfinder.
+  - **Emma Wilson** is a new arrival who signs up with her email and a password.
 - **Staff** run the product. They are onboarded by an operations admin from the <ProductName /> console.
-  - **Odin** is the operations admin who onboards everyone else.
-  - **Heimdall** is the support agent.
-  - **Baldur** is the destinations curator.
+  - **Alex Carter** is the operations admin who onboards everyone else.
+  - **Sam Rivera** is the support agent.
+  - **Maya Patel** is the destinations curator.
 
 ## Sample Architecture
 
@@ -37,48 +35,48 @@ Wayfinder runs as three deployable pieces:
 
 - **Wayfinder Web**: the browser-based app that consumers interact with.
 - **Wayfinder Server**: holds the booking data and exposes the booking API.
-- <ProductName />: authenticates users and issues the tokens.
+- **<ProductName />**: authenticates users and issues the tokens.
 
 <WayfinderArchitecture />
 
 ## Identity Model
 
-The setup below creates a handful of <ProductName /> resources. Here is what each one is and how it maps to Wayfinder concepts.
+The setup below creates a set of <ProductName /> resources. Here is what each one is and how it maps to Wayfinder concepts.
 
 ### Organization
 
-<ProductName /> can host many isolated tenants. A B2C product like Wayfinder needs only one, so everything lives in a single organization.
+<ProductName /> can host many businesses as isolated Organizations. Wayfinder is one such business, so everything lives in a single organization.
 
 ### User Types
 
 A user type defines who can exist in the system and what attributes they carry. Each user record belongs to exactly one user type. Wayfinder defines two user types:
 
-- `Customer`: consumers like Thor and Freya, with traveller attributes such as name and email.
-- `Staff`: team members like Odin, with operational attributes like display name and time zone.
+- `Customer`: a consumer who books travel, with profile attributes required for a traveller.
+- `Staff`: an internal team member who manages the product, with profile attributes required for a staff member.
 
 See [User Types](/docs/next/guides/guides/users/user-types).
 
-### Resource and Permissions
+### Resources and Permissions
 
-When Wayfinder Web calls Wayfinder Server, the server protects its endpoints with permissions issued by <ProductName />. 
+Wayfinder Server protects its API endpoints using permissions issued by <ProductName />.
 
-A **resource server** groups the APIs of one backend. Each resource server defines one or more **resources**, and each resource defines **actions**. <ProductName /> automatically generates a **permission** of the form `<resource>:<action>` for every action. 
+A **resource server** represents the APIs of a single backend. Each resource server defines one or more **resources**, and each resource defines **actions**. <ProductName /> automatically generates a **permission** of the form `<resource>:<action>` for every action.
 
 Wayfinder's booking API is one resource server with a single `booking` resource that has three actions: `read`, `create`, and `cancel`. The generated permissions are `booking:read`, `booking:create`, and `booking:cancel`.
 
 ```
-wayfinder-booking-api                   (Resource Server)
+booking-api                             (Resource Server)
 └── booking                             (Resource)
     ├── read     →  booking:read        (Permission)
     ├── create   →  booking:create
     └── cancel   →  booking:cancel
 ```
 
-Permissions are issued to the access tokens. See [Resource Servers](/docs/next/guides/guides/resource-servers).
+Permissions are included in access tokens. See [Resource Servers](/docs/next/guides/guides/resource-servers).
 
 ### Roles
 
-A role bundles permissions for a class of user. A user's effective permissions are the union of permissions across their roles. Wayfinder defines four roles:
+A role groups permissions for a user category. A user's effective permissions are the combined set of permissions across all their assigned roles. Wayfinder defines four roles:
 
 - `Traveler`: consumer role with all three `booking:*` permissions.
 - `Support`: staff role for consumer support workflows.
@@ -95,7 +93,7 @@ See [Manage Applications](/docs/next/guides/guides/applications/manage-applicati
 
 ### Flows
 
-A flow is the sequence of steps a user moves through when signing in, signing up, or recovering. Wayfinder uses `default-basic-flow` for sign-in (with Google added for federated sign-in), plus a separate recovery and invitation flow.
+A flow is the sequence of steps a user moves through when signing in, signing up, or recovering. Wayfinder uses the bundled `default-basic-flow` for sign-in (with Google added for federated sign-in), plus a separate recovery and invitation flow.
 
 See [Build a Flow](/docs/next/guides/guides/flows/build-a-flow).
 
@@ -106,7 +104,7 @@ Complete the setup once. Every walkthrough below builds on the same starting poi
 The two tabs below offer the same end state through different paths.
 
 - **Quick Start** applies a single declarative bundle that creates every resource the walkthroughs share.
-- **Build It Yourself** creates the same consumer-side resources manually so you can see how each one is made.
+- **Configure It Yourself** creates the same consumer-side resources manually so you can see how each one is made.
 
 Before you begin, make sure you have:
 
@@ -116,11 +114,9 @@ Before you begin, make sure you have:
 <Tabs>
 <TabItem value="declarative" label="Quick Start" default>
 
-Apply the Wayfinder declarative bundle.
+Create the consumer-side resources in one step by importing the declarative YAML bundle through the <ProductName /> Console. Then update `deployment.yaml` with two additions.
 
-1. **Edit `thunderid-config/thunderid.env`** to set the client ID and redirect URIs the sample should use.
-
-2. **Import the YAML into <ProductName />.**
+1. **Import the YAML into <ProductName />.**
 
    - Sign in to the <ProductName /> Console at [https://localhost:8090/console](https://localhost:8090/console).
    - On first sign-in, a welcome screen appears with an **Open** button. (Later, reach the same screen from the user profile menu in the top-right corner of the Console.)
@@ -131,15 +127,39 @@ Apply the Wayfinder declarative bundle.
    The import creates:
 
    - **User types:** Customer (consumers) and Staff (internal team).
-   - **Resource server:** `wayfinder-booking-api` with `booking:read`, `booking:create`, and `booking:cancel` permissions.
+   - **Resource server:** `booking-api` with `booking:read`, `booking:create`, and `booking:cancel` permissions.
    - **Roles:** Traveler (consumer), Support, DestinationsAdmin, OpsAdmin (staff).
-   - **Application:** WAYFINDER.
-   - **Users:** Thor (Customer with the Traveler role) and Odin (Staff with the OpsAdmin role).
+   - **Application:** WAYFINDER, with registration and recovery flows enabled.
+   - **Flows:** `wayfinder-registration-flow` (sign-up), `wayfinder-recovery-flow` (recovery), and `wayfinder-onboarding-flow` (staff invitations). Sign-in uses the bundled `default-basic-flow`.
+   - **Users:** John Doe and Jane Smith (Customers with the Traveler role) and Alex Carter (Staff with the OpsAdmin role).
+
+2. **Update `deployment.yaml`** with two additions, then restart <ProductName /> so the changes take effect.
+
+   - Activate the Wayfinder onboarding flow. <ProductName /> permits one `USER_ONBOARDING` flow at a time, selected by handle:
+
+     ```yaml
+     flow:
+       user_onboarding_flow_handle: "wayfinder-onboarding-flow"
+     ```
+
+   - Configure SMTP so recovery and invitation emails can be delivered. Replace the placeholders with your SMTP relay credentials:
+
+     ```yaml
+     email:
+       smtp:
+         host: "<smtp-host>"
+         port: <smtp-port>
+         username: "<smtp-username>"
+         password: "<smtp-password>"
+         from_address: "<from-address>"
+         enable_start_tls: true
+         enable_authentication: true
+     ```
 
 3. **Start the sample** following the commands in its README.
 
 </TabItem>
-<TabItem value="build" label="Build It Yourself">
+<TabItem value="build" label="Configure It Yourself">
 
 Create the consumer-side resources manually in the <ProductName /> console. Each walkthrough later layers any additional resources it needs on top of this baseline.
 
@@ -154,27 +174,61 @@ Create the consumer-side resources manually in the <ProductName /> console. Each
    | `password`    | string | Credential          |
    | `given_name`  | string | Optional            |
    | `family_name` | string | Optional            |
-   | `name`        | string | Optional            |
    | `sub`         | string | Optional            |
 
    See [User Types](/docs/next/guides/guides/users/user-types).
 
-2. **Create the `wayfinder-booking-api` resource server.**
+2. **Create the `booking-api` resource server.**
 
-   Invoke **Resource Management API** to create the resource server, resource and actions. Set the handle to `wayfinder-booking-api`. Add a resource with handle `booking` and three actions:
+   Resource servers are managed through the Resource Management API. Create the resource server, the `booking` resource, and three actions in one call:
 
-   | Action   | Generated permission |
-   | -------- | -------------------- |
-   | `read`   | `booking:read`       |
-   | `create` | `booking:create`     |
-   | `cancel` | `booking:cancel`     |
+   ```bash
+   curl -k -X POST https://localhost:8090/resource-servers \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "name": "Booking API",
+       "identifier": "booking-api",
+       "delimiter": ":",
+       "resources": [
+         {
+           "name": "Booking",
+           "handle": "booking",
+           "actions": [
+             { "name": "Read",   "handle": "read"   },
+             { "name": "Create", "handle": "create" },
+             { "name": "Cancel", "handle": "cancel" }
+           ]
+         }
+       ]
+     }'
+   ```
+
+   This generates three permissions: `booking:read`, `booking:create`, and `booking:cancel`.
 
    See [Resource Servers](/docs/next/guides/guides/resource-servers).
 
 3. **Create the `Traveler` role.**
 
-   Navigate to **Roles** → **Add Role**. Grant it the three `booking:*` permissions on `wayfinder-booking-api`. 
-   
+   Roles and their permissions are managed through the Role Management API. Create the role with the three `booking:*` permissions in one call. Replace `<default-ou-id>` with the ID of your default organization unit (look it up via `GET /organization-units`).
+
+   ```bash
+   curl -k -X POST https://localhost:8090/roles \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "name": "Traveler",
+       "description": "Consumer role with full booking permissions",
+       "ouId": "<default-ou-id>",
+       "permissions": [
+         {
+           "resourceServerId": "booking-api",
+           "permissions": ["booking:read", "booking:create", "booking:cancel"]
+         }
+       ]
+     }'
+   ```
+
    See [Authorization](/docs/next/guides/key-concepts/authorization).
 
 4. **Register the `WAYFINDER` application.**
@@ -190,15 +244,11 @@ Create the consumer-side resources manually in the <ProductName /> console. Each
 
    See [Manage Applications](/docs/next/guides/guides/applications/manage-applications).
 
-5. **Use the `default-basic-flow` authentication flow.**
+5. **Create John Doe as a `Customer`.**
 
-   The shipped `default-basic-flow` works as-is for password sign-in. To customize the steps, see [Build a Flow](/docs/next/guides/guides/flows/build-a-flow).
+   Navigate to **Users** → **Add User**. Select `Customer` as the user type and click **Create User**. Fill in the schema attributes (`username: john.doe`, `email: john.doe@example.com`, password: `john.doe`) and complete the user creation.
 
-6. **Create Thor as a `Customer`.**
-
-   Navigate to **Users** → **Add User**. Select `Customer` as the user type and click "Create User". Fill in the schema attributes and complete the user creation.
-
-   Navigate to **Roles** → open the `Traveler` role → **Assignments** tab. Click on **Add** and select the user you just created to assign the role.
+   Navigate to **Roles** → open the `Traveler` role → **Assignments** tab. Click **Add** and select John to assign the role.
    
    See [Manage Users](/docs/next/guides/guides/users/manage-users).
 

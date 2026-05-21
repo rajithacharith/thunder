@@ -36,22 +36,6 @@ import WindowsLogo from '../icons/WindowsLogo';
 const INSTALL_TABS = [
   {id: 'cli', label: 'CLI', icon: CliLogo, command: 'npx thunderid', brandColor: null, enabled: true},
   {
-    id: 'claude',
-    label: 'Claude',
-    icon: ClaudeLogo,
-    command: '/plugin marketplace add thunder-id/skills',
-    brandColor: '#D97757',
-    enabled: false,
-  },
-  {
-    id: 'codex',
-    label: 'Codex',
-    icon: CodexLogo,
-    command: 'codex plugin marketplace add thunder-id/skills',
-    brandColor: '#3941FF',
-    enabled: false,
-  },
-  {
     id: 'docker',
     label: 'Docker',
     icon: DockerLogo,
@@ -60,12 +44,28 @@ const INSTALL_TABS = [
     enabled: true,
   },
   {
+    id: 'claude',
+    label: 'Claude',
+    icon: ClaudeLogo,
+    command: '/plugin marketplace add thunder-id/skills',
+    brandColor: '#D97757',
+    enabled: true,
+  },
+  {
+    id: 'codex',
+    label: 'Codex',
+    icon: CodexLogo,
+    command: 'codex plugin marketplace add thunder-id/skills',
+    brandColor: '#3941FF',
+    enabled: true,
+  },
+  {
     id: 'skills',
     label: 'Skills',
     icon: SkillsLogo,
     command: 'npx skills add thunder-id/skills',
     brandColor: null,
-    enabled: false,
+    enabled: true,
   },
 ];
 

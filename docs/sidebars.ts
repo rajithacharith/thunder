@@ -153,6 +153,11 @@ const sidebars: SidebarsConfig = {
       items: [
         {
           type: 'doc',
+          id: 'guides/working-with-ai/skills',
+          label: 'Skills',
+        },
+        {
+          type: 'doc',
           id: 'guides/working-with-ai/mcp-server',
           label: 'MCP Server',
         },
@@ -355,7 +360,11 @@ const sidebars: SidebarsConfig = {
               items: [
                 {type: 'doc', id: 'use-cases/ai-agents/try-it-out/protect-the-agent', label: 'Protect the Agent'},
                 {type: 'doc', id: 'use-cases/ai-agents/try-it-out/act-on-its-own', label: 'Acting on Its Own'},
-                {type: 'doc', id: 'use-cases/ai-agents/try-it-out/act-on-behalf-of-user', label: 'Acting on Behalf of a User'},
+                {
+                  type: 'doc',
+                  id: 'use-cases/ai-agents/try-it-out/act-on-behalf-of-user',
+                  label: 'Acting on Behalf of a User',
+                },
               ],
             },
           ],

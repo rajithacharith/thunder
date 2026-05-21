@@ -71,7 +71,7 @@ async function main(): Promise<void> {
 
   const BRAND_BLUE = '\x1b[38;2;54;136;255m';
   const RESET = '\x1b[0m';
-  const WHITE = '\x1b[97m';
+  const GREY = '\x1b[38;2;128;128;128m';
 
   const thunderLines = [
     ' _____ _                     _           ',
@@ -89,7 +89,7 @@ async function main(): Promise<void> {
     ' _| |_| |/ / ',
     ' \\___/|___/  ',
   ];
-  const banner = thunderLines.map((t, i) => `  ${BRAND_BLUE}${t}${RESET}${WHITE}${idLines[i]}${RESET}`).join('\n');
+  const banner = thunderLines.map((t, i) => `  ${BRAND_BLUE}${t}${RESET}${GREY}${idLines[i]}${RESET}`).join('\n');
 
   intro(`\n${banner}\n\n${colors.dim('· High-performance open-source identity stack, engineered for developers')}\n`);
 

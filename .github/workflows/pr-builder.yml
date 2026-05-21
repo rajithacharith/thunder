@@ -227,8 +227,8 @@ jobs:
 
   build:
     name: 🛠️ Build Product
-    needs: dependency-guard
-    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
+    needs: [dependency-guard, detect-code-changes]
+    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group') && (needs.detect-code-changes.result == 'skipped' || needs.detect-code-changes.outputs.should-run == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -319,10 +319,35 @@ jobs:
           path: backend/coverage_unit.out
           if-no-files-found: error
 
+  detect-code-changes:
+    name: 🔍 Detect Code Changes
+    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      should-run: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3
+        id: filter
+        with:
+          base: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
+          ref: ${{ github.event_name == 'merge_group' && github.sha || github.event.pull_request.head.sha }}
+          filters: |
+            code:
+              - '**'
+              - '!docs/**'
+      - name: ✅ Code changes detected
+        if: steps.filter.outputs.code == 'true'
+        run: echo "Non-documentation files changed - frontend and E2E tests will run"
+      - name: ⏭️ Docs-only changes
+        if: steps.filter.outputs.code != 'true'
+        run: echo "Only documentation changes detected - skipping frontend and E2E tests"
+
   test-frontend:
     name: 🧪 Frontend Tests (shard ${{ matrix.shard }}/4)
-    needs: dependency-guard
-    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
+    needs: [dependency-guard, detect-code-changes]
+    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group') && (needs.detect-code-changes.result == 'skipped' || needs.detect-code-changes.outputs.should-run == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -454,8 +479,8 @@ jobs:
 
   build_samples:
     name: 🛠️ Build Sample Apps
-    needs: dependency-guard
-    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
+    needs: [dependency-guard, detect-code-changes]
+    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group') && (needs.detect-code-changes.result == 'skipped' || needs.detect-code-changes.outputs.should-run == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -594,8 +619,8 @@ jobs:
 
   test-e2e:
     name: 🎭 Playwright E2E Tests
-    needs: [build, build_samples]
-    if: ${{ always() && needs.build.result == 'success' && needs.build_samples.result == 'success' }}
+    needs: [build, build_samples, detect-code-changes]
+    if: ${{ always() && needs.build.result == 'success' && needs.build_samples.result == 'success' && (needs.detect-code-changes.result == 'skipped' || needs.detect-code-changes.outputs.should-run == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:

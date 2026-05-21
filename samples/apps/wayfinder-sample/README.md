@@ -108,19 +108,7 @@ The `thunderid-config/` directory contains a single importable YAML that creates
 
 ### Import Resources
 
-**Before you import**, delete the bundled `default-user-onboarding` flow. ThunderID permits only one `USER_ONBOARDING` flow at a time. The Wayfinder bundle ships its own with Support and DestinationsAdmin branches that attach the matching role on invitation accept.
-
-```bash
-# Look up the default flow ID first
-curl -k -H "Authorization: Bearer $TOKEN" \
-  https://localhost:8090/flows?flowType=USER_ONBOARDING
-
-# Delete it
-curl -k -X DELETE -H "Authorization: Bearer $TOKEN" \
-  https://localhost:8090/flows/<default-onboarding-flow-id>
-```
-
-Then import the bundle:
+Import the bundle:
 
 1. Start ThunderID and open the Console.
 2. On the **welcome screen** (shown on first login, or accessible from the user profile menu), choose **Open** and upload `thunderid-config/thunderid-config.yaml`. Then for environment variables, upload `thunderid-config/thunderid.env`.
@@ -150,6 +138,31 @@ The import creates:
 | `alex.carter` / `alex.carter` | User | Staff with the `OpsAdmin` role for inviting other staff |
 
 The agent's client secret defaults to `wayfinder-agent-secret` (set in `thunderid.env`). Change it in the environment file before importing if you prefer a different value.
+
+### Manual Setup
+
+After the import, update `deployment.yaml` with two additions and restart the server:
+
+- Activate the Wayfinder onboarding flow. ThunderID permits only one `USER_ONBOARDING` flow at a time, selected by handle:
+
+  ```yaml
+  flow:
+    user_onboarding_flow_handle: "wayfinder-onboarding-flow"
+  ```
+
+- Configure SMTP so recovery and invitation emails can be delivered. Replace the placeholders with your SMTP relay credentials:
+
+  ```yaml
+  email:
+    smtp:
+      host: "<smtp-host>"
+      port: <smtp-port>
+      username: "<smtp-username>"
+      password: "<smtp-password>"
+      from_address: "<from-address>"
+      enable_start_tls: true
+      enable_authentication: true
+  ```
 
 ## Configure the Sample
 

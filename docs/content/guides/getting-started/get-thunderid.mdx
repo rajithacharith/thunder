@@ -1,7 +1,7 @@
 ---
 title: Get started
 sidebar_position: 2
-description: Download and run using the release artifact or Docker Compose
+description: Download and run using the release artifact, Docker Compose, or Helm
 ---
 
 import Tabs from '@theme/Tabs';
@@ -86,7 +86,7 @@ Launch the <ProductName /> server:
 </Tabs>
 
 :::tip Success
-<ProductName /> will start on **https://localhost:8090**
+Access <ProductName /> on **https://localhost:8090/console**
 :::
 
 </Stepper>
@@ -121,7 +121,102 @@ This command will automatically:
 
 
 :::tip Success
-<ProductName /> will start on **https://localhost:8090**
+Access <ProductName /> on **https://localhost:8090/console**
+:::
+
+</Stepper>
+
+</TabItem>
+
+<TabItem value="helm" label="Helm">
+
+Deploy <ProductName /> on Kubernetes with PostgreSQL using Helm charts.
+
+## Prerequisites
+
+- A running Kubernetes cluster ([minikube](https://kubernetes.io/docs/tasks/tools/#minikube) or [kind](https://kind.sigs.k8s.io/) for local development)
+- [Helm](https://helm.sh/docs/intro/install/) and [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed
+- Terminal or command prompt access
+
+<Stepper stepNode="h2" as="h3">
+
+## Set Up the Database
+
+Install PostgreSQL using the [Bitnami Helm chart](https://bitnami.com/stacks/postgresql):
+
+```bash
+helm install postgresql oci://registry-1.docker.io/bitnamicharts/postgresql \
+  --set auth.username=dbuser \
+  --set auth.password=dbpassword \
+  --set auth.postgresPassword=dbpassword \
+  --set-file primary.initdb.scripts.setup\\.sql=<(cat <<'SQL'
+CREATE DATABASE configdb;
+CREATE DATABASE runtimedb;
+CREATE DATABASE userdb;
+CREATE DATABASE consentdb;
+GRANT ALL PRIVILEGES ON DATABASE configdb TO dbuser;
+GRANT ALL PRIVILEGES ON DATABASE runtimedb TO dbuser;
+GRANT ALL PRIVILEGES ON DATABASE userdb TO dbuser;
+GRANT ALL PRIVILEGES ON DATABASE consentdb TO dbuser;
+SQL
+)
+```
+
+Wait for PostgreSQL to be ready:
+
+```bash
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=postgresql --timeout=120s
+```
+
+Apply the database schemas:
+
+```bash
+kubectl run {{productSlug}}-dbinit --image=ghcr.io/thunder-id/{{productSlug}}:latest --restart=Never --command -- sleep 300
+kubectl wait --for=condition=ready pod/{{productSlug}}-dbinit --timeout=60s
+for db in configdb runtimedb userdb; do
+  kubectl exec {{productSlug}}-dbinit -- cat /opt/{{productSlug}}/dbscripts/$db/postgres.sql | \
+    kubectl exec -i postgresql-0 -- env PGPASSWORD=dbpassword psql -U dbuser -d $db
+done
+kubectl exec {{productSlug}}-dbinit -- cat /opt/{{productSlug}}/consent/dbscripts/db_schema_postgres.sql | \
+  kubectl exec -i postgresql-0 -- env PGPASSWORD=dbpassword psql -U dbuser -d consentdb
+kubectl delete pod {{productSlug}}-dbinit
+```
+
+## Install <ProductName />
+
+Install <ProductName /> using the [<ProductName /> Helm chart](https://github.com/orgs/thunder-id/packages/container/package/helm-charts%2Fthunderid):
+
+```bash
+helm install {{productSlug}} oci://ghcr.io/thunder-id/helm-charts/{{productSlug}} \
+  --set configuration.database.config.postgres.hostname=postgresql \
+  --set configuration.database.config.postgres.sslmode=disable \
+  --set configuration.database.runtime.postgres.hostname=postgresql \
+  --set configuration.database.runtime.postgres.sslmode=disable \
+  --set configuration.database.user.postgres.hostname=postgresql \
+  --set configuration.database.user.postgres.sslmode=disable \
+  --set configuration.consent.database.host=postgresql \
+  --set configuration.consent.database.sslmode=disable \
+  --set configuration.server.publicUrl=https://localhost:8090 \
+  --set configuration.gateClient.hostname=localhost \
+  --set configuration.gateClient.port=8090
+```
+
+Wait for <ProductName /> to be ready:
+
+```bash
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name={{productSlug}} --timeout=120s
+```
+
+## Access <ProductName />
+
+Forward the service port to your local machine:
+
+```bash
+kubectl port-forward svc/{{productSlug}}-service 8090:8090
+```
+
+:::tip Success
+Access <ProductName /> on **https://localhost:8090/console**
 :::
 
 </Stepper>
