@@ -237,6 +237,11 @@ const sidebars: SidebarsConfig = {
             },
             {
               type: 'doc',
+              id: 'guides/guides/users/manage-roles',
+              label: 'Manage Roles',
+            },
+            {
+              type: 'doc',
               id: 'guides/guides/users/user-types',
               label: 'User Types',
             },
