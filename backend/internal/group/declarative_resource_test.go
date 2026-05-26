@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
@@ -82,6 +83,8 @@ func (suite *GroupExporterTestSuite) TestGetAllResourceIDs_SinglePage() {
 	}
 
 	suite.mockService.On("GetGroupList", suite.ctx, serverconst.MaxPageSize, 0, false).Return(groupList, nil)
+	suite.mockService.On("IsGroupDeclarative", suite.ctx, "group1").Return(false, (*serviceerror.ServiceError)(nil))
+	suite.mockService.On("IsGroupDeclarative", suite.ctx, "group2").Return(false, (*serviceerror.ServiceError)(nil))
 	suite.mockService.On("GetGroupList", suite.ctx, serverconst.MaxPageSize, 2, false).Return(emptyPage, nil)
 
 	ids, err := suite.exporter.GetAllResourceIDs(suite.ctx)
@@ -109,7 +112,9 @@ func (suite *GroupExporterTestSuite) TestGetAllResourceIDs_MultiplePages() {
 	}
 
 	suite.mockService.On("GetGroupList", suite.ctx, serverconst.MaxPageSize, 0, false).Return(page1, nil)
+	suite.mockService.On("IsGroupDeclarative", suite.ctx, "group1").Return(false, (*serviceerror.ServiceError)(nil))
 	suite.mockService.On("GetGroupList", suite.ctx, serverconst.MaxPageSize, 1, false).Return(page2, nil)
+	suite.mockService.On("IsGroupDeclarative", suite.ctx, "group2").Return(false, (*serviceerror.ServiceError)(nil))
 	suite.mockService.On("GetGroupList", suite.ctx, serverconst.MaxPageSize, 2, false).Return(emptyPage, nil)
 
 	ids, err := suite.exporter.GetAllResourceIDs(suite.ctx)
@@ -330,4 +335,278 @@ func (suite *GroupExporterTestSuite) TestValidateResource_EmptyName() {
 
 	suite.NotNil(exportErr)
 	assert.Empty(suite.T(), name)
+}
+
+// Test GetAllResourceIDs - excludes declarative groups
+func (suite *GroupExporterTestSuite) TestGetAllResourceIDs_ExcludesDeclarativeGroups() {
+	groupList := &GroupListResponse{
+		Groups: []GroupBasic{
+			{ID: "group1", Name: "Admins", OUID: "ou1"},
+			{ID: "group-declarative", Name: "Declarative Group", OUID: "ou1"},
+		},
+		TotalResults: 2,
+	}
+
+	suite.mockService.On("GetGroupList", suite.ctx, serverconst.MaxPageSize, 0, false).Return(groupList, nil)
+	suite.mockService.On("GetGroupList", suite.ctx, serverconst.MaxPageSize, 2, false).Return(
+		&GroupListResponse{Groups: []GroupBasic{}, TotalResults: 2}, nil,
+	)
+	suite.mockService.On("IsGroupDeclarative", suite.ctx, "group1").Return(false, (*serviceerror.ServiceError)(nil))
+	suite.mockService.On("IsGroupDeclarative", suite.ctx, "group-declarative").
+		Return(true, (*serviceerror.ServiceError)(nil))
+
+	ids, err := suite.exporter.GetAllResourceIDs(suite.ctx)
+
+	suite.Nil(err)
+	assert.Len(suite.T(), ids, 1)
+	assert.Equal(suite.T(), "group1", ids[0])
+	suite.mockService.AssertExpectations(suite.T())
+}
+
+// Test GetAllResourceIDs - error on IsGroupDeclarative
+func (suite *GroupExporterTestSuite) TestGetAllResourceIDs_ErrorOnIsGroupDeclarative() {
+	groupList := &GroupListResponse{
+		Groups: []GroupBasic{
+			{ID: "group1", Name: "Admins", OUID: "ou1"},
+		},
+		TotalResults: 1,
+	}
+	serviceErr := &serviceerror.ServiceError{Code: "500"}
+
+	suite.mockService.On("GetGroupList", suite.ctx, serverconst.MaxPageSize, 0, false).Return(groupList, nil)
+	suite.mockService.On("IsGroupDeclarative", suite.ctx, "group1").Return(false, serviceErr)
+
+	ids, err := suite.exporter.GetAllResourceIDs(suite.ctx)
+
+	suite.NotNil(err)
+	assert.Nil(suite.T(), ids)
+	assert.Equal(suite.T(), serviceErr, err)
+	suite.mockService.AssertExpectations(suite.T())
+}
+
+// Test parseToGroup - valid YAML with all fields
+func (suite *GroupExporterTestSuite) TestParseToGroup_ValidYAML() {
+	yamlData := []byte(`
+id: group1
+name: Admins
+description: Admin group
+ou_id: ou1
+members:
+  - id: user1
+    type: user
+  - id: group2
+    type: group
+`)
+
+	grp, err := parseToGroup(yamlData)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), grp)
+	assert.Equal(suite.T(), "group1", grp.ID)
+	assert.Equal(suite.T(), "Admins", grp.Name)
+	assert.Equal(suite.T(), "Admin group", grp.Description)
+	assert.Equal(suite.T(), "ou1", grp.OUID)
+	assert.Len(suite.T(), grp.Members, 2)
+	assert.Equal(suite.T(), "user1", grp.Members[0].ID)
+	assert.Equal(suite.T(), memberTypeEntity, grp.Members[0].Type)
+	assert.Equal(suite.T(), "group2", grp.Members[1].ID)
+	assert.Equal(suite.T(), MemberTypeGroup, grp.Members[1].Type)
+}
+
+// Test parseToGroup - invalid YAML
+func (suite *GroupExporterTestSuite) TestParseToGroup_InvalidYAML() {
+	yamlData := []byte(`
+invalid: yaml: content:
+`)
+
+	grp, err := parseToGroup(yamlData)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), grp)
+}
+
+// Test parseToGroup - optional fields omitted
+func (suite *GroupExporterTestSuite) TestParseToGroup_OptionalFieldsOmitted() {
+	yamlData := []byte(`
+id: group1
+name: Admins
+ou_id: ou1
+`)
+
+	grp, err := parseToGroup(yamlData)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), grp)
+	assert.Empty(suite.T(), grp.Description)
+	assert.Empty(suite.T(), grp.Members)
+	assert.Empty(suite.T(), grp.OUHandle)
+}
+
+// Test parseToGroup - ou_handle is preserved
+func (suite *GroupExporterTestSuite) TestParseToGroup_WithOUHandle() {
+	yamlData := []byte(`
+id: group1
+name: Admins
+ou_handle: /root/engineering
+`)
+
+	grp, err := parseToGroup(yamlData)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), grp)
+	assert.Equal(suite.T(), "/root/engineering", grp.OUHandle)
+	assert.Empty(suite.T(), grp.OUID)
+}
+
+// Test parseToGroup - entity member types (user, app, agent) are translated to internal type
+func (suite *GroupExporterTestSuite) TestParseToGroup_EntityTypesTranslated() {
+	yamlData := []byte(`
+id: group1
+name: Mixed
+ou_id: ou1
+members:
+  - id: u1
+    type: user
+  - id: a1
+    type: app
+  - id: ag1
+    type: agent
+  - id: g1
+    type: group
+`)
+
+	grp, err := parseToGroup(yamlData)
+
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), grp.Members, 4)
+	assert.Equal(suite.T(), memberTypeEntity, grp.Members[0].Type)
+	assert.Equal(suite.T(), memberTypeEntity, grp.Members[1].Type)
+	assert.Equal(suite.T(), memberTypeEntity, grp.Members[2].Type)
+	assert.Equal(suite.T(), MemberTypeGroup, grp.Members[3].Type)
+}
+
+// Test parseToGroupWrapper - returns correct type
+func (suite *GroupExporterTestSuite) TestParseToGroupWrapper() {
+	yamlData := []byte(`
+id: group1
+name: Admins
+ou_id: ou1
+`)
+
+	result, err := parseToGroupWrapper(yamlData)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	grp, ok := result.(*groupDeclarativeResource)
+	assert.True(suite.T(), ok)
+	assert.Equal(suite.T(), "group1", grp.ID)
+}
+
+// Test validateGroupWrapper - valid group
+func (suite *GroupExporterTestSuite) TestValidateGroupWrapper_ValidGroup() {
+	grp := &groupDeclarativeResource{
+		ID:   "group1",
+		Name: "Admins",
+		OUID: "ou1",
+	}
+
+	err := validateGroupWrapper(grp, nil, nil, nil)
+
+	assert.NoError(suite.T(), err)
+}
+
+// Test validateGroupWrapper - valid group with members
+func (suite *GroupExporterTestSuite) TestValidateGroupWrapper_WithMembers() {
+	grp := &groupDeclarativeResource{
+		ID:   "group1",
+		Name: "Admins",
+		OUID: "ou1",
+		Members: []Member{
+			{ID: "user1", Type: memberTypeEntity},
+			{ID: "group2", Type: MemberTypeGroup},
+		},
+	}
+
+	err := validateGroupWrapper(grp, nil, nil, nil)
+
+	assert.NoError(suite.T(), err)
+}
+
+// Test validateGroupWrapper - wrong type
+func (suite *GroupExporterTestSuite) TestValidateGroupWrapper_WrongType() {
+	err := validateGroupWrapper("not a group", nil, nil, nil)
+
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "invalid type")
+}
+
+// Test validateGroupWrapper - missing ID
+func (suite *GroupExporterTestSuite) TestValidateGroupWrapper_MissingID() {
+	grp := &groupDeclarativeResource{
+		Name: "Admins",
+		OUID: "ou1",
+	}
+
+	err := validateGroupWrapper(grp, nil, nil, nil)
+
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "group ID is required")
+}
+
+// Test validateGroupWrapper - missing name
+func (suite *GroupExporterTestSuite) TestValidateGroupWrapper_MissingName() {
+	grp := &groupDeclarativeResource{
+		ID:   "group1",
+		OUID: "ou1",
+	}
+
+	err := validateGroupWrapper(grp, nil, nil, nil)
+
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "group name is required")
+}
+
+// Test validateGroupWrapper - missing OU ID when no handle
+func (suite *GroupExporterTestSuite) TestValidateGroupWrapper_MissingOUID() {
+	grp := &groupDeclarativeResource{
+		ID:   "group1",
+		Name: "Admins",
+	}
+
+	err := validateGroupWrapper(grp, nil, nil, nil)
+
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "ou_id or ou_handle is required")
+}
+
+// Test validateGroupWrapper - duplicate ID in DB store
+func (suite *GroupExporterTestSuite) TestValidateGroupWrapper_DuplicateInDBStore() {
+	grp := &groupDeclarativeResource{
+		ID:   "group1",
+		Name: "Admins",
+		OUID: "ou1",
+	}
+	mockStore := newGroupStoreInterfaceMock(suite.T())
+	mockStore.On("GetGroup", mock.Anything, "group1").Return(GroupDAO{ID: "group1", Name: "Admins"}, nil)
+
+	err := validateGroupWrapper(grp, nil, mockStore, nil)
+
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "duplicate group ID")
+	assert.Contains(suite.T(), err.Error(), "database store")
+}
+
+// Test validateGroupWrapper - no duplicate when DB returns error (not found)
+func (suite *GroupExporterTestSuite) TestValidateGroupWrapper_NoDuplicateWhenDBNotFound() {
+	grp := &groupDeclarativeResource{
+		ID:   "group1",
+		Name: "Admins",
+		OUID: "ou1",
+	}
+	mockStore := newGroupStoreInterfaceMock(suite.T())
+	mockStore.On("GetGroup", mock.Anything, "group1").Return(GroupDAO{}, ErrGroupNotFound)
+
+	err := validateGroupWrapper(grp, nil, mockStore, nil)
+
+	assert.NoError(suite.T(), err)
 }

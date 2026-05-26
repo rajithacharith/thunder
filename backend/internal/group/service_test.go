@@ -30,6 +30,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/entity"
 	oupkg "github.com/thunder-id/thunderid/internal/ou"
+	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/security"
@@ -76,6 +77,20 @@ func newAuthzError(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
 
 type GroupServiceTestSuite struct {
 	suite.Suite
+}
+
+func (suite *GroupServiceTestSuite) SetupSuite() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetServerRuntime()
+	if err := config.InitializeServerRuntime("/tmp/test", testConfig); err != nil {
+		suite.Fail("Failed to initialize runtime", err)
+	}
+}
+
+func (suite *GroupServiceTestSuite) TearDownSuite() {
+	config.ResetServerRuntime()
 }
 
 func TestGroupServiceTestSuite(t *testing.T) {

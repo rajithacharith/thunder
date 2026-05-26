@@ -723,6 +723,74 @@ func (_c *GroupServiceInterfaceMock_GetGroupsByPath_Call) RunAndReturn(run func(
 	return _c
 }
 
+// IsGroupDeclarative provides a mock function for the type GroupServiceInterfaceMock
+func (_mock *GroupServiceInterfaceMock) IsGroupDeclarative(ctx context.Context, id string) (bool, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsGroupDeclarative")
+	}
+
+	var r0 bool
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// GroupServiceInterfaceMock_IsGroupDeclarative_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsGroupDeclarative'
+type GroupServiceInterfaceMock_IsGroupDeclarative_Call struct {
+	*mock.Call
+}
+
+// IsGroupDeclarative is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id string
+func (_e *GroupServiceInterfaceMock_Expecter) IsGroupDeclarative(ctx interface{}, id interface{}) *GroupServiceInterfaceMock_IsGroupDeclarative_Call {
+	return &GroupServiceInterfaceMock_IsGroupDeclarative_Call{Call: _e.mock.On("IsGroupDeclarative", ctx, id)}
+}
+
+func (_c *GroupServiceInterfaceMock_IsGroupDeclarative_Call) Run(run func(ctx context.Context, id string)) *GroupServiceInterfaceMock_IsGroupDeclarative_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *GroupServiceInterfaceMock_IsGroupDeclarative_Call) Return(b bool, serviceError *serviceerror.ServiceError) *GroupServiceInterfaceMock_IsGroupDeclarative_Call {
+	_c.Call.Return(b, serviceError)
+	return _c
+}
+
+func (_c *GroupServiceInterfaceMock_IsGroupDeclarative_Call) RunAndReturn(run func(ctx context.Context, id string) (bool, *serviceerror.ServiceError)) *GroupServiceInterfaceMock_IsGroupDeclarative_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // RemoveGroupMembers provides a mock function for the type GroupServiceInterfaceMock
 func (_mock *GroupServiceInterfaceMock) RemoveGroupMembers(ctx context.Context, groupID string, members []Member) (*Group, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, groupID, members)
