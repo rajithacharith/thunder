@@ -16,17 +16,18 @@
  * under the License.
  */
 
-// Package hash provides stateful credential hashing services and generic hashing utilities.
-// Initialize must be called with a fully populated HashConfig; no config system is read here.
-package hash
+package cryptolib
 
 import (
 	"crypto/pbkdf2"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/sha512"
 	"crypto/subtle"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"hash"
 
 	"golang.org/x/crypto/argon2"
 )
@@ -36,10 +37,68 @@ const (
 	maxUint32 = int(^uint32(0))
 )
 
+// CredAlgorithm represents the supported credential hashing algorithms.
+type CredAlgorithm string
+
+const (
+	// SHA256 represents the SHA-256 hashing algorithm.
+	SHA256 CredAlgorithm = "SHA256"
+	// PBKDF2 represents the PBKDF2 key derivation function.
+	PBKDF2 CredAlgorithm = "PBKDF2"
+	// ARGON2ID represents the Argon2id key derivation function.
+	ARGON2ID CredAlgorithm = "ARGON2ID"
+)
+
+// CredParameters holds the parameters for credential hashing algorithms.
+type CredParameters struct {
+	Iterations  int
+	Parallelism int
+	Memory      int
+	KeySize     int
+	Salt        string
+}
+
+// Credential represents the output of a credential hash operation.
+type Credential struct {
+	Hash       string
+	Parameters CredParameters
+	Algorithm  CredAlgorithm
+}
+
+// HashAlgorithm represents the supported generic hash algorithms.
+type HashAlgorithm string
+
+const (
+	// GenericSHA256 represents the SHA-256 hash algorithm.
+	GenericSHA256 HashAlgorithm = "SHA-256"
+	// GenericSHA384 represents the SHA-384 hash algorithm.
+	GenericSHA384 HashAlgorithm = "SHA-384"
+	// GenericSHA512 represents the SHA-512 hash algorithm.
+	GenericSHA512 HashAlgorithm = "SHA-512"
+)
+
+// HashConfig holds all parameters needed to initialize the hash service.
+// All configuration is provided by the caller (typically the key management layer);
+// no config system is read from within this package.
+type HashConfig struct {
+	Algorithm   CredAlgorithm
+	Parallelism int
+	Memory      int
+	SaltSize    int
+	Iterations  int
+	KeySize     int
+}
+
 // HashServiceInterface defines the interface for credential hashing services.
 type HashServiceInterface interface {
 	Generate(credentialValue []byte) (Credential, error)
 	Verify(credentialValueToVerify []byte, referenceCredential Credential) (bool, error)
+}
+
+// Initialize returns a HashServiceInterface configured according to cfg.
+// All hash algorithm parameters must be provided by the caller; this package reads no config.
+func Initialize(cfg HashConfig) (HashServiceInterface, error) {
+	return newHashService(cfg)
 }
 
 type sha256HashProvider struct {
@@ -269,6 +328,48 @@ func (a *argon2idHashProvider) Verify(credentialValueToVerify []byte, referenceC
 		return false, err
 	}
 	return subtle.ConstantTimeCompare(h, referenceHash) == 1, nil
+}
+
+// GenerateThumbprint generates a SHA-256 thumbprint for the given data.
+func GenerateThumbprint(data []byte) string {
+	h := sha256.Sum256(data)
+	return base64.StdEncoding.EncodeToString(h[:])
+}
+
+// GenerateThumbprintFromString generates a SHA-256 thumbprint for the given string data.
+func GenerateThumbprintFromString(data string) string {
+	return GenerateThumbprint([]byte(data))
+}
+
+// Hash returns the hash of the given data using the specified algorithm.
+func Hash(data []byte, alg HashAlgorithm) ([]byte, error) {
+	switch alg {
+	case GenericSHA256:
+		h := sha256.Sum256(data)
+		return h[:], nil
+	case GenericSHA384:
+		h := sha512.Sum384(data)
+		return h[:], nil
+	case GenericSHA512:
+		h := sha512.Sum512(data)
+		return h[:], nil
+	default:
+		return nil, fmt.Errorf("unsupported hash algorithm: %s", alg)
+	}
+}
+
+// GetHash returns a hash.Hash for the given algorithm.
+func GetHash(alg HashAlgorithm) (hash.Hash, error) {
+	switch alg {
+	case GenericSHA256:
+		return sha256.New(), nil
+	case GenericSHA384:
+		return sha512.New384(), nil
+	case GenericSHA512:
+		return sha512.New(), nil
+	default:
+		return nil, fmt.Errorf("unsupported hash algorithm: %s", alg)
+	}
 }
 
 func generateSalt(saltSize int) ([]byte, error) {

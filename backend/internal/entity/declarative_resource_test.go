@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/cryptolib/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
 	"github.com/thunder-id/thunderid/tests/mocks/crypto/hashmock"
 )
@@ -211,10 +211,10 @@ func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_HashesSystem
 
 	fileStore := newEntityFileBasedStore()
 	hashService := hashmock.NewHashServiceInterfaceMock(s.T())
-	hashService.On("Generate", []byte("plain-secret")).Return(hash.Credential{
+	hashService.On("Generate", []byte("plain-secret")).Return(cryptolib.Credential{
 		Algorithm: "PBKDF2",
 		Hash:      "hashed-secret",
-		Parameters: hash.CredParameters{
+		Parameters: cryptolib.CredParameters{
 			Salt: "salt", Iterations: 1, KeySize: 32,
 		},
 	}, nil).Once()
@@ -245,7 +245,7 @@ func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_HashesSystem
 	s.NoError(err)
 	s.Equal([]StoredCredential{{
 		StorageAlgo: "PBKDF2",
-		StorageAlgoParams: hash.CredParameters{
+		StorageAlgoParams: cryptolib.CredParameters{
 			Salt: "salt", Iterations: 1, KeySize: 32,
 		},
 		Value: "hashed-secret",

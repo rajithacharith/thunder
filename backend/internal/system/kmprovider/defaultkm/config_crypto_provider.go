@@ -26,7 +26,6 @@ import (
 	"fmt"
 
 	"github.com/thunder-id/thunderid/internal/system/cryptolib"
-	"github.com/thunder-id/thunderid/internal/system/cryptolib/hash"
 	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
 )
 
@@ -36,7 +35,7 @@ type configCryptoService struct {
 }
 
 func newConfigCryptoService(key []byte) kmprovider.ConfigCryptoProvider {
-	kid := hash.GenerateThumbprint(key)
+	kid := cryptolib.GenerateThumbprint(key)
 	return &configCryptoService{
 		defaultKeyID: kid,
 		keys:         map[string][]byte{kid: key},

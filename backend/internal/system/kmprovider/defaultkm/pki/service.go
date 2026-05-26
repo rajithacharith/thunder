@@ -33,7 +33,7 @@ import (
 	"slices"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/cryptolib/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/jose/jws"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -228,5 +228,5 @@ func getThumbprint(cert tls.Certificate) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return hash.GenerateThumbprint(parsedCert.Raw), nil
+	return cryptolib.GenerateThumbprint(parsedCert.Raw), nil
 }
