@@ -20,7 +20,9 @@ package declarativeresource
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
@@ -48,17 +50,34 @@ func NewResourceLoader(config ResourceConfig, store Storer) *ResourceLoader {
 	}
 }
 
-// LoadResources loads all resources from the configured directory.
-// It reads YAML files, parses them, validates them, and stores them.
+// LoadResources loads all resources using the following precedence:
+//  1. A file supplied via the --resources startup argument.
+//  2. YAML files found directly in repository/resources/ (multi-document format with
+//     "# resource_type: <type>" headers), when present.
+//  3. Individual YAML files inside the repository/resources/<DirectoryName>/ subdirectory.
+//
 // Returns an error if any step fails.
 func (l *ResourceLoader) LoadResources() error {
-	// Read configuration files from the directory
-	configs, err := GetConfigs(l.config.DirectoryName)
+	var configs [][]byte
+	var err error
+
+	resourceType := strings.TrimSuffix(l.config.DirectoryName, "s")
+
+	if resourcesFile := config.GetServerRuntime().ResourcesFile; resourcesFile != "" {
+		configs, err = GetConfigsFromFile(resourcesFile, resourceType)
+	} else {
+		var rootConfigs [][]byte
+		rootConfigs, err = GetConfigsFromRootDir(resourceType)
+		if err == nil && len(rootConfigs) > 0 {
+			configs = rootConfigs
+		} else if err == nil {
+			configs, err = GetConfigs(l.config.DirectoryName)
+		}
+	}
 	if err != nil {
 		return err
 	}
 
-	// Process each configuration file
 	for _, cfg := range configs {
 		if err := l.loadSingleResource(cfg); err != nil {
 			return err

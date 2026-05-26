@@ -29,6 +29,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -57,11 +58,20 @@ func main() {
 	startupStartedAt := time.Now()
 	logger := log.GetLogger()
 
+	resourcesFile := flag.String("resources", "", "Path to declarative resources YAML file")
 	serverHome := getThunderHome(logger)
 
 	cfg := initThunderConfigurations(logger, serverHome)
 	if cfg == nil {
 		logger.Fatal("Failed to initialize configurations")
+	}
+
+	if *resourcesFile != "" {
+		absResourcesFile, err := filepath.Abs(*resourcesFile)
+		if err != nil {
+			logger.Fatal("Failed to resolve resources file path", log.Error(err))
+		}
+		config.SetResourcesFile(absResourcesFile)
 	}
 
 	// Install the CORS allowed-origins matcher used by the HTTP middleware.

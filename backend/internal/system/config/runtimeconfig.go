@@ -31,6 +31,7 @@ import (
 // ServerRuntime holds the runtime configuration for the server.
 type ServerRuntime struct {
 	ServerHome         string `yaml:"server_home"`
+	ResourcesFile      string // Path to single declarative resources YAML file (optional)
 	GateClientLoginURL *url.URL
 	Config             Config `yaml:"config"`
 }
@@ -83,6 +84,13 @@ func GetServerRuntime() *ServerRuntime {
 		panic("Server runtime is not initialized")
 	}
 	return runtimeConfig
+}
+
+// SetResourcesFile sets the path to the declarative resources file on the runtime config.
+func SetResourcesFile(filePath string) {
+	if runtimeConfig != nil {
+		runtimeConfig.ResourcesFile = filePath
+	}
 }
 
 // ResetServerRuntime resets the server runtime.
