@@ -245,7 +245,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 
 	// Initialize authn provider
 	authnProvider := authnprovidermgr.InitializeAuthnProviderManager(entityService, passkeyService, otpCoreService,
-		federatedAuths)
+		magicLinkService, federatedAuths)
 
 	// Initialize authentication services.
 	authAssertGen := authnAssert.Initialize()

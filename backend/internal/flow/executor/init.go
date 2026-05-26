@@ -81,7 +81,7 @@ func Initialize(
 	reg.RegisterExecutor(ExecutorNamePasskeyAuth, newPasskeyAuthExecutor(
 		flowFactory, passkeyService, authnProvider, entityProvider))
 	reg.RegisterExecutor(ExecutorNameMagicLinkAuth, newMagicLinkAuthExecutor(
-		flowFactory, magicLinkService, entityProvider))
+		flowFactory, magicLinkService, authnProvider, entityProvider))
 	reg.RegisterExecutor(ExecutorNameOAuth, newOAuthExecutor(
 		"", []common.Input{}, []common.Input{}, flowFactory, idpService, entityTypeService,
 		oauthSvc, authnProvider, idp.IDPTypeOAuth))
