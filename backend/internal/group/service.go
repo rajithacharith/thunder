@@ -272,6 +272,11 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Creating group", log.String("name", request.Name))
 
+	if isGroupDeclarativeModeEnabled() {
+		logger.Debug("Cannot create group in declarative-only mode")
+		return nil, &ErrorDeclarativeModeGroupCreateNotAllowed
+	}
+
 	if err := gs.validateCreateGroupRequest(request); err != nil {
 		return nil, err
 	}
@@ -456,6 +461,14 @@ func (gs *groupService) UpdateGroup(
 		return nil, err
 	}
 
+	if isDeclarative, err := gs.groupStore.IsGroupDeclarative(ctx, groupID); err != nil {
+		logger.Warn("Failed to check if group is declarative", log.String("groupID", groupID), log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	} else if isDeclarative {
+		logger.Debug("Cannot update declarative group", log.String("id", groupID))
+		return nil, &ErrorImmutableGroup
+	}
+
 	var updatedGroup *Group
 	var capturedSvcErr *serviceerror.ServiceError
 
@@ -552,6 +565,14 @@ func (gs *groupService) DeleteGroup(ctx context.Context, groupID string) *servic
 
 	if groupID == "" {
 		return &ErrorMissingGroupID
+	}
+
+	if isDeclarative, err := gs.groupStore.IsGroupDeclarative(ctx, groupID); err != nil {
+		logger.Warn("Failed to check if group is declarative", log.String("groupID", groupID), log.Error(err))
+		return &serviceerror.InternalServerError
+	} else if isDeclarative {
+		logger.Debug("Cannot delete declarative group", log.String("id", groupID))
+		return &ErrorImmutableGroup
 	}
 
 	var capturedSvcErr *serviceerror.ServiceError
@@ -1147,6 +1168,7 @@ func convertGroupDAOToGroup(groupDAO GroupDAO) Group {
 		Description: groupDAO.Description,
 		OUID:        groupDAO.OUID,
 		Members:     groupDAO.Members,
+		IsReadOnly:  groupDAO.IsReadOnly,
 	}
 }
 
@@ -1157,6 +1179,7 @@ func buildGroupBasic(groupDAO GroupBasicDAO) GroupBasic {
 		Name:        groupDAO.Name,
 		Description: groupDAO.Description,
 		OUID:        groupDAO.OUID,
+		IsReadOnly:  groupDAO.IsReadOnly,
 	}
 }
 
@@ -1182,6 +1205,27 @@ func (gs *groupService) populateGroupOUHandles(ctx context.Context, groups []Gro
 			groups[i].OUHandle = handle
 		}
 	}
+}
+
+// resolveGroupOUHandle resolves ou_handle to ou_id on the given groupDeclarativeResource.
+// It is a no-op when ou_id is already set or ou_handle is empty.
+// Returns a non-nil error when the OU lookup fails.
+func resolveGroupOUHandle(
+	ctx context.Context,
+	grp *groupDeclarativeResource,
+	ouService oupkg.OrganizationUnitServiceInterface,
+) error {
+	if grp.OUID != "" || grp.OUHandle == "" {
+		return nil
+	}
+
+	ou, svcErr := ouService.GetOrganizationUnitByPath(ctx, grp.OUHandle)
+	if svcErr != nil {
+		return fmt.Errorf("organization unit with handle %q not found: %v", grp.OUHandle, svcErr)
+	}
+
+	grp.OUID = ou.ID
+	return nil
 }
 
 // validatePaginationParams validates pagination parameters.
