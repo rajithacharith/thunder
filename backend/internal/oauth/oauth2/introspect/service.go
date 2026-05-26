@@ -57,7 +57,7 @@ func (s *tokenIntrospectionService) IntrospectToken(
 		return nil, errors.New("token is required")
 	}
 
-	if !s.validateToken(logger, token) {
+	if !s.validateToken(ctx, logger, token) {
 		return &IntrospectResponse{
 			Active: false,
 		}, nil
@@ -78,8 +78,8 @@ func (s *tokenIntrospectionService) IntrospectToken(
 }
 
 // validateToken verifies the signature and validity of the token.
-func (s *tokenIntrospectionService) validateToken(logger *log.Logger, token string) bool {
-	if err := s.jwtService.VerifyJWT(token, "", ""); err != nil {
+func (s *tokenIntrospectionService) validateToken(ctx context.Context, logger *log.Logger, token string) bool {
+	if err := s.jwtService.VerifyJWT(ctx, token, "", ""); err != nil {
 		logger.Debug("Failed to verify refresh token", log.String("error", err.Error.DefaultValue))
 		return false
 	}

@@ -45,11 +45,11 @@ import (
 type JWTServiceInterface interface {
 	GenerateJWT(ctx context.Context, sub, iss string, validityPeriod int64,
 		claims map[string]interface{}, typ, alg string) (string, int64, *serviceerror.ServiceError)
-	VerifyJWT(jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError
+	VerifyJWT(ctx context.Context, jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError
 	VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey, expectedAud,
 		expectedIss string) *serviceerror.ServiceError
 	VerifyJWTWithJWKS(jwtToken, jwksURL, expectedAud, expectedIss string) *serviceerror.ServiceError
-	VerifyJWTSignature(jwtToken string) *serviceerror.ServiceError
+	VerifyJWTSignature(ctx context.Context, jwtToken string) *serviceerror.ServiceError
 	VerifyJWTSignatureWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey) *serviceerror.ServiceError
 	VerifyJWTSignatureWithJWKS(jwtToken string, jwksURL string) *serviceerror.ServiceError
 }
@@ -115,10 +115,6 @@ func newJWTService(
 func (js *jwtService) GenerateJWT(
 	ctx context.Context, sub, iss string, validityPeriod int64, claims map[string]interface{}, typ, alg string,
 ) (string, int64, *serviceerror.ServiceError) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
 	jwsAlg := js.jwsAlg
 	if alg != "" {
 		mapped, err := jws.MapAlgorithmToSignAlg(jws.Algorithm(alg))
@@ -224,14 +220,16 @@ func (js *jwtService) GenerateJWT(
 }
 
 // VerifyJWT verifies the JWT token using the server's public key.
-func (js *jwtService) VerifyJWT(jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError {
+func (js *jwtService) VerifyJWT(
+	ctx context.Context, jwtToken string, expectedAud, expectedIss string,
+) *serviceerror.ServiceError {
 	if js.cryptoProvider == nil {
 		js.logger.Error("Crypto provider not initialized for JWT verification")
 		return &serviceerror.InternalServerError
 	}
 
 	// First verify signature using the configured server key and algorithm
-	if err := js.VerifyJWTSignature(jwtToken); err != nil {
+	if err := js.VerifyJWTSignature(ctx, jwtToken); err != nil {
 		return &ErrorInvalidTokenSignature
 	}
 
@@ -270,7 +268,7 @@ func (js *jwtService) VerifyJWTWithJWKS(
 }
 
 // VerifyJWTSignature verifies the signature of a JWT token using the server's public key.
-func (js *jwtService) VerifyJWTSignature(jwtToken string) *serviceerror.ServiceError {
+func (js *jwtService) VerifyJWTSignature(ctx context.Context, jwtToken string) *serviceerror.ServiceError {
 	if js.cryptoProvider == nil {
 		js.logger.Error("Crypto provider not initialized for JWT verification")
 		return &serviceerror.InternalServerError
@@ -302,7 +300,7 @@ func (js *jwtService) VerifyJWTSignature(jwtToken string) *serviceerror.ServiceE
 	}
 
 	// Retrieve all public keys from the provider and match by thumbprint
-	keys, providerErr := js.cryptoProvider.GetPublicKeys(context.Background(), kmprovider.PublicKeyFilter{})
+	keys, providerErr := js.cryptoProvider.GetPublicKeys(ctx, kmprovider.PublicKeyFilter{})
 	if providerErr != nil {
 		js.logger.Error("Failed to retrieve public keys for JWT verification: " + providerErr.Error())
 		return &serviceerror.InternalServerError

@@ -131,7 +131,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_Basic() {
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildAccessToken(ctx)
+	result, err := suite.builder.BuildAccessToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -179,7 +179,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_WithActorClaim(
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildAccessToken(ctx)
+	result, err := suite.builder.BuildAccessToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -222,7 +222,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_WithNestedActor
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildAccessToken(ctx)
+	result, err := suite.builder.BuildAccessToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -254,7 +254,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_EmptyScopes() {
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildAccessToken(ctx)
+	result, err := suite.builder.BuildAccessToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -286,7 +286,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_EmptyClientID()
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildAccessToken(ctx)
+	result, err := suite.builder.BuildAccessToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -318,7 +318,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_EmptyGrantType(
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildAccessToken(ctx)
+	result, err := suite.builder.BuildAccessToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -356,7 +356,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_CustomValidityP
 		mock.Anything, mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildAccessToken(ctx)
+	result, err := suite.builder.BuildAccessToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -365,7 +365,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_CustomValidityP
 }
 
 func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Error_NilContext() {
-	result, err := suite.builder.BuildAccessToken(nil)
+	result, err := suite.builder.BuildAccessToken(context.Background(), nil)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -400,7 +400,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Error_JWTGenerationFail
 		},
 	})
 
-	result, err := suite.builder.BuildAccessToken(ctx)
+	result, err := suite.builder.BuildAccessToken(context.Background(), ctx)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -437,7 +437,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_WithClaimsLocal
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildAccessToken(ctx)
+	result, err := suite.builder.BuildAccessToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -471,7 +471,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_WithDPoPJkt() {
 		}), mock.Anything, mock.Anything,
 	).Return(testAccessToken, time.Now().Unix(), nil)
 
-	result, err := suite.builder.BuildAccessToken(ctx)
+	result, err := suite.builder.BuildAccessToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -501,7 +501,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_WithoutDPoPJkt_
 		}), mock.Anything, mock.Anything,
 	).Return(testAccessToken, time.Now().Unix(), nil)
 
-	result, err := suite.builder.BuildAccessToken(ctx)
+	result, err := suite.builder.BuildAccessToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), constants.TokenTypeBearer, result.TokenType)
@@ -547,7 +547,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_Basic() {
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildRefreshToken(ctx)
+	result, err := suite.builder.BuildRefreshToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -583,7 +583,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithDPoPJkt() 
 		}), mock.Anything, mock.Anything,
 	).Return(testRefreshToken, time.Now().Unix(), nil)
 
-	result, err := suite.builder.BuildRefreshToken(ctx)
+	result, err := suite.builder.BuildRefreshToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -611,7 +611,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithoutDPoPJkt
 		}), mock.Anything, mock.Anything,
 	).Return(testRefreshToken, time.Now().Unix(), nil)
 
-	result, err := suite.builder.BuildRefreshToken(ctx)
+	result, err := suite.builder.BuildRefreshToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -643,7 +643,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithoutUserAtt
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildRefreshToken(ctx)
+	result, err := suite.builder.BuildRefreshToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -674,7 +674,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithNilOAuthAp
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildRefreshToken(ctx)
+	result, err := suite.builder.BuildRefreshToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -706,7 +706,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_EmptyScopes() 
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildRefreshToken(ctx)
+	result, err := suite.builder.BuildRefreshToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -742,7 +742,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithTokenConfi
 		mock.Anything, mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildRefreshToken(ctx)
+	result, err := suite.builder.BuildRefreshToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -781,7 +781,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithNilAccessT
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildRefreshToken(ctx)
+	result, err := suite.builder.BuildRefreshToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -789,7 +789,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithNilAccessT
 }
 
 func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Error_NilContext() {
-	result, err := suite.builder.BuildRefreshToken(nil)
+	result, err := suite.builder.BuildRefreshToken(context.Background(), nil)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -824,7 +824,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Error_JWTGenerationFai
 		},
 	})
 
-	result, err := suite.builder.BuildRefreshToken(ctx)
+	result, err := suite.builder.BuildRefreshToken(context.Background(), ctx)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -861,7 +861,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithClaimsLoca
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildRefreshToken(ctx)
+	result, err := suite.builder.BuildRefreshToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -898,7 +898,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_Basic() {
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildIDToken(ctx)
+	result, err := suite.builder.BuildIDToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -935,7 +935,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithNonce() {
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildIDToken(ctx)
+	result, err := suite.builder.BuildIDToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -967,7 +967,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithoutNonce() {
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildIDToken(ctx)
+	result, err := suite.builder.BuildIDToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -998,7 +998,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_NoAuthTime() {
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildIDToken(ctx)
+	result, err := suite.builder.BuildIDToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1041,7 +1041,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithScopeClaims() {
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildIDToken(ctx)
+	result, err := suite.builder.BuildIDToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1082,7 +1082,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithStandardOIDCSco
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildIDToken(ctx)
+	result, err := suite.builder.BuildIDToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1112,7 +1112,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_NoUserAttributes() 
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildIDToken(ctx)
+	result, err := suite.builder.BuildIDToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1153,7 +1153,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_EmptyUserAttributes
 		}), mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildIDToken(ctx)
+	result, err := suite.builder.BuildIDToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1190,7 +1190,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_CustomValidityPerio
 		mock.Anything, mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildIDToken(ctx)
+	result, err := suite.builder.BuildIDToken(context.Background(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1199,7 +1199,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_CustomValidityPerio
 }
 
 func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_NilContext() {
-	result, err := suite.builder.BuildIDToken(nil)
+	result, err := suite.builder.BuildIDToken(context.Background(), nil)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1233,7 +1233,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_JWTGenerationFailed()
 		},
 	})
 
-	result, err := suite.builder.BuildIDToken(ctx)
+	result, err := suite.builder.BuildIDToken(context.Background(), ctx)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1298,8 +1298,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithEncryption_Inli
 		jwksResolver: jwksresolver.Initialize(nil),
 	}
 
-	result, err := builder.BuildIDToken(&IDTokenBuildContext{
-		Context:  context.Background(),
+	result, err := builder.BuildIDToken(context.Background(), &IDTokenBuildContext{
 		Subject:  "user123",
 		Audience: "test-client",
 		Scopes:   []string{"openid"},
@@ -1348,8 +1347,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_EncryptionKeyNotFound
 		jwksResolver: jwksresolver.Initialize(nil),
 	}
 
-	result, err := builder.BuildIDToken(&IDTokenBuildContext{
-		Context:  context.Background(),
+	result, err := builder.BuildIDToken(context.Background(), &IDTokenBuildContext{
 		Subject:  "user123",
 		Audience: "test-client",
 		Scopes:   []string{"openid"},
@@ -1412,8 +1410,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_EncryptionFailed() {
 		jwksResolver: jwksresolver.Initialize(nil),
 	}
 
-	result, err := builder.BuildIDToken(&IDTokenBuildContext{
-		Context:  context.Background(),
+	result, err := builder.BuildIDToken(context.Background(), &IDTokenBuildContext{
 		Subject:  "user123",
 		Audience: "test-client",
 		Scopes:   []string{"openid"},
@@ -1480,8 +1477,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithEncryption_JWKS
 		jwksResolver: jwksresolver.Initialize(mockHTTP),
 	}
 
-	result, err := builder.BuildIDToken(&IDTokenBuildContext{
-		Context:  context.Background(),
+	result, err := builder.BuildIDToken(context.Background(), &IDTokenBuildContext{
 		Subject:  "user123",
 		Audience: "test-client",
 		Scopes:   []string{"openid"},
@@ -1528,8 +1524,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_NilJWEService() {
 		jweService: nil,
 	}
 
-	result, err := builder.BuildIDToken(&IDTokenBuildContext{
-		Context:  context.Background(),
+	result, err := builder.BuildIDToken(context.Background(), &IDTokenBuildContext{
 		Subject:  "user123",
 		Audience: "test-client",
 		Scopes:   []string{"openid"},
@@ -1564,8 +1559,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_NoEncryptionAlg() {
 		jweService: nil,
 	}
 
-	result, err := builder.BuildIDToken(&IDTokenBuildContext{
-		Context:  context.Background(),
+	result, err := builder.BuildIDToken(context.Background(), &IDTokenBuildContext{
 		Subject:  "user123",
 		Audience: "test-client",
 		Scopes:   []string{"openid"},
@@ -1609,8 +1603,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_UnsupportedCertType()
 		jwksResolver: jwksresolver.Initialize(nil),
 	}
 
-	result, err := builder.BuildIDToken(&IDTokenBuildContext{
-		Context:  context.Background(),
+	result, err := builder.BuildIDToken(context.Background(), &IDTokenBuildContext{
 		Subject:  "user123",
 		Audience: "test-client",
 		Scopes:   []string{"openid"},

@@ -27,6 +27,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
@@ -124,7 +125,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 			name:       "Successful authentication with system scope",
 			authHeader: "Bearer " + validToken,
 			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
-				m.On("VerifyJWT", validToken, "", "").Return(nil)
+				m.On("VerifyJWT", mock.Anything, validToken, "", "").Return(nil)
 			},
 			expectedError: nil,
 			validateResult: func(t *testing.T, ctx *SecurityContext) {
@@ -155,7 +156,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 			name:       "Invalid JWT signature",
 			authHeader: "Bearer invalid.jwt.token",
 			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
-				m.On("VerifyJWT", "invalid.jwt.token", "", "").Return(&serviceerror.ServiceError{
+				m.On("VerifyJWT", mock.Anything, "invalid.jwt.token", "", "").Return(&serviceerror.ServiceError{
 					Type:             serviceerror.ServerErrorType,
 					Code:             "INVALID_SIGNATURE",
 					Error:            i18ncore.I18nMessage{DefaultValue: "Invalid signature"},
@@ -168,7 +169,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 			name:       "Expired JWT token",
 			authHeader: "Bearer expired.jwt.token",
 			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
-				m.On("VerifyJWT", "expired.jwt.token", "", "").Return(&serviceerror.ServiceError{
+				m.On("VerifyJWT", mock.Anything, "expired.jwt.token", "", "").Return(&serviceerror.ServiceError{
 					Type:             serviceerror.ClientErrorType,
 					Code:             "JWT-60005",
 					Error:            i18ncore.I18nMessage{DefaultValue: "Token has expired"},
@@ -181,7 +182,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 			name:       "Invalid JWT format - decoding error",
 			authHeader: "Bearer invalidjwtformat", // Not 3 parts separated by dots
 			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
-				m.On("VerifyJWT", "invalidjwtformat", "", "").Return(nil)
+				m.On("VerifyJWT", mock.Anything, "invalidjwtformat", "", "").Return(nil)
 			},
 			expectedError: errInvalidToken,
 		},
@@ -189,7 +190,8 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 			name:       "Invalid JWT payload - malformed base64",
 			authHeader: "Bearer eyJhbGciOiJIUzI1NiJ9.invalid!base64!payload.signature",
 			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
-				m.On("VerifyJWT", "eyJhbGciOiJIUzI1NiJ9.invalid!base64!payload.signature", "", "").Return(nil)
+				const tok = "eyJhbGciOiJIUzI1NiJ9.invalid!base64!payload.signature"
+				m.On("VerifyJWT", mock.Anything, tok, "", "").Return(nil)
 			},
 			expectedError: errInvalidToken,
 		},
@@ -197,7 +199,8 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 			name:       "Invalid JWT payload - malformed JSON",
 			authHeader: "Bearer eyJhbGciOiJIUzI1NiJ9.bm90X3ZhbGlkX2pzb24.signature", // "not_valid_json" base64 encoded
 			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
-				m.On("VerifyJWT", "eyJhbGciOiJIUzI1NiJ9.bm90X3ZhbGlkX2pzb24.signature", "", "").Return(nil)
+				const tok = "eyJhbGciOiJIUzI1NiJ9.bm90X3ZhbGlkX2pzb24.signature"
+				m.On("VerifyJWT", mock.Anything, tok, "", "").Return(nil)
 			},
 			expectedError: errInvalidToken,
 		},
@@ -884,7 +887,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate_SelfIssuedTokenUnderFed
 	)
 
 	mockJWT := jwtmock.NewJWTServiceInterfaceMock(suite.T())
-	mockJWT.On("VerifyJWT", token, "", "").Return(nil)
+	mockJWT.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 	auth := newJWTAuthenticator(mockJWT)
 
 	req := httptest.NewRequest(http.MethodGet, "/users", nil)
@@ -913,7 +916,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate_SelfIssuedTokenInvalidU
 	)
 
 	mockJWT := jwtmock.NewJWTServiceInterfaceMock(suite.T())
-	mockJWT.On("VerifyJWT", token, "", "").Return(&serviceerror.ServiceError{
+	mockJWT.On("VerifyJWT", mock.Anything, token, "", "").Return(&serviceerror.ServiceError{
 		Type:  serviceerror.ServerErrorType,
 		Code:  "INVALID_SIGNATURE",
 		Error: i18ncore.I18nMessage{DefaultValue: "Invalid signature"},

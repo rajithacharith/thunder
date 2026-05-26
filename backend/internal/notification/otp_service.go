@@ -138,7 +138,7 @@ func (s *otpService) VerifyOTP(
 		return nil, err
 	}
 
-	sessionData, svcErr := s.verifyAndDecodeSessionToken(otpDTO.SessionToken, logger)
+	sessionData, svcErr := s.verifyAndDecodeSessionToken(ctx, otpDTO.SessionToken, logger)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -302,11 +302,11 @@ func (s *otpService) createSessionToken(ctx context.Context, sessionData common.
 }
 
 // verifyAndDecodeSessionToken verifies the JWT signature and decodes the session data.
-func (s *otpService) verifyAndDecodeSessionToken(token string, logger *log.Logger) (
+func (s *otpService) verifyAndDecodeSessionToken(ctx context.Context, token string, logger *log.Logger) (
 	*common.OTPSessionData, *serviceerror.ServiceError) {
 	// Verify JWT signature
 	jwtConfig := config.GetServerRuntime().Config.JWT
-	svcErr := s.jwtService.VerifyJWT(token, "otp-svc", jwtConfig.Issuer)
+	svcErr := s.jwtService.VerifyJWT(ctx, token, "otp-svc", jwtConfig.Issuer)
 	if svcErr != nil {
 		logger.Debug("Invalid session token", log.String("error", svcErr.Error.DefaultValue))
 		return nil, &ErrorInvalidSessionToken

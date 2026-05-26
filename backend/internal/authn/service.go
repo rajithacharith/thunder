@@ -314,7 +314,7 @@ func (as *authenticationService) FinishIDPAuthentication(ctx context.Context, re
 	}
 
 	// Verify and decode session token
-	sessionData, svcErr := as.verifyAndDecodeSessionToken(sessionToken, logger)
+	sessionData, svcErr := as.verifyAndDecodeSessionToken(ctx, sessionToken, logger)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -394,7 +394,7 @@ func (as *authenticationService) validateAndAppendAuthAssertion(
 	if strings.TrimSpace(existingAssertion) != "" {
 		var assertionSub string
 		var svcErr *serviceerror.ServiceError
-		existingAssurance, assertionSub, svcErr = as.extractClaimsFromAssertion(existingAssertion, logger)
+		existingAssurance, assertionSub, svcErr = as.extractClaimsFromAssertion(ctx, existingAssertion, logger)
 		if svcErr != nil {
 			return svcErr
 		}
@@ -468,11 +468,11 @@ func (as *authenticationService) getAssertionResult(existingContext *assert.Assu
 }
 
 // extractClaimsFromAssertion extracts assurance context and subject from an existing JWT assertion.
-func (as *authenticationService) extractClaimsFromAssertion(assertion string,
+func (as *authenticationService) extractClaimsFromAssertion(ctx context.Context, assertion string,
 	logger *log.Logger) (*assert.AssuranceContext, string, *serviceerror.ServiceError) {
 	jwtConfig := config.GetServerRuntime().Config.JWT
 
-	if err := as.jwtService.VerifyJWT(assertion, "", jwtConfig.Issuer); err != nil {
+	if err := as.jwtService.VerifyJWT(ctx, assertion, "", jwtConfig.Issuer); err != nil {
 		logger.Debug("Failed to verify JWT signature of the assertion", log.String("error", err.Error.DefaultValue))
 		return nil, "", &common.ErrorInvalidAssertion
 	}
@@ -624,11 +624,11 @@ func (as *authenticationService) createSessionToken(ctx context.Context, idpID s
 }
 
 // verifyAndDecodeSessionToken verifies the JWT signature and decodes the auth session data.
-func (as *authenticationService) verifyAndDecodeSessionToken(token string, logger *log.Logger) (
+func (as *authenticationService) verifyAndDecodeSessionToken(ctx context.Context, token string, logger *log.Logger) (
 	*AuthSessionData, *serviceerror.ServiceError) {
 	// Verify JWT signature and claims
 	jwtConfig := config.GetServerRuntime().Config.JWT
-	svcErr := as.jwtService.VerifyJWT(token, "auth-svc", jwtConfig.Issuer)
+	svcErr := as.jwtService.VerifyJWT(ctx, token, "auth-svc", jwtConfig.Issuer)
 	if svcErr != nil {
 		logger.Debug("Error verifying session token", log.String("error", svcErr.Error.DefaultValue))
 		return nil, &common.ErrorInvalidSessionToken

@@ -92,7 +92,7 @@ func (suite *JWEServiceTestSuite) TestEncryptDecrypt_RSA() {
 	for _, enc := range encAlgs {
 		jweToken, sErr := suite.jweService.Encrypt(payload, recipientPublicKey, RSAOAEP256, enc, "", "")
 		assert.Nil(suite.T(), sErr)
-		decrypted, sErr := suite.jweService.Decrypt(jweToken)
+		decrypted, sErr := suite.jweService.Decrypt(context.Background(), jweToken)
 		assert.Nil(suite.T(), sErr)
 		assert.Equal(suite.T(), payload, decrypted)
 	}
@@ -131,7 +131,7 @@ func (suite *JWEServiceTestSuite) TestEncryptDecrypt_ECDH() {
 	for _, tc := range testCases {
 		jweToken, sErr := suite.jweService.Encrypt(payload, recipientPublicKey, tc.alg, tc.enc, "", "")
 		assert.Nil(suite.T(), sErr)
-		decrypted, sErr := suite.jweService.Decrypt(jweToken)
+		decrypted, sErr := suite.jweService.Decrypt(context.Background(), jweToken)
 		assert.Nil(suite.T(), sErr)
 		assert.Equal(suite.T(), payload, decrypted)
 	}
@@ -162,7 +162,7 @@ func (suite *JWEServiceTestSuite) TestDecrypt_Errors() {
 	}
 
 	// Invalid JWE format — no provider call
-	_, sErr := suite.jweService.Decrypt("invalid.jwe")
+	_, sErr := suite.jweService.Decrypt(context.Background(), "invalid.jwe")
 	assert.NotNil(suite.T(), sErr)
 	assert.Equal(suite.T(), ErrorDecodingJWE, *sErr)
 
@@ -173,7 +173,7 @@ func (suite *JWEServiceTestSuite) TestDecrypt_Errors() {
 	// DecryptKey failure: provider returns an error
 	mockProvider.EXPECT().Decrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, errors.New("key decryption error")).Once()
-	_, sErr = suite.jweService.Decrypt(jweToken)
+	_, sErr = suite.jweService.Decrypt(context.Background(), jweToken)
 	assert.NotNil(suite.T(), sErr)
 	assert.Equal(suite.T(), ErrorJWEDecryptionFailed, *sErr)
 
@@ -188,7 +188,7 @@ func (suite *JWEServiceTestSuite) TestDecrypt_Errors() {
 	parts := strings.Split(jweToken, ".")
 	parts[4] = base64.RawURLEncoding.EncodeToString([]byte("wrong-tag"))
 	tamperedToken := strings.Join(parts, ".")
-	_, sErr = suite.jweService.Decrypt(tamperedToken)
+	_, sErr = suite.jweService.Decrypt(context.Background(), tamperedToken)
 	assert.NotNil(suite.T(), sErr)
 	assert.Equal(suite.T(), ErrorJWEDecryptionFailed, *sErr)
 }
@@ -224,24 +224,24 @@ func (suite *JWEServiceTestSuite) TestDecrypt_EdgeCases() {
 	}
 
 	// Test with malformed JWE (wrong number of parts)
-	_, sErr := suite.jweService.Decrypt("malformed.jwe")
+	_, sErr := suite.jweService.Decrypt(context.Background(), "malformed.jwe")
 	assert.NotNil(suite.T(), sErr)
 	assert.Equal(suite.T(), ErrorDecodingJWE, *sErr)
 
 	// Test with invalid base64 in header
-	_, sErr = suite.jweService.Decrypt("invalid-base64.key.iv.ciphertext.tag")
+	_, sErr = suite.jweService.Decrypt(context.Background(), "invalid-base64.key.iv.ciphertext.tag")
 	assert.NotNil(suite.T(), sErr)
 	assert.Equal(suite.T(), ErrorDecodingJWE, *sErr)
 
 	// Test with invalid JSON in header
 	invalidHeader := base64.RawURLEncoding.EncodeToString([]byte("{invalid json"))
-	_, sErr = suite.jweService.Decrypt(invalidHeader + ".key.iv.ciphertext.tag")
+	_, sErr = suite.jweService.Decrypt(context.Background(), invalidHeader+".key.iv.ciphertext.tag")
 	assert.NotNil(suite.T(), sErr)
 	assert.Equal(suite.T(), ErrorDecodingJWE, *sErr)
 
 	// Test with missing required header fields
 	headerMissingAlg := base64.RawURLEncoding.EncodeToString([]byte(`{"enc":"A128GCM"}`))
-	_, sErr = suite.jweService.Decrypt(headerMissingAlg + ".key.iv.ciphertext.tag")
+	_, sErr = suite.jweService.Decrypt(context.Background(), headerMissingAlg+".key.iv.ciphertext.tag")
 	assert.NotNil(suite.T(), sErr)
 	assert.Equal(suite.T(), ErrorUnsupportedJWEAlgorithm, *sErr)
 }
@@ -343,7 +343,7 @@ func (suite *JWEServiceTestSuite) TestDecrypt_MissingEncField() {
 	}
 
 	headerNoEnc := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"RSA-OAEP-256"}`))
-	_, sErr := suite.jweService.Decrypt(headerNoEnc + ".key.iv.ciphertext.tag")
+	_, sErr := suite.jweService.Decrypt(context.Background(), headerNoEnc+".key.iv.ciphertext.tag")
 	assert.NotNil(suite.T(), sErr)
 	assert.Equal(suite.T(), ErrorUnsupportedEncryptionAlgorithm, *sErr)
 }
@@ -355,7 +355,7 @@ func (suite *JWEServiceTestSuite) TestDecrypt_UnsupportedAlgorithmForDecrypt() {
 
 	// A128KW is valid for encrypt but hits the default branch in buildDecryptParams
 	headerAESKW := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"A128KW","enc":"A128GCM"}`))
-	_, sErr := suite.jweService.Decrypt(headerAESKW + ".key.iv.ciphertext.tag")
+	_, sErr := suite.jweService.Decrypt(context.Background(), headerAESKW+".key.iv.ciphertext.tag")
 	assert.NotNil(suite.T(), sErr)
 	assert.Equal(suite.T(), ErrorUnsupportedJWEAlgorithm, *sErr)
 }
@@ -382,7 +382,7 @@ func (suite *JWEServiceTestSuite) TestEncryptDecrypt_CBC() {
 	for _, enc := range encAlgs {
 		jweToken, sErr := suite.jweService.Encrypt(payload, &suite.testRSAPrivateKey.PublicKey, RSAOAEP256, enc, "", "")
 		assert.Nil(suite.T(), sErr, "enc=%s", enc)
-		decrypted, sErr := suite.jweService.Decrypt(jweToken)
+		decrypted, sErr := suite.jweService.Decrypt(context.Background(), jweToken)
 		assert.Nil(suite.T(), sErr, "enc=%s", enc)
 		assert.Equal(suite.T(), payload, decrypted, "enc=%s", enc)
 	}

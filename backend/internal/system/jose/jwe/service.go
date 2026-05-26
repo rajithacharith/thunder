@@ -36,7 +36,7 @@ import (
 type JWEServiceInterface interface {
 	Encrypt(payload []byte, recipientPublicKey crypto.PublicKey,
 		alg KeyEncAlgorithm, enc ContentEncAlgorithm, cty string, kid string) (string, *serviceerror.ServiceError)
-	Decrypt(jweToken string) ([]byte, *serviceerror.ServiceError)
+	Decrypt(ctx context.Context, jweToken string) ([]byte, *serviceerror.ServiceError)
 }
 
 // jweService implements the JWEServiceInterface.
@@ -137,7 +137,7 @@ func (js *jweService) Encrypt(payload []byte, recipientPublicKey crypto.PublicKe
 }
 
 // Decrypt decrypts the JWE compact serialization using the server's private key via the crypto provider.
-func (js *jweService) Decrypt(jweToken string) ([]byte, *serviceerror.ServiceError) {
+func (js *jweService) Decrypt(ctx context.Context, jweToken string) ([]byte, *serviceerror.ServiceError) {
 	header, headerBase64, encryptedKey, iv, ciphertext, tag, err := DecodeJWE(jweToken)
 	if err != nil {
 		js.logger.Debug("Failed to decode JWE: " + err.Error())
@@ -164,7 +164,7 @@ func (js *jweService) Decrypt(jweToken string) ([]byte, *serviceerror.ServiceErr
 	}
 
 	// Decrypt CEK via the runtime crypto provider (uses server's private key).
-	cek, err := js.cryptoProvider.Decrypt(context.Background(), &js.keyRef, params, encryptedKey)
+	cek, err := js.cryptoProvider.Decrypt(ctx, &js.keyRef, params, encryptedKey)
 	if err != nil {
 		js.logger.Error("Failed to decrypt CEK: " + err.Error())
 		return nil, &ErrorJWEDecryptionFailed
