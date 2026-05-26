@@ -372,6 +372,57 @@ const sidebars: SidebarsConfig = {
           id: 'guides/guides/resource-servers',
           label: 'Resource Servers',
         },
+        {
+          type: 'category',
+          label: 'Design',
+          collapsed: true,
+          collapsible: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'guides/guides/design/overview',
+              label: 'Style Your Experience',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/design/themes',
+              label: 'Themes',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/design/layouts',
+              label: 'Layouts',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/design/design-catalog',
+              label: 'Design Catalog',
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Translations',
+          collapsed: true,
+          collapsible: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'guides/guides/i18n/localization',
+              label: 'Localization',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/i18n/manage-translations',
+              label: 'Manage Translations',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/i18n/resolve-translations',
+              label: 'Resolve Translations',
+            },
+          ],
+        },
       ],
     },
 
