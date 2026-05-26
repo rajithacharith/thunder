@@ -100,7 +100,9 @@ describe('RichTextAdapter', () => {
         type: 'RICH_TEXT',
         label: 'Read our <a href="https://example.com/terms" target="_blank">Terms</a>.',
       };
-      const {getByTestId} = render(<RichTextAdapter component={component} resolve={(s: string | undefined) => s} />);
+      const {getByTestId} = renderWithProviders(
+        <RichTextAdapter component={component} resolve={(s: string | undefined) => s} />,
+      );
       const anchor = getByTestId('rich-text-box').querySelector('a');
       expect(anchor).not.toBeNull();
       expect(anchor?.getAttribute('target')).toBe('_blank');
@@ -112,7 +114,9 @@ describe('RichTextAdapter', () => {
         type: 'RICH_TEXT',
         label: 'Read our <a href="https://example.com/terms" target="_blank">Terms</a>.',
       };
-      const {getByTestId} = render(<RichTextAdapter component={component} resolve={(s: string | undefined) => s} />);
+      const {getByTestId} = renderWithProviders(
+        <RichTextAdapter component={component} resolve={(s: string | undefined) => s} />,
+      );
       const anchor = getByTestId('rich-text-box').querySelector('a');
       expect(anchor?.getAttribute('rel')).toBe('noopener noreferrer');
     });
@@ -123,7 +127,9 @@ describe('RichTextAdapter', () => {
         type: 'RICH_TEXT',
         label: '<a href="https://example.com" target="_blank" rel="opener">Link</a>',
       };
-      const {getByTestId} = render(<RichTextAdapter component={component} resolve={(s: string | undefined) => s} />);
+      const {getByTestId} = renderWithProviders(
+        <RichTextAdapter component={component} resolve={(s: string | undefined) => s} />,
+      );
       const anchor = getByTestId('rich-text-box').querySelector('a');
       expect(anchor?.getAttribute('rel')).toBe('noopener noreferrer');
     });
