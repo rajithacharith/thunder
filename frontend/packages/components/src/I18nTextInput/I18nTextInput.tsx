@@ -48,6 +48,7 @@ import {
 import {PlusIcon, SquareFunction, XIcon} from '@wso2/oxygen-ui-icons-react';
 import {type ChangeEvent, type ReactElement, type SyntheticEvent, useCallback, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
+import PageLoadingAnimation from '../lab/components/PageLoadingAnimation';
 
 /**
  * UI strings displayed by {@link I18nTextInput}. All fields are optional; English fallbacks
@@ -288,11 +289,7 @@ function I18nContent({
   ]);
 
   if (isLoading) {
-    return (
-      <Box sx={{display: 'flex', justifyContent: 'center', p: 2}}>
-        <CircularProgress size={20} />
-      </Box>
-    );
+    return <PageLoadingAnimation />;
   }
 
   if (isCreateMode) {

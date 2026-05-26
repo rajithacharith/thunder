@@ -427,6 +427,7 @@ func TestUserService_CreateUser_CallsCreateEntity(t *testing.T) {
 		ouService:         ouServiceMock,
 		entityTypeService: entityTypeMock,
 		authzService:      newAllowAllAuthz(t),
+		uuidGenerator:     utils.GenerateUUIDv7,
 	}
 
 	user := &User{
@@ -441,6 +442,32 @@ func TestUserService_CreateUser_CallsCreateEntity(t *testing.T) {
 	require.Equal(t, testOrgID, created.OUID)
 	require.NotEmpty(t, created.ID)
 	storeMock.AssertNumberOfCalls(t, "CreateEntity", 1)
+}
+
+func TestUserService_CreateUser_UUIDGenerationError(t *testing.T) {
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
+		Return(true, (*serviceerror.ServiceError)(nil)).Once()
+
+	entityTypeMock := entitytypemock.NewEntityTypeServiceInterfaceMock(t)
+	entityTypeMock.On("GetEntityTypeByName", mock.Anything, mock.Anything, testUserType).
+		Return(&entitytype.EntityType{OUID: testOrgID}, (*serviceerror.ServiceError)(nil)).Once()
+
+	service := &userService{
+		ouService:         ouServiceMock,
+		entityTypeService: entityTypeMock,
+		authzService:      newAllowAllAuthz(t),
+		uuidGenerator: func() (string, error) {
+			return "", errors.New("entropy source failed")
+		},
+	}
+
+	user := &User{Type: testUserType, OUID: testOrgID}
+
+	created, svcErr := service.CreateUser(context.Background(), user)
+	require.Nil(t, created)
+	require.NotNil(t, svcErr)
+	require.Equal(t, serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func TestUserService_CreateUser_PropagatesStoreError(t *testing.T) {
@@ -468,6 +495,7 @@ func TestUserService_CreateUser_PropagatesStoreError(t *testing.T) {
 		ouService:         ouServiceMock,
 		entityTypeService: entityTypeMock,
 		authzService:      newAllowAllAuthz(t),
+		uuidGenerator:     utils.GenerateUUIDv7,
 	}
 
 	user := &User{
@@ -1857,6 +1885,7 @@ func TestUserService_CreateUser_EntityErrors(t *testing.T) {
 				ouService:         ouServiceMock,
 				entityTypeService: entityTypeMock,
 				authzService:      newAllowAllAuthz(t),
+				uuidGenerator:     utils.GenerateUUIDv7,
 			}
 
 			user := &User{
@@ -3178,4 +3207,104 @@ func TestUserService_GetUserList_WithIncludeDisplay(t *testing.T) {
 	require.Equal(t, "engineering", resp.Users[0].OUHandle)
 	require.Equal(t, "Bob", resp.Users[1].Display)
 	require.Equal(t, "sales", resp.Users[1].OUHandle)
+}
+
+// TestResolveUserOUHandle_OUHandleResolved verifies that when only ou_handle is set,
+// it is resolved to ou_id via the OU service.
+func TestResolveUserOUHandle_OUHandleResolved(t *testing.T) {
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.On("GetOrganizationUnitByPath", mock.Anything, "default").
+		Return(oupkg.OrganizationUnit{ID: "ou-resolved"}, (*serviceerror.ServiceError)(nil)).Once()
+
+	svc := &userService{ouService: ouServiceMock}
+	u := &User{OUHandle: "default"}
+
+	svcErr := svc.ResolveUserOUHandle(context.Background(), u)
+
+	require.Nil(t, svcErr)
+	require.Equal(t, "ou-resolved", u.OUID)
+}
+
+// TestResolveUserOUHandle_OUIDAlreadySet verifies that no resolution happens when
+// ou_id is set and ou_handle is empty.
+func TestResolveUserOUHandle_OUIDAlreadySet(t *testing.T) {
+	svc := &userService{}
+	u := &User{OUID: "ou-direct"}
+
+	svcErr := svc.ResolveUserOUHandle(context.Background(), u)
+
+	require.Nil(t, svcErr)
+	require.Equal(t, "ou-direct", u.OUID)
+}
+
+// TestResolveUserOUHandle_BothProvided verifies that when both ou_id and ou_handle are
+// provided, ou_id is retained and the OU service is never called.
+func TestResolveUserOUHandle_BothProvided(t *testing.T) {
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+
+	svc := &userService{ouService: ouServiceMock}
+	u := &User{ID: "u1", OUID: "ou-direct", OUHandle: "default"}
+
+	svcErr := svc.ResolveUserOUHandle(context.Background(), u)
+
+	require.Nil(t, svcErr)
+	require.Equal(t, "ou-direct", u.OUID)
+	// Cleanup-time AssertExpectations confirms GetOrganizationUnitByPath was never called.
+}
+
+// TestResolveUserOUHandle_OUHandleNotFound verifies that a not-found response from the OU
+// service is surfaced as ErrorInvalidRequestFormat.
+func TestResolveUserOUHandle_OUHandleNotFound(t *testing.T) {
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.On("GetOrganizationUnitByPath", mock.Anything, "missing").
+		Return(oupkg.OrganizationUnit{}, &oupkg.ErrorOrganizationUnitNotFound).Once()
+
+	svc := &userService{ouService: ouServiceMock}
+	u := &User{OUHandle: "missing"}
+
+	svcErr := svc.ResolveUserOUHandle(context.Background(), u)
+
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInvalidRequestFormat.Code, svcErr.Code)
+}
+
+// TestResolveUserOUHandle_NeitherProvided verifies the call is a no-op when neither
+// ou_id nor ou_handle is provided.
+func TestResolveUserOUHandle_NeitherProvided(t *testing.T) {
+	svc := &userService{}
+	u := &User{}
+
+	svcErr := svc.ResolveUserOUHandle(context.Background(), u)
+
+	require.Nil(t, svcErr)
+	require.Empty(t, u.OUID)
+}
+
+// TestResolveUserOUHandle_NilOUService verifies that a clear error is returned when the OU
+// service is nil and ou_handle is supplied (no nil-pointer panic).
+func TestResolveUserOUHandle_NilOUService(t *testing.T) {
+	svc := &userService{ouService: nil}
+	u := &User{OUHandle: "default"}
+
+	svcErr := svc.ResolveUserOUHandle(context.Background(), u)
+
+	require.NotNil(t, svcErr)
+	require.Equal(t, serviceerror.InternalServerError.Code, svcErr.Code)
+}
+
+// TestUserDeclarativeYAML_OUHandleParsed verifies that ou_handle is parsed off the YAML
+// document into the user declarative resource.
+func TestUserDeclarativeYAML_OUHandleParsed(t *testing.T) {
+	yamlData := []byte("" +
+		"id: user-1\n" +
+		"type: person\n" +
+		"ou_handle: default\n" +
+		"attributes:\n" +
+		"  username: alice\n")
+
+	user, _, err := parseToUser(yamlData)
+
+	require.NoError(t, err)
+	require.Equal(t, "default", user.OUHandle)
+	require.Empty(t, user.OUID)
 }

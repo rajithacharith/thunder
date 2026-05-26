@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Role Management API
   version: "1.0"
-  description: This API is used to manage roles with permission-based access control.
+  description: Define and assign roles for permission-based access control. Roles aggregate permissions derived from resource server scopes and can be assigned directly to users or groups.
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
@@ -16,8 +16,8 @@ servers:
         default: "8090"
 
 tags:
-  - name: roles
-    description: Operations related to role management
+  - name: Roles
+    description: Create roles, define their permission scopes, and assign them to users or groups.
 
 security:
   - OAuth2: [system]
@@ -26,7 +26,7 @@ paths:
   /roles:
     get:
       tags:
-        - roles
+        - Roles
       summary: List roles
       parameters:
         - $ref: '#/components/parameters/limitQueryParam'
@@ -48,11 +48,13 @@ paths:
                     description: "Front desk agent role with booking and customer management permissions"
                     ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                     ouHandle: "default"
+                    isReadOnly: false
                   - id: "257e528f-eb24-48b6-884d-20460e190957"
                     name: "hotel-manager"
                     description: "Hotel manager with full property access"
                     ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                     ouHandle: "default"
+                    isReadOnly: true
                 links:
                   - href: "roles?offset=2&limit=2"
                     rel: "next"
@@ -76,7 +78,7 @@ paths:
                 invalid-limit:
                   summary: Invalid limit parameter
                   value:
-                    code: "ROL-1011"
+                    code: "ROL-1008"
                     message:
                       key: "error.roleservice.invalid_limit_parameter"
                       defaultValue: "Invalid limit parameter"
@@ -86,7 +88,7 @@ paths:
                 invalid-offset:
                   summary: Invalid offset parameter
                   value:
-                    code: "ROL-1012"
+                    code: "ROL-1009"
                     message:
                       key: "error.roleservice.invalid_offset_parameter"
                       defaultValue: "Invalid offset parameter"
@@ -107,10 +109,10 @@ paths:
                 description:
                   key: "error.internal_server_error_description"
                   defaultValue: "An unexpected error occurred while processing the request"
-    
+
     post:
       tags:
-        - roles
+        - Roles
       summary: Create a new role
       description: Creates a new role with optional initial permissions and assignments
       requestBody:
@@ -223,6 +225,16 @@ paths:
                     description:
                       key: "error.roleservice.invalid_permissions_description"
                       defaultValue: "One or more permissions do not exist in the resource management system"
+                declarative-mode:
+                  summary: Role creation not allowed in declarative-only mode
+                  value:
+                    code: "ROL-1015"
+                    message:
+                      key: "error.roleservice.cannot_create_role_in_declarative_only_mode"
+                      defaultValue: "Cannot create role in declarative-only mode"
+                    description:
+                      key: "error.roleservice.cannot_create_role_in_declarative_only_mode_description"
+                      defaultValue: "Role creation is not allowed when running in declarative-only mode. Roles must be defined in declarative configuration files"
         "409":
           description: Conflict
           content:
@@ -251,11 +263,11 @@ paths:
                 description:
                   key: "error.internal_server_error_description"
                   defaultValue: "An unexpected error occurred while processing the request"
-  
+
   /roles/{id}:
     get:
       tags:
-        - roles
+        - Roles
       summary: Get role details
       description: Returns role metadata with permissions list
       parameters:
@@ -279,10 +291,14 @@ paths:
                 ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                 ouHandle: "default"
                 permissions:
-                  - "create_reservation"
-                  - "view_reservation"
-                  - "process_payment"
-                  - "view_customer_profile"
+                  - resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                    permissions:
+                      - "create_reservation"
+                      - "view_reservation"
+                  - resourceServerId: "7b8c9d0e-1f2a-3b4c-5d6e-7f8a9b0c1d2e"
+                    permissions:
+                      - "process_payment"
+                      - "view_customer_profile"
         "400":
           description: Bad request
           content:
@@ -328,7 +344,7 @@ paths:
 
     put:
       tags:
-        - roles
+        - Roles
       summary: Update role
       description: Updates role name, description, organization unit, and permissions
       parameters:
@@ -436,6 +452,16 @@ paths:
                     description:
                       key: "error.roleservice.invalid_permissions_description"
                       defaultValue: "One or more permissions do not exist in the resource management system"
+                immutable-role:
+                  summary: Cannot modify declarative role
+                  value:
+                    code: "ROL-1013"
+                    message:
+                      key: "error.roleservice.cannot_modify_declarative_role"
+                      defaultValue: "Cannot modify declarative role"
+                    description:
+                      key: "error.roleservice.cannot_modify_declarative_role_description"
+                      defaultValue: "The role is defined in declarative configuration and cannot be modified"
         "404":
           description: Role not found
           content:
@@ -481,7 +507,7 @@ paths:
 
     delete:
       tags:
-        - roles
+        - Roles
       summary: Delete a role by id
       parameters:
         - in: path
@@ -520,6 +546,30 @@ paths:
                     description:
                       key: "error.roleservice.cannot_delete_role_description"
                       defaultValue: "Cannot delete role that is currently assigned to users or groups"
+                immutable-role:
+                  summary: Cannot modify declarative role
+                  value:
+                    code: "ROL-1013"
+                    message:
+                      key: "error.roleservice.cannot_modify_declarative_role"
+                      defaultValue: "Cannot modify declarative role"
+                    description:
+                      key: "error.roleservice.cannot_modify_declarative_role_description"
+                      defaultValue: "The role is defined in declarative configuration and cannot be modified"
+        "404":
+          description: Role not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "ROL-1003"
+                message:
+                  key: "error.roleservice.role_not_found"
+                  defaultValue: "Role not found"
+                description:
+                  key: "error.roleservice.role_not_found_description"
+                  defaultValue: "The role with the specified id does not exist"
         "500":
           description: Internal server error
           content:
@@ -538,7 +588,7 @@ paths:
   /roles/{id}/assignments:
     get:
       tags:
-        - roles
+        - Roles
       summary: Get role assignments
       description: Returns user and group assignments for the role. Use type to filter by assignee type and include=display to get display names.
       parameters:
@@ -610,7 +660,7 @@ paths:
                 invalid-limit:
                   summary: Invalid limit parameter
                   value:
-                    code: "ROL-1011"
+                    code: "ROL-1008"
                     message:
                       key: "error.roleservice.invalid_limit_parameter"
                       defaultValue: "Invalid limit parameter"
@@ -620,7 +670,7 @@ paths:
                 invalid-offset:
                   summary: Invalid offset parameter
                   value:
-                    code: "ROL-1012"
+                    code: "ROL-1009"
                     message:
                       key: "error.roleservice.invalid_offset_parameter"
                       defaultValue: "Invalid offset parameter"
@@ -659,7 +709,7 @@ paths:
   /roles/{id}/assignments/add:
     post:
       tags:
-        - roles
+        - Roles
       summary: Add assignments to a role
       description: Adds one or more user or group assignments to the specified role
       parameters:
@@ -714,13 +764,23 @@ paths:
                 empty-assignments:
                   summary: Empty assignments
                   value:
-                    code: "ROL-1014"
+                    code: "ROL-1010"
                     message:
                       key: "error.roleservice.empty_assignments_list"
                       defaultValue: "Empty assignments list"
                     description:
                       key: "error.roleservice.empty_assignments_list_description"
                       defaultValue: "At least one assignment must be provided"
+                immutable-assignment:
+                  summary: Cannot modify declarative assignment
+                  value:
+                    code: "ROL-1014"
+                    message:
+                      key: "error.roleservice.cannot_modify_declarative_assignment"
+                      defaultValue: "Cannot modify declarative assignment"
+                    description:
+                      key: "error.roleservice.cannot_modify_declarative_assignment_description"
+                      defaultValue: "The assignment is defined in declarative configuration and cannot be modified"
         "404":
           description: Role not found
           content:
@@ -753,7 +813,7 @@ paths:
   /roles/{id}/assignments/remove:
     post:
       tags:
-        - roles
+        - Roles
       summary: Remove assignments from a role
       description: Removes one or more user or group assignments from the specified role
       parameters:
@@ -798,13 +858,23 @@ paths:
                 empty-assignments:
                   summary: Empty assignments
                   value:
-                    code: "ROL-1014"
+                    code: "ROL-1010"
                     message:
                       key: "error.roleservice.empty_assignments_list"
                       defaultValue: "Empty assignments list"
                     description:
                       key: "error.roleservice.empty_assignments_list_description"
                       defaultValue: "At least one assignment must be provided"
+                immutable-assignment:
+                  summary: Cannot modify declarative assignment
+                  value:
+                    code: "ROL-1014"
+                    message:
+                      key: "error.roleservice.cannot_modify_declarative_assignment"
+                      defaultValue: "Cannot modify declarative assignment"
+                    description:
+                      key: "error.roleservice.cannot_modify_declarative_assignment_description"
+                      defaultValue: "The assignment is defined in declarative configuration and cannot be modified"
         "404":
           description: Role not found
           content:
@@ -841,6 +911,10 @@ components:
       flows:
         authorizationCode:
           authorizationUrl: https://localhost:8090/oauth2/authorize
+          tokenUrl: https://localhost:8090/oauth2/token
+          scopes:
+            system: Access to system management APIs
+        clientCredentials:
           tokenUrl: https://localhost:8090/oauth2/token
           scopes:
             system: Access to system management APIs
@@ -967,6 +1041,10 @@ components:
           type: string
           readOnly: true
           description: "Handle of the organization unit this role belongs to"
+        isReadOnly:
+          type: boolean
+          readOnly: true
+          description: "Indicates if the role is defined in declarative configuration and cannot be modified"
 
     Role:
       type: object

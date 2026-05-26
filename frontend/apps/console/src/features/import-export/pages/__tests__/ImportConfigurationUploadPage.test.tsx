@@ -157,17 +157,42 @@ describe('ImportConfigurationUploadPage', () => {
     expect(screen.getByRole('button', {name: 'common:actions.continue'})).not.toBeDisabled();
   });
 
-  it('shows error when continue is clicked without env file', async () => {
+  it('continue button is enabled with only a YAML file selected (env file is optional)', async () => {
     const user = userEvent.setup();
     render(<ImportConfigurationUploadPage />);
 
-    // Only select yaml file
     const yamlFile = new File(['key: value'], 'config.yaml', {type: 'text/yaml'});
     await user.upload(document.getElementById('file-upload') as HTMLInputElement, yamlFile);
 
-    // Manually enable the button by patching disabled - instead verify error shows when submitting
-    // The button is disabled without envFile so this tests the validation guard
-    expect(screen.getByRole('button', {name: 'common:actions.continue'})).toBeDisabled();
+    expect(screen.getByRole('button', {name: 'common:actions.continue'})).not.toBeDisabled();
+  });
+
+  it('navigates to validate page with envFile and envData absent when only YAML is provided', async () => {
+    const user = userEvent.setup();
+    render(<ImportConfigurationUploadPage />);
+
+    const yamlContent = '---\n# resource_type: application\nname: test-app\n';
+    const yamlFile = new File([yamlContent], 'config.yaml', {type: 'text/yaml'});
+    Object.defineProperty(yamlFile, 'text', {value: () => Promise.resolve(yamlContent)});
+
+    await user.upload(document.getElementById('file-upload') as HTMLInputElement, yamlFile);
+    await user.click(screen.getByRole('button', {name: 'common:actions.continue'}));
+
+    await waitFor(
+      () => {
+        expect(mockNavigate).toHaveBeenCalledWith(
+          '/welcome/open-project/validate',
+          expect.objectContaining({
+            state: expect.objectContaining({
+              method: 'file',
+              envFile: null,
+              envData: null,
+            }) as Record<string, unknown>,
+          }),
+        );
+      },
+      {timeout: 5000},
+    );
   });
 
   it('navigates to validate page after both valid files are provided', async () => {

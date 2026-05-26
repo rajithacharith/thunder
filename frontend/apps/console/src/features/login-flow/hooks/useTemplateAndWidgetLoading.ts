@@ -234,7 +234,7 @@ const useTemplateAndWidgetLoading = (props: UseTemplateAndWidgetLoadingProps): U
       const replacers = widgetFlow.__generationMeta__?.replacers ?? [];
 
       const defaultPropertySelectorId = widgetFlow.__generationMeta__?.defaultPropertySelectorId;
-      let defaultPropertySectorStepId: string | null = null;
+      let defaultPropertySelectorStepId: string | null = null;
       let defaultPropertySelector: Resource | null = null;
 
       // Resolve step & component metadata.
@@ -260,7 +260,7 @@ const useTemplateAndWidgetLoading = (props: UseTemplateAndWidgetLoadingProps): U
       // Find default property selector
       newNodes.forEach((node: Node) => {
         if (node.id === defaultPropertySelectorId) {
-          defaultPropertySectorStepId = node.id;
+          defaultPropertySelectorStepId = node.id;
           defaultPropertySelector = node as Resource;
 
           return;
@@ -269,7 +269,7 @@ const useTemplateAndWidgetLoading = (props: UseTemplateAndWidgetLoadingProps): U
         if (!isEmpty(node?.data?.components)) {
           (node.data.components as Element[]).forEach((component: Element) => {
             if (component.id === defaultPropertySelectorId) {
-              defaultPropertySectorStepId = node.id;
+              defaultPropertySelectorStepId = node.id;
               defaultPropertySelector = component as Resource;
 
               return;
@@ -277,7 +277,7 @@ const useTemplateAndWidgetLoading = (props: UseTemplateAndWidgetLoadingProps): U
 
             if (!isEmpty(component?.components)) {
               if (component.id === defaultPropertySelectorId) {
-                defaultPropertySectorStepId = node.id;
+                defaultPropertySelectorStepId = node.id;
                 defaultPropertySelector = component as Resource;
               }
             }
@@ -310,22 +310,22 @@ const useTemplateAndWidgetLoading = (props: UseTemplateAndWidgetLoadingProps): U
         }
       }
 
-      // Check if `defaultPropertySectorStepId` is in the `replacedPlaceholders`.
+      // Check if `defaultPropertySelectorStepId` is in the `replacedPlaceholders`.
       // If so, update them with the replaced value.
-      if (defaultPropertySectorStepId) {
-        const stepId: string = defaultPropertySectorStepId;
+      if (defaultPropertySelectorStepId) {
+        const stepId: string = defaultPropertySelectorStepId;
         const cleanedId = stepId.replace(/[{}]/g, '');
 
         if (replacedPlaceholders.has(cleanedId)) {
           const replacedId = replacedPlaceholders.get(cleanedId);
 
           if (replacedId) {
-            defaultPropertySectorStepId = replacedId;
+            defaultPropertySelectorStepId = replacedId;
           }
         }
       }
 
-      return [updatedNodes, newEdges, defaultPropertySelector, defaultPropertySectorStepId];
+      return [updatedNodes, newEdges, defaultPropertySelector, defaultPropertySelectorStepId];
     },
     [resources, edgeStyle],
   );

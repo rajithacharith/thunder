@@ -159,6 +159,20 @@ func parseToIDPDTO(data []byte) (*IDPDTO, error) {
 		return nil, err
 	}
 
+	return buildIDPDTOFromRequest(idpRequest)
+}
+
+// ParseIDPDTOFromNode decodes a yaml.Node into an IDPDTO, converting PropertyDTOs to Properties.
+func ParseIDPDTOFromNode(node *yaml.Node) (*IDPDTO, error) {
+	var idpRequest idpRequestWithID
+	if err := node.Decode(&idpRequest); err != nil {
+		return nil, err
+	}
+
+	return buildIDPDTOFromRequest(idpRequest)
+}
+
+func buildIDPDTOFromRequest(idpRequest idpRequestWithID) (*IDPDTO, error) {
 	idpDTO := &IDPDTO{
 		ID:          idpRequest.ID,
 		Name:        idpRequest.Name,

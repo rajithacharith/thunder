@@ -65,7 +65,7 @@ export interface ClientConfig {
 
   /**
    * Unique identifier for the client application, used for authentication
-   * and authorization with identity providers like Asgardeo.
+   * and authorization with identity providers like ThunderID.
    * @example "CONSOLE", "my-app-client-id"
    */
   client_id: string;
@@ -145,6 +145,12 @@ export interface BrandConfig {
   favicon: {light: string; dark: string};
 
   /**
+   * Base URL for the product documentation site.
+   * @example "https://thunderid.dev/docs/next"
+   */
+  docs_url?: string;
+
+  /**
    * Design configuration for theming and UI customization.
    */
   design?: DesignConfig;
@@ -208,6 +214,20 @@ export interface TrustedIssuerConfig {
 }
 
 /**
+ * Runtime overrides for the ThunderID SDK provider (ThunderIDProvider props).
+ *
+ * Accepts any valid ThunderIDProvider prop. Values are deep-merged on top of
+ * the defaults derived from the application config, so only fields that need
+ * to differ from the computed defaults must be specified.
+ * `config.sdk` takes the highest precedence — it overrides both the defaults
+ * derived from `trusted_issuer` and the identity-related props (baseUrl,
+ * clientId, afterSignInUrl, scopes) resolved from the server/client config.
+ *
+ * @public
+ */
+export type SdkConfig = Record<string, unknown>;
+
+/**
  * Runtime configuration interface that contains all configuration
  * settings for applications.
  *
@@ -232,6 +252,9 @@ export interface ProductConfig {
 
   /** Optional design configuration for theming and UI customization */
   design?: DesignConfig;
+
+  /** Optional SDK provider overrides. Values here take precedence over computed defaults. */
+  sdk?: SdkConfig;
 }
 
 /**

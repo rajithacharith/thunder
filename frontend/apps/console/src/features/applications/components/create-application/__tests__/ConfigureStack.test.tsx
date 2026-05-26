@@ -295,6 +295,7 @@ describe('ConfigureStack', () => {
       onReadyChange: vi.fn(),
     });
 
+    expect(screen.getByText('applications:onboarding.configure.stack.technology.express.title')).toBeInTheDocument();
     expect(screen.getByText('applications:onboarding.configure.stack.technology.react.title')).toBeInTheDocument();
     expect(screen.getByText('applications:onboarding.configure.stack.technology.nextjs.title')).toBeInTheDocument();
   });
@@ -333,17 +334,17 @@ describe('ConfigureStack', () => {
     expect(screen.queryByText('applications:onboarding.configure.stack.dividerLabel')).not.toBeInTheDocument();
   });
 
-  it('shows "Coming Soon" badge for disabled technology options', () => {
+  it('does not show "Coming Soon" badge when no technology options are disabled', () => {
     renderWithContext({
       oauthConfig: null,
       onOAuthConfigChange: vi.fn(),
       onReadyChange: vi.fn(),
     });
 
-    expect(screen.getByText('Coming Soon')).toBeInTheDocument();
+    expect(screen.queryByText('Coming Soon')).not.toBeInTheDocument();
   });
 
-  it('does not call setSelectedTechnology when clicking disabled technology card', async () => {
+  it('calls setSelectedTechnology when clicking an enabled technology card', async () => {
     const user = userEvent.setup({pointerEventsCheck: 0});
     const setSelectedTechnology = vi.fn();
 
@@ -352,12 +353,10 @@ describe('ConfigureStack', () => {
       {setSelectedTechnology},
     );
 
-    // Next.js is disabled, clicking should not trigger the handler
     const nextjsCard = screen.getByText('applications:onboarding.configure.stack.technology.nextjs.title');
     await user.click(nextjsCard);
 
-    // setSelectedTechnology should not have been called with NEXTJS
-    expect(setSelectedTechnology).not.toHaveBeenCalledWith(TechnologyApplicationTemplate.NEXTJS);
+    expect(setSelectedTechnology).toHaveBeenCalledWith(TechnologyApplicationTemplate.NEXTJS);
   });
 
   it('hides platform section and divider when signInApproach is EMBEDDED', () => {
@@ -659,12 +658,12 @@ describe('ConfigureStack', () => {
       expect(browserTitle).toBeInTheDocument();
     });
 
-    it('should render disabled technology card with correct structure', () => {
+    it('should render all technology cards as enabled', () => {
       renderWithContext({oauthConfig: null, onOAuthConfigChange: vi.fn(), onReadyChange: vi.fn()});
 
       const nextjsTitle = screen.getByText('applications:onboarding.configure.stack.technology.nextjs.title');
       expect(nextjsTitle).toBeInTheDocument();
-      expect(screen.getByText('Coming Soon')).toBeInTheDocument();
+      expect(screen.queryByText('Coming Soon')).not.toBeInTheDocument();
     });
   });
 

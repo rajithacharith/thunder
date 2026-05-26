@@ -183,6 +183,11 @@ $reactApiPackageJson = Get-Content "samples/apps/react-api-based-sample/package.
 $REACT_API_SAMPLE_APP_VERSION = $reactApiPackageJson.version
 $REACT_API_SAMPLE_APP_FOLDER = "sample-app-react-api-based-${REACT_API_SAMPLE_APP_VERSION}-${SAMPLE_PACKAGE_OS}-${SAMPLE_PACKAGE_ARCH}"
 
+# Wayfinder Sample
+$agentIdPackageJson = Get-Content "samples/apps/wayfinder-sample/package.json" -Raw | ConvertFrom-Json
+$WAYFINDER_SAMPLE_APP_VERSION = $agentIdPackageJson.version
+$WAYFINDER_SAMPLE_APP_FOLDER = "sample-app-wayfinder-${WAYFINDER_SAMPLE_APP_VERSION}-${SAMPLE_PACKAGE_OS}-${SAMPLE_PACKAGE_ARCH}"
+
 # Directories
 $TARGET_DIR = Join-Path $SCRIPT_DIR "target"
 $OUTPUT_DIR = Join-Path $TARGET_DIR "out"
@@ -206,6 +211,7 @@ $VANILLA_SAMPLE_APP_DIR = Join-Path $SAMPLE_BASE_DIR "apps/react-vanilla-sample"
 $VANILLA_SAMPLE_APP_SERVER_DIR = Join-Path $VANILLA_SAMPLE_APP_DIR "server"
 $REACT_SDK_SAMPLE_APP_DIR = Join-Path $SAMPLE_BASE_DIR "apps/react-sdk-sample"
 $REACT_API_SAMPLE_APP_DIR = Join-Path $SAMPLE_BASE_DIR "apps/react-api-based-sample"
+$WAYFINDER_SAMPLE_APP_DIR = Join-Path $SAMPLE_BASE_DIR "apps/wayfinder-sample"
 
 # Default ports
 $GATE_APP_DEFAULT_PORT = 5190
@@ -461,24 +467,25 @@ function Build-Backend {
     Write-Host "================================================================"
 }
 
-function Build-Frontend {
-    Write-Host "================================================================"
-    Write-Host "Building frontend apps..."
-    
-    # Check if pnpm is installed, if not install it
+function Ensure-Pnpm {
     if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
         Write-Host "pnpm not found, installing..."
         & npm install -g pnpm
     }
+}
+
+function Build-Frontend {
+    Write-Host "================================================================"
+    Write-Host "Building frontend apps..."
+    Ensure-Pnpm
     
-    # Navigate to frontend directory and install dependencies
-    Push-Location $FRONTEND_BASE_DIR
+    # Install dependencies
     try {
         Write-Host "Installing frontend dependencies..."
         & pnpm install --frozen-lockfile
         
         Write-Host "Building frontend applications & packages..."
-        & pnpm build
+        & pnpm build:frontend
     }
     finally {
         Pop-Location
@@ -490,15 +497,8 @@ function Build-Frontend {
 function Build-Docs {
     Write-Host "================================================================"
     Write-Host "Building documentation..."
+    Ensure-Pnpm
     
-    # Check if pnpm is installed, if not install it
-    if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
-        Write-Host "pnpm not found, installing..."
-        & npm install -g pnpm
-    }
-    
-    # Navigate to frontend directory first to ensure build:docs script can run
-    Push-Location $FRONTEND_BASE_DIR
     try {
         Write-Host "Installing frontend dependencies (required for docs build)..."
         & pnpm install --frozen-lockfile
@@ -510,6 +510,57 @@ function Build-Docs {
         Pop-Location
     }
     
+    Write-Host "================================================================"
+}
+
+function Build-JavaScript-SDKs {
+    Ensure-Pnpm
+    
+    Write-Host "Installing SDK dependencies..."
+    & pnpm install --frozen-lockfile
+    
+    Write-Host "Building JavaScript ecosystem SDK packages..."
+    & pnpm --filter './sdks/**' build
+}
+
+function Test-JavaScript-SDKs {
+    Ensure-Pnpm
+    
+    Write-Host "Installing SDK dependencies..."
+    & pnpm install --frozen-lockfile
+    
+    Write-Host "Running JavaScript ecosystem SDK tests..."
+    & pnpm --filter './sdks/**' test
+}
+
+function Lint-JavaScript-SDKs {
+    Ensure-Pnpm
+    
+    Write-Host "Installing SDK dependencies..."
+    & pnpm install --frozen-lockfile
+    
+    Write-Host "Linting JavaScript ecosystem SDK packages..."
+    & pnpm --filter './sdks/**' lint
+}
+
+function Build-SDKs {
+    Write-Host "================================================================"
+    Write-Host "Building SDKs..."
+    Build-JavaScript-SDKs
+    Write-Host "================================================================"
+}
+
+function Test-SDKs {
+    Write-Host "================================================================"
+    Write-Host "Running SDK tests..."
+    Test-JavaScript-SDKs
+    Write-Host "================================================================"
+}
+
+function Lint-SDKs {
+    Write-Host "================================================================"
+    Write-Host "Linting SDKs..."
+    Lint-JavaScript-SDKs
     Write-Host "================================================================"
 }
 
@@ -854,6 +905,43 @@ function Build-Sample-App {
     }
 
     Write-Host "✅ React API-based sample app built successfully."
+
+    # Build Wayfinder sample (Wayfinder)
+    Write-Host "=== Building Wayfinder sample app ==="
+
+    Push-Location (Join-Path $WAYFINDER_SAMPLE_APP_DIR "frontend")
+    try {
+        Write-Host "Installing Wayfinder sample frontend dependencies..."
+        & npm ci
+        if ($LASTEXITCODE -ne 0) {
+            throw "npm ci failed with exit code $LASTEXITCODE"
+        }
+
+        Write-Host "Building Wayfinder sample frontend..."
+        & npm run build
+        if ($LASTEXITCODE -ne 0) {
+            throw "npm run build failed with exit code $LASTEXITCODE"
+        }
+    }
+    finally {
+        Pop-Location
+    }
+
+    foreach ($svc in @("api", "mcp", "ai-agent")) {
+        Write-Host "Installing Wayfinder sample $svc dependencies..."
+        Push-Location (Join-Path $WAYFINDER_SAMPLE_APP_DIR $svc)
+        try {
+            & npm ci
+            if ($LASTEXITCODE -ne 0) {
+                throw "npm ci ($svc) failed with exit code $LASTEXITCODE"
+            }
+        }
+        finally {
+            Pop-Location
+        }
+    }
+
+    Write-Host "✅ Wayfinder sample app built successfully."
     Write-Host "================================================================"
 }
 
@@ -872,6 +960,10 @@ function Package-Sample-App {
     # Package React API-based sample
     Write-Host "=== Packaging React API-based sample app ==="
     Package-React-API-Based-Sample
+
+    # Package Wayfinder sample
+    Write-Host "=== Packaging Wayfinder sample app ==="
+    Package-Wayfinder-Sample
 
     Write-Host "================================================================"
 }
@@ -1053,6 +1145,83 @@ function Package-React-API-Based-Sample {
     Remove-Item -Path $react_api_sample_app_folder_t -Recurse -Force
 
     Write-Host "✅ React API-based sample app packaged successfully as $zipFile"
+}
+
+function Package-Wayfinder-Sample {
+    $dist_folder = Join-Path $DIST_DIR $WAYFINDER_SAMPLE_APP_FOLDER
+    New-Item -Path $dist_folder -ItemType Directory -Force | Out-Null
+
+    # Frontend built ahead of time; api/mcp/ai-agent ship as source because
+    # pkg cannot bundle Node 22's node:sqlite binding and the chat agent
+    # needs runtime LLM keys from .env.
+    $frontendDist = Join-Path $WAYFINDER_SAMPLE_APP_DIR "frontend/dist"
+    if (-not (Test-Path $frontendDist)) {
+        throw "Wayfinder sample frontend build output not found at $frontendDist"
+    }
+    Write-Host "Copying Wayfinder sample frontend build output..."
+    $frontendDest = Join-Path $dist_folder "frontend"
+    New-Item -Path $frontendDest -ItemType Directory -Force | Out-Null
+    Copy-Item -Path $frontendDist -Destination $frontendDest -Recurse -Force
+    foreach ($item in @("package.json", "package-lock.json", "index.html", "vite.config.js", ".env.example", "README.md")) {
+        $src = Join-Path $WAYFINDER_SAMPLE_APP_DIR "frontend/$item"
+        if (Test-Path $src) { Copy-Item -Path $src -Destination $frontendDest -Force }
+    }
+    foreach ($subdir in @("src", "public")) {
+        $src = Join-Path $WAYFINDER_SAMPLE_APP_DIR "frontend/$subdir"
+        if (Test-Path $src) { Copy-Item -Path $src -Destination $frontendDest -Recurse -Force }
+    }
+
+    foreach ($svc in @("api", "mcp", "ai-agent")) {
+        $svcSrc = Join-Path $WAYFINDER_SAMPLE_APP_DIR $svc
+        $svcDest = Join-Path $dist_folder $svc
+        Write-Host "Copying Wayfinder sample $svc source..."
+        New-Item -Path $svcDest -ItemType Directory -Force | Out-Null
+        foreach ($item in @("package.json", "package-lock.json", "tsconfig.json", "README.md", ".env.example", "server.ts", "agent.ts")) {
+            $src = Join-Path $svcSrc $item
+            if (Test-Path $src) { Copy-Item -Path $src -Destination $svcDest -Force }
+        }
+        foreach ($subdir in @("src", "scripts")) {
+            $src = Join-Path $svcSrc $subdir
+            if (Test-Path $src) { Copy-Item -Path $src -Destination $svcDest -Recurse -Force }
+        }
+    }
+
+    if (Test-Path (Join-Path $WAYFINDER_SAMPLE_APP_DIR "README.md")) {
+        Copy-Item -Path (Join-Path $WAYFINDER_SAMPLE_APP_DIR "README.md") -Destination $dist_folder -Force
+    }
+    if (Test-Path (Join-Path $WAYFINDER_SAMPLE_APP_DIR "package.json")) {
+        Copy-Item -Path (Join-Path $WAYFINDER_SAMPLE_APP_DIR "package.json") -Destination $dist_folder -Force
+    }
+
+    if ($SAMPLE_DIST_OS -eq "win") {
+        Write-Host "Including Windows start script (start.ps1)..."
+        Copy-Item -Path (Join-Path $WAYFINDER_SAMPLE_APP_DIR "start.ps1") -Destination $dist_folder -Force
+    }
+    else {
+        Write-Host "Including Unix start script (start.sh)..."
+        Copy-Item -Path (Join-Path $WAYFINDER_SAMPLE_APP_DIR "start.sh") -Destination $dist_folder -Force
+    }
+
+    $thunderConfig = Join-Path $WAYFINDER_SAMPLE_APP_DIR "thunderid-config"
+    if (-not (Test-Path $thunderConfig)) {
+        throw "thunderid-config directory not found at $thunderConfig"
+    }
+    Write-Host "Copying ThunderID config..."
+    Copy-Item -Path $thunderConfig -Destination $dist_folder -Recurse -Force
+
+    Write-Host "Creating Wayfinder sample zip file..."
+    $distAbs = (Resolve-Path -Path $DIST_DIR).Path
+    $zipFile = [System.IO.Path]::Combine($distAbs, "$WAYFINDER_SAMPLE_APP_FOLDER.zip")
+    if (Test-Path $zipFile) {
+        Remove-Item $zipFile -Force
+    }
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [System.IO.Compression.ZipFile]::CreateFromDirectory($dist_folder, $zipFile)
+
+    Remove-Item -Path $dist_folder -Recurse -Force
+
+    Write-Host "✅ Wayfinder sample app packaged successfully as $zipFile"
 }
 
 function Test-Unit {
@@ -1780,21 +1949,15 @@ function Start-Backend {
 function Run-Frontend {
     Write-Host "================================================================"
     Write-Host "Running frontend apps..."
+    Ensure-Pnpm
     
-    # Check if pnpm is installed, if not install it
-    if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
-        Write-Host "pnpm not found, installing..."
-        & npm install -g pnpm
-    }
-    
-    # Navigate to frontend directory and install dependencies
-    Push-Location $FRONTEND_BASE_DIR
+    # Install dependencies
     try {
         Write-Host "Installing frontend dependencies..."
         & pnpm install --frozen-lockfile
         
         Write-Host "Building frontend applications & packages..."
-        & pnpm build
+        & pnpm build:frontend
         
         Write-Host "Starting frontend applications in the background..."
         # Start frontend processes in background
@@ -1811,15 +1974,9 @@ function Run-Frontend {
 function Run-Docs {
     Write-Host "================================================================"
     Write-Host "Starting documentation development server..."
+    Ensure-Pnpm
     
-    # Check if pnpm is installed, if not install it
-    if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
-        Write-Host "pnpm not found, installing..."
-        & npm install -g pnpm
-    }
-    
-    # Navigate to frontend directory first to install all dependencies
-    Push-Location $FRONTEND_BASE_DIR
+    # Install dependencies
     try {
         Write-Host "Installing frontend dependencies (required for docs)..."
         & pnpm install --frozen-lockfile
@@ -1897,6 +2054,7 @@ switch ($Command) {
     'build' {
         Build-Backend
         Build-Frontend
+        Build-SDKs
         Package
         Build-Sample-App
         Package-Sample-App
@@ -1910,6 +2068,15 @@ switch ($Command) {
     }
     'build_docs' {
         Build-Docs
+    }
+    'build_sdks' {
+        Build-SDKs
+    }
+    'test_sdks' {
+        Test-SDKs
+    }
+    'lint_sdks' {
+        Lint-SDKs
     }
     'build_samples' {
         Build-Sample-App

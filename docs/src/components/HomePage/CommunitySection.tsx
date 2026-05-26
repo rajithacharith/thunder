@@ -17,11 +17,12 @@
  */
 
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
-import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
 import {Box, Card, Container, Typography, useTheme} from '@wso2/oxygen-ui';
-import React, {JSX} from 'react';
+import {MessagesSquareIcon} from '@wso2/oxygen-ui-icons-react';
+import {JSX} from 'react';
 import useIsDarkMode from '../../hooks/useIsDarkMode';
 import useScrollAnimation from '../../hooks/useScrollAnimation';
+import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
 
 interface CommunityCardProps {
   icon: JSX.Element;
@@ -48,31 +49,54 @@ function CommunityCard({icon, iconBg, title, description, linkLabel, href}: Comm
         alignItems: 'center',
         textAlign: 'center',
         cursor: 'pointer',
-        transition: 'all 0.3s ease',
-        bgcolor: isDark ? 'rgba(255, 255, 255, 0.025)' : 'rgba(0, 0, 0, 0.02)',
+        transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+        bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+        backdropFilter: 'blur(12px)',
         border: '1px solid',
         borderColor: 'divider',
         borderRadius: '16px',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '2px',
+          background: `linear-gradient(90deg, ${theme.vars?.palette.primary.dark} 0%, ${theme.vars?.palette.primary.main} 100%)`,
+          opacity: 0,
+          transition: 'opacity 0.3s ease',
+        },
+        '&:hover::before': {opacity: 1},
         '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: isDark ? '0 12px 32px rgba(0, 0, 0, 0.4)' : '0 12px 32px rgba(0, 0, 0, 0.1)',
-          borderColor: `rgba(${theme.vars?.palette.primary.main} / 0.25)`,
-          bgcolor: isDark ? 'rgba(255, 255, 255, 0.035)' : 'rgba(0, 0, 0, 0.03)',
+          transform: 'translateY(-6px)',
+          boxShadow: isDark
+            ? `0 16px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(${theme.vars?.palette.primary.main} / 0.2)`
+            : `0 16px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(${theme.vars?.palette.primary.main} / 0.15)`,
+          borderColor: `rgba(${theme.vars?.palette.primary.main} / 0.3)`,
+          bgcolor: isDark ? 'rgba(255, 255, 255, 0.045)' : 'rgba(0, 0, 0, 0.025)',
         },
       }}
       onClick={() => window.open(href, '_blank', 'noopener noreferrer')}
     >
       <Box
         sx={{
-          width: 56,
-          height: 56,
-          borderRadius: '14px',
+          width: 60,
+          height: 60,
+          borderRadius: '16px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           background: iconBg,
           color: 'common.white',
           mb: 3,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+          transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+          '.MuiCard-root:hover &': {
+            transform: 'scale(1.1)',
+            boxShadow: '0 12px 32px rgba(0,0,0,0.3)',
+          },
         }}
       >
         {icon}
@@ -140,22 +164,18 @@ function IssueIcon() {
   );
 }
 
-function DiscordIcon() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.032.055a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
-    </svg>
-  );
-}
-
 export default function CommunitySection(): JSX.Element {
   const theme = useTheme();
+  const isDark = useIsDarkMode();
   const {ref, isVisible} = useScrollAnimation({threshold: 0.15});
   const {siteConfig} = useDocusaurusContext();
   const productName = (siteConfig.customFields?.product as DocusaurusProductConfig).project.name;
+  const discussionsUrl = (siteConfig.customFields?.product as DocusaurusProductConfig).project.source.github
+    .discussionsUrl;
+  const issuesUrl = (siteConfig.customFields?.product as DocusaurusProductConfig).project.source.github.issuesUrl;
 
   return (
-    <Box component="section" sx={{py: {xs: 8, lg: 12}}}>
+    <Box component="section" sx={{py: {xs: 8, lg: 12}, borderTop: '1px solid', borderColor: 'divider'}}>
       <Container maxWidth="lg" sx={{px: {xs: 2, sm: 4}}}>
         <Box
           ref={ref}
@@ -201,8 +221,8 @@ export default function CommunitySection(): JSX.Element {
               maxWidth: '600px',
             }}
           >
-            We're building {productName} with you. Engage with our ever-growing community to get the latest updates,
-            product support, and more.
+            We&apos;re building {productName} with you. Engage with our ever-growing community to get the latest
+            updates, product support, and more.
           </Typography>
 
           <Box
@@ -216,27 +236,27 @@ export default function CommunitySection(): JSX.Element {
           >
             <CommunityCard
               icon={<GitForkIcon />}
-              iconBg={`linear-gradient(135deg, ${theme.vars?.palette.primary.dark} 0%, ${theme.vars?.palette.primary.main} 100%)`}
+              iconBg="rgba(59,130,246,0.10)"
               title="Contribute"
               description={`Help shape ${productName} by submitting features, fixes, or improvements.`}
               linkLabel="Start Contributing"
-              href="https://github.com/thunder-id/thunderid/blob/main/CONTRIBUTING.md"
+              href="/docs/next/community/contributing/overview/"
             />
             <CommunityCard
               icon={<IssueIcon />}
-              iconBg="linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"
+              iconBg="rgba(59,130,246,0.10)"
               title="Report issues"
               description={`Identify bugs and suggest enhancements to make ${productName} better for everyone.`}
               linkLabel="Open an Issue"
-              href="https://github.com/thunder-id/thunderid/issues"
+              href={issuesUrl}
             />
             <CommunityCard
-              icon={<DiscordIcon />}
-              iconBg="linear-gradient(135deg, #5865F2 0%, #4752C4 100%)"
-              title="Join Discord"
-              description="Join Discord to get real-time support, ask questions, and engage with other users"
-              linkLabel="Join Discord"
-              href="https://discord.gg/wso2"
+              icon={<MessagesSquareIcon />}
+              iconBg="rgba(59,130,246,0.10)"
+              title="Join the Discussions"
+              description="Ask questions, share ideas, and connect with the community through GitHub Discussions"
+              linkLabel="Open Discussions"
+              href={discussionsUrl}
             />
           </Box>
         </Box>

@@ -60,18 +60,11 @@ func (h *jwtAuthenticator) Authenticate(r *http.Request) (*SecurityContext, erro
 		return nil, errInvalidToken
 	}
 
-	// Step 2: Verify JWT.
-	// If a trusted issuer is configured, the server delegates token issuance to it
-	// and verifies tokens exclusively against its JWKS. Otherwise, verify with the
-	// server's own signing key.
-	if config.GetServerRuntime().Config.Server.SecurityConfig.TrustedIssuer.IsConfigured() {
-		if !h.verifyFederatedToken(token) {
-			return nil, errInvalidToken
-		}
-	} else {
-		if err := h.jwtService.VerifyJWT(token, "", ""); err != nil {
-			return nil, errInvalidToken
-		}
+	// Step 2: Verify the JWT, routing on its issuer. Tokens this server issued
+	// are verified with its own signing key; Additionally when a trusted issuer is
+	// configured, tokens from that issuer are verified against its JWKS.
+	if err := h.verifyToken(token); err != nil {
+		return nil, err
 	}
 
 	// Step 3: Decode JWT payload to extract attributes
@@ -93,6 +86,29 @@ func (h *jwtAuthenticator) Authenticate(r *http.Request) (*SecurityContext, erro
 
 	// Create immutable SecurityContext
 	return newSecurityContext(subject, ouID, token, scopes, attributes), nil
+}
+
+// verifyToken verifies the bearer token by routing on its iss claim against
+// an explicit allowlist of accepted issuers. Tokens from the configured
+// trusted issuer (when set) are verified against its JWKS. Tokens whose iss
+// matches this server's own JWT issuer are verified with the local signing
+// key. Any other iss is rejected. There is no cross-issuer fallback.
+func (h *jwtAuthenticator) verifyToken(token string) error {
+	trustedIssuer := config.GetServerRuntime().Config.Server.SecurityConfig.TrustedIssuer
+	iss := extractIssuer(token)
+	switch {
+	case trustedIssuer.IsConfigured() && iss == trustedIssuer.Issuer:
+		if !h.verifyFederatedToken(token) {
+			return errInvalidToken
+		}
+	case iss == config.GetServerRuntime().Config.JWT.Issuer:
+		if err := h.jwtService.VerifyJWT(token, "", ""); err != nil {
+			return errInvalidToken
+		}
+	default:
+		return errInvalidToken
+	}
+	return nil
 }
 
 // verifyFederatedToken checks if the token is from a trusted external issuer and verifies it via JWKS.
@@ -142,6 +158,17 @@ func extractToken(authHeader string) (string, error) {
 	}
 	token := strings.TrimSpace(utils.TrimPrefixFold(authHeader, constants.AuthSchemeBearer))
 	return token, nil
+}
+
+// extractIssuer returns the iss claim of the token, or an empty string if the
+// token payload cannot be decoded or carries no string iss claim.
+func extractIssuer(token string) string {
+	attributes, err := jwt.DecodeJWTPayload(token)
+	if err != nil {
+		return ""
+	}
+	iss, _ := attributes["iss"].(string)
+	return iss
 }
 
 // extractScopes extracts permissions from JWT claims.

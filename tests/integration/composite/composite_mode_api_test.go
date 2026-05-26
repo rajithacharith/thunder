@@ -36,8 +36,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thunder-id/thunderid/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
+	"github.com/thunder-id/thunderid/tests/integration/testutils"
 )
 
 type CompositeModeSuite struct {
@@ -46,8 +46,15 @@ type CompositeModeSuite struct {
 }
 
 func (suite *CompositeModeSuite) SetupSuite() {
-	// Initialize suite
 	suite.createdResources = make(map[string][]string)
+
+	// Ensure the singleton "default" agent type exists so composite agent tests can create runtime agents.
+	_, err := testutils.CreateAgentType(testutils.UserType{
+		Name:   "default",
+		OUID:   "decl-ou-1",
+		Schema: map[string]interface{}{"description": map[string]interface{}{"type": "string"}},
+	})
+	suite.Require().NoError(err, "Failed to ensure default agent type exists")
 }
 
 func (suite *CompositeModeSuite) TearDownSuite() {
@@ -55,6 +62,8 @@ func (suite *CompositeModeSuite) TearDownSuite() {
 	for module, ids := range suite.createdResources {
 		for _, id := range ids {
 			switch module {
+			case "agent":
+				suite.deleteResource(fmt.Sprintf("%s/agents/%s", testutils.TestServerURL, id))
 			case "application":
 				suite.deleteResource(fmt.Sprintf("%s/applications/%s", testutils.TestServerURL, id))
 			case "user":
@@ -195,6 +204,64 @@ func (suite *CompositeModeSuite) TestUserDeclarativeVisibility() {
 	resp.Body.Close()
 
 	suite.assertMergedCollectionContainsIDs("/users", "users", "decl-user-1", "user")
+}
+
+func (suite *CompositeModeSuite) TestAgentCreate() {
+	agent := map[string]interface{}{
+		"name": "Test Runtime Agent",
+		"type": "default",
+		"ouId": "decl-ou-1",
+	}
+
+	payload, _ := json.Marshal(agent)
+	client := testutils.GetHTTPClient()
+
+	req, err := http.NewRequest(
+		"POST",
+		fmt.Sprintf("%s/agents", testutils.TestServerURL),
+		strings.NewReader(string(payload)),
+	)
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	suite.Require().NoError(err)
+	suite.Equal(http.StatusCreated, resp.StatusCode, "agent should be created")
+
+	var agentResp map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&agentResp)
+	resp.Body.Close()
+	suite.Require().NoError(err, "failed to decode agent creation response")
+
+	agentID, ok := agentResp["id"].(string)
+	suite.Require().True(ok, "response should contain agent ID")
+	suite.Require().NotEmpty(agentID, "agent ID should not be empty")
+
+	getReq, _ := http.NewRequest("GET", fmt.Sprintf("%s/agents/%s", testutils.TestServerURL, agentID), nil)
+	resp, err = client.Do(getReq)
+	suite.Require().NoError(err)
+	suite.Equal(http.StatusOK, resp.StatusCode, "created agent should be retrievable")
+	resp.Body.Close()
+
+	suite.trackResource("agent", agentID)
+}
+
+func (suite *CompositeModeSuite) TestAgentDeclarativeVisibility() {
+	client := testutils.GetHTTPClient()
+	resp, err := client.Get(fmt.Sprintf("%s/agents/decl-agent-1", testutils.TestServerURL))
+	suite.Require().NoError(err)
+	suite.Equal(http.StatusOK, resp.StatusCode, "declarative agent should be visible")
+	resp.Body.Close()
+
+	suite.assertMergedCollectionContainsIDs("/agents", "agents", "decl-agent-1", "agent")
+}
+
+func (suite *CompositeModeSuite) TestAgentDeclarativeVisibilityConfidential() {
+	client := testutils.GetHTTPClient()
+	resp, err := client.Get(fmt.Sprintf("%s/agents/decl-agent-confidential-1", testutils.TestServerURL))
+	suite.Require().NoError(err)
+	suite.Equal(http.StatusOK, resp.StatusCode, "declarative confidential agent should be visible")
+	resp.Body.Close()
 }
 
 func (suite *CompositeModeSuite) TestRoleDeclarativeVisibility() {
@@ -856,6 +923,38 @@ func (suite *CompositeModeSuite) TestUserDeclarativeDeleteReject() {
 
 	errCode := suite.extractErrorCode(resp)
 	suite.Equal("USR-1025", errCode, "error code should be USR-1025 for immutable user")
+}
+
+func (suite *CompositeModeSuite) TestAgentDeclarativeUpdateReject() {
+	client := testutils.GetHTTPClient()
+	payload := map[string]interface{}{
+		"name": "Updated",
+		"type": "default",
+		"ouId": "decl-ou-1",
+	}
+	jsonPayload, _ := json.Marshal(payload)
+
+	req, _ := http.NewRequest("PUT", fmt.Sprintf("%s/agents/decl-agent-1", testutils.TestServerURL), strings.NewReader(string(jsonPayload)))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	suite.Require().NoError(err)
+	suite.Equal(http.StatusForbidden, resp.StatusCode, "update of declarative agent should be rejected")
+
+	errCode := suite.extractErrorCode(resp)
+	suite.Equal("AGT-1027", errCode, "error code should be AGT-1027 for immutable agent")
+}
+
+func (suite *CompositeModeSuite) TestAgentDeclarativeDeleteReject() {
+	client := testutils.GetHTTPClient()
+	req, _ := http.NewRequest("DELETE", fmt.Sprintf("%s/agents/decl-agent-1", testutils.TestServerURL), nil)
+
+	resp, err := client.Do(req)
+	suite.Require().NoError(err)
+	suite.Equal(http.StatusForbidden, resp.StatusCode, "delete of declarative agent should be rejected")
+
+	errCode := suite.extractErrorCode(resp)
+	suite.Equal("AGT-1027", errCode, "error code should be AGT-1027 for immutable agent")
 }
 
 func (suite *CompositeModeSuite) TestRoleDeclarativeUpdateReject() {

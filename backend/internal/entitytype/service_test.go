@@ -30,8 +30,10 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/entitytype/model"
+	oupkg "github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/security"
 	"github.com/thunder-id/thunderid/internal/system/sysauthz"
 	"github.com/thunder-id/thunderid/tests/mocks/consentmock"
 	"github.com/thunder-id/thunderid/tests/mocks/oumock"
@@ -195,6 +197,410 @@ func TestUpdateEntityTypeReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
 	require.Nil(t, updatedSchema)
 	require.NotNil(t, svcErr)
 	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, svcErr.Code)
+}
+
+func TestCreateEntityTypeResolvesOUHandleToID(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetServerRuntime()
+	require.NoError(t, config.InitializeServerRuntime("/tmp/test", testConfig))
+	defer config.ResetServerRuntime()
+
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+
+	ouServiceMock.On("GetOrganizationUnitByPath", mock.Anything, "default").
+		Return(oupkg.OrganizationUnit{ID: testOUID1}, (*serviceerror.ServiceError)(nil)).Once()
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOUID1).
+		Return(true, (*serviceerror.ServiceError)(nil)).Once()
+	storeMock.On("GetEntityTypeByName", mock.Anything, TypeCategoryUser, "test-schema").
+		Return(EntityType{}, ErrEntityTypeNotFound).Once()
+	storeMock.On("CreateEntityType", mock.Anything, mock.Anything).Return(nil).Once()
+
+	consentMock := newConsentServiceMockDisabled(t)
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		ouService:       ouServiceMock,
+		transactioner:   &mockTransactioner{},
+		consentService:  consentMock,
+	}
+
+	result, svcErr := service.CreateEntityType(context.Background(), TypeCategoryUser, CreateEntityTypeRequestWithID{
+		Name:     "test-schema",
+		OUHandle: "default",
+		Schema:   json.RawMessage(`{"email":{"type":"string"}}`),
+	})
+
+	require.Nil(t, svcErr)
+	require.NotNil(t, result)
+	require.Equal(t, testOUID1, result.OUID)
+}
+
+func TestCreateEntityTypeReturnsErrorWhenOUHandleNotFound(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetServerRuntime()
+	require.NoError(t, config.InitializeServerRuntime("/tmp/test", testConfig))
+	defer config.ResetServerRuntime()
+
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+
+	ouServiceMock.On("GetOrganizationUnitByPath", mock.Anything, "missing").
+		Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{Code: "OUS-4004"}).Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		ouService:       ouServiceMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	result, svcErr := service.CreateEntityType(context.Background(), TypeCategoryUser, CreateEntityTypeRequestWithID{
+		Name:     "test-schema",
+		OUHandle: "missing",
+		Schema:   json.RawMessage(`{"email":{"type":"string"}}`),
+	})
+
+	require.Nil(t, result)
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, svcErr.Code)
+}
+
+func TestUpdateEntityTypeResolvesOUHandleToID(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetServerRuntime()
+	require.NoError(t, config.InitializeServerRuntime("/tmp/test", testConfig))
+	defer config.ResetServerRuntime()
+
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+
+	storeMock.On("IsEntityTypeDeclarative", TypeCategoryUser, "schema-id").Return(false).Once()
+	ouServiceMock.On("GetOrganizationUnitByPath", mock.Anything, "default").
+		Return(oupkg.OrganizationUnit{ID: testOUID1}, (*serviceerror.ServiceError)(nil)).Once()
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOUID1).
+		Return(true, (*serviceerror.ServiceError)(nil)).Once()
+	storeMock.On("GetEntityTypeByID", mock.Anything, TypeCategoryUser, "schema-id").
+		Return(EntityType{ID: "schema-id", Name: "test-schema", OUID: testOUID1}, nil).Once()
+	storeMock.On("UpdateEntityTypeByID", mock.Anything, TypeCategoryUser, "schema-id", mock.Anything).Return(nil).Once()
+
+	consentMock := newConsentServiceMockDisabled(t)
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		ouService:       ouServiceMock,
+		transactioner:   &mockTransactioner{},
+		consentService:  consentMock,
+	}
+
+	req := UpdateEntityTypeRequest{
+		Name:     "test-schema",
+		OUHandle: "default",
+		Schema:   json.RawMessage(`{"email":{"type":"string"}}`),
+	}
+	result, svcErr := service.UpdateEntityType(context.Background(), TypeCategoryUser, "schema-id", req)
+
+	require.Nil(t, svcErr)
+	require.NotNil(t, result)
+	require.Equal(t, testOUID1, result.OUID)
+}
+
+func TestUpdateEntityTypeReturnsErrorWhenOUHandleNotFound(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetServerRuntime()
+	require.NoError(t, config.InitializeServerRuntime("/tmp/test", testConfig))
+	defer config.ResetServerRuntime()
+
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+
+	storeMock.On("IsEntityTypeDeclarative", TypeCategoryUser, "schema-id").Return(false).Once()
+	ouServiceMock.On("GetOrganizationUnitByPath", mock.Anything, "missing").
+		Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{Code: "OUS-4004"}).Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		ouService:       ouServiceMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	req := UpdateEntityTypeRequest{
+		Name:     "test-schema",
+		OUHandle: "missing",
+		Schema:   json.RawMessage(`{"email":{"type":"string"}}`),
+	}
+	result, svcErr := service.UpdateEntityType(context.Background(), TypeCategoryUser, "schema-id", req)
+
+	require.Nil(t, result)
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, svcErr.Code)
+}
+
+// TestCreateEntityTypeOUIDWinsWhenBothOUIDAndOUHandleProvided verifies that when both
+// ou_id and ou_handle are supplied to CreateEntityType, ou_id wins and no handle
+// resolution is attempted (the absence of a GetOrganizationUnitByPath mock expectation
+// asserts that). This covers the WARN-on-collision branch used by the importer/REST path.
+func TestCreateEntityTypeOUIDWinsWhenBothOUIDAndOUHandleProvided(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetServerRuntime()
+	require.NoError(t, config.InitializeServerRuntime("/tmp/test", testConfig))
+	defer config.ResetServerRuntime()
+
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOUID1).
+		Return(true, (*serviceerror.ServiceError)(nil)).Once()
+	storeMock.On("GetEntityTypeByName", mock.Anything, TypeCategoryUser, "test-schema").
+		Return(EntityType{}, ErrEntityTypeNotFound).Once()
+	storeMock.On("CreateEntityType", mock.Anything, mock.Anything).Return(nil).Once()
+
+	consentMock := newConsentServiceMockDisabled(t)
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		ouService:       ouServiceMock,
+		transactioner:   &mockTransactioner{},
+		consentService:  consentMock,
+	}
+
+	result, svcErr := service.CreateEntityType(context.Background(), TypeCategoryUser, CreateEntityTypeRequestWithID{
+		Name:     "test-schema",
+		OUID:     testOUID1,
+		OUHandle: "some-handle",
+		Schema:   json.RawMessage(`{"email":{"type":"string"}}`),
+	})
+
+	require.Nil(t, svcErr)
+	require.NotNil(t, result)
+	require.Equal(t, testOUID1, result.OUID)
+}
+
+// TestUpdateEntityTypeOUIDWinsWhenBothOUIDAndOUHandleProvided verifies that when both
+// ou_id and ou_handle are supplied to UpdateEntityType, ou_id wins and no handle
+// resolution is attempted (the absence of a GetOrganizationUnitByPath mock expectation
+// asserts that). This covers the WARN-on-collision branch used by the importer/REST path.
+func TestUpdateEntityTypeOUIDWinsWhenBothOUIDAndOUHandleProvided(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetServerRuntime()
+	require.NoError(t, config.InitializeServerRuntime("/tmp/test", testConfig))
+	defer config.ResetServerRuntime()
+
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+
+	storeMock.On("IsEntityTypeDeclarative", TypeCategoryUser, "schema-id").Return(false).Once()
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOUID1).
+		Return(true, (*serviceerror.ServiceError)(nil)).Once()
+	storeMock.On("GetEntityTypeByID", mock.Anything, TypeCategoryUser, "schema-id").
+		Return(EntityType{ID: "schema-id", Name: "test-schema", OUID: testOUID1}, nil).Once()
+	storeMock.On("UpdateEntityTypeByID", mock.Anything, TypeCategoryUser, "schema-id", mock.Anything).
+		Return(nil).Once()
+
+	consentMock := newConsentServiceMockDisabled(t)
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		ouService:       ouServiceMock,
+		transactioner:   &mockTransactioner{},
+		consentService:  consentMock,
+	}
+
+	req := UpdateEntityTypeRequest{
+		Name:     "test-schema",
+		OUID:     testOUID1,
+		OUHandle: "some-handle",
+		Schema:   json.RawMessage(`{"email":{"type":"string"}}`),
+	}
+	result, svcErr := service.UpdateEntityType(context.Background(), TypeCategoryUser, "schema-id", req)
+
+	require.Nil(t, svcErr)
+	require.NotNil(t, result)
+	require.Equal(t, testOUID1, result.OUID)
+}
+
+func TestResolveEntityTypeHandles_OUHandleResolved(t *testing.T) {
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.On("GetOrganizationUnitByPath", mock.Anything, "default").
+		Return(oupkg.OrganizationUnit{ID: testOUID1}, (*serviceerror.ServiceError)(nil)).Once()
+
+	svc := &entityTypeService{ouService: ouServiceMock}
+	et := &EntityType{OUHandle: "default"}
+
+	svcErr := svc.ResolveEntityTypeHandles(context.Background(), et)
+
+	require.Nil(t, svcErr)
+	require.Equal(t, testOUID1, et.OUID)
+}
+
+func TestResolveEntityTypeHandles_OUIDAlreadySet(t *testing.T) {
+	svc := &entityTypeService{}
+	et := &EntityType{OUID: testOUID1}
+
+	svcErr := svc.ResolveEntityTypeHandles(context.Background(), et)
+
+	require.Nil(t, svcErr)
+	require.Equal(t, testOUID1, et.OUID)
+}
+
+func TestResolveEntityTypeHandles_OUHandleNotFound(t *testing.T) {
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.On("GetOrganizationUnitByPath", mock.Anything, "bad").
+		Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{Code: "OUS-4004"}).Once()
+
+	svc := &entityTypeService{ouService: ouServiceMock}
+	et := &EntityType{OUHandle: "bad"}
+
+	svcErr := svc.ResolveEntityTypeHandles(context.Background(), et)
+
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInvalidRequestFormat.Code, svcErr.Code)
+}
+
+func TestResolveEntityTypeHandles_NilOUService(t *testing.T) {
+	svc := &entityTypeService{ouService: nil}
+	et := &EntityType{OUHandle: "default"}
+
+	svcErr := svc.ResolveEntityTypeHandles(context.Background(), et)
+
+	require.NotNil(t, svcErr)
+	require.Equal(t, serviceerror.InternalServerError.Code, svcErr.Code)
+}
+
+// TestResolveEntityTypeHandles_DeclarativeLoaderUsesRuntimeContext verifies the public
+// ResolveEntityTypeHandles entry point (used by the startup-time declarative loader, which
+// has no user context) elevates the caller context to a runtime context before invoking the
+// OU lookup. This is what allows file-based entity types to be loaded without an authenticated
+// subject.
+func TestResolveEntityTypeHandles_DeclarativeLoaderUsesRuntimeContext(t *testing.T) {
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	var capturedCtx context.Context
+	ouServiceMock.On("GetOrganizationUnitByPath", mock.Anything, "default").
+		Run(func(args mock.Arguments) {
+			capturedCtx = args.Get(0).(context.Context)
+		}).
+		Return(oupkg.OrganizationUnit{ID: testOUID1}, (*serviceerror.ServiceError)(nil)).Once()
+
+	svc := &entityTypeService{ouService: ouServiceMock}
+	et := &EntityType{OUHandle: "default"}
+
+	svcErr := svc.ResolveEntityTypeHandles(context.Background(), et)
+
+	require.Nil(t, svcErr)
+	require.NotNil(t, capturedCtx)
+	require.True(t, security.IsRuntimeContext(capturedCtx),
+		"declarative loader path should elevate to runtime context")
+}
+
+// TestCreateEntityType_OUHandleLookupUsesCallerContext verifies that the API/REST path
+// (CreateEntityType) does NOT elevate to a runtime context when resolving ou_handle. The
+// caller's context must propagate so that the underlying OU lookup is still subject to the
+// caller's ou:read authorization. Without this, an API caller without ou:read could bypass
+// authorization by supplying ou_handle instead of ou_id.
+func TestCreateEntityType_OUHandleLookupUsesCallerContext(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetServerRuntime()
+	require.NoError(t, config.InitializeServerRuntime("/tmp/test", testConfig))
+	defer config.ResetServerRuntime()
+
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+
+	var capturedCtx context.Context
+	ouServiceMock.On("GetOrganizationUnitByPath", mock.Anything, "default").
+		Run(func(args mock.Arguments) {
+			capturedCtx = args.Get(0).(context.Context)
+		}).
+		Return(oupkg.OrganizationUnit{ID: testOUID1}, (*serviceerror.ServiceError)(nil)).Once()
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOUID1).
+		Return(true, (*serviceerror.ServiceError)(nil)).Once()
+	storeMock.On("GetEntityTypeByName", mock.Anything, TypeCategoryUser, "test-schema").
+		Return(EntityType{}, ErrEntityTypeNotFound).Once()
+	storeMock.On("CreateEntityType", mock.Anything, mock.Anything).Return(nil).Once()
+
+	consentMock := newConsentServiceMockDisabled(t)
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		ouService:       ouServiceMock,
+		transactioner:   &mockTransactioner{},
+		consentService:  consentMock,
+	}
+
+	result, svcErr := service.CreateEntityType(context.Background(), TypeCategoryUser, CreateEntityTypeRequestWithID{
+		Name:     "test-schema",
+		OUHandle: "default",
+		Schema:   json.RawMessage(`{"email":{"type":"string"}}`),
+	})
+
+	require.Nil(t, svcErr)
+	require.NotNil(t, result)
+	require.NotNil(t, capturedCtx)
+	require.False(t, security.IsRuntimeContext(capturedCtx),
+		"API path must propagate the caller's context (not runtime) so ou:read is enforced")
+}
+
+// TestUpdateEntityType_OUHandleLookupUsesCallerContext is the UpdateEntityType analog of
+// TestCreateEntityType_OUHandleLookupUsesCallerContext.
+func TestUpdateEntityType_OUHandleLookupUsesCallerContext(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetServerRuntime()
+	require.NoError(t, config.InitializeServerRuntime("/tmp/test", testConfig))
+	defer config.ResetServerRuntime()
+
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+
+	var capturedCtx context.Context
+	storeMock.On("IsEntityTypeDeclarative", TypeCategoryUser, "schema-id").Return(false).Once()
+	ouServiceMock.On("GetOrganizationUnitByPath", mock.Anything, "default").
+		Run(func(args mock.Arguments) {
+			capturedCtx = args.Get(0).(context.Context)
+		}).
+		Return(oupkg.OrganizationUnit{ID: testOUID1}, (*serviceerror.ServiceError)(nil)).Once()
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOUID1).
+		Return(true, (*serviceerror.ServiceError)(nil)).Once()
+	storeMock.On("GetEntityTypeByID", mock.Anything, TypeCategoryUser, "schema-id").
+		Return(EntityType{ID: "schema-id", Name: "test-schema", OUID: testOUID1}, nil).Once()
+	storeMock.On("UpdateEntityTypeByID", mock.Anything, TypeCategoryUser, "schema-id", mock.Anything).
+		Return(nil).Once()
+
+	consentMock := newConsentServiceMockDisabled(t)
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		ouService:       ouServiceMock,
+		transactioner:   &mockTransactioner{},
+		consentService:  consentMock,
+	}
+
+	req := UpdateEntityTypeRequest{
+		Name:     "test-schema",
+		OUHandle: "default",
+		Schema:   json.RawMessage(`{"email":{"type":"string"}}`),
+	}
+	result, svcErr := service.UpdateEntityType(context.Background(), TypeCategoryUser, "schema-id", req)
+
+	require.Nil(t, svcErr)
+	require.NotNil(t, result)
+	require.NotNil(t, capturedCtx)
+	require.False(t, security.IsRuntimeContext(capturedCtx),
+		"API path must propagate the caller's context (not runtime) so ou:read is enforced")
 }
 
 func TestGetEntityTypeByNameReturnsSchema(t *testing.T) {

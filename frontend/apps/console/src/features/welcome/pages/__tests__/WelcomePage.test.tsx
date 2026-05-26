@@ -136,9 +136,14 @@ describe('WelcomePage', () => {
     expect(screen.getByText('common:welcome.start.openImport')).toBeInTheDocument();
   });
 
+  it('renders learn product items', () => {
+    render(<WelcomePage />);
+    expect(screen.getByText('common:welcome.tryoutProduct.b2c')).toBeInTheDocument();
+    expect(screen.getByText('common:welcome.tryoutProduct.aiAgents')).toBeInTheDocument();
+  });
+
   it('renders walkthrough items', () => {
     render(<WelcomePage />);
-    expect(screen.getByText('common:welcome.walkthrough.getStartedDesigner')).toBeInTheDocument();
     expect(screen.getByText('common:welcome.walkthrough.learnFundamentals')).toBeInTheDocument();
   });
 
@@ -148,10 +153,22 @@ describe('WelcomePage', () => {
     const user = userEvent.setup();
     render(<WelcomePage />);
 
-    const getStartedButton = screen.getByText('common:welcome.walkthrough.getStartedDesigner');
-    await user.click(getStartedButton.closest('[role="button"]') ?? getStartedButton);
+    const learnFundamentals = screen.getByText('common:welcome.walkthrough.learnFundamentals');
+    await user.click(learnFundamentals);
 
-    expect(mockOpen).toHaveBeenCalledWith(expect.stringContaining('quickstart'), '_blank', 'noopener,noreferrer');
+    expect(mockOpen).toHaveBeenCalledWith(expect.any(String), '_blank', 'noopener,noreferrer');
+  });
+
+  it('renders learn product items as links with correct href', () => {
+    render(<WelcomePage />);
+
+    const b2cLink = screen.getByText('common:welcome.tryoutProduct.b2c').closest('a');
+    expect(b2cLink).toHaveAttribute('href', expect.stringContaining('/use-cases/b2c/try-it-out'));
+    expect(b2cLink).toHaveAttribute('target', '_blank');
+    expect(b2cLink).toHaveAttribute('rel', 'noopener noreferrer');
+
+    const aiAgentsLink = screen.getByText('common:welcome.tryoutProduct.aiAgents').closest('a');
+    expect(aiAgentsLink).toHaveAttribute('href', expect.stringContaining('/use-cases/ai-agents/try-it-out'));
   });
 
   it('uses product name from config', () => {

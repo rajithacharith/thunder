@@ -70,7 +70,7 @@ export default function ConfigureThemeName({
               variant="outlined"
               clickable
               sx={{
-                '&:hover': {bgcolor: 'primary.main', color: 'primary.contrastText', borderColor: 'primary.main'},
+                '&:hover': {bgcolor: 'primary.main', color: 'text.primary', borderColor: 'primary.main'},
               }}
             />
           ))}

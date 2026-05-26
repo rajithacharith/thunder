@@ -1748,3 +1748,77 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithRuntimeRequiredEssenti
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 }
+
+// ----- resolvePermissionsForClaim -----
+
+func (suite *AuthAssertExecutorTestSuite) TestResolvePermissionsForClaim_PrefersConsented() {
+	ctx := &core.NodeContext{RuntimeData: map[string]string{
+		common.RuntimeKeyConsentedPermissions: "booking:read",
+		"authorized_permissions":              "booking:read booking:write",
+		common.RuntimeKeyRequestedPermissions: "booking:read booking:write booking:cancel",
+	}}
+	assert.Equal(suite.T(), "booking:read", (&authAssertExecutor{}).resolvePermissionsForClaim(ctx))
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestResolvePermissionsForClaim_ConsentedEmptyStillPreferredOverAuthorized() {
+	// Consent step ran but the user denied every permission. The empty value must be used so
+	// the JWT does not leak authorized but not consented permissions.
+	ctx := &core.NodeContext{RuntimeData: map[string]string{
+		common.RuntimeKeyConsentedPermissions: "",
+		"authorized_permissions":              "booking:read",
+	}}
+	assert.Equal(suite.T(), "", (&authAssertExecutor{}).resolvePermissionsForClaim(ctx))
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestResolvePermissionsForClaim_FallsBackToAuthorized() {
+	ctx := &core.NodeContext{RuntimeData: map[string]string{
+		"authorized_permissions":              "booking:read",
+		common.RuntimeKeyRequestedPermissions: "booking:read booking:write",
+	}}
+	assert.Equal(suite.T(), "booking:read", (&authAssertExecutor{}).resolvePermissionsForClaim(ctx))
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestResolvePermissionsForClaim_RequestedAloneNeverLeaksToClaim() {
+	// Raw requested permissions must NEVER end up in the JWT claim without going through
+	// the authz executor. Regression: when a user has no authorized permissions, an empty
+	// claim must be emitted so token endpoint clears PermissionScopes correctly.
+	ctx := &core.NodeContext{RuntimeData: map[string]string{
+		common.RuntimeKeyRequestedPermissions: "booking:read booking:write",
+	}}
+	assert.Equal(suite.T(), "", (&authAssertExecutor{}).resolvePermissionsForClaim(ctx))
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestResolvePermissionsForClaim_NoKeysReturnsEmpty() {
+	ctx := &core.NodeContext{RuntimeData: map[string]string{}}
+	assert.Equal(suite.T(), "", (&authAssertExecutor{}).resolvePermissionsForClaim(ctx))
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestResolvePermissionsForClaim_IntersectsConsentedWithAuthorized() {
+	// Stale-permission scenario: the consent record has a permission ("write") the user no
+	// longer holds in this session. The intersection must drop it from the JWT.
+	ctx := &core.NodeContext{RuntimeData: map[string]string{
+		common.RuntimeKeyConsentedPermissions: "read write cancel",
+		"authorized_permissions":              "read cancel",
+	}}
+	got := (&authAssertExecutor{}).resolvePermissionsForClaim(ctx)
+	assert.Equal(suite.T(), "read cancel", got)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestIntersectPermissionSpaceList_EmptyInputs() {
+	assert.Equal(suite.T(), "", intersectPermissionSpaceList("", "a b"))
+	assert.Equal(suite.T(), "", intersectPermissionSpaceList("a b", ""))
+	assert.Equal(suite.T(), "", intersectPermissionSpaceList("", ""))
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestIntersectPermissionSpaceList_PreservesOrderOfFirstArg() {
+	assert.Equal(suite.T(), "c a", intersectPermissionSpaceList("c a b", "a c"))
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestIntersectPermissionSpaceList_DropsDuplicates() {
+	// Defensive dedup: if `a` has duplicates, each token appears at most once in the result.
+	assert.Equal(suite.T(), "x y", intersectPermissionSpaceList("x y x y", "x y"))
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestIntersectPermissionSpaceList_NoOverlap() {
+	assert.Equal(suite.T(), "", intersectPermissionSpaceList("a b", "c d"))
+}

@@ -16,17 +16,18 @@
  * under the License.
  */
 
-import React, {useEffect, useMemo, useState} from 'react';
 import Link from '@docusaurus/Link';
-import Layout from '@theme/Layout';
 import {useBaseUrlUtils} from '@docusaurus/useBaseUrl';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import Layout from '@theme/Layout';
+import {Avatar, AvatarGroup, Tooltip, Typography} from '@wso2/oxygen-ui';
+import React, {useEffect, useMemo, useState} from 'react';
 import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
-import {Avatar, AvatarGroup, Tooltip} from '@wso2/oxygen-ui';
 import GithubIcon from '@site/src/components/icons/GithubIcon';
 import IOSLogo from '@site/src/components/icons/IOSLogo';
 import LinuxLogo from '@site/src/components/icons/LinuxLogo';
 import WindowsLogo from '@site/src/components/icons/WindowsLogo';
+import usePlatform from '@site/src/hooks/usePlatform';
 
 const OS_LABELS: Record<DistributionAsset['os'], string> = {
   linux: 'Linux',
@@ -56,19 +57,6 @@ interface DistributionAsset extends ReleaseAsset {
   architectureLabel: string;
   os: 'linux' | 'macos' | 'win';
   osLabel: string;
-}
-
-interface DetectedPlatform {
-  architecture: DistributionAsset['architecture'] | null;
-  os: DistributionAsset['os'] | null;
-}
-
-interface NavigatorWithUserAgentData extends Navigator {
-  userAgentData?: {
-    getHighEntropyValues?: (
-      hints: ('architecture' | 'bitness' | 'platform')[],
-    ) => Promise<{architecture?: string; bitness?: string; platform?: string}>;
-  };
 }
 
 interface Contributor {
@@ -142,98 +130,6 @@ function getDistributionAsset(asset: ReleaseAsset): DistributionAsset | null {
   };
 }
 
-function detectOperatingSystem(userAgent: string, platform: string): DetectedPlatform['os'] {
-  const normalizedPlatform = platform.toLowerCase();
-  const normalizedUserAgent = userAgent.toLowerCase();
-
-  if (normalizedPlatform.includes('mac') || /(mac os x|macintosh)/.test(normalizedUserAgent)) {
-    return 'macos';
-  }
-
-  if (normalizedPlatform.includes('win') || normalizedUserAgent.includes('windows')) {
-    return 'win';
-  }
-
-  if (normalizedPlatform.includes('linux') || normalizedUserAgent.includes('linux')) {
-    return 'linux';
-  }
-
-  return null;
-}
-
-function detectArchitecture(
-  userAgent: string,
-  operatingSystem: DetectedPlatform['os'],
-): DetectedPlatform['architecture'] {
-  const normalizedUserAgent = userAgent.toLowerCase();
-  const hasArmToken = /(arm64|aarch64|armv8|apple silicon|silicon)/.test(normalizedUserAgent);
-  const hasX64Token = /\b(wow64|win64|x64|x86_64|amd64|intel)\b/.test(normalizedUserAgent);
-
-  if (hasArmToken) {
-    return 'arm64';
-  }
-
-  if (hasX64Token) {
-    // Safari on Apple Silicon often exposes Intel-style tokens in the UA string.
-    // Avoid recommending x64 on macOS unless we have explicit ARM evidence.
-    if (operatingSystem === 'macos') {
-      return null;
-    }
-
-    return 'x64';
-  }
-
-  return null;
-}
-
-async function detectPlatform(): Promise<DetectedPlatform> {
-  if (typeof navigator === 'undefined') {
-    return {architecture: null, os: null};
-  }
-
-  const {platform, userAgent} = navigator;
-  const {userAgentData} = navigator as NavigatorWithUserAgentData;
-  const fallbackOs = detectOperatingSystem(userAgent, platform);
-
-  const fallback = {
-    architecture: detectArchitecture(userAgent, fallbackOs),
-    os: fallbackOs,
-  };
-
-  if (!userAgentData?.getHighEntropyValues) {
-    return fallback;
-  }
-
-  try {
-    const values = await userAgentData.getHighEntropyValues(['architecture', 'bitness', 'platform']);
-    const {architecture: detectedArchitectureValue, bitness: detectedBitness, platform: detectedPlatformValue} = values;
-    const detectedPlatform = detectedPlatformValue?.toLowerCase() ?? '';
-    const architecture = detectedArchitectureValue?.toLowerCase() ?? '';
-    const bitness = detectedBitness?.toLowerCase() ?? '';
-    const {architecture: fallbackArchitecture, os: fallbackOs} = fallback;
-    let os = fallbackOs;
-    let resolvedArchitecture = fallbackArchitecture;
-
-    if (detectedPlatform === 'macos') {
-      os = 'macos';
-    } else if (detectedPlatform === 'windows') {
-      os = 'win';
-    } else if (detectedPlatform === 'linux') {
-      os = 'linux';
-    }
-
-    if (architecture === 'arm') {
-      resolvedArchitecture = 'arm64';
-    } else if (architecture === 'x86' && bitness === '64') {
-      resolvedArchitecture = 'x64';
-    }
-
-    return {architecture: resolvedArchitecture, os};
-  } catch {
-    return fallback;
-  }
-}
-
 function ContributorsAvatarGroup({contributors}: {contributors: Contributor[]}) {
   return (
     <AvatarGroup className="releases-contributors-avatar-group" max={5} total={contributors.length}>
@@ -301,34 +197,14 @@ function ReleaseCard({release}: {release: ReleaseEntry}) {
     () => release.assets.map(getDistributionAsset).filter((asset): asset is DistributionAsset => asset !== null),
     [release.assets],
   );
-  const [detectedPlatform, setDetectedPlatform] = useState<DetectedPlatform | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    detectPlatform()
-      .then((platform) => {
-        if (!isMounted) {
-          return;
-        }
-
-        setDetectedPlatform(platform);
-      })
-      .catch(() => undefined);
-
-    return () => {
-      isMounted = false;
-    };
-  }, [release.id]);
+  const platform = usePlatform();
 
   const detectedAsset = useMemo(
     () =>
-      distributionAssets.find(
-        (asset) => asset.os === detectedPlatform?.os && asset.architecture === detectedPlatform?.architecture,
-      ) ??
-      distributionAssets.find((asset) => asset.os === detectedPlatform?.os) ??
+      distributionAssets.find((asset) => asset.os === platform?.os && asset.architecture === platform?.arch) ??
+      distributionAssets.find((asset) => asset.os === platform?.os) ??
       null,
-    [detectedPlatform, distributionAssets],
+    [platform, distributionAssets],
   );
   const selectedAsset = useMemo(
     () => detectedAsset ?? distributionAssets[0] ?? null,
@@ -562,24 +438,23 @@ export default function ReleasesPage() {
     >
       <main className="releases-shell">
         <section className="releases-hero">
-          <h1>
-            {productName}{' '}
-            <span
-              style={{
-                background: 'linear-gradient(90deg, #FF6B00 0%, #FF8C00 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
-              Releases
-            </span>
-          </h1>
-          <p>Explore every release with detailed changelogs, download options, and the people building {productName}.</p>
+          <Typography
+            variant="h1"
+            sx={{
+              fontWeight: 700,
+              fontSize: {xs: '2.5rem', sm: '3rem', md: '3.5rem'},
+              lineHeight: 1.15,
+            }}
+          >
+            Releases
+          </Typography>
+          <p>
+            Explore every release with detailed changelogs, download options, and the people building {productName}.
+          </p>
 
           <div className="releases-hero-actions">
             <a
-              className="button button--primary"
+              className="button button--secondary"
               href={repository?.releasesUrl ?? githubReleasesUrl}
               target="_blank"
               rel="noreferrer"
@@ -630,10 +505,7 @@ export default function ReleasesPage() {
 
         <section className="releases-footer-note">
           <p>
-            Source:{' '}
-            <Link to={repository?.url ?? repoUrl}>
-              {repository?.fullName ?? siteConfig.title}
-            </Link>
+            Source: <Link to={repository?.url ?? repoUrl}>{repository?.fullName ?? siteConfig.title}</Link>
             {data?.generatedAt ? ` · Updated ${new Date(data.generatedAt).toLocaleString('en-US')}` : ''}
           </p>
         </section>

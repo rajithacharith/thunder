@@ -20,10 +20,9 @@ package application
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
-
-	"encoding/json"
 
 	"github.com/thunder-id/thunderid/internal/application/model"
 	"github.com/thunder-id/thunderid/internal/entity"
@@ -157,6 +156,7 @@ func makeAppInboundParser(appService ApplicationServiceInterface) func([]byte) (
 }
 
 // parseToApplicationDTO unmarshals YAML bytes into an ApplicationDTO.
+// Handle fields (ou_handle) are preserved in the DTO for the service layer to resolve.
 func parseToApplicationDTO(data []byte) (*model.ApplicationDTO, error) {
 	var appRequest model.ApplicationRequestWithID
 	err := yaml.Unmarshal(data, &appRequest)
@@ -167,13 +167,17 @@ func parseToApplicationDTO(data []byte) (*model.ApplicationDTO, error) {
 	appDTO := model.ApplicationDTO{
 		ID:          appRequest.ID,
 		OUID:        appRequest.OUID,
+		OUHandle:    appRequest.OUHandle,
 		Name:        appRequest.Name,
 		Description: appRequest.Description,
 		InboundAuthProfile: inboundmodel.InboundAuthProfile{
 			AuthFlowID:                appRequest.AuthFlowID,
+			AuthFlowHandle:            appRequest.AuthFlowHandle,
 			RegistrationFlowID:        appRequest.RegistrationFlowID,
+			RegistrationFlowHandle:    appRequest.RegistrationFlowHandle,
 			IsRegistrationFlowEnabled: appRequest.IsRegistrationFlowEnabled,
 			RecoveryFlowID:            appRequest.RecoveryFlowID,
+			RecoveryFlowHandle:        appRequest.RecoveryFlowHandle,
 			IsRecoveryFlowEnabled:     appRequest.IsRecoveryFlowEnabled,
 			ThemeID:                   appRequest.ThemeID,
 			LayoutID:                  appRequest.LayoutID,
@@ -209,6 +213,7 @@ func parseToApplicationDTO(data []byte) (*model.ApplicationDTO, error) {
 					PKCERequired:                       config.OAuthConfig.PKCERequired,
 					PublicClient:                       config.OAuthConfig.PublicClient,
 					RequirePushedAuthorizationRequests: config.OAuthConfig.RequirePushedAuthorizationRequests,
+					DPoPBoundAccessTokens:              config.OAuthConfig.DPoPBoundAccessTokens,
 					Token:                              config.OAuthConfig.Token,
 					Scopes:                             config.OAuthConfig.Scopes,
 					UserInfo:                           config.OAuthConfig.UserInfo,

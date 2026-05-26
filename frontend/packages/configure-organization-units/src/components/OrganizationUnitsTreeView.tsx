@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {useAsgardeo} from '@asgardeo/react';
 import {useQueryClient} from '@tanstack/react-query';
-import {ResourceAvatar} from '@thunderid/components';
+import {PageLoadingAnimation, ResourceAvatar} from '@thunderid/components';
 import {useConfig} from '@thunderid/contexts';
 import {useLogger} from '@thunderid/logger/react';
+import {useThunderID} from '@thunderid/react';
 import {
   Box,
   IconButton,
@@ -230,6 +230,7 @@ function CustomTreeItem(allProps: CustomTreeItemProps): JSX.Element {
               sx={{
                 p: 0.5,
                 backgroundColor: theme.vars?.palette.primary.main,
+                color: theme.vars?.palette.primary.contrastText,
                 width: 32,
                 height: 32,
                 fontSize: '0.875rem',
@@ -300,18 +301,7 @@ function CustomTreeItem(allProps: CustomTreeItemProps): JSX.Element {
             gap: 1.5,
           }}
         >
-          <ResourceAvatar
-            value={itemData?.logoUrl}
-            size={30}
-            fallback="emoji:🏛️"
-            sx={{
-              backgroundColor: theme.vars?.palette.grey[500],
-              fontSize: '1rem',
-              ...theme.applyStyles('dark', {
-                backgroundColor: theme.vars?.palette.grey[900],
-              }),
-            }}
-          />
+          <ResourceAvatar value={itemData?.logoUrl} size={30} fallback="emoji:🏛️" />
           <Box sx={{flexGrow: 1, minWidth: 0}}>
             <Typography variant="body2" sx={{fontWeight: 500, lineHeight: 1.3}}>
               {labelStr}
@@ -374,7 +364,7 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
   const navigate = useNavigate();
   const {t} = useTranslation();
   const logger = useLogger('OrganizationUnitsTreeView');
-  const {http} = useAsgardeo();
+  const {http} = useThunderID();
   const {getServerUrl} = useConfig();
   const queryClient = useQueryClient();
   const {data, isLoading, error} = useGetOrganizationUnits();
@@ -824,11 +814,7 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
   }
 
   if (isLoading) {
-    return (
-      <Box sx={{display: 'flex', justifyContent: 'center', py: 8}}>
-        <CircularProgress />
-      </Box>
-    );
+    return <PageLoadingAnimation />;
   }
 
   if (!treeItems.length) {
@@ -877,6 +863,7 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
               sx={{
                 p: 0.5,
                 backgroundColor: theme.vars?.palette.primary.main,
+                color: theme.vars?.palette.primary.contrastText,
                 width: 32,
                 height: 32,
                 fontSize: '0.875rem',
@@ -898,11 +885,7 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
     }
 
     // Still loading tree items
-    return (
-      <Box sx={{display: 'flex', justifyContent: 'center', py: 8}}>
-        <CircularProgress />
-      </Box>
-    );
+    return <PageLoadingAnimation />;
   }
 
   return (
@@ -948,6 +931,7 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
             sx={{
               p: 0.5,
               backgroundColor: theme.vars?.palette.primary.main,
+              color: theme.vars?.palette.primary.contrastText,
               width: 32,
               height: 32,
               fontSize: '0.875rem',

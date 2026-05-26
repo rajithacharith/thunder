@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {Avatar, Box, IconButton} from '@wso2/oxygen-ui';
+import {Avatar, Box, IconButton, useTheme} from '@wso2/oxygen-ui';
 import type {AvatarProps} from '@wso2/oxygen-ui';
 import {Edit} from '@wso2/oxygen-ui-icons-react';
 import {useState, useCallback} from 'react';
@@ -119,6 +119,8 @@ export default function ResourceAvatar({
   onClick = undefined,
   ...rest
 }: ResourceAvatarProps): JSX.Element {
+  const theme = useTheme();
+
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [imgErrorUrl, setImgErrorUrl] = useState<string | null>(null);
 
@@ -193,10 +195,15 @@ export default function ResourceAvatar({
       sx={{
         width: size,
         height: size,
-        fontSize: `${Math.round(size * 0.55)}px`,
+        color: 'text.primary',
+        backgroundColor: theme.vars?.palette.grey[800],
+        fontSize: `${Math.round(size * 0.4)}px`,
         cursor: isInteractive ? 'pointer' : undefined,
         ...(onSelect ? {'&:hover': {opacity: 0.8}} : {}),
         '&:focus-visible': isInteractive ? {outline: '2px solid', outlineOffset: '2px'} : undefined,
+        ...theme.applyStyles('light', {
+          backgroundColor: theme.vars?.palette.grey[400],
+        }),
         ...sx,
       }}
       {...rest}

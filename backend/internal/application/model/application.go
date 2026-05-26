@@ -29,6 +29,7 @@ import (
 type ApplicationDTO struct {
 	ID          string `json:"id,omitempty" jsonschema:"Application ID. Auto-generated unique identifier."`
 	OUID        string `json:"ouId,omitempty" jsonschema:"Organization unit ID. The OU this application belongs to."`
+	OUHandle    string `json:"ouHandle,omitempty" jsonschema:"Organization unit handle. Resolved to an ID by the service layer."`
 	Name        string `json:"name" jsonschema:"Application name."`
 	Description string `json:"description,omitempty" jsonschema:"Optional description of the application's purpose or functionality."`
 	Template    string `json:"template,omitempty" jsonschema:"Application template. Optional. Pre-configured application type template."`
@@ -124,6 +125,7 @@ type ApplicationRequest struct {
 type ApplicationRequestWithID struct {
 	ID          string   `json:"id" yaml:"id"`
 	OUID        string   `json:"ouId,omitempty" yaml:"ou_id,omitempty"`
+	OUHandle    string   `json:"ouHandle,omitempty" yaml:"ou_handle,omitempty"`
 	Name        string   `json:"name" yaml:"name"`
 	Description string   `json:"description" yaml:"description"`
 	Template    string   `json:"template,omitempty" yaml:"template,omitempty"`

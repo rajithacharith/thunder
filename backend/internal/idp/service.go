@@ -47,6 +47,7 @@ type idpService struct {
 	idpStore      idpStoreInterface
 	transactioner transaction.Transactioner
 	logger        *log.Logger
+	uuidGenerator func() (string, error)
 }
 
 // newIDPService creates a new instance of IdPService.
@@ -55,6 +56,7 @@ func newIDPService(idpStore idpStoreInterface, transactioner transaction.Transac
 		idpStore:      idpStore,
 		transactioner: transactioner,
 		logger:        log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService")),
+		uuidGenerator: utils.GenerateUUIDv7,
 	}
 }
 
@@ -70,14 +72,19 @@ func (is *idpService) CreateIdentityProvider(
 		return nil, svcErr
 	}
 
-	id, err := utils.GenerateUUIDv7()
-	if err != nil {
-		logger.Error("failed to generate ID for identity provider", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+	if idp.ID == "" {
+		id, genErr := is.uuidGenerator()
+		if genErr != nil {
+			logger.Error("failed to generate ID for identity provider", log.Error(genErr))
+			return nil, &serviceerror.InternalServerError
+		}
+		idp.ID = id
 	}
-	idp.ID = id
 
-	var svcErr *serviceerror.ServiceError
+	var (
+		err    error
+		svcErr *serviceerror.ServiceError
+	)
 	err = is.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		// Check if an identity provider with the same name already exists
 		existingIDP, err := is.idpStore.GetIdentityProviderByName(txCtx, idp.Name)

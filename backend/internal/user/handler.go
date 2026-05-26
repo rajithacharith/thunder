@@ -94,7 +94,7 @@ func (uh *userHandler) HandleUserPostRequest(w http.ResponseWriter, r *http.Requ
 	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
-	createRequest, err := sysutils.DecodeJSONBody[User](r)
+	createRequest, err := sysutils.DecodeJSONBody[CreateUserRequest](r)
 	if err != nil {
 		errResp := apierror.ErrorResponse{
 			Code:        ErrorInvalidRequestFormat.Code,
@@ -105,8 +105,14 @@ func (uh *userHandler) HandleUserPostRequest(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	user := &User{
+		OUID:       createRequest.OUID,
+		Type:       createRequest.Type,
+		Attributes: createRequest.Attributes,
+	}
+
 	// Create the user using the user service.
-	createdUser, svcErr := uh.userService.CreateUser(ctx, createRequest)
+	createdUser, svcErr := uh.userService.CreateUser(ctx, user)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return

@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {PageLoadingAnimation} from '@thunderid/components';
 import {useToast} from '@thunderid/contexts';
 import {useLogger} from '@thunderid/logger/react';
 import {
@@ -27,7 +28,6 @@ import {
   Paper,
   Alert,
   IconButton,
-  CircularProgress,
   Tabs,
   Tab,
   PageContent,
@@ -135,11 +135,7 @@ export default function GroupEditPage(): JSX.Element {
   };
 
   if (isLoading) {
-    return (
-      <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px'}}>
-        <CircularProgress />
-      </Box>
-    );
+    return <PageLoadingAnimation />;
   }
 
   if (fetchError) {

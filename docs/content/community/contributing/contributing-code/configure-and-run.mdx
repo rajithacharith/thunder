@@ -83,7 +83,7 @@ This command will automatically set up your complete development environment:
 - Starts the backend server
 - Runs the bootstrap script which creates:
   - The `Console` application with the correct redirect URIs
-  - The default admin user (`admin` / `admin`)
+  - The default admin user (credentials default to `admin` / `admin`; configurable via `ADMIN_USERNAME` / `ADMIN_PASSWORD` environment variables)
 
 **Services that start:**
 
@@ -134,7 +134,7 @@ $env:API_BASE = "https://localhost:8090"
   </CodeBlock>
 </CodeGroup>
 
-This creates the `Console` application and the default admin user (`admin` / `admin`). You only need to do this once — the data persists in the SQLite databases.
+This creates the `Console` application and the default admin user (credentials default to `admin` / `admin`). You only need to do this once — the data persists in the SQLite databases.
 
 :::warning
 Don't use `./setup.sh` here. That script is designed for the packaged distribution zip and expects a compiled `./thunderid` binary at the project root. From source code, always use the bootstrap script directly as shown above, or use `make run` (Option A) which handles everything for you.
@@ -147,7 +147,7 @@ Don't use `./setup.sh` here. That script is designed for the packaged distributi
 | Command | Use Case | Seeded Data |
 |---------|----------|-------------|
 | `make run` | Source development | Default resources |
-| `./setup.sh` | Deployment / release initialization | Default + sample resources |
+| `./setup.sh` | Deployment / release initialization | Default resources |
 
 ### Development Seeding (`make run`)
 
@@ -155,7 +155,7 @@ For development environments, `make run` executes the `backend/cmd/server/bootst
 
 - Default Organization Unit
 - Default User Type (Person)
-- Admin user (`admin` / `admin`)
+- Admin user (credentials default to `admin` / `admin`; configurable via `ADMIN_USERNAME` / `ADMIN_PASSWORD` environment variables)
 - System resource server with system actions and permissions
 - Administrator role and role assignment
 - `Console` application
@@ -172,13 +172,6 @@ For release artifacts and deployment environments, `./setup.sh` performs a one-t
 **Bootstrap Scripts:**
 
 - **`01-default-resources.sh`** — Seeds the core identity resources (same as development seeding above)
-- **`02-sample-resources.sh`** — Seeds additional sample resources used for demos and sample integrations:
-  - `customers` Organization Unit
-  - Customer user type schema
-  - Sample App application
-  - React SDK Sample App application
-
-The setup logs also print the sample application IDs, which can be used when configuring the sample applications.
 
 **In short:**
 - Use `make run` when running <ProductName /> from source.

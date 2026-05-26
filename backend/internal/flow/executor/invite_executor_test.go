@@ -257,6 +257,39 @@ func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_PopulatesTemplate
 	suite.Equal("Test App", templateData["appName"])
 }
 
+func (suite *InviteExecutorTestSuite) TestGenerateInviteLink_UsesInviteBaseURLProperty() {
+	ctx := &core.NodeContext{
+		ExecutionID:  "test-execution-id",
+		ExecutorMode: ExecutorModeGenerate,
+		UserInputs:   make(map[string]string),
+		RuntimeData:  make(map[string]string),
+		NodeProperties: map[string]interface{}{
+			propertyKeyInviteBaseURL: "http://localhost:3000",
+		},
+	}
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Contains(suite.T(), resp.RuntimeData[common.RuntimeKeyInviteLink], "http://localhost:3000?")
+}
+
+func (suite *InviteExecutorTestSuite) TestGenerateInviteLink_FallsBackToGateConfigWhenPropertyAbsent() {
+	ctx := &core.NodeContext{
+		ExecutionID:  "test-execution-id",
+		ExecutorMode: ExecutorModeGenerate,
+		UserInputs:   make(map[string]string),
+		RuntimeData:  make(map[string]string),
+	}
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Contains(suite.T(), resp.RuntimeData[common.RuntimeKeyInviteLink], "https://localhost:5190/gate/invite?")
+}
+
 func (suite *InviteExecutorTestSuite) TestGetExecutionPolicy_GenerateMode_ReturnsNil() {
 	policy := suite.executor.GetExecutionPolicy(ExecutorModeGenerate)
 	assert.Nil(suite.T(), policy)

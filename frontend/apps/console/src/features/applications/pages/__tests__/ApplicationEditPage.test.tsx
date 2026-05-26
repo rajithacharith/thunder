@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -126,6 +126,7 @@ vi.mock('@thunderid/components', async () => {
   return {
     CopyableId: vi.fn(() => null),
     EmojiPicker: vi.fn(() => null),
+    PageLoadingAnimation: vi.fn(() => <div data-testid="page-loading-animation" />),
     ResourceLogoDialog: vi.fn(
       ({open, onClose, onSelect}: {open: boolean; onClose: () => void; onSelect: (value: string) => void}) => (
         <div data-testid="resource-logo-dialog" style={{display: open ? 'block' : 'none'}}>
@@ -286,7 +287,7 @@ describe('ApplicationEditPage', () => {
       renderComponent();
 
       // When loading, the component shows a loading indicator
-      expect(screen.getByRole('progressbar')).toBeInTheDocument();
+      expect(screen.getByTestId('page-loading-animation')).toBeInTheDocument();
     });
   });
 

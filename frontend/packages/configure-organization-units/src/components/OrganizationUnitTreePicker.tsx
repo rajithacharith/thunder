@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {useAsgardeo} from '@asgardeo/react';
 import {useQueryClient} from '@tanstack/react-query';
-import {ResourceAvatar} from '@thunderid/components';
+import {PageLoadingAnimation, ResourceAvatar} from '@thunderid/components';
 import {useConfig} from '@thunderid/contexts';
 import {useLogger} from '@thunderid/logger/react';
+import {useThunderID} from '@thunderid/react';
 import {Box, Typography, CircularProgress, TreeView, useTheme} from '@wso2/oxygen-ui';
 import {useState, useCallback, useEffect, useRef, useMemo, type JSX, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -177,18 +177,7 @@ function PickerTreeItem(allProps: PickerTreeItemProps): JSX.Element {
       {...(isItemLoading ? {slots: {collapseIcon: PickerLoadingIcon, expandIcon: PickerLoadingIcon}} : {})}
       label={
         <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
-          <ResourceAvatar
-            value={itemData?.logoUrl}
-            size={30}
-            fallback="emoji:🏛️"
-            sx={{
-              backgroundColor: theme.vars?.palette.grey[500],
-              fontSize: '1rem',
-              ...theme.applyStyles('dark', {
-                backgroundColor: theme.vars?.palette.grey[900],
-              }),
-            }}
-          />
+          <ResourceAvatar value={itemData?.logoUrl} size={30} fallback="emoji:🏛️" />
           <Box sx={{flexGrow: 1, minWidth: 0}}>
             <Typography variant="body2" sx={{fontWeight: 500, lineHeight: 1.3}}>
               {labelStr}
@@ -227,7 +216,7 @@ export default function OrganizationUnitTreePicker({
   const theme = useTheme();
   const {t} = useTranslation();
   const logger = useLogger('OrganizationUnitTreePicker');
-  const {http} = useAsgardeo();
+  const {http} = useThunderID();
   const {getServerUrl} = useConfig();
   const queryClient = useQueryClient();
   const {data, isLoading} = useGetOrganizationUnits(undefined, !rootOuId);
@@ -541,11 +530,7 @@ export default function OrganizationUnitTreePicker({
   const rootedModeError = rootOuId ? (rootOuError ?? rootOuChildrenError) : null;
 
   if (isTreeLoading) {
-    return (
-      <Box sx={{display: 'flex', justifyContent: 'center', py: 4}}>
-        <CircularProgress size={24} />
-      </Box>
-    );
+    return <PageLoadingAnimation />;
   }
 
   if (rootedModeError) {

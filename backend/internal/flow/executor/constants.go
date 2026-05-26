@@ -101,6 +101,7 @@ const (
 	propertyKeyDynamicInputsIncludeOptional            = "includeOptional"
 	propertyKeyDynamicInputsIncludeOptionalCredentials = "includeOptionalCredentials"
 	propertyKeyMaxDynamicInputsPerPrompt               = "maxPerPrompt"
+	propertyKeyInviteBaseURL                           = "inviteBaseURL"
 )
 
 // nonSearchableInputs contains the list of user inputs/ attributes that are non-searchable.

@@ -459,6 +459,7 @@ const (
 	testFederatedJWKSURL     = "https://external-auth:8090/oauth2/jwks"
 	testFederatedAudience    = "FEDERATED_CONSOLE"
 	testResourceServerAudURL = "https://resource-server:9443"
+	testLocalIssuer          = "https://localhost:8090"
 )
 
 // buildFakeJWT creates a fake JWT string with the given header and payload claims.
@@ -746,9 +747,10 @@ func (suite *JWTAuthenticatorTestSuite) TestVerifyFederatedToken_InvalidPayload(
 }
 
 func (suite *JWTAuthenticatorTestSuite) TestAuthenticate_FederatedTokenFailure() {
-	// When the trusted issuer is configured and federated verification fails
-	// (here, JWKS verification returns an error), Authenticate must reject the
-	// request with errInvalidToken and must NOT fall back to local-key verification.
+	// A token whose issuer is the trusted issuer is routed to federated
+	// verification. When that fails (here, JWKS verification returns an error),
+	// Authenticate must reject the request with errInvalidToken and must NOT
+	// fall back to local-key verification (no cross-issuer fallback).
 	config.ResetServerRuntime()
 	defer config.ResetServerRuntime()
 
@@ -790,9 +792,10 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate_FederatedTokenFailure()
 	req.Header.Set("Authorization", "Bearer "+token)
 
 	authCtx, err := auth.Authenticate(req)
-	assert.Error(suite.T(), err)
+	assert.ErrorIs(suite.T(), err, errInvalidToken)
 	assert.Nil(suite.T(), authCtx)
 	mockJWT.AssertExpectations(suite.T())
+	mockJWT.AssertNotCalled(suite.T(), "VerifyJWT")
 	mockJWT.AssertNotCalled(suite.T(), "VerifyJWTSignature")
 }
 
@@ -842,4 +845,113 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate_FederatedTokenSuccess()
 	assert.Equal(suite.T(), "federated-user", GetSubject(baseCtx))
 	mockJWT.AssertExpectations(suite.T())
 	mockJWT.AssertNotCalled(suite.T(), "VerifyJWTSignature")
+}
+
+// federatedConfigWithLocalIssuer returns a config where a trusted issuer is
+// configured (federated mode) and the server's own JWT issuer is set, so that
+// issuer-based routing can distinguish self-issued tokens from federated ones.
+func federatedConfigWithLocalIssuer() *config.Config {
+	return &config.Config{
+		Server: config.ServerConfig{
+			SecurityConfig: config.SecurityConfig{
+				TrustedIssuer: config.TrustedIssuerConfig{
+					Issuer:   testFederatedIssuer,
+					JWKSURL:  testFederatedJWKSURL,
+					Audience: testFederatedAudience,
+				},
+			},
+		},
+		JWT: config.JWTConfig{Issuer: testLocalIssuer},
+	}
+}
+
+func (suite *JWTAuthenticatorTestSuite) TestAuthenticate_SelfIssuedTokenUnderFederation() {
+	// Regression: a token this server issued itself (e.g. via client_credentials)
+	// must still authenticate against the server's own secured APIs even when a
+	// trusted issuer is configured. It is routed to local-key verification by its
+	// iss claim and must never be sent to the trusted issuer's JWKS.
+	config.ResetServerRuntime()
+	defer config.ResetServerRuntime()
+	_ = config.InitializeServerRuntime("", federatedConfigWithLocalIssuer())
+
+	token := buildFakeJWT(
+		map[string]interface{}{"alg": "RS256", "kid": "local-kid"},
+		map[string]interface{}{
+			"sub":   "service-app",
+			"iss":   testLocalIssuer,
+			"scope": "system",
+		},
+	)
+
+	mockJWT := jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	mockJWT.On("VerifyJWT", token, "", "").Return(nil)
+	auth := newJWTAuthenticator(mockJWT)
+
+	req := httptest.NewRequest(http.MethodGet, "/users", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	authCtx, err := auth.Authenticate(req)
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), authCtx)
+
+	baseCtx := withSecurityContext(context.Background(), authCtx)
+	assert.Equal(suite.T(), "service-app", GetSubject(baseCtx))
+	mockJWT.AssertExpectations(suite.T())
+	mockJWT.AssertNotCalled(suite.T(), "VerifyJWTWithJWKS")
+}
+
+func (suite *JWTAuthenticatorTestSuite) TestAuthenticate_SelfIssuedTokenInvalidUnderFederation() {
+	// A self-issued token routed to local verification that fails the signature
+	// check is rejected; it must not be retried against the trusted issuer JWKS.
+	config.ResetServerRuntime()
+	defer config.ResetServerRuntime()
+	_ = config.InitializeServerRuntime("", federatedConfigWithLocalIssuer())
+
+	token := buildFakeJWT(
+		map[string]interface{}{"alg": "RS256", "kid": "local-kid"},
+		map[string]interface{}{"sub": "service-app", "iss": testLocalIssuer},
+	)
+
+	mockJWT := jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	mockJWT.On("VerifyJWT", token, "", "").Return(&serviceerror.ServiceError{
+		Type:  serviceerror.ServerErrorType,
+		Code:  "INVALID_SIGNATURE",
+		Error: i18ncore.I18nMessage{DefaultValue: "Invalid signature"},
+	})
+	auth := newJWTAuthenticator(mockJWT)
+
+	req := httptest.NewRequest(http.MethodGet, "/users", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	authCtx, err := auth.Authenticate(req)
+	assert.ErrorIs(suite.T(), err, errInvalidToken)
+	assert.Nil(suite.T(), authCtx)
+	mockJWT.AssertExpectations(suite.T())
+	mockJWT.AssertNotCalled(suite.T(), "VerifyJWTWithJWKS")
+}
+
+func (suite *JWTAuthenticatorTestSuite) TestAuthenticate_UnknownIssuerUnderFederation() {
+	// A token whose iss is neither the trusted issuer nor this server's own
+	// JWT issuer is rejected outright by the issuer allowlist, with no
+	// verifier invoked.
+	config.ResetServerRuntime()
+	defer config.ResetServerRuntime()
+	_ = config.InitializeServerRuntime("", federatedConfigWithLocalIssuer())
+
+	token := buildFakeJWT(
+		map[string]interface{}{"alg": "RS256", "kid": "rogue-kid"},
+		map[string]interface{}{"sub": "attacker", "iss": "https://rogue-issuer:9999"},
+	)
+
+	mockJWT := jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	auth := newJWTAuthenticator(mockJWT)
+
+	req := httptest.NewRequest(http.MethodGet, "/users", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	authCtx, err := auth.Authenticate(req)
+	assert.ErrorIs(suite.T(), err, errInvalidToken)
+	assert.Nil(suite.T(), authCtx)
+	mockJWT.AssertNotCalled(suite.T(), "VerifyJWT")
+	mockJWT.AssertNotCalled(suite.T(), "VerifyJWTWithJWKS")
 }

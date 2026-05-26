@@ -74,20 +74,7 @@ export default function ApplicationsList(): JSX.Element {
         renderCell: (params: DataGrid.GridRenderCellParams<BasicApplication>): JSX.Element => (
           <ListingTable.CellIcon
             sx={{width: '100%'}}
-            icon={
-              <ResourceAvatar
-                value={params.row.logoUrl}
-                size={30}
-                fallback="emoji:🖥️"
-                sx={{
-                  backgroundColor: theme.vars?.palette.grey[500],
-                  fontSize: '1rem',
-                  ...theme.applyStyles('dark', {
-                    backgroundColor: theme.vars?.palette.grey[900],
-                  }),
-                }}
-              />
-            }
+            icon={<ResourceAvatar value={params.row.logoUrl} size={30} fallback="emoji:🖥️" />}
             primary={params.row.name}
             secondary={params.row.description}
           />

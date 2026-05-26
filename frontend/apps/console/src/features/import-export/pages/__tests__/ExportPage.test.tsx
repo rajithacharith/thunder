@@ -83,6 +83,7 @@ describe('ExportPage', () => {
           identityProviders: ['*'],
           flows: ['*'],
           groups: ['*'],
+          agents: ['*'],
         }),
       );
     });

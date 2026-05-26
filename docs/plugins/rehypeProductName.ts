@@ -21,6 +21,11 @@ import type {Plugin} from 'unified';
 interface Options {
   productName: string;
   productSlug: string;
+  /**
+   * Additional token-to-value substitutions. Each key is the literal token
+   * (e.g. `{{ConsoleUrl}}`) replaced with the corresponding value.
+   */
+  replacements?: Record<string, string>;
 }
 
 interface HastNode {
@@ -30,22 +35,29 @@ interface HastNode {
   children?: HastNode[];
 }
 
-function replaceInTextNode(node: HastNode, productName: string, productSlug: string): void {
+function applyReplacements(value: string, replacements: Record<string, string>): string {
+  let result = value;
+  for (const [token, replacement] of Object.entries(replacements)) {
+    result = result.replaceAll(token, replacement);
+  }
+  return result;
+}
+
+function replaceInTextNode(node: HastNode, replacements: Record<string, string>): void {
   if (node.type === 'text' && typeof node.value === 'string') {
-    node.value = node.value.replaceAll('{{ProductName}}', productName).replaceAll('{{productSlug}}', productSlug);
+    node.value = applyReplacements(node.value, replacements);
   }
 }
 
 /**
  * Recursively visits every `code` element in the hast tree — both fenced code
- * blocks (`pre > code`) and inline code spans — and replaces all occurrences of
- * `{{ProductName}}` and `{{productSlug}}` in text nodes with the resolved product
- * name and slug respectively.
+ * blocks (`pre > code`) and inline code spans — and replaces token occurrences
+ * in their text children with the configured values.
  */
-function replaceInCodeNodes(node: HastNode, productName: string, productSlug: string): void {
+function replaceInCodeNodes(node: HastNode, replacements: Record<string, string>): void {
   if (node.type === 'element' && node.tagName === 'code' && node.children) {
     for (const child of node.children) {
-      replaceInTextNode(child, productName, productSlug);
+      replaceInTextNode(child, replacements);
     }
     // Don't recurse into code children — text nodes already handled above.
     return;
@@ -53,16 +65,21 @@ function replaceInCodeNodes(node: HastNode, productName: string, productSlug: st
 
   if (node.children) {
     for (const child of node.children) {
-      replaceInCodeNodes(child, productName, productSlug);
+      replaceInCodeNodes(child, replacements);
     }
   }
 }
 
 const rehypeProductName: Plugin<[Options]> = function (options: Options) {
-  const {productName, productSlug} = options;
+  const {productName, productSlug, replacements: extra = {}} = options;
+  const replacements: Record<string, string> = {
+    '{{ProductName}}': productName,
+    '{{productSlug}}': productSlug,
+    ...extra,
+  };
 
   return (tree: unknown) => {
-    replaceInCodeNodes(tree as HastNode, productName, productSlug);
+    replaceInCodeNodes(tree as HastNode, replacements);
   };
 };
 

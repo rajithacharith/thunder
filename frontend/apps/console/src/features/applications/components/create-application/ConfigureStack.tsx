@@ -252,7 +252,7 @@ export default function ConfigureStack({
                 sm: '1fr',
                 md: '1fr',
                 lg: '1fr',
-                xl: 'repeat(3, 1fr)',
+                xl: 'repeat(4, 1fr)',
               },
               gap: 1.5,
             }}

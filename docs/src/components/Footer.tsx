@@ -19,10 +19,10 @@
 import Link from '@docusaurus/Link';
 import {useBaseUrlUtils} from '@docusaurus/useBaseUrl';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
-import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
 import ThemedImage from '@theme/ThemedImage';
 import {Box, Container, Typography} from '@wso2/oxygen-ui';
 import React, {JSX} from 'react';
+import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
 
 interface FooterColumnProps {
   title: string;
@@ -80,7 +80,7 @@ export default function Footer(): JSX.Element {
         color: 'text.primary',
         borderTop: '1px solid',
         borderColor: 'divider',
-        pt: {xs: 6, lg: 8},
+        pt: {xs: 4, lg: 5},
         pb: 3,
       }}
     >
@@ -88,9 +88,9 @@ export default function Footer(): JSX.Element {
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: {xs: '1fr', sm: 'repeat(2, 1fr)', md: '2fr 1fr 1fr'},
-            gap: {xs: 4, md: 6},
-            mb: 6,
+            gridTemplateColumns: {xs: '1fr', sm: 'repeat(2, 1fr)', md: '2fr 1fr 1fr 1fr'},
+            gap: {xs: 4, md: 5},
+            mb: 4,
           }}
         >
           {/* Brand column */}
@@ -102,40 +102,28 @@ export default function Footer(): JSX.Element {
                   dark: withBaseUrl('/assets/images/logo-inverted.svg'),
                 }}
                 alt={`${productConfig.project.name} Logo`}
-                style={{height: 32}}
+                style={{height: 48}}
               />
             </Box>
-            <Typography
-              variant="body2"
-              sx={{
-                color: 'text.secondary',
-                fontSize: '0.85rem',
-                lineHeight: 1.7,
-                maxWidth: '280px',
-                mb: 3,
-              }}
-            >
-              Work together seamlessly with secure your applications with ease.
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                color: 'text.disabled',
-                fontSize: '0.75rem',
-              }}
-            >
-              Terms & Policy
-            </Typography>
           </Box>
 
-          {/* Pages column */}
+          {/* Docs + SDKs column */}
           <FooterColumn
-            title="Pages"
+            title="Product"
             links={[
-              {label: 'Home', href: '/'},
               {label: 'Docs', href: '/docs/next/guides/getting-started/what-is-thunderid'},
               {label: 'APIs', href: '/docs/next/apis'},
               {label: 'SDKs', href: '/docs/next/sdks/overview'},
+            ]}
+          />
+
+          {/* Community column */}
+          <FooterColumn
+            title="Community"
+            links={[
+              {label: 'Contributing', href: '/docs/next/community/contributing/overview'},
+              {label: 'Discussions', href: productConfig.project.source.github.discussionsUrl},
+              {label: 'Report an Issue', href: productConfig.project.source.github.issuesUrl},
             ]}
           />
 
@@ -143,10 +131,8 @@ export default function Footer(): JSX.Element {
           <FooterColumn
             title="Resources"
             links={[
-              {label: 'Community', href: '/docs/next/community/overview'},
               {label: 'Releases', href: productConfig.project.source.github.releasesUrl},
-              {label: 'Discussions', href: productConfig.project.source.github.discussionsUrl},
-              {label: 'Report an Issue', href: productConfig.project.source.github.issuesUrl},
+              {label: 'GitHub', href: productConfig.project.source.github.url},
             ]}
           />
         </Box>
@@ -157,7 +143,11 @@ export default function Footer(): JSX.Element {
             borderTop: '1px solid',
             borderColor: 'divider',
             pt: 3,
-            textAlign: 'center',
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 2,
           }}
         >
           <Typography
@@ -168,6 +158,38 @@ export default function Footer(): JSX.Element {
             }}
           >
             &copy; WSO2 LLC. All rights reserved.
+          </Typography>
+          <Typography
+            component={Link}
+            href="/privacy-policy"
+            variant="caption"
+            sx={{
+              color: 'text.disabled',
+              fontSize: '0.75rem',
+              textDecoration: 'none',
+              '&:hover': {
+                color: 'text.secondary',
+                textDecoration: 'none',
+              },
+            }}
+          >
+            Privacy Policy
+          </Typography>
+          <Typography
+            component={Link}
+            href="/cookie-policy"
+            variant="caption"
+            sx={{
+              color: 'text.disabled',
+              fontSize: '0.75rem',
+              textDecoration: 'none',
+              '&:hover': {
+                color: 'text.secondary',
+                textDecoration: 'none',
+              },
+            }}
+          >
+            Cookie Policy
           </Typography>
         </Box>
       </Container>

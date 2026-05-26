@@ -1133,6 +1133,65 @@ func (_c *ResourceServiceInterfaceMock_IsResourceServerDeclarative_Call) RunAndR
 	return _c
 }
 
+// ResolveResourceServerOUHandle provides a mock function for the type ResourceServiceInterfaceMock
+func (_mock *ResourceServiceInterfaceMock) ResolveResourceServerOUHandle(ctx context.Context, rs *resource.ResourceServer) *serviceerror.ServiceError {
+	ret := _mock.Called(ctx, rs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ResolveResourceServerOUHandle")
+	}
+
+	var r0 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *resource.ResourceServer) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(ctx, rs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*serviceerror.ServiceError)
+		}
+	}
+	return r0
+}
+
+// ResourceServiceInterfaceMock_ResolveResourceServerOUHandle_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ResolveResourceServerOUHandle'
+type ResourceServiceInterfaceMock_ResolveResourceServerOUHandle_Call struct {
+	*mock.Call
+}
+
+// ResolveResourceServerOUHandle is a helper method to define mock.On call
+//   - ctx context.Context
+//   - rs *resource.ResourceServer
+func (_e *ResourceServiceInterfaceMock_Expecter) ResolveResourceServerOUHandle(ctx interface{}, rs interface{}) *ResourceServiceInterfaceMock_ResolveResourceServerOUHandle_Call {
+	return &ResourceServiceInterfaceMock_ResolveResourceServerOUHandle_Call{Call: _e.mock.On("ResolveResourceServerOUHandle", ctx, rs)}
+}
+
+func (_c *ResourceServiceInterfaceMock_ResolveResourceServerOUHandle_Call) Run(run func(ctx context.Context, rs *resource.ResourceServer)) *ResourceServiceInterfaceMock_ResolveResourceServerOUHandle_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *resource.ResourceServer
+		if args[1] != nil {
+			arg1 = args[1].(*resource.ResourceServer)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *ResourceServiceInterfaceMock_ResolveResourceServerOUHandle_Call) Return(serviceError *serviceerror.ServiceError) *ResourceServiceInterfaceMock_ResolveResourceServerOUHandle_Call {
+	_c.Call.Return(serviceError)
+	return _c
+}
+
+func (_c *ResourceServiceInterfaceMock_ResolveResourceServerOUHandle_Call) RunAndReturn(run func(ctx context.Context, rs *resource.ResourceServer) *serviceerror.ServiceError) *ResourceServiceInterfaceMock_ResolveResourceServerOUHandle_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateAction provides a mock function for the type ResourceServiceInterfaceMock
 func (_mock *ResourceServiceInterfaceMock) UpdateAction(ctx context.Context, resourceServerID string, resourceID *string, id string, action resource.Action) (*resource.Action, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, resourceServerID, resourceID, id, action)

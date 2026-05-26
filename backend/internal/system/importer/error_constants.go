@@ -20,6 +20,7 @@
 package importer
 
 import (
+	"github.com/thunder-id/thunderid/internal/agent"
 	"github.com/thunder-id/thunderid/internal/application"
 	layoutmgt "github.com/thunder-id/thunderid/internal/design/layout/mgt"
 	thememgt "github.com/thunder-id/thunderid/internal/design/theme/mgt"
@@ -50,6 +51,7 @@ var notFoundErrorCodes = map[string]struct{}{
 	thememgt.ErrorThemeNotFound.Code:          {},
 	layoutmgt.ErrorLayoutNotFound.Code:        {},
 	user.ErrorUserNotFound.Code:               {},
+	agent.ErrorAgentNotFound.Code:             {},
 }
 
 var (

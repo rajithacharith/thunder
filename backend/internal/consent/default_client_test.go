@@ -1718,3 +1718,32 @@ func (s *DefaultClientTestSuite) TestListConsentPurposes_WithGroupID_UsesClientI
 	s.Len(result, 1)
 	s.Equal("app-99", result[0].GroupID)
 }
+
+// ----- purpose name + type helpers -----
+
+func (s *DefaultClientTestSuite) TestNamespaceFromPurposeName() {
+	s.Equal(NamespaceAttribute, NamespaceFromPurposeName("attributes:app1"))
+	s.Equal(NamespaceAttribute, NamespaceFromPurposeName(AttributesPurposeName("app1")))
+	s.Equal(NamespacePermission, NamespaceFromPurposeName("permissions:app1"))
+	s.Equal(NamespacePermission, NamespaceFromPurposeName(PermissionsPurposeName("app1")))
+	s.Equal(Namespace(""), NamespaceFromPurposeName("custom-purpose"), "names without a recognized prefix return empty")
+	s.Equal(Namespace(""), NamespaceFromPurposeName(""))
+}
+
+func (s *DefaultClientTestSuite) TestAttributesPurposeName() {
+	s.Equal("attributes:app1", AttributesPurposeName("app1"))
+	s.Equal("attributes:", AttributesPurposeName(""))
+}
+
+func (s *DefaultClientTestSuite) TestFilterAttributePurposes() {
+	input := []ConsentPurpose{
+		{ID: "1", Namespace: NamespaceAttribute},
+		{ID: "2", Namespace: NamespacePermission},
+		{ID: "3", Namespace: ""},
+		{ID: "4", Namespace: NamespaceAttribute},
+	}
+	got := FilterAttributePurposes(input)
+	s.Len(got, 2)
+	s.Equal("1", got[0].ID)
+	s.Equal("4", got[1].ID)
+}

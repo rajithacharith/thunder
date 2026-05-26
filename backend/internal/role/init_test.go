@@ -77,7 +77,7 @@ func (suite *InitTestSuite) TestInitializeStoreMutableMode() {
 	getDBProvider = func() provider.DBProviderInterface { return mockProvider }
 	defer func() { getDBProvider = originalGetDBProvider }()
 
-	store, _, err := initializeStore()
+	store, _, _, _, err := initializeStore()
 
 	suite.NoError(err)
 	suite.NotNil(store)
@@ -94,7 +94,7 @@ func (suite *InitTestSuite) TestInitializeStoreDeclarativeMode() {
 	runtime.Config.Role.Store = string(serverconst.StoreModeDeclarative)
 	runtime.Config.DeclarativeResources.Enabled = true
 
-	store, _, err := initializeStore()
+	store, _, _, _, err := initializeStore()
 
 	suite.NoError(err)
 	suite.NotNil(store)
@@ -117,7 +117,7 @@ func (suite *InitTestSuite) TestInitializeStoreCompositeMode() {
 	getDBProvider = func() provider.DBProviderInterface { return mockProvider }
 	defer func() { getDBProvider = originalGetDBProvider }()
 
-	store, _, err := initializeStore()
+	store, _, _, _, err := initializeStore()
 
 	suite.NoError(err)
 	suite.NotNil(store)
@@ -136,7 +136,7 @@ func (suite *InitTestSuite) TestInitializeStoreDeclarativeFallback() {
 	runtime.Config.Role.Store = ""
 	runtime.Config.DeclarativeResources.Enabled = true
 
-	store, _, err := initializeStore()
+	store, _, _, _, err := initializeStore()
 
 	suite.NoError(err)
 	suite.NotNil(store)
@@ -160,7 +160,7 @@ func (suite *InitTestSuite) TestInitializeStoreMutableModeFallback() {
 	getDBProvider = func() provider.DBProviderInterface { return mockProvider }
 	defer func() { getDBProvider = originalGetDBProvider }()
 
-	store, _, err := initializeStore()
+	store, _, _, _, err := initializeStore()
 
 	suite.NoError(err)
 	suite.NotNil(store)
@@ -176,7 +176,7 @@ func (suite *InitTestSuite) TestInitializeStoreNormalizeCaseSensitivity() {
 	runtime := config.GetServerRuntime()
 	runtime.Config.Role.Store = "DECLARATIVE"
 
-	store, _, err := initializeStore()
+	store, _, _, _, err := initializeStore()
 
 	suite.NoError(err)
 	suite.NotNil(store)
@@ -199,7 +199,7 @@ func (suite *InitTestSuite) TestInitializeStoreTrimsWhitespace() {
 	getDBProvider = func() provider.DBProviderInterface { return mockProvider }
 	defer func() { getDBProvider = originalGetDBProvider }()
 
-	store, _, err := initializeStore()
+	store, _, _, _, err := initializeStore()
 
 	suite.NoError(err)
 	suite.NotNil(store)
@@ -240,7 +240,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesWith
 	genericStore := declarativeresource.NewGenericFileBasedStoreForTest(entity.KeyTypeRole)
 	fileStore := &fileBasedStore{GenericFileBasedStore: genericStore}
 
-	err := loadDeclarativeResources(fileStore, nil)
+	err := loadDeclarativeResources(fileStore, nil, nil)
 
 	// Should not error even if no resources are found (empty directory)
 	suite.NoError(err)
@@ -252,7 +252,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesWith
 	fileStore := &fileBasedStore{GenericFileBasedStore: genericStore}
 
 	// Should handle nil dbStore gracefully (no duplicate checking against DB)
-	err := loadDeclarativeResources(fileStore, nil)
+	err := loadDeclarativeResources(fileStore, nil, nil)
 
 	suite.NoError(err)
 }
@@ -266,7 +266,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesWith
 	mockDbStore := newRoleStoreInterfaceMock(suite.T())
 	// Don't setup any expectations since no resources are loaded by default
 
-	err := loadDeclarativeResources(fileStore, mockDbStore)
+	err := loadDeclarativeResources(fileStore, mockDbStore, nil)
 
 	suite.NoError(err)
 }
@@ -291,7 +291,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 	}
 
 	// Validate the role with no dbStore (validation should pass for valid role)
-	err := validateRoleWrapper(testRole, fileStore, nil)
+	err := validateRoleWrapper(testRole, fileStore, nil, nil)
 
 	suite.NoError(err)
 }
@@ -311,7 +311,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesIDEx
 	suite.NoError(err)
 
 	// Load should correctly extract the ID
-	err = loadDeclarativeResources(fileStore, nil)
+	err = loadDeclarativeResources(fileStore, nil, nil)
 
 	suite.NoError(err)
 	// Verify the role is still in the store with correct ID
@@ -366,7 +366,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 		Name: "No ID",
 		OUID: "ou1",
 	}
-	err := validateRoleWrapper(roleNoID, fileStore, nil)
+	err := validateRoleWrapper(roleNoID, fileStore, nil, nil)
 	suite.Error(err)
 	suite.Contains(err.Error(), "role ID is required")
 
@@ -375,7 +375,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 		ID:   "role1",
 		OUID: "ou1",
 	}
-	err = validateRoleWrapper(roleNoName, fileStore, nil)
+	err = validateRoleWrapper(roleNoName, fileStore, nil, nil)
 	suite.Error(err)
 	suite.Contains(err.Error(), "role name is required")
 
@@ -384,9 +384,9 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 		ID:   "role1",
 		Name: "Test Role",
 	}
-	err = validateRoleWrapper(roleNoOU, fileStore, nil)
+	err = validateRoleWrapper(roleNoOU, fileStore, nil, nil)
 	suite.Error(err)
-	suite.Contains(err.Error(), "organization unit ID is required")
+	suite.Contains(err.Error(), "ou_id or ou_handle is required for role 'Test Role'")
 }
 
 // TestLoadDeclarativeResourcesValidateAssignmentTypes tests validation of assignment types.
@@ -403,7 +403,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 			{ID: "user1", Type: assigneeTypeEntity},
 		},
 	}
-	err := validateRoleWrapper(roleValidUser, fileStore, nil)
+	err := validateRoleWrapper(roleValidUser, fileStore, nil, nil)
 	suite.NoError(err)
 
 	// Test role with valid group assignment
@@ -415,7 +415,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 			{ID: "group1", Type: AssigneeTypeGroup},
 		},
 	}
-	err = validateRoleWrapper(roleValidGroup, fileStore, nil)
+	err = validateRoleWrapper(roleValidGroup, fileStore, nil, nil)
 	suite.NoError(err)
 
 	// Test role with invalid assignment type
@@ -427,7 +427,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 			{ID: "invalid1", Type: "invalid_type"},
 		},
 	}
-	err = validateRoleWrapper(roleInvalidType, fileStore, nil)
+	err = validateRoleWrapper(roleInvalidType, fileStore, nil, nil)
 	suite.Error(err)
 	suite.Contains(err.Error(), "invalid assignment type")
 
@@ -440,7 +440,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 			{Type: assigneeTypeEntity},
 		},
 	}
-	err = validateRoleWrapper(roleNoAssignmentID, fileStore, nil)
+	err = validateRoleWrapper(roleNoAssignmentID, fileStore, nil, nil)
 	suite.Error(err)
 	suite.Contains(err.Error(), "assignment ID is required")
 }
@@ -459,7 +459,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 			{Permissions: []string{"read"}},
 		},
 	}
-	err := validateRoleWrapper(roleNoResourceServer, fileStore, nil)
+	err := validateRoleWrapper(roleNoResourceServer, fileStore, nil, nil)
 	suite.Error(err)
 	suite.Contains(err.Error(), "resource server ID is required")
 
@@ -475,7 +475,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 			},
 		},
 	}
-	err = validateRoleWrapper(roleValidPermission, fileStore, nil)
+	err = validateRoleWrapper(roleValidPermission, fileStore, nil, nil)
 	suite.NoError(err)
 }
 
@@ -494,7 +494,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 	suite.NoError(err)
 
 	// Try to validate same role again
-	err = validateRoleWrapper(existingRole, fileStore, nil)
+	err = validateRoleWrapper(existingRole, fileStore, nil, nil)
 	suite.Error(err)
 	suite.Contains(err.Error(), "duplicate role ID")
 	suite.Contains(err.Error(), "declarative resources")
@@ -515,7 +515,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 	// Mock database store to indicate role exists
 	mockDbStore.On("IsRoleExist", mock.Anything, "db-duplicate").Return(true, nil).Once()
 
-	err := validateRoleWrapper(role, fileStore, mockDbStore)
+	err := validateRoleWrapper(role, fileStore, mockDbStore, nil)
 	suite.Error(err)
 	suite.Contains(err.Error(), "duplicate role ID")
 	suite.Contains(err.Error(), "database store")
@@ -539,7 +539,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 		false, fmt.Errorf("database error"),
 	).Once()
 
-	err := validateRoleWrapper(role, fileStore, mockDbStore)
+	err := validateRoleWrapper(role, fileStore, mockDbStore, nil)
 	suite.Error(err)
 	suite.Contains(err.Error(), "database error")
 	mockDbStore.AssertExpectations(suite.T())

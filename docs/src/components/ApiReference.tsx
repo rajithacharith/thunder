@@ -40,11 +40,14 @@ export default function ApiReference({specUrl, ...rest}: ApiReferenceProps) {
           className="apis-page"
           style={{
             position: 'fixed',
-            top: 'calc(var(--ifm-navbar-height) + var(--docusaurus-announcement-bar-height))',
+            top: 'var(--ifm-navbar-height)',
             left: 0,
             right: 0,
             bottom: 0,
-            overflow: 'auto',
+            height: 'calc(100vh - var(--ifm-navbar-height))',
+            overflowY: 'scroll',
+            overflowX: 'hidden',
+            WebkitOverflowScrolling: 'touch',
             background: 'var(--oxygen-palette-background-default)',
           }}
         >

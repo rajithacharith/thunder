@@ -21,12 +21,15 @@
   "sideEffects": false,
   "scripts": {
     "build": "tsc -p tsconfig.lib.json --emitDeclarationOnly && rolldown --config rolldown.config.js",
+    "clean": "pnpm clean:node_modules && pnpm clean:dist",
+    "clean:dist": "rimraf dist",
+    "clean:node_modules": "rimraf node_modules",
     "dev": "rolldown --config rolldown.config.js --watch",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "@asgardeo/react": "catalog:",
+    "@thunderid/react": "workspace:^",
     "@tanstack/react-query": "catalog:",
     "@thunderid/contexts": "workspace:^",
     "i18next": "catalog:",
@@ -42,6 +45,7 @@
     "@types/react": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",
+    "rimraf": "catalog:",
     "rolldown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

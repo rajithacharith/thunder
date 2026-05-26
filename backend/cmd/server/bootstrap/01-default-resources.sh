@@ -45,7 +45,7 @@ echo ""
 
 # System resource server configuration from environment variables.
 SYSTEM_RS_HANDLE="${SYSTEM_RS_HANDLE:-}"
-SYSTEM_RS_IDENTIFIER="${SYSTEM_RS_IDENTIFIER:-system}"
+SYSTEM_RS_IDENTIFIER="${SYSTEM_RS_IDENTIFIER:-https://localhost:8090/mcp}"
 
 # Derive the system permission root based on the configured handle.
 if [[ -n "$SYSTEM_RS_HANDLE" ]]; then
@@ -75,8 +75,10 @@ if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
     DEFAULT_OU_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
     if [[ -n "$DEFAULT_OU_ID" ]]; then
         log_info "Default OU ID: $DEFAULT_OU_ID"
+        log_result_success "Created default organization unit"
     else
         log_error "Could not extract OU ID from response"
+        log_result_failure "Failed to create default organization unit"
         exit 1
     fi
 elif [[ "$HTTP_CODE" == "409" ]]; then
@@ -90,17 +92,21 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
         DEFAULT_OU_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
         if [[ -n "$DEFAULT_OU_ID" ]]; then
             log_success "Found OU ID: $DEFAULT_OU_ID"
+            log_result_success "Created default organization unit"
         else
             log_error "Could not find OU ID in response"
+            log_result_failure "Failed to create default organization unit"
             exit 1
         fi
     else
         log_error "Failed to fetch organization unit by handle 'default' (HTTP $HTTP_CODE)"
+        log_result_failure "Failed to create default organization unit"
         exit 1
     fi
 else
     log_error "Failed to create organization unit (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
+    log_result_failure "Failed to create default organization unit"
     exit 1
 fi
 
@@ -184,8 +190,10 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
     log_warning "User type already exists, skipping"
 else
     log_error "Failed to create user type (HTTP $HTTP_CODE)"
+    log_result_failure "Failed to create default user type (Person)"
     exit 1
 fi
+log_result_success "Created default user type (Person)"
 
 echo ""
 
@@ -226,8 +234,10 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
     log_warning "Agent type already exists, skipping"
 else
     log_error "Failed to create agent type (HTTP $HTTP_CODE)"
+    log_result_failure "Failed to create default agent type"
     exit 1
 fi
+log_result_success "Created default agent type"
 
 echo ""
 
@@ -235,15 +245,35 @@ echo ""
 # Create Admin User
 # ============================================================================
 
+ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
+ADMIN_PASSWORD="${ADMIN_PASSWORD:-admin}"
+
+if [[ "$ADMIN_USERNAME" == "admin" && "$ADMIN_PASSWORD" == "admin" ]]; then
+    log_warning "Using default admin credentials (admin/admin). Set ADMIN_USERNAME and ADMIN_PASSWORD or use --admin-username/--admin-password to override."
+fi
+
 log_info "Creating admin user..."
+
+# JSON-escape username and password to safely embed arbitrary characters in the payload.
+json_escape() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"
+    s="${s//$'\r'/\\r}"
+    s="${s//$'\t'/\\t}"
+    printf '%s' "$s"
+}
+ADMIN_USERNAME_JSON=$(json_escape "$ADMIN_USERNAME")
+ADMIN_PASSWORD_JSON=$(json_escape "$ADMIN_PASSWORD")
 
 RESPONSE=$(api_call POST "/users" '{
   "type": "Person",
   "ouId": "'${DEFAULT_OU_ID}'",
   "attributes": {
-    "username": "admin",
-    "password": "admin",
-    "sub": "admin",
+    "username": "'"${ADMIN_USERNAME_JSON}"'",
+    "password": "'"${ADMIN_PASSWORD_JSON}"'",
+    "sub": "'"${ADMIN_USERNAME_JSON}"'",
     "email": "admin@example.com",
     "name": "Administrator",
     "given_name": "Admin",
@@ -258,8 +288,7 @@ BODY="${RESPONSE%???}"
 
 if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
     log_success "Admin user created successfully"
-    log_info "Username: admin"
-    log_info "Password: admin"
+    log_info "Username: ${ADMIN_USERNAME}"
 
     # Extract admin user ID
     ADMIN_USER_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
@@ -277,29 +306,36 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
     BODY="${RESPONSE%???}"
 
     if [[ "$HTTP_CODE" == "200" ]]; then
+        # Escape regex metacharacters so usernames like "admin.test" match literally.
+        ADMIN_USERNAME_REGEX=$(printf '%s' "$ADMIN_USERNAME" | sed 's/[.[*^$()+?{|\\]/\\&/g')
+
         # Parse JSON to find admin user
-        ADMIN_USER_ID=$(echo "$BODY" | grep -o '"id":"[^"]*","[^"]*":"[^"]*","attributes":{[^}]*"username":"admin"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+        ADMIN_USER_ID=$(echo "$BODY" | grep -o "\"id\":\"[^\"]*\",\"[^\"]*\":\"[^\"]*\",\"attributes\":{[^}]*\"username\":\"${ADMIN_USERNAME_REGEX}\"" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
 
         # Fallback parsing
         if [[ -z "$ADMIN_USER_ID" ]]; then
-            ADMIN_USER_ID=$(echo "$BODY" | sed 's/},{/}\n{/g' | grep '"username":"admin"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+            ADMIN_USER_ID=$(echo "$BODY" | sed 's/},{/}\n{/g' | grep "\"username\":\"${ADMIN_USERNAME_REGEX}\"" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
         fi
 
         if [[ -n "$ADMIN_USER_ID" ]]; then
             log_success "Found admin user ID: $ADMIN_USER_ID"
         else
             log_error "Could not find admin user in response"
+            log_result_failure "Failed to create admin user"
             exit 1
         fi
     else
         log_error "Failed to fetch users (HTTP $HTTP_CODE)"
+        log_result_failure "Failed to create admin user"
         exit 1
     fi
 else
     log_error "Failed to create admin user (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
+    log_result_failure "Failed to create admin user"
     exit 1
 fi
+log_result_success "Created admin user"
 
 echo ""
 
@@ -311,6 +347,7 @@ log_info "Creating system resource server..."
 
 if [[ -z "$DEFAULT_OU_ID" ]]; then
     log_error "Default OU ID is not available. Cannot create resource server."
+    log_result_failure "Failed to create system resource server"
     exit 1
 fi
 
@@ -330,8 +367,10 @@ if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
     SYSTEM_RS_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
     if [[ -n "$SYSTEM_RS_ID" ]]; then
         log_info "System resource server ID: $SYSTEM_RS_ID"
+        log_result_success "Created system resource server"
     else
         log_error "Could not extract resource server ID from response"
+        log_result_failure "Failed to create system resource server"
         exit 1
     fi
 elif [[ "$HTTP_CODE" == "409" ]]; then
@@ -356,19 +395,24 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
             EXISTING_IDENTIFIER=$(echo "$SYSTEM_LINE" | grep -o '"identifier":"[^"]*"' | head -1 | cut -d'"' -f4)
             if [[ "$EXISTING_HANDLE" != "$SYSTEM_RS_HANDLE" ]] || [[ "$EXISTING_IDENTIFIER" != "$SYSTEM_RS_IDENTIFIER" ]]; then
                 log_error "Existing system resource server has mismatched configuration. Expected handle='${SYSTEM_RS_HANDLE}', identifier='${SYSTEM_RS_IDENTIFIER}' but found handle='${EXISTING_HANDLE}', identifier='${EXISTING_IDENTIFIER}'. Manual migration required."
+                log_result_failure "Failed to create system resource server"
                 exit 1
             fi
+            log_result_success "Created system resource server"
         else
             log_error "Could not find resource server ID in response"
+            log_result_failure "Failed to create system resource server"
             exit 1
         fi
     else
         log_error "Failed to fetch resource servers (HTTP $HTTP_CODE)"
+        log_result_failure "Failed to create system resource server"
         exit 1
     fi
 else
     log_error "Failed to create resource server (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
+    log_result_failure "Failed to create system resource server"
     exit 1
 fi
 
@@ -391,11 +435,16 @@ echo ""
 #           └── Action handle "view"       → permission "system:usertype:view"
 # ============================================================================
 
+system_permissions_failed() {
+    log_result_failure "Failed to create system permissions"
+    exit 1
+}
+
 log_info "Creating 'system' resource under the system resource server..."
 
 if [[ -z "$SYSTEM_RS_ID" ]]; then
     log_error "System resource server ID is not available. Cannot create system resource."
-    exit 1
+    system_permissions_failed
 fi
 
 RESPONSE=$(api_call POST "/resource-servers/${SYSTEM_RS_ID}/resources" '{
@@ -414,7 +463,7 @@ if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
         log_info "System resource ID: $SYSTEM_RESOURCE_ID"
     else
         log_error "Could not extract system resource ID from response"
-        exit 1
+        system_permissions_failed
     fi
 elif [[ "$HTTP_CODE" == "409" ]]; then
     log_warning "System resource already exists, retrieving ID..."
@@ -428,16 +477,16 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
             log_success "Found system resource ID: $SYSTEM_RESOURCE_ID"
         else
             log_error "Could not find system resource in response"
-            exit 1
+            system_permissions_failed
         fi
     else
         log_error "Failed to fetch resources (HTTP $HTTP_CODE)"
-        exit 1
+        system_permissions_failed
     fi
 else
     log_error "Failed to create system resource (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
-    exit 1
+    system_permissions_failed
 fi
 
 log_info "Creating 'ou' sub-resource under the 'system' resource..."
@@ -459,7 +508,7 @@ if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
         log_info "OU resource ID: $OU_RESOURCE_ID"
     else
         log_error "Could not extract OU resource ID from response"
-        exit 1
+        system_permissions_failed
     fi
 elif [[ "$HTTP_CODE" == "409" ]]; then
     log_warning "OU resource already exists, retrieving ID..."
@@ -473,16 +522,16 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
             log_success "Found OU resource ID: $OU_RESOURCE_ID"
         else
             log_error "Could not find OU resource in response"
-            exit 1
+            system_permissions_failed
         fi
     else
         log_error "Failed to fetch resources (HTTP $HTTP_CODE)"
-        exit 1
+        system_permissions_failed
     fi
 else
     log_error "Failed to create OU resource (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
-    exit 1
+    system_permissions_failed
 fi
 
 log_info "Creating 'view' action under the 'ou' resource..."
@@ -503,7 +552,7 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
 else
     log_error "Failed to create OU view action (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
-    exit 1
+    system_permissions_failed
 fi
 
 log_info "Creating 'user' sub-resource under the 'system' resource..."
@@ -525,7 +574,7 @@ if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
         log_info "User resource ID: $USER_RESOURCE_ID"
     else
         log_error "Could not extract user resource ID from response"
-        exit 1
+        system_permissions_failed
     fi
 elif [[ "$HTTP_CODE" == "409" ]]; then
     log_warning "User resource already exists, retrieving ID..."
@@ -539,16 +588,16 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
             log_success "Found user resource ID: $USER_RESOURCE_ID"
         else
             log_error "Could not find user resource in response"
-            exit 1
+            system_permissions_failed
         fi
     else
         log_error "Failed to fetch resources (HTTP $HTTP_CODE)"
-        exit 1
+        system_permissions_failed
     fi
 else
     log_error "Failed to create user resource (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
-    exit 1
+    system_permissions_failed
 fi
 
 log_info "Creating 'view' action under the 'user' resource..."
@@ -569,7 +618,7 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
 else
     log_error "Failed to create user view action (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
-    exit 1
+    system_permissions_failed
 fi
 
 log_info "Creating 'usertype' sub-resource under the 'system' resource..."
@@ -591,7 +640,7 @@ if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
         log_info "User type resource ID: $USER_TYPE_RESOURCE_ID"
     else
         log_error "Could not extract user type resource ID from response"
-        exit 1
+        system_permissions_failed
     fi
 elif [[ "$HTTP_CODE" == "409" ]]; then
     log_warning "User type resource already exists, retrieving ID..."
@@ -605,16 +654,16 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
             log_success "Found user type resource ID: $USER_TYPE_RESOURCE_ID"
         else
             log_error "Could not find user type resource in response"
-            exit 1
+            system_permissions_failed
         fi
     else
         log_error "Failed to fetch resources (HTTP $HTTP_CODE)"
-        exit 1
+        system_permissions_failed
     fi
 else
     log_error "Failed to create user type resource (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
-    exit 1
+    system_permissions_failed
 fi
 
 log_info "Creating 'view' action under the 'usertype' resource..."
@@ -635,7 +684,7 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
 else
     log_error "Failed to create user type view action (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
-    exit 1
+    system_permissions_failed
 fi
 
 echo ""
@@ -659,7 +708,7 @@ if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
         log_info "Group resource ID: $GROUP_RESOURCE_ID"
     else
         log_error "Could not extract group resource ID from response"
-        exit 1
+        system_permissions_failed
     fi
 elif [[ "$HTTP_CODE" == "409" ]]; then
     log_warning "Group resource already exists, retrieving ID..."
@@ -673,16 +722,16 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
             log_success "Found group resource ID: $GROUP_RESOURCE_ID"
         else
             log_error "Could not find group resource in response"
-            exit 1
+            system_permissions_failed
         fi
     else
         log_error "Failed to fetch resources (HTTP $HTTP_CODE)"
-        exit 1
+        system_permissions_failed
     fi
 else
     log_error "Failed to create group resource (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
-    exit 1
+    system_permissions_failed
 fi
 
 log_info "Creating 'view' action under the 'group' resource..."
@@ -703,8 +752,9 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
 else
     log_error "Failed to create group view action (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
-    exit 1
+    system_permissions_failed
 fi
+log_result_success "Created system permissions"
 
 echo ""
 
@@ -716,11 +766,13 @@ log_info "Creating administrator group..."
 
 if [[ -z "$DEFAULT_OU_ID" ]]; then
     log_error "Default OU ID is not available. Cannot create administrator group."
+    log_result_failure "Failed to create Administrators group"
     exit 1
 fi
 
 if [[ -z "$ADMIN_USER_ID" ]]; then
     log_error "Admin user ID is not available. Cannot create administrator group with user membership."
+    log_result_failure "Failed to create Administrators group"
     exit 1
 fi
 
@@ -744,8 +796,10 @@ if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
     ADMIN_GROUP_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
     if [[ -n "$ADMIN_GROUP_ID" ]]; then
         log_info "Administrator group ID: $ADMIN_GROUP_ID"
+        log_result_success "Created Administrators group"
     else
         log_error "Could not extract administrator group ID from response"
+        log_result_failure "Failed to create Administrators group"
         exit 1
     fi
 elif [[ "$HTTP_CODE" == "409" ]]; then
@@ -758,17 +812,21 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
         ADMIN_GROUP_ID=$(echo "$BODY" | sed 's/},{/}\n{/g' | grep '"name":"Administrators"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
         if [[ -n "$ADMIN_GROUP_ID" ]]; then
             log_success "Found administrator group ID: $ADMIN_GROUP_ID"
+            log_result_success "Created Administrators group"
         else
             log_error "Could not find administrator group in response"
+            log_result_failure "Failed to create Administrators group"
             exit 1
         fi
     else
         log_error "Failed to fetch groups under default OU (HTTP $HTTP_CODE)"
+        log_result_failure "Failed to create Administrators group"
         exit 1
     fi
 else
     log_error "Failed to create administrator group (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
+    log_result_failure "Failed to create Administrators group"
     exit 1
 fi
 
@@ -782,16 +840,19 @@ log_info "Creating admin role with '${SYSTEM_PERMISSION}' permission..."
 
 if [[ -z "$ADMIN_GROUP_ID" ]]; then
     log_error "Administrator group ID is not available. Cannot create role."
+    log_result_failure "Failed to create Administrator role"
     exit 1
 fi
 
 if [[ -z "$DEFAULT_OU_ID" ]]; then
     log_error "Default OU ID is not available. Cannot create role."
+    log_result_failure "Failed to create Administrator role"
     exit 1
 fi
 
 if [[ -z "$SYSTEM_RS_ID" ]]; then
     log_error "System resource server ID is not available. Cannot create role."
+    log_result_failure "Failed to create Administrator role"
     exit 1
 fi
 
@@ -827,8 +888,10 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
 else
     log_error "Failed to create admin role (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
+    log_result_failure "Failed to create Administrator role"
     exit 1
 fi
+log_result_success "Created Administrator role"
 
 echo ""
 
@@ -1277,6 +1340,8 @@ else
     log_warning "Application flows directory not found at $APPS_FLOWS_DIR"
 fi
 
+log_result_success "Created default flows"
+
 echo ""
 
 # ============================================================================
@@ -1294,10 +1359,12 @@ log_debug "Extracted flow IDs: auth=$CONSOLE_AUTH_FLOW_ID, reg=$CONSOLE_REG_FLOW
 # Validate that flow IDs are available
 if [[ -z "$CONSOLE_AUTH_FLOW_ID" ]]; then
     log_error "Console authentication flow ID not found, cannot create CONSOLE application"
+    log_result_failure "Failed to create Console application"
     exit 1
 fi
 if [[ -z "$CONSOLE_REG_FLOW_ID" ]]; then
     log_error "Console registration flow ID not found, cannot create CONSOLE application"
+    log_result_failure "Failed to create Console application"
     exit 1
 fi
 if [[ -z "$CONSOLE_RECOVERY_FLOW_ID" ]]; then
@@ -1385,8 +1452,10 @@ elif [[ "$HTTP_CODE" == "400" ]] && [[ "$BODY" =~ (Application already exists|AP
 else
     log_error "Failed to create CONSOLE application (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
+    log_result_failure "Failed to create Console application"
     exit 1
 fi
+log_result_success "Created Console application"
 
 echo ""
 
@@ -1471,6 +1540,7 @@ else
         log_warning "No theme files found in ${THEMES_DIR}"
     fi
 fi
+log_result_success "Created themes"
 
 echo ""
 
@@ -1518,6 +1588,7 @@ else
             else
                 log_error "Failed to seed translations for '${LANGUAGE}' (HTTP $HTTP_CODE)"
                 log_error "Response: $BODY"
+                log_result_failure "Failed to seed i18n translations"
                 exit 1
             fi
         done
@@ -1528,6 +1599,7 @@ else
         log_warning "No i18n translation files found in ${I18N_DIR}"
     fi
 fi
+log_result_success "Seeded i18n translations"
 
 echo ""
 

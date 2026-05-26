@@ -27,7 +27,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/flow/executor"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/observability"
@@ -178,6 +178,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 			return flowStep, nodeErr
 		}
 
+		fe.trackPresentedOptionalInputs(ctx, nodeResp)
 		fe.updateContextWithNodeResponse(ctx, nodeResp)
 
 		nextNode, continueExecution, svcErr := fe.processNodeResponse(ctx, nodeResp, &flowStep, logger)
@@ -216,6 +217,37 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 	publishFlowCompletedEvent(ctx, flowStartTime, flowEndTime, fe.observabilitySvc)
 
 	return flowStep, nil
+}
+
+// trackPresentedOptionalInputs records the optional inputs presented in an incomplete view response
+// into the node response's runtime data so they can be skipped in subsequent execution steps.
+func (fe *flowEngine) trackPresentedOptionalInputs(ctx *EngineContext, nodeResp *common.NodeResponse) {
+	if nodeResp == nil || nodeResp.Status != common.NodeStatusIncomplete ||
+		nodeResp.Type != common.NodeResponseTypeView || len(nodeResp.Inputs) == 0 {
+		return
+	}
+
+	optionalIdentifiers := make([]string, 0, len(nodeResp.Inputs))
+	for _, input := range nodeResp.Inputs {
+		if !input.Required {
+			optionalIdentifiers = append(optionalIdentifiers, input.Identifier)
+		}
+	}
+	if len(optionalIdentifiers) == 0 {
+		return
+	}
+
+	if nodeResp.RuntimeData == nil {
+		nodeResp.RuntimeData = make(map[string]string)
+	}
+
+	raw := nodeResp.RuntimeData[common.RuntimeKeyPresentedOptionalInputs]
+	if raw == "" && ctx != nil {
+		raw = ctx.RuntimeData[common.RuntimeKeyPresentedOptionalInputs]
+	}
+
+	nodeResp.RuntimeData[common.RuntimeKeyPresentedOptionalInputs] =
+		core.MergePresentedOptionalInputIdentifiers(raw, optionalIdentifiers)
 }
 
 // setCurrentExecutionNode sets the current execution node in the context.
@@ -764,6 +796,10 @@ func (fe *flowEngine) resolveStepDetailsForPrompt(ctx *EngineContext, nodeResp *
 		flowStep.FailureReason = nodeResp.FailureReason
 	}
 
+	if len(nodeResp.FieldErrors) > 0 {
+		flowStep.Data.FieldErrors = nodeResp.FieldErrors
+	}
+
 	flowStep.Status = common.FlowStatusIncomplete
 	flowStep.Type = common.StepTypeView
 	return nil
@@ -827,7 +863,7 @@ func (fe *flowEngine) validateChallengeToken(
 		logger.Debug("Challenge token is empty in the request")
 		return &ErrorInvalidChallengeToken
 	}
-	if !cryptolab.ValidateTokenHash(ctx.ChallengeTokenIn, ctx.ChallengeTokenHash) {
+	if !cryptolib.ValidateTokenHash(ctx.ChallengeTokenIn, ctx.ChallengeTokenHash) {
 		logger.Debug("Invalid challenge token provided in the request")
 		return &ErrorInvalidChallengeToken
 	}
@@ -841,13 +877,13 @@ func (fe *flowEngine) validateChallengeToken(
 func (fe *flowEngine) rotateChallengeToken(ctx *EngineContext, flowStep *FlowStep) *serviceerror.ServiceError {
 	logger := fe.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
-	newToken, err := cryptolab.GenerateSecureToken()
+	newToken, err := cryptolib.GenerateSecureToken()
 	if err != nil {
 		logger.Error("Failed to generate new challenge token", log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 
-	ctx.ChallengeTokenHash = cryptolab.HashToken(newToken)
+	ctx.ChallengeTokenHash = cryptolib.HashToken(newToken)
 	flowStep.ChallengeToken = newToken
 	return nil
 }

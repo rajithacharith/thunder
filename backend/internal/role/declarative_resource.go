@@ -147,13 +147,16 @@ func (e *roleExporter) GetResourceRules() *declarativeresource.ResourceRules {
 
 // loadDeclarativeResources loads immutable role resources from files.
 // The dbStore parameter is optional (can be nil) and is used for duplicate checking in composite mode.
-func loadDeclarativeResources(fileStore *fileBasedStore, dbStore roleStoreInterface) error {
+// The service parameter is optional (can be nil) and is used to resolve ou_handle to ou_id.
+func loadDeclarativeResources(
+	fileStore *fileBasedStore, dbStore roleStoreInterface, service RoleServiceInterface,
+) error {
 	resourceConfig := declarativeresource.ResourceConfig{
 		ResourceType:  "Role",
 		DirectoryName: "roles",
 		Parser:        parseToRoleWrapper,
 		Validator: func(data interface{}) error {
-			return validateRoleWrapper(data, fileStore, dbStore)
+			return validateRoleWrapper(data, fileStore, dbStore, service)
 		},
 		IDExtractor: func(data interface{}) string {
 			// Use safe type assertion to prevent panic
@@ -185,7 +188,8 @@ type roleDeclarativeResource struct {
 	ID          string                      `yaml:"id"`
 	Name        string                      `yaml:"name"`
 	Description string                      `yaml:"description,omitempty"`
-	OUID        string                      `yaml:"ou_id"`
+	OUID        string                      `yaml:"ou_id,omitempty"`
+	OUHandle    string                      `yaml:"ou_handle,omitempty"`
 	Permissions []roleDeclarativePermission `yaml:"permissions"`
 	Assignments []RoleAssignment            `yaml:"assignments,omitempty"`
 }
@@ -219,6 +223,7 @@ func parseToRole(data []byte) (*RoleWithPermissionsAndAssignments, error) {
 		Name:        roleResource.Name,
 		Description: roleResource.Description,
 		OUID:        roleResource.OUID,
+		OUHandle:    roleResource.OUHandle,
 		Permissions: permissions,
 		Assignments: roleResource.Assignments,
 	}
@@ -227,7 +232,10 @@ func parseToRole(data []byte) (*RoleWithPermissionsAndAssignments, error) {
 }
 
 // validateRoleWrapper validates role declarative resources and checks for duplicates.
-func validateRoleWrapper(data interface{}, fileStore *fileBasedStore, dbStore roleStoreInterface) error {
+// When a service is provided, OU handles are resolved before validation runs.
+func validateRoleWrapper(
+	data interface{}, fileStore *fileBasedStore, dbStore roleStoreInterface, service RoleServiceInterface,
+) error {
 	role, ok := data.(*RoleWithPermissionsAndAssignments)
 	if !ok {
 		return fmt.Errorf("invalid type: expected *RoleWithPermissionsAndAssignments")
@@ -239,8 +247,14 @@ func validateRoleWrapper(data interface{}, fileStore *fileBasedStore, dbStore ro
 	if role.Name == "" {
 		return fmt.Errorf("role name is required")
 	}
+	if service != nil {
+		if svcErr := service.ResolveRoleOUHandle(context.Background(), role); svcErr != nil {
+			return fmt.Errorf("organization unit with handle %q not found for role '%s'",
+				role.OUHandle, role.Name)
+		}
+	}
 	if role.OUID == "" {
-		return fmt.Errorf("organization unit ID is required")
+		return fmt.Errorf("ou_id or ou_handle is required for role '%s'", role.Name)
 	}
 
 	for _, assignment := range role.Assignments {

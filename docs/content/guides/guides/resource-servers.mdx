@@ -12,7 +12,7 @@ A resource server in <ProductName /> represents an API, service, or application 
 ## Prerequisites
 
 - A running <ProductName /> instance.
-- An organization unit to associate the resource server with. See [Organization Units](./organization-units) to create one.
+- An organization unit to associate the resource server with. See [Organization Units](../organization-units) to create one.
 - An access token with administrative permissions.
 
 ## Understanding the Permission Model
@@ -31,7 +31,7 @@ Resource Server (handle: "booking-api", delimiter: ":")
 
 Permission strings use one of two forms. Flat permissions follow `{rs-handle}{delimiter}{action-handle}` (for example, `booking-api:list`). Hierarchical permissions follow `{rs-handle}{delimiter}{resource-handle}{delimiter}{action-handle}` (for example, `booking-api:reservations:create`). The resource server handle always prefixes the permission string.
 
-- **Resource Server** — container for all resources and actions. Requires a unique `handle` and an optional `identifier`. When the identifier is set to an absolute URI, the resource server is used in [resource indicator](./resource-indicators) flows (RFC 8707).
+- **Resource Server** — container for all resources and actions. Requires a unique `handle` and an optional `identifier`. When the identifier is set to an absolute URI, the resource server is used in [resource indicator](../resource-indicators) flows (RFC 8707).
 - **Resource** — a named entity within a resource server. Resources can nest to form hierarchies.
 - **Action** — an operation that can be performed. Actions can exist at the resource server level (global) or within a specific resource.
 
@@ -296,11 +296,11 @@ curl -kL -X DELETE https://localhost:8090/resource-servers/<resource-server-id>/
 ## Best Practices
 
 - **Plan handle names before creation.** The `handle` on resource servers, resources, and actions is immutable. Use lowercase with hyphens for readability (for example, `booking-api`, `reservations`, `create`).
-- **Use absolute URIs as identifiers for RFC 8707.** The `identifier` field accepts any string, but only resource servers with absolute URI identifiers (such as `https://api.example.com/booking`) are used in [resource indicator](./resource-indicators) flows. Set a URI identifier if you need audience-restricted access tokens.
+- **Use absolute URIs as identifiers for RFC 8707.** The `identifier` field accepts any string, but only resource servers with absolute URI identifiers (such as `https://api.example.com/booking`) are used in [resource indicator](../resource-indicators) flows. Set a URI identifier if you need audience-restricted access tokens.
 - **Create one resource server per API boundary.** Separate resource servers for different microservices or applications produce cleaner permission models and more targeted access tokens.
 - **Choose the delimiter before creation.** The delimiter separates hierarchy levels in permission strings and cannot be changed. The colon (`:`) is the most common choice.
 
 ## Next Steps
 
-- [Resource Indicators](./resource-indicators) — request audience-restricted access tokens targeting specific resource servers.
-- [Organization Units](./organization-units) — organize resource servers within organizational boundaries.
+- [Resource Indicators](../resource-indicators) — request audience-restricted access tokens targeting specific resource servers.
+- [Organization Units](../organization-units) — organize resource servers within organizational boundaries.

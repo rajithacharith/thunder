@@ -21,6 +21,7 @@ import {useLogger} from '@thunderid/logger/react';
 import {Box, Button, Chip, ColorSchemeSVG, IconButton, Paper, Stack, Typography} from '@wso2/oxygen-ui';
 import {
   Bell,
+  Bot,
   Building,
   Copy,
   FileDown,
@@ -107,6 +108,7 @@ export default function ConfigureExport({
   const [expandedResourceServers, setExpandedResourceServers] = useState(false);
   const [expandedRoles, setExpandedRoles] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState(false);
+  const [expandedAgents, setExpandedAgents] = useState(false);
 
   const nextSteps = [
     t('importExport:configureExport.nextSteps.startWithConfig', {productName}),
@@ -282,6 +284,7 @@ export default function ConfigureExport({
     (Array.isArray(configData?.resource_server) ? configData.resource_server.length : 0);
   const rolesCount = resourceCounts?.role ?? (Array.isArray(configData?.role) ? configData.role.length : 0);
   const groupsCount = resourceCounts?.group ?? (Array.isArray(configData?.group) ? configData.group.length : 0);
+  const agentsCount = resourceCounts?.agent ?? (Array.isArray(configData?.agent) ? configData.agent.length : 0);
 
   const items: ConfigSummaryItem[] = [];
 
@@ -1036,6 +1039,79 @@ export default function ConfigureExport({
                   size="small"
                   variant="outlined"
                   onClick={() => setExpandedGroups(!expandedGroups)}
+                  sx={{cursor: 'pointer'}}
+                />
+              </Box>
+            )}
+          </Stack>
+        </Box>
+      ),
+    });
+  }
+
+  // Add agents if present
+  if (agentsCount > 0) {
+    const agents =
+      (configData?.agent as {
+        id?: string;
+        name?: string;
+        description?: string;
+        inbound_auth_config?: {type?: string; config?: {client_id?: string}}[];
+      }[]) ?? [];
+    const displayedAgents = expandedAgents ? agents : agents.slice(0, 5);
+    const remainingCount = agents.length - 5;
+
+    items.push({
+      id: 'agents',
+      label: t('importExport:configureExport.labels.agents'),
+      icon: <Bot size={16} />,
+      value: agentsCount,
+      status: 'ready',
+      dependencyCount: 0,
+      content: (
+        <Box sx={{px: 3, py: 2, bgcolor: 'background.default'}}>
+          <Stack spacing={2}>
+            <Stack spacing={2} divider={<Box sx={{borderBottom: 1, borderColor: 'divider'}} />}>
+              {displayedAgents.map((agent, idx) => {
+                const clientId = agent.inbound_auth_config?.find((cfg) => cfg.type === 'oauth2')?.config?.client_id;
+                const agentKey = agent.id ?? agent.name ?? `agent-${idx}`;
+                return (
+                  <Stack key={agentKey} spacing={0.5}>
+                    <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
+                      <Bot size={14} />
+                      <Typography variant="body2" fontWeight={600}>
+                        {agent.name ?? t('importExport:configureExport.fallback.unnamedAgent')}
+                      </Typography>
+                    </Stack>
+                    {agent.description && (
+                      <Typography variant="caption" color="text.secondary" sx={{pl: 2.5}}>
+                        {agent.description}
+                      </Typography>
+                    )}
+                    {clientId && (
+                      <Box sx={{pl: 2.5}}>
+                        <TemplateVariableDisplay
+                          text={clientId}
+                          envData={environmentVariables}
+                          label={t('importExport:configureExport.labels.clientId')}
+                        />
+                      </Box>
+                    )}
+                  </Stack>
+                );
+              })}
+            </Stack>
+            {remainingCount > 0 && (
+              <Box sx={{pt: 1, textAlign: 'center'}}>
+                <Chip
+                  label={
+                    expandedAgents
+                      ? t('importExport:configureExport.actions.showLess')
+                      : t('importExport:configureExport.actions.more', {count: remainingCount})
+                  }
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setExpandedAgents(!expandedAgents)}
                   sx={{cursor: 'pointer'}}
                 />
               </Box>

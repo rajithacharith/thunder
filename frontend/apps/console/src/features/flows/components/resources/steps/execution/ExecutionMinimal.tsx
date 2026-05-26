@@ -94,7 +94,7 @@ function ExecutionMinimal({resource}: ExecutionMinimalPropsInterface): ReactElem
           variant="body2"
           className="execution-minimal-step-title"
           sx={{
-            color: 'text.primary',
+            color: 'common.white',
             fontWeight: 500,
           }}
         >
@@ -107,7 +107,7 @@ function ExecutionMinimal({resource}: ExecutionMinimalPropsInterface): ReactElem
               onClick={handleConfigClick}
               className="execution-minimal-step-action"
               sx={(theme) => ({
-                color: 'text.secondary',
+                color: 'common.white',
                 '&:hover': {
                   ...theme.applyStyles('dark', {
                     backgroundColor: 'rgba(0, 0, 0, 0.2)',
@@ -115,7 +115,7 @@ function ExecutionMinimal({resource}: ExecutionMinimalPropsInterface): ReactElem
                   }),
                   ...theme.applyStyles('light', {
                     backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                    color: 'text.primary',
+                    color: 'common.white',
                   }),
                 },
               })}
@@ -135,7 +135,7 @@ function ExecutionMinimal({resource}: ExecutionMinimalPropsInterface): ReactElem
                 }}
                 className="execution-minimal-step-action"
                 sx={(theme) => ({
-                  color: 'text.secondary',
+                  color: 'common.white',
                   '&:hover': {
                     ...theme.applyStyles('dark', {
                       backgroundColor: 'rgba(0, 0, 0, 0.2)',
@@ -143,7 +143,7 @@ function ExecutionMinimal({resource}: ExecutionMinimalPropsInterface): ReactElem
                     }),
                     ...theme.applyStyles('light', {
                       backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                      color: 'text.primary',
+                      color: 'common.white',
                     }),
                   },
                 })}

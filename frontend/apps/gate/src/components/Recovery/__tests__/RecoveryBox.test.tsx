@@ -99,8 +99,8 @@ let capturedOnFlowChange: ((response: unknown) => void) | undefined;
 let capturedOnError: ((error: Error) => void) | undefined;
 let capturedAfterRecoveryUrl: string | undefined;
 
-vi.mock('@asgardeo/react', async () => {
-  const actual = await vi.importActual('@asgardeo/react');
+vi.mock('@thunderid/react', async () => {
+  const actual = await vi.importActual('@thunderid/react');
   return {
     ...actual,
     Recovery: ({
@@ -117,7 +117,7 @@ vi.mock('@asgardeo/react', async () => {
       capturedOnFlowChange = onFlowChange;
       capturedOnError = onError;
       capturedAfterRecoveryUrl = afterRecoveryUrl;
-      return <div data-testid="asgardeo-recovery">{children(mockRecoveryRenderProps)}</div>;
+      return <div data-testid="thunderid-recovery">{children(mockRecoveryRenderProps)}</div>;
     },
     EmbeddedFlowEventType: {
       Submit: 'SUBMIT',
@@ -148,9 +148,9 @@ describe('RecoveryBox', () => {
     expect(container).toBeInTheDocument();
   });
 
-  it('renders the asgardeo Recovery component', () => {
+  it('renders the ThunderID Recovery component', () => {
     render(<RecoveryBox />);
-    expect(screen.getByTestId('asgardeo-recovery')).toBeInTheDocument();
+    expect(screen.getByTestId('thunderid-recovery')).toBeInTheDocument();
   });
 
   it('renders AuthCardLayout', () => {
@@ -279,7 +279,7 @@ describe('RecoveryBox', () => {
       isLoading: false,
     });
     render(<RecoveryBox />);
-    expect(screen.getByTestId('asgardeo-recovery')).toBeInTheDocument();
+    expect(screen.getByTestId('thunderid-recovery')).toBeInTheDocument();
   });
 
   it('uses fallback index keys when components have undefined id', () => {

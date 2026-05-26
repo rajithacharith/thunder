@@ -84,7 +84,7 @@ export default function ConfigureBasicInfo({
                 sx={{
                   '&:hover': {
                     bgcolor: 'primary.main',
-                    color: 'primary.contrastText',
+                    color: 'text.primary',
                     borderColor: 'primary.main',
                   },
                 }}

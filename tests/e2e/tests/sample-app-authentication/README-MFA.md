@@ -133,7 +133,7 @@ ADMIN_TOKEN_RESPONSE=$(curl -k -s -X POST 'https://localhost:8090/flow/execute' 
 ADMIN_TOKEN=$(echo $ADMIN_TOKEN_RESPONSE | jq -r '.assertion')
 ```
 
-### Create the notification sender
+### Create the Notification Sender
 
 ```bash
 NOTIFICATION_SENDER_RESPONSE=$(curl -kL -X POST 'https://localhost:8090/notification-senders/message' \
@@ -512,7 +512,7 @@ FLOW_RESPONSE=$(curl --location 'https://localhost:8090/flows' \
 FLOW_ID=$(echo $FLOW_RESPONSE | jq -r '.id')
 ```
 
-### Create a user with mobile No
+### Create a User with Mobile No
 ```bash
 USER_RESPONSE=$(curl --location 'https://localhost:8090/users' \
 --header 'Content-Type: application/json' \
@@ -539,7 +539,7 @@ Follow these steps:
 4. Update the `auth_flow_id` with the new MFA flow
 5. Send a PUT request to update the application
 
-**Alternatively, you can manually update via curl:**
+**Or manually update via curl:**
 
 ```bash
 # Get the React SDK Sample application ID
@@ -743,7 +743,7 @@ The tests use a TypeScript-based mock SMS server that:
 **OTP Extraction Logic:**
 - Searches for numeric sequences of 4-8 digits
 - Prioritizes 6-digit codes (most common)
-- Handles various SMS message formats
+- Handles multiple SMS message formats
 
 ### Page Object Model
 
@@ -842,7 +842,7 @@ The tests use a TypeScript-based mock SMS server that:
    curl -k 'https://localhost:8090/applications' \
      -H "Authorization: Bearer <admin-token>"
    ```
-3. Alternatively, use manual setup with `AUTO_SETUP_MFA=false`
+3. Or use manual setup with `AUTO_SETUP_MFA=false`
 
 #### Setup Fails - Admin Authentication Error
 

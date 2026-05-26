@@ -82,7 +82,19 @@ func (h *agentHandler) HandleAgentPostRequest(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	resp, svcErr := h.service.CreateAgent(ctx, req)
+	agent := &model.Agent{
+		OUID:               req.OUID,
+		OUHandle:           req.OUHandle,
+		Type:               req.Type,
+		Name:               req.Name,
+		Description:        req.Description,
+		Owner:              req.Owner,
+		Attributes:         req.Attributes,
+		InboundAuthProfile: req.InboundAuthProfile,
+		InboundAuthConfig:  req.InboundAuthConfig,
+	}
+
+	resp, svcErr := h.service.CreateAgent(ctx, agent)
 	if svcErr != nil {
 		writeServiceError(w, svcErr)
 		return

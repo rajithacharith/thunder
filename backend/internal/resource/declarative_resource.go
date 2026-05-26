@@ -254,7 +254,7 @@ func loadDeclarativeResources(resourceStore resourceStoreInterface, resourceServ
 		DirectoryName: "resource_servers",
 		Parser:        parseAndValidateResourceServerWrapper(resourceService),
 		Validator: func(data interface{}) error {
-			return validateResourceServerWrapper(data, fileStore, dbStore)
+			return validateResourceServerWrapper(data, fileStore, dbStore, resourceService)
 		},
 		IDExtractor: func(data interface{}) string {
 			return data.(*ResourceServer).ID
@@ -299,9 +299,6 @@ func parseToResourceServer(data []byte) (*ResourceServer, error) {
 	}
 	if rs.Name == "" {
 		return nil, fmt.Errorf("resource server name cannot be empty")
-	}
-	if rs.OUID == "" {
-		return nil, fmt.Errorf("resource server organization unit ID cannot be empty")
 	}
 
 	return &rs, nil
@@ -419,6 +416,7 @@ func validateResourceServerWrapper(
 	data interface{},
 	fileStore resourceStoreInterface,
 	dbStore resourceStoreInterface,
+	service ResourceServiceInterface,
 ) error {
 	rs, ok := data.(*ResourceServer)
 	if !ok {
@@ -427,6 +425,17 @@ func validateResourceServerWrapper(
 
 	if rs.Name == "" {
 		return fmt.Errorf("resource server name cannot be empty")
+	}
+
+	if service != nil {
+		if svcErr := service.ResolveResourceServerOUHandle(context.Background(), rs); svcErr != nil {
+			return fmt.Errorf("organization unit with handle %q not found for resource server '%s'",
+				rs.OUHandle, rs.Name)
+		}
+	}
+
+	if rs.OUID == "" {
+		return fmt.Errorf("ou_id or ou_handle is required for resource server '%s'", rs.Name)
 	}
 
 	// Check for duplicate ID in the file store

@@ -65,6 +65,7 @@ vi.mock('@wso2/oxygen-ui-icons-react', async (importOriginal) => {
   return {
     ...actual,
     Bell: () => <span data-testid="icon-bell" />,
+    Bot: () => <span data-testid="icon-bot" />,
     Building: () => <span data-testid="icon-building" />,
     Copy: () => <span data-testid="icon-copy" />,
     FileDown: () => <span data-testid="icon-file-down" />,
@@ -224,6 +225,18 @@ name: Valid Flow
 
       render(<ConfigureExport resources={emptyYaml} />);
       expect(screen.getByTestId('icon-terminal')).toBeInTheDocument();
+    });
+
+    it('parses agent resources and renders agents section', () => {
+      const agentYaml = `
+---
+# resource_type: agent
+id: agent-1
+name: Test Agent
+description: A test agent
+`;
+      render(<ConfigureExport resources={agentYaml} />);
+      expect(screen.getByTestId('icon-bot')).toBeInTheDocument();
     });
 
     it('logs error when resources string is completely invalid', () => {

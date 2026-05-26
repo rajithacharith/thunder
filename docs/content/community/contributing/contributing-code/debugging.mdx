@@ -87,9 +87,6 @@ In a **new terminal**, seed data (one-time only):
 API_BASE="https://localhost:8090" \
   backend/cmd/server/bootstrap/01-default-resources.sh \
   --console-redirect-uris "https://localhost:5191/console"
-
-API_BASE="https://localhost:8090" \
-  backend/cmd/server/bootstrap/02-sample-resources.sh
 ```
 
 Stop the backend by pressing `Ctrl + C`.
@@ -190,7 +187,7 @@ In VS Code, open these files and set breakpoints:
 ### 3. Trigger the Flow
 
 1. Navigate to [https://localhost:5191/console](https://localhost:5191/console)
-2. Log in with admin credentials (`admin` / `admin`)
+2. Log in with the admin credentials configured during setup (default: `admin` / `admin`)
 3. Go to **Users** section
 4. Click **Add User**
 5. Select **User Type: Person**

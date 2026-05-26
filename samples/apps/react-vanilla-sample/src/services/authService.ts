@@ -214,65 +214,20 @@ export const authenticateWithPasskey = async (
     };
 };
 
+export class FlowServerError extends Error {
+    isServerError = true;
+    constructor(message: string) {
+        super(message);
+        this.name = 'FlowServerError';
+    }
+}
+
 type NativeAuthSubmitPayload =
   | { type: typeof NativeAuthSubmitType.INPUT; [key: string]: string }
   | { type: typeof NativeAuthSubmitType.SOCIAL; code: string }
   | { type: typeof NativeAuthSubmitType.OTP; otp: string };
 
-const { applicationID, clientId, flowEndpoint, redirectUri, tokenEndpoint } = config;
-
-/**
- * Generates a cryptographically secure random code verifier for PKCE (RFC 7636).
- * 
- * Generates a 43-character base64url-encoded string from 32 random bytes,
- * which complies with RFC 7636 requirements (minimum 43 characters, maximum 128 characters).
- * 
- * @returns {string} - PKCE code verifier.
- */
-const generateCodeVerifier = (): string => {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return base64UrlEncode(array);
-};
-
-/**
- * Base64 URL encodes a byte array.
- * 
- * @param {Uint8Array} buffer - The byte array to encode.
- * @returns {string} - The base64 URL encoded string.
- */
-const base64UrlEncode = (buffer: Uint8Array): string => {
-    let binary = '';
-    for (let i = 0; i < buffer.length; i++) {
-        binary += String.fromCharCode(buffer[i]);
-    }
-    const base64 = btoa(binary);
-    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-};
-
-/**
- * Generates a code challenge from a code verifier using SHA-256.
- * 
- * @param {string} verifier - The code verifier.
- * @returns {Promise<string>} - A promise that resolves to the code challenge.
- */
-const generateCodeChallenge = async (verifier: string): Promise<string> => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(verifier);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    return base64UrlEncode(new Uint8Array(hash));
-};
-
-/**
- * Initiates the OAuth 2.0 authorization code flow by redirecting the user to the authorization endpoint.
- * 
- * @returns {void}
- */
-export const initiateRedirectAuth = () => {
-    const state = Math.random().toString(36).substring(2, 15); // Generate a random state.
-    const url = `${flowEndpoint}/authn?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=openid&state=${state}`;
-    window.location.href = url;
-};
+const { applicationID, flowEndpoint } = config;
 
 /**
  * Initiates the native authentication or registration flow by sending a POST request to the flow endpoint.
@@ -280,7 +235,7 @@ export const initiateRedirectAuth = () => {
  * @param {string} flowType - The type of flow to initiate. Defaults to 'LOGIN'.
  * @returns {Promise<object>} - A promise that resolves to the response data from the server.
  */
-export const initiateNativeAuthFlow = async (flowType: 'LOGIN' | 'REGISTRATION' = 'LOGIN') => {
+export const initiateNativeAuthFlow = async (flowType: 'LOGIN' | 'REGISTRATION' | 'RECOVERY' = 'LOGIN') => {
     const headers = {
         'Content-Type': 'application/json'
     };
@@ -291,6 +246,8 @@ export const initiateNativeAuthFlow = async (flowType: 'LOGIN' | 'REGISTRATION' 
 
     if (flowType === 'REGISTRATION') {
         data.flowType = 'REGISTRATION';
+    } else if (flowType === 'RECOVERY') {
+        data.flowType = 'RECOVERY';
     } else {
         data.flowType = 'AUTHENTICATION';
     }
@@ -303,7 +260,11 @@ export const initiateNativeAuthFlow = async (flowType: 'LOGIN' | 'REGISTRATION' 
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({})) as { message?: { defaultValue?: string } };
-        const flowTypeName = flowType === 'REGISTRATION' ? 'registration' : 'authentication';
+        const flowTypeName = flowType === 'REGISTRATION'
+            ? 'registration'
+            : flowType === 'RECOVERY'
+                ? 'recovery'
+                : 'authentication';
         const message = response.status === 400
             ? `Error initiating native ${flowTypeName} request.`
             : errorData?.message?.defaultValue || 'Server error occurred.';
@@ -403,6 +364,7 @@ export const submitAuthDecision = async (executionId: string, actionId: string, 
         const message = response.status === 400
             ? 'Error processing authentication option.'
             : errorData?.message?.defaultValue || 'Server error occurred.';
+        if (response.status >= 500) throw new FlowServerError(message);
         throw new Error(message);
     }
 
@@ -471,119 +433,9 @@ export const submitNativeAuth = async (
         const message = response.status === 400
             ? 'Login failed. Please check your credentials.'
             : errorData?.message?.defaultValue || 'Server error occurred.';
+        if (response.status >= 500) throw new FlowServerError(message);
         throw new Error(message);
     }
 
     return { data: await response.json() };
 }
-
-/**
- * Exchanges the authorization code for an access token.
- * 
- * @param {string} code - The authorization code received from the OAuth server.
- * @param {string | null} [codeVerifier] - Optional code verifier for PKCE.
- * @returns {Promise<object>} - A promise that resolves to the access token data.
- */
-export const exchangeCodeForToken = async (code: string, codeVerifier?: string | null) => {
-    const headers = {
-        'Content-Type': 'application/x-www-form-urlencoded',
-    };
-
-    const data = new URLSearchParams();
-    data.append('grant_type', 'authorization_code');
-    data.append('redirect_uri', redirectUri);
-    data.append('code', code);
-    data.append('client_id', clientId);
-    
-    // Include code_verifier if provided (PKCE)
-    if (codeVerifier) {
-        data.append('code_verifier', codeVerifier);
-    }
-
-    const response = await fetch(tokenEndpoint, {
-        method: 'POST',
-        headers,
-        body: data,
-    });
-
-    if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        console.error('Error exchanging code for token:', error);
-        throw new Error('Failed to exchange code for token.');
-    }
-
-    return response.json();
-};
-
-/**
- * Generates a cryptographically secure random state parameter.
- * 
- * @returns {string} - A secure random state string for CSRF protection.
- */
-const generateSecureState = (): string => {
-    const array = new Uint8Array(16);
-    crypto.getRandomValues(array);
-    return base64UrlEncode(array);
-};
-
-/**
- * Initiates the OAuth 2.0 authorization code flow with PKCE support.
- * Generates code verifier and challenge, stores the verifier and state, and redirects to authorization endpoint.
- * 
- * @param {string} authorizationEndpoint - The OAuth2 authorization endpoint URL.
- * @param {string} clientId - The OAuth2 client ID.
- * @param {string} redirectUri - The redirect URI.
- * @param {string} scope - The OAuth2 scope.
- * @returns {Promise<void>}
- */
-export const initiateAuthWithPKCE = async (
-    authorizationEndpoint: string,
-    clientId: string,
-    redirectUri: string,
-    scope: string
-): Promise<void> => {
-    const state = generateSecureState();
-    const codeVerifier = generateCodeVerifier();
-    const codeChallenge = await generateCodeChallenge(codeVerifier);
-    
-    // Store code verifier and state in session storage for later use
-    sessionStorage.setItem('pkce_code_verifier', codeVerifier);
-    sessionStorage.setItem('pkce_state', state);
-    
-    const params = new URLSearchParams({
-        response_type: 'code',
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        scope: scope,
-        state: state,
-        code_challenge: codeChallenge,
-        code_challenge_method: 'S256'
-    });
-    
-    window.location.href = `${authorizationEndpoint}?${params.toString()}`;
-};
-
-/**
- * Validates the state parameter for CSRF protection.
- * 
- * @param {string} returnedState - The state parameter returned from the authorization server.
- * @returns {boolean} - True if the state is valid, false otherwise.
- */
-export const validateState = (returnedState: string): boolean => {
-    const storedState = sessionStorage.getItem('pkce_state');
-    return storedState !== null && storedState === returnedState;
-};
-
-/**
- * Retrieves the stored code verifier from session storage and cleans up.
- * 
- * @returns {string | null} - The stored code verifier or null if not found.
- */
-export const getAndClearCodeVerifier = (): string | null => {
-    const codeVerifier = sessionStorage.getItem('pkce_code_verifier');
-    if (codeVerifier) {
-        sessionStorage.removeItem('pkce_code_verifier');
-        sessionStorage.removeItem('pkce_state');
-    }
-    return codeVerifier;
-};

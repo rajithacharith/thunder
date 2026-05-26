@@ -31,6 +31,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/cmodels"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
 
 const (
@@ -73,6 +74,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) SetupTest() {
 	suite.service = &notificationSenderMgtService{
 		notificationStore: suite.mockStore,
 		transactioner:     &fakeTransactioner{},
+		uuidGenerator:     sysutils.GenerateUUIDv7,
 	}
 }
 
@@ -89,6 +91,39 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestCreateSender() {
 	suite.NotNil(result)
 	suite.Equal(sender.Name, result.Name)
 	suite.NotEmpty(result.ID)
+}
+
+func (suite *NotificationSenderMgtServiceTestSuite) TestCreateSender_WithPresetID() {
+	sender := suite.getValidTwilioSender()
+	presetID := "preset-sender-id-1234"
+	sender.ID = presetID
+
+	suite.mockStore.EXPECT().getSenderByName(mock.Anything, sender.Name).Return(nil, nil).Once()
+	suite.mockStore.EXPECT().createSender(mock.Anything, mock.MatchedBy(func(s common.NotificationSenderDTO) bool {
+		return s.ID == presetID
+	})).Return(nil).Once()
+
+	result, err := suite.service.CreateSender(context.Background(), sender)
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal(presetID, result.ID)
+}
+
+func (suite *NotificationSenderMgtServiceTestSuite) TestCreateSender_UUIDGenerationError() {
+	sender := suite.getValidTwilioSender()
+
+	svc := &notificationSenderMgtService{
+		notificationStore: suite.mockStore,
+		transactioner:     &fakeTransactioner{},
+		uuidGenerator: func() (string, error) {
+			return "", errors.New("entropy source failed")
+		},
+	}
+
+	result, err := svc.CreateSender(context.Background(), sender)
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 func (suite *NotificationSenderMgtServiceTestSuite) TestCreateSender_WithFailures() {
@@ -157,6 +192,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestCreateSender_WithFailure
 			svc := &notificationSenderMgtService{
 				notificationStore: mockStore,
 				transactioner:     &fakeTransactioner{},
+				uuidGenerator:     sysutils.GenerateUUIDv7,
 			}
 
 			sender := suite.getValidTwilioSender()
@@ -273,6 +309,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestGetSenderByName() {
 			svc := &notificationSenderMgtService{
 				notificationStore: mockStore,
 				transactioner:     &fakeTransactioner{},
+				uuidGenerator:     sysutils.GenerateUUIDv7,
 			}
 
 			if tc.setup != nil {
@@ -332,6 +369,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestGetSenderByName_WithFail
 			svc := &notificationSenderMgtService{
 				notificationStore: mockStore,
 				transactioner:     &fakeTransactioner{},
+				uuidGenerator:     sysutils.GenerateUUIDv7,
 			}
 
 			if tc.setup != nil {
@@ -394,6 +432,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender() {
 			svc := &notificationSenderMgtService{
 				notificationStore: mockStore,
 				transactioner:     &fakeTransactioner{},
+				uuidGenerator:     sysutils.GenerateUUIDv7,
 			}
 
 			sender := suite.getValidTwilioSender()
@@ -525,6 +564,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender_WithFailure
 			svc := &notificationSenderMgtService{
 				notificationStore: mockStore,
 				transactioner:     &fakeTransactioner{},
+				uuidGenerator:     sysutils.GenerateUUIDv7,
 			}
 
 			sender := suite.getValidTwilioSender()

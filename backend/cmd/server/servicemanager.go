@@ -63,7 +63,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/role"
 	"github.com/thunder-id/thunderid/internal/system/cache"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib/hash"
 	dbprovider "github.com/thunder-id/thunderid/internal/system/database/provider"
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 	"github.com/thunder-id/thunderid/internal/system/email"
@@ -73,8 +73,8 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/importer"
 	"github.com/thunder-id/thunderid/internal/system/jose"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
-	"github.com/thunder-id/thunderid/internal/system/kmprovider/defaultkm"
-	"github.com/thunder-id/thunderid/internal/system/kmprovider/defaultkm/pkiservice"
+	"github.com/thunder-id/thunderid/internal/system/kmprovider"
+	"github.com/thunder-id/thunderid/internal/system/kmprovider/defaultkm/pki"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/mcp"
 	"github.com/thunder-id/thunderid/internal/system/observability"
@@ -92,23 +92,25 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	logger := log.GetLogger()
 
 	// Load the server's private key for signing JWTs.
-	pkiService, err := pkiservice.Initialize()
+	pkiService, err := pki.Initialize()
 	if err != nil {
 		logger.Fatal("Failed to initialize certificate service", log.Error(err))
 	}
 
-	configCryptoSvc, err := defaultkm.InitConfigProvider()
+	runtimeCryptoSvc, _, err := kmprovider.Initialize(pkiService)
 	if err != nil {
-		logger.Fatal("Failed to initialize config crypto provider", log.Error(err))
+		logger.Fatal("Failed to initialize key manager provider", log.Error(err))
 	}
-	runtimeCryptoSvc := defaultkm.NewRuntimeCryptoService(pkiService, configCryptoSvc)
 
-	jwtService, jweService, err := jose.Initialize(pkiService)
+	jwtService, jweService, err := jose.Initialize(runtimeCryptoSvc)
 	if err != nil {
 		logger.Fatal("Failed to initialize JOSE services", log.Error(err))
 	}
 
 	observabilitySvc = observability.Initialize()
+
+	// Initialize MCP server early so packages initializing below can register tools.
+	mcpServer := mcp.Initialize(mux, jwtService)
 
 	// List to collect exporters from each package
 	var exporters []declarativeresource.ResourceExporter
@@ -126,7 +128,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		logger.Fatal("Failed to initialize system authorization service", log.Error(err))
 	}
 
-	ouService, ouHierarchyResolver, ouExporter, err := ou.Initialize(mux, ouAuthzService)
+	ouService, ouHierarchyResolver, ouExporter, err := ou.Initialize(mux, mcpServer, cacheManager, ouAuthzService)
 	if err != nil {
 		logger.Fatal("Failed to initialize OrganizationUnitService", log.Error(err))
 	}
@@ -151,7 +153,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 
 	// Initialize user type service
 	entityTypeService, entityTypeExporter, err := entitytype.Initialize(
-		mux, cacheManager, ouService, ouAuthzService, consentService)
+		mux, mcpServer, cacheManager, ouService, ouAuthzService, consentService)
 	if err != nil {
 		logger.Fatal("Failed to initialize EntityTypeService", log.Error(err))
 	}
@@ -186,7 +188,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	ouService.SetOUUserResolver(ouUserResolver)
 	ouService.SetOUGroupResolver(ouGroupResolver)
 
-	resourceService, resourceExporter, err := resource.Initialize(mux, ouService)
+	resourceService, resourceExporter, err := resource.Initialize(mux, ouService, consentService)
 	if err != nil {
 		logger.Fatal("Failed to initialize Resource Service", log.Error(err))
 	}
@@ -217,9 +219,6 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		logger.Fatal("Failed to initialize NotificationService", log.Error(err))
 	}
 	exporters = append(exporters, notificationExporter)
-
-	// Initialize MCP server
-	mcpServer := mcp.Initialize(mux, jwtService)
 
 	// Initialize passkey service
 	passkeyService := passkey.Initialize(entityService)
@@ -283,7 +282,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	}
 
 	// Initialize theme and layout services
-	themeMgtService, themeExporter, err := thememgt.Initialize(mux)
+	themeMgtService, themeExporter, err := thememgt.Initialize(mux, mcpServer)
 	if err != nil {
 		logger.Fatal("Failed to initialize ThemeMgtService", log.Error(err))
 	}
@@ -310,9 +309,11 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	}
 	exporters = append(exporters, applicationExporter)
 
-	if _, err := agent.Initialize(mux, entityService, inboundClientService, ouService); err != nil {
+	agentService, agentExporter, err := agent.Initialize(mux, entityService, inboundClientService, ouService)
+	if err != nil {
 		logger.Fatal("Failed to initialize AgentService", log.Error(err))
 	}
+	exporters = append(exporters, agentExporter)
 
 	// Initialize design resolve service for theme and layout resolution
 	designResolveService := resolve.Initialize(mux, themeMgtService, layoutMgtService, applicationService)
@@ -339,6 +340,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		layoutMgtService,
 		userService,
 		i18nService,
+		agentService,
 	)
 
 	flowExecService, err := flowexec.Initialize(mux, flowMgtService, inboundClientService, entityProvider,
@@ -349,8 +351,8 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 
 	// Initialize OAuth services.
 	err = oauth.Initialize(mux, applicationService, inboundClientService, authnProvider, jwtService, jweService,
-		flowExecService, observabilitySvc, pkiService, ouService, attributeCacheService, authZService, entityProvider,
-		resourceService, i18nService, idpService)
+		flowExecService, observabilitySvc, runtimeCryptoSvc, ouService, attributeCacheService, authZService,
+		entityProvider, resourceService, i18nService, idpService)
 	if err != nil {
 		logger.Fatal("Failed to initialize OAuth services", log.Error(err))
 	}

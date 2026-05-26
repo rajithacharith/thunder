@@ -42,7 +42,7 @@ import (
 
 // AgentServiceInterface defines the operations exposed by the agent service.
 type AgentServiceInterface interface {
-	CreateAgent(ctx context.Context, req *model.CreateAgentRequest) (*model.AgentCompleteResponse,
+	CreateAgent(ctx context.Context, agent *model.Agent) (*model.AgentCompleteResponse,
 		*serviceerror.ServiceError)
 	GetAgent(ctx context.Context, agentID string, includeDisplay bool) (*model.AgentGetResponse,
 		*serviceerror.ServiceError)
@@ -53,6 +53,8 @@ type AgentServiceInterface interface {
 	DeleteAgent(ctx context.Context, agentID string) *serviceerror.ServiceError
 	GetAgentGroups(ctx context.Context, agentID string, limit, offset int) (
 		*model.AgentGroupListResponse, *serviceerror.ServiceError)
+	ValidateAgent(ctx context.Context, agent *model.Agent, excludeID string) (
+		clientID, clientSecret string, client inboundmodel.InboundClient, svcErr *serviceerror.ServiceError)
 }
 
 type agentService struct {
@@ -76,44 +78,37 @@ func newAgentService(
 }
 
 // CreateAgent creates an agent entity with optional inbound auth profile.
-func (s *agentService) CreateAgent(ctx context.Context, req *model.CreateAgentRequest) (
+func (s *agentService) CreateAgent(ctx context.Context, agent *model.Agent) (
 	*model.AgentCompleteResponse, *serviceerror.ServiceError) {
-	if req == nil {
+	if agent == nil {
 		return nil, &ErrorInvalidRequestFormat
 	}
-	if svcErr := validateBaseFields(req.Name, req.Type); svcErr != nil {
-		return nil, svcErr
-	}
-	if svcErr := s.validateOUExists(ctx, req.OUID); svcErr != nil {
-		return nil, svcErr
-	}
-	if svcErr := s.validateNameUnique(ctx, req.Name, ""); svcErr != nil {
-		return nil, svcErr
-	}
+	normalizeLoginConsent(agent.LoginConsent)
 
-	agentID, err := sysutils.GenerateUUIDv7()
-	if err != nil {
-		s.logger.Error("Failed to generate agent ID", log.Error(err))
-		return nil, &serviceerror.InternalServerError
-	}
-
-	normalizeLoginConsent(req.LoginConsent)
-
-	clientID, clientSecret, svcErr := s.resolveOAuthCredentials(ctx, req.InboundAuthConfig, "", "")
+	clientID, clientSecret, _, svcErr := s.ValidateAgent(ctx, agent, "")
 	if svcErr != nil {
 		return nil, svcErr
 	}
 
-	owner := req.Owner
+	agentID := agent.ID
+	if agentID == "" {
+		var err error
+		agentID, err = sysutils.GenerateUUIDv7()
+		if err != nil {
+			s.logger.Error("Failed to generate agent ID", log.Error(err))
+			return nil, &serviceerror.InternalServerError
+		}
+	}
+
+	owner := agent.Owner
 	if owner == "" {
-		// Default to the authenticated subject.
 		owner = security.GetSubject(ctx)
 	} else if svcErr := s.validateOwnerExists(ctx, owner); svcErr != nil {
 		return nil, svcErr
 	}
 
-	e, sysCredsJSON, buildErr := buildAgentEntity(agentID, req.Type, req.OUID, req.Attributes,
-		req.Name, req.Description, owner, clientID, clientSecret)
+	e, sysCredsJSON, buildErr := buildAgentEntity(agentID, agent.Type, agent.OUID, agent.Attributes,
+		agent.Name, agent.Description, owner, clientID, clientSecret)
 	if buildErr != nil {
 		s.logger.Error("Failed to build agent entity", log.Error(buildErr))
 		return nil, &serviceerror.InternalServerError
@@ -128,12 +123,12 @@ func (s *agentService) CreateAgent(ctx context.Context, req *model.CreateAgentRe
 		return nil, &serviceerror.InternalServerError
 	}
 
-	authFlowID, regFlowID := req.AuthFlowID, req.RegistrationFlowID
-	assertion, loginConsent := req.Assertion, req.LoginConsent
+	authFlowID, regFlowID := agent.AuthFlowID, agent.RegistrationFlowID
+	assertion, loginConsent := agent.Assertion, agent.LoginConsent
 	var inboundConfigs []inboundmodel.InboundAuthConfigWithSecret
 
-	if needsInboundClient(req) {
-		resolvedClient, resolvedOAuth, svcErr := s.createInboundForAgent(ctx, agentID, req, clientSecret)
+	if needsInboundClient(agent) {
+		resolvedClient, resolvedOAuth, svcErr := s.createInboundForAgent(ctx, agentID, agent, clientSecret)
 		if svcErr != nil {
 			s.deleteEntityCompensation(ctx, agentID)
 			return nil, svcErr
@@ -151,11 +146,11 @@ func (s *agentService) CreateAgent(ctx context.Context, req *model.CreateAgentRe
 	}
 
 	resp := buildCompleteResponse(agentID, owner, clientID, clientSecret,
-		req.Type, req.Name, req.Description, createdEntity.Attributes,
-		authFlowID, regFlowID, req.IsRegistrationFlowEnabled,
-		req.ThemeID, req.LayoutID, assertion, loginConsent,
-		req.AllowedUserTypes, req.Certificate, inboundConfigs)
-	resp.OUID = req.OUID
+		agent.Type, agent.Name, agent.Description, createdEntity.Attributes,
+		authFlowID, regFlowID, agent.IsRegistrationFlowEnabled,
+		agent.ThemeID, agent.LayoutID, assertion, loginConsent,
+		agent.AllowedUserTypes, agent.Certificate, inboundConfigs)
+	resp.OUID = agent.OUID
 	s.populateOUHandleForComplete(ctx, resp)
 	return resp, nil
 }
@@ -276,13 +271,9 @@ func (s *agentService) UpdateAgent(ctx context.Context, agentID string,
 		return nil, svcErr
 	}
 
-	ouID := req.OUID
-	if ouID == "" {
-		ouID = existing.OUID
-	} else if ouID != existing.OUID {
-		if svcErr := s.validateOUExists(ctx, ouID); svcErr != nil {
-			return nil, svcErr
-		}
+	ouID, svcErr := s.resolveUpdateOUID(ctx, req, existing.OUID)
+	if svcErr != nil {
+		return nil, svcErr
 	}
 
 	resolvedClient, resolvedOAuth, svcErr := s.reconcileInboundForUpdate(
@@ -446,6 +437,93 @@ func (s *agentService) GetAgentGroups(ctx context.Context, agentID string, limit
 	return resp, nil
 }
 
+// ValidateAgent validates an Agent without persisting. It resolves OAuth credentials
+// using the entity ID (excludeID) for exclusion, allowing declarative reload of an existing agent.
+func (s *agentService) ValidateAgent(ctx context.Context, agent *model.Agent, excludeID string) (
+	string, string, inboundmodel.InboundClient, *serviceerror.ServiceError) {
+	if agent == nil {
+		return "", "", inboundmodel.InboundClient{}, &ErrorInvalidRequestFormat
+	}
+	if svcErr := validateBaseFields(agent.Name, agent.Type); svcErr != nil {
+		return "", "", inboundmodel.InboundClient{}, svcErr
+	}
+	if agent.OUID == "" && agent.OUHandle != "" {
+		ou, svcErr := s.ouService.GetOrganizationUnitByPath(ctx, agent.OUHandle)
+		if svcErr != nil {
+			if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
+				return "", "", inboundmodel.InboundClient{}, &ErrorOrganizationUnitNotFound
+			}
+			s.logger.Error("Failed to resolve OU handle", log.Any("error", svcErr))
+			return "", "", inboundmodel.InboundClient{}, &serviceerror.InternalServerError
+		}
+		agent.OUID = ou.ID
+	}
+	if svcErr := s.validateOUExists(ctx, agent.OUID); svcErr != nil {
+		return "", "", inboundmodel.InboundClient{}, svcErr
+	}
+	if svcErr := s.validateNameUnique(ctx, agent.Name, excludeID); svcErr != nil {
+		return "", "", inboundmodel.InboundClient{}, svcErr
+	}
+
+	var clientID, clientSecret string
+	oauthCfg, svcErr := pickOAuthConfig(agent.InboundAuthConfig)
+	if svcErr != nil {
+		return "", "", inboundmodel.InboundClient{}, svcErr
+	}
+	if oauthCfg != nil {
+		clientID = oauthCfg.ClientID
+		if clientID == "" {
+			generated, err := oauthutils.GenerateOAuth2ClientID()
+			if err != nil {
+				s.logger.Error("Failed to generate client ID", log.Error(err))
+				return "", "", inboundmodel.InboundClient{}, &serviceerror.InternalServerError
+			}
+			clientID = generated
+		} else if taken, checkErr := s.isClientIDTaken(ctx, clientID, excludeID); checkErr != nil {
+			return "", "", inboundmodel.InboundClient{}, checkErr
+		} else if taken {
+			return "", "", inboundmodel.InboundClient{}, &ErrorAgentAlreadyExistsWithClientID
+		}
+
+		if requiresClientSecret(oauthCfg) && oauthCfg.ClientSecret == "" {
+			generated, err := oauthutils.GenerateOAuth2ClientSecret()
+			if err != nil {
+				s.logger.Error("Failed to generate client secret", log.Error(err))
+				return "", "", inboundmodel.InboundClient{}, &serviceerror.InternalServerError
+			}
+			clientSecret = generated
+		} else {
+			clientSecret = oauthCfg.ClientSecret
+		}
+	}
+
+	if err := s.inboundClientService.ResolveInboundAuthProfileHandles(ctx, &agent.InboundAuthProfile); err != nil {
+		if svcErr := translateInboundClientFKError(err); svcErr != nil {
+			return "", "", inboundmodel.InboundClient{}, svcErr
+		}
+		s.logger.Error("Failed to resolve inbound auth profile handles", log.Error(err))
+		return "", "", inboundmodel.InboundClient{}, &serviceerror.InternalServerError
+	}
+
+	client := buildInboundClientRecord("", agent.AuthFlowID, agent.RegistrationFlowID,
+		agent.IsRegistrationFlowEnabled, agent.ThemeID, agent.LayoutID, agent.Assertion,
+		agent.LoginConsent, agent.AllowedUserTypes)
+
+	if needsInboundClient(agent) {
+		oauthProfile := buildOAuthProfile(agent.InboundAuthConfig)
+		hasSecret := clientSecret != ""
+		if err := s.inboundClientService.Validate(ctx, &client, oauthProfile, hasSecret); err != nil {
+			if svcErr := s.translateInboundClientError(err); svcErr != nil {
+				return "", "", inboundmodel.InboundClient{}, svcErr
+			}
+			s.logger.Error("Inbound client validation failed", log.Error(err))
+			return "", "", inboundmodel.InboundClient{}, &serviceerror.InternalServerError
+		}
+	}
+
+	return clientID, clientSecret, client, nil
+}
+
 // deleteEntityCompensation deletes the entity row as a best-effort rollback after a failed downstream operation.
 func (s *agentService) deleteEntityCompensation(ctx context.Context, agentID string) {
 	if err := s.entityService.DeleteEntity(ctx, agentID); err != nil {
@@ -475,6 +553,32 @@ func (s *agentService) validateOUExists(ctx context.Context, ouID string) *servi
 
 // resolveUpdateOwner picks the effective owner for an update — either the requested owner or the
 // existing one — and validates it exists when the owner is changing.
+func (s *agentService) resolveUpdateOUID(
+	ctx context.Context, req *model.UpdateAgentRequest, existingOUID string,
+) (string, *serviceerror.ServiceError) {
+	if req.OUID == "" && req.OUHandle != "" {
+		ou, ouSvcErr := s.ouService.GetOrganizationUnitByPath(ctx, req.OUHandle)
+		if ouSvcErr != nil {
+			if ouSvcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
+				return "", &ErrorOrganizationUnitNotFound
+			}
+			s.logger.Error("Failed to resolve OU handle", log.Any("error", ouSvcErr))
+			return "", &serviceerror.InternalServerError
+		}
+		req.OUID = ou.ID
+	}
+	ouID := req.OUID
+	if ouID == "" {
+		return existingOUID, nil
+	}
+	if ouID != existingOUID {
+		if svcErr := s.validateOUExists(ctx, ouID); svcErr != nil {
+			return "", svcErr
+		}
+	}
+	return ouID, nil
+}
+
 func (s *agentService) resolveUpdateOwner(
 	ctx context.Context, requestedOwner, currentOwner string,
 ) (string, *serviceerror.ServiceError) {
@@ -611,17 +715,17 @@ func (s *agentService) isClientIDTaken(
 
 // createInboundForAgent creates the inbound client row; applies server defaults via CreateInboundClient.
 func (s *agentService) createInboundForAgent(ctx context.Context, agentID string,
-	req *model.CreateAgentRequest, clientSecret string) (
+	agent *model.Agent, clientSecret string) (
 	inboundmodel.InboundClient, *inboundmodel.OAuthProfile, *serviceerror.ServiceError) {
-	client := buildInboundClientRecord(agentID, req.AuthFlowID, req.RegistrationFlowID,
-		req.IsRegistrationFlowEnabled, req.ThemeID, req.LayoutID, req.Assertion,
-		req.LoginConsent, req.AllowedUserTypes)
+	client := buildInboundClientRecord(agentID, agent.AuthFlowID, agent.RegistrationFlowID,
+		agent.IsRegistrationFlowEnabled, agent.ThemeID, agent.LayoutID, agent.Assertion,
+		agent.LoginConsent, agent.AllowedUserTypes)
 
-	oauthProfile := buildOAuthProfile(req.InboundAuthConfig)
+	oauthProfile := buildOAuthProfile(agent.InboundAuthConfig)
 
 	hasSecret := clientSecret != ""
-	if err := s.inboundClientService.CreateInboundClient(ctx, &client, req.Certificate,
-		oauthProfile, hasSecret, req.Name); err != nil {
+	if err := s.inboundClientService.CreateInboundClient(ctx, &client, agent.Certificate,
+		oauthProfile, hasSecret, agent.Name); err != nil {
 		if svcErr := s.translateInboundClientError(err); svcErr != nil {
 			return inboundmodel.InboundClient{}, nil, svcErr
 		}
@@ -734,10 +838,10 @@ func (s *agentService) composeGetResponse(ctx context.Context, e *entity.Entity)
 		return nil, &serviceerror.InternalServerError
 	}
 	if oauthErr == nil && oauth != nil {
-		resp.InboundAuthConfig = []inboundmodel.InboundAuthConfig{
+		resp.InboundAuthConfig = []inboundmodel.InboundAuthConfigWithSecret{
 			{
 				Type:        inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: oauthProfileToConfig(clientID, oauth),
+				OAuthConfig: oauthProfileToComplete(clientID, oauth),
 			},
 		}
 	}
@@ -779,6 +883,7 @@ func (s *agentService) buildListResponse(ctx context.Context, entities []entity.
 			ClientID:    clientID,
 			Owner:       owner,
 			Attributes:  e.Attributes,
+			IsReadOnly:  e.IsReadOnly,
 		})
 	}
 
@@ -855,20 +960,20 @@ func (s *agentService) populateOUHandlesForList(ctx context.Context, agents []mo
 }
 
 // needsInboundClient reports whether any inbound auth field in the create request requires an inbound client row.
-func needsInboundClient(req *model.CreateAgentRequest) bool {
-	if req == nil {
+func needsInboundClient(agent *model.Agent) bool {
+	if agent == nil {
 		return false
 	}
-	return req.AuthFlowID != "" ||
-		req.RegistrationFlowID != "" ||
-		req.IsRegistrationFlowEnabled ||
-		req.ThemeID != "" ||
-		req.LayoutID != "" ||
-		req.Assertion != nil ||
-		req.LoginConsent != nil ||
-		len(req.AllowedUserTypes) > 0 ||
-		req.Certificate != nil ||
-		len(req.InboundAuthConfig) > 0
+	return agent.AuthFlowID != "" ||
+		agent.RegistrationFlowID != "" ||
+		agent.IsRegistrationFlowEnabled ||
+		agent.ThemeID != "" ||
+		agent.LayoutID != "" ||
+		agent.Assertion != nil ||
+		agent.LoginConsent != nil ||
+		len(agent.AllowedUserTypes) > 0 ||
+		agent.Certificate != nil ||
+		len(agent.InboundAuthConfig) > 0
 }
 
 // updateNeedsInboundClient reports whether an update request contains any inbound auth field requiring a client row.
@@ -1082,6 +1187,7 @@ func buildOAuthProfile(configs []inboundmodel.InboundAuthConfigWithSecret) *inbo
 		PKCERequired:                       cfg.PKCERequired,
 		PublicClient:                       cfg.PublicClient,
 		RequirePushedAuthorizationRequests: cfg.RequirePushedAuthorizationRequests,
+		DPoPBoundAccessTokens:              cfg.DPoPBoundAccessTokens,
 		Certificate:                        cfg.Certificate,
 		Token:                              cfg.Token,
 		Scopes:                             cfg.Scopes,
@@ -1105,29 +1211,7 @@ func oauthProfileToComplete(clientID string, p *inboundmodel.OAuthProfile) *inbo
 		PKCERequired:                       p.PKCERequired,
 		PublicClient:                       p.PublicClient,
 		RequirePushedAuthorizationRequests: p.RequirePushedAuthorizationRequests,
-		Certificate:                        p.Certificate,
-		Token:                              p.Token,
-		Scopes:                             p.Scopes,
-		UserInfo:                           p.UserInfo,
-		ScopeClaims:                        p.ScopeClaims,
-	}
-}
-
-// oauthProfileToConfig converts a stored OAuth profile into the read (GET) response shape.
-func oauthProfileToConfig(clientID string, p *inboundmodel.OAuthProfile) *inboundmodel.OAuthConfig {
-	if p == nil {
-		return nil
-	}
-	grants, respTypes := convertGrantAndResponseTypes(p)
-	return &inboundmodel.OAuthConfig{
-		ClientID:                           clientID,
-		RedirectURIs:                       p.RedirectURIs,
-		GrantTypes:                         grants,
-		ResponseTypes:                      respTypes,
-		TokenEndpointAuthMethod:            oauth2const.TokenEndpointAuthMethod(p.TokenEndpointAuthMethod),
-		PKCERequired:                       p.PKCERequired,
-		PublicClient:                       p.PublicClient,
-		RequirePushedAuthorizationRequests: p.RequirePushedAuthorizationRequests,
+		DPoPBoundAccessTokens:              p.DPoPBoundAccessTokens,
 		Certificate:                        p.Certificate,
 		Token:                              p.Token,
 		Scopes:                             p.Scopes,

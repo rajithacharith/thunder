@@ -488,6 +488,16 @@ setup:
   ttlSecondsAfterFinished: 86400  # 24 hours
   # Enable debug mode for setup
   debug: false
+  # Default admin user credentials seeded by the setup job.
+  # WARNING: Replace the default password before deploying to any non-development environment.
+  admin:
+    username: "admin"
+    password: "admin"
+    # Optional: source the admin password from an existing Kubernetes Secret.
+    # When `passwordRef.name` is set, it takes precedence over the plain `password` above.
+    passwordRef:
+      name: ""
+      key: ""
   # Additional command-line arguments for setup.sh
   args: []
     # Example:

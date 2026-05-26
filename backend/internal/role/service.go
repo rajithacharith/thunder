@@ -30,6 +30,7 @@ import (
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/security"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -50,6 +51,9 @@ type RoleServiceInterface interface {
 		ctx context.Context, entityID string, groups []string, requestedPermissions []string,
 	) ([]string, *serviceerror.ServiceError)
 	GetUserRoles(ctx context.Context, entityID string, groupIDs []string) ([]string, *serviceerror.ServiceError)
+	ResolveRoleOUHandle(
+		ctx context.Context, role *RoleWithPermissionsAndAssignments,
+	) *serviceerror.ServiceError
 }
 
 // roleService is the default implementation of the RoleServiceInterface.
@@ -468,6 +472,32 @@ func (rs *roleService) IsRoleDeclarative(ctx context.Context, id string) (bool, 
 	}
 
 	return isDeclarative, nil
+}
+
+// ResolveRoleOUHandle resolves ou_handle to an OU ID on the given role in-place.
+// Called by the declarative loader validator so that file-based roles support ou_handle.
+// If both ou_id and ou_handle are provided, ou_id wins and a warning is logged.
+func (rs *roleService) ResolveRoleOUHandle(
+	ctx context.Context, role *RoleWithPermissionsAndAssignments,
+) *serviceerror.ServiceError {
+	if role.OUID != "" && role.OUHandle != "" {
+		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+		logger.Warn("Both ou_id and ou_handle provided for role; ou_handle ignored",
+			log.String("roleID", role.ID), log.String("name", role.Name))
+		return nil
+	}
+	if role.OUID == "" && role.OUHandle != "" {
+		if rs.ouService == nil {
+			return &serviceerror.InternalServerError
+		}
+		ou, svcErr := rs.ouService.GetOrganizationUnitByPath(
+			security.WithRuntimeContext(ctx), role.OUHandle)
+		if svcErr != nil {
+			return &ErrorInvalidRequestFormat
+		}
+		role.OUID = ou.ID
+	}
+	return nil
 }
 
 // validateCreateRoleRequest validates the create role request.

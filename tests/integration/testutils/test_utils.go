@@ -414,6 +414,7 @@ func CopyDeclarativeResources(zipFilePattern string) error {
 
 	// Copy each declarative resource subdirectory
 	resourceDirs := []string{
+		"agents",
 		"applications",
 		"flows",
 		"identity_providers",

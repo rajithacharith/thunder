@@ -119,6 +119,10 @@ REACT_SDK_SAMPLE_APP_FOLDER="sample-app-react-sdk-${REACT_SDK_SAMPLE_APP_VERSION
 REACT_API_SAMPLE_APP_VERSION=$(grep -o '"version": *"[^"]*"' samples/apps/react-api-based-sample/package.json | sed 's/"version": *"\(.*\)"/\1/')
 REACT_API_SAMPLE_APP_FOLDER="sample-app-react-api-based-${REACT_API_SAMPLE_APP_VERSION}-${SAMPLE_PACKAGE_OS}-${SAMPLE_PACKAGE_ARCH}"
 
+# Wayfinder Sample
+WAYFINDER_SAMPLE_APP_VERSION=$(grep -o '"version": *"[^"]*"' samples/apps/wayfinder-sample/package.json | sed 's/"version": *"\(.*\)"/\1/')
+WAYFINDER_SAMPLE_APP_FOLDER="sample-app-wayfinder-${WAYFINDER_SAMPLE_APP_VERSION}-${SAMPLE_PACKAGE_OS}-${SAMPLE_PACKAGE_ARCH}"
+
 # Directories
 TARGET_DIR=target
 OUTPUT_DIR=$TARGET_DIR/out
@@ -142,6 +146,7 @@ VANILLA_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-vanilla-sample
 VANILLA_SAMPLE_APP_SERVER_DIR=$VANILLA_SAMPLE_APP_DIR/server
 REACT_SDK_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-sdk-sample
 REACT_API_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-api-based-sample
+WAYFINDER_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/wayfinder-sample
 
 # Default ports
 GATE_APP_DEFAULT_PORT=5190
@@ -153,7 +158,7 @@ TEST_RUN="${4:-}"
 TEST_PACKAGE="${5:-}"
 
 # PNPM version to use for frontend builds and docs build
-PNPM_VERSION="10.33.4"
+PNPM_VERSION="11.0.9"
 
 # ============================================================================
 # Read Configuration from deployment.yaml
@@ -373,41 +378,89 @@ function initialize_databases() {
     echo "================================================================"
 }
 
-function build_frontend() {
-    echo "================================================================"
-    echo "Building frontend apps..."
-    
-    # Check if pnpm is installed, if not install it
+function ensure_pnpm() {
     if ! command -v pnpm >/dev/null 2>&1; then
         echo "pnpm not found, installing..."
         npm install -g pnpm@$PNPM_VERSION
     fi
+}
+
+function build_frontend() {
+    echo "================================================================"
+    echo "Building frontend apps..."
+    ensure_pnpm
     
-    # Navigate to frontend directory and install dependencies
-    cd "$FRONTEND_BASE_DIR" || exit 1
+    # Install dependencies
     echo "Installing frontend dependencies..."
     pnpm install --frozen-lockfile
     
     echo "Building frontend applications & packages..."
-    pnpm build
+    pnpm build:frontend
     
     # Return to script directory
     cd "$SCRIPT_DIR" || exit 1
     echo "================================================================"
 }
 
+function build_sdks_js() {
+    ensure_pnpm
+    
+    echo "Installing SDK dependencies..."
+    pnpm install --frozen-lockfile
+    
+    echo "Building JavaScript ecosystem SDK packages..."
+    pnpm --filter './sdks/**' build
+    cd "$SCRIPT_DIR" || exit 1
+}
+
+function test_sdks_js() {
+    ensure_pnpm
+    
+    echo "Installing SDK dependencies..."
+    pnpm install --frozen-lockfile
+    
+    echo "Running JavaScript ecosystem SDK tests..."
+    pnpm --filter './sdks/**' test
+    cd "$SCRIPT_DIR" || exit 1
+}
+
+function lint_sdks_js() {
+    ensure_pnpm
+    
+    echo "Installing SDK dependencies..."
+    pnpm install --frozen-lockfile
+    
+    echo "Linting JavaScript ecosystem SDK packages..."
+    pnpm --filter './sdks/**' lint
+    cd "$SCRIPT_DIR" || exit 1
+}
+
+function build_sdks() {
+    echo "================================================================"
+    echo "Building SDKs..."
+    build_sdks_js
+    echo "================================================================"
+}
+
+function test_sdks() {
+    echo "================================================================"
+    echo "Running SDK tests..."
+    test_sdks_js
+    echo "================================================================"
+}
+
+function lint_sdks() {
+    echo "================================================================"
+    echo "Linting SDKs..."
+    lint_sdks_js
+    echo "================================================================"
+}
+
 function build_docs() {
     echo "================================================================"
     echo "Building documentation..."
+    ensure_pnpm
     
-    # Check if pnpm is installed, if not install it
-    if ! command -v pnpm >/dev/null 2>&1; then
-        echo "pnpm not found, installing..."
-        npm install -g pnpm@$PNPM_VERSION
-    fi
-    
-    # Navigate to frontend directory first to ensure build:docs script can run
-    cd "$FRONTEND_BASE_DIR" || exit 1
     echo "Installing frontend dependencies (required for docs build)..."
     pnpm install --frozen-lockfile
     
@@ -554,10 +607,10 @@ function build_sample_app() {
 
     cd "$REACT_SDK_SAMPLE_APP_DIR" || exit 1
     echo "Installing React SDK sample dependencies..."
-    npm ci
+    pnpm install
 
     echo "Building React SDK sample app..."
-    npm run build
+    pnpm run build
 
     cd - || exit 1
     echo "✅ React SDK sample app built successfully."
@@ -579,6 +632,25 @@ function build_sample_app() {
     cd - || exit 1
     echo "✅ React API-based sample app built successfully."
 
+    # Build Wayfinder sample (Wayfinder)
+    echo "=== Building Wayfinder sample app ==="
+
+    cd "$WAYFINDER_SAMPLE_APP_DIR/frontend" || exit 1
+    echo "Installing Wayfinder sample frontend dependencies..."
+    npm ci
+
+    echo "Building Wayfinder sample frontend..."
+    npm run build
+
+    cd "$SCRIPT_DIR" || exit 1
+
+    for svc in api mcp ai-agent; do
+        echo "Installing Wayfinder sample $svc dependencies..."
+        (cd "$WAYFINDER_SAMPLE_APP_DIR/$svc" && npm ci)
+    done
+
+    echo "✅ Wayfinder sample app built successfully."
+
     echo "================================================================"
 }
 
@@ -597,6 +669,10 @@ function package_sample_app() {
     # Package React API-based sample
     echo "=== Packaging React API-based sample app ==="
     package_react_api_based_sample
+
+    # Package Wayfinder sample
+    echo "=== Packaging Wayfinder sample app ==="
+    package_wayfinder_sample
 
     echo "================================================================"
 }
@@ -648,6 +724,18 @@ function package_vanilla_sample() {
         cp -r "$VANILLA_SAMPLE_APP_SERVER_DIR/start.sh" "$DIST_DIR/$VANILLA_SAMPLE_APP_FOLDER"
     fi
 
+    # Copy ThunderID declarative resource configs
+    if [ -d "$VANILLA_SAMPLE_APP_DIR/thunderid-config" ]; then
+        echo "Copying ThunderID config..."
+        cp -r "$VANILLA_SAMPLE_APP_DIR/thunderid-config" "$DIST_DIR/$VANILLA_SAMPLE_APP_FOLDER/"
+    else
+        echo "Error: thunderid-config directory not found at $VANILLA_SAMPLE_APP_DIR/thunderid-config"
+        echo "  VANILLA_SAMPLE_APP_DIR=$VANILLA_SAMPLE_APP_DIR"
+        echo "  VANILLA_SAMPLE_APP_FOLDER=$VANILLA_SAMPLE_APP_FOLDER"
+        echo "  DIST_DIR=$DIST_DIR"
+        exit 1
+    fi
+
     echo "Creating React Vanilla sample zip file..."
     (cd "$DIST_DIR" && find "$VANILLA_SAMPLE_APP_FOLDER" | sort | zip "$VANILLA_SAMPLE_APP_FOLDER.zip" -@)
     rm -rf "${DIST_DIR:?}/$VANILLA_SAMPLE_APP_FOLDER"
@@ -683,6 +771,18 @@ function package_react_sdk_sample() {
     else
         echo "Including Unix start script (start.sh)..."
         cp -r "$REACT_SDK_SAMPLE_APP_DIR/start.sh" "$DIST_DIR/$REACT_SDK_SAMPLE_APP_FOLDER"
+    fi
+
+    # Copy ThunderID declarative resource configs
+    if [ -d "$REACT_SDK_SAMPLE_APP_DIR/thunderid-config" ]; then
+        echo "Copying ThunderID config..."
+        cp -r "$REACT_SDK_SAMPLE_APP_DIR/thunderid-config" "$DIST_DIR/$REACT_SDK_SAMPLE_APP_FOLDER/"
+    else
+        echo "Error: thunderid-config directory not found at $REACT_SDK_SAMPLE_APP_DIR/thunderid-config"
+        echo "  REACT_SDK_SAMPLE_APP_DIR=$REACT_SDK_SAMPLE_APP_DIR"
+        echo "  REACT_SDK_SAMPLE_APP_FOLDER=$REACT_SDK_SAMPLE_APP_FOLDER"
+        echo "  DIST_DIR=$DIST_DIR"
+        exit 1
     fi
 
     echo "Creating React SDK sample zip file..."
@@ -722,11 +822,123 @@ function package_react_api_based_sample() {
         cp -r "$REACT_API_SAMPLE_APP_DIR/start.sh" "$DIST_DIR/$REACT_API_SAMPLE_APP_FOLDER"
     fi
 
+    # Copy ThunderID declarative resource configs
+    if [ -d "$REACT_API_SAMPLE_APP_DIR/thunderid-config" ]; then
+        echo "Copying ThunderID config..."
+        cp -r "$REACT_API_SAMPLE_APP_DIR/thunderid-config" "$DIST_DIR/$REACT_API_SAMPLE_APP_FOLDER/"
+    else
+        echo "Error: thunderid-config directory not found at $REACT_API_SAMPLE_APP_DIR/thunderid-config"
+        echo "  REACT_API_SAMPLE_APP_DIR=$REACT_API_SAMPLE_APP_DIR"
+        echo "  REACT_API_SAMPLE_APP_FOLDER=$REACT_API_SAMPLE_APP_FOLDER"
+        echo "  DIST_DIR=$DIST_DIR"
+        exit 1
+    fi
+
     echo "Creating React API-based sample zip file..."
     (cd "$DIST_DIR" && find "$REACT_API_SAMPLE_APP_FOLDER" | sort | zip "$REACT_API_SAMPLE_APP_FOLDER.zip" -@)
     rm -rf "${DIST_DIR:?}/$REACT_API_SAMPLE_APP_FOLDER"
 
     echo "✅ React API-based sample app packaged successfully as $DIST_DIR/$REACT_API_SAMPLE_APP_FOLDER.zip"
+}
+
+function package_wayfinder_sample() {
+    local dist_folder="$DIST_DIR/$WAYFINDER_SAMPLE_APP_FOLDER"
+    mkdir -p "$dist_folder"
+
+    # Frontend is built ahead of time; the api/mcp/ai-agent services ship as source
+    # because pkg cannot bundle Node 22's node:sqlite binding and the chat agent
+    # requires runtime LLM keys from .env.
+    if [ -d "$WAYFINDER_SAMPLE_APP_DIR/frontend/dist" ]; then
+        echo "Copying Wayfinder sample frontend build output..."
+        mkdir -p "$dist_folder/frontend"
+        cp -r "$WAYFINDER_SAMPLE_APP_DIR/frontend/dist" "$dist_folder/frontend/"
+        cp "$WAYFINDER_SAMPLE_APP_DIR/frontend/package.json" "$dist_folder/frontend/"
+        cp "$WAYFINDER_SAMPLE_APP_DIR/frontend/package-lock.json" "$dist_folder/frontend/" 2>/dev/null || true
+        cp "$WAYFINDER_SAMPLE_APP_DIR/frontend/index.html" "$dist_folder/frontend/" 2>/dev/null || true
+        cp "$WAYFINDER_SAMPLE_APP_DIR/frontend/vite.config.js" "$dist_folder/frontend/" 2>/dev/null || true
+        if [ -d "$WAYFINDER_SAMPLE_APP_DIR/frontend/src" ]; then
+            cp -r "$WAYFINDER_SAMPLE_APP_DIR/frontend/src" "$dist_folder/frontend/"
+        fi
+        if [ -d "$WAYFINDER_SAMPLE_APP_DIR/frontend/public" ]; then
+            cp -r "$WAYFINDER_SAMPLE_APP_DIR/frontend/public" "$dist_folder/frontend/"
+        fi
+        if [ -f "$WAYFINDER_SAMPLE_APP_DIR/frontend/.env.example" ]; then
+            cp "$WAYFINDER_SAMPLE_APP_DIR/frontend/.env.example" "$dist_folder/frontend/"
+        fi
+        if [ -f "$WAYFINDER_SAMPLE_APP_DIR/frontend/README.md" ]; then
+            cp "$WAYFINDER_SAMPLE_APP_DIR/frontend/README.md" "$dist_folder/frontend/"
+        fi
+    else
+        echo "Error: Wayfinder sample frontend build output not found at $WAYFINDER_SAMPLE_APP_DIR/frontend/dist"
+        exit 1
+    fi
+
+    for svc in api mcp ai-agent; do
+        local svc_src="$WAYFINDER_SAMPLE_APP_DIR/$svc"
+        local svc_dest="$dist_folder/$svc"
+        echo "Copying Wayfinder sample $svc source..."
+        mkdir -p "$svc_dest"
+        # Copy package metadata, source, and per-service docs but skip node_modules
+        cp "$svc_src/package.json" "$svc_dest/"
+        cp "$svc_src/package-lock.json" "$svc_dest/" 2>/dev/null || true
+        if [ -f "$svc_src/tsconfig.json" ]; then
+            cp "$svc_src/tsconfig.json" "$svc_dest/"
+        fi
+        if [ -f "$svc_src/README.md" ]; then
+            cp "$svc_src/README.md" "$svc_dest/"
+        fi
+        if [ -f "$svc_src/.env.example" ]; then
+            cp "$svc_src/.env.example" "$svc_dest/"
+        fi
+        if [ -d "$svc_src/src" ]; then
+            cp -r "$svc_src/src" "$svc_dest/"
+        fi
+        if [ -d "$svc_src/scripts" ]; then
+            cp -r "$svc_src/scripts" "$svc_dest/"
+        fi
+        # mcp/ai-agent ship a single TypeScript entry file at the root
+        for entry in server.ts agent.ts; do
+            if [ -f "$svc_src/$entry" ]; then
+                cp "$svc_src/$entry" "$svc_dest/"
+            fi
+        done
+    done
+
+    # Copy top-level files
+    if [ -f "$WAYFINDER_SAMPLE_APP_DIR/README.md" ]; then
+        cp "$WAYFINDER_SAMPLE_APP_DIR/README.md" "$dist_folder/"
+    fi
+    if [ -f "$WAYFINDER_SAMPLE_APP_DIR/package.json" ]; then
+        cp "$WAYFINDER_SAMPLE_APP_DIR/package.json" "$dist_folder/"
+    fi
+
+    # Startup script for the appropriate OS
+    if [ "$SAMPLE_DIST_OS" = "win" ]; then
+        echo "Including Windows start script (start.ps1)..."
+        cp "$WAYFINDER_SAMPLE_APP_DIR/start.ps1" "$dist_folder/"
+    else
+        echo "Including Unix start script (start.sh)..."
+        cp "$WAYFINDER_SAMPLE_APP_DIR/start.sh" "$dist_folder/"
+        chmod +x "$dist_folder/start.sh"
+    fi
+
+    # ThunderID declarative resource configs
+    if [ -d "$WAYFINDER_SAMPLE_APP_DIR/thunderid-config" ]; then
+        echo "Copying ThunderID config..."
+        cp -r "$WAYFINDER_SAMPLE_APP_DIR/thunderid-config" "$dist_folder/"
+    else
+        echo "Error: thunderid-config directory not found at $WAYFINDER_SAMPLE_APP_DIR/thunderid-config"
+        echo "  WAYFINDER_SAMPLE_APP_DIR=$WAYFINDER_SAMPLE_APP_DIR"
+        echo "  WAYFINDER_SAMPLE_APP_FOLDER=$WAYFINDER_SAMPLE_APP_FOLDER"
+        echo "  DIST_DIR=$DIST_DIR"
+        exit 1
+    fi
+
+    echo "Creating Wayfinder sample zip file..."
+    (cd "$DIST_DIR" && find "$WAYFINDER_SAMPLE_APP_FOLDER" | sort | zip "$WAYFINDER_SAMPLE_APP_FOLDER.zip" -@)
+    rm -rf "${DIST_DIR:?}/$WAYFINDER_SAMPLE_APP_FOLDER"
+
+    echo "✅ Wayfinder sample app packaged successfully as $DIST_DIR/$WAYFINDER_SAMPLE_APP_FOLDER.zip"
 }
 
 function test_unit() {
@@ -1049,6 +1261,8 @@ function run() {
     API_BASE="$BASE_URL" \
         SYSTEM_RS_HANDLE="$SYSTEM_RS_HANDLE" \
         SYSTEM_RS_IDENTIFIER="$SYSTEM_RS_IDENTIFIER" \
+        ADMIN_USERNAME="${ADMIN_USERNAME:-}" \
+        ADMIN_PASSWORD="${ADMIN_PASSWORD:-}" \
         "$BACKEND_BASE_DIR/cmd/server/bootstrap/01-default-resources.sh" \
         --console-redirect-uris "https://localhost:$CONSOLE_APP_DEFAULT_PORT/console"
 
@@ -1150,20 +1364,14 @@ function start_backend() {
 function run_frontend() {
     echo "================================================================"
     echo "Running frontend apps..."
+    ensure_pnpm
     
-    # Check if pnpm is installed, if not install it
-    if ! command -v pnpm >/dev/null 2>&1; then
-        echo "pnpm not found, installing..."
-        npm install -g pnpm@$PNPM_VERSION
-    fi
-    
-    # Navigate to frontend directory and install dependencies
-    cd "$FRONTEND_BASE_DIR" || exit 1
+    # Install dependencies
     echo "Installing frontend dependencies..."
     pnpm install --frozen-lockfile
     
     echo "Building frontend applications & packages..."
-    pnpm build
+    pnpm build:frontend
     
     echo "Starting frontend applications in the background..."
     # Start frontend processes in background
@@ -1178,15 +1386,9 @@ function run_frontend() {
 function run_docs() {
     echo "================================================================"
     echo "Starting documentation development server..."
+    ensure_pnpm
     
-    # Check if pnpm is installed, if not install it
-    if ! command -v pnpm >/dev/null 2>&1; then
-        echo "pnpm not found, installing..."
-        npm install -g pnpm@$PNPM_VERSION
-    fi
-    
-    # Navigate to frontend directory first to install all dependencies
-    cd "$FRONTEND_BASE_DIR" || exit 1
+    # Install dependencies
     echo "Installing frontend dependencies (required for docs)..."
     pnpm install --frozen-lockfile
     
@@ -1256,7 +1458,17 @@ case "$1" in
     build_docs)
         build_docs
         ;;
+    build_sdks)
+        build_sdks
+        ;;
+    test_sdks)
+        test_sdks
+        ;;
+    lint_sdks)
+        lint_sdks
+        ;;
     build_samples)
+        build_sdks_js
         build_sample_app
         package_sample_app
         ;;
@@ -1266,6 +1478,7 @@ case "$1" in
     build)
         build_backend
         build_frontend
+        build_sdks
         package
         build_sample_app
         package_sample_app
@@ -1306,6 +1519,9 @@ case "$1" in
         echo "  build_backend            - Build only the ${PRODUCT_NAME} backend server"
         echo "  build_frontend           - Build only the Next.js frontend applications"
         echo "  build_docs               - Build only the documentation"
+        echo "  build_sdks               - Build all SDK packages"
+        echo "  test_sdks                - Run tests for all SDK packages"
+        echo "  lint_sdks                - Run linting for all SDK packages"
         echo "  build_samples            - Build the sample applications"
         echo "  test_unit                - Run unit tests with coverage"
         echo "  test_integration         - Run integration tests. Use -run and -package for filtering"

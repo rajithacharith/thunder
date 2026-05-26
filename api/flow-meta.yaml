@@ -16,14 +16,14 @@ servers:
         default: "8090"
 
 tags:
-  - name: flow-meta
-    description: Operations for retrieving flow metadata
+  - name: Flow Meta
+    description: "Retrieve aggregated runtime metadata for a flow context: application details, OU, active theme and layout, and i18n translations."
 
 paths:
   /flow/meta:
     get:
       tags:
-        - flow-meta
+        - Flow Meta
       security: []
       summary: Get flow metadata
       description: |

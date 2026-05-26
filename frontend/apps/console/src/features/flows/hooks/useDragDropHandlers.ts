@@ -29,6 +29,7 @@ import type {Step, StepData} from '../models/steps';
 import type {Widget} from '../models/widget';
 import autoAssignConnections from '../utils/autoAssignConnections';
 import generateResourceId from '../utils/generateResourceId';
+import {widgetNeedsViewContainer} from '../utils/widgetUtils';
 
 /**
  * Props interface for useDragDropHandlers hook
@@ -106,12 +107,39 @@ const useDragDropHandlers = (props: UseDragDropHandlersProps): UseDragDropHandle
   handlersRef.current ??= {
     addCanvasNode: (event, sourceData): void => {
       const {props: currentProps, reactFlowInstance: rf} = depsRef.current;
-      const {onStepLoad, setNodes, onResourceDropOnCanvas} = currentProps;
-      const {screenToFlowPosition} = rf;
+      const {onStepLoad, setNodes, setEdges, onResourceDropOnCanvas, onWidgetLoad, metadata} = currentProps;
+      const {screenToFlowPosition, getNodes, getEdges} = rf;
 
       const sourceResource: Resource | undefined = cloneDeep(sourceData.dragged);
 
       if (!sourceResource || !event.nativeEvent) {
+        return;
+      }
+
+      if (sourceResource.resourceType === ResourceTypes.Widget) {
+        const widget = sourceResource as Widget;
+
+        if (widgetNeedsViewContainer(widget)) {
+          return;
+        }
+
+        const currentNodes = getNodes();
+        const currentEdges = getEdges();
+        const [newNodes, newEdges, defaultPropertySelector, defaultPropertySelectorStepId] = onWidgetLoad(
+          widget,
+          widget,
+          currentNodes,
+          currentEdges,
+        );
+
+        if (metadata?.executorConnections) {
+          autoAssignConnections(newNodes, metadata.executorConnections);
+        }
+
+        setNodes(() => newNodes);
+        setEdges(() => newEdges);
+        onResourceDropOnCanvas(defaultPropertySelector ?? widget, defaultPropertySelectorStepId ?? '');
+
         return;
       }
 
@@ -173,7 +201,7 @@ const useDragDropHandlers = (props: UseDragDropHandlersProps): UseDragDropHandle
         const currentNodes = getNodes();
         const currentEdges = getEdges();
 
-        const [newNodes, newEdges, defaultPropertySelector, defaultPropertySectorStepId] = onWidgetLoad(
+        const [newNodes, newEdges, defaultPropertySelector, defaultPropertySelectorStepId] = onWidgetLoad(
           sourceResource as Widget,
           targetResource,
           currentNodes,
@@ -190,7 +218,7 @@ const useDragDropHandlers = (props: UseDragDropHandlersProps): UseDragDropHandle
 
         onResourceDropOnCanvas(
           defaultPropertySelector ?? sourceResource,
-          defaultPropertySectorStepId ?? targetStepId ?? '',
+          defaultPropertySelectorStepId ?? targetStepId ?? '',
         );
 
         return;
@@ -282,7 +310,7 @@ const useDragDropHandlers = (props: UseDragDropHandlersProps): UseDragDropHandle
           const currentNodes = getNodes();
           const currentEdges = getEdges();
 
-          const [newNodes, newEdges, defaultPropertySelector, defaultPropertySectorStepId] = onWidgetLoad(
+          const [newNodes, newEdges, defaultPropertySelector, defaultPropertySelectorStepId] = onWidgetLoad(
             sourceResource as Widget,
             targetNode as Resource,
             currentNodes,
@@ -338,7 +366,7 @@ const useDragDropHandlers = (props: UseDragDropHandlersProps): UseDragDropHandle
 
           onResourceDropOnCanvas(
             defaultPropertySelector ?? sourceResource,
-            defaultPropertySectorStepId ?? targetStepId,
+            defaultPropertySelectorStepId ?? targetStepId,
           );
         }
       } else {

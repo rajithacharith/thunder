@@ -1457,3 +1457,98 @@ func (suite *RoleServiceTestSuite) TestIsRoleDeclarative_StoreReturnsError() {
 	suite.False(isDeclarative)
 	suite.Equal(&serviceerror.InternalServerError, err)
 }
+
+// TestResolveRoleOUHandle_OUHandleResolved verifies that when only ou_handle is set, it is
+// resolved to ou_id via the OU service.
+func (suite *RoleServiceTestSuite) TestResolveRoleOUHandle_OUHandleResolved() {
+	suite.mockOUService.On("GetOrganizationUnitByPath", mock.Anything, "default").
+		Return(oupkg.OrganizationUnit{ID: "ou-resolved"}, (*serviceerror.ServiceError)(nil)).Once()
+
+	role := &RoleWithPermissionsAndAssignments{OUHandle: "default"}
+	svcErr := suite.service.ResolveRoleOUHandle(context.Background(), role)
+
+	suite.Nil(svcErr)
+	suite.Equal("ou-resolved", role.OUID)
+}
+
+// TestResolveRoleOUHandle_OUIDAlreadySet verifies that no resolution happens when ou_id is set
+// and ou_handle is empty.
+func (suite *RoleServiceTestSuite) TestResolveRoleOUHandle_OUIDAlreadySet() {
+	role := &RoleWithPermissionsAndAssignments{OUID: "ou-direct"}
+	svcErr := suite.service.ResolveRoleOUHandle(context.Background(), role)
+
+	suite.Nil(svcErr)
+	suite.Equal("ou-direct", role.OUID)
+}
+
+// TestResolveRoleOUHandle_BothProvided verifies that when both ou_id and ou_handle are
+// provided, ou_id is retained and the OU service is never called.
+func (suite *RoleServiceTestSuite) TestResolveRoleOUHandle_BothProvided() {
+	role := &RoleWithPermissionsAndAssignments{ID: "r1", Name: "Admin", OUID: "ou-direct", OUHandle: "default"}
+
+	svcErr := suite.service.ResolveRoleOUHandle(context.Background(), role)
+
+	suite.Nil(svcErr)
+	suite.Equal("ou-direct", role.OUID)
+	// AssertExpectations in t.Cleanup will confirm GetOrganizationUnitByPath was never invoked.
+}
+
+// TestResolveRoleOUHandle_OUHandleNotFound verifies that a not-found response from the OU
+// service is surfaced as ErrorInvalidRequestFormat.
+func (suite *RoleServiceTestSuite) TestResolveRoleOUHandle_OUHandleNotFound() {
+	suite.mockOUService.On("GetOrganizationUnitByPath", mock.Anything, "missing").
+		Return(oupkg.OrganizationUnit{}, &oupkg.ErrorOrganizationUnitNotFound).Once()
+
+	role := &RoleWithPermissionsAndAssignments{OUHandle: "missing"}
+	svcErr := suite.service.ResolveRoleOUHandle(context.Background(), role)
+
+	suite.NotNil(svcErr)
+	suite.Equal(ErrorInvalidRequestFormat.Code, svcErr.Code)
+}
+
+// TestResolveRoleOUHandle_NeitherProvided verifies that the call is a no-op when neither
+// ou_id nor ou_handle is provided.
+func (suite *RoleServiceTestSuite) TestResolveRoleOUHandle_NeitherProvided() {
+	role := &RoleWithPermissionsAndAssignments{}
+	svcErr := suite.service.ResolveRoleOUHandle(context.Background(), role)
+
+	suite.Nil(svcErr)
+	suite.Empty(role.OUID)
+}
+
+// TestResolveRoleOUHandle_NilOUService verifies that a clear error is returned when the OU
+// service is nil and ou_handle is supplied (no nil-pointer panic).
+func (suite *RoleServiceTestSuite) TestResolveRoleOUHandle_NilOUService() {
+	svc := &roleService{ouService: nil}
+	role := &RoleWithPermissionsAndAssignments{OUHandle: "default"}
+
+	svcErr := svc.ResolveRoleOUHandle(context.Background(), role)
+
+	suite.NotNil(svcErr)
+	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+}
+
+// TestRoleDeclarativeYAML_OUHandleParsed verifies that ou_handle is parsed off the YAML
+// document into the role declarative resource.
+func TestRoleDeclarativeYAML_OUHandleParsed(t *testing.T) {
+	yamlData := []byte(`
+id: role-1
+name: Admin
+ou_handle: default
+permissions:
+  - resource_server_id: rs1
+    permissions:
+      - read
+`)
+	role, err := parseToRole(yamlData)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if role.OUHandle != "default" {
+		t.Errorf("OUHandle = %q, want %q", role.OUHandle, "default")
+	}
+	if role.OUID != "" {
+		t.Errorf("OUID = %q, want empty (resolution happens later)", role.OUID)
+	}
+}

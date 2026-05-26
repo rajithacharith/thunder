@@ -71,7 +71,7 @@ vi.mock('@thunderid/contexts', () => ({
   }),
 }));
 
-// Mock @asgardeo/react
+// Mock @thunderid/react
 const mockHttpRequest = vi.fn().mockResolvedValue({
   data: {
     language: 'en-US',
@@ -79,8 +79,8 @@ const mockHttpRequest = vi.fn().mockResolvedValue({
   },
 });
 
-vi.mock('@asgardeo/react', () => ({
-  useAsgardeo: () => ({
+vi.mock('@thunderid/react', () => ({
+  useThunderID: () => ({
     http: {
       request: mockHttpRequest,
     },
@@ -377,7 +377,7 @@ describe('I18nProvider', () => {
         url: 'https://api.example.com/i18n/languages/en-US/translations/resolve',
         method: 'GET',
         attachToken: false,
-        withCredentials: false,
+        credentials: 'omit',
       });
       expect(result).toEqual(expectedResponse);
     });

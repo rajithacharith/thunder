@@ -77,6 +77,7 @@ function VisualFlow({
       maxZoom={4}
       style={
         {
+          '--xy-background-color-default': colorMode === 'dark' ? '#0000002b' : '#ffffff2b',
           '--xy-edge-stroke': '#d7d7d7',
         } as CSSProperties
       }

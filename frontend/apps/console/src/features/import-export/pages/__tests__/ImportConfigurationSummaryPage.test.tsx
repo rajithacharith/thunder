@@ -489,5 +489,28 @@ describe('ImportConfigurationSummaryPage', () => {
 
       expect(screen.getByText(/application.*3/i)).toBeInTheDocument();
     });
+
+    it('displays agents when agent data is present', () => {
+      mockLocationState.configData = {
+        agent: [
+          {id: 'agent1', name: 'Test Agent', description: 'A test agent'},
+          {id: 'agent2', name: 'Another Agent'},
+        ],
+      } as ProductConfig;
+
+      render(<ImportConfigurationSummaryPage />);
+
+      expect(screen.getByText(/configureExport\.labels\.agents.*2/i)).toBeInTheDocument();
+    });
+
+    it('does not display agents section when no agents present', () => {
+      mockLocationState.configData = {
+        application: [{id: 'app1', name: 'App 1'}],
+      } as ProductConfig;
+
+      render(<ImportConfigurationSummaryPage />);
+
+      expect(screen.queryByText(/configureExport\.labels\.agents/i)).not.toBeInTheDocument();
+    });
   });
 });

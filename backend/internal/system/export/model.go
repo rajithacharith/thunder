@@ -22,6 +22,7 @@ import declarativeresource "github.com/thunder-id/thunderid/internal/system/decl
 
 // ExportRequest represents the request structure for exporting resources.
 type ExportRequest struct {
+	Agents              []string `json:"agents,omitempty"`
 	Applications        []string `json:"applications,omitempty"`
 	IdentityProviders   []string `json:"identityProviders,omitempty"`
 	NotificationSenders []string `json:"notificationSenders,omitempty"`

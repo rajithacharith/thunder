@@ -148,6 +148,24 @@ spec:
             - name: WITH_CONSENT
               value: "false"
             {{- end }}
+            - name: ADMIN_USERNAME
+              value: {{ .Values.setup.admin.username | quote }}
+            {{- if and .Values.setup.admin.passwordRef.key (not .Values.setup.admin.passwordRef.name) }}
+            {{- fail "setup.admin.passwordRef.name is required when setup.admin.passwordRef.key is set" }}
+            {{- end }}
+            {{- if .Values.setup.admin.passwordRef.name }}
+            {{- if not .Values.setup.admin.passwordRef.key }}
+            {{- fail "setup.admin.passwordRef.key is required when setup.admin.passwordRef.name is set" }}
+            {{- end }}
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.setup.admin.passwordRef.name | quote }}
+                  key: {{ .Values.setup.admin.passwordRef.key | quote }}
+            {{- else }}
+            - name: ADMIN_PASSWORD
+              value: {{ .Values.setup.admin.password | quote }}
+            {{- end }}
             {{- include "thunderid.databasePasswordEnvVars" . | nindent 12 }}
             {{- include "thunderid.secretEnvVars" (dict "secretEnv" .Values.setup.secretEnv) | nindent 12 }}
             {{- include "thunderid.cacheRedisPasswordEnvVars" . | nindent 12 }}

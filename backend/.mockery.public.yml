@@ -116,6 +116,22 @@ packages:
       pkgname: granthandlersmock
       filename: "{{.InterfaceName}}_mock.go"
 
+  github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop:
+    config:
+      all: true
+      dir: tests/mocks/oauth/oauth2/dpopmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: dpopmock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/thunder-id/thunderid/internal/oauth/oauth2/jti:
+    config:
+      all: true
+      dir: tests/mocks/oauth/oauth2/jtimock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: jtimock
+      filename: "{{.InterfaceName}}_mock.go"
+
   github.com/thunder-id/thunderid/internal/oauth/oauth2/token:
     config:
       all: true
@@ -279,6 +295,15 @@ packages:
       pkgname: httpmock
       filename: "{{.InterfaceName}}_mock.go"
 
+  github.com/thunder-id/thunderid/internal/agent:
+    config:
+      dir: tests/mocks/agentmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: agentmock
+      filename: "{{.InterfaceName}}_mock.go"
+    interfaces:
+      AgentServiceInterface:
+
   github.com/thunder-id/thunderid/internal/application:
     config:
       dir: tests/mocks/applicationmock
@@ -425,7 +450,7 @@ packages:
       pkgname: mgtmock
       filename: "{{.InterfaceName}}_mock.go"
   
-  github.com/thunder-id/thunderid/internal/system/cryptolab/hash:
+  github.com/thunder-id/thunderid/internal/system/crypto_lib/hash:
     config:
       all: true
       dir: tests/mocks/crypto/hashmock

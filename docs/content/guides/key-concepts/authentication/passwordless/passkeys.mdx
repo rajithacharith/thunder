@@ -167,11 +167,11 @@ curl -k -X POST https://localhost:8090/auth/passkey/finish \
 
 On success, the API returns an authentication response compatible with other <ProductName /> auth flows.
 
-## Use Passkeys With Flow/Execute
+## Use Passkeys with Flow/Execute
 
 Passkeys also work through the flow engine (`POST /flow/execute`), which returns dynamic prompts and additional data.
 
-### Authentication With Flow/Execute
+### Authentication with Flow/Execute
 
 1) **Start the flow** – send an initial flow request.
 
@@ -208,7 +208,7 @@ curl -k -X POST https://localhost:8090/flow/execute \
 
 - On success, the next response either completes the flow (with an assertion) or advances to the next step.
 
-### Registration With Flow/Execute
+### Registration with Flow/Execute
 
 > Passkey registration in a flow must run **after the user is created or identified**. Ensure the flow provisions the user (e.g., collecting username/email and running provisioning) or resolves an existing user before the passkey register start node, as shown in the bundled flow definitions.
 

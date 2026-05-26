@@ -633,6 +633,63 @@ func (_c *InboundClientServiceInterfaceMock_LoadDeclarativeResources_Call) RunAn
 	return _c
 }
 
+// ResolveInboundAuthProfileHandles provides a mock function for the type InboundClientServiceInterfaceMock
+func (_mock *InboundClientServiceInterfaceMock) ResolveInboundAuthProfileHandles(ctx context.Context, profile *model.InboundAuthProfile) error {
+	ret := _mock.Called(ctx, profile)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ResolveInboundAuthProfileHandles")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *model.InboundAuthProfile) error); ok {
+		r0 = returnFunc(ctx, profile)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ResolveInboundAuthProfileHandles'
+type InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call struct {
+	*mock.Call
+}
+
+// ResolveInboundAuthProfileHandles is a helper method to define mock.On call
+//   - ctx context.Context
+//   - profile *model.InboundAuthProfile
+func (_e *InboundClientServiceInterfaceMock_Expecter) ResolveInboundAuthProfileHandles(ctx interface{}, profile interface{}) *InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call {
+	return &InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call{Call: _e.mock.On("ResolveInboundAuthProfileHandles", ctx, profile)}
+}
+
+func (_c *InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call) Run(run func(ctx context.Context, profile *model.InboundAuthProfile)) *InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *model.InboundAuthProfile
+		if args[1] != nil {
+			arg1 = args[1].(*model.InboundAuthProfile)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call) Return(err error) *InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call) RunAndReturn(run func(ctx context.Context, profile *model.InboundAuthProfile) error) *InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateInboundClient provides a mock function for the type InboundClientServiceInterfaceMock
 func (_mock *InboundClientServiceInterfaceMock) UpdateInboundClient(ctx context.Context, client *model.InboundClient, appCert *model.Certificate, oauthProfile *model.OAuthProfile, hasClientSecret bool, oauthClientID string, entityName string) error {
 	ret := _mock.Called(ctx, client, appCert, oauthProfile, hasClientSecret, oauthClientID, entityName)

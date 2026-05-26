@@ -780,6 +780,7 @@ func buildOAuthProfileFromProcessed(inboundAuth inboundmodel.InboundAuthConfigPr
 		PKCERequired:                       oa.PKCERequired,
 		PublicClient:                       oa.PublicClient,
 		RequirePushedAuthorizationRequests: oa.RequirePushedAuthorizationRequests,
+		DPoPBoundAccessTokens:              oa.DPoPBoundAccessTokens,
 		Scopes:                             oa.Scopes,
 		ScopeClaims:                        oa.ScopeClaims,
 		Token:                              oa.Token,
@@ -911,6 +912,22 @@ func (as *applicationService) validateApplicationForUpdate(
 // validateApplicationFields validates application fields that are common to both create and update operations.
 func (as *applicationService) validateApplicationFields(
 	ctx context.Context, app *model.ApplicationDTO) *serviceerror.ServiceError {
+	// Resolve ou_handle to an ID when the direct ID is absent.
+	// If both are provided, ou_id wins and a warning is logged.
+	if app.OUID != "" && app.OUHandle != "" {
+		as.logger.Warn("Both ou_id and ou_handle provided for application; ou_handle ignored",
+			log.String("appID", app.ID), log.String("name", app.Name))
+	} else if app.OUID == "" && app.OUHandle != "" {
+		ou, svcErr := as.ouService.GetOrganizationUnitByPath(ctx, app.OUHandle)
+		if svcErr != nil {
+			return &ErrorInvalidRequestFormat
+		}
+		app.OUID = ou.ID
+	}
+	// Resolve flow handles to IDs when the direct IDs are absent.
+	if err := as.inboundClientService.ResolveInboundAuthProfileHandles(ctx, &app.InboundAuthProfile); err != nil {
+		return &ErrorInvalidRequestFormat
+	}
 	// Validate organization unit ID.
 	if app.OUID == "" {
 		return &ErrorInvalidRequestFormat
@@ -1539,6 +1556,7 @@ func buildApplicationResponse(dto *model.ApplicationProcessedDTO) *model.Applica
 					PKCERequired:                       oauthAppConfig.PKCERequired,
 					PublicClient:                       oauthAppConfig.PublicClient,
 					RequirePushedAuthorizationRequests: oauthAppConfig.RequirePushedAuthorizationRequests,
+					DPoPBoundAccessTokens:              oauthAppConfig.DPoPBoundAccessTokens,
 					Token:                              oauthAppConfig.Token,
 					Scopes:                             oauthAppConfig.Scopes,
 					UserInfo:                           oauthAppConfig.UserInfo,
@@ -1662,6 +1680,7 @@ func buildOAuthInboundAuthConfigProcessedDTO(
 			PKCERequired:                       inboundAuthConfig.OAuthConfig.PKCERequired,
 			PublicClient:                       inboundAuthConfig.OAuthConfig.PublicClient,
 			RequirePushedAuthorizationRequests: inboundAuthConfig.OAuthConfig.RequirePushedAuthorizationRequests,
+			DPoPBoundAccessTokens:              inboundAuthConfig.OAuthConfig.DPoPBoundAccessTokens,
 			Token:                              oauthToken,
 			Scopes:                             inboundAuthConfig.OAuthConfig.Scopes,
 			UserInfo:                           userInfo,
@@ -1721,6 +1740,7 @@ func buildReturnApplicationDTO(
 				PKCERequired:                       inboundAuthConfig.OAuthConfig.PKCERequired,
 				PublicClient:                       inboundAuthConfig.OAuthConfig.PublicClient,
 				RequirePushedAuthorizationRequests: inboundAuthConfig.OAuthConfig.RequirePushedAuthorizationRequests,
+				DPoPBoundAccessTokens:              inboundAuthConfig.OAuthConfig.DPoPBoundAccessTokens,
 				Token:                              oauthToken,
 				Scopes:                             inboundAuthConfig.OAuthConfig.Scopes,
 				UserInfo:                           userInfo,

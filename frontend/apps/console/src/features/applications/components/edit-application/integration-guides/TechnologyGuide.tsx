@@ -312,10 +312,10 @@ export default function TechnologyGuide({
               </Box>
               <Box sx={{flex: 1}}>
                 <Typography variant="subtitle1" sx={{mb: 0.5, fontWeight: 600}}>
-                  {llmPrompt.title}
+                  {replacePlaceholders(llmPrompt.title)}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {llmPrompt.description}
+                  {replacePlaceholders(llmPrompt.description)}
                 </Typography>
               </Box>
               {llmPrompt.content && (
@@ -387,14 +387,14 @@ export default function TechnologyGuide({
               {/* Content */}
               <Box sx={{flex: 1, pb: 2}}>
                 <Typography variant="subtitle1" sx={{fontWeight: 600, mb: 1}}>
-                  {step.title}
+                  {replacePlaceholders(step.title)}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{mb: 0.5}}>
-                  {step.description}
+                  {replacePlaceholders(step.description)}
                 </Typography>
                 {step.subDescription && (
                   <Typography variant="body2" color="text.secondary" sx={{mb: 0.5}}>
-                    {step.subDescription}
+                    {replacePlaceholders(step.subDescription)}
                   </Typography>
                 )}
                 {step.bullets && step.bullets.length > 0 && (
@@ -402,7 +402,7 @@ export default function TechnologyGuide({
                     {step.bullets.map((bullet) => (
                       <Box component="li" key={bullet} sx={{mb: 0.5}}>
                         <Typography variant="body2" color="text.secondary">
-                          {bullet}
+                          {replacePlaceholders(bullet)}
                         </Typography>
                       </Box>
                     ))}

@@ -557,7 +557,7 @@
                   "    const response = pm.response.json();",
                   "    ",
                   "    // Store the IDP id",
-                  "    pm.environment.set(\"asgardeoIDPId\", response.id);",
+                  "    pm.environment.set(\"thunderidIDPId\", response.id);",
                   "    ",
                   "    console.log(\"✓ Asgardeo IDP created\");",
                   "    console.log(\"  ID:\", response.id);",
@@ -592,7 +592,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"Asgardeo Prod\",\n    \"description\": \"Login with Asgardeo\",\n    \"type\": \"OAUTH\",\n    \"properties\": [\n        {\n            \"name\": \"client_id\",\n            \"value\": \"{{ASGARDEO_CLIENT_ID}}\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"client_secret\",\n            \"value\": \"{{ASGARDEO_CLIENT_SECRET}}\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"redirect_uri\",\n            \"value\": \"{{FED_IDP_REDIRECT_URI}}\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"scopes\",\n            \"value\": \"openid,custom,email,groups,profile\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"authorization_endpoint\",\n            \"value\": \"{{ASGARDEO_BASE_URI}}/oauth2/authorize\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"token_endpoint\",\n            \"value\": \"{{ASGARDEO_BASE_URI}}/oauth2/token\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"userinfo_endpoint\",\n            \"value\": \"{{ASGARDEO_BASE_URI}}/oauth2/userinfo\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"logout_endpoint\",\n            \"value\": \"{{ASGARDEO_BASE_URI}}/oidc/logout\",\n            \"isSecret\": false\n        }\n    ]\n}",
+              "raw": "{\n    \"name\": \"Asgardeo Prod\",\n    \"description\": \"Login with Asgardeo\",\n    \"type\": \"OAUTH\",\n    \"properties\": [\n        {\n            \"name\": \"client_id\",\n            \"value\": \"{{ASGARDEO_CLIENT_ID}}\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"client_secret\",\n            \"value\": \"{{ASGARDEO_CLIENT_SECRET}}\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"redirect_uri\",\n            \"value\": \"{{FED_IDP_REDIRECT_URI}}\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"scopes\",\n            \"value\": \"openid,custom,email,groups,profile\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"authorization_endpoint\",\n            \"value\": \"{{THUNDERID_BASE_URI}}/oauth2/authorize\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"token_endpoint\",\n            \"value\": \"{{THUNDERID_BASE_URI}}/oauth2/token\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"userinfo_endpoint\",\n            \"value\": \"{{THUNDERID_BASE_URI}}/oauth2/userinfo\",\n            \"isSecret\": false\n        },\n        {\n            \"name\": \"logout_endpoint\",\n            \"value\": \"{{THUNDERID_BASE_URI}}/oidc/logout\",\n            \"isSecret\": false\n        }\n    ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1613,7 +1613,7 @@
                       "const sessionToken = jsonResponse.sessionToken;",
                       "",
                       "// Store it as a collection variable",
-                      "pm.collectionVariables.set(\"asgardeo_session_token\", sessionToken);",
+                      "pm.collectionVariables.set(\"thunderid_session_token\", sessionToken);",
                       ""
                     ],
                     "type": "text/javascript",
@@ -1636,7 +1636,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"idp_id\": \"{{asgardeoIDPId}}\"\n}",
+                  "raw": "{\n  \"idp_id\": \"{{thunderidIDPId}}\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1674,7 +1674,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"sessionToken\": \"{{asgardeo_session_token}}\",\n  \"code\": \"<ASGARDEO_AUTHORIZATION_CODE>\"\n//   \"skip_assertion\": false,\n//   \"assertion\": \"\"\n}\n",
+                  "raw": "{\n  \"sessionToken\": \"{{thunderid_session_token}}\",\n  \"code\": \"<THUNDERID_AUTHORIZATION_CODE>\"\n//   \"skip_assertion\": false,\n//   \"assertion\": \"\"\n}\n",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -3726,7 +3726,7 @@
       "value": ""
     },
     {
-      "key": "asgardeo_session_token",
+      "key": "thunderid_session_token",
       "value": ""
     },
     {

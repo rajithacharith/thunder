@@ -55,6 +55,12 @@ export interface DocusaurusProductConfig {
       };
     };
   };
+  local: {
+    consoleUrl: string;
+    samples: {
+      wayfinderUrl: string;
+    };
+  };
 }
 
 const DocusaurusProductConfig = {
@@ -95,6 +101,12 @@ const DocusaurusProductConfig = {
         baseUrl: '',
         url: 'https://thunderid.dev',
       },
+    },
+  },
+  local: {
+    consoleUrl: 'https://localhost:8090/console',
+    samples: {
+      wayfinderUrl: 'http://localhost:5173',
     },
   },
 };

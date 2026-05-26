@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {ResourceAvatar, UnsavedChangesBar} from '@thunderid/components';
+import {PageLoadingAnimation, ResourceAvatar, UnsavedChangesBar} from '@thunderid/components';
 import {useLogger} from '@thunderid/logger/react';
 import {
   Box,
@@ -26,7 +26,6 @@ import {
   TextField,
   Alert,
   IconButton,
-  CircularProgress,
   Tabs,
   Tab,
   Snackbar,
@@ -156,11 +155,7 @@ export default function OrganizationUnitEditPage(): JSX.Element {
   };
 
   if (isLoading) {
-    return (
-      <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px'}}>
-        <CircularProgress />
-      </Box>
-    );
+    return <PageLoadingAnimation />;
   }
 
   if (fetchError) {

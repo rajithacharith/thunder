@@ -3268,18 +3268,18 @@ describe('handleWidgetLoad - defaultPropertySelector Resolution', () => {
 
     const defaultPropertySelectorId = 'selector-1';
     let defaultPropertySelector: Node | null = null;
-    let defaultPropertySectorStepId: string | null = null;
+    let defaultPropertySelectorStepId: string | null = null;
 
     // Simulate the logic
     nodes.forEach((node: Node) => {
       if (node.id === defaultPropertySelectorId) {
-        defaultPropertySectorStepId = node.id;
+        defaultPropertySelectorStepId = node.id;
         defaultPropertySelector = node;
       }
     });
 
     expect(defaultPropertySelector).not.toBeNull();
-    expect(defaultPropertySectorStepId).toBe('selector-1');
+    expect(defaultPropertySelectorStepId).toBe('selector-1');
   });
 
   it('should find defaultPropertySelector in component level', () => {
@@ -3296,13 +3296,13 @@ describe('handleWidgetLoad - defaultPropertySelector Resolution', () => {
 
     const defaultPropertySelectorId = 'selector-component';
     let defaultPropertySelector: Element | null = null;
-    let defaultPropertySectorStepId: string | null = null;
+    let defaultPropertySelectorStepId: string | null = null;
 
     nodes.forEach((node: Node) => {
       if (node.data?.components) {
         (node.data.components as Element[]).forEach((component: Element) => {
           if (component.id === defaultPropertySelectorId) {
-            defaultPropertySectorStepId = node.id;
+            defaultPropertySelectorStepId = node.id;
             defaultPropertySelector = component;
           }
         });
@@ -3311,7 +3311,7 @@ describe('handleWidgetLoad - defaultPropertySelector Resolution', () => {
 
     expect(defaultPropertySelector).not.toBeNull();
     expect((defaultPropertySelector as Element | null)?.id).toBe('selector-component');
-    expect(defaultPropertySectorStepId).toBe('step-1');
+    expect(defaultPropertySelectorStepId).toBe('step-1');
   });
 
   it('should replace placeholder IDs from replacedPlaceholders map', () => {
@@ -3337,20 +3337,20 @@ describe('handleWidgetLoad - defaultPropertySelector Resolution', () => {
     const replacedPlaceholders = new Map<string, string>();
     replacedPlaceholders.set('STEP_PLACEHOLDER', 'resolved-step-id');
 
-    let defaultPropertySectorStepId: string | null = '{{STEP_PLACEHOLDER}}';
+    let defaultPropertySelectorStepId: string | null = '{{STEP_PLACEHOLDER}}';
 
     // Simulate the logic
-    if (defaultPropertySectorStepId) {
-      const cleanedId = defaultPropertySectorStepId.replace(/[{}]/g, '');
+    if (defaultPropertySelectorStepId) {
+      const cleanedId = defaultPropertySelectorStepId.replace(/[{}]/g, '');
       if (replacedPlaceholders.has(cleanedId)) {
         const replacedId = replacedPlaceholders.get(cleanedId);
         if (replacedId) {
-          defaultPropertySectorStepId = replacedId;
+          defaultPropertySelectorStepId = replacedId;
         }
       }
     }
 
-    expect(defaultPropertySectorStepId).toBe('resolved-step-id');
+    expect(defaultPropertySelectorStepId).toBe('resolved-step-id');
   });
 });
 

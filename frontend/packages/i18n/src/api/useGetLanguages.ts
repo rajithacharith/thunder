@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useAsgardeo} from '@asgardeo/react';
+import {useThunderID} from '@thunderid/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunderid/contexts';
 import I18nQueryKeys from '../constants/i18n-query-keys';
@@ -57,7 +57,7 @@ export interface UseGetLanguagesOptions {
  * ```
  */
 export default function useGetLanguages(options?: UseGetLanguagesOptions): UseQueryResult<LanguagesResponse, Error> {
-  const {http} = useAsgardeo();
+  const {http} = useThunderID();
   const {getServerUrl} = useConfig();
   const {enabled = true} = options ?? {};
 
@@ -71,8 +71,8 @@ export default function useGetLanguages(options?: UseGetLanguagesOptions): UseQu
         url: `${serverUrl}/i18n/languages`,
         method: 'GET',
         attachToken: false,
-        withCredentials: false,
-      } as unknown as Parameters<typeof http.request>[0]);
+        credentials: 'omit',
+      });
 
       return response.data;
     },

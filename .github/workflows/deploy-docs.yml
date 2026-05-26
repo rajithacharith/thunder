@@ -13,16 +13,6 @@ on:
         required: false
         type: string
         default: ''
-      site-url:
-        description: 'Override the site URL (e.g. https://thunderid.dev). Leave empty to use the default from build config.'
-        required: false
-        type: string
-        default: ''
-      site-base-url:
-        description: 'Override the base URL (e.g. /). Leave empty to use the default from build config.'
-        required: false
-        type: string
-        default: ''
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -46,14 +36,29 @@ jobs:
       - name: 📥 Checkout Code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
+      - name: 🔧 Resolve Site URLs
+        id: resolve-urls
+        env:
+          REPO: ${{ github.repository }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          if [ "$REPO" = "thunder-id/thunderid" ]; then
+            echo "site-url=" >> $GITHUB_OUTPUT
+            echo "site-base-url=" >> $GITHUB_OUTPUT
+          else
+            echo "site-url=https://$REPO_OWNER.github.io" >> $GITHUB_OUTPUT
+            echo "site-base-url=/$REPO_NAME/" >> $GITHUB_OUTPUT
+          fi
+
       - name: 📚 Deploy Documentation
         uses: ./.github/actions/deploy-docs
         with:
           docs-artifact-name: ${{ inputs.use-artifact }}
           build-docs: ${{ inputs.use-artifact == '' && 'true' || 'false' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          site-url: ${{ inputs.site-url }}
-          site-base-url: ${{ inputs.site-base-url }}
+          site-url: ${{ steps.resolve-urls.outputs.site-url }}
+          site-base-url: ${{ steps.resolve-urls.outputs.site-base-url }}
 
       - name: 🎉 Deployment Complete
         run: |

@@ -2,7 +2,7 @@ openapi: 3.0.3
 
 info:
   title: Authentication API
-  description: This API is used to authenticate users.
+  description: Execute authentication challenges using supported factor types. Callers initiate a session and step through one or more challenges — password, OTP, passkey, or a federated identity provider — until authentication succeeds or fails.
   version: "1.0"
   license:
     name: Apache 2.0
@@ -27,7 +27,7 @@ tags:
     description: Authentication operations with GitHub identity provider.
   - name: Standard
     description: Standard authentication flow operations.
-  - name: WebAuthn / Passkey
+  - name: Passkeys
     description: Passkey authentication operations based on WebAuthn.
 
 security: []
@@ -184,13 +184,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                code: "AUTHN-OTP-1006"
+                code: "AUTHN-OTPAUTHN-1009"
                 message:
-                  key: "error.authnotpservice.incorrect_otp"
-                  defaultValue: "Incorrect OTP"
+                  key: "error.authnservice.otp_authentication_failed"
+                  defaultValue: "Authentication failed"
                 description:
-                  key: "error.authnotpservice.incorrect_otp_description"
-                  defaultValue: "The provided OTP is incorrect or has expired"
+                  key: "error.authnservice.otp_authentication_failed_description"
+                  defaultValue: "The OTP authentication attempt failed"
         "404":
           description: 'Not Found: The user could not be found'
           content:
@@ -283,13 +283,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                code: "AUTHN-1003"
+                code: "AUTHN-1005"
                 message:
                   key: "error.authnservice.empty_auth_code"
-                  defaultValue: "Authorization code is required"
+                  defaultValue: "Empty authorization code"
                 description:
                   key: "error.authnservice.empty_auth_code_description"
-                  defaultValue: "The authorization code must be provided to complete authentication"
+                  defaultValue: "The provided authorization code is empty"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request.'
           content:
@@ -368,13 +368,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                code: "AUTHN-1003"
+                code: "AUTHN-1005"
                 message:
                   key: "error.authnservice.empty_auth_code"
-                  defaultValue: "Authorization code is required"
+                  defaultValue: "Empty authorization code"
                 description:
                   key: "error.authnservice.empty_auth_code_description"
-                  defaultValue: "The authorization code must be provided to complete authentication"
+                  defaultValue: "The provided authorization code is empty"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request.'
           content:
@@ -453,13 +453,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                code: "AUTHN-1003"
+                code: "AUTHN-1005"
                 message:
                   key: "error.authnservice.empty_auth_code"
-                  defaultValue: "Authorization code is required"
+                  defaultValue: "Empty authorization code"
                 description:
                   key: "error.authnservice.empty_auth_code_description"
-                  defaultValue: "The authorization code must be provided to complete authentication"
+                  defaultValue: "The provided authorization code is empty"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request.'
           content:
@@ -472,7 +472,7 @@ paths:
       summary: Start WebAuthn authentication
       description: Initiate WebAuthn/Passkey authentication for a user.
       tags:
-        - WebAuthn / Passkey
+        - Passkeys
       requestBody:
         description: WebAuthn authentication initiation data
         required: true
@@ -494,13 +494,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                code: "AUTHN-1011"
+                code: "PSK-1001"
                 message:
                   key: "error.passkeyservice.empty_user_identifier"
-                  defaultValue: "Empty username"
+                  defaultValue: "Empty user identifier"
                 description:
                   key: "error.passkeyservice.empty_user_identifier_description"
-                  defaultValue: "The username is required to start WebAuthn authentication"
+                  defaultValue: "Either user ID or username must be provided"
         "404":
           description: 'Not Found: The user could not be found'
           content:
@@ -510,11 +510,11 @@ paths:
               example:
                 code: "AUTHN-1008"
                 message:
-                  key: "error.passkeyservice.user_not_found"
+                  key: "error.authnservice.user_not_found"
                   defaultValue: "User not found"
                 description:
-                  key: "error.passkeyservice.user_not_found_description"
-                  defaultValue: "No user found with the provided User ID"
+                  key: "error.authnservice.user_not_found_description"
+                  defaultValue: "No user found with the provided attributes"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request'
           content:
@@ -527,7 +527,7 @@ paths:
       summary: Finish WebAuthn authentication
       description: Complete WebAuthn/Passkey authentication for a user.
       tags:
-        - WebAuthn / Passkey
+        - Passkeys
       requestBody:
         description: WebAuthn authentication completion data
         required: true
@@ -550,26 +550,29 @@ paths:
                 $ref: '#/components/schemas/Error'
               examples:
                 emptyCredentialId:
+                  summary: Empty credential ID
                   value:
-                    code: "AUTHN-1012"
+                    code: "PSK-1003"
                     message:
                       key: "error.passkeyservice.empty_credential_id"
                       defaultValue: "Empty credential ID"
                     description:
                       key: "error.passkeyservice.empty_credential_id_description"
-                      defaultValue: "The credential ID is required to complete WebAuthn authentication"
+                      defaultValue: "The credential ID is required"
                 emptyCredentialType:
+                  summary: Empty credential type
                   value:
-                    code: "AUTHN-1013"
+                    code: "PSK-1004"
                     message:
                       key: "error.passkeyservice.empty_credential_type"
                       defaultValue: "Empty credential type"
                     description:
                       key: "error.passkeyservice.empty_credential_type_description"
-                      defaultValue: "The credential type is required to complete WebAuthn authentication"
+                      defaultValue: "The credential type is required"
                 invalidAuthenticatorResponse:
+                  summary: Invalid authenticator response
                   value:
-                    code: "AUTHN-1014"
+                    code: "PSK-1005"
                     message:
                       key: "error.passkeyservice.invalid_authenticator_response"
                       defaultValue: "Invalid authenticator response"
@@ -577,28 +580,15 @@ paths:
                       key: "error.passkeyservice.invalid_authenticator_response_description"
                       defaultValue: "The authenticator response is missing required fields (clientDataJSON, authenticatorData, or signature)"
                 emptySessionToken:
+                  summary: Empty session token
                   value:
-                    code: "AUTHN-1004"
+                    code: "PSK-1006"
                     message:
                       key: "error.passkeyservice.empty_session_token"
                       defaultValue: "Empty session token"
                     description:
                       key: "error.passkeyservice.empty_session_token_description"
-                      defaultValue: "The provided session token is empty"
-        "401":
-          description: 'Unauthorized: WebAuthn authentication failed'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: "WEBAUTHN-1008"
-                message:
-                  key: "error.passkeyservice.invalid_signature"
-                  defaultValue: "Invalid signature"
-                description:
-                  key: "error.passkeyservice.invalid_signature_description"
-                  defaultValue: "The WebAuthn signature verification failed"
+                      defaultValue: "The session token is required"
         "404":
           description: 'Not Found: The user or credential could not be found'
           content:
@@ -608,11 +598,11 @@ paths:
               example:
                 code: "AUTHN-1008"
                 message:
-                  key: "error.passkeyservice.user_not_found"
+                  key: "error.authnservice.user_not_found"
                   defaultValue: "User not found"
                 description:
-                  key: "error.passkeyservice.user_not_found_description"
-                  defaultValue: "No user found for the provided credential"
+                  key: "error.authnservice.user_not_found_description"
+                  defaultValue: "No user found with the provided attributes"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request'
           content:
@@ -712,7 +702,7 @@ components:
         type:
           type: string
           description: "The type of the authenticated user"
-        organization_unit:
+        ouId:
           type: string
           format: uuid
           description: "The organization unit ID of the authenticated user"
@@ -769,17 +759,17 @@ components:
     WebAuthnStartRequest:
       type: object
       properties:
-        user_id:
+        userId:
           type: string
           description: User ID of the user to authenticate
           example: "550e8400-e29b-41d4-a716-446655440000"
-        relying_party_id:
+        relyingPartyId:
           type: string
           description: Relying Party ID (typically the domain)
           example: "example.com"
       required:
-        - user_id
-        - relying_party_id
+        - userId
+        - relyingPartyId
 
     WebAuthnStartResponse:
       type: object
@@ -933,8 +923,8 @@ components:
       properties:
         code:
           type: string
-          description: "Error code. Codes follow the AUTHN-XXXX or WEBAUTHN-XXXX convention."
-          example: "AUTHN-1001"
+          description: "Error code. Prefixes: AUTHN-1000 (request format), AUTHN-XXXX (IDP/session), AUTH-CRED-XXXX (credentials), AUTHN-OTP-XXXX (OTP), AUTHN-OTPAUTHN-XXXX (OTP auth), AUTHN-PSK-XXXX (passkey auth), PSK-XXXX (passkey service)."
+          example: "AUTHN-1000"
         message:
           $ref: '#/components/schemas/I18nMessage'
         description:

@@ -16,13 +16,12 @@
  * under the License.
  */
 
-import useBaseUrl from '@docusaurus/useBaseUrl';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
-import {DocusaurusProductConfig} from '@site/docusaurus.product.config';
-import {Box, Card, Container, Typography, useTheme} from '@wso2/oxygen-ui';
+import {Box, Container, Typography, useTheme} from '@wso2/oxygen-ui';
 import React, {JSX, ReactNode} from 'react';
 import useIsDarkMode from '../../hooks/useIsDarkMode';
 import useScrollAnimation from '../../hooks/useScrollAnimation';
+import {DocusaurusProductConfig} from '@site/docusaurus.product.config';
 
 interface FeatureCardProps {
   icon: ReactNode;
@@ -32,166 +31,130 @@ interface FeatureCardProps {
   isVisible: boolean;
 }
 
-function HighlightCard({icon, title, description, index, isVisible}: FeatureCardProps) {
+/* ─── Highlight card ─────────────────────────────────────────────────────── */
+
+function HighlightCard({icon, title, description, index, isVisible, num}: FeatureCardProps): JSX.Element {
   const isDark = useIsDarkMode();
   const theme = useTheme();
 
   return (
-    <Card
+    <Box
       sx={{
-        p: 4,
-        height: '100%',
         position: 'relative',
         overflow: 'hidden',
-        background: isDark
-          ? `linear-gradient(160deg, rgba(${theme.vars?.palette.primary.main} / 0.1) 0%, rgba(10, 10, 10, 0.95) 60%)`
-          : `linear-gradient(160deg, rgba(${theme.vars?.palette.primary.main} / 0.07) 0%, rgba(255, 255, 255, 0.97) 60%)`,
+        borderRadius: '16px',
         border: '1px solid',
-        borderColor: isDark
-          ? `rgba(${theme.vars?.palette.primary.main} / 0.35)`
-          : `rgba(${theme.vars?.palette.primary.main} / 0.3)`,
+        borderColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)',
+        bgcolor: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(255,255,255,0.8)',
+        p: {xs: 3, md: 3.5},
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
         opacity: isVisible ? 1 : 0,
-        transform: isVisible ? 'translateY(0)' : 'translateY(32px)',
-        transitionProperty: 'opacity, transform, box-shadow',
-        transitionDuration: '0.6s, 0.6s, 0.3s',
+        transform: isVisible ? 'translateY(0)' : 'translateY(28px)',
+        transitionProperty: 'opacity, transform, border-color, box-shadow',
+        transitionDuration: '0.55s, 0.55s, 0.25s, 0.25s',
         transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
         transitionDelay: isVisible ? `${index * 0.07}s` : '0s',
+        cursor: 'default',
         '&:hover': {
-          transform: 'translateY(-6px)',
+          borderColor: `rgba(${theme.vars?.palette.primary.main} / 0.42)`,
           boxShadow: isDark
-            ? `0 20px 48px rgba(${theme.vars?.palette.primary.main} / 0.22)`
-            : `0 20px 48px rgba(${theme.vars?.palette.primary.main} / 0.14)`,
+            ? `0 0 0 1px rgba(${theme.vars?.palette.primary.main} / 0.18), 0 16px 40px rgba(0,0,0,0.28)`
+            : `0 0 0 1px rgba(${theme.vars?.palette.primary.main} / 0.14), 0 12px 28px rgba(0,0,0,0.07)`,
         },
-        '&::before': {
+        /* Subtle noise texture */
+        '&::after': {
           content: '""',
           position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '3px',
-          background: `linear-gradient(90deg, ${theme.vars?.palette.primary.dark} 0%, ${theme.vars?.palette.primary.main} 50%, ${theme.vars?.palette.primary.light} 100%)`,
+          inset: 0,
+          borderRadius: 'inherit',
+          background: isDark
+            ? `radial-gradient(ellipse at 0% 0%, rgba(${theme.vars?.palette.primary.main} / 0.08) 0%, transparent 55%)`
+            : `radial-gradient(ellipse at 0% 0%, rgba(${theme.vars?.palette.primary.main} / 0.05) 0%, transparent 55%)`,
+          pointerEvents: 'none',
         },
       }}
     >
+      {/* Number badge */}
+      <Typography
+        sx={{
+          position: 'absolute',
+          top: 20,
+          right: 20,
+          fontFamily: 'var(--ifm-font-family-monospace, monospace)',
+          fontSize: '0.68rem',
+          letterSpacing: '0.06em',
+          color: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.15)',
+          fontWeight: 600,
+          userSelect: 'none',
+        }}
+      >
+        {num}
+      </Typography>
+
+      {/* Icon */}
       <Box
         sx={{
-          width: 56,
-          height: 56,
-          mb: 3,
+          width: 48,
+          height: 48,
+          borderRadius: '12px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          borderRadius: '14px',
-          background: `linear-gradient(135deg, rgba(${theme.vars?.palette.primary.main} / 0.22) 0%, rgba(${theme.vars?.palette.primary.main} / 0.12) 100%)`,
+          background: `linear-gradient(135deg, rgba(${theme.vars?.palette.primary.main} / 0.18) 0%, rgba(${theme.vars?.palette.primary.main} / 0.08) 100%)`,
           color: 'primary.main',
-          boxShadow: `0 4px 16px rgba(${theme.vars?.palette.primary.main} / 0.2)`,
-          transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-          '.MuiCard-root:hover &': {
-            transform: 'scale(1.12)',
-            boxShadow: `0 8px 24px rgba(${theme.vars?.palette.primary.main} / 0.32)`,
+          border: '1px solid',
+          borderColor: `rgba(${theme.vars?.palette.primary.main} / 0.2)`,
+          flexShrink: 0,
+          transition: 'transform 0.25s ease, box-shadow 0.25s ease',
+          'div:hover > &': {
+            transform: 'scale(1.1)',
+            boxShadow: `0 4px 16px rgba(${theme.vars?.palette.primary.main} / 0.28)`,
           },
         }}
       >
         {icon}
       </Box>
-      <Typography
-        variant="h6"
-        sx={{
-          fontWeight: 700,
-          mb: 1.5,
-          fontSize: '1.05rem',
-          letterSpacing: '-0.01em',
-          color: 'text.primary',
-        }}
-      >
-        {title}
-      </Typography>
-      <Typography
-        variant="body2"
-        sx={{
-          fontSize: '0.875rem',
-          lineHeight: 1.75,
-          color: 'text.secondary',
-        }}
-      >
-        {description}
-      </Typography>
-    </Card>
-  );
-}
 
-function FeatureCard({icon, title, description, index, isVisible}: FeatureCardProps) {
-  const isDark = useIsDarkMode();
-  const theme = useTheme();
-
-  return (
-    <Card
-      sx={{
-        p: 3,
-        height: '100%',
-        transition: 'transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease',
-        bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-        border: '1px solid',
-        borderColor: isDark
-          ? `rgba(${theme.vars?.palette.primary.main} / 0.15)`
-          : `rgba(${theme.vars?.palette.primary.main} / 0.2)`,
-        opacity: isVisible ? 1 : 0,
-        transform: isVisible ? 'translateY(0)' : 'translateY(32px)',
-        transitionProperty: 'opacity, transform, border-color, box-shadow',
-        transitionDuration: '0.6s, 0.6s, 0.3s, 0.3s',
-        transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
-        transitionDelay: isVisible ? `${index * 0.07}s` : '0s',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          borderColor: `rgba(${theme.vars?.palette.primary.main} / 0.5)`,
-          boxShadow: isDark
-            ? `0 8px 24px rgba(${theme.vars?.palette.primary.main} / 0.1)`
-            : `0 8px 24px rgba(${theme.vars?.palette.primary.main} / 0.08)`,
-        },
-      }}
-    >
-      <Box
-        sx={{
-          width: 44,
-          height: 44,
-          mb: 2,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: '10px',
-          bgcolor: isDark
-            ? `rgba(${theme.vars?.palette.primary.main} / 0.1)`
-            : `rgba(${theme.vars?.palette.primary.main} / 0.08)`,
-          color: 'primary.main',
-          transition: 'transform 0.3s ease',
-          '.MuiCard-root:hover &': {transform: 'scale(1.1)'},
-        }}
-      >
-        {icon}
+      <Box sx={{flex: 1}}>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 700,
+            mb: 1,
+            fontSize: '1rem',
+            letterSpacing: '-0.01em',
+            color: 'text.primary',
+            lineHeight: 1.3,
+          }}
+        >
+          {title}
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{
+            fontSize: '0.875rem',
+            lineHeight: 1.75,
+            color: 'text.secondary',
+          }}
+        >
+          {description}
+        </Typography>
       </Box>
-      <Typography variant="h6" sx={{fontWeight: 600, mb: 1, fontSize: '0.95rem', color: 'text.primary'}}>
-        {title}
-      </Typography>
-      <Typography
-        variant="body2"
-        sx={{
-          fontSize: '0.85rem',
-          lineHeight: 1.65,
-          color: 'text.secondary',
-        }}
-      >
-        {description}
-      </Typography>
-    </Card>
+    </Box>
   );
 }
 
-const features = [
+/* ─── Feature data ───────────────────────────────────────────────────────── */
+
+const highlights = [
   {
     icon: (
       <svg
-        width="24"
-        height="24"
+        width="22"
+        height="22"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -213,8 +176,8 @@ const features = [
   {
     icon: (
       <svg
-        width="24"
-        height="24"
+        width="22"
+        height="22"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -234,8 +197,8 @@ const features = [
   {
     icon: (
       <svg
-        width="24"
-        height="24"
+        width="22"
+        height="22"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -259,8 +222,8 @@ const features = [
   {
     icon: (
       <svg
-        width="24"
-        height="24"
+        width="22"
+        height="22"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -275,11 +238,120 @@ const features = [
     description:
       'Built for cloud-native delivery with a lightweight, high-performant, API-first runtime that integrates into modern CI/CD, GitOps, and containerized workflows.',
   },
+];
+
+/* ─── Capability row (bottom grid) ──────────────────────────────────────── */
+
+function CapabilityCard({icon, title, description, index, isVisible}: CapabilityRowProps): JSX.Element {
+  const isDark = useIsDarkMode();
+  const theme = useTheme();
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1.5,
+        p: {xs: 2.5, md: 3},
+        borderRadius: '12px',
+        border: '1px solid',
+        borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+        bgcolor: 'transparent',
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
+        transitionProperty: 'opacity, transform, border-color',
+        transitionDuration: '0.5s, 0.5s, 0.2s',
+        transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+        transitionDelay: isVisible ? `${index * 0.055}s` : '0s',
+        '&:hover': {
+          borderColor: `rgba(${theme.vars?.palette.primary.main} / 0.3)`,
+          bgcolor: isDark
+            ? `rgba(${theme.vars?.palette.primary.main} / 0.04)`
+            : `rgba(${theme.vars?.palette.primary.main} / 0.02)`,
+        },
+      }}
+    >
+      <Box
+        sx={{
+          width: 38,
+          height: 38,
+          borderRadius: '9px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: isDark
+            ? `rgba(${theme.vars?.palette.primary.main} / 0.1)`
+            : `rgba(${theme.vars?.palette.primary.main} / 0.07)`,
+          color: 'primary.main',
+          flexShrink: 0,
+        }}
+      >
+        {icon}
+      </Box>
+      <Box>
+        <Typography
+          variant="subtitle2"
+          sx={{fontWeight: 700, mb: 0.5, fontSize: '0.9rem', color: 'text.primary', letterSpacing: '-0.01em'}}
+        >
+          {title}
+        </Typography>
+        <Typography variant="body2" sx={{fontSize: '0.83rem', lineHeight: 1.65, color: 'text.secondary'}}>
+          {description}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+/* ─── Section divider ────────────────────────────────────────────────────── */
+
+function SectionDivider({label}: {label: string}): JSX.Element {
+  const isDark = useIsDarkMode();
+  const theme = useTheme();
+
+  return (
+    <Box sx={{display: 'flex', alignItems: 'center', gap: 3, my: {xs: 6, md: 8}}}>
+      <Box
+        sx={{
+          flex: 1,
+          height: '1px',
+          background: isDark
+            ? `linear-gradient(90deg, transparent, rgba(${theme.vars?.palette.primary.main} / 0.25))`
+            : `linear-gradient(90deg, transparent, rgba(${theme.vars?.palette.primary.main} / 0.2))`,
+        }}
+      />
+      <Typography
+        variant="h3"
+        sx={{
+          mt: 4,
+          fontSize: {xs: '1rem', sm: '1.25rem', md: '2rem'},
+          fontWeight: 800,
+          letterSpacing: '-0.03em',
+          color: 'text.primary',
+          lineHeight: 1.15,
+        }}
+      >
+        {label}
+      </Typography>
+      <Box
+        sx={{
+          flex: 1,
+          height: '1px',
+          background: isDark
+            ? `linear-gradient(90deg, rgba(${theme.vars?.palette.primary.main} / 0.25), transparent)`
+            : `linear-gradient(90deg, rgba(${theme.vars?.palette.primary.main} / 0.2), transparent)`,
+        }}
+      />
+    </Box>
+  );
+}
+
+const capabilities = [
   {
     icon: (
       <svg
-        width="24"
-        height="24"
+        width="18"
+        height="18"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -302,8 +374,8 @@ const features = [
   {
     icon: (
       <svg
-        width="24"
-        height="24"
+        width="18"
+        height="18"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -322,8 +394,8 @@ const features = [
   {
     icon: (
       <svg
-        width="24"
-        height="24"
+        width="18"
+        height="18"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -343,8 +415,8 @@ const features = [
   {
     icon: (
       <svg
-        width="24"
-        height="24"
+        width="18"
+        height="18"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -363,8 +435,8 @@ const features = [
   {
     icon: (
       <svg
-        width="24"
-        height="24"
+        width="18"
+        height="18"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -385,8 +457,8 @@ const features = [
   {
     icon: (
       <svg
-        width="24"
-        height="24"
+        width="18"
+        height="18"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -412,25 +484,42 @@ export default function ProductOverviewSection(): JSX.Element {
   const productName = (siteConfig.customFields?.product as DocusaurusProductConfig).project.name;
 
   return (
-    <Box sx={{py: {xs: 8, lg: 12}}}>
+    <Box sx={{pb: {xs: 8, lg: 12}}}>
       <Container maxWidth="lg" sx={{px: {xs: 2, sm: 4}}}>
+        {/* Section heading */}
         <Box
           ref={titleRef}
           sx={{
             textAlign: 'center',
-            mb: 8,
+            mb: {xs: 6, md: 8},
             opacity: titleVisible ? 1 : 0,
             transform: titleVisible ? 'translateY(0)' : 'translateY(32px)',
             transition: 'opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
           }}
         >
           <Typography
+            variant="overline"
+            sx={{
+              display: 'block',
+              fontSize: '0.7rem',
+              letterSpacing: '0.18em',
+              color: 'primary.main',
+              fontWeight: 600,
+              mb: 0.3,
+            }}
+          >
+            BUILD DIFFERENT
+          </Typography>
+
+          <Typography
             variant="h3"
             sx={{
               mb: 2,
               fontSize: {xs: '1.75rem', sm: '2.25rem', md: '2.5rem'},
-              fontWeight: 700,
+              fontWeight: 800,
+              letterSpacing: '-0.03em',
               color: 'text.primary',
+              lineHeight: 1.15,
             }}
           >
             What is{' '}
@@ -449,10 +538,10 @@ export default function ProductOverviewSection(): JSX.Element {
           <Typography
             variant="body1"
             sx={{
-              maxWidth: '680px',
+              maxWidth: '800px',
               mx: 'auto',
               fontSize: {xs: '0.95rem', sm: '1.05rem'},
-              lineHeight: 1.7,
+              lineHeight: 1.75,
               color: 'text.secondary',
             }}
           >
@@ -461,65 +550,40 @@ export default function ProductOverviewSection(): JSX.Element {
           </Typography>
         </Box>
 
-        <Box
-          ref={ref}
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: {xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)'},
-            gap: 3,
-          }}
-        >
-          {features.slice(0, 4).map((feature, index) => (
-            <HighlightCard key={feature.title} {...feature} index={index} isVisible={isVisible} />
-          ))}
-
+        {/* ── Highlight grid ── */}
+        <Box ref={ref}>
           <Box
             sx={{
-              gridColumn: '1 / -1',
-              textAlign: 'center',
-              pt: 6,
-              pb: 2,
-              opacity: isVisible ? 1 : 0,
-              transform: isVisible ? 'translateY(0)' : 'translateY(24px)',
-              transition:
-                'opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s',
+              display: 'grid',
+              gridTemplateColumns: {xs: '1fr', sm: 'repeat(2, 1fr)'},
+              gap: 2,
             }}
           >
-            <Typography
-              variant="h4"
-              sx={{
-                mb: 1.5,
-                fontSize: {xs: '1.4rem', sm: '1.65rem'},
-                fontWeight: 700,
-                color: 'text.primary',
-              }}
-            >
-              Core capabilities
-            </Typography>
-            <Typography
-              variant="body1"
-              sx={{
-                maxWidth: '560px',
-                mx: 'auto',
-                fontSize: {xs: '0.9rem', sm: '1rem'},
-                lineHeight: 1.7,
-                color: 'text.secondary',
-              }}
-            >
-              Everything you need to build, deploy, and scale identity in production.
-            </Typography>
+            {highlights.map((item, index) => (
+              <HighlightCard key={item.title} {...item} index={index} isVisible={isVisible} num={`0${index + 1}`} />
+            ))}
           </Box>
 
+          {/* ── Divider ── */}
           <Box
             sx={{
-              gridColumn: '1 / -1',
-              display: 'grid',
-              gridTemplateColumns: {xs: '1fr', sm: 'repeat(3, 1fr)'},
-              gap: 3,
+              opacity: isVisible ? 1 : 0,
+              transition: 'opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.28s',
             }}
           >
-            {features.slice(4).map((feature, index) => (
-              <FeatureCard key={feature.title} {...feature} index={index + 4} isVisible={isVisible} />
+            <SectionDivider label="Core capabilities" />
+          </Box>
+
+          {/* ── Capabilities grid ── */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)'},
+              gap: 2,
+            }}
+          >
+            {capabilities.map((item, index) => (
+              <CapabilityCard key={item.title} {...item} index={index + 4} isVisible={isVisible} />
             ))}
           </Box>
         </Box>

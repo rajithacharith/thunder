@@ -58,6 +58,7 @@ type UserServiceInterface interface {
 	UpdateUserCredentials(ctx context.Context, userID string,
 		credentials json.RawMessage) *serviceerror.ServiceError
 	DeleteUser(ctx context.Context, userID string) *serviceerror.ServiceError
+	ResolveUserOUHandle(ctx context.Context, user *User) *serviceerror.ServiceError
 }
 
 // userService is the default implementation of the UserServiceInterface.
@@ -66,6 +67,7 @@ type userService struct {
 	entityService     entity.EntityServiceInterface
 	ouService         oupkg.OrganizationUnitServiceInterface
 	entityTypeService entitytype.EntityTypeServiceInterface
+	uuidGenerator     func() (string, error)
 }
 
 // newUserService creates a new instance of userService with injected dependencies.
@@ -80,6 +82,7 @@ func newUserService(
 		entityService:     entityService,
 		ouService:         ouService,
 		entityTypeService: entityTypeService,
+		uuidGenerator:     utils.GenerateUUIDv7,
 	}
 }
 
@@ -314,10 +317,12 @@ func (us *userService) CreateUser(ctx context.Context, user *User) (*User, *serv
 	// Schema validation and uniqueness checks are handled by entity service in CreateEntity.
 
 	var err error
-	user.ID, err = utils.GenerateUUIDv7()
-	if err != nil {
-		logger.Error("Failed to generate UUID", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+	if user.ID == "" {
+		user.ID, err = us.uuidGenerator()
+		if err != nil {
+			logger.Error("Failed to generate UUID", log.Error(err))
+			return nil, &serviceerror.InternalServerError
+		}
 	}
 
 	e := userToEntity(user)
@@ -1037,4 +1042,30 @@ func (us *userService) checkUserAccess(
 func buildTreePaginationLinks(handlePath string, limit, offset, totalResults int, displayQuery string) []utils.Link {
 	treePath := fmt.Sprintf("/users/tree/%s", path.Clean(handlePath))
 	return utils.BuildPaginationLinks(treePath, limit, offset, totalResults, displayQuery)
+}
+
+// ResolveUserOUHandle resolves ou_handle to an OU ID on the given user in-place.
+// Called by the declarative loader parser so that file-based users support ou_handle.
+// If both ou_id and ou_handle are provided, ou_id wins and a warning is logged.
+func (us *userService) ResolveUserOUHandle(
+	ctx context.Context, user *User,
+) *serviceerror.ServiceError {
+	if user.OUID != "" && user.OUHandle != "" {
+		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+		logger.Warn("Both ou_id and ou_handle provided for user; ou_handle ignored",
+			log.MaskedString(log.LoggerKeyUserID, user.ID))
+		return nil
+	}
+	if user.OUID == "" && user.OUHandle != "" {
+		if us.ouService == nil {
+			return &serviceerror.InternalServerError
+		}
+		ou, svcErr := us.ouService.GetOrganizationUnitByPath(
+			security.WithRuntimeContext(ctx), user.OUHandle)
+		if svcErr != nil {
+			return &ErrorInvalidRequestFormat
+		}
+		user.OUID = ou.ID
+	}
+	return nil
 }

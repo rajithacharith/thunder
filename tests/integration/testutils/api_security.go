@@ -139,13 +139,21 @@ func GetHTTPClientForUser(username, password string) (*http.Client, error) {
 // ObtainAdminAccessToken obtains an admin access token using the CONSOLE app and stores it globally
 func ObtainAdminAccessToken() error {
 	log.Println("Obtaining admin access token...")
+	adminUsername := os.Getenv("ADMIN_USERNAME")
+	if adminUsername == "" {
+		adminUsername = "admin"
+	}
+	adminPassword := os.Getenv("ADMIN_PASSWORD")
+	if adminPassword == "" {
+		adminPassword = "admin"
+	}
 	var err error
 	adminTokenState, err = ObtainAccessTokenWithPassword(
 		"CONSOLE",
 		"https://localhost:8095/console",
 		"system",
-		"admin",
-		"admin",
+		adminUsername,
+		adminPassword,
 		true,
 	)
 	if err != nil {

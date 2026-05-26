@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {ResourceAvatar, SettingsCard, getInitials} from '@thunderid/components';
+import {PageLoadingAnimation, ResourceAvatar, SettingsCard, getInitials} from '@thunderid/components';
 import {useResolveDisplayName} from '@thunderid/hooks';
 import {useLogger} from '@thunderid/logger/react';
 import {
@@ -24,7 +24,6 @@ import {
   Stack,
   Typography,
   Button,
-  CircularProgress,
   Alert,
   Chip,
   Tabs,
@@ -207,11 +206,7 @@ export default function UserEditPage() {
 
   // Loading state
   if (isUserLoading || isSchemaLoading) {
-    return (
-      <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px'}}>
-        <CircularProgress />
-      </Box>
-    );
+    return <PageLoadingAnimation />;
   }
 
   // Error state

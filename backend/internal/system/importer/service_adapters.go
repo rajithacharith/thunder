@@ -23,26 +23,57 @@ import (
 	"encoding/json"
 	"fmt"
 
+	agentmodel "github.com/thunder-id/thunderid/internal/agent/model"
+	layoutmgt "github.com/thunder-id/thunderid/internal/design/layout/mgt"
+	thememgt "github.com/thunder-id/thunderid/internal/design/theme/mgt"
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	"github.com/thunder-id/thunderid/internal/group"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
+	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
+	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/user"
-
-	layoutmgt "github.com/thunder-id/thunderid/internal/design/layout/mgt"
-	thememgt "github.com/thunder-id/thunderid/internal/design/theme/mgt"
-	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 )
+
+// resolveImportOUHandle resolves an ou_handle to its corresponding OU ID for import operations.
+// If both ouID and ouHandle are provided, ouID wins and a warning is logged.
+// Returns the (possibly resolved) ouID and any service error from the OU lookup.
+func (s *importService) resolveImportOUHandle(
+	ctx context.Context, resourceType, resourceID, resourceName, ouID, ouHandle string,
+) (string, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ImportService"))
+	if ouID != "" && ouHandle != "" {
+		logger.Warn("Both ou_id and ou_handle provided; ou_handle ignored",
+			log.String("resourceType", resourceType),
+			log.String("resourceID", resourceID),
+			log.String("resourceName", resourceName))
+		return ouID, nil
+	}
+	if ouID == "" && ouHandle != "" {
+		if s.ouService == nil {
+			return "", &serviceerror.InternalServerError
+		}
+		resolved, svcErr := s.ouService.GetOrganizationUnitByPath(ctx, ouHandle)
+		if svcErr != nil {
+			return "", svcErr
+		}
+		return resolved.ID, nil
+	}
+	return ouID, nil
+}
 
 type roleDeclarativeYAML struct {
 	ID          string                     `yaml:"id"`
 	Name        string                     `yaml:"name"`
 	Description string                     `yaml:"description,omitempty"`
-	OUID        string                     `yaml:"ou_id"`
+	OUID        string                     `yaml:"ou_id,omitempty"`
+	OUHandle    string                     `yaml:"ou_handle,omitempty"`
 	Permissions []role.ResourcePermissions `yaml:"permissions"`
 	Assignments []role.RoleAssignment      `yaml:"assignments,omitempty"`
 }
@@ -50,7 +81,8 @@ type roleDeclarativeYAML struct {
 type userDeclarativeYAML struct {
 	ID          string                 `yaml:"id"`
 	Type        string                 `yaml:"type"`
-	OUID        string                 `yaml:"ou_id"`
+	OUID        string                 `yaml:"ou_id,omitempty"`
+	OUHandle    string                 `yaml:"ou_handle,omitempty"`
 	Attributes  map[string]interface{} `yaml:"attributes"`
 	Credentials map[string]interface{} `yaml:"credentials,omitempty"`
 }
@@ -59,7 +91,8 @@ type entityTypeDeclarativeYAML struct {
 	ID                    string                       `yaml:"id"`
 	Category              entitytype.TypeCategory      `yaml:"category,omitempty"`
 	Name                  string                       `yaml:"name"`
-	OUID                  string                       `yaml:"organization_unit_id"`
+	OUID                  string                       `yaml:"organization_unit_id,omitempty"`
+	OUHandle              string                       `yaml:"ou_handle,omitempty"`
 	AllowSelfRegistration bool                         `yaml:"allow_self_registration,omitempty"`
 	SystemAttributes      *entitytype.SystemAttributes `yaml:"system_attributes,omitempty"`
 	Schema                interface{}                  `yaml:"schema"`
@@ -201,6 +234,7 @@ func (s *importService) importEntityType(
 		ID:                    req.ID,
 		Name:                  req.Name,
 		OUID:                  req.OUID,
+		OUHandle:              req.OUHandle,
 		AllowSelfRegistration: req.AllowSelfRegistration,
 		SystemAttributes:      req.SystemAttributes,
 		Schema:                schemaBytes,
@@ -208,6 +242,7 @@ func (s *importService) importEntityType(
 	updateReq := entitytype.UpdateEntityTypeRequest{
 		Name:                  createReq.Name,
 		OUID:                  createReq.OUID,
+		OUHandle:              createReq.OUHandle,
 		AllowSelfRegistration: createReq.AllowSelfRegistration,
 		SystemAttributes:      createReq.SystemAttributes,
 		Schema:                createReq.Schema,
@@ -263,6 +298,13 @@ func (s *importService) importRole(
 	if err := doc.Node.Decode(&req); err != nil {
 		return decodeErrorOutcome(resourceTypeRole, req.ID, req.Name, err)
 	}
+
+	resolvedOUID, svcErr := s.resolveImportOUHandle(
+		ctx, resourceTypeRole, req.ID, req.Name, req.OUID, req.OUHandle)
+	if svcErr != nil {
+		return serviceErrorOutcome(resourceTypeRole, req.ID, req.Name, operationCreate, svcErr)
+	}
+	req.OUID = resolvedOUID
 
 	createReq := role.RoleCreationDetail{
 		ID:          req.ID,
@@ -340,12 +382,21 @@ func (s *importService) importGroup(
 		ID          string         `yaml:"id"`
 		Name        string         `yaml:"name"`
 		Description string         `yaml:"description,omitempty"`
-		OUID        string         `yaml:"ou_id"`
+		OUID        string         `yaml:"ou_id,omitempty"`
+		OUHandle    string         `yaml:"ou_handle,omitempty"`
 		Members     []group.Member `yaml:"members,omitempty"`
 	}
 	if err := doc.Node.Decode(&raw); err != nil {
 		return decodeErrorOutcome(resourceTypeGroup, raw.ID, raw.Name, err)
 	}
+
+	resolvedOUID, svcErr := s.resolveImportOUHandle(
+		ctx, resourceTypeGroup, raw.ID, raw.Name, raw.OUID, raw.OUHandle)
+	if svcErr != nil {
+		return serviceErrorOutcome(resourceTypeGroup, raw.ID, raw.Name, operationCreate, svcErr)
+	}
+	raw.OUID = resolvedOUID
+
 	req = group.CreateGroupRequest{
 		ID:          raw.ID,
 		Name:        raw.Name,
@@ -414,6 +465,13 @@ func (s *importService) importResourceServer(
 	if err := doc.Node.Decode(&req); err != nil {
 		return decodeErrorOutcome(resourceTypeResourceServer, req.ID, req.Name, err)
 	}
+
+	resolvedOUID, svcErr := s.resolveImportOUHandle(
+		ctx, resourceTypeResourceServer, req.ID, req.Name, req.OUID, req.OUHandle)
+	if svcErr != nil {
+		return serviceErrorOutcome(resourceTypeResourceServer, req.ID, req.Name, operationCreate, svcErr)
+	}
+	req.OUID = resolvedOUID
 
 	if dryRun {
 		if options.IsUpsertEnabled() && req.ID != "" {
@@ -599,6 +657,13 @@ func (s *importService) importUser(
 	if err := doc.Node.Decode(&req); err != nil {
 		return decodeErrorOutcome(resourceTypeUser, req.ID, "", err)
 	}
+
+	resolvedOUID, svcErr := s.resolveImportOUHandle(
+		ctx, resourceTypeUser, req.ID, "", req.OUID, req.OUHandle)
+	if svcErr != nil {
+		return serviceErrorOutcome(resourceTypeUser, req.ID, "", operationCreate, svcErr)
+	}
+	req.OUID = resolvedOUID
 
 	attributesJSON, err := json.Marshal(req.Attributes)
 	if err != nil {
@@ -810,6 +875,135 @@ func (s *importService) importResourceServerChildren(
 	}
 
 	return nil
+}
+
+func (s *importService) importAgent(
+	ctx context.Context, doc parsedDocument, options *ImportOptions, dryRun bool, flowIDAliases map[string]string,
+) ImportItemOutcome {
+	if s.agentService == nil {
+		return unsupportedAdapterOutcome(resourceTypeAgent, "agent")
+	}
+
+	var req agentmodel.AgentRequestWithID
+	if err := doc.Node.Decode(&req); err != nil {
+		return decodeErrorOutcome(resourceTypeAgent, req.ID, req.Name, err)
+	}
+
+	if mappedFlowID, ok := flowIDAliases[req.AuthFlowID]; ok {
+		req.AuthFlowID = mappedFlowID
+	}
+	if mappedFlowID, ok := flowIDAliases[req.RegistrationFlowID]; ok {
+		req.RegistrationFlowID = mappedFlowID
+	}
+
+	var attributesJSON json.RawMessage
+	if len(req.Attributes) > 0 {
+		raw, err := json.Marshal(req.Attributes)
+		if err != nil {
+			return ImportItemOutcome{
+				ResourceType: resourceTypeAgent,
+				ResourceID:   req.ID,
+				ResourceName: req.Name,
+				Status:       statusFailed,
+				Code:         ErrorInvalidYAMLContent.Code,
+				Message:      fmt.Sprintf("failed to marshal agent attributes: %v", err),
+			}
+		}
+		attributesJSON = raw
+	}
+
+	normalizeAgentOAuthConfigForImport(&req)
+
+	createReq := &agentmodel.Agent{
+		ID:                 req.ID,
+		OUID:               req.OUID,
+		OUHandle:           req.OUHandle,
+		Type:               req.Type,
+		Name:               req.Name,
+		Description:        req.Description,
+		Owner:              req.Owner,
+		Attributes:         attributesJSON,
+		InboundAuthProfile: req.InboundAuthProfile,
+		InboundAuthConfig:  req.InboundAuthConfig,
+	}
+	updateReq := &agentmodel.UpdateAgentRequest{
+		OUID:               req.OUID,
+		OUHandle:           req.OUHandle,
+		Type:               req.Type,
+		Name:               req.Name,
+		Description:        req.Description,
+		Owner:              req.Owner,
+		Attributes:         attributesJSON,
+		InboundAuthProfile: req.InboundAuthProfile,
+		InboundAuthConfig:  req.InboundAuthConfig,
+	}
+
+	if dryRun {
+		if options.IsUpsertEnabled() && req.ID != "" {
+			_, svcErr := s.agentService.GetAgent(ctx, req.ID, false)
+			if svcErr == nil {
+				return successOutcome(resourceTypeAgent, req.ID, req.Name, operationUpdate)
+			}
+
+			if !isNotFoundServiceError(svcErr) {
+				return serviceErrorOutcome(resourceTypeAgent, req.ID, req.Name, operationUpdate, svcErr)
+			}
+		}
+
+		return successOutcome(resourceTypeAgent, req.ID, req.Name, operationCreate)
+	}
+
+	if options.IsUpsertEnabled() && req.ID != "" {
+		_, svcErr := s.agentService.GetAgent(ctx, req.ID, false)
+		if svcErr == nil {
+			updated, updateErr := s.agentService.UpdateAgent(ctx, req.ID, updateReq)
+			if updateErr != nil {
+				return serviceErrorOutcome(resourceTypeAgent, req.ID, req.Name, operationUpdate, updateErr)
+			}
+			return successOutcome(resourceTypeAgent, updated.ID, updated.Name, operationUpdate)
+		}
+
+		if !isNotFoundServiceError(svcErr) {
+			return serviceErrorOutcome(resourceTypeAgent, req.ID, req.Name, operationUpdate, svcErr)
+		}
+	}
+
+	created, svcErr := s.agentService.CreateAgent(ctx, createReq)
+	if svcErr != nil {
+		return serviceErrorOutcome(resourceTypeAgent, req.ID, req.Name, operationCreate, svcErr)
+	}
+	return successOutcome(resourceTypeAgent, created.ID, created.Name, operationCreate)
+}
+
+func getAgentOAuthConfigForImport(req *agentmodel.AgentRequestWithID) *inboundmodel.OAuthConfigWithSecret {
+	if req == nil {
+		return nil
+	}
+
+	for _, inboundAuth := range req.InboundAuthConfig {
+		if inboundAuth.Type == inboundmodel.OAuthInboundAuthType && inboundAuth.OAuthConfig != nil {
+			return inboundAuth.OAuthConfig
+		}
+	}
+
+	return nil
+}
+
+func normalizeAgentOAuthConfigForImport(req *agentmodel.AgentRequestWithID) {
+	oauthConfig := getAgentOAuthConfigForImport(req)
+	if oauthConfig == nil {
+		return
+	}
+
+	if oauthConfig.PublicClient &&
+		oauthConfig.TokenEndpointAuthMethod == oauth2const.TokenEndpointAuthMethodNone &&
+		oauthConfig.ClientSecret != "" {
+		log.GetLogger().Debug("Dropping client_secret for public agent import with token endpoint auth method 'none'",
+			log.String("agentID", req.ID),
+			log.String("name", req.Name),
+			log.String("clientID", oauthConfig.ClientID))
+		oauthConfig.ClientSecret = ""
+	}
 }
 
 func unsupportedAdapterOutcome(resourceType, name string) ImportItemOutcome {

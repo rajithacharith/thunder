@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Agent Management API
   version: "1.0"
-  description: This API is used to manage agents.
+  description: Manage AI agents and their configuration schemas. Agents are autonomous components assigned to applications to extend identity flows with AI-driven capabilities.
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
@@ -16,10 +16,10 @@ servers:
         default: "8090"
 
 tags:
-  - name: agents
-    description: Operations related to agent management
-  - name: agent-types
-    description: Operations related to agent type schema management
+  - name: Agents
+    description: CRUD operations for agent instances.
+  - name: Agent Types
+    description: Read agent type schemas to understand available configuration options.
 
 security:
   - OAuth2: [system]
@@ -28,7 +28,7 @@ paths:
   /agents:
     get:
       tags:
-        - agents
+        - Agents
       summary: List agents
       parameters:
         - $ref: '#/components/parameters/limitQueryParam'
@@ -115,7 +115,7 @@ paths:
 
     post:
       tags:
-        - agents
+        - Agents
       summary: Create a new agent
       description: |
         Creates a new agent. At minimum, an entity is created with the provided identity fields.
@@ -553,16 +553,36 @@ paths:
                     description:
                       key: "error.agentservice.certificate_operation_failed_description"
                       defaultValue: "A certificate operation failed due to invalid input"
+                multiple-oauth-configs:
+                  summary: More than one OAuth inbound auth config supplied
+                  value:
+                    code: "AGT-1038"
+                    message:
+                      key: "error.agentservice.multiple_oauth_configs"
+                      defaultValue: "Multiple OAuth inbound auth configs are not allowed"
+                    description:
+                      key: "error.agentservice.multiple_oauth_configs_description"
+                      defaultValue: "An entity may have at most one inbound auth config per protocol"
                 owner-not-found:
                   summary: Owner does not resolve to an existing entity
                   value:
-                    code: "AGT-1038"
+                    code: "AGT-1039"
                     message:
                       key: "error.agentservice.owner_not_found"
                       defaultValue: "Owner not found"
                     description:
                       key: "error.agentservice.owner_not_found_description"
                       defaultValue: "The specified owner does not match any known user, application, or agent"
+                invalid-user-attribute:
+                  summary: User attribute not valid for any allowed user type
+                  value:
+                    code: "AGT-1040"
+                    message:
+                      key: "error.agentservice.invalid_user_attribute"
+                      defaultValue: "Invalid user attribute"
+                    description:
+                      key: "error.agentservice.invalid_user_attribute_description"
+                      defaultValue: "One or more user attributes are not valid for the configured allowed user types"
         "403":
           description: Forbidden
           content:
@@ -622,7 +642,7 @@ paths:
   /agents/{id}:
     get:
       tags:
-        - agents
+        - Agents
       summary: Get an agent by id
       parameters:
         - in: path
@@ -722,7 +742,7 @@ paths:
 
     put:
       tags:
-        - agents
+        - Agents
       summary: Update an agent by id
       description: |
         Full replacement update. `name` and `type` are required. All inbound auth profile
@@ -1090,16 +1110,36 @@ paths:
                     description:
                       key: "error.agentservice.invalid_credential_description"
                       defaultValue: "The provided credential is invalid"
+                multiple-oauth-configs:
+                  summary: More than one OAuth inbound auth config supplied
+                  value:
+                    code: "AGT-1038"
+                    message:
+                      key: "error.agentservice.multiple_oauth_configs"
+                      defaultValue: "Multiple OAuth inbound auth configs are not allowed"
+                    description:
+                      key: "error.agentservice.multiple_oauth_configs_description"
+                      defaultValue: "An entity may have at most one inbound auth config per protocol"
                 owner-not-found:
                   summary: Owner does not resolve to an existing entity
                   value:
-                    code: "AGT-1038"
+                    code: "AGT-1039"
                     message:
                       key: "error.agentservice.owner_not_found"
                       defaultValue: "Owner not found"
                     description:
                       key: "error.agentservice.owner_not_found_description"
                       defaultValue: "The specified owner does not match any known user, application, or agent"
+                invalid-user-attribute:
+                  summary: User attribute not valid for any allowed user type
+                  value:
+                    code: "AGT-1040"
+                    message:
+                      key: "error.agentservice.invalid_user_attribute"
+                      defaultValue: "Invalid user attribute"
+                    description:
+                      key: "error.agentservice.invalid_user_attribute_description"
+                      defaultValue: "One or more user attributes are not valid for the configured allowed user types"
 
         "403":
           description: Forbidden
@@ -1163,7 +1203,7 @@ paths:
 
     delete:
       tags:
-        - agents
+        - Agents
       summary: Delete an agent by id
       description: |
         Deletes the agent, its inbound auth profile, and its OAuth client profile. Group
@@ -1215,7 +1255,7 @@ paths:
   /agents/{id}/groups:
     get:
       tags:
-        - agents
+        - Agents
       summary: List groups that the agent belongs to
       description: |
         Returns a paginated list of groups the agent is a member of. Use the group and role APIs
@@ -1289,7 +1329,7 @@ paths:
   /agent-types:
     get:
       tags:
-        - agent-types
+        - Agent Types
       summary: List agent type schemas
       description: |
         Retrieves the list of agent type schemas. Agent types are restricted to a single
@@ -1352,7 +1392,7 @@ paths:
 
     post:
       tags:
-        - agent-types
+        - Agent Types
       summary: Create the default agent type schema
       description: |
         Creates the agent type schema. The `name` must be `default` — agent types are
@@ -1471,7 +1511,7 @@ paths:
   /agent-types/{id}:
     get:
       tags:
-        - agent-types
+        - Agent Types
       summary: Get an agent type schema by ID
       description: |
         Retrieves the details of a specific agent type schema by its ID.
@@ -1539,7 +1579,7 @@ paths:
 
     put:
       tags:
-        - agent-types
+        - Agent Types
       summary: Update the default agent type schema by ID
       description: |
         Updates the agent type schema with new attribute definitions. The `name` must remain
@@ -1656,7 +1696,7 @@ paths:
 
     delete:
       tags:
-        - agent-types
+        - Agent Types
       summary: Delete an agent type schema by ID (not supported)
       description: |
         Deleting agent type schemas is not supported. The `default` agent type cannot be
@@ -1701,6 +1741,10 @@ components:
       flows:
         authorizationCode:
           authorizationUrl: https://localhost:8090/oauth2/authorize
+          tokenUrl: https://localhost:8090/oauth2/token
+          scopes:
+            system: Access to system management APIs
+        clientCredentials:
           tokenUrl: https://localhost:8090/oauth2/token
           scopes:
             system: Access to system management APIs
@@ -1832,6 +1876,13 @@ components:
           example:
             llmModel: "claude-3-5-sonnet"
             environment: "production"
+        isReadOnly:
+          type: boolean
+          readOnly: true
+          description: |
+            Indicates whether the agent is immutable. When `true`, update and delete
+            operations are rejected. Set by the system for declaratively provisioned agents.
+          example: false
 
     AgentListResponse:
       type: object
@@ -2257,6 +2308,25 @@ components:
             type: string
           description: User attributes to embed in the ID token payload.
           example: ["email", "name", "given_name", "family_name"]
+        responseType:
+          type: string
+          enum: ["JWT", "JWE", "NESTED_JWT"]
+          description: |
+            ID token response type. Defaults to `JWT`.
+            - `JWT` — standard signed JWT (default)
+            - `JWE` — encrypted JWT (requires `encryptionAlg` and `encryptionEnc`)
+            - `NESTED_JWT` — signed-then-encrypted (requires `encryptionAlg` and `encryptionEnc`)
+          example: "JWT"
+        encryptionAlg:
+          type: string
+          enum: ["RSA-OAEP", "RSA-OAEP-256"]
+          description: JWE key-management algorithm. Required when `responseType` is `JWE` or `NESTED_JWT`.
+          example: "RSA-OAEP-256"
+        encryptionEnc:
+          type: string
+          enum: ["A128CBC-HS256", "A256GCM"]
+          description: JWE content-encryption algorithm. Required when `encryptionAlg` is set.
+          example: "A256GCM"
 
     UserInfoConfig:
       type: object
@@ -2440,6 +2510,12 @@ components:
           example:
             profile: ["name", "family_name", "given_name"]
             email: ["email", "email_verified"]
+        acrValues:
+          type: array
+          items:
+            type: string
+          description: Default ACR values applied when the authorization request does not specify `acr_values`.
+          example: ["urn:mace:incommon:iap:silver"]
 
     OAuthAgentConfigComplete:
       allOf:

@@ -279,3 +279,49 @@ type SenderProperty struct {
 	Value    string `json:"value"`
 	IsSecret bool   `json:"isSecret"`
 }
+
+// Agent represents an agent resource in the system.
+type Agent struct {
+	ID          string      `json:"id,omitempty"`
+	OUID        string      `json:"ouId,omitempty"`
+	OUHandle    string      `json:"ouHandle,omitempty"`
+	Type        string      `json:"type,omitempty"`
+	Name        string      `json:"name,omitempty"`
+	Description string      `json:"description,omitempty"`
+	Owner       string      `json:"owner,omitempty"`
+	Attributes  interface{} `json:"attributes,omitempty"`
+	IsReadOnly  bool        `json:"isReadOnly"`
+
+	AuthFlowID                string                   `json:"authFlowId,omitempty"`
+	RegistrationFlowID        string                   `json:"registrationFlowId,omitempty"`
+	IsRegistrationFlowEnabled bool                     `json:"isRegistrationFlowEnabled,omitempty"`
+	ThemeID                   string                   `json:"themeId,omitempty"`
+	LayoutID                  string                   `json:"layoutId,omitempty"`
+	AllowedUserTypes          []string                 `json:"allowedUserTypes,omitempty"`
+	InboundAuthConfig         []AgentInboundAuthConfig `json:"inboundAuthConfig,omitempty"`
+}
+
+// AgentInboundAuthConfig represents an inbound auth config entry for an agent.
+type AgentInboundAuthConfig struct {
+	Type   string            `json:"type"`
+	Config *AgentOAuthConfig `json:"config,omitempty"`
+}
+
+// AgentOAuthConfig holds OAuth client settings for an agent.
+type AgentOAuthConfig struct {
+	ClientID                string   `json:"clientId,omitempty"`
+	ClientSecret            string   `json:"clientSecret,omitempty"`
+	GrantTypes              []string `json:"grantTypes,omitempty"`
+	ResponseTypes           []string `json:"responseTypes,omitempty"`
+	TokenEndpointAuthMethod string   `json:"tokenEndpointAuthMethod,omitempty"`
+	PKCERequired            bool     `json:"pkceRequired,omitempty"`
+	PublicClient            bool     `json:"publicClient,omitempty"`
+}
+
+// AgentListResponse is the paginated list response for agents.
+type AgentListResponse struct {
+	TotalResults int     `json:"totalResults"`
+	StartIndex   int     `json:"startIndex"`
+	Count        int     `json:"count"`
+	Agents       []Agent `json:"agents"`
+}

@@ -16,8 +16,8 @@ servers:
         default: "8090"
 
 tags:
-  - name: export
-    description: Operations related to resource export
+  - name: Export
+    description: Export all declared resources as a combined YAML document or a downloadable ZIP archive.
 
 security:
   - OAuth2: [system]
@@ -26,7 +26,7 @@ paths:
   /export:
     post:
       tags:
-        - export
+        - Export
       summary: Export resources as JSON
       description: >
         Exports the requested resources and returns a JSON response containing
@@ -108,7 +108,7 @@ paths:
   /export/zip:
     post:
       tags:
-        - export
+        - Export
       summary: Export resources as ZIP archive
       description: >
         Exports the requested resources and returns them as a downloadable
@@ -263,6 +263,11 @@ components:
           items:
             type: string
           description: IDs of users to export, or ["*"] for all.
+        groups:
+          type: array
+          items:
+            type: string
+          description: IDs of groups to export, or ["*"] for all.
         resourceServers:
           type: array
           items:

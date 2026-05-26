@@ -292,6 +292,7 @@ vi.mock('../../components/create-application/ConfigureDetails', () => ({
   default: ({
     onReadyChange,
     onCallbackUrlChange,
+    onHostingUrlChange,
   }: {
     onReadyChange: (ready: boolean) => void;
     onCallbackUrlChange: (url: string) => void;
@@ -302,6 +303,11 @@ vi.mock('../../components/create-application/ConfigureDetails', () => ({
     setTimeout(() => onReadyChange(true), 0);
     return (
       <div data-testid="application-configure-details">
+        <input
+          data-testid="hosting-url-input"
+          onChange={(e) => onHostingUrlChange(e.target.value)}
+          placeholder="Hosting URL"
+        />
         <input
           data-testid="callback-url-input"
           onChange={(e) => onCallbackUrlChange(e.target.value)}
@@ -1422,6 +1428,95 @@ describe('ApplicationCreatePage', () => {
       });
 
       expect(screen.queryByText(/no.*flow/i)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Hosting URL / Application URL', () => {
+    it('should include url in create request when hosting URL is provided', async () => {
+      mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
+        onSuccess({id: 'app-123', name: 'My App'} as Application);
+      });
+
+      renderWithProviders();
+
+      // STACK → NAME
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.type(screen.getByTestId('app-name-input'), 'My App');
+      // NAME → DESIGN
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+      // DESIGN → OPTIONS
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('application-configure-sign-in')).toBeInTheDocument();
+      });
+      // OPTIONS → EXPERIENCE
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('application-configure-experience')).toBeInTheDocument();
+      });
+      // EXPERIENCE → CONFIGURE
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('application-configure-details')).toBeInTheDocument();
+      });
+
+      await user.type(screen.getByTestId('hosting-url-input'), 'https://myapp.example.com');
+
+      // CONFIGURE → Create
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(mockCreateApplication).toHaveBeenCalled();
+      });
+
+      const createAppCall = mockCreateApplication.mock.calls[0][0] as Record<string, unknown>;
+      expect(createAppCall.url).toBe('https://myapp.example.com');
+    });
+
+    it('should not include url in create request when hosting URL is not provided', async () => {
+      mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
+        onSuccess({id: 'app-123', name: 'My App'} as Application);
+      });
+
+      renderWithProviders();
+
+      // STACK → NAME
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.type(screen.getByTestId('app-name-input'), 'My App');
+      // NAME → DESIGN
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+      // DESIGN → OPTIONS
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('application-configure-sign-in')).toBeInTheDocument();
+      });
+      // OPTIONS → EXPERIENCE
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('application-configure-experience')).toBeInTheDocument();
+      });
+      // EXPERIENCE → CONFIGURE
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('application-configure-details')).toBeInTheDocument();
+      });
+
+      // Do not type a hosting URL — proceed directly
+      // CONFIGURE → Create
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(mockCreateApplication).toHaveBeenCalled();
+      });
+
+      const createAppCall = mockCreateApplication.mock.calls[0][0] as Record<string, unknown>;
+      expect(createAppCall.url).toBeUndefined();
     });
   });
 

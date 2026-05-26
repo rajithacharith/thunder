@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Application Management API
   version: "1.0"
-  description: This API is used to manage applications.
+  description: Create and manage client applications registered with ThunderID. Applications define OAuth2/OIDC client configuration, associated authentication flows, and branding.
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
@@ -16,8 +16,8 @@ servers:
         default: "8090"
 
 tags:
-  - name: applications
-    description: Operations related to application management
+  - name: Applications
+    description: CRUD operations for registered client applications.
 
 security:
   - OAuth2: [system]
@@ -26,9 +26,12 @@ paths:
   /applications:
     get:
       tags:
-        - applications
+        - Applications
       summary: List applications
       description: Retrieve a list of all applications.
+      parameters:
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
       responses:
         "200":
           description: List of applications
@@ -66,17 +69,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-              examples:
-                invalid-limit:
-                  summary: Invalid limit parameter
-                  value:
-                    code: "APP-1001"
-                    message:
-                      key: "error.applicationservice.invalid_limit_parameter"
-                      defaultValue: "Invalid pagination parameter"
-                    description:
-                      key: "error.applicationservice.invalid_limit_parameter_description"
-                      defaultValue: "The limit parameter must be a positive integer"
         "500":
           description: Internal server error
           content:
@@ -94,7 +86,7 @@ paths:
 
     post:
       tags:
-        - applications
+        - Applications
       summary: Create an application
       description: Creates a new application with the provided details.
       requestBody:
@@ -146,6 +138,7 @@ paths:
                     pkceRequired: false
                     publicClient: false
                     requirePushedAuthorizationRequests: false
+                    dpopBoundAccessTokens: false
                     scopes:
                       - "openid"
                       - "profile"
@@ -221,6 +214,7 @@ paths:
                       pkceRequired: false
                       publicClient: false
                       requirePushedAuthorizationRequests: false
+                      dpopBoundAccessTokens: false
                       scopes:
                         - "openid"
                         - "profile"
@@ -253,7 +247,7 @@ paths:
                 invalid-request-format:
                   summary: Invalid request format
                   value:
-                    code: "APP-1001"
+                    code: "APP-1018"
                     message:
                       key: "error.applicationservice.invalid_request_format"
                       defaultValue: "Invalid request format"
@@ -263,33 +257,23 @@ paths:
                 invalid-redirect-uri:
                   summary: Invalid redirect URI
                   value:
-                    code: "APP-1002"
+                    code: "APP-1012"
                     message:
                       key: "error.applicationservice.invalid_redirect_uri"
                       defaultValue: "Invalid redirect URI"
                     description:
                       key: "error.applicationservice.invalid_redirect_uri_description"
-                      defaultValue: "One or more redirect URIs are not valid"
+                      defaultValue: "One or more provided redirect URIs are not valid URIs"
                 invalid-grant-type:
                   summary: Invalid grant type
                   value:
-                    code: "APP-1003"
+                    code: "APP-1010"
                     message:
                       key: "error.applicationservice.invalid_grant_type"
                       defaultValue: "Invalid grant type"
                     description:
                       key: "error.applicationservice.invalid_grant_type_description"
-                      defaultValue: "One or more grant types are not supported"
-                invalid-recovery-flow-id:
-                  summary: Invalid or disabled recovery flow ID
-                  value:
-                    code: "APP-1005"
-                    message:
-                      key: "error.applicationservice.invalid_recovery_flow_id"
-                      defaultValue: "Invalid or disabled recovery flow ID"
-                    description:
-                      key: "error.applicationservice.invalid_recovery_flow_id_description"
-                      defaultValue: "The provided recoveryFlowId does not exist or is not enabled"
+                      defaultValue: "One or more provided grant types are invalid"
         "500":
           description: Internal server error
           content:
@@ -308,7 +292,7 @@ paths:
   /applications/{id}:
     get:
       tags:
-        - applications
+        - Applications
       summary: Get an application by ID
       description: Retrieve a specific application using its ID.
       parameters:
@@ -372,6 +356,7 @@ paths:
                       pkceRequired: false
                       publicClient: false
                       requirePushedAuthorizationRequests: false
+                      dpopBoundAccessTokens: false
                       scopes:
                         - "openid"
                         - "profile"
@@ -401,13 +386,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                code: "APP-1001"
+                code: "APP-1002"
                 message:
-                  key: "error.applicationservice.invalid_request_format"
-                  defaultValue: "Invalid request format"
+                  key: "error.applicationservice.invalid_application_id"
+                  defaultValue: "Invalid application ID"
                 description:
-                  key: "error.applicationservice.invalid_request_format_description"
-                  defaultValue: "The request contains invalid data"
+                  key: "error.applicationservice.invalid_application_id_description"
+                  defaultValue: "The provided application ID is invalid or empty"
         "404":
           description: Application not found
           content:
@@ -415,13 +400,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                code: "APP-1004"
+                code: "APP-1001"
                 message:
                   key: "error.applicationservice.application_not_found"
                   defaultValue: "Application not found"
                 description:
                   key: "error.applicationservice.application_not_found_description"
-                  defaultValue: "The application with the specified ID does not exist"
+                  defaultValue: "The requested application could not be found"
         "500":
           description: Internal server error
           content:
@@ -439,7 +424,7 @@ paths:
 
     put:
       tags:
-        - applications
+        - Applications
       summary: Update an application
       description: Update the details of an existing application.
       parameters:
@@ -501,6 +486,7 @@ paths:
                     tokenEndpointAuthMethod: "client_secret_basic"
                     pkceRequired: false
                     publicClient: false
+                    dpopBoundAccessTokens: false
                     scopes:
                       - "openid"
                       - "profile"
@@ -578,6 +564,7 @@ paths:
                       pkceRequired: false
                       publicClient: false
                       requirePushedAuthorizationRequests: false
+                      dpopBoundAccessTokens: false
                       scopes:
                         - "openid"
                         - "profile"
@@ -607,10 +594,20 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               examples:
+                missing-application-id:
+                  summary: Missing application ID
+                  value:
+                    code: "APP-1002"
+                    message:
+                      key: "error.applicationservice.invalid_application_id"
+                      defaultValue: "Invalid application ID"
+                    description:
+                      key: "error.applicationservice.invalid_application_id_description"
+                      defaultValue: "The provided application ID is invalid or empty"
                 invalid-request-format:
                   summary: Invalid request format
                   value:
-                    code: "APP-1001"
+                    code: "APP-1018"
                     message:
                       key: "error.applicationservice.invalid_request_format"
                       defaultValue: "Invalid request format"
@@ -620,23 +617,13 @@ paths:
                 invalid-redirect-uri:
                   summary: Invalid redirect URI
                   value:
-                    code: "APP-1002"
+                    code: "APP-1012"
                     message:
                       key: "error.applicationservice.invalid_redirect_uri"
                       defaultValue: "Invalid redirect URI"
                     description:
                       key: "error.applicationservice.invalid_redirect_uri_description"
-                      defaultValue: "One or more redirect URIs are not valid"
-                invalid-recovery-flow-id:
-                  summary: Invalid or disabled recovery flow ID
-                  value:
-                    code: "APP-1005"
-                    message:
-                      key: "error.applicationservice.invalid_recovery_flow_id"
-                      defaultValue: "Invalid or disabled recovery flow ID"
-                    description:
-                      key: "error.applicationservice.invalid_recovery_flow_id_description"
-                      defaultValue: "The provided recoveryFlowId does not exist or is not enabled"
+                      defaultValue: "One or more provided redirect URIs are not valid URIs"
         "404":
           description: Application not found
           content:
@@ -644,13 +631,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                code: "APP-1004"
+                code: "APP-1001"
                 message:
                   key: "error.applicationservice.application_not_found"
                   defaultValue: "Application not found"
                 description:
                   key: "error.applicationservice.application_not_found_description"
-                  defaultValue: "The application with the specified ID does not exist"
+                  defaultValue: "The requested application could not be found"
         "500":
           description: Internal server error
           content:
@@ -668,7 +655,7 @@ paths:
 
     delete:
       tags:
-        - applications
+        - Applications
       summary: Delete an application
       description: Delete an application using its ID.
       parameters:
@@ -690,13 +677,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                code: "APP-1001"
+                code: "APP-1002"
                 message:
-                  key: "error.applicationservice.invalid_request_format"
-                  defaultValue: "Invalid request format"
+                  key: "error.applicationservice.invalid_application_id"
+                  defaultValue: "Invalid application ID"
                 description:
-                  key: "error.applicationservice.invalid_request_format_description"
-                  defaultValue: "The request contains invalid data"
+                  key: "error.applicationservice.invalid_application_id_description"
+                  defaultValue: "The provided application ID is invalid or empty"
         "500":
           description: Internal server error
           content:
@@ -719,6 +706,10 @@ components:
       flows:
         authorizationCode:
           authorizationUrl: https://localhost:8090/oauth2/authorize
+          tokenUrl: https://localhost:8090/oauth2/token
+          scopes:
+            system: Access to system management APIs
+        clientCredentials:
           tokenUrl: https://localhost:8090/oauth2/token
           scopes:
             system: Access to system management APIs
@@ -1144,6 +1135,10 @@ components:
           type: string
           description: The template type of the application.
           example: "spa"
+        isReadOnly:
+          type: boolean
+          description: Indicates if the application is read-only (declarative/immutable).
+          example: false
 
     ApplicationListResponse:
       type: object
@@ -1363,6 +1358,11 @@ components:
           description: Whether Pushed Authorization Requests (PAR) per RFC 9126 are required for this application.
           example: false
           default: false
+        dpopBoundAccessTokens:
+          type: boolean
+          description: Whether DPoP-bound access tokens (RFC 9449) are required for this application.
+          example: false
+          default: false
         scopes:
           type: array
           items:
@@ -1388,6 +1388,8 @@ components:
           example:
             profile: ["name", "family_name", "given_name", "picture"]
             employee: ["emp_id", "department"]
+        certificate:
+          $ref: '#/components/schemas/Certificate'
         acrValues:
           type: array
           items:
@@ -1453,6 +1455,11 @@ components:
           description: Whether Pushed Authorization Requests (PAR) per RFC 9126 are required for this application.
           example: false
           default: false
+        dpopBoundAccessTokens:
+          type: boolean
+          description: Whether DPoP-bound access tokens (RFC 9449) are required for this application.
+          example: false
+          default: false
         scopes:
           type: array
           items:
@@ -1478,6 +1485,8 @@ components:
           example:
             profile: ["name", "family_name", "given_name", "picture"]
             employee: ["emp_id", "department"]
+        certificate:
+          $ref: '#/components/schemas/Certificate'
         acrValues:
           type: array
           items:

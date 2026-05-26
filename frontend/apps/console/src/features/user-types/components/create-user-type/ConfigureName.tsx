@@ -99,7 +99,7 @@ export default function ConfigureName({
                 sx={{
                   '&:hover': {
                     bgcolor: 'primary.main',
-                    color: 'primary.contrastText',
+                    color: 'text.primary',
                     borderColor: 'primary.main',
                   },
                 }}

@@ -96,7 +96,7 @@ export function I18nConfigurationCardContent({
   onCreateModeChange,
 }: I18nConfigurationCardContentProps): ReactElement {
   const {t} = useTranslation();
-  const {i18nText, i18nTextLoading} = useI18nConfig();
+  const {i18nTextLoading} = useI18nConfig();
   const updateTranslation = useUpdateTranslation({
     onMutationSuccess: () => {
       invalidateI18nCache();
@@ -136,22 +136,18 @@ export function I18nConfigurationCardContent({
   }, [translationsData]);
 
   const resolvedValue: string = useMemo(() => {
-    if (!selectedI18nKey || !i18nText) {
+    if (!selectedI18nKey) {
       return '';
     }
-
-    let foundValue = '';
-
-    Object.values(i18nText).some((screenTexts: Record<string, string>) => {
-      if (screenTexts[selectedI18nKey]) {
-        foundValue = screenTexts[selectedI18nKey];
-        return true;
-      }
-      return false;
-    });
-
-    return foundValue;
-  }, [selectedI18nKey, i18nText]);
+    const resolved = t(selectedI18nKey);
+    const keyWithoutNamespace = selectedI18nKey.includes(':')
+      ? selectedI18nKey.slice(selectedI18nKey.indexOf(':') + 1)
+      : selectedI18nKey;
+    if (resolved === selectedI18nKey || resolved === keyWithoutNamespace) {
+      return '';
+    }
+    return resolved;
+  }, [selectedI18nKey, t]);
 
   const availableLanguages: string[] = useMemo(() => {
     if (languagesData?.languages && languagesData.languages.length > 0) {

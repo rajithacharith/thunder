@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/thunder-id/thunderid/internal/entity"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib/hash"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 )
 

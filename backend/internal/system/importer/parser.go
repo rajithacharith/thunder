@@ -42,6 +42,7 @@ const (
 	resourceTypeApplication        = "application"
 	resourceTypeUser               = "user"
 	resourceTypeTranslation        = "translation"
+	resourceTypeAgent              = "agent"
 	resourceTypeUnknown            = "unknown"
 )
 
@@ -166,6 +167,7 @@ func isKnownResourceType(resourceType string) bool {
 		resourceTypeUser:               {},
 		resourceTypeGroup:              {},
 		resourceTypeTranslation:        {},
+		resourceTypeAgent:              {},
 	}
 
 	_, exists := knownTypes[resourceType]
@@ -179,7 +181,7 @@ func classifyResourceType(node *yaml.Node) string {
 		matches = append(matches, resourceTypeTranslation)
 	}
 
-	if hasAllKeys(node, "organization_unit_id", "schema") {
+	if hasAllKeys(node, "schema") && hasAnyKey(node, "organization_unit_id", "ou_handle") {
 		matches = append(matches, resourceTypeEntityType)
 	}
 
@@ -199,7 +201,7 @@ func classifyResourceType(node *yaml.Node) string {
 		matches = append(matches, resourceTypeLayout)
 	}
 
-	if hasAllKeys(node, "type", "attributes", "ou_id") {
+	if hasAllKeys(node, "type", "attributes") && hasAnyKey(node, "ou_id", "ou_handle") {
 		matches = append(matches, resourceTypeUser)
 	}
 
@@ -211,12 +213,24 @@ func classifyResourceType(node *yaml.Node) string {
 		matches = append(matches, resourceTypeIdentityProvider)
 	}
 
-	if hasAnyKey(node, "auth_flow_id", "registration_flow_id", "inbound_auth_config", "allowed_user_types") {
+	if hasAnyKey(node, "owner") ||
+		(hasAnyKey(node, "type") &&
+			hasAnyKey(node, "auth_flow_id", "registration_flow_id", "inbound_auth_config", "allowed_user_types") &&
+			!hasAnyKey(node, "properties")) {
+		matches = append(matches, resourceTypeAgent)
+	}
+
+	if !hasAnyKey(node, "owner") &&
+		!(hasAnyKey(node, "type") &&
+			hasAnyKey(node, "auth_flow_id", "registration_flow_id", "inbound_auth_config", "allowed_user_types") &&
+			!hasAnyKey(node, "properties")) &&
+		hasAnyKey(node, "auth_flow_id", "registration_flow_id", "inbound_auth_config", "allowed_user_types") {
 		matches = append(matches, resourceTypeApplication)
 	}
 
-	if hasAllKeys(node, "name", "ou_id") &&
-		!hasAnyKey(node, "handle", "permissions", "identifier", "type", "flowType", "displayName", "properties") {
+	if hasAllKeys(node, "name") && hasAnyKey(node, "ou_id", "ou_handle") &&
+		!hasAnyKey(node, "handle", "permissions", "identifier", "type", "flowType",
+			"displayName", "properties", "schema") {
 		matches = append(matches, resourceTypeGroup)
 	}
 

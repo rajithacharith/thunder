@@ -16,13 +16,12 @@
  * under the License.
  */
 
-import {UnsavedChangesBar} from '@thunderid/components';
+import {PageLoadingAnimation, UnsavedChangesBar} from '@thunderid/components';
 import {useLogger} from '@thunderid/logger/react';
 import {
   Alert,
   Box,
   Button,
-  CircularProgress,
   IconButton,
   PageContent,
   PageTitle,
@@ -138,11 +137,7 @@ export default function AgentEditPage(): JSX.Element {
   const hasChanges = useMemo(() => Object.keys(editedAgent).length > 0, [editedAgent]);
 
   if (isLoading) {
-    return (
-      <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px'}}>
-        <CircularProgress />
-      </Box>
-    );
+    return <PageLoadingAnimation />;
   }
 
   if (isError || error) {

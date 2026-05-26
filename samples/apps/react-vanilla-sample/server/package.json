@@ -1,6 +1,6 @@
 {
   "name": "server",
-  "version": "0.38.0",
+  "version": "0.40.0",
   "description": "Sample App Server for ThunderID",
   "bin": "server.js",
   "main": "server.js",
@@ -18,7 +18,7 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "4.22.1"
+    "express": "4.22.2"
   },
   "overrides": {
     "path-to-regexp": "0.1.13"

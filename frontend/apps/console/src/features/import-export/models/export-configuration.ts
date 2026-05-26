@@ -75,6 +75,10 @@ export interface ExportRequest {
    */
   groups?: string[];
   /**
+   * List of agent IDs to export. Use `["*"]` to export all.
+   */
+  agents?: string[];
+  /**
    * Optional configuration for export behavior
    */
   options?: ExportOptions;

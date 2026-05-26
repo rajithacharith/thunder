@@ -51,7 +51,7 @@ func Initialize(
 	// Step 3: Load declarative resources if user store mode requires it.
 	storeMode := getUserStoreMode()
 	if storeMode == serverconst.StoreModeDeclarative || storeMode == serverconst.StoreModeComposite {
-		if err := entityService.LoadDeclarativeResources(makeUserDeclarativeConfig()); err != nil {
+		if err := entityService.LoadDeclarativeResources(makeUserDeclarativeConfig(userService)); err != nil {
 			return nil, nil, nil, err
 		}
 	}

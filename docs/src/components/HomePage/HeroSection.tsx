@@ -17,250 +17,680 @@
  */
 
 import Link from '@docusaurus/Link';
-import {Box, Container, Typography, Stack, Button, useTheme} from '@wso2/oxygen-ui';
-import React, {JSX} from 'react';
-import ConstellationBackground from './ConstellationBackground';
+import {useBaseUrlUtils} from '@docusaurus/useBaseUrl';
+import {Box, Button, Container, Stack, Typography, useTheme} from '@wso2/oxygen-ui';
+import React, {JSX, useEffect, useState} from 'react';
+import useIsDarkMode from '../../hooks/useIsDarkMode';
+import usePlatform from '../../hooks/usePlatform';
+import {type ArchKey, type OsKey} from '../../utils/platform';
+import ClaudeLogo from '../icons/ClaudeLogo';
+import CliLogo from '../icons/CliLogo';
+import CodexLogo from '../icons/CodexLogo';
+import DockerLogo from '../icons/DockerLogo';
+import GoLogo from '../icons/GoLogo';
+import IOSLogo from '../icons/IOSLogo';
+import LinuxLogo from '../icons/LinuxLogo';
+import SkillsLogo from '../icons/SkillsLogo';
+import WindowsLogo from '../icons/WindowsLogo';
+
+const INSTALL_TABS = [
+  {id: 'cli', label: 'CLI', icon: CliLogo, command: 'npx thunderid', brandColor: null, enabled: true},
+  {
+    id: 'docker',
+    label: 'Docker',
+    icon: DockerLogo,
+    command: 'docker compose -f oci://ghcr.io/thunder-id/thunderid-quick-start:latest up',
+    brandColor: '#2560FF',
+    enabled: true,
+  },
+  {
+    id: 'claude',
+    label: 'Claude',
+    icon: ClaudeLogo,
+    command: '/plugin marketplace add thunder-id/skills',
+    brandColor: '#D97757',
+    enabled: true,
+  },
+  {
+    id: 'codex',
+    label: 'Codex',
+    icon: CodexLogo,
+    command: 'codex plugin marketplace add thunder-id/skills',
+    brandColor: '#3941FF',
+    enabled: true,
+  },
+  {
+    id: 'skills',
+    label: 'Skills',
+    icon: SkillsLogo,
+    command: 'npx skills add thunder-id/skills',
+    brandColor: null,
+    enabled: true,
+  },
+];
+
+interface DownloadAsset {
+  arch: ArchKey;
+  downloadUrl: string;
+  os: OsKey;
+  sizeLabel: string;
+}
+
+function parseDownloadAssets(assets: {name: string; downloadUrl: string; sizeLabel: string}[]): DownloadAsset[] {
+  const result: DownloadAsset[] = [];
+  for (const asset of assets) {
+    const m = /^thunder(?:id)?-[0-9A-Za-z.+-]+-(macos|linux|win)-(arm64|x64)\.zip$/i.exec(asset.name);
+    if (m) {
+      result.push({
+        arch: m[2] as ArchKey,
+        downloadUrl: asset.downloadUrl,
+        os: m[1] as OsKey,
+        sizeLabel: asset.sizeLabel,
+      });
+    }
+  }
+  return result;
+}
+
+const OS_ICONS: Record<OsKey, JSX.Element> = {
+  linux: <LinuxLogo size={20} />,
+  macos: <IOSLogo size={18} />,
+  win: <WindowsLogo size={20} />,
+};
+
+const OS_LABELS: Record<OsKey, string> = {
+  linux: 'Linux',
+  macos: 'macOS',
+  win: 'Windows',
+};
+
+const ARCH_LABELS: Partial<Record<OsKey, Record<ArchKey, string>>> = {
+  macos: {arm64: 'Apple Silicon', x64: 'Intel'},
+};
 
 export default function HeroSection(): JSX.Element {
   const theme = useTheme();
+  const isLight = !useIsDarkMode();
+  const {withBaseUrl} = useBaseUrlUtils();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+  const [activeTab, setActiveTabRaw] = useState('cli');
+  const setActiveTab = setActiveTabRaw as (v: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+  const [copied, setCopiedRaw] = useState(false);
+  const setCopied = setCopiedRaw as (v: boolean) => void;
+  const platform = usePlatform();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+  const [downloadAssetsRaw, setDownloadAssetsRaw] = useState([] as DownloadAsset[]);
+  const downloadAssets = downloadAssetsRaw as DownloadAsset[];
+  const setDownloadAssets = setDownloadAssetsRaw as (v: DownloadAsset[]) => void;
+  useEffect(() => {
+    fetch(withBaseUrl('/data/releases.json'))
+      .then(
+        (r) =>
+          r.json() as Promise<{
+            latestRelease: {tagName: string; assets: {name: string; downloadUrl: string; sizeLabel: string}[]};
+          }>,
+      )
+      .then((data) => {
+        setDownloadAssets(parseDownloadAssets(data.latestRelease?.assets ?? []));
+      })
+      .catch(() => {});
+  }, [withBaseUrl, setDownloadAssets]);
+
+  const activeCommand = INSTALL_TABS.find((t) => t.id === activeTab)?.command ?? '';
+
+  const cmdSpaceIdx = activeCommand.indexOf(' ');
+  const cmdFirst = cmdSpaceIdx !== -1 ? activeCommand.slice(0, cmdSpaceIdx) : activeCommand;
+  const cmdRest = cmdSpaceIdx !== -1 ? activeCommand.slice(cmdSpaceIdx) : '';
+
+  const handleCopy = (): void => {
+    navigator.clipboard.writeText(activeCommand).then(() => {
+      setCopied(true);
+      setTimeout(() => {
+        setCopied(false);
+      }, 1800);
+    });
+  };
+
+  const primaryAsset: DownloadAsset | null = (() => {
+    if (!platform?.os || downloadAssets.length === 0) return null;
+    const preferred = platform.arch ?? 'arm64';
+    const typed = downloadAssets;
+    return (
+      typed.find((a: DownloadAsset) => a.os === platform.os && a.arch === preferred) ??
+      typed.find((a: DownloadAsset) => a.os === platform.os) ??
+      null
+    );
+  })();
+
+  const alternateAsset: DownloadAsset | null = (() => {
+    if (!primaryAsset || !platform?.os) return null;
+    const alt: ArchKey = primaryAsset.arch === 'arm64' ? 'x64' : 'arm64';
+    return downloadAssets.find((a: DownloadAsset) => a.os === platform.os && a.arch === alt) ?? null;
+  })();
+
+  const dimColor = isLight ? 'rgba(0,0,0,0.38)' : 'rgba(255,255,255,0.35)';
 
   return (
     <Box
       sx={{
         '@keyframes fadeInUp': {
-          from: {opacity: 0, transform: 'translateY(32px)'},
+          from: {opacity: 0, transform: 'translateY(24px)'},
           to: {opacity: 1, transform: 'translateY(0)'},
         },
-        '@keyframes pulseGlow': {
-          '0%, 100%': {opacity: 0.6, transform: 'scale(1)'},
-          '50%': {opacity: 1, transform: 'scale(1.1)'},
-        },
-        '@keyframes heroFloat': {
-          '0%, 100%': {transform: 'translateY(0)'},
-          '50%': {transform: 'translateY(-6px)'},
-        },
-        py: {xs: 7, lg: 10},
+        minHeight: 'calc(100vh - var(--ifm-navbar-height))',
+        display: 'flex',
+        alignItems: 'center',
         position: 'relative',
         overflow: 'hidden',
-        background: 'transparent',
       }}
     >
-      <Container maxWidth="lg" sx={{px: {xs: 2, sm: 4}, position: 'relative', zIndex: 1}}>
+      <Container maxWidth="lg" sx={{px: {xs: 2, sm: 4}, position: 'relative', zIndex: 1, width: '100%'}}>
         <Box
           sx={{
+            '@keyframes streak': {
+              '0%': {transform: 'translateX(-120%) skewX(-20deg)', opacity: 0},
+              '20%': {opacity: 0.18},
+              '80%': {opacity: 0.18},
+              '100%': {transform: 'translateX(260%) skewX(-20deg)', opacity: 0},
+            },
             display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            py: {xs: 5, lg: 8},
-            textAlign: 'center',
+            flexDirection: {xs: 'column', lg: 'row'},
+            alignItems: {xs: 'center', lg: 'center'},
+            gap: {xs: 6, lg: 8},
+            py: {xs: 8, lg: 10},
           }}
         >
-          {/* Lightning bolt icon */}
+          {/* ── Left column ── */}
           <Box
             sx={{
-              mb: 3,
-              position: 'relative',
-              width: 80,
-              height: 120,
+              flex: '1 1 0',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              animation: 'fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both',
+              flexDirection: 'column',
+              alignItems: {xs: 'center', lg: 'flex-start'},
+              textAlign: {xs: 'center', lg: 'left'},
             }}
           >
-            <Box
+            <Typography
+              variant="overline"
               sx={{
-                position: 'absolute',
-                width: 120,
-                height: 120,
-                borderRadius: '50%',
-                background: `radial-gradient(circle, rgba(${theme.vars?.palette.primary.main} / 0.25) 0%, transparent 70%)`,
-                filter: 'blur(20px)',
-                animation: 'pulseGlow 3s ease-in-out infinite',
+                mb: 2,
+                fontSize: '0.75rem',
+                letterSpacing: '0.22em',
+                color: theme.vars?.palette.primary.main,
+                fontWeight: 500,
+                animation: 'fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) both',
+              }}
+            >
+              INTRODUCING
+            </Typography>
+
+            <Box
+              component="img"
+              src={isLight ? 'assets/images/logo.svg' : 'assets/images/logo-inverted.svg'}
+              alt="ThunderID"
+              sx={{
+                height: {xs: 36, md: 44},
+                width: 'auto',
+                mb: 3,
+                animation: 'fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.05s both',
               }}
             />
-            <svg
-              width="56"
-              height="80"
-              viewBox="0 0 24 32"
-              fill="none"
-              style={{position: 'relative', zIndex: 1, animation: 'heroFloat 4s ease-in-out infinite'}}
+
+            <Typography
+              variant="h1"
+              sx={{
+                mb: 2.5,
+                fontSize: {xs: '3rem', sm: '4rem', md: '5rem'},
+                fontWeight: 700,
+                lineHeight: 1.05,
+                color: 'text.primary',
+                animation: 'fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.1s both',
+              }}
             >
-              <path
-                d="M13.5 1L4 18h7l-1.5 13L20 14h-7L13.5 1z"
-                stroke={theme.vars?.palette.primary.main}
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-              />
-            </svg>
+              <Box
+                component="span"
+                sx={{
+                  background: `linear-gradient(90deg, ${theme.vars?.palette.primary.dark} 0%, ${theme.vars?.palette.primary.main} 100%)`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}
+              >
+                Auth
+              </Box>{' '}
+              for the Modern Dev
+            </Typography>
+
+            <Typography
+              variant="body1"
+              sx={{
+                maxWidth: '480px',
+                mb: 5,
+                fontSize: {xs: '1.05rem', sm: '1.15rem'},
+                lineHeight: 1.75,
+                color: 'text.secondary',
+                animation: 'fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.2s both',
+              }}
+            >
+              High-performance open-source identity stack, engineered for developers.
+            </Typography>
+
+            <Stack
+              direction={{xs: 'column', sm: 'row'}}
+              spacing={2}
+              alignItems="center"
+              sx={{animation: 'fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.3s both', mb: 4}}
+            >
+              <Button
+                component={Link}
+                href="/docs/next"
+                variant="contained"
+                color="primary"
+                size="large"
+                sx={{
+                  px: 4,
+                  py: 1.5,
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                  borderRadius: '28px',
+                  background: `linear-gradient(135deg, ${theme.vars?.palette.primary.dark} 0%, ${theme.vars?.palette.primary.main} 100%)`,
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  '&:hover': {
+                    background: `linear-gradient(135deg, ${theme.vars?.palette.primary.dark} 0%, ${theme.vars?.palette.primary.main} 100%)`,
+                    transform: 'translateY(-2px)',
+                    boxShadow: `0 6px 24px rgba(${theme.vars?.palette.primary.main} / 0.35)`,
+                  },
+                  '&:active': {transform: 'translateY(0)'},
+                }}
+              >
+                Get Started
+              </Button>
+              <Button
+                component={Link}
+                href="/docs/next/guides/getting-started/what-is-thunderid"
+                variant="text"
+                size="large"
+                sx={{
+                  px: 3,
+                  py: 1.5,
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                  color: 'text.secondary',
+                  borderRadius: '28px',
+                  '&:hover': {bgcolor: 'transparent', color: 'text.primary'},
+                }}
+              >
+                Learn More →
+              </Button>
+            </Stack>
+
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: {xs: 1.5, sm: 0},
+                alignItems: 'center',
+                justifyContent: {xs: 'center', lg: 'flex-start'},
+                animation: 'fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.4s both',
+              }}
+            >
+              {(
+                [
+                  {
+                    key: 'apache',
+                    icon: null,
+                    parts: [
+                      {text: 'Apache 2.0', bold: true},
+                      {text: 'license', bold: false},
+                    ],
+                  },
+                  {
+                    key: 'go',
+                    icon: <GoLogo size={18} />,
+                    parts: [
+                      {text: 'built with', bold: false},
+                      {text: 'Go', bold: true},
+                    ],
+                  },
+                  {
+                    key: 'speed',
+                    icon: null,
+                    parts: [
+                      {text: '<50ms', bold: true},
+                      {text: 'startup', bold: false},
+                    ],
+                  },
+                ] as {key: string; icon: JSX.Element | null; parts: {text: string; bold: boolean}[]}[]
+              ).map(({key, icon, parts}, i) => (
+                <React.Fragment key={key}>
+                  {i > 0 && (
+                    <Box
+                      component="span"
+                      sx={{
+                        mx: 2,
+                        display: {xs: 'none', sm: 'inline'},
+                        color: isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)',
+                      }}
+                    >
+                      ·
+                    </Box>
+                  )}
+                  <Box sx={{display: 'inline-flex', alignItems: 'center', gap: 0.5}}>
+                    {icon && (
+                      <Box sx={{display: 'flex', alignItems: 'center', filter: 'grayscale(0.4)', opacity: 0.65}}>
+                        {icon}
+                      </Box>
+                    )}
+                    {parts.map(({text, bold}) => (
+                      <Typography
+                        key={text}
+                        component="span"
+                        sx={{
+                          fontSize: '0.8rem',
+                          ...(bold
+                            ? {
+                                fontWeight: 600,
+                                fontFamily: 'monospace',
+                                color: isLight ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.6)',
+                              }
+                            : {color: isLight ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.3)'}),
+                        }}
+                      >
+                        {text}
+                      </Typography>
+                    ))}
+                  </Box>
+                </React.Fragment>
+              ))}
+            </Box>
           </Box>
 
-          {/* INTRODUCING label */}
-          <Typography
-            variant="overline"
+          {/* ── Right column ── */}
+          <Box
             sx={{
-              mb: 1.5,
-              fontSize: '0.8rem',
-              letterSpacing: '0.25em',
-              color: theme.vars?.palette.primary.main,
-              fontWeight: 500,
-              animation: 'fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both',
+              flex: '1 1 0',
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              width: '100%',
+              maxWidth: {xs: 560, lg: 'none'},
+              animation: 'fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.25s both',
             }}
           >
-            INTRODUCING
-          </Typography>
+            {/* Tab row */}
+            <Box sx={{display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap'}}>
+              {INSTALL_TABS.filter((tab) => tab.enabled).map((tab) => {
+                const isActive = activeTab === tab.id;
+                const ac = isActive && tab.brandColor ? tab.brandColor : null;
+                const activeColor = ac ?? theme.vars?.palette.primary.main;
+                return (
+                  <Box
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                    }}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.75,
+                      px: {xs: 1.5, sm: 2},
+                      py: {xs: 0.75, sm: 1},
+                      borderRadius: '8px',
+                      border: '1px solid',
+                      borderColor: isActive
+                        ? ac
+                          ? `${ac}80`
+                          : `rgba(${theme.vars?.palette.primary.main} / 0.5)`
+                        : isLight
+                          ? 'rgba(0,0,0,0.12)'
+                          : 'rgba(255,255,255,0.1)',
+                      bgcolor: isActive
+                        ? ac
+                          ? `${ac}1A`
+                          : `rgba(${theme.vars?.palette.primary.main} / 0.1)`
+                        : 'transparent',
+                      color: isActive ? activeColor : isLight ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.5)',
+                      fontFamily: 'monospace',
+                      fontSize: {xs: '0.78rem', sm: '0.85rem'},
+                      fontWeight: isActive ? 600 : 400,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      userSelect: 'none',
+                      '&:hover': {
+                        borderColor: isActive
+                          ? ac
+                            ? `${ac}99`
+                            : `rgba(${theme.vars?.palette.primary.main} / 0.6)`
+                          : isLight
+                            ? 'rgba(0,0,0,0.25)'
+                            : 'rgba(255,255,255,0.22)',
+                        color: isActive ? activeColor : isLight ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)',
+                      },
+                    }}
+                  >
+                    <Box
+                      component="span"
+                      sx={{
+                        display: 'flex',
+                        filter: isActive ? 'none' : 'grayscale(1)',
+                        opacity: isActive ? 1 : 0.5,
+                        transition: 'filter 0.15s ease, opacity 0.15s ease',
+                      }}
+                    >
+                      <tab.icon />
+                    </Box>
+                    {tab.label}
+                  </Box>
+                );
+              })}
+            </Box>
 
-          {/* [ THUNDER ] title */}
-          <Typography
-            variant="h2"
-            sx={{
-              mb: 3,
-              fontSize: {xs: '2rem', sm: '2.5rem', md: '3rem'},
-              fontWeight: 300,
-              letterSpacing: '0.15em',
-              color: 'text.primary',
-              animation: 'fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both',
-            }}
-          >
-            [ ThunderID ]
-          </Typography>
-
-          {/* Main heading */}
-          <Typography
-            variant="h1"
-            sx={{
-              mb: 3,
-              fontSize: {xs: '2.75rem', sm: '3.5rem', md: '4.5rem'},
-              fontWeight: 700,
-              lineHeight: 1.1,
-              color: 'text.primary',
-              animation: 'fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both',
-            }}
-          >
+            {/* Command display */}
             <Box
-              component="span"
               sx={{
-                background: `linear-gradient(90deg, ${theme.vars?.palette.primary.dark} 0%, ${theme.vars?.palette.primary.main} 100%)`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
+                '@keyframes glowPulse': {
+                  '0%, 100%': {
+                    borderColor: isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
+                    boxShadow: 'none',
+                  },
+                  '50%': {
+                    borderColor: theme.vars?.palette.primary.main,
+                    boxShadow: `0 0 22px 2px ${theme.vars?.palette.primary.main}`,
+                  },
+                },
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                px: {xs: 2.5, sm: 3.5},
+                py: {xs: 2, sm: 2.5},
+                borderRadius: '14px',
+                border: '1px solid',
+                borderColor: isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
+                bgcolor: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)',
+                backdropFilter: 'blur(8px)',
+                animation: 'glowPulse 3s ease-in-out 0.8s infinite',
+                mb: 3,
               }}
             >
-              Auth
-            </Box>{' '}
-            for the Modern Dev
-          </Typography>
+              <Typography
+                component="code"
+                sx={{
+                  flex: 1,
+                  minWidth: 0,
+                  fontFamily: '"JetBrains Mono", "Fira Code", monospace',
+                  fontSize: {xs: '0.95rem', sm: '1.1rem'},
+                  fontWeight: 500,
+                  color: isLight ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.85)',
+                  textAlign: 'left',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  letterSpacing: '-0.01em',
+                  background: 'none',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  padding: 0,
+                  borderRadius: 0,
+                }}
+              >
+                <Box
+                  component="span"
+                  sx={{color: isLight ? 'rgba(0,0,0,0.28)' : 'rgba(255,255,255,0.22)', mr: 1.5, fontWeight: 400}}
+                >
+                  $
+                </Box>
+                <Box component="span" sx={{color: theme.vars?.palette.success.main, fontWeight: 600}}>
+                  {cmdFirst}
+                </Box>
+                {cmdRest}
+              </Typography>
 
-          {/* Description */}
-          <Typography
-            variant="body1"
-            sx={{
-              maxWidth: '680px',
-              textAlign: 'center',
-              mb: 5,
-              fontSize: {xs: '1rem', sm: '1.15rem'},
-              lineHeight: 1.7,
-              color: 'text.secondary',
-              animation: 'fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both',
-            }}
-          >
-            High-performance open-source identity stack, engineered for developers.
-          </Typography>
+              <Box
+                onClick={handleCopy}
+                title={copied ? 'Copied!' : 'Copy'}
+                sx={{
+                  flexShrink: 0,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.75,
+                  px: 1.75,
+                  py: 0.875,
+                  borderRadius: '8px',
+                  border: '1px solid',
+                  borderColor: copied
+                    ? 'rgba(74,222,128,0.4)'
+                    : isLight
+                      ? 'rgba(0,0,0,0.12)'
+                      : 'rgba(255,255,255,0.12)',
+                  bgcolor: copied ? 'rgba(74,222,128,0.08)' : isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)',
+                  color: copied ? '#4ade80' : isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.45)',
+                  cursor: 'pointer',
+                  transition: 'all 0.18s ease',
+                  '&:hover': {
+                    borderColor: copied
+                      ? 'rgba(74,222,128,0.5)'
+                      : isLight
+                        ? 'rgba(0,0,0,0.25)'
+                        : 'rgba(255,255,255,0.28)',
+                    color: copied ? '#4ade80' : isLight ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.85)',
+                  },
+                  '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '40%',
+                    height: '100%',
+                    background: `linear-gradient(90deg, transparent 0%, ${isLight ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.12)'} 50%, transparent 100%)`,
+                    animation: 'streak 3.5s ease-in-out 1.2s infinite',
+                    pointerEvents: 'none',
+                  },
+                }}
+              >
+                {copied ? (
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : (
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                )}
+                <Typography component="span" sx={{fontSize: '0.78rem', fontWeight: 500, lineHeight: 1}}>
+                  {copied ? 'Copied' : 'Copy'}
+                </Typography>
+              </Box>
+            </Box>
 
-          {/* Buttons */}
-          <Stack
-            direction={{xs: 'column', sm: 'row'}}
-            spacing={2}
-            sx={{mb: 8, animation: 'fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both'}}
-            alignItems="center"
-          >
-            <Button
-              component={Link}
-              href="/docs/next/guides/getting-started/what-is-thunderid"
-              variant="contained"
-              color="primary"
-              size="large"
-              sx={{
-                px: 5,
-                py: 1.5,
-                fontWeight: 600,
-                textTransform: 'none',
-                fontSize: '1.05rem',
-                borderRadius: '28px',
-                background: `linear-gradient(135deg, ${theme.vars?.palette.primary.dark} 0%, ${theme.vars?.palette.primary.main} 100%)`,
-                position: 'relative',
-                overflow: 'hidden',
-                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: '-100%',
-                  width: '60%',
-                  height: '100%',
-                  background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)',
-                  transition: 'none',
-                  transform: 'skewX(-15deg)',
-                },
-                '&:hover::after': {
-                  left: '150%',
-                  transition: 'left 0.6s ease',
-                },
-                '&:hover': {
-                  background: `linear-gradient(135deg, ${theme.vars?.palette.primary.dark} 0%, ${theme.vars?.palette.primary.main} 100%)`,
-                  transform: 'translateY(-2px)',
-                  boxShadow: `0 6px 24px rgba(${theme.vars?.palette.primary.main} / 0.35), 0 0 40px rgba(${theme.vars?.palette.primary.main} / 0.1)`,
-                },
-                '&:active': {
-                  transform: 'translateY(0)',
-                  boxShadow: `0 2px 8px rgba(${theme.vars?.palette.primary.main} / 0.2)`,
-                },
-              }}
-            >
-              Start Building
-            </Button>
-            <Button
-              component={Link}
-              href="/docs/next/guides/getting-started/what-is-thunderid"
-              variant="outlined"
-              size="large"
-              sx={{
-                px: 4,
-                py: 1.5,
-                textTransform: 'none',
-                fontSize: '1.05rem',
-                borderRadius: '28px',
-                borderColor: `rgba(${theme.vars?.palette.primary.main} / 0.45)`,
-                color: 'primary.main',
-                position: 'relative',
-                overflow: 'hidden',
-                transition:
-                  'transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  inset: 0,
-                  borderRadius: 'inherit',
-                  background: `radial-gradient(circle at center, rgba(${theme.vars?.palette.primary.main} / 0.07) 0%, transparent 70%)`,
-                  opacity: 0,
-                  transition: 'opacity 0.3s ease',
-                },
-                '&:hover::before': {opacity: 1},
-                '&:hover': {
-                  borderColor: `rgba(${theme.vars?.palette.primary.main} / 0.7)`,
-                  bgcolor: `rgba(${theme.vars?.palette.primary.main} / 0.05)`,
-                  transform: 'translateY(-2px)',
-                  boxShadow: `0 4px 16px rgba(${theme.vars?.palette.primary.main} / 0.12), 0 0 0 1px rgba(${theme.vars?.palette.primary.main} / 0.15)`,
-                },
-                '&:active': {transform: 'translateY(0)', boxShadow: 'none'},
-              }}
-            >
-              Learn More
-            </Button>
-          </Stack>
+            {/* ── Download row ── */}
+            <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap'}}>
+              {primaryAsset ? (
+                <>
+                  <Box
+                    component="a"
+                    href={primaryAsset.downloadUrl}
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 0.75,
+                      textDecoration: 'none',
+                      color: isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.45)',
+                      fontSize: '0.82rem',
+                      transition: 'color 0.15s ease',
+                      '&:hover': {color: isLight ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.85)'},
+                    }}
+                  >
+                    <Box sx={{display: 'flex', alignItems: 'center', opacity: 0.7}}>{OS_ICONS[primaryAsset.os]}</Box>
+                    <span>
+                      Download for {OS_LABELS[primaryAsset.os]}
+                      {ARCH_LABELS[primaryAsset.os]?.[primaryAsset.arch]
+                        ? ` (${ARCH_LABELS[primaryAsset.os]?.[primaryAsset.arch] ?? ''})`
+                        : ''}
+                    </span>
+                  </Box>
+                  {alternateAsset && (
+                    <>
+                      <Box component="span" sx={{color: isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)'}}>
+                        ·
+                      </Box>
+                      <Typography
+                        component="a"
+                        href={alternateAsset.downloadUrl}
+                        sx={{
+                          fontSize: '0.82rem',
+                          color: dimColor,
+                          textDecoration: 'none',
+                          '&:hover': {color: theme.vars?.palette.primary.main, textDecoration: 'underline'},
+                          transition: 'color 0.15s ease',
+                        }}
+                      >
+                        {ARCH_LABELS[alternateAsset.os]?.[alternateAsset.arch] ?? alternateAsset.arch}
+                      </Typography>
+                    </>
+                  )}
+                  <Box component="span" sx={{color: isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)'}}>
+                    ·
+                  </Box>
+                </>
+              ) : null}
+              <Typography
+                component={Link}
+                href="/docs/next/guides/getting-started/get-thunderid"
+                sx={{
+                  fontSize: '0.82rem',
+                  color: dimColor,
+                  textDecoration: 'none',
+                  '&:hover': {color: theme.vars?.palette.primary.main, textDecoration: 'underline'},
+                  transition: 'color 0.15s ease',
+                }}
+              >
+                explore other options →
+              </Typography>
+            </Box>
+          </Box>
         </Box>
       </Container>
     </Box>

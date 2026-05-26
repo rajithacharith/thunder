@@ -19,18 +19,19 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import {zodResolver} from '@hookform/resolvers/zod';
+import {PageLoadingAnimation} from '@thunderid/components';
+import {OrganizationUnitTreePicker} from '@thunderid/configure-organization-units';
+import {CopyableTextAdapter, type FlowComponent} from '@thunderid/design';
+import {useLogger} from '@thunderid/logger/react';
 import {
   EmbeddedFlowComponentType,
   EmbeddedFlowEventType,
   InviteUser,
-  useAsgardeo,
+  useThunderID,
   type EmbeddedFlowComponent,
   type InviteUserRenderProps,
-} from '@asgardeo/react';
-import {zodResolver} from '@hookform/resolvers/zod';
-import {OrganizationUnitTreePicker} from '@thunderid/configure-organization-units';
-import {CopyableTextAdapter, type FlowComponent} from '@thunderid/design';
-import {useLogger} from '@thunderid/logger/react';
+} from '@thunderid/react';
 import type {ApiError} from '@thunderid/types';
 import {
   Box,
@@ -39,7 +40,6 @@ import {
   Button,
   Alert,
   AlertTitle,
-  CircularProgress,
   TextField,
   IconButton,
   FormControl,
@@ -48,6 +48,7 @@ import {
   MenuItem,
   LinearProgress,
   Breadcrumbs,
+  CircularProgress,
 } from '@wso2/oxygen-ui';
 import {X, ChevronRight} from '@wso2/oxygen-ui-icons-react';
 import {useState, useEffect, useMemo, useCallback, useRef, type JSX} from 'react';
@@ -181,7 +182,7 @@ function InviteUserStepContent({
     resetFlow,
     isValid: propsIsValid,
   } = renderProps;
-  const {resolveFlowTemplateLiterals: rawResolve} = useAsgardeo();
+  const {resolveFlowTemplateLiterals: rawResolve} = useThunderID();
   const resolve = useCallback((text?: string) => (text ? rawResolve(text) : undefined), [rawResolve]);
   const {t} = useTranslation();
   const [activeActionId, setActiveActionId] = useState<string | null>(null);
@@ -381,7 +382,10 @@ function InviteUserStepContent({
                 error={!!formErrors[ref]}
                 helperText={formErrors[ref]?.message as string}
                 color={formErrors[ref] ? 'error' : 'primary'}
-                onChange={field.onChange}
+                onChange={(e) => {
+                  field.onChange(e);
+                  handleInputChangeFn(ref, e.target.value);
+                }}
                 onBlur={field.onBlur}
                 inputRef={field.ref}
               />
@@ -527,11 +531,7 @@ function InviteUserStepContent({
 
   // Loading
   if (isLoading && !components?.length) {
-    return (
-      <Box sx={{display: 'flex', justifyContent: 'center', p: 4}}>
-        <CircularProgress />
-      </Box>
-    );
+    return <PageLoadingAnimation />;
   }
 
   // Error without components
@@ -553,11 +553,7 @@ function InviteUserStepContent({
 
   // Loading components
   if (!components?.length) {
-    return (
-      <Box sx={{display: 'flex', justifyContent: 'center', p: 4}}>
-        <CircularProgress />
-      </Box>
-    );
+    return <PageLoadingAnimation />;
   }
 
   const hasInteractiveComponents = hasActionsOrInputs(components as EmbeddedFlowComponent[]);
@@ -771,7 +767,7 @@ function InviteUserFlowBridge({
   onOuStepDetected: () => void;
   onResetLocalState: () => void;
 }): JSX.Element {
-  const {resolveFlowTemplateLiterals: rawResolve} = useAsgardeo();
+  const {resolveFlowTemplateLiterals: rawResolve} = useThunderID();
   const resolve = useCallback((text?: string) => (text ? rawResolve(text) : undefined), [rawResolve]);
   const {t} = useTranslation();
   const components = renderProps.components as EmbeddedFlowComponent[] | undefined;

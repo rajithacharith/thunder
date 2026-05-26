@@ -18,10 +18,12 @@
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any */
 
+import path from 'path';
+
 export default function () {
   return {
     name: 'product-docs-webpack-plugin',
-    configureWebpack(config: any) {
+    configureWebpack(config: any, isServer: boolean) {
       // url-loader@4.x is incompatible with webpack@5.100+, causing:
       // "TypeError: Cannot read properties of undefined (reading 'date')"
       // Mutate existing rules in-place to replace url-loader with webpack 5
@@ -42,7 +44,7 @@ export default function () {
           }
         }
       }
-      return {
+      const baseConfig = {
         module: {
           rules: [
             {
@@ -52,6 +54,33 @@ export default function () {
               },
             },
           ],
+        },
+      };
+
+      // @thunderid/react is an external used by the frontend design package dist
+      // but is not needed at all in the docs build. Alias it to a no-op shim.
+      const thunderidReactShim = path.resolve(__dirname, 'shims/thunderid-react.cjs');
+
+      // @emotion/css calls document.createElement at module init, which fails
+      // in Node.js SSR. Alias it to a no-op shim for the server build only.
+      if (isServer) {
+        return {
+          ...baseConfig,
+          resolve: {
+            alias: {
+              '@emotion/css': path.resolve(__dirname, 'shims/emotion-css.cjs'),
+              '@thunderid/react': thunderidReactShim,
+            },
+          },
+        };
+      }
+
+      return {
+        ...baseConfig,
+        resolve: {
+          alias: {
+            '@thunderid/react': thunderidReactShim,
+          },
         },
       };
     },

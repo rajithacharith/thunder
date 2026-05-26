@@ -29,7 +29,12 @@ import type {OAuth2Config} from './oauth';
  */
 export const TechnologyApplicationTemplate = {
   REACT: 'REACT',
+  EXPRESS: 'EXPRESS',
   NEXTJS: 'NEXTJS',
+  VANILLA_JS: 'VANILLA_JS',
+  VUE: 'VUE',
+  NUXT: 'NUXT',
+  NODEJS: 'NODEJS',
   OTHER: 'OTHER',
 } as const;
 

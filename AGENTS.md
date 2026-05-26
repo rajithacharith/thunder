@@ -6,7 +6,7 @@ ThunderID is a lightweight user and identity management product. Go backend + Re
 - For build and running - [Makefile](Makefile) and [README.md](README.md)
 - Documentation at [docs/content](docs/content)
 
-Login Gate leverages v2 of the [Asgardeo JavaScript SDK](https://github.com/asgardeo/javascript), consumed via its published package in typical setups.
+Login Gate leverages v2 of the [ThunderID JavaScript SDK](https://github.com/thunder-id/thunderid/tree/main/sdks/javascript), consumed via its published package in typical setups.
 Clone the SDK repository only if you are developing or debugging the SDK itself, or testing the product against unreleased SDK changes.
 
 ## General Rules

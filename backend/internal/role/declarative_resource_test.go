@@ -344,7 +344,7 @@ func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_ValidRole() {
 	}
 
 	// Pass nil for fileStore to skip duplicate check (for unit test purposes)
-	err := validateRoleWrapper(role, nil, nil)
+	err := validateRoleWrapper(role, nil, nil, nil)
 
 	assert.NoError(suite.T(), err)
 }
@@ -356,7 +356,7 @@ func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_MissingID() {
 		OUID: "ou1",
 	}
 
-	err := validateRoleWrapper(role, nil, nil)
+	err := validateRoleWrapper(role, nil, nil, nil)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "role ID is required")
@@ -369,7 +369,7 @@ func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_MissingName() {
 		OUID: "ou1",
 	}
 
-	err := validateRoleWrapper(role, nil, nil)
+	err := validateRoleWrapper(role, nil, nil, nil)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "role name is required")
@@ -382,10 +382,10 @@ func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_MissingOUID() {
 		Name: "Admin",
 	}
 
-	err := validateRoleWrapper(role, nil, nil)
+	err := validateRoleWrapper(role, nil, nil, nil)
 
 	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "organization unit ID is required")
+	assert.Contains(suite.T(), err.Error(), "ou_id or ou_handle is required for role 'Admin'")
 }
 
 // Test validateRoleWrapper - invalid assignment type
@@ -399,7 +399,7 @@ func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_InvalidAssignmentTyp
 		},
 	}
 
-	err := validateRoleWrapper(role, nil, nil)
+	err := validateRoleWrapper(role, nil, nil, nil)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "invalid assignment type")
@@ -416,7 +416,7 @@ func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_MissingAssignmentID(
 		},
 	}
 
-	err := validateRoleWrapper(role, nil, nil)
+	err := validateRoleWrapper(role, nil, nil, nil)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "assignment ID is required")
@@ -433,7 +433,7 @@ func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_MissingResourceServe
 		},
 	}
 
-	err := validateRoleWrapper(role, nil, nil)
+	err := validateRoleWrapper(role, nil, nil, nil)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "resource server ID is required")

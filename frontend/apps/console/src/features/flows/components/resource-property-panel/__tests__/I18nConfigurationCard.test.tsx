@@ -30,7 +30,16 @@ vi.mock('react-i18next', () => ({
       if (params) {
         return `${key} ${JSON.stringify(params)}`;
       }
-      return key;
+      const translations: Record<string, string> = {
+        'login.title': 'Sign In',
+        'login.description': 'Enter your credentials',
+        'login.button.submit': 'Submit',
+        'common.continue': 'Continue',
+        'common.cancel': 'Cancel',
+        'custom:login.title': 'Sign In',
+        'signin:forms.credentials.title': 'Sign In',
+      };
+      return translations[key] ?? key;
     },
   }),
 }));
@@ -384,6 +393,39 @@ describe('I18nConfigurationCard', () => {
       );
 
       expect(screen.getByText('Continue')).toBeInTheDocument();
+    });
+
+    it('should display resolved value when a namespaced i18n key is selected', () => {
+      render(
+        <I18nConfigurationCard
+          open
+          anchorEl={anchorEl}
+          propertyKey="label"
+          onClose={mockOnClose}
+          onChange={mockOnChange}
+          i18nKey="custom:login.title"
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      expect(screen.getByText('flows:core.elements.textPropertyField.resolvedValue')).toBeInTheDocument();
+      expect(screen.getByText('Sign In')).toBeInTheDocument();
+    });
+
+    it('should not display resolved value box when namespaced key has no matching translation', () => {
+      render(
+        <I18nConfigurationCard
+          open
+          anchorEl={anchorEl}
+          propertyKey="label"
+          onClose={mockOnClose}
+          onChange={mockOnChange}
+          i18nKey="signin:nonexistent.key"
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      expect(screen.queryByText('flows:core.elements.textPropertyField.resolvedValue')).not.toBeInTheDocument();
     });
   });
 

@@ -42,8 +42,8 @@ func Initialize(
 	resourceService resourcepkg.ResourceServiceInterface,
 	entityTypeService entitytype.EntityTypeServiceInterface,
 ) (RoleServiceInterface, RoleAssignmentServiceInterface, declarativeresource.ResourceExporter, error) {
-	// Step 1: Initialize store and transactioner based on store mode
-	roleStore, transactioner, err := initializeStore()
+	// Step 1: Initialize store and transactioner based on store mode (no declarative loading yet)
+	roleStore, transactioner, fileStore, dbStore, err := initializeStore()
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -53,6 +53,14 @@ func Initialize(
 		roleStore, entityService, groupService, ouService, resourceService,
 		transactioner,
 	)
+
+	// Step 3: Load declarative resources into store (if applicable)
+	if fileStore != nil {
+		if err := loadDeclarativeResources(fileStore, dbStore, roleService); err != nil {
+			return nil, nil, nil, err
+		}
+	}
+
 	assignmentService := newRoleAssignmentService(
 		roleStore, entityService, groupService, entityTypeService, transactioner,
 	)
@@ -86,7 +94,14 @@ func Initialize(
 // - If role.store is not specified, falls back to global declarative_resources.enabled:
 //   - If declarative_resources.enabled = true: behaves as IMMUTABLE mode
 //   - If declarative_resources.enabled = false: behaves as MUTABLE mode
-func initializeStore() (roleStoreInterface, transaction.Transactioner, error) {
+//
+// Returns the active role store, transactioner, and the file/db stores used for declarative
+// resource loading. fileStore is non-nil only in declarative or composite modes; dbStore is non-nil
+// only in composite mode. Callers in those modes invoke loadDeclarativeResources after the
+// role service has been constructed so it can resolve ou_handle.
+func initializeStore() (
+	roleStoreInterface, transaction.Transactioner, *fileBasedStore, roleStoreInterface, error,
+) {
 	storeMode := getRoleStoreMode()
 
 	switch storeMode {
@@ -95,24 +110,22 @@ func initializeStore() (roleStoreInterface, transaction.Transactioner, error) {
 		fileStore := fileStoreInterface.(*fileBasedStore)
 		dbStore, transactioner, err := newRoleStore()
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, nil, err
 		}
 		roleStore := newCompositeRoleStore(fileStoreInterface, dbStore)
-		if err := loadDeclarativeResources(fileStore, dbStore); err != nil {
-			return nil, nil, err
-		}
-		return roleStore, transactioner, nil
+		return roleStore, transactioner, fileStore, dbStore, nil
 
 	case serverconst.StoreModeDeclarative:
 		fileStoreInterface, transactioner := newFileBasedStore()
 		fileStore := fileStoreInterface.(*fileBasedStore)
-		if err := loadDeclarativeResources(fileStore, nil); err != nil {
-			return nil, nil, err
-		}
-		return fileStoreInterface, transactioner, nil
+		return fileStoreInterface, transactioner, fileStore, nil, nil
 
 	default:
-		return newRoleStore()
+		store, transactioner, err := newRoleStore()
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+		return store, transactioner, nil, nil, nil
 	}
 }
 

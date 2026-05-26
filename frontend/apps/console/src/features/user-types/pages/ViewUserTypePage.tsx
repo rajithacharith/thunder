@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {UnsavedChangesBar} from '@thunderid/components';
+import {PageLoadingAnimation, UnsavedChangesBar} from '@thunderid/components';
 import {useToast} from '@thunderid/contexts';
 import {useLogger} from '@thunderid/logger/react';
 import {
@@ -27,7 +27,6 @@ import {
   TextField,
   Alert,
   IconButton,
-  CircularProgress,
   Tabs,
   Tab,
   PageContent,
@@ -280,11 +279,7 @@ export default function ViewUserTypePage(): JSX.Element {
 
   // Loading state
   if (isLoading) {
-    return (
-      <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px'}}>
-        <CircularProgress />
-      </Box>
-    );
+    return <PageLoadingAnimation />;
   }
 
   // Error state

@@ -136,10 +136,6 @@ export default function ImportConfigurationUploadPage(): JSX.Element {
       setError(t('upload.errors.selectFile'));
       return;
     }
-    if (!selectedEnvFile) {
-      setError(t('upload.errors.selectEnvFile'));
-      return;
-    }
 
     try {
       let configData: unknown = null;
@@ -527,11 +523,7 @@ export default function ImportConfigurationUploadPage(): JSX.Element {
             <Button variant="outlined" onClick={handleCancel}>
               {t('common:actions.cancel')}
             </Button>
-            <Button
-              variant="contained"
-              onClick={() => void handleContinue()}
-              disabled={!selectedFile || !selectedEnvFile}
-            >
+            <Button variant="contained" onClick={() => void handleContinue()} disabled={!selectedFile}>
               {t('common:actions.continue')}
             </Button>
           </Stack>

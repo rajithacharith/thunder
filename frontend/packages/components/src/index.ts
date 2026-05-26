@@ -32,6 +32,7 @@ export {default as EmojiPicker} from './lab/components/EmojiPicker/EmojiPicker';
 export {default as CopyableId} from './lab/components/CopyableId';
 export {default as Kbd} from './lab/components/Kbd';
 export {default as generateIconSuggestions} from './lab/components/EmojiPicker/utils/generateIconSuggestions';
+export {default as PageLoadingAnimation} from './lab/components/PageLoadingAnimation';
 export {default as ResourceAvatar} from './lab/components/ResourceAvatar';
 export {default as ResourceLogoDialog} from './lab/components/ResourceLogoDialog';
 export {default as SettingsCard} from './lab/components/SettingsCard';

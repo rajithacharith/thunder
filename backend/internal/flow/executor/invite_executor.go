@@ -166,14 +166,9 @@ func (e *inviteExecutor) getOrGenerateToken(ctx *core.NodeContext) (string, erro
 	return utils.GenerateUUIDv7()
 }
 
-// generateInviteLink constructs the invite link using the GateClient configuration.
+// generateInviteLink constructs the invite link. If the node declares an inviteBaseURL
+// property it is used as the base; otherwise the GateClient configuration is the fallback.
 func (e *inviteExecutor) generateInviteLink(ctx *core.NodeContext, inviteToken string) string {
-	gateConfig := config.GetServerRuntime().Config.GateClient
-	gateAppURL := fmt.Sprintf("%s://%s:%d%s",
-		gateConfig.Scheme,
-		gateConfig.Hostname,
-		gateConfig.Port,
-		gateConfig.Path)
 	queryParams := url.Values{
 		"executionId": []string{ctx.ExecutionID},
 		"inviteToken": []string{inviteToken},
@@ -182,6 +177,24 @@ func (e *inviteExecutor) generateInviteLink(ctx *core.NodeContext, inviteToken s
 	if ctx.EntityID != "" {
 		queryParams.Set(oauth2const.AppID, ctx.EntityID)
 	}
+
+	if baseURL, ok := ctx.NodeProperties[propertyKeyInviteBaseURL].(string); ok && baseURL != "" {
+		if u, err := url.Parse(baseURL); err == nil {
+			q := u.Query()
+			for k, vals := range queryParams {
+				q[k] = vals
+			}
+			u.RawQuery = q.Encode()
+			return u.String()
+		}
+	}
+
+	gateConfig := config.GetServerRuntime().Config.GateClient
+	gateAppURL := fmt.Sprintf("%s://%s:%d%s",
+		gateConfig.Scheme,
+		gateConfig.Hostname,
+		gateConfig.Port,
+		gateConfig.Path)
 
 	return fmt.Sprintf("%s/invite?%s", gateAppURL, queryParams.Encode())
 }

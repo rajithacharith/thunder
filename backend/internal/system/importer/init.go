@@ -21,6 +21,7 @@ package importer
 import (
 	"net/http"
 
+	"github.com/thunder-id/thunderid/internal/agent"
 	"github.com/thunder-id/thunderid/internal/application"
 	layoutmgt "github.com/thunder-id/thunderid/internal/design/layout/mgt"
 	thememgt "github.com/thunder-id/thunderid/internal/design/theme/mgt"
@@ -52,6 +53,7 @@ func Initialize(
 	layoutService layoutmgt.LayoutMgtServiceInterface,
 	userService user.UserServiceInterface,
 	translationService i18nmgt.I18nServiceInterface,
+	agentService agent.AgentServiceInterface,
 ) ImportServiceInterface {
 	importService := newImportService(
 		applicationService,
@@ -67,6 +69,7 @@ func Initialize(
 		layoutService,
 		userService,
 		translationService,
+		agentService,
 	)
 	importHandler := newImportHandler(importService)
 

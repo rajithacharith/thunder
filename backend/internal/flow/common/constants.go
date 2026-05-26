@@ -185,6 +185,9 @@ const (
 	RuntimeKeyClientID = "clientId"
 	// RuntimeKeyRequestedPermissions holds the space-separated permission scopes requested by the OAuth client.
 	RuntimeKeyRequestedPermissions = "requested_permissions"
+	// RuntimeKeyConsentedPermissions holds the space-separated permission scopes the user has consented to
+	// release to the client, as produced by the ConsentExecutor.
+	RuntimeKeyConsentedPermissions = "consented_permissions"
 	// RuntimeKeyRequiredEssentialAttributes holds the space-separated essential user attributes required for the flow.
 	RuntimeKeyRequiredEssentialAttributes = "required_essential_attributes"
 	// RuntimeKeyRequiredOptionalAttributes holds the space-separated optional user attributes required for the flow.
@@ -215,12 +218,9 @@ const (
 	RuntimeKeySkipDelivery = "skipDelivery"
 	// RuntimeKeyCandidateUsers holds serialized candidate users during disambiguation in resolve mode.
 	RuntimeKeyCandidateUsers = "candidateUsers"
-	// RuntimeKeyPresentedOptionalAttrs holds a space-separated list of optional schema attribute
-	// identifiers that have already been prompted to the user. ProvisioningExecutor uses this to
-	// skip optional attrs the user has already been shown, even if they left the value empty.
-	// TODO: Revisit optional input tracking — if the flow engine gains a mechanism to detect whether
-	// an optional field was intentionally skipped, remove this key and its associated helper methods.
-	RuntimeKeyPresentedOptionalAttrs = "provisioningPresentedOptionalAttrs"
+	// RuntimeKeyPresentedOptionalInputs holds a space-separated list of optional input identifiers
+	// that have already been prompted to the user, even if the user left them empty.
+	RuntimeKeyPresentedOptionalInputs = "presentedOptionalInputs"
 	// RuntimeKeySMSOTPMobileNumber holds the resolved mobile number for SMS OTP verification.
 	// TODO: Revisit when the generic OTP executor is implemented.
 	RuntimeKeySMSOTPMobileNumber = "smsOTPMobileNumber"
@@ -315,4 +315,25 @@ const (
 	ForwardedDataKeyActionType = "actionType"
 	// ForwardedDataKeyTemplateData holds template parameters for notification executors
 	ForwardedDataKeyTemplateData = "templateData"
+)
+
+// ValidationType identifies the constraint type of a ValidationRule.
+type ValidationType string
+
+// Validation rule types.
+const (
+	// ValidationTypeRegex matches the submitted value against a regex pattern.
+	ValidationTypeRegex ValidationType = "regex"
+	// ValidationTypeMinLength enforces a minimum string length on the submitted value.
+	ValidationTypeMinLength ValidationType = "minLength"
+	// ValidationTypeMaxLength enforces a maximum string length on the submitted value.
+	ValidationTypeMaxLength ValidationType = "maxLength"
+)
+
+// Default i18n fallback message keys returned in fieldErrors when a validation
+// rule does not specify a message.
+const (
+	DefaultValidationMessageRegex     = "validation.pattern.invalid"
+	DefaultValidationMessageMinLength = "validation.minLength.invalid"
+	DefaultValidationMessageMaxLength = "validation.maxLength.invalid"
 )

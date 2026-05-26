@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import React, {JSX} from 'react';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import {Box, Container, Typography, useTheme} from '@wso2/oxygen-ui';
+import React, {JSX} from 'react';
 import useIsDarkMode from '../../hooks/useIsDarkMode';
 import useScrollAnimation from '../../hooks/useScrollAnimation';
-import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import {DocusaurusProductConfig} from '@site/docusaurus.product.config';
 
 export default function WorkflowSection(): JSX.Element {
@@ -35,6 +35,8 @@ export default function WorkflowSection(): JSX.Element {
       sx={{
         py: {xs: 8, lg: 12},
         position: 'relative',
+        borderTop: '1px solid',
+        borderColor: 'divider',
         '&::before': {
           content: '""',
           position: 'absolute',

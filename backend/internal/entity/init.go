@@ -22,7 +22,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/cache"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib/hash"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
 )
 
@@ -54,6 +54,11 @@ func initializeStore(cacheManager cache.CacheManagerInterface) (
 		return nil, nil, err
 	}
 	entityByIDCache := cache.GetCache[*Entity](cacheManager, "EntityByIDCache")
-	cacheBackedEntityStore := newCacheBackedEntityStore(dbStore, entityByIDCache)
+	entityWithCredsByIDCache := cache.GetCache[*entityWithCredentials](cacheManager,
+		"EntityWithCredentialsByIDCache")
+	entityIDByIdentifierCache := cache.GetCache[*string](cacheManager,
+		"EntityIDByIdentifierCache")
+	cacheBackedEntityStore := newCacheBackedEntityStore(dbStore, entityByIDCache,
+		entityWithCredsByIDCache, entityIDByIdentifierCache)
 	return newEntityCompositeStore(fileStore, cacheBackedEntityStore), transactioner, nil
 }

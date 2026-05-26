@@ -130,6 +130,31 @@ function replaceOAuth2Urls(obj) {
 }
 
 /**
+ * Rewrite the OAuth2 auth block from authorization_code to client_credentials.
+ * Client credentials requires only a token endpoint POST — no browser redirect —
+ * making it far simpler for API testing workflows.
+ */
+function rewriteAuthToClientCredentials(collection) {
+  if (collection?.auth?.type !== 'oauth2') return;
+  collection.auth.oauth2 = [
+    {key: 'grant_type', value: 'client_credentials'},
+    {key: 'accessTokenUrl', value: '{{baseUrl}}/oauth2/token'},
+    {key: 'clientId', value: '{{clientId}}'},
+    {key: 'clientSecret', value: '{{clientSecret}}'},
+    {key: 'scope', value: 'system'},
+    {key: 'addTokenTo', value: 'header'},
+  ];
+
+  const existing = new Set((collection.variable ?? []).map((v) => v.key));
+  if (!existing.has('clientId')) {
+    collection.variable.push({key: 'clientId', value: '', type: 'string'});
+  }
+  if (!existing.has('clientSecret')) {
+    collection.variable.push({key: 'clientSecret', value: '', type: 'string'});
+  }
+}
+
+/**
  * Convert a single OpenAPI spec file to a Postman collection.
  */
 async function convertSpec(specPath) {
@@ -142,6 +167,7 @@ async function convertSpec(specPath) {
 
   const collection = result.output[0].data;
   replaceOAuth2Urls(collection);
+  rewriteAuthToClientCredentials(collection);
 
   return collection;
 }

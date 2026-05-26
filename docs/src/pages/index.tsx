@@ -20,35 +20,27 @@ import Head from '@docusaurus/Head';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import type {ReactNode} from 'react';
-import React, {useEffect} from 'react';
-import HomeFooter from '@site/src/components/Footer';
+import React from 'react';
 import CommunitySection from '@site/src/components/HomePage/CommunitySection';
 import HeroSection from '@site/src/components/HomePage/HeroSection';
 import ProductOverviewSection from '@site/src/components/HomePage/ProductOverviewSection';
+import SDKShowcaseSection from '@site/src/components/HomePage/SDKShowcaseSection';
 import WorkflowSection from '@site/src/components/HomePage/WorkflowSection';
 
 export default function Homepage(): ReactNode {
   const {siteConfig} = useDocusaurusContext();
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-page', 'home');
-    return () => {
-      document.documentElement.removeAttribute('data-page');
-    };
-  }, []);
-
   return (
-    <Layout title={siteConfig.tagline} noFooter>
+    <Layout title={siteConfig.tagline}>
       <Head>
         <link rel="prefetch" href="/assets/css/elements.min.css" />
-        <html data-page="home" />
       </Head>
       <div>
         <HeroSection />
         <ProductOverviewSection />
+        <SDKShowcaseSection />
         <WorkflowSection />
         <CommunitySection />
-        <HomeFooter />
       </div>
     </Layout>
   );

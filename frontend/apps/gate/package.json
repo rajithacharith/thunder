@@ -23,7 +23,9 @@
   },
   "scripts": {
     "build": "tsc -b && vite build",
-    "clean": "rimraf dist node_modules",
+    "clean": "pnpm clean:dist && pnpm clean:node_modules",
+    "clean:dist": "rimraf dist",
+    "clean:node_modules": "rimraf node_modules",
     "dev": "vite",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -34,8 +36,8 @@
     "typecheck": "tsc -p tsconfig.app.json"
   },
   "dependencies": {
-    "@asgardeo/react": "catalog:",
-    "@asgardeo/react-router": "catalog:",
+    "@thunderid/react": "workspace:^",
+    "@thunderid/react-router": "workspace:^",
     "@fontsource-variable/inter": "5.2.8",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-query-devtools": "catalog:",
@@ -71,8 +73,10 @@
     "babel-plugin-react-compiler": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
+    "rimraf": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
+    "vite-plugin-svgr": "catalog:",
     "vitest": "catalog:"
   }
 }

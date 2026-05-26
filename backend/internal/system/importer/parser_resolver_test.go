@@ -139,8 +139,13 @@ func TestClassifyResourceType_AdditionalResources(t *testing.T) {
 			expected: resourceTypeOrganizationUnit,
 		},
 		{
-			name:     "user type",
+			name:     "user type with organization_unit_id",
 			yamlDoc:  "id: sch-1\nname: Schema\norganization_unit_id: ou-1\nschema: '{}'\n",
+			expected: resourceTypeEntityType,
+		},
+		{
+			name:     "user type with ou_handle",
+			yamlDoc:  "id: sch-1\nname: Schema\nou_handle: customers\nschema: '{}'\n",
 			expected: resourceTypeEntityType,
 		},
 		{
@@ -153,6 +158,28 @@ func TestClassifyResourceType_AdditionalResources(t *testing.T) {
 		{name: "layout", yamlDoc: "id: ly-1\ndisplayName: Layout\nlayout: {}\n", expected: resourceTypeLayout},
 		{name: "user", yamlDoc: "id: u-1\ntype: person\nou_id: ou-1\nattributes: {}\n", expected: resourceTypeUser},
 		{name: "translation", yamlDoc: "language: en-US\ntranslations: {}\n", expected: resourceTypeTranslation},
+		{
+			name:     "agent with owner",
+			yamlDoc:  "id: agt-1\nou_id: ou-1\ntype: default\nname: Test Agent\nowner: owner-id-1\n",
+			expected: resourceTypeAgent,
+		},
+		{
+			name: "agent with auth_flow_id is still agent not application",
+			yamlDoc: "id: agt-2\nou_id: ou-1\ntype: default\nname: OAuth Agent\n" +
+				"owner: owner-id-1\nauth_flow_id: flow-1\n",
+			expected: resourceTypeAgent,
+		},
+		{
+			name: "agent without owner but with type and auth_flow_id",
+			yamlDoc: "id: agt-3\nou_id: ou-1\ntype: default\nname: Auth Agent\n" +
+				"auth_flow_id: flow-1\n",
+			expected: resourceTypeAgent,
+		},
+		{
+			name:     "application without top-level type is still application",
+			yamlDoc:  "name: app-one\nauth_flow_id: flow-1\n",
+			expected: resourceTypeApplication,
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -163,6 +190,43 @@ func TestClassifyResourceType_AdditionalResources(t *testing.T) {
 			assert.Equal(t, testCase.expected, docs[0].ResourceType)
 		})
 	}
+}
+
+func TestParseDocuments_AgentDocument(t *testing.T) {
+	content := strings.Join([]string{
+		"id: agt-1",
+		"ou_id: ou-1",
+		"type: default",
+		"name: Test Agent",
+		"owner: owner-id-1",
+		"",
+	}, "\n")
+
+	docs, err := parseDocuments(content)
+	require.NoError(t, err)
+	require.Len(t, docs, 1)
+	assert.Equal(t, resourceTypeAgent, docs[0].ResourceType)
+}
+
+func TestParseDocuments_AgentWithOAuthNotClassifiedAsApplication(t *testing.T) {
+	content := strings.Join([]string{
+		"id: agt-2",
+		"ou_id: ou-1",
+		"type: default",
+		"name: OAuth Agent",
+		"owner: owner-id-1",
+		"auth_flow_id: flow-1",
+		"inbound_auth_config:",
+		"- type: oauth2",
+		"  config:",
+		"    client_id: client-1",
+		"",
+	}, "\n")
+
+	docs, err := parseDocuments(content)
+	require.NoError(t, err)
+	require.Len(t, docs, 1)
+	assert.Equal(t, resourceTypeAgent, docs[0].ResourceType)
 }
 
 func TestParseDocuments_UsesResourceTypeComment(t *testing.T) {

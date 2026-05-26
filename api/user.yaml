@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: User Management API
   version: "1.0"
-  description: This API is used to manage users.
+  description: Create, search, and manage user accounts. Covers full lifecycle operations, self-service profile management, and user type schema definitions.
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
@@ -16,14 +16,14 @@ servers:
         default: "8090"
 
 tags:
-  - name: users
-    description: Operations related to user management
+  - name: Users
+    description: CRUD operations for user accounts including attribute management, role assignment, and group membership.
   - name: users-by-path
-    description: Operations related to user management using hierarchical handle paths
-  - name: self
-    description: Self service operations related to the user
-  - name: user-types
-    description: Operations related to user type schema management
+    description: Create and list users within an organization unit identified by its handle path.
+  - name: Self
+    description: Self-service operations that the authenticated user performs on their own profile.
+  - name: User Types
+    description: Manage user type schemas that define the attribute structure for different user categories.
 
 security:
   - OAuth2: [system]
@@ -32,7 +32,7 @@ paths:
   /users:
     get:
       tags:
-        - users
+        - Users
       summary: List users
       parameters:
         - $ref: '#/components/parameters/limitQueryParam'
@@ -129,7 +129,7 @@ paths:
           description: Internal server error
     post:
       tags:
-        - users
+        - Users
       summary: Create a new user
       requestBody:
         required: true
@@ -140,9 +140,6 @@ paths:
             example:
               ouId: "456e8400-e29b-41d4-a716-446655440001"
               type: "customer"
-              groups:
-                - "550e8400-e29b-41d4-a716-446655440000"
-                - "660e8400-e29b-41d4-a716-446655440001"
               attributes:
                 age: 24
                 email: "jane.doe@example.com"
@@ -211,6 +208,46 @@ paths:
                     description:
                       key: "error.userservice.schema_validation_failed_description"
                       defaultValue: "User attributes do not conform to the required schema"
+                user-type-not-found:
+                  summary: User type not found
+                  value:
+                    code: "USR-1021"
+                    message:
+                      key: "error.userservice.user_type_not_found"
+                      defaultValue: "User type not found"
+                    description:
+                      key: "error.userservice.user_type_not_found_description"
+                      defaultValue: "The specified user type does not exist"
+                invalid-organization-unit:
+                  summary: Invalid organization unit ID
+                  value:
+                    code: "USR-1022"
+                    message:
+                      key: "error.userservice.invalid_organization_unit"
+                      defaultValue: "Invalid organization unit"
+                    description:
+                      key: "error.userservice.invalid_organization_unit_description"
+                      defaultValue: "Organization unit id must be specified as a valid UUID"
+                organization-unit-mismatch:
+                  summary: Organization unit mismatch
+                  value:
+                    code: "USR-1023"
+                    message:
+                      key: "error.userservice.organization_unit_mismatch"
+                      defaultValue: "Organization unit mismatch"
+                    description:
+                      key: "error.userservice.organization_unit_mismatch_description"
+                      defaultValue: "The organization unit does not match the user type configuration"
+                invalid-credential:
+                  summary: Invalid credential fields
+                  value:
+                    code: "USR-1024"
+                    message:
+                      key: "error.userservice.invalid_credential"
+                      defaultValue: "Invalid request format"
+                    description:
+                      key: "error.userservice.invalid_credential_description"
+                      defaultValue: "Invalid credential fields in request"
         "409":
           description: Conflict
           content:
@@ -234,7 +271,7 @@ paths:
   /users/{id}:
     get:
       tags:
-        - users
+        - Users
       summary: Get a user by id
       parameters:
         - in: path
@@ -272,7 +309,7 @@ paths:
           description: Internal server error
     put:
       tags:
-        - users
+        - Users
       summary: Update a user by id
       parameters:
         - in: path
@@ -291,8 +328,6 @@ paths:
             example:
               ouId: "456e8400-e29b-41d4-a716-446655440001"
               type: "customer"
-              groups:
-                - "550e8400-e29b-41d4-a716-446655440000"
               attributes:
                 age: 25
                 email: "jane.doe@example.com"
@@ -359,6 +394,56 @@ paths:
                     description:
                       key: "error.userservice.schema_validation_failed_description"
                       defaultValue: "User attributes do not conform to the required schema"
+                user-type-not-found:
+                  summary: User type not found
+                  value:
+                    code: "USR-1021"
+                    message:
+                      key: "error.userservice.user_type_not_found"
+                      defaultValue: "User type not found"
+                    description:
+                      key: "error.userservice.user_type_not_found_description"
+                      defaultValue: "The specified user type does not exist"
+                invalid-organization-unit:
+                  summary: Invalid organization unit ID
+                  value:
+                    code: "USR-1022"
+                    message:
+                      key: "error.userservice.invalid_organization_unit"
+                      defaultValue: "Invalid organization unit"
+                    description:
+                      key: "error.userservice.invalid_organization_unit_description"
+                      defaultValue: "Organization unit id must be specified as a valid UUID"
+                organization-unit-mismatch:
+                  summary: Organization unit mismatch
+                  value:
+                    code: "USR-1023"
+                    message:
+                      key: "error.userservice.organization_unit_mismatch"
+                      defaultValue: "Organization unit mismatch"
+                    description:
+                      key: "error.userservice.organization_unit_mismatch_description"
+                      defaultValue: "The organization unit does not match the user type configuration"
+                invalid-credential:
+                  summary: Invalid credential fields
+                  value:
+                    code: "USR-1024"
+                    message:
+                      key: "error.userservice.invalid_credential"
+                      defaultValue: "Invalid request format"
+                    description:
+                      key: "error.userservice.invalid_credential_description"
+                      defaultValue: "Invalid credential fields in request"
+                cannot-modify-declarative-resource:
+                  summary: Cannot modify declarative resource
+                  value:
+                    code: "USR-1025"
+                    message:
+                      key: "error.userservice.cannot_modify_declarative_resource"
+                      defaultValue: "Cannot modify declarative resource"
+                    description:
+                      key: "error.userservice.cannot_modify_declarative_resource_description"
+                      defaultValue: "The user is declarative and cannot be modified or deleted"
         "409":
           description: Conflict
           content:
@@ -394,7 +479,7 @@ paths:
           description: Internal server error
     delete:
       tags:
-        - users
+        - Users
       summary: Delete a user by id
       parameters:
         - in: path
@@ -407,6 +492,23 @@ paths:
       responses:
         "204":
           description: User deleted
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                cannot-modify-declarative-resource:
+                  summary: Cannot modify declarative resource
+                  value:
+                    code: "USR-1025"
+                    message:
+                      key: "error.userservice.cannot_modify_declarative_resource"
+                      defaultValue: "Cannot modify declarative resource"
+                    description:
+                      key: "error.userservice.cannot_modify_declarative_resource_description"
+                      defaultValue: "The user is declarative and cannot be modified or deleted"
         "404":
           description: User not found
         "500":
@@ -415,7 +517,7 @@ paths:
   /users/{id}/groups:
     get:
       tags:
-        - users
+        - Users
       summary: List groups that the user belongs to
       parameters:
         - in: path
@@ -456,16 +558,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               examples:
-                missing-user-id:
-                  summary: Missing user ID
-                  value:
-                    code: "USR-1002"
-                    message:
-                      key: "error.userservice.missing_user_id"
-                      defaultValue: "Invalid request format"
-                    description:
-                      key: "error.userservice.missing_user_id_description"
-                      defaultValue: "User ID is required"
                 invalid-limit:
                   summary: Invalid limit parameter
                   value:
@@ -492,14 +584,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-              example:
-                code: "USR-1003"
-                message:
-                  key: "error.userservice.user_not_found"
-                  defaultValue: "User not found"
-                description:
-                  key: "error.userservice.user_not_found_description"
-                  defaultValue: "The user with the specified id does not exist"
+              examples:
+                user-not-found:
+                  summary: User not found
+                  value:
+                    code: "USR-1003"
+                    message:
+                      key: "error.userservice.user_not_found"
+                      defaultValue: "User not found"
+                    description:
+                      key: "error.userservice.user_not_found_description"
+                      defaultValue: "The user with the specified id does not exist"
+                missing-user-id:
+                  summary: Missing user ID
+                  value:
+                    code: "USR-1002"
+                    message:
+                      key: "error.userservice.missing_user_id"
+                      defaultValue: "Invalid request format"
+                    description:
+                      key: "error.userservice.missing_user_id_description"
+                      defaultValue: "User ID is required"
         "500":
           description: Internal server error
           content:
@@ -654,9 +759,6 @@ paths:
               $ref: '#/components/schemas/CreateUserByPathRequest'
             example:
               type: "employee"
-              groups:
-                - "880e8400-e29b-41d4-a716-446655440003"
-                - "990e8400-e29b-41d4-a716-446655440004"
               attributes:
                 username: "john.doe"
                 firstname: "John"
@@ -717,6 +819,36 @@ paths:
                     description:
                       key: "error.userservice.schema_validation_failed_description"
                       defaultValue: "User attributes do not conform to the required schema"
+                user-type-not-found:
+                  summary: User type not found
+                  value:
+                    code: "USR-1021"
+                    message:
+                      key: "error.userservice.user_type_not_found"
+                      defaultValue: "User type not found"
+                    description:
+                      key: "error.userservice.user_type_not_found_description"
+                      defaultValue: "The specified user type does not exist"
+                organization-unit-mismatch:
+                  summary: Organization unit mismatch
+                  value:
+                    code: "USR-1023"
+                    message:
+                      key: "error.userservice.organization_unit_mismatch"
+                      defaultValue: "Organization unit mismatch"
+                    description:
+                      key: "error.userservice.organization_unit_mismatch_description"
+                      defaultValue: "The organization unit does not match the user type configuration"
+                invalid-credential:
+                  summary: Invalid credential fields
+                  value:
+                    code: "USR-1024"
+                    message:
+                      key: "error.userservice.invalid_credential"
+                      defaultValue: "Invalid request format"
+                    description:
+                      key: "error.userservice.invalid_credential_description"
+                      defaultValue: "Invalid credential fields in request"
         "404":
           description: Organization unit not found
           content:
@@ -782,7 +914,7 @@ paths:
   /users/me:
     get:
       tags:
-        - self
+        - Self
       summary: Get self user profile
       security:
         - OAuth2: []
@@ -846,7 +978,7 @@ paths:
                   defaultValue: "An unexpected error occurred while processing the request"
     put:
       tags:
-        - self
+        - Self
       summary: Update self user profile
       security:
         - OAuth2: []
@@ -975,7 +1107,7 @@ paths:
   /users/me/update-credentials:
     post:
       tags:
-        - self
+        - Self
       summary: Update self user credentials
       security:
         - OAuth2: []
@@ -1054,7 +1186,7 @@ paths:
   /user-types:
     get:
       tags:
-        - user-types
+        - User Types
       summary: List user type schemas
       description: |
         Retrieves a list of all user type schemas that define the structure
@@ -1125,7 +1257,7 @@ paths:
 
     post:
       tags:
-        - user-types
+        - User Types
       summary: Create a new user type schema
       description: |
         Creates a new user type schema that defines the structure and attributes
@@ -1249,7 +1381,7 @@ paths:
   /user-types/{id}:
     get:
       tags:
-        - user-types
+        - User Types
       summary: Get a user type schema by ID
       description: |
         Retrieves the details of a specific user type schema by its ID.
@@ -1358,7 +1490,7 @@ paths:
 
     put:
       tags:
-        - user-types
+        - User Types
       summary: Update a user type schema by ID
       description: |
         Updates an existing user type schema with new attribute definitions.
@@ -1495,7 +1627,7 @@ paths:
 
     delete:
       tags:
-        - user-types
+        - User Types
       summary: Delete a user type schema by ID
       description: |
         Deletes a user type schema. This operation will fail if there are 
@@ -1535,6 +1667,10 @@ components:
       flows:
         authorizationCode:
           authorizationUrl: https://localhost:8090/oauth2/authorize
+          tokenUrl: https://localhost:8090/oauth2/token
+          scopes:
+            system: Access to system management APIs
+        clientCredentials:
           tokenUrl: https://localhost:8090/oauth2/token
           scopes:
             system: Access to system management APIs
@@ -1619,6 +1755,10 @@ components:
           type: string
           readOnly: true
           description: "Display name of the user (only included when include=display query parameter is used). Resolved from the schema-configured display attribute (`systemAttributes.display`). Falls back to the user ID if no display attribute is configured, the configured attribute path does not exist in the user's data, or the attribute value is empty."
+        isReadOnly:
+          type: boolean
+          readOnly: true
+          description: "Whether the user is declarative and cannot be modified or deleted by clients."
 
     Link:
       type: object
@@ -1702,13 +1842,6 @@ components:
           type: string
           description: "The type of user"
           example: "employee"
-        groups:
-          type: array
-          description: "List of groups that the user should belong to"
-          items:
-            type: string
-            format: uuid
-            description: "Group ID"
         attributes:
           type: object
           description: "User attributes"
@@ -1732,13 +1865,6 @@ components:
           type: string
           description: "The type of user"
           example: "customer"
-        groups:
-          type: array
-          description: "List of groups that the user should belong to"
-          items:
-            type: string
-            format: uuid
-            description: "Group ID"
         attributes:
           type: object
           description: "User attributes"
@@ -1754,13 +1880,6 @@ components:
         type:
           type: string
           description: "The type of user"
-        groups:
-          type: array
-          description: "List of groups that the user should belong to"
-          items:
-            type: string
-            format: uuid
-            description: "Group ID"
         attributes:
           type: object
           description: "User attributes"

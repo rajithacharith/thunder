@@ -116,6 +116,7 @@ type OAuthProfile struct {
 	PKCERequired                       bool                `json:"pkceRequired"`
 	PublicClient                       bool                `json:"publicClient"`
 	RequirePushedAuthorizationRequests bool                `json:"requirePushedAuthorizationRequests"`
+	DPoPBoundAccessTokens              bool                `json:"dpopBoundAccessTokens"`
 	Token                              *OAuthTokenConfig   `json:"token,omitempty"`
 	Scopes                             []string            `json:"scopes,omitempty"`
 	UserInfo                           *UserInfoConfig     `json:"userInfo,omitempty"`
@@ -136,6 +137,7 @@ type OAuthConfigWithSecret struct {
 	PKCERequired                       bool                                `json:"pkceRequired"                                yaml:"pkce_required"                                jsonschema:"Require PKCE for security. Recommended for all user-interactive flows."`
 	PublicClient                       bool                                `json:"publicClient"                                yaml:"public_client"                                jsonschema:"Identify if client is public (cannot store secrets). Set true for SPA/Mobile."`
 	RequirePushedAuthorizationRequests bool                                `json:"requirePushedAuthorizationRequests"          yaml:"require_pushed_authorization_requests"        jsonschema:"Require Pushed Authorization Requests (PAR) per RFC 9126."`
+	DPoPBoundAccessTokens              bool                                `json:"dpopBoundAccessTokens"                       yaml:"dpop_bound_access_tokens"                     jsonschema:"Require DPoP-bound access tokens (RFC 9449)."`
 	Token                              *OAuthTokenConfig                   `json:"token,omitempty"                             yaml:"token,omitempty"                              jsonschema:"Token configuration for access tokens and ID tokens"`
 	Scopes                             []string                            `json:"scopes,omitempty"                            yaml:"scopes,omitempty"                             jsonschema:"Allowed OAuth scopes. Add custom scopes as needed for your application."`
 	UserInfo                           *UserInfoConfig                     `json:"userInfo,omitempty"                          yaml:"user_info,omitempty"                          jsonschema:"UserInfo endpoint configuration. Configure user attributes returned from the OIDC userinfo endpoint."`
@@ -145,22 +147,24 @@ type OAuthConfigWithSecret struct {
 }
 
 // OAuthConfig is the wire output shape (GET responses). ClientSecret is structurally absent.
-// Empty slice/map fields are omitted; booleans are always serialized for explicit semantics.
+// Empty slice/map fields are omitted; booleans are always serialized in both JSON and YAML for
+// explicit semantics.
 type OAuthConfig struct {
-	ClientID                           string                              `json:"clientId,omitempty"`
-	RedirectURIs                       []string                            `json:"redirectUris,omitempty"`
-	GrantTypes                         []oauth2const.GrantType             `json:"grantTypes,omitempty"`
-	ResponseTypes                      []oauth2const.ResponseType          `json:"responseTypes,omitempty"`
-	TokenEndpointAuthMethod            oauth2const.TokenEndpointAuthMethod `json:"tokenEndpointAuthMethod,omitempty"`
-	PKCERequired                       bool                                `json:"pkceRequired"`
-	PublicClient                       bool                                `json:"publicClient"`
-	RequirePushedAuthorizationRequests bool                                `json:"requirePushedAuthorizationRequests"`
-	Token                              *OAuthTokenConfig                   `json:"token,omitempty"`
-	Scopes                             []string                            `json:"scopes,omitempty"`
-	UserInfo                           *UserInfoConfig                     `json:"userInfo,omitempty"`
-	ScopeClaims                        map[string][]string                 `json:"scopeClaims,omitempty"`
-	Certificate                        *Certificate                        `json:"certificate,omitempty"`
-	AcrValues                          []string                            `json:"acrValues,omitempty"`
+	ClientID                           string                              `json:"clientId,omitempty"                 yaml:"client_id,omitempty"`
+	RedirectURIs                       []string                            `json:"redirectUris,omitempty"             yaml:"redirect_uris,omitempty"`
+	GrantTypes                         []oauth2const.GrantType             `json:"grantTypes,omitempty"               yaml:"grant_types,omitempty"`
+	ResponseTypes                      []oauth2const.ResponseType          `json:"responseTypes,omitempty"            yaml:"response_types,omitempty"`
+	TokenEndpointAuthMethod            oauth2const.TokenEndpointAuthMethod `json:"tokenEndpointAuthMethod,omitempty"  yaml:"token_endpoint_auth_method,omitempty"`
+	PKCERequired                       bool                                `json:"pkceRequired"                       yaml:"pkce_required"`
+	PublicClient                       bool                                `json:"publicClient"                       yaml:"public_client"`
+	RequirePushedAuthorizationRequests bool                                `json:"requirePushedAuthorizationRequests" yaml:"require_pushed_authorization_requests"`
+	DPoPBoundAccessTokens              bool                                `json:"dpopBoundAccessTokens"              yaml:"dpop_bound_access_tokens"`
+	Token                              *OAuthTokenConfig                   `json:"token,omitempty"                    yaml:"token,omitempty"`
+	Scopes                             []string                            `json:"scopes,omitempty"                   yaml:"scopes,omitempty"`
+	UserInfo                           *UserInfoConfig                     `json:"userInfo,omitempty"                 yaml:"user_info,omitempty"`
+	ScopeClaims                        map[string][]string                 `json:"scopeClaims,omitempty"              yaml:"scope_claims,omitempty"`
+	Certificate                        *Certificate                        `json:"certificate,omitempty"              yaml:"certificate,omitempty"`
+	AcrValues                          []string                            `json:"acrValues,omitempty"                yaml:"acr_values,omitempty"`
 }
 
 // SupportedIDTokenEncryptionAlgs lists JWE key-management algorithms supported for ID token encryption.
@@ -181,6 +185,7 @@ type OAuthClient struct {
 	PKCERequired                       bool                                `yaml:"pkce_required,omitempty"`
 	PublicClient                       bool                                `yaml:"public_client,omitempty"`
 	RequirePushedAuthorizationRequests bool                                `yaml:"require_pushed_authorization_requests,omitempty"`
+	DPoPBoundAccessTokens              bool                                `yaml:"dpop_bound_access_tokens,omitempty"`
 	Token                              *OAuthTokenConfig                   `yaml:"token,omitempty"`
 	Scopes                             []string                            `yaml:"scopes,omitempty"`
 	UserInfo                           *UserInfoConfig                     `yaml:"user_info,omitempty"`
@@ -227,8 +232,8 @@ type InboundAuthConfigWithSecret struct {
 
 // InboundAuthConfig is the wire output wrapper (GET responses).
 type InboundAuthConfig struct {
-	Type        InboundAuthType `json:"type"`
-	OAuthConfig *OAuthConfig    `json:"config,omitempty"`
+	Type        InboundAuthType `json:"type"             yaml:"type"`
+	OAuthConfig *OAuthConfig    `json:"config,omitempty" yaml:"config,omitempty"`
 }
 
 // InboundAuthConfigProcessed is the runtime wrapper.

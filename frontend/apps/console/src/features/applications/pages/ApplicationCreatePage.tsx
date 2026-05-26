@@ -89,6 +89,7 @@ export default function ApplicationCreatePage(): JSX.Element {
     setSignInApproach,
     selectedTechnology,
     selectedPlatform,
+    hostingUrl,
     setHostingUrl,
     callbackUrlFromConfig,
     setCallbackUrlFromConfig,
@@ -217,6 +218,7 @@ export default function ApplicationCreatePage(): JSX.Element {
 
     const applicationData: CreateApplicationRequest = {
       name: appName,
+      ...(hostingUrl && {url: hostingUrl}),
       ...(authFlowId && {authFlowId}),
       ...(effectiveOuId && {ouId: effectiveOuId}),
       ...(finalTemplateId && {template: finalTemplateId}),
@@ -481,13 +483,21 @@ export default function ApplicationCreatePage(): JSX.Element {
         }
 
         const oauth2Config = createdApplication.inboundAuthConfig?.find((config) => config.type === 'oauth2');
+        const clientId = oauth2Config?.config?.clientId;
         const clientSecret = oauth2Config?.config?.clientSecret;
 
         if (!clientSecret) {
           return null;
         }
 
-        return <ShowClientSecret appName={appName} clientSecret={clientSecret} onContinue={handleNextStep} />;
+        return (
+          <ShowClientSecret
+            appName={appName}
+            clientId={clientId}
+            clientSecret={clientSecret}
+            onContinue={handleNextStep}
+          />
+        );
       }
 
       default:
@@ -579,7 +589,7 @@ export default function ApplicationCreatePage(): JSX.Element {
               <Box
                 sx={{
                   width: '100%',
-                  maxWidth: 800,
+                  maxWidth: {xs: '100%', md: currentStep === ApplicationCreateFlowStep.STACK ? '70%' : 800},
                   display: 'flex',
                   flexDirection: 'column',
                 }}

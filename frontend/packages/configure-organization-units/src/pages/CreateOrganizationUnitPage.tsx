@@ -273,7 +273,7 @@ export default function CreateOrganizationUnitPage(): JSX.Element {
                               sx={{
                                 '&:hover': {
                                   bgcolor: 'primary.main',
-                                  color: 'primary.contrastText',
+                                  color: 'text.primary',
                                   borderColor: 'primary.main',
                                 },
                               }}

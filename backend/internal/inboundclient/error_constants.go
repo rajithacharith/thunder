@@ -203,10 +203,16 @@ type ConsentSyncError struct {
 	Underlying *serviceerror.ServiceError
 }
 
-// Error implements the error interface.
+// Error implements the error interface. Falls back through (description → code → generic) so
+// the returned string is never empty even when the underlying error has no description.
 func (e *ConsentSyncError) Error() string {
 	if e.Underlying != nil {
-		return e.Underlying.ErrorDescription.DefaultValue
+		if msg := e.Underlying.ErrorDescription.DefaultValue; msg != "" {
+			return msg
+		}
+		if e.Underlying.Code != "" {
+			return "consent sync failed (code " + e.Underlying.Code + ")"
+		}
 	}
 	return "consent sync failed"
 }

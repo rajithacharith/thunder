@@ -21,7 +21,6 @@ package application
 import (
 	"context"
 	"encoding/json"
-
 	"errors"
 	"testing"
 
@@ -36,6 +35,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/inboundclient"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	oupkg "github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
@@ -153,6 +153,7 @@ func (suite *ServiceTestSuite) setupTestService() (
 	mockEntityProvider.On("UpdateSystemAttributes", mock.Anything, mock.Anything).Maybe().Return(noEPErr)
 	mockEntityProvider.On("UpdateSystemCredentials", mock.Anything, mock.Anything).Maybe().Return(noEPErr)
 	mockStore.On("Validate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Maybe().Return(nil)
+	mockStore.On("ResolveInboundAuthProfileHandles", mock.Anything, mock.Anything).Maybe().Return(nil)
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	mockOUService.On("IsOrganizationUnitExists", mock.Anything, mock.Anything).Maybe().Return(true, nil)
 	service := &applicationService{
@@ -3291,4 +3292,118 @@ func (suite *ServiceTestSuite) TestTranslateConsentSyncError() {
 		Underlying: &serviceerror.ServiceError{Type: serviceerror.ServerErrorType, Code: "CONSENT-9000"},
 	}
 	suite.Equal(serviceerror.InternalServerError.Code, translateConsentSyncError(serverErr).Code)
+}
+
+// ----- validateApplicationFields handle resolution -----
+
+func (suite *ServiceTestSuite) TestValidateApplicationFields_OUHandleResolved() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetServerRuntime()
+	require.NoError(suite.T(), config.InitializeServerRuntime("/tmp/test", testConfig))
+	defer config.ResetServerRuntime()
+
+	service, mockStore := suite.setupTestService()
+
+	ouMock := service.ouService.(*oumock.OrganizationUnitServiceInterfaceMock)
+	ouMock.On("GetOrganizationUnitByPath", mock.Anything, "default").
+		Return(oupkg.OrganizationUnit{ID: testOUID}, nil).Once()
+
+	app := &model.ApplicationDTO{
+		Name:     "test-app",
+		OUHandle: "default",
+	}
+
+	mockStore.On("Validate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Maybe().Return(nil)
+
+	svcErr := service.validateApplicationFields(context.Background(), app)
+
+	assert.Nil(suite.T(), svcErr)
+	assert.Equal(suite.T(), testOUID, app.OUID)
+}
+
+func (suite *ServiceTestSuite) TestValidateApplicationFields_OUHandleNotFound() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetServerRuntime()
+	require.NoError(suite.T(), config.InitializeServerRuntime("/tmp/test", testConfig))
+	defer config.ResetServerRuntime()
+
+	service, _ := suite.setupTestService()
+
+	ouMock := service.ouService.(*oumock.OrganizationUnitServiceInterfaceMock)
+	ouMock.On("GetOrganizationUnitByPath", mock.Anything, "bad-handle").
+		Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{Code: "OUS-4004"}).Once()
+
+	app := &model.ApplicationDTO{
+		Name:     "test-app",
+		OUHandle: "bad-handle",
+	}
+
+	svcErr := service.validateApplicationFields(context.Background(), app)
+
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorInvalidRequestFormat.Code, svcErr.Code)
+}
+
+// TestValidateApplicationFields_OUIDWinsWhenBothProvided verifies that when both ou_id and
+// ou_handle are supplied, ou_id wins and no handle resolution is attempted (the absence of a
+// GetOrganizationUnitByPath mock expectation asserts that). This covers the WARN-on-collision
+// branch in validateApplicationFields.
+func (suite *ServiceTestSuite) TestValidateApplicationFields_OUIDWinsWhenBothProvided() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetServerRuntime()
+	require.NoError(suite.T(), config.InitializeServerRuntime("/tmp/test", testConfig))
+	defer config.ResetServerRuntime()
+
+	service, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name:     "test-app",
+		OUID:     testOUID,
+		OUHandle: "some-handle",
+	}
+
+	svcErr := service.validateApplicationFields(context.Background(), app)
+
+	assert.Nil(suite.T(), svcErr)
+	assert.Equal(suite.T(), testOUID, app.OUID)
+
+	ouMock := service.ouService.(*oumock.OrganizationUnitServiceInterfaceMock)
+	ouMock.AssertNotCalled(suite.T(), "GetOrganizationUnitByPath", mock.Anything, mock.Anything)
+}
+
+func (suite *ServiceTestSuite) TestValidateApplicationFields_FlowHandleResolutionError() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetServerRuntime()
+	require.NoError(suite.T(), config.InitializeServerRuntime("/tmp/test", testConfig))
+	defer config.ResetServerRuntime()
+
+	service, mockStore := suite.setupTestService()
+
+	// Remove the permissive ResolveInboundAuthProfileHandles mock and register an error one
+	for i, c := range mockStore.ExpectedCalls {
+		if c.Method == "ResolveInboundAuthProfileHandles" {
+			mockStore.ExpectedCalls = append(mockStore.ExpectedCalls[:i], mockStore.ExpectedCalls[i+1:]...)
+			break
+		}
+	}
+	mockStore.On("ResolveInboundAuthProfileHandles", mock.Anything, mock.Anything).
+		Return(inboundclient.ErrFKInvalidAuthFlow).Once()
+
+	app := &model.ApplicationDTO{
+		Name: "test-app",
+		OUID: testOUID,
+	}
+
+	svcErr := service.validateApplicationFields(context.Background(), app)
+
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorInvalidRequestFormat.Code, svcErr.Code)
 }

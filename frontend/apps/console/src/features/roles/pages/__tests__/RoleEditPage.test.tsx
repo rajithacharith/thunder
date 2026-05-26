@@ -47,6 +47,7 @@ vi.mock('../../components/edit-role/assignments-settings/EditAssignmentsSettings
 
 vi.mock('@thunderid/components', () => ({
   CopyableId: vi.fn(() => null),
+  PageLoadingAnimation: vi.fn(() => <div data-testid="page-loading-animation" />),
 }));
 
 vi.mock('react-router', async () => {
@@ -139,7 +140,7 @@ describe('RoleEditPage', () => {
 
       render(<RoleEditPage />);
 
-      expect(screen.getByRole('progressbar')).toBeInTheDocument();
+      expect(screen.getByTestId('page-loading-animation')).toBeInTheDocument();
     });
   });
 

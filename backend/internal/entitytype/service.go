@@ -84,6 +84,7 @@ type EntityTypeServiceInterface interface {
 	GetDisplayAttributesByNames(
 		ctx context.Context, category TypeCategory, names []string,
 	) (map[string]string, *serviceerror.ServiceError)
+	ResolveEntityTypeHandles(ctx context.Context, entityType *EntityType) *serviceerror.ServiceError
 }
 
 // entityTypeService is the default implementation of the EntityTypeServiceInterface.
@@ -225,6 +226,12 @@ func (us *entityTypeService) CreateEntityType(
 	if isDeclarativeModeEnabled() {
 		return nil, &ErrorCannotModifyDeclarativeResource
 	}
+
+	ouOnly := &EntityType{ID: request.ID, Name: request.Name, OUID: request.OUID, OUHandle: request.OUHandle}
+	if svcErr := us.resolveEntityTypeOUHandle(ctx, ouOnly); svcErr != nil {
+		return nil, invalidEntityTypeRequestErr(category, "organization unit with handle not found")
+	}
+	request.OUID = ouOnly.OUID
 
 	schemaToValidate := EntityType{
 		Category:         category,
@@ -387,6 +394,12 @@ func (us *entityTypeService) UpdateEntityType(ctx context.Context, category Type
 	if us.entityTypeStore.IsEntityTypeDeclarative(category, schemaID) {
 		return nil, &ErrorCannotModifyDeclarativeResource
 	}
+
+	ouOnly := &EntityType{ID: schemaID, Name: request.Name, OUID: request.OUID, OUHandle: request.OUHandle}
+	if svcErr := us.resolveEntityTypeOUHandle(ctx, ouOnly); svcErr != nil {
+		return nil, invalidEntityTypeRequestErr(category, "organization unit with handle not found")
+	}
+	request.OUID = ouOnly.OUID
 
 	schemaToValidate := EntityType{
 		Category:         category,
@@ -744,6 +757,41 @@ func (us *entityTypeService) getAccessibleResources(
 		return nil, &serviceerror.InternalServerError
 	}
 	return accessible, nil
+}
+
+// ResolveEntityTypeHandles resolves ou_handle to an OU ID on the given entity type in-place.
+// Called by the declarative loader validator (startup, no user context) so that file-based
+// entity types support ou_handle. It elevates to runtime context internally.
+func (us *entityTypeService) ResolveEntityTypeHandles(
+	ctx context.Context, entityType *EntityType,
+) *serviceerror.ServiceError {
+	return us.resolveEntityTypeOUHandle(security.WithRuntimeContext(ctx), entityType)
+}
+
+// resolveEntityTypeOUHandle resolves ou_handle to an OU ID on the given entity type in-place
+// using the caller's context. API/importer paths must pass their own caller context so the
+// underlying OU lookup is still subject to the caller's ou:read authorization.
+// If both ou_id and ou_handle are provided, ou_id wins and a warning is logged.
+func (us *entityTypeService) resolveEntityTypeOUHandle(
+	ctx context.Context, entityType *EntityType,
+) *serviceerror.ServiceError {
+	if entityType.OUID != "" && entityType.OUHandle != "" {
+		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, entityTypeLoggerComponentName))
+		logger.Warn("Both ou_id and ou_handle provided for entity type; ou_handle ignored",
+			log.String("entityTypeID", entityType.ID), log.String("name", entityType.Name))
+		return nil
+	}
+	if entityType.OUID == "" && entityType.OUHandle != "" {
+		if us.ouService == nil {
+			return &serviceerror.InternalServerError
+		}
+		ou, svcErr := us.ouService.GetOrganizationUnitByPath(ctx, entityType.OUHandle)
+		if svcErr != nil {
+			return &ErrorInvalidRequestFormat
+		}
+		entityType.OUID = ou.ID
+	}
+	return nil
 }
 
 // ensureOrganizationUnitExists validates that the provided organization unit exists using the OU service.

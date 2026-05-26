@@ -48,6 +48,7 @@ export default function ExportPage(): JSX.Element {
       resourceServers: ['*'],
       roles: ['*'],
       groups: ['*'],
+      agents: ['*'],
     });
   }, [mutate]);
 

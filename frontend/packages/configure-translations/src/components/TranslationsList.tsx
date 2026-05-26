@@ -72,20 +72,7 @@ export default function TranslationsList(): JSX.Element {
         renderCell: (params: DataGrid.GridRenderCellParams<{id: string; code: string}>): JSX.Element => (
           <ListingTable.CellIcon
             sx={{width: '100%'}}
-            icon={
-              <ResourceAvatar
-                value={toFlagEmoji(params.row.code)}
-                size={30}
-                fallback="emoji:🌍"
-                sx={{
-                  backgroundColor: theme.vars?.palette.grey[500],
-                  fontSize: '1rem',
-                  ...theme.applyStyles('dark', {
-                    backgroundColor: theme.vars?.palette.grey[900],
-                  }),
-                }}
-              />
-            }
+            icon={<ResourceAvatar value={toFlagEmoji(params.row.code)} size={30} fallback="emoji:🌍" />}
             primary={getDisplayNameForCode(params.row.code)}
             secondary={
               <Chip

@@ -213,7 +213,7 @@ function View({
         <Typography
           variant="body2"
           sx={{
-            color: 'text.primary',
+            color: 'common.white',
             fontWeight: 500,
           }}
         >
@@ -226,7 +226,7 @@ function View({
                 size="small"
                 onClick={handleMenuOpen}
                 sx={(theme: Theme) => ({
-                  color: 'text.secondary',
+                  color: 'common.white',
                   '&:hover': {
                     ...theme.applyStyles('dark', {
                       backgroundColor: 'rgba(0, 0, 0, 0.2)',
@@ -234,7 +234,7 @@ function View({
                     }),
                     ...theme.applyStyles('light', {
                       backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                      color: 'text.primary',
+                      color: 'common.white',
                     }),
                   },
                 })}
@@ -251,7 +251,7 @@ function View({
                   onConfigure?.();
                 }}
                 sx={(theme: Theme) => ({
-                  color: 'text.secondary',
+                  color: 'common.white',
                   '&:hover': {
                     ...theme.applyStyles('dark', {
                       backgroundColor: 'rgba(0, 0, 0, 0.2)',
@@ -259,7 +259,7 @@ function View({
                     }),
                     ...theme.applyStyles('light', {
                       backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                      color: 'text.primary',
+                      color: 'common.white',
                     }),
                   },
                 })}
@@ -279,7 +279,7 @@ function View({
                   }
                 }}
                 sx={(theme: Theme) => ({
-                  color: 'text.secondary',
+                  color: 'common.white',
                   '&:hover': {
                     ...theme.applyStyles('dark', {
                       backgroundColor: 'rgba(0, 0, 0, 0.2)',
@@ -287,7 +287,7 @@ function View({
                     }),
                     ...theme.applyStyles('light', {
                       backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                      color: 'text.primary',
+                      color: 'common.white',
                     }),
                   },
                 })}

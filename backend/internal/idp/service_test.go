@@ -31,6 +31,7 @@ import (
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/utils"
 )
 
 type mockTransactioner struct{}
@@ -68,6 +69,7 @@ func (s *IDPServiceTestSuite) SetupTest() {
 		idpStore:      s.mockStore,
 		transactioner: &mockTransactioner{},
 		logger:        log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService")),
+		uuidGenerator: utils.GenerateUUIDv7,
 	}
 }
 
@@ -224,6 +226,49 @@ func (s *IDPServiceTestSuite) TestCreateIdentityProvider_StoreError() {
 	s.NotNil(err)
 	s.Equal(serviceerror.InternalServerError.Code, err.Code)
 	s.mockStore.AssertExpectations(s.T())
+}
+
+// TestCreateIdentityProvider_WithPresetID tests that a preset ID is preserved and not overwritten.
+func (s *IDPServiceTestSuite) TestCreateIdentityProvider_WithPresetID() {
+	presetID := "preset-idp-id-1234"
+	idp := &IDPDTO{
+		ID:          presetID,
+		Name:        "Test IDP",
+		Description: "Test Description",
+		Type:        IDPTypeOIDC,
+		Properties:  createOIDCProperties(),
+	}
+
+	s.mockStore.On("GetIdentityProviderByName", mock.Anything, "Test IDP").Return((*IDPDTO)(nil), ErrIDPNotFound)
+	s.mockStore.On("CreateIdentityProvider", mock.Anything, mock.MatchedBy(func(dto IDPDTO) bool {
+		return dto.ID == presetID
+	})).Return(nil)
+
+	result, err := s.idpService.CreateIdentityProvider(context.Background(), idp)
+
+	s.Nil(err)
+	s.NotNil(result)
+	s.Equal(presetID, result.ID)
+	s.mockStore.AssertExpectations(s.T())
+}
+
+// TestCreateIdentityProvider_UUIDGenerationError tests that a UUID generation failure returns InternalServerError.
+func (s *IDPServiceTestSuite) TestCreateIdentityProvider_UUIDGenerationError() {
+	idp := &IDPDTO{
+		Name:       "Test IDP",
+		Type:       IDPTypeOIDC,
+		Properties: createOIDCProperties(),
+	}
+
+	s.idpService.uuidGenerator = func() (string, error) {
+		return "", errors.New("entropy source failed")
+	}
+
+	result, err := s.idpService.CreateIdentityProvider(context.Background(), idp)
+
+	s.Nil(result)
+	s.NotNil(err)
+	s.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
 // TestGetIdentityProviderList_Success tests successful list retrieval

@@ -10,8 +10,8 @@ CREATE TABLE "AUTHORIZATION_CODE" (
     EXPIRY_TIME TIMESTAMP NOT NULL
 );
 
--- Composite index for authorization code lookup by client + code + deployment (hot login-path query)
-CREATE INDEX idx_authz_code_client_code_deployment ON "AUTHORIZATION_CODE" (CLIENT_ID, AUTHORIZATION_CODE, DEPLOYMENT_ID);
+-- Composite index for authorization code lookup by code + deployment (hot login-path query)
+CREATE INDEX idx_authorization_code_code_deployment ON "AUTHORIZATION_CODE" (AUTHORIZATION_CODE, DEPLOYMENT_ID);
 
 -- Index for expiry time on AUTHORIZATION_CODE (supports cleanup and expiry checks)
 CREATE INDEX idx_authz_code_expiry_time ON "AUTHORIZATION_CODE" (EXPIRY_TIME);
@@ -78,3 +78,15 @@ CREATE TABLE "PAR_REQUEST" (
 
 -- Index for expiry time on PAR_REQUEST (supports cleanup and expiry checks)
 CREATE INDEX idx_par_request_expiry_time ON "PAR_REQUEST" (EXPIRY_TIME);
+
+-- Table to store JWT jti values for replay protection across consumers. Rows are isolated by NAMESPACE.
+CREATE TABLE "JTI_RECORD" (
+    DEPLOYMENT_ID VARCHAR(255) NOT NULL,
+    NAMESPACE VARCHAR(64) NOT NULL,
+    JTI VARCHAR(256) NOT NULL,
+    EXPIRY_TIME TIMESTAMP NOT NULL,
+    PRIMARY KEY (DEPLOYMENT_ID, NAMESPACE, JTI)
+);
+
+-- Index for expiry time on JTI_RECORD (supports cleanup and expiry checks)
+CREATE INDEX idx_jti_record_expiry_time ON "JTI_RECORD" (EXPIRY_TIME);

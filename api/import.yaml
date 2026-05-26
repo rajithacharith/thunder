@@ -16,8 +16,8 @@ servers:
         default: "8090"
 
 tags:
-  - name: import
-    description: Operations related to resource import and declarative resource deletion
+  - name: Import
+    description: Import declarative resource definitions from YAML into the runtime store, or delete resources by declaration.
 
 security:
   - OAuth2: [system]
@@ -26,7 +26,7 @@ paths:
   /import:
     post:
       tags:
-        - import
+        - Import
       summary: Import declarative resources
       description: >
         Imports one or more declarative YAML documents into runtime stores or file storage.
@@ -165,7 +165,7 @@ paths:
   /import/delete:
     post:
       tags:
-        - import
+        - Import
       summary: Delete imported declarative resource file
       description: >
         Deletes a file-backed declarative resource by resource type and key.

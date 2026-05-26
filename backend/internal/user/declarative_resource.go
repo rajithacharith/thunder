@@ -30,7 +30,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/entity"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib/hash"
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -182,21 +182,32 @@ func (e *userExporter) GetResourceRules() *declarativeresource.ResourceRules {
 
 // makeUserDeclarativeConfig creates the declarative loader configuration for user resources.
 // This provides user-specific parser and validator callbacks to the entity service.
-func makeUserDeclarativeConfig() entity.DeclarativeLoaderConfig {
+// When userService is non-nil, ou_handle is resolved to ou_id during parsing.
+func makeUserDeclarativeConfig(userService UserServiceInterface) entity.DeclarativeLoaderConfig {
 	return entity.DeclarativeLoaderConfig{
 		Directory: "users",
 		Category:  entity.EntityCategoryUser,
-		Parser:    makeUserParser(),
+		Parser:    makeUserParser(userService),
 		Validator: makeUserValidator(),
 	}
 }
 
 // makeUserParser creates a parser callback that converts YAML data into an Entity with credentials.
-func makeUserParser() func(data []byte) (*entity.Entity, json.RawMessage, json.RawMessage, error) {
+// When userService is non-nil, ou_handle is resolved to ou_id before producing the entity.
+func makeUserParser(
+	userService UserServiceInterface,
+) func(data []byte) (*entity.Entity, json.RawMessage, json.RawMessage, error) {
 	return func(data []byte) (*entity.Entity, json.RawMessage, json.RawMessage, error) {
 		user, creds, err := parseToUser(data)
 		if err != nil {
 			return nil, nil, nil, err
+		}
+
+		if userService != nil {
+			if svcErr := userService.ResolveUserOUHandle(context.Background(), &user); svcErr != nil {
+				return nil, nil, nil, fmt.Errorf(
+					"organization unit with handle %q not found for user '%s'", user.OUHandle, user.ID)
+			}
 		}
 
 		e := userToEntity(&user)
@@ -219,7 +230,7 @@ func makeUserValidator() func(e *entity.Entity, svc entity.EntityServiceInterfac
 			return fmt.Errorf("user type is required")
 		}
 		if e.OUID == "" {
-			return fmt.Errorf("organization unit ID is required")
+			return fmt.Errorf("ou_id or ou_handle is required for user '%s'", e.ID)
 		}
 		if len(e.Attributes) == 0 {
 			return fmt.Errorf("user attributes are required")
@@ -251,12 +262,14 @@ func makeUserValidator() func(e *entity.Entity, svc entity.EntityServiceInterfac
 type userDeclarativeResource struct {
 	ID          string                 `yaml:"id"`
 	Type        string                 `yaml:"type"`
-	OUID        string                 `yaml:"ou_id"`
+	OUID        string                 `yaml:"ou_id,omitempty"`
+	OUHandle    string                 `yaml:"ou_handle,omitempty"`
 	Attributes  map[string]interface{} `yaml:"attributes"`
 	Credentials map[string]interface{} `yaml:"credentials,omitempty"` // Flexible format for YAML
 }
 
-// parseToUser parses YAML data into a User and its Credentials.
+// parseToUser parses YAML data into a User and its Credentials. The ou_handle from YAML is
+// populated onto User.OUHandle so callers can resolve it to an ou_id via the user service.
 func parseToUser(data []byte) (User, Credentials, error) {
 	var userRes userDeclarativeResource
 	if err := yaml.Unmarshal(data, &userRes); err != nil {
@@ -273,6 +286,7 @@ func parseToUser(data []byte) (User, Credentials, error) {
 		ID:         userRes.ID,
 		Type:       userRes.Type,
 		OUID:       userRes.OUID,
+		OUHandle:   userRes.OUHandle,
 		Attributes: json.RawMessage(attributesJSON),
 	}
 

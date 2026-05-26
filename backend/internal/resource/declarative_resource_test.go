@@ -514,7 +514,7 @@ func TestParseAndValidateResourceServerWrapper_InvalidYAML(t *testing.T) {
 }
 
 func TestValidateResourceServerWrapper_InvalidType(t *testing.T) {
-	err := validateResourceServerWrapper("invalid", newResourceStoreInterfaceMock(t), nil)
+	err := validateResourceServerWrapper("invalid", newResourceStoreInterfaceMock(t), nil, nil)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid type")
@@ -523,7 +523,7 @@ func TestValidateResourceServerWrapper_InvalidType(t *testing.T) {
 func TestValidateResourceServerWrapper_EmptyName(t *testing.T) {
 	fileStore := newResourceStoreInterfaceMock(t)
 
-	err := validateResourceServerWrapper(&ResourceServer{ID: "rs1"}, fileStore, nil)
+	err := validateResourceServerWrapper(&ResourceServer{ID: "rs1"}, fileStore, nil, nil)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "name cannot be empty")
@@ -533,7 +533,8 @@ func TestValidateResourceServerWrapper_DuplicateInFileStore(t *testing.T) {
 	fileStore := newResourceStoreInterfaceMock(t)
 	fileStore.On("GetResourceServer", mock.Anything, "rs1").Return(ResourceServer{ID: "rs1"}, nil)
 
-	err := validateResourceServerWrapper(&ResourceServer{ID: "rs1", Name: "Server"}, fileStore, nil)
+	err := validateResourceServerWrapper(
+		&ResourceServer{ID: "rs1", Name: "Server", OUID: "ou1"}, fileStore, nil, nil)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "duplicate resource server ID")
@@ -543,7 +544,8 @@ func TestValidateResourceServerWrapper_FileStoreError(t *testing.T) {
 	fileStore := newResourceStoreInterfaceMock(t)
 	fileStore.On("GetResourceServer", mock.Anything, "rs1").Return(ResourceServer{}, errors.New("file error"))
 
-	err := validateResourceServerWrapper(&ResourceServer{ID: "rs1", Name: "Server"}, fileStore, nil)
+	err := validateResourceServerWrapper(
+		&ResourceServer{ID: "rs1", Name: "Server", OUID: "ou1"}, fileStore, nil, nil)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to check")
@@ -555,7 +557,8 @@ func TestValidateResourceServerWrapper_DuplicateInDBStore(t *testing.T) {
 	fileStore.On("GetResourceServer", mock.Anything, "rs1").Return(ResourceServer{}, errResourceServerNotFound)
 	dbStore.On("GetResourceServer", mock.Anything, "rs1").Return(ResourceServer{ID: "rs1"}, nil)
 
-	err := validateResourceServerWrapper(&ResourceServer{ID: "rs1", Name: "Server"}, fileStore, dbStore)
+	err := validateResourceServerWrapper(
+		&ResourceServer{ID: "rs1", Name: "Server", OUID: "ou1"}, fileStore, dbStore, nil)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "database store")
@@ -567,7 +570,8 @@ func TestValidateResourceServerWrapper_DBStoreError(t *testing.T) {
 	fileStore.On("GetResourceServer", mock.Anything, "rs1").Return(ResourceServer{}, errResourceServerNotFound)
 	dbStore.On("GetResourceServer", mock.Anything, "rs1").Return(ResourceServer{}, errors.New("db error"))
 
-	err := validateResourceServerWrapper(&ResourceServer{ID: "rs1", Name: "Server"}, fileStore, dbStore)
+	err := validateResourceServerWrapper(
+		&ResourceServer{ID: "rs1", Name: "Server", OUID: "ou1"}, fileStore, dbStore, nil)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "database store")
@@ -577,7 +581,8 @@ func TestValidateResourceServerWrapper_Success(t *testing.T) {
 	fileStore := newResourceStoreInterfaceMock(t)
 	fileStore.On("GetResourceServer", mock.Anything, "rs1").Return(ResourceServer{}, errResourceServerNotFound)
 
-	err := validateResourceServerWrapper(&ResourceServer{ID: "rs1", Name: "Server"}, fileStore, nil)
+	err := validateResourceServerWrapper(
+		&ResourceServer{ID: "rs1", Name: "Server", OUID: "ou1"}, fileStore, nil, nil)
 
 	assert.NoError(t, err)
 }

@@ -1460,3 +1460,91 @@ func AuthenticateWithCredential(identifierKey, identifierValue, credentialKey, c
 	body, _ := io.ReadAll(resp.Body)
 	return false, fmt.Errorf("unexpected auth status %d: %s", resp.StatusCode, string(body))
 }
+
+// CreateAgent creates an agent via API and returns its ID.
+func CreateAgent(a Agent) (string, error) {
+	payload, err := json.Marshal(a)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal agent: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", TestServerURL+"/agents", bytes.NewReader(payload))
+	if err != nil {
+		return "", fmt.Errorf("failed to create agent request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := GetHTTPClient()
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("create agent request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read create agent response body: %w", err)
+	}
+	if resp.StatusCode != http.StatusCreated {
+		return "", fmt.Errorf("create agent failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var created Agent
+	if err := json.Unmarshal(body, &created); err != nil {
+		return "", fmt.Errorf("failed to decode create agent response: %w", err)
+	}
+	return created.ID, nil
+}
+
+// DeleteAgent deletes an agent by ID via API.
+func DeleteAgent(agentID string) error {
+	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/agents/%s", TestServerURL, agentID), nil)
+	if err != nil {
+		return fmt.Errorf("failed to create delete agent request: %w", err)
+	}
+
+	client := GetHTTPClient()
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("delete agent request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("delete agent failed with status %d (failed to read body: %w)", resp.StatusCode, err)
+		}
+		return fmt.Errorf("delete agent failed with status %d: %s", resp.StatusCode, string(body))
+	}
+	return nil
+}
+
+// GetAgent retrieves an agent by ID via API.
+func GetAgent(agentID string) (*Agent, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/agents/%s", TestServerURL, agentID), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create get agent request: %w", err)
+	}
+
+	client := GetHTTPClient()
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("get agent request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read get agent response body: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("get agent failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var a Agent
+	if err := json.Unmarshal(body, &a); err != nil {
+		return nil, fmt.Errorf("failed to decode get agent response: %w", err)
+	}
+	return &a, nil
+}

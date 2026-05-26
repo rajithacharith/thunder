@@ -30,7 +30,7 @@ import (
 	entitypkg "github.com/thunder-id/thunderid/internal/entity"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib/hash"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/tests/mocks/entitymock"
 )
@@ -234,7 +234,7 @@ func (suite *DeclarativeResourceTestSuite) TestMakeUserParser_ParsesYAMLToEntity
 		"credentials:\n" +
 		"  password: \"secret\"\n")
 
-	parser := makeUserParser()
+	parser := makeUserParser(nil)
 	e, _, systemCreds, err := parser(userYAML)
 
 	suite.NoError(err)

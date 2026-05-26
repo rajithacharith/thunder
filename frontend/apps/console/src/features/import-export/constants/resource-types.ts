@@ -32,6 +32,7 @@ export const ALLOWED_RESOURCE_TYPES = [
   'user_type',
   'resource_server',
   'role',
+  'agent',
 ] as const;
 
 export type ResourceType = (typeof ALLOWED_RESOURCE_TYPES)[number];

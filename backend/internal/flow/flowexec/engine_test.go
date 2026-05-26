@@ -27,7 +27,7 @@ import (
 	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 	"github.com/thunder-id/thunderid/tests/mocks/observability/observabilitymock"
@@ -222,6 +222,50 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_PreservesActionOnInc
 	fe.updateContextWithNodeResponse(ctx, nodeResp)
 
 	s.Equal("passkeyChallenge", ctx.CurrentAction)
+}
+
+func (s *EngineTestSuite) TestTrackPresentedOptionalInputs_MergesOptionalInputIdentifiers() {
+	fe := &flowEngine{}
+	ctx := &EngineContext{
+		RuntimeData: map[string]string{
+			common.RuntimeKeyPresentedOptionalInputs: "nickname",
+		},
+	}
+	nodeResp := &common.NodeResponse{
+		Status: common.NodeStatusIncomplete,
+		Type:   common.NodeResponseTypeView,
+		Inputs: []common.Input{
+			{Identifier: "given_name", Required: false},
+			{Identifier: "username", Required: true},
+		},
+	}
+
+	fe.trackPresentedOptionalInputs(ctx, nodeResp)
+
+	presented := core.ParsePresentedOptionalInputIdentifiers(
+		nodeResp.RuntimeData[common.RuntimeKeyPresentedOptionalInputs])
+	s.Contains(presented, "nickname")
+	s.Contains(presented, "given_name")
+}
+
+func (s *EngineTestSuite) TestTrackPresentedOptionalInputs_SkipsNonPromptResponses() {
+	fe := &flowEngine{}
+	ctx := &EngineContext{
+		RuntimeData: map[string]string{
+			common.RuntimeKeyPresentedOptionalInputs: "nickname",
+		},
+	}
+	nodeResp := &common.NodeResponse{
+		Status: common.NodeStatusForward,
+		Type:   common.NodeResponseTypeView,
+		Inputs: []common.Input{
+			{Identifier: "given_name", Required: false},
+		},
+	}
+
+	fe.trackPresentedOptionalInputs(ctx, nodeResp)
+
+	s.Nil(nodeResp.RuntimeData)
 }
 
 func (s *EngineTestSuite) TestResolveStepForRedirection_WithAdditionalData() {
@@ -1631,9 +1675,9 @@ func (s *EngineTestSuite) TestValidateChallengeToken_SkipValidationWhenPolicyAll
 	}
 
 	// Generate a token and hash it
-	tokenStr, err := cryptolab.GenerateSecureToken()
+	tokenStr, err := cryptolib.GenerateSecureToken()
 	s.NoError(err)
-	tokenHash := cryptolab.HashToken(tokenStr)
+	tokenHash := cryptolib.HashToken(tokenStr)
 
 	ctx := &EngineContext{
 		ExecutionID:        "test-exec-id",
@@ -1655,9 +1699,9 @@ func (s *EngineTestSuite) TestValidateChallengeToken_ReturnsErrorWhenTokenEmpty(
 	}
 
 	// Generate a token and hash it
-	tokenStr, err := cryptolab.GenerateSecureToken()
+	tokenStr, err := cryptolib.GenerateSecureToken()
 	s.NoError(err)
-	tokenHash := cryptolab.HashToken(tokenStr)
+	tokenHash := cryptolib.HashToken(tokenStr)
 
 	ctx := &EngineContext{
 		ExecutionID:        "test-exec-id",
@@ -1680,9 +1724,9 @@ func (s *EngineTestSuite) TestValidateChallengeToken_ReturnsErrorWhenTokenInvali
 	}
 
 	// Generate a token and hash it
-	tokenStr, err := cryptolab.GenerateSecureToken()
+	tokenStr, err := cryptolib.GenerateSecureToken()
 	s.NoError(err)
-	tokenHash := cryptolab.HashToken(tokenStr)
+	tokenHash := cryptolib.HashToken(tokenStr)
 
 	ctx := &EngineContext{
 		ExecutionID:        "test-exec-id",
@@ -1705,9 +1749,9 @@ func (s *EngineTestSuite) TestValidateChallengeToken_SucceedsWhenTokenValid() {
 	}
 
 	// Generate a token and hash it
-	tokenStr, err := cryptolab.GenerateSecureToken()
+	tokenStr, err := cryptolib.GenerateSecureToken()
 	s.NoError(err)
-	tokenHash := cryptolab.HashToken(tokenStr)
+	tokenHash := cryptolib.HashToken(tokenStr)
 
 	ctx := &EngineContext{
 		ExecutionID:        "test-exec-id",
@@ -1725,9 +1769,9 @@ func (s *EngineTestSuite) TestValidateChallengeToken_SkipValidationWhenNodeNil()
 	}
 
 	// Generate a token and hash it
-	tokenStr, err := cryptolab.GenerateSecureToken()
+	tokenStr, err := cryptolib.GenerateSecureToken()
 	s.NoError(err)
-	tokenHash := cryptolab.HashToken(tokenStr)
+	tokenHash := cryptolib.HashToken(tokenStr)
 
 	ctx := &EngineContext{
 		ExecutionID:        "test-exec-id",
@@ -1750,9 +1794,9 @@ func (s *EngineTestSuite) TestValidateChallengeToken_SkipValidationWhenPolicyNil
 	}
 
 	// Generate a token and hash it
-	tokenStr, err := cryptolab.GenerateSecureToken()
+	tokenStr, err := cryptolib.GenerateSecureToken()
 	s.NoError(err)
-	tokenHash := cryptolab.HashToken(tokenStr)
+	tokenHash := cryptolib.HashToken(tokenStr)
 
 	ctx := &EngineContext{
 		ExecutionID:        "test-exec-id",

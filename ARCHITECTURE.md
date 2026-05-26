@@ -20,10 +20,10 @@ backend/internal/
   consent/ application/ user/ group/ role/ ou/ idp/   # management domains
   system/               # config · database · cache · jose/jwt · security · mcp · log · i18n
 frontend/apps/
-  gate/         # login/registration SPA  (@asgardeo/react — app-native mode)
-  console/      # admin SPA               (@asgardeo/react — redirect mode)
+  gate/         # login/registration SPA  (@thunderid/react — app-native mode)
+  console/      # admin SPA               (@thunderid/react — redirect mode)
 frontend/packages/      # @thunderid/contexts · design · hooks · i18n · utils · types · logger
-samples/apps/           # react-sdk-sample · react-api-based-sample · react-vanilla-sample
+samples/apps/           # react-sdk-sample · react-api-based-sample · react-vanilla-sample · wayfinder-sample
 ```
 
 ## Backend patterns
@@ -36,14 +36,14 @@ samples/apps/           # react-sdk-sample · react-api-based-sample · react-va
 
 Authentication/registration are JSON node graphs (`START → PROMPT → TASK → DECISION → COMPLETE`). The engine steps through nodes, persisting state in `runtimedb` across requests. Each `TASK` node names an executor (e.g. `"BasicAuthExecutor"`). To add one: implement `core.ExecutorInterface`, add name to `executor/constants.go`, register in `executor/init.go`.
 
-## Asgardeo React SDK
+## ThunderID React SDK
 
-| Mode | `AsgardeoProvider` props | Used in |
+| Mode | `ThunderIDProvider` props | Used in |
 |------|--------------------------|---------|
-| Redirect (ThunderID-hosted login) | `clientId` + `baseUrl` + `platform="AsgardeoV2"` | `Console`, `react-sdk-sample` |
-| App-native (Flow API) | `applicationId` + `baseUrl` + `platform="AsgardeoV2"` | `Gate`, `react-api-based-sample` |
+| Redirect (ThunderID-hosted login) | `clientId` + `baseUrl` | `Console`, `react-sdk-sample` |
+| App-native (Flow API) | `applicationId` + `baseUrl` | `Gate`, `react-api-based-sample` |
 
-`clientId` vs `applicationId` is the critical distinction. Common primitives: `useAsgardeo()`, `<SignedIn/Out>`, `<SignInButton/SignOutButton>`, `<ProtectedRoute>` (`@asgardeo/react-router@2.0`).
+`clientId` vs `applicationId` is the critical distinction. Common primitives: `useThunderID()`, `<SignedIn/Out>`, `<SignInButton/SignOutButton>`, `<ProtectedRoute>` (`@thunderid/react-router`).
 
 ## Auth Flow 
 

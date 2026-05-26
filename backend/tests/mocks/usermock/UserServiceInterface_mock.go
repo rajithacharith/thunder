@@ -585,6 +585,65 @@ func (_c *UserServiceInterfaceMock_GetUsersByPath_Call) RunAndReturn(run func(ct
 	return _c
 }
 
+// ResolveUserOUHandle provides a mock function for the type UserServiceInterfaceMock
+func (_mock *UserServiceInterfaceMock) ResolveUserOUHandle(ctx context.Context, user1 *user.User) *serviceerror.ServiceError {
+	ret := _mock.Called(ctx, user1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ResolveUserOUHandle")
+	}
+
+	var r0 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *user.User) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(ctx, user1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*serviceerror.ServiceError)
+		}
+	}
+	return r0
+}
+
+// UserServiceInterfaceMock_ResolveUserOUHandle_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ResolveUserOUHandle'
+type UserServiceInterfaceMock_ResolveUserOUHandle_Call struct {
+	*mock.Call
+}
+
+// ResolveUserOUHandle is a helper method to define mock.On call
+//   - ctx context.Context
+//   - user1 *user.User
+func (_e *UserServiceInterfaceMock_Expecter) ResolveUserOUHandle(ctx interface{}, user1 interface{}) *UserServiceInterfaceMock_ResolveUserOUHandle_Call {
+	return &UserServiceInterfaceMock_ResolveUserOUHandle_Call{Call: _e.mock.On("ResolveUserOUHandle", ctx, user1)}
+}
+
+func (_c *UserServiceInterfaceMock_ResolveUserOUHandle_Call) Run(run func(ctx context.Context, user1 *user.User)) *UserServiceInterfaceMock_ResolveUserOUHandle_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *user.User
+		if args[1] != nil {
+			arg1 = args[1].(*user.User)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_ResolveUserOUHandle_Call) Return(serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_ResolveUserOUHandle_Call {
+	_c.Call.Return(serviceError)
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_ResolveUserOUHandle_Call) RunAndReturn(run func(ctx context.Context, user1 *user.User) *serviceerror.ServiceError) *UserServiceInterfaceMock_ResolveUserOUHandle_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateUser provides a mock function for the type UserServiceInterfaceMock
 func (_mock *UserServiceInterfaceMock) UpdateUser(ctx context.Context, userID string, user1 *user.User) (*user.User, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, userID, user1)

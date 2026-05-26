@@ -63,12 +63,9 @@ const siteUrl = process.env.DOCUSAURUS_URL || productConfig.documentation.deploy
 const config: Config = {
   title: productConfig.project.name,
   tagline: productConfig.project.description,
-  favicon: 'assets/images/favicon.ico',
+  favicon: 'assets/images/favicon-inverted.ico',
 
-  // Prevent search engine indexing
-  // TODO: Remove this flag when the docs are ready for public access
-  // Tracker: https://github.com/thunder-id/thunderid/issues/1209
-  noIndex: true,
+  noIndex: false,
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -77,6 +74,7 @@ const config: Config = {
 
   url: siteUrl,
   baseUrl,
+  trailingSlash: true,
 
   // GitHub pages deployment config.
   organizationName: productConfig.project.source.github.owner.name, // Usually your GitHub org/user name.
@@ -114,6 +112,52 @@ const config: Config = {
     },
   },
 
+  clientModules: [require.resolve('./src/clientModules/tabTocSync.js')],
+
+  headTags: [
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'icon',
+        href: '/assets/images/logo-mini.svg',
+        media: '(prefers-color-scheme: light)',
+        type: 'image/svg+xml',
+      },
+    },
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'icon',
+        href: '/assets/images/logo-mini-inverted.svg',
+        media: '(prefers-color-scheme: dark)',
+        type: 'image/svg+xml',
+      },
+    },
+    {
+      tagName: 'script',
+      attributes: {},
+      innerHTML: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PTKWJGJL');`,
+    },
+    {
+      tagName: 'script',
+      attributes: {
+        src: 'https://cookie-cdn.cookiepro.com/scripttemplates/otSDKStub.js',
+        type: 'text/javascript',
+        charset: 'UTF-8',
+        'data-domain-script': '019e40cb-79a0-7395-aa5d-5d887b4b8d2d',
+      },
+    },
+    {
+      tagName: 'script',
+      attributes: {type: 'text/javascript'},
+      innerHTML: 'function OptanonWrapper() { }',
+    },
+  ],
+
   plugins: [webpackPlugin, personaPlugin],
 
   presets: [
@@ -133,11 +177,18 @@ const config: Config = {
               path: 'next',
             },
           },
-          // Replace {{ProductName}} and {{productSlug}} placeholders inside fenced code blocks at build time.
+          // Replace {{ProductName}}, {{productSlug}}, and local-URL placeholders inside code blocks at build time.
           rehypePlugins: [
             [
               rehypeProductName,
-              {productName: productConfig.project.name, productSlug: productConfig.project.name.toLowerCase()},
+              {
+                productName: productConfig.project.name,
+                productSlug: productConfig.project.name.toLowerCase(),
+                replacements: {
+                  '{{ConsoleUrl}}': productConfig.local.consoleUrl,
+                  '{{WayFinderSampleUrl}}': productConfig.local.samples.wayfinderUrl,
+                },
+              },
             ],
           ],
         },
@@ -172,21 +223,11 @@ const config: Config = {
       },
       items: [
         {
-          type: 'custom-PersonaDropdown',
-          position: 'left',
-        },
-        {
           type: 'docSidebar',
           sidebarId: 'docsSidebar',
           position: 'right',
           label: 'Docs',
           className: 'navbar__link--docs',
-        },
-        {
-          type: 'docSidebar',
-          sidebarId: 'useCasesSidebar',
-          position: 'right',
-          label: 'Use Cases',
         },
         {
           type: 'doc',
@@ -206,27 +247,9 @@ const config: Config = {
           position: 'right',
         },
         {
-          label: 'Resources',
-          type: 'dropdown',
+          label: 'Releases',
+          to: productConfig.project.source.github.releasesUrl,
           position: 'right',
-          className: 'navbar__link--dropdown',
-          items: [
-            {
-              label: 'Releases',
-              href: '/docs/next/releases',
-              className: 'navbar-resources__releases',
-            },
-            {
-              label: 'Discussions',
-              href: productConfig.project.source.github.discussionsUrl,
-              className: 'navbar-resources__discussions',
-            },
-            {
-              label: 'Report an Issue',
-              href: productConfig.project.source.github.issuesUrl,
-              className: 'navbar-resources__issues',
-            },
-          ],
         },
         {
           type: 'docSidebar',
@@ -235,26 +258,8 @@ const config: Config = {
           label: 'Community',
         },
         {
-          href: `https://github.com/${productConfig.project.source.github.fullName}`,
+          type: 'custom-GitHubStarButton',
           position: 'right',
-          className: 'navbar__github--link',
-          'aria-label': 'GitHub repository',
-        },
-        // Locale dropdown for i18n support.
-        // Will be visible when multiple locales are configured.
-        {
-          type: 'localeDropdown',
-          position: 'right',
-          dropdownItemsAfter: [
-            {
-              type: 'html',
-              value: '<hr style="margin: 0.3rem 0;">',
-            },
-            {
-              href: 'https://github.com/thunder-id/thunderid/issues/1912',
-              label: '🌍 Help translate',
-            },
-          ],
         },
         ...(productConfig.documentation.versioning.enabled
           ? [
@@ -274,6 +279,11 @@ const config: Config = {
     prism: {
       theme: prismThemes.nightOwlLight,
       darkTheme: prismThemes.nightOwl,
+    },
+    algolia: {
+      appId: 'I2J00F96K6',
+      apiKey: '109b36a4b48dc5da1f24d1f764e7685f',
+      indexName: 'thunderid-docs-prod',
     },
   } satisfies Preset.ThemeConfig,
 

@@ -47,6 +47,7 @@ type NotificationSenderMgtSvcInterface interface {
 type notificationSenderMgtService struct {
 	notificationStore notificationStoreInterface
 	transactioner     transaction.Transactioner
+	uuidGenerator     func() (string, error)
 }
 
 // newNotificationSenderMgtService returns a new instance of NotificationSenderMgtSvcInterface.
@@ -55,6 +56,7 @@ func newNotificationSenderMgtService(
 	return &notificationSenderMgtService{
 		notificationStore: store,
 		transactioner:     tx,
+		uuidGenerator:     sysutils.GenerateUUIDv7,
 	}
 }
 
@@ -73,12 +75,14 @@ func (s *notificationSenderMgtService) CreateSender(
 		return nil, err
 	}
 
-	id, err := sysutils.GenerateUUIDv7()
-	if err != nil {
-		logger.Error("Failed to generate UUID", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+	if sender.ID == "" {
+		id, err := s.uuidGenerator()
+		if err != nil {
+			logger.Error("Failed to generate UUID", log.Error(err))
+			return nil, &serviceerror.InternalServerError
+		}
+		sender.ID = id
 	}
-	sender.ID = id
 
 	var svcErr *serviceerror.ServiceError
 	transactErr := s.transactioner.Transact(ctx, func(txCtx context.Context) error {

@@ -189,13 +189,13 @@
       "enabled": true
     },
     {
-      "key": "ASGARDEO_BASE_URI",
+      "key": "THUNDERID_BASE_URI",
       "value": "",
       "type": "default",
       "enabled": true
     },
     {
-      "key": "asgardeoIDPId",
+      "key": "thunderidIDPId",
       "value": "",
       "type": "default",
       "enabled": true

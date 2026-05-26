@@ -539,6 +539,65 @@ func (_c *RoleServiceInterfaceMock_IsRoleDeclarative_Call) RunAndReturn(run func
 	return _c
 }
 
+// ResolveRoleOUHandle provides a mock function for the type RoleServiceInterfaceMock
+func (_mock *RoleServiceInterfaceMock) ResolveRoleOUHandle(ctx context.Context, role *RoleWithPermissionsAndAssignments) *serviceerror.ServiceError {
+	ret := _mock.Called(ctx, role)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ResolveRoleOUHandle")
+	}
+
+	var r0 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *RoleWithPermissionsAndAssignments) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(ctx, role)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*serviceerror.ServiceError)
+		}
+	}
+	return r0
+}
+
+// RoleServiceInterfaceMock_ResolveRoleOUHandle_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ResolveRoleOUHandle'
+type RoleServiceInterfaceMock_ResolveRoleOUHandle_Call struct {
+	*mock.Call
+}
+
+// ResolveRoleOUHandle is a helper method to define mock.On call
+//   - ctx context.Context
+//   - role *RoleWithPermissionsAndAssignments
+func (_e *RoleServiceInterfaceMock_Expecter) ResolveRoleOUHandle(ctx interface{}, role interface{}) *RoleServiceInterfaceMock_ResolveRoleOUHandle_Call {
+	return &RoleServiceInterfaceMock_ResolveRoleOUHandle_Call{Call: _e.mock.On("ResolveRoleOUHandle", ctx, role)}
+}
+
+func (_c *RoleServiceInterfaceMock_ResolveRoleOUHandle_Call) Run(run func(ctx context.Context, role *RoleWithPermissionsAndAssignments)) *RoleServiceInterfaceMock_ResolveRoleOUHandle_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *RoleWithPermissionsAndAssignments
+		if args[1] != nil {
+			arg1 = args[1].(*RoleWithPermissionsAndAssignments)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *RoleServiceInterfaceMock_ResolveRoleOUHandle_Call) Return(serviceError *serviceerror.ServiceError) *RoleServiceInterfaceMock_ResolveRoleOUHandle_Call {
+	_c.Call.Return(serviceError)
+	return _c
+}
+
+func (_c *RoleServiceInterfaceMock_ResolveRoleOUHandle_Call) RunAndReturn(run func(ctx context.Context, role *RoleWithPermissionsAndAssignments) *serviceerror.ServiceError) *RoleServiceInterfaceMock_ResolveRoleOUHandle_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateRoleWithPermissions provides a mock function for the type RoleServiceInterfaceMock
 func (_mock *RoleServiceInterfaceMock) UpdateRoleWithPermissions(ctx context.Context, id string, role RoleUpdateDetail) (*RoleWithPermissions, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, id, role)

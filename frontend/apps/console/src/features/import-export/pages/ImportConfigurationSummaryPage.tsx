@@ -34,6 +34,7 @@ import {
 } from '@wso2/oxygen-ui';
 import {
   Bell,
+  Bot,
   Building,
   ChevronRight,
   Languages,
@@ -187,6 +188,7 @@ export default function ImportConfigurationSummaryPage(): JSX.Element {
   const [expandedTranslations, setExpandedTranslations] = useState(false);
   const [expandedUsers, setExpandedUsers] = useState(false);
   const [expandedSchemas, setExpandedSchemas] = useState(false);
+  const [expandedAgents, setExpandedAgents] = useState(false);
 
   // Extract data from configuration
   const applicationsCount = Array.isArray(configData?.application) ? configData.application.length : 0;
@@ -201,6 +203,7 @@ export default function ImportConfigurationSummaryPage(): JSX.Element {
     ? configData.notification_sender.length
     : 0;
   const layoutsCount = Array.isArray(configData?.layout) ? configData.layout.length : 0;
+  const agentsCount = Array.isArray(configData?.agent) ? configData.agent.length : 0;
 
   const envVariables = useMemo(() => parseEnvData(envData), [envData]);
 
@@ -941,6 +944,73 @@ export default function ImportConfigurationSummaryPage(): JSX.Element {
                   size="small"
                   variant="outlined"
                   onClick={() => setExpandedSchemas(!expandedSchemas)}
+                  sx={{cursor: 'pointer'}}
+                />
+              </Box>
+            )}
+          </Stack>
+        </Box>
+      ),
+    });
+  }
+
+  // 11. Agents
+  if (agentsCount > 0) {
+    const agents =
+      (configData?.agent as {
+        id?: string;
+        name?: string;
+        description?: string;
+        inbound_auth_config?: {type?: string; config?: {client_id?: string}}[];
+      }[]) ?? [];
+    const displayedAgents = expandedAgents ? agents : agents.slice(0, 5);
+    const remainingCount = agents.length - 5;
+
+    summaryItems.push({
+      id: 'agents',
+      icon: <Bot size={16} />,
+      label: t('configureExport.labels.agents'),
+      value: agentsCount,
+      content: (
+        <Box sx={{px: 3, py: 2, bgcolor: 'background.default'}}>
+          <Stack spacing={2}>
+            <Stack spacing={2} divider={<Box sx={{borderBottom: 1, borderColor: 'divider'}} />}>
+              {displayedAgents.map((agent, idx) => {
+                const clientId = agent.inbound_auth_config?.find((cfg) => cfg.type === 'oauth2')?.config?.client_id;
+                const agentKey = agent.id ?? agent.name ?? `agent-${idx}`;
+                return (
+                  <Stack key={agentKey} spacing={0.5}>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Bot size={14} />
+                      <Typography variant="body2" fontWeight={600}>
+                        {agent.name ?? t('configureExport.fallback.unnamedAgent')}
+                      </Typography>
+                    </Stack>
+                    {agent.description && (
+                      <Typography variant="caption" color="text.secondary" sx={{pl: 2.5}}>
+                        {agent.description}
+                      </Typography>
+                    )}
+                    {clientId && (
+                      <Box sx={{pl: 2.5}}>
+                        <TemplateVariableDisplay text={clientId} envData={envData} label={t('export.app.clientId')} />
+                      </Box>
+                    )}
+                  </Stack>
+                );
+              })}
+            </Stack>
+            {remainingCount > 0 && (
+              <Box sx={{pt: 1, textAlign: 'center'}}>
+                <Chip
+                  label={
+                    expandedAgents
+                      ? t('configureExport.actions.showLess')
+                      : t('configureExport.actions.more', {count: remainingCount})
+                  }
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setExpandedAgents(!expandedAgents)}
                   sx={{cursor: 'pointer'}}
                 />
               </Box>
