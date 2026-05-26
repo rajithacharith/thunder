@@ -1804,6 +1804,7 @@ const translations = {
       'Configure the user attributes to include in your tokens & user info response',
     'edit.token.tabs.access_token': 'Access Token',
     'edit.token.tabs.id_token': 'ID Token',
+    'edit.token.tabs.refresh_token': 'Refresh Token',
     'edit.token.tabs.user_info_endpoint': 'User Info Endpoint',
     'edit.token.token_validation.title': 'Token Validity',
     'edit.token.token_validation.description': 'Configure how long tokens remain valid before expiration',
