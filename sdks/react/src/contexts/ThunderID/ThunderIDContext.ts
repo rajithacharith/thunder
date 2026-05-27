@@ -176,7 +176,17 @@ export type ThunderIDContextProps = {
    * @example
    * signInOptions: { prompt: "login", fidp: "OrganizationSSO" }
    */
-  signInOptions: SignInOptions;
+  signInOptions?: SignInOptions;
+
+  /**
+   * Optional token request configuration. params are appended to the token endpoint POST body.
+   *
+   * @example
+   * tokenRequest: { params: { resource: "https://api.example.com" } }
+   */
+  tokenRequest?: {
+    params?: Record<string, unknown>;
+  };
 
   /**
    * Silent sign-in function to re-authenticate the user without user interaction.
@@ -239,7 +249,6 @@ const ThunderIDContext: Context<ThunderIDContextProps | null> = createContext<nu
   recover: () => Promise.resolve({} as any),
   resolveFlowTemplateLiterals: (text: string | undefined) => text ?? '',
   signIn: () => Promise.resolve({} as any),
-  signInOptions: {},
   signInSilently: () => Promise.resolve({} as any),
   signInUrl: undefined,
   signOut: () => Promise.resolve({} as any),

@@ -17,7 +17,7 @@
  */
 
 import Link from '@docusaurus/Link';
-import React, {ReactNode} from 'react';
+import {ReactNode} from 'react';
 
 /* ─── NextStepsCard ───────────────────────────────────────────────────────── */
 
@@ -29,7 +29,13 @@ interface NextStepsCardProps {
   cta?: string;
 }
 
-export function NextStepsCard({title, description, href, step, cta}: NextStepsCardProps) {
+export function NextStepsCard({
+  title,
+  description = undefined,
+  href,
+  step = undefined,
+  cta = undefined,
+}: NextStepsCardProps) {
   const isExternal = href.startsWith('http');
   const ctaLabel = cta ?? `Go to ${title}`;
 
@@ -40,9 +46,7 @@ export function NextStepsCard({title, description, href, step, cta}: NextStepsCa
       style={{textDecoration: 'none', display: 'block'}}
     >
       <div className="next-steps-card">
-        <span className="next-steps-card__title">
-          {step != null ? `Step ${step} → ${title}` : title}
-        </span>
+        <span className="next-steps-card__title">{step != null ? `Step ${step} → ${title}` : title}</span>
         {description && <span className="next-steps-card__desc">{description}</span>}
         <span className="next-steps-card__cta">{ctaLabel} →</span>
       </div>

@@ -382,6 +382,7 @@ function InviteUserStepContent({
                 error={!!formErrors[ref]}
                 helperText={formErrors[ref]?.message as string}
                 color={formErrors[ref] ? 'error' : 'primary'}
+                ariaLabel={resolve(labelText) ?? labelText}
                 onChange={(e) => {
                   field.onChange(e);
                   handleInputChangeFn(ref, e.target.value);

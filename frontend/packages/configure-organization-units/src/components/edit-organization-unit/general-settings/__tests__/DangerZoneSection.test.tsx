@@ -16,28 +16,18 @@
  * under the License.
  */
 
-import {screen, fireEvent, renderWithProviders} from '@thunderid/test-utils';
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {screen, fireEvent, renderWithProviders, renderHook} from '@thunderid/test-utils';
+import {useTranslation} from 'react-i18next';
+import {describe, it, expect, vi, beforeEach, afterEach, beforeAll} from 'vitest';
 import DangerZoneSection from '../DangerZoneSection';
 
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'organizationUnits:edit.general.sections.dangerZone.title': 'Danger Zone',
-        'organizationUnits:edit.general.sections.dangerZone.description': 'Irreversible actions',
-        'organizationUnits:edit.general.sections.dangerZone.deleteOU.title': 'Delete Organization Unit',
-        'organizationUnits:edit.general.sections.dangerZone.deleteOU.description':
-          'Once you delete an organization unit, there is no going back. Please be certain.',
-        'organizationUnits:edit.general.dangerZone.delete.button.label': 'Delete Organization Unit',
-      };
-      return translations[key] ?? key;
-    },
-  }),
-}));
-
 describe('DangerZoneSection', () => {
+  let t: (key: string) => string;
+
+  beforeAll(() => {
+    ({t} = renderHook(() => useTranslation()).result.current);
+  });
+
   const mockOnDeleteClick = vi.fn();
 
   beforeEach(() => {
@@ -51,14 +41,17 @@ describe('DangerZoneSection', () => {
   it('should render the danger zone section', () => {
     renderWithProviders(<DangerZoneSection onDeleteClick={mockOnDeleteClick} />);
 
-    expect(screen.getByText('Danger Zone')).toBeInTheDocument();
-    expect(screen.getByText('Irreversible actions')).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:edit.general.sections.dangerZone.title'))).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:edit.general.sections.dangerZone.description'))).toBeInTheDocument();
   });
 
   it('should render delete organization unit title', () => {
     renderWithProviders(<DangerZoneSection onDeleteClick={mockOnDeleteClick} />);
 
-    const heading = screen.getByRole('heading', {name: 'Delete Organization Unit', level: 6});
+    const heading = screen.getByRole('heading', {
+      name: t('organizationUnits:edit.general.sections.dangerZone.deleteOU.title'),
+      level: 6,
+    });
     expect(heading).toBeInTheDocument();
   });
 
@@ -66,21 +59,25 @@ describe('DangerZoneSection', () => {
     renderWithProviders(<DangerZoneSection onDeleteClick={mockOnDeleteClick} />);
 
     expect(
-      screen.getByText('Once you delete an organization unit, there is no going back. Please be certain.'),
+      screen.getByText(t('organizationUnits:edit.general.sections.dangerZone.deleteOU.description')),
     ).toBeInTheDocument();
   });
 
   it('should render delete button', () => {
     renderWithProviders(<DangerZoneSection onDeleteClick={mockOnDeleteClick} />);
 
-    const deleteButton = screen.getByRole('button', {name: 'Delete Organization Unit'});
+    const deleteButton = screen.getByRole('button', {
+      name: t('organizationUnits:edit.general.dangerZone.delete.button.label'),
+    });
     expect(deleteButton).toBeInTheDocument();
   });
 
   it('should call onDeleteClick when delete button is clicked', () => {
     renderWithProviders(<DangerZoneSection onDeleteClick={mockOnDeleteClick} />);
 
-    const deleteButton = screen.getByRole('button', {name: 'Delete Organization Unit'});
+    const deleteButton = screen.getByRole('button', {
+      name: t('organizationUnits:edit.general.dangerZone.delete.button.label'),
+    });
     fireEvent.click(deleteButton);
 
     expect(mockOnDeleteClick).toHaveBeenCalledTimes(1);
@@ -89,7 +86,9 @@ describe('DangerZoneSection', () => {
   it('should call onDeleteClick multiple times when clicked multiple times', () => {
     renderWithProviders(<DangerZoneSection onDeleteClick={mockOnDeleteClick} />);
 
-    const deleteButton = screen.getByRole('button', {name: 'Delete Organization Unit'});
+    const deleteButton = screen.getByRole('button', {
+      name: t('organizationUnits:edit.general.dangerZone.delete.button.label'),
+    });
     fireEvent.click(deleteButton);
     fireEvent.click(deleteButton);
     fireEvent.click(deleteButton);
@@ -100,7 +99,9 @@ describe('DangerZoneSection', () => {
   it('should render delete button with error color', () => {
     renderWithProviders(<DangerZoneSection onDeleteClick={mockOnDeleteClick} />);
 
-    const deleteButton = screen.getByRole('button', {name: 'Delete Organization Unit'});
+    const deleteButton = screen.getByRole('button', {
+      name: t('organizationUnits:edit.general.dangerZone.delete.button.label'),
+    });
     expect(deleteButton).toHaveClass('MuiButton-colorError');
   });
 });

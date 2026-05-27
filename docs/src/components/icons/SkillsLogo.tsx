@@ -16,7 +16,6 @@
  * under the License.
  */
 
-import React from 'react';
 
 export default function SkillsLogo({size = 13}: {size?: number}) {
   return (

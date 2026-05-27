@@ -49,6 +49,7 @@
     "typecheck": "tsc -p tsconfig.lib.json"
   },
   "devDependencies": {
+    "@playwright/test": "catalog:",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@testing-library/user-event": "catalog:",

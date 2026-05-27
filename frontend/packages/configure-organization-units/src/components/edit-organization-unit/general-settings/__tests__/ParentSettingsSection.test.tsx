@@ -16,8 +16,9 @@
  * under the License.
  */
 
-import {screen, renderWithProviders} from '@thunderid/test-utils';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {screen, renderWithProviders, renderHook} from '@thunderid/test-utils';
+import {useTranslation} from 'react-i18next';
+import {describe, it, expect, vi, beforeEach, beforeAll} from 'vitest';
 import type {OrganizationUnit} from '../../../../models/organization-unit';
 import ParentSettingsSection from '../ParentSettingsSection';
 
@@ -25,21 +26,6 @@ import ParentSettingsSection from '../ParentSettingsSection';
 const mockUseGetOrganizationUnit = vi.fn();
 vi.mock('@/api/useGetOrganizationUnit', () => ({
   default: (id?: string, enabled?: boolean): unknown => mockUseGetOrganizationUnit(id, enabled),
-}));
-
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'organizationUnits:edit.general.sections.parentOUSettings.title': 'Parent Organization Unit',
-        'organizationUnits:edit.general.sections.parentOUSettings.description': 'The parent of this organization unit',
-        'organizationUnits:edit.general.ou.parent.label': 'Parent',
-        'organizationUnits:edit.general.ou.noParent.label': 'Root Organization Unit',
-      };
-      return translations[key] ?? key;
-    },
-  }),
 }));
 
 // Mock navigate function
@@ -53,6 +39,11 @@ vi.mock('react-router', async () => {
 });
 
 describe('ParentSettingsSection', () => {
+  let t: (key: string) => string;
+
+  beforeAll(() => {
+    ({t} = renderHook(() => useTranslation()).result.current);
+  });
   const mockOrganizationUnit: OrganizationUnit = {
     id: 'ou-child-123',
     handle: 'engineering-frontend',
@@ -81,8 +72,10 @@ describe('ParentSettingsSection', () => {
 
     renderWithProviders(<ParentSettingsSection organizationUnit={mockOrganizationUnit} />);
 
-    expect(screen.getByText('Parent Organization Unit')).toBeInTheDocument();
-    expect(screen.getByText('The parent of this organization unit')).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:edit.general.sections.parentOUSettings.title'))).toBeInTheDocument();
+    expect(
+      screen.getByText(t('organizationUnits:edit.general.sections.parentOUSettings.description')),
+    ).toBeInTheDocument();
   });
 
   it('should show "Root Organization Unit" when no parent exists', () => {
@@ -98,7 +91,7 @@ describe('ParentSettingsSection', () => {
 
     renderWithProviders(<ParentSettingsSection organizationUnit={rootOU} />);
 
-    const input = screen.getByDisplayValue('Root Organization Unit');
+    const input = screen.getByDisplayValue(t('organizationUnits:edit.general.ou.noParent.label'));
     expect(input).toBeInTheDocument();
     expect(input).toHaveAttribute('readonly');
   });

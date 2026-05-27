@@ -33,7 +33,6 @@ import {
   DialogActions,
   Button,
   DataGrid,
-  useTheme,
 } from '@wso2/oxygen-ui';
 import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useMemo, useState, useCallback} from 'react';
@@ -44,7 +43,6 @@ import useGetUsers from '../api/useGetUsers';
 import type {UserWithDetails} from '../models/users';
 
 export default function UsersList() {
-  const theme = useTheme();
   const navigate = useNavigate();
   const {t} = useTranslation();
   const logger = useLogger('UsersList');
@@ -188,7 +186,7 @@ export default function UsersList() {
         ),
       },
     ],
-    [handleDeleteClick, handleEditClick, t, theme],
+    [handleDeleteClick, handleEditClick, t],
   );
 
   return (

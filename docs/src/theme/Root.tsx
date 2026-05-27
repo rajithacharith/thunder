@@ -18,17 +18,22 @@
 
 import {useLocation} from '@docusaurus/router';
 import useBaseUrl from '@docusaurus/useBaseUrl';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import {DefaultTheme} from '@thunderid/design';
 import {LoggerProvider, LogLevel} from '@thunderid/logger/react';
 import {OxygenUIThemeProvider} from '@wso2/oxygen-ui';
-import React, {PropsWithChildren, useEffect} from 'react';
-import {applyPersona, PERSONAS, type Persona} from './NavbarItem/PersonaDropdown';
+import {PropsWithChildren, useEffect, useMemo} from 'react';
+import {applyPersona, getPersonaOptions, type Persona} from './NavbarItem/persona-utils';
+import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
 
 const PERSONA_STORAGE_KEY = 'product-docs-persona';
 
 export default function Root({children = null}: PropsWithChildren<Record<string, unknown>>) {
   const location = useLocation();
   const baseUrl = useBaseUrl('/');
+  const {siteConfig} = useDocusaurusContext();
+  const config = siteConfig.customFields?.product as DocusaurusProductConfig;
+  const personas = useMemo(() => getPersonaOptions(config.project.name), [config.project.name]);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -46,10 +51,10 @@ export default function Root({children = null}: PropsWithChildren<Record<string,
   // Restore persona selection from localStorage before first paint.
   useEffect(() => {
     const saved = localStorage.getItem(PERSONA_STORAGE_KEY) as Persona | null;
-    if (saved && PERSONAS.some((p) => p.value === saved)) {
+    if (saved && personas.some((p) => p.value === saved)) {
       applyPersona(saved);
     }
-  }, []);
+  }, [personas]);
 
   return (
     <OxygenUIThemeProvider theme={DefaultTheme}>

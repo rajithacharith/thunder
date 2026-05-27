@@ -325,7 +325,7 @@ class ThunderIDReactClient<T extends ThunderIDReactConfig = ThunderIDReactConfig
         return response;
       }
 
-      return (await super.signIn(arg1)) as unknown as User;
+      return (await super.signIn(...args)) as unknown as User;
     });
   }
 

@@ -377,7 +377,7 @@ describe('I18nProvider', () => {
         url: 'https://api.example.com/i18n/languages/en-US/translations/resolve',
         method: 'GET',
         attachToken: false,
-        withCredentials: false,
+        credentials: 'omit',
       });
       expect(result).toEqual(expectedResponse);
     });

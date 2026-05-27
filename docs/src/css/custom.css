@@ -4932,6 +4932,104 @@ a.connect-card {
   fill: var(--ifm-color-emphasis-800);
 }
 
+/* ── Sequence diagrams (integration-models) ── */
+
+.seq-diagram {
+  margin: 1.5rem 0;
+  padding: 1.25rem 1.5rem;
+  background: var(--ifm-color-emphasis-100);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+[data-theme='dark'] .seq-diagram {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--ifm-color-emphasis-200);
+}
+
+.seq-diagram svg {
+  min-width: 480px;
+}
+
+.seq-actor {
+  fill: var(--ifm-color-primary);
+  stroke: none;
+}
+
+.seq-actor-label {
+  fill: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.seq-lifeline {
+  stroke: var(--ifm-color-emphasis-300);
+  stroke-width: 1;
+  stroke-dasharray: 6 4;
+}
+
+[data-theme='dark'] .seq-lifeline {
+  stroke: var(--ifm-color-emphasis-400);
+}
+
+.seq-message {
+  stroke: var(--ifm-color-emphasis-500);
+  stroke-width: 1.5;
+  fill: none;
+}
+
+[data-theme='dark'] .seq-message {
+  stroke: var(--ifm-color-emphasis-600);
+}
+
+.seq-arrowhead {
+  fill: var(--ifm-color-emphasis-500);
+}
+
+[data-theme='dark'] .seq-arrowhead {
+  fill: var(--ifm-color-emphasis-600);
+}
+
+.seq-message-label {
+  fill: var(--ifm-font-color-base);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.seq-message-sublabel {
+  fill: var(--ifm-color-emphasis-600);
+  font-size: 13.5px;
+  font-weight: 400;
+}
+
+[data-theme='dark'] .seq-message-sublabel {
+  fill: var(--ifm-color-emphasis-700);
+}
+
+.seq-note-bg {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 8%, var(--ifm-background-color));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 35%, var(--ifm-color-emphasis-200));
+  stroke-width: 1;
+  stroke-dasharray: 4 2;
+}
+
+[data-theme='dark'] .seq-note-bg {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 10%, var(--ifm-color-emphasis-100));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 40%, var(--ifm-color-emphasis-300));
+}
+
+.seq-note {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 80%, var(--ifm-font-color-base));
+  font-size: 11px;
+  font-style: italic;
+}
+
+[data-theme='dark'] .seq-note {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 70%, var(--ifm-color-emphasis-900));
+}
+
 /* ── Prerequisites table ── */
 .dp-prereqs {
   margin-top: 2.5rem;

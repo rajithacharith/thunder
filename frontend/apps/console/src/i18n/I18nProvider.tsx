@@ -74,7 +74,7 @@ function I18nProvider({children}: I18nProviderProps): ReactElement {
         url: string;
         method: string;
         attachToken?: boolean;
-        withCredentials?: boolean;
+        credentials?: RequestCredentials;
       }) => Promise<{data: TranslationsResponse}>;
     };
   };
@@ -95,7 +95,7 @@ function I18nProvider({children}: I18nProviderProps): ReactElement {
         url,
         method: 'GET',
         attachToken: false,
-        withCredentials: false,
+        credentials: 'omit',
       });
 
       return response.data;

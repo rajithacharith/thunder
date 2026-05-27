@@ -16,14 +16,12 @@
  * under the License.
  */
 
-import React from 'react';
-
 // Reusable person-silhouette icon. PersonIcon viewBox is 56x56; the
 // returned <g> renders within whatever transform / scale the caller
 // applies. The outer circle is themed via the `className` prop; the
 // inner glyph uses a fixed class so the same person silhouette renders
 // in both diagrams.
-function PersonIcon({className}: {className?: string}) {
+function PersonIcon({className = undefined}: {className?: string}) {
   return (
     <g className={className}>
       <circle cx="28" cy="28" r="26" />
@@ -379,7 +377,7 @@ export function WayfinderArchitecture() {
 // convention as PersonIcon so the two glyphs sit side-by-side at the
 // same size; the inner glyph is a small bot face to distinguish the
 // agent visually from human cast members.
-function AgentIcon({className}: {className?: string}) {
+function AgentIcon({className = undefined}: {className?: string}) {
   return (
     <g className={className}>
       <circle cx="28" cy="28" r="26" />

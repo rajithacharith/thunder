@@ -18,7 +18,9 @@
 
 import BrowserOnly from '@docusaurus/BrowserOnly';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
-import React from 'react';
+import React, {lazy, Suspense} from 'react';
+
+const GitHubButtonInner = lazy(() => import('./GitHubButtonInner'));
 
 interface ProductCustomFields {
   project: {
@@ -42,21 +44,11 @@ export default function GitHubStarButton({mobile = false}: Props): React.ReactEl
 
   const button = (
     <BrowserOnly>
-      {() => {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const GitHubButton = require('react-github-btn').default;
-        return (
-          <GitHubButton
-            href={url}
-            data-color-scheme="no-preference: light; light: light; dark: dark;"
-            data-size="large"
-            data-icon="octicon-star"
-            aria-label={`Star ${fullName} on GitHub`}
-          >
-            Star
-          </GitHubButton>
-        );
-      }}
+      {() => (
+        <Suspense fallback={null}>
+          <GitHubButtonInner url={url} fullName={fullName} />
+        </Suspense>
+      )}
     </BrowserOnly>
   );
 

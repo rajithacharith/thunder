@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {render, screen, act} from '@testing-library/react';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render, screen, act, cleanup} from '@testing-library/react';
+import {describe, it, expect, vi, beforeAll, beforeEach, afterEach} from 'vitest';
 
 // Mock i18next top-level await before importing withI18n
 vi.mock('i18next', () => ({
@@ -55,12 +55,21 @@ vi.mock('react-i18next', () => ({
 }));
 
 describe('withI18n (gate)', () => {
+  let withI18n: typeof import('../withI18n').default;
+
+  beforeAll(async () => {
+    ({default: withI18n} = await import('../withI18n'));
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renders without crashing', async () => {
-    const {default: withI18n} = await import('../withI18n');
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('renders without crashing', () => {
     function MockChild() {
       return <div data-testid="mock-child">Child</div>;
     }
@@ -70,8 +79,7 @@ describe('withI18n (gate)', () => {
     expect(container).toBeInTheDocument();
   });
 
-  it('renders the wrapped component', async () => {
-    const {default: withI18n} = await import('../withI18n');
+  it('renders the wrapped component', () => {
     function MockChild() {
       return <div data-testid="mock-child">Child</div>;
     }
@@ -81,8 +89,7 @@ describe('withI18n (gate)', () => {
     expect(screen.getByTestId('mock-child')).toBeInTheDocument();
   });
 
-  it('wraps different components correctly', async () => {
-    const {default: withI18n} = await import('../withI18n');
+  it('wraps different components correctly', () => {
     function AnotherChild() {
       return <div data-testid="another-child">Another</div>;
     }
@@ -92,7 +99,7 @@ describe('withI18n (gate)', () => {
     expect(screen.getByTestId('another-child')).toBeInTheDocument();
   });
 
-  it('merges translations from meta into i18next when available', async () => {
+  it('merges translations from meta into i18next when available', () => {
     mockMeta.i18n = {
       language: 'en-US',
       translations: {
@@ -100,7 +107,6 @@ describe('withI18n (gate)', () => {
       },
     };
 
-    const {default: withI18n} = await import('../withI18n');
     function MockChild() {
       return <div data-testid="mock-child">Child</div>;
     }
@@ -120,10 +126,9 @@ describe('withI18n (gate)', () => {
     expect(mockEmit).toHaveBeenCalledWith('added', 'en-US', ['common']);
   });
 
-  it('does not crash when meta has no i18n translations', async () => {
+  it('does not crash when meta has no i18n translations', () => {
     mockMeta.i18n = undefined as unknown as typeof mockMeta.i18n;
 
-    const {default: withI18n} = await import('../withI18n');
     function MockChild() {
       return <div data-testid="mock-child">Child</div>;
     }
@@ -133,10 +138,9 @@ describe('withI18n (gate)', () => {
     expect(screen.getByTestId('mock-child')).toBeInTheDocument();
   });
 
-  it('does not crash when meta is null', async () => {
+  it('does not crash when meta is null', () => {
     (mockMeta as unknown as Record<string, unknown>).i18n = undefined;
 
-    const {default: withI18n} = await import('../withI18n');
     function MockChild() {
       return <div data-testid="mock-child">Child</div>;
     }
@@ -146,7 +150,7 @@ describe('withI18n (gate)', () => {
     expect(screen.getByTestId('mock-child')).toBeInTheDocument();
   });
 
-  it('skips namespace with empty translations object', async () => {
+  it('skips namespace with empty translations object', () => {
     mockMeta.i18n = {
       language: 'en-US',
       translations: {
@@ -155,7 +159,6 @@ describe('withI18n (gate)', () => {
       },
     };
 
-    const {default: withI18n} = await import('../withI18n');
     function MockChild() {
       return <div data-testid="mock-child">Child</div>;
     }
@@ -182,7 +185,7 @@ describe('withI18n (gate)', () => {
     );
   });
 
-  it('changes language when meta language differs from current i18n language', async () => {
+  it('changes language when meta language differs from current i18n language', () => {
     mockMeta.i18n = {
       language: 'fr-FR',
       translations: {
@@ -190,7 +193,6 @@ describe('withI18n (gate)', () => {
       },
     };
 
-    const {default: withI18n} = await import('../withI18n');
     function MockChild() {
       return <div data-testid="mock-child">Child</div>;
     }

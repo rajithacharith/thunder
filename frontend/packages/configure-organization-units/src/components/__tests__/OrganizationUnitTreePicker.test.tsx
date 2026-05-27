@@ -16,8 +16,9 @@
  * under the License.
  */
 
-import {screen, fireEvent, waitFor, renderWithProviders} from '@thunderid/test-utils';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {screen, fireEvent, waitFor, renderWithProviders, renderHook} from '@thunderid/test-utils';
+import {useTranslation} from 'react-i18next';
+import {describe, it, expect, vi, beforeEach, beforeAll} from 'vitest';
 import type {OrganizationUnit} from '../../models/organization-unit';
 import type {OrganizationUnitListResponse} from '../../models/responses';
 import OrganizationUnitTreePicker from '../OrganizationUnitTreePicker';
@@ -76,20 +77,12 @@ vi.mock('@thunderid/contexts', async (importOriginal) => {
   };
 });
 
-// Mock translations — stable t function to avoid useCallback churn
-const translations: Record<string, string> = {
-  'organizationUnits:treePicker.empty': 'No organization units available',
-  'organizationUnits:listing.treeView.noChildren': 'No child organization units',
-  'organizationUnits:listing.treeView.loadMore': 'Load more',
-  'common:status.loading': 'Loading...',
-};
-const stableT = (key: string): string => translations[key] ?? key;
-const stableTranslation = {t: stableT};
-vi.mock('react-i18next', () => ({
-  useTranslation: () => stableTranslation,
-}));
-
 describe('OrganizationUnitTreePicker', () => {
+  let t: (key: string) => string;
+
+  beforeAll(() => {
+    ({t} = renderHook(() => useTranslation()).result.current);
+  });
   const mockOUData: OrganizationUnitListResponse = {
     totalResults: 2,
     startIndex: 1,
@@ -152,7 +145,7 @@ describe('OrganizationUnitTreePicker', () => {
 
     renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
-    expect(screen.getByText('No organization units available')).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:treePicker.empty'))).toBeInTheDocument();
   });
 
   it('should display handles for tree items', async () => {
@@ -292,7 +285,7 @@ describe('OrganizationUnitTreePicker', () => {
     fireEvent.click(expandIcons[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('No child organization units')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.treeView.noChildren'))).toBeInTheDocument();
     });
   });
 
@@ -340,7 +333,7 @@ describe('OrganizationUnitTreePicker', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Load more')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.treeView.loadMore'))).toBeInTheDocument();
     });
   });
 
@@ -376,10 +369,10 @@ describe('OrganizationUnitTreePicker', () => {
     renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText('Load more')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.treeView.loadMore'))).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Load more'));
+    fireEvent.click(screen.getByText(t('organizationUnits:listing.treeView.loadMore')));
 
     await waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalled();
@@ -415,10 +408,12 @@ describe('OrganizationUnitTreePicker', () => {
     renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText('Load more')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.treeView.loadMore'))).toBeInTheDocument();
     });
 
-    const loadMoreButton = screen.getByText('Load more').closest('[role="button"]')!;
+    const loadMoreButton = screen
+      .getByText(t('organizationUnits:listing.treeView.loadMore'))
+      .closest('[role="button"]')!;
     fireEvent.keyDown(loadMoreButton, {key: 'Enter'});
 
     await waitFor(() => {
@@ -455,10 +450,12 @@ describe('OrganizationUnitTreePicker', () => {
     renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText('Load more')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.treeView.loadMore'))).toBeInTheDocument();
     });
 
-    const loadMoreButton = screen.getByText('Load more').closest('[role="button"]')!;
+    const loadMoreButton = screen
+      .getByText(t('organizationUnits:listing.treeView.loadMore'))
+      .closest('[role="button"]')!;
     fireEvent.keyDown(loadMoreButton, {key: ' '});
 
     await waitFor(() => {
@@ -489,7 +486,7 @@ describe('OrganizationUnitTreePicker', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Fetched Child')).toBeInTheDocument();
-      expect(screen.getByText('Load more')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.treeView.loadMore'))).toBeInTheDocument();
     });
   });
 
@@ -515,10 +512,10 @@ describe('OrganizationUnitTreePicker', () => {
     renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText('Load more')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.treeView.loadMore'))).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Load more'));
+    fireEvent.click(screen.getByText(t('organizationUnits:listing.treeView.loadMore')));
 
     await waitFor(() => {
       expect(stableLogger.error).toHaveBeenCalled();
@@ -696,7 +693,7 @@ describe('OrganizationUnitTreePicker', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Root OU')).toBeInTheDocument();
-        expect(screen.getByText('No child organization units')).toBeInTheDocument();
+        expect(screen.getByText(t('organizationUnits:listing.treeView.noChildren'))).toBeInTheDocument();
       });
     });
 
@@ -716,7 +713,7 @@ describe('OrganizationUnitTreePicker', () => {
       });
 
       // The global empty message should NOT appear
-      expect(screen.queryByText('No organization units available')).not.toBeInTheDocument();
+      expect(screen.queryByText(t('organizationUnits:treePicker.empty'))).not.toBeInTheDocument();
     });
 
     it('should display handles for root and child items in rooted mode', async () => {
@@ -754,7 +751,7 @@ describe('OrganizationUnitTreePicker', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Child One')).toBeInTheDocument();
-        expect(screen.getByText('Load more')).toBeInTheDocument();
+        expect(screen.getByText(t('organizationUnits:listing.treeView.loadMore'))).toBeInTheDocument();
       });
     });
 

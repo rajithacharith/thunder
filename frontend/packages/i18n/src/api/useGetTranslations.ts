@@ -93,8 +93,8 @@ export default function useGetTranslations({
         url,
         method: 'GET',
         attachToken: false,
-        withCredentials: false,
-      } as unknown as Parameters<typeof http.request>[0]);
+        credentials: 'omit',
+      });
 
       return response.data;
     },

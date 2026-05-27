@@ -17,7 +17,7 @@
  */
 
 import {Box} from '@wso2/oxygen-ui';
-import React, {JSX, useMemo} from 'react';
+import {JSX, useMemo} from 'react';
 import AndroidLogo from './icons/AndroidLogo';
 import AngularLogo from './icons/AngularLogo';
 import BrowserLogo from './icons/BrowserLogo';
@@ -55,10 +55,10 @@ const ALL_LOGOS = [
 
 // Create rows with different logo orderings for visual variety.
 const ROWS = [
-  [0, 3, 6, 9, 12, 1, 4, 7, 10, 13, 2, 5, 8, 11],
-  [13, 10, 7, 4, 1, 12, 9, 6, 3, 0, 11, 8, 5, 2],
-  [2, 5, 8, 11, 0, 3, 6, 9, 12, 1, 4, 7, 10, 13],
-].map((indices) => indices.map((i) => ALL_LOGOS[i]));
+  {key: 'row-a', logos: [0, 3, 6, 9, 12, 1, 4, 7, 10, 13, 2, 5, 8, 11].map((i) => ALL_LOGOS[i])},
+  {key: 'row-b', logos: [13, 10, 7, 4, 1, 12, 9, 6, 3, 0, 11, 8, 5, 2].map((i) => ALL_LOGOS[i])},
+  {key: 'row-c', logos: [2, 5, 8, 11, 0, 3, 6, 9, 12, 1, 4, 7, 10, 13].map((i) => ALL_LOGOS[i])},
+];
 
 // Deterministic pseudo-random delays so they're stable across renders.
 // Seeded from row + position to avoid layout shift.
@@ -80,7 +80,10 @@ function LogoRow({logos, rowIndex, direction, duration, isDark}: LogoRowProps): 
 
   // Triple logos to ensure full coverage across all viewport widths.
   // scrollLeft: 0 → -33%, scrollRight: -33% → 0 (both show the middle third initially).
-  const tripled = useMemo(() => [...logos, ...logos, ...logos], [logos]);
+  const tripled = useMemo(
+    () => Array.from({length: 3}, (_, copy) => logos.map((l) => ({...l, uid: `${copy}-${l.name}`}))).flat(),
+    [logos],
+  );
 
   return (
     <Box
@@ -102,7 +105,7 @@ function LogoRow({logos, rowIndex, direction, duration, isDark}: LogoRowProps): 
       >
         {tripled.map((logo, i) => (
           <Box
-            key={`${logo.name}-${i}`}
+            key={logo.uid}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -181,9 +184,9 @@ export default function FloatingLogosBackground(): JSX.Element {
           height: '100%',
         }}
       >
-        {ROWS.map((logos, i) => (
+        {ROWS.map(({key, logos}, i) => (
           <LogoRow
-            key={i}
+            key={key}
             logos={logos}
             rowIndex={i}
             direction={i % 2 === 0 ? 'left' : 'right'}

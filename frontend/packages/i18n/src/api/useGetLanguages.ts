@@ -71,8 +71,8 @@ export default function useGetLanguages(options?: UseGetLanguagesOptions): UseQu
         url: `${serverUrl}/i18n/languages`,
         method: 'GET',
         attachToken: false,
-        withCredentials: false,
-      } as unknown as Parameters<typeof http.request>[0]);
+        credentials: 'omit',
+      });
 
       return response.data;
     },

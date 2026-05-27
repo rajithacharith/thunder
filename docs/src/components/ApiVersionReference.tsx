@@ -60,14 +60,13 @@ function ApiReferenceSwitch({
   downloadFileName: string;
   onDesktopLoaded: () => void;
 }) {
-  const [isMobile, setIsMobile] = useState(
-    () => window.matchMedia('(max-width: 996px)').matches,
-  );
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 996px)').matches);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 996px)');
     // Re-check after mount: the lazy initialiser can read the wrong value on some
     // mobile browsers before the viewport meta tag has been fully applied.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMobile(mq.matches);
     const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
     mq.addEventListener('change', handler);
@@ -76,11 +75,7 @@ function ApiReferenceSwitch({
 
   if (isMobile) {
     return createPortal(
-      <MobileApiReference
-        collectionUrl={collectionUrl}
-        downloadFileName={downloadFileName}
-        specUrl={specUrl}
-      />,
+      <MobileApiReference collectionUrl={collectionUrl} downloadFileName={downloadFileName} specUrl={specUrl} />,
       document.body,
     );
   }
@@ -163,9 +158,7 @@ export default function ApiVersionReference() {
   const handleApiLoaded = useCallback(() => {
     if (typeof window === 'undefined' || window.location.hash) return;
     setTimeout(() => {
-      const firstNavLink = document.querySelector<HTMLAnchorElement>(
-        '.apis-page aside a[href^="#"]:not([href="#"])',
-      );
+      const firstNavLink = document.querySelector<HTMLAnchorElement>('.apis-page aside a[href^="#"]:not([href="#"])');
       firstNavLink?.click();
     }, 50);
   }, []);

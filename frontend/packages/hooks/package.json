@@ -49,6 +49,7 @@
     "typecheck": "tsc -p tsconfig.lib.json"
   },
   "devDependencies": {
+    "@playwright/test": "catalog:",
     "@thunderid/eslint-plugin": "workspace:^",
     "@thunderid/prettier-config": "workspace:^",
     "@thunderid/test-utils": "workspace:^",

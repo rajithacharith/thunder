@@ -24,4 +24,4 @@ export default {
   ...ComponentTypes,
   'custom-GitHubStarButton': GitHubStarButton,
   'custom-PersonaDropdown': PersonaDropdown,
-} as typeof ComponentTypes;
+};

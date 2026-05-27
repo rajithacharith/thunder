@@ -30,6 +30,10 @@ export type SignInButtonProps = BaseSignInButtonProps & {
    * Additional parameters to pass to the `authorize` request.
    */
   signInOptions?: Record<string, any>;
+  /**
+   * Additional parameters to pass to the token request body.
+   */
+  tokenRequest?: {params?: Record<string, unknown>};
 };
 
 /**
@@ -77,10 +81,10 @@ const SignInButton: ForwardRefExoticComponent<SignInButtonProps & RefAttributes<
   SignInButtonProps
 >(
   (
-    {children, onClick, preferences, signInOptions: overriddenSignInOptions = {}, ...rest}: SignInButtonProps,
+    {children, onClick, preferences, signInOptions: overriddenSignInOptions, tokenRequest: overriddenTokenRequest, ...rest}: SignInButtonProps,
     ref: Ref<HTMLButtonElement>,
   ): ReactElement => {
-    const {signIn, signInUrl, signInOptions, meta} = useThunderID();
+    const {signIn, signInUrl, signInOptions, tokenRequest, meta} = useThunderID();
     const {t} = useTranslation(preferences?.i18n);
 
     const [isLoading, setIsLoading] = useState(false);
@@ -93,7 +97,14 @@ const SignInButton: ForwardRefExoticComponent<SignInButtonProps & RefAttributes<
         if (signInUrl) {
           navigate(signInUrl);
         } else {
-          await signIn(overriddenSignInOptions ?? signInOptions);
+          const mergedParams = (overriddenTokenRequest ?? tokenRequest)?.params;
+          await signIn(
+            overriddenSignInOptions ?? signInOptions,
+            undefined,
+            undefined,
+            undefined,
+            mergedParams && Object.keys(mergedParams).length > 0 ? {params: mergedParams} : undefined,
+          );
         }
 
         if (onClick) {

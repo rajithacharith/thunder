@@ -16,8 +16,9 @@
  * under the License.
  */
 
-import {screen, fireEvent, waitFor, renderWithProviders} from '@thunderid/test-utils';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {screen, fireEvent, waitFor, renderWithProviders, renderHook} from '@thunderid/test-utils';
+import {useTranslation} from 'react-i18next';
+import {describe, it, expect, vi, beforeEach, beforeAll} from 'vitest';
 import type {OrganizationUnit} from '../../../../models/organization-unit';
 import AppearanceSection from '../AppearanceSection';
 
@@ -27,23 +28,12 @@ vi.mock('@thunderid/design', () => ({
   useGetThemes: (): unknown => mockUseGetThemes(),
 }));
 
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'organizationUnits:edit.customization.sections.appearance': 'Appearance',
-        'organizationUnits:edit.customization.sections.appearance.description': 'Customize the look and feel',
-        'organizationUnits:edit.customization.labels.theme': 'Theme',
-        'organizationUnits:edit.customization.theme.placeholder': 'Select a theme',
-        'organizationUnits:edit.customization.theme.hint': 'Choose a theme for your organization unit',
-      };
-      return translations[key] ?? key;
-    },
-  }),
-}));
-
 describe('AppearanceSection', () => {
+  let t: (key: string) => string;
+
+  beforeAll(() => {
+    ({t} = renderHook(() => useTranslation()).result.current);
+  });
   const mockOrganizationUnit: OrganizationUnit = {
     id: 'ou-123',
     handle: 'engineering',
@@ -75,8 +65,10 @@ describe('AppearanceSection', () => {
       <AppearanceSection organizationUnit={mockOrganizationUnit} editedOU={{}} onFieldChange={mockOnFieldChange} />,
     );
 
-    expect(screen.getByText('Appearance')).toBeInTheDocument();
-    expect(screen.getByText('Customize the look and feel')).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:edit.customization.sections.appearance'))).toBeInTheDocument();
+    expect(
+      screen.getByText(t('organizationUnits:edit.customization.sections.appearance.description')),
+    ).toBeInTheDocument();
   });
 
   it('should render theme label', () => {
@@ -89,7 +81,7 @@ describe('AppearanceSection', () => {
       <AppearanceSection organizationUnit={mockOrganizationUnit} editedOU={{}} onFieldChange={mockOnFieldChange} />,
     );
 
-    expect(screen.getByText('Theme')).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:edit.customization.labels.theme'))).toBeInTheDocument();
   });
 
   it('should show loading spinner when themes are loading', () => {
@@ -115,7 +107,7 @@ describe('AppearanceSection', () => {
       <AppearanceSection organizationUnit={mockOrganizationUnit} editedOU={{}} onFieldChange={mockOnFieldChange} />,
     );
 
-    const autocomplete = screen.getByPlaceholderText('Select a theme');
+    const autocomplete = screen.getByPlaceholderText(t('organizationUnits:edit.customization.theme.placeholder'));
     expect(autocomplete).toBeInTheDocument();
   });
 
@@ -187,7 +179,7 @@ describe('AppearanceSection', () => {
       <AppearanceSection organizationUnit={mockOrganizationUnit} editedOU={{}} onFieldChange={mockOnFieldChange} />,
     );
 
-    const autocomplete = screen.getByPlaceholderText('Select a theme');
+    const autocomplete = screen.getByPlaceholderText(t('organizationUnits:edit.customization.theme.placeholder'));
     const clearButton = autocomplete.parentElement?.querySelector('[title="Clear"]');
 
     expect(clearButton).toBeTruthy();
@@ -208,7 +200,7 @@ describe('AppearanceSection', () => {
       <AppearanceSection organizationUnit={mockOrganizationUnit} editedOU={{}} onFieldChange={mockOnFieldChange} />,
     );
 
-    const autocomplete = screen.getByPlaceholderText('Select a theme');
+    const autocomplete = screen.getByPlaceholderText(t('organizationUnits:edit.customization.theme.placeholder'));
     expect(autocomplete).toBeInTheDocument();
   });
 
@@ -222,7 +214,7 @@ describe('AppearanceSection', () => {
       <AppearanceSection organizationUnit={mockOrganizationUnit} editedOU={{}} onFieldChange={mockOnFieldChange} />,
     );
 
-    const autocomplete = screen.getByPlaceholderText('Select a theme');
+    const autocomplete = screen.getByPlaceholderText(t('organizationUnits:edit.customization.theme.placeholder'));
     expect(autocomplete).toBeInTheDocument();
   });
 
@@ -236,6 +228,6 @@ describe('AppearanceSection', () => {
       <AppearanceSection organizationUnit={mockOrganizationUnit} editedOU={{}} onFieldChange={mockOnFieldChange} />,
     );
 
-    expect(screen.getByText('Choose a theme for your organization unit')).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:edit.customization.theme.hint'))).toBeInTheDocument();
   });
 });

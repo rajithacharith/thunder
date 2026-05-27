@@ -20,7 +20,6 @@ import Head from '@docusaurus/Head';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import type {ReactNode} from 'react';
-import React from 'react';
 import CommunitySection from '@site/src/components/HomePage/CommunitySection';
 import HeroSection from '@site/src/components/HomePage/HeroSection';
 import ProductOverviewSection from '@site/src/components/HomePage/ProductOverviewSection';

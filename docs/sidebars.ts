@@ -497,9 +497,22 @@ const sidebars: SidebarsConfig = {
       className: 'sidebar-section sidebar-persona-not-devops',
       items: [
         {
-          type: 'doc',
-          id: 'guides/key-concepts/authentication/passwordless/passkeys',
-          label: 'Passkeys',
+          type: 'category',
+          label: 'Authentication',
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'guides/key-concepts/authentication/passwordless/passkeys',
+              label: 'Passkeys',
+            },
+            {
+              type: 'doc',
+              id: 'guides/key-concepts/authentication/integration-models',
+              label: 'Integration Models',
+            },
+          ],
         },
         {
           type: 'doc',

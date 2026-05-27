@@ -109,7 +109,9 @@ export abstract class HttpClient {
   }
 
   protected async requestHandler(config: HttpRequestConfig): Promise<HttpRequestConfig> {
-    await this.attachToken(config);
+    if (config.attachToken !== false) {
+      await this.attachToken(config);
+    }
 
     if (config.shouldEncodeToFormData && config.data) {
       const formData: FormData = new FormData();

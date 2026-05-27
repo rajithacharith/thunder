@@ -32,6 +32,7 @@ interface CredentialFieldInputProps {
   onBlur: () => void;
   inputRef: React.Ref<HTMLInputElement>;
   name: string;
+  ariaLabel?: string;
 }
 
 function CredentialFieldInput({
@@ -46,6 +47,7 @@ function CredentialFieldInput({
   onBlur,
   inputRef,
   name,
+  ariaLabel = undefined,
 }: CredentialFieldInputProps) {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -66,6 +68,7 @@ function CredentialFieldInput({
       onBlur={onBlur}
       inputRef={inputRef}
       slotProps={{
+        htmlInput: {'aria-label': ariaLabel},
         input: {
           endAdornment: (
             <InputAdornment position="end">

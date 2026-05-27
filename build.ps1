@@ -513,7 +513,7 @@ function Build-Docs {
     Write-Host "================================================================"
 }
 
-function Build-Sdks-Js {
+function Build-JavaScript-SDKs {
     Ensure-Pnpm
     
     Write-Host "Installing SDK dependencies..."
@@ -523,7 +523,7 @@ function Build-Sdks-Js {
     & pnpm --filter './sdks/**' build
 }
 
-function Test-Sdks-Js {
+function Test-JavaScript-SDKs {
     Ensure-Pnpm
     
     Write-Host "Installing SDK dependencies..."
@@ -533,7 +533,7 @@ function Test-Sdks-Js {
     & pnpm --filter './sdks/**' test
 }
 
-function Lint-Sdks-Js {
+function Lint-JavaScript-SDKs {
     Ensure-Pnpm
     
     Write-Host "Installing SDK dependencies..."
@@ -543,24 +543,24 @@ function Lint-Sdks-Js {
     & pnpm --filter './sdks/**' lint
 }
 
-function Build-Sdks {
+function Build-SDKs {
     Write-Host "================================================================"
     Write-Host "Building SDKs..."
-    Build-Sdks-Js
+    Build-JavaScript-SDKs
     Write-Host "================================================================"
 }
 
-function Test-Sdks {
+function Test-SDKs {
     Write-Host "================================================================"
     Write-Host "Running SDK tests..."
-    Test-Sdks-Js
+    Test-JavaScript-SDKs
     Write-Host "================================================================"
 }
 
-function Lint-Sdks {
+function Lint-SDKs {
     Write-Host "================================================================"
     Write-Host "Linting SDKs..."
-    Lint-Sdks-Js
+    Lint-JavaScript-SDKs
     Write-Host "================================================================"
 }
 
@@ -2054,6 +2054,7 @@ switch ($Command) {
     'build' {
         Build-Backend
         Build-Frontend
+        Build-SDKs
         Package
         Build-Sample-App
         Package-Sample-App
@@ -2069,13 +2070,13 @@ switch ($Command) {
         Build-Docs
     }
     'build_sdks' {
-        Build-Sdks
+        Build-SDKs
     }
     'test_sdks' {
-        Test-Sdks
+        Test-SDKs
     }
     'lint_sdks' {
-        Lint-Sdks
+        Lint-SDKs
     }
     'build_samples' {
         Build-Sample-App

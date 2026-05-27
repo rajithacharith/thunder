@@ -382,6 +382,14 @@ export interface BaseConfig<T = unknown> extends WithPreferences, WithExtensions
      * ThunderIDV2 → `client_secret_basic`; all others → `client_secret_post`.
      */
     authMethod?: TokenEndpointAuthMethod;
+    /**
+     * Optional additional parameters to be sent in the token request body.
+     * Appended to the token endpoint POST body alongside the standard OAuth parameters.
+     *
+     * @example
+     * params: { resource: "https://api.example.com", audience: "my-api" }
+     */
+    params?: Record<string, unknown>;
   };
 
   /**

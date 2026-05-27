@@ -17,9 +17,8 @@
  */
 
 import Link from '@docusaurus/Link';
-import useIsDarkMode from '@site/src/hooks/useIsDarkMode';
 import {Box, Container, Typography} from '@wso2/oxygen-ui';
-import React, {JSX, useState} from 'react';
+import {JSX, useState} from 'react';
 import ExpressLogo from '../icons/ExpressLogo';
 import JavaScriptLogo from '../icons/JavaScriptLogo';
 import NextLogo from '../icons/NextLogo';
@@ -27,6 +26,7 @@ import NodeLogo from '../icons/NodeLogo';
 import NuxtLogo from '../icons/NuxtLogo';
 import ReactLogo from '../icons/ReactLogo';
 import VueLogo from '../icons/VueLogo';
+import useIsDarkMode from '@site/src/hooks/useIsDarkMode';
 
 const SDKS = [
   {
@@ -74,7 +74,7 @@ const SDKS = [
 ];
 
 export default function SDKShowcaseSection(): JSX.Element {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+   
   const [hoveredIndex, rawSet] = useState<number | null>(null);
   const isDark = useIsDarkMode();
   const setHoveredIndex = rawSet as (v: number | null) => void;

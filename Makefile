@@ -49,7 +49,7 @@ prepare:
 clean:
 	./build.sh clean $(OS) $(ARCH)
 
-build: build_frontend build_backend build_samples
+build: build_frontend build_backend build_sdks build_samples
 
 build_backend:
 	./build.sh build_backend $(OS) $(ARCH)

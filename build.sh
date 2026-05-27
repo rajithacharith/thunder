@@ -1478,6 +1478,7 @@ case "$1" in
     build)
         build_backend
         build_frontend
+        build_sdks
         package
         build_sample_app
         package_sample_app

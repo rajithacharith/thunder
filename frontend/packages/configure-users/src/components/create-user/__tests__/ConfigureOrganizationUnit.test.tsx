@@ -16,23 +16,18 @@
  * under the License.
  */
 
-import {render, screen} from '@thunderid/test-utils';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render, renderHook, screen} from '@thunderid/test-utils';
+import {useTranslation} from 'react-i18next';
+import {describe, it, expect, vi, beforeAll, beforeEach} from 'vitest';
 import ConfigureOrganizationUnit, {type ConfigureOrganizationUnitProps} from '../ConfigureOrganizationUnit';
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
-
 // Mock OrganizationUnitTreePicker to isolate this component's logic
-vi.mock('../../../../organization-units/components/OrganizationUnitTreePicker', () => ({
-  default: ({
-    rootOuId,
+vi.mock('@thunderid/configure-organization-units', () => ({
+  OrganizationUnitTreePicker: ({
+    rootOuId = undefined,
     value,
     onChange,
-    maxHeight,
+    maxHeight = undefined,
   }: {
     rootOuId?: string;
     value: string;
@@ -48,6 +43,12 @@ vi.mock('../../../../organization-units/components/OrganizationUnitTreePicker', 
 }));
 
 describe('ConfigureOrganizationUnit', () => {
+  let t: (key: string) => string;
+
+  beforeAll(() => {
+    ({t} = renderHook(() => useTranslation()).result.current);
+  });
+
   const mockOnOuIdChange = vi.fn();
   const mockOnReadyChange = vi.fn();
 
@@ -67,14 +68,18 @@ describe('ConfigureOrganizationUnit', () => {
   it('renders the component with title and subtitle', () => {
     renderComponent();
 
-    expect(screen.getByText('users:createWizard.selectOrganizationUnit.title')).toBeInTheDocument();
-    expect(screen.getByText('users:createWizard.selectOrganizationUnit.subtitle')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', {name: t('users:createWizard.selectOrganizationUnit.title')}),
+    ).toBeInTheDocument();
+    expect(screen.getByText(t('users:createWizard.selectOrganizationUnit.subtitle'))).toBeInTheDocument();
   });
 
   it('renders the field label', () => {
     renderComponent();
 
-    expect(screen.getByText('users:createWizard.selectOrganizationUnit.fieldLabel')).toBeInTheDocument();
+    expect(
+      screen.getByText(t('users:createWizard.selectOrganizationUnit.fieldLabel'), {exact: false, selector: 'label'}),
+    ).toBeInTheDocument();
   });
 
   it('renders the OU tree picker with correct props', () => {

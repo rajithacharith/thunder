@@ -16,8 +16,9 @@
  * under the License.
  */
 
-import {screen, fireEvent, waitFor, renderWithProviders} from '@thunderid/test-utils';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {screen, fireEvent, waitFor, renderWithProviders, renderHook} from '@thunderid/test-utils';
+import {useTranslation} from 'react-i18next';
+import {describe, it, expect, vi, beforeEach, beforeAll} from 'vitest';
 import CreateOrganizationUnitPage from '../CreateOrganizationUnitPage';
 
 // Mock navigate and location
@@ -68,34 +69,13 @@ vi.mock('@thunderid/utils', () => ({
   generateRandomHumanReadableIdentifiers: () => ['Suggested Name One', 'Suggested Name Two', 'Suggested Name Three'],
 }));
 
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'organizationUnits:create.title': 'Create Organization Unit',
-        'organizationUnits:create.heading': 'Create a new organization unit',
-        'organizationUnits:create.suggestions.label': 'Try these suggestions:',
-        'organizationUnits:create.error': 'Failed to create organization unit',
-        'organizationUnits:edit.general.name.label': 'Name',
-        'organizationUnits:edit.general.name.placeholder': 'Enter organization unit name',
-        'organizationUnits:edit.general.handle.label': 'Handle',
-        'organizationUnits:edit.general.handle.placeholder': 'Enter handle',
-        'organizationUnits:edit.general.handle.hint': 'A unique identifier for this organization unit',
-        'organizationUnits:edit.general.description.label': 'Description',
-        'organizationUnits:edit.general.description.placeholder': 'Enter description',
-        'organizationUnits:edit.general.parent.label': 'Parent Organization Unit',
-        'organizationUnits:edit.general.parent.hint': 'The parent organization unit for this new unit',
-        'organizationUnits:edit.general.ou.noParent.label': 'Root Organization Unit',
-        'common:actions.create': 'Create',
-        'common:status.saving': 'Creating...',
-      };
-      return translations[key] ?? key;
-    },
-  }),
-}));
-
 describe('CreateOrganizationUnitPage', () => {
+  let t: (key: string) => string;
+
+  beforeAll(() => {
+    ({t} = renderHook(() => useTranslation()).result.current);
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockNavigate.mockReset();
@@ -106,8 +86,8 @@ describe('CreateOrganizationUnitPage', () => {
   it('should render page title and heading', () => {
     renderWithProviders(<CreateOrganizationUnitPage />);
 
-    expect(screen.getByText('Create Organization Unit')).toBeInTheDocument();
-    expect(screen.getByText('Create a new organization unit')).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:create.title'))).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:create.heading'))).toBeInTheDocument();
   });
 
   it('should render name input field', () => {
@@ -179,7 +159,7 @@ describe('CreateOrganizationUnitPage', () => {
   it('should disable create button when form is invalid', () => {
     renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const createButton = screen.getByText('Create');
+    const createButton = screen.getByText(t('common:actions.create'));
     expect(createButton).toBeDisabled();
   });
 
@@ -194,7 +174,7 @@ describe('CreateOrganizationUnitPage', () => {
 
     // Wait for form validation to complete
     await waitFor(() => {
-      const createButton = screen.getByText('Create');
+      const createButton = screen.getByText(t('common:actions.create'));
       expect(createButton).not.toBeDisabled();
     });
   });
@@ -207,11 +187,11 @@ describe('CreateOrganizationUnitPage', () => {
 
     // Wait for form validation to complete
     await waitFor(() => {
-      const createButton = screen.getByText('Create');
+      const createButton = screen.getByText(t('common:actions.create'));
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
+    const createButton = screen.getByText(t('common:actions.create'));
     fireEvent.click(createButton);
 
     await waitFor(() => {
@@ -249,11 +229,11 @@ describe('CreateOrganizationUnitPage', () => {
 
     // Wait for form validation to complete
     await waitFor(() => {
-      const createButton = screen.getByText('Create');
+      const createButton = screen.getByText(t('common:actions.create'));
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
+    const createButton = screen.getByText(t('common:actions.create'));
     fireEvent.click(createButton);
 
     await waitFor(() => {
@@ -273,11 +253,11 @@ describe('CreateOrganizationUnitPage', () => {
 
     // Wait for form validation to complete
     await waitFor(() => {
-      const createButton = screen.getByText('Create');
+      const createButton = screen.getByText(t('common:actions.create'));
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
+    const createButton = screen.getByText(t('common:actions.create'));
     fireEvent.click(createButton);
 
     await waitFor(() => {
@@ -297,11 +277,11 @@ describe('CreateOrganizationUnitPage', () => {
 
     // Wait for form validation to complete
     await waitFor(() => {
-      const createButton = screen.getByText('Create');
+      const createButton = screen.getByText(t('common:actions.create'));
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
+    const createButton = screen.getByText(t('common:actions.create'));
     fireEvent.click(createButton);
 
     await waitFor(() => {
@@ -328,11 +308,11 @@ describe('CreateOrganizationUnitPage', () => {
 
     // Wait for form validation to complete
     await waitFor(() => {
-      const createButton = screen.getByText('Create');
+      const createButton = screen.getByText(t('common:actions.create'));
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
+    const createButton = screen.getByText(t('common:actions.create'));
     fireEvent.click(createButton);
 
     await waitFor(() => {
@@ -353,11 +333,11 @@ describe('CreateOrganizationUnitPage', () => {
 
     // Wait for form validation to complete
     await waitFor(() => {
-      const createButton = screen.getByText('Create');
+      const createButton = screen.getByText(t('common:actions.create'));
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
+    const createButton = screen.getByText(t('common:actions.create'));
     fireEvent.click(createButton);
 
     await waitFor(() => {
@@ -373,8 +353,8 @@ describe('CreateOrganizationUnitPage', () => {
   it('should show "Root Organization Unit" in parent field when no parent is provided', () => {
     renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const parentInput = screen.getByLabelText(/Parent Organization Unit/i);
-    expect(parentInput).toHaveValue('Root Organization Unit');
+    const parentInput = screen.getByLabelText(new RegExp(t('organizationUnits:edit.general.parent.label'), 'i'));
+    expect(parentInput).toHaveValue(t('organizationUnits:edit.general.ou.noParent.label'));
     expect(parentInput).toHaveAttribute('readOnly');
   });
 
@@ -386,11 +366,11 @@ describe('CreateOrganizationUnitPage', () => {
 
     // Wait for form validation to complete
     await waitFor(() => {
-      const createButton = screen.getByText('Create');
+      const createButton = screen.getByText(t('common:actions.create'));
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
+    const createButton = screen.getByText(t('common:actions.create'));
     fireEvent.click(createButton);
 
     await waitFor(() => {
@@ -408,7 +388,7 @@ describe('CreateOrganizationUnitPage', () => {
 
     renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const parentInput = screen.getByLabelText(/Parent Organization Unit/i);
+    const parentInput = screen.getByLabelText(new RegExp(t('organizationUnits:edit.general.parent.label'), 'i'));
     expect(parentInput).toHaveValue('Engineering (engineering)');
     expect(parentInput).toHaveAttribute('readOnly');
   });
@@ -418,7 +398,7 @@ describe('CreateOrganizationUnitPage', () => {
 
     renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const parentInput = screen.getByLabelText(/Parent Organization Unit/i);
+    const parentInput = screen.getByLabelText(new RegExp(t('organizationUnits:edit.general.parent.label'), 'i'));
     expect(parentInput).toHaveValue('Engineering');
   });
 
@@ -431,11 +411,11 @@ describe('CreateOrganizationUnitPage', () => {
     fireEvent.change(nameInput, {target: {value: 'Child Organization'}});
 
     await waitFor(() => {
-      const createButton = screen.getByText('Create');
+      const createButton = screen.getByText(t('common:actions.create'));
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
+    const createButton = screen.getByText(t('common:actions.create'));
     fireEvent.click(createButton);
 
     await waitFor(() => {
@@ -472,11 +452,11 @@ describe('CreateOrganizationUnitPage', () => {
 
     // Wait for form validation to complete
     await waitFor(() => {
-      const createButton = screen.getByText('Create');
+      const createButton = screen.getByText(t('common:actions.create'));
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
+    const createButton = screen.getByText(t('common:actions.create'));
     fireEvent.click(createButton);
 
     await waitFor(() => {
@@ -511,11 +491,11 @@ describe('CreateOrganizationUnitPage', () => {
 
     // Wait for form validation to complete
     await waitFor(() => {
-      const createButton = screen.getByText('Create');
+      const createButton = screen.getByText(t('common:actions.create'));
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
+    const createButton = screen.getByText(t('common:actions.create'));
     fireEvent.click(createButton);
 
     // Should not throw - error is logged
@@ -537,11 +517,11 @@ describe('CreateOrganizationUnitPage', () => {
 
     // Wait for form validation to complete
     await waitFor(() => {
-      const createButton = screen.getByText('Create');
+      const createButton = screen.getByText(t('common:actions.create'));
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
+    const createButton = screen.getByText(t('common:actions.create'));
     fireEvent.click(createButton);
 
     await waitFor(() => {
@@ -565,6 +545,6 @@ describe('CreateOrganizationUnitPage', () => {
   it('should render suggestions label', () => {
     renderWithProviders(<CreateOrganizationUnitPage />);
 
-    expect(screen.getByText('Try these suggestions:')).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:create.suggestions.label'))).toBeInTheDocument();
   });
 });

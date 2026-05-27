@@ -73,6 +73,16 @@ export interface ProtectedRouteProps {
    * ```
    */
   signInOptions?: Record<string, any>;
+  /**
+   * Additional parameters to pass to the token request body.
+   * These will be merged with the default tokenRequest from the ThunderID context.
+   *
+   * @example
+   * ```tsx
+   * tokenRequest={{ params: { resource: "https://api.example.com" } }}
+   * ```
+   */
+  tokenRequest?: {params?: Record<string, unknown>};
 }
 
 /**
@@ -146,9 +156,10 @@ const ProtectedRoute: FC<ProtectedRouteProps> = ({
   redirectTo,
   loader = null,
   onSignIn,
-  signInOptions: overriddenSignInOptions = {},
+  signInOptions: overriddenSignInOptions,
+  tokenRequest: overriddenTokenRequest,
 }: ProtectedRouteProps) => {
-  const {isSignedIn, isLoading, signIn, signInOptions, signInUrl} = useThunderID();
+  const {isSignedIn, isLoading, signIn, signInOptions, tokenRequest, signInUrl} = useThunderID();
 
   // Always wait for loading to finish before making authentication decisions
   if (isLoading) {
@@ -175,7 +186,14 @@ const ProtectedRoute: FC<ProtectedRouteProps> = ({
     } else {
       (async (): Promise<void> => {
         try {
-          await signIn(overriddenSignInOptions ?? signInOptions);
+          const mergedParams = (overriddenTokenRequest ?? tokenRequest)?.params;
+          await signIn(
+            overriddenSignInOptions ?? signInOptions,
+            undefined,
+            undefined,
+            undefined,
+            mergedParams && Object.keys(mergedParams).length > 0 ? {params: mergedParams} : undefined,
+          );
         } catch (error) {
           throw new ThunderIDRuntimeError(
             'Sign-in failed in ProtectedRoute.',
