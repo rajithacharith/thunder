@@ -63,15 +63,6 @@ const mockOnNodeElementDelete = vi.fn().mockImplementation((handler: (...args: u
   return unsub;
 });
 
-const mockOnEdgeDelete = vi.fn().mockImplementation((handler: (...args: unknown[]) => Promise<boolean>) => {
-  if (!registeredHandlers.onEdgeDelete) registeredHandlers.onEdgeDelete = [];
-  registeredHandlers.onEdgeDelete.push(handler);
-  const unsub = vi.fn();
-  if (!mockUnsubscribes.onEdgeDelete) mockUnsubscribes.onEdgeDelete = [];
-  mockUnsubscribes.onEdgeDelete.push(unsub);
-  return unsub;
-});
-
 const mockFlowPlugins = {
   onPropertyChange: vi.fn().mockReturnValue(vi.fn()),
   emitPropertyChange: vi.fn().mockReturnValue(true),
@@ -79,7 +70,7 @@ const mockFlowPlugins = {
   emitPropertyPanelOpen: vi.fn().mockReturnValue(true),
   onElementFilter: vi.fn().mockReturnValue(vi.fn()),
   emitElementFilter: vi.fn().mockReturnValue(true),
-  onEdgeDelete: mockOnEdgeDelete,
+  onEdgeDelete: vi.fn().mockReturnValue(vi.fn()),
   emitEdgeDelete: vi.fn().mockReturnValue(true),
   onNodeDelete: mockOnNodeDelete,
   emitNodeDelete: vi.fn().mockReturnValue(true),
@@ -158,14 +149,6 @@ describe('useDeleteExecutionResource', () => {
       mockUnsubscribes.onNodeElementDelete.push(unsub);
       return unsub;
     });
-    mockOnEdgeDelete.mockImplementation((handler: (...args: unknown[]) => Promise<boolean>) => {
-      if (!registeredHandlers.onEdgeDelete) registeredHandlers.onEdgeDelete = [];
-      registeredHandlers.onEdgeDelete.push(handler);
-      const unsub = vi.fn();
-      if (!mockUnsubscribes.onEdgeDelete) mockUnsubscribes.onEdgeDelete = [];
-      mockUnsubscribes.onEdgeDelete.push(unsub);
-      return unsub;
-    });
   });
 
   describe('Plugin Registration', () => {
@@ -177,7 +160,6 @@ describe('useDeleteExecutionResource', () => {
       // Check that handlers are registered
       expect(mockOnNodeDelete).toHaveBeenCalledWith(expect.any(Function));
       expect(mockOnNodeElementDelete).toHaveBeenCalledWith(expect.any(Function));
-      expect(mockOnEdgeDelete).toHaveBeenCalledWith(expect.any(Function));
     });
 
     it('should call unsubscribe functions on unmount', () => {
@@ -190,7 +172,6 @@ describe('useDeleteExecutionResource', () => {
       // Check that unsubscribe functions are called
       mockUnsubscribes.onNodeDelete?.forEach((unsub) => expect(unsub).toHaveBeenCalled());
       mockUnsubscribes.onNodeElementDelete?.forEach((unsub) => expect(unsub).toHaveBeenCalled());
-      mockUnsubscribes.onEdgeDelete?.forEach((unsub) => expect(unsub).toHaveBeenCalled());
     });
   });
 
@@ -246,43 +227,6 @@ describe('useDeleteExecutionResource', () => {
     });
   });
 
-  describe('deleteComponentAndNode', () => {
-    it('should register the handler for edge deletion', () => {
-      renderHook(() => useDeleteExecutionResource(), {
-        wrapper: createWrapper(),
-      });
-
-      expect(mockOnEdgeDelete).toHaveBeenCalledWith(expect.any(Function));
-    });
-
-    it('should set up nodes getter for edge deletion handler', () => {
-      const executionNode: Node = {
-        id: 'execution-1',
-        type: 'TASK_EXECUTION',
-        position: {x: 0, y: 0},
-        data: {},
-      };
-
-      const actionNode: Node = {
-        id: 'action-1',
-        type: 'VIEW',
-        position: {x: 0, y: 0},
-        data: {
-          components: [{id: 'button-1', type: 'ACTION'}],
-        },
-      };
-
-      mockGetNodes.mockReturnValue([actionNode, executionNode] as Node[]);
-
-      renderHook(() => useDeleteExecutionResource(), {
-        wrapper: createWrapper(),
-      });
-
-      // Verify the hook registered with the plugin registry
-      expect(mockOnEdgeDelete).toHaveBeenCalledWith(expect.any(Function));
-    });
-  });
-
   describe('Context Integration', () => {
     it('should use setIsOpenResourcePropertiesPanel from context', () => {
       renderHook(() => useDeleteExecutionResource(), {
@@ -292,7 +236,6 @@ describe('useDeleteExecutionResource', () => {
       // The hook should have access to context
       expect(mockOnNodeDelete).toHaveBeenCalledTimes(1);
       expect(mockOnNodeElementDelete).toHaveBeenCalledTimes(1);
-      expect(mockOnEdgeDelete).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -457,216 +400,6 @@ describe('useDeleteExecutionResource', () => {
 
       const result = await deleteElementHandler('step-1', element);
       expect(result).toBe(true);
-    });
-  });
-
-  describe('deleteComponentAndNode Handler', () => {
-    it('should return true when no execution nodes are connected to deleted edges', async () => {
-      const viewNode: Node = {
-        id: 'view-1',
-        type: 'VIEW',
-        position: {x: 0, y: 0},
-        data: {},
-      };
-
-      mockGetNodes.mockReturnValue([viewNode]);
-
-      renderHook(() => useDeleteExecutionResource(), {
-        wrapper: createWrapper(),
-      });
-
-      const deleteEdgeHandler = registeredHandlers.onEdgeDelete?.[0];
-      expect(deleteEdgeHandler).toBeDefined();
-
-      const edges = [
-        {
-          id: 'edge-1',
-          source: 'view-1',
-          target: 'view-2',
-          sourceHandle: 'button-1-next',
-        },
-      ];
-
-      const result = await deleteEdgeHandler(edges);
-      expect(result).toBe(true);
-    });
-
-    it('should delete execution nodes and components when edges are deleted', async () => {
-      const executionNode: Node = {
-        id: 'execution-1',
-        type: 'TASK_EXECUTION',
-        position: {x: 100, y: 0},
-        data: {},
-      };
-
-      const actionNode: Node = {
-        id: 'action-1',
-        type: 'VIEW',
-        position: {x: 0, y: 0},
-        data: {
-          components: [{id: 'button-1', type: 'ACTION'}],
-        },
-      };
-
-      mockGetNodes.mockReturnValue([actionNode, executionNode]);
-
-      renderHook(() => useDeleteExecutionResource(), {
-        wrapper: createWrapper(),
-      });
-
-      const deleteEdgeHandler = registeredHandlers.onEdgeDelete?.[0];
-      expect(deleteEdgeHandler).toBeDefined();
-
-      const edges = [
-        {
-          id: 'edge-1',
-          source: 'action-1',
-          target: 'execution-1',
-          sourceHandle: 'button-1-next',
-        },
-      ];
-
-      const result = await deleteEdgeHandler(edges);
-      expect(result).toBe(true);
-      expect(mockSetNodes).toHaveBeenCalled();
-      expect(mockUpdateNodeData).toHaveBeenCalled();
-      expect(mockSetIsOpenResourcePropertiesPanel).toHaveBeenCalledWith(false);
-    });
-
-    it('should handle multiple edges being deleted', async () => {
-      const executionNode1: Node = {
-        id: 'execution-1',
-        type: 'TASK_EXECUTION',
-        position: {x: 100, y: 0},
-        data: {},
-      };
-
-      const executionNode2: Node = {
-        id: 'execution-2',
-        type: 'TASK_EXECUTION',
-        position: {x: 200, y: 0},
-        data: {},
-      };
-
-      const actionNode: Node = {
-        id: 'action-1',
-        type: 'VIEW',
-        position: {x: 0, y: 0},
-        data: {
-          components: [
-            {id: 'button-1', type: 'ACTION'},
-            {id: 'button-2', type: 'ACTION'},
-          ],
-        },
-      };
-
-      mockGetNodes.mockReturnValue([actionNode, executionNode1, executionNode2]);
-
-      renderHook(() => useDeleteExecutionResource(), {
-        wrapper: createWrapper(),
-      });
-
-      const deleteEdgeHandler = registeredHandlers.onEdgeDelete?.[0];
-
-      const edges = [
-        {
-          id: 'edge-1',
-          source: 'action-1',
-          target: 'execution-1',
-          sourceHandle: 'button-1-next',
-        },
-        {
-          id: 'edge-2',
-          source: 'action-1',
-          target: 'execution-2',
-          sourceHandle: 'button-2-next',
-        },
-      ];
-
-      const result = await deleteEdgeHandler(edges);
-      expect(result).toBe(true);
-      expect(mockSetNodes).toHaveBeenCalled();
-    });
-
-    it('should handle edge without sourceHandle', async () => {
-      const executionNode: Node = {
-        id: 'execution-1',
-        type: 'TASK_EXECUTION',
-        position: {x: 100, y: 0},
-        data: {},
-      };
-
-      mockGetNodes.mockReturnValue([executionNode]);
-
-      renderHook(() => useDeleteExecutionResource(), {
-        wrapper: createWrapper(),
-      });
-
-      const deleteEdgeHandler = registeredHandlers.onEdgeDelete?.[0];
-
-      const edges = [
-        {
-          id: 'edge-1',
-          source: 'action-1',
-          target: 'execution-1',
-          // No sourceHandle
-        },
-      ];
-
-      const result = await deleteEdgeHandler(edges);
-      expect(result).toBe(true);
-    });
-
-    it('should execute updateNodeData callback to filter components in deleteComponentAndNode', async () => {
-      const executionNode: Node = {
-        id: 'execution-1',
-        type: 'TASK_EXECUTION',
-        position: {x: 100, y: 0},
-        data: {},
-      };
-
-      const actionNode: Node = {
-        id: 'action-1',
-        type: 'VIEW',
-        position: {x: 0, y: 0},
-        data: {
-          components: [
-            {id: 'button-1', type: 'ACTION'},
-            {id: 'button-2', type: 'ACTION'},
-          ],
-        },
-      };
-
-      mockGetNodes.mockReturnValue([actionNode, executionNode]);
-
-      // Capture the callback passed to updateNodeData
-      let capturedCallback: ((node: Node) => {components: unknown[]}) | null = null;
-      mockUpdateNodeData.mockImplementation((_id: string, callback: (node: Node) => {components: unknown[]}) => {
-        capturedCallback = callback;
-      });
-
-      renderHook(() => useDeleteExecutionResource(), {
-        wrapper: createWrapper(),
-      });
-
-      const deleteEdgeHandler = registeredHandlers.onEdgeDelete?.[0];
-
-      const edges = [
-        {
-          id: 'edge-1',
-          source: 'action-1',
-          target: 'execution-1',
-          sourceHandle: 'button-1-next',
-        },
-      ];
-
-      await deleteEdgeHandler(edges);
-
-      expect(capturedCallback).not.toBeNull();
-
-      const result = capturedCallback!(actionNode);
-      expect(result.components).toHaveLength(1);
-      expect(result.components[0]).toEqual({id: 'button-2', type: 'ACTION'});
     });
   });
 
