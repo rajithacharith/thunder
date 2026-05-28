@@ -4959,7 +4959,7 @@ a.connect-card {
 
 .seq-actor-label {
   fill: #fff;
-  font-size: 12.5px;
+  font-size: 19px;
   font-weight: 600;
   letter-spacing: 0.02em;
 }
@@ -4994,13 +4994,13 @@ a.connect-card {
 
 .seq-message-label {
   fill: var(--ifm-font-color-base);
-  font-size: 14px;
+  font-size: 21px;
   font-weight: 600;
 }
 
 .seq-message-sublabel {
   fill: var(--ifm-color-emphasis-600);
-  font-size: 13.5px;
+  font-size: 19px;
   font-weight: 400;
 }
 
@@ -5022,12 +5022,34 @@ a.connect-card {
 
 .seq-note {
   fill: color-mix(in srgb, var(--ifm-color-primary) 80%, var(--ifm-font-color-base));
-  font-size: 11px;
+  font-size: 16px;
   font-style: italic;
 }
 
 [data-theme='dark'] .seq-note {
   fill: color-mix(in srgb, var(--ifm-color-primary) 70%, var(--ifm-color-emphasis-900));
+}
+
+/* ── Protocol family card (Protocols & Standards index) ── */
+.protocol-family-card {
+  margin: 1.5rem 0;
+  padding: 1.25rem 1.5rem;
+  background: var(--ifm-color-emphasis-100);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 12px;
+}
+
+[data-theme='dark'] .protocol-family-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--ifm-color-emphasis-200);
+}
+
+.protocol-family-card > :first-child {
+  margin-top: 0;
+}
+
+.protocol-family-card > :last-child {
+  margin-bottom: 0;
 }
 
 /* ── Prerequisites table ── */
