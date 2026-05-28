@@ -98,6 +98,7 @@ const createMockSignUpRenderProps = (overrides: Partial<MockSignUpRenderProps> =
 
 let mockSignUpRenderProps: MockSignUpRenderProps = createMockSignUpRenderProps();
 let capturedOnFlowChange: ((response: unknown) => void) | undefined;
+let capturedAfterSignUpUrl: string | undefined;
 
 vi.mock('@thunderid/react', async () => {
   const actual = await vi.importActual('@thunderid/react');
@@ -106,11 +107,14 @@ vi.mock('@thunderid/react', async () => {
     SignUp: ({
       children,
       onFlowChange = undefined,
+      afterSignUpUrl = undefined,
     }: {
       children: (props: typeof mockSignUpRenderProps) => React.ReactNode;
       onFlowChange?: (response: unknown) => void;
+      afterSignUpUrl?: string;
     }) => {
       capturedOnFlowChange = onFlowChange;
+      capturedAfterSignUpUrl = afterSignUpUrl;
       return <div data-testid="thunderid-signup">{children(mockSignUpRenderProps)}</div>;
     },
     EmbeddedFlowComponentType: {
@@ -135,6 +139,7 @@ describe('SignUpBox', () => {
     });
     mockSignUpRenderProps = createMockSignUpRenderProps();
     capturedOnFlowChange = undefined;
+    capturedAfterSignUpUrl = undefined;
   });
 
   it('renders without crashing', () => {
@@ -543,6 +548,12 @@ describe('SignUpBox', () => {
     });
     render(<SignUpBox />);
     expect(screen.getByText('Sign in')).toBeInTheDocument();
+  });
+
+  it('passes afterSignUpUrl as an absolute URL with origin and BASE_URL prefix to SignUp component', () => {
+    render(<SignUpBox />);
+    const expectedUrl = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, '')}/signin`;
+    expect(capturedAfterSignUpUrl).toBe(expectedUrl);
   });
 
   it('navigates to sign in page when clicking sign in link', async () => {

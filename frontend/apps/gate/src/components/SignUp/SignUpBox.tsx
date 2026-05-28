@@ -37,7 +37,12 @@ export default function SignUpBox(): JSX.Element {
   const {isDesignEnabled} = useDesign();
   const [flowError, setFlowError] = useState<string | null>(null);
 
-  const signInUrl = ROUTES.AUTH.SIGN_IN;
+  // For React Router navigate() — basename is handled by the router.
+  const signInPath = ROUTES.AUTH.SIGN_IN;
+  // For window.location.href and new URL() (via afterSignUpUrl) — React Router basename is
+  // bypassed, so an absolute URL with origin + base path must be constructed explicitly.
+  // Vite appends a trailing slash to BASE_URL.
+  const afterSignUpUrl = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, '')}${signInPath}`;
 
   const renderFlowContent = (
     components: EmbeddedFlowComponent[],
@@ -103,7 +108,7 @@ export default function SignUpBox(): JSX.Element {
       logoDisplay={!isDesignEnabled ? {xs: 'flex', md: 'none'} : {display: 'none'}}
     >
       <SignUp
-        afterSignUpUrl={signInUrl}
+        afterSignUpUrl={afterSignUpUrl}
         onFlowChange={(response: any) => {
           if (response?.failureReason) {
             setFlowError(response.failureReason as string);
@@ -151,7 +156,7 @@ export default function SignUpBox(): JSX.Element {
                 <Button
                   variant="text"
                   onClick={() => {
-                    void navigate(signInUrl);
+                    void navigate(signInPath);
                   }}
                   sx={{
                     p: 0,
