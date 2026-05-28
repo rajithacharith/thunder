@@ -133,6 +133,7 @@ export default function Footer(): JSX.Element {
             links={[
               {label: 'Releases', href: productConfig.project.source.github.releasesUrl},
               {label: 'GitHub', href: productConfig.project.source.github.url},
+              {label: 'Brand Guidelines', href: '/brand'},
             ]}
           />
         </Box>
