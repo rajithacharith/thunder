@@ -100,7 +100,7 @@ vi.mock('../TokenUserAttributesSection', () => ({
 
 // TokenValidationSection is called with tokenType="oauth" in OAuth mode and
 // tokenType="shared" in native mode. The mock splits "oauth" into separate
-// access and id testids to match test expectations.
+// access, id, and refresh testids to match test expectations.
 vi.mock('../TokenValidationSection', () => ({
   default: ({tokenType}: {tokenType: string}) => {
     if (tokenType === 'oauth') {
@@ -108,6 +108,7 @@ vi.mock('../TokenValidationSection', () => ({
         <>
           <div data-testid="token-validation-section-access">Access Token Validation</div>
           <div data-testid="token-validation-section-id">ID Token Validation</div>
+          <div data-testid="token-validation-section-refresh">Refresh Token Validation</div>
         </>
       );
     }
@@ -203,6 +204,9 @@ describe('EditTokenSettings', () => {
         idToken: {
           validityPeriod: 3600,
           userAttributes: ['sub', 'name', 'email'],
+        },
+        refreshToken: {
+          validityPeriod: 86400,
         },
       },
     } as OAuth2Config;
@@ -310,6 +314,7 @@ describe('EditTokenSettings', () => {
         token: {
           accessToken: {validityPeriod: 1800, userAttributes: []},
           idToken: {validityPeriod: 3600, userAttributes: []},
+          refreshToken: {validityPeriod: 86400},
         },
       } as unknown as OAuth2Config;
 
@@ -326,6 +331,7 @@ describe('EditTokenSettings', () => {
       expect(screen.getByTestId('token-validation-section-access')).toBeInTheDocument();
       expect(screen.getByTestId('token-user-attributes-section-id')).toBeInTheDocument();
       expect(screen.getByTestId('token-validation-section-id')).toBeInTheDocument();
+      expect(screen.getByTestId('token-validation-section-refresh')).toBeInTheDocument();
     });
 
     it('should render all sections for native mode', () => {

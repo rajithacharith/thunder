@@ -153,6 +153,8 @@ paths:
                         responseType: "JWE"
                         encryptionAlg: "RSA-OAEP-256"
                         encryptionEnc: "A256GCM"
+                      refreshToken:
+                        validityPeriod: 86400
                     userInfo:
                       responseType: "JWS"
                       signingAlg: "RS256"
@@ -229,6 +231,8 @@ paths:
                           responseType: "JWE"
                           encryptionAlg: "RSA-OAEP-256"
                           encryptionEnc: "A256GCM"
+                        refreshToken:
+                          validityPeriod: 86400
                       userInfo:
                         responseType: "JWS"
                         signingAlg: "RS256"
@@ -371,6 +375,8 @@ paths:
                           responseType: "JWE"
                           encryptionAlg: "RSA-OAEP-256"
                           encryptionEnc: "A256GCM"
+                        refreshToken:
+                          validityPeriod: 86400
                       userInfo:
                         responseType: "JWS"
                         signingAlg: "RS256"
@@ -501,6 +507,8 @@ paths:
                         responseType: "JWE"
                         encryptionAlg: "RSA-OAEP-256"
                         encryptionEnc: "A256GCM"
+                      refreshToken:
+                        validityPeriod: 86400
                     userInfo:
                       responseType: "JWS"
                       signingAlg: "RS256"
@@ -579,6 +587,8 @@ paths:
                           responseType: "JWE"
                           encryptionAlg: "RSA-OAEP-256"
                           encryptionEnc: "A256GCM"
+                        refreshToken:
+                          validityPeriod: 86400
                       userInfo:
                         responseType: "JWS"
                         signingAlg: "RS256"
@@ -1222,6 +1232,17 @@ components:
           description: JWE content-encryption algorithm (e.g. A256GCM). Required when responseType is JWE or NESTED_JWT.
           enum: ["A128CBC-HS256", "A256GCM"]
           example: "A256GCM"
+    
+    RefreshTokenConfig:
+      type: object
+      description: |
+        Refresh token configuration for OAuth applications.
+      properties:
+        validityPeriod:
+          type: integer
+          description: The validity period of the refresh token in seconds. If not specified, falls back to application-level or deployment default.
+          example: 86400
+
 
     UserInfoConfig:
       type: object
@@ -1376,6 +1397,8 @@ components:
               $ref: '#/components/schemas/AccessTokenConfig'
             idToken:
               $ref: '#/components/schemas/IDTokenConfig'
+            refreshToken:
+              $ref: '#/components/schemas/RefreshTokenConfig'
         userInfo:
           $ref: '#/components/schemas/UserInfoConfig'
         scopeClaims:
@@ -1473,6 +1496,8 @@ components:
               $ref: '#/components/schemas/AccessTokenConfig'
             idToken:
               $ref: '#/components/schemas/IDTokenConfig'
+            refreshToken:
+              $ref: '#/components/schemas/RefreshTokenConfig'
         userInfo:
           $ref: '#/components/schemas/UserInfoConfig'
         scopeClaims:
