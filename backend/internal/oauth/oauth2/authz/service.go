@@ -425,7 +425,7 @@ func (as *authorizeService) HandleAuthorizationCallback(ctx context.Context, aut
 		}
 
 		// Verify the assertion.
-		if err := as.verifyAssertion(assertion); err != nil {
+		if err := as.verifyAssertion(ctx, assertion); err != nil {
 			as.logger.Debug("Assertion verification failed", log.Error(err))
 			authErr = &AuthorizationError{
 				Code:              oauth2const.ErrorInvalidRequest,
@@ -575,8 +575,8 @@ func (as *authorizeService) loadAuthRequestContext(ctx context.Context, authID s
 }
 
 // verifyAssertion verifies the JWT assertion.
-func (as *authorizeService) verifyAssertion(assertion string) error {
-	if err := as.jwtService.VerifyJWT(assertion, "", ""); err != nil {
+func (as *authorizeService) verifyAssertion(ctx context.Context, assertion string) error {
+	if err := as.jwtService.VerifyJWT(ctx, assertion, "", ""); err != nil {
 		as.logger.Debug("Invalid assertion signature", log.String("error", err.Error.DefaultValue))
 		return errors.New("invalid assertion signature")
 	}

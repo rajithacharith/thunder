@@ -31,9 +31,6 @@ const (
 
 // WithProof attaches a raw DPoP proof JWT to the context for downstream verification.
 func WithProof(ctx context.Context, proof string) context.Context {
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	return context.WithValue(ctx, proofKey, proof)
 }
 
@@ -51,9 +48,6 @@ func GetProof(ctx context.Context) string {
 // WithJkt attaches the verified DPoP proof's JWK thumbprint to the context so grant
 // handlers can sender-constrain the issued tokens.
 func WithJkt(ctx context.Context, jkt string) context.Context {
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	return context.WithValue(ctx, jktKey, jkt)
 }
 

@@ -463,10 +463,10 @@ func (s *ConsentEnforcerServiceTestSuite) TestVerifyAndDecodeConsentSession_Deco
 	headerJSON, _ := json.Marshal(header)
 	token := base64.RawURLEncoding.EncodeToString(headerJSON) + ".invalid-payload.signature"
 
-	s.mockJWTSvc.On("VerifyJWT", token, consentSessionTokenAudience, mock.Anything).
+	s.mockJWTSvc.On("VerifyJWT", mock.Anything, token, consentSessionTokenAudience, mock.Anything).
 		Return((*serviceerror.ServiceError)(nil))
 
-	result, err := s.service.verifyAndDecodeConsentSession(token)
+	result, err := s.service.verifyAndDecodeConsentSession(context.Background(), token)
 
 	s.Nil(result)
 	s.Error(err)
@@ -475,10 +475,10 @@ func (s *ConsentEnforcerServiceTestSuite) TestVerifyAndDecodeConsentSession_Deco
 func (s *ConsentEnforcerServiceTestSuite) TestVerifyAndDecodeConsentSession_MissingClaim() {
 	token := buildSessionTokenWithPayload(map[string]interface{}{"sub": "user1"})
 
-	s.mockJWTSvc.On("VerifyJWT", token, consentSessionTokenAudience, mock.Anything).
+	s.mockJWTSvc.On("VerifyJWT", mock.Anything, token, consentSessionTokenAudience, mock.Anything).
 		Return((*serviceerror.ServiceError)(nil))
 
-	result, err := s.service.verifyAndDecodeConsentSession(token)
+	result, err := s.service.verifyAndDecodeConsentSession(context.Background(), token)
 
 	s.Nil(result)
 	s.Error(err)
@@ -488,10 +488,10 @@ func (s *ConsentEnforcerServiceTestSuite) TestVerifyAndDecodeConsentSession_Miss
 func (s *ConsentEnforcerServiceTestSuite) TestVerifyAndDecodeConsentSession_InvalidClaimFormat() {
 	token := buildSessionTokenWithPayload(map[string]interface{}{consentSessionClaimKey: "invalid"})
 
-	s.mockJWTSvc.On("VerifyJWT", token, consentSessionTokenAudience, mock.Anything).
+	s.mockJWTSvc.On("VerifyJWT", mock.Anything, token, consentSessionTokenAudience, mock.Anything).
 		Return((*serviceerror.ServiceError)(nil))
 
-	result, err := s.service.verifyAndDecodeConsentSession(token)
+	result, err := s.service.verifyAndDecodeConsentSession(context.Background(), token)
 
 	s.Nil(result)
 	s.Error(err)
@@ -503,7 +503,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_SessionTokenInvalid(
 			{PurposeName: "purpose1", Approved: true},
 		},
 	}
-	s.mockJWTSvc.On("VerifyJWT", "bad-token", consentSessionTokenAudience, mock.Anything).
+	s.mockJWTSvc.On("VerifyJWT", mock.Anything, "bad-token", consentSessionTokenAudience, mock.Anything).
 		Return(&serviceerror.ServiceError{
 			Code:  "JWT-5001",
 			Error: core.I18nMessage{Key: "error.test.invalid_token", DefaultValue: "Invalid token"},
@@ -542,7 +542,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_MissingPurpose_Treat
 		},
 	}
 
-	s.mockJWTSvc.On("VerifyJWT", sessionToken, consentSessionTokenAudience, mock.Anything).
+	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*serviceerror.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
@@ -586,7 +586,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_SearchFails_ClientEr
 		Code: "CONSENT-4002",
 	}
 
-	s.mockJWTSvc.On("VerifyJWT", sessionToken, consentSessionTokenAudience, mock.Anything).
+	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*serviceerror.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return(nil, clientErr)
@@ -615,7 +615,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_SearchFails_ServerEr
 		Code: "CONSENT-5002",
 	}
 
-	s.mockJWTSvc.On("VerifyJWT", sessionToken, consentSessionTokenAudience, mock.Anything).
+	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*serviceerror.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return(nil, serverErr)
@@ -656,7 +656,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateSuc
 		},
 	}
 
-	s.mockJWTSvc.On("VerifyJWT", sessionToken, consentSessionTokenAudience, mock.Anything).
+	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*serviceerror.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
@@ -687,7 +687,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateFai
 		Code: "CONSENT-4003",
 	}
 
-	s.mockJWTSvc.On("VerifyJWT", sessionToken, consentSessionTokenAudience, mock.Anything).
+	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*serviceerror.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
@@ -718,7 +718,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateFai
 		Code: "CONSENT-5003",
 	}
 
-	s.mockJWTSvc.On("VerifyJWT", sessionToken, consentSessionTokenAudience, mock.Anything).
+	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*serviceerror.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
@@ -775,7 +775,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_Upda
 		},
 	}
 
-	s.mockJWTSvc.On("VerifyJWT", sessionToken, consentSessionTokenAudience, mock.Anything).
+	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*serviceerror.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{existingConsent}, nil)
@@ -808,7 +808,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_Upda
 		Code: "CONSENT-4004",
 	}
 
-	s.mockJWTSvc.On("VerifyJWT", sessionToken, consentSessionTokenAudience, mock.Anything).
+	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*serviceerror.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{existingConsent}, nil)
@@ -840,7 +840,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_Upda
 		Code: "CONSENT-5004",
 	}
 
-	s.mockJWTSvc.On("VerifyJWT", sessionToken, consentSessionTokenAudience, mock.Anything).
+	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*serviceerror.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{existingConsent}, nil)
@@ -868,7 +868,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_WithValidityPeriod()
 	}
 	createdConsent := &consent.Consent{ID: "consent-timed"}
 
-	s.mockJWTSvc.On("VerifyJWT", sessionToken, consentSessionTokenAudience, mock.Anything).
+	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*serviceerror.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
@@ -898,7 +898,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ZeroValidityPeriod()
 	}
 	createdConsent := &consent.Consent{ID: "consent-no-expiry"}
 
-	s.mockJWTSvc.On("VerifyJWT", sessionToken, consentSessionTokenAudience, mock.Anything).
+	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*serviceerror.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
@@ -945,7 +945,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_EssentialDenied_Retu
 		},
 	}
 
-	s.mockJWTSvc.On("VerifyJWT", sessionToken, consentSessionTokenAudience, mock.Anything).
+	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
 		Return((*serviceerror.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)

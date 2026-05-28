@@ -116,7 +116,7 @@ func (s *magicLinkAuthnService) GenerateMagicLink(ctx context.Context,
 
 // VerifyMagicLink verifies the validity of a magic link token and retrieves the associated user information.
 // Returns a user object on success or a localized service error if the token is invalid, expired, or malformed.
-func (s *magicLinkAuthnService) VerifyMagicLink(_ context.Context,
+func (s *magicLinkAuthnService) VerifyMagicLink(ctx context.Context,
 	token string, subjectAttribute string) (*entityprovider.Entity, *serviceerror.ServiceError) {
 	s.logger.Debug("Verifying magic link token")
 
@@ -126,7 +126,7 @@ func (s *magicLinkAuthnService) VerifyMagicLink(_ context.Context,
 	}
 
 	issuer := config.GetServerRuntime().Config.JWT.Issuer
-	verifyErr := s.jwtService.VerifyJWT(token, tokenAudience, issuer)
+	verifyErr := s.jwtService.VerifyJWT(ctx, token, tokenAudience, issuer)
 	if verifyErr != nil {
 		if verifyErr.Code == jwt.ErrorTokenExpired.Code {
 			return nil, &ErrorExpiredToken

@@ -158,7 +158,7 @@ func (s *consentEnforcerService) RecordConsent(ctx context.Context, ouID, appID,
 	logger.Debug("Recording consent for user")
 
 	// Verify and decode the consent session token to retrieve the prompted purposes
-	sessionData, err := s.verifyAndDecodeConsentSession(sessionToken)
+	sessionData, err := s.verifyAndDecodeConsentSession(ctx, sessionToken)
 	if err != nil {
 		logger.Debug("Failed to verify consent session token", log.Error(err))
 		return nil, &ErrorConsentSessionInvalid
@@ -335,10 +335,10 @@ func (s *consentEnforcerService) createConsentSessionToken(
 
 // verifyAndDecodeConsentSession verifies the JWT consent session token and decodes the session data.
 func (s *consentEnforcerService) verifyAndDecodeConsentSession(
-	sessionToken string) (*consentSessionData, error) {
+	ctx context.Context, sessionToken string) (*consentSessionData, error) {
 	issuer := config.GetServerRuntime().Config.JWT.Issuer
 
-	if svcErr := s.jwtService.VerifyJWT(sessionToken, consentSessionTokenAudience, issuer); svcErr != nil {
+	if svcErr := s.jwtService.VerifyJWT(ctx, sessionToken, consentSessionTokenAudience, issuer); svcErr != nil {
 		return nil, errors.New("consent session token verification failed: " + svcErr.Error.DefaultValue)
 	}
 

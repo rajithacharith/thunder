@@ -187,7 +187,7 @@ func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkExpiredToken() {
 	expiredErr := &serviceerror.ServiceError{
 		Code: jwt.ErrorTokenExpired.Code,
 	}
-	suite.mockJWTService.On("VerifyJWT", testToken, tokenAudience, mock.Anything).Return(expiredErr)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, testToken, tokenAudience, mock.Anything).Return(expiredErr)
 
 	result, err := suite.service.VerifyMagicLink(context.Background(), testToken, "")
 	suite.Nil(result)
@@ -196,9 +196,10 @@ func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkExpiredToken() {
 }
 
 func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkInvalidToken() {
-	suite.mockJWTService.On("VerifyJWT", testToken, tokenAudience, mock.Anything).Return(&serviceerror.ServiceError{
-		Code: "JWT_INVALID",
-	})
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, testToken, tokenAudience, mock.Anything).
+		Return(&serviceerror.ServiceError{
+			Code: "JWT_INVALID",
+		})
 
 	result, err := suite.service.VerifyMagicLink(context.Background(), testToken, "")
 	suite.Nil(result)
@@ -207,7 +208,7 @@ func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkInvalidToken() {
 }
 
 func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkSuccess() {
-	suite.mockJWTService.On("VerifyJWT", testValidJWT, tokenAudience, mock.Anything).Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, testValidJWT, tokenAudience, mock.Anything).Return(nil)
 
 	testUser := &entityprovider.Entity{
 		ID:   testUserID,
@@ -230,7 +231,7 @@ func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkSuccessWithDestinatio
 	)
 	workEmailUser := "user-work"
 	testWorkEmailJWT := createMagicLinkJWTWithSubject(workEmailValue)
-	suite.mockJWTService.On("VerifyJWT", testWorkEmailJWT, tokenAudience, mock.Anything).Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, testWorkEmailJWT, tokenAudience, mock.Anything).Return(nil)
 	suite.mockUserService.On("IdentifyEntity", map[string]interface{}{
 		workEmailAttr: workEmailValue,
 	}).Return(&workEmailUser, nil)
@@ -249,7 +250,7 @@ func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkSuccessWithDestinatio
 }
 
 func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkMissingSubjectClaim() {
-	suite.mockJWTService.On("VerifyJWT", testMissingSubJWT, tokenAudience, mock.Anything).Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, testMissingSubJWT, tokenAudience, mock.Anything).Return(nil)
 
 	result, err := suite.service.VerifyMagicLink(context.Background(), testMissingSubJWT, "")
 	suite.Nil(result)
@@ -258,7 +259,8 @@ func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkMissingSubjectClaim()
 }
 
 func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkUserIDMismatchClaim() {
-	suite.mockJWTService.On("VerifyJWT", testMismatchedUserIDJWT, tokenAudience, mock.Anything).Return(nil)
+	suite.mockJWTService.
+		On("VerifyJWT", mock.Anything, testMismatchedUserIDJWT, tokenAudience, mock.Anything).Return(nil)
 	suite.mockUserService.On("GetEntity", "user-456").Return(nil, &entityprovider.EntityProviderError{
 		Code:    entityprovider.ErrorCodeEntityNotFound,
 		Message: "Entity not found",
@@ -271,7 +273,7 @@ func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkUserIDMismatchClaim()
 }
 
 func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkUserNotFoundOnVerify() {
-	suite.mockJWTService.On("VerifyJWT", testValidJWT, tokenAudience, mock.Anything).Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, testValidJWT, tokenAudience, mock.Anything).Return(nil)
 	suite.mockUserService.On("GetEntity", testUserID).Return(nil, &entityprovider.EntityProviderError{
 		Code:    entityprovider.ErrorCodeEntityNotFound,
 		Message: "Entity not found",
@@ -284,7 +286,7 @@ func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkUserNotFoundOnVerify(
 }
 
 func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkGetUserError() {
-	suite.mockJWTService.On("VerifyJWT", testValidJWT, tokenAudience, mock.Anything).Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, testValidJWT, tokenAudience, mock.Anything).Return(nil)
 	suite.mockUserService.On("GetEntity", testUserID).Return(nil, &entityprovider.EntityProviderError{
 		Code:    entityprovider.ErrorCodeInvalidRequestFormat,
 		Message: "Invalid request",
@@ -297,7 +299,7 @@ func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkGetUserError() {
 }
 
 func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkEntityProviderSystemError() {
-	suite.mockJWTService.On("VerifyJWT", testValidJWT, tokenAudience, mock.Anything).Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, testValidJWT, tokenAudience, mock.Anything).Return(nil)
 	suite.mockUserService.On("GetEntity", testUserID).Return(nil, &entityprovider.EntityProviderError{
 		Code:        entityprovider.ErrorCodeSystemError,
 		Message:     "System error",

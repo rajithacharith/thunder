@@ -101,7 +101,7 @@ func (s *userInfoService) GetUserInfo(
 		return nil, &errorInvalidAccessToken
 	}
 
-	accessTokenClaims, err := s.tokenValidator.ValidateAccessToken(accessToken)
+	accessTokenClaims, err := s.tokenValidator.ValidateAccessToken(ctx, accessToken)
 	if err != nil {
 		s.logger.Debug("Failed to verify access token", log.Error(err))
 		return nil, &errorInvalidAccessToken
@@ -126,7 +126,7 @@ func (s *userInfoService) GetUserInfoForDPoP(
 		return nil, &errorInvalidAccessToken
 	}
 
-	accessTokenClaims, err := s.tokenValidator.ValidateAccessToken(accessToken)
+	accessTokenClaims, err := s.tokenValidator.ValidateAccessToken(ctx, accessToken)
 	if err != nil {
 		s.logger.Debug("Failed to verify access token", log.Error(err))
 		return nil, &errorInvalidAccessToken
