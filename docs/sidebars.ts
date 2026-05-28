@@ -327,6 +327,11 @@ const sidebars: SidebarsConfig = {
                 },
               ],
             },
+            {
+              type: 'doc',
+              id: 'guides/guides/smtp-server/smtp-server-configuration',
+              label: 'Configure SMTP Server',
+            },
           ],
         },
         {
