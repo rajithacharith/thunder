@@ -362,7 +362,15 @@ jobs:
         run: |
           pnpm build:frontend
 
+      - name: 🎭 Cache Playwright Browsers
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        id: playwright-cache-packages
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
       - name: 🎭 Install Playwright Browsers
+        if: steps.playwright-cache-packages.outputs.cache-hit != 'true'
         run: pnpm exec playwright install chromium
 
       - name: 🧪 Run Tests for Frontend Packages
@@ -888,6 +896,13 @@ jobs:
         run: npm ci
         working-directory: tests/e2e
 
+      - name: 🎭 Cache Playwright Browsers
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        id: playwright-cache-e2e
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('tests/e2e/package-lock.json') }}
+
       - name: Install Playwright System Dependencies
         run: npx playwright install-deps
         working-directory: tests/e2e
@@ -896,6 +911,7 @@ jobs:
           DEBIAN_FRONTEND: noninteractive
 
       - name: Install Playwright Browsers
+        if: steps.playwright-cache-e2e.outputs.cache-hit != 'true'
         run: npx playwright install
         working-directory: tests/e2e
         timeout-minutes: 15
