@@ -680,9 +680,21 @@ const sidebars: SidebarsConfig = {
           collapsed: true,
           items: [
             {
-              type: 'doc',
-              id: 'guides/deployment-patterns/docker',
+              type: 'category',
               label: 'Docker',
+              collapsible: true,
+              collapsed: false,
+              link: {
+                type: 'doc',
+                id: 'guides/deployment-patterns/docker',
+              },
+              items: [
+                {
+                  type: 'doc',
+                  id: 'guides/deployment-patterns/docker-production',
+                  label: 'Production Recommendations',
+                },
+              ],
             },
             {
               type: 'doc',
