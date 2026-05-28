@@ -101,6 +101,32 @@ Handles must be unique within the same parent. Two sibling OUs cannot share the 
 5. The **Parent Organization Unit** field shows where the OU will be created. For root OUs this displays **Root Organization Unit**; for child OUs it shows the selected parent.
 6. Click **Create**.
 
+When creating an OU through the API, you can also provide the following optional branding and policy fields:
+
+| Field | Description |
+|-------|-------------|
+| `themeId` | Identifier of the theme to apply to the OU. |
+| `layoutId` | Identifier of the layout to apply to the OU. |
+| `logoUrl` | URL of the logo to display for the OU. |
+| `tosUri` | URL of the Terms of Service page. |
+| `policyUri` | URL of the Privacy Policy page. |
+| `cookiePolicyUri` | URL of the Cookie Policy page. |
+
+**Example — create an OU with branding:**
+
+```bash
+curl -kL -X POST "https://localhost:8090/organization-units" \
+  -H 'Authorization: Bearer <access-token>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "Engineering",
+    "handle": "engineering",
+    "parent": null,
+    "logoUrl": "https://example.com/logo.png",
+    "tosUri": "https://example.com/tos"
+  }'
+```
+
 ## View an Organization Unit
 
 Navigate to **Organization Units** in the <ProductName /> Console to see all OUs. Click the three-dot menu on any OU and select **Edit** to view its details:
@@ -112,9 +138,50 @@ Navigate to **Organization Units** in the <ProductName /> Console to see all OUs
 
 When using the Organization Unit APIs, each OU response also includes system metadata:
 
-- **isReadOnly** - indicates whether the OU is immutable.
+- **isReadOnly** - indicates whether the OU is immutable (for example, because it is defined declaratively and cannot be modified at runtime).
 - **createdAt** - UTC timestamp when the OU was created.
 - **updatedAt** - UTC timestamp when the OU was last updated.
+
+To retrieve an OU by its ID:
+
+```bash
+curl -kL "https://localhost:8090/organization-units/{id}" \
+  -H 'Authorization: Bearer <access-token>'
+```
+
+To retrieve an OU by its hierarchical handle path:
+
+```bash
+curl -kL "https://localhost:8090/organization-units/tree/{path}" \
+  -H 'Authorization: Bearer <access-token>'
+```
+
+## Update an Organization Unit
+
+1. Navigate to **Organization Units** in the <ProductName /> Console.
+2. Click the three-dot menu on the OU you want to update and select **Edit**.
+3. Update the **Name**, **Handle**, or **Description** as needed.
+4. Click **Save**.
+
+To update an OU using the API by its ID:
+
+```bash
+curl -kL -X PUT "https://localhost:8090/organization-units/{id}" \
+  -H 'Authorization: Bearer <access-token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"name": "Engineering Team", "handle": "engineering", "parent": null}'
+```
+
+To update by hierarchical path:
+
+```bash
+curl -kL -X PUT "https://localhost:8090/organization-units/tree/{path}" \
+  -H 'Authorization: Bearer <access-token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"name": "Engineering Team", "handle": "engineering", "parent": null}'
+```
+
+The request body accepts the same fields as the create request, including the optional branding and policy fields.
 
 ## List and Filter Organization Units
 
@@ -122,7 +189,7 @@ The Organization Unit API returns paginated results on all list endpoints. Appen
 
 ### Supported Endpoints
 
-Filtering applies to the following endpoints:
+Filtering applies to the following list endpoints:
 
 | Endpoint | Description |
 |----------|-------------|
@@ -203,6 +270,50 @@ curl -kL "https://localhost:8090/organization-units?filter=name%20eq%20%22Engine
 | Error Code | HTTP Status | Cause |
 |------------|-------------|-------|
 | `OU-1014` | 400 | The filter expression is malformed, uses an unsupported connector, or references an unsupported attribute |
+| `OU-1013` | 400 | The result count exceeds the limit supported in the current store configuration |
+
+## List Users in an Organization Unit
+
+### Using Organization Unit ID
+
+```bash
+curl -kL "https://localhost:8090/organization-units/{id}/users" \
+  -H 'Authorization: Bearer <access-token>'
+```
+
+### Using Hierarchical Path
+
+```bash
+curl -kL "https://localhost:8090/organization-units/tree/{path}/users" \
+  -H 'Authorization: Bearer <access-token>'
+```
+
+Append `include=display` to include a human-readable display name for each user:
+
+```bash
+curl -kL "https://localhost:8090/organization-units/{id}/users?include=display" \
+  -H 'Authorization: Bearer <access-token>'
+```
+
+The response includes pagination fields (`totalResults`, `startIndex`, `count`) and a `users` array. Each user entry contains an `id` and `type`, and optionally a `display` name when `include=display` is requested.
+
+## List Groups in an Organization Unit
+
+### Using Organization Unit ID
+
+```bash
+curl -kL "https://localhost:8090/organization-units/{id}/groups" \
+  -H 'Authorization: Bearer <access-token>'
+```
+
+### Using Hierarchical Path
+
+```bash
+curl -kL "https://localhost:8090/organization-units/tree/{path}/groups" \
+  -H 'Authorization: Bearer <access-token>'
+```
+
+The response includes pagination fields and a `groups` array. Each group entry contains an `id` and `name`.
 
 ## Delete an Organization Unit
 
@@ -212,6 +323,20 @@ curl -kL "https://localhost:8090/organization-units?filter=name%20eq%20%22Engine
 :::warning
 Deletion fails if the OU still contains users, groups, or child OUs. Delete or reassign all contained resources before deleting the OU.
 :::
+
+To delete an OU using the API by its ID:
+
+```bash
+curl -kL -X DELETE "https://localhost:8090/organization-units/{id}" \
+  -H 'Authorization: Bearer <access-token>'
+```
+
+To delete by hierarchical path:
+
+```bash
+curl -kL -X DELETE "https://localhost:8090/organization-units/tree/{path}" \
+  -H 'Authorization: Bearer <access-token>'
+```
 
 ## Related Guides
 
