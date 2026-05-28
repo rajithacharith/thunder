@@ -5,6 +5,8 @@
 package jwks
 
 import (
+	"context"
+
 	mock "github.com/stretchr/testify/mock"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 )
@@ -37,8 +39,8 @@ func (_m *JWKSServiceInterfaceMock) EXPECT() *JWKSServiceInterfaceMock_Expecter 
 }
 
 // GetJWKS provides a mock function for the type JWKSServiceInterfaceMock
-func (_mock *JWKSServiceInterfaceMock) GetJWKS() (*JWKSResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called()
+func (_mock *JWKSServiceInterfaceMock) GetJWKS(ctx context.Context) (*JWKSResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetJWKS")
@@ -46,18 +48,18 @@ func (_mock *JWKSServiceInterfaceMock) GetJWKS() (*JWKSResponse, *serviceerror.S
 
 	var r0 *JWKSResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func() (*JWKSResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (*JWKSResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx)
 	}
-	if returnFunc, ok := ret.Get(0).(func() *JWKSResponse); ok {
-		r0 = returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) *JWKSResponse); ok {
+		r0 = returnFunc(ctx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*JWKSResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func() *serviceerror.ServiceError); ok {
-		r1 = returnFunc()
+	if returnFunc, ok := ret.Get(1).(func(context.Context) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -72,13 +74,20 @@ type JWKSServiceInterfaceMock_GetJWKS_Call struct {
 }
 
 // GetJWKS is a helper method to define mock.On call
-func (_e *JWKSServiceInterfaceMock_Expecter) GetJWKS() *JWKSServiceInterfaceMock_GetJWKS_Call {
-	return &JWKSServiceInterfaceMock_GetJWKS_Call{Call: _e.mock.On("GetJWKS")}
+//   - ctx context.Context
+func (_e *JWKSServiceInterfaceMock_Expecter) GetJWKS(ctx interface{}) *JWKSServiceInterfaceMock_GetJWKS_Call {
+	return &JWKSServiceInterfaceMock_GetJWKS_Call{Call: _e.mock.On("GetJWKS", ctx)}
 }
 
-func (_c *JWKSServiceInterfaceMock_GetJWKS_Call) Run(run func()) *JWKSServiceInterfaceMock_GetJWKS_Call {
+func (_c *JWKSServiceInterfaceMock_GetJWKS_Call) Run(run func(ctx context.Context)) *JWKSServiceInterfaceMock_GetJWKS_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
 	})
 	return _c
 }
@@ -88,7 +97,7 @@ func (_c *JWKSServiceInterfaceMock_GetJWKS_Call) Return(jWKSResponse *JWKSRespon
 	return _c
 }
 
-func (_c *JWKSServiceInterfaceMock_GetJWKS_Call) RunAndReturn(run func() (*JWKSResponse, *serviceerror.ServiceError)) *JWKSServiceInterfaceMock_GetJWKS_Call {
+func (_c *JWKSServiceInterfaceMock_GetJWKS_Call) RunAndReturn(run func(ctx context.Context) (*JWKSResponse, *serviceerror.ServiceError)) *JWKSServiceInterfaceMock_GetJWKS_Call {
 	_c.Call.Return(run)
 	return _c
 }

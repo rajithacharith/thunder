@@ -40,8 +40,8 @@ func (_m *TokenValidatorInterfaceMock) EXPECT() *TokenValidatorInterfaceMock_Exp
 }
 
 // ValidateAccessToken provides a mock function for the type TokenValidatorInterfaceMock
-func (_mock *TokenValidatorInterfaceMock) ValidateAccessToken(token string) (*tokenservice.AccessTokenClaims, error) {
-	ret := _mock.Called(token)
+func (_mock *TokenValidatorInterfaceMock) ValidateAccessToken(ctx context.Context, token string) (*tokenservice.AccessTokenClaims, error) {
+	ret := _mock.Called(ctx, token)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ValidateAccessToken")
@@ -49,18 +49,18 @@ func (_mock *TokenValidatorInterfaceMock) ValidateAccessToken(token string) (*to
 
 	var r0 *tokenservice.AccessTokenClaims
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (*tokenservice.AccessTokenClaims, error)); ok {
-		return returnFunc(token)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*tokenservice.AccessTokenClaims, error)); ok {
+		return returnFunc(ctx, token)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *tokenservice.AccessTokenClaims); ok {
-		r0 = returnFunc(token)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *tokenservice.AccessTokenClaims); ok {
+		r0 = returnFunc(ctx, token)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*tokenservice.AccessTokenClaims)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(token)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, token)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -73,79 +73,17 @@ type TokenValidatorInterfaceMock_ValidateAccessToken_Call struct {
 }
 
 // ValidateAccessToken is a helper method to define mock.On call
+//   - ctx context.Context
 //   - token string
-func (_e *TokenValidatorInterfaceMock_Expecter) ValidateAccessToken(token interface{}) *TokenValidatorInterfaceMock_ValidateAccessToken_Call {
-	return &TokenValidatorInterfaceMock_ValidateAccessToken_Call{Call: _e.mock.On("ValidateAccessToken", token)}
+func (_e *TokenValidatorInterfaceMock_Expecter) ValidateAccessToken(ctx interface{}, token interface{}) *TokenValidatorInterfaceMock_ValidateAccessToken_Call {
+	return &TokenValidatorInterfaceMock_ValidateAccessToken_Call{Call: _e.mock.On("ValidateAccessToken", ctx, token)}
 }
 
-func (_c *TokenValidatorInterfaceMock_ValidateAccessToken_Call) Run(run func(token string)) *TokenValidatorInterfaceMock_ValidateAccessToken_Call {
+func (_c *TokenValidatorInterfaceMock_ValidateAccessToken_Call) Run(run func(ctx context.Context, token string)) *TokenValidatorInterfaceMock_ValidateAccessToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *TokenValidatorInterfaceMock_ValidateAccessToken_Call) Return(accessTokenClaims *tokenservice.AccessTokenClaims, err error) *TokenValidatorInterfaceMock_ValidateAccessToken_Call {
-	_c.Call.Return(accessTokenClaims, err)
-	return _c
-}
-
-func (_c *TokenValidatorInterfaceMock_ValidateAccessToken_Call) RunAndReturn(run func(token string) (*tokenservice.AccessTokenClaims, error)) *TokenValidatorInterfaceMock_ValidateAccessToken_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// ValidateRefreshToken provides a mock function for the type TokenValidatorInterfaceMock
-func (_mock *TokenValidatorInterfaceMock) ValidateRefreshToken(token string, clientID string) (*tokenservice.RefreshTokenClaims, error) {
-	ret := _mock.Called(token, clientID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for ValidateRefreshToken")
-	}
-
-	var r0 *tokenservice.RefreshTokenClaims
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string, string) (*tokenservice.RefreshTokenClaims, error)); ok {
-		return returnFunc(token, clientID)
-	}
-	if returnFunc, ok := ret.Get(0).(func(string, string) *tokenservice.RefreshTokenClaims); ok {
-		r0 = returnFunc(token, clientID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*tokenservice.RefreshTokenClaims)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = returnFunc(token, clientID)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// TokenValidatorInterfaceMock_ValidateRefreshToken_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ValidateRefreshToken'
-type TokenValidatorInterfaceMock_ValidateRefreshToken_Call struct {
-	*mock.Call
-}
-
-// ValidateRefreshToken is a helper method to define mock.On call
-//   - token string
-//   - clientID string
-func (_e *TokenValidatorInterfaceMock_Expecter) ValidateRefreshToken(token interface{}, clientID interface{}) *TokenValidatorInterfaceMock_ValidateRefreshToken_Call {
-	return &TokenValidatorInterfaceMock_ValidateRefreshToken_Call{Call: _e.mock.On("ValidateRefreshToken", token, clientID)}
-}
-
-func (_c *TokenValidatorInterfaceMock_ValidateRefreshToken_Call) Run(run func(token string, clientID string)) *TokenValidatorInterfaceMock_ValidateRefreshToken_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 string
 		if args[1] != nil {
@@ -159,12 +97,86 @@ func (_c *TokenValidatorInterfaceMock_ValidateRefreshToken_Call) Run(run func(to
 	return _c
 }
 
+func (_c *TokenValidatorInterfaceMock_ValidateAccessToken_Call) Return(accessTokenClaims *tokenservice.AccessTokenClaims, err error) *TokenValidatorInterfaceMock_ValidateAccessToken_Call {
+	_c.Call.Return(accessTokenClaims, err)
+	return _c
+}
+
+func (_c *TokenValidatorInterfaceMock_ValidateAccessToken_Call) RunAndReturn(run func(ctx context.Context, token string) (*tokenservice.AccessTokenClaims, error)) *TokenValidatorInterfaceMock_ValidateAccessToken_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ValidateRefreshToken provides a mock function for the type TokenValidatorInterfaceMock
+func (_mock *TokenValidatorInterfaceMock) ValidateRefreshToken(ctx context.Context, token string, clientID string) (*tokenservice.RefreshTokenClaims, error) {
+	ret := _mock.Called(ctx, token, clientID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ValidateRefreshToken")
+	}
+
+	var r0 *tokenservice.RefreshTokenClaims
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*tokenservice.RefreshTokenClaims, error)); ok {
+		return returnFunc(ctx, token, clientID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *tokenservice.RefreshTokenClaims); ok {
+		r0 = returnFunc(ctx, token, clientID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*tokenservice.RefreshTokenClaims)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = returnFunc(ctx, token, clientID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// TokenValidatorInterfaceMock_ValidateRefreshToken_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ValidateRefreshToken'
+type TokenValidatorInterfaceMock_ValidateRefreshToken_Call struct {
+	*mock.Call
+}
+
+// ValidateRefreshToken is a helper method to define mock.On call
+//   - ctx context.Context
+//   - token string
+//   - clientID string
+func (_e *TokenValidatorInterfaceMock_Expecter) ValidateRefreshToken(ctx interface{}, token interface{}, clientID interface{}) *TokenValidatorInterfaceMock_ValidateRefreshToken_Call {
+	return &TokenValidatorInterfaceMock_ValidateRefreshToken_Call{Call: _e.mock.On("ValidateRefreshToken", ctx, token, clientID)}
+}
+
+func (_c *TokenValidatorInterfaceMock_ValidateRefreshToken_Call) Run(run func(ctx context.Context, token string, clientID string)) *TokenValidatorInterfaceMock_ValidateRefreshToken_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
 func (_c *TokenValidatorInterfaceMock_ValidateRefreshToken_Call) Return(refreshTokenClaims *tokenservice.RefreshTokenClaims, err error) *TokenValidatorInterfaceMock_ValidateRefreshToken_Call {
 	_c.Call.Return(refreshTokenClaims, err)
 	return _c
 }
 
-func (_c *TokenValidatorInterfaceMock_ValidateRefreshToken_Call) RunAndReturn(run func(token string, clientID string) (*tokenservice.RefreshTokenClaims, error)) *TokenValidatorInterfaceMock_ValidateRefreshToken_Call {
+func (_c *TokenValidatorInterfaceMock_ValidateRefreshToken_Call) RunAndReturn(run func(ctx context.Context, token string, clientID string) (*tokenservice.RefreshTokenClaims, error)) *TokenValidatorInterfaceMock_ValidateRefreshToken_Call {
 	_c.Call.Return(run)
 	return _c
 }

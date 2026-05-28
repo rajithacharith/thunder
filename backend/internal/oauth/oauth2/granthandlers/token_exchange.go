@@ -196,8 +196,7 @@ func (h *tokenExchangeGrantHandler) HandleGrant(ctx context.Context, tokenReques
 	finalAudiences := mergeAudiences(tokenRequest.Audiences, rsAudiences, tokenRequest.ClientID)
 
 	// Build access token using token builder
-	accessToken, err := h.tokenBuilder.BuildAccessToken(&tokenservice.AccessTokenBuildContext{
-		Context:        ctx,
+	accessToken, err := h.tokenBuilder.BuildAccessToken(ctx, &tokenservice.AccessTokenBuildContext{
 		Subject:        subjectClaims.Sub,
 		Audiences:      finalAudiences,
 		ClientID:       tokenRequest.ClientID,

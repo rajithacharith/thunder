@@ -221,7 +221,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_InvalidSessionToken() {
 	}
 
 	// Expect VerifyJWT to be called; issuer can vary in tests so use Any
-	suite.mockJWTService.EXPECT().VerifyJWT("invalid-token", "otp-svc", mock.Anything).
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, "invalid-token", "otp-svc", mock.Anything).
 		Return(&ErrorInvalidSessionToken).Once()
 
 	result, err := suite.service.VerifyOTP(context.Background(), request)
@@ -417,7 +417,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_Success() {
 	payloadEnc := base64.RawURLEncoding.EncodeToString(payloadBytes)
 	token := fmt.Sprintf("%s.%s.", headerEnc, payloadEnc)
 
-	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, token, mock.Anything, mock.Anything).Return(nil).Once()
 
 	req := common.VerifyOTPDTO{SessionToken: token, OTPCode: otpValue}
 	res, err := suite.service.VerifyOTP(context.Background(), req)
@@ -449,7 +449,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_Expired() {
 	payloadEnc := base64.RawURLEncoding.EncodeToString(payloadBytes)
 	token := fmt.Sprintf("%s.%s.", headerEnc, payloadEnc)
 
-	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, token, mock.Anything, mock.Anything).Return(nil).Once()
 
 	req := common.VerifyOTPDTO{SessionToken: token, OTPCode: otpValue}
 	res, err := suite.service.VerifyOTP(context.Background(), req)
@@ -518,7 +518,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_MissingOTPData() {
 	payloadEnc := base64.RawURLEncoding.EncodeToString(payloadBytes)
 	token := fmt.Sprintf("%s.%s.", headerEnc, payloadEnc)
 
-	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, token, mock.Anything, mock.Anything).Return(nil).Once()
 
 	req := common.VerifyOTPDTO{SessionToken: token, OTPCode: "123456"}
 	res, err := suite.service.VerifyOTP(context.Background(), req)
@@ -530,7 +530,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_MissingOTPData() {
 func (suite *OTPServiceTestSuite) TestVerifyOTP_BadPayloadDecode() {
 	// craft token with invalid base64 payload part
 	token := "hdr.invalid@@@.sig" // #nosec G101
-	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, token, mock.Anything, mock.Anything).Return(nil).Once()
 
 	req := common.VerifyOTPDTO{SessionToken: token, OTPCode: "123456"}
 	res, err := suite.service.VerifyOTP(context.Background(), req)
@@ -563,7 +563,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_Mismatch() {
 	payloadEnc := base64.RawURLEncoding.EncodeToString(payloadBytes)
 	token := fmt.Sprintf("%s.%s.", headerEnc, payloadEnc)
 
-	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, token, mock.Anything, mock.Anything).Return(nil).Once()
 
 	req := common.VerifyOTPDTO{SessionToken: token, OTPCode: otpValue}
 	res, err := suite.service.VerifyOTP(context.Background(), req)
@@ -606,7 +606,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_UnmarshalError() {
 	payloadEnc := base64.RawURLEncoding.EncodeToString(payloadBytes)
 	token := fmt.Sprintf("%s.%s.", headerEnc, payloadEnc)
 
-	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, token, mock.Anything, mock.Anything).Return(nil).Once()
 
 	req := common.VerifyOTPDTO{SessionToken: token, OTPCode: "123456"}
 	res, err := suite.service.VerifyOTP(context.Background(), req)
@@ -694,9 +694,9 @@ func (suite *OTPServiceTestSuite) TestVerifyAndDecode_Success() {
 	payloadEnc := base64.RawURLEncoding.EncodeToString(payloadBytes)
 	token := fmt.Sprintf("%s.%s.", headerEnc, payloadEnc)
 
-	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, token, mock.Anything, mock.Anything).Return(nil).Once()
 
-	sessionData, svcErr := suite.service.verifyAndDecodeSessionToken(token, log.GetLogger())
+	sessionData, svcErr := suite.service.verifyAndDecodeSessionToken(context.Background(), token, log.GetLogger())
 	suite.Nil(svcErr)
 	suite.NotNil(sessionData)
 	suite.Equal("+15559876543", sessionData.Recipient)

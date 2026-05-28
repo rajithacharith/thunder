@@ -821,7 +821,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 				}
 			}
 
-			err := jwtSvc.VerifyJWT(token, expectedAud, expectedIss)
+			err := jwtSvc.VerifyJWT(context.Background(), token, expectedAud, expectedIss)
 
 			if tc.expectError {
 				assert.NotNil(t, err)
@@ -1443,7 +1443,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 			token := tc.setupFunc()
 			jwtSvc := tc.setupSvc()
 
-			err := jwtSvc.VerifyJWTSignature(token)
+			err := jwtSvc.VerifyJWTSignature(context.Background(), token)
 			if tc.expectError {
 				assert.NotNil(t, err)
 			} else {
@@ -2019,7 +2019,7 @@ func (suite *JWTServiceTestSuite) TestInitWithECDSAKeys() {
 			assert.NoError(t, err)
 			assert.Equal(t, string(tc.expectedAlg), header["alg"])
 
-			svcErr = service.VerifyJWTSignature(token)
+			svcErr = service.VerifyJWTSignature(context.Background(), token)
 			assert.Nil(t, svcErr)
 		})
 	}
@@ -2072,7 +2072,7 @@ func (suite *JWTServiceTestSuite) TestInitWithEd25519Key() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "EdDSA", header["alg"])
 
-	svcErr = service.VerifyJWTSignature(token)
+	svcErr = service.VerifyJWTSignature(context.Background(), token)
 	assert.Nil(suite.T(), svcErr)
 }
 
@@ -2417,7 +2417,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithLeeway() {
 			tc.setupConfig()
 			token, expectedAud, expectedIss := tc.setupFunc()
 
-			err := suite.jwtService.VerifyJWT(token, expectedAud, expectedIss)
+			err := suite.jwtService.VerifyJWT(context.Background(), token, expectedAud, expectedIss)
 
 			if tc.expectError {
 				assert.NotNil(t, err)
@@ -2459,7 +2459,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithZeroLeeway() {
 	expiredTime := time.Now().Add(-1 * time.Second).Unix()
 	token := suite.createBasicJWT(testAudience, testIssuer, expiredTime, time.Now().Add(-time.Hour).Unix())
 
-	svcErr := suite.jwtService.VerifyJWT(token, testAudience, testIssuer)
+	svcErr := suite.jwtService.VerifyJWT(context.Background(), token, testAudience, testIssuer)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), ErrorTokenExpired, *svcErr)
 }

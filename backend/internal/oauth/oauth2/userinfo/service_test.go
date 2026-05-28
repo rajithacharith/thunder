@@ -116,7 +116,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_EmptyToken() {
 // TestGetUserInfo_InvalidTokenSignature tests that invalid token signature returns an error
 func (s *UserInfoServiceTestSuite) TestGetUserInfo_InvalidTokenSignature() {
 	token := "invalid.token.signature"
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		nil, errors.New("invalid signature"))
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
@@ -154,7 +154,7 @@ func (s *UserInfoServiceTestSuite) createToken(claims map[string]interface{}) st
 func (s *UserInfoServiceTestSuite) TestGetUserInfo_InvalidTokenFormat() {
 	// nolint:gosec // This is a test token, not a real credential
 	invalidToken := "not.a.valid.jwt"
-	s.mockTokenValidator.On("ValidateAccessToken", invalidToken).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, invalidToken).Return(
 		nil, errors.New("invalid token format"))
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), invalidToken)
@@ -173,12 +173,31 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_NoScopes() {
 	}
 	token := s.createToken(claims)
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.NotNil(s.T(), svcErr)
 	assert.Equal(s.T(), "insufficient_scope", svcErr.Code)
+	assert.Nil(s.T(), response)
+	s.mockTokenValidator.AssertExpectations(s.T())
+}
+
+func (s *UserInfoServiceTestSuite) assertInsufficientScope(
+	claims map[string]interface{},
+	errorDescriptionContains string,
+) {
+	token := s.createToken(claims)
+
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
+		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
+
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
+	assert.NotNil(s.T(), svcErr)
+	assert.Equal(s.T(), "insufficient_scope", svcErr.Code)
+	if errorDescriptionContains != "" {
+		assert.Contains(s.T(), svcErr.ErrorDescription.DefaultValue, errorDescriptionContains)
+	}
 	assert.Nil(s.T(), response)
 	s.mockTokenValidator.AssertExpectations(s.T())
 }
@@ -191,16 +210,8 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_NoScopesEmptyScopeString() {
 		"sub":   "user123",
 		"scope": "",
 	}
-	token := s.createToken(claims)
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
-		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
-
-	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
-	assert.NotNil(s.T(), svcErr)
-	assert.Equal(s.T(), "insufficient_scope", svcErr.Code)
-	assert.Nil(s.T(), response)
-	s.mockTokenValidator.AssertExpectations(s.T())
+	s.assertInsufficientScope(claims, "")
 }
 
 // TestGetUserInfo_ErrorFetchingUserAttributes tests error when fetching user attributes fails
@@ -214,7 +225,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_ErrorFetchingUserAttributes()
 	}
 	token := s.createToken(claims)
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-err-123").Return(
 		nil, &serviceerror.InternalServerError)
@@ -244,7 +255,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_ErrorFetchingGroups() {
 			UserAttributes: []string{"name", constants.UserAttributeGroups},
 		},
 	}
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-groups-123").Return(
 		nil, &serviceerror.InternalServerError)
@@ -287,7 +298,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_StandardScopes() {
 		},
 	}
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-std-123").Return(
 		&attributecache.AttributeCache{ID: "cache-std-123", Attributes: userAttrs}, nil)
@@ -336,7 +347,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_WithGroups() {
 		},
 	}
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-grp-123").Return(
 		&attributecache.AttributeCache{ID: "cache-grp-123", Attributes: userAttrs}, nil)
@@ -392,7 +403,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_WithScopeClaimsMappin
 		},
 	}
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-scope-123").Return(
 		&attributecache.AttributeCache{ID: "cache-scope-123", Attributes: userAttrs}, nil)
@@ -428,7 +439,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_NoAppConfig() {
 		"email": "john@example.com",
 	}
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-noapp-123").Return(
 		&attributecache.AttributeCache{ID: "cache-noapp-123", Attributes: userAttrs}, nil)
@@ -460,7 +471,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_AppNotFound_ReturnsInvalidTok
 
 	userAttrs := map[string]interface{}{}
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-anf-123").Return(
 		&attributecache.AttributeCache{ID: "cache-anf-123", Attributes: userAttrs}, nil)
@@ -506,7 +517,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_GroupsNotInAllowedAtt
 		},
 	}
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-gnaa-123").Return(
 		&attributecache.AttributeCache{ID: "cache-gnaa-123", Attributes: userAttrs}, nil)
@@ -548,7 +559,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_EmptyUserAttributes()
 		},
 	}
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockInboundClient.On("GetOAuthClientByClientID", mock.Anything, "client123").Return(oauthApp, nil)
 
@@ -572,16 +583,8 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_ScopeAsNonString() {
 		"sub":   "user123",
 		"scope": 123, // Invalid type
 	}
-	token := s.createToken(claims)
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
-		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
-
-	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
-	assert.NotNil(s.T(), svcErr)
-	assert.Equal(s.T(), "insufficient_scope", svcErr.Code)
-	assert.Nil(s.T(), response)
-	s.mockTokenValidator.AssertExpectations(s.T())
+	s.assertInsufficientScope(claims, "")
 }
 
 // TestGetUserInfo_ScopeExistsButNotString tests when scope exists but is not a string returns insufficient_scope error
@@ -594,7 +597,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_ScopeExistsButNotString() {
 	}
 	token := s.createToken(claims)
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
@@ -620,7 +623,7 @@ func (s *UserInfoServiceTestSuite) testGetUserInfoInvalidClientID(clientIDValue 
 		"name": "John Doe",
 	}
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-inv-cid-123").Return(
 		&attributecache.AttributeCache{ID: "cache-inv-cid-123", Attributes: userAttrs}, nil)
@@ -663,7 +666,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithNilOAuthApp() {
 		"name": "John Doe",
 	}
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-nil-app-123").Return(
 		&attributecache.AttributeCache{ID: "cache-nil-app-123", Attributes: userAttrs}, nil)
@@ -698,7 +701,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithNilToken() {
 		Token: nil, // Token is nil
 	}
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-nil-tok-123").Return(
 		&attributecache.AttributeCache{ID: "cache-nil-tok-123", Attributes: userAttrs}, nil)
@@ -739,7 +742,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithNilIDToken() {
 		},
 	}
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-nil-idt-123").Return(
 		&attributecache.AttributeCache{ID: "cache-nil-idt-123", Attributes: userAttrs}, nil)
@@ -788,7 +791,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithEmptyGroups() {
 		},
 	}
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-eg-123").Return(
 		&attributecache.AttributeCache{ID: "cache-eg-123", Attributes: userAttrs}, nil)
@@ -820,7 +823,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_ClientCredentialsGrant_Reject
 	}
 	token := s.createToken(claims)
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "client123", Claims: claims}, nil)
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
@@ -862,7 +865,7 @@ func (s *UserInfoServiceTestSuite) testGetUserInfoAllowedGrantType(grantTypeValu
 		},
 	}
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-agt-123").Return(
 		&attributecache.AttributeCache{ID: "cache-agt-123", Attributes: userAttrs}, nil)
@@ -916,7 +919,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_MissingOpenIDScope_WithOtherS
 	}
 	token := s.createToken(claims)
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
@@ -935,16 +938,8 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_OpenIDScope_CaseSensitive() {
 		"sub":   "user123",
 		"scope": "OpenID profile", // Wrong case - should fail
 	}
-	token := s.createToken(claims)
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
-		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
-
-	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
-	assert.NotNil(s.T(), svcErr)
-	assert.Equal(s.T(), "insufficient_scope", svcErr.Code)
-	assert.Nil(s.T(), response)
-	s.mockTokenValidator.AssertExpectations(s.T())
+	s.assertInsufficientScope(claims, "")
 }
 
 // TestGetUserInfo_OnlyOpenIDScope_Success tests that only openid scope returns sub claim
@@ -958,7 +953,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_OnlyOpenIDScope_Success() {
 	}
 	token := s.createToken(claims)
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-oid-only-123").Return(
 		&attributecache.AttributeCache{ID: "cache-oid-only-123", Attributes: map[string]interface{}{}}, nil)
@@ -997,7 +992,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_OpenIDScope_InMiddleOfScopeSt
 		},
 	}
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-mid-123").Return(
 		&attributecache.AttributeCache{ID: "cache-mid-123", Attributes: userAttrs}, nil)
@@ -1037,7 +1032,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_OpenIDScope_AtEnd() {
 		},
 	}
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-end-123").Return(
 		&attributecache.AttributeCache{ID: "cache-end-123", Attributes: userAttrs}, nil)
@@ -1085,7 +1080,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_ResponseType() {
 	issuer := "test-issuer"
 
 	// JWT verification
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 
 	// Attribute cache fetch
@@ -1132,7 +1127,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_BearerScheme_DPoPBoundToken_R
 	}
 	token := s.createToken(claims)
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
@@ -1158,7 +1153,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfoForDPoP_NotBoundToken_Rejected
 	}
 	token := s.createToken(claims)
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 
 	response, svcErr := s.userInfoService.GetUserInfoForDPoP(
@@ -1185,7 +1180,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfoForDPoP_VerifierFails_Rejected
 	}
 	token := s.createToken(claims)
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 	verifier.EXPECT().Verify(mock.Anything, mock.MatchedBy(func(p dpop.VerifyParams) bool {
 		return p.Proof == "proof" && p.HTM == "GET" && p.AccessToken == token &&
@@ -1228,7 +1223,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_GenerateJWTFailure() {
 	}
 	issuer := "test-issuer"
 
-	s.mockTokenValidator.On("ValidateAccessToken", token).Return(
+	s.mockTokenValidator.On("ValidateAccessToken", mock.Anything, token).Return(
 		&tokenservice.AccessTokenClaims{Sub: "user123", Claims: claims}, nil)
 
 	s.mockAttributeCacheService.On("GetAttributeCache", mock.Anything, "cache-jws-fail-123").Return(

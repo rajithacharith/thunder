@@ -38,7 +38,7 @@ import (
 
 // JWKSServiceInterface defines the interface for JWKS service.
 type JWKSServiceInterface interface {
-	GetJWKS() (*JWKSResponse, *serviceerror.ServiceError)
+	GetJWKS(ctx context.Context) (*JWKSResponse, *serviceerror.ServiceError)
 }
 
 // jwksService implements the JWKSServiceInterface.
@@ -56,8 +56,8 @@ func newJWKSService(cryptoProvider kmprovider.RuntimeCryptoProvider) JWKSService
 }
 
 // GetJWKS retrieves the JSON Web Key Set (JWKS) from the runtime crypto provider.
-func (s *jwksService) GetJWKS() (*JWKSResponse, *serviceerror.ServiceError) {
-	publicKeys, err := s.cryptoProvider.GetPublicKeys(context.Background(), kmprovider.PublicKeyFilter{})
+func (s *jwksService) GetJWKS(ctx context.Context) (*JWKSResponse, *serviceerror.ServiceError) {
+	publicKeys, err := s.cryptoProvider.GetPublicKeys(ctx, kmprovider.PublicKeyFilter{})
 	if err != nil {
 		s.logger.Error("Failed to retrieve public keys", log.Error(err))
 		return nil, &serviceerror.InternalServerError
