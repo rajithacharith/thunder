@@ -34,7 +34,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/notification/common"
 	"github.com/thunder-id/thunderid/internal/system/cmodels"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/cryptolib/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/template"
@@ -397,7 +397,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_GenerateJWTError() {
 
 func (suite *OTPServiceTestSuite) TestVerifyOTP_Success() {
 	otpValue := "123456"
-	otpHash := hash.GenerateThumbprintFromString(otpValue)
+	otpHash := cryptolib.GenerateThumbprintFromString(otpValue)
 	expiry := time.Now().Add(1 * time.Minute).UnixMilli()
 
 	payloadMap := map[string]interface{}{
@@ -429,7 +429,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_Success() {
 
 func (suite *OTPServiceTestSuite) TestVerifyOTP_Expired() {
 	otpValue := "123456"
-	otpHash := hash.GenerateThumbprintFromString(otpValue)
+	otpHash := cryptolib.GenerateThumbprintFromString(otpValue)
 	expiry := time.Now().Add(-1 * time.Minute).UnixMilli() // already expired
 
 	payloadMap := map[string]interface{}{
@@ -543,7 +543,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_Mismatch() {
 	// prepare session data with a different OTP hash
 	otpValue := "123456"
 	wrongOTP := "000000"
-	otpHash := hash.GenerateThumbprintFromString(wrongOTP) // stored hash is for wrongOTP
+	otpHash := cryptolib.GenerateThumbprintFromString(wrongOTP) // stored hash is for wrongOTP
 	expiry := time.Now().Add(1 * time.Minute).UnixMilli()
 
 	payloadMap := map[string]interface{}{
@@ -674,7 +674,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_TemplateRenderFailure_ReturnsInter
 
 func (suite *OTPServiceTestSuite) TestVerifyAndDecode_Success() {
 	otpValue := "123456"
-	otpHash := hash.GenerateThumbprintFromString(otpValue)
+	otpHash := cryptolib.GenerateThumbprintFromString(otpValue)
 	expiry := time.Now().Add(1 * time.Minute).UnixMilli()
 
 	payloadMap := map[string]interface{}{

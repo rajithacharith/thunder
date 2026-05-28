@@ -30,7 +30,7 @@ import (
 	// Use crypto/sha1 only for JWKS x5t as required by spec for thumbprint.
 	"crypto/sha1" //nolint:gosec
 
-	"github.com/thunder-id/thunderid/internal/system/cryptolib/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -78,7 +78,7 @@ func (s *jwksService) GetJWKS(ctx context.Context) (*JWKSResponse, *serviceerror
 			x5c = []string{base64.StdEncoding.EncodeToString(keyInfo.CertificateDER)}
 			sha1Sum := sha1.Sum(keyInfo.CertificateDER) //nolint:gosec // x5t (SHA-1 thumbprint) is required by spec
 			x5t = encodeBase64URL(sha1Sum[:])
-			x5tS256 = hash.GenerateThumbprint(keyInfo.CertificateDER)
+			x5tS256 = cryptolib.GenerateThumbprint(keyInfo.CertificateDER)
 		}
 
 		switch pub := keyInfo.PublicKey.(type) {

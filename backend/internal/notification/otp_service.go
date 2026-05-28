@@ -29,7 +29,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/notification/common"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/cryptolib/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -111,7 +111,7 @@ func (s *otpService) SendOTP(
 		Recipient:  otpDTO.Recipient,
 		Channel:    otpDTO.Channel,
 		SenderID:   otpDTO.SenderID,
-		OTPValue:   hash.GenerateThumbprintFromString(otp.Value),
+		OTPValue:   cryptolib.GenerateThumbprintFromString(otp.Value),
 		ExpiryTime: otp.ExpiryTimeInMillis,
 	}
 
@@ -154,7 +154,7 @@ func (s *otpService) VerifyOTP(
 	}
 
 	// Verify OTP value by comparing hashes
-	providedOTPHash := hash.GenerateThumbprintFromString(otpDTO.OTPCode)
+	providedOTPHash := cryptolib.GenerateThumbprintFromString(otpDTO.OTPCode)
 	if providedOTPHash != sessionData.OTPValue {
 		logger.Debug("Invalid OTP provided")
 		return &common.VerifyOTPResultDTO{

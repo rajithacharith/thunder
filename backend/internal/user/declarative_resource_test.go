@@ -30,7 +30,7 @@ import (
 	entitypkg "github.com/thunder-id/thunderid/internal/entity"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
-	"github.com/thunder-id/thunderid/internal/system/cryptolib/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/tests/mocks/entitymock"
 )
@@ -51,7 +51,7 @@ func (suite *DeclarativeResourceTestSuite) SetupTest() {
 	err := config.InitializeServerRuntime("test", &config.Config{
 		Crypto: config.CryptoConfig{
 			PasswordHashing: config.PasswordHashingConfig{
-				Algorithm: string(hash.SHA256),
+				Algorithm: string(cryptolib.SHA256),
 				SHA256: config.SHA256Config{
 					SaltSize: 16,
 				},
@@ -115,8 +115,8 @@ func (suite *DeclarativeResourceTestSuite) TestParseCredentials_InvalidFormat() 
 }
 
 func (suite *DeclarativeResourceTestSuite) TestParseCredentialObject_HashesWhenNoStorageType() {
-	hashService, err := hash.Initialize(
-		hash.HashConfig{Algorithm: hash.PBKDF2, SaltSize: 16, Iterations: 1, KeySize: 32},
+	hashService, err := cryptolib.Initialize(
+		cryptolib.HashConfig{Algorithm: cryptolib.PBKDF2, SaltSize: 16, Iterations: 1, KeySize: 32},
 	)
 	suite.Require().NoError(err)
 	cred, err := parseCredentialObject(map[string]interface{}{
@@ -129,8 +129,8 @@ func (suite *DeclarativeResourceTestSuite) TestParseCredentialObject_HashesWhenN
 }
 
 func (suite *DeclarativeResourceTestSuite) TestParseCredentialObject_SystemManagedMarker() {
-	hashService, err := hash.Initialize(
-		hash.HashConfig{Algorithm: hash.PBKDF2, SaltSize: 16, Iterations: 1, KeySize: 32},
+	hashService, err := cryptolib.Initialize(
+		cryptolib.HashConfig{Algorithm: cryptolib.PBKDF2, SaltSize: 16, Iterations: 1, KeySize: 32},
 	)
 	suite.Require().NoError(err)
 	cred, err := parseCredentialObject(map[string]interface{}{
@@ -366,8 +366,8 @@ func (suite *DeclarativeResourceTestSuite) TestParseCredentials_YAMLMapInterface
 }
 
 func (suite *DeclarativeResourceTestSuite) TestParseCredentialObject_YAMLMapInterfaceParams() {
-	hashService, err := hash.Initialize(
-		hash.HashConfig{Algorithm: hash.PBKDF2, SaltSize: 16, Iterations: 1, KeySize: 32},
+	hashService, err := cryptolib.Initialize(
+		cryptolib.HashConfig{Algorithm: cryptolib.PBKDF2, SaltSize: 16, Iterations: 1, KeySize: 32},
 	)
 	suite.Require().NoError(err)
 	credMap := map[string]interface{}{

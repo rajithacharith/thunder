@@ -22,7 +22,7 @@ package entity
 import (
 	"encoding/json"
 
-	"github.com/thunder-id/thunderid/internal/system/cryptolib/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 )
 
 // EntityCategory represents the category of an entity (e.g., user, application, agent).
@@ -101,9 +101,9 @@ type AuthenticateResult struct {
 // StoredCredential represents a single credential entry stored in the entity's schema or
 // system credentials column.
 type StoredCredential struct {
-	StorageAlgo       hash.CredAlgorithm  `json:"storageAlgo"`
-	StorageAlgoParams hash.CredParameters `json:"storageAlgoParams"`
-	Value             string              `json:"value"`
+	StorageAlgo       cryptolib.CredAlgorithm  `json:"storageAlgo"`
+	StorageAlgoParams cryptolib.CredParameters `json:"storageAlgoParams"`
+	Value             string                   `json:"value"`
 }
 
 // DeclarativeLoaderConfig configures declarative resource loading for a specific entity category.
