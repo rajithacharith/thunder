@@ -33,13 +33,11 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
 	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
-	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/log"
-	"github.com/thunder-id/thunderid/internal/system/transaction"
 )
 
 const serviceLoggerComponentName = "UserInfoService"
@@ -58,9 +56,7 @@ type userInfoService struct {
 	jwksResolver      *jwksresolver.Resolver
 	tokenValidator    tokenservice.TokenValidatorInterface
 	inboundClient     inboundclient.InboundClientServiceInterface
-	ouService         ou.OrganizationUnitServiceInterface
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface
-	transactioner     transaction.Transactioner
 	dpopVerifier      dpop.VerifierInterface
 	logger            *log.Logger
 }
@@ -72,9 +68,7 @@ func newUserInfoService(
 	resolver *jwksresolver.Resolver,
 	tokenValidator tokenservice.TokenValidatorInterface,
 	inboundClient inboundclient.InboundClientServiceInterface,
-	ouService ou.OrganizationUnitServiceInterface,
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
-	transactioner transaction.Transactioner,
 	dpopVerifier dpop.VerifierInterface,
 ) userInfoServiceInterface {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, serviceLoggerComponentName))
@@ -84,9 +78,7 @@ func newUserInfoService(
 		jwksResolver:      resolver,
 		tokenValidator:    tokenValidator,
 		inboundClient:     inboundClient,
-		ouService:         ouService,
 		attributeCacheSvc: attributeCacheSvc,
-		transactioner:     transactioner,
 		dpopVerifier:      dpopVerifier,
 		logger:            logger,
 	}

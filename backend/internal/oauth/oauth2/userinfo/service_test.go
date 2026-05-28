@@ -47,7 +47,6 @@ import (
 	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
 	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/dpopmock"
 	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/tokenservicemock"
-	"github.com/thunder-id/thunderid/tests/mocks/oumock"
 )
 
 type UserInfoServiceTestSuite struct {
@@ -55,18 +54,9 @@ type UserInfoServiceTestSuite struct {
 	mockJWTService            *jwtmock.JWTServiceInterfaceMock
 	mockTokenValidator        *tokenservicemock.TokenValidatorInterfaceMock
 	mockInboundClient         *inboundclientmock.InboundClientServiceInterfaceMock
-	mockOUService             *oumock.OrganizationUnitServiceInterfaceMock
 	mockAttributeCacheService *attributecachemock.AttributeCacheServiceInterfaceMock
-	mockTransactioner         *MockTransactioner
 	userInfoService           userInfoServiceInterface
 	privateKey                *rsa.PrivateKey
-}
-
-// MockTransactioner is a simple implementation of Transactioner for testing.
-type MockTransactioner struct{}
-
-func (m *MockTransactioner) Transact(ctx context.Context, txFunc func(context.Context) error) error {
-	return txFunc(ctx)
 }
 
 func TestUserInfoServiceTestSuite(t *testing.T) {
@@ -77,13 +67,10 @@ func (s *UserInfoServiceTestSuite) SetupTest() {
 	s.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(s.T())
 	s.mockTokenValidator = tokenservicemock.NewTokenValidatorInterfaceMock(s.T())
 	s.mockInboundClient = inboundclientmock.NewInboundClientServiceInterfaceMock(s.T())
-	s.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(s.T())
 	s.mockAttributeCacheService = attributecachemock.NewAttributeCacheServiceInterfaceMock(s.T())
-	s.mockTransactioner = &MockTransactioner{}
 	s.userInfoService = newUserInfoService(
 		s.mockJWTService, nil, nil, s.mockTokenValidator,
-		s.mockInboundClient, s.mockOUService,
-		s.mockAttributeCacheService, s.mockTransactioner, nil)
+		s.mockInboundClient, s.mockAttributeCacheService, nil)
 
 	// Initialize server runtime for tests
 	config.ResetServerRuntime()
@@ -1149,8 +1136,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfoForDPoP_NotBoundToken_Rejected
 	verifier := dpopmock.NewVerifierInterfaceMock(s.T())
 	s.userInfoService = newUserInfoService(
 		s.mockJWTService, nil, nil, s.mockTokenValidator,
-		s.mockInboundClient, s.mockOUService,
-		s.mockAttributeCacheService, s.mockTransactioner, verifier)
+		s.mockInboundClient, s.mockAttributeCacheService, verifier)
 
 	claims := map[string]any{
 		"sub":   "user123",
@@ -1175,8 +1161,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfoForDPoP_VerifierFails_Rejected
 	verifier := dpopmock.NewVerifierInterfaceMock(s.T())
 	s.userInfoService = newUserInfoService(
 		s.mockJWTService, nil, nil, s.mockTokenValidator,
-		s.mockInboundClient, s.mockOUService,
-		s.mockAttributeCacheService, s.mockTransactioner, verifier)
+		s.mockInboundClient, s.mockAttributeCacheService, verifier)
 
 	claims := map[string]any{
 		"sub":   "user123",

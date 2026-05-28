@@ -58,6 +58,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/inboundclient"
 	"github.com/thunder-id/thunderid/internal/notification"
 	"github.com/thunder-id/thunderid/internal/oauth"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dcr"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
@@ -355,6 +356,12 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		entityProvider, resourceService, i18nService, idpService)
 	if err != nil {
 		logger.Fatal("Failed to initialize OAuth services", log.Error(err))
+	}
+
+	// Register OAuth2 DCR service.
+	err = dcr.Initialize(mux, applicationService, ouService, i18nService)
+	if err != nil {
+		logger.Fatal("Failed to initialize OAuth2 DCR service", log.Error(err))
 	}
 
 	// Register the health service.

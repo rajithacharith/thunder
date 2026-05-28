@@ -33,7 +33,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
 	"github.com/thunder-id/thunderid/internal/system/observability"
-	"github.com/thunder-id/thunderid/internal/system/transaction"
 )
 
 // Initialize initializes the token handler and registers its routes.
@@ -46,12 +45,11 @@ func Initialize(
 	scopeValidator scope.ScopeValidatorInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
-	transactioner transaction.Transactioner,
 	dpopVerifier dpop.VerifierInterface,
 ) TokenHandlerInterface {
 	tokenEndpoint := discoveryService.GetOAuth2AuthorizationServerMetadata(context.Background()).TokenEndpoint
 	dpopRequired := config.GetServerRuntime().Config.OAuth.DPoP.Required
-	tokenSvc := newTokenService(grantHandlerProvider, scopeValidator, observabilitySvc, transactioner,
+	tokenSvc := newTokenService(grantHandlerProvider, scopeValidator, observabilitySvc,
 		dpopVerifier, tokenEndpoint, dpopRequired)
 	tokenHandler := newTokenHandler(tokenSvc, observabilitySvc)
 	registerRoutes(mux, tokenHandler, inboundClient, authnProvider, jwtService, discoveryService)
