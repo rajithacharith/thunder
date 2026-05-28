@@ -16,10 +16,9 @@
  * under the License.
  */
 
-import React from 'react';
+import BrowserOnly from '@docusaurus/BrowserOnly';
 import {ApiReferenceReact, type AnyApiReferenceConfiguration} from '@scalar/api-reference-react';
 import '@scalar/api-reference-react/style.css';
-import BrowserOnly from '@docusaurus/BrowserOnly';
 import {Box, CircularProgress} from '@wso2/oxygen-ui';
 
 export type ApiReferenceProps = AnyApiReferenceConfiguration & {

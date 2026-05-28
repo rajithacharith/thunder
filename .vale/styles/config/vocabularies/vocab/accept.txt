@@ -162,3 +162,5 @@ Twilio
 [Uu]serdb
 [Cc]onsentdb
 [Mm]ultibyte
+[Ss]harding
+[Ff]ailover

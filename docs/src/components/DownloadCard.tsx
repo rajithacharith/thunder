@@ -92,7 +92,7 @@ export default function DownloadCard({
   showAllPlatforms = false,
   collapseOtherPlatforms = false,
   compact = false,
-}: DownloadCardProps): React.ReactElement {
+}: DownloadCardProps): ReactNode {
   const {withBaseUrl} = useBaseUrlUtils();
   const platform = usePlatform();
   const [assets, setAssets] = useState<DistributionAsset[] | null>(null);
@@ -128,7 +128,7 @@ export default function DownloadCard({
   );
 
   if (errored || (assets !== null && assets.length === 0)) {
-    return <>{fallback}</>;
+    return fallback;
   }
 
   if (!selected) {

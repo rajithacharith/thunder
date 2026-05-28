@@ -112,16 +112,16 @@ export default function HeroSection(): JSX.Element {
   const theme = useTheme();
   const isLight = !useIsDarkMode();
   const {withBaseUrl} = useBaseUrlUtils();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+
   const [activeTab, setActiveTabRaw] = useState('cli');
   const setActiveTab = setActiveTabRaw as (v: string) => void;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+
   const [copied, setCopiedRaw] = useState(false);
   const setCopied = setCopiedRaw as (v: boolean) => void;
   const platform = usePlatform();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+
   const [downloadAssetsRaw, setDownloadAssetsRaw] = useState([] as DownloadAsset[]);
-  const downloadAssets = downloadAssetsRaw as DownloadAsset[];
+  const downloadAssets = downloadAssetsRaw;
   const setDownloadAssets = setDownloadAssetsRaw as (v: DownloadAsset[]) => void;
   useEffect(() => {
     fetch(withBaseUrl('/data/releases.json'))
@@ -134,6 +134,7 @@ export default function HeroSection(): JSX.Element {
       .then((data) => {
         setDownloadAssets(parseDownloadAssets(data.latestRelease?.assets ?? []));
       })
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
       .catch(() => {});
   }, [withBaseUrl, setDownloadAssets]);
 
@@ -144,7 +145,7 @@ export default function HeroSection(): JSX.Element {
   const cmdRest = cmdSpaceIdx !== -1 ? activeCommand.slice(cmdSpaceIdx) : '';
 
   const handleCopy = (): void => {
-    navigator.clipboard.writeText(activeCommand).then(() => {
+    void navigator.clipboard.writeText(activeCommand).then(() => {
       setCopied(true);
       setTimeout(() => {
         setCopied(false);

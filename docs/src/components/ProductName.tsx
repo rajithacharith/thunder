@@ -17,11 +17,11 @@
  */
 
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
-import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
 import type {ReactNode} from 'react';
+import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
 
 export default function ProductName(): ReactNode {
   const {siteConfig} = useDocusaurusContext();
   const config = siteConfig.customFields?.product as DocusaurusProductConfig;
-  return <>{config.project.name}</>;
+  return config.project.name;
 }

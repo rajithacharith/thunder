@@ -18,8 +18,6 @@
  * under the License.
  */
 
-/* eslint-disable @thunderid/copyright-header, no-undef */
-
 /**
  * Generates Postman collections, environments, and globals from OpenAPI specifications.
  * Product name and slug are derived from docusaurus.product.config.ts to keep the

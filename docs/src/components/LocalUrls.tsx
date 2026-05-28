@@ -46,7 +46,7 @@ interface UrlComponentProps {
  */
 function renderUrl(baseUrl: string, {path = '', plain = false}: UrlComponentProps): ReactNode {
   const href = `${baseUrl}${path}`;
-  return plain ? <>{href}</> : <Link to={href}>{href}</Link>;
+  return plain ? href : <Link to={href}>{href}</Link>;
 }
 
 /**

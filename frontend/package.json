@@ -26,6 +26,7 @@
     "clean": "pnpm clean:node_modules",
     "clean:node_modules": "rimraf node_modules",
     "dev": "nx run-many --target=dev --projects=frontend/apps/*",
+    "test:packages": "nx run-many --target=test --projects=frontend/packages/*",
     "i18n:extract": "pnpm i18next-cli sync"
   },
   "devDependencies": {

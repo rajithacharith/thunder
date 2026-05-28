@@ -17,7 +17,6 @@
  */
 
 import {render, screen, fireEvent} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import ResourceLogoDialog from '../ResourceLogoDialog';
 
@@ -137,34 +136,34 @@ describe('ResourceLogoDialog', () => {
   });
 
   describe('User interaction — URL selection', () => {
-    it('should enable the Select button after entering a URL', async () => {
+    it('should enable the Select button after entering a URL', () => {
       render(<ResourceLogoDialog {...defaultProps} value="" />);
 
       const urlInput = screen.getByPlaceholderText(/https:\/\/example\.com\/logo\.png/i);
-      await userEvent.type(urlInput, 'https://example.com/icon.png');
+      fireEvent.change(urlInput, {target: {value: 'https://example.com/icon.png'}});
 
       expect(screen.getByRole('button', {name: /^select$/i})).not.toBeDisabled();
     });
 
-    it('should call onSelect with the raw URL when Select is clicked after entering a URL', async () => {
+    it('should call onSelect with the raw URL when Select is clicked after entering a URL', () => {
       const onSelect = vi.fn();
       render(<ResourceLogoDialog {...defaultProps} onSelect={onSelect} value="" />);
 
       const urlInput = screen.getByPlaceholderText(/https:\/\/example\.com\/logo\.png/i);
-      await userEvent.type(urlInput, 'https://example.com/icon.png');
+      fireEvent.change(urlInput, {target: {value: 'https://example.com/icon.png'}});
 
       fireEvent.click(screen.getByRole('button', {name: /^select$/i}));
 
       expect(onSelect).toHaveBeenCalledWith('https://example.com/icon.png');
     });
 
-    it('should call onClose after calling onSelect', async () => {
+    it('should call onClose after calling onSelect', () => {
       const onClose = vi.fn();
       const onSelect = vi.fn();
       render(<ResourceLogoDialog {...defaultProps} onClose={onClose} onSelect={onSelect} value="" />);
 
       const urlInput = screen.getByPlaceholderText(/https:\/\/example\.com\/logo\.png/i);
-      await userEvent.type(urlInput, 'https://example.com/icon.png');
+      fireEvent.change(urlInput, {target: {value: 'https://example.com/icon.png'}});
 
       fireEvent.click(screen.getByRole('button', {name: /^select$/i}));
 
@@ -184,12 +183,12 @@ describe('ResourceLogoDialog', () => {
   });
 
   describe('User interaction — URL clears pending emoji', () => {
-    it('should prefer URL over emoji when both could be set', async () => {
+    it('should prefer URL over emoji when both could be set', () => {
       const onSelect = vi.fn();
       render(<ResourceLogoDialog {...defaultProps} onSelect={onSelect} value="emoji:🎉" />);
 
       const urlInput = screen.getByPlaceholderText(/https:\/\/example\.com\/logo\.png/i);
-      await userEvent.type(urlInput, 'https://example.com/icon.png');
+      fireEvent.change(urlInput, {target: {value: 'https://example.com/icon.png'}});
 
       fireEvent.click(screen.getByRole('button', {name: /^select$/i}));
 
@@ -211,13 +210,13 @@ describe('ResourceLogoDialog', () => {
       expect(screen.getByRole('button', {name: /^select$/i})).not.toBeDisabled();
     });
 
-    it('should clear the URL input when an emoji is clicked after a URL is typed', async () => {
+    it('should clear the URL input when an emoji is clicked after a URL is typed', () => {
       const onSelect = vi.fn();
       render(<ResourceLogoDialog {...defaultProps} onSelect={onSelect} value="" />);
 
       // Type a URL first
       const urlInput = screen.getByPlaceholderText(/https:\/\/example\.com\/logo\.png/i);
-      await userEvent.type(urlInput, 'https://example.com/icon.png');
+      fireEvent.change(urlInput, {target: {value: 'https://example.com/icon.png'}});
 
       // Click an emoji tile to override the URL
       const emojiTiles = document.querySelectorAll('[title]');

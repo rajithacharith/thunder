@@ -17,17 +17,10 @@
  */
 
 import userEvent from '@testing-library/user-event';
-import {render, screen, fireEvent} from '@thunderid/test-utils';
-import {describe, expect, it, vi, beforeEach} from 'vitest';
+import {render, renderHook, screen, fireEvent} from '@thunderid/test-utils';
+import {useTranslation} from 'react-i18next';
+import {describe, expect, it, vi, beforeAll, beforeEach} from 'vitest';
 import TranslationsList from '@/components/TranslationsList';
-
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({t: (key: string) => key}),
-  };
-});
 
 const mockNavigate = vi.fn();
 vi.mock('react-router', async () => {
@@ -129,6 +122,12 @@ vi.mock('@/components/TranslationDeleteDialog', () => ({
 }));
 
 describe('TranslationsList', () => {
+  let t: (key: string) => string;
+
+  beforeAll(() => {
+    ({t} = renderHook(() => useTranslation()).result.current);
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -152,7 +151,7 @@ describe('TranslationsList', () => {
     const user = userEvent.setup();
     render(<TranslationsList />);
 
-    const editButtons = screen.getAllByRole('button', {name: /common:actions.edit/i});
+    const editButtons = screen.getAllByRole('button', {name: t('common:actions.edit')});
     await user.click(editButtons[0]);
 
     expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/\/translations\//));
@@ -162,7 +161,7 @@ describe('TranslationsList', () => {
     const user = userEvent.setup();
     render(<TranslationsList />);
 
-    const deleteButtons = screen.getAllByRole('button', {name: /common:actions.delete/i});
+    const deleteButtons = screen.getAllByRole('button', {name: t('common:actions.delete')});
     await user.click(deleteButtons[0]);
 
     expect(screen.getByTestId('delete-dialog')).toBeInTheDocument();
@@ -174,7 +173,7 @@ describe('TranslationsList', () => {
     render(<TranslationsList />);
 
     // Open dialog
-    const deleteButtons = screen.getAllByRole('button', {name: /common:actions.delete/i});
+    const deleteButtons = screen.getAllByRole('button', {name: t('common:actions.delete')});
     await user.click(deleteButtons[0]);
 
     expect(screen.getByTestId('delete-dialog')).toBeInTheDocument();

@@ -17,82 +17,33 @@
  */
 
 import Link from '@docusaurus/Link';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import React from 'react';
-
-interface JourneyStep {
-  label: string;
-  href: string;
-  docIds: string[];
-}
-
-export const GETTING_STARTED_STEPS: JourneyStep[] = [
-  {
-    label: 'Run ThunderID',
-    href: '/docs/next/guides/getting-started/get-thunderid',
-    docIds: ['guides/getting-started/get-thunderid'],
-  },
-  {
-    label: 'Register an app',
-    href: '/docs/next/guides/getting-started/register-an-application',
-    docIds: ['guides/getting-started/register-an-application'],
-  },
-  {
-    label: 'Build a flow',
-    href: '/docs/next/guides/getting-started/build-a-flow',
-    docIds: ['guides/getting-started/build-a-flow'],
-  },
-  {
-    label: 'Connect your app',
-    href: '/docs/next/guides/getting-started/connect-your-application',
-    docIds: [
-      'guides/getting-started/connect-your-application/index',
-      'guides/getting-started/connect-your-application/react',
-      'guides/getting-started/connect-your-application/vue',
-      'guides/getting-started/connect-your-application/browser',
-      'guides/getting-started/connect-your-application/express',
-      'guides/getting-started/connect-your-application/nuxt',
-      'guides/getting-started/connect-your-application/node',
-      'guides/getting-started/connect-your-application/nextjs',
-    ],
-  },
-];
-
-export function getGettingStartedStepIndex(docId?: string): number | null {
-  if (!docId) {
-    return null;
-  }
-
-  const stepIndex = GETTING_STARTED_STEPS.findIndex((step) => step.docIds.includes(docId));
-
-  return stepIndex >= 0 ? stepIndex + 1 : null;
-}
+import {createGettingStartedSteps} from './GettingStartedSteps';
+import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
 
 interface GettingStartedJourneyProps {
   current: number; // 1-based index
 }
 
 export default function GettingStartedJourney({current}: GettingStartedJourneyProps) {
+  const {siteConfig} = useDocusaurusContext();
+  const config = siteConfig.customFields?.product as DocusaurusProductConfig;
+  const steps = createGettingStartedSteps(config.project.name);
+
   return (
     <div className="gsj">
-      {GETTING_STARTED_STEPS.map((step, i) => {
+      {steps.map((step, i) => {
         const index = i + 1;
         const isDone = index < current;
         const isActive = index === current;
         const isNext = index === current + 1;
 
-        const circleClass = [
-          'gsj__circle',
-          isDone ? 'gsj__circle--done' : '',
-          isActive ? 'gsj__circle--active' : '',
-        ]
+        const circleClass = ['gsj__circle', isDone ? 'gsj__circle--done' : '', isActive ? 'gsj__circle--active' : '']
           .filter(Boolean)
           .join(' ');
 
-        const labelClass = [
-          'gsj__label',
-          isActive ? 'gsj__label--active' : '',
-          isDone ? 'gsj__label--done' : '',
-        ]
+        const labelClass = ['gsj__label', isActive ? 'gsj__label--active' : '', isDone ? 'gsj__label--done' : '']
           .filter(Boolean)
           .join(' ');
 
@@ -101,7 +52,13 @@ export default function GettingStartedJourney({current}: GettingStartedJourneyPr
             <div className={circleClass}>
               {isDone ? (
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path
+                    d="M2 6l3 3 5-5"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               ) : (
                 <span>{index}</span>
@@ -126,7 +83,7 @@ export default function GettingStartedJourney({current}: GettingStartedJourneyPr
                 {content}
               </Link>
             )}
-            {i < GETTING_STARTED_STEPS.length - 1 && (
+            {i < steps.length - 1 && (
               <div className={`gsj__connector ${isDone ? 'gsj__connector--done' : ''}`} aria-hidden />
             )}
           </React.Fragment>

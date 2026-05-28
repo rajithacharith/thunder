@@ -16,7 +16,6 @@
  * under the License.
  */
 
-import React from 'react';
 
 export default function CodexLogo({size = 14}: {size?: number}) {
   return (

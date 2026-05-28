@@ -21,7 +21,7 @@ import {useBaseUrlUtils} from '@docusaurus/useBaseUrl';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import ThemedImage from '@theme/ThemedImage';
 import {Box, Container, Typography} from '@wso2/oxygen-ui';
-import React, {JSX} from 'react';
+import {JSX} from 'react';
 import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
 
 interface FooterColumnProps {

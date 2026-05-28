@@ -51,6 +51,7 @@
     "@thunderid/react": "workspace:^",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
+    "@playwright/test": "catalog:",
     "@vitest/browser-playwright": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",

@@ -18,8 +18,6 @@
  * under the License.
  */
 
-/* eslint-disable @thunderid/copyright-header, import/no-extraneous-dependencies */
-
 import {readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync} from 'fs';
 import {join, dirname} from 'path';
 import {fileURLToPath} from 'url';
@@ -50,14 +48,6 @@ const versionPath = versionPathArgIndex !== -1 ? process.argv[versionPathArgInde
 const OUTPUT_FILE = join(STATIC_DIR, versionPath, 'combined.yaml');
 
 const GROUP_CONFIG_PATH = join(__dirname, '..', 'api-groups.config.yaml');
-
-/**
- * Converts a hyphenated filename stem to Title Case (e.g. "notification-sender" → "Notification Sender").
- * Used as a fallback group name for spec files not listed in fileGroupNames.
- */
-function toTitleCase(str) {
-  return str.replace(/-+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 function loadGroupConfig(configPath) {
   const config = parse(readFileSync(configPath, 'utf8'));
@@ -143,9 +133,7 @@ function mergeOpenAPISpecs() {
 
     // Merge paths
     if (spec.paths) {
-      const specSecurity = Object.prototype.hasOwnProperty.call(spec, 'security')
-        ? spec.security
-        : undefined;
+      const specSecurity = Object.prototype.hasOwnProperty.call(spec, 'security') ? spec.security : undefined;
 
       Object.entries(spec.paths).forEach(([path, pathItem]) => {
         let resolvedPathItem = pathItem;
@@ -246,10 +234,7 @@ function mergeOpenAPISpecs() {
 
   // Combine all groups then sort by groupOrder. Groups absent from groupOrder
   // are appended alphabetically after all ordered entries.
-  const allGroups = [
-    ...explicitSubGroups,
-    ...[...autoGroupMap.entries()].map(([name, tags]) => ({name, tags})),
-  ];
+  const allGroups = [...explicitSubGroups, ...[...autoGroupMap.entries()].map(([name, tags]) => ({name, tags}))];
 
   if (groupOrder.length > 0) {
     const orderIndex = new Map(groupOrder.map((name, i) => [name, i]));

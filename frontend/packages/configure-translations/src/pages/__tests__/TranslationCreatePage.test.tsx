@@ -17,19 +17,12 @@
  */
 
 import userEvent from '@testing-library/user-event';
-import {render, screen} from '@thunderid/test-utils';
-import {describe, expect, it, vi, beforeEach} from 'vitest';
+import {render, renderHook, screen} from '@thunderid/test-utils';
+import {useTranslation} from 'react-i18next';
+import {describe, expect, it, vi, beforeAll, beforeEach} from 'vitest';
 import type {TranslationCreateContextType} from '@/contexts/TranslationCreate/TranslationCreateContext';
 import {TranslationCreateFlowStep} from '@/models/translation-create-flow';
 import TranslationCreatePage from '@/pages/TranslationCreatePage';
-
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({t: (key: string) => key}),
-  };
-});
 
 const mockNavigate = vi.fn();
 vi.mock('react-router', async () => {
@@ -133,6 +126,12 @@ vi.mock('@/contexts/TranslationCreate/useTranslationCreate', () => ({
 }));
 
 describe('TranslationCreatePage', () => {
+  let t: (key: string) => string;
+
+  beforeAll(() => {
+    ({t} = renderHook(() => useTranslation()).result.current);
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseTranslationCreate.mockReturnValue({...baseContext});
@@ -160,13 +159,13 @@ describe('TranslationCreatePage', () => {
     it('does not render the Back button on the first step', () => {
       render(<TranslationCreatePage />);
 
-      expect(screen.queryByText('common:actions.back')).not.toBeInTheDocument();
+      expect(screen.queryByText(t('common:actions.back'))).not.toBeInTheDocument();
     });
 
     it('renders the Continue button on non-final steps', () => {
       render(<TranslationCreatePage />);
 
-      expect(screen.getByText('common:actions.continue')).toBeInTheDocument();
+      expect(screen.getByText(t('common:actions.continue'))).toBeInTheDocument();
     });
 
     it('renders the Create button on the final step', () => {
@@ -231,7 +230,7 @@ describe('TranslationCreatePage', () => {
     it('disables Continue when the current step is not ready', () => {
       render(<TranslationCreatePage />);
 
-      expect(screen.getByText('common:actions.continue').closest('button')).toBeDisabled();
+      expect(screen.getByText(t('common:actions.continue')).closest('button')).toBeDisabled();
     });
 
     it('enables Continue after the step reports ready', async () => {
@@ -240,7 +239,7 @@ describe('TranslationCreatePage', () => {
 
       await user.click(screen.getByText('ready'));
 
-      expect(screen.getByText('common:actions.continue').closest('button')).not.toBeDisabled();
+      expect(screen.getByText(t('common:actions.continue')).closest('button')).not.toBeDisabled();
     });
   });
 
@@ -256,7 +255,7 @@ describe('TranslationCreatePage', () => {
 
       // Mark step ready then advance
       await user.click(screen.getByText('ready'));
-      await user.click(screen.getByText('common:actions.continue'));
+      await user.click(screen.getByText(t('common:actions.continue')));
 
       expect(setCurrentStep).toHaveBeenCalledWith(TranslationCreateFlowStep.LANGUAGE);
     });
@@ -272,7 +271,7 @@ describe('TranslationCreatePage', () => {
       const user = userEvent.setup();
       render(<TranslationCreatePage />);
 
-      await user.click(screen.getByText('common:actions.back'));
+      await user.click(screen.getByText(t('common:actions.back')));
 
       expect(setCurrentStep).toHaveBeenCalledWith(TranslationCreateFlowStep.COUNTRY);
     });
@@ -298,7 +297,7 @@ describe('TranslationCreatePage', () => {
 
       render(<TranslationCreatePage />);
 
-      expect(screen.getByText('common:actions.continue').closest('button')).toBeDisabled();
+      expect(screen.getByText(t('common:actions.continue')).closest('button')).toBeDisabled();
     });
 
     it('disables the close button while isCreating is true', () => {
@@ -331,7 +330,7 @@ describe('TranslationCreatePage', () => {
 
       // Mark step ready then advance
       await user.click(screen.getByText('ready'));
-      await user.click(screen.getByText('common:actions.continue'));
+      await user.click(screen.getByText(t('common:actions.continue')));
 
       expect(setLocaleCodeOverride).toHaveBeenCalledWith('fr-FR');
       expect(setCurrentStep).toHaveBeenCalledWith(TranslationCreateFlowStep.LOCALE_CODE);

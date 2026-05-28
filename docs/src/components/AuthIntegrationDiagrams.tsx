@@ -16,7 +16,6 @@
  * under the License.
  */
 
-import React from 'react';
 
 /* ── Types ──────────────────────────────────────────────────────────────── */
 
@@ -59,7 +58,7 @@ interface SequenceDiagramProps {
   ariaLabel: string;
 }
 
-function SequenceDiagram({ actors, gaps, rows, ariaLabel }: SequenceDiagramProps) {
+function SequenceDiagram({ actors, gaps = undefined, rows, ariaLabel }: SequenceDiagramProps) {
   const actorCount = actors.length;
   const defaultGap = actorCount <= 2 ? 400 : actorCount === 3 ? 260 : 210;
   const firstActorX = ACTOR_PAD + ACTOR_W / 2;
@@ -108,7 +107,7 @@ function SequenceDiagram({ actors, gaps, rows, ariaLabel }: SequenceDiagramProps
         {actors.map((name, i) => {
           const cx = actorXPositions[i];
           return (
-            <g key={`actor-${i}`}>
+            <g key={name}>
               <rect x={cx - ACTOR_W / 2} y={ACTOR_Y} width={ACTOR_W} height={ACTOR_H} rx="6" className="seq-actor" />
               <text x={cx} y={ACTOR_Y + ACTOR_H / 2} textAnchor="middle" dominantBaseline="central" className="seq-actor-label">
                 {name}
@@ -130,7 +129,7 @@ function SequenceDiagram({ actors, gaps, rows, ariaLabel }: SequenceDiagramProps
             const noteW = Math.max(320, noteRight - noteLeft - 40);
 
             return (
-              <g key={i}>
+              <g key={row.note}>
                 <rect x={noteMid - noteW / 2} y={rowY - 14} width={noteW} height="24" rx="4" className="seq-note-bg" />
                 <text x={noteMid} y={rowY} textAnchor="middle" dominantBaseline="central" className="seq-note">
                   {row.note}
@@ -154,7 +153,7 @@ function SequenceDiagram({ actors, gaps, rows, ariaLabel }: SequenceDiagramProps
           const blockTopY = rowY - blockH - 4;
 
           return (
-            <g key={i}>
+            <g key={`${row.from}-${row.to}-${String(row.label)}`}>
               <line x1={x1} y1={rowY} x2={x2} y2={rowY} className="seq-message" markerEnd="url(#seq-arrow)" />
               {lines.length > 0 && lines[0] && (
                 <text x={midX} y={blockTopY + LABEL_LINE_H * 0.75} textAnchor="middle" className="seq-message-label">

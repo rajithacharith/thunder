@@ -2033,13 +2033,13 @@ func (suite *ExternalIDPValidatorTestSuite) SetupTest() {
 	}
 }
 
-// buildExternalIDPDTO builds a minimal idp.IDPDTO for the standard test external IDP.
-func buildExternalIDPDTO() *idp.IDPDTO {
+// buildExternalIDPDTOs builds a minimal []idp.IDPDTO for the standard test external IDP.
+func buildExternalIDPDTOs() []idp.IDPDTO {
 	propTokenExchange, _ := cmodels.NewProperty(idp.PropTokenExchangeEnabled, "true", false)
 	propJWKS, _ := cmodels.NewProperty(idp.PropJwksEndpoint, testExternalJWKS, false)
 	propIssuer, _ := cmodels.NewProperty(idp.PropIssuer, testExternalIssuer, false)
-	return &idp.IDPDTO{
-		Properties: []cmodels.Property{*propTokenExchange, *propJWKS, *propIssuer},
+	return []idp.IDPDTO{
+		{Properties: []cmodels.Property{*propTokenExchange, *propJWKS, *propIssuer}},
 	}
 }
 
@@ -2058,15 +2058,15 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 	claims := map[string]interface{}{
 		"sub": "ext-user-123",
 		"iss": testExternalIssuer,
-		"aud": "https://example.com", // audience is this server's own issuer
+		"aud": "https://example.com",
 		"exp": float64(now + 3600),
 		"nbf": float64(now - 60),
 	}
 	token := suite.createExternalJWT(claims)
-	idpDTO := buildExternalIDPDTO()
+	idpDTOs := buildExternalIDPDTOs()
 
-	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
-		Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
+		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
 	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
@@ -2084,15 +2084,15 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 	claims := map[string]interface{}{
 		"sub": "ext-user-123",
 		"iss": testExternalIssuer,
-		"aud": []interface{}{"https://example.com", "other-audience"}, // array including server issuer
+		"aud": []interface{}{"https://example.com", "other-audience"},
 		"exp": float64(now + 3600),
 		"nbf": float64(now - 60),
 	}
 	token := suite.createExternalJWT(claims)
-	idpDTO := buildExternalIDPDTO()
+	idpDTOs := buildExternalIDPDTOs()
 
-	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
-		Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
+		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
 	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
@@ -2109,15 +2109,15 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 	claims := map[string]interface{}{
 		"sub": "ext-user-123",
 		"iss": testExternalIssuer,
-		"aud": "some-client-id", // audience is a client_id, not the server issuer
+		"aud": "some-client-id",
 		"exp": float64(now + 3600),
 		"nbf": float64(now - 60),
 	}
 	token := suite.createExternalJWT(claims)
-	idpDTO := buildExternalIDPDTO()
+	idpDTOs := buildExternalIDPDTOs()
 
-	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
-		Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
+		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
 	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
@@ -2134,14 +2134,13 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 	claims := map[string]interface{}{
 		"sub": "ext-user-123",
 		"iss": testExternalIssuer,
-		// no aud claim
 		"exp": float64(now + 3600),
 	}
 	token := suite.createExternalJWT(claims)
-	idpDTO := buildExternalIDPDTO()
+	idpDTOs := buildExternalIDPDTOs()
 
-	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
-		Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
+		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
 	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
@@ -2162,10 +2161,10 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 		"exp": float64(now + 3600),
 	}
 	token := suite.createExternalJWT(claims)
-	idpDTO := buildExternalIDPDTO()
+	idpDTOs := buildExternalIDPDTOs()
 
-	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
-		Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
+		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
 	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).
 		Return(&serviceerror.ServiceError{
 			Type:  serviceerror.ServerErrorType,
@@ -2198,12 +2197,12 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 	propTokenExchange, _ := cmodels.NewProperty(idp.PropTokenExchangeEnabled, "false", false)
 	propJWKS, _ := cmodels.NewProperty(idp.PropJwksEndpoint, testExternalJWKS, false)
 	propIssuer, _ := cmodels.NewProperty(idp.PropIssuer, testExternalIssuer, false)
-	idpDTO := &idp.IDPDTO{
-		Properties: []cmodels.Property{*propTokenExchange, *propJWKS, *propIssuer},
+	idpDTOs := []idp.IDPDTO{
+		{Properties: []cmodels.Property{*propTokenExchange, *propJWKS, *propIssuer}},
 	}
 
-	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
-		Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
+		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -2225,12 +2224,12 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 
 	propTokenExchange, _ := cmodels.NewProperty(idp.PropTokenExchangeEnabled, "true", false)
 	propIssuer, _ := cmodels.NewProperty(idp.PropIssuer, testExternalIssuer, false)
-	idpDTO := &idp.IDPDTO{
-		Properties: []cmodels.Property{*propTokenExchange, *propIssuer},
+	idpDTOs := []idp.IDPDTO{
+		{Properties: []cmodels.Property{*propTokenExchange, *propIssuer}},
 	}
 
-	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
-		Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
+		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -2252,7 +2251,8 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 	}
 	token := suite.createExternalJWT(claims)
 
-	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), unknownIssuer).
+	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
+		idp.PropIssuer, unknownIssuer).
 		Return(nil, &serviceerror.ServiceError{
 			Type:  serviceerror.ClientErrorType,
 			Code:  "IDP_NOT_FOUND",

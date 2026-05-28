@@ -20,25 +20,31 @@ import {usePluginData} from '@docusaurus/useGlobalData';
 import OriginalDocSidebarItemLink from '@theme-original/DocSidebarItem/Link';
 import React from 'react';
 
-type OriginalProps = React.ComponentProps<typeof OriginalDocSidebarItemLink>;
-
 interface PersonaPluginData {
   personaMap: Record<string, string>;
 }
 
-export default function DocSidebarItemLink(props: OriginalProps): React.ReactElement {
+interface SidebarItem {
+  docId?: string;
+  className?: string;
+  [key: string]: unknown;
+}
+
+type OriginalProps = Omit<React.ComponentProps<typeof OriginalDocSidebarItemLink>, 'item'> & {
+  item: SidebarItem;
+};
+
+export default function DocSidebarItemLink({item, ...rest}: OriginalProps): React.ReactElement {
   const {personaMap} = usePluginData('product-persona-plugin') as PersonaPluginData;
-  const docId = (props.item as {docId?: string}).docId;
-  const persona = docId ? personaMap[docId] : undefined;
+  const persona = item.docId ? personaMap[item.docId] : undefined;
 
   if (persona) {
-    const existingClass = (props.item as {className?: string}).className ?? '';
-    const enrichedItem = {
-      ...props.item,
-      className: `${existingClass} sidebar-persona-${persona}`.trim(),
+    const enrichedItem: SidebarItem = {
+      ...item,
+      className: `${item.className ?? ''} sidebar-persona-${persona}`.trim(),
     };
-    return <OriginalDocSidebarItemLink {...props} item={enrichedItem as OriginalProps['item']} />;
+    return <OriginalDocSidebarItemLink {...rest} item={enrichedItem} />;
   }
 
-  return <OriginalDocSidebarItemLink {...props} />;
+  return <OriginalDocSidebarItemLink {...rest} item={item} />;
 }

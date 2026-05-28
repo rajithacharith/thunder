@@ -140,9 +140,7 @@ function buildTagGroups(spec: Record<string, unknown>): TagGroup[] {
       // Only include parameters that have a recognised 'in' location.
       // Parameters without a valid location would otherwise render as
       // an "UNDEFINED PARAMETERS" section.
-      const parameters = ((rawOp.parameters as Param[]) ?? []).filter(
-        p => p?.in && VALID_PARAM_LOCATIONS.has(p.in),
-      );
+      const parameters = ((rawOp.parameters as Param[]) ?? []).filter((p) => p?.in && VALID_PARAM_LOCATIONS.has(p.in));
 
       const op: FlatOp = {
         description: rawOp.description as string | undefined,
@@ -166,22 +164,22 @@ function buildTagGroups(spec: Record<string, unknown>): TagGroup[] {
   // Prefer x-tagGroups when present — this mirrors the desktop sidebar grouping
   // (e.g. "Identities" containing Users, Groups, OUs) rather than showing every
   // raw tag as a separate section.
-  const xTagGroups = spec['x-tagGroups'] as Array<{name: string; tags: string[]}> | undefined;
+  const xTagGroups = spec['x-tagGroups'] as {name: string; tags: string[]}[] | undefined;
   if (xTagGroups?.length) {
     return xTagGroups
-      .map(group => ({
+      .map((group) => ({
         description: '',
         name: group.name,
-        ops: group.tags.flatMap(tag => tagOpMap.get(tag) ?? []),
+        ops: group.tags.flatMap((tag) => tagOpMap.get(tag) ?? []),
       }))
-      .filter(g => g.ops.length > 0);
+      .filter((g) => g.ops.length > 0);
   }
 
   // Fallback for specs that don't carry x-tagGroups: group by individual tags.
-  const specTagDefs = (spec.tags as Array<{name: string; description?: string}>) ?? [];
+  const specTagDefs = (spec.tags as {name: string; description?: string}[]) ?? [];
   return specTagDefs
-    .map(t => ({description: t.description ?? '', name: t.name, ops: tagOpMap.get(t.name) ?? []}))
-    .filter(g => g.ops.length > 0);
+    .map((t) => ({description: t.description ?? '', name: t.name, ops: tagOpMap.get(t.name) ?? []}))
+    .filter((g) => g.ops.length > 0);
 }
 
 function buildModels(spec: Record<string, unknown>): ModelSchema[] {
@@ -302,7 +300,7 @@ function ListView({
           }}
           type="search"
           value={search}
-          onChange={e => onSearch(e.target.value)}
+          onChange={(e) => onSearch(e.target.value)}
         />
       </div>
 
@@ -316,7 +314,7 @@ function ListView({
           overscrollBehavior: 'contain',
         }}
       >
-        {filteredGroups.map(group => {
+        {filteredGroups.map((group) => {
           const isExpanded = expandedTags.has(group.name);
           return (
             <div key={group.name}>
@@ -348,9 +346,7 @@ function ListView({
                 >
                   ▶
                 </span>
-                <span style={{flex: 1, fontSize: '0.92rem', fontWeight: 600}}>
-                  {group.name}
-                </span>
+                <span style={{flex: 1, fontSize: '0.92rem', fontWeight: 600}}>{group.name}</span>
                 <span
                   style={{
                     fontFamily: 'var(--ifm-font-family-monospace, monospace)',
@@ -363,7 +359,7 @@ function ListView({
               </button>
 
               {isExpanded &&
-                group.ops.map(op => {
+                group.ops.map((op) => {
                   const isActive = selectedOpId === op.id;
                   return (
                     <button
@@ -375,9 +371,7 @@ function ListView({
                           : 'transparent',
                         border: 'none',
                         borderBottom: '1px solid var(--ifm-color-emphasis-100)',
-                        borderLeft: isActive
-                          ? '3px solid var(--ifm-color-primary)'
-                          : '3px solid transparent',
+                        borderLeft: isActive ? '3px solid var(--ifm-color-primary)' : '3px solid transparent',
                         color: 'var(--ifm-font-color-base)',
                         cursor: 'pointer',
                         display: 'flex',
@@ -453,7 +447,7 @@ function ListView({
             </button>
 
             {expandedModels &&
-              filteredModels.map(model => (
+              filteredModels.map((model) => (
                 <button
                   key={model.name}
                   style={{
@@ -557,10 +551,7 @@ function DetailView({op, tagName, onBack}: DetailViewProps) {
     return Object.entries(groups);
   }, [op.parameters]);
 
-  const responses = useMemo(
-    () => Object.entries(op.responses ?? {}),
-    [op.responses],
-  );
+  const responses = useMemo(() => Object.entries(op.responses ?? {}), [op.responses]);
 
   const contentTypes = useMemo(
     () => (op.requestBody?.content ? Object.keys(op.requestBody.content) : []),
@@ -614,19 +605,13 @@ function DetailView({op, tagName, onBack}: DetailViewProps) {
           }}
         >
           <MethodBadge method={op.method} />
-          <code style={{fontSize: '0.85rem', opacity: 0.85, wordBreak: 'break-all'}}>
-            {op.path}
-          </code>
+          <code style={{fontSize: '0.85rem', opacity: 0.85, wordBreak: 'break-all'}}>{op.path}</code>
         </div>
 
-        <h2 style={{fontSize: '1.05rem', fontWeight: 700, margin: '0 0 10px'}}>
-          {op.summary}
-        </h2>
+        <h2 style={{fontSize: '1.05rem', fontWeight: 700, margin: '0 0 10px'}}>{op.summary}</h2>
 
         {op.description && (
-          <p style={{fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 20, opacity: 0.72}}>
-            {op.description}
-          </p>
+          <p style={{fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 20, opacity: 0.72}}>{op.description}</p>
         )}
 
         {/* Parameters */}
@@ -686,9 +671,7 @@ function DetailView({op, tagName, onBack}: DetailViewProps) {
                     )}
                   </div>
                   {p.description && (
-                    <p style={{fontSize: '0.82rem', lineHeight: 1.4, margin: 0, opacity: 0.62}}>
-                      {p.description}
-                    </p>
+                    <p style={{fontSize: '0.82rem', lineHeight: 1.4, margin: 0, opacity: 0.62}}>{p.description}</p>
                   )}
                   {p.schema?.enum && (
                     <p
@@ -711,9 +694,7 @@ function DetailView({op, tagName, onBack}: DetailViewProps) {
         {/* Request body */}
         {op.requestBody && (
           <div style={{marginBottom: 20}}>
-            <SectionLabel>
-              request body{op.requestBody.required ? ' (required)' : ' (optional)'}
-            </SectionLabel>
+            <SectionLabel>request body{op.requestBody.required ? ' (required)' : ' (optional)'}</SectionLabel>
             <div
               style={{
                 border: '1px solid var(--ifm-color-emphasis-200)',
@@ -783,9 +764,7 @@ function DetailView({op, tagName, onBack}: DetailViewProps) {
                   >
                     {code}
                   </span>
-                  <span style={{fontSize: '0.85rem', lineHeight: 1.4, opacity: 0.72}}>
-                    {resp.description ?? '—'}
-                  </span>
+                  <span style={{fontSize: '0.85rem', lineHeight: 1.4, opacity: 0.72}}>{resp.description ?? '—'}</span>
                 </div>
               ))}
             </div>
@@ -800,10 +779,10 @@ function DetailView({op, tagName, onBack}: DetailViewProps) {
 
 function ModelDetailView({model, onBack}: {model: ModelSchema; onBack: () => void}) {
   const properties = useMemo(() => {
-    const props: Array<{name: string; schema: PropertySchema; required: boolean}> = [];
+    const propsList: {name: string; schema: PropertySchema; required: boolean}[] = [];
     if (model.properties) {
       for (const [name, schema] of Object.entries(model.properties)) {
-        props.push({name, required: model.required?.includes(name) ?? false, schema});
+        propsList.push({name, required: model.required?.includes(name) ?? false, schema});
       }
     }
     // Collect additional properties contributed by allOf members.
@@ -811,14 +790,14 @@ function ModelDetailView({model, onBack}: {model: ModelSchema; onBack: () => voi
       for (const sub of model.allOf) {
         if (sub.properties) {
           for (const [name, schema] of Object.entries(sub.properties)) {
-            if (!props.find(p => p.name === name)) {
-              props.push({name, required: false, schema: schema as PropertySchema});
+            if (!propsList.find((p) => p.name === name)) {
+              propsList.push({name, required: false, schema: schema});
             }
           }
         }
       }
     }
-    return props;
+    return propsList;
   }, [model]);
 
   return (
@@ -876,9 +855,7 @@ function ModelDetailView({model, onBack}: {model: ModelSchema; onBack: () => voi
         <h2 style={{fontSize: '1.05rem', fontWeight: 700, margin: '0 0 10px'}}>{model.name}</h2>
 
         {model.description && (
-          <p style={{fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 20, opacity: 0.72}}>
-            {model.description}
-          </p>
+          <p style={{fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 20, opacity: 0.72}}>{model.description}</p>
         )}
 
         {properties.length > 0 && (
@@ -956,11 +933,11 @@ function ModelDetailView({model, onBack}: {model: ModelSchema; onBack: () => voi
           </div>
         )}
 
-        {(model.oneOf || model.allOf) && properties.length === 0 && (
+        {(model.oneOf != null || model.allOf != null) && properties.length === 0 && (
           <div style={{marginBottom: 20}}>
             <SectionLabel>{model.oneOf ? 'one of' : 'composed of'}</SectionLabel>
             <p style={{fontSize: '0.82rem', margin: 0, opacity: 0.6}}>
-              {(model.oneOf ?? model.allOf ?? []).map(s => resolveTypeLabel(s)).join(' | ')}
+              {(model.oneOf ?? model.allOf ?? []).map((s) => resolveTypeLabel(s)).join(' | ')}
             </p>
           </div>
         )}
@@ -980,8 +957,10 @@ export interface MobileApiReferenceProps {
 export default function MobileApiReference({specUrl, collectionUrl, downloadFileName}: MobileApiReferenceProps) {
   const [tagGroups, setTagGroups] = useState<TagGroup[]>([]);
   const [models, setModels] = useState<ModelSchema[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [fetchResult, setFetchResult] = useState<{specUrl: string; error: string | null} | null>(null);
+
+  const loading = fetchResult?.specUrl !== specUrl;
+  const loadError = fetchResult?.specUrl === specUrl ? fetchResult.error : null;
 
   // Measure the navbar's actual bottom edge so our fixed overlay starts exactly
   // below it. --docusaurus-announcement-bar-height resolves to 'auto' when no
@@ -1008,15 +987,13 @@ export default function MobileApiReference({specUrl, collectionUrl, downloadFile
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setLoadError(null);
 
     fetch(specUrl)
-      .then(r => {
+      .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.text();
       })
-      .then(text => {
+      .then((text) => {
         if (cancelled) return;
         const spec = parse(text) as Record<string, unknown>;
         const groups = buildTagGroups(spec);
@@ -1027,12 +1004,11 @@ export default function MobileApiReference({specUrl, collectionUrl, downloadFile
           setSelectedOp(groups[0].ops[0]);
           setExpandedTags(new Set([groups[0].name]));
         }
-        setLoading(false);
+        setFetchResult({error: null, specUrl});
       })
-      .catch(err => {
+      .catch((err: unknown) => {
         if (!cancelled) {
-          setLoadError(String(err));
-          setLoading(false);
+          setFetchResult({error: String(err), specUrl});
         }
       });
 
@@ -1046,32 +1022,36 @@ export default function MobileApiReference({specUrl, collectionUrl, downloadFile
   const filteredGroups = useMemo<TagGroup[]>(() => {
     if (!q) return tagGroups;
     return tagGroups
-      .map(g => ({
+      .map((g) => ({
         ...g,
         ops: g.ops.filter(
-          op =>
+          (op) =>
             op.summary.toLowerCase().includes(q) ||
             op.path.toLowerCase().includes(q) ||
             g.name.toLowerCase().includes(q),
         ),
       }))
-      .filter(g => g.ops.length > 0);
+      .filter((g) => g.ops.length > 0);
   }, [tagGroups, q]);
 
   const filteredModels = useMemo<ModelSchema[]>(() => {
     if (!q) return models;
-    return models.filter(m => m.name.toLowerCase().includes(q) || 'models'.includes(q));
+    return models.filter((m) => m.name.toLowerCase().includes(q) || 'models'.includes(q));
   }, [models, q]);
 
   const toggleTag = useCallback((name: string) => {
-    setExpandedTags(prev => {
+    setExpandedTags((prev) => {
       const next = new Set(prev);
-      next.has(name) ? next.delete(name) : next.add(name);
+      if (next.has(name)) {
+        next.delete(name);
+      } else {
+        next.add(name);
+      }
       return next;
     });
   }, []);
 
-  const toggleModels = useCallback(() => setExpandedModels(prev => !prev), []);
+  const toggleModels = useCallback(() => setExpandedModels((prev) => !prev), []);
 
   const handleSelectOp = useCallback((op: FlatOp) => {
     setSelectedModel(null);
@@ -1090,7 +1070,7 @@ export default function MobileApiReference({specUrl, collectionUrl, downloadFile
 
   const selectedTagName = useMemo(() => {
     if (!selectedOp) return '';
-    return tagGroups.find(g => g.ops.some(o => o.id === selectedOp.id))?.name ?? '';
+    return tagGroups.find((g) => g.ops.some((o) => o.id === selectedOp.id))?.name ?? '';
   }, [selectedOp, tagGroups]);
 
   // Rendered via a portal into document.body so that Docusaurus's mobile sidebar
@@ -1128,10 +1108,7 @@ export default function MobileApiReference({specUrl, collectionUrl, downloadFile
 
   if (loadError) {
     return (
-      <div
-        className="apis-page"
-        style={{...rootStyle, color: '#f93e3e', fontSize: '0.88rem', padding: 20}}
-      >
+      <div className="apis-page" style={{...rootStyle, color: '#f93e3e', fontSize: '0.88rem', padding: 20}}>
         Failed to load API reference: {loadError}
       </div>
     );

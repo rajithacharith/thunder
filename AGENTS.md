@@ -34,7 +34,7 @@ Clone the SDK repository only if you are developing or debugging the SDK itself,
 - Reference the related issue or pull request when applicable (e.g., `Refs #123` or `Fixes #123`).
 
 ### One Commit Per Pull Request
-- PRs are squash-merged, so the final commit history stays clean automatically.
+- Each PR must have a single commit. Only add a second commit when strictly necessary. Never leave intermediate or fixup commits in the PR.
 
 ## Agent Skills
 

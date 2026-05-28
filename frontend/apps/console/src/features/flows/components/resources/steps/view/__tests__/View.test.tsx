@@ -41,9 +41,8 @@ const mockGetNode = vi.fn(() => ({id: 'view-node', data: {}}));
 const mockUseNodeId = vi.fn(() => 'view-node-id');
 
 vi.mock('@xyflow/react', () => ({
-  // eslint-disable-next-line react/require-default-props
-  Handle: ({type, position, id}: {type: string; position: string; id?: string}) => (
-    <div data-testid={`handle-${type}`} data-position={position} data-handle-id={id ?? ''} />
+  Handle: ({type, position, id = ''}: {type: string; position: string; id?: string}) => (
+    <div data-testid={`handle-${type}`} data-position={position} data-handle-id={id} />
   ),
   Position: {
     Left: 'left',
