@@ -20,13 +20,15 @@
 package dcr
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/thunder-id/thunderid/internal/application"
 	"github.com/thunder-id/thunderid/internal/ou"
+	"github.com/thunder-id/thunderid/internal/system/database/provider"
 	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
+	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
-	"github.com/thunder-id/thunderid/internal/system/transaction"
 )
 
 // Initialize initializes the DCR service and registers its routes.
@@ -35,12 +37,18 @@ func Initialize(
 	appService application.ApplicationServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	i18nService i18nmgt.I18nServiceInterface,
-	transactioner transaction.Transactioner,
-) DCRServiceInterface {
+) error {
+	// Fetch runtime transactioner for OAuth services.
+	transactioner, err := provider.GetDBProvider().GetRuntimeDBTransactioner()
+	if err != nil {
+		wrappedErr := fmt.Errorf("failed to get runtime DB transactioner for DCR: %w", err)
+		log.GetLogger().Error("Failed to initialize DCR service", log.Error(wrappedErr))
+		return wrappedErr
+	}
 	dcrService := newDCRService(appService, ouService, i18nService, transactioner)
 	dcrHandler := newDCRHandler(dcrService)
 	registerRoutes(mux, dcrHandler)
-	return dcrService
+	return nil
 }
 
 // registerRoutes registers the routes for DCR operations.

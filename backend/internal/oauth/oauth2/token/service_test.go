@@ -44,15 +44,7 @@ type TokenServiceTestSuite struct {
 	mockScopeValidator *scopemock.ScopeValidatorInterfaceMock
 	mockGrantHandler   *granthandlersmock.GrantHandlerInterfaceMock
 	mockObsSvc         *observabilitymock.ObservabilityServiceInterfaceMock
-	mockTransactioner  *MockTransactioner
 	mockDPoPVerifier   *dpopmock.VerifierInterfaceMock
-}
-
-// MockTransactioner is a simple implementation of Transactioner for testing.
-type MockTransactioner struct{}
-
-func (m *MockTransactioner) Transact(ctx context.Context, txFunc func(context.Context) error) error {
-	return txFunc(ctx)
 }
 
 func TestTokenServiceSuite(t *testing.T) {
@@ -68,7 +60,6 @@ func (suite *TokenServiceTestSuite) SetupTest() {
 	suite.mockObsSvc.On("IsEnabled").Return(true).Maybe()
 	suite.mockObsSvc.On("PublishEvent", mock.Anything).Return().Maybe()
 
-	suite.mockTransactioner = &MockTransactioner{}
 	suite.mockDPoPVerifier = dpopmock.NewVerifierInterfaceMock(suite.T())
 
 	// Common grant handler lookup; individual tests may override this.
@@ -80,7 +71,7 @@ func (suite *TokenServiceTestSuite) SetupTest() {
 // newService builds a fresh tokenService using the suite's mocks.
 func (suite *TokenServiceTestSuite) newService() TokenServiceInterface {
 	return newTokenService(suite.mockGrantProvider, suite.mockScopeValidator, suite.mockObsSvc,
-		suite.mockTransactioner, suite.mockDPoPVerifier, "https://example.test/oauth2/token", false)
+		suite.mockDPoPVerifier, "https://example.test/oauth2/token", false)
 }
 
 // defaultApp returns an OAuthClient that allows the authorization_code grant.
@@ -484,7 +475,7 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_NoDPoPProof_GlobalRe
 	suite.mockScopeValidator.On("ValidateScopes", mock.Anything, "openid", "test-client-id").Return("openid", nil)
 
 	svc := newTokenService(suite.mockGrantProvider, suite.mockScopeValidator, suite.mockObsSvc,
-		suite.mockTransactioner, suite.mockDPoPVerifier, "https://example.test/oauth2/token", true)
+		suite.mockDPoPVerifier, "https://example.test/oauth2/token", true)
 	_, errResp := svc.ProcessTokenRequest(context.Background(), req, app)
 
 	assert.NotNil(suite.T(), errResp)

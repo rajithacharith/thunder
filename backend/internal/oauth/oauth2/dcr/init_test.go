@@ -62,16 +62,16 @@ func (suite *InitTestSuite) TearDownTest() {
 func (suite *InitTestSuite) TestInitialize() {
 	mux := http.NewServeMux()
 
-	service := Initialize(mux, suite.mockAppService, suite.mockOUService, nil, &MockTransactioner{})
+	err := Initialize(mux, suite.mockAppService, suite.mockOUService, nil)
 
-	assert.NotNil(suite.T(), service)
-	assert.Implements(suite.T(), (*DCRServiceInterface)(nil), service)
+	assert.NoError(suite.T(), err)
 }
 
 func (suite *InitTestSuite) TestInitialize_RegistersRoutes() {
 	mux := http.NewServeMux()
 
-	Initialize(mux, suite.mockAppService, suite.mockOUService, nil, &MockTransactioner{})
+	err := Initialize(mux, suite.mockAppService, suite.mockOUService, nil)
+	assert.NoError(suite.T(), err)
 
 	// Verify that the routes are registered by attempting to get a handler for them.
 	// The pattern includes the method because of CORS middleware wrapping.
@@ -80,4 +80,22 @@ func (suite *InitTestSuite) TestInitialize_RegistersRoutes() {
 
 	_, pattern = mux.Handler(&http.Request{Method: "OPTIONS", URL: &url.URL{Path: "/oauth2/dcr/register"}})
 	assert.Contains(suite.T(), pattern, "/oauth2/dcr/register")
+}
+
+func (suite *InitTestSuite) TestInitialize_ReturnsError_WhenRuntimeTransactionerUnavailable() {
+	config.ResetServerRuntime()
+	testConfig := &config.Config{
+		Database: config.DatabaseConfig{
+			Config:  config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: "test.db"}},
+			Runtime: config.DataSource{},
+			User:    config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: "test.db"}},
+		},
+	}
+	_ = config.InitializeServerRuntime("", testConfig)
+
+	mux := http.NewServeMux()
+	err := Initialize(mux, suite.mockAppService, suite.mockOUService, nil)
+
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "failed to get runtime DB transactioner for DCR")
 }
