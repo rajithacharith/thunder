@@ -118,7 +118,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	var exporters []declarativeresource.ResourceExporter
 
 	// Initialize i18n service for internationalization support.
-	i18nService, i18nExporter, err := i18nmgt.Initialize(mux)
+	i18nService, i18nExporter, err := i18nmgt.Initialize(mux, config.GetServerRuntime().Config.Translation)
 	if err != nil {
 		logger.Fatal("Failed to initialize i18n service", log.Error(err))
 	}
