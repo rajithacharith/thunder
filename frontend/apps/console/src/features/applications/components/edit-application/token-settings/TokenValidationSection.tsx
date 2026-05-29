@@ -49,6 +49,10 @@ interface TokenValidationSectionProps {
    * - 'oauth': Tabbed layout with separate Access Token and ID Token validity inputs
    */
   tokenType: 'shared' | 'oauth';
+  /**
+   * Whether inputs should be disabled (e.g. read-only resource).
+   */
+  disabled?: boolean;
 }
 
 /**
@@ -62,7 +66,12 @@ interface TokenValidationSectionProps {
  * @param props - Component props
  * @returns Token validity configuration UI within a SettingsCard
  */
-export default function TokenValidationSection({control, errors, tokenType}: TokenValidationSectionProps) {
+export default function TokenValidationSection({
+  control,
+  errors,
+  tokenType,
+  disabled = false,
+}: TokenValidationSectionProps) {
   const {t} = useTranslation();
   const [activeValidationTab, setActiveValidationTab] = useState<'access' | 'id'>('access');
 
@@ -90,6 +99,7 @@ export default function TokenValidationSection({control, errors, tokenType}: Tok
             error={!!errors[fieldName]}
             helperText={errors[fieldName]?.message ?? hint}
             inputProps={{min: 1}}
+            disabled={disabled}
           />
         )}
       />
