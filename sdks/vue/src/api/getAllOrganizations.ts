@@ -37,7 +37,7 @@ const getAllOrganizations = async ({
 }: GetAllOrganizationsConfig): Promise<AllOrganizationsApiResponse> => {
   const defaultFetcher = async (url: string, config: RequestInit): Promise<Response> => {
     const httpClient: FetchHttpClient = FetchHttpClient.getInstance(instanceId);
-    
+
     const response: HttpResponse<any> = await httpClient.request({
       headers: config.headers as Record<string, string>,
       method: config.method || 'GET',

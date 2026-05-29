@@ -36,7 +36,7 @@ const SelectInput: FC<AdapterProps> = ({
   const config: Record<string, unknown> = component.config || {};
   const fieldName: string = (config['identifier'] as string) || (config['name'] as string) || component.id;
   const value: string = formValues[fieldName] || '';
-  const error: string = touchedFields[fieldName] ? formErrors[fieldName] : undefined;
+  const error: string | undefined = touchedFields[fieldName] ? formErrors[fieldName] : undefined;
 
   // Get options from config and convert to SelectOption format
   const rawOptions: string[] = (config['options'] as string[]) || [];

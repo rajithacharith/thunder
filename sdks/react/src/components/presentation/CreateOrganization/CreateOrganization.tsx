@@ -30,7 +30,7 @@ export interface CreateOrganizationProps extends Omit<BaseCreateOrganizationProp
   /**
    * Fallback element to render when the user is not signed in.
    */
-  fallback?: ReactElement;
+  fallback?: ReactElement | null;
   /**
    * Custom organization creation handler (will use default API if not provided).
    */
@@ -75,7 +75,7 @@ export const CreateOrganization: FC<CreateOrganizationProps> = ({
   onSuccess,
   defaultParentId,
   ...props
-}: CreateOrganizationProps): ReactElement => {
+}: CreateOrganizationProps): ReactElement | null => {
   const {isSignedIn, baseUrl, instanceId} = useThunderID();
   const {currentOrganization, revalidateMyOrganizations} = useOrganization();
   const [loading, setLoading] = useState(false);

@@ -50,7 +50,7 @@ const protect = (
       return;
     }
 
-    const isValid: boolean = await client.isSignedIn(sessionId);
+    const isValid: boolean = (await client.isSignedIn(sessionId)) ?? false;
 
     if (isValid) {
       return next();

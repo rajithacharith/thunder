@@ -16,7 +16,6 @@
  * under the License.
  */
 
-import React from 'react';
 
 export default function ClaudeLogo({size = 14}: {size?: number}) {
   return (

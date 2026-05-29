@@ -39,7 +39,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/cors"
 	"github.com/thunder-id/thunderid/internal/system/database/provider"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
-	"github.com/thunder-id/thunderid/internal/system/kmprovider/defaultkm/pkiservice"
+	"github.com/thunder-id/thunderid/internal/system/kmprovider/defaultkm/pki"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
 	"github.com/thunder-id/thunderid/internal/system/security"
@@ -75,7 +75,7 @@ func main() {
 	cacheManager := cache.Initialize()
 
 	// Initialize system permission strings before any service or middleware uses them.
-	security.InitSystemPermissions(cfg.Resource.SystemResourceServer.Handle)
+	security.InitSystemPermissions(cfg.Server.SecurityConfig.SystemPermissionPrefix)
 
 	// Create a new HTTP multiplexer.
 	mux := http.NewServeMux()
@@ -171,7 +171,7 @@ func loadCertConfig(logger *log.Logger, cfg *config.Config, serverHome string) *
 	keyFilePath := path.Join(serverHome, cfg.TLS.KeyFile)
 
 	// Load TLS configuration
-	tlsConfig, err := pkiservice.LoadTLSConfig(cfg, certFilePath, keyFilePath)
+	tlsConfig, err := pki.LoadTLSConfig(cfg, certFilePath, keyFilePath)
 	if err != nil {
 		logger.Fatal("Failed to load TLS configuration", log.Error(err))
 	}

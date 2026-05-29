@@ -40,7 +40,7 @@ export interface ThunderIDNuxtConfig {
    * URL when present. Mirrors `applicationId` in the React/Next.js SDKs.
    */
   applicationId?: string;
-  /** Base URL of the ThunderID org tenant (e.g. https://api.asgardeo.io/t/your_org) */
+  /** Base URL of the ThunderID org tenant (e.g. https://localhost:8090) */
   baseUrl?: string;
   /** OAuth2 Client ID */
   clientId?: string;

@@ -50,8 +50,8 @@ export const createRecoveryComponent = ({component, onSubmit, ...rest}: AdapterP
 
     case EmbeddedFlowComponentType.Input: {
       // Determine input type based on variant or config
-      const inputVariant: string = component.variant?.toUpperCase();
-      const inputType: string = (component.config['type'] as string)?.toLowerCase();
+      const inputVariant: string = component.variant?.toUpperCase() ?? '';
+      const inputType: string = (component.config['type'] as string)?.toLowerCase() ?? '';
 
       if (inputVariant === 'EMAIL' || inputType === 'email') {
         return <EmailInput component={component} onSubmit={onSubmit} {...rest} />;
@@ -88,7 +88,7 @@ export const createRecoveryComponent = ({component, onSubmit, ...rest}: AdapterP
       if (buttonVariant === 'SOCIAL') {
         if (buttonText.toLowerCase().includes('google')) {
           return (
-            <GoogleButton onClick={(): any => onSubmit(component, {})} {...rest}>
+            <GoogleButton onClick={(): any => onSubmit?.(component, {})} {...rest}>
               {buttonText}
             </GoogleButton>
           );
@@ -96,7 +96,7 @@ export const createRecoveryComponent = ({component, onSubmit, ...rest}: AdapterP
 
         if (buttonText.toLowerCase().includes('github')) {
           return (
-            <GitHubButton onClick={(): any => onSubmit(component, {})} {...rest}>
+            <GitHubButton onClick={(): any => onSubmit?.(component, {})} {...rest}>
               {buttonText}
             </GitHubButton>
           );
@@ -104,7 +104,7 @@ export const createRecoveryComponent = ({component, onSubmit, ...rest}: AdapterP
 
         if (buttonText.toLowerCase().includes('microsoft')) {
           return (
-            <MicrosoftButton onClick={(): any => onSubmit(component, {})} {...rest}>
+            <MicrosoftButton onClick={(): any => onSubmit?.(component, {})} {...rest}>
               {buttonText}
             </MicrosoftButton>
           );
@@ -112,7 +112,7 @@ export const createRecoveryComponent = ({component, onSubmit, ...rest}: AdapterP
 
         if (buttonText.toLowerCase().includes('facebook')) {
           return (
-            <FacebookButton onClick={(): any => onSubmit(component, {})} {...rest}>
+            <FacebookButton onClick={(): any => onSubmit?.(component, {})} {...rest}>
               {buttonText}
             </FacebookButton>
           );
@@ -120,7 +120,7 @@ export const createRecoveryComponent = ({component, onSubmit, ...rest}: AdapterP
 
         if (buttonText.toLowerCase().includes('linkedin')) {
           return (
-            <LinkedInButton onClick={(): any => onSubmit(component, {})} {...rest}>
+            <LinkedInButton onClick={(): any => onSubmit?.(component, {})} {...rest}>
               {buttonText}
             </LinkedInButton>
           );
@@ -128,7 +128,7 @@ export const createRecoveryComponent = ({component, onSubmit, ...rest}: AdapterP
 
         if (buttonText.toLowerCase().includes('ethereum')) {
           return (
-            <SignInWithEthereumButton onClick={(): any => onSubmit(component, {})} {...rest}>
+            <SignInWithEthereumButton onClick={(): any => onSubmit?.(component, {})} {...rest}>
               {buttonText}
             </SignInWithEthereumButton>
           );

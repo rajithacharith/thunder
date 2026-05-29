@@ -17,16 +17,11 @@
  */
 
 import userEvent from '@testing-library/user-event';
-import {render, screen, waitFor, within} from '@thunderid/test-utils';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render, renderHook, screen, waitFor, within} from '@thunderid/test-utils';
+import {useTranslation} from 'react-i18next';
+import {describe, it, expect, vi, beforeAll, beforeEach} from 'vitest';
 import type {SchemaInterface} from '../../../models/users';
 import ConfigureUserType, {type ConfigureUserTypeProps} from '../ConfigureUserType';
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
 
 const mockSchemas: SchemaInterface[] = [
   {id: 'schema-1', name: 'Employee', ouId: 'ou-1'},
@@ -35,6 +30,12 @@ const mockSchemas: SchemaInterface[] = [
 ];
 
 describe('ConfigureUserType', () => {
+  let t: (key: string) => string;
+
+  beforeAll(() => {
+    ({t} = renderHook(() => useTranslation()).result.current);
+  });
+
   const mockOnSchemaChange = vi.fn();
   const mockOnReadyChange = vi.fn();
 
@@ -54,21 +55,23 @@ describe('ConfigureUserType', () => {
   it('renders the component with title and subtitle', () => {
     renderComponent();
 
-    expect(screen.getByText('users:createWizard.selectUserType.title')).toBeInTheDocument();
-    expect(screen.getByText('users:createWizard.selectUserType.subtitle')).toBeInTheDocument();
+    expect(screen.getByRole('heading', {name: t('users:createWizard.selectUserType.title')})).toBeInTheDocument();
+    expect(screen.getByText(t('users:createWizard.selectUserType.subtitle'))).toBeInTheDocument();
   });
 
   it('renders the user type select field', () => {
     renderComponent();
 
-    expect(screen.getByText('users:createWizard.selectUserType.fieldLabel')).toBeInTheDocument();
+    expect(
+      screen.getByText(t('users:createWizard.selectUserType.fieldLabel'), {exact: false, selector: 'label'}),
+    ).toBeInTheDocument();
     expect(screen.getByTestId('configure-user-type')).toBeInTheDocument();
   });
 
   it('renders placeholder when no schema is selected', () => {
     renderComponent();
 
-    expect(screen.getByText('users:createWizard.selectUserType.placeholder')).toBeInTheDocument();
+    expect(screen.getByText(t('users:createWizard.selectUserType.placeholder'), {selector: 'em'})).toBeInTheDocument();
   });
 
   it('renders all schema options in the select', async () => {

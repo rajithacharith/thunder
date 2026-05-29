@@ -45,7 +45,7 @@ const EmailOtp: FC<BaseSignInOptionProps> = ({
   const {t} = useTranslation(preferences?.i18n);
   const {setTitle, setSubtitle} = useFlow();
 
-  const formFields: any = authenticator.metadata?.params?.sort((a: any, b: any) => a.order - b.order) || [];
+  const formFields: any = authenticator!.metadata?.params?.sort((a: any, b: any) => a.order - b.order) || [];
 
   useEffect(() => {
     setTitle(t('email.otp.heading'));
@@ -79,7 +79,7 @@ const EmailOtp: FC<BaseSignInOptionProps> = ({
                 label: param.displayName,
                 name: param.param,
                 onChange: (value: any) => onInputChange(param.param, value),
-                required: authenticator.requiredParams.includes(param.param),
+                required: authenticator!.requiredParams.includes(param.param),
                 touched: touchedFields[param.param] || false,
                 type:
                   param.type === EmbeddedSignInFlowAuthenticatorParamType.String && param.confidential

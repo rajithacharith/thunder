@@ -1,6 +1,7 @@
 ![ThunderID Browser SDK](https://raw.githubusercontent.com/thunder-id/thunderid/refs/heads/main/docs/static/assets/images/readme/repo-banner-browser-sdk.png)
 
-Browser runtime SDK for ThunderID. Provides authentication and session management for single-page applications running in the browser.
+Browser runtime SDK for ThunderID. Provides authentication and session management for single-page applications running
+in the browser.
 
 ## Installation
 

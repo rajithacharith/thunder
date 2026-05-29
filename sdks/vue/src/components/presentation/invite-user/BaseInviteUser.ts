@@ -421,7 +421,7 @@ const BaseInviteUser: Component = defineComponent({
       // Error state during initialization
       if (!currentFlow.value && apiError.value) {
         return h(Card, {class: containerClass, variant: props.variant}, () =>
-          h(Alert, {variant: 'error'}, () => apiError.value.message),
+          h(Alert, {variant: 'error'}, () => apiError.value!.message),
         );
       }
 
@@ -511,7 +511,7 @@ const BaseInviteUser: Component = defineComponent({
           ? h(
               'div',
               {style: 'padding:0 1rem;margin-bottom:1rem'},
-              h(Alert, {variant: 'error'}, () => apiError.value.message),
+              h(Alert, {variant: 'error'}, () => apiError.value!.message),
             )
           : null,
         h(

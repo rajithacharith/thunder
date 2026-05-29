@@ -27,13 +27,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const pkg = JSON.parse(readFileSync('./package.json', 'utf8'));
 
-// Get dependencies excluding crypto-related ones that need to be bundled
+// Get dependencies excluding ones that need to be bundled
 const externalDeps = [...Object.keys(pkg.dependencies || {}), ...Object.keys(pkg.peerDependencies || {})].filter(
-  (dep) => !['crypto-browserify', 'randombytes', 'buffer'].includes(dep),
+  (dep) => !['randombytes', 'buffer'].includes(dep),
 );
 
 const polyfillAliases = {
-  crypto: require.resolve('crypto-browserify'),
   buffer: require.resolve('buffer/index.js'),
 };
 

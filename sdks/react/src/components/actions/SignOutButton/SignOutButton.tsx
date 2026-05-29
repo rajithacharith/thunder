@@ -83,7 +83,7 @@ const SignOutButton: ForwardRefExoticComponent<SignOutButtonProps & RefAttribute
       await signOut();
 
       if (onClick) {
-        onClick(e);
+        onClick(e!);
       }
     } catch (error) {
       throw new ThunderIDRuntimeError(

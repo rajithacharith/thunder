@@ -52,7 +52,7 @@ export interface BaseOrganizationProfileProps {
   /**
    * Component to render when no organization data is available.
    */
-  fallback?: ReactElement;
+  fallback?: ReactElement | null;
 
   /**
    * Array of field configurations to display. Each field specifies what organization data to show.
@@ -225,7 +225,7 @@ const BaseOrganizationProfile: FC<BaseOrganizationProfileProps> = ({
       render: (value: any): any => formatDate(value),
     },
   ],
-}: BaseOrganizationProfileProps): ReactElement => {
+}: BaseOrganizationProfileProps): ReactElement | null => {
   const {theme, colorScheme} = useTheme();
   const styles: Record<string, string> = useStyles(theme, colorScheme);
   const [editedOrganization, setEditedOrganization] = useState(organization);

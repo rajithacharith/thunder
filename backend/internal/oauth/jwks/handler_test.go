@@ -27,6 +27,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
@@ -69,7 +70,7 @@ func (s *JWKSHandlerTestSuite) TestHandleJWKSRequest_Success() {
 			},
 		},
 	}
-	s.mockService.On("GetJWKS").Return(jwksResponse, nil)
+	s.mockService.On("GetJWKS", mock.Anything).Return(jwksResponse, nil)
 
 	s.handler.HandleJWKSRequest(rr, req)
 
@@ -94,7 +95,7 @@ func (s *JWKSHandlerTestSuite) TestHandleJWKSRequest_ClientError() {
 		Error:            core.I18nMessage{Key: "error.test.invalid_request", DefaultValue: "invalid_request"},
 		ErrorDescription: core.I18nMessage{Key: "error.test.invalid_request", DefaultValue: "Invalid request"},
 	}
-	s.mockService.On("GetJWKS").Return(nil, svcErr)
+	s.mockService.On("GetJWKS", mock.Anything).Return(nil, svcErr)
 
 	s.handler.HandleJWKSRequest(rr, req)
 
@@ -111,7 +112,7 @@ func (s *JWKSHandlerTestSuite) TestHandleJWKSRequest_ServiceError() {
 		Key:          "error.test.failed_get_jwks",
 		DefaultValue: "Failed to get JWKS",
 	})
-	s.mockService.On("GetJWKS").Return(nil, svcErr)
+	s.mockService.On("GetJWKS", mock.Anything).Return(nil, svcErr)
 
 	s.handler.HandleJWKSRequest(rr, req)
 

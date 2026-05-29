@@ -242,6 +242,8 @@ paths:
                           idToken:
                             validityPeriod: 1800
                             userAttributes: ["email", "name"]
+                          refreshToken:
+                            validityPeriod: 86400
                         userInfo:
                           responseType: "JWS"
                           signingAlg: "RS256"
@@ -310,6 +312,8 @@ paths:
                         idToken:
                           validityPeriod: 1800
                           userAttributes: ["email", "name"]
+                        refreshToken:
+                          validityPeriod: 86400
                       userInfo:
                         responseType: "JWS"
                         signingAlg: "RS256"
@@ -715,6 +719,8 @@ paths:
                         idToken:
                           validityPeriod: 1800
                           userAttributes: ["email", "name"]
+                        refreshToken:
+                          validityPeriod: 86400
                       userInfo:
                         responseType: "JWS"
                         signingAlg: "RS256"
@@ -828,6 +834,8 @@ paths:
                           idToken:
                             validityPeriod: 1800
                             userAttributes: ["email", "name"]
+                          refreshToken:
+                            validityPeriod: 86400
                         userInfo:
                           responseType: "JWS"
                           signingAlg: "RS256"
@@ -897,6 +905,8 @@ paths:
                         idToken:
                           validityPeriod: 1800
                           userAttributes: ["email", "name"]
+                        refreshToken:
+                          validityPeriod: 86400
                       userInfo:
                         responseType: "JWS"
                         signingAlg: "RS256"
@@ -2328,6 +2338,14 @@ components:
           description: JWE content-encryption algorithm. Required when `encryptionAlg` is set.
           example: "A256GCM"
 
+    RefreshTokenConfig:
+      type: object
+      properties:
+        validityPeriod:
+          type: integer
+          description: Refresh token validity period in seconds.
+          example: 86400
+        
     UserInfoConfig:
       type: object
       description: |
@@ -2498,6 +2516,8 @@ components:
               $ref: '#/components/schemas/AccessTokenConfig'
             idToken:
               $ref: '#/components/schemas/IDTokenConfig'
+            refreshToken:
+              $ref: '#/components/schemas/RefreshTokenConfig'
         userInfo:
           $ref: '#/components/schemas/UserInfoConfig'
         scopeClaims:

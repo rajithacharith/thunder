@@ -74,6 +74,7 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
   organizationHandle,
   applicationId,
   signInOptions,
+  tokenRequest,
   syncSession,
   instanceId = 0,
   organizationChain,
@@ -92,7 +93,7 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
 
   const [myOrganizations, setMyOrganizations] = useState<Organization[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [baseUrl, setBaseUrl] = useState<string>(initialBaseUrl);
+  const [baseUrl, setBaseUrl] = useState<string>(initialBaseUrl ?? '');
   const [config, setConfig] = useState<ThunderIDReactConfig>({
     afterSignInUrl: afterSignInUrl ?? window.location.origin,
     afterSignOutUrl: afterSignOutUrl ?? window.location.origin,
@@ -103,6 +104,7 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
     organizationHandle,
     scopes,
     signInOptions,
+    tokenRequest,
     signInUrl,
     signUpUrl,
     syncSession,
@@ -119,7 +121,7 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
   const [hasFetchedBranding, setHasFetchedBranding] = useState<boolean>(false);
 
   useEffect(() => {
-    setBaseUrl(initialBaseUrl);
+    setBaseUrl(initialBaseUrl ?? '');
     // Reset branding state when baseUrl changes
     if (initialBaseUrl !== baseUrl) {
       setHasFetchedBranding(false);
@@ -154,7 +156,6 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
       }
 
       // TEMPORARY: SCIM2 and Organizations endpoints are not yet supported.
-      // Tracker: https://github.com/asgardeo/javascript/issues/212
       const claims: User = extractUserClaimsFromIdToken(decodedToken) as User;
       setUser(claims);
       setUserProfile({
@@ -262,7 +263,7 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
 
       const currentUrl: URL = new URL(window.location.href);
       const hasAuthParamsResult: boolean =
-        hasAuthParams(currentUrl, config.afterSignInUrl) && hasCalledForThisInstance(currentUrl, instanceId ?? 0);
+        hasAuthParams(currentUrl, config.afterSignInUrl!) && hasCalledForThisInstance(currentUrl, instanceId ?? 0);
 
       if (hasAuthParamsResult) {
         try {
@@ -349,7 +350,7 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
       // Don't set loading=false while auth params are in the URL and user isn't signed in yet.
       // This prevents ProtectedRoute from redirecting before the sign-in effect processes the auth code.
       const currentUrl: URL = new URL(window.location.href);
-      if (!isSignedInSync && hasAuthParams(currentUrl, config.afterSignInUrl)) {
+      if (!isSignedInSync && hasAuthParams(currentUrl, config.afterSignInUrl!)) {
         return;
       }
 
@@ -410,7 +411,6 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
   // Auto-fetch branding when initialized and configured
   useEffect(() => {
     // TEMPORARY: Branding preference is not yet supported.
-    // Tracker: https://github.com/asgardeo/javascript/issues/212
     return;
 
     // Only fetch branding when explicitly enabled via preferences.theme.inheritFromBranding
@@ -473,8 +473,8 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
   const handleProfileUpdate = (payload: User): void => {
     setUser(payload);
     setUserProfile((prev: UserProfile | null) => ({
-      ...prev,
-      flattenedProfile: generateFlattenedUserProfile(payload, prev?.schemas),
+      schemas: prev?.schemas ?? [],
+      flattenedProfile: generateFlattenedUserProfile(payload, prev?.schemas ?? []),
       profile: payload,
     }));
   };
@@ -570,6 +570,7 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
       recover,
       signIn,
       signInOptions,
+      tokenRequest,
       signInSilently,
       signInUrl,
       signOut,
@@ -597,6 +598,7 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
       user,
       client,
       signInOptions,
+      tokenRequest,
       syncSession,
       switchOrganization,
       getDecodedIdToken,
@@ -632,10 +634,10 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
                 ...preferences?.theme?.overrides,
                 direction: preferences?.theme?.direction,
               }}
-              mode={getActiveTheme(preferences?.theme?.mode)}
+              mode={getActiveTheme(preferences?.theme?.mode ?? 'light')}
             >
               <FlowProvider>
-                <UserProvider profile={userProfile} onUpdateProfile={handleProfileUpdate}>
+                <UserProvider profile={userProfile!} onUpdateProfile={handleProfileUpdate}>
                   <OrganizationProvider
                     getAllOrganizations={async (): Promise<AllOrganizationsApiResponse> => client.getAllOrganizations()}
                     myOrganizations={myOrganizations}

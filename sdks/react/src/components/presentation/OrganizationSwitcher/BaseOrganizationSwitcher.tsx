@@ -107,7 +107,7 @@ export interface BaseOrganizationSwitcherProps {
   /**
    * Optional element to render when no organization is selected.
    */
-  fallback?: ReactElement;
+  fallback?: ReactElement | null;
   /**
    * Whether the component is in a loading state.
    */
@@ -194,7 +194,7 @@ export const BaseOrganizationSwitcher: FC<BaseOrganizationSwitcherProps> = ({
   avatarSize = 24,
   fallback = null,
   preferences,
-}: BaseOrganizationSwitcherProps): ReactElement => {
+}: BaseOrganizationSwitcherProps): ReactElement | null => {
   const {theme, colorScheme, direction} = useTheme();
   const styles: Record<string, string> = useStyles(theme, colorScheme);
   const [isOpen, setIsOpen] = useState(false);

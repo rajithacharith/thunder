@@ -72,7 +72,7 @@ export interface BaseUserDropdownProps {
   /**
    * Optional element to render when no user is signed in.
    */
-  fallback?: ReactElement;
+  fallback?: ReactElement | null;
   /**
    * Whether the user data is currently loading
    */
@@ -124,7 +124,7 @@ export const BaseUserDropdown: FC<BaseUserDropdownProps> = ({
   onManageProfile,
   onSignOut,
   attributeMapping = {},
-}: BaseUserDropdownProps): ReactElement => {
+}: BaseUserDropdownProps): ReactElement | null => {
   const {theme, colorScheme} = useTheme();
   const styles: Record<string, string> = useStyles(theme, colorScheme);
   const [isOpen, setIsOpen] = useState(false);
@@ -144,7 +144,7 @@ export const BaseUserDropdown: FC<BaseUserDropdownProps> = ({
 
   const {getReferenceProps, getFloatingProps} = useInteractions([click, dismiss, role]);
 
-  const defaultAttributeMappings: Record<string, string | string[] | undefined> = {
+  const defaultAttributeMappings: Record<string, string | string[]> = {
     email: ['emails'],
     firstName: ['name.givenName', 'given_name'],
     lastName: ['name.familyName', 'family_name'],
@@ -152,10 +152,11 @@ export const BaseUserDropdown: FC<BaseUserDropdownProps> = ({
     username: ['userName', 'username', 'user_name'],
   };
 
-  const mergedMappings: Record<string, string | string[] | undefined> = {
-    ...defaultAttributeMappings,
-    ...attributeMapping,
-  };
+  const mergedMappings: Record<string, string | string[]> = Object.fromEntries(
+    Object.entries({...defaultAttributeMappings, ...attributeMapping}).filter(
+      (entry): entry is [string, string | string[]] => entry[1] !== undefined,
+    ),
+  );
 
   if (fallback && !user && !isLoading) {
     return fallback;

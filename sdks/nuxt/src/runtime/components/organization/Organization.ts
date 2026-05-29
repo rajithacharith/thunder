@@ -45,11 +45,11 @@ const Organization: Component = defineComponent({
 
     return (): VNode | VNode[] | null => {
       if (!currentOrganization?.value) {
-        const fallback: VNode[] | undefined = slots['fallback']?.();
+        const fallback: VNode[] | undefined = slots.fallback?.();
         return fallback ? h(Fragment, {}, fallback) : null;
       }
 
-      const content: VNode[] | undefined = slots['default']?.({organization: currentOrganization.value});
+      const content: VNode[] | undefined = slots.default?.({organization: currentOrganization.value});
       return content ? h(Fragment, {}, content) : null;
     };
   },

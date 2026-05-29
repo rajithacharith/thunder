@@ -25,7 +25,7 @@ By the end of this guide you will have:
 
 ## Create an application
 
-An application in ThunderID represents your product. When you register one, you get a **Client ID**, which links your frontend or backend to ThunderID's authentication layer.
+An application in ThunderID represents your product. When you register an OAuth 2.0 application, you get a **Client ID**, which links your frontend or backend to ThunderID's authentication layer.
 
 1. Sign in to the Console at [https://localhost:8090/console](https://localhost:8090/console) using the default admin credentials (`admin` / `admin`).
 2. Go to **Applications** and click **Add Application**.
@@ -50,33 +50,7 @@ An application in ThunderID represents your product. When you register one, you 
 
    Click **Continue**.
 
-9. On the **Configuration** screen, set the URL where your application is hosted:
-
-   <Tabs groupId="app-type">
-     <TabItem value="quickstart" label="React or Vue Quickstart" default>
-
-     Set **Where is your application hosted?** to `http://localhost:5173`.
-
-     This is the default Vite development server port used by both the React and Vue quickstarts.
-
-     </TabItem>
-     <TabItem value="sample" label="Sample App">
-
-     Set **Where is your application hosted?** to `http://localhost:3000`.
-
-     The ThunderID sample app runs on port `3000` by default.
-
-     </TabItem>
-     <TabItem value="custom" label="My Own App">
-
-     Set **Where is your application hosted?** to the root URL of your app (for example, `http://localhost:3000`).
-
-     Leave **After Sign-in URL** set to **Same as Application Access URL** unless your app handles the callback at a specific path such as `/callback`. In that case, choose **Custom URL** and enter the full callback URL.
-
-     </TabItem>
-   </Tabs>
-
-   Click **Continue** to finish creating the application.
+9. On the **Configuration** screen, click **Continue** to finish creating the application.
 
 :::tip Save your Client ID
 Open the application details page and note the **Client ID**. You will need it when configuring your SDK.

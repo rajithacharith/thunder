@@ -214,7 +214,7 @@ const id = client.getInstanceId() // 0 by default
 
 ---
 
-### Platform-specific Methods (to override)
+### Platform-Specific Methods to Override
 
 Subclasses must implement these methods. Calling them on `ThunderIDJavaScriptClient` directly throws `Error: Method not implemented.`
 
@@ -289,7 +289,7 @@ if (ThunderIDJavaScriptClient.isSignOutSuccessful(window.location.href)) {
 
 #### `ThunderIDJavaScriptClient.didSignOutFail(url)`
 
-Check whether a post-logout redirect URL indicates a failed sign-out (same state parameter but with an `error` query param).
+Check whether a post-logout redirect URL indicates a failed sign-out (same state parameter but with an `error` query parameter).
 
 ```ts
 if (ThunderIDJavaScriptClient.didSignOutFail(window.location.href)) {

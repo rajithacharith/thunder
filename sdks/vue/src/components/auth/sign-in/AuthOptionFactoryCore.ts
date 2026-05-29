@@ -174,7 +174,7 @@ const createAuthComponentFromFlow = (
     case EmbeddedFlowComponentType.TextInput:
     case EmbeddedFlowComponentType.PasswordInput:
     case EmbeddedFlowComponentType.EmailInput: {
-      const identifier: string = component.ref;
+      const identifier: string = component.ref ?? '';
       const value: string = formValues[identifier] || '';
       const isTouched: boolean = touchedFields[identifier] || false;
       const error: string | undefined = isTouched ? formErrors[identifier] : undefined;
@@ -227,7 +227,7 @@ const createAuthComponentFromFlow = (
                       }),
                     ),
                   ],
-                  purposeName: p.purposeName,
+                  purposeName: p.purposeName ?? '',
                 }),
               ),
             };
@@ -294,7 +294,7 @@ const createAuthComponentFromFlow = (
     }
 
     case EmbeddedFlowComponentType.Text: {
-      const variant: any = getTypographyVariant(component.variant);
+      const variant: any = getTypographyVariant(component.variant ?? '');
       const align: string = typeof (component as any).align === 'string' ? (component as any).align : 'left';
 
       return h(
@@ -314,7 +314,7 @@ const createAuthComponentFromFlow = (
     }
 
     case EmbeddedFlowComponentType.Select: {
-      const identifier: string = component.ref;
+      const identifier: string = component.ref ?? '';
       const value: string = formValues[identifier] || '';
       const isTouched: boolean = touchedFields[identifier] || false;
       const error: string | undefined = isTouched ? formErrors[identifier] : undefined;
@@ -496,7 +496,7 @@ export const renderSignInComponents = (
         },
       ),
     )
-    .filter(Boolean);
+    .filter((v): v is VNode => v !== null);
 
 /**
  * Processes an array of components and renders them as VNodes for sign-up.
@@ -539,7 +539,7 @@ export const renderSignUpComponents = (
         },
       ),
     )
-    .filter(Boolean);
+    .filter((v): v is VNode => v !== null);
 
 /**
  * Processes an array of components and renders them as VNodes for invite-user flows.
@@ -582,4 +582,4 @@ export const renderInviteUserComponents = (
         },
       ),
     )
-    .filter(Boolean);
+    .filter((v): v is VNode => v !== null);

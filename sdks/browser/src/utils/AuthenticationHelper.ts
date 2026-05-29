@@ -31,6 +31,8 @@ import {
   HttpRequestConfig,
   HttpResponse,
 } from '@thunderid/javascript';
+import SPAHelper from './SPAHelper';
+import SPAUtils from './SPAUtils';
 import {
   ACCESS_TOKEN_INVALID,
   CHECK_SESSION_SIGNED_IN,
@@ -43,8 +45,6 @@ import {
   RP_IFRAME,
 } from '../constants/SPAConstants';
 import {SPATokenExchangeConfig} from '../models/TokenExchangeConfig';
-import SPAHelper from './SPAHelper';
-import SPAUtils from './SPAUtils';
 
 interface AuthorizationInfo {
   code: string;
@@ -542,8 +542,8 @@ class AuthenticationHelper<T> {
           resolve(false);
         }
 
-        if (data?.type == CHECK_SESSION_SIGNED_IN && (data?.data as AuthorizationInfo)?.code) {
-          const authInfo = data.data as AuthorizationInfo;
+        if (data?.type == CHECK_SESSION_SIGNED_IN && (data?.data)!?.code) {
+          const authInfo = data.data;
           requestAccessToken(authInfo.code, authInfo.sessionState, authInfo.state, tokenRequestConfig)
             .then((response: User) => {
               window.removeEventListener('message', listenToPromptNoneIFrame);

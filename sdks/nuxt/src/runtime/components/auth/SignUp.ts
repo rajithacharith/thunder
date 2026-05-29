@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {navigateTo} from '#app';
 import {
   type EmbeddedFlowExecuteRequestPayload,
   type EmbeddedFlowExecuteResponse,
@@ -25,7 +26,6 @@ import {
 import {BaseSignUp} from '@thunderid/vue';
 import type {BaseSignUpRenderProps} from '@thunderid/vue';
 import {type Component, type PropType, type SetupContext, type VNode, defineComponent, h} from 'vue';
-import {navigateTo} from '#app';
 import {useThunderID} from '#imports';
 
 export type SignUpRenderProps = BaseSignUpRenderProps;
@@ -144,7 +144,7 @@ const SignUp: Component = defineComponent({
           size: props.size,
           variant: props.variant,
         },
-        slots['default'] ? {default: (renderProps: any) => slots['default']!(renderProps)} : undefined,
+        slots.default ? {default: (renderProps: any) => slots.default!(renderProps)} : undefined,
       );
   },
 });

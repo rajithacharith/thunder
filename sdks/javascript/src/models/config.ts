@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type {OIDCEndpoints} from './oidc-endpoints';
 import type {OAuthResponseMode} from './oauth-response';
+import type {OIDCEndpoints} from './oidc-endpoints';
 import {TokenEndpointAuthMethod} from './token-endpoint-auth';
 import {RecursivePartial} from './utility-types';
 import {ComponentsExtensions} from './v2/extensions/components';
@@ -146,7 +146,7 @@ export interface BaseConfig<T = unknown> extends WithPreferences, WithExtensions
 
   /**
    * The base URL of the ThunderID identity server.
-   * Example: "https://api.asgardeo.io/t/{org_name}"
+   * Example: "https://localhost:8090"
    */
   baseUrl: string | undefined;
 
@@ -382,6 +382,14 @@ export interface BaseConfig<T = unknown> extends WithPreferences, WithExtensions
      * ThunderIDV2 → `client_secret_basic`; all others → `client_secret_post`.
      */
     authMethod?: TokenEndpointAuthMethod;
+    /**
+     * Optional additional parameters to be sent in the token request body.
+     * Appended to the token endpoint POST body alongside the standard OAuth parameters.
+     *
+     * @example
+     * params: { resource: "https://api.example.com", audience: "my-api" }
+     */
+    params?: Record<string, unknown>;
   };
 
   /**
@@ -555,7 +563,6 @@ export interface Preferences {
   /**
    * User profile preferences for controlling user data fetching behavior.
    * TEMPORARY CONFIG
-   * TODO: Remove this once https://github.com/asgardeo/javascript/issues/412 is properly fixed.
    */
   user?: UserPreferences;
 }

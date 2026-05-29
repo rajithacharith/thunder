@@ -40,7 +40,7 @@ export interface OrganizationContextProps {
  * Context object for managing organization data and related operations.
  */
 const OrganizationContext: Context<OrganizationContextProps | null> = createContext<null | OrganizationContextProps>({
-  createOrganization: () => null,
+  createOrganization: () => null as unknown as Promise<Organization>,
   currentOrganization: null,
   error: null,
   getAllOrganizations: () =>
@@ -49,7 +49,7 @@ const OrganizationContext: Context<OrganizationContextProps | null> = createCont
       organizations: [],
     }),
   isLoading: false,
-  myOrganizations: null,
+  myOrganizations: [] as Organization[],
   revalidateMyOrganizations: () => Promise.resolve([]),
   switchOrganization: () => Promise.resolve(),
 });

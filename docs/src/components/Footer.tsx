@@ -21,7 +21,7 @@ import {useBaseUrlUtils} from '@docusaurus/useBaseUrl';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import ThemedImage from '@theme/ThemedImage';
 import {Box, Container, Typography} from '@wso2/oxygen-ui';
-import React, {JSX} from 'react';
+import {JSX} from 'react';
 import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
 
 interface FooterColumnProps {
@@ -112,7 +112,7 @@ export default function Footer(): JSX.Element {
             title="Product"
             links={[
               {label: 'Docs', href: '/docs/next/guides/getting-started/what-is-thunderid'},
-              // {label: 'APIs', href: '/docs/next/apis'},
+              {label: 'APIs', href: '/docs/next/apis'},
               {label: 'SDKs', href: '/docs/next/sdks/overview'},
             ]}
           />
@@ -133,6 +133,7 @@ export default function Footer(): JSX.Element {
             links={[
               {label: 'Releases', href: productConfig.project.source.github.releasesUrl},
               {label: 'GitHub', href: productConfig.project.source.github.url},
+              {label: 'Brand Guidelines', href: '/brand'},
             ]}
           />
         </Box>

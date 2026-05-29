@@ -255,6 +255,23 @@ func (s *SecurityContextTestSuite) TestResolveActionPermission_CoversAllMappedAc
 // InitSystemPermissions
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// GetSystemRootPermission
+// ---------------------------------------------------------------------------
+
+func (s *SecurityContextTestSuite) TestGetSystemRootPermission_AfterInitEmptyHandle() {
+	InitSystemPermissions("")
+	s.Equal("system", GetSystemRootPermission())
+}
+
+func (s *SecurityContextTestSuite) TestGetSystemRootPermission_AfterInitNonEmptyHandle() {
+	InitSystemPermissions("mgmt")
+	defer InitSystemPermissions("")
+	s.Equal("mgmt:system", GetSystemRootPermission())
+}
+
+// ---------------------------------------------------------------------------
+
 func TestInitSystemPermissions_EmptyHandle(t *testing.T) {
 	InitSystemPermissions("")
 	p := GetSystemPermissions()

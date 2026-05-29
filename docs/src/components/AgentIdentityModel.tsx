@@ -16,7 +16,6 @@
  * under the License.
  */
 
-import React from 'react';
 
 // ── Diagram geometry ─────────────────────────────────────────────────────────
 // Total height: 270px

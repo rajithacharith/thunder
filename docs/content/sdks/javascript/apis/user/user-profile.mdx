@@ -6,7 +6,7 @@ description: Functions for reading and updating user profile data
 
 # User Profile
 
-These functions read and update user profile data from the OIDC userinfo endpoint and the SCIM2 `/Me` endpoint.
+These functions read and update user profile data from the OIDC userinfo endpoint.
 
 ## `getUserInfo(config)`
 
@@ -46,78 +46,3 @@ console.log(user.email, user.displayName)
 
 Additional claims returned by the server are accessible as `user[claimUri]`.
 
----
-
-## `getScim2Me(config)`
-
-Fetch the authenticated user's full profile from the SCIM2 `/Me` endpoint. Returns more attributes than `getUserInfo()` (custom claims, enterprise attributes, etc.).
-
-```ts
-import { getScim2Me } from '@thunderid/javascript'
-
-const user = await getScim2Me({
-  baseUrl: 'https://localhost:8090',
-  headers: {
-    Authorization: `Bearer ${accessToken}`,
-  },
-})
-```
-
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|:--------:|-------------|
-| `config.url` | `string` | ✅ | Full SCIM2 `/Me` endpoint URL. Mutually exclusive with `baseUrl` |
-| `config.baseUrl` | `string` | ✅ | <ProductName /> base URL. SDK appends `/scim2/Me` |
-| `config.fetcher` | `function` | — | Custom fetch function override |
-| `config.headers` | `Record<string, string>` | — | Additional request headers |
-
-### Response: `User`
-
-Returns the same `User` type as `getUserInfo()`, but may include additional SCIM2 attributes.
-
----
-
-## `updateMeProfile(config)`
-
-Update the authenticated user's profile via the SCIM2 `/Me` PATCH endpoint.
-
-```ts
-import { updateMeProfile } from '@thunderid/javascript'
-
-const updated = await updateMeProfile({
-  baseUrl: 'https://localhost:8090',
-  payload: {
-    Operations: [
-      {
-        op: 'replace',
-        value: {
-          name: {
-            givenName: 'Updated',
-            familyName: 'Name',
-          },
-        },
-      },
-    ],
-    schemas: ['urn:ietf:params:scim:api:messages:2.0:PatchOp'],
-  },
-  headers: {
-    Authorization: `Bearer ${accessToken}`,
-  },
-})
-```
-
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|:--------:|-------------|
-| `config.url` | `string` | ✅ | Full SCIM2 `/Me` endpoint URL. Mutually exclusive with `baseUrl` |
-| `config.baseUrl` | `string` | ✅ | <ProductName /> base URL |
-| `config.payload` | `object` | ✅ | SCIM2 PatchOp request body |
-| `config.payload.Operations` | `object[]` | ✅ | Array of PATCH operations (`op`, `value`, `path`) |
-| `config.payload.schemas` | `string[]` | ✅ | Must include `'urn:ietf:params:scim:api:messages:2.0:PatchOp'` |
-| `config.fetcher` | `function` | — | Custom fetch function override |
-
-### Response: `User`
-
-The updated user profile.

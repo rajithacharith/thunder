@@ -233,7 +233,7 @@ const BaseUserProfile: Component = defineComponent({
     }
 
     function cancelEditing(fieldName: string): void {
-      const data: User | null = props.flattenedProfile || props.profile;
+      const data: User | null = props.flattenedProfile ?? props.profile ?? null;
       const originalValue: any = (data as Record<string, any>)?.[fieldName] ?? '';
       editedValues.value = {...editedValues.value, [fieldName]: originalValue};
       editingFields.value = {...editingFields.value, [fieldName]: false};
@@ -255,7 +255,7 @@ const BaseUserProfile: Component = defineComponent({
     // ── Input rendering per schema type ───────────────────────────────────────
 
     function renderInput(schema: ExtendedSchema): VNode {
-      const fieldName: string = schema.name;
+      const fieldName: string = schema.name ?? '';
       const currentValue: any = editedValues.value[fieldName];
 
       switch (schema.type) {
@@ -421,7 +421,7 @@ const BaseUserProfile: Component = defineComponent({
     // ── Main render ───────────────────────────────────────────────────────────
 
     return (): VNode | VNode[] | null => {
-      const data: User | null = props.flattenedProfile || props.profile;
+      const data: User | null = props.flattenedProfile ?? props.profile ?? null;
 
       if (!data && !props.isLoading) {
         return slots['default']

@@ -32,6 +32,7 @@ import (
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/authz"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
 	"github.com/thunder-id/thunderid/internal/resource"
@@ -51,6 +52,7 @@ const (
 	testCodeChallengeMethodS256 = "S256"
 	testClientCallbackURL       = "https://client.example.com/callback"
 	testCacheID                 = "test-cache-id"
+	testDPoPThumbprint          = "thumbprint-abc"
 )
 
 // convertToStringSlice converts groups from various formats to []string for testing.
@@ -247,13 +249,14 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_Success() {
 		Return(&authCodeWithResource, nil)
 
 	// Mock token builder to generate access token
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return ctx.Subject == testUserID &&
-			len(ctx.Audiences) == 1 &&
-			ctx.Audiences[0] == testResourceURL &&
-			ctx.ClientID == testClientID &&
-			ctx.GrantType == string(constants.GrantTypeAuthorizationCode)
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return ctx.Subject == testUserID &&
+				len(ctx.Audiences) == 1 &&
+				ctx.Audiences[0] == testResourceURL &&
+				ctx.ClientID == testClientID &&
+				ctx.GrantType == string(constants.GrantTypeAuthorizationCode)
+		})).Return(&model.TokenDTO{
 		Token:     "test-jwt-token",
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  time.Now().Unix(),
@@ -311,7 +314,8 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_JWTGenerati
 		Return(&suite.testAuthzCode, nil)
 
 	// Mock token builder to fail token generation
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(nil, errors.New("jwt generation failed"))
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).
+		Return(nil, errors.New("jwt generation failed"))
 
 	// Create token request with matching resource
 	tokenReqWithResource := *suite.testTokenReq
@@ -336,7 +340,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_EmptyScopes
 	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&authzCodeWithEmptyScopes, nil)
 
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).Return(&model.TokenDTO{
 		Token:     "test-jwt-token",
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  time.Now().Unix(),
@@ -364,7 +368,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NilTokenAtt
 	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&suite.testAuthzCode, nil)
 
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).Return(&model.TokenDTO{
 		Token:     "test-jwt-token",
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  time.Now().Unix(),
@@ -561,6 +565,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 
 			// Mock access token generation - use function return to access context at call time
 			suite.mockTokenBuilder.On("BuildAccessToken",
+				mock.Anything,
 				mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
 					// Capture user attributes and groups (simulate filtering that happens in BuildAccessToken)
 					capturedAccessTokenClaims = make(map[string]interface{})
@@ -569,7 +574,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 					}
 					// Verify GrantType is authorization_code
 					return ctx.GrantType == string(constants.GrantTypeAuthorizationCode)
-				})).Return(func(ctx *tokenservice.AccessTokenBuildContext) (*model.TokenDTO, error) {
+				})).Return(func(_ context.Context, ctx *tokenservice.AccessTokenBuildContext) (*model.TokenDTO, error) {
 				// Simulate filtering that happens in BuildAccessToken
 				userAttrs := make(map[string]interface{})
 				for k, v := range ctx.UserAttributes {
@@ -589,6 +594,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 			// Mock ID token generation if openid scope is present
 			if tc.includeOpenIDScope {
 				suite.mockTokenBuilder.On("BuildIDToken",
+					mock.Anything,
 					mock.MatchedBy(func(ctx *tokenservice.IDTokenBuildContext) bool {
 						// Capture ID token claims
 						capturedIDTokenClaims = make(map[string]interface{})
@@ -755,6 +761,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 
 			// Mock access token generation - use function return to access context at call time
 			suite.mockTokenBuilder.On("BuildAccessToken",
+				mock.Anything,
 				mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
 					// Capture user attributes which contain groups
 					capturedAccessTokenClaims = make(map[string]interface{})
@@ -763,7 +770,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 					}
 					// Verify GrantType is authorization_code
 					return ctx.GrantType == string(constants.GrantTypeAuthorizationCode)
-				})).Return(func(ctx *tokenservice.AccessTokenBuildContext) (*model.TokenDTO, error) {
+				})).Return(func(_ context.Context, ctx *tokenservice.AccessTokenBuildContext) (*model.TokenDTO, error) {
 				// Return user attributes from the actual call context
 				userAttrs := make(map[string]interface{})
 				for k, v := range ctx.UserAttributes {
@@ -783,6 +790,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 			// Mock ID token generation if openid scope is present
 			if tc.includeOpenIDScope {
 				suite.mockTokenBuilder.On("BuildIDToken",
+					mock.Anything,
 					mock.MatchedBy(func(ctx *tokenservice.IDTokenBuildContext) bool {
 						// Capture ID token claims from user attributes
 						capturedIDTokenClaims = ctx.UserAttributes
@@ -850,10 +858,11 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_ResourcePar
 		Return(&authCodeWithResource, nil)
 
 	var capturedAudiences []string
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		capturedAudiences = ctx.Audiences
-		return true
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			capturedAudiences = ctx.Audiences
+			return true
+		})).Return(&model.TokenDTO{
 		Token:     "mock-jwt-token",
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  time.Now().Unix(),
@@ -880,10 +889,11 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NoResourceP
 		Return(&suite.testAuthzCode, nil)
 
 	var capturedAudiences []string
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		capturedAudiences = ctx.Audiences
-		return true
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			capturedAudiences = ctx.Audiences
+			return true
+		})).Return(&model.TokenDTO{
 		Token:     "mock-jwt-token",
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  time.Now().Unix(),
@@ -916,7 +926,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_IDTokenGene
 		Return(&authzCodeWithOpenID, nil)
 
 	// Mock access token generation succeeds
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).Return(&model.TokenDTO{
 		Token:     "test-jwt-token",
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  time.Now().Unix(),
@@ -926,7 +936,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_IDTokenGene
 	}, nil)
 
 	// Mock ID token generation fails
-	suite.mockTokenBuilder.On("BuildIDToken", mock.Anything).
+	suite.mockTokenBuilder.On("BuildIDToken", mock.Anything, mock.Anything).
 		Return(nil, errors.New("failed to generate ID token"))
 
 	result, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
@@ -1006,17 +1016,18 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_FetchUserGr
 
 	// Groups come from the authorization code (extracted from assertion during authorization)
 	// Token builder will extract groups from UserAttributes - verify groups are in UserAttributes
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		// Verify groups are in UserAttributes (will be extracted by token builder)
-		groupsValue, ok := ctx.UserAttributes[constants.UserAttributeGroups]
-		if !ok {
-			return false
-		}
-		groupsArray := convertToStringSlice(groupsValue)
-		return len(groupsArray) == 2 &&
-			groupsArray[0] == "Admin" &&
-			groupsArray[1] == "Users"
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			// Verify groups are in UserAttributes (will be extracted by token builder)
+			groupsValue, ok := ctx.UserAttributes[constants.UserAttributeGroups]
+			if !ok {
+				return false
+			}
+			groupsArray := convertToStringSlice(groupsValue)
+			return len(groupsArray) == 2 &&
+				groupsArray[0] == "Admin" &&
+				groupsArray[1] == "Users"
+		})).Return(&model.TokenDTO{
 		Token:     "test-jwt-token",
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  time.Now().Unix(),
@@ -1127,7 +1138,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestRetrieveAndValidateAuth
 		Return(&authCodeWithPKCE, nil)
 
 	// Mock token builder
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).Return(&model.TokenDTO{
 		Token:     "test-jwt-token",
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  time.Now().Unix(),
@@ -1215,10 +1226,11 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_TokenReques
 		Return(&authCodeWithTwoResources, nil)
 
 	var capturedAudiences []string
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		capturedAudiences = ctx.Audiences
-		return true
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			capturedAudiences = ctx.Audiences
+			return true
+		})).Return(&model.TokenDTO{
 		Token:     "mock-jwt-token",
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  time.Now().Unix(),
@@ -1250,10 +1262,11 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_TokenReques
 		Return(&authCodeWithTwoResources, nil)
 
 	var capturedAudiences []string
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		capturedAudiences = ctx.Audiences
-		return true
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			capturedAudiences = ctx.Audiences
+			return true
+		})).Return(&model.TokenDTO{
 		Token:     "mock-jwt-token",
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  time.Now().Unix(),
@@ -1296,11 +1309,12 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_TokenReques
 
 	var capturedAudiences []string
 	var capturedScopes []string
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		capturedAudiences = ctx.Audiences
-		capturedScopes = ctx.Scopes
-		return true
-	})).Return(func(ctx *tokenservice.AccessTokenBuildContext) (*model.TokenDTO, error) {
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			capturedAudiences = ctx.Audiences
+			capturedScopes = ctx.Scopes
+			return true
+		})).Return(func(_ context.Context, ctx *tokenservice.AccessTokenBuildContext) (*model.TokenDTO, error) {
 		return &model.TokenDTO{
 			Token:     "mock-jwt-token",
 			TokenType: constants.TokenTypeBearer,
@@ -1334,10 +1348,11 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_TokenReques
 		Return(&authCodeNoResources, nil)
 
 	var capturedAudiences []string
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		capturedAudiences = ctx.Audiences
-		return true
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			capturedAudiences = ctx.Audiences
+			return true
+		})).Return(&model.TokenDTO{
 		Token:     "mock-jwt-token",
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  time.Now().Unix(),
@@ -1354,4 +1369,60 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_TokenReques
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), []string{testResourceURL}, capturedAudiences)
+}
+
+func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_DPoPBoundCode_NoProof_InvalidGrant() {
+	authzCodeBound := suite.testAuthzCode
+	authzCodeBound.DPoPJkt = testDPoPThumbprint
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
+		Return(&authzCodeBound, nil)
+
+	result, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), constants.ErrorInvalidGrant, err.Error)
+	assert.Contains(suite.T(), err.ErrorDescription, "DPoP proof required")
+}
+
+func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_DPoPBoundCode_ProofMismatch_InvalidGrant() {
+	authzCodeBound := suite.testAuthzCode
+	authzCodeBound.DPoPJkt = testDPoPThumbprint
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
+		Return(&authzCodeBound, nil)
+
+	ctx := dpop.WithJkt(context.Background(), "thumbprint-xyz")
+	result, err := suite.handler.HandleGrant(ctx, suite.testTokenReq, suite.oauthApp)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), constants.ErrorInvalidGrant, err.Error)
+	assert.Contains(suite.T(), err.ErrorDescription, "does not match")
+}
+
+func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_DPoPBoundCode_ProofMatches_Success() {
+	authzCodeBound := suite.testAuthzCode
+	authzCodeBound.DPoPJkt = testDPoPThumbprint
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
+		Return(&authzCodeBound, nil)
+
+	suite.mockTokenBuilder.On("BuildAccessToken",
+		mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return ctx.DPoPJkt == testDPoPThumbprint
+		})).Return(&model.TokenDTO{
+		Token:     "test-jwt-token",
+		TokenType: constants.TokenTypeDPoP,
+		IssuedAt:  time.Now().Unix(),
+		ExpiresIn: 3600,
+		Scopes:    []string{"read", "write"},
+		ClientID:  testClientID,
+	}, nil)
+
+	ctx := dpop.WithJkt(context.Background(), testDPoPThumbprint)
+	result, err := suite.handler.HandleGrant(ctx, suite.testTokenReq, suite.oauthApp)
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), constants.TokenTypeDPoP, result.AccessToken.TokenType)
 }

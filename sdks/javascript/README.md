@@ -1,6 +1,7 @@
 ![ThunderID JavaScript SDK](https://raw.githubusercontent.com/thunder-id/thunderid/refs/heads/main/docs/static/assets/images/readme/repo-banner-javascript-sdk.png)
 
-JavaScript ecosystem SDK for ThunderID. Framework-agnostic core library that powers the browser, Node.js, and other platform-specific SDKs.
+JavaScript ecosystem SDK for ThunderID. Framework-agnostic core library that powers the browser, Node.js, and other
+platform-specific SDKs.
 
 ## Installation
 

@@ -44,7 +44,7 @@ describe('executeEmbeddedSignUpFlow', (): void => {
       ok: true,
     });
 
-    const url = 'https://api.asgardeo.io/t/demo/api/server/v1/flow/execute';
+    const url = 'https://localhost:8090/api/server/v1/flow/execute';
     const payload: Record<string, string> = {foo: 'bar'};
 
     const result: EmbeddedFlowExecuteResponse = await executeEmbeddedSignUpFlow({payload, url});
@@ -82,7 +82,7 @@ describe('executeEmbeddedSignUpFlow', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const payload: Record<string, number> = {a: 1};
 
     const result: EmbeddedFlowExecuteResponse = await executeEmbeddedSignUpFlow({baseUrl, payload});
@@ -114,8 +114,8 @@ describe('executeEmbeddedSignUpFlow', (): void => {
       ok: true,
     });
 
-    const url = 'https://api.asgardeo.io/t/demo/api/server/v1/flow/execute';
-    const baseUrl = 'https://api.asgardeo.io/t/ignored';
+    const url = 'https://localhost:8090/api/server/v1/flow/execute';
+    const baseUrl = 'https://localhost:8090';
 
     await executeEmbeddedSignUpFlow({baseUrl, payload: {x: 1}, url});
 
@@ -135,7 +135,7 @@ describe('executeEmbeddedSignUpFlow', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
 
     await executeEmbeddedSignUpFlow({
       baseUrl,
@@ -162,7 +162,7 @@ describe('executeEmbeddedSignUpFlow', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const payload: Record<string, unknown> = {flowType: 'SOMETHING_ELSE', p: 1} as any;
 
     await executeEmbeddedSignUpFlow({baseUrl, payload});
@@ -187,7 +187,7 @@ describe('executeEmbeddedSignUpFlow', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     await executeEmbeddedSignUpFlow({baseUrl});
 
     const [, init]: [string, RequestInit] = (fetch as unknown as Mock).mock.calls[0];
@@ -234,7 +234,7 @@ describe('executeEmbeddedSignUpFlow', (): void => {
       text: () => Promise.resolve('Bad payload'),
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     await expect(executeEmbeddedSignUpFlow({baseUrl, payload: {a: 1}})).rejects.toThrow(ThunderIDAPIError);
     await expect(executeEmbeddedSignUpFlow({baseUrl, payload: {a: 1}})).rejects.toThrow(
       'Embedded SignUp flow execution failed: Bad payload',
@@ -244,7 +244,7 @@ describe('executeEmbeddedSignUpFlow', (): void => {
   it('should handle network or parsing errors', async (): Promise<void> => {
     global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     await expect(executeEmbeddedSignUpFlow({baseUrl, payload: {a: 1}})).rejects.toThrow(ThunderIDAPIError);
     await expect(executeEmbeddedSignUpFlow({baseUrl, payload: {a: 1}})).rejects.toThrow(
       'Network or parsing error: Network error',
@@ -254,7 +254,7 @@ describe('executeEmbeddedSignUpFlow', (): void => {
   it('should handle non-Error rejections', async (): Promise<void> => {
     global.fetch = vi.fn().mockRejectedValue('boom');
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     await expect(executeEmbeddedSignUpFlow({baseUrl, payload: {a: 1}})).rejects.toThrow(
       'Network or parsing error: Unknown error',
     );
@@ -273,7 +273,7 @@ describe('executeEmbeddedSignUpFlow', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const headers: Record<string, string> = {
       Authorization: 'Bearer token',
       'X-Custom-Header': 'custom',

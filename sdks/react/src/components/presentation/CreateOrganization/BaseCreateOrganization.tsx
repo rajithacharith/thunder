@@ -244,7 +244,7 @@ export const BaseCreateOrganization: FC<BaseCreateOrganizationProps> = ({
               />
             </FormControl>
           </div>
-          {renderAdditionalFields && renderAdditionalFields()}
+          {renderAdditionalFields?.()}
         </form>
         <div className={cx(styles['actions'])}>
           {onCancel && (

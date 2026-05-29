@@ -48,7 +48,7 @@ export interface GetSchemasConfig extends Omit<RequestInit, 'method'> {
  * // Using default fetch
  * try {
  *   const schemas = await getSchemas({
- *     url: "https://api.asgardeo.io/t/<ORGANIZATION>/scim2/Schemas",
+ *     url: "https://localhost:8090/scim2/Schemas",
  *   });
  *   console.log(schemas);
  * } catch (error) {
@@ -63,7 +63,7 @@ export interface GetSchemasConfig extends Omit<RequestInit, 'method'> {
  * // Using custom fetcher (e.g., axios-based httpClient)
  * try {
  *   const schemas = await getSchemas({
- *     url: "https://api.asgardeo.io/t/<ORGANIZATION>/scim2/Schemas",
+ *     url: "https://localhost:8090/scim2/Schemas",
  *     fetcher: async (url, config) => {
  *       const response = await httpClient({
  *         url,
@@ -92,7 +92,7 @@ export interface GetSchemasConfig extends Omit<RequestInit, 'method'> {
 const getSchemas = async ({url, baseUrl, fetcher, ...requestConfig}: GetSchemasConfig): Promise<Schema[]> => {
   try {
     // eslint-disable-next-line no-new
-    new URL(url ?? baseUrl);
+    new URL((url ?? baseUrl)!);
   } catch (error) {
     throw new ThunderIDAPIError(
       `Invalid URL provided. ${error?.toString()}`,

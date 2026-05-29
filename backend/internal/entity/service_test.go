@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/thunder-id/thunderid/internal/system/cryptolab/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
 	"github.com/thunder-id/thunderid/tests/mocks/crypto/hashmock"
 )
@@ -49,10 +49,10 @@ func (s *ServiceTestSuite) SetupTest() {
 	s.store = newEntityStoreInterfaceMock(s.T())
 	s.hashService = hashmock.NewHashServiceInterfaceMock(s.T())
 	// Default: hashService.Generate returns a deterministic hash for any input.
-	s.hashService.On("Generate", mock.Anything).Return(hash.Credential{
+	s.hashService.On("Generate", mock.Anything).Return(cryptolib.Credential{
 		Algorithm: "PBKDF2",
 		Hash:      "testhash",
-		Parameters: hash.CredParameters{
+		Parameters: cryptolib.CredParameters{
 			Salt: "testsalt", Iterations: 1, KeySize: 32,
 		},
 	}, nil).Maybe()

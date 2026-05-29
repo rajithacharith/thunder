@@ -238,7 +238,7 @@ const ThemeProvider: FC<PropsWithChildren<ThemeProviderProps>> = ({
 
     // Don't set up automatic theme detection for branding mode
     if (mode === 'branding') {
-      return null;
+      return;
     }
 
     if (mode === 'class') {

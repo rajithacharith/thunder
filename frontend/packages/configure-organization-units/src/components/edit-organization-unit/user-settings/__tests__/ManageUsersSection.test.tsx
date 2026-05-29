@@ -16,9 +16,10 @@
  * under the License.
  */
 
-import {screen, renderWithProviders} from '@thunderid/test-utils';
+import {screen, renderWithProviders, renderHook} from '@thunderid/test-utils';
 import type {User} from '@thunderid/types';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {useTranslation} from 'react-i18next';
+import {describe, it, expect, vi, beforeEach, beforeAll} from 'vitest';
 import ManageUsersSection from '../ManageUsersSection';
 
 // Mock the useGetOrganizationUnitUsers hook
@@ -33,23 +34,12 @@ vi.mock('@thunderid/hooks', async (importOriginal) => {
   return {...(actual as object), useDataGridLocaleText: () => ({})};
 });
 
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'organizationUnits:edit.users.sections.manage.title': 'Manage Users',
-        'organizationUnits:edit.users.sections.manage.description': 'View and manage users in this organization unit',
-        'organizationUnits:edit.users.sections.manage.listing.columns.name': 'Display Name',
-        'organizationUnits:edit.users.sections.manage.listing.columns.id': 'User ID',
-        'organizationUnits:edit.users.sections.manage.listing.columns.type': 'Type',
-      };
-      return translations[key] ?? key;
-    },
-  }),
-}));
-
 describe('ManageUsersSection', () => {
+  let t: (key: string) => string;
+
+  beforeAll(() => {
+    ({t} = renderHook(() => useTranslation()).result.current);
+  });
   const mockUsers: User[] = [
     {id: 'user-1', type: 'internal', ouId: 'ou-123', display: 'John Doe'},
     {id: 'user-2', type: 'external', ouId: 'ou-123', display: 'Jane Smith'},
@@ -68,8 +58,8 @@ describe('ManageUsersSection', () => {
 
     renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
 
-    expect(screen.getByText('Manage Users')).toBeInTheDocument();
-    expect(screen.getByText('View and manage users in this organization unit')).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:edit.users.sections.manage.title'))).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:edit.users.sections.manage.description'))).toBeInTheDocument();
   });
 
   it('should render data grid with users showing display names', () => {
@@ -109,9 +99,13 @@ describe('ManageUsersSection', () => {
 
     renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
 
-    expect(screen.getByText('Display Name')).toBeInTheDocument();
-    expect(screen.getByText('User ID')).toBeInTheDocument();
-    expect(screen.getByText('Type')).toBeInTheDocument();
+    expect(
+      screen.getByText(t('organizationUnits:edit.users.sections.manage.listing.columns.name')),
+    ).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:edit.users.sections.manage.listing.columns.id'))).toBeInTheDocument();
+    expect(
+      screen.getByText(t('organizationUnits:edit.users.sections.manage.listing.columns.type')),
+    ).toBeInTheDocument();
   });
 
   it('should show loading state', () => {

@@ -27,7 +27,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/flow/executor"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/observability"
@@ -796,6 +796,10 @@ func (fe *flowEngine) resolveStepDetailsForPrompt(ctx *EngineContext, nodeResp *
 		flowStep.FailureReason = nodeResp.FailureReason
 	}
 
+	if len(nodeResp.FieldErrors) > 0 {
+		flowStep.Data.FieldErrors = nodeResp.FieldErrors
+	}
+
 	flowStep.Status = common.FlowStatusIncomplete
 	flowStep.Type = common.StepTypeView
 	return nil
@@ -859,7 +863,7 @@ func (fe *flowEngine) validateChallengeToken(
 		logger.Debug("Challenge token is empty in the request")
 		return &ErrorInvalidChallengeToken
 	}
-	if !cryptolab.ValidateTokenHash(ctx.ChallengeTokenIn, ctx.ChallengeTokenHash) {
+	if !cryptolib.ValidateTokenHash(ctx.ChallengeTokenIn, ctx.ChallengeTokenHash) {
 		logger.Debug("Invalid challenge token provided in the request")
 		return &ErrorInvalidChallengeToken
 	}
@@ -873,13 +877,13 @@ func (fe *flowEngine) validateChallengeToken(
 func (fe *flowEngine) rotateChallengeToken(ctx *EngineContext, flowStep *FlowStep) *serviceerror.ServiceError {
 	logger := fe.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
-	newToken, err := cryptolab.GenerateSecureToken()
+	newToken, err := cryptolib.GenerateSecureToken()
 	if err != nil {
 		logger.Error("Failed to generate new challenge token", log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 
-	ctx.ChallengeTokenHash = cryptolab.HashToken(newToken)
+	ctx.ChallengeTokenHash = cryptolib.HashToken(newToken)
 	flowStep.ChallengeToken = newToken
 	return nil
 }

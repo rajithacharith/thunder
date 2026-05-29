@@ -51,7 +51,7 @@ export interface GetSchemasConfig extends Omit<BaseGetSchemasConfig, 'fetcher'> 
  * // Using default ThunderID SPA client httpClient
  * try {
  *   const schemas = await getSchemas({
- *     url: "https://api.asgardeo.io/t/<ORGANIZATION>/scim2/Schemas",
+ *     url: "https://localhost:8090/scim2/Schemas",
  *   });
  *   console.log(schemas);
  * } catch (error) {
@@ -66,7 +66,7 @@ export interface GetSchemasConfig extends Omit<BaseGetSchemasConfig, 'fetcher'> 
  * // Using custom fetcher
  * try {
  *   const schemas = await getSchemas({
- *     url: "https://api.asgardeo.io/t/<ORGANIZATION>/scim2/Schemas",
+ *     url: "https://localhost:8090/scim2/Schemas",
  *     fetcher: customFetchFunction
  *   });
  *   console.log(schemas);

@@ -832,7 +832,7 @@ const SignIn: FC<SignInProps> = ({
       }
 
       await handleSubmit({
-        executionId: passkeyState.executionId,
+        executionId: passkeyState.executionId ?? undefined,
         inputs,
       });
     };

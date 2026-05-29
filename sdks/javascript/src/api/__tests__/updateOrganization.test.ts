@@ -28,7 +28,7 @@ interface PatchOp {
 }
 
 describe('updateOrganization', (): void => {
-  const baseUrl = 'https://api.asgardeo.io/t/demo';
+  const baseUrl = 'https://localhost:8090';
   const organizationId = '0d5e071b-d3d3-475d-b3c6-1a20ee2fa9b1';
 
   beforeEach((): void => {

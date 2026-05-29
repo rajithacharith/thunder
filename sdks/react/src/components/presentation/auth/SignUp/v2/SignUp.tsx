@@ -65,7 +65,7 @@ const SignUp: FC<SignUpProps> = ({
     payload?: EmbeddedFlowExecuteRequestPayload,
   ): Promise<EmbeddedFlowExecuteResponse> => {
     const urlParams: URLSearchParams = new URL(window.location.href).searchParams;
-    const applicationIdFromUrl: string = urlParams.get('applicationId');
+    const applicationIdFromUrl: string = urlParams.get('applicationId') ?? '';
 
     // Priority order: applicationId from context > applicationId from URL
     const effectiveApplicationId: any = applicationId || applicationIdFromUrl;

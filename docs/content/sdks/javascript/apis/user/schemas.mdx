@@ -1,99 +1,23 @@
 ---
-title: SCIM2 Schemas
+title: User Schemas
 displayed_sidebar: javascriptSdkSidebar
-description: Fetch SCIM2 schema definitions for user attribute discovery
+description: Utility functions for working with user attribute schemas
 ---
 
-# SCIM2 Schemas
+# User Schemas
 
-`getSchemas` retrieves the SCIM2 schema definitions from <ProductName />. Use schemas to discover available user attributes, their types, and validation rules before building profile forms or processing user data.
-
-## `getSchemas(config)`
-
-```ts
-import { getSchemas } from '@thunderid/javascript'
-
-const schemas = await getSchemas({
-  baseUrl: 'https://localhost:8090',
-  headers: {
-    Authorization: `Bearer ${accessToken}`,
-  },
-})
-
-schemas.forEach(schema => {
-  console.log(schema.name, schema.attributes.map(a => a.name))
-})
-```
-
-## Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|:--------:|-------------|
-| `config.url` | `string` | ✅ | Full SCIM2 schemas endpoint URL. Mutually exclusive with `baseUrl` |
-| `config.baseUrl` | `string` | ✅ | <ProductName /> base URL. SDK appends `/scim2/Schemas` |
-| `config.fetcher` | `function` | — | Custom fetch function override |
-| `config.headers` | `Record<string, string>` | — | Additional request headers |
-
-## Response: `Schema[]`
-
-An array of schema definitions.
-
-### `Schema`
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `id` | `string` | Schema URI (e.g., `'urn:ietf:params:scim:schemas:core:2.0:User'`) |
-| `name` | `string` | Schema name (e.g., `'User'`) |
-| `description` | `string` | Schema description |
-| `attributes` | `SchemaAttribute[]` | Attribute definitions |
-
-### `SchemaAttribute`
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `name` | `string` | Attribute name (e.g., `'userName'`, `'emails'`) |
-| `type` | `string` | Data type: `'STRING'`, `'BOOLEAN'`, `'DECIMAL'`, `'INTEGER'`, `'DATETIME'`, `'BINARY'`, `'REFERENCE'`, `'COMPLEX'` |
-| `displayName` | `string` | Human-readable attribute label |
-| `description` | `string` | Attribute description |
-| `required` | `boolean` | Whether the attribute is required |
-| `multiValued` | `boolean` | Whether the attribute can hold multiple values |
-| `caseExact` | `boolean` | Whether string comparisons are case-sensitive |
-| `returned` | `string` | When the attribute is returned: `'always'`, `'never'`, `'default'`, `'request'` |
-| `uniqueness` | `string` | Uniqueness constraint: `'none'`, `'server'`, `'global'` |
-| `regEx` | `string` | Validation regex pattern |
-| `subAttributes` | `SchemaAttribute[]` | Nested attributes for complex types |
-
-## Well-Known Schema IDs
-
-Use `WellKnownSchemaIds` to reference standard schema URIs without hardcoding strings:
-
-```ts
-import { WellKnownSchemaIds } from '@thunderid/javascript'
-
-const userSchema = schemas.find(s => s.id === WellKnownSchemaIds.User)
-```
-
-| Constant | Value | Description |
-|----------|-------|-------------|
-| `WellKnownSchemaIds.Core` | `urn:ietf:params:scim:schemas:core:2.0` | SCIM2 core schema |
-| `WellKnownSchemaIds.User` | `urn:ietf:params:scim:schemas:core:2.0:User` | Standard user attributes |
-| `WellKnownSchemaIds.EnterpriseUser` | `urn:ietf:params:scim:schemas:extension:enterprise:2.0:User` | Enterprise user extension |
-| `WellKnownSchemaIds.SystemUser` | `urn:scim:wso2:schema` | WSO2 system attributes |
-| `WellKnownSchemaIds.CustomUser` | `urn:scim:custom:schema` | Custom user attributes |
+The SDK provides helpers for working with user schema data.
 
 ## Utility Functions
 
-The SDK provides helpers for working with schema data:
-
 ### `flattenUserSchema(schemas, user)`
 
-Produce a flat `Record<string, any>` from nested SCIM2 attribute paths.
+Produce a flat `Record<string, any>` from nested attribute paths.
 
 ```ts
 import { flattenUserSchema } from '@thunderid/javascript'
 
 const flat = flattenUserSchema(schemas, userProfile)
-// { 'urn:ietf:...name.givenName': 'Alice', 'urn:ietf:...emails[0].value': 'alice@example.com' }
 ```
 
 ### `generateUserProfile(flatProfile, schemas)`
@@ -110,7 +34,7 @@ const profile = generateUserProfile(flatProfile, schemas)
 
 ### `generateFlattenedUserProfile(profile, schemas)`
 
-Generate a flattened version of a full SCIM2 user profile directly.
+Generate a flattened version of a full user profile.
 
 ```ts
 import { generateFlattenedUserProfile } from '@thunderid/javascript'
@@ -120,9 +44,9 @@ const flat = generateFlattenedUserProfile(user, schemas)
 
 **Returns:** `User`
 
-### `resolveFieldType(scimType)`
+### `resolveFieldType(type)`
 
-Map a SCIM2 attribute type string to a `FieldType` enum value for rendering form inputs.
+Map an attribute type string to a `FieldType` enum value for rendering form inputs.
 
 ```ts
 import { resolveFieldType, FieldType } from '@thunderid/javascript'
@@ -132,4 +56,4 @@ const fieldType = resolveFieldType('STRING') // FieldType.Text
 
 ### `resolveFieldName(schema, path)`
 
-Resolve a human-readable display name for a SCIM2 attribute path.
+Resolve a human-readable display name for an attribute path.

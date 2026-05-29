@@ -221,6 +221,7 @@ func (as *authorizeService) handleStandardAuthorizationRequest(
 
 	nonce := msg.RequestQueryParams[oauth2const.RequestParamNonce]
 	acrValues := msg.RequestQueryParams[oauth2const.RequestParamAcrValues]
+	dpopJkt := msg.RequestQueryParams[oauth2const.RequestParamDPoPJkt]
 
 	// Parse the claims parameter if present.
 	var claimsRequest *oauth2model.ClaimsRequest
@@ -283,6 +284,7 @@ func (as *authorizeService) handleStandardAuthorizationRequest(
 		ClaimsLocales:       claimsLocales,
 		Nonce:               nonce,
 		AcrValues:           acrValues,
+		DPoPJkt:             dpopJkt,
 	}
 
 	// Set the redirect URI if not provided in the request. Invalid cases are already handled at this point.
@@ -423,7 +425,7 @@ func (as *authorizeService) HandleAuthorizationCallback(ctx context.Context, aut
 		}
 
 		// Verify the assertion.
-		if err := as.verifyAssertion(assertion); err != nil {
+		if err := as.verifyAssertion(ctx, assertion); err != nil {
 			as.logger.Debug("Assertion verification failed", log.Error(err))
 			authErr = &AuthorizationError{
 				Code:              oauth2const.ErrorInvalidRequest,
@@ -573,8 +575,8 @@ func (as *authorizeService) loadAuthRequestContext(ctx context.Context, authID s
 }
 
 // verifyAssertion verifies the JWT assertion.
-func (as *authorizeService) verifyAssertion(assertion string) error {
-	if err := as.jwtService.VerifyJWT(assertion, "", ""); err != nil {
+func (as *authorizeService) verifyAssertion(ctx context.Context, assertion string) error {
+	if err := as.jwtService.VerifyJWT(ctx, assertion, "", ""); err != nil {
 		as.logger.Debug("Invalid assertion signature", log.String("error", err.Error.DefaultValue))
 		return errors.New("invalid assertion signature")
 	}
@@ -706,6 +708,7 @@ func createAuthorizationCode(
 		ClaimsLocales:       authRequestCtx.OAuthParameters.ClaimsLocales,
 		Nonce:               authRequestCtx.OAuthParameters.Nonce,
 		CompletedACR:        claims.completedACR,
+		DPoPJkt:             authRequestCtx.OAuthParameters.DPoPJkt,
 	}, nil
 }
 

@@ -176,7 +176,7 @@ npm run posttest
 
 ### Authentication Flow
 
-We use Playwright's **Project Dependencies** pattern. The `setup` project runs first, authenticates the user, and saves the session state (cookies, localStorage, sessionStorage) to a JSON file. Subsequent test projects import this state.
+We use Playwright's **Project Dependencies** pattern. The `setup` project runs first, authenticates the user, and saves the session state (cookies, localStorage, sessionStorage) to a JSON file. Later test projects import this state.
 
 ```mermaid
 sequenceDiagram
@@ -229,7 +229,7 @@ tests/e2e/
 
 Follow this workflow when adding new automation:
 
-### Step 1: Define Constants & Configs
+### Step 1: Define Constants and Configurations
 
 Before writing test logic, define static values in the appropriate files:
 

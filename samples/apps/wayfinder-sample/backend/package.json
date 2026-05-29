@@ -1,0 +1,19 @@
+{
+  "name": "wayfinder-travel-api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "seed": "node scripts/seed.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.4",
+    "dotenv": "^16.5.0",
+    "zod": "^3.25.76"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}

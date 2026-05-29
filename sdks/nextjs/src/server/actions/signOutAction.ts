@@ -20,9 +20,9 @@
 
 import {cookies} from 'next/headers';
 import getSessionId from './getSessionId';
-import getClient from '../getClient';
 import logger from '../../utils/logger';
 import SessionManager from '../../utils/SessionManager';
+import getClient from '../getClient';
 
 type RequestCookies = Awaited<ReturnType<typeof cookies>>;
 

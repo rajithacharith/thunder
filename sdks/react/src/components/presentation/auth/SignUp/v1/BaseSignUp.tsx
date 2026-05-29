@@ -440,7 +440,7 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
 
         if (code && state) {
           const payload: EmbeddedFlowExecuteRequestPayload = {
-            ...(currentFlow.flowId && {flowId: currentFlow.flowId}),
+            ...(currentFlow!.flowId && {flowId: currentFlow!.flowId}),
             actionId: '',
             flowType: (currentFlow as any).flowType || 'REGISTRATION',
             inputs: {
@@ -450,7 +450,7 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
           } as any;
 
           try {
-            const continueResponse: any = await onSubmit(payload);
+            const continueResponse: any = await onSubmit!(payload);
             onFlowChange?.(continueResponse);
 
             if (continueResponse.flowStatus === EmbeddedFlowStatus.Complete) {
@@ -511,7 +511,7 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
 
               if (code && state) {
                 const payload: EmbeddedFlowExecuteRequestPayload = {
-                  ...(currentFlow.flowId && {flowId: currentFlow.flowId}),
+                  ...(currentFlow!.flowId && {flowId: currentFlow!.flowId}),
                   actionId: '',
                   flowType: (currentFlow as any).flowType || 'REGISTRATION',
                   inputs: {
@@ -521,7 +521,7 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
                 } as any;
 
                 try {
-                  const continueResponse: any = await onSubmit(payload);
+                  const continueResponse: any = await onSubmit!(payload);
                   onFlowChange?.(continueResponse);
 
                   if (continueResponse.flowStatus === EmbeddedFlowStatus.Complete) {
@@ -585,7 +585,7 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
         ...(actionId && {actionId: actionId}),
       } as any;
 
-      const response: any = await onSubmit(payload);
+      const response: any = await onSubmit!(payload);
       onFlowChange?.(response);
 
       if (response.flowStatus === EmbeddedFlowStatus.Complete) {
@@ -685,7 +685,7 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
         clearMessages();
 
         try {
-          const response: any = await onInitialize();
+          const response: any = await onInitialize?.();
 
           setCurrentFlow(response);
           setIsFlowInitialized(true);

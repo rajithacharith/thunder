@@ -34,14 +34,14 @@ import {
 const state = vi.hoisted(() => ({
   cookieStore: {} as Record<string, string>,
   tempCookie: undefined as string | undefined,
-  mockAuthorizeUrl: 'https://api.asgardeo.io/t/org/oauth2/authorize?code_challenge=x',
+  mockAuthorizeUrl: 'https://localhost:8090/oauth2/authorize?code_challenge=x',
   liveSession: null as any,
 }));
 
 const mockClientInstance = vi.hoisted(() => ({
   getAuthorizeRequestUrl: vi
     .fn<() => Promise<string>>()
-    .mockResolvedValue('https://api.asgardeo.io/t/org/oauth2/authorize?code_challenge=x'),
+    .mockResolvedValue('https://localhost:8090/oauth2/authorize?code_challenge=x'),
   signIn: vi.fn<() => Promise<any>>().mockResolvedValue(undefined),
 }));
 
@@ -118,7 +118,7 @@ describe('POST /api/auth/signin', () => {
       const result = await (signinHandler as any)(mockEvent);
 
       expect(result.success).toBe(true);
-      expect(result.data.signInUrl).toBe('https://api.asgardeo.io/t/org/oauth2/authorize?code_challenge=x');
+      expect(result.data.signInUrl).toBe('https://localhost:8090/oauth2/authorize?code_challenge=x');
     });
 
     it('mints a temp session cookie when no existing session', async () => {

@@ -17,16 +17,8 @@ env:
   PRODUCT_NAME: "ThunderID"
 
 jobs:
-  dependency-guard:
-    name: 🛡️ Dependency Guard
-    uses: ./.github/workflows/dependency-guard.yml
-    with:
-      detection-mode: commit
-
   validate-complete-build:
     name: 🔨 Validate Complete Build (All Platforms)
-    needs: dependency-guard
-    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code

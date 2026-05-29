@@ -30,7 +30,7 @@ import (
 	"time"
 
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
 
@@ -81,7 +81,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_EmptyToken() {
 
 func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_PublicKeyNotAvailable() {
 	s.jwtServiceMock.On("GetPublicKey").Return(nil).Maybe()
-	s.jwtServiceMock.On("VerifyJWT", mock.Anything, "", "").Return(
+	s.jwtServiceMock.On("VerifyJWT", mock.Anything, mock.Anything, "", "").Return(
 		&serviceerror.ServiceError{
 			Type: serviceerror.ServerErrorType,
 			Code: "PUBLIC_KEY_NOT_AVAILABLE",
@@ -118,7 +118,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_InvalidSignatur
 	claimsEncoded := base64.RawURLEncoding.EncodeToString(claimsBytes)
 
 	signingInput := headerEncoded + "." + claimsEncoded
-	signature, err := cryptolab.Generate([]byte(signingInput), cryptolab.RSASHA256, differentKey)
+	signature, err := cryptolib.Generate([]byte(signingInput), cryptolib.RSASHA256, differentKey)
 	if err != nil {
 		s.T().Fatal("Error signing token:", err)
 	}
@@ -126,7 +126,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_InvalidSignatur
 
 	invalidToken := signingInput + "." + signatureEncoded
 
-	s.jwtServiceMock.On("VerifyJWT", invalidToken, "", "").Return(
+	s.jwtServiceMock.On("VerifyJWT", mock.Anything, invalidToken, "", "").Return(
 		&serviceerror.ServiceError{
 			Type:  serviceerror.ServerErrorType,
 			Code:  "INVALID_SIGNATURE",
@@ -149,7 +149,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_DecodeFailsAfte
 	// This can happen with a malformed JWT structure (e.g., missing dots or invalid base64)
 	malformedToken := "header.payload" // Missing signature part
 
-	s.jwtServiceMock.On("VerifyJWT", malformedToken, "", "").Return(nil)
+	s.jwtServiceMock.On("VerifyJWT", mock.Anything, malformedToken, "", "").Return(nil)
 
 	response, err := s.introspectService.IntrospectToken(context.Background(), malformedToken, "")
 	assert.NoError(s.T(), err)
@@ -267,7 +267,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 			// Mock VerifyJWT based on test case
 			switch tc.name {
 			case "InvalidTokenFormat":
-				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
+				s.jwtServiceMock.On("VerifyJWT", mock.Anything, token, "", "").Return(
 					&serviceerror.ServiceError{
 						Type: serviceerror.ServerErrorType,
 						Code: "INVALID_TOKEN_FORMAT",
@@ -279,7 +279,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 						},
 					})
 			case "ExpiredToken":
-				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
+				s.jwtServiceMock.On("VerifyJWT", mock.Anything, token, "", "").Return(
 					&serviceerror.ServiceError{
 						Type: serviceerror.ClientErrorType,
 						Code: "TOKEN_EXPIRED",
@@ -291,7 +291,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 						},
 					})
 			case "FutureToken":
-				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
+				s.jwtServiceMock.On("VerifyJWT", mock.Anything, token, "", "").Return(
 					&serviceerror.ServiceError{
 						Type: serviceerror.ClientErrorType,
 						Code: "TOKEN_NOT_VALID_YET",
@@ -304,7 +304,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 						},
 					})
 			case "TokenWithMissingExpClaim":
-				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
+				s.jwtServiceMock.On("VerifyJWT", mock.Anything, token, "", "").Return(
 					&serviceerror.ServiceError{
 						Type: serviceerror.ClientErrorType,
 						Code: "MISSING_EXP_CLAIM",
@@ -317,7 +317,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 						},
 					})
 			case "TokenWithMissingNbfClaim":
-				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
+				s.jwtServiceMock.On("VerifyJWT", mock.Anything, token, "", "").Return(
 					&serviceerror.ServiceError{
 						Type: serviceerror.ClientErrorType,
 						Code: "MISSING_NBF_CLAIM",
@@ -330,9 +330,9 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 						},
 					})
 			case "ValidToken", "TokenWithMissingOptionalClaims":
-				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(nil)
+				s.jwtServiceMock.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 			default:
-				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(nil)
+				s.jwtServiceMock.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 			}
 
 			response, err := s.introspectService.IntrospectToken(context.Background(), token, "")
@@ -376,6 +376,31 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 	}
 }
 
+// TestIntrospectToken_DPoPBoundToken_SurfacesCnfAndDPoPType verifies that a token
+// carrying cnf.jkt is reported with token_type=DPoP and the cnf claim is surfaced.
+func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_DPoPBoundToken_SurfacesCnfAndDPoPType() {
+	claims := map[string]any{
+		"exp":       float64(time.Now().Add(time.Hour).Unix()),
+		"nbf":       float64(time.Now().Add(-time.Minute).Unix()),
+		"iat":       float64(time.Now().Unix()),
+		"sub":       "user123",
+		"client_id": "client123",
+		"cnf":       map[string]any{"jkt": "thumbprint-abc"},
+	}
+	token := s.createToken(claims)
+
+	s.jwtServiceMock.On("GetPublicKey").Return(&s.privateKey.PublicKey).Maybe()
+	s.jwtServiceMock.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
+
+	response, err := s.introspectService.IntrospectToken(context.Background(), token, "")
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), response)
+	assert.True(s.T(), response.Active)
+	assert.Equal(s.T(), constants.TokenTypeDPoP, response.TokenType)
+	assert.NotNil(s.T(), response.Cnf)
+	assert.Equal(s.T(), "thumbprint-abc", response.Cnf.Jkt)
+}
+
 // Helper methods to create tokens with specific claims
 func (s *TokenIntrospectionServiceTestSuite) createToken(claims map[string]interface{}) string {
 	header := map[string]interface{}{
@@ -390,7 +415,7 @@ func (s *TokenIntrospectionServiceTestSuite) createToken(claims map[string]inter
 	claimsEncoded := base64.RawURLEncoding.EncodeToString(claimsBytes)
 
 	signingInput := headerEncoded + "." + claimsEncoded
-	signature, err := cryptolab.Generate([]byte(signingInput), cryptolab.RSASHA256, s.privateKey)
+	signature, err := cryptolib.Generate([]byte(signingInput), cryptolib.RSASHA256, s.privateKey)
 	if err != nil {
 		s.T().Fatal("Error signing token:", err)
 	}

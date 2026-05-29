@@ -1,6 +1,6 @@
 # ThunderID React SDK Sample Application
 
-This sample application demonstrates how to integrate authentication into a React application using the `@asgardeo/react` SDK. It showcases OAuth 2.0/OIDC based user authentication, token management, and user profile display.
+This sample application demonstrates how to integrate authentication into a React application using the `@thunderid/react` SDK. It showcases OAuth 2.0/OIDC based user authentication, token management, and user profile display.
 
 ## Features
 
@@ -173,9 +173,9 @@ Before running the app, ensure your application is configured with:
 
 **Using Authentication Hooks:**
 ```tsx
-import { useAsgardeo } from "@asgardeo/react";
+import { useThunderID } from "@thunderid/react";
 
-const { getAccessToken, signIn } = useAsgardeo();
+const { getAccessToken, signIn } = useThunderID();
 const accessToken = await getAccessToken();
 ```
 

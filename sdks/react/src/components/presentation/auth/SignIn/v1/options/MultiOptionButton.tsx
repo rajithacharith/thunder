@@ -44,10 +44,10 @@ const MultiOptionButton: FC<BaseSignInOptionProps> = ({
    * Get display name for the authenticator.
    */
   const getDisplayName = (): string => {
-    let authenticatorName: any = authenticator.authenticator;
+    let authenticatorName: any = authenticator!.authenticator;
 
-    if (authenticator.idp !== EmbeddedSignInFlowAuthenticatorKnownIdPType.Local) {
-      authenticatorName = authenticator.idp;
+    if (authenticator!.idp !== EmbeddedSignInFlowAuthenticatorKnownIdPType.Local) {
+      authenticatorName = authenticator!.idp;
     }
 
     switch (authenticatorName) {
@@ -60,7 +60,7 @@ const MultiOptionButton: FC<BaseSignInOptionProps> = ({
    * Get appropriate icon for the authenticator type.
    */
   const getIcon = (): ReactElement | null => {
-    const {authenticatorId} = authenticator;
+    const {authenticatorId} = authenticator!;
 
     switch (authenticatorId) {
       case ApplicationNativeAuthenticationConstants.SupportedAuthenticators.SmsOtp:
@@ -133,7 +133,7 @@ const MultiOptionButton: FC<BaseSignInOptionProps> = ({
   const handleClick = (): any => {
     // For multi-option buttons, we call onSubmit without form data
     // This will trigger the authenticator selection and likely move to the next step
-    onSubmit(authenticator);
+    onSubmit!(authenticator!);
   };
 
   return (

@@ -176,7 +176,17 @@ export type ThunderIDContextProps = {
    * @example
    * signInOptions: { prompt: "login", fidp: "OrganizationSSO" }
    */
-  signInOptions: SignInOptions;
+  signInOptions?: SignInOptions;
+
+  /**
+   * Optional token request configuration. params are appended to the token endpoint POST body.
+   *
+   * @example
+   * tokenRequest: { params: { resource: "https://api.example.com" } }
+   */
+  tokenRequest?: {
+    params?: Record<string, unknown>;
+  };
 
   /**
    * Silent sign-in function to re-authenticate the user without user interaction.
@@ -217,14 +227,14 @@ const ThunderIDContext: Context<ThunderIDContextProps | null> = createContext<nu
   discovery: {
     wellKnown: null,
   },
-  exchangeToken: null,
-  getAccessToken: null,
-  getDecodedIdToken: null,
-  getIdToken: null,
+  exchangeToken: null as unknown as ThunderIDContextProps['exchangeToken'],
+  getAccessToken: null as unknown as ThunderIDContextProps['getAccessToken'],
+  getDecodedIdToken: null as unknown as ThunderIDContextProps['getDecodedIdToken'],
+  getIdToken: null as unknown as ThunderIDContextProps['getIdToken'],
   getStorageManager: () => Promise.resolve(null),
   http: {
-    request: () => null,
-    requestAll: () => null,
+    request: () => null as unknown as Promise<HttpResponse<any>>,
+    requestAll: () => null as unknown as Promise<HttpResponse<any>[]>,
   },
   instanceId: 0,
   isInitialized: false,
@@ -232,21 +242,20 @@ const ThunderIDContext: Context<ThunderIDContextProps | null> = createContext<nu
   isMetaLoading: false,
   isSignedIn: false,
   meta: null,
-  organization: null,
+  organization: null as unknown as Organization,
   organizationHandle: undefined,
   platform: undefined,
-  reInitialize: null,
+  reInitialize: null as unknown as ThunderIDContextProps['reInitialize'],
   recover: () => Promise.resolve({} as any),
   resolveFlowTemplateLiterals: (text: string | undefined) => text ?? '',
   signIn: () => Promise.resolve({} as any),
-  signInOptions: {},
   signInSilently: () => Promise.resolve({} as any),
   signInUrl: undefined,
   signOut: () => Promise.resolve({} as any),
   signUp: () => Promise.resolve({} as any),
   signUpUrl: undefined,
   storage: 'sessionStorage',
-  switchOrganization: null,
+  switchOrganization: null as unknown as ThunderIDContextProps['switchOrganization'],
   user: null,
 });
 

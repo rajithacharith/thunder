@@ -91,7 +91,7 @@ const BaseSignOutButton: ForwardRefExoticComponent<BaseSignOutButtonProps & RefA
       ref: Ref<HTMLButtonElement>,
     ): ReactElement => {
       if (typeof children === 'function') {
-        return <>{children({isLoading, meta, signOut})}</>;
+        return <>{children({isLoading, meta, signOut: signOut!})}</>;
       }
 
       return (

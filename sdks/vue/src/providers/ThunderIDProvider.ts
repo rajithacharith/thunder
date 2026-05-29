@@ -499,7 +499,7 @@ const ThunderIDProvider: Component = defineComponent({
                                   userProfile.value = {
                                     flattenedProfile: generateFlattenedUserProfile(
                                       updatedUser,
-                                      userProfile.value?.schemas,
+                                      userProfile.value?.schemas ?? [],
                                     ),
                                     profile: updatedUser,
                                     schemas: userProfile.value?.schemas ?? [],

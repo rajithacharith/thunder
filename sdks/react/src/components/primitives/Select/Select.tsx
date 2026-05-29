@@ -84,7 +84,7 @@ const Select: FC<SelectProps> = ({
 }: SelectProps) => {
   const {theme, colorScheme}: ReturnType<typeof useTheme> = useTheme();
   const hasError = !!error;
-  const styles: Record<string, string> = useStyles(theme, colorScheme, disabled, hasError);
+  const styles: Record<string, string> = useStyles(theme, colorScheme, disabled ?? false, hasError);
 
   const selectClassName: string = cx(
     withVendorCSSClassPrefix(bem('select', 'input')),

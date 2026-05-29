@@ -68,7 +68,7 @@ export interface GetMeOrganizationsConfig extends Omit<RequestInit, 'method'> {
  * // Using default fetch
  * try {
  *   const organizations = await getMeOrganizations({
- *     baseUrl: "https://api.asgardeo.io/t/<ORGANIZATION>",
+ *     baseUrl: "https://localhost:8090",
  *     after: "",
  *     before: "",
  *     filter: "",
@@ -88,7 +88,7 @@ export interface GetMeOrganizationsConfig extends Omit<RequestInit, 'method'> {
  * // Using custom fetcher (e.g., axios-based httpClient)
  * try {
  *   const organizations = await getMeOrganizations({
- *     baseUrl: "https://api.asgardeo.io/t/<ORGANIZATION>",
+ *     baseUrl: "https://localhost:8090",
  *     after: "",
  *     before: "",
  *     filter: "",

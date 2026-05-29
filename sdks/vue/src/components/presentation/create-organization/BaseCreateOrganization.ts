@@ -70,7 +70,7 @@ const BaseCreateOrganization: Component = defineComponent({
       }
     };
 
-    return (): VNode | VNode[] | null => {
+    return (): any => {
       if (slots.default) {
         return slots.default({
           error: error.value,

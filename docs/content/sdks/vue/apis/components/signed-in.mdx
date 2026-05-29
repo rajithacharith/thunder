@@ -6,7 +6,7 @@ description: Conditionally render content for authenticated users
 # `<SignedIn />`
 
 The `SignedIn` component conditionally renders its default slot only when the user is authenticated with <ProductName />.
-It checks the current authentication state and displays protected UI content for signed-in users, while rendering an optional `#fallback` slot (or nothing by default) when the user is not authenticated.
+It checks the current authentication state and displays protected UI content for signed-in users. When the user is not authenticated, it renders an optional `#fallback` slot or nothing by default.
 This makes it ideal for guarding routes or UI sections that require authentication.
 
 ## Usage
@@ -33,7 +33,7 @@ import { SignedIn } from '@thunderid/vue'
 If the user is not signed in, nothing will be rendered unless you provide a `#fallback` slot.
 :::
 
-### With Fallback
+### Fallback Slot
 
 Show alternative content when the user is not signed in using the `#fallback` slot:
 

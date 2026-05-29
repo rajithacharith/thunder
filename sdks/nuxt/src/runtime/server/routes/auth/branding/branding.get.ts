@@ -40,7 +40,7 @@ export default defineEventHandler(async (event: H3Event): Promise<BrandingPrefer
   const publicConfig: ThunderIDNuxtConfig = config.public.thunderid as ThunderIDNuxtConfig;
   const sessionSecret: string | undefined = config.thunderid?.sessionSecret;
 
-  const baseUrl: string = (publicConfig?.baseUrl ?? '') as string;
+  const baseUrl: string = publicConfig?.baseUrl ?? '';
   let resolvedBaseUrl: string = baseUrl;
 
   // Attempt to resolve the org-scoped base URL from the session, if present.
@@ -57,7 +57,7 @@ export default defineEventHandler(async (event: H3Event): Promise<BrandingPrefer
         const idToken: Awaited<ReturnType<ThunderIDNuxtClient['getDecodedIdToken']>> = await client.getDecodedIdToken(
           session.sessionId,
         );
-        if (idToken?.['user_org']) {
+        if (idToken?.user_org) {
           resolvedBaseUrl = `${baseUrl}/o`;
         }
       }

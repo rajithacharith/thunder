@@ -6,7 +6,7 @@ ThunderID is a lightweight user and identity management product. Go backend + Re
 - For build and running - [Makefile](Makefile) and [README.md](README.md)
 - Documentation at [docs/content](docs/content)
 
-Login Gate leverages v2 of the [Asgardeo JavaScript SDK](https://github.com/asgardeo/javascript), consumed via its published package in typical setups.
+Login Gate leverages v2 of the [ThunderID JavaScript SDK](https://github.com/thunder-id/thunderid/tree/main/sdks/javascript), consumed via its published package in typical setups.
 Clone the SDK repository only if you are developing or debugging the SDK itself, or testing the product against unreleased SDK changes.
 
 ## General Rules
@@ -34,7 +34,7 @@ Clone the SDK repository only if you are developing or debugging the SDK itself,
 - Reference the related issue or pull request when applicable (e.g., `Refs #123` or `Fixes #123`).
 
 ### One Commit Per Pull Request
-- PRs are squash-merged, so the final commit history stays clean automatically.
+- Each PR must have a single commit. Only add a second commit when strictly necessary. Never leave intermediate or fixup commits in the PR.
 
 ## Agent Skills
 

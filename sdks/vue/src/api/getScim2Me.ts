@@ -33,7 +33,7 @@ export interface GetScim2MeConfig extends Omit<BaseGetScim2MeConfig, 'fetcher'> 
 const getScim2Me = async ({fetcher, instanceId = 0, ...requestConfig}: GetScim2MeConfig): Promise<User> => {
   const defaultFetcher = async (url: string, config: RequestInit): Promise<Response> => {
     const httpClient: FetchHttpClient = FetchHttpClient.getInstance(instanceId);
-    
+
     const response: HttpResponse<any> = await httpClient.request({
       headers: config.headers as Record<string, string>,
       method: config.method || 'GET',

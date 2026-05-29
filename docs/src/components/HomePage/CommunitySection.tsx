@@ -166,7 +166,6 @@ function IssueIcon() {
 
 export default function CommunitySection(): JSX.Element {
   const theme = useTheme();
-  const isDark = useIsDarkMode();
   const {ref, isVisible} = useScrollAnimation({threshold: 0.15});
   const {siteConfig} = useDocusaurusContext();
   const productName = (siteConfig.customFields?.product as DocusaurusProductConfig).project.name;

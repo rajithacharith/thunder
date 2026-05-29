@@ -1,9 +1,30 @@
-import React from 'react';
+/**
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 import Link from '@docusaurus/Link';
+import React from 'react';
 
-type Feature = { text: string; available: boolean };
+interface Feature {
+  text: string;
+  available: boolean;
+}
 
-type Station = {
+interface Station {
   href: string;
   accentColor: string;
   iconBackground: string;
@@ -17,26 +38,14 @@ type Station = {
   features: Feature[];
   featured?: boolean;
   animClass: string;
-};
+}
 
 function DockerLogo() {
-  return (
-    <img
-      src="/img/docker-logo.svg"
-      alt="Docker"
-      style={{ objectFit: 'contain', display: 'block' }}
-    />
-  );
+  return <img src="/img/docker-logo.svg" alt="Docker" style={{objectFit: 'contain', display: 'block'}} />;
 }
 
 function KubernetesLogo() {
-  return (
-    <img
-      src="/img/kubernetes-logo.svg"
-      alt="Kubernetes"
-      style={{ objectFit: 'contain', display: 'block' }}
-    />
-  );
+  return <img src="/img/kubernetes-logo.svg" alt="Kubernetes" style={{objectFit: 'contain', display: 'block'}} />;
 }
 
 function OpenChoreoLogo() {
@@ -45,32 +54,59 @@ function OpenChoreoLogo() {
       className="dp-openchoreo-logo"
       src="/img/openchoreo-logo.svg"
       alt="OpenChoreo"
-      style={{ objectFit: 'contain', display: 'block' }}
+      style={{objectFit: 'contain', display: 'block'}}
     />
   );
 }
 
 function ClockIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/>
-      <polyline points="12 6 12 12 16 14"/>
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
     </svg>
   );
 }
 
 function CheckIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12"/>
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="20 6 9 17 4 12" />
     </svg>
   );
 }
 
 function DashIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="5" y1="12" x2="19" y2="12"/>
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   );
 }
@@ -88,10 +124,10 @@ const stations: Station[] = [
     cta: 'Start locally →',
     icon: <DockerLogo />,
     features: [
-      { text: 'Quick setup with pre-built images', available: true },
-      { text: 'PostgreSQL integration', available: true },
-      { text: 'Custom configuration mounting', available: true },
-      { text: 'Not for production use', available: false },
+      {text: 'Quick setup with pre-built images', available: true},
+      {text: 'PostgreSQL integration', available: true},
+      {text: 'Custom configuration mounting', available: true},
+      {text: 'Not for production use', available: false},
     ],
     animClass: 'dp-row-1',
   },
@@ -107,11 +143,11 @@ const stations: Station[] = [
     cta: 'Deploy on Kubernetes →',
     icon: <KubernetesLogo />,
     features: [
-      { text: 'Helm chart deployment', available: true },
-      { text: 'Multi-replica support', available: true },
-      { text: 'Ingress configuration', available: true },
-      { text: 'Database flexibility (PostgreSQL/SQLite)', available: true },
-      { text: 'Rolling updates and rollbacks', available: true },
+      {text: 'Helm chart deployment', available: true},
+      {text: 'Multi-replica support', available: true},
+      {text: 'Ingress configuration', available: true},
+      {text: 'Database flexibility (PostgreSQL/SQLite)', available: true},
+      {text: 'Rolling updates and rollbacks', available: true},
     ],
     animClass: 'dp-row-2',
   },
@@ -127,20 +163,18 @@ const stations: Station[] = [
     cta: 'Deploy on OpenChoreo →',
     icon: <OpenChoreoLogo />,
     features: [
-      { text: 'Cell-based deployment model', available: true },
-      { text: 'Integrated platform services', available: true },
-      { text: 'Advanced networking', available: true },
-      { text: 'Service mesh integration', available: true },
+      {text: 'Cell-based deployment model', available: true},
+      {text: 'Integrated platform services', available: true},
+      {text: 'Advanced networking', available: true},
+      {text: 'Service mesh integration', available: true},
     ],
     animClass: 'dp-row-3',
   },
-]; 
+];
 
 export default function DeploymentCards() {
   return (
     <div className="dp-wrap">
-
-      {/* Page header */}
       <div className="dp-header">
         <div className="dp-header-kicker">Deployment</div>
         <h1 className="dp-header-title">Where are you deploying?</h1>
@@ -156,7 +190,7 @@ export default function DeploymentCards() {
             <div
               key={s.href}
               className="dp-route-stop"
-              style={{ ['--dp-accent' as string]: s.accentColor, ['--dp-icon-bg' as string]: s.iconBackground }}
+              style={{['--dp-accent' as string]: s.accentColor, ['--dp-icon-bg' as string]: s.iconBackground}}
             >
               <div className="dp-route-node">{s.icon}</div>
               <span className="dp-route-stop-label">{s.title}</span>
@@ -172,13 +206,17 @@ export default function DeploymentCards() {
             key={s.href}
             to={s.href}
             className={`dp-row-card ${s.animClass}${s.featured ? ' dp-featured' : ''}`}
-            style={{ ['--dp-accent' as string]: s.accentColor, ['--dp-icon-bg' as string]: s.iconBackground }}
+            style={{['--dp-accent' as string]: s.accentColor, ['--dp-icon-bg' as string]: s.iconBackground}}
           >
-            <div className="dp-rc-step">Path {s.stepLabel} — {s.stepTag}</div>
+            <div className="dp-rc-step">
+              Path {s.stepLabel} — {s.stepTag}
+            </div>
             <div className="dp-rc-title">{s.title}</div>
 
             <div className="dp-setup-badge">
-              <span className="dp-setup-badge-icon"><ClockIcon /></span>
+              <span className="dp-setup-badge-icon">
+                <ClockIcon />
+              </span>
               <div>
                 <div className="dp-setup-label">Setup time</div>
                 <div className="dp-setup-value">{s.setupTime}</div>
@@ -188,9 +226,7 @@ export default function DeploymentCards() {
             <ul className="dp-feature-list">
               {s.features.map((f) => (
                 <li key={f.text} className={`dp-feature-item ${f.available ? 'dp-feat-check' : 'dp-feat-miss'}`}>
-                  <span className="dp-feat-icon">
-                    {f.available ? <CheckIcon /> : <DashIcon />}
-                  </span>
+                  <span className="dp-feat-icon">{f.available ? <CheckIcon /> : <DashIcon />}</span>
                   <span>{f.text}</span>
                 </li>
               ))}
@@ -208,9 +244,9 @@ export default function DeploymentCards() {
 
       {/* Production recommendation note */}
       <p className="dp-prod-note">
-        For production deployments, use <strong>Kubernetes</strong> or <strong>OpenChoreo</strong> with PostgreSQL. Use Docker for local evaluation, demos, and development testing.
+        For production deployments, use <strong>Kubernetes</strong> or <strong>OpenChoreo</strong> with PostgreSQL. Use
+        Docker for local evaluation, demos, and development testing.
       </p>
-
     </div>
   );
 }

@@ -31,7 +31,7 @@ pnpm add vue-router
 </CodeGroup>
 :::
 
-## Per-Route Guard With `beforeEnter`
+## `beforeEnter` Route Guard
 
 Apply the guard to a single route using `beforeEnter`. This is the most common pattern when only a few routes need protection.
 
@@ -59,7 +59,7 @@ const router = createRouter({
 export default router
 ```
 
-## Global Guard With `router.beforeEach`
+## Global Guard with `router.beforeEach`
 
 Apply the guard to every route at once using `router.beforeEach`. Combine this with per-route `meta` flags if you want to opt specific routes out of the check.
 

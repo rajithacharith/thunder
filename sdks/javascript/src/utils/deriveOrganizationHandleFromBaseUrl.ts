@@ -20,13 +20,9 @@ import logger from './logger';
 import ThunderIDRuntimeError from '../errors/ThunderIDRuntimeError';
 
 /**
- * Extracts the organization handle from an ThunderID base URL.
+ * Extracts the organization handle from a ThunderID base URL.
  *
- * This function parses ThunderID URLs with the standard pattern:
- * - https://dev.asgardeo.io/t/{orgHandle}
- * - https://stage.asgardeo.io/t/{orgHandle}
- * - https://prod.asgardeo.io/t/{orgHandle}
- * - https://{subdomain}.asgardeo.io/t/{orgHandle}
+ * Parses URLs following the `/t/{orgHandle}` pattern.
  *
  * @param baseUrl - The base URL of the ThunderID identity server
  * @returns The extracted organization handle
@@ -35,12 +31,8 @@ import ThunderIDRuntimeError from '../errors/ThunderIDRuntimeError';
  *
  * @example
  * ```typescript
- * // Standard ThunderID URLs
- * const handle1 = deriveOrganizationHandleFromBaseUrl('https://dev.asgardeo.io/t/dxlab');
+ * const handle = deriveOrganizationHandleFromBaseUrl('https://localhost:8090/t/dxlab');
  * // Returns: 'dxlab'
- *
- * const handle2 = deriveOrganizationHandleFromBaseUrl('https://stage.asgardeo.io/t/myorg');
- * // Returns: 'myorg'
  *
  * // Custom domain - returns empty string with a warning
  * const handle2 = deriveOrganizationHandleFromBaseUrl('https://custom.example.com/auth');

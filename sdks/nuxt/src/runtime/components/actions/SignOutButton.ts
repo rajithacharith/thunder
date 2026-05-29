@@ -62,17 +62,17 @@ const SignOutButton: Component = defineComponent({
     };
 
     return (): VNode => {
-      const slotContent: (() => VNode[]) | undefined = slots['default']
-        ? (): VNode[] => slots['default']!({isLoading: isLoading.value})
+      const slotContent: (() => VNode[]) | undefined = slots.default
+        ? (): VNode[] => slots.default!({isLoading: isLoading.value})
         : undefined;
 
       return h(
         BaseSignOutButton,
         {
-          class: attrs['class'],
+          class: attrs.class,
           isLoading: isLoading.value,
           onClick: handleSignOut,
-          style: attrs['style'],
+          style: attrs.style,
         },
         slotContent,
       );

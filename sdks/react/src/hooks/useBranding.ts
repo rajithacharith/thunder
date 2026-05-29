@@ -122,7 +122,7 @@ export interface UseBrandingReturn {
  * For new implementations, use BrandingProvider with useBrandingContext:
  * ```tsx
  * // In your root component
- * <BrandingProvider baseUrl="https://api.asgardeo.io/t/your-org">
+ * <BrandingProvider baseUrl="https://localhost:8090">
  *   <App />
  * </BrandingProvider>
  *

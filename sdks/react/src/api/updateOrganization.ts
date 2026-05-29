@@ -57,14 +57,14 @@ export interface UpdateOrganizationConfig extends Omit<BaseUpdateOrganizationCon
  * });
  *
  * await updateOrganization({
- *   baseUrl: "https://api.asgardeo.io/t/<ORG>",
+ *   baseUrl: "https://localhost:8090",
  *   organizationId: "0d5e071b-d3d3-475d-b3c6-1a20ee2fa9b1",
  *   operations
  * });
  *
  * // Or manually specify operations
  * await updateOrganization({
- *   baseUrl: "https://api.asgardeo.io/t/<ORG>",
+ *   baseUrl: "https://localhost:8090",
  *   organizationId: "0d5e071b-d3d3-475d-b3c6-1a20ee2fa9b1",
  *   operations: [
  *     { operation: "REPLACE", path: "/name", value: "Updated Organization Name" },
@@ -77,7 +77,7 @@ export interface UpdateOrganizationConfig extends Omit<BaseUpdateOrganizationCon
  * ```typescript
  * // Using custom fetcher
  * await updateOrganization({
- *   baseUrl: "https://api.asgardeo.io/t/<ORG>",
+ *   baseUrl: "https://localhost:8090",
  *   organizationId: "0d5e071b-d3d3-475d-b3c6-1a20ee2fa9b1",
  *   operations: [
  *     { operation: "REPLACE", path: "/name", value: "Updated Organization Name" }

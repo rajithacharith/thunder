@@ -16,7 +16,6 @@
  * under the License.
  */
 
-import React from 'react';
 
 export default function DockerLogo({size = 14}: {size?: number}) {
   const width = Math.round(size * (340 / 268));

@@ -425,7 +425,7 @@ const BaseSignUp: Component = defineComponent({
           flowType: (currentFlow.value as any).flowType || 'REGISTRATION',
           ...(component.id && {action: component.id}),
           inputs: filteredInputs,
-        } as any;
+        };
 
         const rawResponse: EmbeddedFlowExecuteResponse = await props.onSubmit(payload);
         const response: EmbeddedFlowExecuteResponse = normalizeFlowResponseLocal(rawResponse);

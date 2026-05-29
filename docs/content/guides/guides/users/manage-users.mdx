@@ -21,8 +21,7 @@ Every user belongs to an **Organization Unit (OU)** and has a **user type**. The
 - The **user type** defines what the user looks like. Their attributes, constraints, and registration rules.
 - The **organization unit** defines where the user belongs in the organizational hierarchy.
 
-Each user type belongs to a specific OU. A user of that type can only be created under that OU or one of its descendants. 
-This means, for example, you cannot place a Customer-type user under the Default OU, or a Person-type user under the Customers OU.
+Each user type belongs to a specific OU. A user of that type can only be created under that OU or one of its descendants.
 
 See [Organization Units](../../organization-units/) for more information on how OUs structure your users and [User Types](../user-types) for how user types define attribute schemas and registration settings.
 
@@ -67,8 +66,13 @@ The attributes available during onboarding depend on the selected user type. See
 Deleting a user is permanent. The user's account, attributes, and group memberships are removed immediately.
 :::
 
+## Search and Filter Users
+
+Use the search bar at the top of the **Users** list to filter users by name or email. Use the pagination controls to navigate through pages of results.
+
 ## Related Guides
 
 - [User Types](../user-types) - Define schemas and attribute rules for each user type
 - [Organization Units](../../organization-units) - Manage the organizational hierarchy that contains users
-- [Flows](../../flows/what-is-flows) - Configure registration flows for self-service sign-up
+- [Roles](../manage-roles) - Assign roles to grant permissions to users
+- [Flows](../../flows/what-are-flows) - Configure registration flows for self-service sign-up

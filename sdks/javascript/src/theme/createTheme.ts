@@ -444,8 +444,9 @@ const toCssVariables = (theme: ThemeConfig): Record<string, string> => {
 
   // Images
   if (theme.images) {
-    Object.keys(theme.images).forEach((imageKey: string) => {
-      const imageConfig: ThemeImage | undefined = theme.images[imageKey];
+    const themeImages = theme.images;
+    Object.keys(themeImages).forEach((imageKey: string) => {
+      const imageConfig: ThemeImage | undefined = themeImages[imageKey];
       if (imageConfig?.url) {
         cssVars[`--${prefix}-image-${imageKey}-url`] = imageConfig.url;
       }
@@ -588,9 +589,11 @@ const toThemeVars = (theme: ThemeConfig): ThemeVars => {
   // Add images if they exist
   if (theme.images) {
     themeVars.images = {};
-    Object.keys(theme.images).forEach((imageKey: string) => {
-      const imageConfig: ThemeImage | undefined = theme.images[imageKey];
-      themeVars.images[imageKey] = {
+    const themeImages = theme.images;
+    const imageVars = themeVars.images;
+    Object.keys(themeImages).forEach((imageKey: string) => {
+      const imageConfig: ThemeImage | undefined = themeImages[imageKey];
+      imageVars[imageKey] = {
         alt: imageConfig?.alt ? `var(--${prefix}-image-${imageKey}-alt)` : undefined,
         title: imageConfig?.title ? `var(--${prefix}-image-${imageKey}-title)` : undefined,
         url: imageConfig?.url ? `var(--${prefix}-image-${imageKey}-url)` : undefined,

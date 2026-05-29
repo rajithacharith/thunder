@@ -65,7 +65,7 @@ export default App
 #### Default CSS Classes
 
 The button includes a default vendor-prefixed class for targeting:
-- `.asgardeo-sign-out-button` – Main sign-out button element
+- `.thunderid-sign-out-button` – Main sign-out button element
 
 ### CSS Custom Properties (CSS Variables)
 
@@ -73,11 +73,11 @@ You can theme the button and other SDK components using CSS variables:
 
 ```css title="index.css" showLineNumbers
 :root {
-  --asgardeo-primary-color: #007bff;
-  --asgardeo-primary-hover: #0056b3;
-  --asgardeo-border-radius: 8px;
-  --asgardeo-font-family: 'Inter', sans-serif;
-  --asgardeo-button-padding: 12px 24px;
+  --thunderid-primary-color: #007bff;
+  --thunderid-primary-hover: #0056b3;
+  --thunderid-border-radius: 8px;
+  --thunderid-font-family: 'Inter', sans-serif;
+  --thunderid-button-padding: 12px 24px;
 }
 ```
 
@@ -149,4 +149,4 @@ export default App
 ```
 
 ## Error Handling
-If sign-out fails, an `AsgardeoRuntimeError` is thrown with a descriptive message.
+If sign-out fails, a `ThunderIDRuntimeError` is thrown with a descriptive message.

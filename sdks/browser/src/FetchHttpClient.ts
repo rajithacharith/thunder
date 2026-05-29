@@ -37,7 +37,7 @@ export class FetchHttpClient extends HttpClient {
     if (!this.instances.has(instanceId)) {
       this.instances.set(instanceId, new FetchHttpClient(isHandlerEnabled, attachToken));
     }
-    return this.instances.get(instanceId);
+    return this.instances.get(instanceId)!;
   }
 
   static destroyInstance(instanceId = 0): void {

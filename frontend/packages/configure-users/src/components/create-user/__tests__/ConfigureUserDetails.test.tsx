@@ -17,16 +17,11 @@
  */
 
 import userEvent from '@testing-library/user-event';
-import {render, screen, waitFor} from '@thunderid/test-utils';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render, renderHook, screen, waitFor} from '@thunderid/test-utils';
+import {useTranslation} from 'react-i18next';
+import {describe, it, expect, vi, beforeAll, beforeEach} from 'vitest';
 import type {ApiUserType} from '../../../models/users';
 import ConfigureUserDetails, {type ConfigureUserDetailsProps} from '../ConfigureUserDetails';
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
 
 const mockSchema: ApiUserType = {
   id: 'schema-1',
@@ -48,6 +43,12 @@ const mockSchema: ApiUserType = {
 };
 
 describe('ConfigureUserDetails', () => {
+  let t: (key: string) => string;
+
+  beforeAll(() => {
+    ({t} = renderHook(() => useTranslation()).result.current);
+  });
+
   const mockOnFormValuesChange = vi.fn();
   const mockOnReadyChange = vi.fn();
 
@@ -67,8 +68,8 @@ describe('ConfigureUserDetails', () => {
   it('renders the component with title and subtitle', () => {
     renderComponent();
 
-    expect(screen.getByText('users:createWizard.userDetails.title')).toBeInTheDocument();
-    expect(screen.getByText('users:createWizard.userDetails.subtitle')).toBeInTheDocument();
+    expect(screen.getByRole('heading', {name: t('users:createWizard.userDetails.title')})).toBeInTheDocument();
+    expect(screen.getByText(t('users:createWizard.userDetails.subtitle'))).toBeInTheDocument();
   });
 
   it('renders the data-testid attribute', () => {

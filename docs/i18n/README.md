@@ -55,13 +55,13 @@ i18n: {
 
 ### 2. Translating Content
 
-#### Documentation (MDX/Markdown files)
+#### Documentation (MDX/Markdown Files)
 
 - Copy files from `content/` to `i18n/<locale>/docusaurus-plugin-content-docs/current/`
 - Translate the content while keeping the file structure intact
 - Keep code blocks, links, and images unchanged unless they need localization
 
-#### UI Strings (JSON files)
+#### UI Strings (JSON Files)
 
 - Translate strings in `docusaurus-theme-classic/navbar.json` and `footer.json`
 - Keep the JSON keys unchanged, only translate the values

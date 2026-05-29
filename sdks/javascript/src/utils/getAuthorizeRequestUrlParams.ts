@@ -70,7 +70,7 @@ const getAuthorizeRequestUrlParams = (
   authorizeRequestParams.set('response_type', 'code');
   authorizeRequestParams.set('client_id', clientId);
 
-  authorizeRequestParams.set('scope', scopes);
+  authorizeRequestParams.set('scope', scopes ?? '');
   authorizeRequestParams.set('redirect_uri', redirectUri);
 
   if (responseMode) {

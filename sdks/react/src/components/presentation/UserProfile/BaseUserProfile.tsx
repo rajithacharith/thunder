@@ -70,7 +70,7 @@ export interface BaseUserProfileProps {
   displayNameAttributes?: string[];
   editable?: boolean;
   error?: string | null;
-  fallback?: ReactElement;
+  fallback?: ReactElement | null;
   flattenedProfile?: User;
   hideFields?: string[];
   isLoading?: boolean;
@@ -136,7 +136,7 @@ const BaseUserProfile: FC<BaseUserProfileProps> = ({
   showFields = [],
   hideFields = [],
   displayNameAttributes = [],
-}: BaseUserProfileProps): ReactElement => {
+}: BaseUserProfileProps): ReactElement | null => {
   const {theme, colorScheme} = useTheme();
   const [editedUser, setEditedUser] = useState(flattenedProfile || profile);
   const [editingFields, setEditingFields] = useState<Record<string, boolean>>({});
@@ -222,7 +222,7 @@ const BaseUserProfile: FC<BaseUserProfileProps> = ({
 
   const styles: any = useStyles(theme, colorScheme);
 
-  const ObjectDisplay: FC<{data: unknown}> = ({data}: {data: unknown}): ReactElement => {
+  const ObjectDisplay: FC<{data: unknown}> = ({data}: {data: unknown}): ReactElement | null => {
     if (!data || typeof data !== 'object') return null;
 
     return (
@@ -318,7 +318,7 @@ const BaseUserProfile: FC<BaseUserProfileProps> = ({
     [flattenedProfile, profile, toggleFieldEdit],
   );
 
-  const defaultAttributeMappings: Record<string, string | string[] | undefined> = {
+  const defaultAttributeMappings: Record<string, string | string[]> = {
     email: ['emails', 'email'],
     firstName: ['name.givenName', 'given_name'],
     lastName: ['name.familyName', 'family_name'],
@@ -326,10 +326,11 @@ const BaseUserProfile: FC<BaseUserProfileProps> = ({
     username: ['userName', 'username', 'user_name'],
   };
 
-  const mergedMappings: Record<string, string | string[] | undefined> = {
-    ...defaultAttributeMappings,
-    ...attributeMapping,
-  };
+  const mergedMappings: Record<string, string | string[]> = Object.fromEntries(
+    Object.entries({...defaultAttributeMappings, ...attributeMapping}).filter(
+      (entry): entry is [string, string | string[]] => entry[1] !== undefined,
+    ),
+  );
 
   const renderSchemaField = (
     schema: Schema,
@@ -571,7 +572,7 @@ const BaseUserProfile: FC<BaseUserProfileProps> = ({
             isFieldEditing,
             (value: any) => {
               const tempEditedUser: any = {...editedUser};
-              tempEditedUser[schema.name] = value;
+              tempEditedUser[schema.name!] = value;
               setEditedUser(tempEditedUser);
             },
             () => toggleFieldEdit(schema.name),
@@ -628,7 +629,7 @@ const BaseUserProfile: FC<BaseUserProfileProps> = ({
   const renderProfileWithoutSchemas = (): any => {
     if (!currentUser) return null;
 
-    const displayName: any = getDisplayName(mergedMappings, profile, displayNameAttributes);
+    const displayName: any = getDisplayName(mergedMappings, profile!, displayNameAttributes);
 
     const profileEntries: any = Object.entries(currentUser)
       .filter(([key, value]: [string, any]) => {
@@ -688,9 +689,9 @@ const BaseUserProfile: FC<BaseUserProfileProps> = ({
         <div className={styles.header}>
           <Avatar
             imageUrl={getMappedUserProfileValue('picture', mergedMappings, currentUser)}
-            name={getDisplayName(mergedMappings, profile)}
+            name={getDisplayName(mergedMappings, profile!)}
             size={80}
-            alt={`${getDisplayName(mergedMappings, profile)}'s avatar`}
+            alt={`${getDisplayName(mergedMappings, profile!)}'s avatar`}
             isLoading={isLoading}
           />
         </div>

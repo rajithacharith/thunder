@@ -63,7 +63,6 @@
     "base64url": "catalog:",
     "buffer": "catalog:",
     "core-js": "catalog:",
-    "crypto-browserify": "catalog:",
     "fast-sha256": "catalog:",
     "jose": "catalog:",
     "process": "catalog:",

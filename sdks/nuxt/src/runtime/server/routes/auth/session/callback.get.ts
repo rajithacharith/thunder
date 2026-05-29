@@ -41,12 +41,12 @@ export default defineEventHandler(async (event: H3Event) => {
   const sessionSecret: string | undefined = config.thunderid?.sessionSecret;
   const publicConfig: typeof config.public.thunderid = config.public.thunderid;
 
-  const query: Record<string, unknown> = getQuery(event) as Record<string, unknown>;
-  const code: string | undefined = query['code'] as string | undefined;
-  const state: string | undefined = query['state'] as string | undefined;
-  const sessionState: string | undefined = query['session_state'] as string | undefined;
-  const error: string | undefined = query['error'] as string | undefined;
-  const errorDescription: string | undefined = query['error_description'] as string | undefined;
+  const query: Record<string, unknown> = getQuery(event);
+  const code: string | undefined = query.code as string | undefined;
+  const state: string | undefined = query.state as string | undefined;
+  const sessionState: string | undefined = query.session_state as string | undefined;
+  const error: string | undefined = query.error as string | undefined;
+  const errorDescription: string | undefined = query.error_description as string | undefined;
 
   if (error) {
     throw createError({

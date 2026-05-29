@@ -38,7 +38,7 @@ describe('updateMeProfile', (): void => {
       ok: true,
     });
 
-    const url = 'https://api.asgardeo.io/t/demo/scim2/Me';
+    const url = 'https://localhost:8090/scim2/Me';
     const payload: Record<string, unknown> = {'urn:scim:wso2:schema': {mobileNumbers: ['0777933830']}};
 
     const result: User = await updateMeProfile({payload, url});
@@ -70,7 +70,7 @@ describe('updateMeProfile', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const payload: Record<string, unknown> = {profile: {givenName: 'Bob'}};
 
     const result: User = await updateMeProfile({baseUrl, payload});
@@ -87,7 +87,7 @@ describe('updateMeProfile', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const payload: Record<string, unknown> = {profile: {familyName: 'Doe'}};
 
     const result: User = await updateMeProfile({baseUrl, fetcher: customFetcher, payload});
@@ -112,8 +112,8 @@ describe('updateMeProfile', (): void => {
       ok: true,
     });
 
-    const url = 'https://api.asgardeo.io/t/demo/scim2/Me';
-    const baseUrl = 'https://api.asgardeo.io/t/ignored';
+    const url = 'https://localhost:8090/scim2/Me';
+    const baseUrl = 'https://localhost:8090';
     await updateMeProfile({baseUrl, payload: {x: 1}, url});
 
     expect(fetch).toHaveBeenCalledWith(url, expect.any(Object));
@@ -145,7 +145,7 @@ describe('updateMeProfile', (): void => {
       text: () => Promise.resolve('SCIM validation failed'),
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     await expect(updateMeProfile({baseUrl, payload: {bad: 'data'}})).rejects.toThrow(ThunderIDAPIError);
 
     await expect(updateMeProfile({baseUrl, payload: {bad: 'data'}})).rejects.toThrow(
@@ -156,16 +156,16 @@ describe('updateMeProfile', (): void => {
   it('should handle network or unknown errors with the generic message', async (): Promise<void> => {
     // Rejection with Error
     global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
-    await expect(updateMeProfile({payload: {a: 1}, url: 'https://api.asgardeo.io/t/demo/scim2/Me'})).rejects.toThrow(
+    await expect(updateMeProfile({payload: {a: 1}, url: 'https://localhost:8090/scim2/Me'})).rejects.toThrow(
       ThunderIDAPIError,
     );
-    await expect(updateMeProfile({payload: {a: 1}, url: 'https://api.asgardeo.io/t/demo/scim2/Me'})).rejects.toThrow(
+    await expect(updateMeProfile({payload: {a: 1}, url: 'https://localhost:8090/scim2/Me'})).rejects.toThrow(
       'An error occurred while updating the user profile. Please try again.',
     );
 
     // Rejection with non-Error
     global.fetch = vi.fn().mockRejectedValue('weird failure');
-    await expect(updateMeProfile({payload: {a: 1}, url: 'https://api.asgardeo.io/t/demo/scim2/Me'})).rejects.toThrow(
+    await expect(updateMeProfile({payload: {a: 1}, url: 'https://localhost:8090/scim2/Me'})).rejects.toThrow(
       'An error occurred while updating the user profile. Please try again.',
     );
   });
@@ -178,7 +178,7 @@ describe('updateMeProfile', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const customHeaders: Record<string, string> = {
       Accept: 'text/plain',
       Authorization: 'Bearer token',
@@ -203,7 +203,7 @@ describe('updateMeProfile', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const payload: Record<string, unknown> = {'urn:scim:wso2:schema': {mobileNumbers: ['123']}};
 
     await updateMeProfile({baseUrl, payload});
@@ -223,7 +223,7 @@ describe('updateMeProfile', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     await updateMeProfile({baseUrl, method: 'PUT' as any, payload: {z: 9}});
 
     const [, init]: [string, RequestInit] = (fetch as unknown as Mock).mock.calls[0];

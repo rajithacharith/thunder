@@ -279,7 +279,7 @@ export interface EmbeddedSignInFlowCompleteResponse {
  * };
  *
  * const response = await executeEmbeddedSignInFlow({
- *   baseUrl: "https://api.asgardeo.io/t/myorg",
+ *   baseUrl: "https://localhost:8090",
  *   payload: initRequest
  * });
  * ```
@@ -321,7 +321,7 @@ export interface EmbeddedSignInFlowInitiateRequest {
  *
  * // Submit to continue the flow
  * const response = await executeEmbeddedSignInFlow({
- *   baseUrl: "https://api.asgardeo.io/t/myorg",
+ *   baseUrl: "https://localhost:8090",
  *   payload: stepRequest
  * });
  * ```

@@ -16,10 +16,10 @@
  * under the License.
  */
 
+import {navigateTo} from '#app';
 import {ThunderIDRuntimeError} from '@thunderid/browser';
 import {BaseSignUpButton} from '@thunderid/vue';
 import {type Component, type Ref, type SetupContext, type VNode, defineComponent, h, ref} from 'vue';
-import {navigateTo} from '#app';
 import {useThunderID} from '#imports';
 
 /**
@@ -68,17 +68,17 @@ const SignUpButton: Component = defineComponent({
     };
 
     return (): VNode => {
-      const slotContent: (() => VNode[]) | undefined = slots['default']
-        ? (): VNode[] => slots['default']!({isLoading: isLoading.value})
+      const slotContent: (() => VNode[]) | undefined = slots.default
+        ? (): VNode[] => slots.default!({isLoading: isLoading.value})
         : undefined;
 
       return h(
         BaseSignUpButton,
         {
-          class: attrs['class'],
+          class: attrs.class,
           isLoading: isLoading.value,
           onClick: handleSignUp,
-          style: attrs['style'],
+          style: attrs.style,
         },
         slotContent,
       );

@@ -45,7 +45,7 @@ const UsernamePassword: FC<BaseSignInOptionProps> = ({
   const {setTitle, setSubtitle} = useFlow();
 
   const formFields: any =
-    authenticator.metadata?.params
+    authenticator!.metadata?.params
       ?.sort((a: any, b: any) => a.order - b.order)
       ?.filter((param: any) => param.param !== 'totp') || []; // Exclude TOTP fields for username/password
 
@@ -67,7 +67,7 @@ const UsernamePassword: FC<BaseSignInOptionProps> = ({
             placeholder: t(`elements.fields.generic.placeholder`, {
               field: (param.displayName || param.param).toLowerCase(),
             }),
-            required: authenticator.requiredParams.includes(param.param),
+            required: authenticator!.requiredParams.includes(param.param),
             touched: touchedFields[param.param] || false,
             type:
               param.type === EmbeddedSignInFlowAuthenticatorParamType.String && param.confidential

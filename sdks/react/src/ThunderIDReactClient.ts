@@ -117,11 +117,11 @@ class ThunderIDReactClient<T extends ThunderIDReactConfig = ThunderIDReactConfig
   }
 
   override async getDecodedIdToken(sessionId?: string): Promise<IdToken> {
-    return super.getDecodedIdToken(sessionId) as Promise<IdToken>;
+    return super.getDecodedIdToken(sessionId);
   }
 
   override async getIdToken(): Promise<string> {
-    return this.withLoading(async () => super.getIdToken() as Promise<string>);
+    return this.withLoading(async () => super.getIdToken());
   }
 
   override async getUserProfile(): Promise<UserProfile> {
@@ -140,7 +140,7 @@ class ThunderIDReactClient<T extends ThunderIDReactConfig = ThunderIDReactConfig
       let baseUrl: string = options?.baseUrl;
 
       if (!baseUrl) {
-        const configData: any = await (this.getStorageManager() as any).getConfigData();
+        const configData: any = await this.getStorageManager().getConfigData();
         baseUrl = configData?.baseUrl;
       }
 
@@ -162,7 +162,7 @@ class ThunderIDReactClient<T extends ThunderIDReactConfig = ThunderIDReactConfig
       let baseUrl: string = options?.baseUrl;
 
       if (!baseUrl) {
-        const configData: any = await (this.getStorageManager() as any).getConfigData();
+        const configData: any = await this.getStorageManager().getConfigData();
         baseUrl = configData?.baseUrl;
       }
 
@@ -182,9 +182,9 @@ class ThunderIDReactClient<T extends ThunderIDReactConfig = ThunderIDReactConfig
       return await this.withLoading(async () => {
         const idToken: IdToken = await this.getDecodedIdToken();
         return {
-          id: idToken?.org_id,
-          name: idToken?.org_name,
-          orgHandle: idToken?.org_handle,
+          id: idToken?.org_id ?? '',
+          name: idToken?.org_name ?? '',
+          orgHandle: idToken?.org_handle ?? '',
         };
       });
     } catch (error) {
@@ -200,7 +200,7 @@ class ThunderIDReactClient<T extends ThunderIDReactConfig = ThunderIDReactConfig
   override async switchOrganization(organization: Organization): Promise<TokenResponse | Response> {
     return this.withLoading(async () => {
       try {
-        const configData: any = await (this.getStorageManager() as any).getConfigData();
+        const configData: any = await this.getStorageManager().getConfigData();
         const sourceInstanceId: number | undefined = configData?.organizationChain?.sourceInstanceId;
 
         if (!organization.id) {
@@ -243,13 +243,11 @@ class ThunderIDReactClient<T extends ThunderIDReactConfig = ThunderIDReactConfig
   }
 
   override async isSignedIn(): Promise<boolean> {
-    return super.isSignedIn() as Promise<boolean>;
+    return super.isSignedIn();
   }
 
   override async exchangeToken(config: TokenExchangeRequestConfig): Promise<TokenResponse | Response> {
-    return this.withLoading(
-      async () => super.exchangeToken(config) as unknown as TokenResponse | Response,
-    );
+    return this.withLoading(async () => super.exchangeToken(config) as unknown as TokenResponse | Response);
   }
 
   override async signIn(...args: any[]): Promise<User | EmbeddedSignInFlowResponseV2> {
@@ -257,16 +255,15 @@ class ThunderIDReactClient<T extends ThunderIDReactConfig = ThunderIDReactConfig
       const arg1: any = args[0];
       const arg2: any = args[1];
 
-      const config: ThunderIDReactConfig | undefined = (await (this.getStorageManager() as any).getConfigData()) as
+      const config: ThunderIDReactConfig | undefined = (await this.getStorageManager().getConfigData()) as
         | ThunderIDReactConfig
         | undefined;
 
       // NOTE: With React 19 strict mode, the initialization logic runs twice, and there's an intermittent
       // issue where the config object is not getting stored in the storage layer with Vite scaffolding.
       // Hence, we need to check if the client is initialized but the config object is empty, and reinitialize.
-      // Tracker: https://github.com/asgardeo/asgardeo-auth-react-sdk/issues/240
       if (!config || Object.keys(config).length === 0) {
-        await this.initialize(this._initializeConfig);
+        await this.initialize(this._initializeConfig!);
       }
 
       if (typeof arg1 === 'object' && arg1 !== null && arg1.callOnlyOnRedirect === true) {
@@ -279,10 +276,10 @@ class ThunderIDReactClient<T extends ThunderIDReactConfig = ThunderIDReactConfig
         !isEmpty(arg1) &&
         ('executionId' in arg1 || 'applicationId' in arg1)
       ) {
-        const authIdFromUrl: string = new URL(window.location.href).searchParams.get('authId');
-        const authIdFromStorage: string = sessionStorage.getItem('thunderid_auth_id');
+        const authIdFromUrl: string = new URL(window.location.href).searchParams.get('authId') ?? '';
+        const authIdFromStorage: string = sessionStorage.getItem('thunderid_auth_id') ?? '';
         const authId: string = authIdFromUrl || authIdFromStorage;
-        const baseUrl: string = config?.baseUrl;
+        const baseUrl: string = config?.baseUrl ?? '';
 
         const response: EmbeddedSignInFlowResponseV2 = await executeEmbeddedSignInFlowV2({
           authId,
@@ -328,7 +325,7 @@ class ThunderIDReactClient<T extends ThunderIDReactConfig = ThunderIDReactConfig
         return response;
       }
 
-      return (await super.signIn(arg1)) as unknown as User;
+      return (await super.signIn(...args)) as unknown as User;
     });
   }
 
@@ -339,12 +336,12 @@ class ThunderIDReactClient<T extends ThunderIDReactConfig = ThunderIDReactConfig
   override async signUp(options?: SignUpOptions): Promise<void>;
   override async signUp(payload: EmbeddedFlowExecuteRequestPayload): Promise<EmbeddedFlowExecuteResponse>;
   override async signUp(...args: any[]): Promise<void | EmbeddedFlowExecuteResponse> {
-    const config: ThunderIDReactConfig = (await (this.getStorageManager() as any).getConfigData()) as ThunderIDReactConfig;
+    const config: ThunderIDReactConfig = (await this.getStorageManager().getConfigData()) as ThunderIDReactConfig;
     const firstArg: any = args[0];
-    const baseUrl: string = config?.baseUrl;
+    const baseUrl: string = config?.baseUrl ?? '';
 
-    const authIdFromUrl: string = new URL(window.location.href).searchParams.get('authId');
-    const authIdFromStorage: string = sessionStorage.getItem('thunderid_auth_id');
+    const authIdFromUrl: string = new URL(window.location.href).searchParams.get('authId') ?? '';
+    const authIdFromStorage: string = sessionStorage.getItem('thunderid_auth_id') ?? '';
     const authId: string = authIdFromUrl || authIdFromStorage;
 
     if (authIdFromUrl && !authIdFromStorage) {
@@ -362,7 +359,7 @@ class ThunderIDReactClient<T extends ThunderIDReactConfig = ThunderIDReactConfig
   }
 
   override async recover(payload: EmbeddedFlowExecuteRequestPayload): Promise<EmbeddedFlowExecuteResponse> {
-    const config: ThunderIDReactConfig = (await (this.getStorageManager() as any).getConfigData()) as ThunderIDReactConfig;
+    const config: ThunderIDReactConfig = (await this.getStorageManager().getConfigData()) as ThunderIDReactConfig;
 
     return executeEmbeddedRecoveryFlowV2({
       baseUrl: config?.baseUrl,
@@ -375,11 +372,11 @@ class ThunderIDReactClient<T extends ThunderIDReactConfig = ThunderIDReactConfig
   }
 
   async request(requestConfig?: HttpRequestConfig): Promise<HttpResponse<any>> {
-    return super.httpRequest(requestConfig);
+    return super.httpRequest(requestConfig!) as Promise<HttpResponse<any>>;
   }
 
   async requestAll(requestConfigs?: HttpRequestConfig[]): Promise<HttpResponse<any>[]> {
-    return super.httpRequestAll(requestConfigs) as Promise<HttpResponse<any>[]>;
+    return super.httpRequestAll(requestConfigs!) as Promise<HttpResponse<any>[]>;
   }
 }
 

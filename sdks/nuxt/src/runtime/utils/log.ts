@@ -18,7 +18,7 @@
 
 /* eslint-disable no-console */
 
-const PREFIX: string = '@thunderid/nuxt';
+const PREFIX = '@thunderid/nuxt';
 
 /**
  * Mask a token so it is safe to include in logs and error messages.
@@ -52,10 +52,10 @@ export function createLogger(subsystem: string): {
   info: (...args: unknown[]) => void;
   warn: (...args: unknown[]) => void;
 } {
-  const tag: string = `[${PREFIX}:${subsystem}]`;
+  const tag = `[${PREFIX}:${subsystem}]`;
   return {
     debug: (...args: unknown[]): void => {
-      if (process.env['THUNDERID_DEBUG']) {
+      if (process.env.THUNDERID_DEBUG) {
         console.log(tag, ...args);
       }
     },

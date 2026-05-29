@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import React, {JSX, PropsWithChildren, ReactElement} from 'react';
-import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import Tabs from '@theme/Tabs';
+import React, {JSX, PropsWithChildren, ReactElement} from 'react';
 
 interface CodeGroupProps {
   /**

@@ -40,7 +40,7 @@ describe('getUserInfo', (): void => {
       ok: true,
     });
 
-    const url = 'https://api.asgardeo.io/t/<ORGANIZATION>/oauth2/userinfo';
+    const url = 'https://localhost:8090/oauth2/userinfo';
     const result: User = await getUserInfo({url});
 
     expect(fetch).toHaveBeenCalledWith(url, {
@@ -72,7 +72,7 @@ describe('getUserInfo', (): void => {
       ok: true,
     });
 
-    const url = 'https://api.asgardeo.io/t/<ORGANIZATION>/oauth2/userinfo';
+    const url = 'https://localhost:8090/oauth2/userinfo';
     const result: User = await getUserInfo({url});
 
     expect(result).toEqual({
@@ -92,7 +92,7 @@ describe('getUserInfo', (): void => {
       text: () => Promise.resolve(errorText),
     });
 
-    const url = 'https://api.asgardeo.io/t/<ORGANIZATION>/oauth2/userinfo';
+    const url = 'https://localhost:8090/oauth2/userinfo';
 
     await expect(getUserInfo({url})).rejects.toThrow(ThunderIDAPIError);
     await expect(getUserInfo({url})).rejects.toThrow(`Failed to fetch user info: ${errorText}`);
@@ -142,12 +142,12 @@ describe('getUserInfo', (): void => {
 
     await expect(
       getUserInfo({
-        url: 'https://api.asgardeo.io/t/test/oauth2/userinfo',
+        url: 'https://localhost:8090/oauth2/userinfo',
       }),
     ).rejects.toThrow(ThunderIDAPIError);
     await expect(
       getUserInfo({
-        url: 'https://api.asgardeo.io/t/test/oauth2/userinfo',
+        url: 'https://localhost:8090/oauth2/userinfo',
       }),
     ).rejects.toThrow('Network or parsing error: Network error');
   });
@@ -155,7 +155,7 @@ describe('getUserInfo', (): void => {
   it('should handle non-Error rejections', async (): Promise<void> => {
     global.fetch = vi.fn().mockRejectedValue('unexpected failure');
 
-    const url = 'https://api.asgardeo.io/t/dxlab';
+    const url = 'https://localhost:8090';
 
     await expect(getUserInfo({url})).rejects.toThrow(ThunderIDAPIError);
     await expect(getUserInfo({url})).rejects.toThrow('Network or parsing error: Unknown error');
@@ -178,7 +178,7 @@ describe('getUserInfo', (): void => {
       Authorization: 'Bearer token',
       'X-Custom-Header': 'custom-value',
     };
-    const url = 'https://api.asgardeo.io/t/<ORGANIZATION>/oauth2/userinfo';
+    const url = 'https://localhost:8090/oauth2/userinfo';
     const result: User = await getUserInfo({headers: customHeaders, url});
 
     expect(result).toEqual(mockUserInfo);

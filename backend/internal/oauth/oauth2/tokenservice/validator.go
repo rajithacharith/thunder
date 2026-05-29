@@ -26,6 +26,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/idp"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	oauth2model "github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
 	"github.com/thunder-id/thunderid/internal/system/config"
@@ -34,8 +35,8 @@ import (
 
 // TokenValidatorInterface defines the interface for validating tokens.
 type TokenValidatorInterface interface {
-	ValidateAccessToken(token string) (*AccessTokenClaims, error)
-	ValidateRefreshToken(token string, clientID string) (*RefreshTokenClaims, error)
+	ValidateAccessToken(ctx context.Context, token string) (*AccessTokenClaims, error)
+	ValidateRefreshToken(ctx context.Context, token string, clientID string) (*RefreshTokenClaims, error)
 	ValidateSubjectToken(ctx context.Context, token string, oauthApp *inboundmodel.OAuthClient) (
 		*SubjectTokenClaims, error)
 }
@@ -55,10 +56,10 @@ func newTokenValidator(jwtService jwt.JWTServiceInterface, idpService idp.IDPSer
 }
 
 // ValidateAccessToken validates an access token and extracts the claims.
-func (tv *tokenValidator) ValidateAccessToken(token string) (*AccessTokenClaims, error) {
+func (tv *tokenValidator) ValidateAccessToken(ctx context.Context, token string) (*AccessTokenClaims, error) {
 	// Verify signature and standard claims.
 	expectedIss := config.GetServerRuntime().Config.JWT.Issuer
-	if err := tv.jwtService.VerifyJWT(token, "", expectedIss); err != nil {
+	if err := tv.jwtService.VerifyJWT(ctx, token, "", expectedIss); err != nil {
 		return nil, fmt.Errorf("access token verification failed: %v", err.Error)
 	}
 
@@ -113,8 +114,10 @@ func (tv *tokenValidator) ValidateAccessToken(token string) (*AccessTokenClaims,
 }
 
 // ValidateRefreshToken validates a refresh token and extracts the claims.
-func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*RefreshTokenClaims, error) {
-	if err := tv.jwtService.VerifyJWT(token, "", ""); err != nil {
+func (tv *tokenValidator) ValidateRefreshToken(
+	ctx context.Context, token string, clientID string,
+) (*RefreshTokenClaims, error) {
+	if err := tv.jwtService.VerifyJWT(ctx, token, "", ""); err != nil {
 		return nil, fmt.Errorf("invalid refresh token: %v", err.Error)
 	}
 
@@ -149,6 +152,15 @@ func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*
 	// Extract claims_locales if present
 	claimsLocales, _ := extractStringClaim(claims, "access_token_claims_locales")
 
+	var dpopJkt string
+	if _, exists := claims["dpop_jkt"]; exists {
+		s, err := extractStringClaim(claims, "dpop_jkt")
+		if err != nil {
+			return nil, fmt.Errorf("invalid 'dpop_jkt' claim in refresh token: %w", err)
+		}
+		dpopJkt = s
+	}
+
 	// Extract user type and organizational unit details if present
 	return &RefreshTokenClaims{
 		Sub:              sub,
@@ -159,6 +171,7 @@ func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*
 		Iat:              iat,
 		ClaimsRequest:    claimsRequest,
 		ClaimsLocales:    claimsLocales,
+		DPoPJkt:          dpopJkt,
 	}, nil
 }
 
@@ -180,7 +193,7 @@ func (tv *tokenValidator) ValidateSubjectToken(
 
 	// Try the server's own issuer first.
 	if isSelfIssuer(iss) {
-		if err := tv.verifyTokenSignatureByIssuer(token, iss); err != nil {
+		if err := tv.verifyTokenSignatureByIssuer(ctx, token, iss); err != nil {
 			return nil, fmt.Errorf("invalid subject token signature: %w", err)
 		}
 		return tv.extractSubjectTokenClaims(token, iss, claims, oauthApp)
@@ -224,11 +237,12 @@ func (tv *tokenValidator) resolveExternalIssuer(ctx context.Context, issuer stri
 		return nil, fmt.Errorf("no external issuers configured")
 	}
 
-	idpDTO, svcErr := tv.idpService.GetIdentityProviderByIssuer(ctx, issuer)
-	if svcErr != nil {
+	idpDTOs, svcErr := tv.idpService.GetIdentityProvidersByProperty(ctx, idp.PropIssuer, issuer)
+	if svcErr != nil || len(idpDTOs) == 0 {
 		return nil, fmt.Errorf("no external issuer configured for '%s'", issuer)
 	}
 
+	idpDTO := idpDTOs[0]
 	if idp.GetPropertyValue(idpDTO.Properties, idp.PropTokenExchangeEnabled) != "true" {
 		return nil, fmt.Errorf("token exchange not enabled for issuer '%s'", issuer)
 	}
@@ -301,6 +315,11 @@ func (tv *tokenValidator) extractSubjectTokenClaims(
 		nestedAct = actClaim
 	}
 
+	cnfJkt, err := dpop.ExtractCnfJkt(claims)
+	if err != nil {
+		return nil, err
+	}
+
 	return &SubjectTokenClaims{
 		Sub:            sub,
 		Iss:            iss,
@@ -308,18 +327,20 @@ func (tv *tokenValidator) extractSubjectTokenClaims(
 		Scopes:         scopes,
 		UserAttributes: userAttributes,
 		NestedAct:      nestedAct,
+		CnfJkt:         cnfJkt,
 	}, nil
 }
 
 // verifyTokenSignatureByIssuer verifies JWT signature using issuer-specific verification method.
 func (tv *tokenValidator) verifyTokenSignatureByIssuer(
+	ctx context.Context,
 	token string,
 	issuer string,
 ) error {
 	if !isSelfIssuer(issuer) {
 		return fmt.Errorf("no verification method configured for issuer: %s", issuer)
 	}
-	svcErr := tv.jwtService.VerifyJWTSignature(token)
+	svcErr := tv.jwtService.VerifyJWTSignature(ctx, token)
 	if svcErr != nil {
 		return fmt.Errorf("failed to verify token signature: %v", svcErr.Error)
 	}

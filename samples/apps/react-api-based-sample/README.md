@@ -80,7 +80,7 @@ The application will be available at [https://localhost:3000](https://localhost:
 | `npm run preview` | Preview the production build locally |
 | `npm run lint` | Run ESLint to check code quality |
 
-## Important: Sign up Requirements
+## Important: Sign Up Requirements
 
 To use the sign-up functionality, you need to temporarily disable security by setting the following environment variable before starting the server:
 
@@ -131,7 +131,7 @@ This sample interacts with the following APIs:
 
 ## How It Works
 
-### Sign up Flow
+### Sign Up Flow
 1. User fills in the registration form (username, name, email, password)
 2. Application fetches the default organization unit ID
 3. Sends a POST request to `/users` with user attributes and type "Customer"

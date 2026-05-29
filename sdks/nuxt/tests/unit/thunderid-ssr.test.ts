@@ -72,7 +72,7 @@ vi.mock('h3', () => ({
 
 vi.mock('#imports', () => ({
   useRuntimeConfig: vi.fn(() => ({
-    public: {thunderid: {baseUrl: 'https://api.asgardeo.io/t/testorg', preferences: undefined}},
+    public: {thunderid: {baseUrl: 'https://localhost:8090', preferences: undefined}},
   })),
 }));
 
@@ -159,7 +159,7 @@ describe('thunderid-ssr Nitro plugin', () => {
     // Default runtime config — all preferences enabled (undefined = default true).
     vi.mocked(useRuntimeConfig).mockReturnValue({
       public: {
-        thunderid: {baseUrl: 'https://api.asgardeo.io/t/testorg', clientId: 'test-client-id', preferences: undefined},
+        thunderid: {baseUrl: 'https://localhost:8090', clientId: 'test-client-id', preferences: undefined},
       },
     } as any);
 
@@ -248,7 +248,7 @@ describe('thunderid-ssr Nitro plugin', () => {
     vi.mocked(useRuntimeConfig).mockReturnValue({
       public: {
         thunderid: {
-          baseUrl: 'https://api.asgardeo.io/t/testorg',
+          baseUrl: 'https://localhost:8090',
           preferences: {user: {fetchUserProfile: false}},
         },
       },
@@ -267,7 +267,7 @@ describe('thunderid-ssr Nitro plugin', () => {
     vi.mocked(useRuntimeConfig).mockReturnValue({
       public: {
         thunderid: {
-          baseUrl: 'https://api.asgardeo.io/t/testorg',
+          baseUrl: 'https://localhost:8090',
           preferences: {user: {fetchOrganizations: false}},
         },
       },
@@ -288,7 +288,7 @@ describe('thunderid-ssr Nitro plugin', () => {
     vi.mocked(useRuntimeConfig).mockReturnValue({
       public: {
         thunderid: {
-          baseUrl: 'https://api.asgardeo.io/t/testorg',
+          baseUrl: 'https://localhost:8090',
           preferences: {theme: {inheritFromBranding: false}},
         },
       },
@@ -347,7 +347,7 @@ describe('thunderid-ssr Nitro plugin', () => {
 
     const event = await callHandler('/', 'valid-cookie');
 
-    expect(event.context.thunderid.ssr.resolvedBaseUrl).toBe('https://api.asgardeo.io/t/testorg/o');
+    expect(event.context.thunderid.ssr.resolvedBaseUrl).toBe('https://localhost:8090/o');
   });
 
   it('uses plain baseUrl when session has no organizationId and ID token has no user_org', async () => {
@@ -356,7 +356,7 @@ describe('thunderid-ssr Nitro plugin', () => {
 
     const event = await callHandler('/', 'valid-cookie');
 
-    expect(event.context.thunderid.ssr.resolvedBaseUrl).toBe('https://api.asgardeo.io/t/testorg');
+    expect(event.context.thunderid.ssr.resolvedBaseUrl).toBe('https://localhost:8090');
   });
 
   it('sets resolvedBaseUrl to baseUrl/o when ID token contains user_org claim', async () => {
@@ -364,6 +364,6 @@ describe('thunderid-ssr Nitro plugin', () => {
 
     const event = await callHandler('/', 'valid-cookie');
 
-    expect(event.context.thunderid.ssr.resolvedBaseUrl).toBe('https://api.asgardeo.io/t/testorg/o');
+    expect(event.context.thunderid.ssr.resolvedBaseUrl).toBe('https://localhost:8090/o');
   });
 });

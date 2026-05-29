@@ -33,7 +33,7 @@ export interface UpdateMeProfileConfig extends Omit<BaseUpdateMeProfileConfig, '
 const updateMeProfile = async ({fetcher, instanceId = 0, ...requestConfig}: UpdateMeProfileConfig): Promise<User> => {
   const defaultFetcher = async (url: string, config: RequestInit): Promise<Response> => {
     const httpClient: FetchHttpClient = FetchHttpClient.getInstance(instanceId);
-    
+
     const response: HttpResponse<any> = await httpClient.request({
       data: config.body ? JSON.parse(config.body as string) : undefined,
       headers: config.headers as Record<string, string>,

@@ -18,17 +18,10 @@
 
 import userEvent from '@testing-library/user-event';
 import {useGetLanguages} from '@thunderid/i18n';
-import {render, screen, fireEvent} from '@thunderid/test-utils';
-import {describe, expect, it, vi, beforeEach} from 'vitest';
+import {render, renderHook, screen, fireEvent} from '@thunderid/test-utils';
+import {useTranslation} from 'react-i18next';
+import {describe, expect, it, vi, beforeAll, beforeEach} from 'vitest';
 import TranslationsListPage from '@/pages/TranslationsListPage';
-
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({t: (key: string) => key}),
-  };
-});
 
 const mockNavigate = vi.fn();
 vi.mock('react-router', async () => {
@@ -112,6 +105,12 @@ vi.mock('@wso2/oxygen-ui', async () => {
 const mockUseGetLanguages = vi.mocked(useGetLanguages);
 
 describe('TranslationsListPage', () => {
+  let t: (key: string) => string;
+
+  beforeAll(() => {
+    ({t} = renderHook(() => useTranslation()).result.current);
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseGetLanguages.mockReturnValue({
@@ -136,7 +135,7 @@ describe('TranslationsListPage', () => {
     it('renders the Add Language button', () => {
       render(<TranslationsListPage />);
 
-      expect(screen.getByRole('button', {name: /listing.addLanguage/i})).toBeInTheDocument();
+      expect(screen.getByRole('button', {name: t('translations:listing.addLanguage')})).toBeInTheDocument();
     });
 
     it('renders the data grid', () => {
@@ -186,7 +185,7 @@ describe('TranslationsListPage', () => {
       const user = userEvent.setup();
       render(<TranslationsListPage />);
 
-      await user.click(screen.getByRole('button', {name: /listing.addLanguage/i}));
+      await user.click(screen.getByRole('button', {name: t('translations:listing.addLanguage')}));
 
       expect(mockNavigate).toHaveBeenCalledWith('/translations/create');
     });
@@ -204,7 +203,7 @@ describe('TranslationsListPage', () => {
     it('opens the actions menu when the menu button for a row is clicked', () => {
       render(<TranslationsListPage />);
 
-      const editButtons = screen.getAllByRole('button', {name: /common:actions.edit/i});
+      const editButtons = screen.getAllByRole('button', {name: t('common:actions.edit')});
       expect(editButtons.length).toBeGreaterThan(0);
     });
 
@@ -212,7 +211,7 @@ describe('TranslationsListPage', () => {
       const user = userEvent.setup();
       render(<TranslationsListPage />);
 
-      const editButtons = screen.getAllByRole('button', {name: /common:actions.edit/i});
+      const editButtons = screen.getAllByRole('button', {name: t('common:actions.edit')});
       await user.click(editButtons[0]);
 
       expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/\/translations\//));

@@ -84,7 +84,7 @@ const getAuthComponentHeadings = (
    */
   const findHeadings = (comps: EmbeddedFlowComponent[]): void => {
     for (const component of comps) {
-      if (component.type === 'TEXT' && component.variant && component.variant.startsWith('HEADING_')) {
+      if (component.type === 'TEXT' && component.variant?.startsWith('HEADING_')) {
         if (!heading) {
           heading = component;
         } else if (!subheading) {
@@ -108,12 +108,7 @@ const getAuthComponentHeadings = (
 
     const filter = (items: EmbeddedFlowComponent[]): EmbeddedFlowComponent[] =>
       items.reduce((acc: EmbeddedFlowComponent[], component: EmbeddedFlowComponent) => {
-        if (
-          foundHeadings < maxHeadings &&
-          component.type === 'TEXT' &&
-          component.variant &&
-          component.variant.startsWith('HEADING_')
-        ) {
+        if (foundHeadings < maxHeadings && component.type === 'TEXT' && component.variant?.startsWith('HEADING_')) {
           foundHeadings += 1;
           return acc;
         }

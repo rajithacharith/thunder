@@ -17,10 +17,10 @@
  */
 
 import Link from '@docusaurus/Link';
-import {translate} from '@docusaurus/Translate';
 import {useActiveVersion, useDoc} from '@docusaurus/plugin-content-docs/client';
+import {translate} from '@docusaurus/Translate';
 import IconHome from '@theme/Icon/Home';
-import React, {type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 
 import styles from './styles.module.css';
 

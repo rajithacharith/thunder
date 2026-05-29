@@ -99,6 +99,7 @@ export default function TranslationsList(): JSX.Element {
             <Tooltip title={t('common:actions.edit')}>
               <IconButton
                 size="small"
+                aria-label={t('common:actions.edit')}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleEditClick(params.row.code);
@@ -111,6 +112,7 @@ export default function TranslationsList(): JSX.Element {
               <IconButton
                 size="small"
                 color="error"
+                aria-label={t('common:actions.delete')}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDeleteClick(params.row.code);

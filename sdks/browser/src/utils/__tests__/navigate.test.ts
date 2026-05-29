@@ -66,7 +66,7 @@ describe('navigate', () => {
   });
 
   it('should use window.location.assign for cross-origin URLs', () => {
-    const crossOriginUrl = 'https://accounts.asgardeo.io/t/dxlab/accountrecoveryendpoint/register.do';
+    const crossOriginUrl = 'https://localhost:8090/accountrecoveryendpoint/register.do';
     navigate(crossOriginUrl);
     expect(window.location.assign).toHaveBeenCalledWith(crossOriginUrl);
     expect(window.history.pushState).not.toHaveBeenCalled();

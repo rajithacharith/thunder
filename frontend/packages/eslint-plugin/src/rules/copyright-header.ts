@@ -22,6 +22,7 @@ import {Comment} from 'estree';
 interface CopyrightHeaderOptions {
   excludePatterns?: string[];
   template?: string;
+  allowShebang?: boolean;
 }
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -62,6 +63,9 @@ const copyrightHeaderRule: Rule.RuleModule = {
           template: {
             type: 'string',
           },
+          allowShebang: {
+            type: 'boolean',
+          },
         },
         additionalProperties: false,
       },
@@ -75,6 +79,7 @@ const copyrightHeaderRule: Rule.RuleModule = {
     const options: CopyrightHeaderOptions = (context.options?.[0] as CopyrightHeaderOptions) ?? {};
     const excludePatterns: string[] = options.excludePatterns ?? [];
     const template: string = options.template ?? REQUIRED_COPYRIGHT_HEADER;
+    const allowShebang: boolean = options.allowShebang ?? false;
     const filename: string = context.filename;
 
     // Check if file should be excluded
@@ -90,7 +95,11 @@ const copyrightHeaderRule: Rule.RuleModule = {
     return {
       Program(node: unknown) {
         const sourceCode: SourceCode = context.sourceCode;
-        const comments: Comment[] = sourceCode.getAllComments();
+        const allComments: Comment[] = sourceCode.getAllComments();
+
+        const hasShebang = allowShebang && (allComments[0]?.type as string) === 'Shebang';
+        const shebangComment = hasShebang ? allComments[0] : undefined;
+        const comments: Comment[] = hasShebang ? allComments.slice(1) : allComments;
 
         // Check if first comment is the copyright header
         const firstComment: Comment | undefined = comments[0];
@@ -101,6 +110,10 @@ const copyrightHeaderRule: Rule.RuleModule = {
             node,
             messageId: 'missingHeader',
             fix(fixer: Rule.RuleFixer) {
+              if (shebangComment) {
+                // @ts-expect-error TODO: Update to the latest ESLint and remove `@types/eslint`.
+                return fixer.insertTextAfter(shebangComment, `\n\n${template}`);
+              }
               // @ts-expect-error TODO: Update to the latest ESLint and remove `@types/eslint`.
               return fixer.insertTextBefore(node, `${template}\n\n`);
             },

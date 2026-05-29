@@ -51,7 +51,7 @@ export interface GetScim2MeConfig extends Omit<BaseGetScim2MeConfig, 'fetcher'> 
  * // Using default ThunderID SPA client httpClient
  * try {
  *   const userProfile = await getScim2Me({
- *     url: "https://api.asgardeo.io/t/<ORGANIZATION>/scim2/Me",
+ *     url: "https://localhost:8090/scim2/Me",
  *   });
  *   console.log(userProfile);
  * } catch (error) {
@@ -66,7 +66,7 @@ export interface GetScim2MeConfig extends Omit<BaseGetScim2MeConfig, 'fetcher'> 
  * // Using custom fetcher
  * try {
  *   const userProfile = await getScim2Me({
- *     url: "https://api.asgardeo.io/t/<ORGANIZATION>/scim2/Me",
+ *     url: "https://localhost:8090/scim2/Me",
  *     fetcher: customFetchFunction
  *   });
  *   console.log(userProfile);

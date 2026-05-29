@@ -18,8 +18,8 @@
 
 import {TokenExchangeRequestConfig, TokenResponse} from '@thunderid/node';
 import getSessionIdAction from './actions/getSessionId';
-import {ThunderIDNextConfig} from '../models/config';
 import getClient from './getClient';
+import {ThunderIDNextConfig} from '../models/config';
 
 const thunderid = async (): Promise<{
   exchangeToken: (config: TokenExchangeRequestConfig, sessionId: string) => Promise<TokenResponse | Response>;

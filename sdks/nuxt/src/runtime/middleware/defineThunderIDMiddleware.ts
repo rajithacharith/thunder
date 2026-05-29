@@ -16,10 +16,10 @@
  * under the License.
  */
 
+import {defineNuxtRouteMiddleware, navigateTo, useState} from '#app';
 import type {Ref} from 'vue';
 import type {RouteLocationNormalized} from 'vue-router';
 import type {ThunderIDAuthState} from '../types';
-import {defineNuxtRouteMiddleware, navigateTo, useState} from '#app';
 
 export interface ThunderIDMiddlewareOptions {
   /**
@@ -39,7 +39,7 @@ export interface ThunderIDMiddlewareOptions {
   requireScopes?: string[];
 }
 
-const DEFAULT_REDIRECT_TO: string = '/api/auth/signin';
+const DEFAULT_REDIRECT_TO = '/api/auth/signin';
 
 /**
  * Typed factory for ThunderID route middleware.
@@ -73,12 +73,12 @@ export function defineThunderIDMiddleware(
 
     const user: Record<string, unknown> | null = authState.value.user as Record<string, unknown> | null;
 
-    if (requireOrganization && !user?.['organizationId']) {
+    if (requireOrganization && !user?.organizationId) {
       return navigateTo(redirectTo, {external: true});
     }
 
     if (requireScopes.length > 0) {
-      const sessionScopes: string[] = String(user?.['scopes'] ?? '').split(' ');
+      const sessionScopes: string[] = String(user?.scopes ?? '').split(' ');
       const hasAllScopes: boolean = requireScopes.every((s: string) => sessionScopes.includes(s));
       if (!hasAllScopes) {
         return navigateTo(redirectTo, {external: true});

@@ -461,6 +461,7 @@ func BuildOAuthClient(entityID, clientID, ouID string, p *inboundmodel.OAuthProf
 		PKCERequired:                       p.PKCERequired,
 		PublicClient:                       p.PublicClient,
 		RequirePushedAuthorizationRequests: p.RequirePushedAuthorizationRequests,
+		DPoPBoundAccessTokens:              p.DPoPBoundAccessTokens,
 		Scopes:                             p.Scopes,
 		ScopeClaims:                        p.ScopeClaims,
 		Token:                              p.Token,
@@ -1174,8 +1175,12 @@ func applyInboundDefaults(c *inboundmodel.InboundClient, oauthProfile *inboundmo
 	if c != nil {
 		assertion = c.Assertion
 	}
-	accessToken, idToken := resolveOAuthTokens(oauthProfile.Token, assertion)
-	oauthProfile.Token = &inboundmodel.OAuthTokenConfig{AccessToken: accessToken, IDToken: idToken}
+	accessToken, idToken, refreshToken := resolveOAuthTokens(oauthProfile.Token, assertion)
+	oauthProfile.Token = &inboundmodel.OAuthTokenConfig{
+		AccessToken:  accessToken,
+		IDToken:      idToken,
+		RefreshToken: refreshToken,
+	}
 	oauthProfile.UserInfo = resolveUserInfo(oauthProfile.UserInfo, idToken)
 	oauthProfile.ScopeClaims = resolveScopeClaims(oauthProfile.ScopeClaims)
 }
@@ -1214,7 +1219,9 @@ func resolveAssertion(input, deploymentDefault *inboundmodel.AssertionConfig) *i
 
 // resolveOAuthTokens resolves access token and ID token configs, defaulting to assertion settings.
 func resolveOAuthTokens(in *inboundmodel.OAuthTokenConfig,
-	assertion *inboundmodel.AssertionConfig) (*inboundmodel.AccessTokenConfig, *inboundmodel.IDTokenConfig) {
+	assertion *inboundmodel.AssertionConfig) (*inboundmodel.AccessTokenConfig,
+	*inboundmodel.IDTokenConfig,
+	*inboundmodel.RefreshTokenConfig) {
 	if assertion == nil {
 		assertion = &inboundmodel.AssertionConfig{}
 	}
@@ -1264,7 +1271,26 @@ func resolveOAuthTokens(in *inboundmodel.OAuthTokenConfig,
 		}
 	}
 
-	return accessToken, idToken
+	var refreshToken *inboundmodel.RefreshTokenConfig
+	if in != nil && in.RefreshToken != nil {
+		refreshToken = &inboundmodel.RefreshTokenConfig{
+			ValidityPeriod: in.RefreshToken.ValidityPeriod,
+		}
+	}
+
+	refreshTokenValidity := config.GetServerRuntime().Config.OAuth.RefreshToken.ValidityPeriod
+
+	if refreshToken != nil {
+		if refreshToken.ValidityPeriod == 0 {
+			refreshToken.ValidityPeriod = refreshTokenValidity
+		}
+	} else {
+		refreshToken = &inboundmodel.RefreshTokenConfig{
+			ValidityPeriod: refreshTokenValidity,
+		}
+	}
+
+	return accessToken, idToken, refreshToken
 }
 
 // resolveUserInfo resolves user info config, defaulting user attributes to the ID token config.

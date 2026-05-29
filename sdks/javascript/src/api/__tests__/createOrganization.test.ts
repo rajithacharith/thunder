@@ -46,7 +46,7 @@ describe('createOrganization', (): void => {
       type: 'TENANT',
     };
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const result: Organization = await createOrganization({baseUrl, payload});
 
     expect(fetch).toHaveBeenCalledWith(`${baseUrl}/api/server/v1/organizations`, {
@@ -79,7 +79,7 @@ describe('createOrganization', (): void => {
       type: 'TENANT',
     };
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const result: Organization = await createOrganization({
       baseUrl,
       fetcher: customFetcher,
@@ -111,7 +111,7 @@ describe('createOrganization', (): void => {
       type: 'TENANT',
     };
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
 
     await expect(createOrganization({baseUrl, fetcher: customFetcher, payload})).rejects.toThrow(
       'Network or parsing error: Custom fetcher failure',
@@ -154,7 +154,7 @@ describe('createOrganization', (): void => {
   });
 
   it('should throw ThunderIDAPIError when payload is missing', async (): Promise<void> => {
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
 
     await expect(createOrganization({baseUrl} as any)).rejects.toThrow(ThunderIDAPIError);
     await expect(createOrganization({baseUrl} as any)).rejects.toThrow('Organization payload is required');
@@ -179,7 +179,7 @@ describe('createOrganization', (): void => {
       type: 'GROUP', // Intentionally incorrect to test override
     };
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     await createOrganization({baseUrl, payload});
 
     expect(fetch).toHaveBeenCalledWith(`${baseUrl}/api/server/v1/organizations`, {
@@ -210,7 +210,7 @@ describe('createOrganization', (): void => {
       type: 'TENANT',
     };
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
 
     await expect(createOrganization({baseUrl, payload})).rejects.toThrow(ThunderIDAPIError);
     await expect(createOrganization({baseUrl, payload})).rejects.toThrow(
@@ -228,7 +228,7 @@ describe('createOrganization', (): void => {
       type: 'TENANT',
     };
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
 
     await expect(createOrganization({baseUrl, payload})).rejects.toThrow(ThunderIDAPIError);
     await expect(createOrganization({baseUrl, payload})).rejects.toThrow('Network or parsing error: Network error');
@@ -244,7 +244,7 @@ describe('createOrganization', (): void => {
       type: 'TENANT',
     };
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
 
     await expect(createOrganization({baseUrl, payload})).rejects.toThrow('Network or parsing error: Unknown error');
   });
@@ -273,7 +273,7 @@ describe('createOrganization', (): void => {
       'X-Custom-Header': 'custom-value',
     };
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
 
     await createOrganization({
       baseUrl,

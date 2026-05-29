@@ -16,11 +16,16 @@
  * under the License.
  */
 
-import React, {useEffect, type ReactNode} from 'react';
-import ColorModeToggle from '@theme-original/ColorModeToggle';
-import type ColorModeToggleType from '@theme/ColorModeToggle';
 import type {WrapperProps} from '@docusaurus/types';
+import type ColorModeToggleType from '@theme/ColorModeToggle';
+import ColorModeToggle from '@theme-original/ColorModeToggle';
 import {useColorScheme} from '@wso2/oxygen-ui';
+import {useEffect, useLayoutEffect, type ReactNode} from 'react';
+
+// useLayoutEffect runs synchronously before the browser paints, which ensures the
+// dark-mode / light-mode class is on document.body before Scalar (BrowserOnly) reads it.
+// Falls back to useEffect in SSR where window is not available to avoid React warnings.
+const useSyncLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 type Props = WrapperProps<typeof ColorModeToggleType>;
 
@@ -33,7 +38,7 @@ export default function ColorModeToggleWrapper(props: Props): ReactNode {
 
   // change mode based on "value" prop
   // "dark" or "light" are also used for MUI
-  useEffect(() => {
+  useSyncLayoutEffect(() => {
     setMode(value);
 
     // Set CSS class on body tag to sync Scalar API Reference theme with the main Docusaurus theme.

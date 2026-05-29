@@ -353,7 +353,7 @@ const {t} = useTranslation('common');
 
 To add support for additional languages:
 
-### 1. Create a new locale file
+### 1. Create a New Locale File
 
 Create a new file in `src/locales/` (e.g., `si-LK.ts` for Sinhala):
 
@@ -538,7 +538,7 @@ const { t } = useTranslation('users');
 <p>{t('count', { count: userCount })}</p>
 ```
 
-### Context-specific Translations
+### Context-Specific Translations
 
 ```tsx
 // Different translations based on context
@@ -626,7 +626,7 @@ Apache-2.0
 
 ## Migration Notes
 
-### From Manual i18n Setup
+### Manual i18n Setup Migration
 
 If migrating from a manual i18n setup:
 

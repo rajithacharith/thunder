@@ -326,7 +326,7 @@ const BaseSignInContent: FC<BaseSignInProps> = ({
 
           if (code && state) {
             const payload: EmbeddedSignInFlowHandleRequestPayload = {
-              flowId: currentFlow.flowId,
+              flowId: currentFlow!.flowId,
               selectedAuthenticator: {
                 authenticatorId: responseAuthenticator.authenticatorId,
                 params: {
@@ -336,7 +336,7 @@ const BaseSignInContent: FC<BaseSignInProps> = ({
               },
             };
 
-            await onSubmit(payload, {
+            await onSubmit!(payload, {
               method: currentFlow?.links[0].method,
               url: currentFlow?.links[0].href,
             });
@@ -390,7 +390,7 @@ const BaseSignInContent: FC<BaseSignInProps> = ({
 
                 if (code && state) {
                   const payload: EmbeddedSignInFlowHandleRequestPayload = {
-                    flowId: currentFlow.flowId,
+                    flowId: currentFlow!.flowId,
                     selectedAuthenticator: {
                       authenticatorId: responseAuthenticator.authenticatorId,
                       params: {
@@ -400,7 +400,7 @@ const BaseSignInContent: FC<BaseSignInProps> = ({
                     },
                   };
 
-                  const submitResponse: any = await onSubmit(payload, {
+                  const submitResponse: any = await onSubmit!(payload, {
                     method: currentFlow?.links[0].method,
                     url: currentFlow?.links[0].href,
                   });
@@ -458,7 +458,7 @@ const BaseSignInContent: FC<BaseSignInProps> = ({
         },
       };
 
-      const response: any = await onSubmit(payload, {
+      const response: any = await onSubmit!(payload, {
         method: currentFlow?.links[0].method,
         url: currentFlow?.links[0].href,
       });
@@ -558,7 +558,7 @@ const BaseSignInContent: FC<BaseSignInProps> = ({
             },
           };
 
-          const response: any = await onSubmit(payload, {
+          const response: any = await onSubmit!(payload, {
             method: currentFlow?.links[0].method,
             url: currentFlow?.links[0].href,
           });
@@ -635,7 +635,7 @@ const BaseSignInContent: FC<BaseSignInProps> = ({
           },
         };
 
-        const response: any = await onSubmit(payload, {
+        const response: any = await onSubmit!(payload, {
           method: currentFlow?.links[0].method,
           url: currentFlow?.links[0].href,
         });
@@ -664,7 +664,7 @@ const BaseSignInContent: FC<BaseSignInProps> = ({
           },
         };
 
-        const formResponse: any = await onSubmit(formPayload, {
+        const formResponse: any = await onSubmit!(formPayload, {
           method: currentFlow?.links[0].method,
           url: currentFlow?.links[0].href,
         });
@@ -735,7 +735,7 @@ const BaseSignInContent: FC<BaseSignInProps> = ({
             },
           };
 
-          const response: any = await onSubmit(payload, {
+          const response: any = await onSubmit!(payload, {
             method: currentFlow?.links[0].method,
             url: currentFlow?.links[0].href,
           });
@@ -820,11 +820,13 @@ const BaseSignInContent: FC<BaseSignInProps> = ({
    */
   const hasMultipleOptions: any = useCallback(
     (): boolean =>
-      currentFlow &&
-      'nextStep' in currentFlow &&
-      currentFlow.nextStep?.stepType === EmbeddedSignInFlowStepType.MultiOptionsPrompt &&
-      currentFlow.nextStep?.authenticators &&
-      currentFlow.nextStep.authenticators.length > 1,
+      !!(
+        currentFlow &&
+        'nextStep' in currentFlow &&
+        currentFlow.nextStep?.stepType === EmbeddedSignInFlowStepType.MultiOptionsPrompt &&
+        currentFlow.nextStep?.authenticators &&
+        currentFlow.nextStep.authenticators.length > 1
+      ),
     [currentFlow],
   );
 
@@ -891,7 +893,7 @@ const BaseSignInContent: FC<BaseSignInProps> = ({
       setError(null);
 
       try {
-        const response: any = await onInitialize();
+        const response: any = await onInitialize?.();
 
         setCurrentFlow(response);
         setIsInitialized(true);

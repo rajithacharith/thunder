@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/idp"
@@ -62,7 +63,7 @@ func (suite *TokenValidatorTestSuite) SetupTest() {
 
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://thunder.io",
+			Issuer:         "https://example.com",
 			ValidityPeriod: 3600,
 			Audience:       "application", // Default audience for tests
 			Leeway:         30,            // 30 seconds leeway for clock skew
@@ -122,7 +123,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_BasicToke
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub":   "user123",
-		"iss":   "https://thunder.io",
+		"iss":   "https://example.com",
 		"aud":   defaultAudience, // Use default audience for the issuer
 		"exp":   float64(now + 3600),
 		"nbf":   float64(now - 60),
@@ -130,14 +131,14 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_BasicToke
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "user123", result.Sub)
-	assert.Equal(suite.T(), "https://thunder.io", result.Iss)
+	assert.Equal(suite.T(), "https://example.com", result.Iss)
 	assert.Equal(suite.T(), []string{"read", "write"}, result.Scopes)
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
@@ -152,18 +153,18 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithToken
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"exp": float64(now + 3600),
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, customOAuthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), "https://thunder.io", result.Iss)
+	assert.Equal(suite.T(), "https://example.com", result.Iss)
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
@@ -174,13 +175,13 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithoutNb
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"aud": defaultAudience, // Use default audience for the issuer
 		"exp": float64(now + 3600),
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -195,14 +196,14 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithEmpty
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"aud": defaultAudience, // Use default audience for the issuer
 		"exp": float64(now + 3600),
 		// No scope claim
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -284,12 +285,12 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_InvalidSign
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"exp": float64(now + 3600),
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).
 		Return(&serviceerror.ServiceError{
 			Type: serviceerror.ServerErrorType,
 			Code: "SIGNATURE_VERIFICATION_FAILED",
@@ -317,13 +318,13 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_InvalidSign
 func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_MissingSubClaim() {
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"exp": float64(now + 3600),
 		// Missing sub claim
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -337,12 +338,12 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_InvalidSubT
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": 12345, // Wrong type
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"exp": float64(now + 3600),
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -356,13 +357,13 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_ExpiredToke
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"exp": float64(now - 3600), // Expired
 		"nbf": float64(now - 7200),
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -376,13 +377,13 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_NotYetValid
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"exp": float64(now + 3600),
 		"nbf": float64(now + 1800), // Not yet valid
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -395,9 +396,9 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_NotYetValid
 func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Success_ServerIssuer() {
 	token := testJWTTokenString
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://thunder.io")
+	err := suite.validator.verifyTokenSignatureByIssuer(context.Background(), token, "https://example.com")
 
 	assert.NoError(suite.T(), err)
 	suite.mockJWTService.AssertExpectations(suite.T())
@@ -407,9 +408,9 @@ func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Success_W
 	// Server-level issuer is used for signature verification regardless of app token config
 	token := testJWTTokenString
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://thunder.io")
+	err := suite.validator.verifyTokenSignatureByIssuer(context.Background(), token, "https://example.com")
 
 	assert.NoError(suite.T(), err)
 	suite.mockJWTService.AssertExpectations(suite.T())
@@ -418,7 +419,7 @@ func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Success_W
 func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Error_SignatureFailure() {
 	token := testJWTTokenString
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).
 		Return(&serviceerror.ServiceError{
 			Type: serviceerror.ServerErrorType,
 			Code: "SIGNATURE_MISMATCH",
@@ -430,7 +431,7 @@ func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Error_Sig
 			},
 		})
 
-	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://thunder.io")
+	err := suite.validator.verifyTokenSignatureByIssuer(context.Background(), token, "https://example.com")
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to verify token signature")
@@ -441,7 +442,7 @@ func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Error_Ext
 	// External issuer (not in trusted server issuers)
 	token := testJWTTokenString
 
-	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://external-idp.com")
+	err := suite.validator.verifyTokenSignatureByIssuer(context.Background(), token, "https://external-idp.com")
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "no verification method configured for issuer")
@@ -456,13 +457,13 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_DecodeBeforeVerify(
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"aud": defaultAudience, // Use default audience for the issuer
 		"exp": float64(now + 3600),
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -506,11 +507,11 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_OnlyServerIssuerIsV
 	// Test token from server issuer (matches config-level issuer)
 	claimsValid := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"exp": float64(now + 3600),
 	}
 	tokenValid := suite.createTestJWT(claimsValid)
-	suite.mockJWTService.On("VerifyJWTSignature", tokenValid).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, tokenValid).Return(nil)
 
 	resultValid, errValid := suite.validator.ValidateSubjectToken(
 		context.Background(), tokenValid, appWithTokenConfig)
@@ -544,7 +545,7 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_FutureExternalIssue
 	externalIssuer := "https://external-idp.com"
 
 	// Currently returns error because no JWKS support yet
-	err := suite.validator.verifyTokenSignatureByIssuer(token, externalIssuer)
+	err := suite.validator.verifyTokenSignatureByIssuer(context.Background(), token, externalIssuer)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "no verification method configured")
@@ -558,12 +559,12 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_FutureExternalIssue
 func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Security_RejectsTokenWithoutExp() {
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		// Missing exp claim - security risk
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -590,14 +591,14 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_EdgeCase_VeryLong
 	now := time.Now().Unix()
 	largeClaims := map[string]interface{}{
 		"sub":   "user123",
-		"iss":   "https://thunder.io",
+		"iss":   "https://example.com",
 		"aud":   defaultAudience, // Use default audience for the issuer
 		"exp":   float64(now + 3600),
 		"large": string(make([]byte, 10000)), // 10KB of data
 	}
 	token := suite.createTestJWT(largeClaims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -616,14 +617,14 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_AuthAssertion_Rej
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub":       "user123",
-		"iss":       "https://thunder.io",
+		"iss":       "https://example.com",
 		"aud":       []interface{}{"a", "b"},
 		"exp":       float64(now + 3600),
 		"assurance": "high", // marks this as an auth assertion
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -643,7 +644,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_NonAssertion_Acce
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"aud": []interface{}{"x", "y"},
 		"exp": float64(now + 3600),
 	}
@@ -654,7 +655,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_NonAssertion_Acce
 		ID:       "x", // Matches one element of the aud array.
 	}
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, oauthAppWithID)
 
@@ -671,13 +672,13 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_NonAssertion_Tole
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"aud": 123, // numeric — wrong type, silently ignored
 		"exp": float64(now + 3600),
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -691,7 +692,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_Basic() {
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub":              "test-client",
-		"iss":              "https://thunder.io",
+		"iss":              "https://example.com",
 		"aud":              "test-client",
 		"exp":              float64(now + 3600),
 		"iat":              float64(now),
@@ -703,9 +704,9 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_Basic() {
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.Background(), token, "test-client")
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -721,7 +722,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_WithoutUs
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub":              "test-client",
-		"iss":              "https://thunder.io",
+		"iss":              "https://example.com",
 		"aud":              "test-client",
 		"exp":              float64(now + 3600),
 		"iat":              float64(now),
@@ -732,9 +733,9 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_WithoutUs
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.Background(), token, "test-client")
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -746,7 +747,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_EmptyScop
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub":              "test-client",
-		"iss":              "https://thunder.io",
+		"iss":              "https://example.com",
 		"aud":              "test-client",
 		"exp":              float64(now + 3600),
 		"iat":              float64(now),
@@ -756,9 +757,9 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_EmptyScop
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.Background(), token, "test-client")
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -769,7 +770,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_EmptyScop
 func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_InvalidSignature() {
 	token := "invalid.token.signature"
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").
 		Return(&serviceerror.ServiceError{
 			Type: serviceerror.ServerErrorType,
 			Code: "SIGNATURE_VERIFICATION_FAILED",
@@ -782,7 +783,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_InvalidSign
 			},
 		})
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.Background(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -794,7 +795,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_InvalidJWTF
 	token := invalidJWTFormat
 
 	// VerifyJWT is called first and should fail for invalid format
-	suite.mockJWTService.On("VerifyJWT", token, "", "").
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").
 		Return(&serviceerror.ServiceError{
 			Type: serviceerror.ClientErrorType,
 			Code: "INVALID_JWT_FORMAT",
@@ -806,7 +807,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_InvalidJWTF
 			},
 		})
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.Background(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -820,7 +821,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_DecodeFailu
 	token := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.invalid-base64.signature"
 
 	// VerifyJWT is called first and should fail for invalid base64
-	suite.mockJWTService.On("VerifyJWT", token, "", "").
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").
 		Return(&serviceerror.ServiceError{
 			Type: serviceerror.ServerErrorType,
 			Code: "INVALID_JWT_SIGNATURE",
@@ -832,7 +833,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_DecodeFailu
 			},
 		})
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.Background(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -845,7 +846,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_MissingIa
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "test-client",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"aud": "test-client",
 		"exp": float64(now + 3600),
 		// Missing iat - should be allowed
@@ -855,9 +856,9 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_MissingIa
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.Background(), token, "test-client")
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -871,7 +872,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_ExpiredToke
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub":              "test-client",
-		"iss":              "https://thunder.io",
+		"iss":              "https://example.com",
 		"aud":              "test-client",
 		"exp":              float64(now - 3600), // Expired
 		"nbf":              float64(now - 7200), // Required by VerifyJWT
@@ -883,7 +884,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_ExpiredToke
 	token := suite.createTestJWT(claims)
 
 	// VerifyJWT should catch expired tokens
-	suite.mockJWTService.On("VerifyJWT", token, "", "").
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").
 		Return(&serviceerror.ServiceError{
 			Type:  serviceerror.ClientErrorType,
 			Code:  "TOKEN_EXPIRED",
@@ -893,7 +894,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_ExpiredToke
 			},
 		})
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.Background(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -906,7 +907,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_NotYetValid
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub":              "test-client",
-		"iss":              "https://thunder.io",
+		"iss":              "https://example.com",
 		"aud":              "test-client",
 		"exp":              float64(now + 3600),
 		"nbf":              float64(now + 1800), // Not yet valid
@@ -918,7 +919,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_NotYetValid
 	token := suite.createTestJWT(claims)
 
 	// VerifyJWT should catch not yet valid tokens
-	suite.mockJWTService.On("VerifyJWT", token, "", "").
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").
 		Return(&serviceerror.ServiceError{
 			Type: serviceerror.ClientErrorType,
 			Code: "TOKEN_NOT_VALID_YET",
@@ -930,7 +931,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_NotYetValid
 			},
 		})
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.Background(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -941,7 +942,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_NotYetValid
 func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_MissingSub() {
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
-		"iss":              "https://thunder.io",
+		"iss":              "https://example.com",
 		"aud":              "test-client",
 		"exp":              float64(now + 3600),
 		"iat":              float64(now),
@@ -952,9 +953,9 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_MissingSub(
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.Background(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -966,7 +967,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_WrongClient
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub":              "wrong-client",
-		"iss":              "https://thunder.io",
+		"iss":              "https://example.com",
 		"aud":              "wrong-client",
 		"exp":              float64(now + 3600),
 		"iat":              float64(now),
@@ -976,9 +977,9 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_WrongClient
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.Background(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -990,7 +991,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_MissingAcce
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub":              "test-client",
-		"iss":              "https://thunder.io",
+		"iss":              "https://example.com",
 		"aud":              "test-client",
 		"exp":              float64(now + 3600),
 		"iat":              float64(now),
@@ -1000,9 +1001,9 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_MissingAcce
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.Background(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1014,7 +1015,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_MissingAcce
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub":              "test-client",
-		"iss":              "https://thunder.io",
+		"iss":              "https://example.com",
 		"aud":              "test-client",
 		"exp":              float64(now + 3600),
 		"iat":              float64(now),
@@ -1024,9 +1025,9 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_MissingAcce
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.Background(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1038,7 +1039,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_MissingGran
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub":              "test-client",
-		"iss":              "https://thunder.io",
+		"iss":              "https://example.com",
 		"aud":              "test-client",
 		"exp":              float64(now + 3600),
 		"iat":              float64(now),
@@ -1048,9 +1049,9 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_MissingGran
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.Background(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1062,7 +1063,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_WithClaim
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub":                         "test-client",
-		"iss":                         "https://thunder.io",
+		"iss":                         "https://example.com",
 		"aud":                         "test-client",
 		"exp":                         float64(now + 3600),
 		"iat":                         float64(now),
@@ -1075,9 +1076,9 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_WithClaim
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.Background(), token, "test-client")
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1090,6 +1091,56 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_WithClaim
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
+func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_WithDPoPJkt() {
+	const testJkt = "0ZcOCORZNYy-DWpqq30jZyJGHTN0d2HglBV3uiguA4I"
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub":              "test-client",
+		"iss":              "https://example.com",
+		"aud":              "test-client",
+		"exp":              float64(now + 3600),
+		"iat":              float64(now),
+		"scope":            "read",
+		"access_token_sub": "user123",
+		"access_token_aud": testAppID,
+		"grant_type":       "authorization_code",
+		"dpop_jkt":         testJkt,
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
+
+	result, err := suite.validator.ValidateRefreshToken(context.Background(), token, "test-client")
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), testJkt, result.DPoPJkt)
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_WithoutDPoPJkt() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub":              "test-client",
+		"iss":              "https://example.com",
+		"aud":              "test-client",
+		"exp":              float64(now + 3600),
+		"iat":              float64(now),
+		"scope":            "read",
+		"access_token_sub": "user123",
+		"access_token_aud": testAppID,
+		"grant_type":       "authorization_code",
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
+
+	result, err := suite.validator.ValidateRefreshToken(context.Background(), token, "test-client")
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Empty(suite.T(), result.DPoPJkt)
+}
+
 // ============================================================================
 // ValidateAuthAssertion Tests - Success Cases
 // ============================================================================
@@ -1098,7 +1149,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithAppI
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub":                    "user123",
-		"iss":                    "https://thunder.io",
+		"iss":                    "https://example.com",
 		"aud":                    testAppID, // Matches client app_id
 		"exp":                    float64(now + 3600),
 		"nbf":                    float64(now - 60),
@@ -1111,14 +1162,14 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithAppI
 	suite.oauthApp.ID = testAppID
 	suite.oauthApp.ClientID = testClientID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "user123", result.Sub)
-	assert.Equal(suite.T(), "https://thunder.io", result.Iss)
+	assert.Equal(suite.T(), "https://example.com", result.Iss)
 	assert.Equal(suite.T(), []string{testAppID}, result.Aud)
 	assert.Equal(suite.T(), []string{"read:documents", "write:documents"}, result.Scopes)
 	assert.Equal(suite.T(), "person", result.UserAttributes["userType"])
@@ -1131,7 +1182,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithEmpt
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"aud": defaultAudience, // Use default audience
 		"exp": float64(now + 3600),
 		"nbf": float64(now - 60),
@@ -1141,7 +1192,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithEmpt
 
 	suite.oauthApp.ID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -1158,7 +1209,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithScop
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub":                    "user123",
-		"iss":                    "https://thunder.io",
+		"iss":                    "https://example.com",
 		"aud":                    defaultAudience, // Use default audience
 		"exp":                    float64(now + 3600),
 		"nbf":                    float64(now - 60),
@@ -1169,7 +1220,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithScop
 
 	suite.oauthApp.ID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -1185,7 +1236,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithUser
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub":                    "user123",
-		"iss":                    "https://thunder.io",
+		"iss":                    "https://example.com",
 		"aud":                    defaultAudience, // Use default audience
 		"exp":                    float64(now + 3600),
 		"nbf":                    float64(now - 60),
@@ -1198,7 +1249,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithUser
 
 	suite.oauthApp.ID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -1218,7 +1269,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_MissingAud
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		// Missing aud claim
 		"exp":       float64(now + 3600),
 		"nbf":       float64(now - 60),
@@ -1228,7 +1279,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_MissingAud
 
 	suite.oauthApp.ID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -1242,7 +1293,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_AudienceMi
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub":       "user123",
-		"iss":       "https://thunder.io",
+		"iss":       "https://example.com",
 		"aud":       "different-app-id", // Doesn't match default audience or client app_id
 		"exp":       float64(now + 3600),
 		"nbf":       float64(now - 60),
@@ -1253,7 +1304,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_AudienceMi
 	suite.oauthApp.ID = testAppID
 	suite.oauthApp.ClientID = testClientID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -1269,7 +1320,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithDefa
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"aud": defaultAudience, // Matches configured default audience
 		"exp": float64(now + 3600),
 		"nbf": float64(now - 60),
@@ -1279,14 +1330,14 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithDefa
 	suite.oauthApp.ID = testAppID // Different from audience
 	suite.oauthApp.ClientID = testClientID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "user123", result.Sub)
-	assert.Equal(suite.T(), "https://thunder.io", result.Iss)
+	assert.Equal(suite.T(), "https://example.com", result.Iss)
 	assert.Equal(suite.T(), []string{defaultAudience}, result.Aud)
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
@@ -1322,7 +1373,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_ExpiredTok
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"aud": "app123",
 		"exp": float64(now - 3600), // Expired
 		"nbf": float64(now - 7200),
@@ -1331,7 +1382,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_ExpiredTok
 
 	suite.oauthApp.ID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -1365,7 +1416,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidSig
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"aud": "app123",
 		"exp": float64(now + 3600),
 		"nbf": float64(now - 60),
@@ -1374,7 +1425,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidSig
 
 	suite.oauthApp.ID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(&serviceerror.ServiceError{
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(&serviceerror.ServiceError{
 		Type:  serviceerror.ServerErrorType,
 		Code:  "INVALID_SIGNATURE",
 		Error: core.I18nMessage{Key: "error.test.invalid_signature", DefaultValue: "Invalid signature"},
@@ -1395,7 +1446,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidSub
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": 12345, // Invalid type - should be string
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"aud": "app123",
 		"exp": float64(now + 3600),
 		"nbf": float64(now - 60),
@@ -1404,7 +1455,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidSub
 
 	suite.oauthApp.ID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -1418,7 +1469,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_TokenNotYe
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"aud": "app123",
 		"exp": float64(now + 3600),
 		"nbf": float64(now + 60), // Not yet valid - nbf is in the future
@@ -1427,7 +1478,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_TokenNotYe
 
 	suite.oauthApp.ID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -1441,7 +1492,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_MissingExp
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"aud": "app123",
 		// Missing exp claim
 		"nbf": float64(now - 60),
@@ -1450,7 +1501,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_MissingExp
 
 	suite.oauthApp.ID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -1464,7 +1515,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidAud
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub":       "user123",
-		"iss":       "https://thunder.io",
+		"iss":       "https://example.com",
 		"aud":       12345, // Invalid type - should be string
 		"exp":       float64(now + 3600),
 		"nbf":       float64(now - 60),
@@ -1474,7 +1525,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidAud
 
 	suite.oauthApp.ID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -1490,7 +1541,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithEmpt
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub":                    "user123",
-		"iss":                    "https://thunder.io",
+		"iss":                    "https://example.com",
 		"aud":                    defaultAudience, // Use default audience
 		"exp":                    float64(now + 3600),
 		"nbf":                    float64(now - 60),
@@ -1500,7 +1551,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithEmpt
 
 	suite.oauthApp.ID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -1521,14 +1572,14 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_ExpiredWit
 	// Token expired 10 seconds ago, but leeway is 30 seconds - should pass
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"aud": defaultAudience,
 		"exp": float64(now - 10), // Expired 10 seconds ago
 		"nbf": float64(now - 3600),
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -1543,13 +1594,13 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_ExpiredBey
 	// Token expired 60 seconds ago, leeway is 30 seconds - should fail
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"exp": float64(now - 60), // Expired 60 seconds ago
 		"nbf": float64(now - 3600),
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -1566,14 +1617,14 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_NbfInFutur
 	// Token nbf is 10 seconds in future, but leeway is 30 seconds - should pass
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"aud": defaultAudience,
 		"exp": float64(now + 3600),
 		"nbf": float64(now + 10), // Not valid for another 10 seconds
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -1588,13 +1639,13 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_NbfInFutur
 	// Token nbf is 60 seconds in future, leeway is 30 seconds - should fail
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"exp": float64(now + 3600),
 		"nbf": float64(now + 60), // Not valid for another 60 seconds
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -1630,7 +1681,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_Expiration
 			config.ResetServerRuntime()
 			testConfig := &config.Config{
 				JWT: config.JWTConfig{
-					Issuer:         "https://thunder.io",
+					Issuer:         "https://example.com",
 					ValidityPeriod: 3600,
 					Audience:       "application",
 					Leeway:         tc.leeway,
@@ -1641,13 +1692,13 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_Expiration
 			now := time.Now().Unix()
 			claims := map[string]interface{}{
 				"sub": "user123",
-				"iss": "https://thunder.io",
+				"iss": "https://example.com",
 				"exp": float64(now + tc.expOffset),
 				"nbf": float64(now - 3600),
 			}
 			token := suite.createTestJWT(claims)
 
-			suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil).Once()
+			suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil).Once()
 
 			result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -1663,7 +1714,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_ExpJustIns
 	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://thunder.io",
+			Issuer:         "https://example.com",
 			ValidityPeriod: 3600,
 			Audience:       "application",
 			Leeway:         30, // 30 seconds leeway
@@ -1679,14 +1730,14 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_ExpJustIns
 	// = now >= (now - 29) + 30 = now >= now + 1 = FALSE (should pass)
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"aud": defaultAudience,
 		"exp": float64(now - 29), // Just inside boundary
 		"nbf": float64(now - 3600),
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -1717,7 +1768,7 @@ func (suite *TokenValidatorTestSuite) createTestAccessToken(
 func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Success() {
 	claims := map[string]interface{}{
 		"sub":        "user123",
-		"iss":        "https://thunder.io",
+		"iss":        "https://example.com",
 		"aud":        "test-app",
 		"scope":      "openid profile",
 		"client_id":  "test-client",
@@ -1725,14 +1776,14 @@ func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Success() {
 	}
 	token := suite.createTestAccessToken(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "https://example.com").Return(nil)
 
-	result, err := suite.validator.ValidateAccessToken(token)
+	result, err := suite.validator.ValidateAccessToken(context.Background(), token)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "user123", result.Sub)
-	assert.Equal(suite.T(), "https://thunder.io", result.Iss)
+	assert.Equal(suite.T(), "https://example.com", result.Iss)
 	assert.Equal(suite.T(), []string{"test-app"}, result.Aud)
 	assert.Equal(suite.T(), "test-client", result.ClientID)
 	assert.Equal(suite.T(), "authorization_code", result.GrantType)
@@ -1745,20 +1796,20 @@ func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Success_MinClaims(
 	// Token with only the mandatory claims and no optional ones.
 	claims := map[string]interface{}{
 		"sub":       "user123",
-		"iss":       "https://thunder.io",
+		"iss":       "https://example.com",
 		"aud":       "test-app",
 		"client_id": "test-client",
 	}
 	token := suite.createTestAccessToken(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "https://example.com").Return(nil)
 
-	result, err := suite.validator.ValidateAccessToken(token)
+	result, err := suite.validator.ValidateAccessToken(context.Background(), token)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "user123", result.Sub)
-	assert.Equal(suite.T(), "https://thunder.io", result.Iss)
+	assert.Equal(suite.T(), "https://example.com", result.Iss)
 	assert.Equal(suite.T(), []string{"test-app"}, result.Aud)
 	assert.Equal(suite.T(), "test-client", result.ClientID)
 	assert.Empty(suite.T(), result.GrantType)
@@ -1769,14 +1820,14 @@ func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Success_MinClaims(
 func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_VerifyFails() {
 	token := "invalid.token.signature"
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "https://example.com").
 		Return(&serviceerror.ServiceError{
 			Type:  serviceerror.ServerErrorType,
 			Code:  "JWT-1004",
 			Error: core.I18nMessage{Key: "error.test.invalid_token_signature", DefaultValue: "Invalid token signature"},
 		})
 
-	result, err := suite.validator.ValidateAccessToken(token)
+	result, err := suite.validator.ValidateAccessToken(context.Background(), token)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1789,13 +1840,13 @@ func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_WrongTyp() {
 	// Token with typ "JWT" instead of "at+jwt" should be rejected.
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 	}
 	token := suite.createTestJWT(claims) // Uses typ: "JWT"
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "https://example.com").Return(nil)
 
-	result, err := suite.validator.ValidateAccessToken(token)
+	result, err := suite.validator.ValidateAccessToken(context.Background(), token)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1819,9 +1870,9 @@ func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_MissingTyp()
 	claimsB64 := base64.RawURLEncoding.EncodeToString(claimsJSON)
 	token := fmt.Sprintf("%s.%s.signature", headerB64, claimsB64)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "https://example.com").Return(nil)
 
-	result, err := suite.validator.ValidateAccessToken(token)
+	result, err := suite.validator.ValidateAccessToken(context.Background(), token)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1831,15 +1882,15 @@ func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_MissingTyp()
 
 func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_MissingSub() {
 	claims := map[string]interface{}{
-		"iss":       "https://thunder.io",
+		"iss":       "https://example.com",
 		"aud":       "test-app",
 		"client_id": "test-client",
 	}
 	token := suite.createTestAccessToken(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "https://example.com").Return(nil)
 
-	result, err := suite.validator.ValidateAccessToken(token)
+	result, err := suite.validator.ValidateAccessToken(context.Background(), token)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1850,14 +1901,14 @@ func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_MissingSub()
 func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_MissingAud() {
 	claims := map[string]interface{}{
 		"sub":       "user123",
-		"iss":       "https://thunder.io",
+		"iss":       "https://example.com",
 		"client_id": "test-client",
 	}
 	token := suite.createTestAccessToken(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "https://example.com").Return(nil)
 
-	result, err := suite.validator.ValidateAccessToken(token)
+	result, err := suite.validator.ValidateAccessToken(context.Background(), token)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1873,9 +1924,9 @@ func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_MissingIss()
 	}
 	token := suite.createTestAccessToken(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "https://example.com").Return(nil)
 
-	result, err := suite.validator.ValidateAccessToken(token)
+	result, err := suite.validator.ValidateAccessToken(context.Background(), token)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1886,14 +1937,14 @@ func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_MissingIss()
 func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_MissingClientID() {
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder.io",
+		"iss": "https://example.com",
 		"aud": "test-app",
 	}
 	token := suite.createTestAccessToken(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "https://example.com").Return(nil)
 
-	result, err := suite.validator.ValidateAccessToken(token)
+	result, err := suite.validator.ValidateAccessToken(context.Background(), token)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1904,15 +1955,15 @@ func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_MissingClien
 func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_EmptySub() {
 	claims := map[string]interface{}{
 		"sub":       "",
-		"iss":       "https://thunder.io",
+		"iss":       "https://example.com",
 		"aud":       "test-app",
 		"client_id": "test-client",
 	}
 	token := suite.createTestAccessToken(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "https://example.com").Return(nil)
 
-	result, err := suite.validator.ValidateAccessToken(token)
+	result, err := suite.validator.ValidateAccessToken(context.Background(), token)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1923,15 +1974,15 @@ func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_EmptySub() {
 func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_EmptyClientID() {
 	claims := map[string]interface{}{
 		"sub":       "user123",
-		"iss":       "https://thunder.io",
+		"iss":       "https://example.com",
 		"aud":       "test-app",
 		"client_id": "",
 	}
 	token := suite.createTestAccessToken(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "https://example.com").Return(nil)
 
-	result, err := suite.validator.ValidateAccessToken(token)
+	result, err := suite.validator.ValidateAccessToken(context.Background(), token)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1964,7 +2015,7 @@ func (suite *ExternalIDPValidatorTestSuite) SetupTest() {
 	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://thunder.io",
+			Issuer:         "https://example.com",
 			ValidityPeriod: 3600,
 			Audience:       "application",
 			Leeway:         30,
@@ -1983,13 +2034,13 @@ func (suite *ExternalIDPValidatorTestSuite) SetupTest() {
 	}
 }
 
-// buildExternalIDPDTO builds a minimal idp.IDPDTO for the standard test external IDP.
-func buildExternalIDPDTO() *idp.IDPDTO {
+// buildExternalIDPDTOs builds a minimal []idp.IDPDTO for the standard test external IDP.
+func buildExternalIDPDTOs() []idp.IDPDTO {
 	propTokenExchange, _ := cmodels.NewProperty(idp.PropTokenExchangeEnabled, "true", false)
 	propJWKS, _ := cmodels.NewProperty(idp.PropJwksEndpoint, testExternalJWKS, false)
 	propIssuer, _ := cmodels.NewProperty(idp.PropIssuer, testExternalIssuer, false)
-	return &idp.IDPDTO{
-		Properties: []cmodels.Property{*propTokenExchange, *propJWKS, *propIssuer},
+	return []idp.IDPDTO{
+		{Properties: []cmodels.Property{*propTokenExchange, *propJWKS, *propIssuer}},
 	}
 }
 
@@ -2008,15 +2059,15 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 	claims := map[string]interface{}{
 		"sub": "ext-user-123",
 		"iss": testExternalIssuer,
-		"aud": "https://thunder.io", // audience is this server's own issuer
+		"aud": "https://example.com",
 		"exp": float64(now + 3600),
 		"nbf": float64(now - 60),
 	}
 	token := suite.createExternalJWT(claims)
-	idpDTO := buildExternalIDPDTO()
+	idpDTOs := buildExternalIDPDTOs()
 
-	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
-		Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
+		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
 	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
@@ -2034,15 +2085,15 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 	claims := map[string]interface{}{
 		"sub": "ext-user-123",
 		"iss": testExternalIssuer,
-		"aud": []interface{}{"https://thunder.io", "other-audience"}, // array including server issuer
+		"aud": []interface{}{"https://example.com", "other-audience"},
 		"exp": float64(now + 3600),
 		"nbf": float64(now - 60),
 	}
 	token := suite.createExternalJWT(claims)
-	idpDTO := buildExternalIDPDTO()
+	idpDTOs := buildExternalIDPDTOs()
 
-	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
-		Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
+		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
 	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
@@ -2059,15 +2110,15 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 	claims := map[string]interface{}{
 		"sub": "ext-user-123",
 		"iss": testExternalIssuer,
-		"aud": "some-client-id", // audience is a client_id, not the server issuer
+		"aud": "some-client-id",
 		"exp": float64(now + 3600),
 		"nbf": float64(now - 60),
 	}
 	token := suite.createExternalJWT(claims)
-	idpDTO := buildExternalIDPDTO()
+	idpDTOs := buildExternalIDPDTOs()
 
-	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
-		Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
+		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
 	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
@@ -2084,14 +2135,13 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 	claims := map[string]interface{}{
 		"sub": "ext-user-123",
 		"iss": testExternalIssuer,
-		// no aud claim
 		"exp": float64(now + 3600),
 	}
 	token := suite.createExternalJWT(claims)
-	idpDTO := buildExternalIDPDTO()
+	idpDTOs := buildExternalIDPDTOs()
 
-	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
-		Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
+		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
 	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
@@ -2108,14 +2158,14 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 	claims := map[string]interface{}{
 		"sub": "ext-user-123",
 		"iss": testExternalIssuer,
-		"aud": "https://thunder.io",
+		"aud": "https://example.com",
 		"exp": float64(now + 3600),
 	}
 	token := suite.createExternalJWT(claims)
-	idpDTO := buildExternalIDPDTO()
+	idpDTOs := buildExternalIDPDTOs()
 
-	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
-		Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
+		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
 	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).
 		Return(&serviceerror.ServiceError{
 			Type:  serviceerror.ServerErrorType,
@@ -2140,7 +2190,7 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 	claims := map[string]interface{}{
 		"sub": "ext-user-123",
 		"iss": testExternalIssuer,
-		"aud": "https://thunder.io",
+		"aud": "https://example.com",
 		"exp": float64(now + 3600),
 	}
 	token := suite.createExternalJWT(claims)
@@ -2148,12 +2198,12 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 	propTokenExchange, _ := cmodels.NewProperty(idp.PropTokenExchangeEnabled, "false", false)
 	propJWKS, _ := cmodels.NewProperty(idp.PropJwksEndpoint, testExternalJWKS, false)
 	propIssuer, _ := cmodels.NewProperty(idp.PropIssuer, testExternalIssuer, false)
-	idpDTO := &idp.IDPDTO{
-		Properties: []cmodels.Property{*propTokenExchange, *propJWKS, *propIssuer},
+	idpDTOs := []idp.IDPDTO{
+		{Properties: []cmodels.Property{*propTokenExchange, *propJWKS, *propIssuer}},
 	}
 
-	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
-		Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
+		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -2168,19 +2218,19 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 	claims := map[string]interface{}{
 		"sub": "ext-user-123",
 		"iss": testExternalIssuer,
-		"aud": "https://thunder.io",
+		"aud": "https://example.com",
 		"exp": float64(now + 3600),
 	}
 	token := suite.createExternalJWT(claims)
 
 	propTokenExchange, _ := cmodels.NewProperty(idp.PropTokenExchangeEnabled, "true", false)
 	propIssuer, _ := cmodels.NewProperty(idp.PropIssuer, testExternalIssuer, false)
-	idpDTO := &idp.IDPDTO{
-		Properties: []cmodels.Property{*propTokenExchange, *propIssuer},
+	idpDTOs := []idp.IDPDTO{
+		{Properties: []cmodels.Property{*propTokenExchange, *propIssuer}},
 	}
 
-	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
-		Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
+		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -2197,12 +2247,13 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 	claims := map[string]interface{}{
 		"sub": "ext-user-123",
 		"iss": unknownIssuer,
-		"aud": "https://thunder.io",
+		"aud": "https://example.com",
 		"exp": float64(now + 3600),
 	}
 	token := suite.createExternalJWT(claims)
 
-	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), unknownIssuer).
+	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
+		idp.PropIssuer, unknownIssuer).
 		Return(nil, &serviceerror.ServiceError{
 			Type:  serviceerror.ClientErrorType,
 			Code:  "IDP_NOT_FOUND",
@@ -2218,4 +2269,69 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 	assert.Nil(suite.T(), result)
 	assert.Contains(suite.T(), err.Error(), "failed to exchange token for issuer")
 	suite.mockIDPService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_PopulatesCnfJkt() {
+	defaultAudience := suite.getDefaultAudience()
+
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://example.com",
+		"aud": defaultAudience,
+		"exp": float64(now + 3600),
+		"cnf": map[string]interface{}{"jkt": "thumbprint-abc"},
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), "thumbprint-abc", result.CnfJkt)
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_NoCnf_EmptyJkt() {
+	defaultAudience := suite.getDefaultAudience()
+
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://example.com",
+		"aud": defaultAudience,
+		"exp": float64(now + 3600),
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Empty(suite.T(), result.CnfJkt)
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_MalformedCnf_Error() {
+	defaultAudience := suite.getDefaultAudience()
+
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://example.com",
+		"aud": defaultAudience,
+		"exp": float64(now + 3600),
+		"cnf": "not-an-object",
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
 }

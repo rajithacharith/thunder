@@ -22,9 +22,9 @@ import {Organization, ThunderIDAPIError, IdToken, TokenResponse} from '@thunderi
 import {cookies} from 'next/headers';
 import getSessionId from './getSessionId';
 import {ThunderIDNextConfig} from '../../models/config';
-import getClient from '../getClient';
 import logger from '../../utils/logger';
 import SessionManager from '../../utils/SessionManager';
+import getClient from '../getClient';
 
 type RequestCookies = Awaited<ReturnType<typeof cookies>>;
 
@@ -52,7 +52,9 @@ const switchOrganization = async (
         | string
         | undefined;
       const config: ThunderIDNextConfig = await client.getConfiguration();
-      const sessionCookieExpiryTime: number = SessionManager.resolveSessionCookieExpiry(config.sessionCookie?.expiryTime);
+      const sessionCookieExpiryTime: number = SessionManager.resolveSessionCookieExpiry(
+        config.sessionCookie?.expiryTime,
+      );
       const expiresIn: number = parseInt(tokenResponse.expiresIn, 10);
 
       const sessionToken: string = await SessionManager.createSessionToken(

@@ -36,8 +36,7 @@ const identifyPlatform = (config: Config): Platform => {
   try {
     if (isRecognizedBaseUrlPattern(baseUrl)) {
       try {
-        const url: URL = new URL(baseUrl);
-        // Check for asgardeo domain (e.g., api.asgardeo.io, etc.)
+        const url: URL = new URL(baseUrl!);
         if (/\.thunderid\.io$/i.test(url.hostname) || /thunderid\.io$/i.test(url.hostname)) {
           return Platform.ThunderID;
         }

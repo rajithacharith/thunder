@@ -26,6 +26,7 @@ import {
   OIDCRequestConstants,
   SessionData,
   Storage,
+  TokenResponse,
   extractPkceStorageKeyFromState,
   initializeEmbeddedSignInFlow,
   HttpError,
@@ -33,10 +34,9 @@ import {
   HttpResponse,
   createPackageComponentLogger,
 } from '@thunderid/javascript';
-import FetchHttpClient from './FetchHttpClient';
 import {REFRESH_ACCESS_TOKEN_ERR0R, SILENT_SIGN_IN_STATE, TOKEN_REQUEST_CONFIG_KEY} from './constants/SPAConstants';
+import FetchHttpClient from './FetchHttpClient';
 import {BrowserAuthConfig} from './models/BrowserConfig';
-import navigate from './utils/navigate';
 import BrowserStorage from './models/BrowserStorage';
 import SignInConfig from './models/SignInConfig';
 import SignOutError from './models/SignOutError';
@@ -45,6 +45,7 @@ import LocalStore from './stores/LocalStore';
 import MemoryStore from './stores/MemoryStore';
 import SessionStore from './stores/SessionStore';
 import AuthenticationHelper from './utils/AuthenticationHelper';
+import navigate from './utils/navigate';
 import createSessionManagementHelper, {SessionManagementHelperInterface} from './utils/SessionManagementHelper';
 import SPACryptoUtils from './utils/SPACryptoUtils';
 import SPAHelper from './utils/SPAHelper';
@@ -143,7 +144,7 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
       getIdToken: () => this.getIdToken(),
       getOpenIDProviderEndpoints: async () => this.getOpenIDProviderEndpoints() as Promise<OIDCEndpoints>,
       getUser: () => this.getUser(),
-      isSignedIn: () => this.isSignedIn() as Promise<boolean>,
+      isSignedIn: () => this.isSignedIn(),
       refreshAccessToken: () => super.refreshAccessToken(),
       setPKCECode: (pkceKey: string, state: string) => this.setPKCECode(pkceKey, state),
     });
@@ -154,7 +155,7 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
       this._onInitialize(true);
     }
 
-    if (!(merged as any).autoLogoutOnTokenRefreshError) {
+    if (!merged.autoLogoutOnTokenRefreshError) {
       return true;
     }
 
@@ -300,7 +301,7 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
         (sm as any).setTemporaryDataParameter(TOKEN_REQUEST_CONFIG_KEY, JSON.stringify(tokenRequestConfig));
       }
 
-      if ((signInConfig as any)?.['response_mode'] === 'direct') {
+      if ((signInConfig as any)?.response_mode === 'direct') {
         const authorizeUrl: URL = new URL(url);
         return initializeEmbeddedSignInFlow({
           url: `${authorizeUrl.origin}${authorizeUrl.pathname}`,
@@ -392,7 +393,6 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
 
     // TEMPORARY: Handle sign-out by clearing the session and navigating back to sign-in,
     // until the OIDC end-session flow is fully supported.
-    // Tracker: https://github.com/asgardeo/javascript/issues/212#issuecomment-3435713699
     this.clearSession();
 
     if (config?.signInUrl) {
@@ -430,7 +430,7 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
     );
   }
 
-  public override async getUser(userId?: string): Promise<User | undefined> {
+  public override async getUser(userId?: string): Promise<User> {
     await this._validateMethod();
 
     return super.getUser(userId);
@@ -440,13 +440,13 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
     return super.getAccessToken(sessionId);
   }
 
-  public override async getDecodedIdToken(userId?: string, idToken?: string): Promise<IdToken | undefined> {
+  public override async getDecodedIdToken(userId?: string, idToken?: string): Promise<IdToken> {
     await this._validateMethod();
 
     return super.getDecodedIdToken(userId, idToken);
   }
 
-  public override async getIdToken(userId?: string): Promise<string | undefined> {
+  public override async getIdToken(userId?: string): Promise<string> {
     await this._validateMethod();
 
     return super.getIdToken(userId);
@@ -476,7 +476,7 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
     return this._httpClient;
   }
 
-  public override async isSignedIn(userId?: string): Promise<boolean | undefined> {
+  public override async isSignedIn(userId?: string): Promise<boolean> {
     await this.isInitialized();
 
     return super.isSignedIn(userId);
@@ -492,7 +492,7 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
     return (await (this.getStorageManager() as any).getSessionStatus()) === 'true';
   }
 
-  public override async refreshAccessToken(userId?: string): Promise<User | undefined> {
+  public override async refreshAccessToken(userId?: string): Promise<User | TokenResponse> {
     await this._validateMethod(false);
 
     try {
@@ -502,7 +502,7 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
     }
   }
 
-  public override async revokeAccessToken(userId?: string): Promise<boolean | undefined> {
+  public override async revokeAccessToken(userId?: string): Promise<boolean | Response> {
     await this._validateMethod();
 
     const timer: number = await this._spaHelper!.getRefreshTimeoutTimer();
@@ -531,13 +531,12 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
       );
     }
 
-    const response = await this._authHelper!.exchangeToken(
-      config,
-      (cfg) => this._enableRetrievingSignOutURLFromSession(cfg),
+    const response = await this._authHelper!.exchangeToken(config, (cfg) =>
+      this._enableRetrievingSignOutURLFromSession(cfg),
     );
 
     const cb = this._onCustomGrant.get(config.id);
-    cb && cb(response);
+    cb?.(response);
 
     return response;
   }
@@ -555,7 +554,7 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
     const result = await super.reInitialize(config);
 
     const merged = {...existingConfig, ...config};
-    if ((merged as any).syncSession && isCheckSessionIframeDifferent) {
+    if (merged.syncSession && isCheckSessionIframeDifferent) {
       this._sessionManagementHelper?.reset();
       this._checkSession();
     }
@@ -588,10 +587,8 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
     return true;
   }
 
-  public override async decodeJwtToken<R = Record<string, unknown>>(token?: string): Promise<R | undefined> {
-    if (!token) return undefined;
-
-    return this.getCryptoHelper()?.decodeJwtToken<R>(token);
+  public override async decodeJwtToken<R = Record<string, unknown>>(token: string): Promise<R> {
+    return this.getCryptoHelper().decodeJwtToken<R>(token);
   }
 
   public async on(hook: string, callback: (response?: any) => void | Promise<void>, id?: string): Promise<void> {
@@ -633,10 +630,10 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
         this._httpFinishCallback = callback;
         break;
       case 'http-request-start':
-        this._httpClient?.setHttpRequestStartCallback && this._httpClient.setHttpRequestStartCallback(callback);
+        this._httpClient?.setHttpRequestStartCallback?.(callback);
         break;
       case 'http-request-success':
-        this._httpClient?.setHttpRequestSuccessCallback && this._httpClient.setHttpRequestSuccessCallback(callback);
+        this._httpClient?.setHttpRequestSuccessCallback?.(callback);
         break;
       case 'custom-grant':
         id && this._onCustomGrant.set(id, callback);
@@ -662,7 +659,7 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
     this._authHelper!.initializeSessionManger(
       config,
       oidcEndpoints,
-      async () => ((await (sm as any).getSessionData()) as any)?.session_state ?? '',
+      async () => (await (sm as any).getSessionData())?.session_state ?? '',
       async (params?: any): Promise<string> => this.getSignInUrl(params),
       this._sessionManagementHelper!,
     );
@@ -685,9 +682,7 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
     }
   }
 
-  private async _constructSilentSignInUrl(
-    additionalParams: Record<string, string | boolean> = {},
-  ): Promise<string> {
+  private async _constructSilentSignInUrl(additionalParams: Record<string, string | boolean> = {}): Promise<string> {
     const sm = this.getStorageManager();
     const config = await (sm as any).getConfigData();
 
@@ -702,10 +697,7 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
 
     if (this._storage === BrowserStorage.BrowserMemory && config.enablePKCE) {
       const state = urlObject.searchParams.get(OIDCRequestConstants.Params.STATE);
-      SPAUtils.setPKCE(
-        extractPkceStorageKeyFromState(state ?? ''),
-        await this.getPKCECode(state ?? ''),
-      );
+      SPAUtils.setPKCE(extractPkceStorageKeyFromState(state ?? ''), await this.getPKCECode(state ?? ''));
     }
 
     return urlObject.toString();

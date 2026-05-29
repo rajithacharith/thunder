@@ -20,6 +20,9 @@ package flowexec
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -35,10 +38,10 @@ import (
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	"github.com/thunder-id/thunderid/internal/system/cache"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
-	"github.com/thunder-id/thunderid/internal/system/kmprovider"
+	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider/defaultkm"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/tests/mocks/crypto/cryptomock"
@@ -583,18 +586,28 @@ func TestDecryptCalledForEncryptedStoredContext(t *testing.T) {
 func TestEncryptedContext_SensitiveFieldsHidden(t *testing.T) {
 	// Verifies that after encryptEngineContext, sensitive fields (appId, userId, token, inputs)
 	// are not visible in the encrypted bytes stored — matching the protection guarantee.
-	testConfig := &config.Config{
-		Crypto: config.CryptoConfig{
-			Encryption: config.EncryptionConfig{
-				Key: "2729a7928c79371e5f312167269294a14bb0660fd166b02a408a20fa73271580",
-			},
-		},
-	}
-	config.ResetServerRuntime()
-	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
+	_ = config.InitializeServerRuntime("/tmp/test", &config.Config{})
 
-	cfgSvc, err := defaultkm.InitConfigProvider()
-	assert.NoError(t, err)
+	testKey, _ := hex.DecodeString("2729a7928c79371e5f312167269294a14bb0660fd166b02a408a20fa73271580")
+
+	mockConfigCryptoService := cryptomock.NewConfigCryptoProviderMock(t)
+	mockConfigCryptoService.EXPECT().Encrypt(mock.Anything, mock.Anything).RunAndReturn(
+		func(_ context.Context, plaintext []byte) ([]byte, error) {
+			ciphertext, _, err := cryptolib.Encrypt(
+				testKey,
+				&cryptolib.AlgorithmParams{Algorithm: cryptolib.AlgorithmAESGCM},
+				plaintext,
+			)
+			if err != nil {
+				return nil, err
+			}
+			encData := defaultkm.EncryptedData{
+				Algorithm:  defaultkm.AESGCM,
+				Ciphertext: base64.StdEncoding.EncodeToString(ciphertext),
+				KeyID:      "test-kid",
+			}
+			return json.Marshal(encData)
+		})
 
 	mockCrypto := cryptomock.NewRuntimeCryptoProviderMock(t)
 	mockCrypto.EXPECT().Encrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
@@ -602,9 +615,9 @@ func TestEncryptedContext_SensitiveFieldsHidden(t *testing.T) {
 			func(
 				ctx context.Context,
 				_ *kmprovider.KeyRef,
-				_ cryptolab.AlgorithmParams,
-				content []byte) ([]byte, *cryptolab.CryptoDetails, error) {
-				encrypted, encErr := cfgSvc.Encrypt(ctx, content)
+				_ cryptolib.AlgorithmParams,
+				content []byte) ([]byte, *cryptolib.CryptoDetails, error) {
+				encrypted, encErr := mockConfigCryptoService.Encrypt(ctx, content)
 				return encrypted, nil, encErr
 			})
 
@@ -653,35 +666,61 @@ func TestEncryptedContext_SensitiveFieldsHidden(t *testing.T) {
 func TestEncryptDecryptRoundTrip_AllFieldsPreserved(t *testing.T) {
 	// Full encrypt → decrypt round trip through encryptEngineContext / getFlowContext decrypt path.
 	// Verifies all context fields — including the auth token — survive the cycle intact.
-	testConfig := &config.Config{
-		Crypto: config.CryptoConfig{
-			Encryption: config.EncryptionConfig{
-				Key: "2729a7928c79371e5f312167269294a14bb0660fd166b02a408a20fa73271580",
-			},
-		},
-	}
-	config.ResetServerRuntime()
-	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
+	_ = config.InitializeServerRuntime("/tmp/test", &config.Config{})
 
-	cfgSvc, err := defaultkm.InitConfigProvider()
-	assert.NoError(t, err)
+	testKey, _ := hex.DecodeString("2729a7928c79371e5f312167269294a14bb0660fd166b02a408a20fa73271580")
+
+	mockConfigCryptoService := cryptomock.NewConfigCryptoProviderMock(t)
+	mockConfigCryptoService.EXPECT().Encrypt(mock.Anything, mock.Anything).RunAndReturn(
+		func(_ context.Context, plaintext []byte) ([]byte, error) {
+			ciphertext, _, err := cryptolib.Encrypt(
+				testKey,
+				&cryptolib.AlgorithmParams{Algorithm: cryptolib.AlgorithmAESGCM},
+				plaintext,
+			)
+			if err != nil {
+				return nil, err
+			}
+			encData := defaultkm.EncryptedData{
+				Algorithm:  defaultkm.AESGCM,
+				Ciphertext: base64.StdEncoding.EncodeToString(ciphertext),
+				KeyID:      "test-kid",
+			}
+			return json.Marshal(encData)
+		})
+	mockConfigCryptoService.EXPECT().Decrypt(mock.Anything, mock.Anything).RunAndReturn(
+		func(_ context.Context, encodedData []byte) ([]byte, error) {
+			var encData defaultkm.EncryptedData
+			if err := json.Unmarshal(encodedData, &encData); err != nil {
+				return nil, err
+			}
+			ciphertext, err := base64.StdEncoding.DecodeString(encData.Ciphertext)
+			if err != nil {
+				return nil, err
+			}
+			return cryptolib.Decrypt(
+				testKey,
+				cryptolib.AlgorithmParams{Algorithm: cryptolib.AlgorithmAESGCM},
+				ciphertext,
+			)
+		})
 
 	mockCrypto := cryptomock.NewRuntimeCryptoProviderMock(t)
 	mockCrypto.EXPECT().Encrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		RunAndReturn(func(
 			ctx context.Context,
 			_ *kmprovider.KeyRef,
-			_ cryptolab.AlgorithmParams,
-			content []byte) ([]byte, *cryptolab.CryptoDetails, error) {
-			encrypted, encErr := cfgSvc.Encrypt(ctx, content)
+			_ cryptolib.AlgorithmParams,
+			content []byte) ([]byte, *cryptolib.CryptoDetails, error) {
+			encrypted, encErr := mockConfigCryptoService.Encrypt(ctx, content)
 			return encrypted, nil, encErr
 		})
 	mockCrypto.EXPECT().Decrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		RunAndReturn(func(
 			ctx context.Context,
 			_ *kmprovider.KeyRef,
-			_ cryptolab.AlgorithmParams, content []byte) ([]byte, error) {
-			return cfgSvc.Decrypt(ctx, content)
+			_ cryptolib.AlgorithmParams, content []byte) ([]byte, error) {
+			return mockConfigCryptoService.Decrypt(ctx, content)
 		})
 
 	flowFactory, _ := core.Initialize(cache.Initialize())
@@ -717,7 +756,7 @@ func TestEncryptDecryptRoundTrip_AllFieldsPreserved(t *testing.T) {
 	// Step 2: Simulate getFlowContext decrypt path — call through the mock so RunAndReturn fires
 	decryptedBytes, err := mockCrypto.Decrypt(
 		context.Background(), nil,
-		cryptolab.AlgorithmParams{Algorithm: cryptolab.AlgorithmAESGCM},
+		cryptolib.AlgorithmParams{Algorithm: cryptolib.AlgorithmAESGCM},
 		[]byte(encryptedEngineCtx.Context))
 	assert.NoError(t, err)
 

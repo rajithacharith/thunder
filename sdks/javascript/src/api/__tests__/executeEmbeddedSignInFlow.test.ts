@@ -37,7 +37,7 @@ describe('executeEmbeddedSignInFlow', (): void => {
       ok: true,
     });
 
-    const url = 'https://api.asgardeo.io/t/demo/oauth2/authn';
+    const url = 'https://localhost:8090/oauth2/authn';
     const payload: Record<string, string> = {client_id: 'abc123', password: 'pass', username: 'test'};
 
     const result: EmbeddedSignInFlowHandleResponse = await executeEmbeddedSignInFlow({payload, url});
@@ -64,7 +64,7 @@ describe('executeEmbeddedSignInFlow', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const payload: Record<string, string> = {grant_type: 'password'};
 
     const result: EmbeddedSignInFlowHandleResponse = await executeEmbeddedSignInFlow({baseUrl, payload});
@@ -105,7 +105,7 @@ describe('executeEmbeddedSignInFlow', (): void => {
   });
 
   it('should throw ThunderIDAPIError when payload is missing', async (): Promise<void> => {
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
 
     await expect(executeEmbeddedSignInFlow({baseUrl} as any)).rejects.toThrow(ThunderIDAPIError);
     await expect(executeEmbeddedSignInFlow({baseUrl} as any)).rejects.toThrow('Authorization payload is required');
@@ -121,8 +121,8 @@ describe('executeEmbeddedSignInFlow', (): void => {
       ok: true,
     });
 
-    const url = 'https://api.asgardeo.io/t/demo/oauth2/authn';
-    const baseUrl = 'https://api.asgardeo.io/t/ignored';
+    const url = 'https://localhost:8090/oauth2/authn';
+    const baseUrl = 'https://localhost:8090';
     await executeEmbeddedSignInFlow({baseUrl, payload: {a: 1}, url});
 
     expect(fetch).toHaveBeenCalledWith(url, expect.any(Object));
@@ -135,7 +135,7 @@ describe('executeEmbeddedSignInFlow', (): void => {
     };
     global.fetch = vi.fn().mockResolvedValue({json: () => Promise.resolve(mockData), ok: true});
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     await executeEmbeddedSignInFlow({baseUrl, method: 'PUT' as any, payload: {a: 1}});
 
     expect(fetch).toHaveBeenCalledWith(`${baseUrl}/oauth2/authn`, expect.objectContaining({method: 'PUT'}));
@@ -150,7 +150,7 @@ describe('executeEmbeddedSignInFlow', (): void => {
     });
 
     const payload: Record<string, string> = {password: 'invalid', username: 'wrong'};
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
 
     await expect(executeEmbeddedSignInFlow({baseUrl, payload})).rejects.toThrow(ThunderIDAPIError);
     await expect(executeEmbeddedSignInFlow({baseUrl, payload})).rejects.toThrow('Invalid credentials');
@@ -174,7 +174,7 @@ describe('executeEmbeddedSignInFlow', (): void => {
     });
 
     const payload: Record<string, string> = {password: 'pass', username: 'user'};
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
 
     await expect(executeEmbeddedSignInFlow({baseUrl, payload})).rejects.toThrow(
       'An unexpected error occurred while processing the request',
@@ -185,7 +185,7 @@ describe('executeEmbeddedSignInFlow', (): void => {
     global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
     const payload: Record<string, string> = {password: 'pass', username: 'user'};
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
 
     await expect(executeEmbeddedSignInFlow({baseUrl, payload})).rejects.toThrow(ThunderIDAPIError);
     await expect(executeEmbeddedSignInFlow({baseUrl, payload})).rejects.toThrow(
@@ -197,7 +197,7 @@ describe('executeEmbeddedSignInFlow', (): void => {
     global.fetch = vi.fn().mockRejectedValue('Unexpected failure');
 
     const payload: Record<string, string> = {password: 'pass', username: 'user'};
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
 
     await expect(executeEmbeddedSignInFlow({baseUrl, payload})).rejects.toThrow(
       'Network or parsing error: Unknown error',
@@ -216,7 +216,7 @@ describe('executeEmbeddedSignInFlow', (): void => {
     });
 
     const payload: Record<string, string> = {password: 'pass', username: 'user'};
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const customHeaders: Record<string, string> = {
       Authorization: 'Bearer token',
       'X-Custom-Header': 'custom-value',

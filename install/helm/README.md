@@ -677,7 +677,7 @@ The setup job runs `setup.sh` as a one-time Helm pre-install hook to initialize 
 | `setup.debug`                          | Enable debug mode for setup                                     | `false`                      |
 | `setup.args`                           | Additional command-line arguments for setup.sh                  | `[]`                         |
 | `setup.env`                            | Additional environment variables for setup job                  | `[]`                         |
-| `setup.secretEnv`                      | Additional environment variables sourced from Kubernetes Secrets | `[]`                         |
+| `setup.secretEnv`                      | Secret-backed setup environment variables                        | `[]`                         |
 | `setup.resources.requests.cpu`         | CPU request for setup job                                       | `100m`                       |
 | `setup.resources.requests.memory`      | Memory request for setup job                                    | `50Mi`                       |
 | `setup.resources.limits.cpu`           | CPU limit for setup job                                         | `200m`                       |

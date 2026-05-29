@@ -36,7 +36,7 @@ import {EmbeddedRecoveryFlowResponse} from '../../models/v2/embedded-recovery-fl
  * ```typescript
  * // Initiate recovery flow
  * const response = await executeEmbeddedRecoveryFlowV2({
- *   baseUrl: 'https://api.asgardeo.io/t/myorg',
+ *   baseUrl: 'https://localhost:8090',
  *   payload: {
  *     flowType: 'RECOVERY',
  *     applicationId: 'my-app-id',
@@ -45,7 +45,7 @@ import {EmbeddedRecoveryFlowResponse} from '../../models/v2/embedded-recovery-fl
  *
  * // Continue recovery flow with user input
  * const nextResponse = await executeEmbeddedRecoveryFlowV2({
- *   baseUrl: 'https://api.asgardeo.io/t/myorg',
+ *   baseUrl: 'https://localhost:8090',
  *   payload: {
  *     executionId: response.executionId,
  *     action: 'submit',
@@ -110,7 +110,7 @@ const executeEmbeddedRecoveryFlowV2 = async ({
       Accept: 'application/json',
       'Content-Type': 'application/json',
       ...requestConfig.headers,
-    },
+    } as HeadersInit,
     method: requestConfig.method || 'POST',
   });
 

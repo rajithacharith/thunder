@@ -84,7 +84,7 @@ const handleFlow = (): express.RequestHandler => {
 
       const flowResponse = await executeEmbeddedSignInFlowV2({
         authId: resolvedAuthId,
-        baseUrl: baseUrl as string,
+        baseUrl: baseUrl,
         payload,
       });
 

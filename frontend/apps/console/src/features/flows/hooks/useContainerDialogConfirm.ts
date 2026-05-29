@@ -223,7 +223,7 @@ const useContainerDialogConfirm = (props: UseContainerDialogConfirmProps): (() =
       const currentEdges = getEdges();
 
       // Use onWidgetLoad to properly load the widget into the View
-      const [newNodes, newEdges, defaultPropertySelector, defaultPropertySectorStepId] = onWidgetLoad(
+      const [newNodes, newEdges, defaultPropertySelector, defaultPropertySelectorStepId] = onWidgetLoad(
         droppedResource as Widget,
         generatedViewStep,
         [...currentNodes, generatedViewStep],
@@ -240,7 +240,7 @@ const useContainerDialogConfirm = (props: UseContainerDialogConfirmProps): (() =
 
       onResourceDropOnCanvas(
         defaultPropertySelector ?? droppedResource,
-        defaultPropertySectorStepId ?? generatedViewStep.id ?? '',
+        defaultPropertySelectorStepId ?? generatedViewStep.id ?? '',
       );
 
       // Dispatch custom event to notify about element addition (for auto-layout hint)

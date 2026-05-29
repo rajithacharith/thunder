@@ -40,6 +40,12 @@ vi.mock('../hocs/withTheme', () => ({
 vi.mock('../App', () => ({
   default: () => <div>App</div>,
 }));
+vi.mock('../AppWithDecorators', () => ({
+  default: () => <div>AppWithDecorators</div>,
+}));
+vi.mock('@thunderid/utils', () => ({
+  setCnPrefix: vi.fn(),
+}));
 
 // Mock i18next
 vi.mock('i18next', () => ({
@@ -125,13 +131,8 @@ describe('main', () => {
   });
 
   it('should call createRoot and render when imported', async () => {
-    // Reset modules to ensure clean test isolation for dynamic imports
-    vi.resetModules();
-
-    // Import main to trigger the render
     await import('../main');
 
-    // Wait for async operations (i18n init)
     await vi.waitFor(() => {
       expect(mockCreateRoot).toHaveBeenCalled();
     });

@@ -30,9 +30,9 @@ describe('identifyPlatform', () => {
 
   it('should return Platform.ThunderID for recognized thunderid domains', () => {
     const configs: Config[] = [
-      {applicationId: '', baseUrl: 'https://api.asgardeo.io/t/org', clientId: ''},
-      {applicationId: '', baseUrl: 'https://accounts.asgardeo.io/t/org', clientId: ''},
-      {applicationId: '', baseUrl: 'https://asgardeo.io/t/org', clientId: ''},
+      {applicationId: '', baseUrl: 'https://api.thunderid.io/t/org', clientId: ''},
+      {applicationId: '', baseUrl: 'https://accounts.thunderid.io/t/org', clientId: ''},
+      {applicationId: '', baseUrl: 'https://thunderid.io/t/org', clientId: ''},
     ];
 
     configs.forEach((config: Config) => {

@@ -44,11 +44,11 @@ describe('getScim2Me', () => {
     global.fetch = mockFetch;
 
     const result: Record<string, unknown> = await getScim2Me({
-      url: 'https://api.asgardeo.io/t/test/scim2/Me',
+      url: 'https://localhost:8090/scim2/Me',
     });
 
     expect(result).toEqual(mockUser);
-    expect(mockFetch).toHaveBeenCalledWith('https://api.asgardeo.io/t/test/scim2/Me', {
+    expect(mockFetch).toHaveBeenCalledWith('https://localhost:8090/scim2/Me', {
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/scim+json',
@@ -68,11 +68,11 @@ describe('getScim2Me', () => {
 
     const result: Record<string, unknown> = await getScim2Me({
       fetcher: customFetcher,
-      url: 'https://api.asgardeo.io/t/test/scim2/Me',
+      url: 'https://localhost:8090/scim2/Me',
     });
 
     expect(result).toEqual(mockUser);
-    expect(customFetcher).toHaveBeenCalledWith('https://api.asgardeo.io/t/test/scim2/Me', {
+    expect(customFetcher).toHaveBeenCalledWith('https://localhost:8090/scim2/Me', {
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/scim+json',
@@ -89,13 +89,13 @@ describe('getScim2Me', () => {
     await expect(
       getScim2Me({
         fetcher: customFetcher,
-        url: 'https://api.asgardeo.io/t/test/scim2/Me',
+        url: 'https://localhost:8090/scim2/Me',
       }),
     ).rejects.toThrow(ThunderIDAPIError);
     await expect(
       getScim2Me({
         fetcher: customFetcher,
-        url: 'https://api.asgardeo.io/t/test/scim2/Me',
+        url: 'https://localhost:8090/scim2/Me',
       }),
     ).rejects.toThrow('Network or parsing error: Custom fetcher failure');
   });
@@ -153,7 +153,7 @@ describe('getScim2Me', () => {
 
     await expect(
       getScim2Me({
-        url: 'https://api.asgardeo.io/t/test/scim2/Me',
+        url: 'https://localhost:8090/scim2/Me',
       }),
     ).rejects.toThrow(ThunderIDAPIError);
   });
@@ -165,7 +165,7 @@ describe('getScim2Me', () => {
 
     await expect(
       getScim2Me({
-        url: 'https://api.asgardeo.io/t/test/scim2/Me',
+        url: 'https://localhost:8090/scim2/Me',
       }),
     ).rejects.toThrow(ThunderIDAPIError);
   });
@@ -173,7 +173,7 @@ describe('getScim2Me', () => {
   it('should handle non-Error rejections', async (): Promise<void> => {
     global.fetch = vi.fn().mockRejectedValue('unexpected failure');
 
-    const baseUrl = 'https://api.asgardeo.io/t/dxlab';
+    const baseUrl = 'https://localhost:8090';
 
     await expect(getScim2Me({baseUrl})).rejects.toThrow(ThunderIDAPIError);
     await expect(getScim2Me({baseUrl})).rejects.toThrow('Network or parsing error: Unknown error');
@@ -196,10 +196,10 @@ describe('getScim2Me', () => {
 
     await getScim2Me({
       headers: customHeaders,
-      url: 'https://api.asgardeo.io/t/test/scim2/Me',
+      url: 'https://localhost:8090/scim2/Me',
     });
 
-    expect(mockFetch).toHaveBeenCalledWith('https://api.asgardeo.io/t/test/scim2/Me', {
+    expect(mockFetch).toHaveBeenCalledWith('https://localhost:8090/scim2/Me', {
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/scim+json',
@@ -219,7 +219,7 @@ describe('getScim2Me', () => {
     });
     global.fetch = mockFetch;
 
-    const baseUrl = 'https://api.asgardeo.io/t/test';
+    const baseUrl = 'https://localhost:8090';
     await getScim2Me({
       baseUrl,
     });

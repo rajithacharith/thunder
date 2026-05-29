@@ -16,19 +16,23 @@
  * under the License.
  */
 
-import {ThunderIDProvider} from '@thunderid/react';
 import {useConfig} from '@thunderid/contexts';
+import {ThunderIDProvider} from '@thunderid/react';
+import type {ThunderIDProviderProps} from '@thunderid/react';
 import type {JSX, ComponentType} from 'react';
 
 export default function withConfig<P extends object>(WrappedComponent: ComponentType<P>) {
   return function WithConfig(props: P): JSX.Element {
-    const {getServerUrl} = useConfig();
+    const {getServerUrl, config} = useConfig();
     const applicationId = new URL(window.location.href).searchParams.get('applicationId');
+
+    const sdkProps = (config.sdk ?? {}) as Partial<ThunderIDProviderProps>;
 
     return (
       <ThunderIDProvider
         baseUrl={getServerUrl() ?? (import.meta.env.VITE_THUNDER_BASE_URL as string)}
         applicationId={applicationId!}
+        {...sdkProps}
       >
         <WrappedComponent {...props} />
       </ThunderIDProvider>

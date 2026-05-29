@@ -4,180 +4,17 @@ description: Run a self sign-up flow with Emma Wilson using email and password.
 sidebar_position: 3
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
 # Self Sign-Up
 
 In this walkthrough, Emma signs up for Wayfinder with her email and a password, and arrives at the dashboard ready to make her first booking. <ProductName /> creates a `Customer` user record from her input and attaches the `Traveler` role so she has booking permissions from her first session.
 
 :::note Prerequisites
-Complete [Setup](../#setup) before starting this walkthrough.
+Complete [Set Up Your Environment](../../try-it-out#set-up-your-environment) before starting this walkthrough.
 :::
 
 :::info Background
-[Enable Self Sign-Up and Registration](../../customer-identity#enable-self-sign-up-and-registration) covers the requirements story behind this use case.
+[Enable Self Sign-Up](../../customer-identity#enable-self-sign-up) covers the requirements story behind this use case.
 :::
-
-## Walkthrough Setup
-
-**Add a registration flow.** Pick the tab that matches the path you used in Setup.
-
-<Tabs>
-<TabItem value="declarative" label="Quick Start" default>
-
-The bundle already includes the `wayfinder-registration-flow` attached to `WAYFINDER`. No further action is needed.
-
-</TabItem>
-<TabItem value="build" label="Configure It Yourself">
-
-1. Create a registration flow through the flows API. The flow follows this sequence of steps:
-
-    - Resolves the user type (prompts the new user to pick one if the application allows multiple).
-    - Prompts for username and password.
-    - Runs basic-auth and provisioning, with `properties.assignRole` set to attach the `Traveler` role automatically.
-    - Prompts for any remaining required schema attributes (rendered dynamically from the user type).
-    - Returns an auth assertion so the new user lands signed in.
-
-    Save the JSON below as `wayfinder-registration-flow.json` and POST it to the flows API:
-
-    ```bash
-    curl -k -X POST https://localhost:8090/flows \
-      -H "Authorization: Bearer $TOKEN" \
-      -H "Content-Type: application/json" \
-      -d @wayfinder-registration-flow.json
-    ```
-
-    <details>
-    <summary>wayfinder-registration-flow.json</summary>
-
-    ```json
-    {
-      "handle": "wayfinder-registration-flow",
-      "name": "Wayfinder Registration Flow",
-      "flowType": "REGISTRATION",
-      "nodes": [
-        { "id": "start", "type": "START", "onSuccess": "user_type_resolver" },
-        {
-          "id": "user_type_resolver",
-          "type": "TASK_EXECUTION",
-          "executor": { "name": "UserTypeResolver" },
-          "onSuccess": "prompt_credentials",
-          "onIncomplete": "prompt_usertype"
-        },
-        {
-          "id": "prompt_usertype",
-          "type": "PROMPT",
-          "meta": {
-            "components": [
-              { "align": "center", "type": "TEXT", "id": "heading_usertype", "label": "Choose your account type", "variant": "HEADING_1" },
-              {
-                "type": "BLOCK",
-                "id": "block_usertype",
-                "components": [
-                  { "type": "SELECT", "id": "usertype_input", "ref": "userType", "label": "Account type", "placeholder": "Select an account type", "required": true, "options": [] },
-                  { "type": "ACTION", "id": "action_usertype", "label": "Continue", "variant": "PRIMARY", "eventType": "SUBMIT" }
-                ]
-              }
-            ]
-          },
-          "prompts": [
-            {
-              "inputs": [ { "ref": "usertype_input", "identifier": "userType", "type": "SELECT", "required": true } ],
-              "action": { "ref": "action_usertype", "nextNode": "user_type_resolver" }
-            }
-          ]
-        },
-        {
-          "id": "prompt_credentials",
-          "type": "PROMPT",
-          "meta": {
-            "components": [
-              { "align": "center", "type": "TEXT", "id": "heading_credentials", "label": "Create your account", "variant": "HEADING_1" },
-              {
-                "type": "BLOCK",
-                "id": "block_credentials",
-                "components": [
-                  { "type": "TEXT_INPUT", "id": "input_username", "ref": "username", "label": "Username", "placeholder": "Pick a username", "required": true },
-                  { "type": "PASSWORD_INPUT", "id": "input_password", "ref": "password", "label": "Password", "placeholder": "Choose a password", "required": true },
-                  { "type": "ACTION", "id": "action_credentials", "label": "Continue", "variant": "PRIMARY", "eventType": "SUBMIT" }
-                ]
-              }
-            ]
-          },
-          "prompts": [
-            {
-              "inputs": [
-                { "ref": "input_username", "identifier": "username", "type": "TEXT_INPUT", "required": true },
-                { "ref": "input_password", "identifier": "password", "type": "PASSWORD_INPUT", "required": true }
-              ],
-              "action": { "ref": "action_credentials", "nextNode": "basic_auth" }
-            }
-          ]
-        },
-        {
-          "id": "basic_auth",
-          "type": "TASK_EXECUTION",
-          "executor": { "name": "BasicAuthExecutor" },
-          "onSuccess": "provisioning"
-        },
-        {
-          "id": "provisioning",
-          "type": "TASK_EXECUTION",
-          "properties": { "assignRole": "wayfinder-traveler-role" },
-          "executor": {
-            "name": "ProvisioningExecutor",
-            "inputs": [
-              { "ref": "input_username", "identifier": "username", "type": "TEXT_INPUT", "required": true },
-              { "ref": "input_password", "identifier": "password", "type": "PASSWORD_INPUT", "required": true }
-            ]
-          },
-          "onSuccess": "auth_assert",
-          "onIncomplete": "prompt_schema_attrs"
-        },
-        {
-          "id": "prompt_schema_attrs",
-          "type": "PROMPT",
-          "meta": {
-            "components": [
-              { "align": "center", "type": "TEXT", "id": "heading_schema_attrs", "label": "Tell us about you", "variant": "HEADING_1" },
-              {
-                "type": "BLOCK",
-                "id": "block_dynamic_user_inputs",
-                "components": [
-                  { "type": "DYNAMIC_INPUT_PLACEHOLDER", "id": "dynamic_inputs" },
-                  { "type": "ACTION", "id": "action_schema_attrs", "label": "Continue", "variant": "PRIMARY", "eventType": "SUBMIT" }
-                ]
-              }
-            ]
-          },
-          "prompts": [
-            { "inputs": [], "action": { "ref": "action_schema_attrs", "nextNode": "provisioning" } }
-          ]
-        },
-        {
-          "id": "auth_assert",
-          "type": "TASK_EXECUTION",
-          "executor": { "name": "AuthAssertExecutor" },
-          "onSuccess": "end"
-        },
-        { "id": "end", "type": "END" }
-      ]
-    }
-    ```
-
-    </details>
-
-    Replace `wayfinder-traveler-role` with the ID of the `Traveler` role you created in [Setup](../#setup) if it differs.
-
-    See [Build a Flow](/docs/next/guides/guides/flows/build-a-flow).
-
-2. Go to **Applications** → **WAYFINDER** → **Flows** and select the registration flow you just created from the **Registration Flow** dropdown. Save the application.
-
-    See [Manage Applications](/docs/next/guides/guides/applications/manage-applications).
-
-</TabItem>
-</Tabs>
 
 ## Pick Your Pattern
 
@@ -188,10 +25,10 @@ In the redirect-based pattern, the consumer app sends the user to <ProductName /
 
 **Try the Use Case**
 
-1. Open [http://localhost:5173](http://localhost:5173). The Wayfinder home page loads.
-2. Select "Sign in". The browser navigates to <ProductName />.
-3. Select "Sign up". The browser navigates to the <ProductName /> sign-up page.
-4. Fill in Emma's details — username `emma.wilson`, email `emma.wilson@example.com`, given name `Emma`, family name `Wilson`, and a password — then submit.
+1. Open <WayFinderSampleUrl />. The Wayfinder home page loads.
+2. Select **Sign in**. The browser navigates to <ProductName />.
+3. Select **Sign up**. The browser navigates to the <ProductName /> sign-up page.
+4. Fill in Emma's details (username `emma.wilson`, email `emma.wilson@example.com`, given name `Emma`, family name `Wilson`, and a password), then submit.
 5. <ProductName /> runs the sign-up flow: it creates a `Customer` user, records her terms acceptance, and assigns the `Traveler` role.
 6. The browser returns to Wayfinder. Emma arrives at the dashboard, ready to make her first booking.
 
@@ -202,14 +39,14 @@ In the redirect-based pattern, the consumer app sends the user to <ProductName /
 </details>
 
 <details>
-  <summary>App-native step-by-step</summary>
+  <summary>App-native step-by-step (verbose flow)</summary>
 
 Coming soon. See the [App-native pattern](../../solution-patterns#app-native) for what to expect.
 
 </details>
 
 <details>
-  <summary>App-native managed</summary>
+  <summary>App-native managed (non-verbose flow)</summary>
 
 Coming soon. See the [App-native pattern](../../solution-patterns#app-native) for what to expect.
 
@@ -221,3 +58,8 @@ Coming soon. See the [App-native pattern](../../solution-patterns#app-native) fo
 Coming soon. See the [Direct API pattern](../../solution-patterns#direct-api) for what to expect.
 
 </details>
+
+## Going Deeper
+
+- Want to understand how user records and roles come together? See [User Types](../../identity-concepts#user-types), [Roles](../../identity-concepts#roles), and [Flows](../../identity-concepts#flows) in the Identity Concepts.
+- Prefer to build the registration flow manually? See [Build the Registration Flow](../../configure-it-yourself#build-the-registration-flow) in Configure It Yourself.

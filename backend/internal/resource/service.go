@@ -389,26 +389,11 @@ func (rs *resourceService) UpdateResourceServer(
 	// Delimiter is always preserved from the existing record
 	resourceServer.Delimiter = existingResServer.Delimiter
 
-	// Handle: preserve existing if not provided; validate and check uniqueness if changed
+	// Handle is immutable after creation. Preserve existing when omitted; reject any change.
 	if resourceServer.Handle == "" {
 		resourceServer.Handle = existingResServer.Handle
 	} else if resourceServer.Handle != existingResServer.Handle {
-		if svcErr := validateHandle(resourceServer.Handle, resourceServer.Delimiter); svcErr != nil {
-			if svcErr.Code == ErrorDelimiterInHandle.Code {
-				return nil, &ErrorDelimiterInResourceServerHandle
-			}
-			return nil, svcErr
-		}
-		handleExists, err := rs.resourceStore.CheckResourceServerHandleExists(ctx, resourceServer.Handle)
-		if err != nil {
-			rs.logger.Error("Failed to check resource server handle", log.Error(err))
-			return nil, &serviceerror.InternalServerError
-		}
-		if handleExists {
-			rs.logger.Debug("Resource server handle already exists",
-				log.String("handle", resourceServer.Handle))
-			return nil, &ErrorHandleConflict
-		}
+		return nil, &ErrorImmutableHandle
 	}
 
 	// Identifier: preserve existing if not provided; check uniqueness if changed
@@ -448,24 +433,11 @@ func (rs *resourceService) UpdateResourceServer(
 		}
 	}
 
-	// When handle changes, collect all resources and actions for permission recomputation
-	handleChanged := existingResServer.Handle != resourceServer.Handle
-	permData, svcErr2 := rs.collectPermissionData(ctx, id, handleChanged)
-	if svcErr2 != nil {
-		return nil, svcErr2
-	}
-
 	var updatedRS *ResourceServer
 	if err := rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if err := rs.resourceStore.UpdateResourceServer(txCtx, id, resourceServer); err != nil {
 			rs.logger.Error("Failed to update resource server", log.Error(err))
 			return err
-		}
-
-		if handleChanged {
-			if err := rs.recomputePermissions(txCtx, id, resourceServer, permData); err != nil {
-				return err
-			}
 		}
 
 		updatedRS = &ResourceServer{
@@ -483,110 +455,6 @@ func (rs *resourceService) UpdateResourceServer(
 	}
 
 	return updatedRS, nil
-}
-
-// permissionData holds the resources and actions collected for permission recomputation.
-type permissionData struct {
-	resources       []Resource
-	rsLevelActions  []Action
-	resourceActions []struct {
-		resourceID string
-		actions    []Action
-	}
-}
-
-// collectPermissionData fetches all resources and actions under a resource server when the handle changes.
-// Returns a zero-value permissionData (no store calls) when handleChanged is false.
-func (rs *resourceService) collectPermissionData(
-	ctx context.Context, rsID string, handleChanged bool,
-) (*permissionData, *serviceerror.ServiceError) {
-	if !handleChanged {
-		return &permissionData{}, nil
-	}
-
-	pd := &permissionData{}
-	var err error
-
-	pd.resources, err = rs.resourceStore.GetResourceList(ctx, rsID, serverconst.MaxPageSize, 0)
-	if err != nil {
-		rs.logger.Error("Failed to list resources for permission recomputation", log.Error(err))
-		return nil, &serviceerror.InternalServerError
-	}
-
-	pd.rsLevelActions, err = rs.resourceStore.GetActionList(ctx, rsID, nil, serverconst.MaxPageSize, 0)
-	if err != nil {
-		rs.logger.Error("Failed to list RS-level actions for permission recomputation", log.Error(err))
-		return nil, &serviceerror.InternalServerError
-	}
-
-	for i := range pd.resources {
-		actions, err := rs.resourceStore.GetActionList(
-			ctx, rsID, &pd.resources[i].ID, serverconst.MaxPageSize, 0,
-		)
-		if err != nil {
-			rs.logger.Error("Failed to list resource actions for permission recomputation", log.Error(err))
-			return nil, &serviceerror.InternalServerError
-		}
-		if len(actions) > 0 {
-			pd.resourceActions = append(pd.resourceActions, struct {
-				resourceID string
-				actions    []Action
-			}{resourceID: pd.resources[i].ID, actions: actions})
-		}
-	}
-
-	return pd, nil
-}
-
-// recomputePermissions updates the stored permission strings for all resources and actions
-// under a resource server whose handle has changed. Must be called inside a transaction.
-func (rs *resourceService) recomputePermissions(
-	ctx context.Context, rsID string, resourceServer ResourceServer, pd *permissionData,
-) error {
-	permByID := make(map[string]string, len(pd.resources))
-
-	for i := range pd.resources {
-		res := &pd.resources[i]
-		var parentRes *Resource
-		if res.Parent != nil {
-			if parentPerm, ok := permByID[*res.Parent]; ok {
-				parentRes = &Resource{Permission: parentPerm}
-			}
-		}
-		newPerm := derivePermission(resourceServer, parentRes, res.Handle)
-		permByID[res.ID] = newPerm
-		if err := rs.resourceStore.UpdateResourcePermission(ctx, res.ID, rsID, newPerm); err != nil {
-			rs.logger.Error("Failed to update resource permission", log.Error(err))
-			return err
-		}
-	}
-
-	for i := range pd.rsLevelActions {
-		newPerm := derivePermission(resourceServer, nil, pd.rsLevelActions[i].Handle)
-		if err := rs.resourceStore.UpdateActionPermission(
-			ctx, pd.rsLevelActions[i].ID, rsID, nil, newPerm,
-		); err != nil {
-			rs.logger.Error("Failed to update RS-level action permission", log.Error(err))
-			return err
-		}
-	}
-
-	for _, ra := range pd.resourceActions {
-		parentPerm := permByID[ra.resourceID]
-		parentRes := &Resource{Permission: parentPerm}
-		for i := range ra.actions {
-			newPerm := derivePermission(resourceServer, parentRes, ra.actions[i].Handle)
-			resID := ra.resourceID
-			if err := rs.resourceStore.UpdateActionPermission(
-				ctx, ra.actions[i].ID, rsID, &resID, newPerm,
-			); err != nil {
-				rs.logger.Error("Failed to update resource action permission", log.Error(err))
-				return err
-			}
-		}
-	}
-
-	return nil
 }
 
 // DeleteResourceServer deletes a resource server.

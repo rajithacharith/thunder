@@ -125,7 +125,7 @@ const Button: ForwardRefExoticComponent<ButtonProps & RefAttributes<HTMLButtonEl
     ref: Ref<HTMLButtonElement>,
   ) => {
     const {theme, colorScheme}: ReturnType<typeof useTheme> = useTheme();
-    const styles: Record<string, string> = useStyles(
+    const styles: Record<string, string | null> = useStyles(
       theme,
       colorScheme,
       color,

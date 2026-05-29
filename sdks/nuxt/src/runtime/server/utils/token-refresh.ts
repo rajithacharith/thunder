@@ -26,7 +26,7 @@ import {useRuntimeConfig} from '#imports';
  * Seconds before expiry at which we proactively refresh the access token.
  * Refreshing 60 s early avoids races where the token expires mid-request.
  */
-const REFRESH_SKEW_SECONDS: number = 60;
+const REFRESH_SKEW_SECONDS = 60;
 
 /**
  * Shape of an OIDC token endpoint refresh response (snake_case JSON).
@@ -84,7 +84,7 @@ export async function getValidAccessToken(event: H3Event): Promise<string> {
   const publicConfig: typeof config.public.thunderid = config.public.thunderid;
   const privateConfig: typeof config.thunderid = config.thunderid;
 
-  const tokenEndpoint: string = `${publicConfig.baseUrl}/oauth2/token`;
+  const tokenEndpoint = `${publicConfig.baseUrl}/oauth2/token`;
 
   const body: URLSearchParams = new URLSearchParams({
     client_id: publicConfig.clientId,

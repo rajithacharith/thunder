@@ -51,7 +51,7 @@ All commands use the named session `-s=thunderid` so the browser persists across
 
 ## Authentication
 
-ThunderID Console requires authentication. The sign-in form is dynamically rendered by the Asgardeo SDK, so always use `snapshot` to get element refs before interacting.
+ThunderID Console requires authentication. The sign-in form is dynamically rendered by the ThunderID SDK, so always use `snapshot` to get element refs before interacting.
 
 Default credentials: `admin` / `admin`
 
@@ -224,5 +224,5 @@ playwright-cli screenshot --filename=console-users.png -s=thunderid
 
   **Important**: You must accept certs for **each origin** the console talks to. The console redirects to the gate for auth, which calls the backend. If the backend cert is not accepted in the same browser session, API calls will silently fail. Resolve the backend port from `deployment.yaml` (`server.port`) and the gate port from the console's runtime config. Accept certs for each origin before proceeding.
 
-- **Login form not visible**: The Asgardeo SDK renders the form dynamically. Take a snapshot after a brief wait. If you see a loading spinner, snapshot again after a few seconds.
+- **Login form not visible**: The ThunderID SDK renders the form dynamically. Take a snapshot after a brief wait. If you see a loading spinner, snapshot again after a few seconds.
 - **Session lost**: Run `playwright-cli list` to check active sessions. Start a new one with `playwright-cli open -s=thunderid`.

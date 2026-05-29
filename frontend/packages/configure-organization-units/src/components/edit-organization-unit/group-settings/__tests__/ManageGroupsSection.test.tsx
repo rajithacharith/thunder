@@ -16,8 +16,9 @@
  * under the License.
  */
 
-import {screen, renderWithProviders} from '@thunderid/test-utils';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {screen, renderWithProviders, renderHook} from '@thunderid/test-utils';
+import {useTranslation} from 'react-i18next';
+import {describe, it, expect, vi, beforeEach, beforeAll} from 'vitest';
 import type {Group} from '../../../../models/group';
 import ManageGroupsSection from '../ManageGroupsSection';
 
@@ -33,22 +34,12 @@ vi.mock('@thunderid/hooks', async (importOriginal) => {
   return {...(actual as object), useDataGridLocaleText: () => ({})};
 });
 
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'organizationUnits:edit.groups.sections.manage.title': 'Manage Groups',
-        'organizationUnits:edit.groups.sections.manage.description': 'View and manage groups in this organization unit',
-        'organizationUnits:edit.groups.sections.manage.listing.columns.name': 'Group Name',
-        'organizationUnits:edit.groups.sections.manage.listing.columns.id': 'Group ID',
-      };
-      return translations[key] ?? key;
-    },
-  }),
-}));
-
 describe('ManageGroupsSection', () => {
+  let t: (key: string) => string;
+
+  beforeAll(() => {
+    ({t} = renderHook(() => useTranslation()).result.current);
+  });
   const mockGroups: Group[] = [
     {id: 'group-1', name: 'Developers', ouId: 'ou-123'},
     {id: 'group-2', name: 'Designers', ouId: 'ou-123'},
@@ -67,8 +58,8 @@ describe('ManageGroupsSection', () => {
 
     renderWithProviders(<ManageGroupsSection organizationUnitId="ou-123" />);
 
-    expect(screen.getByText('Manage Groups')).toBeInTheDocument();
-    expect(screen.getByText('View and manage groups in this organization unit')).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:edit.groups.sections.manage.title'))).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:edit.groups.sections.manage.description'))).toBeInTheDocument();
   });
 
   it('should render data grid with groups', () => {
@@ -93,8 +84,10 @@ describe('ManageGroupsSection', () => {
 
     renderWithProviders(<ManageGroupsSection organizationUnitId="ou-123" />);
 
-    expect(screen.getByText('Group Name')).toBeInTheDocument();
-    expect(screen.getByText('Group ID')).toBeInTheDocument();
+    expect(
+      screen.getByText(t('organizationUnits:edit.groups.sections.manage.listing.columns.name')),
+    ).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:edit.groups.sections.manage.listing.columns.id'))).toBeInTheDocument();
   });
 
   it('should show loading state', () => {

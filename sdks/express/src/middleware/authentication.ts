@@ -18,9 +18,9 @@
 
 import {ThunderIDRuntimeError, TokenResponse, logger as Logger} from '@thunderid/node';
 import express from 'express';
-import ThunderIDExpressClient from '../ThunderIDExpressClient';
 import {SESSION_COOKIE_NAME} from '../constants/CookieConfig';
 import {ThunderIDExpressConfig} from '../models/config';
+import ThunderIDExpressClient from '../ThunderIDExpressClient';
 
 /**
  * Returns Express middleware that initialises the ThunderID client and attaches
@@ -148,11 +148,7 @@ const handleSignOut = (): express.RequestHandler => {
     if (!sessionId) {
       onError(
         res,
-        new ThunderIDRuntimeError(
-          'No cookie found in the request',
-          'EXPRESS-AUTH_MW-LOGOUT-NF01',
-          'express',
-        ),
+        new ThunderIDRuntimeError('No cookie found in the request', 'EXPRESS-AUTH_MW-LOGOUT-NF01', 'express'),
       );
       return;
     }

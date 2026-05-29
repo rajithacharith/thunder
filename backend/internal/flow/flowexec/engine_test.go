@@ -27,7 +27,7 @@ import (
 	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 	"github.com/thunder-id/thunderid/tests/mocks/observability/observabilitymock"
@@ -1675,9 +1675,9 @@ func (s *EngineTestSuite) TestValidateChallengeToken_SkipValidationWhenPolicyAll
 	}
 
 	// Generate a token and hash it
-	tokenStr, err := cryptolab.GenerateSecureToken()
+	tokenStr, err := cryptolib.GenerateSecureToken()
 	s.NoError(err)
-	tokenHash := cryptolab.HashToken(tokenStr)
+	tokenHash := cryptolib.HashToken(tokenStr)
 
 	ctx := &EngineContext{
 		ExecutionID:        "test-exec-id",
@@ -1699,9 +1699,9 @@ func (s *EngineTestSuite) TestValidateChallengeToken_ReturnsErrorWhenTokenEmpty(
 	}
 
 	// Generate a token and hash it
-	tokenStr, err := cryptolab.GenerateSecureToken()
+	tokenStr, err := cryptolib.GenerateSecureToken()
 	s.NoError(err)
-	tokenHash := cryptolab.HashToken(tokenStr)
+	tokenHash := cryptolib.HashToken(tokenStr)
 
 	ctx := &EngineContext{
 		ExecutionID:        "test-exec-id",
@@ -1724,9 +1724,9 @@ func (s *EngineTestSuite) TestValidateChallengeToken_ReturnsErrorWhenTokenInvali
 	}
 
 	// Generate a token and hash it
-	tokenStr, err := cryptolab.GenerateSecureToken()
+	tokenStr, err := cryptolib.GenerateSecureToken()
 	s.NoError(err)
-	tokenHash := cryptolab.HashToken(tokenStr)
+	tokenHash := cryptolib.HashToken(tokenStr)
 
 	ctx := &EngineContext{
 		ExecutionID:        "test-exec-id",
@@ -1749,9 +1749,9 @@ func (s *EngineTestSuite) TestValidateChallengeToken_SucceedsWhenTokenValid() {
 	}
 
 	// Generate a token and hash it
-	tokenStr, err := cryptolab.GenerateSecureToken()
+	tokenStr, err := cryptolib.GenerateSecureToken()
 	s.NoError(err)
-	tokenHash := cryptolab.HashToken(tokenStr)
+	tokenHash := cryptolib.HashToken(tokenStr)
 
 	ctx := &EngineContext{
 		ExecutionID:        "test-exec-id",
@@ -1769,9 +1769,9 @@ func (s *EngineTestSuite) TestValidateChallengeToken_SkipValidationWhenNodeNil()
 	}
 
 	// Generate a token and hash it
-	tokenStr, err := cryptolab.GenerateSecureToken()
+	tokenStr, err := cryptolib.GenerateSecureToken()
 	s.NoError(err)
-	tokenHash := cryptolab.HashToken(tokenStr)
+	tokenHash := cryptolib.HashToken(tokenStr)
 
 	ctx := &EngineContext{
 		ExecutionID:        "test-exec-id",
@@ -1794,9 +1794,9 @@ func (s *EngineTestSuite) TestValidateChallengeToken_SkipValidationWhenPolicyNil
 	}
 
 	// Generate a token and hash it
-	tokenStr, err := cryptolab.GenerateSecureToken()
+	tokenStr, err := cryptolib.GenerateSecureToken()
 	s.NoError(err)
-	tokenHash := cryptolab.HashToken(tokenStr)
+	tokenHash := cryptolib.HashToken(tokenStr)
 
 	ctx := &EngineContext{
 		ExecutionID:        "test-exec-id",

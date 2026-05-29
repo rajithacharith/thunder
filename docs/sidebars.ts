@@ -161,6 +161,11 @@ const sidebars: SidebarsConfig = {
           id: 'guides/working-with-ai/mcp-server',
           label: 'MCP Server',
         },
+        {
+          type: 'doc',
+          id: 'guides/working-with-ai/get-started-with-mcp',
+          label: 'Getting Started with MCP',
+        },
       ],
     },
 
@@ -194,9 +199,22 @@ const sidebars: SidebarsConfig = {
               id: 'guides/guides/applications/application-settings',
               label: 'Application Settings',
             },
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Protocols',
+          collapsed: true,
+          collapsible: true,
+          items: [
             {
               type: 'doc',
-              id: 'guides/guides/applications/dynamic-client-registration',
+              id: 'guides/guides/protocols/oauth2',
+              label: 'OAuth 2.0 Configuration',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/protocols/dynamic-client-registration',
               label: 'Dynamic Client Registration',
             },
           ],
@@ -216,6 +234,11 @@ const sidebars: SidebarsConfig = {
               type: 'doc',
               id: 'guides/guides/users/manage-groups',
               label: 'Manage Groups',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/users/manage-roles',
+              label: 'Manage Roles',
             },
             {
               type: 'doc',
@@ -243,6 +266,75 @@ const sidebars: SidebarsConfig = {
           ],
         },
         {
+          type: 'category',
+          label: 'Integrations',
+          collapsed: true,
+          collapsible: true,
+          items: [
+            {
+              type: 'category',
+              label: 'Identity Providers',
+              collapsed: true,
+              collapsible: true,
+              items: [
+                {
+                  type: 'doc',
+                  id: 'guides/guides/identity-providers/overview',
+                  label: 'What are Identity Providers?',
+                },
+                {
+                  type: 'doc',
+                  id: 'guides/guides/identity-providers/add-google',
+                  label: 'Add Google',
+                },
+                {
+                  type: 'doc',
+                  id: 'guides/guides/identity-providers/add-github',
+                  label: 'Add GitHub',
+                },
+                {
+                  type: 'doc',
+                  id: 'guides/guides/identity-providers/add-oidc-provider',
+                  label: 'Add OIDC Provider',
+                },
+                {
+                  type: 'doc',
+                  id: 'guides/guides/identity-providers/add-oauth-provider',
+                  label: 'Add OAuth 2.0 Provider',
+                },
+                {
+                  type: 'doc',
+                  id: 'guides/guides/identity-providers/manage-identity-providers',
+                  label: 'Manage Identity Providers',
+                },
+                {
+                  type: 'doc',
+                  id: 'guides/guides/identity-providers/connect-idp-to-application',
+                  label: 'Connect IdP to Application',
+                },
+              ],
+            },
+            {
+              type: 'category',
+              label: 'Notifications',
+              collapsed: true,
+              collapsible: true,
+              items: [
+                {
+                  type: 'doc',
+                  id: 'guides/guides/notifications/sms-providers',
+                  label: 'SMS Providers',
+                },
+              ],
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/smtp-server/smtp-server-configuration',
+              label: 'Configure SMTP Server',
+            },
+          ],
+        },
+        {
           type: 'doc',
           id: 'guides/guides/organization-units',
           label: 'Organization Units',
@@ -255,8 +347,8 @@ const sidebars: SidebarsConfig = {
           items: [
             {
               type: 'doc',
-              id: 'guides/guides/flows/what-is-flows',
-              label: 'What are Flows?',
+              id: 'guides/guides/flows/what-are-flows',
+              label: 'What Are Flows?',
             },
             {
               type: 'doc',
@@ -270,8 +362,8 @@ const sidebars: SidebarsConfig = {
             },
             {
               type: 'doc',
-              id: 'guides/guides/flows/flow-reference',
-              label: 'Flow Reference',
+              id: 'guides/guides/flows/advanced-configurations',
+              label: 'Advanced Configurations',
             },
           ],
         },
@@ -289,6 +381,57 @@ const sidebars: SidebarsConfig = {
           type: 'doc',
           id: 'guides/guides/resource-servers',
           label: 'Resource Servers',
+        },
+        {
+          type: 'category',
+          label: 'Design',
+          collapsed: true,
+          collapsible: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'guides/guides/design/overview',
+              label: 'Style Your Experience',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/design/themes',
+              label: 'Themes',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/design/layouts',
+              label: 'Layouts',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/design/design-catalog',
+              label: 'Design Catalog',
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Translations',
+          collapsed: true,
+          collapsible: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'guides/guides/i18n/localization',
+              label: 'Localization',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/i18n/manage-translations',
+              label: 'Manage Translations',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/i18n/resolve-translations',
+              label: 'Resolve Translations',
+            },
+          ],
         },
       ],
     },
@@ -323,11 +466,35 @@ const sidebars: SidebarsConfig = {
               collapsed: true,
               link: {type: 'doc', id: 'use-cases/b2c/try-it-out'},
               items: [
-                {type: 'doc', id: 'use-cases/b2c/try-it-out/add-login', label: 'Add Login'},
-                {type: 'doc', id: 'use-cases/b2c/try-it-out/self-sign-up', label: 'Self Sign-Up'},
-                {type: 'doc', id: 'use-cases/b2c/try-it-out/profile-section', label: 'Profile Section'},
-                {type: 'doc', id: 'use-cases/b2c/try-it-out/account-recovery', label: 'Account Recovery'},
-                {type: 'doc', id: 'use-cases/b2c/try-it-out/onboard-internal-users', label: 'Onboard Internal Users'},
+                {
+                  type: 'category',
+                  label: 'Walkthroughs',
+                  collapsible: true,
+                  collapsed: true,
+                  key: 'b2c-walkthroughs',
+                  items: [
+                    {type: 'doc', id: 'use-cases/b2c/try-it-out/add-login', label: 'Login'},
+                    {type: 'doc', id: 'use-cases/b2c/try-it-out/self-sign-up', label: 'Self Sign-Up'},
+                    {type: 'doc', id: 'use-cases/b2c/try-it-out/profile-section', label: 'View Profile'},
+                    {type: 'doc', id: 'use-cases/b2c/try-it-out/account-recovery', label: 'Account Recovery'},
+                    {
+                      type: 'doc',
+                      id: 'use-cases/b2c/try-it-out/onboard-internal-users',
+                      label: 'Onboard Internal Users',
+                    },
+                  ],
+                },
+                {
+                  type: 'category',
+                  label: 'Learn More',
+                  collapsible: true,
+                  collapsed: true,
+                  key: 'b2c-learn-more',
+                  items: [
+                    {type: 'doc', id: 'use-cases/b2c/identity-concepts', label: 'Identity Concepts', key: 'b2c-identity-concepts'},
+                    {type: 'doc', id: 'use-cases/b2c/configure-it-yourself', label: 'Configure It Yourself', key: 'b2c-configure-it-yourself'},
+                  ],
+                },
               ],
             },
           ],
@@ -341,29 +508,99 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: 'Identity for AI Agents',
+          label: 'Agent Identity',
           collapsible: true,
           collapsed: true,
           items: [
-            {type: 'doc', id: 'use-cases/ai-agents/overview', label: 'Overview', key: 'ai-agents-overview'},
-            {type: 'doc', id: 'use-cases/ai-agents/protect-your-agent', label: 'Protect Your Agent'},
-            {type: 'doc', id: 'use-cases/ai-agents/connect-to-services', label: 'Connect to Services'},
-            {type: 'doc', id: 'use-cases/ai-agents/multi-agent-workflows', label: 'Multi-Agent Workflows'},
-            {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization', label: 'MCP Authorization'},
             {
               type: 'category',
-              label: 'Try It Out',
+              label: 'Securing AI Agents',
               collapsible: true,
               collapsed: true,
-              key: 'ai-agents-try-it-out',
-              link: {type: 'doc', id: 'use-cases/ai-agents/try-it-out'},
               items: [
-                {type: 'doc', id: 'use-cases/ai-agents/try-it-out/protect-the-agent', label: 'Protect the Agent'},
-                {type: 'doc', id: 'use-cases/ai-agents/try-it-out/act-on-its-own', label: 'Acting on Its Own'},
+                {type: 'doc', id: 'use-cases/ai-agents/overview', label: 'Overview', key: 'ai-agents-overview'},
+                {type: 'doc', id: 'use-cases/ai-agents/solution-patterns', label: 'Solution Patterns', key: 'ai-agents-solution-patterns'},
                 {
-                  type: 'doc',
-                  id: 'use-cases/ai-agents/try-it-out/act-on-behalf-of-user',
-                  label: 'Acting on Behalf of a User',
+                  type: 'category',
+                  label: 'Try It Out',
+                  collapsible: true,
+                  collapsed: true,
+                  key: 'ai-agents-try-it-out',
+                  link: {type: 'doc', id: 'use-cases/ai-agents/try-it-out'},
+                  items: [
+                    {
+                      type: 'category',
+                      label: 'Walkthroughs',
+                      collapsible: true,
+                      collapsed: true,
+                      key: 'ai-agents-walkthroughs',
+                      items: [
+                        {type: 'doc', id: 'use-cases/ai-agents/try-it-out/protect-the-agent', label: 'Protect the Agent'},
+                        {type: 'doc', id: 'use-cases/ai-agents/try-it-out/act-on-its-own', label: 'Acting on Its Own'},
+                        {
+                          type: 'doc',
+                          id: 'use-cases/ai-agents/try-it-out/act-on-behalf-of-user',
+                          label: 'Acting on Behalf of a User',
+                        },
+                      ],
+                    },
+                    {
+                      type: 'category',
+                      label: 'Learn More',
+                      collapsible: true,
+                      collapsed: true,
+                      key: 'ai-agents-learn-more',
+                      items: [
+                        {type: 'doc', id: 'use-cases/ai-agents/identity-concepts', label: 'Identity Concepts', key: 'ai-agents-identity-concepts'},
+                        {type: 'doc', id: 'use-cases/ai-agents/configure-it-yourself', label: 'Configure It Yourself', key: 'ai-agents-configure-it-yourself'},
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              type: 'category',
+              label: 'Securing MCP',
+              collapsible: true,
+              collapsed: true,
+              items: [
+                {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/overview', label: 'Overview', key: 'mcp-authorization-overview'},
+                {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/solution-patterns', label: 'Solution Patterns', key: 'mcp-authorization-solution-patterns'},
+                {
+                  type: 'category',
+                  label: 'Try It Out',
+                  collapsible: true,
+                  collapsed: true,
+                  key: 'mcp-authorization-try-it-out',
+                  link: {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/try-it-out'},
+                  items: [
+                    {
+                      type: 'category',
+                      label: 'Walkthroughs',
+                      collapsible: true,
+                      collapsed: true,
+                      key: 'mcp-authorization-walkthroughs',
+                      items: [
+                        {
+                          type: 'doc',
+                          id: 'use-cases/ai-agents/mcp-authorization/try-it-out/connect-via-inspector',
+                          label: 'MCP Authorization',
+                        },
+                      ],
+                    },
+                    {
+                      type: 'category',
+                      label: 'Learn More',
+                      collapsible: true,
+                      collapsed: true,
+                      key: 'mcp-authorization-learn-more',
+                      items: [
+                        {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/identity-concepts', label: 'Identity Concepts', key: 'mcp-authorization-identity-concepts'},
+                        {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/configure-it-yourself', label: 'Configure It Yourself', key: 'mcp-authorization-configure-it-yourself'},
+                      ],
+                    },
+                  ],
                 },
               ],
             },
@@ -387,9 +624,22 @@ const sidebars: SidebarsConfig = {
       className: 'sidebar-section sidebar-persona-not-devops',
       items: [
         {
-          type: 'doc',
-          id: 'guides/key-concepts/authentication/passwordless/passkeys',
-          label: 'Passkeys',
+          type: 'category',
+          label: 'Authentication',
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'guides/key-concepts/authentication/passwordless/passkeys',
+              label: 'Passkeys',
+            },
+            {
+              type: 'doc',
+              id: 'guides/key-concepts/authentication/integration-models',
+              label: 'Integration Models',
+            },
+          ],
         },
         {
           type: 'doc',

@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import {navigateTo, useState, useRuntimeConfig} from '#app';
 import {EmbeddedSignInFlowStatus, getRedirectBasedSignUpUrl} from '@thunderid/browser';
 import {useThunderID as useThunderIDVue, type ThunderIDContext} from '@thunderid/vue';
 import type {Ref} from 'vue';
 import type {ThunderIDAuthState} from '../types';
-import {navigateTo, useState, useRuntimeConfig} from '#app';
 
 /**
  * Nuxt-aware primary composable for ThunderID authentication.
@@ -100,7 +100,7 @@ export function useThunderID(): ThunderIDContext {
 
     // Redirect flow.
     const options: Record<string, unknown> | undefined = arg0 as Record<string, unknown> | undefined;
-    const returnTo: string | undefined = typeof options?.['returnTo'] === 'string' ? options['returnTo'] : undefined;
+    const returnTo: string | undefined = typeof options?.returnTo === 'string' ? options.returnTo : undefined;
     const url: string = returnTo ? `/api/auth/signin?returnTo=${encodeURIComponent(returnTo)}` : '/api/auth/signin';
     await navigateTo(url, {external: true});
     return undefined;

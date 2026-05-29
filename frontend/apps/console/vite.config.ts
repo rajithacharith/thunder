@@ -71,6 +71,9 @@ export default defineConfig({
         ]
       : []),
   ],
+  optimizeDeps: {
+    include: ['lodash-es'],
+  },
   server: {
     port: PORT,
     host: HOST,

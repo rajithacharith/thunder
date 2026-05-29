@@ -42,11 +42,11 @@ const Loading: Component = defineComponent({
 
     return (): VNode | VNode[] | null => {
       if (!isLoading.value) {
-        const fallback: VNode[] | undefined = slots['fallback']?.();
+        const fallback: VNode[] | undefined = slots.fallback?.();
         return fallback ? h(Fragment, {}, fallback) : null;
       }
 
-      const content: VNode[] | undefined = slots['default']?.();
+      const content: VNode[] | undefined = slots.default?.();
       return content ? h(Fragment, {}, content) : null;
     };
   },

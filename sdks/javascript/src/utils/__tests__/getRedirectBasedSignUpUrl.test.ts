@@ -24,8 +24,8 @@ import isRecognizedBaseUrlPattern from '../isRecognizedBaseUrlPattern';
 vi.mock('../isRecognizedBaseUrlPattern', () => ({default: vi.fn()}));
 
 describe('getRedirectBasedSignUpUrl', () => {
-  const baseUrl = 'https://api.asgardeo.io/t/org';
-  const expectedBaseUrl = 'https://accounts.asgardeo.io/t/org';
+  const baseUrl = 'https://api.thunderid.io/t/org';
+  const expectedBaseUrl = 'https://accounts.thunderid.io/t/org';
   const clientId = 'client123';
   const applicationId = 'app456';
 

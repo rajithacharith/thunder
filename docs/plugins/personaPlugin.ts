@@ -48,7 +48,7 @@ export default function personaPlugin(): Plugin {
   return {
     name: 'product-persona-plugin',
 
-    async allContentLoaded({
+    allContentLoaded({
       allContent,
       actions,
     }: {

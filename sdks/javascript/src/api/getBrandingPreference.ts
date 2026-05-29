@@ -59,7 +59,7 @@ export interface GetBrandingPreferenceConfig extends Omit<RequestInit, 'method'>
  * // Using default fetch
  * try {
  *   const response = await getBrandingPreference({
- *     baseUrl: "https://api.asgardeo.io/t/<ORGANIZATION>",
+ *     baseUrl: "https://localhost:8090",
  *     locale: "en-US",
  *     name: "my-branding",
  *     type: "org"
@@ -77,7 +77,7 @@ export interface GetBrandingPreferenceConfig extends Omit<RequestInit, 'method'>
  * // Using custom fetcher (e.g., axios-based httpClient)
  * try {
  *   const response = await getBrandingPreference({
- *     baseUrl: "https://api.asgardeo.io/t/<ORGANIZATION>",
+ *     baseUrl: "https://localhost:8090",
  *     locale: "en-US",
  *     name: "my-branding",
  *     type: "org",

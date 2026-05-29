@@ -16,10 +16,10 @@
  * under the License.
  */
 
+import {navigateTo} from '#app';
 import {ThunderIDRuntimeError} from '@thunderid/browser';
 import {BaseSignInButton} from '@thunderid/vue';
 import {type Component, type PropType, type Ref, type SetupContext, type VNode, defineComponent, h, ref} from 'vue';
-import {navigateTo} from '#app';
 import {useThunderID} from '#imports';
 
 /**
@@ -75,17 +75,17 @@ const SignInButton: Component = defineComponent({
     };
 
     return (): VNode => {
-      const slotContent: (() => VNode[]) | undefined = slots['default']
-        ? (): VNode[] => slots['default']!({isLoading: isLoading.value})
+      const slotContent: (() => VNode[]) | undefined = slots.default
+        ? (): VNode[] => slots.default!({isLoading: isLoading.value})
         : undefined;
 
       return h(
         BaseSignInButton,
         {
-          class: attrs['class'],
+          class: attrs.class,
           isLoading: isLoading.value,
           onClick: handleSignIn,
-          style: attrs['style'],
+          style: attrs.style,
         },
         slotContent,
       );

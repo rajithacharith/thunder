@@ -11,7 +11,7 @@
 
 ThunderID is a lightweight, open-source Identity and Access Management (IAM) engine built to secure access for humans, AI agents, and machines.
 
-Designed for the agentic era, ThunderID provides a developer-first IAM platform and supporting tools for securing applications, APIs, services, and agent-driven workflows across traditional and decentralized identity ecosystems, with post-quantum-ready security built in from the start.
+Designed for the agentic era, ThunderID provides a developer-first IAM platform and supporting tools for securing applications, APIs, services, and agent-driven workflows. It works across traditional and decentralized identity ecosystems, with post-quantum-ready security built in from the start.
 
 Core design goals of ThunderID include:
 - **Agent-native identity:** Manage AI agents as first-class identities with delegated authority, consent-aware access, traceability, and support for issuing verifiable credentials to agents. ThunderID also aims to expose IAM capabilities through interfaces that agents can use safely and programmatically.
@@ -25,6 +25,7 @@ Core design goals of ThunderID include:
 Get started by exploring how ThunderID can be used to secure:
 * Applications - by following [Securing B2C Application Guide](https://thunderid.dev/docs/next/use-cases/b2c/try-it-out)
 * AI Agents - by following [Securing AI Agents Guide](https://thunderid.dev/docs/next/use-cases/ai-agents/try-it-out)
+* MCP - by following [Securing MCP Guide](https://thunderid.dev/docs/next/use-cases/ai-agents/mcp-authorization/try-it-out)
 
  To learn more about overall requirements, solution patterns of these scenarios, refer to the [Use Cases](https://thunderid.dev/docs/next/use-cases/overview/) section.
 

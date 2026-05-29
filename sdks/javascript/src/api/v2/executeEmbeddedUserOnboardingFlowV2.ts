@@ -152,7 +152,7 @@ const executeEmbeddedUserOnboardingFlowV2 = async ({
       Accept: 'application/json',
       'Content-Type': 'application/json',
       ...requestConfig.headers,
-    },
+    } as HeadersInit,
     method: requestConfig.method || 'POST',
   });
 

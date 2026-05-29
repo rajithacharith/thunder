@@ -31,10 +31,11 @@ import (
 	"github.com/thunder-id/thunderid/internal/idp"
 	"github.com/thunder-id/thunderid/internal/inboundclient"
 	"github.com/thunder-id/thunderid/internal/oauth/jwks"
-	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dcr"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/discovery"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/granthandlers"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/introspect"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/jti"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/jwksresolver"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/par"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/token"
@@ -43,12 +44,12 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/scope"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
-	"github.com/thunder-id/thunderid/internal/system/database/provider"
+	"github.com/thunder-id/thunderid/internal/system/config"
 	syshttp "github.com/thunder-id/thunderid/internal/system/http"
 	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
-	"github.com/thunder-id/thunderid/internal/system/kmprovider"
+	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
 	"github.com/thunder-id/thunderid/internal/system/observability"
 )
 
@@ -71,12 +72,6 @@ func Initialize(
 	i18nService i18nmgt.I18nServiceInterface,
 	idpService idp.IDPServiceInterface,
 ) error {
-	// Fetch runtime transactioner for OAuth services.
-	transactioner, err := provider.GetDBProvider().GetRuntimeDBTransactioner()
-	if err != nil {
-		return err
-	}
-
 	jwks.Initialize(mux, runtimeCrypto)
 	httpClient := syshttp.NewHTTPClientWithCheckRedirect(func(req *http.Request, _ []*http.Request) error {
 		return syshttp.IsSSRFSafeURL(req.URL.String())
@@ -85,8 +80,10 @@ func Initialize(
 	tokenBuilder, tokenValidator := tokenservice.Initialize(jwtService, jweService, resolver, idpService)
 	scopeValidator := scope.Initialize()
 	discoveryService := discovery.Initialize(mux, runtimeCrypto)
+	jtiStore := jti.Initialize(config.GetServerRuntime().Config.Server.Identifier)
+	dpopVerifier := dpop.Initialize(jtiStore)
 	parService := par.Initialize(mux, inboundClient, authnProvider, jwtService, discoveryService,
-		resourceService)
+		resourceService, dpopVerifier)
 	grantHandlerProvider, err := granthandlers.Initialize(
 		mux, jwtService, inboundClient, flowExecService, tokenBuilder, tokenValidator,
 		attributeCacheSvc, ouService, authzService, entityProvider, resourceService, parService)
@@ -94,10 +91,10 @@ func Initialize(
 		return err
 	}
 	token.Initialize(mux, jwtService, inboundClient, authnProvider, grantHandlerProvider,
-		scopeValidator, observabilitySvc, discoveryService, transactioner)
+		scopeValidator, observabilitySvc, discoveryService, dpopVerifier)
 	introspect.Initialize(mux, jwtService, inboundClient, authnProvider, discoveryService)
 	userinfo.Initialize(mux, jwtService, jweService, resolver,
-		tokenValidator, inboundClient, ouService, attributeCacheSvc, transactioner)
-	dcr.Initialize(mux, applicationService, ouService, i18nService, transactioner)
+		tokenValidator, inboundClient, attributeCacheSvc,
+		discoveryService, dpopVerifier)
 	return nil
 }

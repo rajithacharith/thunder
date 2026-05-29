@@ -17,7 +17,7 @@
  */
 
 import {Box, Typography, styled} from '@wso2/oxygen-ui';
-import React, {ReactNode, Children, isValidElement} from 'react';
+import {ReactNode, Children, isValidElement} from 'react';
 
 interface StepperProps {
   children: ReactNode;
@@ -80,7 +80,7 @@ export default function Stepper({children, stepNode = 'h2', as = 'h2'}: StepperP
       // Create new step, preserving the id Docusaurus generated for the heading
       currentStep = {
         id: child.props.id as string | undefined,
-        label: child.props.children,
+        label: child.props.children as ReactNode,
         content: [],
       };
     } else if (currentStep) {

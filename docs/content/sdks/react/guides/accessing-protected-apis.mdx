@@ -16,7 +16,7 @@ When your application is wrapped with `ThunderIDProvider`, you can use the `useT
 - Provides methods like `request()` and `requestAll()` for making API calls
 
 :::tip Accessing the HTTP Client
-There are two ways to access the `http` client:
+You can access the `http` client in two ways:
 
 1. **Inside a component**: Use the `useThunderID` hook to get the `http` instance
    ```jsx
@@ -31,7 +31,7 @@ There are two ways to access the `http` client:
 
 ### Basic API Request
 
-The following examples demonstrate how to use the <ProductName /> SDK's `http` module to call a protected API endpoint.
+The following examples show how to use the <ProductName /> SDK's `http` module to call a protected API endpoint.
 
 #### Using the Hook Inside a Component
 
@@ -154,7 +154,7 @@ Note that you don't need to manually specify the Authorization header, as the `h
 
 ### Parallel API Requests
 
-In case you want to send multiple API requests in parallel, you can use the `httpRequestAll` function to simultaneously trigger parallel network requests and receive responses after all network requests are completed.
+To send multiple API requests in parallel, use the `httpRequestAll` function. It triggers parallel network requests and returns responses after all requests are completed.
 
 The following code snippet shows how to send multiple network requests in parallel:
 
@@ -214,10 +214,10 @@ export default function UserProfile() {
 
 ## Using a GraphQL Client
 
-In case you are not using the `webWorker` as the storage type, the `getAccessToken` function can be used to fetch the access token and manually attach it to the GraphQL client's authentication headers.
+If you are not using `webWorker` as the storage type, use the `getAccessToken` function to fetch the access token. Then manually attach the token to the GraphQL client's authentication headers.
 
 :::note Storage Type Limitation
-This approach is not available when the storage type is set to `webWorker`, as the access token is automatically managed by the SDK and not exposed to the main thread.
+This approach is not available when the storage type is set to `webWorker`. The SDK automatically manages the access token and does not expose it to the main thread.
 :::
 
 The following example shows how to configure a GraphQL client with authentication using the access token:

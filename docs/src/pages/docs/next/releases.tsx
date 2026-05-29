@@ -359,7 +359,7 @@ function ReleaseCard({release}: {release: ReleaseEntry}) {
 
       {hasRenderedChanges ? (
         <section className="releases-section-block">
-          <h2>What's Changed</h2>
+          <h2>What&apos;s Changed</h2>
           <div className="releases-change-grid">
             <ChangeGroup title="⚠️ Breaking Changes" items={release.changes.breaking} />
             <ChangeGroup title="🚀 Features" items={release.changes.features} />

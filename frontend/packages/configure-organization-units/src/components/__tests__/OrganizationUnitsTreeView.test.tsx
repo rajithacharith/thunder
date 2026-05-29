@@ -16,8 +16,9 @@
  * under the License.
  */
 
-import {screen, fireEvent, waitFor, within, renderWithProviders, act} from '@thunderid/test-utils';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {screen, fireEvent, waitFor, within, renderWithProviders, act, renderHook} from '@thunderid/test-utils';
+import {useTranslation} from 'react-i18next';
+import {describe, it, expect, vi, beforeEach, beforeAll} from 'vitest';
 import type {OrganizationUnitListResponse} from '../../models/responses';
 import OrganizationUnitsTreeView from '../OrganizationUnitsTreeView';
 
@@ -92,40 +93,12 @@ vi.mock('@/api/useDeleteOrganizationUnit', () => ({
   default: () => mockDeleteHook,
 }));
 
-// Mock translations — stable t function to avoid useCallback churn
-const translations: Record<string, string> = {
-  'organizationUnits:listing.error.title': 'Error loading organization units',
-  'organizationUnits:listing.error.unknown': 'An unknown error occurred',
-  'organizationUnits:listing.treeView.empty': 'No organization units found',
-  'organizationUnits:listing.treeView.noChildren': 'No child organization units',
-  'organizationUnits:listing.treeView.loadError': 'Failed to load child organization units',
-  'common:actions.view': 'View',
-  'common:actions.edit': 'Edit',
-  'common:actions.delete': 'Delete',
-  'organizationUnits:listing.treeView.addChild': 'Add child organization unit',
-  'organizationUnits:edit.general.dangerZone.delete.title': 'Delete Organization Unit',
-  'organizationUnits:edit.general.dangerZone.delete.message':
-    'Are you sure you want to delete this organization unit? This action cannot be undone.',
-  'organizationUnits:edit.general.dangerZone.delete.success': 'Organization unit deleted successfully',
-  'organizationUnits:edit.general.dangerZone.delete.error': 'Failed to delete organization unit',
-  'organizationUnits:delete.dialog.title': 'Delete Organization Unit',
-  'organizationUnits:delete.dialog.message':
-    'Are you sure you want to delete this organization unit? This action cannot be undone.',
-  'organizationUnits:delete.dialog.disclaimer': 'This action is permanent and cannot be undone.',
-  'organizationUnits:listing.addRootOrganizationUnit': 'Add Root Organization Unit',
-  'organizationUnits:listing.treeView.addChildOrganizationUnit': 'Add Engineering Unit',
-  'organizationUnits:listing.treeView.loadMore': 'Load more',
-  'common:actions.cancel': 'Cancel',
-  'common:status.loading': 'Loading...',
-  'common:status.deleting': 'Deleting...',
-};
-const stableT = (key: string): string => translations[key] ?? key;
-const stableTranslation = {t: stableT};
-vi.mock('react-i18next', () => ({
-  useTranslation: () => stableTranslation,
-}));
-
 describe('OrganizationUnitsTreeView', () => {
+  let t: (key: string) => string;
+
+  beforeAll(() => {
+    ({t} = renderHook(() => useTranslation()).result.current);
+  });
   const mockOUData: OrganizationUnitListResponse = {
     totalResults: 2,
     startIndex: 1,
@@ -166,7 +139,7 @@ describe('OrganizationUnitsTreeView', () => {
     renderWithProviders(<OrganizationUnitsTreeView />);
 
     await waitFor(() => {
-      expect(screen.getByText('Error loading organization units')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.error.title'))).toBeInTheDocument();
       expect(screen.getByText('Network error')).toBeInTheDocument();
     });
   });
@@ -181,8 +154,8 @@ describe('OrganizationUnitsTreeView', () => {
     renderWithProviders(<OrganizationUnitsTreeView />);
 
     await waitFor(() => {
-      expect(screen.getByText('Error loading organization units')).toBeInTheDocument();
-      expect(screen.getByText('An unknown error occurred')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.error.title'))).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.error.unknown'))).toBeInTheDocument();
     });
   });
 
@@ -213,7 +186,7 @@ describe('OrganizationUnitsTreeView', () => {
     renderWithProviders(<OrganizationUnitsTreeView />);
 
     await waitFor(() => {
-      expect(screen.getByText('No organization units found')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.treeView.empty'))).toBeInTheDocument();
     });
   });
 
@@ -235,9 +208,9 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    expect(screen.getAllByLabelText('Add child organization unit')).toHaveLength(2);
-    expect(screen.getAllByLabelText('Edit')).toHaveLength(2);
-    expect(screen.getAllByLabelText('Delete')).toHaveLength(2);
+    expect(screen.getAllByLabelText(t('organizationUnits:listing.treeView.addChild'))).toHaveLength(2);
+    expect(screen.getAllByLabelText(t('common:actions.edit'))).toHaveLength(2);
+    expect(screen.getAllByLabelText(t('common:actions.delete'))).toHaveLength(2);
   });
 
   it('should render direct row actions for each tree item', async () => {
@@ -247,9 +220,9 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    expect(screen.getAllByLabelText('Add child organization unit')).toHaveLength(2);
-    expect(screen.getAllByLabelText('Edit')).toHaveLength(2);
-    expect(screen.getAllByLabelText('Delete')).toHaveLength(2);
+    expect(screen.getAllByLabelText(t('organizationUnits:listing.treeView.addChild'))).toHaveLength(2);
+    expect(screen.getAllByLabelText(t('common:actions.edit'))).toHaveLength(2);
+    expect(screen.getAllByLabelText(t('common:actions.delete'))).toHaveLength(2);
   });
 
   it('should navigate to create page with parentId when add child action is clicked', async () => {
@@ -259,7 +232,7 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getAllByLabelText('Add child organization unit')[0]);
+    fireEvent.click(screen.getAllByLabelText(t('organizationUnits:listing.treeView.addChild'))[0]);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/organization-units/create', {
@@ -275,7 +248,7 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getAllByLabelText('Edit')[0]);
+    fireEvent.click(screen.getAllByLabelText(t('common:actions.edit'))[0]);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/organization-units/ou-1');
@@ -289,13 +262,11 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getAllByLabelText('Delete')[0]);
+    fireEvent.click(screen.getAllByLabelText(t('common:actions.delete'))[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
-      expect(
-        screen.getByText('Are you sure you want to delete this organization unit? This action cannot be undone.'),
-      ).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:delete.dialog.title'))).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:delete.dialog.message'))).toBeInTheDocument();
     });
   });
 
@@ -320,17 +291,17 @@ describe('OrganizationUnitsTreeView', () => {
     });
 
     // Click row delete action
-    fireEvent.click(screen.getAllByLabelText('Delete')[0]);
+    fireEvent.click(screen.getAllByLabelText(t('common:actions.delete'))[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:delete.dialog.title'))).toBeInTheDocument();
     });
 
     // Cancel the dialog
-    fireEvent.click(screen.getByText('Cancel'));
+    fireEvent.click(screen.getByText(t('common:actions.cancel')));
 
     await waitFor(() => {
-      expect(screen.queryByText('Delete Organization Unit')).not.toBeInTheDocument();
+      expect(screen.queryByText(t('organizationUnits:delete.dialog.title'))).not.toBeInTheDocument();
     });
   });
 
@@ -346,18 +317,18 @@ describe('OrganizationUnitsTreeView', () => {
     });
 
     // Click row delete action to open dialog, then confirm
-    fireEvent.click(screen.getAllByLabelText('Delete')[0]);
+    fireEvent.click(screen.getAllByLabelText(t('common:actions.delete'))[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:delete.dialog.title'))).toBeInTheDocument();
     });
 
     // Use within to scope to the dialog's Delete button (avoids ambiguity with menu item)
     const dialog = screen.getByRole('dialog');
-    fireEvent.click(within(dialog).getByText('Delete'));
+    fireEvent.click(within(dialog).getByText(t('common:actions.delete')));
 
     await waitFor(() => {
-      expect(screen.getByText('Organization unit deleted successfully')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:edit.general.dangerZone.delete.success'))).toBeInTheDocument();
     });
   });
 
@@ -377,15 +348,15 @@ describe('OrganizationUnitsTreeView', () => {
     });
 
     // Click row delete action to open dialog, then confirm
-    fireEvent.click(screen.getAllByLabelText('Delete')[0]);
+    fireEvent.click(screen.getAllByLabelText(t('common:actions.delete'))[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:delete.dialog.title'))).toBeInTheDocument();
     });
 
     // Use within to scope to the dialog's Delete button (avoids ambiguity with menu item)
     const dialog2 = screen.getByRole('dialog');
-    fireEvent.click(within(dialog2).getByText('Delete'));
+    fireEvent.click(within(dialog2).getByText(t('common:actions.delete')));
 
     await waitFor(() => {
       expect(screen.getByText('Server error occurred')).toBeInTheDocument();
@@ -401,7 +372,7 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getAllByLabelText('Edit')[0]);
+    fireEvent.click(screen.getAllByLabelText(t('common:actions.edit'))[0]);
 
     await waitFor(() => {
       expect(stableLogger.error).toHaveBeenCalledWith(
@@ -420,7 +391,7 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getAllByLabelText('Add child organization unit')[0]);
+    fireEvent.click(screen.getAllByLabelText(t('organizationUnits:listing.treeView.addChild'))[0]);
 
     await waitFor(() => {
       expect(stableLogger.error).toHaveBeenCalledWith(
@@ -482,7 +453,7 @@ describe('OrganizationUnitsTreeView', () => {
 
     // The error placeholder should be visible instead of a perpetual spinner
     await waitFor(() => {
-      expect(screen.getByText('Failed to load child organization units')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.treeView.loadError'))).toBeInTheDocument();
     });
   });
 
@@ -540,18 +511,18 @@ describe('OrganizationUnitsTreeView', () => {
     });
 
     // Click row delete action to trigger snackbar
-    fireEvent.click(screen.getAllByLabelText('Delete')[0]);
+    fireEvent.click(screen.getAllByLabelText(t('common:actions.delete'))[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:delete.dialog.title'))).toBeInTheDocument();
     });
 
     // Use within to scope to the dialog's Delete button (avoids ambiguity with menu item)
     const dialog3 = screen.getByRole('dialog');
-    fireEvent.click(within(dialog3).getByText('Delete'));
+    fireEvent.click(within(dialog3).getByText(t('common:actions.delete')));
 
     await waitFor(() => {
-      expect(screen.getByText('Organization unit deleted successfully')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:edit.general.dangerZone.delete.success'))).toBeInTheDocument();
     });
 
     // Close the snackbar via the Alert close button
@@ -562,7 +533,7 @@ describe('OrganizationUnitsTreeView', () => {
     }
 
     await waitFor(() => {
-      expect(screen.queryByText('Organization unit deleted successfully')).not.toBeInTheDocument();
+      expect(screen.queryByText(t('organizationUnits:edit.general.dangerZone.delete.success'))).not.toBeInTheDocument();
     });
   });
 
@@ -585,7 +556,7 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Add Root Organization Unit')).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:listing.addRootOrganizationUnit'))).toBeInTheDocument();
   });
 
   it('should navigate to create page when add root row is clicked', async () => {
@@ -595,7 +566,7 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Add Root Organization Unit'));
+    fireEvent.click(screen.getByText(t('organizationUnits:listing.addRootOrganizationUnit')));
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/organization-units/create');
@@ -626,7 +597,7 @@ describe('OrganizationUnitsTreeView', () => {
 
     // After expansion, the add child button should appear
     await waitFor(() => {
-      expect(screen.getByText('Add Engineering Unit')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.treeView.addChildOrganizationUnit'))).toBeInTheDocument();
     });
   });
 
@@ -653,10 +624,10 @@ describe('OrganizationUnitsTreeView', () => {
     fireEvent.click(expandIcons[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('Add Engineering Unit')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.treeView.addChildOrganizationUnit'))).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Add Engineering Unit'));
+    fireEvent.click(screen.getByText(t('organizationUnits:listing.treeView.addChildOrganizationUnit')));
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/organization-units/create', {
@@ -687,7 +658,7 @@ describe('OrganizationUnitsTreeView', () => {
 
     // Even with no children, the add child button should appear
     await waitFor(() => {
-      expect(screen.getByText('Add Engineering Unit')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.treeView.addChildOrganizationUnit'))).toBeInTheDocument();
     });
   });
 
@@ -706,12 +677,12 @@ describe('OrganizationUnitsTreeView', () => {
     renderWithProviders(<OrganizationUnitsTreeView />);
 
     await waitFor(() => {
-      expect(screen.getByText('No organization units found')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.treeView.empty'))).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Add Root Organization Unit')).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:listing.addRootOrganizationUnit'))).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Add Root Organization Unit'));
+    fireEvent.click(screen.getByText(t('organizationUnits:listing.addRootOrganizationUnit')));
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/organization-units/create');
@@ -725,7 +696,9 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    const addRootButton = screen.getByText('Add Root Organization Unit').closest('[role="button"]')!;
+    const addRootButton = screen
+      .getByText(t('organizationUnits:listing.addRootOrganizationUnit'))
+      .closest('[role="button"]')!;
     fireEvent.keyDown(addRootButton, {key: 'Enter'});
 
     await waitFor(() => {
@@ -740,7 +713,9 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    const addRootButton = screen.getByText('Add Root Organization Unit').closest('[role="button"]')!;
+    const addRootButton = screen
+      .getByText(t('organizationUnits:listing.addRootOrganizationUnit'))
+      .closest('[role="button"]')!;
     fireEvent.keyDown(addRootButton, {key: ' '});
 
     await waitFor(() => {
@@ -763,10 +738,12 @@ describe('OrganizationUnitsTreeView', () => {
     renderWithProviders(<OrganizationUnitsTreeView />);
 
     await waitFor(() => {
-      expect(screen.getByText('No organization units found')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.treeView.empty'))).toBeInTheDocument();
     });
 
-    const addRootButton = screen.getByText('Add Root Organization Unit').closest('[role="button"]')!;
+    const addRootButton = screen
+      .getByText(t('organizationUnits:listing.addRootOrganizationUnit'))
+      .closest('[role="button"]')!;
     fireEvent.keyDown(addRootButton, {key: 'Enter'});
 
     await waitFor(() => {
@@ -802,10 +779,12 @@ describe('OrganizationUnitsTreeView', () => {
 
     // Find the load more button and activate via keyboard
     await waitFor(() => {
-      expect(screen.getByText('Load more')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.treeView.loadMore'))).toBeInTheDocument();
     });
 
-    const loadMoreButton = screen.getByText('Load more').closest('[role="button"]')!;
+    const loadMoreButton = screen
+      .getByText(t('organizationUnits:listing.treeView.loadMore'))
+      .closest('[role="button"]')!;
     mockHttpRequest.mockClear();
     mockHttpRequest.mockResolvedValue({
       data: {
@@ -884,7 +863,7 @@ describe('OrganizationUnitsTreeView', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Load more')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.treeView.loadMore'))).toBeInTheDocument();
     });
   });
 
@@ -897,7 +876,7 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Add Root Organization Unit'));
+    fireEvent.click(screen.getByText(t('organizationUnits:listing.addRootOrganizationUnit')));
 
     await waitFor(() => {
       expect(stableLogger.error).toHaveBeenCalledWith('Failed to navigate to create organization unit page', {
@@ -930,7 +909,9 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    const addRootButton = screen.getByText('Add Root Organization Unit').closest('[role="button"]')!;
+    const addRootButton = screen
+      .getByText(t('organizationUnits:listing.addRootOrganizationUnit'))
+      .closest('[role="button"]')!;
     fireEvent.keyDown(addRootButton, {key: 'Enter'});
 
     await waitFor(() => {
@@ -976,10 +957,10 @@ describe('OrganizationUnitsTreeView', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Load more')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.treeView.loadMore'))).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Load more'));
+    fireEvent.click(screen.getByText(t('organizationUnits:listing.treeView.loadMore')));
 
     await waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalled();
@@ -1018,10 +999,10 @@ describe('OrganizationUnitsTreeView', () => {
     renderWithProviders(<OrganizationUnitsTreeView />);
 
     await waitFor(() => {
-      expect(screen.getByText('Load more')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.treeView.loadMore'))).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Load more'));
+    fireEvent.click(screen.getByText(t('organizationUnits:listing.treeView.loadMore')));
 
     await waitFor(() => {
       expect(screen.getByText('Marketing')).toBeInTheDocument();
@@ -1050,10 +1031,10 @@ describe('OrganizationUnitsTreeView', () => {
     renderWithProviders(<OrganizationUnitsTreeView />);
 
     await waitFor(() => {
-      expect(screen.getByText('Load more')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:listing.treeView.loadMore'))).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Load more'));
+    fireEvent.click(screen.getByText(t('organizationUnits:listing.treeView.loadMore')));
 
     await waitFor(() => {
       expect(stableLogger.error).toHaveBeenCalledWith('Failed to load more root organization units', expect.anything());
@@ -1071,22 +1052,24 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getAllByLabelText('Delete')[0]);
+    fireEvent.click(screen.getAllByLabelText(t('common:actions.delete'))[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:delete.dialog.title'))).toBeInTheDocument();
     });
 
     const dialog = screen.getByRole('dialog');
-    fireEvent.click(within(dialog).getByText('Delete'));
+    fireEvent.click(within(dialog).getByText(t('common:actions.delete')));
 
     await waitFor(() => {
-      expect(screen.getByText('Organization unit deleted successfully')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:edit.general.dangerZone.delete.success'))).toBeInTheDocument();
     });
 
     await waitFor(
       () => {
-        expect(screen.queryByText('Organization unit deleted successfully')).not.toBeInTheDocument();
+        expect(
+          screen.queryByText(t('organizationUnits:edit.general.dangerZone.delete.success')),
+        ).not.toBeInTheDocument();
       },
       {timeout: 7000},
     );
@@ -1103,17 +1086,17 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getAllByLabelText('Delete')[0]);
+    fireEvent.click(screen.getAllByLabelText(t('common:actions.delete'))[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:delete.dialog.title'))).toBeInTheDocument();
     });
 
     const dialog = screen.getByRole('dialog');
-    fireEvent.click(within(dialog).getByText('Delete'));
+    fireEvent.click(within(dialog).getByText(t('common:actions.delete')));
 
     await waitFor(() => {
-      expect(screen.getByText('Organization unit deleted successfully')).toBeInTheDocument();
+      expect(screen.getByText(t('organizationUnits:edit.general.dangerZone.delete.success'))).toBeInTheDocument();
     });
 
     act(() => {
@@ -1121,7 +1104,7 @@ describe('OrganizationUnitsTreeView', () => {
     });
 
     await waitFor(() => {
-      expect(screen.queryByText('Organization unit deleted successfully')).not.toBeInTheDocument();
+      expect(screen.queryByText(t('organizationUnits:edit.general.dangerZone.delete.success'))).not.toBeInTheDocument();
     });
   });
 });

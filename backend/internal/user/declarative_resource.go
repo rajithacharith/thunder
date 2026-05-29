@@ -30,7 +30,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/entity"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -313,7 +313,7 @@ func parseCredentials(credentialsMap map[string]interface{}) (Credentials, error
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize hash service: %w", err)
 	}
-	hashService, err := hash.Initialize(hashCfg)
+	hashService, err := cryptolib.Initialize(hashCfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize hash service: %w", err)
 	}
@@ -341,7 +341,7 @@ func parseCredentials(credentialsMap map[string]interface{}) (Credentials, error
 			credential := Credential{
 				StorageType: "hash",
 				StorageAlgo: hashedCred.Algorithm,
-				StorageAlgoParams: hash.CredParameters{
+				StorageAlgoParams: cryptolib.CredParameters{
 					Iterations:  hashedCred.Parameters.Iterations,
 					Memory:      hashedCred.Parameters.Memory,
 					Parallelism: hashedCred.Parameters.Parallelism,
@@ -392,7 +392,7 @@ func parseCredentials(credentialsMap map[string]interface{}) (Credentials, error
 // If the value is plain text and no hash info is provided, it will hash it.
 func parseCredentialObject(
 	credMap map[string]interface{},
-	hashService hash.HashServiceInterface,
+	hashService cryptolib.HashServiceInterface,
 	credentialType CredentialType,
 ) (Credential, error) {
 	value, hasValue := credMap["value"].(string)
@@ -410,7 +410,7 @@ func parseCredentialObject(
 		}
 		return Credential{
 			StorageType: storageType,
-			StorageAlgo: hash.CredAlgorithm(storageAlgo),
+			StorageAlgo: cryptolib.CredAlgorithm(storageAlgo),
 			Value:       value,
 		}, nil
 	}
@@ -425,7 +425,7 @@ func parseCredentialObject(
 		return Credential{
 			StorageType: "hash",
 			StorageAlgo: hashedCred.Algorithm,
-			StorageAlgoParams: hash.CredParameters{
+			StorageAlgoParams: cryptolib.CredParameters{
 				Iterations:  hashedCred.Parameters.Iterations,
 				Memory:      hashedCred.Parameters.Memory,
 				Parallelism: hashedCred.Parameters.Parallelism,
@@ -456,8 +456,8 @@ func parseCredentialObject(
 
 	return Credential{
 		StorageType: storageType,
-		StorageAlgo: hash.CredAlgorithm(storageAlgo),
-		StorageAlgoParams: hash.CredParameters{
+		StorageAlgo: cryptolib.CredAlgorithm(storageAlgo),
+		StorageAlgoParams: cryptolib.CredParameters{
 			Iterations: iterations,
 			KeySize:    keySize,
 			Salt:       salt,
@@ -466,21 +466,21 @@ func parseCredentialObject(
 	}, nil
 }
 
-// buildHashCfgForUser constructs a hash.HashConfig from the server's password hashing config.
-func buildHashCfgForUser() (hash.HashConfig, error) {
+// buildHashCfgForUser constructs a cryptolib.HashConfig from the server's password hashing config.
+func buildHashCfgForUser() (cryptolib.HashConfig, error) {
 	cfg := config.GetServerRuntime().Config.Crypto.PasswordHashing
-	alg := hash.CredAlgorithm(strings.ToUpper(cfg.Algorithm))
+	alg := cryptolib.CredAlgorithm(strings.ToUpper(cfg.Algorithm))
 	switch alg {
-	case "", hash.SHA256:
-		return hash.HashConfig{Algorithm: hash.SHA256, SaltSize: cfg.SHA256.SaltSize}, nil
-	case hash.PBKDF2:
-		return hash.HashConfig{Algorithm: alg, SaltSize: cfg.PBKDF2.SaltSize,
+	case "", cryptolib.SHA256:
+		return cryptolib.HashConfig{Algorithm: cryptolib.SHA256, SaltSize: cfg.SHA256.SaltSize}, nil
+	case cryptolib.PBKDF2:
+		return cryptolib.HashConfig{Algorithm: alg, SaltSize: cfg.PBKDF2.SaltSize,
 			Iterations: cfg.PBKDF2.Iterations, KeySize: cfg.PBKDF2.KeySize}, nil
-	case hash.ARGON2ID:
-		return hash.HashConfig{Algorithm: alg, SaltSize: cfg.Argon2ID.SaltSize,
+	case cryptolib.ARGON2ID:
+		return cryptolib.HashConfig{Algorithm: alg, SaltSize: cfg.Argon2ID.SaltSize,
 			Iterations: cfg.Argon2ID.Iterations, Memory: cfg.Argon2ID.Memory,
 			Parallelism: cfg.Argon2ID.Parallelism, KeySize: cfg.Argon2ID.KeySize}, nil
 	default:
-		return hash.HashConfig{}, fmt.Errorf("unrecognized password hashing algorithm %q", cfg.Algorithm)
+		return cryptolib.HashConfig{}, fmt.Errorf("unrecognized password hashing algorithm %q", cfg.Algorithm)
 	}
 }

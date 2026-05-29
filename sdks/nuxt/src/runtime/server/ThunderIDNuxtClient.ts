@@ -52,7 +52,7 @@ import type {ThunderIDNuxtConfig, ThunderIDSessionPayload} from '../types';
 class ThunderIDNuxtClient extends ThunderIDNodeClient<ThunderIDNuxtConfig> {
   private static instance: ThunderIDNuxtClient;
 
-  public isInitialized: boolean = false;
+  public isInitialized = false;
 
   private constructor() {
     super();
@@ -71,10 +71,10 @@ class ThunderIDNuxtClient extends ThunderIDNodeClient<ThunderIDNuxtConfig> {
     }
 
     const authConfig: AuthClientConfig<ThunderIDNuxtConfig> = {
-      afterSignInUrl: config.afterSignInUrl as string,
+      afterSignInUrl: config.afterSignInUrl!,
       afterSignOutUrl: config.afterSignOutUrl || '/',
-      baseUrl: config.baseUrl as string,
-      clientId: config.clientId as string,
+      baseUrl: config.baseUrl!,
+      clientId: config.clientId!,
       clientSecret: config.clientSecret || undefined,
       enablePKCE: true,
       scopes: config.scopes || ['openid', 'profile'],
@@ -123,16 +123,15 @@ class ThunderIDNuxtClient extends ThunderIDNodeClient<ThunderIDNuxtConfig> {
       const sessionId: string | undefined = args[2] as string | undefined;
 
       if ((arg0 as any).flowId === '') {
-        return this.getSignInUrl(
-          {client_secret: '{{clientSecret}}', response_mode: 'direct'},
-          sessionId,
-        ).then((authorizeUrl: string) => {
-          const url: URL = new URL(authorizeUrl);
-          return initializeEmbeddedSignInFlow({
-            payload: Object.fromEntries(url.searchParams.entries()),
-            url: `${url.origin}${url.pathname}`,
-          });
-        });
+        return this.getSignInUrl({client_secret: '{{clientSecret}}', response_mode: 'direct'}, sessionId).then(
+          (authorizeUrl: string) => {
+            const url: URL = new URL(authorizeUrl);
+            return initializeEmbeddedSignInFlow({
+              payload: Object.fromEntries(url.searchParams.entries()),
+              url: `${url.origin}${url.pathname}`,
+            });
+          },
+        );
       }
 
       const request: EmbeddedFlowExecuteRequestConfig = args[1] ?? {};
@@ -172,7 +171,7 @@ class ThunderIDNuxtClient extends ThunderIDNodeClient<ThunderIDNuxtConfig> {
     if (!payloadOrOptions || !('flowType' in payloadOrOptions)) {
       return undefined;
     }
-    const configData: any = (this.getStorageManager() as any).getConfigData();
+    const configData: any = this.getStorageManager().getConfigData();
     const baseUrl: string | undefined = configData?.baseUrl as string | undefined;
     const response: EmbeddedFlowExecuteResponse = await executeEmbeddedSignUpFlow({
       baseUrl,
@@ -189,12 +188,12 @@ class ThunderIDNuxtClient extends ThunderIDNodeClient<ThunderIDNuxtConfig> {
   }
 
   override async signOut(...args: any[]): Promise<string> {
-    const configData: any = (this.getStorageManager() as any).getConfigData();
+    const configData: any = this.getStorageManager().getConfigData();
     return (configData?.afterSignOutUrl as string) || (configData?.afterSignInUrl as string) || '/';
   }
 
   override getUser(sessionId?: string): Promise<User> {
-    return super.getUser(sessionId) as Promise<User>;
+    return super.getUser(sessionId);
   }
 
   override getAccessToken(sessionId?: string): Promise<string> {
@@ -202,11 +201,11 @@ class ThunderIDNuxtClient extends ThunderIDNodeClient<ThunderIDNuxtConfig> {
   }
 
   override getDecodedIdToken(sessionId?: string, idToken?: string): Promise<IdToken> {
-    return super.getDecodedIdToken(sessionId, idToken) as Promise<IdToken>;
+    return super.getDecodedIdToken(sessionId, idToken);
   }
 
   override isSignedIn(sessionId?: string): Promise<boolean> {
-    return super.isSignedIn(sessionId) as Promise<boolean>;
+    return super.isSignedIn(sessionId);
   }
 
   override exchangeToken(config: TokenExchangeRequestConfig, sessionId?: string): Promise<TokenResponse | Response> {
@@ -225,9 +224,9 @@ class ThunderIDNuxtClient extends ThunderIDNodeClient<ThunderIDNuxtConfig> {
         return null;
       }
       return {
-        id: idToken.org_id as string,
-        name: (idToken.org_name ?? '') as string,
-        orgHandle: (idToken.org_handle ?? '') as string,
+        id: idToken.org_id,
+        name: idToken.org_name ?? '',
+        orgHandle: idToken.org_handle ?? '',
       };
     } catch {
       return null;
@@ -236,7 +235,7 @@ class ThunderIDNuxtClient extends ThunderIDNodeClient<ThunderIDNuxtConfig> {
 
   override async getMyOrganizations(sessionId: string): Promise<Organization[]> {
     const accessToken: string = await this.getAccessToken(sessionId);
-    const configData: any = (this.getStorageManager() as any).getConfigData();
+    const configData: any = this.getStorageManager().getConfigData();
     const baseUrl: string = (configData?.baseUrl ?? '') as string;
 
     return getMeOrganizations({
@@ -245,7 +244,6 @@ class ThunderIDNuxtClient extends ThunderIDNodeClient<ThunderIDNuxtConfig> {
     });
   }
 
-  // eslint-disable-next-line class-methods-use-this
   async getBrandingPreference(config: GetBrandingPreferenceConfig): Promise<BrandingPreference> {
     return getBrandingPreference(config);
   }
@@ -257,7 +255,7 @@ class ThunderIDNuxtClient extends ThunderIDNodeClient<ThunderIDNuxtConfig> {
   override async getAllOrganizations(options?: any, sessionId?: string): Promise<AllOrganizationsApiResponse> {
     const resolvedSessionId: string = sessionId ?? '';
     const accessToken: string = await this.getAccessToken(resolvedSessionId);
-    const configData: any = (this.getStorageManager() as any).getConfigData();
+    const configData: any = this.getStorageManager().getConfigData();
     const baseUrl: string = (configData?.baseUrl ?? '') as string;
 
     return getAllOrganizations({
@@ -268,7 +266,7 @@ class ThunderIDNuxtClient extends ThunderIDNodeClient<ThunderIDNuxtConfig> {
 
   async createOrganization(payload: CreateOrganizationPayload, sessionId: string): Promise<Organization> {
     const accessToken: string = await this.getAccessToken(sessionId);
-    const configData: any = (this.getStorageManager() as any).getConfigData();
+    const configData: any = this.getStorageManager().getConfigData();
     const baseUrl: string = (configData?.baseUrl ?? '') as string;
 
     return createOrganization({
@@ -280,7 +278,7 @@ class ThunderIDNuxtClient extends ThunderIDNodeClient<ThunderIDNuxtConfig> {
 
   async getOrganization(organizationId: string, sessionId: string): Promise<OrganizationDetails> {
     const accessToken: string = await this.getAccessToken(sessionId);
-    const configData: any = (this.getStorageManager() as any).getConfigData();
+    const configData: any = this.getStorageManager().getConfigData();
     const baseUrl: string = (configData?.baseUrl ?? '') as string;
 
     return getOrganization({

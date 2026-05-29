@@ -506,7 +506,7 @@ const BaseSignInContent: FC<BaseSignInProps> = ({
       isValid: isFormValid,
       messages: flowMessages || [],
       meta,
-      subtitle: flowSubtitle,
+      subtitle: flowSubtitle ?? '',
       title: flowTitle || t('signin.heading'),
       touched: touchedFields,
       validateForm: () => {

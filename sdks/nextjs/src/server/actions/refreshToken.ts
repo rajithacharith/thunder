@@ -21,9 +21,9 @@
 import {ThunderIDAPIError, logger} from '@thunderid/node';
 import {cookies} from 'next/headers';
 import {ThunderIDNextConfig} from '../../models/config';
-import getClient from '../getClient';
 import handleRefreshToken, {HandleRefreshTokenResult} from '../../utils/handleRefreshToken';
 import SessionManager, {SessionTokenPayload} from '../../utils/SessionManager';
+import getClient from '../getClient';
 
 type RequestCookies = Awaited<ReturnType<typeof cookies>>;
 

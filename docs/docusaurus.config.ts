@@ -177,11 +177,18 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
               path: 'next',
             },
           },
-          // Replace {{ProductName}} and {{productSlug}} placeholders inside fenced code blocks at build time.
+          // Replace {{ProductName}}, {{productSlug}}, and local-URL placeholders inside code blocks at build time.
           rehypePlugins: [
             [
               rehypeProductName,
-              {productName: productConfig.project.name, productSlug: productConfig.project.name.toLowerCase()},
+              {
+                productName: productConfig.project.name,
+                productSlug: productConfig.project.name.toLowerCase(),
+                replacements: {
+                  '{{ConsoleUrl}}': productConfig.local.consoleUrl,
+                  '{{WayFinderSampleUrl}}': productConfig.local.samples.wayfinderUrl,
+                },
+              },
             ],
           ],
         },
@@ -222,12 +229,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           label: 'Docs',
           className: 'navbar__link--docs',
         },
-        // {
-        //   type: 'doc',
-        //   docId: 'apis',
-        //   position: 'right',
-        //   label: 'APIs',
-        // },
+        {
+          type: 'doc',
+          docId: 'apis',
+          position: 'right',
+          label: 'APIs',
+        },
         {
           type: 'doc',
           docId: 'sdks/overview',

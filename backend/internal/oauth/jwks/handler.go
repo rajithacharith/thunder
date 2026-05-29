@@ -43,7 +43,8 @@ func newJWKSHandler(jwksService JWKSServiceInterface) *jwksHandler {
 func (h *jwksHandler) HandleJWKSRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWKSHandler"))
 
-	jwksResponse, svcErr := h.jwksService.GetJWKS()
+	ctx := r.Context()
+	jwksResponse, svcErr := h.jwksService.GetJWKS(ctx)
 	if svcErr != nil {
 		h.logAndWriteError(w, logger, svcErr)
 		return

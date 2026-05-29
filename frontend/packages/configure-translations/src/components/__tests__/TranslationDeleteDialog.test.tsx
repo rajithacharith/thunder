@@ -17,17 +17,10 @@
  */
 
 import userEvent from '@testing-library/user-event';
-import {render, screen} from '@thunderid/test-utils';
-import {describe, expect, it, vi, beforeEach} from 'vitest';
+import {render, renderHook, screen} from '@thunderid/test-utils';
+import {useTranslation} from 'react-i18next';
+import {describe, expect, it, vi, beforeAll, beforeEach} from 'vitest';
 import TranslationDeleteDialog from '@/components/TranslationDeleteDialog';
-
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({t: (key: string) => key}),
-  };
-});
 
 const mockMutate = vi.fn();
 vi.mock('@thunderid/i18n', () => ({
@@ -43,6 +36,12 @@ const defaultProps = {
 };
 
 describe('TranslationDeleteDialog', () => {
+  let t: (key: string) => string;
+
+  beforeAll(() => {
+    ({t} = renderHook(() => useTranslation()).result.current);
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -69,8 +68,8 @@ describe('TranslationDeleteDialog', () => {
     it('renders cancel and delete buttons', () => {
       render(<TranslationDeleteDialog {...defaultProps} />);
 
-      expect(screen.getByText('common:actions.cancel')).toBeInTheDocument();
-      expect(screen.getByText('common:actions.delete')).toBeInTheDocument();
+      expect(screen.getByText(t('common:actions.cancel'))).toBeInTheDocument();
+      expect(screen.getByText(t('common:actions.delete'))).toBeInTheDocument();
     });
   });
 
@@ -80,7 +79,7 @@ describe('TranslationDeleteDialog', () => {
       const user = userEvent.setup();
       render(<TranslationDeleteDialog {...defaultProps} onClose={onClose} />);
 
-      await user.click(screen.getByText('common:actions.cancel'));
+      await user.click(screen.getByText(t('common:actions.cancel')));
 
       expect(onClose).toHaveBeenCalled();
     });
@@ -91,7 +90,7 @@ describe('TranslationDeleteDialog', () => {
       const user = userEvent.setup();
       render(<TranslationDeleteDialog {...defaultProps} />);
 
-      await user.click(screen.getByText('common:actions.delete'));
+      await user.click(screen.getByText(t('common:actions.delete')));
 
       expect(mockMutate).toHaveBeenCalledWith(
         'fr-FR',
@@ -106,7 +105,7 @@ describe('TranslationDeleteDialog', () => {
       const user = userEvent.setup();
       render(<TranslationDeleteDialog {...defaultProps} language={null} />);
 
-      await user.click(screen.getByText('common:actions.delete'));
+      await user.click(screen.getByText(t('common:actions.delete')));
 
       expect(mockMutate).not.toHaveBeenCalled();
     });
@@ -120,7 +119,7 @@ describe('TranslationDeleteDialog', () => {
       const user = userEvent.setup();
       render(<TranslationDeleteDialog {...defaultProps} onClose={onClose} onSuccess={onSuccess} />);
 
-      await user.click(screen.getByText('common:actions.delete'));
+      await user.click(screen.getByText(t('common:actions.delete')));
 
       expect(onClose).toHaveBeenCalled();
       expect(onSuccess).toHaveBeenCalled();
@@ -133,7 +132,7 @@ describe('TranslationDeleteDialog', () => {
       const user = userEvent.setup();
       render(<TranslationDeleteDialog {...defaultProps} />);
 
-      await user.click(screen.getByText('common:actions.delete'));
+      await user.click(screen.getByText(t('common:actions.delete')));
 
       expect(screen.getByText('delete.error')).toBeInTheDocument();
     });

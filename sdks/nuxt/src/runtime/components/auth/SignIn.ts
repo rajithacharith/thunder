@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {navigateTo} from '#app';
 import {
   type EmbeddedSignInFlowHandleRequestPayload,
   type EmbeddedSignInFlowHandleResponse,
@@ -23,7 +24,6 @@ import {
 } from '@thunderid/browser';
 import {BaseSignIn} from '@thunderid/vue';
 import {type Component, type PropType, type SetupContext, type VNode, defineComponent, h} from 'vue';
-import {navigateTo} from '#app';
 import {useThunderID} from '#imports';
 
 /**

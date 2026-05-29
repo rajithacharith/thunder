@@ -31,7 +31,7 @@ import {EmbeddedSignInFlowInitiateResponse} from '../models/embedded-signin-flow
  * ```typescript
  * try {
  *   const authResponse = await initializeEmbeddedSignInFlow({
- *     url: "https://api.asgardeo.io/t/<ORGANIZATION>/oauth2/authorize",
+ *     url: "https://localhost:8090/oauth2/authorize",
  *     payload: {
  *       response_type: "code",
  *       client_id: "your-client-id",
@@ -58,7 +58,7 @@ const initializeEmbeddedSignInFlow = async ({
 }: EmbeddedFlowExecuteRequestConfig): Promise<EmbeddedSignInFlowInitiateResponse> => {
   try {
     // eslint-disable-next-line no-new
-    new URL(url ?? baseUrl);
+    new URL((url ?? baseUrl)!);
   } catch (error) {
     throw new ThunderIDAPIError(
       `Invalid URL provided. ${error?.toString()}`,
@@ -94,7 +94,7 @@ const initializeEmbeddedSignInFlow = async ({
         ...requestConfig.headers,
         Accept: 'application/json',
         'Content-Type': 'application/x-www-form-urlencoded',
-      },
+      } as HeadersInit,
       method: requestConfig.method || 'POST',
     });
 

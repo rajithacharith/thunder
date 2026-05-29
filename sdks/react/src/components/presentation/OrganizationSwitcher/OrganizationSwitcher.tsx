@@ -44,7 +44,7 @@ export interface OrganizationSwitcherProps
   /**
    * Fallback element to render when the user is not signed in.
    */
-  fallback?: ReactElement;
+  fallback?: ReactElement | null;
   /**
    * Optional callback for organization switch (will use context if not provided)
    */
@@ -89,7 +89,7 @@ export const OrganizationSwitcher: FC<OrganizationSwitcherProps> = ({
   organizations: propOrganizations,
   preferences,
   ...props
-}: OrganizationSwitcherProps): ReactElement => {
+}: OrganizationSwitcherProps): ReactElement | null => {
   const {isSignedIn} = useThunderID();
   const {
     currentOrganization: contextCurrentOrganization,
@@ -112,7 +112,8 @@ export const OrganizationSwitcher: FC<OrganizationSwitcherProps> = ({
   }
 
   const organizations: Organization[] = propOrganizations || contextOrganizations || [];
-  const currentOrganization: Organization | null = propCurrentOrganization || contextCurrentOrganization;
+  const currentOrganization: Organization | undefined =
+    propCurrentOrganization || contextCurrentOrganization || undefined;
   const onOrganizationSwitch: (organization: Organization) => Promise<void> | void =
     propOnOrganizationSwitch || switchOrganization;
 
@@ -153,7 +154,7 @@ export const OrganizationSwitcher: FC<OrganizationSwitcherProps> = ({
         currentOrganization={currentOrganization}
         onOrganizationSwitch={onOrganizationSwitch}
         loading={isLoading}
-        error={error}
+        error={error ?? undefined}
         menuItems={menuItems}
         onManageProfile={handleManageOrganization}
         preferences={preferences}

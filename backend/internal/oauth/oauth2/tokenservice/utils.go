@@ -82,6 +82,11 @@ func ResolveTokenConfig(oauthApp *inboundmodel.OAuthClient, tokenType TokenType)
 		if conf.OAuth.RefreshToken.ValidityPeriod > 0 {
 			tokenConfig.ValidityPeriod = conf.OAuth.RefreshToken.ValidityPeriod
 		}
+		if oauthApp != nil && oauthApp.Token != nil && oauthApp.Token.RefreshToken != nil {
+			if oauthApp.Token.RefreshToken.ValidityPeriod > 0 {
+				tokenConfig.ValidityPeriod = oauthApp.Token.RefreshToken.ValidityPeriod
+			}
+		}
 	}
 
 	return tokenConfig

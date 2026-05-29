@@ -21,16 +21,17 @@ import React from 'react';
 import GitHubStarButton from './GitHubStarButton';
 import PersonaDropdown from './PersonaDropdown';
 
-type OriginalProps = React.ComponentProps<typeof OriginalNavbarItem>;
+type OriginalProps = Omit<React.ComponentProps<typeof OriginalNavbarItem>, 'type' | 'mobile'> & {
+  type?: string;
+  mobile?: boolean;
+};
 
-export default function NavbarItem(props: OriginalProps): React.ReactElement {
-  const type = (props as {type?: string}).type;
+export default function NavbarItem({type = undefined, mobile = undefined, ...rest}: OriginalProps): React.ReactElement {
   if (type === 'custom-PersonaDropdown') {
     return <PersonaDropdown />;
   }
   if (type === 'custom-GitHubStarButton') {
-    const {mobile} = props as {mobile?: boolean};
     return <GitHubStarButton mobile={mobile} />;
   }
-  return <OriginalNavbarItem {...props} />;
+  return <OriginalNavbarItem type={type} mobile={mobile} {...rest} />;
 }

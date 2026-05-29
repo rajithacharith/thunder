@@ -26,7 +26,7 @@ import {User} from '../models/user';
  * @returns A promise that resolves with the user information.
  * @throw
  *   const userInfo = await getUserInfo({
- *     url: "https://api.asgardeo.io/t/<ORGANIZATION>/oauth2/userinfo",
+ *     url: "https://localhost:8090/oauth2/userinfo",
  *   });
  *   console.log(userInfo);
  * } catch (error) {
@@ -39,7 +39,7 @@ import {User} from '../models/user';
 const getUserInfo = async ({url, ...requestConfig}: Partial<Request>): Promise<User> => {
   try {
     // eslint-disable-next-line no-new
-    new URL(url);
+    new URL(url!);
   } catch (error) {
     throw new ThunderIDAPIError(
       'Invalid endpoint URL provided',
@@ -51,13 +51,13 @@ const getUserInfo = async ({url, ...requestConfig}: Partial<Request>): Promise<U
   }
 
   try {
-    const response: Response = await fetch(url, {
+    const response: Response = await fetch(url!, {
       ...requestConfig,
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
         ...requestConfig.headers,
-      },
+      } as HeadersInit,
       method: 'GET',
     });
 

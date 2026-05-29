@@ -1,6 +1,7 @@
 ![ThunderID Nuxt SDK](https://raw.githubusercontent.com/thunder-id/thunderid/refs/heads/main/docs/static/assets/images/readme/repo-banner-nuxt-sdk.png)
 
-Nuxt SDK for ThunderID. Provides authentication for Nuxt 3 applications with support for SSR, server routes, and composables.
+Nuxt SDK for ThunderID. Provides authentication for Nuxt 3 applications with support for SSR, server routes, and
+composables.
 
 ## Installation
 

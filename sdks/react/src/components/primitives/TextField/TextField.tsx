@@ -86,7 +86,14 @@ const TextField: FC<TextFieldProps> = ({
   const hasError = !!error;
   const hasStartIcon = !!startIcon;
   const hasEndIcon = !!endIcon;
-  const styles: Record<string, string> = useStyles(theme, colorScheme, disabled, hasError, hasStartIcon, hasEndIcon);
+  const styles: Record<string, string> = useStyles(
+    theme,
+    colorScheme,
+    disabled ?? false,
+    hasError,
+    hasStartIcon,
+    hasEndIcon,
+  );
 
   const inputClassName: string = cx(
     withVendorCSSClassPrefix(bem('text-field', 'input')),

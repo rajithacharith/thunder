@@ -18,7 +18,7 @@
 
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import {Box, Container, Typography, useTheme} from '@wso2/oxygen-ui';
-import React, {JSX, ReactNode} from 'react';
+import {JSX, ReactNode} from 'react';
 import useIsDarkMode from '../../hooks/useIsDarkMode';
 import useScrollAnimation from '../../hooks/useScrollAnimation';
 import {DocusaurusProductConfig} from '@site/docusaurus.product.config';
@@ -29,6 +29,7 @@ interface FeatureCardProps {
   description: string;
   index: number;
   isVisible: boolean;
+  num: string | number;
 }
 
 /* ─── Highlight card ─────────────────────────────────────────────────────── */
@@ -476,7 +477,6 @@ const capabilities = [
 ];
 
 export default function ProductOverviewSection(): JSX.Element {
-  const isDark = useIsDarkMode();
   const theme = useTheme();
   const {ref: titleRef, isVisible: titleVisible} = useScrollAnimation({threshold: 0.2});
   const {ref, isVisible} = useScrollAnimation({threshold: 0.05});

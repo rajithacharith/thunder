@@ -37,7 +37,7 @@ describe('initializeEmbeddedSignInFlow', (): void => {
       ok: true,
     });
 
-    const url = 'https://api.asgardeo.io/t/demo/oauth2/authorize';
+    const url = 'https://localhost:8090/oauth2/authorize';
     const payload: Record<string, string> = {
       client_id: 'cid',
       code_challenge: 'abc',
@@ -72,7 +72,7 @@ describe('initializeEmbeddedSignInFlow', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const payload: Record<string, string> = {client_id: 'cid', response_type: 'code'};
 
     const result: EmbeddedSignInFlowInitiateResponse = await initializeEmbeddedSignInFlow({baseUrl, payload});
@@ -99,7 +99,7 @@ describe('initializeEmbeddedSignInFlow', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const payload: Record<string, string> = {client_id: 'cid', response_type: 'code'};
 
     await initializeEmbeddedSignInFlow({baseUrl, method: 'PUT' as any, payload});
@@ -118,8 +118,8 @@ describe('initializeEmbeddedSignInFlow', (): void => {
       ok: true,
     });
 
-    const url = 'https://api.asgardeo.io/t/demo/oauth2/authorize';
-    const baseUrl = 'https://api.asgardeo.io/t/ignored';
+    const url = 'https://localhost:8090/oauth2/authorize';
+    const baseUrl = 'https://localhost:8090';
     await initializeEmbeddedSignInFlow({baseUrl, payload: {response_type: 'code'}, url});
 
     expect(fetch).toHaveBeenCalledWith(url, expect.any(Object));
@@ -135,7 +135,7 @@ describe('initializeEmbeddedSignInFlow', (): void => {
   });
 
   it('should throw ThunderIDAPIError when payload is missing', async (): Promise<void> => {
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     await expect(initializeEmbeddedSignInFlow({baseUrl} as any)).rejects.toThrow(ThunderIDAPIError);
     await expect(initializeEmbeddedSignInFlow({baseUrl} as any)).rejects.toThrow('Authorization payload is required');
   });
@@ -148,7 +148,7 @@ describe('initializeEmbeddedSignInFlow', (): void => {
       text: () => Promise.resolve('invalid request'),
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const payload: Record<string, string> = {client_id: 'cid', response_type: 'code'};
 
     await expect(initializeEmbeddedSignInFlow({baseUrl, payload})).rejects.toThrow(ThunderIDAPIError);
@@ -172,7 +172,7 @@ describe('initializeEmbeddedSignInFlow', (): void => {
       text: () => Promise.resolve(structuredError),
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const payload: Record<string, string> = {client_id: 'cid', response_type: 'code'};
 
     await expect(initializeEmbeddedSignInFlow({baseUrl, payload})).rejects.toThrow(
@@ -183,7 +183,7 @@ describe('initializeEmbeddedSignInFlow', (): void => {
   it('should handle network or parsing errors', async (): Promise<void> => {
     global.fetch = vi.fn().mockRejectedValue(new Error('Network down'));
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const payload: Record<string, string> = {client_id: 'cid', response_type: 'code'};
 
     await expect(initializeEmbeddedSignInFlow({baseUrl, payload})).rejects.toThrow(ThunderIDAPIError);
@@ -195,7 +195,7 @@ describe('initializeEmbeddedSignInFlow', (): void => {
   it('should handle non-Error rejections', async (): Promise<void> => {
     global.fetch = vi.fn().mockRejectedValue('weird failure');
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const payload: Record<string, string> = {client_id: 'cid', response_type: 'code'};
 
     await expect(initializeEmbeddedSignInFlow({baseUrl, payload})).rejects.toThrow(
@@ -214,7 +214,7 @@ describe('initializeEmbeddedSignInFlow', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const payload: Record<string, string> = {client_id: 'cid', response_type: 'code'};
     const customHeaders: Record<string, string> = {
       Accept: 'text/plain',
@@ -252,7 +252,7 @@ describe('initializeEmbeddedSignInFlow', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const payload: Record<string, string> = {
       client_id: 'cid',
       redirect_uri: 'https://app.example.com/cb?x=1&y=2',

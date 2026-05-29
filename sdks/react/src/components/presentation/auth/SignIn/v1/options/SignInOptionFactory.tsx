@@ -110,10 +110,10 @@ export const createSignInOption = ({
   ...rest
 }: BaseSignInOptionProps): ReactElement => {
   // Check if this authenticator has params (indicating it needs user input)
-  const hasParams: any = authenticator.metadata?.params && authenticator.metadata.params.length > 0;
+  const hasParams: any = authenticator!.metadata?.params && authenticator!.metadata.params.length > 0;
 
   // Use authenticatorId to determine the component type
-  switch (authenticator.authenticatorId) {
+  switch (authenticator!.authenticatorId) {
     case ApplicationNativeAuthenticationConstants.SupportedAuthenticators.UsernamePassword:
       return <UsernamePassword authenticator={authenticator} preferences={preferences} onSubmit={onSubmit} {...rest} />;
 
@@ -124,7 +124,7 @@ export const createSignInOption = ({
       return (
         <GoogleButton
           className={buttonClassName}
-          onClick={(): any => onSubmit(authenticator)}
+          onClick={(): any => onSubmit!(authenticator!)}
           preferences={preferences}
           {...rest}
         />
@@ -135,7 +135,7 @@ export const createSignInOption = ({
         <GitHubButton
           preferences={preferences}
           className={buttonClassName}
-          onClick={(): any => onSubmit(authenticator)}
+          onClick={(): any => onSubmit!(authenticator!)}
           {...rest}
         />
       );
@@ -145,7 +145,7 @@ export const createSignInOption = ({
         <MicrosoftButton
           preferences={preferences}
           className={buttonClassName}
-          onClick={(): any => onSubmit(authenticator)}
+          onClick={(): any => onSubmit!(authenticator!)}
           {...rest}
         />
       );
@@ -155,7 +155,7 @@ export const createSignInOption = ({
         <FacebookButton
           preferences={preferences}
           className={buttonClassName}
-          onClick={(): any => onSubmit(authenticator)}
+          onClick={(): any => onSubmit!(authenticator!)}
           {...rest}
         />
       );
@@ -165,7 +165,7 @@ export const createSignInOption = ({
         <LinkedInButton
           preferences={preferences}
           className={buttonClassName}
-          onClick={(): any => onSubmit(authenticator)}
+          onClick={(): any => onSubmit!(authenticator!)}
           {...rest}
         />
       );
@@ -175,7 +175,7 @@ export const createSignInOption = ({
         <SignInWithEthereumButton
           preferences={preferences}
           className={buttonClassName}
-          onClick={(): any => onSubmit(authenticator)}
+          onClick={(): any => onSubmit!(authenticator!)}
           {...rest}
         />
       );
@@ -206,17 +206,17 @@ export const createSignInOption = ({
 
     default:
       // Check if it's a federated authenticator (non-LOCAL idp)
-      if (authenticator.idp !== EmbeddedSignInFlowAuthenticatorKnownIdPType.Local) {
+      if (authenticator!.idp !== EmbeddedSignInFlowAuthenticatorKnownIdPType.Local) {
         // For unknown federated authenticators, use generic social login
         return (
           <SocialButton
             authenticator={authenticator}
             preferences={preferences}
             className={buttonClassName}
-            onClick={(): any => onSubmit(authenticator)}
+            onClick={(): any => onSubmit!(authenticator!)}
             {...rest}
           >
-            {authenticator.idp}
+            {authenticator!.idp}
           </SocialButton>
         );
       }

@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {ThunderIDError} from '../errors/thunderid-error';
 import {ErrorCode} from '../errors/error-codes';
+import {ThunderIDError} from '../errors/thunderid-error';
 
 /**
  * Validate a `returnTo` / redirect URL supplied by the client.
@@ -87,7 +87,7 @@ export function validateReturnUrl(url: unknown): string {
  * const url = safeReturnUrl(query.returnTo, '/dashboard');
  * ```
  */
-export function safeReturnUrl(url: unknown, fallback: string = '/'): string {
+export function safeReturnUrl(url: unknown, fallback = '/'): string {
   try {
     return validateReturnUrl(url);
   } catch {

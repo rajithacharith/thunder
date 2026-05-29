@@ -20,41 +20,26 @@ import ThunderIDRuntimeError from '../../errors/ThunderIDRuntimeError';
 import deriveOrganizationHandleFromBaseUrl from '../deriveOrganizationHandleFromBaseUrl';
 
 describe('deriveOrganizationHandleFromBaseUrl', () => {
-  describe('Valid asgardeo.io URLs', () => {
-    it('should extract organization handle from dev.asgardeo.io URL', () => {
-      const result: string = deriveOrganizationHandleFromBaseUrl('https://dev.asgardeo.io/t/dxlab');
-      expect(result).toBe('dxlab');
-    });
-
-    it('should extract organization handle from stage.asgardeo.io URL', () => {
-      const result: string = deriveOrganizationHandleFromBaseUrl('https://stage.asgardeo.io/t/dxlab');
-      expect(result).toBe('dxlab');
-    });
-
-    it('should extract organization handle from prod.asgardeo.io URL', () => {
-      const result: string = deriveOrganizationHandleFromBaseUrl('https://prod.asgardeo.io/t/dxlab');
-      expect(result).toBe('dxlab');
-    });
-
-    it('should extract organization handle from custom subdomain asgardeo.io URL', () => {
-      const result: string = deriveOrganizationHandleFromBaseUrl('https://xxx.asgardeo.io/t/dxlab');
+  describe('Valid ThunderID URLs', () => {
+    it('should extract organization handle from URL with /t/{org} pattern', () => {
+      const result: string = deriveOrganizationHandleFromBaseUrl('https://localhost:8090/t/dxlab');
       expect(result).toBe('dxlab');
     });
 
     it('should extract organization handle with trailing slash', () => {
-      const result: string = deriveOrganizationHandleFromBaseUrl('https://dev.asgardeo.io/t/dxlab/');
+      const result: string = deriveOrganizationHandleFromBaseUrl('https://localhost:8090/t/dxlab/');
       expect(result).toBe('dxlab');
     });
 
     it('should extract organization handle with additional path segments', () => {
-      const result: string = deriveOrganizationHandleFromBaseUrl('https://dev.asgardeo.io/t/dxlab/api/v1');
+      const result: string = deriveOrganizationHandleFromBaseUrl('https://localhost:8090/t/dxlab/api/v1');
       expect(result).toBe('dxlab');
     });
 
     it('should handle different organization handles', () => {
-      expect(deriveOrganizationHandleFromBaseUrl('https://dev.asgardeo.io/t/myorg')).toBe('myorg');
-      expect(deriveOrganizationHandleFromBaseUrl('https://dev.asgardeo.io/t/test-org')).toBe('test-org');
-      expect(deriveOrganizationHandleFromBaseUrl('https://dev.asgardeo.io/t/org123')).toBe('org123');
+      expect(deriveOrganizationHandleFromBaseUrl('https://localhost:8090/t/myorg')).toBe('myorg');
+      expect(deriveOrganizationHandleFromBaseUrl('https://localhost:8090/t/test-org')).toBe('test-org');
+      expect(deriveOrganizationHandleFromBaseUrl('https://localhost:8090/t/org123')).toBe('org123');
     });
   });
 
@@ -69,7 +54,7 @@ describe('deriveOrganizationHandleFromBaseUrl', () => {
       warnSpy.mockRestore();
     });
 
-    it('should return empty string and warn for custom domain without asgardeo.io', () => {
+    it('should return empty string and warn for URLs without /t/{org} pattern', () => {
       const result: string = deriveOrganizationHandleFromBaseUrl('https://custom.example.com/auth');
 
       expect(result).toBe('');
@@ -81,7 +66,7 @@ describe('deriveOrganizationHandleFromBaseUrl', () => {
     });
 
     it('should return empty string and warn for URLs without /t/ pattern', () => {
-      const result: string = deriveOrganizationHandleFromBaseUrl('https://auth.asgardeo.io/oauth2/token');
+      const result: string = deriveOrganizationHandleFromBaseUrl('https://localhost:8090/oauth2/token');
 
       expect(result).toBe('');
       expect(warnSpy).toHaveBeenCalled();
@@ -91,8 +76,8 @@ describe('deriveOrganizationHandleFromBaseUrl', () => {
     });
 
     it('should return empty string and warn for URLs with malformed /t/ pattern', () => {
-      const result1: string = deriveOrganizationHandleFromBaseUrl('https://dev.asgardeo.io/t/');
-      const result2: string = deriveOrganizationHandleFromBaseUrl('https://dev.asgardeo.io/t');
+      const result1: string = deriveOrganizationHandleFromBaseUrl('https://localhost:8090/t/');
+      const result2: string = deriveOrganizationHandleFromBaseUrl('https://localhost:8090/t');
 
       expect(result1).toBe('');
       expect(result2).toBe('');
@@ -100,7 +85,7 @@ describe('deriveOrganizationHandleFromBaseUrl', () => {
     });
 
     it('should return empty string and warn for URLs with empty organization handle', () => {
-      const result: string = deriveOrganizationHandleFromBaseUrl('https://dev.asgardeo.io/t//');
+      const result: string = deriveOrganizationHandleFromBaseUrl('https://localhost:8090/t//');
 
       expect(result).toBe('');
       expect(warnSpy).toHaveBeenCalled();

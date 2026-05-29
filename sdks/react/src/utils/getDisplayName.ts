@@ -47,10 +47,11 @@ const getDisplayName = (
   user: User,
   displayAttributes?: string[],
 ): string => {
+  const mappings: Record<string, string | string[]> = mergedMappings as Record<string, string | string[]>;
   if (displayAttributes && displayAttributes.length > 0) {
     let foundValue: string | undefined;
     displayAttributes.some((attr: string) => {
-      const value: any = getMappedUserProfileValue(attr, mergedMappings, user);
+      const value: any = getMappedUserProfileValue(attr, mappings, user);
 
       if (value !== undefined && value !== null && value !== '') {
         foundValue = String(value);
@@ -63,17 +64,17 @@ const getDisplayName = (
     }
   }
 
-  const firstName: any = getMappedUserProfileValue('firstName', mergedMappings, user);
-  const lastName: any = getMappedUserProfileValue('lastName', mergedMappings, user);
+  const firstName: any = getMappedUserProfileValue('firstName', mappings, user);
+  const lastName: any = getMappedUserProfileValue('lastName', mappings, user);
 
   if (firstName && lastName) {
     return `${firstName} ${lastName}`;
   }
 
   return (
-    getMappedUserProfileValue('username', mergedMappings, user) ||
-    getMappedUserProfileValue('email', mergedMappings, user) ||
-    getMappedUserProfileValue('name', mergedMappings, user) ||
+    getMappedUserProfileValue('username', mappings, user) ||
+    getMappedUserProfileValue('email', mappings, user) ||
+    getMappedUserProfileValue('name', mappings, user) ||
     'User'
   );
 };

@@ -50,7 +50,7 @@ export interface UpdateMeProfileConfig extends Omit<BaseUpdateMeProfileConfig, '
  * ```typescript
  * // Using default ThunderID SPA client httpClient
  * await updateMeProfile({
- *   url: "https://api.asgardeo.io/t/<ORG>/scim2/Me",
+ *   url: "https://localhost:8090/scim2/Me",
  *   payload: { "urn:scim:wso2:schema": { mobileNumbers: ["0777933830"] } }
  * });
  * ```
@@ -59,7 +59,7 @@ export interface UpdateMeProfileConfig extends Omit<BaseUpdateMeProfileConfig, '
  * ```typescript
  * // Using custom fetcher
  * await updateMeProfile({
- *   url: "https://api.asgardeo.io/t/<ORG>/scim2/Me",
+ *   url: "https://localhost:8090/scim2/Me",
  *   payload: { "urn:scim:wso2:schema": { mobileNumbers: ["0777933830"] } },
  *   fetcher: customFetchFunction
  * });

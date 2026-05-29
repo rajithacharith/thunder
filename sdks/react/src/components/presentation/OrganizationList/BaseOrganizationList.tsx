@@ -169,7 +169,7 @@ const defaultRenderOrganization = (
         <Button
           onClick={(e: MouseEvent<HTMLButtonElement>): void => {
             e.stopPropagation();
-            onOrganizationSelect(organization);
+            onOrganizationSelect?.(organization);
           }}
           type="button"
           size="small"

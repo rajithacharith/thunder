@@ -583,7 +583,7 @@ export interface ConsentPromptData {
  * @example
  * ```typescript
  * const config: EmbeddedFlowExecuteRequestConfigV2 = {
- *   baseUrl: 'https://api.asgardeo.io/t/myorg',
+ *   baseUrl: 'https://localhost:8090',
  *   payload: {
  *     flowType: 'AUTHENTICATION',
  *     inputs: { username: 'user@example.com' }

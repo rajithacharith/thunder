@@ -892,7 +892,7 @@ function App() {
 - **Source maps** - View original source code in error reports
 - **User context** - Associate errors with specific users
 - **Performance monitoring** - Track application performance
-- **Release tracking** - Monitor errors across deployments
+- **Release tracking** - Track errors across deployments
 
 **Use Cases:**
 

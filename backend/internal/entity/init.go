@@ -22,7 +22,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/cache"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
 )
 
@@ -32,7 +32,7 @@ import (
 // based on their own store mode configuration.
 func Initialize(
 	cacheManager cache.CacheManagerInterface,
-	hashService hash.HashServiceInterface,
+	hashService cryptolib.HashServiceInterface,
 	entityTypeService entitytype.EntityTypeServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 ) (EntityServiceInterface, error) {

@@ -304,7 +304,7 @@ const ThunderIDRoot: Component = defineComponent({
                                               : undefined,
                                           },
                                           {
-                                            default: (): VNode | VNode[] | undefined => slots['default']?.(),
+                                            default: (): VNode | VNode[] | undefined => slots.default?.(),
                                           },
                                         ),
                                     },

@@ -67,7 +67,7 @@ export interface GetOrganizationConfig extends Omit<RequestInit, 'method'> {
  * // Using default fetch
  * try {
  *   const organization = await getOrganization({
- *     baseUrl: "https://api.asgardeo.io/t/dxlab",
+ *     baseUrl: "https://localhost:8090",
  *     organizationId: "0d5e071b-d3d3-475d-b3c6-1a20ee2fa9b1"
  *   });
  *   console.log(organization);
@@ -83,7 +83,7 @@ export interface GetOrganizationConfig extends Omit<RequestInit, 'method'> {
  * // Using custom fetcher (e.g., axios-based httpClient)
  * try {
  *   const organization = await getOrganization({
- *     baseUrl: "https://api.asgardeo.io/t/dxlab",
+ *     baseUrl: "https://localhost:8090",
  *     organizationId: "0d5e071b-d3d3-475d-b3c6-1a20ee2fa9b1",
  *     fetcher: async (url, config) => {
  *       const response = await httpClient({

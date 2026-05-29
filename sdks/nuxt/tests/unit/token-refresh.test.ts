@@ -67,7 +67,7 @@ const fakeEvent = {} as Parameters<typeof getValidAccessToken>[0];
 const mockConfig = {
   public: {
     thunderid: {
-      baseUrl: 'https://api.asgardeo.io/t/testorg',
+      baseUrl: 'https://localhost:8090',
       clientId: 'test-client-id',
     },
   },
@@ -177,7 +177,7 @@ describe('getValidAccessToken — successful refresh', () => {
 
     expect(fetchMock).toHaveBeenCalledOnce();
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://api.asgardeo.io/t/testorg/oauth2/token');
+    expect(url).toBe('https://localhost:8090/oauth2/token');
     expect(init.method).toBe('POST');
 
     const bodyParams = new URLSearchParams(init.body as string);

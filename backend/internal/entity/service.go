@@ -27,7 +27,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	"github.com/thunder-id/thunderid/internal/ou"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
@@ -93,7 +93,7 @@ type EntityServiceInterface interface {
 // entityService is the default implementation of EntityServiceInterface.
 type entityService struct {
 	store             entityStoreInterface
-	hashService       hash.HashServiceInterface
+	hashService       cryptolib.HashServiceInterface
 	entityTypeService entitytype.EntityTypeServiceInterface
 	ouService         ou.OrganizationUnitServiceInterface
 	transactioner     transaction.Transactioner
@@ -109,7 +109,7 @@ func usesEntityType(category EntityCategory) bool {
 // newEntityService creates a new entity service.
 func newEntityService(
 	store entityStoreInterface,
-	hashService hash.HashServiceInterface,
+	hashService cryptolib.HashServiceInterface,
 	entityTypeService entitytype.EntityTypeServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	transactioner transaction.Transactioner,
@@ -526,10 +526,10 @@ func (s *entityService) verifyCredentials(credentials map[string]interface{},
 		credList := storedCreds[credType]
 		verified := false
 		for _, stored := range credList {
-			ref := hash.Credential{
+			ref := cryptolib.Credential{
 				Algorithm: stored.StorageAlgo,
 				Hash:      stored.Value,
-				Parameters: hash.CredParameters{
+				Parameters: cryptolib.CredParameters{
 					Salt:       stored.StorageAlgoParams.Salt,
 					Iterations: stored.StorageAlgoParams.Iterations,
 					KeySize:    stored.StorageAlgoParams.KeySize,
@@ -924,7 +924,7 @@ func (s *entityService) hashPlaintextCredentials(creds json.RawMessage) (json.Ra
 			result[credType] = []StoredCredential{
 				{
 					StorageAlgo: credHash.Algorithm,
-					StorageAlgoParams: hash.CredParameters{
+					StorageAlgoParams: cryptolib.CredParameters{
 						Salt:       credHash.Parameters.Salt,
 						Iterations: credHash.Parameters.Iterations,
 						KeySize:    credHash.Parameters.KeySize,

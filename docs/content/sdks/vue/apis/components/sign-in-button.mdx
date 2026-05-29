@@ -76,7 +76,7 @@ import { SignInButton } from '@thunderid/vue'
 
 The button includes a default vendor-prefixed class for targeting:
 
-- `.asgardeo-sign-in-button` – Main sign-in button element
+- `.thunderid-sign-in-button` – Main sign-in button element
 
 ### CSS Custom Properties (CSS Variables)
 
@@ -84,11 +84,11 @@ You can theme the button and other SDK components using CSS variables:
 
 ```css title="src/style.css" showLineNumbers
 :root {
-  --asgardeo-primary-color: #007bff;
-  --asgardeo-primary-hover: #0056b3;
-  --asgardeo-border-radius: 8px;
-  --asgardeo-font-family: 'Inter', sans-serif;
-  --asgardeo-button-padding: 12px 24px;
+  --thunderid-primary-color: #007bff;
+  --thunderid-primary-hover: #0056b3;
+  --thunderid-border-radius: 8px;
+  --thunderid-font-family: 'Inter', sans-serif;
+  --thunderid-button-padding: 12px 24px;
 }
 ```
 
@@ -126,7 +126,7 @@ import { SignInButton } from '@thunderid/vue'
 ```
 
 :::tip
-When you provide a scoped slot, the rendered `<button>` element inside the slot does not need its own click handler — the `SignInButton` wrapper handles the click and triggers sign-in automatically.
+When you provide a scoped slot, the rendered `<button>` element inside the slot does not need its own click handler. The `SignInButton` wrapper handles the click and triggers sign-in automatically.
 :::
 
 ## Error Handling

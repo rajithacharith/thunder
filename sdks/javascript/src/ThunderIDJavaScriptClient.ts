@@ -444,20 +444,22 @@ class ThunderIDJavaScriptClient<T = Config> implements ThunderIDClient<T> {
       }
 
       if (authRequestConfig['client_secret']) {
-        authRequestConfig['client_secret'] = configData.clientSecret;
+        authRequestConfig['client_secret'] = configData.clientSecret ?? '';
       }
 
       const authorizeRequestParams: Map<string, string> = getAuthorizeRequestUrlParams(
-        {
-          clientId: configData.clientId,
-          codeChallenge,
-          codeChallengeMethod: PKCEConstants.DEFAULT_CODE_CHALLENGE_METHOD,
-          instanceId: this.getInstanceId().toString(),
-          prompt: configData.prompt,
-          redirectUri: configData.afterSignInUrl,
-          responseMode: configData.responseMode,
-          scopes: processOpenIDScopes(configData.scopes),
-        },
+        Object.fromEntries(
+          Object.entries({
+            clientId: configData.clientId ?? '',
+            codeChallenge,
+            codeChallengeMethod: PKCEConstants.DEFAULT_CODE_CHALLENGE_METHOD,
+            instanceId: this.getInstanceId().toString(),
+            prompt: configData.prompt,
+            redirectUri: configData.afterSignInUrl ?? '',
+            responseMode: configData.responseMode,
+            scopes: processOpenIDScopes(configData.scopes),
+          }).filter(([, v]) => v !== undefined),
+        ) as Parameters<typeof getAuthorizeRequestUrlParams>[0],
         {key: pkceKey},
         authRequestConfig,
       );
@@ -517,18 +519,18 @@ class ThunderIDJavaScriptClient<T = Config> implements ThunderIDClient<T> {
 
     const body: URLSearchParams = new URLSearchParams();
 
-    body.set('client_id', configData.clientId);
+    body.set('client_id', configData.clientId ?? '');
 
     const hasSecret = Boolean(configData.clientSecret && configData.clientSecret.trim().length > 0);
     const tokenEndpointAuthMethod = configData.tokenRequest?.authMethod ?? 'client_secret_basic';
 
     if (hasSecret && tokenEndpointAuthMethod === 'client_secret_post') {
-      body.set('client_secret', configData.clientSecret);
+      body.set('client_secret', configData.clientSecret!);
     }
 
     body.set('code', authorizationCode);
     body.set('grant_type', 'authorization_code');
-    body.set('redirect_uri', configData.afterSignInUrl);
+    body.set('redirect_uri', configData.afterSignInUrl ?? '');
 
     if (tokenRequestConfig?.params) {
       Object.entries(tokenRequestConfig.params).forEach(([key, value]: [string, unknown]) => {
@@ -550,7 +552,7 @@ class ThunderIDJavaScriptClient<T = Config> implements ThunderIDClient<T> {
     };
 
     if (hasSecret && tokenEndpointAuthMethod === 'client_secret_basic') {
-      const credential = `${encodeURIComponent(configData.clientId)}:${encodeURIComponent(configData.clientSecret)}`;
+      const credential = `${encodeURIComponent(configData.clientId!)}:${encodeURIComponent(configData.clientSecret!)}`;
       tokenRequestHeaders['Authorization'] = `Basic ${base64Encode(credential)}`;
     }
 
@@ -595,7 +597,7 @@ class ThunderIDJavaScriptClient<T = Config> implements ThunderIDClient<T> {
       );
     }
 
-    const callbackURL: string = configData?.afterSignOutUrl ?? configData?.afterSignInUrl;
+    const callbackURL: string | undefined = configData?.afterSignOutUrl ?? configData?.afterSignInUrl;
 
     if (!callbackURL || callbackURL.trim().length === 0) {
       throw new ThunderIDAuthException(
@@ -621,7 +623,7 @@ class ThunderIDJavaScriptClient<T = Config> implements ThunderIDClient<T> {
       }
       queryParams.set('id_token_hint', idToken);
     } else {
-      queryParams.set('client_id', configData.clientId);
+      queryParams.set('client_id', configData.clientId ?? '');
     }
 
     queryParams.set('state', OIDCRequestConstants.Params.SIGN_OUT_SUCCESS);

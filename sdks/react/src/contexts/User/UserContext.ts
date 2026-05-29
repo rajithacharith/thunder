@@ -41,9 +41,9 @@ const UserContext: Context<UserContextProps | null> = createContext<null | UserC
   flattenedProfile: null,
   onUpdateProfile: () => null,
   profile: null,
-  revalidateProfile: () => null,
+  revalidateProfile: () => null as unknown as Promise<void>,
   schemas: null,
-  updateProfile: () => null,
+  updateProfile: () => null as unknown as Promise<{data: {user: User}; error: string; success: boolean}>,
 });
 
 UserContext.displayName = 'UserContext';

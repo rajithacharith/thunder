@@ -74,7 +74,7 @@ export interface CreateOrganizationConfig extends Omit<RequestInit, 'method' | '
  * // Using default fetch
  * try {
  *   const organization = await createOrganization({
- *     baseUrl: "https://api.asgardeo.io/t/<ORGANIZATION>",
+ *     baseUrl: "https://localhost:8090",
  *     payload: {
  *       description: "Share your screens",
  *       name: "Team Viewer",
@@ -96,7 +96,7 @@ export interface CreateOrganizationConfig extends Omit<RequestInit, 'method' | '
  * // Using custom fetcher (e.g., axios-based httpClient)
  * try {
  *   const organization = await createOrganization({
- *     baseUrl: "https://api.asgardeo.io/t/<ORGANIZATION>",
+ *     baseUrl: "https://localhost:8090",
  *     payload: {
  *       description: "Share your screens",
  *       name: "Team Viewer",

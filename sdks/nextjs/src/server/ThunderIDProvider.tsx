@@ -39,9 +39,9 @@ import signOutAction from './actions/signOutAction';
 import signUpAction from './actions/signUpAction';
 import switchOrganization from './actions/switchOrganization';
 import updateUserProfileAction from './actions/updateUserProfileAction';
+import getClient from './getClient';
 import ThunderIDClientProvider from '../client/contexts/ThunderID/ThunderIDProvider.js';
 import {ThunderIDNextConfig} from '../models/config';
-import getClient from './getClient';
 import logger from '../utils/logger';
 import {SessionTokenPayload} from '../utils/SessionManager';
 

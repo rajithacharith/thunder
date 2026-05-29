@@ -154,8 +154,10 @@ const translations = {
     'welcome.sections.tryoutProduct': 'Tryout',
     'welcome.tryoutProduct.b2c': 'Securing Consumer App (B2C)',
     'welcome.tryoutProduct.b2cDesc': 'Tryout user journeys for a consumer-facing app',
-    'welcome.tryoutProduct.aiAgents': 'Securing AI Agent Identity',
+    'welcome.tryoutProduct.aiAgents': 'Securing AI Agents',
     'welcome.tryoutProduct.aiAgentsDesc': 'Tryout identity patterns for AI agents and tools',
+    'welcome.tryoutProduct.mcp': 'Securing MCP',
+    'welcome.tryoutProduct.mcpDesc': 'Try authorizing MCP clients to your MCP server',
     'welcome.start.newProject': 'New / Continue',
     'welcome.start.newProjectDesc': 'Configure a new project or edit existing',
     'welcome.start.openImport': 'Open',
@@ -1804,6 +1806,7 @@ const translations = {
       'Configure the user attributes to include in your tokens & user info response',
     'edit.token.tabs.access_token': 'Access Token',
     'edit.token.tabs.id_token': 'ID Token',
+    'edit.token.tabs.refresh_token': 'Refresh Token',
     'edit.token.tabs.user_info_endpoint': 'User Info Endpoint',
     'edit.token.token_validation.title': 'Token Validity',
     'edit.token.token_validation.description': 'Configure how long tokens remain valid before expiration',
@@ -2345,13 +2348,22 @@ const translations = {
 
     // Provisioning executor
     'core.executions.provisioning.description': 'Configure the provisioning executor settings.',
+    'core.executions.provisioning.includeOptional.label': 'Allow Optional Non-Credential Attributes',
+    'core.executions.provisioning.includeOptional.hint':
+      'Prompt for optional non-credential attributes during dynamic input collection.',
     'core.executions.provisioning.includeOptionalCredentials.label': 'Include Optional Credentials',
     'core.executions.provisioning.includeOptionalCredentials.hint':
       'Prompt for optional credential attributes during dynamic input collection.',
+    'core.executions.provisioning.maxPerPrompt.label': 'Max Per Prompt',
+    'core.executions.provisioning.maxPerPrompt.placeholder': '0',
+    'core.executions.provisioning.maxPerPrompt.hint':
+      'Number of dynamic inputs to show per prompt when connected to this provisioning executor.',
     'core.executions.provisioning.assignGroup.label': 'Assign Group',
     'core.executions.provisioning.assignGroup.placeholder': 'Group ID to assign',
     'core.executions.provisioning.assignRole.label': 'Assign Role',
     'core.executions.provisioning.assignRole.placeholder': 'Role ID to assign',
+    'core.placeholders.dynamicInputPlaceholder.title': 'Dynamic Input',
+    'core.placeholders.dynamicInputPlaceholder.hint': 'Resolves input fields passed from runtime.',
 
     // OU executor
     'core.executions.ouExecutor.description': 'Configure the OU creation executor settings.',

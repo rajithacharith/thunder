@@ -141,7 +141,7 @@ const FlowProvider: FC<PropsWithChildren<FlowProviderProps>> = ({
         id: stepId,
         metadata: options?.metadata,
         subtitle: options?.subtitle,
-        title: options?.title,
+        title: options?.title ?? '',
         type: flowType,
       };
 

@@ -150,11 +150,13 @@ const OrganizationProvider: FC<PropsWithChildren<OrganizationProviderProps>> = (
   const contextValue: OrganizationContextProps = useMemo(
     () => ({
       createOrganization,
-      currentOrganization,
+      currentOrganization: currentOrganization ?? null,
       error,
-      getAllOrganizations,
+      getAllOrganizations:
+        getAllOrganizations ??
+        ((): Promise<AllOrganizationsApiResponse> => Promise.resolve({count: 0, organizations: []})),
       isLoading,
-      myOrganizations,
+      myOrganizations: myOrganizations ?? [],
       revalidateMyOrganizations,
       switchOrganization,
     }),

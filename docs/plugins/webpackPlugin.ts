@@ -57,9 +57,9 @@ export default function () {
         },
       };
 
-      // @asgardeo/react is an external used by the frontend design package dist
+      // @thunderid/react is an external used by the frontend design package dist
       // but is not needed at all in the docs build. Alias it to a no-op shim.
-      const asgardeoReactShim = path.resolve(__dirname, 'shims/asgardeo-react.cjs');
+      const thunderidReactShim = path.resolve(__dirname, 'shims/thunderid-react.cjs');
 
       // @emotion/css calls document.createElement at module init, which fails
       // in Node.js SSR. Alias it to a no-op shim for the server build only.
@@ -69,7 +69,7 @@ export default function () {
           resolve: {
             alias: {
               '@emotion/css': path.resolve(__dirname, 'shims/emotion-css.cjs'),
-              '@asgardeo/react': asgardeoReactShim,
+              '@thunderid/react': thunderidReactShim,
             },
           },
         };
@@ -79,7 +79,7 @@ export default function () {
         ...baseConfig,
         resolve: {
           alias: {
-            '@asgardeo/react': asgardeoReactShim,
+            '@thunderid/react': thunderidReactShim,
           },
         },
       };

@@ -35,7 +35,7 @@ interface TextColors {
 }
 
 const extractColorValue = (colorVariant?: ColorVariant, preferDark = false): string | undefined => {
-  if (preferDark && colorVariant?.dark && colorVariant.dark.trim()) {
+  if (preferDark && colorVariant?.dark?.trim()) {
     return colorVariant.dark;
   }
   return colorVariant?.main;
@@ -74,48 +74,48 @@ const transformThemeVariant = (themeVariant: ThemeVariant, isDark = false): Part
       background: {
         body: {
           dark: (colors?.background?.body as ColorVariant)?.dark || (colors?.background?.body as ColorVariant)?.main,
-          main: extractColorValue(colors?.background?.body as ColorVariant, isDark),
+          main: extractColorValue(colors?.background?.body as ColorVariant, isDark) ?? '',
         },
         dark:
           (colors?.background?.surface as ColorVariant)?.dark || (colors?.background?.surface as ColorVariant)?.main,
-        disabled: extractColorValue(colors?.background?.surface as ColorVariant, isDark),
-        surface: extractColorValue(colors?.background?.surface as ColorVariant, isDark),
+        disabled: extractColorValue(colors?.background?.surface as ColorVariant, isDark) ?? '',
+        surface: extractColorValue(colors?.background?.surface as ColorVariant, isDark) ?? '',
       },
-      border: colors?.outlined?.default,
+      border: colors?.outlined?.default ?? '',
       error: {
-        contrastText: extractContrastText(colors?.alerts?.error),
+        contrastText: extractContrastText(colors?.alerts?.error) ?? '',
         dark: (colors?.alerts?.error as ColorVariant)?.dark || (colors?.alerts?.error as ColorVariant)?.main,
-        main: extractColorValue(colors?.alerts?.error as ColorVariant, isDark),
+        main: extractColorValue(colors?.alerts?.error as ColorVariant, isDark) ?? '',
       },
       info: {
-        contrastText: extractContrastText(colors?.alerts?.info),
+        contrastText: extractContrastText(colors?.alerts?.info) ?? '',
         dark: (colors?.alerts?.info as ColorVariant)?.dark || (colors?.alerts?.info as ColorVariant)?.main,
-        main: extractColorValue(colors?.alerts?.info as ColorVariant, isDark),
+        main: extractColorValue(colors?.alerts?.info as ColorVariant, isDark) ?? '',
       },
       primary: {
-        contrastText: extractContrastText(colors?.primary),
+        contrastText: extractContrastText(colors?.primary) ?? '',
         dark: colors?.primary?.dark || (colors?.primary as ColorVariant)?.main,
-        main: extractColorValue(colors?.primary as ColorVariant, isDark),
+        main: extractColorValue(colors?.primary as ColorVariant, isDark) ?? '',
       },
       secondary: {
-        contrastText: extractContrastText(colors?.secondary),
+        contrastText: extractContrastText(colors?.secondary) ?? '',
         dark: colors?.secondary?.dark || (colors?.secondary as ColorVariant)?.main,
-        main: extractColorValue(colors?.secondary as ColorVariant, isDark),
+        main: extractColorValue(colors?.secondary as ColorVariant, isDark) ?? '',
       },
       success: {
-        contrastText: extractContrastText(colors?.alerts?.neutral),
+        contrastText: extractContrastText(colors?.alerts?.neutral) ?? '',
         dark: (colors?.alerts?.neutral as ColorVariant)?.dark || (colors?.alerts?.neutral as ColorVariant)?.main,
-        main: extractColorValue(colors?.alerts?.neutral as ColorVariant, isDark),
+        main: extractColorValue(colors?.alerts?.neutral as ColorVariant, isDark) ?? '',
       },
       text: {
         dark: (colors?.text as TextColors)?.dark || (colors?.text as TextColors)?.primary,
-        primary: (colors?.text as TextColors)?.primary,
-        secondary: (colors?.text as TextColors)?.secondary,
+        primary: (colors?.text as TextColors)?.primary ?? '',
+        secondary: (colors?.text as TextColors)?.secondary ?? '',
       },
       warning: {
-        contrastText: extractContrastText(colors?.alerts?.warning),
+        contrastText: extractContrastText(colors?.alerts?.warning) ?? '',
         dark: (colors?.alerts?.warning as ColorVariant)?.dark || (colors?.alerts?.warning as ColorVariant)?.main,
-        main: extractColorValue(colors?.alerts?.warning as ColorVariant, isDark),
+        main: extractColorValue(colors?.alerts?.warning as ColorVariant, isDark) ?? '',
       },
     },
     images: {

@@ -122,7 +122,10 @@ class ThunderIDNodeClient<T = ThunderIDNodeConfig> extends ThunderIDJavaScriptCl
     });
   }
 
-  public override async getSignInUrl(requestConfig?: ExtendedAuthorizeRequestUrlParams, userId?: string): Promise<string> {
+  public override async getSignInUrl(
+    requestConfig?: ExtendedAuthorizeRequestUrlParams,
+    userId?: string,
+  ): Promise<string> {
     const url = await super.getSignInUrl(requestConfig, userId);
     if (!url) {
       return Promise.reject(
@@ -151,7 +154,7 @@ class ThunderIDNodeClient<T = ThunderIDNodeConfig> extends ThunderIDJavaScriptCl
     return signOutUrl;
   }
 
-  public override async isSignedIn(userId?: string): Promise<boolean | undefined> {
+  public override async isSignedIn(userId?: string): Promise<boolean> {
     try {
       if (!(await super.isSignedIn(userId))) {
         return false;
@@ -172,7 +175,7 @@ class ThunderIDNodeClient<T = ThunderIDNodeConfig> extends ThunderIDJavaScriptCl
     }
   }
 
-  public override async getIdToken(userId?: string): Promise<string | undefined> {
+  public override async getIdToken(userId?: string): Promise<string> {
     if (!(await this.isSignedIn(userId))) {
       return Promise.reject(
         new ThunderIDAuthException(
@@ -193,7 +196,7 @@ class ThunderIDNodeClient<T = ThunderIDNodeConfig> extends ThunderIDJavaScriptCl
     return super.revokeAccessToken(userId);
   }
 
-  public override async getDecodedIdToken(userId?: string, idToken?: string): Promise<IdToken | undefined> {
+  public override async getDecodedIdToken(userId?: string, idToken?: string): Promise<IdToken> {
     return super.getDecodedIdToken(userId, idToken);
   }
 
@@ -201,7 +204,7 @@ class ThunderIDNodeClient<T = ThunderIDNodeConfig> extends ThunderIDJavaScriptCl
     return super.getAccessToken(userId);
   }
 
-  public override async getUser(userId?: string): Promise<User | undefined> {
+  public override async getUser(userId?: string): Promise<User> {
     return super.getUser(userId);
   }
 

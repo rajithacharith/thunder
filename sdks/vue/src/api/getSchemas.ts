@@ -33,7 +33,7 @@ export interface GetSchemasConfig extends Omit<BaseGetSchemasConfig, 'fetcher'> 
 const getSchemas = async ({fetcher, instanceId = 0, ...requestConfig}: GetSchemasConfig): Promise<Schema[]> => {
   const defaultFetcher = async (url: string, config: RequestInit): Promise<Response> => {
     const httpClient: FetchHttpClient = FetchHttpClient.getInstance(instanceId);
-    
+
     const response: HttpResponse<any> = await httpClient.request({
       headers: config.headers as Record<string, string>,
       method: config.method || 'GET',

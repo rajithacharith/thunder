@@ -256,10 +256,10 @@ const createAuthComponentFromFlow = (
     case EmbeddedFlowComponentType.PasswordInput:
     case EmbeddedFlowComponentType.EmailInput:
     case EmbeddedFlowComponentType.PhoneInput: {
-      const identifier: string = component.ref;
+      const identifier: string = component.ref!;
       const value: string = formValues[identifier] || '';
       const isTouched: boolean = touchedFields[identifier] || false;
-      const error: string = isTouched ? formErrors[identifier] : undefined;
+      const error: string = isTouched ? formErrors[identifier] : undefined!;
       const fieldType: string = getFieldType(component.type);
 
       const field: any = createField({
@@ -279,10 +279,10 @@ const createAuthComponentFromFlow = (
     }
 
     case EmbeddedFlowComponentType.OtpInput: {
-      const identifier: string = component.ref;
+      const identifier: string = component.ref!;
       const value: string = formValues[identifier] || '';
       const isTouched: boolean = touchedFields[identifier] || false;
-      const error: string = isTouched ? formErrors[identifier] : undefined;
+      const error: string = isTouched ? formErrors[identifier] : undefined!;
 
       const field: any = createField({
         className: options.inputClassName,
@@ -338,7 +338,7 @@ const createAuthComponentFromFlow = (
                       }),
                     ),
                   ],
-                  purposeName: p.purposeName,
+                  purposeName: p.purposeName!,
                 }),
               ),
             };
@@ -415,7 +415,7 @@ const createAuthComponentFromFlow = (
     }
 
     case EmbeddedFlowComponentType.Text: {
-      const variant: any = getTypographyVariant(component.variant);
+      const variant: any = getTypographyVariant(component.variant!);
       return (
         <Typography
           key={key}
@@ -436,10 +436,10 @@ const createAuthComponentFromFlow = (
     }
 
     case EmbeddedFlowComponentType.Select: {
-      const identifier: string = component.ref;
+      const identifier: string = component.ref!;
       const value: string = formValues[identifier] || '';
       const isTouched: boolean = touchedFields[identifier] || false;
-      const error: string = isTouched ? formErrors[identifier] : undefined;
+      const error: string = isTouched ? formErrors[identifier] : undefined!;
 
       // Options are pre-sanitized by flowTransformer to {value: string, label: string} format
       const selectOptions: any = (component.options || []).map((opt: any) => ({
@@ -548,14 +548,14 @@ const createAuthComponentFromFlow = (
               },
             } as any
           }
-          formErrors={undefined}
-          formValues={undefined}
+          formErrors={undefined!}
+          formValues={undefined!}
           isFormValid={false}
           isLoading={false}
           onInputChange={(): void => {
             throw new Error('Function not implemented.');
           }}
-          touchedFields={undefined}
+          touchedFields={undefined!}
         />
       );
     }
@@ -697,7 +697,7 @@ export const renderSignInComponents = (
         },
       ),
     )
-    .filter(Boolean);
+    .filter((x): x is ReactElement => x !== null);
 
 /**
  * Processes an array of components and renders them as React elements for sign-up.
@@ -746,7 +746,7 @@ export const renderSignUpComponents = (
         },
       ),
     )
-    .filter(Boolean);
+    .filter((x): x is ReactElement => x !== null);
 
 /**
  * Processes an array of components and renders them as React elements for recovery flow.
@@ -797,7 +797,7 @@ export const renderRecoveryComponents = (
         },
       ),
     )
-    .filter(Boolean);
+    .filter((x): x is ReactElement => x !== null);
 
 /**
  * Processes an array of components and renders them as React elements for invite user.
@@ -853,4 +853,4 @@ export const renderInviteUserComponents = (
         },
       ),
     )
-    .filter(Boolean);
+    .filter((x): x is ReactElement => x !== null);

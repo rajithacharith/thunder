@@ -24,6 +24,7 @@ import (
 
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/jwksresolver"
 	oauth2model "github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
 	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
@@ -31,18 +32,11 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 )
 
-func resolveContext(ctx context.Context) context.Context {
-	if ctx == nil {
-		return context.Background()
-	}
-	return ctx
-}
-
 // TokenBuilderInterface defines the interface for building OAuth2 tokens.
 type TokenBuilderInterface interface {
-	BuildAccessToken(ctx *AccessTokenBuildContext) (*oauth2model.TokenDTO, error)
-	BuildRefreshToken(ctx *RefreshTokenBuildContext) (*oauth2model.TokenDTO, error)
-	BuildIDToken(ctx *IDTokenBuildContext) (*oauth2model.TokenDTO, error)
+	BuildAccessToken(ctx context.Context, tokenCtx *AccessTokenBuildContext) (*oauth2model.TokenDTO, error)
+	BuildRefreshToken(ctx context.Context, tokenCtx *RefreshTokenBuildContext) (*oauth2model.TokenDTO, error)
+	BuildIDToken(ctx context.Context, tokenCtx *IDTokenBuildContext) (*oauth2model.TokenDTO, error)
 }
 
 // TokenBuilder implements TokenBuilderInterface.
@@ -66,35 +60,43 @@ func newTokenBuilder(
 }
 
 // BuildAccessToken builds an access token with all necessary claims.
-func (tb *tokenBuilder) BuildAccessToken(ctx *AccessTokenBuildContext) (*oauth2model.TokenDTO, error) {
-	if ctx == nil {
+func (tb *tokenBuilder) BuildAccessToken(
+	ctx context.Context,
+	tokenCtx *AccessTokenBuildContext,
+) (*oauth2model.TokenDTO, error) {
+	if tokenCtx == nil {
 		return nil, fmt.Errorf("build context cannot be nil")
 	}
 
-	tokenConfig := ResolveTokenConfig(ctx.OAuthApp, TokenTypeAccess)
+	tokenConfig := ResolveTokenConfig(tokenCtx.OAuthApp, TokenTypeAccess)
 
-	userAttributes := tb.buildAccessTokenUserAttributes(ctx.UserAttributes, ctx.OAuthApp)
-	jwtClaims, claimsErr := tb.buildAccessTokenClaims(ctx, userAttributes)
+	userAttributes := tb.buildAccessTokenUserAttributes(tokenCtx.UserAttributes, tokenCtx.OAuthApp)
+	jwtClaims, claimsErr := tb.buildAccessTokenClaims(tokenCtx, userAttributes)
 	if claimsErr != nil {
 		return nil, fmt.Errorf("failed to build access token claims: %w", claimsErr)
 	}
 
+	tokenType := constants.TokenTypeBearer
+	if tokenCtx.DPoPJkt != "" {
+		tokenType = constants.TokenTypeDPoP
+	}
+
 	tokenDTO := &oauth2model.TokenDTO{
-		TokenType:        constants.TokenTypeBearer,
+		TokenType:        tokenType,
 		ExpiresIn:        tokenConfig.ValidityPeriod,
-		Scopes:           ctx.Scopes,
-		ClientID:         ctx.ClientID,
+		Scopes:           tokenCtx.Scopes,
+		ClientID:         tokenCtx.ClientID,
 		UserAttributes:   userAttributes,
-		AttributeCacheID: ctx.AttributeCacheID,
-		Subject:          ctx.Subject,
-		Audiences:        ctx.Audiences,
-		ClaimsRequest:    ctx.ClaimsRequest,
-		ClaimsLocales:    ctx.ClaimsLocales,
+		AttributeCacheID: tokenCtx.AttributeCacheID,
+		Subject:          tokenCtx.Subject,
+		Audiences:        tokenCtx.Audiences,
+		ClaimsRequest:    tokenCtx.ClaimsRequest,
+		ClaimsLocales:    tokenCtx.ClaimsLocales,
 	}
 
 	token, iat, err := tb.jwtService.GenerateJWT(
-		resolveContext(ctx.Context),
-		ctx.Subject,
+		ctx,
+		tokenCtx.Subject,
 		tokenConfig.Issuer,
 		tokenConfig.ValidityPeriod,
 		jwtClaims,
@@ -176,6 +178,8 @@ func (tb *tokenBuilder) buildAccessTokenClaims(
 		claims["aud"] = ctx.Audiences[0]
 	}
 
+	dpop.SetCnfJkt(claims, ctx.DPoPJkt)
+
 	return claims, nil
 }
 
@@ -231,32 +235,35 @@ func (tb *tokenBuilder) buildActorClaim(actorClaims *SubjectTokenClaims) map[str
 }
 
 // BuildRefreshToken builds a refresh token with all necessary claims.
-func (tb *tokenBuilder) BuildRefreshToken(ctx *RefreshTokenBuildContext) (*oauth2model.TokenDTO, error) {
-	if ctx == nil {
+func (tb *tokenBuilder) BuildRefreshToken(
+	ctx context.Context,
+	tokenCtx *RefreshTokenBuildContext,
+) (*oauth2model.TokenDTO, error) {
+	if tokenCtx == nil {
 		return nil, fmt.Errorf("build context cannot be nil")
 	}
 
-	tokenConfig := ResolveTokenConfig(ctx.OAuthApp, TokenTypeRefresh)
+	tokenConfig := ResolveTokenConfig(tokenCtx.OAuthApp, TokenTypeRefresh)
 
-	claims, claimsErr := tb.buildRefreshTokenClaims(ctx)
+	claims, claimsErr := tb.buildRefreshTokenClaims(tokenCtx)
 	if claimsErr != nil {
 		return nil, fmt.Errorf("failed to build refresh token claims: %w", claimsErr)
 	}
 
 	tokenDTO := &oauth2model.TokenDTO{
 		ExpiresIn:     tokenConfig.ValidityPeriod,
-		Scopes:        ctx.Scopes,
-		ClientID:      ctx.ClientID,
-		Subject:       ctx.AccessTokenSubject,
+		Scopes:        tokenCtx.Scopes,
+		ClientID:      tokenCtx.ClientID,
+		Subject:       tokenCtx.AccessTokenSubject,
 		Audiences:     []string{tokenConfig.Issuer},
-		ClaimsLocales: ctx.ClaimsLocales,
+		ClaimsLocales: tokenCtx.ClaimsLocales,
 	}
 
 	claims["aud"] = tokenConfig.Issuer
 
 	token, iat, err := tb.jwtService.GenerateJWT(
-		resolveContext(ctx.Context),
-		ctx.ClientID,
+		ctx,
+		tokenCtx.ClientID,
 		tokenConfig.Issuer,
 		tokenConfig.ValidityPeriod,
 		claims,
@@ -306,32 +313,39 @@ func (tb *tokenBuilder) buildRefreshTokenClaims(ctx *RefreshTokenBuildContext) (
 		claims["access_token_claims_locales"] = ctx.ClaimsLocales
 	}
 
+	if ctx.DPoPJkt != "" {
+		claims[constants.ClaimDPoPJkt] = ctx.DPoPJkt
+	}
+
 	return claims, nil
 }
 
 // BuildIDToken builds an OIDC ID token with all necessary claims.
-func (tb *tokenBuilder) BuildIDToken(ctx *IDTokenBuildContext) (*oauth2model.TokenDTO, error) {
-	if ctx == nil {
+func (tb *tokenBuilder) BuildIDToken(
+	ctx context.Context,
+	tokenCtx *IDTokenBuildContext,
+) (*oauth2model.TokenDTO, error) {
+	if tokenCtx == nil {
 		return nil, fmt.Errorf("build context cannot be nil")
 	}
 
-	tokenConfig := ResolveTokenConfig(ctx.OAuthApp, TokenTypeID)
+	tokenConfig := ResolveTokenConfig(tokenCtx.OAuthApp, TokenTypeID)
 
-	jwtClaims := tb.buildIDTokenClaims(ctx)
+	jwtClaims := tb.buildIDTokenClaims(tokenCtx)
 
 	tokenDTO := &oauth2model.TokenDTO{
 		ExpiresIn: tokenConfig.ValidityPeriod,
-		Scopes:    ctx.Scopes,
-		ClientID:  ctx.Audience,
-		Subject:   ctx.Subject,
-		Audiences: []string{ctx.Audience},
+		Scopes:    tokenCtx.Scopes,
+		ClientID:  tokenCtx.Audience,
+		Subject:   tokenCtx.Subject,
+		Audiences: []string{tokenCtx.Audience},
 	}
 
-	jwtClaims["aud"] = ctx.Audience
+	jwtClaims["aud"] = tokenCtx.Audience
 
 	token, iat, err := tb.jwtService.GenerateJWT(
-		resolveContext(ctx.Context),
-		ctx.Subject,
+		ctx,
+		tokenCtx.Subject,
 		tokenConfig.Issuer,
 		tokenConfig.ValidityPeriod,
 		jwtClaims,
@@ -343,16 +357,16 @@ func (tb *tokenBuilder) BuildIDToken(ctx *IDTokenBuildContext) (*oauth2model.Tok
 	}
 
 	// Optionally encrypt the signed ID token when responseType is JWE or NESTED_JWT.
-	if ctx.OAuthApp != nil && ctx.OAuthApp.Token != nil && ctx.OAuthApp.Token.IDToken != nil {
-		idTokenCfg := ctx.OAuthApp.Token.IDToken
+	if tokenCtx.OAuthApp != nil && tokenCtx.OAuthApp.Token != nil && tokenCtx.OAuthApp.Token.IDToken != nil {
+		idTokenCfg := tokenCtx.OAuthApp.Token.IDToken
 		rt := idTokenCfg.ResponseType
 		if rt == inboundmodel.IDTokenResponseTypeJWE || rt == inboundmodel.IDTokenResponseTypeNESTEDJWT {
 			if tb.jweService == nil {
 				return nil, fmt.Errorf("JWE service is not configured")
 			}
 			rpKey, rpKID, svcErr := tb.jwksResolver.ResolveEncryptionKey(
-				resolveContext(ctx.Context),
-				ctx.OAuthApp.Certificate,
+				ctx,
+				tokenCtx.OAuthApp.Certificate,
 				idTokenCfg.EncryptionAlg,
 				jwksresolver.KeyUseLenientEnc,
 			)

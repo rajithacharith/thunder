@@ -16,6 +16,8 @@
  * under the License.
  */
 
+import extractUserClaimsFromIdToken from './extractUserClaimsFromIdToken';
+import processOpenIDScopes from './processOpenIDScopes';
 import OIDCDiscoveryConstants from '../constants/OIDCDiscoveryConstants';
 import TokenExchangeConstants from '../constants/TokenExchangeConstants';
 import {ThunderIDAuthException} from '../errors/exception';
@@ -27,8 +29,6 @@ import {SessionData} from '../models/session';
 import {IdToken, TokenResponse, AccessTokenApiResponse} from '../models/token';
 import {User} from '../models/user';
 import StorageManager from '../StorageManager';
-import extractUserClaimsFromIdToken from './extractUserClaimsFromIdToken';
-import processOpenIDScopes from './processOpenIDScopes';
 
 /**
  * Provides core authentication helper utilities for token handling, endpoint resolution,
@@ -241,7 +241,7 @@ class AuthenticationHelper<T> {
     return this.cryptoHelper.isValidIdToken(
       idToken,
       jwk,
-      (await this.config()).clientId,
+      (await this.config()).clientId ?? '',
       issuer ?? '',
       this.cryptoHelper.decodeJwtToken<IdToken>(idToken).sub,
       (await this.config()).tokenValidation?.idToken?.clockTolerance,
@@ -316,10 +316,10 @@ class AuthenticationHelper<T> {
       .replace(TokenExchangeConstants.Placeholders.ACCESS_TOKEN, sessionData.access_token)
       .replace(
         TokenExchangeConstants.Placeholders.USERNAME,
-        this.getAuthenticatedUserInfo(sessionData.id_token).username,
+        this.getAuthenticatedUserInfo(sessionData.id_token).username ?? '',
       )
       .replace(TokenExchangeConstants.Placeholders.SCOPES, scope)
-      .replace(TokenExchangeConstants.Placeholders.CLIENT_ID, configData.clientId)
+      .replace(TokenExchangeConstants.Placeholders.CLIENT_ID, configData.clientId ?? '')
       .replace(TokenExchangeConstants.Placeholders.CLIENT_SECRET, configData.clientSecret ?? '');
   }
 

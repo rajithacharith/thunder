@@ -116,7 +116,7 @@ class ThunderIDVueClient<T extends ThunderIDVueConfig = ThunderIDVueConfig> exte
       let baseUrl: string = options?.baseUrl;
 
       if (!baseUrl) {
-        const configData: any = (this.getStorageManager() as any).getConfigData();
+        const configData: any = this.getStorageManager().getConfigData();
         baseUrl = configData?.baseUrl;
       }
 
@@ -130,7 +130,7 @@ class ThunderIDVueClient<T extends ThunderIDVueConfig = ThunderIDVueConfig> exte
   }
 
   override async getDecodedIdToken(sessionId?: string): Promise<IdToken> {
-    return (await super.getDecodedIdToken(sessionId)) as IdToken;
+    return await super.getDecodedIdToken(sessionId);
   }
 
   override async getIdToken(): Promise<string> {
@@ -143,7 +143,7 @@ class ThunderIDVueClient<T extends ThunderIDVueConfig = ThunderIDVueConfig> exte
         let baseUrl: string = options?.baseUrl;
 
         if (!baseUrl) {
-          const configData: any = (this.getStorageManager() as any).getConfigData();
+          const configData: any = this.getStorageManager().getConfigData();
           baseUrl = configData?.baseUrl;
         }
 
@@ -174,7 +174,7 @@ class ThunderIDVueClient<T extends ThunderIDVueConfig = ThunderIDVueConfig> exte
       let baseUrl: string = options?.baseUrl;
 
       if (!baseUrl) {
-        const configData: any = (this.getStorageManager() as any).getConfigData();
+        const configData: any = this.getStorageManager().getConfigData();
         baseUrl = configData?.baseUrl;
       }
 
@@ -196,7 +196,7 @@ class ThunderIDVueClient<T extends ThunderIDVueConfig = ThunderIDVueConfig> exte
       let baseUrl: string = options?.baseUrl;
 
       if (!baseUrl) {
-        const configData: any = (this.getStorageManager() as any).getConfigData();
+        const configData: any = this.getStorageManager().getConfigData();
         baseUrl = configData?.baseUrl;
       }
 
@@ -216,9 +216,9 @@ class ThunderIDVueClient<T extends ThunderIDVueConfig = ThunderIDVueConfig> exte
       return await this.withLoading(async () => {
         const idToken: IdToken = await this.getDecodedIdToken();
         return {
-          id: idToken?.org_id,
-          name: idToken?.org_name,
-          orgHandle: idToken?.org_handle,
+          id: idToken?.org_id ?? '',
+          name: idToken?.org_name ?? '',
+          orgHandle: idToken?.org_handle ?? '',
         };
       });
     } catch (error) {
@@ -234,7 +234,7 @@ class ThunderIDVueClient<T extends ThunderIDVueConfig = ThunderIDVueConfig> exte
   override async switchOrganization(organization: Organization): Promise<TokenResponse | Response> {
     return this.withLoading(async () => {
       try {
-        const configData: any = (this.getStorageManager() as any).getConfigData();
+        const configData: any = this.getStorageManager().getConfigData();
         const sourceInstanceId: number | undefined = configData?.organizationChain?.sourceInstanceId;
 
         if (!organization.id) {
@@ -281,7 +281,7 @@ class ThunderIDVueClient<T extends ThunderIDVueConfig = ThunderIDVueConfig> exte
   }
 
   override async isSignedIn(): Promise<boolean> {
-    return (await super.isSignedIn()) as boolean;
+    return await super.isSignedIn();
   }
 
   override async exchangeToken(config: TokenExchangeRequestConfig): Promise<TokenResponse | Response> {
@@ -305,12 +305,12 @@ class ThunderIDVueClient<T extends ThunderIDVueConfig = ThunderIDVueConfig> exte
         !isEmpty(arg1) &&
         ('executionId' in arg1 || 'applicationId' in arg1)
       ) {
-        const configData: any = (this.getStorageManager() as any).getConfigData();
-        const authIdFromUrl: string = new URL(window.location.href).searchParams.get('authId');
-        const authIdFromStorage: string = sessionStorage.getItem('thunderid_auth_id');
-        const authId: string = authIdFromUrl || authIdFromStorage;
-        const baseUrlFromStorage: string = sessionStorage.getItem('thunderid_base_url');
-        const baseUrl: string = configData?.baseUrl || baseUrlFromStorage;
+        const configData: any = this.getStorageManager().getConfigData();
+        const authIdFromUrl: string | null = new URL(window.location.href).searchParams.get('authId');
+        const authIdFromStorage: string | null = sessionStorage.getItem('thunderid_auth_id');
+        const authId: string = authIdFromUrl || authIdFromStorage || '';
+        const baseUrlFromStorage: string | null = sessionStorage.getItem('thunderid_base_url');
+        const baseUrl: string = configData?.baseUrl || baseUrlFromStorage || '';
 
         const response: EmbeddedSignInFlowResponseV2 = await executeEmbeddedSignInFlowV2({
           authId,
@@ -356,24 +356,24 @@ class ThunderIDVueClient<T extends ThunderIDVueConfig = ThunderIDVueConfig> exte
         return response;
       }
 
-      return (await super.signIn(arg1)) as User;
+      return (await super.signIn(arg1))!;
     });
   }
 
   override async signInSilently(options?: any): Promise<User | boolean> {
-    return (await super.signInSilently(options as Record<string, string | boolean>)) as User | boolean;
+    return (await super.signInSilently(options as Record<string, string | boolean>))!;
   }
 
   override async signUp(options?: SignUpOptions): Promise<void>;
   override async signUp(payload: EmbeddedFlowExecuteRequestPayload): Promise<EmbeddedFlowExecuteResponse>;
   override async signUp(...args: any[]): Promise<void | EmbeddedFlowExecuteResponse> {
-    const configData: any = (this.getStorageManager() as any).getConfigData();
+    const configData: any = this.getStorageManager().getConfigData();
     const firstArg: any = args[0];
     const baseUrl: string = configData?.baseUrl;
 
-    const authIdFromUrl: string = new URL(window.location.href).searchParams.get('authId');
-    const authIdFromStorage: string = sessionStorage.getItem('thunderid_auth_id');
-    const authId: string = authIdFromUrl || authIdFromStorage;
+    const authIdFromUrl: string | null = new URL(window.location.href).searchParams.get('authId');
+    const authIdFromStorage: string | null = sessionStorage.getItem('thunderid_auth_id');
+    const authId: string = authIdFromUrl || authIdFromStorage || '';
 
     if (authIdFromUrl && !authIdFromStorage) {
       sessionStorage.setItem('thunderid_auth_id', authIdFromUrl);
@@ -390,11 +390,11 @@ class ThunderIDVueClient<T extends ThunderIDVueConfig = ThunderIDVueConfig> exte
   }
 
   async request(requestConfig?: HttpRequestConfig): Promise<HttpResponse<any>> {
-    return this.httpRequest(requestConfig);
+    return (await this.httpRequest(requestConfig!))!;
   }
 
   async requestAll(requestConfigs?: HttpRequestConfig[]): Promise<HttpResponse<any>[]> {
-    return this.httpRequestAll(requestConfigs);
+    return (await this.httpRequestAll(requestConfigs!))!;
   }
 
   override async getAccessToken(sessionId?: string): Promise<string> {
@@ -406,7 +406,7 @@ class ThunderIDVueClient<T extends ThunderIDVueConfig = ThunderIDVueConfig> exte
   }
 
   override async setSession(sessionData: Record<string, unknown>, sessionId?: string): Promise<void> {
-    return (this.getStorageManager() as any).setSessionData(sessionData, sessionId);
+    return this.getStorageManager().setSessionData(sessionData, sessionId);
   }
 
   override decodeJwtToken<TResult = Record<string, unknown>>(token: string): Promise<TResult> {

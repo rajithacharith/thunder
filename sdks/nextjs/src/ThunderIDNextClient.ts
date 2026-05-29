@@ -157,7 +157,7 @@ class ThunderIDNextClient<T extends ThunderIDNextConfig = ThunderIDNextConfig> e
 
       return generateUserProfile(profile, flattenUserSchema(schemas));
     } catch (error) {
-      return (await super.getUser(resolvedSessionId)) as User;
+      return await super.getUser(resolvedSessionId);
     }
   }
 
@@ -191,8 +191,8 @@ class ThunderIDNextClient<T extends ThunderIDNextConfig = ThunderIDNextConfig> e
       };
     } catch (error) {
       return {
-        flattenedProfile: extractUserClaimsFromIdToken((await super.getDecodedIdToken(userId))!),
-        profile: extractUserClaimsFromIdToken((await super.getDecodedIdToken(userId))!),
+        flattenedProfile: extractUserClaimsFromIdToken(await super.getDecodedIdToken(userId)),
+        profile: extractUserClaimsFromIdToken(await super.getDecodedIdToken(userId)),
         schemas: [],
       };
     }
@@ -311,7 +311,7 @@ class ThunderIDNextClient<T extends ThunderIDNextConfig = ThunderIDNextConfig> e
   }
 
   override async getCurrentOrganization(userId?: string): Promise<Organization | null> {
-    const idToken: IdToken = (await super.getDecodedIdToken(userId))!;
+    const idToken: IdToken = await super.getDecodedIdToken(userId);
 
     return {
       id: idToken?.org_id!,
@@ -362,7 +362,7 @@ class ThunderIDNextClient<T extends ThunderIDNextConfig = ThunderIDNextConfig> e
   }
 
   override isSignedIn(sessionId?: string): Promise<boolean> {
-    return super.isSignedIn(sessionId!) as Promise<boolean>;
+    return super.isSignedIn(sessionId);
   }
 
   override exchangeToken(config: TokenExchangeRequestConfig, sessionId?: string): Promise<TokenResponse | Response> {
@@ -388,7 +388,7 @@ class ThunderIDNextClient<T extends ThunderIDNextConfig = ThunderIDNextConfig> e
 
   override async getDecodedIdToken(sessionId?: string, idToken?: string): Promise<IdToken> {
     await this.ensureInitialized();
-    return (await super.getDecodedIdToken(sessionId, idToken)) as IdToken;
+    return await super.getDecodedIdToken(sessionId, idToken);
   }
 
   override async signIn(...args: any[]): Promise<any> {
@@ -418,14 +418,7 @@ class ThunderIDNextClient<T extends ThunderIDNextConfig = ThunderIDNextConfig> e
       });
     }
 
-    return super.signIn(
-      arg4,
-      arg3,
-      arg1?.code,
-      arg1?.session_state,
-      arg1?.state,
-      arg1,
-    ) as unknown as Promise<User>;
+    return super.signIn(arg4, arg3, arg1?.code, arg1?.session_state, arg1?.state, arg1) as unknown as Promise<User>;
   }
 
   override async signOut(...args: any[]): Promise<string> {

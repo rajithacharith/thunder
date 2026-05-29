@@ -17,49 +17,29 @@
  */
 
 import {useActiveDocContext} from '@docusaurus/plugin-content-docs/client';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-
-export type Persona = 'all' | 'app' | 'iam' | 'devops';
-
-const STORAGE_KEY = 'product-docs-persona';
-
-interface PersonaOption {
-  value: Persona;
-  label: string;
-  description: string;
-}
-
-export const PERSONAS: PersonaOption[] = [
-  {value: 'all', label: 'All Roles', description: 'Browse all documentation'},
-  {value: 'app', label: 'Application Developer', description: 'Integrate ThunderID into your app'},
-  {value: 'iam', label: 'IAM Developer', description: 'Configure and manage ThunderID'},
-  {value: 'devops', label: 'DevOps Engineer', description: 'Deploy and operate ThunderID'},
-];
-
-export function applyPersona(persona: Persona): void {
-  const html = document.documentElement;
-  if (persona === 'all') {
-    html.removeAttribute('data-persona');
-  } else {
-    html.setAttribute('data-persona', persona);
-  }
-}
+import {applyPersona, getPersonaOptions, STORAGE_KEY, type Persona} from './persona-utils';
+import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
 
 export default function PersonaDropdown(): React.ReactElement | null {
-  const [persona, setPersona] = useState<Persona>('all');
+  const {siteConfig} = useDocusaurusContext();
+  const config = siteConfig.customFields?.product as DocusaurusProductConfig;
+  const personas = getPersonaOptions(config.project.name);
+  const [persona, setPersona] = useState<Persona>(() => {
+    if (typeof window === 'undefined') return 'all';
+    const saved = localStorage.getItem(STORAGE_KEY) as Persona | null;
+    return saved && personas.some((p) => p.value === saved) ? saved : 'all';
+  });
+
+  useEffect(() => {
+    applyPersona(persona);
+  }, [persona]);
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const activeDocContext = useActiveDocContext('default');
   const isDocsSidebar = activeDocContext?.activeDoc?.sidebar === 'docsSidebar';
-
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY) as Persona | null;
-    if (saved && PERSONAS.some((p) => p.value === saved)) {
-      setPersona(saved);
-      applyPersona(saved);
-    }
-  }, []);
 
   const handleSelect = useCallback((value: Persona) => {
     setPersona(value);
@@ -86,7 +66,7 @@ export default function PersonaDropdown(): React.ReactElement | null {
     return null;
   }
 
-  const current = PERSONAS.find((p) => p.value === persona) ?? PERSONAS[0];
+  const current = personas.find((p) => p.value === persona) ?? personas[0];
 
   return (
     <div ref={containerRef} className={`persona-dropdown${isOpen ? ' persona-dropdown--open' : ''}`}>
@@ -135,7 +115,7 @@ export default function PersonaDropdown(): React.ReactElement | null {
 
       {isOpen && (
         <ul className="persona-dropdown__menu" role="listbox" aria-label="Select your role">
-          {PERSONAS.map((option) => (
+          {personas.map((option) => (
             <li key={option.value} role="none">
               <button
                 type="button"

@@ -26,7 +26,7 @@ import {useRuntimeConfig} from '#imports';
 
 const log: ReturnType<typeof createLogger> = createLogger('thunderid-ssr');
 
-const CALLBACK_PATH: string = '/api/auth/callback';
+const CALLBACK_PATH = '/api/auth/callback';
 
 /**
  * Build the OAuth redirect_uri from the incoming request origin.
@@ -78,9 +78,9 @@ export default defineNitroPlugin((nitro: {hooks: {hook: Function}}) => {
       // Enforce session secret strictness at server runtime (not at build time).
       // In production the cookie must be signed with a real secret; in dev we
       // allow a warning + fallback so local development is frictionless.
-      const sessionSecret: string | undefined = process.env['THUNDERID_SESSION_SECRET'] || privateConfig?.sessionSecret;
+      const sessionSecret: string | undefined = process.env.THUNDERID_SESSION_SECRET || privateConfig?.sessionSecret;
       if (!sessionSecret) {
-        if (process.env['NODE_ENV'] === 'production') {
+        if (process.env.NODE_ENV === 'production') {
           log.error(
             'THUNDERID_SESSION_SECRET is required in production. Set it to a secure ' +
               'random string of at least 32 characters. Refusing to initialize ThunderID client.',
@@ -120,8 +120,7 @@ export default defineNitroPlugin((nitro: {hooks: {hook: Function}}) => {
     const config: ReturnType<typeof useRuntimeConfig> = useRuntimeConfig(event);
     const publicConfig: ThunderIDNuxtConfig = config.public.thunderid as ThunderIDNuxtConfig;
     const prefs: ThunderIDNuxtConfig['preferences'] | undefined = publicConfig?.preferences;
-    const sessionSecret: string | undefined =
-      process.env['THUNDERID_SESSION_SECRET'] || config.thunderid?.sessionSecret;
+    const sessionSecret: string | undefined = process.env.THUNDERID_SESSION_SECRET || config.thunderid?.sessionSecret;
 
     const session: Awaited<ReturnType<typeof verifyAndRehydrateSession>> = await verifyAndRehydrateSession(
       event,
@@ -134,7 +133,7 @@ export default defineNitroPlugin((nitro: {hooks: {hook: Function}}) => {
     }
 
     // ── 3. Resolve org-scoped base URL ─────────────────────────────────────
-    const baseUrl: string = (publicConfig?.baseUrl ?? '') as string;
+    const baseUrl: string = publicConfig?.baseUrl ?? '';
     let resolvedBaseUrl: string = baseUrl;
 
     try {
@@ -146,7 +145,7 @@ export default defineNitroPlugin((nitro: {hooks: {hook: Function}}) => {
         const idToken: Awaited<ReturnType<ThunderIDNuxtClient['getDecodedIdToken']>> = await client.getDecodedIdToken(
           session.sessionId,
         );
-        if (idToken?.['user_org']) {
+        if (idToken?.user_org) {
           resolvedBaseUrl = `${baseUrl}/o`;
         }
       }
@@ -214,6 +213,6 @@ export default defineNitroPlugin((nitro: {hooks: {hook: Function}}) => {
       isSignedIn: true,
       user: ssrData.user,
     };
-    eventContext['__thunderidAuth'] = authState;
+    eventContext.__thunderidAuth = authState;
   });
 });

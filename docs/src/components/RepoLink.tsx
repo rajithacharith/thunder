@@ -18,8 +18,8 @@
 
 import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
-import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
 import type {ReactNode} from 'react';
+import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
 
 export default function RepoLink({path = '', children}: {path?: string; children: ReactNode}): ReactNode {
   const {siteConfig} = useDocusaurusContext();

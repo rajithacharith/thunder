@@ -101,7 +101,7 @@ describe('getBrandingPreference', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/dxlab';
+    const baseUrl = 'https://localhost:8090';
     const result: BrandingPreference = await getBrandingPreference({baseUrl});
 
     expect(fetch).toHaveBeenCalledWith(`${baseUrl}/api/server/v1/branding-preference/resolve`, {
@@ -126,7 +126,7 @@ describe('getBrandingPreference', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/dxlab';
+    const baseUrl = 'https://localhost:8090';
     await getBrandingPreference({
       baseUrl,
       locale: 'en-US',
@@ -157,7 +157,7 @@ describe('getBrandingPreference', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/dxlab';
+    const baseUrl = 'https://localhost:8090';
     await getBrandingPreference({baseUrl, fetcher: customFetcher});
 
     expect(customFetcher).toHaveBeenCalledWith(`${baseUrl}/api/server/v1/branding-preference/resolve`, {
@@ -174,7 +174,7 @@ describe('getBrandingPreference', (): void => {
       throw new Error('Custom fetcher failure');
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/dxlab';
+    const baseUrl = 'https://localhost:8090';
 
     await expect(getBrandingPreference({baseUrl, fetcher: customFetcher})).rejects.toThrow(ThunderIDAPIError);
     await expect(getBrandingPreference({baseUrl, fetcher: customFetcher})).rejects.toThrow(
@@ -207,7 +207,7 @@ describe('getBrandingPreference', (): void => {
       text: () => Promise.resolve('Branding preference not found'),
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/dxlab';
+    const baseUrl = 'https://localhost:8090';
 
     await expect(getBrandingPreference({baseUrl})).rejects.toThrow(ThunderIDAPIError);
     await expect(getBrandingPreference({baseUrl})).rejects.toThrow(
@@ -218,7 +218,7 @@ describe('getBrandingPreference', (): void => {
   it('should handle network errors', async (): Promise<void> => {
     global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
-    const baseUrl = 'https://api.asgardeo.io/t/dxlab';
+    const baseUrl = 'https://localhost:8090';
 
     await expect(getBrandingPreference({baseUrl})).rejects.toThrow(ThunderIDAPIError);
     await expect(getBrandingPreference({baseUrl})).rejects.toThrow('Network or parsing error: Network error');
@@ -227,7 +227,7 @@ describe('getBrandingPreference', (): void => {
   it('should handle non-Error rejections', async (): Promise<void> => {
     global.fetch = vi.fn().mockRejectedValue('unexpected failure');
 
-    const baseUrl = 'https://api.asgardeo.io/t/dxlab';
+    const baseUrl = 'https://localhost:8090';
 
     await expect(getBrandingPreference({baseUrl})).rejects.toThrow(ThunderIDAPIError);
     await expect(getBrandingPreference({baseUrl})).rejects.toThrow('Network or parsing error: Unknown error');
@@ -244,7 +244,7 @@ describe('getBrandingPreference', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/dxlab';
+    const baseUrl = 'https://localhost:8090';
     const customHeaders: Record<string, string> = {
       Authorization: 'Bearer token',
       'X-Custom-Header': 'custom-value',

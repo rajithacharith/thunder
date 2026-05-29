@@ -107,9 +107,13 @@ interface UseGetChildOUsReturn {
   error: Error | null;
 }
 const mockUseGetChildOrganizationUnits = vi.fn<() => UseGetChildOUsReturn>();
-vi.mock('../../../organization-units/api/useGetChildOrganizationUnits', () => ({
-  default: () => mockUseGetChildOrganizationUnits(),
-}));
+vi.mock('@thunderid/configure-organization-units', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...(actual as object),
+    useGetChildOrganizationUnits: () => mockUseGetChildOrganizationUnits(),
+  };
+});
 
 // Mock useThunderID
 const mockUseThunderID = vi.fn();

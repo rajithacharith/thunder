@@ -576,10 +576,10 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
               state,
             },
             ...(challengeTokenRef.current ? {challengeToken: challengeTokenRef.current} : {}),
-          } as any;
+          };
 
           try {
-            const continueResponse: any = await onSubmit(payload);
+            const continueResponse: any = await onSubmit!(payload);
             onFlowChange?.(continueResponse);
 
             if (continueResponse.flowStatus === EmbeddedFlowStatus.Complete) {
@@ -648,10 +648,10 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
                     state,
                   },
                   ...(challengeTokenRef.current ? {challengeToken: challengeTokenRef.current} : {}),
-                } as any;
+                };
 
                 try {
-                  const continueResponse: any = await onSubmit(payload);
+                  const continueResponse: any = await onSubmit!(payload);
                   onFlowChange?.(continueResponse);
 
                   if (continueResponse.flowStatus === EmbeddedFlowStatus.Complete) {
@@ -725,9 +725,9 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
         ...(component.id && {action: component.id}),
         ...(challengeTokenRef.current ? {challengeToken: challengeTokenRef.current} : {}),
         inputs: filteredInputs,
-      } as any;
+      };
 
-      const rawResponse: any = await onSubmit(payload);
+      const rawResponse: any = await onSubmit!(payload);
       const response: any = normalizeFlowResponseLocal(rawResponse);
       onFlowChange?.(response);
 
@@ -788,7 +788,7 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
     passkeyProcessedRef.current = true;
 
     const performPasskeyRegistration = async (): Promise<void> => {
-      const passkeyResponse: any = await handlePasskeyRegistration(passkeyState.creationOptions);
+      const passkeyResponse: any = await handlePasskeyRegistration(passkeyState.creationOptions!);
       const passkeyResponseObj: any = JSON.parse(passkeyResponse);
 
       const inputs: any = {
@@ -806,7 +806,7 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
         ...(challengeTokenRef.current ? {challengeToken: challengeTokenRef.current} : {}),
       } as any;
 
-      const nextResponse: any = await onSubmit(payload);
+      const nextResponse: any = await onSubmit!(payload);
       const processedResponse: any = normalizeFlowResponseLocal(nextResponse);
       onFlowChange?.(processedResponse);
 
@@ -930,7 +930,7 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
         clearMessages();
 
         try {
-          const rawResponse: any = await onInitialize();
+          const rawResponse: any = await onInitialize?.();
           const response: any = normalizeFlowResponseLocal(rawResponse);
 
           await setChallengeToken(response.challengeToken ?? null);

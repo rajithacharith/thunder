@@ -29,7 +29,7 @@ import ThunderIDRuntimeError from '../errors/ThunderIDRuntimeError';
  * @returns boolean - true if sensible fallbacks can be used, false otherwise
  *
  * @example
- * isRecognizedBaseUrlPattern('https://dev.asgardeo.io/t/dxlab'); // true
+ * isRecognizedBaseUrlPattern('https://localhost:8090/t/dxlab'); // true
  * isRecognizedBaseUrlPattern('https://custom.example.com/auth'); // false
  */
 const isRecognizedBaseUrlPattern = (baseUrl: string | undefined): boolean => {

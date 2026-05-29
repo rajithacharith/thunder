@@ -16,6 +16,8 @@
  * under the License.
  */
 
+import {defineNuxtPlugin, useState, useRequestEvent, useRuntimeConfig, navigateTo} from '#app';
+import type {NuxtApp} from '#app';
 import {getRedirectBasedSignUpUrl} from '@thunderid/browser';
 import type {BrandingPreference, Organization, UserProfile} from '@thunderid/node';
 import {ThunderIDPlugin, THUNDERID_KEY} from '@thunderid/vue';
@@ -24,8 +26,6 @@ import {computed} from 'vue';
 import type {ComputedRef, Ref} from 'vue';
 import ThunderIDRoot from '../components/ThunderIDRoot';
 import type {ThunderIDAuthState, ThunderIDSSRData} from '../types';
-import {defineNuxtPlugin, useState, useRequestEvent, useRuntimeConfig, navigateTo} from '#app';
-import type {NuxtApp} from '#app';
 
 /**
  * Universal Nuxt plugin (runs on both server and client) that wires up the
@@ -104,7 +104,7 @@ export default defineNuxtPlugin((nuxtApp: NuxtApp) => {
 
   if (import.meta.server) {
     const event: H3Event | undefined = useRequestEvent();
-    const ssr: ThunderIDSSRData | undefined = event?.context?.thunderid?.ssr as ThunderIDSSRData | undefined;
+    const ssr: ThunderIDSSRData | undefined = event?.context?.thunderid?.ssr;
 
     if (ssr) {
       // Seed from the rich SSR payload written by the thunderid-ssr Nitro plugin.
@@ -129,7 +129,7 @@ export default defineNuxtPlugin((nuxtApp: NuxtApp) => {
           user: ssrContext.session?.sub ? ({sub: ssrContext.session.sub} as ThunderIDAuthState['user']) : null,
         };
       } else {
-        const legacyAuth: ThunderIDAuthState | undefined = event?.context?.['__thunderidAuth'] as
+        const legacyAuth: ThunderIDAuthState | undefined = event?.context?.__thunderidAuth as
           | ThunderIDAuthState
           | undefined;
         authState.value = legacyAuth ?? {isLoading: false, isSignedIn: false, user: null};
@@ -154,7 +154,7 @@ export default defineNuxtPlugin((nuxtApp: NuxtApp) => {
 
   // ── 3. Action helpers (Nuxt-aware navigation) ───────────────────────────
   const signIn = async (options?: Record<string, unknown>): Promise<void> => {
-    const returnTo: string | undefined = typeof options?.['returnTo'] === 'string' ? options['returnTo'] : undefined;
+    const returnTo: string | undefined = typeof options?.returnTo === 'string' ? options.returnTo : undefined;
     const url: string = returnTo ? `/api/auth/signin?returnTo=${encodeURIComponent(returnTo)}` : '/api/auth/signin';
     await navigateTo(url, {external: true});
   };

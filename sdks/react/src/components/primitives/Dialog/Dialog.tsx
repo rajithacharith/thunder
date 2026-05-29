@@ -212,7 +212,7 @@ export const DialogHeading: ForwardRefExoticComponent<
     const context: DialogHookReturn = useDialogContext();
     const {theme, colorScheme}: ReturnType<typeof useTheme> = useTheme();
     const styles: Record<string, string> = useStyles(theme, colorScheme);
-    const id: string = useId();
+    const id: string | undefined = useId();
 
     useLayoutEffect((): (() => void) => {
       context.setLabelId(id);
@@ -255,7 +255,7 @@ export const DialogDescription: ForwardRefExoticComponent<
     const context: DialogHookReturn = useDialogContext();
     const {theme, colorScheme}: ReturnType<typeof useTheme> = useTheme();
     const styles: Record<string, string> = useStyles(theme, colorScheme);
-    const id: string = useId();
+    const id: string | undefined = useId();
 
     useLayoutEffect((): (() => void) => {
       context.setDescriptionId(id);

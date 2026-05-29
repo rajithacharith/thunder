@@ -91,7 +91,7 @@ const BaseSignInButton: ForwardRefExoticComponent<BaseSignInButtonProps & RefAtt
       ref: Ref<HTMLButtonElement>,
     ): ReactElement => {
       if (typeof children === 'function') {
-        return <>{children({isLoading, meta, signIn})}</>;
+        return <>{children({isLoading, meta, signIn: signIn!})}</>;
       }
 
       return (

@@ -17,6 +17,7 @@
  */
 
 import {ExtendedAuthorizeRequestUrlParams, OIDCRequestConstants} from '@thunderid/javascript';
+import SPAUtils from './SPAUtils';
 import {
   CHECK_SESSION_SIGNED_IN,
   CHECK_SESSION_SIGNED_OUT,
@@ -29,7 +30,6 @@ import {
   STATE,
   STATE_QUERY,
 } from '../constants/SPAConstants';
-import SPAUtils from './SPAUtils';
 
 interface AuthorizationInfo {
   code: string;

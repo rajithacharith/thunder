@@ -287,7 +287,7 @@ const BaseRecoveryContent: FC<BaseRecoveryProps> = ({
         ...(component.id && {action: component.id}),
         ...(challengeTokenRef.current ? {challengeToken: challengeTokenRef.current} : {}),
         inputs: filteredInputs,
-      } as any;
+      };
 
       const rawResponse: any = await onSubmit?.(payload);
       if (!rawResponse) return;

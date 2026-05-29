@@ -16,8 +16,9 @@
  * under the License.
  */
 
-import {screen, fireEvent, waitFor, renderWithProviders} from '@thunderid/test-utils';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {screen, fireEvent, waitFor, renderWithProviders, renderHook} from '@thunderid/test-utils';
+import {useTranslation} from 'react-i18next';
+import {describe, it, expect, vi, beforeEach, beforeAll} from 'vitest';
 import type {OrganizationUnit} from '../../../../models/organization-unit';
 import ManageChildOrganizationUnitSection from '../ManageChildOrganizationUnitSection';
 
@@ -50,23 +51,12 @@ vi.mock('@thunderid/logger/react', () => ({
   }),
 }));
 
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'organizationUnits:edit.childOUs.sections.manage.title': 'Manage Child Organization Units',
-        'organizationUnits:edit.childOUs.sections.manage.description': 'View and manage child organization units',
-        'organizationUnits:listing.columns.name': 'Name',
-        'organizationUnits:listing.columns.handle': 'Handle',
-        'organizationUnits:listing.columns.description': 'Description',
-      };
-      return translations[key] ?? key;
-    },
-  }),
-}));
-
 describe('ManageChildOrganizationUnitSection', () => {
+  let t: (key: string) => string;
+
+  beforeAll(() => {
+    ({t} = renderHook(() => useTranslation()).result.current);
+  });
   const mockChildOUs: OrganizationUnit[] = [
     {
       id: 'ou-child-1',
@@ -106,8 +96,8 @@ describe('ManageChildOrganizationUnitSection', () => {
       <ManageChildOrganizationUnitSection organizationUnitId="ou-parent" organizationUnitName="Engineering" />,
     );
 
-    expect(screen.getByText('Manage Child Organization Units')).toBeInTheDocument();
-    expect(screen.getByText('View and manage child organization units')).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:edit.childOUs.sections.manage.title'))).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:edit.childOUs.sections.manage.description'))).toBeInTheDocument();
   });
 
   it('should render data grid with child OUs', () => {
@@ -136,9 +126,9 @@ describe('ManageChildOrganizationUnitSection', () => {
       <ManageChildOrganizationUnitSection organizationUnitId="ou-parent" organizationUnitName="Engineering" />,
     );
 
-    expect(screen.getByText('Name')).toBeInTheDocument();
-    expect(screen.getByText('Handle')).toBeInTheDocument();
-    expect(screen.getByText('Description')).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:listing.columns.name'))).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:listing.columns.handle'))).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:listing.columns.description'))).toBeInTheDocument();
   });
 
   it('should show loading state', () => {

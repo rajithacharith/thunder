@@ -8,7 +8,7 @@ Run ThunderID instantly — no manual download or setup required.
 npx thunderid
 ```
 
-On first run this downloads the latest ThunderID release, initializes the platform, and starts it. Subsequent runs reuse
+On first run this downloads the latest ThunderID release, initializes the platform, and starts it. Later runs reuse
 the cached installation and start immediately.
 
 ## Options

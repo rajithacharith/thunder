@@ -4,192 +4,38 @@ description: Reset a forgotten password through an email recovery link as John D
 sidebar_position: 5
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
 # Account Recovery
 
 In this walkthrough, John has forgotten his Wayfinder password. He selects **Forgot password?** on the sign-in screen, receives a recovery email, opens the link, and sets a new password. <ProductName /> runs the recovery flow end-to-end and returns him to Wayfinder ready to sign in with the new credentials.
 
 :::note Prerequisites
-Complete [Setup](../#setup) before starting this walkthrough.
+Complete [Set Up Your Environment](../../try-it-out#set-up-your-environment) before starting this walkthrough.
 :::
 
 :::info Background
-[Account Recovery](../../customer-identity#account-recovery) covers the requirements story behind this use case.
+[Add Account Recovery](../../customer-identity#add-account-recovery) covers the requirements story behind this use case.
 :::
 
-## Walkthrough Setup
+## Set Up Account Recovery
 
-1. **Confirm SMTP is configured.** Recovery emails are delivered through the configured SMTP server.
+1. Recovery emails are delivered through a SMTP server. Configure a SMTP provider and apply the configuration in `repository/conf/deployment.yaml`.
 
-2. **Add a recovery flow.** Pick the tab that matches the path you used in Setup.
+    **Sample SMTP Configuration:**
 
-<Tabs>
-<TabItem value="declarative" label="Quick Start" default>
-
-The bundle already includes the `wayfinder-recovery-flow` attached to `WAYFINDER`. No further action is needed.
-
-</TabItem>
-<TabItem value="build" label="Configure It Yourself">
-
-1. Create a recovery flow through the flows API. The flow follows this sequence of steps:
-
-    - Prompts the user for a username.
-    - Identifies the user.
-    - Generates a recovery token.
-    - Sends the recovery email.
-    - Verifies the token from the email link.
-    - Lands the user on a **Set new password** screen and updates the credential.
-
-    Save the JSON below as `wayfinder-recovery-flow.json` and POST it to the flows API:
-
-    ```bash
-    curl -k -X POST https://localhost:8090/flows \
-      -H "Authorization: Bearer $TOKEN" \
-      -H "Content-Type: application/json" \
-      -d @wayfinder-recovery-flow.json
+    ```yaml
+    email:
+      smtp:
+        host: "<smtp-host>"
+        port: <smtp-port>
+        username: "<smtp-username>"
+        password: "<smtp-password>"
+        from_address: "<from-address>"
+        enable_start_tls: true
+        enable_authentication: true
     ```
+    For the full property reference and provider-specific examples, see [Configure SMTP Server](../../../../guides/guides/smtp-server/smtp-server-configuration).
 
-    <details>
-    <summary>wayfinder-recovery-flow.json</summary>
-
-    ```json
-    {
-      "handle": "wayfinder-recovery-flow",
-      "name": "Wayfinder Password Recovery Flow",
-      "flowType": "RECOVERY",
-      "nodes": [
-        { "id": "start", "type": "START", "onSuccess": "prompt_username" },
-        {
-          "id": "prompt_username",
-          "type": "PROMPT",
-          "meta": {
-            "components": [
-              { "align": "center", "type": "TEXT", "id": "text_header_username", "label": "Reset your password", "variant": "HEADING_1" },
-              { "type": "TEXT", "id": "text_subtitle_username", "label": "Enter your username and we'll email you a recovery link.", "variant": "HEADING_6" },
-              {
-                "type": "BLOCK",
-                "id": "block_username",
-                "components": [
-                  { "id": "input_username", "ref": "username", "type": "TEXT_INPUT", "label": "Username", "required": true, "placeholder": "Your username" },
-                  { "type": "ACTION", "id": "action_submit_username", "label": "Send recovery link", "variant": "PRIMARY", "eventType": "SUBMIT" }
-                ]
-              }
-            ]
-          },
-          "prompts": [
-            {
-              "inputs": [ { "ref": "input_username", "identifier": "username", "type": "TEXT_INPUT", "required": true } ],
-              "action": { "ref": "action_submit_username", "nextNode": "identify_user" }
-            }
-          ]
-        },
-        {
-          "id": "identify_user",
-          "type": "TASK_EXECUTION",
-          "executor": {
-            "name": "IdentifyingExecutor",
-            "mode": "identify",
-            "inputs": [ { "ref": "input_username", "identifier": "username", "type": "TEXT_INPUT", "required": true } ]
-          },
-          "onSuccess": "generate_recovery_token",
-          "onFailure": "email_sent_status"
-        },
-        {
-          "id": "generate_recovery_token",
-          "type": "TASK_EXECUTION",
-          "executor": { "name": "InviteExecutor", "mode": "generate" },
-          "onSuccess": "send_recovery_email"
-        },
-        {
-          "id": "send_recovery_email",
-          "type": "TASK_EXECUTION",
-          "properties": { "emailTemplate": "PASSWORD_RECOVERY" },
-          "executor": { "name": "EmailExecutor", "mode": "send" },
-          "onSuccess": "email_sent_status",
-          "onFailure": "email_sent_status"
-        },
-        {
-          "id": "email_sent_status",
-          "type": "PROMPT",
-          "meta": {
-            "components": [
-              { "align": "center", "type": "TEXT", "id": "email_sent_icon", "label": "✉️", "variant": "HEADING_1" },
-              { "align": "center", "type": "TEXT", "id": "email_sent_heading", "label": "Check your email", "variant": "HEADING_1" },
-              { "align": "center", "type": "TEXT", "id": "email_sent_message", "label": "If an account matches, we've sent a recovery link.", "variant": "HEADING_6" }
-            ]
-          },
-          "message": "Check Your Email",
-          "next": "verify_recovery_token"
-        },
-        {
-          "id": "verify_recovery_token",
-          "type": "TASK_EXECUTION",
-          "executor": {
-            "name": "InviteExecutor",
-            "mode": "verify",
-            "inputs": [ { "ref": "input_recovery_token", "identifier": "inviteToken", "type": "HIDDEN", "required": true } ]
-          },
-          "onSuccess": "prompt_new_password"
-        },
-        {
-          "id": "prompt_new_password",
-          "type": "PROMPT",
-          "meta": {
-            "components": [
-              { "align": "center", "type": "TEXT", "id": "text_header_password", "label": "Set a new password", "variant": "HEADING_1" },
-              {
-                "type": "BLOCK",
-                "id": "block_password",
-                "components": [
-                  { "id": "input_new_password", "ref": "password", "type": "PASSWORD_INPUT", "label": "New password", "required": true, "placeholder": "New password" },
-                  { "type": "ACTION", "id": "action_submit_password", "label": "Update password", "variant": "PRIMARY", "eventType": "SUBMIT" }
-                ]
-              }
-            ]
-          },
-          "prompts": [
-            {
-              "inputs": [ { "ref": "input_new_password", "identifier": "password", "type": "PASSWORD_INPUT", "required": true } ],
-              "action": { "ref": "action_submit_password", "nextNode": "set_credential" }
-            }
-          ]
-        },
-        {
-          "id": "set_credential",
-          "type": "TASK_EXECUTION",
-          "executor": { "name": "CredentialSetter" },
-          "onSuccess": "recovery_complete"
-        },
-        {
-          "id": "recovery_complete",
-          "type": "PROMPT",
-          "meta": {
-            "components": [
-              { "align": "center", "type": "TEXT", "id": "recovery_complete_icon", "label": "✅", "variant": "HEADING_1" },
-              { "align": "center", "type": "TEXT", "id": "recovery_complete_heading", "label": "Password updated", "variant": "HEADING_1" },
-              { "align": "center", "type": "TEXT", "id": "recovery_complete_message", "label": "Return to Wayfinder and sign in with your new password.", "variant": "HEADING_6" }
-            ]
-          },
-          "message": "Password Reset Successful",
-          "next": "end"
-        },
-        { "id": "end", "type": "END" }
-      ]
-    }
-    ```
-
-    </details>
-
-    See [Build a Flow](/docs/next/guides/guides/flows/build-a-flow).
-
-2. Then go to Applications → WAYFINDER → Flows and select the recovery flow you just created from the **Recovery Flow** dropdown. Save the application.
-
-    See [Manage Applications](/docs/next/guides/guides/applications/manage-applications).
-
-</TabItem>
-</Tabs>
+2. Restart <ProductName /> for the changes to take effect.
 
 ## Pick Your Pattern
 
@@ -200,7 +46,7 @@ In the redirect-based pattern, the consumer app sends the user to <ProductName /
 
 **Try the Use Case**
 
-1. Open [http://localhost:5173](http://localhost:5173) and select **Sign in**. The browser navigates to <ProductName />.
+1. Open <WayFinderSampleUrl /> and select **Sign in**. The browser navigates to <ProductName />.
 2. On the <ProductName /> sign-in page, select **Forgot password?**.
 3. Enter `john.doe` as the username and submit. <ProductName /> runs the recovery flow and sends a recovery email to `john.doe@example.com`.
 4. Open the email in John's inbox and open the link inside.
@@ -210,15 +56,20 @@ In the redirect-based pattern, the consumer app sends the user to <ProductName /
 </details>
 
 <details>
-  <summary>App-native step-by-step</summary>
+  <summary>App-native step-by-step (verbose flow)</summary>
 
 Coming soon. See the [App-native pattern](../../solution-patterns#app-native) for what to expect.
 
 </details>
 
 <details>
-  <summary>App-native managed</summary>
+  <summary>App-native managed (non-verbose flow)</summary>
 
 Coming soon. See the [App-native pattern](../../solution-patterns#app-native) for what to expect.
 
 </details>
+
+## Going Deeper
+
+- Want to understand the steps the recovery flow takes? See [Flows](../../identity-concepts#flows) in the Identity Concepts.
+- Prefer to build the recovery flow manually? See [Build the Account Recovery Flow](../../configure-it-yourself#build-the-account-recovery-flow) in Configure It Yourself.

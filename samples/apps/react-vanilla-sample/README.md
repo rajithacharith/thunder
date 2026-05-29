@@ -1,46 +1,49 @@
 # React Vanilla Sample Application
 
-This sample React application demonstrates integrating authentication, registration, and basic self-service profile management into your application using the app-native flow orchestration API.
-
-## Supported Authentication Methods
-
-This sample supports the following authentication and registration methods:
-
-- **Basic authentication** — username and password
-- **Social login** — Google and GitHub OAuth
-- **SMS OTP** — one-time password via SMS
-- **Passkeys** — FIDO2/WebAuthn passkey authentication
-
-To try these out, configure the corresponding flows in your ThunderID instance and assign them to your application. The UI automatically adapts to the options returned by the flow.
+A sample React application that demonstrates app-native flow orchestration with ThunderID — covering login, registration, and basic profile management.
 
 ## Prerequisites
 
 - Node.js 20+
-- A running ThunderID server instance (default: `https://localhost:8090`)
-- An application registered in the server
+- A running ThunderID server (default: `https://localhost:8090`)
 
-## Quick Start (Pre-Built Application)
+## Quick Start
 
-If you have the pre-built distribution, you can run it directly:
+### 1. Pick a Scenario
 
-### 1. Import ThunderID Resources
+Two ready-to-use configurations are provided under `thunderid-config/`:
 
-The sample ships with a `thunderid-config/` directory containing a declarative YAML file that creates the required user type and application (referencing the default OU by handle) in one step.
+| Folder | What it sets up |
+|--------|-----------------|
+| `basic/` | Username and password login — simplest way to get started |
+| `multi-auth/` | Username/password + Google, GitHub, SMS OTP, and Passkey |
 
-1. Open `thunderid-config/thunderid.env` and set your preferred credentials:
+### 2. Import ThunderID Resources
 
-    ```bash
-    SAMPLE_APP_CLIENT_ID=sample_app_client
-    SAMPLE_APP_REDIRECT_URIS=["https://localhost:3000"]
-    ```
+Open the `.env` file in your chosen folder and fill in your values:
 
-2. Import via the ThunderID Console ([https://localhost:8090/console](https://localhost:8090/console)):
-   - **First-time login**: a welcome screen appears with an **Open** button to upload the YAML file directly.
-   - **Later**: access the same welcome screen from the user profile menu in the top-right corner of the console.
+**`basic/thunderid.env`** — only two values needed:
+```
+SAMPLE_APP_CLIENT_ID=sample_app_client
+SAMPLE_APP_REDIRECT_URIS=["https://localhost:3000"]
+```
 
-This creates the `Customer` user type and the `Sample App` application under the default organization unit. The application ID is `019e3a5c-0500-7f3e-a66e-66fc7918c3a7`.
+**`multi-auth/thunderid.env`** — also requires social IdP and SMS credentials:
+```
+SAMPLE_APP_GOOGLE_CLIENT_ID=
+SAMPLE_APP_GOOGLE_CLIENT_SECRET=
+SAMPLE_APP_GITHUB_CLIENT_ID=
+SAMPLE_APP_GITHUB_CLIENT_SECRET=
+SAMPLE_APP_SMS_SENDER_ID=
+```
 
-### 2. Configure the Application
+Then import via the ThunderID Console (`https://localhost:8090/console`):
+- **First time**: a welcome screen appears with an **Open** button to upload the YAML.
+- **Later**: access the same screen from the user profile menu (top-right).
+
+This creates the `Customer` user type and `Sample App` application (ID: `019e3a5c-0500-7f3e-a66e-66fc7918c3a7`) in the default organization unit.
+
+### 3. Configure the Application
 
 Open `public/runtime.json` and set the application ID:
 
@@ -51,139 +54,40 @@ Open `public/runtime.json` and set the application ID:
 }
 ```
 
-### 3. Start the Application
+### 4. Start the Application
 
-**Linux/macOS:**
+**Pre-built (from distribution):**
+
 ```bash
+# Linux/macOS
 sh start.sh
-```
 
-**Windows:**
-```powershell
+# Windows
 .\start.ps1
 ```
 
-### 4. Access the Application
-
-Open your browser and navigate to [https://localhost:3000](https://localhost:3000)
-
-## Configuration
-
-Open `public/runtime.json` and set your values:
-
-```json
-{
-    "flowEndpoint": "https://localhost:8090/flow",
-    "applicationID": "{your-application-id}"
-}
-```
-
-| Property | Description |
-|----------|-------------|
-| `flowEndpoint` | Flow orchestration endpoint |
-| `applicationID` | The application ID registered in the server |
-
-### Passkey Configuration
-
-WebAuthn requires the server to validate that the credential was created from a trusted origin. By default, ThunderID only allows `https://localhost:8090` (the server itself). When running this sample app at `https://localhost:3000`, you must add that origin to the allowed list in the server's `deployment.yaml`:
-
-```yaml
-passkey:
-  allowed_origins:
-    - "https://localhost:8090"
-    - "https://localhost:3000"
-```
-
-If the sample is hosted at a different address, add that origin instead. Without this, passkey registration will fail with an origin validation error.
-
-### Invite Flow Configuration
-
-If you use invite-based flows such as password recovery, set `inviteBaseURL` on the `InviteExecutor` node that runs in `generate` mode in the flow definition.
-
-For this sample, it should point to the frontend invite page, for example:
-
-```text
-https://localhost:3000/invite
-```
-
-Without this, the generated invite link will fall back to the server's default Gate URL instead of this sample app.
-
-## Quick Start
-
-### 1. Install Dependencies
+**From source:**
 
 ```bash
 npm install
-```
-
-### 2. Set Up SSL Certificates
-
-Copy the SSL certificates from your server distribution to the project root:
-
-```bash
-# From distribution
-cp /path/to/thunderid/repository/resources/security/server.key .
-cp /path/to/thunderid/repository/resources/security/server.cert .
-
-# Or from build output (if building from source)
-cp ../../target/out/.cert/server.key .
-cp ../../target/out/.cert/server.cert .
-```
-
-Or generate self-signed certificates:
-
-```bash
-openssl req -nodes -new -x509 -keyout server.key -out server.cert
-```
-
-### 3. Start Development Server
-
-```bash
 npm run dev
 ```
 
-The application will be available at [https://localhost:3000](https://localhost:3000).
+> SSL certificates are required. Copy `server.key` and `server.cert` from your ThunderID distribution, or generate self-signed ones:
+> ```bash
+> openssl req -nodes -new -x509 -keyout server.key -out server.cert
+> ```
 
-## Additional Info
+### 5. Open the App
 
-### UI Rendering and Action Ref Convention
+[https://localhost:3000](https://localhost:3000)
 
-Action button labels and styles are driven by the `ref` value of each action. For actions with no special keyword, the `ref` value itself is used as the button label.
+## Further Reading
 
-The following keywords in the `ref` trigger special rendering:
-
-| Keyword in `ref` | Rendered as |
-|------------------|-------------|
-| `basic_auth` | Username and password form |
-| `google` | "Continue with Google" with Google icon |
-| `github` | "Continue with GitHub" with GitHub icon |
-| `sms` or `mobile` | "Continue with SMS OTP" |
-| `passkey` | "Sign in with Passkey" with fingerprint icon |
-| `signin` or `sign_in` | "Sign In" (submit button label) |
-| `signup` or `sign_up` | "Create Account" (submit button label) |
-
-## Available Scripts
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server with hot reloading |
-| `npm run build` | Build for production (outputs to `dist/`) |
-| `npm run preview` | Preview the production build locally |
-| `npm run lint` | Run ESLint to check code quality |
-| `npm start` | Build and preview the production application |
-
-## Hosting Options
-
-### Using the Provided Node Server
-
-```bash
-npm install && npm run build
-cd server && npm start
-```
-
-### Using Your Own Web Server
-
-Host the contents of the `dist/` folder on any HTTPS-capable web server. Ensure `runtime.json` is served and accessible for configuration.
+See [docs/REFERENCE.md](docs/REFERENCE.md) for:
+- Detailed config reference (`runtime.json`, Passkey, Invite flows)
+- UI rendering and action `ref` conventions
+- Hosting options and available scripts
 
 ## License
 

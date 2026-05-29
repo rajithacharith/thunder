@@ -33,13 +33,13 @@ import type {ThunderIDNuxtConfig, ThunderIDSessionPayload, ThunderIDSSRData} fro
 
 type ViteUserConfig = Parameters<Parameters<typeof extendViteConfig>[0]>[0];
 
-const PACKAGE_NAME: string = '@thunderid/nuxt';
+const PACKAGE_NAME = '@thunderid/nuxt';
 
-type ServerRoute = {
+interface ServerRoute {
   handler: string;
   method?: 'patch' | 'post';
   route: string;
-};
+}
 
 export default defineNuxtModule<ThunderIDNuxtConfig>({
   defaults: {},
@@ -54,13 +54,13 @@ export default defineNuxtModule<ThunderIDNuxtConfig>({
     const publicConfig: ThunderIDNuxtConfig = defu(
       // Layer 1: environment variables — only win when actually set
       {
-        afterSignInUrl: process.env['NUXT_PUBLIC_THUNDERID_AFTER_SIGN_IN_URL'],
-        afterSignOutUrl: process.env['NUXT_PUBLIC_THUNDERID_AFTER_SIGN_OUT_URL'],
-        applicationId: process.env['NUXT_PUBLIC_THUNDERID_APPLICATION_ID'],
-        baseUrl: process.env['NUXT_PUBLIC_THUNDERID_BASE_URL'],
-        clientId: process.env['NUXT_PUBLIC_THUNDERID_CLIENT_ID'],
-        signInUrl: process.env['NUXT_PUBLIC_THUNDERID_SIGN_IN_URL'],
-        signUpUrl: process.env['NUXT_PUBLIC_THUNDERID_SIGN_UP_URL'],
+        afterSignInUrl: process.env.NUXT_PUBLIC_THUNDERID_AFTER_SIGN_IN_URL,
+        afterSignOutUrl: process.env.NUXT_PUBLIC_THUNDERID_AFTER_SIGN_OUT_URL,
+        applicationId: process.env.NUXT_PUBLIC_THUNDERID_APPLICATION_ID,
+        baseUrl: process.env.NUXT_PUBLIC_THUNDERID_BASE_URL,
+        clientId: process.env.NUXT_PUBLIC_THUNDERID_CLIENT_ID,
+        signInUrl: process.env.NUXT_PUBLIC_THUNDERID_SIGN_IN_URL,
+        signUpUrl: process.env.NUXT_PUBLIC_THUNDERID_SIGN_UP_URL,
       },
       // Layer 2: nuxt.config.ts options
       userOptions,
@@ -73,8 +73,8 @@ export default defineNuxtModule<ThunderIDNuxtConfig>({
     );
 
     const privateConfig: {clientSecret: string; sessionSecret: string} = {
-      clientSecret: process.env['THUNDERID_CLIENT_SECRET'] || userOptions.clientSecret || '',
-      sessionSecret: process.env['THUNDERID_SESSION_SECRET'] || userOptions.sessionSecret || '',
+      clientSecret: process.env.THUNDERID_CLIENT_SECRET || userOptions.clientSecret || '',
+      sessionSecret: process.env.THUNDERID_SESSION_SECRET || userOptions.sessionSecret || '',
     };
 
     // Config validation deliberately does not happen here. `setup()` runs during
@@ -123,15 +123,15 @@ export default defineNuxtModule<ThunderIDNuxtConfig>({
 
     // Ensure clientSecret never leaks to public config
     const publicThunderID: Record<string, unknown> = options.runtimeConfig.public.thunderid as Record<string, unknown>;
-    if (publicThunderID?.['clientSecret']) {
-      delete publicThunderID['clientSecret'];
+    if (publicThunderID?.clientSecret) {
+      delete publicThunderID.clientSecret;
       // eslint-disable-next-line no-console
       console.error(
         `[${PACKAGE_NAME}] SECURITY: clientSecret found in public config. Removed. Use THUNDERID_CLIENT_SECRET env var.`,
       );
     }
-    if (publicThunderID?.['sessionSecret']) {
-      delete publicThunderID['sessionSecret'];
+    if (publicThunderID?.sessionSecret) {
+      delete publicThunderID.sessionSecret;
       // eslint-disable-next-line no-console
       console.error(
         `[${PACKAGE_NAME}] SECURITY: sessionSecret found in public config. Removed. Use THUNDERID_SESSION_SECRET env var.`,
@@ -317,7 +317,7 @@ export default defineNuxtModule<ThunderIDNuxtConfig>({
           'fast-sha256',
         ];
 
-        const existingInclude: string[] = (viteConfig.optimizeDeps?.include as string[]) ?? [];
+        const existingInclude: string[] = viteConfig.optimizeDeps?.include! ?? [];
         const newDeps: string[] = deps.filter((dep: string) => !existingInclude.includes(dep));
 
         Object.assign(viteConfig, {

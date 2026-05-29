@@ -24,17 +24,17 @@ vi.mock('../logger', () => ({default: {warn: vi.fn()}}));
 
 describe('isRecognizedBaseUrlPattern', () => {
   it('should return true for recognized base URL pattern', () => {
-    expect(isRecognizedBaseUrlPattern('https://dev.asgardeo.io/t/dxlab')).toBe(true);
+    expect(isRecognizedBaseUrlPattern('https://localhost:8090/t/dxlab')).toBe(true);
     expect(isRecognizedBaseUrlPattern('https://example.com/t/org')).toBe(true);
     expect(isRecognizedBaseUrlPattern('https://foo.com/t/bar/')).toBe(true);
     expect(isRecognizedBaseUrlPattern('https://foo.com/t/bar/extra')).toBe(true);
   });
 
   it('should return false for unrecognized base URL pattern', () => {
-    expect(isRecognizedBaseUrlPattern('https://dev.asgardeo.io/tenant/dxlab')).toBe(false);
-    expect(isRecognizedBaseUrlPattern('https://dev.asgardeo.io/')).toBe(false);
-    expect(isRecognizedBaseUrlPattern('https://dev.asgardeo.io/t')).toBe(false);
-    expect(isRecognizedBaseUrlPattern('https://dev.asgardeo.io/other/path')).toBe(false);
+    expect(isRecognizedBaseUrlPattern('https://localhost:8090/tenant/dxlab')).toBe(false);
+    expect(isRecognizedBaseUrlPattern('https://localhost:8090/')).toBe(false);
+    expect(isRecognizedBaseUrlPattern('https://localhost:8090/t')).toBe(false);
+    expect(isRecognizedBaseUrlPattern('https://localhost:8090/other/path')).toBe(false);
   });
 
   it('should throw ThunderIDRuntimeError if baseUrl is undefined', () => {

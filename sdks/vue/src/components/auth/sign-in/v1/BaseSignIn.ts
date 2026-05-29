@@ -228,7 +228,7 @@ const BaseSignIn: Component = defineComponent({
             const {code, state} = event.data;
             if (code && state) {
               const payload: EmbeddedSignInFlowHandleRequestPayload = {
-                flowId: currentFlow.value.flowId,
+                flowId: currentFlow.value!.flowId,
                 selectedAuthenticator: {
                   authenticatorId: responseAuth.authenticatorId,
                   params: {code, state},
@@ -268,7 +268,7 @@ const BaseSignIn: Component = defineComponent({
                   }
                   if (code && state) {
                     const payload: EmbeddedSignInFlowHandleRequestPayload = {
-                      flowId: currentFlow.value.flowId,
+                      flowId: currentFlow.value!.flowId,
                       selectedAuthenticator: {
                         authenticatorId: responseAuth.authenticatorId,
                         params: {code, state},
@@ -834,7 +834,7 @@ const BaseSignIn: Component = defineComponent({
                     onSubmit: (e: Event) => {
                       e.preventDefault();
                       const fd: Record<string, string> = {};
-                      currentAuthenticator.value.metadata?.params?.forEach((p: any) => {
+                      currentAuthenticator.value?.metadata?.params?.forEach((p: any) => {
                         fd[p.param] = formValues.value[p.param] || '';
                       });
                       handleSubmit(fd);
@@ -842,7 +842,7 @@ const BaseSignIn: Component = defineComponent({
                   },
                   [
                     createSignInOptionFromAuthenticator(
-                      currentAuthenticator.value,
+                      currentAuthenticator.value!,
                       formValues.value,
                       touchedFields.value,
                       isLoading(),

@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {type Component, defineComponent, onMounted} from 'vue';
 import {navigateTo} from '#app';
+import {type Component, defineComponent, onMounted} from 'vue';
 
 const error = (msg: string, ...args: unknown[]): void => {
   // eslint-disable-next-line no-console
@@ -71,7 +71,7 @@ const Callback: Component = defineComponent({
 
     onMounted(() => {
       // All browser APIs are safe here — onMounted only runs on the client.
-      let returnPath: string = '/';
+      let returnPath = '/';
 
       try {
         // 1. Extract OAuth parameters from the current URL.
@@ -116,7 +116,7 @@ const Callback: Component = defineComponent({
         returnPath = path || '/';
 
         // 3. Validate state freshness (5 minute window).
-        const MAX_STATE_AGE: number = 300_000;
+        const MAX_STATE_AGE = 300_000;
         if (Date.now() - timestamp > MAX_STATE_AGE) {
           sessionStorage.removeItem(`thunderid_oauth_${state}`);
           throw new Error('OAuth state expired - please try again');

@@ -18,7 +18,7 @@
 
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import {Box, Container, Typography, useTheme} from '@wso2/oxygen-ui';
-import React, {JSX} from 'react';
+import {JSX} from 'react';
 import useIsDarkMode from '../../hooks/useIsDarkMode';
 import useScrollAnimation from '../../hooks/useScrollAnimation';
 import {DocusaurusProductConfig} from '@site/docusaurus.product.config';

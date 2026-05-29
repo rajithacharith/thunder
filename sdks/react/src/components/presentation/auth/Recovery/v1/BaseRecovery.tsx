@@ -252,7 +252,7 @@ const BaseRecoveryContent: FC<PropsWithChildren<BaseRecoveryProps>> = ({
         flowType: (currentFlow as any).flowType || 'RECOVERY',
         inputs: filteredInputs,
         ...(component.id && {actionId: component.id as string}),
-      } as any;
+      };
 
       const response: any = await onSubmit?.(payload);
       if (!response) return;
@@ -347,7 +347,7 @@ const BaseRecoveryContent: FC<PropsWithChildren<BaseRecoveryProps>> = ({
         clearMessages();
 
         try {
-          const response: any = await onInitialize();
+          const response: any = await onInitialize?.();
           setCurrentFlow(response);
           setIsFlowInitialized(true);
           onFlowChange?.(response);

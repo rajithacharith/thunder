@@ -6,7 +6,7 @@ description: Typed storage abstraction for auth config, session, and OIDC metada
 
 # `StorageManager`
 
-`StorageManager` is the typed storage layer used internally by `ThunderIDJavaScriptClient`. It namespaces all stored data under a storage key derived from the client ID and instance ID, and provides typed getters and setters for each data category: configuration, OIDC provider metadata, session data, and temporary (PKCE/state) data.
+`StorageManager` is the typed storage layer used internally by `ThunderIDJavaScriptClient`. It namespaces all stored data under a storage key derived from the client ID and instance ID. The storage layer provides typed methods for each data category: configuration, OIDC provider metadata, session data, and temporary (PKCE/state) data.
 
 Use it directly only when building platform adapters that need fine-grained control over stored auth state.
 

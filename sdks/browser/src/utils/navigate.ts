@@ -36,7 +36,7 @@
  * navigate('/search?q=thunderid');
  *
  * // Cross-origin navigation (full page load)
- * navigate('https://accounts.asgardeo.io/t/dxlab/accountrecoveryendpoint/register.do');
+ * navigate('https://localhost:8090/accountrecoveryendpoint/register.do');
  * ```
  */
 const navigate = (url: string): void => {

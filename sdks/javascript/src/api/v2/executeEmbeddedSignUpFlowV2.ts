@@ -74,7 +74,7 @@ const executeEmbeddedSignUpFlowV2 = async ({
       Accept: 'application/json',
       'Content-Type': 'application/json',
       ...requestConfig.headers,
-    },
+    } as HeadersInit,
     method: requestConfig.method || 'POST',
   });
 
@@ -107,7 +107,7 @@ const executeEmbeddedSignUpFlowV2 = async ({
           Accept: 'application/json',
           'Content-Type': 'application/json',
           ...requestConfig.headers,
-        },
+        } as HeadersInit,
         method: 'POST',
       });
 

@@ -51,7 +51,7 @@ export interface GetMeOrganizationsConfig extends Omit<BaseGetMeOrganizationsCon
  * // Using default ThunderID SPA client httpClient
  * try {
  *   const organizations = await getMeOrganizations({
- *     baseUrl: "https://api.asgardeo.io/t/<ORGANIZATION>",
+ *     baseUrl: "https://localhost:8090",
  *     after: "",
  *     before: "",
  *     filter: "",
@@ -71,7 +71,7 @@ export interface GetMeOrganizationsConfig extends Omit<BaseGetMeOrganizationsCon
  * // Using custom fetcher
  * try {
  *   const organizations = await getMeOrganizations({
- *     baseUrl: "https://api.asgardeo.io/t/<ORGANIZATION>",
+ *     baseUrl: "https://localhost:8090",
  *     after: "",
  *     before: "",
  *     filter: "",

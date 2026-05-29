@@ -27,6 +27,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/attributecache"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/resourceindicators"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
@@ -100,13 +101,18 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "RefreshTokenGrantHandler"))
 
 	// Validate refresh token using token validator
-	refreshTokenClaims, err := h.tokenValidator.ValidateRefreshToken(tokenRequest.RefreshToken, tokenRequest.ClientID)
+	refreshTokenClaims, err := h.tokenValidator.ValidateRefreshToken(
+		ctx, tokenRequest.RefreshToken, tokenRequest.ClientID)
 	if err != nil {
 		logger.Debug("Failed to validate refresh token", log.Error(err))
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorInvalidGrant,
 			ErrorDescription: "Invalid refresh token",
 		}
+	}
+
+	if errResp := dpop.VerifyProofBinding(ctx, refreshTokenClaims.DPoPJkt, "refresh token"); errResp != nil {
+		return nil, errResp
 	}
 
 	newTokenScopes, scopeErr := h.validateAndApplyScopes(tokenRequest.Scope, refreshTokenClaims.Scopes, logger)
@@ -180,8 +186,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 		attrs = cacheEntry.Attributes
 	}
 
-	accessToken, err := h.tokenBuilder.BuildAccessToken(&tokenservice.AccessTokenBuildContext{
-		Context:          ctx,
+	accessToken, err := h.tokenBuilder.BuildAccessToken(ctx, &tokenservice.AccessTokenBuildContext{
 		Subject:          refreshTokenClaims.Sub,
 		Audiences:        audiences,
 		ClientID:         tokenRequest.ClientID,
@@ -192,6 +197,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 		OAuthApp:         oauthApp,
 		ClaimsRequest:    refreshTokenClaims.ClaimsRequest,
 		ClaimsLocales:    refreshTokenClaims.ClaimsLocales,
+		DPoPJkt:          dpop.GetJkt(ctx),
 	})
 	if err != nil {
 		logger.Error("Failed to generate access token", log.Error(err))
@@ -208,8 +214,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 
 	// Generate ID token if 'openid' scope is present
 	if slices.Contains(newTokenScopes, constants.ScopeOpenID) {
-		idToken, idErr := h.tokenBuilder.BuildIDToken(&tokenservice.IDTokenBuildContext{
-			Context:        ctx,
+		idToken, idErr := h.tokenBuilder.BuildIDToken(ctx, &tokenservice.IDTokenBuildContext{
 			Subject:        refreshTokenClaims.Sub,
 			Audience:       tokenRequest.ClientID,
 			Scopes:         newTokenScopes,
@@ -273,7 +278,6 @@ func (h *refreshTokenGrantHandler) IssueRefreshToken(
 	attributeCacheID string,
 ) *model.ErrorResponse {
 	tokenCtx := &tokenservice.RefreshTokenBuildContext{
-		Context:              ctx,
 		ClientID:             oauthApp.ClientID,
 		Scopes:               scopes,
 		GrantType:            grantType,
@@ -283,10 +287,11 @@ func (h *refreshTokenGrantHandler) IssueRefreshToken(
 		OAuthApp:             oauthApp,
 		ClaimsRequest:        claimsRequest,
 		ClaimsLocales:        claimsLocales,
+		DPoPJkt:              dpopJktForRefresh(ctx, oauthApp),
 	}
 
 	// Build refresh token using token builder
-	refreshToken, err := h.tokenBuilder.BuildRefreshToken(tokenCtx)
+	refreshToken, err := h.tokenBuilder.BuildRefreshToken(ctx, tokenCtx)
 	if err != nil {
 		return &model.ErrorResponse{
 			Error:            constants.ErrorServerError,
@@ -299,6 +304,15 @@ func (h *refreshTokenGrantHandler) IssueRefreshToken(
 	}
 	tokenResponse.RefreshToken = *refreshToken
 	return nil
+}
+
+// dpopJktForRefresh returns the DPoP jkt to bind onto a newly issued refresh token.
+// Confidential clients receive unbound refresh tokens.
+func dpopJktForRefresh(ctx context.Context, oauthApp *inboundmodel.OAuthClient) string {
+	if oauthApp == nil || !oauthApp.PublicClient {
+		return ""
+	}
+	return dpop.GetJkt(ctx)
 }
 
 // extendCacheTTL extends the attribute cache TTL when the desired lifetime exceeds what is already

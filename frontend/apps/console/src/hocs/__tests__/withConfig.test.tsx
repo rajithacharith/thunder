@@ -62,6 +62,7 @@ vi.mock('@thunderid/react', () => ({
     signInOptions,
     preferences,
     sendCookiesInRequests,
+    discovery,
     /* eslint-enable react/require-default-props */
   }: {
     children: React.ReactNode;
@@ -72,6 +73,7 @@ vi.mock('@thunderid/react', () => ({
     signInOptions?: Record<string, string>;
     preferences?: Record<string, unknown>;
     sendCookiesInRequests?: boolean;
+    discovery?: Record<string, unknown>;
   }) => {
     capturedProviderProps = {
       baseUrl,
@@ -81,6 +83,7 @@ vi.mock('@thunderid/react', () => ({
       signInOptions,
       preferences,
       sendCookiesInRequests,
+      discovery,
     };
     return (
       <div
@@ -339,6 +342,136 @@ describe('withConfig (console)', () => {
 
       render(<WithConfigComponent />);
       expect(capturedProviderProps.sendCookiesInRequests).toBe(false);
+    });
+  });
+
+  // --- config.sdk overrides ---
+
+  describe('sdk overrides', () => {
+    it('passes wellKnown.enabled=true by default when no sdk.discovery override', () => {
+      mockGetClientUrl.mockReturnValue('https://client.example.com');
+
+      render(<WithConfigComponent />);
+      expect(capturedProviderProps.discovery).toEqual({wellKnown: {enabled: true}});
+    });
+
+    it('overrides discovery with config.sdk.discovery', () => {
+      mockConfig.sdk = {discovery: {wellKnown: {enabled: false}}};
+      mockGetClientUrl.mockReturnValue('https://client.example.com');
+
+      render(<WithConfigComponent />);
+      expect(capturedProviderProps.discovery).toEqual({wellKnown: {enabled: false}});
+    });
+
+    it('overrides sendCookiesInRequests with config.sdk.sendCookiesInRequests', () => {
+      mockConfig.sdk = {sendCookiesInRequests: false};
+      mockGetClientUrl.mockReturnValue('https://client.example.com');
+
+      render(<WithConfigComponent />);
+      expect(capturedProviderProps.sendCookiesInRequests).toBe(false);
+    });
+
+    it('config.sdk.sendCookiesInRequests=true overrides generic OIDC default of false', () => {
+      mockConfig.trusted_issuer = {hostname: 'tenant.auth0.com', port: 443, http_only: false, type: 'generic'};
+      mockConfig.sdk = {sendCookiesInRequests: true};
+      mockIsTrustedIssuerGenericOidc.mockReturnValue(true);
+      mockGetServerUrl.mockReturnValue('https://tenant.example.com:9443');
+      mockGetTrustedIssuerUrl.mockReturnValue('https://tenant.auth0.com');
+      mockGetTrustedIssuerClientId.mockReturnValue('AUTH0_CLIENT_ID');
+      mockGetClientUrl.mockReturnValue('https://tenant.example.com:9443/console');
+
+      render(<WithConfigComponent />);
+      expect(capturedProviderProps.sendCookiesInRequests).toBe(true);
+    });
+
+    it('merges config.sdk.signInOptions on top of trusted_issuer resource param', () => {
+      mockConfig.trusted_issuer = {hostname: 'localhost', port: 8090, http_only: true};
+      mockConfig.sdk = {signInOptions: {prompt: 'login', acr_values: 'urn:example:silver'}};
+      mockGetServerUrl.mockReturnValue('http://localhost:9443');
+      mockGetTrustedIssuerUrl.mockReturnValue('http://localhost:8090');
+      mockGetTrustedIssuerClientId.mockReturnValue('FEDERATED_CONSOLE');
+      mockGetClientUrl.mockReturnValue('http://localhost:9443/console');
+
+      render(<WithConfigComponent />);
+      expect(capturedProviderProps.signInOptions).toEqual({
+        resource: 'http://localhost:9443',
+        prompt: 'login',
+        acr_values: 'urn:example:silver',
+      });
+    });
+
+    it('sets signInOptions from config.sdk.signInOptions when no trusted_issuer', () => {
+      mockConfig.sdk = {signInOptions: {prompt: 'consent'}};
+      mockGetClientUrl.mockReturnValue('https://client.example.com');
+
+      render(<WithConfigComponent />);
+      expect(capturedProviderProps.signInOptions).toEqual({prompt: 'consent'});
+    });
+
+    it('merges config.sdk.preferences on top of generic OIDC computed preferences', () => {
+      mockConfig.trusted_issuer = {hostname: 'tenant.auth0.com', port: 443, http_only: false, type: 'generic'};
+      mockConfig.sdk = {preferences: {resolveFromMeta: true}};
+      mockIsTrustedIssuerGenericOidc.mockReturnValue(true);
+      mockGetServerUrl.mockReturnValue('https://tenant.example.com:9443');
+      mockGetTrustedIssuerUrl.mockReturnValue('https://tenant.auth0.com');
+      mockGetTrustedIssuerClientId.mockReturnValue('AUTH0_CLIENT_ID');
+      mockGetClientUrl.mockReturnValue('https://tenant.example.com:9443/console');
+
+      render(<WithConfigComponent />);
+      expect(capturedProviderProps.preferences).toEqual({
+        resolveFromMeta: true,
+        theme: {inheritFromBranding: false},
+      });
+    });
+
+    it('sets preferences from config.sdk.preferences when no generic OIDC', () => {
+      mockConfig.sdk = {preferences: {resolveFromMeta: false, theme: {inheritFromBranding: false}}};
+      mockGetClientUrl.mockReturnValue('https://client.example.com');
+
+      render(<WithConfigComponent />);
+      expect(capturedProviderProps.preferences).toEqual({
+        resolveFromMeta: false,
+        theme: {inheritFromBranding: false},
+      });
+    });
+
+    it('overrides baseUrl with config.sdk.baseUrl', () => {
+      mockConfig.sdk = {baseUrl: 'https://override.example.com'};
+      mockGetTrustedIssuerUrl.mockReturnValue('https://trusted-issuer.example.com');
+      mockGetTrustedIssuerClientId.mockReturnValue('client-id');
+      mockGetClientUrl.mockReturnValue('https://client.example.com');
+
+      render(<WithConfigComponent />);
+      expect(capturedProviderProps.baseUrl).toBe('https://override.example.com');
+    });
+
+    it('overrides clientId with config.sdk.clientId', () => {
+      mockConfig.sdk = {clientId: 'SDK_OVERRIDE_CLIENT'};
+      mockGetTrustedIssuerUrl.mockReturnValue('https://trusted-issuer.example.com');
+      mockGetTrustedIssuerClientId.mockReturnValue('TRUSTED_CLIENT');
+      mockGetClientUrl.mockReturnValue('https://client.example.com');
+
+      render(<WithConfigComponent />);
+      expect(capturedProviderProps.clientId).toBe('SDK_OVERRIDE_CLIENT');
+    });
+
+    it('overrides afterSignInUrl with config.sdk.afterSignInUrl', () => {
+      mockConfig.sdk = {afterSignInUrl: 'https://override-redirect.example.com'};
+      mockGetClientUrl.mockReturnValue('https://client.example.com');
+
+      render(<WithConfigComponent />);
+      expect(capturedProviderProps.afterSignInUrl).toBe('https://override-redirect.example.com');
+    });
+
+    it('overrides scopes with config.sdk.scopes', () => {
+      mockConfig.sdk = {scopes: ['openid', 'email', 'custom']};
+      mockGetTrustedIssuerScopes.mockReturnValue(['openid', 'profile']);
+      mockGetTrustedIssuerUrl.mockReturnValue('https://trusted-issuer.example.com');
+      mockGetTrustedIssuerClientId.mockReturnValue('client-id');
+      mockGetClientUrl.mockReturnValue('https://client.example.com');
+
+      render(<WithConfigComponent />);
+      expect(capturedProviderProps.scopes).toEqual(['openid', 'email', 'custom']);
     });
   });
 });

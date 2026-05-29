@@ -16,29 +16,18 @@
  * under the License.
  */
 
-import {screen, fireEvent, waitFor, renderWithProviders} from '@thunderid/test-utils';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {screen, fireEvent, waitFor, renderWithProviders, renderHook} from '@thunderid/test-utils';
+import {useTranslation} from 'react-i18next';
+import {describe, it, expect, vi, beforeEach, beforeAll} from 'vitest';
 import type {OrganizationUnit} from '../../../../models/organization-unit';
 import QuickCopySection from '../QuickCopySection';
 
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'organizationUnits:edit.general.sections.quickCopy.title': 'Quick Copy',
-        'organizationUnits:edit.general.sections.quickCopy.description': 'Copy organization unit identifiers',
-        'organizationUnits:edit.general.handle.label': 'Handle',
-        'organizationUnits:edit.general.ou.id.label': 'Organization Unit ID',
-        'common:actions.copy': 'Copy',
-        'common:actions.copied': 'Copied',
-      };
-      return translations[key] ?? key;
-    },
-  }),
-}));
-
 describe('QuickCopySection', () => {
+  let t: (key: string) => string;
+
+  beforeAll(() => {
+    ({t} = renderHook(() => useTranslation()).result.current);
+  });
   const mockOrganizationUnit: OrganizationUnit = {
     id: 'ou-123',
     handle: 'engineering',
@@ -62,8 +51,8 @@ describe('QuickCopySection', () => {
       />,
     );
 
-    expect(screen.getByText('Quick Copy')).toBeInTheDocument();
-    expect(screen.getByText('Copy organization unit identifiers')).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:edit.general.sections.quickCopy.title'))).toBeInTheDocument();
+    expect(screen.getByText(t('organizationUnits:edit.general.sections.quickCopy.description'))).toBeInTheDocument();
   });
 
   it('should render handle field with correct value', () => {
@@ -103,7 +92,7 @@ describe('QuickCopySection', () => {
       />,
     );
 
-    const copyButtons = screen.getAllByRole('button', {name: 'Copy'});
+    const copyButtons = screen.getAllByRole('button', {name: t('common:actions.copy')});
     fireEvent.click(copyButtons[0]); // First copy button is for handle
 
     await waitFor(() => {
@@ -120,7 +109,7 @@ describe('QuickCopySection', () => {
       />,
     );
 
-    const copyButtons = screen.getAllByRole('button', {name: 'Copy'});
+    const copyButtons = screen.getAllByRole('button', {name: t('common:actions.copy')});
     fireEvent.click(copyButtons[1]); // Second copy button is for ID
 
     await waitFor(() => {
@@ -137,7 +126,7 @@ describe('QuickCopySection', () => {
       />,
     );
 
-    const copiedButton = screen.getByLabelText('Copied');
+    const copiedButton = screen.getByLabelText(t('common:actions.copied'));
     expect(copiedButton).toBeInTheDocument();
   });
 
@@ -150,7 +139,7 @@ describe('QuickCopySection', () => {
       />,
     );
 
-    const copiedButton = screen.getByLabelText('Copied');
+    const copiedButton = screen.getByLabelText(t('common:actions.copied'));
     expect(copiedButton).toBeInTheDocument();
   });
 
@@ -165,7 +154,7 @@ describe('QuickCopySection', () => {
       />,
     );
 
-    const copyButtons = screen.getAllByLabelText('Copy');
+    const copyButtons = screen.getAllByLabelText(t('common:actions.copy'));
     fireEvent.click(copyButtons[0]);
 
     await waitFor(() => {

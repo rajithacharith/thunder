@@ -29,14 +29,15 @@ const config: ThunderIDNodeConfig = {
 
 | Property | Type | Required | Default | Description |
 | :--- | :--- | :---: | :--- | :--- |
-| `sessionCookieExpiryTime` | `number` | ❌ | `86400` (24 hours) | Session cookie lifetime in seconds. Determines how long the session cookie remains valid after sign-in. |
+| `sessionCookie` | `SessionCookieConfig` | ❌ | — | Session cookie settings (expiry, httpOnly, sameSite, secure). |
+| `sessionCookie.expiryTime` | `number` | ❌ | `86400` (24 hours) | Session cookie lifetime in seconds. Determines how long the session cookie remains valid after sign-in. |
 
-#### Resolution Order for `sessionCookieExpiryTime`
+#### Resolution Order for `sessionCookie.expiryTime`
 
 The SDK resolves the session cookie expiry time in the following order, using the first defined value:
 
-1. The `sessionCookieExpiryTime` property in the configuration object.
-2. The `ASGARDEO_SESSION_COOKIE_EXPIRY_TIME` environment variable.
+1. The `sessionCookie.expiryTime` property in the configuration object.
+2. The `THUNDERID_SESSION_COOKIE_EXPIRY_TIME` environment variable.
 3. The built-in default of `86400` seconds (24 hours).
 
 ### Inherited Base Properties

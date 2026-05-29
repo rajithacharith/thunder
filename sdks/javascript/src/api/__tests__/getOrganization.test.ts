@@ -39,7 +39,7 @@ describe('getOrganization', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/dxlab';
+    const baseUrl = 'https://localhost:8090';
     const organizationId: string = mockOrg.id;
     const result: OrganizationDetails = await getOrganization({baseUrl, organizationId});
 
@@ -65,7 +65,7 @@ describe('getOrganization', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const organizationId = 'org-123';
     const result: OrganizationDetails = await getOrganization({
       baseUrl,
@@ -91,7 +91,7 @@ describe('getOrganization', (): void => {
       throw new Error('Custom fetcher failure');
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const organizationId = 'org-1';
 
     await expect(getOrganization({baseUrl, fetcher: customFetcher, organizationId})).rejects.toThrow(
@@ -124,7 +124,7 @@ describe('getOrganization', (): void => {
   });
 
   it('should throw ThunderIDAPIError when organizationId is missing', async (): Promise<void> => {
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
 
     await expect(getOrganization({baseUrl, organizationId: '' as any})).rejects.toThrow(ThunderIDAPIError);
     await expect(getOrganization({baseUrl, organizationId: '' as any})).rejects.toThrow('Organization ID is required');
@@ -138,7 +138,7 @@ describe('getOrganization', (): void => {
       text: () => Promise.resolve('Organization not found'),
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const organizationId = 'missing-org';
 
     await expect(getOrganization({baseUrl, organizationId})).rejects.toThrow(ThunderIDAPIError);
@@ -150,7 +150,7 @@ describe('getOrganization', (): void => {
   it('should handle network or parsing errors', async (): Promise<void> => {
     global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const organizationId = 'org-1';
 
     await expect(getOrganization({baseUrl, organizationId})).rejects.toThrow(ThunderIDAPIError);
@@ -160,7 +160,7 @@ describe('getOrganization', (): void => {
   it('should handle non-Error rejections', async (): Promise<void> => {
     global.fetch = vi.fn().mockRejectedValue('unexpected failure');
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const organizationId = 'org-1';
 
     await expect(getOrganization({baseUrl, organizationId})).rejects.toThrow('Network or parsing error: Unknown error');
@@ -178,7 +178,7 @@ describe('getOrganization', (): void => {
       ok: true,
     });
 
-    const baseUrl = 'https://api.asgardeo.io/t/demo';
+    const baseUrl = 'https://localhost:8090';
     const organizationId = 'org-003';
     const customHeaders: Record<string, string> = {
       Authorization: 'Bearer token',

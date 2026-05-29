@@ -539,7 +539,7 @@ describe('useContainerDialogConfirm', () => {
       );
     });
 
-    it('should use defaultPropertySectorStepId from onWidgetLoad when available', () => {
+    it('should use defaultPropertySelectorStepId from onWidgetLoad when available', () => {
       const widgetResource = createMockResource({
         resourceType: ResourceTypes.Widget,
         type: 'IDENTIFIER_PASSWORD',

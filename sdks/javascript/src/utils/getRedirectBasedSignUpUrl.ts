@@ -36,11 +36,11 @@ const getRedirectBasedSignUpUrl = (config: Config): string => {
 
   if (!isRecognizedBaseUrlPattern(baseUrl)) return '';
 
-  let signUpBaseUrl: string = baseUrl;
+  let signUpBaseUrl: string = baseUrl!;
 
   if (identifyPlatform(config) === Platform.ThunderID) {
     try {
-      const url: URL = new URL(baseUrl);
+      const url: URL = new URL(baseUrl!);
 
       // Replace 'api.' with 'accounts.' in the hostname, preserving subdomains like 'dev.'
       if (/([a-z0-9-]+\.)*api\.thunderid\.io$/i.test(url.hostname)) {

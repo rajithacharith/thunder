@@ -968,3 +968,31 @@ func (suite *UtilsTestSuite) TestExtractAudiences_SliceWithEmptyString_ReturnsEr
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), auds)
 }
+
+func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithAppLevelConfig() {
+	config.GetServerRuntime().Config.OAuth.RefreshToken.ValidityPeriod = 86400
+
+	oauthApp := &inboundmodel.OAuthClient{
+		Token: &inboundmodel.OAuthTokenConfig{
+			RefreshToken: &inboundmodel.RefreshTokenConfig{
+				ValidityPeriod: 7200,
+			},
+		},
+	}
+
+	result := ResolveTokenConfig(oauthApp, TokenTypeRefresh)
+
+	suite.Equal(int64(7200), result.ValidityPeriod)
+}
+
+func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_FallsBackToServerConfig() {
+	config.GetServerRuntime().Config.OAuth.RefreshToken.ValidityPeriod = 86400
+
+	oauthApp := &inboundmodel.OAuthClient{
+		Token: &inboundmodel.OAuthTokenConfig{},
+	}
+
+	result := ResolveTokenConfig(oauthApp, TokenTypeRefresh)
+
+	suite.Equal(int64(86400), result.ValidityPeriod)
+}

@@ -90,9 +90,9 @@ const UserProfile: FC<UserProfileProps> = ({preferences, ...rest}: UserProfilePr
 
   return (
     <BaseUserProfile
-      profile={profile}
-      flattenedProfile={flattenedProfile}
-      schemas={schemas}
+      profile={profile ?? undefined}
+      flattenedProfile={flattenedProfile ?? undefined}
+      schemas={schemas ?? undefined}
       onUpdate={handleProfileUpdate}
       error={error}
       preferences={preferences}

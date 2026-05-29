@@ -30,15 +30,15 @@ import (
 	// Use crypto/sha1 only for JWKS x5t as required by spec for thumbprint.
 	"crypto/sha1" //nolint:gosec
 
-	"github.com/thunder-id/thunderid/internal/system/cryptolab/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	"github.com/thunder-id/thunderid/internal/system/kmprovider"
+	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
 // JWKSServiceInterface defines the interface for JWKS service.
 type JWKSServiceInterface interface {
-	GetJWKS() (*JWKSResponse, *serviceerror.ServiceError)
+	GetJWKS(ctx context.Context) (*JWKSResponse, *serviceerror.ServiceError)
 }
 
 // jwksService implements the JWKSServiceInterface.
@@ -56,8 +56,8 @@ func newJWKSService(cryptoProvider kmprovider.RuntimeCryptoProvider) JWKSService
 }
 
 // GetJWKS retrieves the JSON Web Key Set (JWKS) from the runtime crypto provider.
-func (s *jwksService) GetJWKS() (*JWKSResponse, *serviceerror.ServiceError) {
-	publicKeys, err := s.cryptoProvider.GetPublicKeys(context.Background(), kmprovider.PublicKeyFilter{})
+func (s *jwksService) GetJWKS(ctx context.Context) (*JWKSResponse, *serviceerror.ServiceError) {
+	publicKeys, err := s.cryptoProvider.GetPublicKeys(ctx, kmprovider.PublicKeyFilter{})
 	if err != nil {
 		s.logger.Error("Failed to retrieve public keys", log.Error(err))
 		return nil, &serviceerror.InternalServerError
@@ -78,7 +78,7 @@ func (s *jwksService) GetJWKS() (*JWKSResponse, *serviceerror.ServiceError) {
 			x5c = []string{base64.StdEncoding.EncodeToString(keyInfo.CertificateDER)}
 			sha1Sum := sha1.Sum(keyInfo.CertificateDER) //nolint:gosec // x5t (SHA-1 thumbprint) is required by spec
 			x5t = encodeBase64URL(sha1Sum[:])
-			x5tS256 = hash.GenerateThumbprint(keyInfo.CertificateDER)
+			x5tS256 = cryptolib.GenerateThumbprint(keyInfo.CertificateDER)
 		}
 
 		switch pub := keyInfo.PublicKey.(type) {

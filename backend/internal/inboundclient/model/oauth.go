@@ -45,8 +45,9 @@ const (
 
 // OAuthTokenConfig wraps access and ID token configs.
 type OAuthTokenConfig struct {
-	AccessToken *AccessTokenConfig `json:"accessToken,omitempty" yaml:"access_token,omitempty" jsonschema:"Access token configuration."`
-	IDToken     *IDTokenConfig     `json:"idToken,omitempty"    yaml:"id_token,omitempty"     jsonschema:"ID token configuration."`
+	AccessToken  *AccessTokenConfig  `json:"accessToken,omitempty" yaml:"access_token,omitempty" jsonschema:"Access token configuration."`
+	IDToken      *IDTokenConfig      `json:"idToken,omitempty"    yaml:"id_token,omitempty"     jsonschema:"ID token configuration."`
+	RefreshToken *RefreshTokenConfig `json:"refreshToken,omitempty" yaml:"refresh_token,omitempty" jsonschema:"Refresh token configuration."`
 }
 
 // AccessTokenConfig is the access token configuration.
@@ -62,6 +63,11 @@ type IDTokenConfig struct {
 	ResponseType   IDTokenResponseType `json:"responseType,omitempty"   yaml:"response_type,omitempty"   jsonschema:"ID token response type (JWT, JWE, NESTED_JWT). Defaults to JWT."`
 	EncryptionAlg  string              `json:"encryptionAlg,omitempty"  yaml:"encryption_alg,omitempty"  jsonschema:"JWE key-management algorithm. Required when responseType is JWE or NESTED_JWT."`
 	EncryptionEnc  string              `json:"encryptionEnc,omitempty"  yaml:"encryption_enc,omitempty"  jsonschema:"JWE content-encryption algorithm. Required when responseType is JWE or NESTED_JWT."`
+}
+
+// RefreshTokenConfig is the refresh token configuration.
+type RefreshTokenConfig struct {
+	ValidityPeriod int64 `json:"validityPeriod,omitempty" yaml:"validity_period,omitempty" jsonschema:"Refresh token validity period in seconds."`
 }
 
 // IDTokenResponseType is the response format of the ID token.
@@ -116,6 +122,7 @@ type OAuthProfile struct {
 	PKCERequired                       bool                `json:"pkceRequired"`
 	PublicClient                       bool                `json:"publicClient"`
 	RequirePushedAuthorizationRequests bool                `json:"requirePushedAuthorizationRequests"`
+	DPoPBoundAccessTokens              bool                `json:"dpopBoundAccessTokens"`
 	Token                              *OAuthTokenConfig   `json:"token,omitempty"`
 	Scopes                             []string            `json:"scopes,omitempty"`
 	UserInfo                           *UserInfoConfig     `json:"userInfo,omitempty"`
@@ -136,6 +143,7 @@ type OAuthConfigWithSecret struct {
 	PKCERequired                       bool                                `json:"pkceRequired"                                yaml:"pkce_required"                                jsonschema:"Require PKCE for security. Recommended for all user-interactive flows."`
 	PublicClient                       bool                                `json:"publicClient"                                yaml:"public_client"                                jsonschema:"Identify if client is public (cannot store secrets). Set true for SPA/Mobile."`
 	RequirePushedAuthorizationRequests bool                                `json:"requirePushedAuthorizationRequests"          yaml:"require_pushed_authorization_requests"        jsonschema:"Require Pushed Authorization Requests (PAR) per RFC 9126."`
+	DPoPBoundAccessTokens              bool                                `json:"dpopBoundAccessTokens"                       yaml:"dpop_bound_access_tokens"                     jsonschema:"Require DPoP-bound access tokens (RFC 9449)."`
 	Token                              *OAuthTokenConfig                   `json:"token,omitempty"                             yaml:"token,omitempty"                              jsonschema:"Token configuration for access tokens and ID tokens"`
 	Scopes                             []string                            `json:"scopes,omitempty"                            yaml:"scopes,omitempty"                             jsonschema:"Allowed OAuth scopes. Add custom scopes as needed for your application."`
 	UserInfo                           *UserInfoConfig                     `json:"userInfo,omitempty"                          yaml:"user_info,omitempty"                          jsonschema:"UserInfo endpoint configuration. Configure user attributes returned from the OIDC userinfo endpoint."`
@@ -156,6 +164,7 @@ type OAuthConfig struct {
 	PKCERequired                       bool                                `json:"pkceRequired"                       yaml:"pkce_required"`
 	PublicClient                       bool                                `json:"publicClient"                       yaml:"public_client"`
 	RequirePushedAuthorizationRequests bool                                `json:"requirePushedAuthorizationRequests" yaml:"require_pushed_authorization_requests"`
+	DPoPBoundAccessTokens              bool                                `json:"dpopBoundAccessTokens"              yaml:"dpop_bound_access_tokens"`
 	Token                              *OAuthTokenConfig                   `json:"token,omitempty"                    yaml:"token,omitempty"`
 	Scopes                             []string                            `json:"scopes,omitempty"                   yaml:"scopes,omitempty"`
 	UserInfo                           *UserInfoConfig                     `json:"userInfo,omitempty"                 yaml:"user_info,omitempty"`
@@ -182,6 +191,7 @@ type OAuthClient struct {
 	PKCERequired                       bool                                `yaml:"pkce_required,omitempty"`
 	PublicClient                       bool                                `yaml:"public_client,omitempty"`
 	RequirePushedAuthorizationRequests bool                                `yaml:"require_pushed_authorization_requests,omitempty"`
+	DPoPBoundAccessTokens              bool                                `yaml:"dpop_bound_access_tokens,omitempty"`
 	Token                              *OAuthTokenConfig                   `yaml:"token,omitempty"`
 	Scopes                             []string                            `yaml:"scopes,omitempty"`
 	UserInfo                           *UserInfoConfig                     `yaml:"user_info,omitempty"`

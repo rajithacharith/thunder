@@ -23,6 +23,7 @@ import (
 
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/resourceindicators"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
@@ -145,6 +146,12 @@ func (h *tokenExchangeGrantHandler) HandleGrant(ctx context.Context, tokenReques
 		}
 	}
 
+	// Enforce subject_token DPoP binding. The proof's jkt is verified earlier in the
+	// token service and propagated via context.
+	if errResp := dpop.VerifyProofBinding(ctx, subjectClaims.CnfJkt, "subject_token"); errResp != nil {
+		return nil, errResp
+	}
+
 	// Validate and extract actor token claims if present
 	var actorClaims *tokenservice.SubjectTokenClaims
 	if tokenRequest.ActorToken != "" {
@@ -189,8 +196,7 @@ func (h *tokenExchangeGrantHandler) HandleGrant(ctx context.Context, tokenReques
 	finalAudiences := mergeAudiences(tokenRequest.Audiences, rsAudiences, tokenRequest.ClientID)
 
 	// Build access token using token builder
-	accessToken, err := h.tokenBuilder.BuildAccessToken(&tokenservice.AccessTokenBuildContext{
-		Context:        ctx,
+	accessToken, err := h.tokenBuilder.BuildAccessToken(ctx, &tokenservice.AccessTokenBuildContext{
 		Subject:        subjectClaims.Sub,
 		Audiences:      finalAudiences,
 		ClientID:       tokenRequest.ClientID,
@@ -199,6 +205,7 @@ func (h *tokenExchangeGrantHandler) HandleGrant(ctx context.Context, tokenReques
 		GrantType:      string(constants.GrantTypeTokenExchange),
 		OAuthApp:       oauthApp,
 		ActorClaims:    actorClaims,
+		DPoPJkt:        dpop.GetJkt(ctx),
 	})
 	if err != nil {
 		logger.Error("Failed to generate token", log.Error(err))

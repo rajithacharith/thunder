@@ -20,8 +20,8 @@
 
 import getSessionId from './getSessionId';
 import getSessionPayload from './getSessionPayload';
-import getClient from '../getClient';
 import {SessionTokenPayload} from '../../utils/SessionManager';
+import getClient from '../getClient';
 
 /**
  * Check if the user is currently signed in.

@@ -49,7 +49,7 @@ export interface GetScim2MeConfig extends Omit<RequestInit, 'method'> {
  * // Using default fetch
  * try {
  *   const userProfile = await getScim2Me({
- *     url: "https://api.asgardeo.io/t/<ORGANIZATION>/scim2/Me",
+ *     url: "https://localhost:8090/scim2/Me",
  *   });
  *   console.log(userProfile);
  * } catch (error) {
@@ -64,7 +64,7 @@ export interface GetScim2MeConfig extends Omit<RequestInit, 'method'> {
  * // Using custom fetcher (e.g., axios-based httpClient)
  * try {
  *   const userProfile = await getScim2Me({
- *     url: "https://api.asgardeo.io/t/<ORGANIZATION>/scim2/Me",
+ *     url: "https://localhost:8090/scim2/Me",
  *     fetcher: async (url, config) => {
  *       const response = await httpClient({
  *         url,
@@ -93,7 +93,7 @@ export interface GetScim2MeConfig extends Omit<RequestInit, 'method'> {
 const getScim2Me = async ({url, baseUrl, fetcher, ...requestConfig}: GetScim2MeConfig): Promise<User> => {
   try {
     // eslint-disable-next-line no-new
-    new URL(url ?? baseUrl);
+    new URL((url ?? baseUrl)!);
   } catch (error) {
     throw new ThunderIDAPIError(
       `Invalid URL provided. ${error?.toString()}`,
