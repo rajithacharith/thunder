@@ -16,14 +16,13 @@
  * under the License.
  */
 
-import * as fs from 'fs';
 import * as path from 'path';
 import {intro, outro, text, spinner, note, cancel, isCancel} from '@clack/prompts';
 import colors from 'picocolors';
 import Product from './constants/Product';
 import {deploy} from './deploy';
 import {downloadAndExtract, getLatestThunderVersion} from './download';
-import {runSetup, runStart} from './setup';
+import {findThunderRoot, runSetup, runStart} from './setup';
 import {readState, writeState, markSetupComplete} from './state';
 
 function parseCliArgs(argv: string[]): {forceSetup: boolean; forwardedArgs: string[]} {
@@ -67,7 +66,7 @@ async function main(): Promise<void> {
 
   const state = readState();
   const versionState = state.installs[VERSION];
-  const alreadyInstalled = Boolean(versionState?.installPath && fs.existsSync(versionState.installPath));
+  const alreadyInstalled = Boolean(versionState?.installPath && findThunderRoot(versionState.installPath) !== null);
 
   const BRAND_BLUE = '\x1b[38;2;54;136;255m';
   const RESET = '\x1b[0m';
