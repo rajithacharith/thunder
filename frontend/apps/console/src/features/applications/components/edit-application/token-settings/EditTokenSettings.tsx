@@ -627,6 +627,7 @@ export default function EditTokenSettings({
             highlightedAttributes={visibleHighlightedAttributes}
             onAttributeClick={handleAttributeClick}
             entityLabel={entityLabel}
+            disabled={application.isReadOnly}
           />
 
           {/* Scopes & Attribute Mapping */}
@@ -638,10 +639,11 @@ export default function EditTokenSettings({
             onScopesChange={handleScopesChange}
             onScopeClaimsChange={handleScopeClaimsChange}
             entityLabel={entityLabel}
+            disabled={application.isReadOnly}
           />
 
           {/* Merged Token Validation (Access Token / ID Token tabs) */}
-          <TokenValidationSection control={control} errors={errors} tokenType="oauth" />
+          <TokenValidationSection control={control} errors={errors} tokenType="oauth" disabled={application.isReadOnly} />
         </>
       ) : (
         <>
@@ -655,10 +657,11 @@ export default function EditTokenSettings({
             highlightedAttributes={visibleHighlightedAttributes}
             onAttributeClick={handleAttributeClick}
             entityLabel={entityLabel}
+            disabled={application.isReadOnly}
           />
 
           {/* Token Validation */}
-          <TokenValidationSection control={control} errors={errors} tokenType="shared" />
+          <TokenValidationSection control={control} errors={errors} tokenType="shared" disabled={application.isReadOnly} />
         </>
       )}
     </Stack>
