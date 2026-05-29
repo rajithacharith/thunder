@@ -28,7 +28,6 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
-	"github.com/thunder-id/thunderid/internal/system/log"
 	mcpauth "github.com/thunder-id/thunderid/internal/system/mcp/auth"
 	"github.com/thunder-id/thunderid/internal/system/security"
 )
@@ -47,11 +46,7 @@ func Initialize(
 	// Create MCP server and register standalone tools
 	mcpServer := newServer()
 
-	sysPerm := security.GetSystemPermissions()
-	if sysPerm == nil {
-		log.GetLogger().Fatal("System permissions not initialized before MCP initialization")
-	}
-	rootPerm := sysPerm.Root
+	rootPerm := security.GetSystemRootPermission()
 
 	tokenVerifier := mcpauth.NewTokenVerifier(jwtService, cfg.JWT.Issuer, mcpURL)
 	httpHandler := mcpsdk.NewStreamableHTTPHandler(func(*http.Request) *mcpsdk.Server {

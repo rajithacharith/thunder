@@ -532,7 +532,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_Success() {
 	rs := ResourceServer{
 		Name:        "updated-rs",
 		Description: "Updated",
-		Handle:      "new-handle",
+		Handle:      "original-handler",
 		Identifier:  "new-identifier",
 		OUID:        "ou-123",
 	}
@@ -550,8 +550,6 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_Success() {
 	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(existingRS, nil)
-	suite.mockStore.On("CheckResourceServerHandleExists", mock.Anything,
-		"new-handle").Return(false, nil)
 	suite.mockStore.On("CheckResourceServerIdentifierExists", mock.Anything,
 		"new-identifier").Return(false, nil)
 	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
@@ -559,14 +557,10 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_Success() {
 	suite.mockStore.On("CheckResourceServerNameExists", mock.Anything,
 		"updated-rs").
 		Return(false, nil)
-	suite.mockStore.On("GetResourceList", mock.Anything,
-		"rs-123", mock.Anything, mock.Anything).Return([]Resource{}, nil)
-	suite.mockStore.On("GetActionList", mock.Anything,
-		"rs-123", (*string)(nil), mock.Anything, mock.Anything).Return([]Action{}, nil)
 	suite.mockStore.On("UpdateResourceServer", mock.Anything,
 		"rs-123", mock.MatchedBy(func(r ResourceServer) bool {
 			return r.Name == rs.Name &&
-				r.Handle == "new-handle" &&
+				r.Handle == "original-handler" &&
 				r.Identifier == "new-identifier" &&
 				r.Description == rs.Description &&
 				r.Delimiter == existingRS.Delimiter
@@ -578,7 +572,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_Success() {
 	suite.NotNil(result)
 	suite.Equal("rs-123", result.ID)
 	suite.Equal("updated-rs", result.Name)
-	suite.Equal("new-handle", result.Handle)
+	suite.Equal("original-handler", result.Handle)
 	suite.Equal("new-identifier", result.Identifier)
 }
 
@@ -4619,7 +4613,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_HandleChangedPre
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
-func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_HandleChanged_PermissionsRecomputed() {
+func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_HandleChange_ReturnsImmutableError() {
 	rs := ResourceServer{
 		Name:   "my-rs",
 		Handle: "new-handle",
@@ -4634,78 +4628,6 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_HandleChanged_Pe
 		OUID:      "ou-123",
 	}
 
-	resID := "res-001"
-	actionID := "act-001"
-	rsActionID := "rsact-001"
-
-	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
-	suite.mockStore.On("GetResourceServer", mock.Anything, "rs-123").Return(existingRS, nil)
-	suite.mockStore.On("CheckResourceServerHandleExists", mock.Anything, "new-handle").Return(false, nil)
-	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
-		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
-	suite.mockStore.On("GetResourceList", mock.Anything, "rs-123", mock.Anything, mock.Anything).
-		Return([]Resource{{ID: resID, Name: "res", Handle: "res", Permission: "old-handle:res"}}, nil)
-	suite.mockStore.On("GetActionList", mock.Anything, "rs-123", (*string)(nil), mock.Anything, mock.Anything).
-		Return([]Action{{ID: rsActionID, Name: "rs-action", Handle: "rs-act", Permission: "old-handle:rs-act"}}, nil)
-	suite.mockStore.On("GetActionList", mock.Anything, "rs-123", &resID, mock.Anything, mock.Anything).
-		Return([]Action{{ID: actionID, Name: "act", Handle: "do", Permission: "old-handle:res:do"}}, nil)
-	suite.mockStore.On("UpdateResourceServer", mock.Anything, "rs-123", mock.Anything).Return(nil)
-	suite.mockStore.On("UpdateResourcePermission", mock.Anything, resID, "rs-123", "new-handle:res").Return(nil)
-	suite.mockStore.On("UpdateActionPermission", mock.Anything, rsActionID, "rs-123", (*string)(nil),
-		"new-handle:rs-act").Return(nil)
-	suite.mockStore.On("UpdateActionPermission", mock.Anything, actionID, "rs-123", &resID,
-		"new-handle:res:do").Return(nil)
-
-	result, svcErr := suite.service.UpdateResourceServer(context.Background(), "rs-123", rs)
-
-	suite.Nil(svcErr)
-	suite.NotNil(result)
-	suite.Equal("new-handle", result.Handle)
-	suite.mockStore.AssertExpectations(suite.T())
-}
-
-func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_HandleConflict() {
-	rs := ResourceServer{
-		Name:   "updated-rs",
-		Handle: "taken-handle",
-		OUID:   "ou-123",
-	}
-
-	existingRS := ResourceServer{
-		ID:        "rs-123",
-		Name:      "old-name",
-		Handle:    "original-handle",
-		Delimiter: ":",
-		OUID:      "ou-123",
-	}
-
-	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
-	suite.mockStore.On("GetResourceServer", mock.Anything, "rs-123").Return(existingRS, nil)
-	suite.mockStore.On("CheckResourceServerHandleExists", mock.Anything, "taken-handle").Return(true, nil)
-
-	result, svcErr := suite.service.UpdateResourceServer(context.Background(), "rs-123", rs)
-
-	suite.Nil(result)
-	suite.NotNil(svcErr)
-	suite.Equal(ErrorHandleConflict.Code, svcErr.Code)
-	suite.mockStore.AssertExpectations(suite.T())
-}
-
-func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_HandleInvalidFormat() {
-	rs := ResourceServer{
-		Name:   "updated-rs",
-		Handle: "invalid handle!", // space and ! are not valid
-		OUID:   "ou-123",
-	}
-
-	existingRS := ResourceServer{
-		ID:        "rs-123",
-		Name:      "old-name",
-		Handle:    "original-handle",
-		Delimiter: ":",
-		OUID:      "ou-123",
-	}
-
 	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything, "rs-123").Return(existingRS, nil)
 
@@ -4713,33 +4635,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_HandleInvalidFor
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
-	suite.Equal(ErrorInvalidHandle.Code, svcErr.Code)
-	suite.mockStore.AssertExpectations(suite.T())
-}
-
-func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_HandleContainsDelimiter() {
-	rs := ResourceServer{
-		Name:   "updated-rs",
-		Handle: "foo:bar", // delimiter ':' in handle
-		OUID:   "ou-123",
-	}
-
-	existingRS := ResourceServer{
-		ID:        "rs-123",
-		Name:      "old-name",
-		Handle:    "original-handle",
-		Delimiter: ":",
-		OUID:      "ou-123",
-	}
-
-	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
-	suite.mockStore.On("GetResourceServer", mock.Anything, "rs-123").Return(existingRS, nil)
-
-	result, svcErr := suite.service.UpdateResourceServer(context.Background(), "rs-123", rs)
-
-	suite.Nil(result)
-	suite.NotNil(svcErr)
-	suite.Equal(ErrorDelimiterInResourceServerHandle.Code, svcErr.Code)
+	suite.Equal(ErrorImmutableHandle.Code, svcErr.Code)
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
@@ -4804,34 +4700,6 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_IdentifierConfli
 	suite.Nil(result)
 	suite.NotNil(svcErr)
 	suite.Equal(ErrorIdentifierConflict.Code, svcErr.Code)
-	suite.mockStore.AssertExpectations(suite.T())
-}
-
-func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_HandleCheckStoreError() {
-	rs := ResourceServer{
-		Name:   "updated-rs",
-		Handle: "new-handle",
-		OUID:   "ou-123",
-	}
-
-	existingRS := ResourceServer{
-		ID:        "rs-123",
-		Name:      "old-name",
-		Handle:    "original-handle",
-		Delimiter: ":",
-		OUID:      "ou-123",
-	}
-
-	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
-	suite.mockStore.On("GetResourceServer", mock.Anything, "rs-123").Return(existingRS, nil)
-	suite.mockStore.On("CheckResourceServerHandleExists", mock.Anything, "new-handle").
-		Return(false, errors.New("db error"))
-
-	result, svcErr := suite.service.UpdateResourceServer(context.Background(), "rs-123", rs)
-
-	suite.Nil(result)
-	suite.NotNil(svcErr)
-	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
