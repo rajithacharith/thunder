@@ -55,10 +55,6 @@ var testMissingSubJWT = "eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9." +
 	"eyJyZWNpcGllbnQiOiAidGVzdEBleGFtcGxlLmNvbSJ9." +
 	"test-signature"
 
-var testMismatchedUserIDJWT = "eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9." +
-	"eyJyZWNpcGllbnQiOiAidGVzdEBleGFtcGxlLmNvbSIsICJzdWIiOiAidXNlci00NTYifQ." +
-	"test-signature"
-
 var (
 	testUserID   = "user-123"
 	runtimeMutex sync.Mutex
@@ -176,38 +172,38 @@ func (suite *MagicLinkServiceTestSuite) TestGenerateMagicLinkJWTGenerationError(
 	suite.Empty(magicLinkURL)
 }
 
-func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkEmptyToken() {
-	result, err := suite.service.VerifyMagicLink(context.Background(), "", "")
+func (suite *MagicLinkServiceTestSuite) TestAuthenticateEmptyToken() {
+	result, err := suite.service.Authenticate(context.Background(), "", "")
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorInvalidToken.Code, err.Code)
 }
 
-func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkExpiredToken() {
+func (suite *MagicLinkServiceTestSuite) TestAuthenticateExpiredToken() {
 	expiredErr := &serviceerror.ServiceError{
 		Code: jwt.ErrorTokenExpired.Code,
 	}
 	suite.mockJWTService.On("VerifyJWT", mock.Anything, testToken, tokenAudience, mock.Anything).Return(expiredErr)
 
-	result, err := suite.service.VerifyMagicLink(context.Background(), testToken, "")
+	result, err := suite.service.Authenticate(context.Background(), testToken, "")
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorExpiredToken.Code, err.Code)
 }
 
-func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkInvalidToken() {
+func (suite *MagicLinkServiceTestSuite) TestAuthenticateInvalidToken() {
 	suite.mockJWTService.On("VerifyJWT", mock.Anything, testToken, tokenAudience, mock.Anything).
 		Return(&serviceerror.ServiceError{
 			Code: "JWT_INVALID",
 		})
 
-	result, err := suite.service.VerifyMagicLink(context.Background(), testToken, "")
+	result, err := suite.service.Authenticate(context.Background(), testToken, "")
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorInvalidToken.Code, err.Code)
 }
 
-func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkSuccess() {
+func (suite *MagicLinkServiceTestSuite) TestAuthenticateSuccess() {
 	suite.mockJWTService.On("VerifyJWT", mock.Anything, testValidJWT, tokenAudience, mock.Anything).Return(nil)
 
 	testUser := &entityprovider.Entity{
@@ -217,14 +213,15 @@ func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkSuccess() {
 	}
 	suite.mockUserService.On("GetEntity", testUserID).Return(testUser, nil)
 
-	result, err := suite.service.VerifyMagicLink(context.Background(), testValidJWT, "")
+	result, err := suite.service.Authenticate(context.Background(), testValidJWT, "")
 	suite.Nil(err)
 	suite.NotNil(result)
-	suite.Equal(testUserID, result.ID)
-	suite.Equal(testUserOUID, result.OUID)
+	suite.NotNil(result.InternalEntity)
+	suite.Equal(testUserID, result.InternalEntity.ID)
+	suite.Equal(testUserOUID, result.InternalEntity.OUID)
 }
 
-func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkSuccessWithDestinationAttribute() {
+func (suite *MagicLinkServiceTestSuite) TestAuthenticateSuccessWithDestinationAttribute() {
 	const (
 		workEmailAttr  = "workemail"
 		workEmailValue = "johnwork@company.lk"
@@ -243,62 +240,68 @@ func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkSuccessWithDestinatio
 	}
 	suite.mockUserService.On("GetEntity", workEmailUser).Return(testUser, nil)
 
-	result, err := suite.service.VerifyMagicLink(context.Background(), testWorkEmailJWT, workEmailAttr)
+	result, err := suite.service.Authenticate(context.Background(), testWorkEmailJWT, workEmailAttr)
 	suite.Nil(err)
 	suite.NotNil(result)
-	suite.Equal(workEmailUser, result.ID)
+	suite.NotNil(result.InternalEntity)
+	suite.Equal(workEmailUser, result.InternalEntity.ID)
 }
 
-func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkMissingSubjectClaim() {
+func (suite *MagicLinkServiceTestSuite) TestAuthenticateMissingSubjectClaim() {
 	suite.mockJWTService.On("VerifyJWT", mock.Anything, testMissingSubJWT, tokenAudience, mock.Anything).Return(nil)
 
-	result, err := suite.service.VerifyMagicLink(context.Background(), testMissingSubJWT, "")
+	result, err := suite.service.Authenticate(context.Background(), testMissingSubJWT, "")
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorMalformedTokenClaims.Code, err.Code)
 }
 
-func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkUserIDMismatchClaim() {
+func (suite *MagicLinkServiceTestSuite) TestAuthenticateUserNotFound_ReturnsVerifiedIdentifiers() {
 	suite.mockJWTService.
-		On("VerifyJWT", mock.Anything, testMismatchedUserIDJWT, tokenAudience, mock.Anything).Return(nil)
-	suite.mockUserService.On("GetEntity", "user-456").Return(nil, &entityprovider.EntityProviderError{
-		Code:    entityprovider.ErrorCodeEntityNotFound,
-		Message: "Entity not found",
-	})
-
-	result, err := suite.service.VerifyMagicLink(context.Background(), testMismatchedUserIDJWT, "")
-	suite.Nil(result)
-	suite.NotNil(err)
-	suite.Equal(common.ErrorUserNotFound.Code, err.Code)
-}
-
-func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkUserNotFoundOnVerify() {
-	suite.mockJWTService.On("VerifyJWT", mock.Anything, testValidJWT, tokenAudience, mock.Anything).Return(nil)
+		On("VerifyJWT", mock.Anything, testValidJWT, tokenAudience, mock.Anything).Return(nil)
 	suite.mockUserService.On("GetEntity", testUserID).Return(nil, &entityprovider.EntityProviderError{
 		Code:    entityprovider.ErrorCodeEntityNotFound,
 		Message: "Entity not found",
 	})
 
-	result, err := suite.service.VerifyMagicLink(context.Background(), testValidJWT, "")
-	suite.Nil(result)
-	suite.NotNil(err)
-	suite.Equal(common.ErrorUserNotFound.Code, err.Code)
+	result, err := suite.service.Authenticate(context.Background(), testValidJWT, "")
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Nil(result.InternalEntity)
+	suite.Empty(result.VerifiedIdentifiers)
 }
 
-func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkGetUserError() {
+func (suite *MagicLinkServiceTestSuite) TestAuthenticateUserNotFound_WithSubjectAttribute() {
+	const destAttr = "email"
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, testValidJWT, tokenAudience, mock.Anything).Return(nil)
+	suite.mockUserService.On("IdentifyEntity", map[string]interface{}{
+		destAttr: testUserID,
+	}).Return(nil, &entityprovider.EntityProviderError{
+		Code:    entityprovider.ErrorCodeEntityNotFound,
+		Message: "Entity not found",
+	})
+
+	result, err := suite.service.Authenticate(context.Background(), testValidJWT, destAttr)
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Nil(result.InternalEntity)
+	suite.Equal(testUserID, result.VerifiedIdentifiers[destAttr])
+}
+
+func (suite *MagicLinkServiceTestSuite) TestAuthenticateGetUserError() {
 	suite.mockJWTService.On("VerifyJWT", mock.Anything, testValidJWT, tokenAudience, mock.Anything).Return(nil)
 	suite.mockUserService.On("GetEntity", testUserID).Return(nil, &entityprovider.EntityProviderError{
 		Code:    entityprovider.ErrorCodeInvalidRequestFormat,
 		Message: "Invalid request",
 	})
 
-	result, err := suite.service.VerifyMagicLink(context.Background(), testValidJWT, "")
+	result, err := suite.service.Authenticate(context.Background(), testValidJWT, "")
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorClientErrorWhileResolvingUser.Code, err.Code)
 }
 
-func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkEntityProviderSystemError() {
+func (suite *MagicLinkServiceTestSuite) TestAuthenticateEntityProviderSystemError() {
 	suite.mockJWTService.On("VerifyJWT", mock.Anything, testValidJWT, tokenAudience, mock.Anything).Return(nil)
 	suite.mockUserService.On("GetEntity", testUserID).Return(nil, &entityprovider.EntityProviderError{
 		Code:        entityprovider.ErrorCodeSystemError,
@@ -306,7 +309,7 @@ func (suite *MagicLinkServiceTestSuite) TestVerifyMagicLinkEntityProviderSystemE
 		Description: "Database connection failed",
 	})
 
-	result, err := suite.service.VerifyMagicLink(context.Background(), testValidJWT, "")
+	result, err := suite.service.Authenticate(context.Background(), testValidJWT, "")
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
