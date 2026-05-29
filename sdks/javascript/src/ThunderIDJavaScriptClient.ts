@@ -131,13 +131,18 @@ class ThunderIDJavaScriptClient<T = Config> implements ThunderIDClient<T> {
 
     const resolvedEndpoints = endpoints ? {...endpoints} : {};
 
-    await this.storageManager.setConfigData({
-      ...DEFAULT_CONFIG,
-      ...fullConfig,
-      applicationId: resolvedApplicationId,
-      endpoints: resolvedEndpoints,
-      scope: processOpenIDScopes((fullConfig as any).scopes),
-    } as any);
+    await this.storageManager.setConfigData(
+      deepMerge(
+        {} as Record<string, any>,
+        DEFAULT_CONFIG,
+        fullConfig as Record<string, any>,
+        {
+          applicationId: resolvedApplicationId,
+          endpoints: resolvedEndpoints,
+          scope: processOpenIDScopes((fullConfig as any).scopes),
+        }
+      ) as any
+    );
 
     this.baseURL = (fullConfig as any).baseUrl ?? '';
 

@@ -19,7 +19,7 @@
 import {useConfig} from '@thunderid/contexts';
 import {ThunderIDProvider} from '@thunderid/react';
 import type {ThunderIDProviderProps} from '@thunderid/react';
-import {merge} from 'lodash-es';
+import {merge} from '@thunderid/utils';
 import type {JSX, ComponentType} from 'react';
 
 export default function withConfig<P extends object>(WrappedComponent: ComponentType<P>) {
