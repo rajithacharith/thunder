@@ -20,6 +20,7 @@ import {resolve, dirname} from 'path';
 import {fileURLToPath} from 'url';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import react from '@vitejs/plugin-react';
+import {visualizer} from 'rollup-plugin-visualizer';
 import svgr from 'vite-plugin-svgr';
 import {defineConfig} from 'vitest/config';
 
@@ -51,6 +52,16 @@ export default defineConfig({
         plugins: [['babel-plugin-react-compiler']],
       },
     }),
+    ...(process.env.ANALYZE === 'true'
+      ? [
+          visualizer({
+            filename: resolve(currentDir, 'dist', 'stats.html'),
+            open: true,
+            gzipSize: true,
+            brotliSize: true,
+          }),
+        ]
+      : []),
   ],
   test: {
     globals: true,
