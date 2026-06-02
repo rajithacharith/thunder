@@ -28,6 +28,7 @@ const currentDir = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT ? Number(process.env.PORT) : 5190;
 const HOST = process.env.HOST ?? 'localhost';
 const BASE_URL = process.env.BASE_URL ?? '/gate';
+const ANALYZER_ENABLED = process.env.ANALYZE === 'true' || false;
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -52,7 +53,7 @@ export default defineConfig({
         plugins: [['babel-plugin-react-compiler']],
       },
     }),
-    ...(process.env.ANALYZE === 'true'
+    ...(ANALYZER_ENABLED
       ? [
           visualizer({
             filename: resolve(currentDir, 'dist', 'stats.html'),
