@@ -45,6 +45,7 @@ type PKIServiceInterface interface {
 	GetCertThumbprint(id string) string
 	GetX509Certificate(id string) (*x509.Certificate, *serviceerror.ServiceError)
 	GetAllX509Certificates() (map[string]*x509.Certificate, *serviceerror.ServiceError)
+	GetCertificateChain(id string) [][]byte
 	GetSupportedSigningAlgorithms() []string
 }
 
@@ -117,6 +118,15 @@ func (s *pkiService) GetPrivateKey(id string) (crypto.PrivateKey, *serviceerror.
 		return nil, &serviceerror.InternalServerError
 	}
 	return cert.PrivateKey, nil
+}
+
+// GetCertificateChain returns the DER-encoded certificate chain for the given ID (leaf first).
+func (s *pkiService) GetCertificateChain(id string) [][]byte {
+	cert, exists := s.certificates[id]
+	if !exists {
+		return nil
+	}
+	return cert.Certificate.Certificate
 }
 
 // GetCertThumbprint retrieves the thumbprint of the certificate associated with the given ID.

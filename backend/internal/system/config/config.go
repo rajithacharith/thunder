@@ -523,6 +523,54 @@ type PasskeyConfig struct {
 	AllowedOrigins []string `yaml:"allowed_origins" json:"allowed_origins"`
 }
 
+// OpenID4VPConfig holds the OpenID4VP verifier engine configuration. Engine
+// defaults (client_id, signing key, base URLs, response advertisement) live at
+// the top level; credential-specific configuration (vct, requested claims,
+// trusted issuers, ...) lives under PresentationDefinitions.
+type OpenID4VPConfig struct {
+	ClientID                   string             `yaml:"client_id" json:"client_id"`
+	ClientIDScheme             string             `yaml:"client_id_scheme" json:"client_id_scheme"`
+	SigningKeyID               string             `yaml:"signing_key_id" json:"signing_key_id"`
+	BaseURL                    string             `yaml:"base_url" json:"base_url"`
+	ResultRedirectURI          string             `yaml:"result_redirect_uri" json:"result_redirect_uri"`
+	RequestAudience            string             `yaml:"request_audience" json:"request_audience"`
+	EphemeralKeyID             string             `yaml:"ephemeral_key_id" json:"ephemeral_key_id"`
+	ResponseEncValues          []string           `yaml:"response_enc_values" json:"response_enc_values"`
+	RequestValiditySeconds     int                `yaml:"request_validity_seconds" json:"request_validity_seconds"`
+	StateTTLSeconds            int                `yaml:"state_ttl_seconds" json:"state_ttl_seconds"`
+	LeewaySeconds              int                `yaml:"leeway_seconds" json:"leeway_seconds"`
+	KeyBindingMaxAgeSeconds    int                `yaml:"key_binding_max_age_seconds" json:"key_binding_max_age_seconds"`     //nolint:lll
+	ResultTokenValiditySeconds int                `yaml:"result_token_validity_seconds" json:"result_token_validity_seconds"` //nolint:lll
+	RegistrationCertFile       string             `yaml:"registration_cert_file" json:"registration_cert_file"`
+	PresentationDefinitions    []DefinitionConfig `yaml:"presentation_definitions" json:"presentation_definitions"`
+	EnforceTrustedIssuer       bool               `yaml:"enforce_trusted_issuer" json:"enforce_trusted_issuer"`
+	EnforceKeyBinding          bool               `yaml:"enforce_key_binding" json:"enforce_key_binding"`
+}
+
+// DefinitionConfig describes a single OpenID4VP presentation definition the
+// verifier should register at start-up. The format value selects the
+// CredentialFormat plug-in; the rest configures the DCQL query, the policy
+// applied to verified presentations, the subject derivation claim set and the
+// trusted issuers for that definition.
+type DefinitionConfig struct {
+	ID              string               `yaml:"id" json:"id"`
+	DisplayName     string               `yaml:"display_name" json:"display_name"`
+	CredentialID    string               `yaml:"credential_id" json:"credential_id"`
+	VCT             string               `yaml:"vct" json:"vct"`
+	RequestedClaims []string             `yaml:"requested_claims" json:"requested_claims"`
+	MandatoryClaims []string             `yaml:"mandatory_claims" json:"mandatory_claims"`
+	OptionalClaims  []string             `yaml:"optional_claims" json:"optional_claims"`
+	SubjectClaims   []string             `yaml:"subject_claims" json:"subject_claims"`
+	TrustedIssuers  []TrustedIssuerEntry `yaml:"trusted_issuers" json:"trusted_issuers"`
+}
+
+// TrustedIssuerEntry pins a trusted credential issuer's signing certificate
+// for a presentation definition.
+type TrustedIssuerEntry struct {
+	Issuer   string `yaml:"issuer" json:"issuer"`
+	CertFile string `yaml:"cert_file" json:"cert_file"`
+}
+
 // AuthnProviderConfig holds the authentication provider configuration details.
 type AuthnProviderConfig struct {
 	Type string     `yaml:"type" json:"type"`
@@ -705,6 +753,7 @@ type Config struct {
 	EntityType           EntityTypeConfig       `yaml:"user_type" json:"user_type"`
 	Observability        ObservabilityConfig    `yaml:"observability" json:"observability"`
 	Passkey              PasskeyConfig          `yaml:"passkey" json:"passkey"`
+	OpenID4VP            OpenID4VPConfig        `yaml:"openid4vp" json:"openid4vp"`
 	AuthnProvider        AuthnProviderConfig    `yaml:"authn_provider" json:"authn_provider"`
 	UserProvider         UserProviderConfig     `yaml:"user_provider" json:"user_provider"`
 	EntityProvider       EntityProviderConfig   `yaml:"entity_provider" json:"entity_provider"`

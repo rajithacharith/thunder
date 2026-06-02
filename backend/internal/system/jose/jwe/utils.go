@@ -274,6 +274,20 @@ func extractEPKFromHeader(header map[string]interface{}) (crypto.PublicKey, erro
 	return ecdhPub, nil
 }
 
+// decodeAPUAPV extracts and base64url-decodes the apu or apv field from the JWE
+// protected header. Returns nil when the field is absent or not a string.
+func decodeAPUAPV(header map[string]interface{}, key string) []byte {
+	v, ok := header[key].(string)
+	if !ok || v == "" {
+		return nil
+	}
+	decoded, err := base64.RawURLEncoding.DecodeString(v)
+	if err != nil {
+		return nil
+	}
+	return decoded
+}
+
 // DecodeJWE decodes a JWE compact serialization into its five parts.
 func DecodeJWE(jweToken string) (header map[string]interface{}, headerBase64 string,
 	encryptedKey, iv, ciphertext, tag []byte, err error) {
