@@ -16,7 +16,6 @@
  * under the License.
  */
 
-import {ProtectedRoute} from '@thunderid/react-router';
 import {ViewAgentTypePage} from '@thunderid/configure-agent-types';
 import {
   CreateOrganizationUnitPage,
@@ -38,6 +37,7 @@ import {
   UsersListPage,
 } from '@thunderid/configure-users';
 import {ToastProvider} from '@thunderid/contexts';
+import {ProtectedRoute} from '@thunderid/react-router';
 import type {JSX} from 'react';
 import {BrowserRouter, Route, Routes} from 'react-router';
 import AgentCreateProvider from './features/agents/contexts/AgentCreate/AgentCreateProvider';

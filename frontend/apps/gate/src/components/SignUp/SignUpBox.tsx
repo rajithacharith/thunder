@@ -21,8 +21,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 
-import {EmbeddedFlowEventType, SignUp, useThunderID, type EmbeddedFlowComponent} from '@thunderid/react';
 import {FlowComponentRenderer, AuthCardLayout, useDesign} from '@thunderid/design';
+import {EmbeddedFlowEventType, SignUp, useThunderID, type EmbeddedFlowComponent} from '@thunderid/react';
 import {Box, Button, Alert, Typography, AlertTitle, CircularProgress} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useState} from 'react';

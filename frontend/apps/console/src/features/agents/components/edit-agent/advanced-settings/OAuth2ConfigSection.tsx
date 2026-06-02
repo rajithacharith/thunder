@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {useThunderID} from '@thunderid/react';
 import {SettingsCard} from '@thunderid/components';
+import {useThunderID} from '@thunderid/react';
 import {
   Box,
   Checkbox,
