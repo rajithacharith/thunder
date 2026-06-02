@@ -18,22 +18,8 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: 🎭 Restore Playwright Cache
-      id: playwright-cache
-      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-      with:
-        path: ~/.cache/ms-playwright
-        key: playwright-${{ runner.os }}-${{ inputs.scope }}-${{ hashFiles('pnpm-lock.yaml') }}
-
     - name: 🎭 Install Playwright Browsers
-      if: steps.playwright-cache.outputs.cache-hit != 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: pnpm exec playwright install --with-deps ${{ inputs.browsers }}
 
-    - name: 🎭 Save Playwright Cache
-      if: steps.playwright-cache.outputs.cache-hit != 'true'
-      uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-      with:
-        path: ~/.cache/ms-playwright
-        key: playwright-${{ runner.os }}-${{ inputs.scope }}-${{ hashFiles('pnpm-lock.yaml') }}
