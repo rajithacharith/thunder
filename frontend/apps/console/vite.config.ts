@@ -45,6 +45,18 @@ if (existsSync(rootVersionFile)) {
 const VERSION = readFileSync(publicVersionFile, 'utf-8').trim();
 const ANALYZER_ENABLED = process.env.ANALYZE === 'true' || false;
 
+// prismjs language files reference `Prism` as a global with no import — add one so
+// Rollup sees the dependency edge and evaluates the core before any language file.
+const prismjsGlobalFix = {
+  name: 'prismjs-global-fix',
+  transform(code: string, id: string) {
+    if (/[/\\]prismjs[/\\]components[/\\]prism-(?!core)/.test(id)) {
+      return {code: `import Prism from 'prismjs';\n${code}`, map: null};
+    }
+    return null;
+  },
+};
+
 // https://vite.dev/config/
 export default defineConfig({
   base: BASE_URL,
@@ -53,6 +65,7 @@ export default defineConfig({
     ANALYZER_ENABLED: JSON.stringify(ANALYZER_ENABLED),
   },
   plugins: [
+    prismjsGlobalFix,
     basicSsl(),
     svgr(),
     react({
