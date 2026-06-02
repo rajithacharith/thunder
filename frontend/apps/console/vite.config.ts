@@ -43,12 +43,14 @@ if (existsSync(rootVersionFile)) {
 }
 
 const VERSION = readFileSync(publicVersionFile, 'utf-8').trim();
+const ANALYZER_ENABLED = process.env.ANALYZE === 'true' || false;
 
 // https://vite.dev/config/
 export default defineConfig({
   base: BASE_URL,
   define: {
     VERSION: JSON.stringify(VERSION),
+    ANALYZER_ENABLED: JSON.stringify(ANALYZER_ENABLED),
   },
   plugins: [
     basicSsl(),
@@ -60,7 +62,7 @@ export default defineConfig({
     }),
     // Add visualizer plugin for bundle analysis (only when ANALYZE=true)
 
-    ...(process.env.ANALYZE === 'true'
+    ...(ANALYZER_ENABLED
       ? [
           visualizer({
             filename: resolve(currentDir, 'dist', 'stats.html'),

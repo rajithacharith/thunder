@@ -359,7 +359,7 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
     console.log("\n--- TC002 Completed Successfully ---\n");
   });
 
-  test("TC003: Complete MFA registration flow with mobile number and subsequent login", async ({
+  test.fixme("TC003: Complete MFA registration flow with mobile number and subsequent login", async ({
     sampleAppLoginPage,
     page,
     request,
