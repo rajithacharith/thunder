@@ -484,9 +484,6 @@ importers:
       lodash-es:
         specifier: 'catalog:'
         version: 4.18.1
-      prismjs:
-        specifier: ^1.30.0
-        version: 1.30.0
       react:
         specifier: 'catalog:'
         version: 19.2.3
@@ -539,9 +536,6 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.7.2
-      '@types/prismjs':
-        specifier: ^1.26.5
-        version: 1.26.6
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.14
