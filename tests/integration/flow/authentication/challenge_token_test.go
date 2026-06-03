@@ -250,6 +250,33 @@ func (ts *ChallengeTokenTestSuite) TestTokenIsRotatedOnEachStep() {
 	ts.Require().NotEqual(firstToken, retryStep.ChallengeToken, "Challenge token must be rotated on each step")
 }
 
+func (ts *ChallengeTokenTestSuite) TestStaleTokenIsRejectedAfterRotation() {
+	flowStep, err := common.InitiateAuthenticationFlow(ctTokenTestAppID, false, nil, "")
+	ts.Require().NoError(err, "Failed to initiate authentication flow")
+	firstToken := flowStep.ChallengeToken
+	ts.Require().NotEmpty(firstToken, "Challenge token must be returned on initiation")
+
+	// Submit only the username to trigger a retry step and rotate the token
+	inputs := map[string]string{
+		"username": "ct_token_testuser",
+	}
+	retryStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001", firstToken)
+	ts.Require().NoError(err, "Flow step should succeed with valid challenge token")
+	ts.Require().Equal("INCOMPLETE", retryStep.FlowStatus, "Expected retry step for missing password")
+	ts.Require().NotEmpty(retryStep.ChallengeToken, "Rotated challenge token must be returned")
+
+	// Attempt to use the old (stale) token after rotation
+	fullInputs := map[string]string{
+		"username": "ct_token_testuser",
+		"password": "testpassword",
+	}
+	errorStep, err := common.CompleteFlow(flowStep.ExecutionID, fullInputs, "action_001", firstToken)
+	ts.Require().NoError(err, "Flow step should be returned for stale challenge token")
+	ts.Require().Equal("ERROR", errorStep.FlowStatus, "Expected ERROR flow status for stale token")
+	ts.Require().NotNil(errorStep.Error, "Error should be present in flow step")
+	ts.Require().Equal("ICS-1002", errorStep.Error.Code, "Expected invalid challenge token error code for stale token")
+}
+
 func (ts *ChallengeTokenTestSuite) TestInvalidTokenRejectsRequest() {
 	flowStep, err := common.InitiateAuthenticationFlow(ctTokenTestAppID, false, nil, "")
 	ts.Require().NoError(err, "Failed to initiate authentication flow")
@@ -259,10 +286,11 @@ func (ts *ChallengeTokenTestSuite) TestInvalidTokenRejectsRequest() {
 		"username": "ct_token_testuser",
 		"password": "testpassword",
 	}
-	errorResp, err := common.CompleteAuthFlowWithError(flowStep.ExecutionID, inputs, "wrong-challenge-token")
-	ts.Require().NoError(err, "Error response should be returned for invalid challenge token")
-	ts.Require().NotNil(errorResp, "Error response should not be nil")
-	ts.Require().Equal("FES-1009", errorResp.Code, "Expected challenge token error code")
+	errorStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001", "wrong-challenge-token")
+	ts.Require().NoError(err, "Flow step should be returned for invalid challenge token")
+	ts.Require().Equal("ERROR", errorStep.FlowStatus, "Expected ERROR flow status")
+	ts.Require().NotNil(errorStep.Error, "Error should be present in flow step")
+	ts.Require().Equal("ICS-1002", errorStep.Error.Code, "Expected invalid challenge token error code")
 }
 
 func (ts *ChallengeTokenTestSuite) TestMissingTokenRejectsRequest() {
@@ -274,10 +302,11 @@ func (ts *ChallengeTokenTestSuite) TestMissingTokenRejectsRequest() {
 		"username": "ct_token_testuser",
 		"password": "testpassword",
 	}
-	errorResp, err := common.CompleteAuthFlowWithError(flowStep.ExecutionID, inputs, "")
-	ts.Require().NoError(err, "Error response should be returned for missing challenge token")
-	ts.Require().NotNil(errorResp, "Error response should not be nil")
-	ts.Require().Equal("FES-1009", errorResp.Code, "Expected challenge token error code")
+	errorStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001", "")
+	ts.Require().NoError(err, "Flow step should be returned for missing challenge token")
+	ts.Require().Equal("ERROR", errorStep.FlowStatus, "Expected ERROR flow status")
+	ts.Require().NotNil(errorStep.Error, "Error should be present in flow step")
+	ts.Require().Equal("ICS-1002", errorStep.Error.Code, "Expected invalid challenge token error code")
 }
 
 func (ts *ChallengeTokenTestSuite) TestFlowCanBeRetriedAfterInvalidToken() {
@@ -292,10 +321,11 @@ func (ts *ChallengeTokenTestSuite) TestFlowCanBeRetriedAfterInvalidToken() {
 	}
 
 	// Submit with a wrong token
-	errorResp, err := common.CompleteAuthFlowWithError(flowStep.ExecutionID, inputs, "wrong-challenge-token")
-	ts.Require().NoError(err, "Error response should be returned for invalid challenge token")
-	ts.Require().NotNil(errorResp, "Error response should not be nil")
-	ts.Require().Equal("FES-1009", errorResp.Code, "Expected challenge token error code")
+	errorStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001", "wrong-challenge-token")
+	ts.Require().NoError(err, "Flow step should be returned for invalid challenge token")
+	ts.Require().Equal("ERROR", errorStep.FlowStatus, "Expected ERROR flow status")
+	ts.Require().NotNil(errorStep.Error, "Error should be present in flow step")
+	ts.Require().Equal("ICS-1002", errorStep.Error.Code, "Expected invalid challenge token error code")
 
 	// Retry the same execution with the correct token
 	completeStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001", flowStep.ChallengeToken)

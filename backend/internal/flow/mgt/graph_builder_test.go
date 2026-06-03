@@ -28,18 +28,21 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
+	"github.com/thunder-id/thunderid/internal/flow/interceptor"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/executormock"
+	"github.com/thunder-id/thunderid/tests/mocks/flow/interceptormock"
 )
 
 type GraphBuilderTestSuite struct {
 	suite.Suite
-	mockFlowFactory      *coremock.FlowFactoryInterfaceMock
-	mockExecutorRegistry *executormock.ExecutorRegistryInterfaceMock
-	mockGraphCache       *coremock.GraphCacheInterfaceMock
-	builder              *graphBuilder
+	mockFlowFactory         *coremock.FlowFactoryInterfaceMock
+	mockExecutorRegistry    *executormock.ExecutorRegistryInterfaceMock
+	mockInterceptorRegistry *interceptormock.InterceptorRegistryInterfaceMock
+	mockGraphCache          *coremock.GraphCacheInterfaceMock
+	builder                 *graphBuilder
 }
 
 func TestGraphBuilderTestSuite(t *testing.T) {
@@ -53,13 +56,15 @@ func (s *GraphBuilderTestSuite) SetupTest() {
 
 	s.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(s.T())
 	s.mockExecutorRegistry = executormock.NewExecutorRegistryInterfaceMock(s.T())
+	s.mockInterceptorRegistry = interceptormock.NewInterceptorRegistryInterfaceMock(s.T())
 	s.mockGraphCache = coremock.NewGraphCacheInterfaceMock(s.T())
 
 	s.builder = &graphBuilder{
-		flowFactory:      s.mockFlowFactory,
-		executorRegistry: s.mockExecutorRegistry,
-		graphCache:       s.mockGraphCache,
-		logger:           log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowGraphBuilder")),
+		flowFactory:         s.mockFlowFactory,
+		executorRegistry:    s.mockExecutorRegistry,
+		interceptorRegistry: s.mockInterceptorRegistry,
+		graphCache:          s.mockGraphCache,
+		logger:              log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowGraphBuilder")),
 	}
 }
 
@@ -150,6 +155,7 @@ func (s *GraphBuilderTestSuite) TestGetGraph_BuildAndCache() {
 	mockEndNode.EXPECT().GetType().Return(common.NodeTypeEnd).Maybe()
 	mockStartNode.EXPECT().GetID().Return("start")
 	mockGraph.EXPECT().SetStartNode("start").Return(nil)
+	mockGraph.EXPECT().SetInterceptors(mock.Anything)
 
 	s.mockGraphCache.EXPECT().Set(mock.Anything, "flow-1", mockGraph).Return(nil)
 
@@ -214,6 +220,7 @@ func (s *GraphBuilderTestSuite) TestGetGraph_CacheSetError() {
 	mockStartNode.EXPECT().GetType().Return(common.NodeTypeStart)
 	mockStartNode.EXPECT().GetID().Return("start")
 	mockGraph.EXPECT().SetStartNode("start").Return(nil)
+	mockGraph.EXPECT().SetInterceptors(mock.Anything)
 
 	s.mockGraphCache.EXPECT().Set(mock.Anything, "flow-1", mockGraph).Return(errors.New("cache error"))
 
@@ -291,6 +298,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithExecutor() {
 	mockTaskNode.EXPECT().GetType().Return(common.NodeTypeTaskExecution).Maybe()
 	mockStartNode.EXPECT().GetID().Return("start")
 	mockGraph.EXPECT().SetStartNode("start").Return(nil)
+	mockGraph.EXPECT().SetInterceptors(mock.Anything)
 
 	graph, err := s.builder.buildGraph(context.Background(), flow)
 
@@ -400,6 +408,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithOnFailure() {
 	mockEndNode.EXPECT().GetType().Return(common.NodeTypeEnd).Maybe()
 	mockStartNode.EXPECT().GetID().Return("start")
 	mockGraph.EXPECT().SetStartNode("start").Return(nil)
+	mockGraph.EXPECT().SetInterceptors(mock.Anything)
 
 	graph, err := s.builder.buildGraph(context.Background(), flow)
 
@@ -528,6 +537,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithInputs() {
 	mockTaskNode.EXPECT().GetType().Return(common.NodeTypeTaskExecution).Maybe()
 	mockStartNode.EXPECT().GetID().Return("start")
 	mockGraph.EXPECT().SetStartNode("start").Return(nil)
+	mockGraph.EXPECT().SetInterceptors(mock.Anything)
 
 	graph, err := s.builder.buildGraph(context.Background(), flow)
 
@@ -612,6 +622,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithActions() {
 	mockTask2Node.EXPECT().GetType().Return(common.NodeTypeTaskExecution).Maybe()
 	mockStartNode.EXPECT().GetID().Return("start")
 	mockGraph.EXPECT().SetStartNode("start").Return(nil)
+	mockGraph.EXPECT().SetInterceptors(mock.Anything)
 
 	graph, err := s.builder.buildGraph(context.Background(), flow)
 
@@ -664,6 +675,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithMeta() {
 	mockPromptNode.EXPECT().GetType().Return(common.NodeTypePrompt).Maybe()
 	mockStartNode.EXPECT().GetID().Return("start")
 	mockGraph.EXPECT().SetStartNode("start").Return(nil)
+	mockGraph.EXPECT().SetInterceptors(mock.Anything)
 
 	graph, err := s.builder.buildGraph(context.Background(), flow)
 
@@ -710,6 +722,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_VariantExplicitlySet() {
 	mockPromptNode.EXPECT().GetType().Return(common.NodeTypePrompt).Maybe()
 	mockStartNode.EXPECT().GetID().Return("start")
 	mockGraph.EXPECT().SetStartNode("start").Return(nil)
+	mockGraph.EXPECT().SetInterceptors(mock.Anything)
 
 	graph, err := s.builder.buildGraph(context.Background(), flow)
 
@@ -777,6 +790,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithCondition() {
 	mockEndNode.EXPECT().GetType().Return(common.NodeTypeEnd).Maybe()
 	mockStartNode.EXPECT().GetID().Return("start")
 	mockGraph.EXPECT().SetStartNode("start").Return(nil)
+	mockGraph.EXPECT().SetInterceptors(mock.Anything)
 
 	graph, err := s.builder.buildGraph(context.Background(), flow)
 
@@ -968,6 +982,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithProperties() {
 	mockTaskNode.EXPECT().GetType().Return(common.NodeTypeTaskExecution).Maybe()
 	mockStartNode.EXPECT().GetID().Return("start")
 	mockGraph.EXPECT().SetStartNode("start").Return(nil)
+	mockGraph.EXPECT().SetInterceptors(mock.Anything)
 
 	graph, err := s.builder.buildGraph(context.Background(), flow)
 
@@ -1043,6 +1058,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithExecutorMode() {
 	mockTaskNode.EXPECT().GetType().Return(common.NodeTypeTaskExecution).Maybe()
 	mockStartNode.EXPECT().GetID().Return("start")
 	mockGraph.EXPECT().SetStartNode("start").Return(nil)
+	mockGraph.EXPECT().SetInterceptors(mock.Anything)
 
 	graph, err := s.builder.buildGraph(context.Background(), flow)
 
@@ -1168,6 +1184,129 @@ func (s *GraphBuilderTestSuite) TestConfigureNodeExecutor_EmptyExecutorNameInVal
 
 	s.NotNil(err)
 	s.Contains(err.Error(), "executor name cannot be empty")
+}
+
+// Tests for attachInterceptors and validateInterceptorName
+
+func (s *GraphBuilderTestSuite) TestAttachInterceptors_NoInterceptors() {
+	flow := &CompleteFlowDefinition{
+		Interceptors: nil,
+	}
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.EXPECT().SetInterceptors(mock.Anything)
+
+	err := s.builder.attachInterceptors(flow, mockGraph)
+
+	s.Nil(err)
+}
+
+func (s *GraphBuilderTestSuite) TestAttachInterceptors_ValidInterceptor() {
+	flow := &CompleteFlowDefinition{
+		Interceptors: []InterceptorDefinition{
+			{
+				Name:    "test-interceptor",
+				Mode:    common.InterceptorModePreNode,
+				Scope:   common.InterceptorScopeAll,
+				ApplyTo: []string{"node-1"},
+			},
+		},
+	}
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockUnit := coremock.NewInterceptorUnitInterfaceMock(s.T())
+	mockUnit.EXPECT().GetName().Return("test-interceptor").Maybe()
+
+	s.mockInterceptorRegistry.EXPECT().IsRegistered("test-interceptor").Return(true)
+	s.mockInterceptorRegistry.EXPECT().GetInterceptor("test-interceptor").Return(
+		coremock.NewInterceptorInterfaceMock(s.T()), nil).Maybe()
+	s.mockFlowFactory.EXPECT().CreateInterceptorUnit(
+		"test-interceptor", common.InterceptorModePreNode, common.InterceptorScopeAll,
+		[]string{"node-1"}, map[string]interface{}(nil)).Return(mockUnit)
+	mockGraph.EXPECT().SetInterceptors(mock.Anything)
+
+	err := s.builder.attachInterceptors(flow, mockGraph)
+
+	s.Nil(err)
+}
+
+func (s *GraphBuilderTestSuite) TestAttachInterceptors_UnregisteredInterceptor() {
+	flow := &CompleteFlowDefinition{
+		Interceptors: []InterceptorDefinition{
+			{
+				Name: "unregistered-interceptor",
+				Mode: "PRE",
+			},
+		},
+	}
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+
+	s.mockInterceptorRegistry.EXPECT().IsRegistered("unregistered-interceptor").Return(false)
+
+	err := s.builder.attachInterceptors(flow, mockGraph)
+
+	s.NotNil(err)
+	s.Contains(err.Error(), "error while validating interceptor")
+	s.Contains(err.Error(), "interceptor with name unregistered-interceptor not registered")
+}
+
+func (s *GraphBuilderTestSuite) TestAttachInterceptors_EmptyInterceptorName() {
+	flow := &CompleteFlowDefinition{
+		Interceptors: []InterceptorDefinition{
+			{
+				Name: "",
+				Mode: "PRE",
+			},
+		},
+	}
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+
+	err := s.builder.attachInterceptors(flow, mockGraph)
+
+	s.NotNil(err)
+	s.Contains(err.Error(), "interceptor name cannot be empty")
+}
+
+func (s *GraphBuilderTestSuite) TestAttachInterceptors_SkipsDefaultInterceptor() {
+	originalNames := interceptor.DefaultInterceptorNames
+	interceptor.DefaultInterceptorNames = map[string]struct{}{"DefaultIC": {}}
+	defer func() {
+		interceptor.DefaultInterceptorNames = originalNames
+	}()
+
+	flow := &CompleteFlowDefinition{
+		Interceptors: []InterceptorDefinition{
+			{Name: "DefaultIC", Mode: common.InterceptorModePreRequest},
+		},
+	}
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.EXPECT().SetInterceptors(mock.Anything)
+
+	err := s.builder.attachInterceptors(flow, mockGraph)
+
+	s.Nil(err)
+}
+
+func (s *GraphBuilderTestSuite) TestValidateInterceptorName_EmptyName() {
+	err := s.builder.validateInterceptorName("")
+
+	s.NotNil(err)
+	s.Contains(err.Error(), "interceptor name cannot be empty")
+}
+
+func (s *GraphBuilderTestSuite) TestValidateInterceptorName_Registered() {
+	s.mockInterceptorRegistry.EXPECT().IsRegistered("test-interceptor").Return(true)
+
+	err := s.builder.validateInterceptorName("test-interceptor")
+
+	s.Nil(err)
+}
+
+func (s *GraphBuilderTestSuite) TestValidateInterceptorName_NotRegistered() {
+	s.mockInterceptorRegistry.EXPECT().IsRegistered("unknown").Return(false)
+
+	err := s.builder.validateInterceptorName("unknown")
+
+	s.NotNil(err)
+	s.Contains(err.Error(), "interceptor with name unknown not registered")
 }
 
 // Tests for display-only prompt node properties

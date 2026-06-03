@@ -122,8 +122,7 @@ func (s *flowExecService) Execute(ctx context.Context,
 				log.String("error", loadErr.Error.DefaultValue))
 			return nil, loadErr
 		}
-		// Set the incoming challenge token on the context so the engine can validate it
-		engineCtx.ChallengeTokenIn = challengeToken
+		setChallengeTokenInCtx(engineCtx, challengeToken)
 	}
 
 	// Set trace ID to engine context (request context is already set during context loading)
@@ -132,7 +131,7 @@ func (s *flowExecService) Execute(ctx context.Context,
 	flowStep, flowErr := s.flowEngine.Execute(engineCtx)
 
 	if flowErr != nil {
-		if !isNewFlow(executionID) && flowErr.Code != ErrorInvalidChallengeToken.Code {
+		if !isNewFlow(executionID) {
 			if removeErr := s.removeContext(ctx, engineCtx.ExecutionID, logger); removeErr != nil {
 				logger.Error(ctx, "Failed to remove flow context after engine failure",
 					log.String(log.LoggerKeyExecutionID, engineCtx.ExecutionID), log.Error(removeErr))
@@ -554,10 +553,24 @@ func prepareContext(ctx *EngineContext, action string, inputs map[string]string)
 	if ctx.RuntimeData == nil {
 		ctx.RuntimeData = make(map[string]string)
 	}
+	if ctx.InterceptorSharedData == nil {
+		ctx.InterceptorSharedData = make(map[string]string)
+	}
 
 	// Set the action if provided
 	if action != "" {
 		ctx.CurrentAction = action
+	}
+}
+
+// setChallengeTokenInCtx copies incoming request data from the engine context into the
+// interceptor shared data so that interceptors can access it during execution.
+func setChallengeTokenInCtx(ctx *EngineContext, challengeTokenIn string) {
+	if challengeTokenIn != "" {
+		if ctx.InterceptorSharedData == nil {
+			ctx.InterceptorSharedData = make(map[string]string)
+		}
+		ctx.InterceptorSharedData[common.InterceptorDataKeyChallengeTokenIn] = challengeTokenIn
 	}
 }
 

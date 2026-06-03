@@ -28,6 +28,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/flow/executor"
+	"github.com/thunder-id/thunderid/internal/flow/interceptor"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
@@ -71,13 +72,14 @@ type FlowMgtServiceInterface interface {
 
 // flowMgtService is the default implementation of the FlowMgtServiceInterface.
 type flowMgtService struct {
-	store            flowStoreInterface
-	inferenceService flowInferenceServiceInterface
-	graphBuilder     graphBuilderInterface
-	executorRegistry executor.ExecutorRegistryInterface
-	compositeStore   *compositeFlowStore
-	transactioner    transaction.Transactioner
-	logger           *log.Logger
+	store               flowStoreInterface
+	inferenceService    flowInferenceServiceInterface
+	graphBuilder        graphBuilderInterface
+	executorRegistry    executor.ExecutorRegistryInterface
+	interceptorRegistry interceptor.InterceptorRegistryInterface
+	compositeStore      *compositeFlowStore
+	transactioner       transaction.Transactioner
+	logger              *log.Logger
 }
 
 // newFlowMgtService creates a new instance of flowMgtService.
@@ -86,17 +88,19 @@ func newFlowMgtService(
 	inferenceService flowInferenceServiceInterface,
 	graphBuilder graphBuilderInterface,
 	executorRegistry executor.ExecutorRegistryInterface,
+	interceptorRegistry interceptor.InterceptorRegistryInterface,
 	compositeStore *compositeFlowStore,
 	transactioner transaction.Transactioner,
 ) FlowMgtServiceInterface {
 	return &flowMgtService{
-		store:            store,
-		inferenceService: inferenceService,
-		graphBuilder:     graphBuilder,
-		executorRegistry: executorRegistry,
-		compositeStore:   compositeStore,
-		transactioner:    transactioner,
-		logger:           log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
+		store:               store,
+		inferenceService:    inferenceService,
+		graphBuilder:        graphBuilder,
+		executorRegistry:    executorRegistry,
+		interceptorRegistry: interceptorRegistry,
+		compositeStore:      compositeStore,
+		transactioner:       transactioner,
+		logger:              log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
 	}
 }
 
@@ -140,6 +144,9 @@ func (s *flowMgtService) ListFlows(ctx context.Context, limit, offset int, flowT
 func (s *flowMgtService) CreateFlow(ctx context.Context, flowDef *FlowDefinition) (
 	*CompleteFlowDefinition, *serviceerror.ServiceError) {
 	if err := validateFlowDefinition(flowDef); err != nil {
+		return nil, err
+	}
+	if err := s.validateInterceptorRegistration(flowDef.Interceptors); err != nil {
 		return nil, err
 	}
 
@@ -245,6 +252,9 @@ func (s *flowMgtService) UpdateFlow(ctx context.Context, flowID string, flowDef 
 		return nil, &ErrorMissingFlowID
 	}
 	if err := validateFlowDefinition(flowDef); err != nil {
+		return nil, err
+	}
+	if err := s.validateInterceptorRegistration(flowDef.Interceptors); err != nil {
 		return nil, err
 	}
 
@@ -564,6 +574,74 @@ func validateFlowDefinition(flowDef *FlowDefinition) *serviceerror.ServiceError 
 		})
 	}
 
+	if err := validateInterceptors(flowDef.Interceptors); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateInterceptors validates the interceptor definitions declared in a flow.
+func validateInterceptors(interceptors []InterceptorDefinition) *serviceerror.ServiceError {
+	validModes := common.ValidInterceptorModes
+	validScopes := common.ValidInterceptorScopes
+
+	for i, ic := range interceptors {
+		if ic.Name == "" {
+			return serviceerror.CustomServiceError(ErrorInvalidFlowData, i18ncore.I18nMessage{
+				Key:          "error.flowmgtservice.interceptor_name_required",
+				DefaultValue: fmt.Sprintf("Interceptor at index %d must have a name", i),
+			})
+		}
+		if isDefaultInterceptor(ic.Name) {
+			msg := fmt.Sprintf("Default interceptor '%s' cannot be configured in a flow definition", ic.Name)
+			return serviceerror.CustomServiceError(ErrorInvalidFlowData, i18ncore.I18nMessage{
+				Key:          "error.flowmgtservice.interceptor_default_not_configurable",
+				DefaultValue: msg,
+			})
+		}
+		if !validModes[ic.Mode] {
+			return serviceerror.CustomServiceError(ErrorInvalidFlowData, i18ncore.I18nMessage{
+				Key:          "error.flowmgtservice.interceptor_invalid_mode",
+				DefaultValue: fmt.Sprintf("Interceptor '%s' has invalid mode '%s'", ic.Name, ic.Mode),
+			})
+		}
+		if ic.Scope != "" && !validScopes[ic.Scope] {
+			return serviceerror.CustomServiceError(ErrorInvalidFlowData, i18ncore.I18nMessage{
+				Key:          "error.flowmgtservice.interceptor_invalid_scope",
+				DefaultValue: fmt.Sprintf("Interceptor '%s' has invalid scope '%s'", ic.Name, ic.Scope),
+			})
+		}
+		if ic.Scope == common.InterceptorScopeSelected && len(ic.ApplyTo) == 0 {
+			return serviceerror.CustomServiceError(ErrorInvalidFlowData, i18ncore.I18nMessage{
+				Key:          "error.flowmgtservice.interceptor_selected_scope_requires_apply_to",
+				DefaultValue: "Interceptor with scope SELECTED must specify at least one node in applyTo",
+			})
+		}
+	}
+
+	return nil
+}
+
+// isDefaultInterceptor checks whether the given interceptor name matches any default interceptor.
+func isDefaultInterceptor(name string) bool {
+	_, ok := interceptor.DefaultInterceptorNames[name]
+	return ok
+}
+
+// validateInterceptorRegistration checks that every interceptor referenced in the flow
+// is registered in the interceptor registry.
+func (s *flowMgtService) validateInterceptorRegistration(
+	interceptors []InterceptorDefinition,
+) *serviceerror.ServiceError {
+	for _, ic := range interceptors {
+		if !s.interceptorRegistry.IsRegistered(ic.Name) {
+			return serviceerror.CustomServiceError(ErrorInvalidFlowData, i18ncore.I18nMessage{
+				Key:          "error.flowmgtservice.interceptor_not_registered",
+				DefaultValue: fmt.Sprintf("Interceptor '%s' is not registered", ic.Name),
+			})
+		}
+	}
 	return nil
 }
 

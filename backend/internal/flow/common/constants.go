@@ -176,6 +176,8 @@ const (
 	NodePropertyOUResolveFrom = "resolveFrom"
 	// NodePropertyAuthMethodMapping maps authentication classes to action refs on login_options PROMPT nodes.
 	NodePropertyAuthMethodMapping = "authMethodMapping"
+	// NodePropertySkipInterceptors indicates whether to skip interceptor execution for the current node.
+	NodePropertySkipInterceptors = "skipInterceptors"
 )
 
 const (
@@ -354,3 +356,53 @@ const (
 	DefaultValidationMessageMinLength = "validation.minLength.invalid"
 	DefaultValidationMessageMaxLength = "validation.maxLength.invalid"
 )
+
+// InterceptorMode represents the lifecycle point at which an interceptor executes.
+type InterceptorMode string
+
+// Interceptor mode constants.
+const (
+	InterceptorModePreRequest  InterceptorMode = "PRE_REQUEST"
+	InterceptorModePreNode     InterceptorMode = "PRE_NODE"
+	InterceptorModePostNode    InterceptorMode = "POST_NODE"
+	InterceptorModePostRequest InterceptorMode = "POST_REQUEST"
+)
+
+// InterceptorStatus represents the outcome of an interceptor execution.
+type InterceptorStatus string
+
+// Interceptor status constants.
+const (
+	InterceptorStatusComplete   InterceptorStatus = "COMPLETE"
+	InterceptorStatusIncomplete InterceptorStatus = "INCOMPLETE"
+	InterceptorStatusFailure    InterceptorStatus = "FAILURE"
+)
+
+// Interceptor shared data keys for incoming request data populated before interceptor execution.
+const (
+	// InterceptorDataKeyChallengeTokenIn is the shared data key for the incoming challenge token.
+	InterceptorDataKeyChallengeTokenIn = "challengeTokenIn"
+)
+
+// InterceptorScope determines which nodes a per-node interceptor applies to.
+type InterceptorScope string
+
+// Interceptor scope constants.
+const (
+	InterceptorScopeAll      InterceptorScope = "ALL"
+	InterceptorScopeSelected InterceptorScope = "SELECTED"
+)
+
+// ValidInterceptorModes contains the set of valid interceptor modes for validation.
+var ValidInterceptorModes = map[InterceptorMode]bool{
+	InterceptorModePreRequest:  true,
+	InterceptorModePreNode:     true,
+	InterceptorModePostNode:    true,
+	InterceptorModePostRequest: true,
+}
+
+// ValidInterceptorScopes contains the set of valid interceptor scopes for validation.
+var ValidInterceptorScopes = map[InterceptorScope]bool{
+	InterceptorScopeAll:      true,
+	InterceptorScopeSelected: true,
+}

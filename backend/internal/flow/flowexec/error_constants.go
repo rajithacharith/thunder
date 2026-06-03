@@ -151,20 +151,6 @@ var ErrorInvalidFlowInitContext = serviceerror.ServiceError{
 	},
 }
 
-// ErrorInvalidChallengeToken defines the error response for invalid or missing challenge tokens.
-var ErrorInvalidChallengeToken = serviceerror.ServiceError{
-	Code: "FES-1009",
-	Type: serviceerror.ClientErrorType,
-	Error: core.I18nMessage{
-		Key:          "error.flowexecservice.invalid_challenge_token",
-		DefaultValue: "Invalid challenge token",
-	},
-	ErrorDescription: core.I18nMessage{
-		Key:          "error.flowexecservice.invalid_challenge_token_description",
-		DefaultValue: "The challenge token is missing or invalid",
-	},
-}
-
 // ErrorDirectFlowInitiationNotPermitted defines the error for applications that do not allow
 // direct flow initiation via the HTTP endpoint (e.g. authorization_code grant type apps).
 var ErrorDirectFlowInitiationNotPermitted = serviceerror.ServiceError{

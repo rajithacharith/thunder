@@ -325,6 +325,10 @@ type FlowConfig struct {
 	// When empty, all built-in executors are registered. When set, only listed executors
 	// are available; omit only executors you intentionally disable on this node.
 	Executors []string `yaml:"executors" json:"executors"`
+	// Interceptors lists built-in interceptor names to register (e.g. CaptchaInterceptor).
+	// When empty, all built-in interceptors are registered. When set, only listed interceptors
+	// are available; omit only interceptors you intentionally disable on this node.
+	Interceptors []string `yaml:"interceptors" json:"interceptors"`
 }
 
 // CryptoConfig holds the cryptographic configuration details.
