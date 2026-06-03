@@ -31,6 +31,7 @@ import (
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/security"
 
 	"gopkg.in/yaml.v3"
 )
@@ -135,7 +136,8 @@ func makeAppInboundParser(appService ApplicationServiceInterface) func([]byte) (
 		if err != nil {
 			return nil, err
 		}
-		validatedApp, _, svcErr := appService.ValidateApplication(context.Background(), appDTO)
+		validatedApp, _, svcErr := appService.ValidateApplication(
+			security.WithRuntimeContext(context.Background()), appDTO)
 		if svcErr != nil {
 			return nil, fmt.Errorf("error validating application '%s': %v", appDTO.Name, svcErr)
 		}
@@ -290,7 +292,8 @@ func makeAppEntityParser(
 			return nil, nil, nil, fmt.Errorf("failed to parse application YAML: %w", err)
 		}
 
-		_, inboundAuthConfig, svcErr := appService.ValidateApplication(context.Background(), appDTO)
+		_, inboundAuthConfig, svcErr := appService.ValidateApplication(
+			security.WithRuntimeContext(context.Background()), appDTO)
 		if svcErr != nil {
 			return nil, nil, nil, fmt.Errorf("error validating application '%s': %v", appDTO.Name, svcErr)
 		}
