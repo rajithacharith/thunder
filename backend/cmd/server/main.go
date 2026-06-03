@@ -72,7 +72,7 @@ func main() {
 	}
 
 	// Initialize the cache manager.
-	cacheManager := cache.Initialize()
+	cacheManager := cache.Initialize(cfg.Cache, cfg.Server.Identifier)
 
 	// Initialize system permission strings before any service or middleware uses them.
 	security.InitSystemPermissions(cfg.Server.SecurityConfig.SystemPermissionPrefix)
