@@ -16,19 +16,14 @@
  * under the License.
  */
 
-import {render} from '@testing-library/react';
-import {describe, it, expect, vi} from 'vitest';
-import App from '../App';
+import {render, screen} from '@testing-library/react';
+import {describe, it, expect} from 'vitest';
+import PageLoader from '../PageLoader';
 
-vi.mock('../pages/AcceptInvitePage', () => ({default: () => null}));
-vi.mock('../pages/ErrorPage', () => ({default: () => null}));
-vi.mock('../pages/RecoveryPage', () => ({default: () => null}));
-vi.mock('../pages/SignInPage', () => ({default: () => null}));
-vi.mock('../pages/SignUpPage', () => ({default: () => null}));
+describe('PageLoader', () => {
+  it('renders the spinner', () => {
+    render(<PageLoader />);
 
-describe('App', () => {
-  it('renders without crashing', () => {
-    const {container} = render(<App />);
-    expect(container).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 });

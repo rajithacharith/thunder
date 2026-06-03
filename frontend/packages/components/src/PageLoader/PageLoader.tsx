@@ -16,19 +16,13 @@
  * under the License.
  */
 
-import {render} from '@testing-library/react';
-import {describe, it, expect, vi} from 'vitest';
-import App from '../App';
+import {Box, CircularProgress} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
 
-vi.mock('../pages/AcceptInvitePage', () => ({default: () => null}));
-vi.mock('../pages/ErrorPage', () => ({default: () => null}));
-vi.mock('../pages/RecoveryPage', () => ({default: () => null}));
-vi.mock('../pages/SignInPage', () => ({default: () => null}));
-vi.mock('../pages/SignUpPage', () => ({default: () => null}));
-
-describe('App', () => {
-  it('renders without crashing', () => {
-    const {container} = render(<App />);
-    expect(container).toBeInTheDocument();
-  });
-});
+export default function PageLoader(): JSX.Element {
+  return (
+    <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh'}}>
+      <CircularProgress />
+    </Box>
+  );
+}
