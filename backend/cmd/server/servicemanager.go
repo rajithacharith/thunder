@@ -214,7 +214,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	authZService := authz.Initialize(roleService)
 	authzen.Initialize(mux, authZService, entityProvider, resourceService)
 
-	idpService, idpExporter, err := idp.Initialize(cacheManager, mux)
+	idpService, idpExporter, err := idp.Initialize(cacheManager, mux, entityTypeService)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize IDPService", log.Error(err))
 	}
@@ -243,7 +243,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 
 	// Initialize federated authentication services.
 	oauthAuthnService := authnOAuth.Initialize(idpService, entityProvider)
-	oidcAuthnService := authnOIDC.Initialize(oauthAuthnService, jwtService)
+	oidcAuthnService := authnOIDC.Initialize(oauthAuthnService, jwtService, idpService)
 	googleAuthnService := google.Initialize(oidcAuthnService, jwtService)
 	githubAuthnService := github.Initialize(oauthAuthnService)
 

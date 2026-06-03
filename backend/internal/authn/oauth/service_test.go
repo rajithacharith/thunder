@@ -780,3 +780,67 @@ func (suite *OAuthAuthnServiceTestSuite) TestFetchUserInfoMissingUserInfoEndpoin
 	suite.NotNil(err)
 	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
+
+func (suite *OAuthAuthnServiceTestSuite) TestResolveAttributeMappings_AppliesMappings() {
+	svcImpl := suite.service.(*oAuthAuthnService)
+	idpDTO := &idp.IDPDTO{AttributeConfiguration: &idp.AttributeConfiguration{
+		UserTypeResolution: &idp.UserTypeResolution{Default: "person"},
+		UserTypeAttributeMappings: []idp.UserTypeAttributeMapping{{
+			UserType:   "person",
+			Attributes: []idp.AttributeMapping{{ExternalAttribute: "given_name", LocalAttribute: "firstName"}},
+		}},
+	}}
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).Return(idpDTO, nil)
+
+	result, svcErr := svcImpl.resolveAttributeMappings(context.Background(), testIDPID,
+		map[string]interface{}{"given_name": "Jane", "sub": "abc"})
+
+	suite.Nil(svcErr)
+	suite.Equal("Jane", result["firstName"])
+	suite.NotContains(result, "given_name")
+	suite.Equal("abc", result["sub"])
+}
+
+func (suite *OAuthAuthnServiceTestSuite) TestResolveAttributeMappings_ClientError() {
+	svcImpl := suite.service.(*oAuthAuthnService)
+	clientErr := &serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType, Code: "IDP-1001",
+		ErrorDescription: core.I18nMessage{DefaultValue: "not found"},
+	}
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).Return(nil, clientErr)
+
+	result, svcErr := svcImpl.resolveAttributeMappings(context.Background(), testIDPID,
+		map[string]interface{}{"sub": "abc"})
+
+	suite.Nil(result)
+	suite.NotNil(svcErr)
+	suite.Equal(ErrorClientErrorWhileRetrievingIDP.Code, svcErr.Code)
+}
+
+func (suite *OAuthAuthnServiceTestSuite) TestResolveAttributeMappings_ServerError() {
+	svcImpl := suite.service.(*oAuthAuthnService)
+	serverErr := &serviceerror.ServiceError{
+		Type: serviceerror.ServerErrorType, Code: "IDP-5000",
+		ErrorDescription: core.I18nMessage{DefaultValue: "boom"},
+	}
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).Return(nil, serverErr)
+
+	result, svcErr := svcImpl.resolveAttributeMappings(context.Background(), testIDPID,
+		map[string]interface{}{"sub": "abc"})
+
+	suite.Nil(result)
+	suite.NotNil(svcErr)
+	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+}
+
+func (suite *OAuthAuthnServiceTestSuite) TestResolveAttributeMappings_NilIDP() {
+	svcImpl := suite.service.(*oAuthAuthnService)
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).Return(nil, nil)
+
+	result, svcErr := svcImpl.resolveAttributeMappings(context.Background(), testIDPID,
+		map[string]interface{}{"sub": "abc"})
+
+	suite.Nil(result)
+	suite.NotNil(svcErr)
+	suite.Equal(ErrorInvalidIDP.Code, svcErr.Code)
+}

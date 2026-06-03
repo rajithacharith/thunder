@@ -113,11 +113,15 @@ When processing an external token for exchange, <ProductName />:
 
 If any step fails, the exchange returns HTTP 400 with `error=invalid_request` and an `"Invalid subject_token"` message.
 
+## Attribute Configuration
+
+Attribute configuration for token exchange uses the same `attributeConfiguration` structure as federated sign-in. See [Add an OIDC Identity Provider](../add-oidc-provider#attribute-configuration) for the full reference.
+
 ## Limitations
 
 - Only JWT tokens are supported. Opaque tokens (for example, GitHub access tokens) cannot be exchanged.
 - The external user's `sub` is passed through as-is. No local user lookup or just-in-time provisioning occurs.
-- No scope or claim mapping is applied. External token scopes use the existing intersection logic; external claims pass through filtered by the application's `userAttributes` configuration.
+- No scope mapping is applied; external token scopes use the existing intersection logic. External claims can be renamed to local attributes via the IdP's `attributeConfiguration` (see [Attribute Configuration](#attribute-configuration)); the resulting attributes are still filtered by the application's `userAttributes` configuration.
 - Token exchange is available to all applications that have the token exchange grant type. No per-application IdP restriction applies.
 
 ## Next Steps
