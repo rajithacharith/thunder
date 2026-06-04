@@ -6,7 +6,7 @@ package hashmock
 
 import (
 	mock "github.com/stretchr/testify/mock"
-	"github.com/thunder-id/thunderid/internal/system/cryptolib/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 )
 
 // NewHashServiceInterfaceMock creates a new instance of HashServiceInterfaceMock. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -37,22 +37,22 @@ func (_m *HashServiceInterfaceMock) EXPECT() *HashServiceInterfaceMock_Expecter 
 }
 
 // Generate provides a mock function for the type HashServiceInterfaceMock
-func (_mock *HashServiceInterfaceMock) Generate(credentialValue []byte) (hash.Credential, error) {
+func (_mock *HashServiceInterfaceMock) Generate(credentialValue []byte) (cryptolib.Credential, error) {
 	ret := _mock.Called(credentialValue)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Generate")
 	}
 
-	var r0 hash.Credential
+	var r0 cryptolib.Credential
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func([]byte) (hash.Credential, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func([]byte) (cryptolib.Credential, error)); ok {
 		return returnFunc(credentialValue)
 	}
-	if returnFunc, ok := ret.Get(0).(func([]byte) hash.Credential); ok {
+	if returnFunc, ok := ret.Get(0).(func([]byte) cryptolib.Credential); ok {
 		r0 = returnFunc(credentialValue)
 	} else {
-		r0 = ret.Get(0).(hash.Credential)
+		r0 = ret.Get(0).(cryptolib.Credential)
 	}
 	if returnFunc, ok := ret.Get(1).(func([]byte) error); ok {
 		r1 = returnFunc(credentialValue)
@@ -86,18 +86,18 @@ func (_c *HashServiceInterfaceMock_Generate_Call) Run(run func(credentialValue [
 	return _c
 }
 
-func (_c *HashServiceInterfaceMock_Generate_Call) Return(credential hash.Credential, err error) *HashServiceInterfaceMock_Generate_Call {
+func (_c *HashServiceInterfaceMock_Generate_Call) Return(credential cryptolib.Credential, err error) *HashServiceInterfaceMock_Generate_Call {
 	_c.Call.Return(credential, err)
 	return _c
 }
 
-func (_c *HashServiceInterfaceMock_Generate_Call) RunAndReturn(run func(credentialValue []byte) (hash.Credential, error)) *HashServiceInterfaceMock_Generate_Call {
+func (_c *HashServiceInterfaceMock_Generate_Call) RunAndReturn(run func(credentialValue []byte) (cryptolib.Credential, error)) *HashServiceInterfaceMock_Generate_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Verify provides a mock function for the type HashServiceInterfaceMock
-func (_mock *HashServiceInterfaceMock) Verify(credentialValueToVerify []byte, referenceCredential hash.Credential) (bool, error) {
+func (_mock *HashServiceInterfaceMock) Verify(credentialValueToVerify []byte, referenceCredential cryptolib.Credential) (bool, error) {
 	ret := _mock.Called(credentialValueToVerify, referenceCredential)
 
 	if len(ret) == 0 {
@@ -106,15 +106,15 @@ func (_mock *HashServiceInterfaceMock) Verify(credentialValueToVerify []byte, re
 
 	var r0 bool
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func([]byte, hash.Credential) (bool, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func([]byte, cryptolib.Credential) (bool, error)); ok {
 		return returnFunc(credentialValueToVerify, referenceCredential)
 	}
-	if returnFunc, ok := ret.Get(0).(func([]byte, hash.Credential) bool); ok {
+	if returnFunc, ok := ret.Get(0).(func([]byte, cryptolib.Credential) bool); ok {
 		r0 = returnFunc(credentialValueToVerify, referenceCredential)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func([]byte, hash.Credential) error); ok {
+	if returnFunc, ok := ret.Get(1).(func([]byte, cryptolib.Credential) error); ok {
 		r1 = returnFunc(credentialValueToVerify, referenceCredential)
 	} else {
 		r1 = ret.Error(1)
@@ -129,20 +129,20 @@ type HashServiceInterfaceMock_Verify_Call struct {
 
 // Verify is a helper method to define mock.On call
 //   - credentialValueToVerify []byte
-//   - referenceCredential hash.Credential
+//   - referenceCredential cryptolib.Credential
 func (_e *HashServiceInterfaceMock_Expecter) Verify(credentialValueToVerify interface{}, referenceCredential interface{}) *HashServiceInterfaceMock_Verify_Call {
 	return &HashServiceInterfaceMock_Verify_Call{Call: _e.mock.On("Verify", credentialValueToVerify, referenceCredential)}
 }
 
-func (_c *HashServiceInterfaceMock_Verify_Call) Run(run func(credentialValueToVerify []byte, referenceCredential hash.Credential)) *HashServiceInterfaceMock_Verify_Call {
+func (_c *HashServiceInterfaceMock_Verify_Call) Run(run func(credentialValueToVerify []byte, referenceCredential cryptolib.Credential)) *HashServiceInterfaceMock_Verify_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 []byte
 		if args[0] != nil {
 			arg0 = args[0].([]byte)
 		}
-		var arg1 hash.Credential
+		var arg1 cryptolib.Credential
 		if args[1] != nil {
-			arg1 = args[1].(hash.Credential)
+			arg1 = args[1].(cryptolib.Credential)
 		}
 		run(
 			arg0,
@@ -157,7 +157,7 @@ func (_c *HashServiceInterfaceMock_Verify_Call) Return(b bool, err error) *HashS
 	return _c
 }
 
-func (_c *HashServiceInterfaceMock_Verify_Call) RunAndReturn(run func(credentialValueToVerify []byte, referenceCredential hash.Credential) (bool, error)) *HashServiceInterfaceMock_Verify_Call {
+func (_c *HashServiceInterfaceMock_Verify_Call) RunAndReturn(run func(credentialValueToVerify []byte, referenceCredential cryptolib.Credential) (bool, error)) *HashServiceInterfaceMock_Verify_Call {
 	_c.Call.Return(run)
 	return _c
 }

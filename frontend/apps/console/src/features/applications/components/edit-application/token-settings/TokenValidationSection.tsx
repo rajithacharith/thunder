@@ -34,6 +34,7 @@ interface TokenValidationSectionProps {
     validityPeriod: number;
     accessTokenValidity: number;
     idTokenValidity: number;
+    refreshTokenValidity: number;
   }>;
   /**
    * Form validation errors
@@ -42,29 +43,39 @@ interface TokenValidationSectionProps {
     validityPeriod: number;
     accessTokenValidity: number;
     idTokenValidity: number;
+    refreshTokenValidity: number;
   }>;
   /**
    * Token mode:
    * - 'shared': Single validity period for native apps (no tabs)
-   * - 'oauth': Tabbed layout with separate Access Token and ID Token validity inputs
+   * - 'oauth': Tabbed layout with separate Access Token, ID Token, and Refresh Token validity inputs
    */
   tokenType: 'shared' | 'oauth';
+  /**
+   * Whether inputs should be disabled (e.g. read-only resource).
+   */
+  disabled?: boolean;
 }
 
 /**
  * Section component for configuring token validity periods.
  *
  * - `tokenType="shared"`: renders a single validity period input for native apps.
- * - `tokenType="oauth"`: renders two tabs (Access Token / ID Token), each with its
+ * - `tokenType="oauth"`: renders token tabs (Access Token / ID Token / Refresh Token), each with its
  *   own validity period input. The tab state is managed internally and is independent
  *   of any other tab state in the page.
  *
  * @param props - Component props
  * @returns Token validity configuration UI within a SettingsCard
  */
-export default function TokenValidationSection({control, errors, tokenType}: TokenValidationSectionProps) {
+export default function TokenValidationSection({
+  control,
+  errors,
+  tokenType,
+  disabled = false,
+}: TokenValidationSectionProps) {
   const {t} = useTranslation();
-  const [activeValidationTab, setActiveValidationTab] = useState<'access' | 'id'>('access');
+  const [activeValidationTab, setActiveValidationTab] = useState<'access' | 'id' | 'refresh'>('access');
 
   const title = t('applications:edit.token.token_validation.title', 'Token Validity');
   const description = t(
@@ -74,7 +85,9 @@ export default function TokenValidationSection({control, errors, tokenType}: Tok
   const label = t('applications:edit.token.labels.token_validity', 'Token Validity');
   const hint = t('applications:edit.token.validity.hint', 'Token validity period in seconds (e.g., 3600 for 1 hour)');
 
-  const renderField = (fieldName: 'validityPeriod' | 'accessTokenValidity' | 'idTokenValidity') => (
+  const renderField = (
+    fieldName: 'validityPeriod' | 'accessTokenValidity' | 'idTokenValidity' | 'refreshTokenValidity',
+  ) => (
     <FormControl fullWidth required>
       <FormLabel htmlFor={`${fieldName}-input`}>{label}</FormLabel>
       <Controller
@@ -90,6 +103,7 @@ export default function TokenValidationSection({control, errors, tokenType}: Tok
             error={!!errors[fieldName]}
             helperText={errors[fieldName]?.message ?? hint}
             inputProps={{min: 1}}
+            disabled={disabled}
           />
         )}
       />
@@ -101,16 +115,21 @@ export default function TokenValidationSection({control, errors, tokenType}: Tok
       <SettingsCard slotProps={{content: {sx: {p: 0}}}} title={title} description={description}>
         <Stack spacing={2}>
           <Tabs
-            value={activeValidationTab === 'access' ? 0 : 1}
-            onChange={(_, newValue: number) => setActiveValidationTab(newValue === 0 ? 'access' : 'id')}
+            value={activeValidationTab === 'access' ? 0 : activeValidationTab === 'id' ? 1 : 2}
+            onChange={(_, newValue: number) => {
+              const nextTab = newValue === 0 ? 'access' : newValue === 1 ? 'id' : 'refresh';
+              setActiveValidationTab(nextTab);
+            }}
             sx={{borderBottom: 1, borderColor: 'divider'}}
           >
             <Tab label={t('applications:edit.token.tabs.access_token', 'Access Token')} />
             <Tab label={t('applications:edit.token.tabs.id_token', 'ID Token')} />
+            <Tab label={t('applications:edit.token.tabs.refresh_token', 'Refresh Token')} />
           </Tabs>
           <Box sx={{p: 3}}>
             {activeValidationTab === 'access' && renderField('accessTokenValidity')}
             {activeValidationTab === 'id' && renderField('idTokenValidity')}
+            {activeValidationTab === 'refresh' && renderField('refreshTokenValidity')}
           </Box>
         </Stack>
       </SettingsCard>

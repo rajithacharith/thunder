@@ -43,16 +43,6 @@ source "${SCRIPT_DIR}/common.sh"
 log_info "Creating default ${PRODUCT_NAME} resources..."
 echo ""
 
-# System resource server configuration from environment variables.
-SYSTEM_RS_HANDLE="${SYSTEM_RS_HANDLE:-}"
-SYSTEM_RS_IDENTIFIER="${SYSTEM_RS_IDENTIFIER:-https://localhost:8090/mcp}"
-
-# Derive the system permission root based on the configured handle.
-if [[ -n "$SYSTEM_RS_HANDLE" ]]; then
-    SYSTEM_PERMISSION="${SYSTEM_RS_HANDLE}:system"
-else
-    SYSTEM_PERMISSION="system"
-fi
 
 # ============================================================================
 # Create Default Organization Unit
@@ -354,8 +344,7 @@ fi
 RESPONSE=$(api_call POST "/resource-servers" "{
   \"name\": \"System\",
   \"description\": \"System resource server\",
-  \"handle\": \"${SYSTEM_RS_HANDLE}\",
-  \"identifier\": \"${SYSTEM_RS_IDENTIFIER}\",
+  \"identifier\": \"system\",
   \"ouId\": \"${DEFAULT_OU_ID}\"
 }")
 
@@ -390,14 +379,6 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
 
         if [[ -n "$SYSTEM_RS_ID" ]]; then
             log_success "Found resource server ID: $SYSTEM_RS_ID"
-            SYSTEM_LINE=$(echo "$BODY" | sed 's/},{/}\n{/g' | grep '"name":"System"')
-            EXISTING_HANDLE=$(echo "$SYSTEM_LINE" | grep -o '"handle":"[^"]*"' | head -1 | cut -d'"' -f4)
-            EXISTING_IDENTIFIER=$(echo "$SYSTEM_LINE" | grep -o '"identifier":"[^"]*"' | head -1 | cut -d'"' -f4)
-            if [[ "$EXISTING_HANDLE" != "$SYSTEM_RS_HANDLE" ]] || [[ "$EXISTING_IDENTIFIER" != "$SYSTEM_RS_IDENTIFIER" ]]; then
-                log_error "Existing system resource server has mismatched configuration. Expected handle='${SYSTEM_RS_HANDLE}', identifier='${SYSTEM_RS_IDENTIFIER}' but found handle='${EXISTING_HANDLE}', identifier='${EXISTING_IDENTIFIER}'. Manual migration required."
-                log_result_failure "Failed to create system resource server"
-                exit 1
-            fi
             log_result_success "Created system resource server"
         else
             log_error "Could not find resource server ID in response"
@@ -836,7 +817,7 @@ echo ""
 # Create Admin Role
 # ============================================================================
 
-log_info "Creating admin role with '${SYSTEM_PERMISSION}' permission..."
+log_info "Creating admin role with 'system' permission..."
 
 if [[ -z "$ADMIN_GROUP_ID" ]]; then
     log_error "Administrator group ID is not available. Cannot create role."
@@ -863,7 +844,7 @@ RESPONSE=$(api_call POST "/roles" "{
   \"permissions\": [
     {
       \"resourceServerId\": \"${SYSTEM_RS_ID}\",
-      \"permissions\": [\"${SYSTEM_PERMISSION}\"]
+      \"permissions\": [\"system\"]
     }
   ],
   \"assignments\": [
@@ -1035,16 +1016,6 @@ else
         else
             log_warning "No registration flow files found"
         fi
-    fi
-
-    # Template user onboarding flow files with the dynamic system permission.
-    if [[ -d "$USER_ONBOARDING_FLOWS_DIR" ]] && [[ "$SYSTEM_PERMISSION" != "system" ]]; then
-        TEMPLATED_ONBOARDING_DIR=$(mktemp -d)
-        for f in "$USER_ONBOARDING_FLOWS_DIR"/*.json; do
-            [[ ! -f "$f" ]] && continue
-            sed "s/\[\"system\"\]/[\"${SYSTEM_PERMISSION}\"]/g" "$f" > "$TEMPLATED_ONBOARDING_DIR/$(basename "$f")"
-        done
-        USER_ONBOARDING_FLOWS_DIR="$TEMPLATED_ONBOARDING_DIR"
     fi
 
     # Process user onboarding flows
@@ -1612,5 +1583,5 @@ echo ""
 log_info "👤 Admin credentials:"
 log_info "   Username: admin"
 log_info "   Password: admin"
-log_info "   Role: Administrator (${SYSTEM_PERMISSION} permission via Administrators group)"
+log_info "   Role: Administrator (system permission via Administrators group)"
 echo ""

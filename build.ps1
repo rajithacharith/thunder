@@ -243,8 +243,6 @@ function Read-Config {
             $script:PUBLIC_HOSTNAME = & yq eval '.server.public_hostname // ""' $CONFIG_FILE 2>$null
             $consentEnabled = & yq eval '.consent.enabled // true' $CONFIG_FILE 2>$null
             $script:CONSENT_ENABLED = ($consentEnabled -eq "true")
-            $script:SYSTEM_RS_HANDLE = & yq eval '.resource.system_resource_server.handle // ""' $CONFIG_FILE 2>$null
-            $script:SYSTEM_RS_IDENTIFIER = & yq eval '.resource.system_resource_server.identifier // ""' $CONFIG_FILE 2>$null
         }
         else {
             # Fallback: basic parsing with regex
@@ -290,28 +288,6 @@ function Read-Config {
                 $script:CONSENT_ENABLED = $true
             }
 
-            $uncommentedContent = ($content -split "`n" | Where-Object { $_ -notmatch '^\s*#' }) -join "`n"
-            # Try to extract system resource server handle
-            if ($uncommentedContent -match '(?ms)system_resource_server:.*?handle:\s*[''"]([^''"]*)[''"]') {
-                $script:SYSTEM_RS_HANDLE = $matches[1]
-            }
-            elseif ($uncommentedContent -match '(?ms)system_resource_server:.*?handle:\s*([^\s#]+)') {
-                $script:SYSTEM_RS_HANDLE = $matches[1]
-            }
-            else {
-                $script:SYSTEM_RS_HANDLE = ""
-            }
-
-            # Try to extract system resource server identifier
-            if ($uncommentedContent -match '(?ms)system_resource_server:.*?identifier:\s*[''"]([^''"]*)[''"]') {
-                $script:SYSTEM_RS_IDENTIFIER = $matches[1]
-            }
-            elseif ($uncommentedContent -match '(?ms)system_resource_server:.*?identifier:\s*([^\s#]+)') {
-                $script:SYSTEM_RS_IDENTIFIER = $matches[1]
-            }
-            else {
-                $script:SYSTEM_RS_IDENTIFIER = ""
-            }
         }
     }
     
@@ -927,7 +903,7 @@ function Build-Sample-App {
         Pop-Location
     }
 
-    foreach ($svc in @("api", "mcp", "ai-agent")) {
+    foreach ($svc in @("backend", "ai-agent")) {
         Write-Host "Installing Wayfinder sample $svc dependencies..."
         Push-Location (Join-Path $WAYFINDER_SAMPLE_APP_DIR $svc)
         try {
@@ -1171,12 +1147,12 @@ function Package-Wayfinder-Sample {
         if (Test-Path $src) { Copy-Item -Path $src -Destination $frontendDest -Recurse -Force }
     }
 
-    foreach ($svc in @("api", "mcp", "ai-agent")) {
+    foreach ($svc in @("backend", "ai-agent")) {
         $svcSrc = Join-Path $WAYFINDER_SAMPLE_APP_DIR $svc
         $svcDest = Join-Path $dist_folder $svc
         Write-Host "Copying Wayfinder sample $svc source..."
         New-Item -Path $svcDest -ItemType Directory -Force | Out-Null
-        foreach ($item in @("package.json", "package-lock.json", "tsconfig.json", "README.md", ".env.example", "server.ts", "agent.ts")) {
+        foreach ($item in @("package.json", "package-lock.json", "tsconfig.json", "README.md", ".env.example", "agent.ts")) {
             $src = Join-Path $svcSrc $item
             if (Test-Path $src) { Copy-Item -Path $src -Destination $svcDest -Force }
         }
@@ -1815,8 +1791,6 @@ function Run {
     
     # Run the bootstrap script directly with environment variable and arguments
     $env:API_BASE = $BASE_URL
-    $env:SYSTEM_RS_HANDLE = if ($script:SYSTEM_RS_HANDLE) { $script:SYSTEM_RS_HANDLE } else { "" }
-    $env:SYSTEM_RS_IDENTIFIER = if ($script:SYSTEM_RS_IDENTIFIER) { $script:SYSTEM_RS_IDENTIFIER } else { "" }
     $bootstrapScript = Join-Path $BACKEND_BASE_DIR "cmd/server/bootstrap/01-default-resources.ps1"
     & $bootstrapScript -ConsoleRedirectUris "https://localhost:${CONSOLE_APP_DEFAULT_PORT}/console"
 

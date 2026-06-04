@@ -36,7 +36,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/observability"
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
-	"github.com/thunder-id/thunderid/internal/system/transaction"
 )
 
 // TokenServiceInterface defines the interface for OAuth 2.0 token processing.
@@ -53,7 +52,6 @@ type tokenService struct {
 	grantHandlerProvider granthandlers.GrantHandlerProviderInterface
 	scopeValidator       scope.ScopeValidatorInterface
 	observabilitySvc     observability.ObservabilityServiceInterface
-	transactioner        transaction.Transactioner
 	dpopVerifier         dpop.VerifierInterface
 	tokenEndpoint        string
 	dpopRequired         bool
@@ -64,7 +62,6 @@ func newTokenService(
 	grantHandlerProvider granthandlers.GrantHandlerProviderInterface,
 	scopeValidator scope.ScopeValidatorInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
-	transactioner transaction.Transactioner,
 	dpopVerifier dpop.VerifierInterface,
 	tokenEndpoint string,
 	dpopRequired bool,
@@ -73,7 +70,6 @@ func newTokenService(
 		grantHandlerProvider: grantHandlerProvider,
 		scopeValidator:       scopeValidator,
 		observabilitySvc:     observabilitySvc,
-		transactioner:        transactioner,
 		dpopVerifier:         dpopVerifier,
 		tokenEndpoint:        tokenEndpoint,
 		dpopRequired:         dpopRequired,

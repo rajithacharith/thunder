@@ -25,6 +25,7 @@ import (
 	"errors"
 
 	authncommon "github.com/thunder-id/thunderid/internal/authn/common"
+	"github.com/thunder-id/thunderid/internal/authn/magiclink"
 	"github.com/thunder-id/thunderid/internal/authn/otp"
 	"github.com/thunder-id/thunderid/internal/authn/passkey"
 	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
@@ -36,23 +37,26 @@ import (
 )
 
 type defaultAuthnProvider struct {
-	entitySvc      entity.EntityServiceInterface
-	passkeyService passkey.PasskeyServiceInterface
-	otpService     otp.OTPAuthnServiceInterface
-	federatedAuths map[idp.IDPType]authncommon.FederatedAuthenticator
-	logger         *log.Logger
+	entitySvc        entity.EntityServiceInterface
+	passkeyService   passkey.PasskeyServiceInterface
+	otpService       otp.OTPAuthnServiceInterface
+	magicLinkService magiclink.MagicLinkAuthnServiceInterface
+	federatedAuths   map[idp.IDPType]authncommon.FederatedAuthenticator
+	logger           *log.Logger
 }
 
 // newDefaultAuthnProvider creates a new internal user authn provider.
 func newDefaultAuthnProvider(entitySvc entity.EntityServiceInterface,
 	passkeyService passkey.PasskeyServiceInterface, otpService otp.OTPAuthnServiceInterface,
+	magicLinkService magiclink.MagicLinkAuthnServiceInterface,
 	federatedAuths map[idp.IDPType]authncommon.FederatedAuthenticator) AuthnProviderInterface {
 	return &defaultAuthnProvider{
-		entitySvc:      entitySvc,
-		passkeyService: passkeyService,
-		otpService:     otpService,
-		federatedAuths: federatedAuths,
-		logger:         log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DefaultAuthnProvider")),
+		entitySvc:        entitySvc,
+		passkeyService:   passkeyService,
+		otpService:       otpService,
+		magicLinkService: magicLinkService,
+		federatedAuths:   federatedAuths,
+		logger:           log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DefaultAuthnProvider")),
 	}
 }
 
@@ -92,18 +96,6 @@ func (p *defaultAuthnProvider) Authenticate(
 		}
 	}
 
-	attributesResponse := &authnprovidercm.AttributesResponse{
-		Attributes:    make(map[string]*authnprovidercm.AttributeResponse),
-		Verifications: make(map[string]*authnprovidercm.VerificationResponse),
-	}
-	for k := range attributes {
-		attributesResponse.Attributes[k] = &authnprovidercm.AttributeResponse{
-			AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
-				IsVerified: false,
-			},
-		}
-	}
-
 	return &authnprovidercm.AuthnResult{
 		EntityID:                  authOutcome.entityID,
 		EntityCategory:            string(entityResult.Category),
@@ -112,8 +104,8 @@ func (p *defaultAuthnProvider) Authenticate(
 		UserID:                    authOutcome.entityID,
 		Token:                     authOutcome.entityID,
 		UserType:                  entityResult.Type,
-		IsAttributeValuesIncluded: false,
-		AttributesResponse:        attributesResponse,
+		IsAttributeValuesIncluded: true,
+		AttributesResponse:        buildAttributesResponse(attributes),
 		IsExistingUser:            true,
 		ExternalSub:               authOutcome.externalSub,
 		ExternalClaims:            authOutcome.externalClaims,
@@ -139,6 +131,9 @@ func (p *defaultAuthnProvider) resolveCredentials(
 	}
 	if fedCred, ok := credentials["federated"]; ok {
 		return p.authenticateWithFederated(ctx, fedCred)
+	}
+	if mlCred, ok := credentials["magiclink"]; ok {
+		return p.authenticateWithMagicLink(ctx, mlCred)
 	}
 	if userID, ok := identifiers["userID"]; ok && userID != "" {
 		return p.authenticateByUserID(ctx, userID, credentials)
@@ -180,7 +175,7 @@ func (p *defaultAuthnProvider) authenticateWithOTP(
 		return nil, newClientError(authnprovidercm.ErrorCodeInvalidRequest,
 			"Invalid OTP payload", "otp is required")
 	}
-	authResponse, authErr := p.otpService.Authenticate(ctx, sessionToken, otpValue)
+	authResult, authErr := p.otpService.Authenticate(ctx, sessionToken, otpValue)
 	if authErr != nil {
 		if authErr.Type == serviceerror.ClientErrorType {
 			if authErr.Code == otp.ErrorIncorrectOTP.Code {
@@ -194,7 +189,16 @@ func (p *defaultAuthnProvider) authenticateWithOTP(
 			log.String("error", authErr.Error.DefaultValue),
 			log.String("errorDescription", authErr.ErrorDescription.DefaultValue))
 	}
-	return &credentialOutcome{entityID: authResponse.ID}, nil
+	if authResult.InternalEntity == nil {
+		return &credentialOutcome{
+			earlyReturn: &authnprovidercm.AuthnResult{
+				IsExistingUser:            false,
+				IsAttributeValuesIncluded: true,
+				AttributesResponse:        buildAttributesResponse(authResult.VerifiedIdentifiers),
+			},
+		}, nil
+	}
+	return &credentialOutcome{entityID: authResult.InternalEntity.ID}, nil
 }
 
 func (p *defaultAuthnProvider) authenticateWithFederated(
@@ -231,10 +235,12 @@ func (p *defaultAuthnProvider) authenticateWithFederated(
 	if authResult.InternalEntity == nil {
 		return &credentialOutcome{
 			earlyReturn: &authnprovidercm.AuthnResult{
-				ExternalSub:     authResult.Sub,
-				ExternalClaims:  authResult.Claims,
-				IsExistingUser:  false,
-				IsAmbiguousUser: authResult.IsAmbiguousUser,
+				ExternalSub:               authResult.Sub,
+				ExternalClaims:            authResult.Claims,
+				IsExistingUser:            false,
+				IsAmbiguousUser:           authResult.IsAmbiguousUser,
+				IsAttributeValuesIncluded: true,
+				AttributesResponse:        buildAttributesResponse(authResult.Claims),
 			},
 		}, nil
 	}
@@ -243,6 +249,43 @@ func (p *defaultAuthnProvider) authenticateWithFederated(
 		externalSub:    authResult.Sub,
 		externalClaims: authResult.Claims,
 	}, nil
+}
+
+func (p *defaultAuthnProvider) authenticateWithMagicLink(
+	ctx context.Context, raw interface{},
+) (*credentialOutcome, *serviceerror.ServiceError) {
+	mlCredential, ok := raw.(map[string]interface{})
+	if !ok {
+		return nil, newClientError(authnprovidercm.ErrorCodeInvalidRequest,
+			"Invalid magic link payload", "The provided magic link credential is invalid")
+	}
+	token, ok := mlCredential["token"].(string)
+	if !ok || token == "" {
+		return nil, newClientError(authnprovidercm.ErrorCodeInvalidRequest,
+			"Invalid magic link payload", "token is required")
+	}
+	subjectAttribute, _ := mlCredential["subjectAttribute"].(string)
+
+	authResult, authErr := p.magicLinkService.Authenticate(ctx, token, subjectAttribute)
+	if authErr != nil {
+		if authErr.Type == serviceerror.ClientErrorType {
+			return nil, newClientError(authnprovidercm.ErrorCodeAuthenticationFailed,
+				authErr.Error.DefaultValue, authErr.ErrorDescription.DefaultValue)
+		}
+		return nil, p.logAndReturnServerError("Magic link authentication failed with server error",
+			log.String("error", authErr.Error.DefaultValue),
+			log.String("errorDescription", authErr.ErrorDescription.DefaultValue))
+	}
+	if authResult.InternalEntity == nil {
+		return &credentialOutcome{
+			earlyReturn: &authnprovidercm.AuthnResult{
+				IsExistingUser:            false,
+				IsAttributeValuesIncluded: true,
+				AttributesResponse:        buildAttributesResponse(authResult.VerifiedIdentifiers),
+			},
+		}, nil
+	}
+	return &credentialOutcome{entityID: authResult.InternalEntity.ID}, nil
 }
 
 func (p *defaultAuthnProvider) authenticateByUserID(
@@ -347,6 +390,22 @@ func (p *defaultAuthnProvider) GetAttributes(
 		UserType:           entityResult.Type,
 		AttributesResponse: attributesResponse,
 	}, nil
+}
+
+func buildAttributesResponse(attrs map[string]interface{}) *authnprovidercm.AttributesResponse {
+	resp := &authnprovidercm.AttributesResponse{
+		Attributes:    make(map[string]*authnprovidercm.AttributeResponse),
+		Verifications: make(map[string]*authnprovidercm.VerificationResponse),
+	}
+	for k, v := range attrs {
+		resp.Attributes[k] = &authnprovidercm.AttributeResponse{
+			Value: v,
+			AssuranceMetadataResponse: &authnprovidercm.AssuranceMetadataResponse{
+				IsVerified: false,
+			},
+		}
+	}
+	return resp
 }
 
 func newClientError(code, msg, desc string) *serviceerror.ServiceError {

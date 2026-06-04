@@ -33,7 +33,7 @@ import (
 	"slices"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/cryptolib/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/jose/jws"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -46,6 +46,7 @@ type PKIServiceInterface interface {
 	GetX509Certificate(id string) (*x509.Certificate, *serviceerror.ServiceError)
 	GetAllX509Certificates() (map[string]*x509.Certificate, *serviceerror.ServiceError)
 	GetSupportedSigningAlgorithms() []string
+	GetTLSConfig() (*tls.Config, error)
 }
 
 // pkiService stores loaded certificates indexed by their ID.
@@ -179,6 +180,14 @@ func (s *pkiService) GetSupportedSigningAlgorithms() []string {
 	return result
 }
 
+// GetTLSConfig loads and returns the TLS configuration from the server's TLS cert and key files.
+func (s *pkiService) GetTLSConfig() (*tls.Config, error) {
+	serverRuntime := config.GetServerRuntime()
+	certFilePath := path.Join(serverRuntime.ServerHome, serverRuntime.Config.TLS.CertFile)
+	keyFilePath := path.Join(serverRuntime.ServerHome, serverRuntime.Config.TLS.KeyFile)
+	return LoadTLSConfig(&serverRuntime.Config, certFilePath, keyFilePath)
+}
+
 // pkiAlgorithmToJWSAlgorithms returns the JWS algorithm strings supported for the given PKI algorithm.
 func pkiAlgorithmToJWSAlgorithms(alg PKIAlgorithm) []string {
 	switch alg {
@@ -228,5 +237,5 @@ func getThumbprint(cert tls.Certificate) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return hash.GenerateThumbprint(parsedCert.Raw), nil
+	return cryptolib.GenerateThumbprint(parsedCert.Raw), nil
 }

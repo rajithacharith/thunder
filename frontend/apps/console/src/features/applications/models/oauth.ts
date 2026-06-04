@@ -184,9 +184,25 @@ export interface ScopeClaims {
 export type IDTokenConfig = TokenConfig;
 
 /**
+ * Refresh Token Configuration
+ *
+ * Configuration specific to OAuth2 refresh tokens.
+ *
+ * @public
+ */
+export interface RefreshTokenConfig {
+  /**
+   * Token validity period in seconds
+   * Determines how long the refresh token remains valid after issuance
+   * @example 86400 (24 hours)
+   */
+  validityPeriod: number;
+}
+
+/**
  * OAuth2 Token Settings
  *
- * Complete token configuration for both access tokens and ID tokens.
+ * Complete token configuration for access tokens, ID tokens, and refresh tokens.
  *
  * @public
  * @remarks
@@ -207,6 +223,9 @@ export type IDTokenConfig = TokenConfig;
  *       profile: ['name', 'picture'],
  *       email: ['email', 'email_verified']
  *     }
+ *   },
+ *   refreshToken: {
+ *     validityPeriod: 86400
  *   }
  * };
  * ```
@@ -223,6 +242,12 @@ export interface OAuth2Token {
    * Defines the validity period, user attributes, and scope-to-claims mapping for ID tokens
    */
   idToken: IDTokenConfig;
+
+  /**
+   * Refresh token configuration
+   * Defines the validity period for refresh tokens
+   */
+  refreshToken?: RefreshTokenConfig;
 }
 
 /**

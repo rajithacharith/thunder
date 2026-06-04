@@ -340,6 +340,19 @@ var (
 			DefaultValue: "Failed to sync resource permission changes with the consent service",
 		},
 	}
+	// ErrorImmutableHandle is returned when attempting to change a resource server's handle.
+	ErrorImmutableHandle = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "RES-1025",
+		Error: core.I18nMessage{
+			Key:          "error.resourceservice.immutable_handle",
+			DefaultValue: "Handle is immutable",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.resourceservice.immutable_handle_description",
+			DefaultValue: "Resource server handle cannot be changed after creation",
+		},
+	}
 )
 
 // Internal error constants.

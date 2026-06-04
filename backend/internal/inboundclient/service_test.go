@@ -1079,38 +1079,48 @@ func (suite *InboundClientServiceTestSuite) TestResolveAssertion_InputOverridesD
 // ----- resolveOAuthTokens -----
 
 func (suite *InboundClientServiceTestSuite) TestResolveOAuthTokens_NilInputUsesAssertion() {
+	sysconfig.GetServerRuntime().Config.OAuth.RefreshToken.ValidityPeriod = 86400
+
 	assertion := &inboundmodel.AssertionConfig{ValidityPeriod: 900, UserAttributes: []string{"email"}}
-	at, idt := resolveOAuthTokens(nil, assertion)
+	at, idt, rt := resolveOAuthTokens(nil, assertion)
 
 	assert.Equal(suite.T(), int64(900), at.ValidityPeriod)
 	assert.Equal(suite.T(), []string{"email"}, at.UserAttributes)
 	assert.Equal(suite.T(), int64(900), idt.ValidityPeriod)
+	assert.Equal(suite.T(), int64(86400), rt.ValidityPeriod)
 }
 
 func (suite *InboundClientServiceTestSuite) TestResolveOAuthTokens_InputOverrides() {
 	in := &inboundmodel.OAuthTokenConfig{
-		AccessToken: &inboundmodel.AccessTokenConfig{ValidityPeriod: 60, UserAttributes: []string{"sub"}},
-		IDToken:     &inboundmodel.IDTokenConfig{ValidityPeriod: 120, UserAttributes: []string{"email"}},
+		AccessToken:  &inboundmodel.AccessTokenConfig{ValidityPeriod: 60, UserAttributes: []string{"sub"}},
+		IDToken:      &inboundmodel.IDTokenConfig{ValidityPeriod: 120, UserAttributes: []string{"email"}},
+		RefreshToken: &inboundmodel.RefreshTokenConfig{ValidityPeriod: 1800},
 	}
-	at, idt := resolveOAuthTokens(in, &inboundmodel.AssertionConfig{ValidityPeriod: 900})
+	at, idt, rt := resolveOAuthTokens(in, &inboundmodel.AssertionConfig{ValidityPeriod: 900})
 	assert.Equal(suite.T(), int64(60), at.ValidityPeriod)
 	assert.Equal(suite.T(), int64(120), idt.ValidityPeriod)
+	assert.Equal(suite.T(), int64(1800), rt.ValidityPeriod)
 }
 
 func (suite *InboundClientServiceTestSuite) TestResolveOAuthTokens_NilAssertionDoesNotPanic() {
-	at, idt := resolveOAuthTokens(nil, nil)
+	at, idt, rt := resolveOAuthTokens(nil, nil)
 	assert.NotNil(suite.T(), at)
 	assert.NotNil(suite.T(), idt)
+	assert.NotNil(suite.T(), rt)
 }
 
-func (suite *InboundClientServiceTestSuite) TestResolveOAuthTokens_ZeroValidityFallsBackToAssertion() {
+func (suite *InboundClientServiceTestSuite) TestResolveOAuthTokens_ZeroValidityFallsBack() {
+	sysconfig.GetServerRuntime().Config.OAuth.RefreshToken.ValidityPeriod = 86400
+
 	in := &inboundmodel.OAuthTokenConfig{
-		AccessToken: &inboundmodel.AccessTokenConfig{ValidityPeriod: 0},
-		IDToken:     &inboundmodel.IDTokenConfig{ValidityPeriod: 0},
+		AccessToken:  &inboundmodel.AccessTokenConfig{ValidityPeriod: 0},
+		IDToken:      &inboundmodel.IDTokenConfig{ValidityPeriod: 0},
+		RefreshToken: &inboundmodel.RefreshTokenConfig{ValidityPeriod: 0},
 	}
-	at, idt := resolveOAuthTokens(in, &inboundmodel.AssertionConfig{ValidityPeriod: 1800})
+	at, idt, rt := resolveOAuthTokens(in, &inboundmodel.AssertionConfig{ValidityPeriod: 1800})
 	assert.Equal(suite.T(), int64(1800), at.ValidityPeriod)
 	assert.Equal(suite.T(), int64(1800), idt.ValidityPeriod)
+	assert.Equal(suite.T(), int64(86400), rt.ValidityPeriod)
 }
 
 // ----- resolveScopeClaims -----

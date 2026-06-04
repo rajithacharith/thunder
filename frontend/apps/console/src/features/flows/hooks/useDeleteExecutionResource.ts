@@ -34,7 +34,7 @@ import {StepTypes} from '../models/steps';
 const useDeleteExecutionResource = (): void => {
   const {setIsOpenResourcePropertiesPanel} = useUIPanelState();
   const {getEdges, getNodes, updateNodeData, setNodes} = useReactFlow();
-  const {onNodeDelete, onNodeElementDelete, onEdgeDelete} = useFlowPlugins();
+  const {onNodeDelete, onNodeElementDelete} = useFlowPlugins();
 
   /**
    * Deletes associated execution components when execution nodes are removed.
@@ -116,58 +116,10 @@ const useDeleteExecutionResource = (): void => {
     return true;
   }
 
-  /**
-   * Deletes the component and node associated with the deleted edges.
-   *
-   * @param deleted - The deleted edges from the flow.
-   * @returns Returns true if the deletion was successful.
-   */
-  function deleteComponentAndNode(deleted: Edge[]): boolean {
-    const nodes: Node[] = getNodes();
-    const executionNodeIds: string[] = [];
-    const actionNodeIds: string[] = [];
-    const actionComponentIds: string[] = [];
-
-    deleted.forEach((edge: Edge) => {
-      nodes.forEach((node: Node) => {
-        if (node.type === StepTypes.Execution && edge.target === node.id && edge.sourceHandle) {
-          actionComponentIds.push(
-            edge.sourceHandle.slice(0, -VisualFlowConstants.FLOW_BUILDER_NEXT_HANDLE_SUFFIX.length),
-          );
-          actionNodeIds.push(edge.source);
-          executionNodeIds.push(edge.target);
-        }
-      });
-    });
-
-    if (executionNodeIds.length === 0) {
-      return true;
-    }
-
-    setNodes((nds: Node[]) => nds?.filter((node: Node) => !executionNodeIds.includes(node.id)));
-
-    actionNodeIds.forEach((actionNodeId: string) => {
-      updateNodeData(actionNodeId, (node: Node) => {
-        const components: Element[] = (node.data.components as Element[])?.filter(
-          (component: Element) => !actionComponentIds.includes(component.id),
-        );
-
-        return {
-          components,
-        };
-      });
-    });
-    setIsOpenResourcePropertiesPanel(false);
-
-    return true;
-  }
-
   // eslint-disable-next-line react-hooks/exhaustive-deps -- handlers use state-getter pattern (getNodes, getEdges) so they're safe with empty deps
   useEffect(() => onNodeDelete(deleteExecutionActionNode), [onNodeDelete]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => onNodeElementDelete(deleteExecutionNode), [onNodeElementDelete]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => onEdgeDelete(deleteComponentAndNode), [onEdgeDelete]);
 };
 
 export default useDeleteExecutionResource;

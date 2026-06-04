@@ -29,12 +29,10 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/jwksresolver"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
-	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
-	"github.com/thunder-id/thunderid/internal/system/transaction"
 )
 
 // Initialize initializes the userinfo handler and registers its routes.
@@ -45,14 +43,12 @@ func Initialize(
 	resolver *jwksresolver.Resolver,
 	tokenValidator tokenservice.TokenValidatorInterface,
 	inboundClient inboundclient.InboundClientServiceInterface,
-	ouService ou.OrganizationUnitServiceInterface,
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
-	transactioner transaction.Transactioner,
 	discoveryService discovery.DiscoveryServiceInterface,
 	dpopVerifier dpop.VerifierInterface,
 ) userInfoServiceInterface {
 	userInfoService := newUserInfoService(jwtService, jweService, resolver, tokenValidator,
-		inboundClient, ouService, attributeCacheSvc, transactioner, dpopVerifier)
+		inboundClient, attributeCacheSvc, dpopVerifier)
 	userInfoEndpoint := discoveryService.GetOAuth2AuthorizationServerMetadata(
 		context.Background()).UserInfoEndpoint
 	dpopAlgs := config.GetServerRuntime().Config.OAuth.DPoP.AllowedAlgs

@@ -263,6 +263,66 @@ describe('useVisualFlowHandlers', () => {
       expect(mockSetEdges).toHaveBeenCalled();
     });
 
+    it('should produce exactly one reconnect edge A->C when middle node B is deleted from A->B->C', () => {
+      const nodes = [{id: 'node-1'}, {id: 'node-2'}, {id: 'node-3'}] as Node[];
+      const latestEdges = [
+        {id: 'edge-1', source: 'node-1', target: 'node-2'},
+        {id: 'edge-2', source: 'node-2', target: 'node-3'},
+      ] as Edge[];
+
+      mockGetNodes.mockReturnValue(nodes);
+
+      const {result} = renderHook(() => useVisualFlowHandlers({setEdges: mockSetEdges}), {
+        wrapper: createWrapper(),
+      });
+
+      act(() => {
+        result.current.handleNodesDelete([{id: 'node-2'} as Node]);
+      });
+
+      // Capture and invoke the functional setter with the live edge state
+      const setterFn = mockSetEdges.mock.calls[0][0];
+      const resultEdges: Edge[] = setterFn(latestEdges);
+
+      expect(resultEdges).toHaveLength(1);
+      expect(resultEdges[0]).toMatchObject({
+        id: 'node-1-->node-3',
+        source: 'node-1',
+        target: 'node-3',
+        markerEnd: {type: 'arrowclosed'},
+      });
+    });
+
+    it('should use latestEdges from setter callback, not a stale getEdges() snapshot', () => {
+      const nodes = [{id: 'node-1'}, {id: 'node-2'}, {id: 'node-3'}] as Node[];
+
+      // getEdges returns a stale empty list — the correct edges come via the setter callback
+      mockGetNodes.mockReturnValue(nodes);
+      mockGetEdges.mockReturnValue([]);
+
+      const {result} = renderHook(() => useVisualFlowHandlers({setEdges: mockSetEdges}), {
+        wrapper: createWrapper(),
+      });
+
+      act(() => {
+        result.current.handleNodesDelete([{id: 'node-2'} as Node]);
+      });
+
+      const setterFn = mockSetEdges.mock.calls[0][0];
+
+      // Provide the live edge state through the setter callback
+      const liveEdges = [
+        {id: 'edge-1', source: 'node-1', target: 'node-2'},
+        {id: 'edge-2', source: 'node-2', target: 'node-3'},
+      ] as Edge[];
+
+      const resultEdges: Edge[] = setterFn(liveEdges);
+
+      // Reconnect must be computed from liveEdges, not the stale empty snapshot
+      expect(resultEdges).toHaveLength(1);
+      expect(resultEdges[0]).toMatchObject({source: 'node-1', target: 'node-3'});
+    });
+
     it('should handle deleting multiple nodes', () => {
       const nodes = [{id: 'node-1'}, {id: 'node-2'}, {id: 'node-3'}] as Node[];
       const edges = [
@@ -284,15 +344,14 @@ describe('useVisualFlowHandlers', () => {
       expect(mockSetEdges).toHaveBeenCalled();
     });
 
-    it('should use current edgeStyle for newly created edges', () => {
+    it('should apply edgeStyle to reconnect edges', () => {
       const nodes = [{id: 'node-1'}, {id: 'node-2'}, {id: 'node-3'}] as Node[];
-      const edges = [
+      const latestEdges = [
         {id: 'edge-1', source: 'node-1', target: 'node-2'},
         {id: 'edge-2', source: 'node-2', target: 'node-3'},
       ] as Edge[];
 
       mockGetNodes.mockReturnValue(nodes);
-      mockGetEdges.mockReturnValue(edges);
 
       const {result} = renderHook(() => useVisualFlowHandlers({setEdges: mockSetEdges}), {
         wrapper: createWrapper({edgeStyle: EdgeStyleTypes.Step}),
@@ -302,7 +361,10 @@ describe('useVisualFlowHandlers', () => {
         result.current.handleNodesDelete([{id: 'node-2'} as Node]);
       });
 
-      expect(mockSetEdges).toHaveBeenCalled();
+      const setterFn = mockSetEdges.mock.calls[0][0];
+      const resultEdges: Edge[] = setterFn(latestEdges);
+
+      expect(resultEdges[0].type).toBe(EdgeStyleTypes.Step);
     });
   });
 

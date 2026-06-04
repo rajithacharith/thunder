@@ -409,77 +409,92 @@ Authorization resource settings.
 |---------|---------|-------------|
 | `resource.default_delimiter` | `:` | Default delimiter for resource hierarchies |
 
-### System Resource Server
-
-The system resource server controls administrative permissions for <ProductName /> Console operations such as managing users, groups, organization units, and user types. You can customize the handle and identifier to fit your deployment requirements.
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `resource.system_resource_server.handle` | `""` (empty) | Prefix added before all system permission strings. When empty, permissions use their base names (for example, `system`, `system:ou`). When set, the handle is added before every permission (for example, `mgmt:system`, `mgmt:system:ou`) |
-| `resource.system_resource_server.identifier` | `system` | Identifier for the system resource server. Can be set to a URI for [RFC 8707](https://datatracker.ietf.org/doc/html/rfc8707) resource indicator flows (for example, `https://api.example.com`) |
-
-**Example:**
-```yaml
-resource:
-  system_resource_server:
-    handle: "mgmt"
-    identifier: "https://api.example.com"
-```
-
-With the handle set to `mgmt`, all system permissions change as follows:
-
-| Default Permission | Custom Permission |
-|-------------------|-------------------|
-| `system` | `mgmt:system` |
-| `system:ou` | `mgmt:system:ou` |
-| `system:ou:view` | `mgmt:system:ou:view` |
-| `system:user` | `mgmt:system:user` |
-| `system:user:view` | `mgmt:system:user:view` |
-| `system:group` | `mgmt:system:group` |
-| `system:group:view` | `mgmt:system:group:view` |
-| `system:usertype` | `mgmt:system:usertype` |
-| `system:usertype:view` | `mgmt:system:usertype:view` |
-
-#### Update Console Scopes
-
-When you change the system resource server handle, you must also update the <ProductName /> Console scopes to match the new permission strings. The scopes tell the Console which permissions to request during sign-in.
-
-Update the `scopes` array in the Console configuration file for your deployment mode:
-
-- **Local development** (`pnpm dev`): Update `frontend/apps/console/public/config.js`.
-- **Packaged build** (`build.sh` / `setup.sh` / `setup.ps1`): The setup scripts read the handle from `deployment.yaml` and pass the value to the bootstrap process automatically. Update `frontend/apps/console/public/config.js` for the Console scopes.
-- **Helm deployment**: Update `configuration.consoleClient.scopes` in your Helm values file (`install/helm/values.yaml`).
-
-For example, with the handle set to `mgmt`, update the Console `scopes` array to:
-
-```javascript
-scopes: [
-  'openid',
-  'profile',
-  'email',
-  'ou',
-  'mgmt:system',
-  'mgmt:system:user',
-  'mgmt:system:group',
-  'mgmt:system:ou:view',
-  'mgmt:system:usertype:view',
-],
-```
-
-:::warning
-If the Console scopes do not match the configured handle, the admin user token will lack the required `authorized_permissions` claim. All administrative API calls from the Console will then return `403 Forbidden`.
-:::
 
 ## Observability Configuration
 
-Monitoring and observability settings.
+Monitoring and observability settings. <ProductName /> supports three output backends — console, file, and OpenTelemetry (OTel) — and you can enable any combination of them independently.
+
+### Top-Level Settings
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `observability.enabled` | `false` | If `true`, enables observability features |
-| `observability.output.console.enabled` | `false` | If `true`, outputs observability data to console |
-| `observability.output.console.format` | `json` | Console output format (`json` or `text`) |
-| `observability.output.console.categories` | `["observability.all"]` | Observability categories to output |
+| `observability.enabled` | `false` | If `true`, enables the observability system. All output backends are inactive when this is `false`. |
+| `observability.failure_mode` | `lenient` | Controls how initialization failures in subscribers are handled. `lenient` logs a warning and continues with the remaining subscribers. `strict` stops initialization and returns an error if any subscriber fails. |
+
+### Console Output
+
+Writes events to standard output. Useful for local development and containerized deployments that collect stdout logs.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `observability.output.console.enabled` | `false` | If `true`, outputs observability events to the console |
+| `observability.output.console.format` | `json` | Output format: `json` or `text` |
+| `observability.output.console.categories` | `["observability.all"]` | Event categories to output. See [Event Categories](#event-categories) for valid values. |
+
+### File Output
+
+Writes events to a local file. The file subscriber appends events in the configured format and creates the output directory automatically if it does not exist.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `observability.output.file.enabled` | `false` | If `true`, outputs observability events to a file |
+| `observability.output.file.file_path` | `logs/observability/observability.log` (relative to the installation directory) | Path to the output file. The directory is created automatically. |
+| `observability.output.file.format` | `json` | Output format: `json` |
+| `observability.output.file.categories` | `["observability.all"]` | Event categories to write. See [Event Categories](#event-categories) for valid values. |
+
+### OpenTelemetry Output
+
+Exports events as OpenTelemetry spans to an OTLP-compatible backend such as Jaeger, Grafana Tempo, or an OpenTelemetry Collector. Events with the same `TraceID` are grouped into a single trace.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `observability.output.opentelemetry.enabled` | `false` | If `true`, exports observability events as OpenTelemetry spans |
+| `observability.output.opentelemetry.exporter_type` | `otlp` | Exporter type: `otlp` (gRPC, for production) or `stdout` (for debugging) |
+| `observability.output.opentelemetry.otlp_endpoint` | `""` | OTLP gRPC endpoint, for example `localhost:4317`. Required when `exporter_type` is `otlp`. |
+| `observability.output.opentelemetry.service_name` | `""` | Service name included in all emitted spans, for example `thunderid-iam` |
+| `observability.output.opentelemetry.service_version` | `""` | Service version included in span resource attributes, for example `1.0.0` |
+| `observability.output.opentelemetry.environment` | `""` | Deployment environment included in span resource attributes, for example `production` |
+| `observability.output.opentelemetry.sample_rate` | `1.0` | Fraction of traces to sample. `1.0` samples all traces; `0.5` samples half. |
+| `observability.output.opentelemetry.categories` | `["observability.all"]` | Event categories to export. See [Event Categories](#event-categories) for valid values. |
+| `observability.output.opentelemetry.insecure` | `false` | If `true`, disables TLS for the OTLP connection. Use only in development environments. |
+
+### Event Categories
+
+Use these values in any `categories` list to filter which events a subscriber receives:
+
+| Value | Description |
+|-------|-------------|
+| `observability.all` | Matches all events regardless of type (default) |
+| `observability.authentication` | Token issuance events |
+| `observability.authorization` | Authorization-related events |
+| `observability.flows` | Authentication and registration flow execution events |
+
+### Example
+
+The following `deployment.yaml` snippet enables console output and OpenTelemetry export to a local collector:
+
+```yaml
+observability:
+  enabled: true
+  failure_mode: lenient
+  output:
+    console:
+      enabled: true
+      format: json
+      categories:
+        - observability.all
+    opentelemetry:
+      enabled: true
+      exporter_type: otlp
+      otlp_endpoint: "localhost:4317"
+      service_name: "thunderid-iam"
+      service_version: "1.0.0"
+      environment: "production"
+      sample_rate: 1.0
+      insecure: false
+      categories:
+        - observability.all
+```
 
 ## Crypto Configuration
 
@@ -521,38 +536,21 @@ The key type under `crypto.keys` determines the algorithm in `id_token_signing_a
 
 ## Email Configuration
 
-Controls email sending capabilities (e.g., for magic link authentication, user invitations).
+<ProductName /> sends emails through an SMTP server for features such as magic link authentication and user invitations. This configuration is optional. Without a configured SMTP server, email-dependent features remain unavailable. Add the following configuration to `repository/conf/deployment.yaml` to configure an SMTP server.
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `email.smtp.host` | `""` | SMTP server hostname |
-| `email.smtp.port` | `0` | SMTP server port (e.g., 587 for STARTTLS) |
-| `email.smtp.username` | `""` | SMTP authentication username |
-| `email.smtp.password` | `""` | SMTP authentication password |
-| `email.smtp.from_address` | `""` | Sender email address |
-| `email.smtp.enable_start_tls` | `true` | Enable STARTTLS encryption |
-| `email.smtp.enable_authentication` | `true` | Enable SMTP authentication |
-
-**Example:**
 ```yaml
 email:
   smtp:
     host: "smtp.example.com"
     port: 587
-    username: "yourUsername"
-    password: "yourPassword"
-    from_address: "yourEmail"
+    username: "your-username"
+    password: "your-password"
+    from_address: "noreply@example.com"
     enable_start_tls: true
     enable_authentication: true
 ```
 
-:::note
-**Transport Mode:** Referencing keys `enable_start_tls` and `enable_authentication`, only explicit STARTTLS is supported (set `enable_start_tls: true`). Implicit SMTPS (port 465) is not supported by this transport.
-:::
-
-:::note
-The email configuration is optional. If not provided, features that depend on email (e.g., magic link, user invitations) will not be available.
-:::
+For the full property reference and provider-specific examples, see [Configure SMTP Server](../../guides/smtp-server/smtp-server-configuration).
 
 ## Authentication Provider Configuration
 
@@ -615,6 +613,11 @@ Controls server-wide security behavior that is not specific to any single authen
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `server.security.jwks_cache_ttl` | `300` | JWKS cache TTL in seconds. Applies to every JWKS consumer in the server (trusted issuer validation, federated OIDC authenticators such as Google, and so on). Fetched signing keys are reused from the in-process cache for this duration before being re-fetched. Plan external-server key rotations with at least this much overlap. Set to `0` to disable caching |
+| `server.security.system_permission_prefix` | `""` (empty) | Prefix for system permission strings used in API authorization. When empty, permissions use their base names (for example, `system`, `system:ou`). When set, the prefix is prepended to every system permission (for example, `mgmt:system`, `mgmt:system:ou`). This value must match the system resource server's current handle. Changes require a server restart |
+
+:::tip
+If the system resource server has a custom handle, set `system_permission_prefix` to match the handle value and restart the server. You must also update the Console scopes to match the new permission strings.
+:::
 
 ## Trusted Issuer Configuration
 

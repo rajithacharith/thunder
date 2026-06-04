@@ -20,6 +20,7 @@ package manager
 
 import (
 	authncommon "github.com/thunder-id/thunderid/internal/authn/common"
+	"github.com/thunder-id/thunderid/internal/authn/magiclink"
 	"github.com/thunder-id/thunderid/internal/authn/otp"
 	"github.com/thunder-id/thunderid/internal/authn/passkey"
 	"github.com/thunder-id/thunderid/internal/authnprovider/provider"
@@ -30,7 +31,8 @@ import (
 // InitializeAuthnProviderManager initializes and returns an AuthnProviderManagerInterface.
 func InitializeAuthnProviderManager(entitySvc entity.EntityServiceInterface,
 	passkeySvc passkey.PasskeyServiceInterface, otpSvc otp.OTPAuthnServiceInterface,
+	magicLinkSvc magiclink.MagicLinkAuthnServiceInterface,
 	federatedAuths map[idp.IDPType]authncommon.FederatedAuthenticator) AuthnProviderManagerInterface {
-	p := provider.InitializeAuthnProvider(entitySvc, passkeySvc, otpSvc, federatedAuths)
+	p := provider.InitializeAuthnProvider(entitySvc, passkeySvc, otpSvc, magicLinkSvc, federatedAuths)
 	return newAuthnProviderManager(p)
 }

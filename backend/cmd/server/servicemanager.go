@@ -58,12 +58,13 @@ import (
 	"github.com/thunder-id/thunderid/internal/inboundclient"
 	"github.com/thunder-id/thunderid/internal/notification"
 	"github.com/thunder-id/thunderid/internal/oauth"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dcr"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
 	"github.com/thunder-id/thunderid/internal/system/cache"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/cryptolib/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	dbprovider "github.com/thunder-id/thunderid/internal/system/database/provider"
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 	"github.com/thunder-id/thunderid/internal/system/email"
@@ -88,7 +89,8 @@ import (
 var observabilitySvc observability.ObservabilityServiceInterface
 
 // registerServices registers all the services with the provided HTTP multiplexer.
-func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterface) jwt.JWTServiceInterface {
+func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterface) (
+	jwt.JWTServiceInterface, kmprovider.RuntimeCryptoProvider) {
 	logger := log.GetLogger()
 
 	// Load the server's private key for signing JWTs.
@@ -116,7 +118,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	var exporters []declarativeresource.ResourceExporter
 
 	// Initialize i18n service for internationalization support.
-	i18nService, i18nExporter, err := i18nmgt.Initialize(mux)
+	i18nService, i18nExporter, err := i18nmgt.Initialize(mux, config.GetServerRuntime().Config.Translation)
 	if err != nil {
 		logger.Fatal("Failed to initialize i18n service", log.Error(err))
 	}
@@ -143,7 +145,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	if err != nil {
 		logger.Fatal("Failed to build HashService config", log.Error(err))
 	}
-	hashService, err := hash.Initialize(hashCfg)
+	hashService, err := cryptolib.Initialize(hashCfg)
 	if err != nil {
 		logger.Fatal("Failed to initialize HashService", log.Error(err))
 	}
@@ -244,7 +246,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 
 	// Initialize authn provider
 	authnProvider := authnprovidermgr.InitializeAuthnProviderManager(entityService, passkeyService, otpCoreService,
-		federatedAuths)
+		magicLinkService, federatedAuths)
 
 	// Initialize authentication services.
 	authAssertGen := authnAssert.Initialize()
@@ -357,11 +359,17 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		logger.Fatal("Failed to initialize OAuth services", log.Error(err))
 	}
 
+	// Register OAuth2 DCR service.
+	err = dcr.Initialize(mux, applicationService, ouService, i18nService)
+	if err != nil {
+		logger.Fatal("Failed to initialize OAuth2 DCR service", log.Error(err))
+	}
+
 	// Register the health service.
 	healthSvc := healthcheckservice.Initialize(dbprovider.GetDBProvider(), dbprovider.GetRedisProvider())
 	services.NewHealthCheckService(mux, healthSvc)
 
-	return jwtService
+	return jwtService, runtimeCryptoSvc
 }
 
 // unregisterServices unregisters all services that require cleanup during shutdown.
@@ -369,21 +377,21 @@ func unregisterServices() {
 	observabilitySvc.Shutdown()
 }
 
-// buildHashConfig constructs a hash.HashConfig from the server configuration.
-func buildHashConfig() (hash.HashConfig, error) {
+// buildHashConfig constructs a cryptolib.HashConfig from the server configuration.
+func buildHashConfig() (cryptolib.HashConfig, error) {
 	cfg := config.GetServerRuntime().Config.Crypto.PasswordHashing
-	alg := hash.CredAlgorithm(strings.ToUpper(cfg.Algorithm))
+	alg := cryptolib.CredAlgorithm(strings.ToUpper(cfg.Algorithm))
 	switch alg {
-	case "", hash.SHA256:
-		return hash.HashConfig{Algorithm: hash.SHA256, SaltSize: cfg.SHA256.SaltSize}, nil
-	case hash.PBKDF2:
-		return hash.HashConfig{Algorithm: alg, SaltSize: cfg.PBKDF2.SaltSize,
+	case "", cryptolib.SHA256:
+		return cryptolib.HashConfig{Algorithm: cryptolib.SHA256, SaltSize: cfg.SHA256.SaltSize}, nil
+	case cryptolib.PBKDF2:
+		return cryptolib.HashConfig{Algorithm: alg, SaltSize: cfg.PBKDF2.SaltSize,
 			Iterations: cfg.PBKDF2.Iterations, KeySize: cfg.PBKDF2.KeySize}, nil
-	case hash.ARGON2ID:
-		return hash.HashConfig{Algorithm: alg, SaltSize: cfg.Argon2ID.SaltSize,
+	case cryptolib.ARGON2ID:
+		return cryptolib.HashConfig{Algorithm: alg, SaltSize: cfg.Argon2ID.SaltSize,
 			Iterations: cfg.Argon2ID.Iterations, Memory: cfg.Argon2ID.Memory,
 			Parallelism: cfg.Argon2ID.Parallelism, KeySize: cfg.Argon2ID.KeySize}, nil
 	default:
-		return hash.HashConfig{}, fmt.Errorf("unrecognized password hashing algorithm %q", cfg.Algorithm)
+		return cryptolib.HashConfig{}, fmt.Errorf("unrecognized password hashing algorithm %q", cfg.Algorithm)
 	}
 }

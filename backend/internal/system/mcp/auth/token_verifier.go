@@ -43,7 +43,7 @@ func NewTokenVerifier(
 
 	return func(ctx context.Context, token string, req *http.Request) (*auth.TokenInfo, error) {
 		// Verify JWT signature and claims (iss, aud, exp, nbf)
-		if err := jwtService.VerifyJWT(token, mcpURL, issuer); err != nil {
+		if err := jwtService.VerifyJWT(ctx, token, mcpURL, issuer); err != nil {
 			logger.Error("JWT verification failed", log.String("error", err.Error.DefaultValue))
 			return nil, auth.ErrInvalidToken
 		}

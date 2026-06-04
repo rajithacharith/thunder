@@ -33,6 +33,14 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/utils"
 )
 
+// MagicLinkAuthnResult holds the result of a magic link authentication attempt.
+// When InternalEntity is nil the token was valid but no local user exists yet (registration flow);
+// VerifiedIdentifiers then carries the proven channel identifiers (e.g. email).
+type MagicLinkAuthnResult struct {
+	InternalEntity      *entityprovider.Entity
+	VerifiedIdentifiers map[string]interface{}
+}
+
 // MagicLinkAuthnServiceInterface defines the interface for magic link authentication operations.
 type MagicLinkAuthnServiceInterface interface {
 	GenerateMagicLink(
@@ -43,8 +51,8 @@ type MagicLinkAuthnServiceInterface interface {
 		additionalClaims map[string]interface{},
 		magicLinkURL string,
 	) (string, *serviceerror.ServiceError)
-	VerifyMagicLink(ctx context.Context, token string,
-		subjectAttribute string) (*entityprovider.Entity, *serviceerror.ServiceError)
+	Authenticate(ctx context.Context, token string,
+		subjectAttribute string) (*MagicLinkAuthnResult, *serviceerror.ServiceError)
 }
 
 // magicLinkAuthnService is the default implementation of MagicLinkAuthnServiceInterface.
@@ -114,45 +122,73 @@ func (s *magicLinkAuthnService) GenerateMagicLink(ctx context.Context,
 	return verifyURL, nil
 }
 
-// VerifyMagicLink verifies the validity of a magic link token and retrieves the associated user information.
-// Returns a user object on success or a localized service error if the token is invalid, expired, or malformed.
-func (s *magicLinkAuthnService) VerifyMagicLink(_ context.Context,
-	token string, subjectAttribute string) (*entityprovider.Entity, *serviceerror.ServiceError) {
-	s.logger.Debug("Verifying magic link token")
+// Authenticate verifies a magic link token and returns an authentication result.
+// A missing local user is NOT an error — the result carries VerifiedIdentifiers instead,
+// allowing callers to handle registration flows.
+func (s *magicLinkAuthnService) Authenticate(ctx context.Context,
+	token string, subjectAttribute string) (*MagicLinkAuthnResult, *serviceerror.ServiceError) {
+	s.logger.Debug("Authenticating with magic link token")
 
 	token = strings.TrimSpace(token)
 	if token == "" {
 		return nil, &ErrorInvalidToken
 	}
 
-	issuer := config.GetServerRuntime().Config.JWT.Issuer
-	verifyErr := s.jwtService.VerifyJWT(token, tokenAudience, issuer)
-	if verifyErr != nil {
-		if verifyErr.Code == jwt.ErrorTokenExpired.Code {
-			return nil, &ErrorExpiredToken
-		}
-		s.logger.Debug("Invalid magic link token", log.String("errorCode", verifyErr.Code))
-		return nil, &ErrorInvalidToken
+	if svcErr := s.verifyToken(ctx, token); svcErr != nil {
+		return nil, svcErr
 	}
 
+	subject, svcErr := s.extractSubject(token)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
+	subjectAttribute = strings.TrimSpace(subjectAttribute)
+	user, resolveErr := s.resolveUserFromSubject(subject, subjectAttribute)
+	if resolveErr != nil {
+		if resolveErr.Code == common.ErrorUserNotFound.Code {
+			identifiers := map[string]interface{}{}
+			if subjectAttribute != "" {
+				identifiers[subjectAttribute] = subject
+			}
+			return &MagicLinkAuthnResult{
+				VerifiedIdentifiers: identifiers,
+			}, nil
+		}
+		return nil, resolveErr
+	}
+
+	s.logger.Debug("Magic link authentication successful", log.String("userId", user.ID))
+	return &MagicLinkAuthnResult{InternalEntity: user}, nil
+}
+
+func (s *magicLinkAuthnService) verifyToken(ctx context.Context, token string) *serviceerror.ServiceError {
+	issuer := config.GetServerRuntime().Config.JWT.Issuer
+	verifyErr := s.jwtService.VerifyJWT(ctx, token, tokenAudience, issuer)
+	if verifyErr != nil {
+		if verifyErr.Code == jwt.ErrorTokenExpired.Code {
+			return &ErrorExpiredToken
+		}
+		s.logger.Debug("Invalid magic link token", log.String("errorCode", verifyErr.Code))
+		return &ErrorInvalidToken
+	}
+	return nil
+}
+
+func (s *magicLinkAuthnService) extractSubject(token string) (string, *serviceerror.ServiceError) {
 	payload, decodeErr := jwt.DecodeJWTPayload(token)
 	if decodeErr != nil {
 		s.logger.Debug("Failed to decode magic link token payload", log.Error(decodeErr))
-		return nil, &ErrorInvalidToken
+		return "", &ErrorInvalidToken
 	}
 
 	subject := utils.ConvertInterfaceValueToString(payload["sub"])
 	if subject == "" {
 		s.logger.Debug("Subject claim not found or invalid")
-		return nil, &ErrorMalformedTokenClaims
-	}
-	user, svcErr := s.resolveUserFromSubject(subject, strings.TrimSpace(subjectAttribute))
-	if svcErr != nil {
-		return nil, svcErr
+		return "", &ErrorMalformedTokenClaims
 	}
 
-	s.logger.Debug("Magic link verification successful", log.String("userId", user.ID))
-	return user, nil
+	return subject, nil
 }
 
 // resolveUserFromSubject resolves the token subject either as a user ID or as a configured destination attribute.

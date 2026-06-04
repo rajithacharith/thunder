@@ -19,6 +19,7 @@
 package security
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -49,6 +50,7 @@ func (h *jwtAuthenticator) CanHandle(r *http.Request) bool {
 
 // Authenticate validates the JWT token and builds a SecurityContext.
 func (h *jwtAuthenticator) Authenticate(r *http.Request) (*SecurityContext, error) {
+	ctx := r.Context()
 	// Step 1: Extract Bearer token
 	authHeader := r.Header.Get(constants.AuthorizationHeaderName)
 	token, err := extractToken(authHeader)
@@ -63,7 +65,7 @@ func (h *jwtAuthenticator) Authenticate(r *http.Request) (*SecurityContext, erro
 	// Step 2: Verify the JWT, routing on its issuer. Tokens this server issued
 	// are verified with its own signing key; Additionally when a trusted issuer is
 	// configured, tokens from that issuer are verified against its JWKS.
-	if err := h.verifyToken(token); err != nil {
+	if err := h.verifyToken(ctx, token); err != nil {
 		return nil, err
 	}
 
@@ -93,7 +95,7 @@ func (h *jwtAuthenticator) Authenticate(r *http.Request) (*SecurityContext, erro
 // trusted issuer (when set) are verified against its JWKS. Tokens whose iss
 // matches this server's own JWT issuer are verified with the local signing
 // key. Any other iss is rejected. There is no cross-issuer fallback.
-func (h *jwtAuthenticator) verifyToken(token string) error {
+func (h *jwtAuthenticator) verifyToken(ctx context.Context, token string) error {
 	trustedIssuer := config.GetServerRuntime().Config.Server.SecurityConfig.TrustedIssuer
 	iss := extractIssuer(token)
 	switch {
@@ -102,7 +104,7 @@ func (h *jwtAuthenticator) verifyToken(token string) error {
 			return errInvalidToken
 		}
 	case iss == config.GetServerRuntime().Config.JWT.Issuer:
-		if err := h.jwtService.VerifyJWT(token, "", ""); err != nil {
+		if err := h.jwtService.VerifyJWT(ctx, token, "", ""); err != nil {
 			return errInvalidToken
 		}
 	default:

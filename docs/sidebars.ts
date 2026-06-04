@@ -237,6 +237,11 @@ const sidebars: SidebarsConfig = {
             },
             {
               type: 'doc',
+              id: 'guides/guides/users/manage-roles',
+              label: 'Manage Roles',
+            },
+            {
+              type: 'doc',
               id: 'guides/guides/users/user-types',
               label: 'User Types',
             },
@@ -322,6 +327,11 @@ const sidebars: SidebarsConfig = {
                 },
               ],
             },
+            {
+              type: 'doc',
+              id: 'guides/guides/smtp-server/smtp-server-configuration',
+              label: 'Configure SMTP Server',
+            },
           ],
         },
         {
@@ -372,6 +382,57 @@ const sidebars: SidebarsConfig = {
           id: 'guides/guides/resource-servers',
           label: 'Resource Servers',
         },
+        {
+          type: 'category',
+          label: 'Design',
+          collapsed: true,
+          collapsible: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'guides/guides/design/overview',
+              label: 'Style Your Experience',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/design/themes',
+              label: 'Themes',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/design/layouts',
+              label: 'Layouts',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/design/design-catalog',
+              label: 'Design Catalog',
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Translations',
+          collapsed: true,
+          collapsible: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'guides/guides/i18n/localization',
+              label: 'Localization',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/i18n/manage-translations',
+              label: 'Manage Translations',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/i18n/resolve-translations',
+              label: 'Resolve Translations',
+            },
+          ],
+        },
       ],
     },
 
@@ -410,6 +471,7 @@ const sidebars: SidebarsConfig = {
                   label: 'Walkthroughs',
                   collapsible: true,
                   collapsed: true,
+                  key: 'b2c-walkthroughs',
                   items: [
                     {type: 'doc', id: 'use-cases/b2c/try-it-out/add-login', label: 'Login'},
                     {type: 'doc', id: 'use-cases/b2c/try-it-out/self-sign-up', label: 'Self Sign-Up'},
@@ -427,9 +489,10 @@ const sidebars: SidebarsConfig = {
                   label: 'Learn More',
                   collapsible: true,
                   collapsed: true,
+                  key: 'b2c-learn-more',
                   items: [
-                    {type: 'doc', id: 'use-cases/b2c/identity-concepts', label: 'Identity Concepts'},
-                    {type: 'doc', id: 'use-cases/b2c/configure-it-yourself', label: 'Configure It Yourself'},
+                    {type: 'doc', id: 'use-cases/b2c/identity-concepts', label: 'Identity Concepts', key: 'b2c-identity-concepts'},
+                    {type: 'doc', id: 'use-cases/b2c/configure-it-yourself', label: 'Configure It Yourself', key: 'b2c-configure-it-yourself'},
                   ],
                 },
               ],
@@ -445,17 +508,17 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: 'AI Agents',
+          label: 'Agent Identity',
           collapsible: true,
           collapsed: true,
           items: [
             {
               type: 'category',
-              label: 'Identity for AI Agents',
+              label: 'Securing AI Agents',
               collapsible: true,
               collapsed: true,
               items: [
-                {type: 'doc', id: 'use-cases/ai-agents/overview', label: 'Agent Identity'},
+                {type: 'doc', id: 'use-cases/ai-agents/overview', label: 'Overview', key: 'ai-agents-overview'},
                 {type: 'doc', id: 'use-cases/ai-agents/solution-patterns', label: 'Solution Patterns', key: 'ai-agents-solution-patterns'},
                 {
                   type: 'category',
@@ -465,18 +528,82 @@ const sidebars: SidebarsConfig = {
                   key: 'ai-agents-try-it-out',
                   link: {type: 'doc', id: 'use-cases/ai-agents/try-it-out'},
                   items: [
-                    {type: 'doc', id: 'use-cases/ai-agents/try-it-out/protect-the-agent', label: 'Protect the Agent'},
-                    {type: 'doc', id: 'use-cases/ai-agents/try-it-out/act-on-its-own', label: 'Acting on Its Own'},
                     {
-                      type: 'doc',
-                      id: 'use-cases/ai-agents/try-it-out/act-on-behalf-of-user',
-                      label: 'Acting on Behalf of a User',
+                      type: 'category',
+                      label: 'Walkthroughs',
+                      collapsible: true,
+                      collapsed: true,
+                      key: 'ai-agents-walkthroughs',
+                      items: [
+                        {type: 'doc', id: 'use-cases/ai-agents/try-it-out/protect-the-agent', label: 'Protect the Agent'},
+                        {type: 'doc', id: 'use-cases/ai-agents/try-it-out/act-on-its-own', label: 'Acting on Its Own'},
+                        {
+                          type: 'doc',
+                          id: 'use-cases/ai-agents/try-it-out/act-on-behalf-of-user',
+                          label: 'Acting on Behalf of a User',
+                        },
+                      ],
+                    },
+                    {
+                      type: 'category',
+                      label: 'Learn More',
+                      collapsible: true,
+                      collapsed: true,
+                      key: 'ai-agents-learn-more',
+                      items: [
+                        {type: 'doc', id: 'use-cases/ai-agents/identity-concepts', label: 'Identity Concepts', key: 'ai-agents-identity-concepts'},
+                        {type: 'doc', id: 'use-cases/ai-agents/configure-it-yourself', label: 'Configure It Yourself', key: 'ai-agents-configure-it-yourself'},
+                      ],
                     },
                   ],
                 },
               ],
             },
-            {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization', label: 'MCP Authorization'},
+            {
+              type: 'category',
+              label: 'Securing MCP',
+              collapsible: true,
+              collapsed: true,
+              items: [
+                {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/overview', label: 'Overview', key: 'mcp-authorization-overview'},
+                {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/solution-patterns', label: 'Solution Patterns', key: 'mcp-authorization-solution-patterns'},
+                {
+                  type: 'category',
+                  label: 'Try It Out',
+                  collapsible: true,
+                  collapsed: true,
+                  key: 'mcp-authorization-try-it-out',
+                  link: {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/try-it-out'},
+                  items: [
+                    {
+                      type: 'category',
+                      label: 'Walkthroughs',
+                      collapsible: true,
+                      collapsed: true,
+                      key: 'mcp-authorization-walkthroughs',
+                      items: [
+                        {
+                          type: 'doc',
+                          id: 'use-cases/ai-agents/mcp-authorization/try-it-out/connect-via-inspector',
+                          label: 'MCP Authorization',
+                        },
+                      ],
+                    },
+                    {
+                      type: 'category',
+                      label: 'Learn More',
+                      collapsible: true,
+                      collapsed: true,
+                      key: 'mcp-authorization-learn-more',
+                      items: [
+                        {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/identity-concepts', label: 'Identity Concepts', key: 'mcp-authorization-identity-concepts'},
+                        {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/configure-it-yourself', label: 'Configure It Yourself', key: 'mcp-authorization-configure-it-yourself'},
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
           ],
         },
       ],
@@ -579,6 +706,11 @@ const sidebars: SidebarsConfig = {
           id: 'guides/deployment-patterns/production-guidelines',
           label: 'Production Guidelines',
         },
+        {
+          type: 'doc',
+          id: 'guides/deployment-patterns/observability',
+          label: 'Observability',
+        },
       ],
     },
   ],
@@ -623,7 +755,7 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       collapsible: false,
       items: [
-        {type: 'doc', id: 'community/contributing/overview', label: 'Contribute to ThunderID'},
+        {type: 'doc', id: 'community/contributing/overview', label: `Contribute to ${productConfig.project.name}`},
         {type: 'doc', id: 'community/contributing/sharing-ideas', label: 'Share Ideas'},
         {type: 'doc', id: 'community/contributing/proposing-features', label: 'Propose Features'},
         {type: 'doc', id: 'community/contributing/contributing-code/prerequisites', label: 'Prerequisites'},

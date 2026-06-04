@@ -234,7 +234,7 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentials() {
 				suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything,
 					mock.Anything, mock.Anything).
 					Return(authnprovidermgr.AuthUser{}, &authnprovidercm.AttributesResponse{}, nil).Once()
-				suite.mockJWTService.On("VerifyJWT", mock.Anything, "", mock.Anything).Return(nil).Once()
+				suite.mockJWTService.On("VerifyJWT", mock.Anything, mock.Anything, "", mock.Anything).Return(nil).Once()
 				suite.mockAssertGenerator.On("UpdateAssertion", mock.Anything, mock.Anything).Return(
 					&assert.AssertionResult{
 						Context: &assert.AssuranceContext{
@@ -359,7 +359,7 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsSubj
 		}, nil)
 	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(authnprovidermgr.AuthUser{}, &authnprovidercm.AttributesResponse{}, nil)
-	suite.mockJWTService.On("VerifyJWT", existingAssertion, "", mock.Anything).Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, existingAssertion, "", mock.Anything).Return(nil)
 
 	result, err := suite.service.AuthenticateWithCredentials(context.Background(), identifiers,
 		authnCredentials, false, existingAssertion)
@@ -386,14 +386,15 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsInva
 		}, nil)
 	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
 		authnprovidermgr.AuthUser{}, &authnprovidercm.AttributesResponse{}, nil)
-	suite.mockJWTService.On("VerifyJWT", invalidAssertion, "", mock.Anything).Return(&serviceerror.ServiceError{
-		Type:  serviceerror.ServerErrorType,
-		Code:  "INVALID_JWT",
-		Error: core.I18nMessage{Key: "error.test.invalid_jwt", DefaultValue: "Invalid JWT"},
-		ErrorDescription: core.I18nMessage{
-			Key: "error.test.the_jwt_signature_is_invalid", DefaultValue: "The JWT signature is invalid",
-		},
-	})
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, invalidAssertion, "", mock.Anything).
+		Return(&serviceerror.ServiceError{
+			Type:  serviceerror.ServerErrorType,
+			Code:  "INVALID_JWT",
+			Error: core.I18nMessage{Key: "error.test.invalid_jwt", DefaultValue: "Invalid JWT"},
+			ErrorDescription: core.I18nMessage{
+				Key: "error.test.the_jwt_signature_is_invalid", DefaultValue: "The JWT signature is invalid",
+			},
+		})
 
 	result, err := suite.service.AuthenticateWithCredentials(context.Background(), identifiers,
 		authnCredentials, false, invalidAssertion)
@@ -423,7 +424,7 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsExis
 		}, nil)
 	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
 		authnprovidermgr.AuthUser{}, &authnprovidercm.AttributesResponse{}, nil)
-	suite.mockJWTService.On("VerifyJWT", existingAssertion, "", mock.Anything).Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, existingAssertion, "", mock.Anything).Return(nil)
 
 	result, err := suite.service.AuthenticateWithCredentials(context.Background(), identifiers,
 		authnCredentials, false, existingAssertion)
@@ -535,7 +536,8 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTP() {
 				suite.mockAuthnProvider.On("AuthenticateUser",
 					mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 					Return(authnprovidermgr.AuthUser{}, testAuthnResult, nil).Once()
-				suite.mockJWTService.On("VerifyJWT", existingAssertion, "", mock.Anything).Return(nil).Once()
+				suite.mockJWTService.
+					On("VerifyJWT", mock.Anything, existingAssertion, "", mock.Anything).Return(nil).Once()
 				suite.mockAssertGenerator.On("UpdateAssertion", mock.Anything, mock.Anything).Return(
 					&assert.AssertionResult{
 						Context: &assert.AssuranceContext{
@@ -769,7 +771,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationJWTGenera
 
 func (suite *AuthenticationServiceTestSuite) mockFederatedAuthnSuccess(idpType idp.IDPType) string {
 	sessionToken := suite.createSessionToken(idpType)
-	suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, sessionToken, "auth-svc", mock.Anything).Return(nil)
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(creds map[string]interface{}) bool {
 			_, ok := creds["federated"]
@@ -835,7 +837,8 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationWithAsse
 			existingAssertion: "",
 			setupMocks: func() {
 				sessionToken := suite.createSessionToken(idp.IDPTypeOAuth)
-				suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil).Once()
+				suite.mockJWTService.
+					On("VerifyJWT", mock.Anything, sessionToken, "auth-svc", mock.Anything).Return(nil).Once()
 				suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
 					mock.MatchedBy(func(creds map[string]interface{}) bool {
 						_, ok := creds["federated"]
@@ -869,8 +872,10 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationWithAsse
 			setupMocks: func() {
 				sessionToken := suite.createSessionToken(idp.IDPTypeOAuth)
 				existingAssertion := suite.createTestAssertion(testUserID)
-				suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil).Once()
-				suite.mockJWTService.On("VerifyJWT", existingAssertion, "", mock.Anything).Return(nil).Once()
+				suite.mockJWTService.
+					On("VerifyJWT", mock.Anything, sessionToken, "auth-svc", mock.Anything).Return(nil).Once()
+				suite.mockJWTService.
+					On("VerifyJWT", mock.Anything, existingAssertion, "", mock.Anything).Return(nil).Once()
 				suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
 					mock.MatchedBy(func(creds map[string]interface{}) bool {
 						_, ok := creds["federated"]
@@ -940,7 +945,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationEmptyAut
 }
 
 func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationInvalidSessionToken() {
-	suite.mockJWTService.On("VerifyJWT", "invalid_token", "auth-svc", mock.Anything).
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, "invalid_token", "auth-svc", mock.Anything).
 		Return(&serviceerror.ServiceError{
 			Type:  serviceerror.ServerErrorType,
 			Code:  "INVALID_TOKEN",
@@ -960,7 +965,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationInvalidS
 
 func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationTypeMismatch() {
 	sessionToken := suite.createSessionToken(idp.IDPTypeGoogle)
-	suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, sessionToken, "auth-svc", mock.Anything).Return(nil)
 
 	result, err := suite.service.FinishIDPAuthentication(
 		context.Background(), idp.IDPTypeGitHub, sessionToken, false, "",
@@ -973,7 +978,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationTypeMism
 
 func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationUserNotFound() {
 	sessionToken := suite.createSessionToken(idp.IDPTypeOAuth)
-	suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, sessionToken, "auth-svc", mock.Anything).Return(nil)
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(creds map[string]interface{}) bool {
 			_, ok := creds["federated"]
@@ -994,7 +999,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationUserNotF
 
 func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationProviderAuthFailure() {
 	sessionToken := suite.createSessionToken(idp.IDPTypeOAuth)
-	suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, sessionToken, "auth-svc", mock.Anything).Return(nil)
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(creds map[string]interface{}) bool {
 			_, ok := creds["federated"]
@@ -1058,9 +1063,9 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyAndDecodeSessionTokenMalf
 	logger := log.GetLogger()
 	badToken := "header.invalid-base64.signature"
 
-	suite.mockJWTService.On("VerifyJWT", badToken, "auth-svc", mock.Anything).Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, badToken, "auth-svc", mock.Anything).Return(nil)
 
-	result, err := suite.service.verifyAndDecodeSessionToken(badToken, logger)
+	result, err := suite.service.verifyAndDecodeSessionToken(context.Background(), badToken, logger)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1076,9 +1081,9 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyAndDecodeSessionTokenMiss
 	encoded := base64.RawURLEncoding.EncodeToString(payloadBytes)
 	tokenWithoutAuthData := "header." + encoded + ".signature"
 
-	suite.mockJWTService.On("VerifyJWT", tokenWithoutAuthData, "auth-svc", mock.Anything).Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, tokenWithoutAuthData, "auth-svc", mock.Anything).Return(nil)
 
-	result, err := suite.service.verifyAndDecodeSessionToken(tokenWithoutAuthData, logger)
+	result, err := suite.service.verifyAndDecodeSessionToken(context.Background(), tokenWithoutAuthData, logger)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1114,7 +1119,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationBuildURLE
 
 func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationProviderServerError() {
 	sessionToken := suite.createSessionToken(idp.IDPTypeOIDC)
-	suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, sessionToken, "auth-svc", mock.Anything).Return(nil)
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(creds map[string]interface{}) bool {
 			_, ok := creds["federated"]
@@ -1174,7 +1179,7 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionE
 	encodedPayload := base64.RawURLEncoding.EncodeToString(payloadBytes)
 	invalidAssertion := "header." + encodedPayload + ".signature"
 
-	suite.mockJWTService.On("VerifyJWT", invalidAssertion, "", mock.Anything).Return(nil).Once()
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, invalidAssertion, "", mock.Anything).Return(nil).Once()
 
 	svcErr := suite.service.validateAndAppendAuthAssertion(context.Background(),
 		authResponse, testUser, common.AuthenticatorSMSOTP, invalidAssertion, logger)
@@ -1185,7 +1190,7 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionE
 
 func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationAssertionGenerationError() {
 	sessionToken := suite.createSessionToken(idp.IDPTypeOAuth)
-	suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil).Once()
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, sessionToken, "auth-svc", mock.Anything).Return(nil).Once()
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(creds map[string]interface{}) bool {
 			_, ok := creds["federated"]
@@ -1199,7 +1204,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationAssertio
 		}, nil).Once()
 
 	// Create invalid existing assertion that will fail JWT verification
-	suite.mockJWTService.On("VerifyJWT", invalidAssertion, "", mock.Anything).
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, invalidAssertion, "", mock.Anything).
 		Return(&serviceerror.ServiceError{
 			Type:  serviceerror.ServerErrorType,
 			Code:  "INVALID_SIGNATURE",
@@ -1262,7 +1267,7 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionS
 	// Create assertion with different subject
 	existingAssertion := suite.createTestAssertion("different_user_id")
 
-	suite.mockJWTService.On("VerifyJWT", existingAssertion, "", mock.Anything).Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, existingAssertion, "", mock.Anything).Return(nil)
 
 	svcErr := suite.service.validateAndAppendAuthAssertion(context.Background(),
 		authResponse, testUser, common.AuthenticatorSMSOTP, existingAssertion, log.GetLogger())
@@ -1275,10 +1280,10 @@ func (suite *AuthenticationServiceTestSuite) TestExtractClaimsFromAssertionMissi
 	// Create assertion without assurance claim
 	assertionWithoutAssurance := suite.createTestAssertionWithoutAssurance(testUserID)
 
-	suite.mockJWTService.On("VerifyJWT", assertionWithoutAssurance, "", mock.Anything).Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, assertionWithoutAssurance, "", mock.Anything).Return(nil)
 
 	_, _, svcErr := suite.service.extractClaimsFromAssertion(
-		assertionWithoutAssurance, log.GetLogger())
+		context.Background(), assertionWithoutAssurance, log.GetLogger())
 
 	suite.NotNil(svcErr)
 	suite.Equal(common.ErrorInvalidAssertion.Code, svcErr.Code)
@@ -1308,7 +1313,7 @@ func (suite *AuthenticationServiceTestSuite) TestExtractClaimsFromAssertionError
 				},
 			},
 			setupMock: func(assertion string) {
-				suite.mockJWTService.On("VerifyJWT", assertion, "", mock.Anything).Return(nil).Once()
+				suite.mockJWTService.On("VerifyJWT", mock.Anything, assertion, "", mock.Anything).Return(nil).Once()
 			},
 		},
 		{
@@ -1328,7 +1333,7 @@ func (suite *AuthenticationServiceTestSuite) TestExtractClaimsFromAssertionError
 				},
 			},
 			setupMock: func(assertion string) {
-				suite.mockJWTService.On("VerifyJWT", assertion, "", mock.Anything).Return(nil).Once()
+				suite.mockJWTService.On("VerifyJWT", mock.Anything, assertion, "", mock.Anything).Return(nil).Once()
 			},
 		},
 		{
@@ -1348,7 +1353,7 @@ func (suite *AuthenticationServiceTestSuite) TestExtractClaimsFromAssertionError
 				},
 			},
 			setupMock: func(assertion string) {
-				suite.mockJWTService.On("VerifyJWT", assertion, "", mock.Anything).Return(nil).Once()
+				suite.mockJWTService.On("VerifyJWT", mock.Anything, assertion, "", mock.Anything).Return(nil).Once()
 			},
 		},
 		{
@@ -1357,7 +1362,7 @@ func (suite *AuthenticationServiceTestSuite) TestExtractClaimsFromAssertionError
 				"sub": testUserID,
 			},
 			setupMock: func(assertion string) {
-				suite.mockJWTService.On("VerifyJWT", assertion, "", mock.Anything).Return(nil).Once()
+				suite.mockJWTService.On("VerifyJWT", mock.Anything, assertion, "", mock.Anything).Return(nil).Once()
 			},
 		},
 	}
@@ -1370,7 +1375,8 @@ func (suite *AuthenticationServiceTestSuite) TestExtractClaimsFromAssertionError
 
 			tc.setupMock(testAssertion)
 
-			assuranceCtx, sub, err := suite.service.extractClaimsFromAssertion(testAssertion, logger)
+			assuranceCtx, sub, err := suite.service.
+				extractClaimsFromAssertion(context.Background(), testAssertion, logger)
 
 			suite.Nil(assuranceCtx)
 			suite.Empty(sub, "sub should be empty for test case: %s", tc.name)
@@ -1385,9 +1391,9 @@ func (suite *AuthenticationServiceTestSuite) TestExtractClaimsFromAssertionDecod
 
 	// Create a malformed JWT that will fail payload decoding
 	malformedAssertion := "header.not-valid-base64!!.signature"
-	suite.mockJWTService.On("VerifyJWT", malformedAssertion, "", mock.Anything).Return(nil).Once()
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, malformedAssertion, "", mock.Anything).Return(nil).Once()
 
-	assuranceCtx, sub, err := suite.service.extractClaimsFromAssertion(malformedAssertion, logger)
+	assuranceCtx, sub, err := suite.service.extractClaimsFromAssertion(context.Background(), malformedAssertion, logger)
 	suite.Nil(assuranceCtx)
 	suite.Empty(sub)
 	suite.NotNil(err)
@@ -1405,9 +1411,9 @@ func (suite *AuthenticationServiceTestSuite) TestExtractClaimsFromAssertionUnmar
 	payloadBytes, _ := json.Marshal(validPayload)
 	encodedPayload := base64.RawURLEncoding.EncodeToString(payloadBytes)
 	testAssertion := "header." + encodedPayload + ".signature"
-	suite.mockJWTService.On("VerifyJWT", testAssertion, "", mock.Anything).Return(nil).Once()
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, testAssertion, "", mock.Anything).Return(nil).Once()
 
-	assuranceCtx, sub, err := suite.service.extractClaimsFromAssertion(testAssertion, logger)
+	assuranceCtx, sub, err := suite.service.extractClaimsFromAssertion(context.Background(), testAssertion, logger)
 	suite.Nil(assuranceCtx)
 	suite.Empty(sub)
 	suite.NotNil(err)
@@ -1456,7 +1462,7 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTPJWTGenerationError() {
 func (suite *AuthenticationServiceTestSuite) TestExtractClaimsFromAssertionInvalidJWTSignature() {
 	logger := log.GetLogger()
 
-	suite.mockJWTService.On("VerifyJWT", invalidAssertion, "", mock.Anything).
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, invalidAssertion, "", mock.Anything).
 		Return(&serviceerror.ServiceError{
 			Type:  serviceerror.ServerErrorType,
 			Code:  "INVALID_SIGNATURE",
@@ -1466,7 +1472,7 @@ func (suite *AuthenticationServiceTestSuite) TestExtractClaimsFromAssertionInval
 			},
 		})
 
-	assuranceCtx, sub, err := suite.service.extractClaimsFromAssertion(invalidAssertion, logger)
+	assuranceCtx, sub, err := suite.service.extractClaimsFromAssertion(context.Background(), invalidAssertion, logger)
 
 	suite.Nil(assuranceCtx)
 	suite.Empty(sub)
@@ -1486,9 +1492,9 @@ func (suite *AuthenticationServiceTestSuite) TestExtractClaimsFromAssertionMalfo
 	encoded := base64.RawURLEncoding.EncodeToString(payloadBytes)
 	malformedAssertion := "header." + encoded + ".signature"
 
-	suite.mockJWTService.On("VerifyJWT", malformedAssertion, "", mock.Anything).Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, malformedAssertion, "", mock.Anything).Return(nil)
 
-	assuranceCtx, sub, err := suite.service.extractClaimsFromAssertion(malformedAssertion, logger)
+	assuranceCtx, sub, err := suite.service.extractClaimsFromAssertion(context.Background(), malformedAssertion, logger)
 
 	suite.Nil(assuranceCtx)
 	suite.Empty(sub)
@@ -1549,7 +1555,7 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionU
 	logger := log.GetLogger()
 	existingAssertion := suite.createTestAssertion(testUserID)
 
-	suite.mockJWTService.On("VerifyJWT", existingAssertion, "", mock.Anything).Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, existingAssertion, "", mock.Anything).Return(nil)
 
 	// Create a service with a mock assertion generator that returns an error on update
 	mockAssertGenerator := assertmock.NewAuthAssertGeneratorInterfaceMock(suite.T())
@@ -1865,7 +1871,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Wit
 		mock.Anything).Return(authnprovidermgr.AuthUser{}, authResultFromPasskey, nil).Once()
 
 	// Mock JWT verification for existing assertion
-	suite.mockJWTService.On("VerifyJWT", existingAssertion, "", mock.Anything).Return(nil).Once()
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, existingAssertion, "", mock.Anything).Return(nil).Once()
 
 	// Mock assertion update
 	mockUpdatedResult := &assert.AssertionResult{

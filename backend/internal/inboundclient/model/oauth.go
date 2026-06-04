@@ -45,8 +45,9 @@ const (
 
 // OAuthTokenConfig wraps access and ID token configs.
 type OAuthTokenConfig struct {
-	AccessToken *AccessTokenConfig `json:"accessToken,omitempty" yaml:"access_token,omitempty" jsonschema:"Access token configuration."`
-	IDToken     *IDTokenConfig     `json:"idToken,omitempty"    yaml:"id_token,omitempty"     jsonschema:"ID token configuration."`
+	AccessToken  *AccessTokenConfig  `json:"accessToken,omitempty" yaml:"access_token,omitempty" jsonschema:"Access token configuration."`
+	IDToken      *IDTokenConfig      `json:"idToken,omitempty"    yaml:"id_token,omitempty"     jsonschema:"ID token configuration."`
+	RefreshToken *RefreshTokenConfig `json:"refreshToken,omitempty" yaml:"refresh_token,omitempty" jsonschema:"Refresh token configuration."`
 }
 
 // AccessTokenConfig is the access token configuration.
@@ -62,6 +63,11 @@ type IDTokenConfig struct {
 	ResponseType   IDTokenResponseType `json:"responseType,omitempty"   yaml:"response_type,omitempty"   jsonschema:"ID token response type (JWT, JWE, NESTED_JWT). Defaults to JWT."`
 	EncryptionAlg  string              `json:"encryptionAlg,omitempty"  yaml:"encryption_alg,omitempty"  jsonschema:"JWE key-management algorithm. Required when responseType is JWE or NESTED_JWT."`
 	EncryptionEnc  string              `json:"encryptionEnc,omitempty"  yaml:"encryption_enc,omitempty"  jsonschema:"JWE content-encryption algorithm. Required when responseType is JWE or NESTED_JWT."`
+}
+
+// RefreshTokenConfig is the refresh token configuration.
+type RefreshTokenConfig struct {
+	ValidityPeriod int64 `json:"validityPeriod,omitempty" yaml:"validity_period,omitempty" jsonschema:"Refresh token validity period in seconds."`
 }
 
 // IDTokenResponseType is the response format of the ID token.

@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/thunder-id/thunderid/internal/entity"
-	"github.com/thunder-id/thunderid/internal/system/cryptolib/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 )
 
@@ -39,10 +39,10 @@ type User struct {
 
 // Credential represents the credentials of a user.
 type Credential struct {
-	StorageType       string              `json:"storageType"`
-	StorageAlgo       hash.CredAlgorithm  `json:"storageAlgo"`
-	StorageAlgoParams hash.CredParameters `json:"storageAlgoParams"`
-	Value             string              `json:"value"`
+	StorageType       string                   `json:"storageType"`
+	StorageAlgo       cryptolib.CredAlgorithm  `json:"storageAlgo"`
+	StorageAlgoParams cryptolib.CredParameters `json:"storageAlgoParams"`
+	Value             string                   `json:"value"`
 }
 
 // Credentials represents the credential storage structure where credentials are organized by type.

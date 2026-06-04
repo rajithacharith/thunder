@@ -203,6 +203,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_Success() {
 
 			expectedToken := testJWTToken
 			suite.mockTokenBuilder.On("BuildAccessToken",
+				mock.Anything,
 				mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
 					return ctx.Subject == testClientID &&
 						(len(ctx.Audiences) > 0 && ctx.Audiences[0] == testClientID) &&
@@ -254,7 +255,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_JWTGenerati
 		AuthorizedPermissions: []string{"read"},
 	}, nil)
 
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).
 		Return(nil, errors.New("JWT generation failed"))
 
 	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
@@ -284,10 +285,11 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_NilTokenAtt
 	}, nil)
 
 	expectedToken := testJWTToken
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return ctx.Subject == testClientID && (len(ctx.Audiences) > 0 && ctx.Audiences[0] == testClientID) &&
-			tokenservice.JoinScopes(ctx.Scopes) == testScopeRead
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return ctx.Subject == testClientID && (len(ctx.Audiences) > 0 && ctx.Audiences[0] == testClientID) &&
+				tokenservice.JoinScopes(ctx.Scopes) == testScopeRead
+		})).Return(&model.TokenDTO{
 		Token:     expectedToken,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  int64(1234567890),
@@ -329,7 +331,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_TokenTiming
 
 	expectedToken := testJWTToken
 	now := time.Now().Unix()
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).
 		Return(&model.TokenDTO{
 			Token:     expectedToken,
 			TokenType: constants.TokenTypeBearer,
@@ -413,12 +415,13 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_WithResourc
 	}, nil)
 
 	var capturedAudiences []string
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		capturedAudiences = ctx.Audiences
-		return ctx.Subject == testClientID &&
-			len(ctx.Audiences) == 1 &&
-			ctx.Audiences[0] == "https://mcp.example.com/mcp"
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			capturedAudiences = ctx.Audiences
+			return ctx.Subject == testClientID &&
+				len(ctx.Audiences) == 1 &&
+				ctx.Audiences[0] == "https://mcp.example.com/mcp"
+		})).Return(&model.TokenDTO{
 		Token:     testJWTToken,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  int64(1234567890),
@@ -455,12 +458,13 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_WithoutReso
 	}, nil)
 
 	var capturedAudience string
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		if len(ctx.Audiences) > 0 {
-			capturedAudience = ctx.Audiences[0]
-		}
-		return ctx.Subject == testClientID && (len(ctx.Audiences) > 0 && ctx.Audiences[0] == testClientID)
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			if len(ctx.Audiences) > 0 {
+				capturedAudience = ctx.Audiences[0]
+			}
+			return ctx.Subject == testClientID && (len(ctx.Audiences) > 0 && ctx.Audiences[0] == testClientID)
+		})).Return(&model.TokenDTO{
 		Token:     testJWTToken,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  int64(1234567890),
@@ -503,6 +507,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_PartialScop
 	}, nil)
 
 	suite.mockTokenBuilder.On("BuildAccessToken",
+		mock.Anything,
 		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
 			return tokenservice.JoinScopes(ctx.Scopes) == tokenservice.JoinScopes([]string{"read", "write"})
 		})).Return(&model.TokenDTO{
@@ -539,6 +544,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_NoAuthorize
 	}, nil)
 
 	suite.mockTokenBuilder.On("BuildAccessToken",
+		mock.Anything,
 		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
 			return len(ctx.Scopes) == 0
 		})).Return(&model.TokenDTO{
@@ -593,6 +599,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_EmptyScope_
 	}
 
 	suite.mockTokenBuilder.On("BuildAccessToken",
+		mock.Anything,
 		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
 			return len(ctx.Scopes) == 0
 		})).Return(&model.TokenDTO{
@@ -658,10 +665,11 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_ImplicitRSD
 		}, nil)
 
 	var capturedAudiences []string
-	mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		capturedAudiences = ctx.Audiences
-		return true
-	})).Return(&model.TokenDTO{
+	mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			capturedAudiences = ctx.Audiences
+			return true
+		})).Return(&model.TokenDTO{
 		Token:     testJWTToken,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  int64(1234567890),
@@ -723,10 +731,11 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_ImplicitRSD
 		}, nil)
 
 	var capturedAudiences []string
-	mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		capturedAudiences = ctx.Audiences
-		return true
-	})).Return(&model.TokenDTO{
+	mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			capturedAudiences = ctx.Audiences
+			return true
+		})).Return(&model.TokenDTO{
 		Token:     testJWTToken,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  int64(1234567890),
@@ -770,6 +779,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_DPoPProof_P
 	}, nil)
 
 	suite.mockTokenBuilder.On("BuildAccessToken",
+		mock.Anything,
 		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
 			return ctx.DPoPJkt == "thumbprint-cc"
 		})).Return(&model.TokenDTO{
@@ -806,6 +816,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_NoDPoPProof
 	}, nil)
 
 	suite.mockTokenBuilder.On("BuildAccessToken",
+		mock.Anything,
 		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
 			return ctx.DPoPJkt == ""
 		})).Return(&model.TokenDTO{

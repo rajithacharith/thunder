@@ -34,7 +34,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/notification/common"
 	"github.com/thunder-id/thunderid/internal/system/cmodels"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/cryptolib/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/template"
@@ -221,7 +221,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_InvalidSessionToken() {
 	}
 
 	// Expect VerifyJWT to be called; issuer can vary in tests so use Any
-	suite.mockJWTService.EXPECT().VerifyJWT("invalid-token", "otp-svc", mock.Anything).
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, "invalid-token", "otp-svc", mock.Anything).
 		Return(&ErrorInvalidSessionToken).Once()
 
 	result, err := suite.service.VerifyOTP(context.Background(), request)
@@ -397,7 +397,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_GenerateJWTError() {
 
 func (suite *OTPServiceTestSuite) TestVerifyOTP_Success() {
 	otpValue := "123456"
-	otpHash := hash.GenerateThumbprintFromString(otpValue)
+	otpHash := cryptolib.GenerateThumbprintFromString(otpValue)
 	expiry := time.Now().Add(1 * time.Minute).UnixMilli()
 
 	payloadMap := map[string]interface{}{
@@ -417,7 +417,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_Success() {
 	payloadEnc := base64.RawURLEncoding.EncodeToString(payloadBytes)
 	token := fmt.Sprintf("%s.%s.", headerEnc, payloadEnc)
 
-	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, token, mock.Anything, mock.Anything).Return(nil).Once()
 
 	req := common.VerifyOTPDTO{SessionToken: token, OTPCode: otpValue}
 	res, err := suite.service.VerifyOTP(context.Background(), req)
@@ -429,7 +429,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_Success() {
 
 func (suite *OTPServiceTestSuite) TestVerifyOTP_Expired() {
 	otpValue := "123456"
-	otpHash := hash.GenerateThumbprintFromString(otpValue)
+	otpHash := cryptolib.GenerateThumbprintFromString(otpValue)
 	expiry := time.Now().Add(-1 * time.Minute).UnixMilli() // already expired
 
 	payloadMap := map[string]interface{}{
@@ -449,7 +449,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_Expired() {
 	payloadEnc := base64.RawURLEncoding.EncodeToString(payloadBytes)
 	token := fmt.Sprintf("%s.%s.", headerEnc, payloadEnc)
 
-	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, token, mock.Anything, mock.Anything).Return(nil).Once()
 
 	req := common.VerifyOTPDTO{SessionToken: token, OTPCode: otpValue}
 	res, err := suite.service.VerifyOTP(context.Background(), req)
@@ -518,7 +518,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_MissingOTPData() {
 	payloadEnc := base64.RawURLEncoding.EncodeToString(payloadBytes)
 	token := fmt.Sprintf("%s.%s.", headerEnc, payloadEnc)
 
-	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, token, mock.Anything, mock.Anything).Return(nil).Once()
 
 	req := common.VerifyOTPDTO{SessionToken: token, OTPCode: "123456"}
 	res, err := suite.service.VerifyOTP(context.Background(), req)
@@ -530,7 +530,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_MissingOTPData() {
 func (suite *OTPServiceTestSuite) TestVerifyOTP_BadPayloadDecode() {
 	// craft token with invalid base64 payload part
 	token := "hdr.invalid@@@.sig" // #nosec G101
-	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, token, mock.Anything, mock.Anything).Return(nil).Once()
 
 	req := common.VerifyOTPDTO{SessionToken: token, OTPCode: "123456"}
 	res, err := suite.service.VerifyOTP(context.Background(), req)
@@ -543,7 +543,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_Mismatch() {
 	// prepare session data with a different OTP hash
 	otpValue := "123456"
 	wrongOTP := "000000"
-	otpHash := hash.GenerateThumbprintFromString(wrongOTP) // stored hash is for wrongOTP
+	otpHash := cryptolib.GenerateThumbprintFromString(wrongOTP) // stored hash is for wrongOTP
 	expiry := time.Now().Add(1 * time.Minute).UnixMilli()
 
 	payloadMap := map[string]interface{}{
@@ -563,7 +563,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_Mismatch() {
 	payloadEnc := base64.RawURLEncoding.EncodeToString(payloadBytes)
 	token := fmt.Sprintf("%s.%s.", headerEnc, payloadEnc)
 
-	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, token, mock.Anything, mock.Anything).Return(nil).Once()
 
 	req := common.VerifyOTPDTO{SessionToken: token, OTPCode: otpValue}
 	res, err := suite.service.VerifyOTP(context.Background(), req)
@@ -606,7 +606,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_UnmarshalError() {
 	payloadEnc := base64.RawURLEncoding.EncodeToString(payloadBytes)
 	token := fmt.Sprintf("%s.%s.", headerEnc, payloadEnc)
 
-	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, token, mock.Anything, mock.Anything).Return(nil).Once()
 
 	req := common.VerifyOTPDTO{SessionToken: token, OTPCode: "123456"}
 	res, err := suite.service.VerifyOTP(context.Background(), req)
@@ -674,7 +674,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_TemplateRenderFailure_ReturnsInter
 
 func (suite *OTPServiceTestSuite) TestVerifyAndDecode_Success() {
 	otpValue := "123456"
-	otpHash := hash.GenerateThumbprintFromString(otpValue)
+	otpHash := cryptolib.GenerateThumbprintFromString(otpValue)
 	expiry := time.Now().Add(1 * time.Minute).UnixMilli()
 
 	payloadMap := map[string]interface{}{
@@ -694,9 +694,9 @@ func (suite *OTPServiceTestSuite) TestVerifyAndDecode_Success() {
 	payloadEnc := base64.RawURLEncoding.EncodeToString(payloadBytes)
 	token := fmt.Sprintf("%s.%s.", headerEnc, payloadEnc)
 
-	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, token, mock.Anything, mock.Anything).Return(nil).Once()
 
-	sessionData, svcErr := suite.service.verifyAndDecodeSessionToken(token, log.GetLogger())
+	sessionData, svcErr := suite.service.verifyAndDecodeSessionToken(context.Background(), token, log.GetLogger())
 	suite.Nil(svcErr)
 	suite.NotNil(sessionData)
 	suite.Equal("+15559876543", sessionData.Recipient)

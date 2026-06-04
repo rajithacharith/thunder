@@ -52,16 +52,6 @@ $ErrorActionPreference = 'Stop'
 Log-Info "Creating default $PRODUCT_NAME resources..."
 Write-Host ""
 
-# System resource server configuration from environment variables.
-$SYSTEM_RS_HANDLE = if ($env:SYSTEM_RS_HANDLE) { $env:SYSTEM_RS_HANDLE } else { "" }
-$SYSTEM_RS_IDENTIFIER = if ($env:SYSTEM_RS_IDENTIFIER) { $env:SYSTEM_RS_IDENTIFIER } else { "https://localhost:8090/mcp" }
-
-# Derive the system permission root based on the configured handle.
-if ($SYSTEM_RS_HANDLE) {
-    $SYSTEM_PERMISSION = "${SYSTEM_RS_HANDLE}:system"
-} else {
-    $SYSTEM_PERMISSION = "system"
-}
 
 # ============================================================================
 # Create Default Organization Unit
@@ -350,8 +340,7 @@ if (-not $DEFAULT_OU_ID) {
 $resourceServerData = @{
     name = "System"
     description = "System resource server"
-    handle = $SYSTEM_RS_HANDLE
-    identifier = $SYSTEM_RS_IDENTIFIER
+    identifier = "system"
     ouId = $DEFAULT_OU_ID
 } | ConvertTo-Json -Depth 10
 
@@ -383,13 +372,6 @@ elseif ($response.StatusCode -eq 409) {
         if ($systemRS) {
             $SYSTEM_RS_ID = $systemRS.id
             Log-Success "Found resource server ID: $SYSTEM_RS_ID"
-            $existingHandle = if ($systemRS.handle) { $systemRS.handle } else { "" }
-            $existingIdentifier = if ($systemRS.identifier) { $systemRS.identifier } else { "" }
-            if ($existingHandle -ne $SYSTEM_RS_HANDLE -or $existingIdentifier -ne $SYSTEM_RS_IDENTIFIER) {
-                Log-Error "Existing system resource server has mismatched configuration. Expected handle='${SYSTEM_RS_HANDLE}', identifier='${SYSTEM_RS_IDENTIFIER}' but found handle='${existingHandle}', identifier='${existingIdentifier}'. Manual migration required."
-                Log-Result-Failure "Failed to create system resource server"
-                exit 1
-            }
             Log-Result-Success "Created system resource server"
         }
         else {
@@ -892,7 +874,7 @@ Write-Host ""
 # Create Admin Role
 # ============================================================================
 
-Log-Info "Creating admin role with '$SYSTEM_PERMISSION' permission..."
+Log-Info "Creating admin role with 'system' permission..."
 
 if (-not $ADMIN_GROUP_ID) {
     Log-Error "Administrator group ID is not available. Cannot create role."
@@ -919,7 +901,7 @@ $roleData = @{
     permissions = @(
         @{
             resourceServerId = $SYSTEM_RS_ID
-            permissions = @($SYSTEM_PERMISSION)
+            permissions = @("system")
         }
     )
     assignments = @(
@@ -1078,18 +1060,6 @@ else {
         else {
             Log-Info "No registration flow files found"
         }
-    }
-
-    # Template user onboarding flow files with the dynamic system permission.
-    if ((Test-Path $USER_ONBOARDING_FLOWS_DIR) -and ($SYSTEM_PERMISSION -ne "system")) {
-        $TEMPLATED_ONBOARDING_DIR = Join-Path ([System.IO.Path]::GetTempPath()) "user-onboarding-flows-$([System.Guid]::NewGuid().ToString())"
-        New-Item -ItemType Directory -Path $TEMPLATED_ONBOARDING_DIR -Force | Out-Null
-        Get-ChildItem -Path $USER_ONBOARDING_FLOWS_DIR -Filter "*.json" -File | ForEach-Object {
-            $content = Get-Content -Path $_.FullName -Raw
-            $content = $content -replace '\["system"\]', "[`"$SYSTEM_PERMISSION`"]"
-            Set-Content -Path (Join-Path $TEMPLATED_ONBOARDING_DIR $_.Name) -Value $content
-        }
-        $USER_ONBOARDING_FLOWS_DIR = $TEMPLATED_ONBOARDING_DIR
     }
 
     # Process user onboarding flows

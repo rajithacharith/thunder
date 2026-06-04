@@ -169,17 +169,18 @@ func (suite *TokenExchangeGrantHandlerTestSuite) setupSuccessfulJWTMock(
 			UserAttributes: map[string]interface{}{},
 			NestedAct:      nil,
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		if ctx.Subject != testUserID || len(ctx.Audiences) == 0 {
-			return false
-		}
-		for _, a := range ctx.Audiences {
-			if a == expectedAudience {
-				return true
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			if ctx.Subject != testUserID || len(ctx.Audiences) == 0 {
+				return false
 			}
-		}
-		return false
-	})).Return(&model.TokenDTO{
+			for _, a := range ctx.Audiences {
+				if a == expectedAudience {
+					return true
+				}
+			}
+			return false
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,
@@ -204,10 +205,11 @@ func (suite *TokenExchangeGrantHandlerTestSuite) setupSuccessfulJWTMockWithScope
 			UserAttributes: map[string]interface{}{},
 			NestedAct:      nil,
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return ctx.Subject == testUserID && (len(ctx.Audiences) > 0 && ctx.Audiences[0] == expectedAudience) &&
-			tokenservice.JoinScopes(ctx.Scopes) == expectedScope
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return ctx.Subject == testUserID && (len(ctx.Audiences) > 0 && ctx.Audiences[0] == expectedAudience) &&
+				tokenservice.JoinScopes(ctx.Scopes) == expectedScope
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,
@@ -430,14 +432,15 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_Basic()
 			UserAttributes: map[string]interface{}{"email": testUserEmail},
 			NestedAct:      nil,
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return ctx.Subject == testUserID &&
-			(len(ctx.Audiences) > 0 && ctx.Audiences[0] == testClientID) &&
-			// Default audience is clientID when no resource/audience parameter
-			ctx.ClientID == testClientID &&
-			ctx.UserAttributes["email"] == testUserEmail &&
-			tokenservice.JoinScopes(ctx.Scopes) == testScopeReadWrite
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return ctx.Subject == testUserID &&
+				(len(ctx.Audiences) > 0 && ctx.Audiences[0] == testClientID) &&
+				// Default audience is clientID when no resource/audience parameter
+				ctx.ClientID == testClientID &&
+				ctx.UserAttributes["email"] == testUserEmail &&
+				tokenservice.JoinScopes(ctx.Scopes) == testScopeReadWrite
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,
@@ -520,13 +523,14 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_WithAct
 			UserAttributes: map[string]interface{}{},
 			NestedAct:      nil,
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return ctx.Subject == testUserID &&
-			(len(ctx.Audiences) > 0 && ctx.Audiences[0] == testClientID) &&
-			ctx.ActorClaims != nil &&
-			ctx.ActorClaims.Sub == "service456" &&
-			ctx.ActorClaims.Iss == testCustomIssuer
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return ctx.Subject == testUserID &&
+				(len(ctx.Audiences) > 0 && ctx.Audiences[0] == testClientID) &&
+				ctx.ActorClaims != nil &&
+				ctx.ActorClaims.Sub == "service456" &&
+				ctx.ActorClaims.Iss == testCustomIssuer
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,
@@ -587,13 +591,14 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_WithAct
 			UserAttributes: map[string]interface{}{},
 			NestedAct:      nil,
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		if ctx.ActorClaims == nil {
-			return false
-		}
-		// Check new actor (from actor token)
-		return ctx.ActorClaims.Sub == "service456" && ctx.ActorClaims.Iss == testCustomIssuer
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			if ctx.ActorClaims == nil {
+				return false
+			}
+			// Check new actor (from actor token)
+			return ctx.ActorClaims.Sub == "service456" && ctx.ActorClaims.Iss == testCustomIssuer
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,
@@ -701,12 +706,13 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_Preserv
 			},
 			NestedAct: nil,
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return ctx.Subject == testUserID &&
-			(len(ctx.Audiences) > 0 && ctx.Audiences[0] == testClientID) &&
-			ctx.UserAttributes["email"] == "user@example.com" &&
-			ctx.UserAttributes["name"] == "Test User"
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return ctx.Subject == testUserID &&
+				(len(ctx.Audiences) > 0 && ctx.Audiences[0] == testClientID) &&
+				ctx.UserAttributes["email"] == "user@example.com" &&
+				ctx.UserAttributes["name"] == "Test User"
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,
@@ -919,10 +925,11 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidScope() 
 			NestedAct:      nil,
 		}, nil)
 	// Expect token generation with only valid scopes ("read write", filtering out "delete")
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		// Verify only valid scopes are included (filtering out "delete")
-		return tokenservice.JoinScopes(ctx.Scopes) == testScopeReadWrite
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			// Verify only valid scopes are included (filtering out "delete")
+			return tokenservice.JoinScopes(ctx.Scopes) == testScopeReadWrite
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,
@@ -999,7 +1006,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_JWTGenerationEr
 			UserAttributes: map[string]interface{}{},
 			NestedAct:      nil,
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).
 		Return(nil, errors.New("failed to sign token"))
 
 	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
@@ -1040,7 +1047,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_UsesDefaultConf
 			UserAttributes: map[string]interface{}{},
 			NestedAct:      nil,
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).
 		Return(&model.TokenDTO{
 			Token:     testTokenExchangeJWT,
 			TokenType: constants.TokenTypeBearer,
@@ -1081,7 +1088,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_WithJWT
 			UserAttributes: map[string]interface{}{},
 			NestedAct:      nil,
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).
 		Return(&model.TokenDTO{
 			Token:     testTokenExchangeJWT,
 			TokenType: constants.TokenTypeBearer,
@@ -1167,17 +1174,18 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_CompleteTokenExchan
 			},
 			NestedAct: nil,
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		// Verify claims structure per RFC 8693 - explicit audience is used verbatim; clientID
-		// fallback is dropped when explicit audience is non-empty.
-		return ctx.Subject == testUserID &&
-			len(ctx.Audiences) == 1 &&
-			ctx.Audiences[0] == "https://target-service.com" &&
-			ctx.ClientID == testClientID &&
-			tokenservice.JoinScopes(ctx.Scopes) == testScopeRead &&
-			ctx.UserAttributes["email"] == "user@example.com" &&
-			ctx.UserAttributes["name"] == "John Doe"
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			// Verify claims structure per RFC 8693 - explicit audience is used verbatim; clientID
+			// fallback is dropped when explicit audience is non-empty.
+			return ctx.Subject == testUserID &&
+				len(ctx.Audiences) == 1 &&
+				ctx.Audiences[0] == "https://target-service.com" &&
+				ctx.ClientID == testClientID &&
+				tokenservice.JoinScopes(ctx.Scopes) == testScopeRead &&
+				ctx.UserAttributes["email"] == "user@example.com" &&
+				ctx.UserAttributes["name"] == "John Doe"
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,
@@ -1232,14 +1240,15 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_AudienceCombinedWit
 			UserAttributes: map[string]interface{}{},
 			NestedAct:      nil,
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		// explicit audience first, then RS-resolved audience; clientID fallback absent since
-		// explicit audiences were supplied.
-		return ctx.Subject == testUserID &&
-			len(ctx.Audiences) == 2 &&
-			ctx.Audiences[0] == "request-audience" &&
-			ctx.Audiences[1] == "https://resource.example.com"
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			// explicit audience first, then RS-resolved audience; clientID fallback absent since
+			// explicit audiences were supplied.
+			return ctx.Subject == testUserID &&
+				len(ctx.Audiences) == 2 &&
+				ctx.Audiences[0] == "request-audience" &&
+				ctx.Audiences[1] == "https://resource.example.com"
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,
@@ -1311,21 +1320,22 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_ActorDelegationChai
 				"iss": "https://nested-issuer.com",
 			},
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		// Verify nested delegation chain per RFC 8693
-		if ctx.ActorClaims == nil {
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			// Verify nested delegation chain per RFC 8693
+			if ctx.ActorClaims == nil {
+				return false
+			}
+			// Current actor
+			if ctx.ActorClaims.Sub != "current-actor" || ctx.ActorClaims.Iss != testCustomIssuer {
+				return false
+			}
+			// Check that actor token's act claim is preserved
+			if len(ctx.ActorClaims.NestedAct) > 0 {
+				return ctx.ActorClaims.NestedAct["sub"] == "actor-of-actor"
+			}
 			return false
-		}
-		// Current actor
-		if ctx.ActorClaims.Sub != "current-actor" || ctx.ActorClaims.Iss != testCustomIssuer {
-			return false
-		}
-		// Check that actor token's act claim is preserved
-		if len(ctx.ActorClaims.NestedAct) > 0 {
-			return ctx.ActorClaims.NestedAct["sub"] == "actor-of-actor"
-		}
-		return false
-	})).Return(&model.TokenDTO{
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,
@@ -1390,29 +1400,30 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_WithAct
 				"iss": "https://nested-issuer.com",
 			},
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		// Verify actor claim structure
-		if ctx.ActorClaims == nil {
-			return false
-		}
-		// Current actor should be present
-		if ctx.ActorClaims.Sub != "current-actor" || ctx.ActorClaims.Iss != testCustomIssuer {
-			return false
-		}
-		// Actor's act claim should be preserved directly
-		if len(ctx.ActorClaims.NestedAct) > 0 {
-			nestedAct := ctx.ActorClaims.NestedAct
-			nestedSub := nestedAct["sub"] == "actor-of-actor"
-			nestedIss := nestedAct["iss"] == "https://nested-issuer.com"
-			if !nestedSub || !nestedIss {
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			// Verify actor claim structure
+			if ctx.ActorClaims == nil {
 				return false
 			}
-			// Subject has no act claim, so it should not be nested
-			_, hasFurtherNesting := ctx.ActorClaims.NestedAct["act"]
-			return !hasFurtherNesting
-		}
-		return false
-	})).Return(&model.TokenDTO{
+			// Current actor should be present
+			if ctx.ActorClaims.Sub != "current-actor" || ctx.ActorClaims.Iss != testCustomIssuer {
+				return false
+			}
+			// Actor's act claim should be preserved directly
+			if len(ctx.ActorClaims.NestedAct) > 0 {
+				nestedAct := ctx.ActorClaims.NestedAct
+				nestedSub := nestedAct["sub"] == "actor-of-actor"
+				nestedIss := nestedAct["iss"] == "https://nested-issuer.com"
+				if !nestedSub || !nestedIss {
+					return false
+				}
+				// Subject has no act claim, so it should not be nested
+				_, hasFurtherNesting := ctx.ActorClaims.NestedAct["act"]
+				return !hasFurtherNesting
+			}
+			return false
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,
@@ -1455,9 +1466,10 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_ScopeDownscopingEnf
 			UserAttributes: map[string]interface{}{},
 			NestedAct:      nil,
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return tokenservice.JoinScopes(ctx.Scopes) == testScopeRead
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return tokenservice.JoinScopes(ctx.Scopes) == testScopeRead
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,
@@ -1513,7 +1525,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_NoTokenLinkage() {
 			UserAttributes: map[string]interface{}{},
 			NestedAct:      nil,
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).
 		Return(&model.TokenDTO{
 			Token:     testTokenExchangeJWT,
 			TokenType: constants.TokenTypeBearer,
@@ -1571,13 +1583,14 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_ClaimPreservation()
 			},
 			NestedAct: nil,
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		// Verify all custom claims are preserved in user attributes
-		return ctx.UserAttributes["email"] == testUserEmail &&
-			ctx.UserAttributes["given_name"] == "John" &&
-			ctx.UserAttributes["family_name"] == "Doe" &&
-			ctx.UserAttributes["organization"] == "ACME Corp"
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			// Verify all custom claims are preserved in user attributes
+			return ctx.UserAttributes["email"] == testUserEmail &&
+				ctx.UserAttributes["given_name"] == "John" &&
+				ctx.UserAttributes["family_name"] == "Doe" &&
+				ctx.UserAttributes["organization"] == "ACME Corp"
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,
@@ -1675,12 +1688,13 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ServerAuthAsser
 			NestedAct:      nil,
 		}, nil)
 
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return ctx.Subject == testUserID &&
-			len(ctx.Scopes) == 2 &&
-			ctx.Scopes[0] == "read:documents" &&
-			ctx.Scopes[1] == "write:documents"
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return ctx.Subject == testUserID &&
+				len(ctx.Scopes) == 2 &&
+				ctx.Scopes[0] == "read:documents" &&
+				ctx.Scopes[1] == "write:documents"
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,
@@ -1792,7 +1806,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ServerAuthAsser
 			NestedAct:      nil,
 		}, nil)
 
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,
@@ -1840,12 +1854,13 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ServerAuthAsser
 			NestedAct:      nil,
 		}, nil)
 
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return ctx.Subject == testUserID &&
-			len(ctx.Scopes) == 2 &&
-			ctx.Scopes[0] == "read:documents" &&
-			ctx.Scopes[1] == "write:documents"
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return ctx.Subject == testUserID &&
+				len(ctx.Scopes) == 2 &&
+				ctx.Scopes[0] == "read:documents" &&
+				ctx.Scopes[1] == "write:documents"
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,
@@ -1887,9 +1902,10 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_OnlyAudience_Au
 			Scopes:         []string{},
 			UserAttributes: map[string]interface{}{},
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return len(ctx.Audiences) == 1 && ctx.Audiences[0] == "logical://x"
-	})).Return(&model.TokenDTO{Token: testTokenExchangeJWT, IssuedAt: now, ExpiresIn: 7200}, nil)
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return len(ctx.Audiences) == 1 && ctx.Audiences[0] == "logical://x"
+		})).Return(&model.TokenDTO{Token: testTokenExchangeJWT, IssuedAt: now, ExpiresIn: 7200}, nil)
 
 	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
@@ -1916,9 +1932,10 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_OnlyResource_Au
 			Scopes:         []string{},
 			UserAttributes: map[string]interface{}{},
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return len(ctx.Audiences) == 1 && ctx.Audiences[0] == testRS01URI
-	})).Return(&model.TokenDTO{Token: testTokenExchangeJWT, IssuedAt: now, ExpiresIn: 7200}, nil)
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return len(ctx.Audiences) == 1 && ctx.Audiences[0] == testRS01URI
+		})).Return(&model.TokenDTO{Token: testTokenExchangeJWT, IssuedAt: now, ExpiresIn: 7200}, nil)
 
 	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
@@ -1946,11 +1963,12 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_AudienceAndReso
 			Scopes:         []string{},
 			UserAttributes: map[string]interface{}{},
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return len(ctx.Audiences) == 2 &&
-			ctx.Audiences[0] == "logical://x" &&
-			ctx.Audiences[1] == testRS01URI
-	})).Return(&model.TokenDTO{Token: testTokenExchangeJWT, IssuedAt: now, ExpiresIn: 7200}, nil)
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return len(ctx.Audiences) == 2 &&
+				ctx.Audiences[0] == "logical://x" &&
+				ctx.Audiences[1] == testRS01URI
+		})).Return(&model.TokenDTO{Token: testTokenExchangeJWT, IssuedAt: now, ExpiresIn: 7200}, nil)
 
 	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
@@ -1978,13 +1996,14 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_TwoAudiencesTwo
 			Scopes:         []string{},
 			UserAttributes: map[string]interface{}{},
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return len(ctx.Audiences) == 4 &&
-			ctx.Audiences[0] == "https://a1.example.com" &&
-			ctx.Audiences[1] == "https://a2.example.com" &&
-			ctx.Audiences[2] == testRS01URI &&
-			ctx.Audiences[3] == "https://rs02.example.com"
-	})).Return(&model.TokenDTO{Token: testTokenExchangeJWT, IssuedAt: now, ExpiresIn: 7200}, nil)
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return len(ctx.Audiences) == 4 &&
+				ctx.Audiences[0] == "https://a1.example.com" &&
+				ctx.Audiences[1] == "https://a2.example.com" &&
+				ctx.Audiences[2] == testRS01URI &&
+				ctx.Audiences[3] == "https://rs02.example.com"
+		})).Return(&model.TokenDTO{Token: testTokenExchangeJWT, IssuedAt: now, ExpiresIn: 7200}, nil)
 
 	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
@@ -2012,11 +2031,12 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_AudienceIsClien
 			Scopes:         []string{},
 			UserAttributes: map[string]interface{}{},
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return len(ctx.Audiences) == 2 &&
-			ctx.Audiences[0] == testClientID &&
-			ctx.Audiences[1] == testRS01URI
-	})).Return(&model.TokenDTO{Token: testTokenExchangeJWT, IssuedAt: now, ExpiresIn: 7200}, nil)
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return len(ctx.Audiences) == 2 &&
+				ctx.Audiences[0] == testClientID &&
+				ctx.Audiences[1] == testRS01URI
+		})).Return(&model.TokenDTO{Token: testTokenExchangeJWT, IssuedAt: now, ExpiresIn: 7200}, nil)
 
 	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
@@ -2043,9 +2063,10 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_AudienceOnly_Cl
 			Scopes:         []string{},
 			UserAttributes: map[string]interface{}{},
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return len(ctx.Audiences) == 1 && ctx.Audiences[0] == "https://other-service.example.com"
-	})).Return(&model.TokenDTO{Token: testTokenExchangeJWT, IssuedAt: now, ExpiresIn: 7200}, nil)
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return len(ctx.Audiences) == 1 && ctx.Audiences[0] == "https://other-service.example.com"
+		})).Return(&model.TokenDTO{Token: testTokenExchangeJWT, IssuedAt: now, ExpiresIn: 7200}, nil)
 
 	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
@@ -2071,9 +2092,10 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_NeitherAudience
 			Scopes:         []string{},
 			UserAttributes: map[string]interface{}{},
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return len(ctx.Audiences) == 1 && ctx.Audiences[0] == testClientID
-	})).Return(&model.TokenDTO{Token: testTokenExchangeJWT, IssuedAt: now, ExpiresIn: 7200}, nil)
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return len(ctx.Audiences) == 1 && ctx.Audiences[0] == testClientID
+		})).Return(&model.TokenDTO{Token: testTokenExchangeJWT, IssuedAt: now, ExpiresIn: 7200}, nil)
 
 	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
@@ -2122,9 +2144,10 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_RFC8707_Resourc
 			Scopes:         []string{"read", "write", "admin"},
 			UserAttributes: map[string]interface{}{},
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return tokenservice.JoinScopes(ctx.Scopes) == testScopeReadWrite
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return tokenservice.JoinScopes(ctx.Scopes) == testScopeReadWrite
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,
@@ -2178,9 +2201,10 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_RFC8707_ScopeNo
 			Scopes:         []string{"read", "write", "admin"},
 			UserAttributes: map[string]interface{}{},
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return tokenservice.JoinScopes(ctx.Scopes) == testScopeRead
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return tokenservice.JoinScopes(ctx.Scopes) == testScopeRead
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,
@@ -2215,9 +2239,10 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_RFC8707_Resourc
 			Scopes:         []string{"read", "write"},
 			UserAttributes: map[string]interface{}{},
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return tokenservice.JoinScopes(ctx.Scopes) == testScopeReadWrite
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return tokenservice.JoinScopes(ctx.Scopes) == testScopeReadWrite
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,
@@ -2250,9 +2275,10 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_DPoPProof_Propa
 			Iss:    testCustomIssuer,
 			Scopes: []string{"read"},
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return ctx.DPoPJkt == "thumbprint-tx"
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return ctx.DPoPJkt == "thumbprint-tx"
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeDPoP,
 		IssuedAt:  now,
@@ -2288,9 +2314,10 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_BoundSubjectTok
 			Scopes: []string{"read"},
 			CnfJkt: "thumbprint-tx",
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return ctx.DPoPJkt == "thumbprint-tx"
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return ctx.DPoPJkt == "thumbprint-tx"
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeDPoP,
 		IssuedAt:  now,
@@ -2408,9 +2435,10 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_RFC8707_Multipl
 			Scopes:         []string{"read", "write", "admin"},
 			UserAttributes: map[string]interface{}{},
 		}, nil)
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return tokenservice.JoinScopes(ctx.Scopes) == testScopeReadWrite
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return tokenservice.JoinScopes(ctx.Scopes) == testScopeReadWrite
+		})).Return(&model.TokenDTO{
 		Token:     testTokenExchangeJWT,
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  now,

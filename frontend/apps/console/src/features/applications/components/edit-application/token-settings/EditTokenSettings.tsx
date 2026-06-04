@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {useThunderID} from '@thunderid/react';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useConfig} from '@thunderid/contexts';
 import {useLogger} from '@thunderid/logger';
+import {useThunderID} from '@thunderid/react';
 import {Stack} from '@wso2/oxygen-ui';
 import {useState, useEffect, useMemo, useRef} from 'react';
 import {useForm, useWatch} from 'react-hook-form';
@@ -67,6 +67,7 @@ const createTokenConfigSchema = (t: (key: string) => string) => {
     validityPeriod: validityField,
     accessTokenValidity: validityField,
     idTokenValidity: validityField,
+    refreshTokenValidity: validityField,
   });
 };
 
@@ -172,12 +173,13 @@ export default function EditTokenSettings({
       validityPeriod: oauth2Config?.token?.validityPeriod ?? application.assertion?.validityPeriod ?? 3600,
       accessTokenValidity: oauth2Config?.token?.accessToken?.validityPeriod ?? 3600,
       idTokenValidity: oauth2Config?.token?.idToken?.validityPeriod ?? 3600,
+      refreshTokenValidity: oauth2Config?.token?.refreshToken?.validityPeriod ?? 86400,
     },
   });
 
-  const [validityPeriod, accessTokenValidity, idTokenValidity] = useWatch({
+  const [validityPeriod, accessTokenValidity, idTokenValidity, refreshTokenValidity] = useWatch({
     control,
-    name: ['validityPeriod', 'accessTokenValidity', 'idTokenValidity'],
+    name: ['validityPeriod', 'accessTokenValidity', 'idTokenValidity', 'refreshTokenValidity'],
   });
 
   useEffect(() => {
@@ -212,6 +214,20 @@ export default function EditTokenSettings({
 
       if (isOAuthMode) {
         const config = oauth2ConfigRef.current;
+
+        // Check if values have actually changed
+        const currentAccessValidity = config?.token?.accessToken?.validityPeriod;
+        const currentIdValidity = config?.token?.idToken?.validityPeriod;
+        const currentRefreshValidity = config?.token?.refreshToken?.validityPeriod;
+
+        if (
+          currentAccessValidity === accessTokenValidity &&
+          currentIdValidity === idTokenValidity &&
+          currentRefreshValidity === refreshTokenValidity
+        ) {
+          return; // No changes, skip update
+        }
+
         const updatedConfig = {
           ...config,
           token: {
@@ -223,6 +239,10 @@ export default function EditTokenSettings({
             idToken: {
               ...config?.token?.idToken,
               validityPeriod: idTokenValidity,
+            },
+            refreshToken: {
+              ...config?.token?.refreshToken,
+              validityPeriod: refreshTokenValidity,
             },
           },
         };
@@ -241,7 +261,7 @@ export default function EditTokenSettings({
     return () => {
       cancelled = true;
     };
-  }, [validityPeriod, accessTokenValidity, idTokenValidity, trigger, isOAuthMode, onFieldChange]);
+  }, [validityPeriod, accessTokenValidity, idTokenValidity, refreshTokenValidity, trigger, isOAuthMode, onFieldChange]);
 
   /**
    * Fetch user types for all allowed user types
@@ -627,6 +647,7 @@ export default function EditTokenSettings({
             highlightedAttributes={visibleHighlightedAttributes}
             onAttributeClick={handleAttributeClick}
             entityLabel={entityLabel}
+            disabled={application.isReadOnly}
           />
 
           {/* Scopes & Attribute Mapping */}
@@ -638,10 +659,16 @@ export default function EditTokenSettings({
             onScopesChange={handleScopesChange}
             onScopeClaimsChange={handleScopeClaimsChange}
             entityLabel={entityLabel}
+            disabled={application.isReadOnly}
           />
 
           {/* Merged Token Validation (Access Token / ID Token tabs) */}
-          <TokenValidationSection control={control} errors={errors} tokenType="oauth" />
+          <TokenValidationSection
+            control={control}
+            errors={errors}
+            tokenType="oauth"
+            disabled={application.isReadOnly}
+          />
         </>
       ) : (
         <>
@@ -655,10 +682,16 @@ export default function EditTokenSettings({
             highlightedAttributes={visibleHighlightedAttributes}
             onAttributeClick={handleAttributeClick}
             entityLabel={entityLabel}
+            disabled={application.isReadOnly}
           />
 
           {/* Token Validation */}
-          <TokenValidationSection control={control} errors={errors} tokenType="shared" />
+          <TokenValidationSection
+            control={control}
+            errors={errors}
+            tokenType="shared"
+            disabled={application.isReadOnly}
+          />
         </>
       )}
     </Stack>

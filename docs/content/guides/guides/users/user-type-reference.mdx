@@ -33,9 +33,9 @@ Modifiers add validation and behavior rules to an attribute. You can combine mul
 | `enum` | `string`, `number` | Restricts the value to a fixed set of allowed options. <ProductName /> rejects any value not in the list. | Controlled vocabularies like a `department` field limited to specific team names. |
 | `regex` | `string` | Validates the value against a regular expression on creation and update. <ProductName /> rejects values that do not match. | Format rules such as email patterns or password complexity requirements. |
 
-## Default Schemas
+## Default Schema
 
-<ProductName /> includes two default user types with pre-defined schemas. You can use these as-is,  customize them or create your own user types. See [User Types](../user-types) for more information.
+<ProductName /> includes one default user type with a pre-defined schema. You can use it as-is, customize it, or create your own user types. See [User Types](../user-types) for more information.
 
 ### Person
 
@@ -44,31 +44,12 @@ An admin-managed user type. Self-registration is disabled and only an administra
 | Attribute | Type | Constraints | Notes |
 |-----------|------|-------------|-------|
 | `username` | `string` | required, unique | Display attribute |
-| `email` | `string` | required, unique | Validated against email format |
-| `email_verified` | `boolean` | - | |
-| `given_name` | `string` | - | |
-| `family_name` | `string` | - | |
-| `firstName` | `string` | - | |
-| `lastName` | `string` | - | |
-| `mobileNumber` | `string` | - | |
-| `phone_number` | `string` | - | |
-| `phone_number_verified` | `boolean` | - | |
-| `sub` | `string` | - | |
-| `name` | `string` | - | |
-| `picture` | `string` | - | |
-| `password` | `string` | required, credential | Never returned in responses |
-
-### Customer
-
-An end-user type designed for self-registration. Customers can sign up through an application's registration flow, or be created directly by an administrator.
-
-| Attribute | Type | Constraints | Notes |
-|-----------|------|-------------|-------|
-| `username` | `string` | required, unique | Display attribute |
-| `password` | `string` | required, credential | Never returned in responses |
 | `email` | `string` | required, unique, regex | Validated against email format |
 | `given_name` | `string` | - | |
 | `family_name` | `string` | - | |
-| `firstName` | `string` | - | |
-| `lastName` | `string` | - | |
 | `mobileNumber` | `string` | - | |
+| `phone_number` | `string` | - | |
+| `sub` | `string` | - | |
+| `name` | `string` | - | |
+| `picture` | `string` | - | |
+| `password` | `string` | credential | Never returned in responses |

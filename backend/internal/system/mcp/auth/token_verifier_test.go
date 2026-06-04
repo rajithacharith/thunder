@@ -67,11 +67,12 @@ func (m *MockJWTService) GenerateJWT(
 }
 
 func (m *MockJWTService) VerifyJWT(
+	ctx context.Context,
 	jwtToken string,
 	expectedAud string,
 	expectedIss string,
 ) *serviceerror.ServiceError {
-	args := m.Called(jwtToken, expectedAud, expectedIss)
+	args := m.Called(ctx, jwtToken, expectedAud, expectedIss)
 	if args.Get(0) == nil {
 		return nil
 	}
@@ -104,8 +105,8 @@ func (m *MockJWTService) VerifyJWTWithJWKS(
 	return args.Get(0).(*serviceerror.ServiceError)
 }
 
-func (m *MockJWTService) VerifyJWTSignature(jwtToken string) *serviceerror.ServiceError {
-	args := m.Called(jwtToken)
+func (m *MockJWTService) VerifyJWTSignature(ctx context.Context, jwtToken string) *serviceerror.ServiceError {
+	args := m.Called(ctx, jwtToken)
 	if args.Get(0) == nil {
 		return nil
 	}
@@ -159,7 +160,7 @@ func (suite *TokenVerifierTestSuite) TestNewTokenVerifier_Success() {
 	testToken := "header." + payloadB64 + ".signature"
 
 	// Mock JWT verification to succeed
-	mockJWTService.On("VerifyJWT", testToken, mcpURL, issuer).Return(nil)
+	mockJWTService.On("VerifyJWT", mock.Anything, testToken, mcpURL, issuer).Return(nil)
 
 	// Create token verifier
 	verifier := NewTokenVerifier(mockJWTService, issuer, mcpURL)
@@ -190,7 +191,7 @@ func (suite *TokenVerifierTestSuite) TestNewTokenVerifier_JWTVerificationFailed(
 	testToken := "invalid.token.here"
 
 	// Mock JWT verification to fail
-	mockJWTService.On("VerifyJWT", testToken, mcpURL, issuer).Return(&serviceerror.ServiceError{
+	mockJWTService.On("VerifyJWT", mock.Anything, testToken, mcpURL, issuer).Return(&serviceerror.ServiceError{
 		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "invalid token"},
 	})
 
@@ -221,7 +222,7 @@ func (suite *TokenVerifierTestSuite) TestNewTokenVerifier_InvalidPayload() {
 	testToken := "header.invalid-payload.signature"
 
 	// Mock JWT verification to succeed
-	mockJWTService.On("VerifyJWT", testToken, mcpURL, issuer).Return(nil)
+	mockJWTService.On("VerifyJWT", mock.Anything, testToken, mcpURL, issuer).Return(nil)
 
 	// Create token verifier
 	verifier := NewTokenVerifier(mockJWTService, issuer, mcpURL)
@@ -257,7 +258,7 @@ func (suite *TokenVerifierTestSuite) TestNewTokenVerifier_NoScopes() {
 	testToken := "header." + payloadB64 + ".signature"
 
 	// Mock JWT verification to succeed
-	mockJWTService.On("VerifyJWT", testToken, mcpURL, issuer).Return(nil)
+	mockJWTService.On("VerifyJWT", mock.Anything, testToken, mcpURL, issuer).Return(nil)
 
 	// Create token verifier
 	verifier := NewTokenVerifier(mockJWTService, issuer, mcpURL)
@@ -294,7 +295,7 @@ func (suite *TokenVerifierTestSuite) TestNewTokenVerifier_EmptyUserID() {
 	testToken := "header." + payloadB64 + ".signature"
 
 	// Mock JWT verification to succeed
-	mockJWTService.On("VerifyJWT", testToken, mcpURL, issuer).Return(nil)
+	mockJWTService.On("VerifyJWT", mock.Anything, testToken, mcpURL, issuer).Return(nil)
 
 	// Create token verifier
 	verifier := NewTokenVerifier(mockJWTService, issuer, mcpURL)

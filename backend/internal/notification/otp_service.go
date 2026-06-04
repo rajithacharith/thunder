@@ -29,7 +29,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/notification/common"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/cryptolib/hash"
+	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -111,7 +111,7 @@ func (s *otpService) SendOTP(
 		Recipient:  otpDTO.Recipient,
 		Channel:    otpDTO.Channel,
 		SenderID:   otpDTO.SenderID,
-		OTPValue:   hash.GenerateThumbprintFromString(otp.Value),
+		OTPValue:   cryptolib.GenerateThumbprintFromString(otp.Value),
 		ExpiryTime: otp.ExpiryTimeInMillis,
 	}
 
@@ -138,7 +138,7 @@ func (s *otpService) VerifyOTP(
 		return nil, err
 	}
 
-	sessionData, svcErr := s.verifyAndDecodeSessionToken(otpDTO.SessionToken, logger)
+	sessionData, svcErr := s.verifyAndDecodeSessionToken(ctx, otpDTO.SessionToken, logger)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -154,7 +154,7 @@ func (s *otpService) VerifyOTP(
 	}
 
 	// Verify OTP value by comparing hashes
-	providedOTPHash := hash.GenerateThumbprintFromString(otpDTO.OTPCode)
+	providedOTPHash := cryptolib.GenerateThumbprintFromString(otpDTO.OTPCode)
 	if providedOTPHash != sessionData.OTPValue {
 		logger.Debug("Invalid OTP provided")
 		return &common.VerifyOTPResultDTO{
@@ -302,11 +302,11 @@ func (s *otpService) createSessionToken(ctx context.Context, sessionData common.
 }
 
 // verifyAndDecodeSessionToken verifies the JWT signature and decodes the session data.
-func (s *otpService) verifyAndDecodeSessionToken(token string, logger *log.Logger) (
+func (s *otpService) verifyAndDecodeSessionToken(ctx context.Context, token string, logger *log.Logger) (
 	*common.OTPSessionData, *serviceerror.ServiceError) {
 	// Verify JWT signature
 	jwtConfig := config.GetServerRuntime().Config.JWT
-	svcErr := s.jwtService.VerifyJWT(token, "otp-svc", jwtConfig.Issuer)
+	svcErr := s.jwtService.VerifyJWT(ctx, token, "otp-svc", jwtConfig.Issuer)
 	if svcErr != nil {
 		logger.Debug("Invalid session token", log.String("error", svcErr.Error.DefaultValue))
 		return nil, &ErrorInvalidSessionToken

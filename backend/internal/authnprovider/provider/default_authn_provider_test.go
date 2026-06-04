@@ -26,8 +26,15 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/thunder-id/thunderid/internal/authn/magiclink"
+	"github.com/thunder-id/thunderid/internal/authn/otp"
 	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
 	"github.com/thunder-id/thunderid/internal/entity"
+	"github.com/thunder-id/thunderid/internal/entityprovider"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/tests/mocks/authn/magiclinkmock"
+	"github.com/thunder-id/thunderid/tests/mocks/authn/otpmock"
 	"github.com/thunder-id/thunderid/tests/mocks/entitymock"
 )
 
@@ -39,7 +46,7 @@ type DefaultAuthnProviderTestSuite struct {
 
 func (suite *DefaultAuthnProviderTestSuite) SetupTest() {
 	suite.mockService = entitymock.NewEntityServiceInterfaceMock(suite.T())
-	suite.provider = newDefaultAuthnProvider(suite.mockService, nil, nil, nil)
+	suite.provider = newDefaultAuthnProvider(suite.mockService, nil, nil, nil, nil)
 }
 
 func TestDefaultAuthnProviderTestSuite(t *testing.T) {
@@ -81,11 +88,11 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_Success() {
 	suite.Equal("user123", result.Token)
 	suite.Equal("customer", result.UserType)
 	suite.Equal("ou1", result.OUID)
-	suite.False(result.IsAttributeValuesIncluded)
+	suite.True(result.IsAttributeValuesIncluded)
 	suite.NotNil(result.AttributesResponse)
 	suite.Len(result.AttributesResponse.Attributes, 1)
 	suite.Contains(result.AttributesResponse.Attributes, "email")
-	suite.Nil(result.AttributesResponse.Attributes["email"].Value)
+	suite.Equal("test@example.com", result.AttributesResponse.Attributes["email"].Value)
 }
 
 func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_EntityNotFound() {
@@ -292,4 +299,236 @@ func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_InvalidToken() {
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(authnprovidercm.ErrorCodeInvalidToken, err.Code)
+}
+
+//nolint:dupl // intentionally mirrors MagicLink_UserFound/UserNotFound to cover the OTP credential path
+func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_OTP_UserFound() {
+	mockOTP := otpmock.NewOTPAuthnServiceInterfaceMock(suite.T())
+	provider := newDefaultAuthnProvider(suite.mockService, nil, mockOTP, nil, nil)
+
+	credentials := map[string]interface{}{
+		"otp": map[string]interface{}{
+			"sessionToken": "tok",
+			"otp":          "123456",
+		},
+	}
+	entityObj := &entity.Entity{
+		ID:         "u1",
+		Category:   entity.EntityCategoryUser,
+		Type:       "customer",
+		OUID:       "ou1",
+		Attributes: json.RawMessage(`{}`),
+	}
+
+	mockOTP.On("Authenticate", mock.Anything, "tok", "123456").
+		Return(&otp.OTPAuthnResult{InternalEntity: &entityprovider.Entity{ID: "u1"}}, nil).Once()
+	suite.mockService.On("GetEntity", mock.Anything, "u1").Return(entityObj, nil).Once()
+
+	result, err := provider.Authenticate(context.Background(), nil, credentials, nil)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.True(result.IsExistingUser)
+	suite.Equal("u1", result.UserID)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_OTP_UserNotFound() {
+	mockOTP := otpmock.NewOTPAuthnServiceInterfaceMock(suite.T())
+	provider := newDefaultAuthnProvider(suite.mockService, nil, mockOTP, nil, nil)
+
+	credentials := map[string]interface{}{
+		"otp": map[string]interface{}{
+			"sessionToken": "tok",
+			"otp":          "123456",
+		},
+	}
+
+	mockOTP.On("Authenticate", mock.Anything, "tok", "123456").
+		Return(&otp.OTPAuthnResult{
+			InternalEntity:      nil,
+			VerifiedIdentifiers: map[string]interface{}{"mobileNumber": "+1234567890"},
+		}, nil).Once()
+
+	result, err := provider.Authenticate(context.Background(), nil, credentials, nil)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.False(result.IsExistingUser)
+	suite.True(result.IsAttributeValuesIncluded)
+	suite.NotNil(result.AttributesResponse)
+	suite.Equal("+1234567890", result.AttributesResponse.Attributes["mobileNumber"].Value)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_OTP_IncorrectOTP() {
+	mockOTP := otpmock.NewOTPAuthnServiceInterfaceMock(suite.T())
+	provider := newDefaultAuthnProvider(suite.mockService, nil, mockOTP, nil, nil)
+
+	credentials := map[string]interface{}{
+		"otp": map[string]interface{}{
+			"sessionToken": "tok",
+			"otp":          "wrong",
+		},
+	}
+
+	mockOTP.On("Authenticate", mock.Anything, "tok", "wrong").
+		Return(nil, &otp.ErrorIncorrectOTP).Once()
+
+	result, err := provider.Authenticate(context.Background(), nil, credentials, nil)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(authnprovidercm.ErrorCodeAuthenticationFailed, err.Code)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_OTP_InvalidPayload() {
+	mockOTP := otpmock.NewOTPAuthnServiceInterfaceMock(suite.T())
+	provider := newDefaultAuthnProvider(suite.mockService, nil, mockOTP, nil, nil)
+
+	credentials := map[string]interface{}{
+		"otp": "not-a-map",
+	}
+
+	result, err := provider.Authenticate(context.Background(), nil, credentials, nil)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(authnprovidercm.ErrorCodeInvalidRequest, err.Code)
+}
+
+//nolint:dupl // intentionally mirrors OTP_UserFound/UserNotFound to cover the magic link credential path
+func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_MagicLink_UserFound() {
+	mockML := magiclinkmock.NewMagicLinkAuthnServiceInterfaceMock(suite.T())
+	provider := newDefaultAuthnProvider(suite.mockService, nil, nil, mockML, nil)
+
+	credentials := map[string]interface{}{
+		"magiclink": map[string]interface{}{
+			"token":            "valid-jwt-token",
+			"subjectAttribute": "",
+		},
+	}
+	entityObj := &entity.Entity{
+		ID:         "u1",
+		Category:   entity.EntityCategoryUser,
+		Type:       "customer",
+		OUID:       "ou1",
+		Attributes: json.RawMessage(`{}`),
+	}
+
+	mockML.On("Authenticate", mock.Anything, "valid-jwt-token", "").
+		Return(&magiclink.MagicLinkAuthnResult{InternalEntity: &entityprovider.Entity{ID: "u1"}}, nil).Once()
+	suite.mockService.On("GetEntity", mock.Anything, "u1").Return(entityObj, nil).Once()
+
+	result, err := provider.Authenticate(context.Background(), nil, credentials, nil)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.True(result.IsExistingUser)
+	suite.Equal("u1", result.UserID)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_MagicLink_UserNotFound() {
+	mockML := magiclinkmock.NewMagicLinkAuthnServiceInterfaceMock(suite.T())
+	provider := newDefaultAuthnProvider(suite.mockService, nil, nil, mockML, nil)
+
+	credentials := map[string]interface{}{
+		"magiclink": map[string]interface{}{
+			"token":            "valid-jwt-token",
+			"subjectAttribute": "email",
+		},
+	}
+
+	mockML.On("Authenticate", mock.Anything, "valid-jwt-token", "email").
+		Return(&magiclink.MagicLinkAuthnResult{
+			InternalEntity:      nil,
+			VerifiedIdentifiers: map[string]interface{}{"email": "test@example.com"},
+		}, nil).Once()
+
+	result, err := provider.Authenticate(context.Background(), nil, credentials, nil)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.False(result.IsExistingUser)
+	suite.True(result.IsAttributeValuesIncluded)
+	suite.NotNil(result.AttributesResponse)
+	suite.Equal("test@example.com", result.AttributesResponse.Attributes["email"].Value)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_MagicLink_AuthenticationFailed() {
+	mockML := magiclinkmock.NewMagicLinkAuthnServiceInterfaceMock(suite.T())
+	provider := newDefaultAuthnProvider(suite.mockService, nil, nil, mockML, nil)
+
+	credentials := map[string]interface{}{
+		"magiclink": map[string]interface{}{
+			"token": "expired-token",
+		},
+	}
+
+	mockML.On("Authenticate", mock.Anything, "expired-token", "").
+		Return(nil, &serviceerror.ServiceError{
+			Type:             serviceerror.ClientErrorType,
+			Code:             "AUTHN-ML-1002",
+			Error:            i18ncore.I18nMessage{DefaultValue: "Expired token"},
+			ErrorDescription: i18ncore.I18nMessage{DefaultValue: "The magic link token has expired"},
+		}).Once()
+
+	result, err := provider.Authenticate(context.Background(), nil, credentials, nil)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(authnprovidercm.ErrorCodeAuthenticationFailed, err.Code)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_MagicLink_ServerError() {
+	mockML := magiclinkmock.NewMagicLinkAuthnServiceInterfaceMock(suite.T())
+	provider := newDefaultAuthnProvider(suite.mockService, nil, nil, mockML, nil)
+
+	credentials := map[string]interface{}{
+		"magiclink": map[string]interface{}{
+			"token": "valid-token",
+		},
+	}
+
+	mockML.On("Authenticate", mock.Anything, "valid-token", "").
+		Return(nil, &serviceerror.ServiceError{
+			Type:             serviceerror.ServerErrorType,
+			Code:             "INTERNAL",
+			Error:            i18ncore.I18nMessage{DefaultValue: "Internal error"},
+			ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Something went wrong"},
+		}).Once()
+
+	result, err := provider.Authenticate(context.Background(), nil, credentials, nil)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_MagicLink_InvalidPayload() {
+	mockML := magiclinkmock.NewMagicLinkAuthnServiceInterfaceMock(suite.T())
+	provider := newDefaultAuthnProvider(suite.mockService, nil, nil, mockML, nil)
+
+	credentials := map[string]interface{}{
+		"magiclink": "not-a-map",
+	}
+
+	result, err := provider.Authenticate(context.Background(), nil, credentials, nil)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(authnprovidercm.ErrorCodeInvalidRequest, err.Code)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_MagicLink_MissingToken() {
+	mockML := magiclinkmock.NewMagicLinkAuthnServiceInterfaceMock(suite.T())
+	provider := newDefaultAuthnProvider(suite.mockService, nil, nil, mockML, nil)
+
+	credentials := map[string]interface{}{
+		"magiclink": map[string]interface{}{},
+	}
+
+	result, err := provider.Authenticate(context.Background(), nil, credentials, nil)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(authnprovidercm.ErrorCodeInvalidRequest, err.Code)
 }
