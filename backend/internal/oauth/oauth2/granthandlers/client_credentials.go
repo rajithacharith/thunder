@@ -162,7 +162,7 @@ func (h *clientCredentialsGrantHandler) HandleGrant(ctx context.Context, tokenRe
 	}
 
 	accessToken, err := h.tokenBuilder.BuildAccessToken(ctx, &tokenservice.AccessTokenBuildContext{
-		Subject:          tokenRequest.ClientID,
+		Subject:          oauthApp.ID,
 		Audiences:        audiences,
 		ClientID:         tokenRequest.ClientID,
 		Scopes:           scopes,

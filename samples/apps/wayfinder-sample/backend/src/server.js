@@ -55,7 +55,7 @@ function logRequest(method, pathname, claims) {
     console.log(`${method} ${pathname}`);
     return;
   }
-  const type = claims.sub === claims.client_id ? "m2m" : "user";
+  const type = claims.grant_type === "client_credentials" ? "m2m" : "user";
   const aud = Array.isArray(claims.aud) ? claims.aud.join(",") : (claims.aud || "-");
   console.log(
     `${method} ${pathname} | type: ${type} | client_id: ${claims.client_id || "-"} | sub: ${claims.sub || "-"} | aud: ${aud} | scope: ${claims.scope || "-"}`

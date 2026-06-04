@@ -85,7 +85,7 @@ function callerTag(user) {
     return "anon";
   }
 
-  const type = user.rawClaims?.sub === user.rawClaims?.client_id ? "m2m" : "user";
+  const type = user.rawClaims?.grant_type === "client_credentials" ? "m2m" : "user";
 
   return `${type}:${user.id || "-"}`;
 }
