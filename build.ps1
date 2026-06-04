@@ -1138,9 +1138,13 @@ function Package-Wayfinder-Sample {
     $frontendDest = Join-Path $dist_folder "frontend"
     New-Item -Path $frontendDest -ItemType Directory -Force | Out-Null
     Copy-Item -Path $frontendDist -Destination $frontendDest -Recurse -Force
-    foreach ($item in @("package.json", "package-lock.json", "index.html", "vite.config.js", ".env.example", "README.md")) {
+    foreach ($item in @("package.json", "package-lock.json", "index.html", "vite.config.js", "README.md")) {
         $src = Join-Path $WAYFINDER_SAMPLE_APP_DIR "frontend/$item"
         if (Test-Path $src) { Copy-Item -Path $src -Destination $frontendDest -Force }
+    }
+    $frontendEnvExample = Join-Path $WAYFINDER_SAMPLE_APP_DIR "frontend/.env.example"
+    if (Test-Path $frontendEnvExample) {
+        Copy-Item -Path $frontendEnvExample -Destination (Join-Path $frontendDest ".env") -Force
     }
     foreach ($subdir in @("src", "public")) {
         $src = Join-Path $WAYFINDER_SAMPLE_APP_DIR "frontend/$subdir"
@@ -1152,9 +1156,13 @@ function Package-Wayfinder-Sample {
         $svcDest = Join-Path $dist_folder $svc
         Write-Host "Copying Wayfinder sample $svc source..."
         New-Item -Path $svcDest -ItemType Directory -Force | Out-Null
-        foreach ($item in @("package.json", "package-lock.json", "tsconfig.json", "README.md", ".env.example", "agent.ts")) {
+        foreach ($item in @("package.json", "package-lock.json", "tsconfig.json", "README.md", "agent.ts")) {
             $src = Join-Path $svcSrc $item
             if (Test-Path $src) { Copy-Item -Path $src -Destination $svcDest -Force }
+        }
+        $svcEnvExample = Join-Path $svcSrc ".env.example"
+        if (Test-Path $svcEnvExample) {
+            Copy-Item -Path $svcEnvExample -Destination (Join-Path $svcDest ".env") -Force
         }
         foreach ($subdir in @("src", "scripts")) {
             $src = Join-Path $svcSrc $subdir

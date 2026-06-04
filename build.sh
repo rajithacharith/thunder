@@ -850,7 +850,7 @@ function package_wayfinder_sample() {
             cp -r "$WAYFINDER_SAMPLE_APP_DIR/frontend/public" "$dist_folder/frontend/"
         fi
         if [ -f "$WAYFINDER_SAMPLE_APP_DIR/frontend/.env.example" ]; then
-            cp "$WAYFINDER_SAMPLE_APP_DIR/frontend/.env.example" "$dist_folder/frontend/"
+            cp "$WAYFINDER_SAMPLE_APP_DIR/frontend/.env.example" "$dist_folder/frontend/.env"
         fi
         if [ -f "$WAYFINDER_SAMPLE_APP_DIR/frontend/README.md" ]; then
             cp "$WAYFINDER_SAMPLE_APP_DIR/frontend/README.md" "$dist_folder/frontend/"
@@ -875,7 +875,7 @@ function package_wayfinder_sample() {
             cp "$svc_src/README.md" "$svc_dest/"
         fi
         if [ -f "$svc_src/.env.example" ]; then
-            cp "$svc_src/.env.example" "$svc_dest/"
+            cp "$svc_src/.env.example" "$svc_dest/.env"
         fi
         if [ -d "$svc_src/src" ]; then
             cp -r "$svc_src/src" "$svc_dest/"
