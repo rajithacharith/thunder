@@ -18,23 +18,25 @@
 
 import {useConfig} from '@thunderid/contexts';
 import {Box, Button, CircularProgress, Stack, Typography} from '@wso2/oxygen-ui';
-import {CheckCircle, FileCode, FileText, FolderOpen, RefreshCw, XCircle} from '@wso2/oxygen-ui-icons-react';
+import {CheckCircle, Database, RefreshCw, XCircle} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import useImportConfiguration from '../../import-export/api/useImportConfiguration';
 import type {ImportResponse} from '../../import-export/models/import-configuration';
+import {useGetSampleBundle} from '../api/useGetSampleBundles';
 
 const IMPORTED_KEY = 'thunderid-wayfinder-config-imported';
+const WAYFINDER_BUNDLE_KEY = 'wayfinder';
 
-type Status = 'idle' | 'selected' | 'importing' | 'success' | 'alreadyDone' | 'error';
+type Status = 'idle' | 'importing' | 'success' | 'alreadyDone' | 'error';
 
-interface FoundFiles {
-  folderName: string;
-  yamlFile: File;
-  envFile: File | null;
-}
-
+/**
+ * Parses the content of an .env file and returns an object mapping variable names to their values.
+ *
+ * @param content - The string content of the .env file to parse.
+ * @returns An object where keys are environment variable names and values are their corresponding values.
+ */
 function parseEnvFile(content: string): Record<string, string> {
   const vars: Record<string, string> = {};
   for (const line of content.split(/\r?\n/)) {
@@ -47,91 +49,61 @@ function parseEnvFile(content: string): Record<string, string> {
   return vars;
 }
 
-async function pickConfigFiles(): Promise<FoundFiles> {
-  // showDirectoryPicker only reads metadata for files we explicitly request —
-  // no enumeration of the whole folder tree.
-  const w = window as unknown as {showDirectoryPicker: () => Promise<FileSystemDirectoryHandle>};
-  const dirHandle = await w.showDirectoryPicker();
-
-  const configDirHandle = await dirHandle.getDirectoryHandle('thunderid-config');
-
-  let yamlFileHandle: FileSystemFileHandle | null = null;
-  for (const name of ['thunderid-config.yaml', 'thunderid-config.yml']) {
-    try {
-      yamlFileHandle = await configDirHandle.getFileHandle(name);
-      break;
-    } catch {
-      // try next
-    }
-  }
-
-  if (!yamlFileHandle) {
-    throw new Error('yaml_not_found');
-  }
-
-  let envFileHandle: FileSystemFileHandle | null = null;
-  try {
-    envFileHandle = await configDirHandle.getFileHandle('thunderid.env');
-  } catch {
-    // env file is optional
-  }
-
-  const yamlFile = await yamlFileHandle.getFile();
-  const envFile = envFileHandle ? await envFileHandle.getFile() : null;
-
-  return {folderName: dirHandle.name, yamlFile, envFile};
-}
-
+/**
+ * Formats a timestamp string into a human-readable date format.
+ *
+ * @param ts - The timestamp string to format.
+ * @returns A formatted date string or an empty string if the timestamp is invalid.
+ */
 function formatImportedDate(ts: string): string {
   const date = new Date(Number(ts));
   if (isNaN(date.getTime())) return '';
   return date.toLocaleDateString(undefined, {day: 'numeric', month: 'short', year: 'numeric'});
 }
 
-interface WayfinderFolderImportProps {
+interface WayfinderConfigImportProps {
   onSuccess?: () => void;
 }
 
-export default function WayfinderFolderImport({onSuccess = undefined}: WayfinderFolderImportProps): JSX.Element {
+/**
+ * Component that provides functionality to import a predefined set of configurations (Wayfinder bundle)
+ * into the application.
+ *
+ * @param onSuccess - Optional callback function to be called after a successful import.
+ * @returns A JSX element that renders the import UI and handles the import process.
+ */
+export default function WayfinderConfigImport({onSuccess = undefined}: WayfinderConfigImportProps): JSX.Element {
   const {t} = useTranslation(['common']);
   const {config} = useConfig();
   const productName = config.brand.product_name;
   const {mutateAsync: importConfig} = useImportConfiguration();
+  const bundle = useGetSampleBundle(WAYFINDER_BUNDLE_KEY);
 
   const [status, setStatus] = useState<Status>(() => {
     const ts = localStorage.getItem(IMPORTED_KEY);
     return ts ? 'alreadyDone' : 'idle';
   });
-  const [found, setFound] = useState<FoundFiles | null>(null);
   const [result, setResult] = useState<ImportResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const previousTs = localStorage.getItem(IMPORTED_KEY);
 
-  const handleSelectFolder = async (): Promise<void> => {
-    try {
-      const files = await pickConfigFiles();
-      setFound(files);
-      setErrorMsg(null);
-      setStatus('selected');
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') return;
-      setErrorMsg(t('common:welcome.wayfinderFolderImport.errors.cannotReadFolder'));
-      setStatus('error');
-      setFound(null);
-    }
-  };
-
   const handleImport = async (): Promise<void> => {
-    if (!found) return;
+    if (!bundle?.configs.declarative) {
+      setErrorMsg(t('common:welcome.wayfinderFolderImport.errors.importFailed'));
+      setStatus('error');
+      return;
+    }
     setStatus('importing');
     setErrorMsg(null);
 
     try {
-      const content = await found.yamlFile.text();
-      const variables = found.envFile ? parseEnvFile(await found.envFile.text()) : undefined;
-
-      const response = await importConfig({content, variables, options: {upsert: true}});
+      const variables = bundle.configs.env ? parseEnvFile(bundle.configs.env) : undefined;
+      const response = await importConfig({
+        content: bundle.configs.declarative,
+        variables,
+        options: {upsert: true},
+      });
       setResult(response);
       if (response.summary.failed > 0) {
         setErrorMsg(t('common:welcome.wayfinderFolderImport.errors.partialFailure', {count: response.summary.failed}));
@@ -149,7 +121,6 @@ export default function WayfinderFolderImport({onSuccess = undefined}: Wayfinder
 
   const handleReset = (): void => {
     setStatus('idle');
-    setFound(null);
     setResult(null);
     setErrorMsg(null);
   };
@@ -212,60 +183,17 @@ export default function WayfinderFolderImport({onSuccess = undefined}: Wayfinder
 
   return (
     <Stack spacing={1.5}>
-      {status === 'idle' && (
-        <Box>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<FolderOpen size={16} />}
-            onClick={() => void handleSelectFolder()}
-          >
-            {t('common:welcome.wayfinderFolderImport.actions.selectFolder')}
-          </Button>
-        </Box>
-      )}
-
-      {status === 'selected' && found && (
-        <Stack spacing={1.5}>
-          <Box sx={{border: '1px solid', borderColor: 'divider', borderRadius: 1.5, px: 2, py: 1.5}}>
-            <Stack direction="row" spacing={1} alignItems="center" sx={{mb: 1}}>
-              <FolderOpen size={16} style={{opacity: 0.5, flexShrink: 0}} />
-              <Typography variant="body2" fontWeight={600} noWrap sx={{flex: 1}}>
-                {found.folderName}/
-              </Typography>
-              <Button
-                size="small"
-                variant="text"
-                sx={{fontSize: '0.7rem', flexShrink: 0}}
-                onClick={() => void handleSelectFolder()}
-              >
-                {t('common:welcome.wayfinderFolderImport.actions.change')}
-              </Button>
-            </Stack>
-            <Stack spacing={0.5} sx={{pl: 0.5}}>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <FileCode size={13} style={{opacity: 0.5, flexShrink: 0}} />
-                <Typography variant="caption" color="text.secondary" noWrap>
-                  thunderid-config/{found.yamlFile.name}
-                </Typography>
-              </Stack>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <FileText size={13} style={{opacity: 0.5, flexShrink: 0}} />
-                <Typography variant="caption" color="text.secondary" noWrap>
-                  {found.envFile
-                    ? `thunderid-config/${found.envFile.name}`
-                    : t('common:welcome.wayfinderFolderImport.status.envNotFound')}
-                </Typography>
-              </Stack>
-            </Stack>
-          </Box>
-          <Box>
-            <Button variant="contained" size="small" onClick={() => void handleImport()}>
-              {t('common:welcome.wayfinderFolderImport.actions.importConfig')}
-            </Button>
-          </Box>
-        </Stack>
-      )}
+      <Box>
+        <Button
+          variant="contained"
+          size="small"
+          startIcon={<Database size={16} />}
+          onClick={() => void handleImport()}
+          disabled={!bundle?.configs.declarative}
+        >
+          {t('common:welcome.wayfinderFolderImport.actions.importConfig')}
+        </Button>
+      </Box>
 
       {status === 'error' && (
         <Stack spacing={1}>
@@ -288,19 +216,6 @@ export default function WayfinderFolderImport({onSuccess = undefined}: Wayfinder
                 {r.resourceName ? ` · ${r.resourceName}` : ''}: {r.message}
               </Typography>
             ))}
-          <Box>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<RefreshCw size={13} />}
-              onClick={() => {
-                handleReset();
-                void handleSelectFolder();
-              }}
-            >
-              {t('common:welcome.wayfinderFolderImport.actions.reSelectFolder')}
-            </Button>
-          </Box>
         </Stack>
       )}
     </Stack>

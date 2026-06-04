@@ -25,27 +25,18 @@ export interface SampleBundle {
   configs: SampleBundleConfigs;
 }
 
-const yamlModules: Record<string, string> = import.meta.glob('./sample-bundles/**/*.{yaml,yml}', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
-
-const envModules: Record<string, string> = import.meta.glob('./sample-bundles/**/*.env', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
-
 const BUNDLE_ROOT = './sample-bundles/';
 
-const bundleKeyFromPath = (path: string): string => {
+export const bundleKeyFromPath = (path: string): string => {
   const tail = path.slice(BUNDLE_ROOT.length);
   const lastSlash = tail.lastIndexOf('/');
   return lastSlash === -1 ? tail : tail.slice(0, lastSlash);
 };
 
-const buildRegistry = (): Record<string, SampleBundle> => {
+export const buildRegistry = (
+  yamlModules: Record<string, string>,
+  envModules: Record<string, string>,
+): Record<string, SampleBundle> => {
   const registry: Record<string, SampleBundle> = {};
 
   const ensure = (key: string): SampleBundle => {
@@ -66,4 +57,16 @@ const buildRegistry = (): Record<string, SampleBundle> => {
   return registry;
 };
 
-export const SAMPLE_BUNDLES: Record<string, SampleBundle> = buildRegistry();
+const yamlModules: Record<string, string> = import.meta.glob('./sample-bundles/**/*.{yaml,yml}', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+
+const envModules: Record<string, string> = import.meta.glob('./sample-bundles/**/*.env', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+
+export const SAMPLE_BUNDLES: Record<string, SampleBundle> = buildRegistry(yamlModules, envModules);

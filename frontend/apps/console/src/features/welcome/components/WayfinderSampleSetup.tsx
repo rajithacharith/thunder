@@ -23,7 +23,7 @@ import type {JSX} from 'react';
 import {useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import TerminalBlock from './TerminalBlock';
-import WayfinderFolderImport from './WayfinderFolderImport';
+import WayfinderConfigImport from './WayfinderConfigImport';
 import WayfinderSampleDownload from './WayfinderSampleDownload';
 import {detectPlatform} from '../utils/downloadAssets';
 
@@ -54,7 +54,6 @@ export default function WayfinderSampleSetup(): JSX.Element {
 
   const handleImportSuccess = (): void => {
     setIsDone(true);
-    setExpanded(false);
     sessionStorage.setItem(EXPANDED_KEY, 'false');
   };
 
@@ -201,7 +200,7 @@ export default function WayfinderSampleSetup(): JSX.Element {
                 <Typography variant="body2" color="text.secondary" sx={{mb: 1.5}}>
                   {t('common:welcome.wayfinderSampleSetup.steps.configure.description', {productName})}
                 </Typography>
-                <WayfinderFolderImport onSuccess={handleImportSuccess} />
+                <WayfinderConfigImport onSuccess={handleImportSuccess} />
               </Box>
             </Stack>
           </Box>
