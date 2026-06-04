@@ -29,6 +29,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/cert"
 	"github.com/thunder-id/thunderid/internal/consent"
+	"github.com/thunder-id/thunderid/internal/entity"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	entitytypepkg "github.com/thunder-id/thunderid/internal/entitytype"
 	flowcommon "github.com/thunder-id/thunderid/internal/flow/common"
@@ -1029,14 +1030,17 @@ func (suite *InboundClientServiceTestSuite) TestBuildOAuthClient_MapsAllFields()
 		PKCERequired:                       true,
 		PublicClient:                       false,
 		RequirePushedAuthorizationRequests: true,
+		IncludeActClaim:                    true,
 		Scopes:                             []string{"openid"},
 		ScopeClaims:                        map[string][]string{"profile": {"name"}},
 	}
-	client := BuildOAuthClient("entity-1", "client-1", "ou-1", dao)
+	client := BuildOAuthClient("entity-1", "client-1", "ou-1", entity.EntityCategoryApp, dao)
 
 	assert.Equal(suite.T(), "entity-1", client.ID)
 	assert.Equal(suite.T(), "client-1", client.ClientID)
 	assert.Equal(suite.T(), "ou-1", client.OUID)
+	assert.Equal(suite.T(), entity.EntityCategoryApp, client.EntityCategory)
+	assert.True(suite.T(), client.IncludeActClaim)
 	assert.Equal(suite.T(), []string{"https://app/cb"}, client.RedirectURIs)
 	assert.Equal(suite.T(), oauth2const.TokenEndpointAuthMethod("client_secret_basic"), client.TokenEndpointAuthMethod)
 	assert.True(suite.T(), client.PKCERequired)

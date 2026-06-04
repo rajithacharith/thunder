@@ -307,6 +307,143 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_WithClaims
 	assert.Equal(suite.T(), "en-US fr-CA ja", tokenResponse.RefreshToken.ClaimsLocales)
 }
 
+func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_AgentClientFreezesActorSub() {
+	const actAppID = "act-entity-id"
+	agentApp := &inboundmodel.OAuthClient{
+		ID:                      actAppID,
+		ClientID:                testRefreshTokenClientID,
+		EntityCategory:          "agent",
+		GrantTypes:              []constants.GrantType{constants.GrantTypeRefreshToken},
+		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
+	}
+
+	var capturedActorSub string
+	suite.mockTokenBuilder.On("BuildRefreshToken", mock.Anything, mock.MatchedBy(
+		func(ctx *tokenservice.RefreshTokenBuildContext) bool {
+			capturedActorSub = ctx.ActorSub
+			return true
+		})).Return(&model.TokenDTO{
+		Token:    "new.refresh.token",
+		IssuedAt: int64(1234567890),
+	}, nil)
+
+	tokenResponse := &model.TokenResponseDTO{}
+	err := suite.handler.IssueRefreshToken(context.Background(), tokenResponse, agentApp,
+		testRefreshTokenUserID, []string{testRefreshTokenAudience},
+		"authorization_code", []string{"read"}, nil, "", "")
+
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), actAppID, capturedActorSub)
+}
+
+func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_AppClientWithoutFlagOmitsActorSub() {
+	appApp := &inboundmodel.OAuthClient{
+		ID:                      "app-entity-id",
+		ClientID:                testRefreshTokenClientID,
+		EntityCategory:          "app",
+		IncludeActClaim:         false,
+		GrantTypes:              []constants.GrantType{constants.GrantTypeRefreshToken},
+		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
+	}
+
+	var capturedActorSub string
+	suite.mockTokenBuilder.On("BuildRefreshToken", mock.Anything, mock.MatchedBy(
+		func(ctx *tokenservice.RefreshTokenBuildContext) bool {
+			capturedActorSub = ctx.ActorSub
+			return true
+		})).Return(&model.TokenDTO{
+		Token:    "new.refresh.token",
+		IssuedAt: int64(1234567890),
+	}, nil)
+
+	tokenResponse := &model.TokenResponseDTO{}
+	err := suite.handler.IssueRefreshToken(context.Background(), tokenResponse, appApp,
+		testRefreshTokenUserID, []string{testRefreshTokenAudience},
+		"authorization_code", []string{"read"}, nil, "", "")
+
+	assert.Nil(suite.T(), err)
+	assert.Empty(suite.T(), capturedActorSub)
+}
+
+func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_ReplaysActorSubFromStoredMarker() {
+	const actAppID = "act-entity-id"
+	suite.mockTokenValidator.
+		On("ValidateRefreshToken", mock.Anything, suite.validRefreshToken, testRefreshTokenClientID).
+		Return(&tokenservice.RefreshTokenClaims{
+			Sub:              testRefreshTokenUserID,
+			Audiences:        []string{testRefreshTokenAudience},
+			Scopes:           []string{"read", "write"},
+			GrantType:        "authorization_code",
+			AttributeCacheID: "",
+			Iat:              int64(suite.validClaims["iat"].(float64)),
+			ActorSub:         actAppID,
+		}, nil)
+
+	var capturedActor *tokenservice.SubjectTokenClaims
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.MatchedBy(
+		func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			capturedActor = ctx.ActorClaims
+			return ctx.Subject == testRefreshTokenUserID
+		})).Return(&model.TokenDTO{
+		Token:     "new.access.token",
+		IssuedAt:  time.Now().Unix(),
+		ExpiresIn: 3600,
+		Scopes:    []string{"read"},
+	}, nil)
+
+	response, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), response)
+	assert.NotNil(suite.T(), capturedActor)
+	assert.Equal(suite.T(), actAppID, capturedActor.Sub)
+}
+
+func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_NoActorSubMarker_OmitsActorEvenWhenFlagOn() {
+	// Freeze-at-issuance: a refresh token issued without the marker must not gain an act claim
+	// even if the client now opts into act claims.
+	appWithFlagOn := &inboundmodel.OAuthClient{
+		ID:                      "app-entity-id",
+		ClientID:                testRefreshTokenClientID,
+		EntityCategory:          "app",
+		IncludeActClaim:         true,
+		GrantTypes:              []constants.GrantType{constants.GrantTypeRefreshToken},
+		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
+	}
+
+	suite.mockTokenValidator.
+		On("ValidateRefreshToken", mock.Anything, suite.validRefreshToken, testRefreshTokenClientID).
+		Return(&tokenservice.RefreshTokenClaims{
+			Sub:              testRefreshTokenUserID,
+			Audiences:        []string{testRefreshTokenAudience},
+			Scopes:           []string{"read", "write"},
+			GrantType:        "authorization_code",
+			AttributeCacheID: "",
+			Iat:              int64(suite.validClaims["iat"].(float64)),
+		}, nil)
+
+	var capturedActor *tokenservice.SubjectTokenClaims
+	hadActor := false
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.MatchedBy(
+		func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			capturedActor = ctx.ActorClaims
+			hadActor = true
+			return ctx.Subject == testRefreshTokenUserID
+		})).Return(&model.TokenDTO{
+		Token:     "new.access.token",
+		IssuedAt:  time.Now().Unix(),
+		ExpiresIn: 3600,
+		Scopes:    []string{"read"},
+	}, nil)
+
+	response, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, appWithFlagOn)
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), response)
+	assert.True(suite.T(), hadActor)
+	assert.Nil(suite.T(), capturedActor)
+}
+
 func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_Success_WithRenewOnGrantDisabled() {
 	// Mock successful refresh token validation
 	suite.mockTokenValidator.

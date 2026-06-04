@@ -293,6 +293,10 @@ func (tb *tokenBuilder) buildRefreshTokenClaims(ctx *RefreshTokenBuildContext) (
 	claims["access_token_aud"] = ctx.AccessTokenAudiences
 	claims["grant_type"] = ctx.GrantType
 
+	if ctx.ActorSub != "" {
+		claims["act_sub"] = ctx.ActorSub
+	}
+
 	if ctx.AttributeCacheID != "" {
 		claims["aci"] = ctx.AttributeCacheID
 	}

@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/thunder-id/thunderid/internal/entity"
 	"github.com/thunder-id/thunderid/internal/inboundclient/model"
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	sysconfig "github.com/thunder-id/thunderid/internal/system/config"
@@ -571,6 +572,31 @@ func (suite *OAuthClientTestSuite) TestRequiresPAR_PerClientEnabled() {
 func (suite *OAuthClientTestSuite) TestRequiresPAR_BothFalse() {
 	c := &model.OAuthClient{RequirePushedAuthorizationRequests: false}
 	suite.False(c.RequiresPAR())
+}
+
+func (suite *OAuthClientTestSuite) TestShouldAppendActorClaim() {
+	cases := []struct {
+		name            string
+		entityCategory  entity.EntityCategory
+		includeActClaim bool
+		expected        bool
+	}{
+		{name: "AgentFlagOff", entityCategory: entity.EntityCategoryAgent, includeActClaim: false, expected: true},
+		{name: "AgentFlagOn", entityCategory: entity.EntityCategoryAgent, includeActClaim: true, expected: true},
+		{name: "AppFlagOff", entityCategory: entity.EntityCategoryApp, includeActClaim: false, expected: false},
+		{name: "AppFlagOn", entityCategory: entity.EntityCategoryApp, includeActClaim: true, expected: true},
+		{name: "UserFlagOn", entityCategory: entity.EntityCategoryUser, includeActClaim: true, expected: false},
+		{name: "EmptyCategoryFlagOn", entityCategory: "", includeActClaim: true, expected: false},
+	}
+	for _, tc := range cases {
+		suite.Run(tc.name, func() {
+			c := &model.OAuthClient{
+				EntityCategory:  tc.entityCategory,
+				IncludeActClaim: tc.includeActClaim,
+			}
+			suite.Equal(tc.expected, c.ShouldAppendActorClaim())
+		})
+	}
 }
 
 func (suite *OAuthHelperTestSuite) TestMatchAnyRedirectURIPattern_WildcardEnabled_Matches() {
