@@ -148,6 +148,59 @@ func (_c *PKIServiceInterfaceMock_GetCertThumbprint_Call) RunAndReturn(run func(
 	return _c
 }
 
+// GetCertificateChain provides a mock function for the type PKIServiceInterfaceMock
+func (_mock *PKIServiceInterfaceMock) GetCertificateChain(id string) [][]byte {
+	ret := _mock.Called(id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetCertificateChain")
+	}
+
+	var r0 [][]byte
+	if returnFunc, ok := ret.Get(0).(func(string) [][]byte); ok {
+		r0 = returnFunc(id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([][]byte)
+		}
+	}
+	return r0
+}
+
+// PKIServiceInterfaceMock_GetCertificateChain_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetCertificateChain'
+type PKIServiceInterfaceMock_GetCertificateChain_Call struct {
+	*mock.Call
+}
+
+// GetCertificateChain is a helper method to define mock.On call
+//   - id string
+func (_e *PKIServiceInterfaceMock_Expecter) GetCertificateChain(id interface{}) *PKIServiceInterfaceMock_GetCertificateChain_Call {
+	return &PKIServiceInterfaceMock_GetCertificateChain_Call{Call: _e.mock.On("GetCertificateChain", id)}
+}
+
+func (_c *PKIServiceInterfaceMock_GetCertificateChain_Call) Run(run func(id string)) *PKIServiceInterfaceMock_GetCertificateChain_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *PKIServiceInterfaceMock_GetCertificateChain_Call) Return(bytess [][]byte) *PKIServiceInterfaceMock_GetCertificateChain_Call {
+	_c.Call.Return(bytess)
+	return _c
+}
+
+func (_c *PKIServiceInterfaceMock_GetCertificateChain_Call) RunAndReturn(run func(id string) [][]byte) *PKIServiceInterfaceMock_GetCertificateChain_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetPrivateKey provides a mock function for the type PKIServiceInterfaceMock
 func (_mock *PKIServiceInterfaceMock) GetPrivateKey(id string) (crypto.PrivateKey, *serviceerror.ServiceError) {
 	ret := _mock.Called(id)

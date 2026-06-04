@@ -180,11 +180,12 @@ func (s *runtimeCryptoService) GetPublicKeys(
 		}
 
 		keys = append(keys, kmprovider.PublicKeyInfo{
-			KeyID:          id,
-			Algorithm:      alg,
-			PublicKey:      cert.PublicKey,
-			Thumbprint:     s.pkiService.GetCertThumbprint(id),
-			CertificateDER: cert.Raw,
+			KeyID:               id,
+			Algorithm:           alg,
+			PublicKey:           cert.PublicKey,
+			Thumbprint:          s.pkiService.GetCertThumbprint(id),
+			CertificateDER:      cert.Raw,
+			CertificateChainDER: s.pkiService.GetCertificateChain(id),
 		})
 	}
 

@@ -91,6 +91,9 @@ export enum EmbeddedFlowComponentType {
 
   /** Timer component for displaying a countdown */
   Timer = 'TIMER',
+
+  /** QR code display component for wallet-based flows (e.g. OpenID4VP) */
+  QrCode = 'QR_CODE',
 }
 
 /**

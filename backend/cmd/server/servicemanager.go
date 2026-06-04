@@ -59,6 +59,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/notification"
 	"github.com/thunder-id/thunderid/internal/oauth"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dcr"
+	"github.com/thunder-id/thunderid/internal/openid4vp"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
@@ -266,11 +267,19 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 			"EmailExecutor will be registered but will not send emails.", log.Error(err))
 		emailClient = nil
 	}
+	// Initialize the OpenID4VP verifier engine and register its wallet-facing
+	// endpoints. Presentation definitions are registered from configuration by
+	// the engine itself.
+	openid4vpVerifierSvc, err := openid4vp.Initialize(mux, runtimeCryptoSvc, cacheManager, jwtService)
+	if err != nil {
+		logger.Fatal("Failed to initialize OpenID4VP verifier service", log.Error(err))
+	}
+
 	execRegistry := executor.Initialize(flowFactory, ouService, idpService, notifSenderSvc, jwtService, authAssertGen,
 		consentEnforcer, authnProvider, otpCoreService, passkeyService, magicLinkService, authZService,
 		entityTypeService, groupService, roleService, roleAssignmentService, entityProvider,
 		attributeCacheService, emailClient, templateService, oauthAuthnService, oidcAuthnService,
-		githubAuthnService, googleAuthnService)
+		githubAuthnService, googleAuthnService, openid4vpVerifierSvc)
 
 	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(
 		mux, mcpServer, cacheManager, flowFactory, execRegistry, graphCache)
