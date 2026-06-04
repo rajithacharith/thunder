@@ -137,6 +137,7 @@ func (tv *tokenValidator) ValidateRefreshToken(
 	iat, _ := extractInt64Claim(claims, "iat")
 	scopes := extractScopesFromClaims(claims, false)
 	attributeCacheID, _ := extractStringClaim(claims, "aci")
+	actorSub, _ := extractStringClaim(claims, "act_sub")
 
 	// Extract claims request if present
 	var claimsRequest *oauth2model.ClaimsRequest
@@ -172,6 +173,7 @@ func (tv *tokenValidator) ValidateRefreshToken(
 		ClaimsRequest:    claimsRequest,
 		ClaimsLocales:    claimsLocales,
 		DPoPJkt:          dpopJkt,
+		ActorSub:         actorSub,
 	}, nil
 }
 

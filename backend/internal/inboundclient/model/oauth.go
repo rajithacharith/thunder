@@ -27,6 +27,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/thunder-id/thunderid/internal/entity"
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
@@ -123,6 +124,7 @@ type OAuthProfile struct {
 	PublicClient                       bool                `json:"publicClient"`
 	RequirePushedAuthorizationRequests bool                `json:"requirePushedAuthorizationRequests"`
 	DPoPBoundAccessTokens              bool                `json:"dpopBoundAccessTokens"`
+	IncludeActClaim                    bool                `json:"includeActClaim"`
 	Token                              *OAuthTokenConfig   `json:"token,omitempty"`
 	Scopes                             []string            `json:"scopes,omitempty"`
 	UserInfo                           *UserInfoConfig     `json:"userInfo,omitempty"`
@@ -144,6 +146,7 @@ type OAuthConfigWithSecret struct {
 	PublicClient                       bool                                `json:"publicClient"                                yaml:"public_client"                                jsonschema:"Identify if client is public (cannot store secrets). Set true for SPA/Mobile."`
 	RequirePushedAuthorizationRequests bool                                `json:"requirePushedAuthorizationRequests"          yaml:"require_pushed_authorization_requests"        jsonschema:"Require Pushed Authorization Requests (PAR) per RFC 9126."`
 	DPoPBoundAccessTokens              bool                                `json:"dpopBoundAccessTokens"                       yaml:"dpop_bound_access_tokens"                     jsonschema:"Require DPoP-bound access tokens (RFC 9449)."`
+	IncludeActClaim                    bool                                `json:"includeActClaim"                             yaml:"include_act_claim"                            jsonschema:"Include an implicit on-behalf-of 'act' claim (identifying the application entity) in access tokens issued through this client's authorization code flow. Agents always include it regardless of this setting."`
 	Token                              *OAuthTokenConfig                   `json:"token,omitempty"                             yaml:"token,omitempty"                              jsonschema:"Token configuration for access tokens and ID tokens"`
 	Scopes                             []string                            `json:"scopes,omitempty"                            yaml:"scopes,omitempty"                             jsonschema:"Allowed OAuth scopes. Add custom scopes as needed for your application."`
 	UserInfo                           *UserInfoConfig                     `json:"userInfo,omitempty"                          yaml:"user_info,omitempty"                          jsonschema:"UserInfo endpoint configuration. Configure user attributes returned from the OIDC userinfo endpoint."`
@@ -165,6 +168,7 @@ type OAuthConfig struct {
 	PublicClient                       bool                                `json:"publicClient"                       yaml:"public_client"`
 	RequirePushedAuthorizationRequests bool                                `json:"requirePushedAuthorizationRequests" yaml:"require_pushed_authorization_requests"`
 	DPoPBoundAccessTokens              bool                                `json:"dpopBoundAccessTokens"              yaml:"dpop_bound_access_tokens"`
+	IncludeActClaim                    bool                                `json:"includeActClaim"                    yaml:"include_act_claim"`
 	Token                              *OAuthTokenConfig                   `json:"token,omitempty"                    yaml:"token,omitempty"`
 	Scopes                             []string                            `json:"scopes,omitempty"                   yaml:"scopes,omitempty"`
 	UserInfo                           *UserInfoConfig                     `json:"userInfo,omitempty"                 yaml:"user_info,omitempty"`
@@ -192,6 +196,8 @@ type OAuthClient struct {
 	PublicClient                       bool                                `yaml:"public_client,omitempty"`
 	RequirePushedAuthorizationRequests bool                                `yaml:"require_pushed_authorization_requests,omitempty"`
 	DPoPBoundAccessTokens              bool                                `yaml:"dpop_bound_access_tokens,omitempty"`
+	IncludeActClaim                    bool                                `yaml:"include_act_claim,omitempty"`
+	EntityCategory                     entity.EntityCategory               `yaml:"entity_category,omitempty"`
 	Token                              *OAuthTokenConfig                   `yaml:"token,omitempty"`
 	Scopes                             []string                            `yaml:"scopes,omitempty"`
 	UserInfo                           *UserInfoConfig                     `yaml:"user_info,omitempty"`
@@ -228,6 +234,13 @@ func (o *OAuthClient) RequiresPKCE() bool {
 // RequiresPAR reports whether pushed authorization requests are required for this client.
 func (o *OAuthClient) RequiresPAR() bool {
 	return o.RequirePushedAuthorizationRequests || config.GetServerRuntime().Config.OAuth.PAR.RequirePAR
+}
+
+// ShouldAppendActorClaim reports whether an implicit OBO act claim should be added to
+// user access tokens issued through this client. Agents always do; applications opt in.
+func (o *OAuthClient) ShouldAppendActorClaim() bool {
+	return o.EntityCategory == entity.EntityCategoryAgent ||
+		(o.EntityCategory == entity.EntityCategoryApp && o.IncludeActClaim)
 }
 
 // InboundAuthConfigWithSecret is the wire input wrapper and create/update echo response wrapper.

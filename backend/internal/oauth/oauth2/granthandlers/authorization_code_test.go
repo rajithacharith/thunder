@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/attributecache"
+	"github.com/thunder-id/thunderid/internal/entity"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/authz"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
@@ -287,6 +288,82 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_Success() {
 
 	suite.mockAuthzService.AssertExpectations(suite.T())
 	suite.mockTokenBuilder.AssertExpectations(suite.T())
+}
+
+func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_ActorClaim() {
+	const actAppID = "act-entity-id"
+	testCases := []struct {
+		name            string
+		entityCategory  entity.EntityCategory
+		includeActClaim bool
+		expectActor     bool
+	}{
+		{name: "AgentClientAlwaysAppendsActor", entityCategory: entity.EntityCategoryAgent,
+			includeActClaim: false, expectActor: true},
+		{name: "AppClientWithoutFlagOmitsActor", entityCategory: entity.EntityCategoryApp,
+			includeActClaim: false, expectActor: false},
+		{name: "AppClientWithFlagAppendsActor", entityCategory: entity.EntityCategoryApp,
+			includeActClaim: true, expectActor: true},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			suite.mockAuthzService = authzmock.NewAuthorizeServiceInterfaceMock(suite.T())
+			suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
+			suite.mockAttrCacheService = attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
+			suite.mockResourceService = resourcemock.NewResourceServiceInterfaceMock(suite.T())
+			suite.mockResourceService.On("FindResourceServersByPermissions", mock.Anything, mock.Anything).
+				Return([]resource.ResourceServer{}, nil).Maybe()
+			suite.handler = &authorizationCodeGrantHandler{
+				tokenBuilder:    suite.mockTokenBuilder,
+				authzService:    suite.mockAuthzService,
+				attributeCache:  suite.mockAttrCacheService,
+				resourceService: suite.mockResourceService,
+			}
+
+			oauthApp := &inboundmodel.OAuthClient{
+				ID:                      actAppID,
+				ClientID:                testClientID,
+				EntityCategory:          tc.entityCategory,
+				IncludeActClaim:         tc.includeActClaim,
+				RedirectURIs:            []string{"https://client.example.com/callback"},
+				GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
+				ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
+				TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
+			}
+
+			suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
+				Return(&suite.testAuthzCode, nil)
+
+			var capturedActor *tokenservice.SubjectTokenClaims
+			suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+				mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+					capturedActor = ctx.ActorClaims
+					return ctx.GrantType == string(constants.GrantTypeAuthorizationCode)
+				})).Return(&model.TokenDTO{
+				Token:     "test-jwt-token",
+				TokenType: constants.TokenTypeBearer,
+				IssuedAt:  time.Now().Unix(),
+				ExpiresIn: 3600,
+				Scopes:    []string{"read", "write"},
+				ClientID:  testClientID,
+			}, nil)
+
+			result, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, oauthApp)
+
+			assert.Nil(suite.T(), err)
+			assert.NotNil(suite.T(), result)
+			if tc.expectActor {
+				assert.NotNil(suite.T(), capturedActor)
+				assert.Equal(suite.T(), actAppID, capturedActor.Sub)
+				assert.Empty(suite.T(), capturedActor.Iss)
+			} else {
+				assert.Nil(suite.T(), capturedActor)
+			}
+
+			suite.mockTokenBuilder.AssertExpectations(suite.T())
+		})
+	}
 }
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_InvalidAuthorizationCode() {

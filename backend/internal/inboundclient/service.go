@@ -30,6 +30,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/consent"
 	layoutmgt "github.com/thunder-id/thunderid/internal/design/layout/mgt"
 	thememgt "github.com/thunder-id/thunderid/internal/design/theme/mgt"
+	"github.com/thunder-id/thunderid/internal/entity"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	flowcommon "github.com/thunder-id/thunderid/internal/flow/common"
@@ -325,17 +326,17 @@ func (s *inboundClientService) resolveClientID(entityID string) string {
 	if s.entityProvider == nil {
 		return ""
 	}
-	entity, epErr := s.entityProvider.GetEntity(entityID)
+	e, epErr := s.entityProvider.GetEntity(entityID)
 	if epErr != nil {
 		s.logger.Warn("Failed to resolve OAuth client_id from entity provider",
 			log.String("entityID", entityID), log.Error(epErr))
 		return ""
 	}
-	if entity == nil {
+	if e == nil {
 		return ""
 	}
 	var attrs map[string]interface{}
-	if err := json.Unmarshal(entity.SystemAttributes, &attrs); err != nil || attrs == nil {
+	if err := json.Unmarshal(e.SystemAttributes, &attrs); err != nil || attrs == nil {
 		return ""
 	}
 	clientID, _ := attrs["clientId"].(string)
@@ -422,14 +423,14 @@ func (s *inboundClientService) GetOAuthClientByClientID(ctx context.Context, cli
 		return nil, nil
 	}
 	entityID := *entityIDPtr
-	entity, epErr := s.entityProvider.GetEntity(entityID)
+	e, epErr := s.entityProvider.GetEntity(entityID)
 	if epErr != nil {
 		if epErr.Code == entityprovider.ErrorCodeEntityNotFound {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to load entity for client_id: %w", epErr)
 	}
-	ouID := entity.OUID
+	ouID := e.OUID
 
 	oauthProfile, err := s.store.GetOAuthProfileByEntityID(ctx, entityID)
 	if err != nil && !errors.Is(err, ErrInboundClientNotFound) {
@@ -439,7 +440,7 @@ func (s *inboundClientService) GetOAuthClientByClientID(ctx context.Context, cli
 		return nil, nil
 	}
 
-	client := BuildOAuthClient(entityID, clientID, ouID, oauthProfile)
+	client := BuildOAuthClient(entityID, clientID, ouID, entity.EntityCategory(e.Category), oauthProfile)
 
 	certificate, opErr := s.GetCertificate(ctx, cert.CertificateReferenceTypeOAuthApp, clientID)
 	if opErr != nil {
@@ -451,17 +452,21 @@ func (s *inboundClientService) GetOAuthClientByClientID(ctx context.Context, cli
 }
 
 // BuildOAuthClient assembles an OAuthClient from a stored OAuthProfile and entity context.
-func BuildOAuthClient(entityID, clientID, ouID string, p *inboundmodel.OAuthProfile) *inboundmodel.OAuthClient {
+func BuildOAuthClient(
+	entityID, clientID, ouID string, entityCategory entity.EntityCategory, p *inboundmodel.OAuthProfile,
+) *inboundmodel.OAuthClient {
 	client := &inboundmodel.OAuthClient{
 		ID:                                 entityID,
 		OUID:                               ouID,
 		ClientID:                           clientID,
+		EntityCategory:                     entityCategory,
 		RedirectURIs:                       p.RedirectURIs,
 		TokenEndpointAuthMethod:            oauth2const.TokenEndpointAuthMethod(p.TokenEndpointAuthMethod),
 		PKCERequired:                       p.PKCERequired,
 		PublicClient:                       p.PublicClient,
 		RequirePushedAuthorizationRequests: p.RequirePushedAuthorizationRequests,
 		DPoPBoundAccessTokens:              p.DPoPBoundAccessTokens,
+		IncludeActClaim:                    p.IncludeActClaim,
 		Scopes:                             p.Scopes,
 		ScopeClaims:                        p.ScopeClaims,
 		Token:                              p.Token,

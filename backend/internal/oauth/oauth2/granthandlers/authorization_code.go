@@ -189,7 +189,7 @@ func (h *authorizationCodeGrantHandler) HandleGrant(ctx context.Context, tokenRe
 	}
 
 	// Generate access token using tokenBuilder (attributes will be filtered in BuildAccessToken)
-	accessToken, err := h.tokenBuilder.BuildAccessToken(ctx, &tokenservice.AccessTokenBuildContext{
+	accessTokenCtx := &tokenservice.AccessTokenBuildContext{
 		Subject:          authCode.AuthorizedUserID,
 		Audiences:        accessTokenAudiences,
 		ClientID:         tokenRequest.ClientID,
@@ -201,7 +201,11 @@ func (h *authorizationCodeGrantHandler) HandleGrant(ctx context.Context, tokenRe
 		ClaimsRequest:    authCode.ClaimsRequest,
 		ClaimsLocales:    authCode.ClaimsLocales,
 		DPoPJkt:          dpop.GetJkt(ctx),
-	})
+	}
+	if oauthApp.ShouldAppendActorClaim() {
+		accessTokenCtx.ActorClaims = &tokenservice.SubjectTokenClaims{Sub: oauthApp.ID}
+	}
+	accessToken, err := h.tokenBuilder.BuildAccessToken(ctx, accessTokenCtx)
 	if err != nil {
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorServerError,
