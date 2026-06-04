@@ -511,6 +511,23 @@ const sidebars: SidebarsConfig = {
                 },
               ],
             },
+            {
+              type: 'category',
+              label: 'Verifiable Credentials',
+              collapsed: true,
+              collapsible: true,
+              link: {
+                type: 'doc',
+                id: 'guides/guides/protocols/openid4vc/index',
+              },
+              items: [
+                {
+                  type: 'doc',
+                  id: 'guides/guides/protocols/openid4vc/openid4vp',
+                  label: 'OpenID for Verifiable Presentations',
+                },
+              ],
+            },
           ],
         },
       ],
