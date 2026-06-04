@@ -32,6 +32,10 @@ import GroupCreateProvider from './features/groups/contexts/GroupCreate/GroupCre
 import RoleCreateProvider from './features/roles/contexts/RoleCreate/RoleCreateProvider';
 import UserTypeCreateProvider from './features/user-types/contexts/UserTypeCreate/UserTypeCreateProvider';
 import WelcomeRedirect from './features/welcome/components/WelcomeRedirect';
+import GetStartedPage from './features/welcome/pages/GetStartedPage';
+import TryoutSecuringAIAgentsPage from './features/welcome/pages/TryoutSecuringAIAgentsPage';
+import TryoutSecuringConsumerApp from './features/welcome/pages/TryoutSecuringConsumerAppPage';
+import TryoutSecuringMCPPage from './features/welcome/pages/TryoutSecuringMCPPage';
 import DashboardLayout from './layouts/DashboardLayout';
 import FullScreenLayout from './layouts/FullScreenLayout';
 
@@ -323,6 +327,10 @@ export default function App(): JSX.Element {
               <Route path="open-project" element={<ImportConfigurationUploadPage />} />
               <Route path="open-project/validate" element={<ImportConfigurationValidatePage />} />
               <Route path="open-project/summary" element={<ImportConfigurationSummaryPage />} />
+              <Route path="get-started" element={<GetStartedPage />} />
+              <Route path="tryout/consumer-app" element={<TryoutSecuringConsumerApp />} />
+              <Route path="tryout/ai-agents" element={<TryoutSecuringAIAgentsPage />} />
+              <Route path="tryout/mcp" element={<TryoutSecuringMCPPage />} />
             </Route>
             <Route
               path="/design"
