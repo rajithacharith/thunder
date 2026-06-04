@@ -37,12 +37,14 @@ const APPLICATION_URL_META_KEY = 'application.url';
 
 const REGISTRATION_ENABLED_META_KEY = 'isRegistrationFlowEnabled';
 
-DOMPurify.removeHooks('afterSanitizeAttributes');
-DOMPurify.addHook('afterSanitizeAttributes', (node: globalThis.Element) => {
-  if (node.tagName === 'A' && node.getAttribute('target') === '_blank') {
-    node.setAttribute('rel', 'noopener noreferrer');
-  }
-});
+if (typeof window !== 'undefined') {
+  DOMPurify.removeHooks('afterSanitizeAttributes');
+  DOMPurify.addHook('afterSanitizeAttributes', (node: globalThis.Element) => {
+    if (node.tagName === 'A' && node.getAttribute('target') === '_blank') {
+      node.setAttribute('rel', 'noopener noreferrer');
+    }
+  });
+}
 const RECOVERY_ENABLED_META_KEY = 'isRecoveryFlowEnabled';
 
 interface RichTextAdapterProps {
