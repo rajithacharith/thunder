@@ -176,3 +176,14 @@ Jaeger'?s?
 Tempo
 untrusted
 iss
+[Vv]erifier'?s?
+OpenID4VP
+OpenID4VC
+SD-JWT
+DCQL
+[Rr]elying [Pp]arty
+txn_id
+txn
+rp_id
+EUDI
+[Vv]erifiable
