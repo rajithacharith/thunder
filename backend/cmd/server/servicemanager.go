@@ -59,6 +59,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/notification"
 	"github.com/thunder-id/thunderid/internal/oauth"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dcr"
+	"github.com/thunder-id/thunderid/internal/openid4vp"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
@@ -89,7 +90,8 @@ import (
 var observabilitySvc observability.ObservabilityServiceInterface
 
 // registerServices registers all the services with the provided HTTP multiplexer.
-func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterface) jwt.JWTServiceInterface {
+func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterface) (
+	jwt.JWTServiceInterface, kmprovider.RuntimeCryptoProvider) {
 	logger := log.GetLogger()
 
 	// Load the server's private key for signing JWTs.
@@ -117,7 +119,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	var exporters []declarativeresource.ResourceExporter
 
 	// Initialize i18n service for internationalization support.
-	i18nService, i18nExporter, err := i18nmgt.Initialize(mux)
+	i18nService, i18nExporter, err := i18nmgt.Initialize(mux, config.GetServerRuntime().Config.Translation)
 	if err != nil {
 		logger.Fatal("Failed to initialize i18n service", log.Error(err))
 	}
@@ -245,7 +247,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 
 	// Initialize authn provider
 	authnProvider := authnprovidermgr.InitializeAuthnProviderManager(entityService, passkeyService, otpCoreService,
-		federatedAuths)
+		magicLinkService, federatedAuths)
 
 	// Initialize authentication services.
 	authAssertGen := authnAssert.Initialize()
@@ -265,11 +267,19 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 			"EmailExecutor will be registered but will not send emails.", log.Error(err))
 		emailClient = nil
 	}
+	// Initialize the OpenID4VP verifier engine and register its wallet-facing
+	// endpoints. Presentation definitions are registered from configuration by
+	// the engine itself.
+	openid4vpVerifierSvc, err := openid4vp.Initialize(mux, runtimeCryptoSvc, cacheManager, jwtService)
+	if err != nil {
+		logger.Fatal("Failed to initialize OpenID4VP verifier service", log.Error(err))
+	}
+
 	execRegistry := executor.Initialize(flowFactory, ouService, idpService, notifSenderSvc, jwtService, authAssertGen,
 		consentEnforcer, authnProvider, otpCoreService, passkeyService, magicLinkService, authZService,
 		entityTypeService, groupService, roleService, roleAssignmentService, entityProvider,
 		attributeCacheService, emailClient, templateService, oauthAuthnService, oidcAuthnService,
-		githubAuthnService, googleAuthnService)
+		githubAuthnService, googleAuthnService, openid4vpVerifierSvc)
 
 	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(
 		mux, mcpServer, cacheManager, flowFactory, execRegistry, graphCache)
@@ -368,7 +378,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	healthSvc := healthcheckservice.Initialize(dbprovider.GetDBProvider(), dbprovider.GetRedisProvider())
 	services.NewHealthCheckService(mux, healthSvc)
 
-	return jwtService
+	return jwtService, runtimeCryptoSvc
 }
 
 // unregisterServices unregisters all services that require cleanup during shutdown.

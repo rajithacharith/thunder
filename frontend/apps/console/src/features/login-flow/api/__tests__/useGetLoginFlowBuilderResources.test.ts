@@ -20,6 +20,23 @@ import {renderHook} from '@testing-library/react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import useGetLoginFlowBuilderResources from '../useGetLoginFlowBuilderResources';
 
+// Mock useConfig to avoid ConfigProvider requirement.
+vi.mock('@thunderid/contexts', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+  const actual = (await importOriginal()) as Record<string, unknown>;
+
+  return {
+    ...actual,
+    useConfig: () => ({
+      config: {
+        brand: {
+          product_name: 'TestProduct',
+        },
+      },
+    }),
+  };
+});
+
 // Mock the core resources hook
 vi.mock('@/features/flows/api/useGetFlowBuilderCoreResources', () => ({
   default: vi.fn(() => ({
@@ -46,7 +63,7 @@ vi.mock('../../data/steps.json', () => ({
 }));
 
 vi.mock('../../data/templates.json', () => ({
-  default: [{id: 'login-template'}],
+  default: [{id: 'login-template', relyingPartyName: '{{productName}}'}],
 }));
 
 vi.mock('../../data/widgets.json', () => ({
@@ -58,6 +75,15 @@ describe('useGetLoginFlowBuilderResources', () => {
     const {result} = renderHook(() => useGetLoginFlowBuilderResources());
 
     expect(result.current.data).toBeDefined();
+  });
+
+  it('should substitute {{productName}} placeholders in login-flow resources', () => {
+    const {result} = renderHook(() => useGetLoginFlowBuilderResources());
+
+    const serialised = JSON.stringify(result.current.data);
+
+    expect(serialised).not.toContain('{{productName}}');
+    expect(serialised).toContain('TestProduct');
   });
 
   it('should merge steps from core and login-flow', () => {
@@ -213,7 +239,7 @@ describe('useGetLoginFlowBuilderResources', () => {
       // Verify that the spread operator worked correctly and login-flow data is present
       expect(result.current.data.executors).toContainEqual({id: 'login-executor'});
       expect(result.current.data.steps).toContainEqual({id: 'login-step'});
-      expect(result.current.data.templates).toContainEqual({id: 'login-template'});
+      expect(result.current.data.templates).toContainEqual(expect.objectContaining({id: 'login-template'}));
       expect(result.current.data.widgets).toContainEqual({id: 'login-widget'});
     });
   });

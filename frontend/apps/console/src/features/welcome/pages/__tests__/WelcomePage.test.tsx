@@ -30,6 +30,7 @@ vi.mock('@thunderid/contexts', async (importOriginal) => {
       config: {
         brand: {
           product_name: 'ThunderID',
+          docs_url: 'https://docs.example.com/',
           favicon: {light: 'assets/images/favicon.ico', dark: 'assets/images/favicon-inverted.ico'},
         },
       },
@@ -72,12 +73,15 @@ vi.mock('@wso2/oxygen-ui-icons-react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@wso2/oxygen-ui-icons-react')>();
   return {
     ...actual,
-    FolderOpen: () => <span data-testid="icon-folder-open" />,
-    X: () => <span data-testid="icon-x" />,
+    Bot: () => <span data-testid="icon-bot" />,
     ChevronRight: () => <span data-testid="icon-chevron-right" />,
-    BookOpen: () => <span data-testid="icon-book-open" />,
+    ExternalLink: () => <span data-testid="icon-external-link" />,
+    FolderOpen: () => <span data-testid="icon-folder-open" />,
     Lightbulb: () => <span data-testid="icon-lightbulb" />,
+    MCP: () => <span data-testid="icon-mcp" />,
     PackagePlus: () => <span data-testid="icon-package-plus" />,
+    Users: () => <span data-testid="icon-users" />,
+    X: () => <span data-testid="icon-x" />,
   };
 });
 
@@ -138,7 +142,7 @@ describe('WelcomePage', () => {
 
   it('renders learn product items', () => {
     render(<WelcomePage />);
-    expect(screen.getByText('common:welcome.tryoutProduct.b2c')).toBeInTheDocument();
+    expect(screen.getByText('common:welcome.tryoutProduct.consumerApp')).toBeInTheDocument();
     expect(screen.getByText('common:welcome.tryoutProduct.aiAgents')).toBeInTheDocument();
   });
 
@@ -159,21 +163,65 @@ describe('WelcomePage', () => {
     expect(mockOpen).toHaveBeenCalledWith(expect.any(String), '_blank', 'noopener,noreferrer');
   });
 
-  it('renders learn product items as links with correct href', () => {
+  it('renders learn product items that navigate on click', () => {
     render(<WelcomePage />);
-
-    const b2cLink = screen.getByText('common:welcome.tryoutProduct.b2c').closest('a');
-    expect(b2cLink).toHaveAttribute('href', expect.stringContaining('/use-cases/b2c/try-it-out'));
-    expect(b2cLink).toHaveAttribute('target', '_blank');
-    expect(b2cLink).toHaveAttribute('rel', 'noopener noreferrer');
-
-    const aiAgentsLink = screen.getByText('common:welcome.tryoutProduct.aiAgents').closest('a');
-    expect(aiAgentsLink).toHaveAttribute('href', expect.stringContaining('/use-cases/ai-agents/try-it-out'));
+    expect(screen.getByText('common:welcome.tryoutProduct.consumerApp')).toBeInTheDocument();
+    expect(screen.getByText('common:welcome.tryoutProduct.aiAgents')).toBeInTheDocument();
   });
 
   it('uses product name from config', () => {
     render(<WelcomePage />);
     // The openImportDesc key is interpolated with productName
     expect(screen.getByText(/openImportDesc.*ThunderID/i)).toBeInTheDocument();
+  });
+
+  it('navigates to /welcome/open-project when open import is clicked', async () => {
+    const user = userEvent.setup();
+    render(<WelcomePage />);
+
+    await user.click(screen.getByText('common:welcome.start.openImport'));
+
+    expect(mockSessionStorageSetItem).toHaveBeenCalledWith('thunderid:welcome:dismissed', 'true');
+    expect(mockNavigate).toHaveBeenCalledWith('/welcome/open-project');
+  });
+
+  it('navigates to /welcome/tryout/consumer-app when consumer app item is clicked', async () => {
+    const user = userEvent.setup();
+    render(<WelcomePage />);
+
+    await user.click(screen.getByText('common:welcome.tryoutProduct.consumerApp'));
+
+    expect(mockSessionStorageSetItem).toHaveBeenCalledWith('thunderid:welcome:dismissed', 'true');
+    expect(mockNavigate).toHaveBeenCalledWith('/welcome/tryout/consumer-app');
+  });
+
+  it('opens AI agents docs URL on ai-agents item click', async () => {
+    const mockOpen = vi.fn();
+    vi.stubGlobal('open', mockOpen);
+    const user = userEvent.setup();
+    render(<WelcomePage />);
+
+    await user.click(screen.getByText('common:welcome.tryoutProduct.aiAgents'));
+
+    expect(mockOpen).toHaveBeenCalledWith(
+      'https://docs.example.com/use-cases/ai-agents/try-it-out',
+      '_blank',
+      'noopener,noreferrer',
+    );
+  });
+
+  it('opens MCP docs URL on mcp item click', async () => {
+    const mockOpen = vi.fn();
+    vi.stubGlobal('open', mockOpen);
+    const user = userEvent.setup();
+    render(<WelcomePage />);
+
+    await user.click(screen.getByText('common:welcome.tryoutProduct.mcp'));
+
+    expect(mockOpen).toHaveBeenCalledWith(
+      'https://docs.example.com/use-cases/ai-agents/mcp-authorization/try-it-out',
+      '_blank',
+      'noopener,noreferrer',
+    );
   });
 });

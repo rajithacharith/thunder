@@ -17,8 +17,8 @@
  */
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import type {EmbeddedFlowComponent} from '@thunderid/react';
 import {screen, cleanup} from '@testing-library/react';
+import type {EmbeddedFlowComponent} from '@thunderid/react';
 import {describe, it, expect, afterEach, vi} from 'vitest';
 import renderWithProviders from '../../../test/renderWithProviders';
 import FlowComponentRenderer from '../FlowComponentRenderer';
@@ -102,6 +102,52 @@ describe('FlowComponentRenderer — COPYABLE_TEXT routing', () => {
 
     // CopyableTextAdapter still renders with empty value — Copy button present
     expect(screen.getByRole('button')).toBeTruthy();
+  });
+
+  it('renders QrCodeAdapter when component type is QR_CODE', () => {
+    const component = {
+      id: 'qr-1',
+      type: 'QR_CODE',
+      source: 'openid4vpWalletUri',
+    } as unknown as EmbeddedFlowComponent;
+
+    renderWithProviders(
+      <FlowComponentRenderer
+        component={component}
+        index={0}
+        values={{}}
+        isLoading={false}
+        resolve={identity}
+        onInputChange={noop}
+        onSubmit={noop}
+        additionalData={{openid4vpWalletUri: 'eudi-openid4vp://?client_id=test&request_uri=https%3A%2F%2Fexample.com'}}
+      />,
+    );
+
+    expect(screen.getByRole('link', {name: 'Open wallet on this device'})).toBeTruthy();
+  });
+
+  it('returns null for QR_CODE when source key is absent from additionalData', () => {
+    const component = {
+      id: 'qr-2',
+      type: 'QR_CODE',
+      source: 'openid4vpWalletUri',
+    } as unknown as EmbeddedFlowComponent;
+
+    const {container} = renderWithProviders(
+      <FlowComponentRenderer
+        component={component}
+        index={0}
+        values={{}}
+        isLoading={false}
+        resolve={identity}
+        onInputChange={noop}
+        onSubmit={noop}
+        additionalData={{}}
+      />,
+    );
+
+    expect(container.firstChild).toBeNull();
   });
 
   it('returns null for an unknown component type', () => {

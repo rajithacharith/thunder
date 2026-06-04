@@ -20,8 +20,8 @@ import {ResourceAvatar} from '@thunderid/components';
 import {useConfig} from '@thunderid/contexts';
 import {useDataGridLocaleText} from '@thunderid/hooks';
 import {useLogger} from '@thunderid/logger/react';
-import {Box, Chip, IconButton, Tooltip, Typography, ListingTable, DataGrid, useTheme} from '@wso2/oxygen-ui';
-import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {Box, Chip, IconButton, Tooltip, Typography, ListingTable, DataGrid} from '@wso2/oxygen-ui';
+import {Eye, Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
@@ -31,7 +31,6 @@ import type {BasicApplication} from '../models/application';
 import getTemplateMetadata from '../utils/getTemplateMetadata';
 
 export default function ApplicationsList(): JSX.Element {
-  const theme = useTheme();
   const navigate = useNavigate();
   const {config} = useConfig();
   const {t} = useTranslation();
@@ -132,36 +131,46 @@ export default function ApplicationsList(): JSX.Element {
         hideable: false,
         renderCell: (params: DataGrid.GridRenderCellParams<BasicApplication>): JSX.Element => (
           <ListingTable.RowActions>
-            <Tooltip title={t('common:actions.edit')}>
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEditClick(params.row.id);
-                }}
-              >
-                <Pencil size={16} />
-              </IconButton>
-            </Tooltip>
-            {params.row.clientId?.toUpperCase() !== systemConsoleClientId && (
-              <Tooltip title={t('common:actions.delete')}>
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteClick(params.row.id);
-                  }}
-                >
-                  <Trash2 size={16} />
+            {params.row.isReadOnly ? (
+              <Tooltip title={t('common:status.readOnly', 'Read Only')}>
+                <IconButton size="small" disableRipple sx={{cursor: 'default'}}>
+                  <Eye size={16} />
                 </IconButton>
               </Tooltip>
+            ) : (
+              <>
+                <Tooltip title={t('common:actions.edit')}>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditClick(params.row.id);
+                    }}
+                  >
+                    <Pencil size={16} />
+                  </IconButton>
+                </Tooltip>
+                {params.row.clientId?.toUpperCase() !== systemConsoleClientId && (
+                  <Tooltip title={t('common:actions.delete')}>
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClick(params.row.id);
+                      }}
+                    >
+                      <Trash2 size={16} />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </>
             )}
           </ListingTable.RowActions>
         ),
       },
     ],
-    [handleDeleteClick, handleEditClick, systemConsoleClientId, t, theme],
+    [handleDeleteClick, handleEditClick, systemConsoleClientId, t],
   );
 
   if (error) {

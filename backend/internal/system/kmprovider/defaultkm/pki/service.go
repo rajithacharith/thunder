@@ -45,7 +45,9 @@ type PKIServiceInterface interface {
 	GetCertThumbprint(id string) string
 	GetX509Certificate(id string) (*x509.Certificate, *serviceerror.ServiceError)
 	GetAllX509Certificates() (map[string]*x509.Certificate, *serviceerror.ServiceError)
+	GetCertificateChain(id string) [][]byte
 	GetSupportedSigningAlgorithms() []string
+	GetTLSConfig() (*tls.Config, error)
 }
 
 // pkiService stores loaded certificates indexed by their ID.
@@ -119,6 +121,15 @@ func (s *pkiService) GetPrivateKey(id string) (crypto.PrivateKey, *serviceerror.
 	return cert.PrivateKey, nil
 }
 
+// GetCertificateChain returns the DER-encoded certificate chain for the given ID (leaf first).
+func (s *pkiService) GetCertificateChain(id string) [][]byte {
+	cert, exists := s.certificates[id]
+	if !exists {
+		return nil
+	}
+	return cert.Certificate.Certificate
+}
+
 // GetCertThumbprint retrieves the thumbprint of the certificate associated with the given ID.
 func (s *pkiService) GetCertThumbprint(id string) string {
 	cert, exists := s.certificates[id]
@@ -177,6 +188,14 @@ func (s *pkiService) GetSupportedSigningAlgorithms() []string {
 		}
 	}
 	return result
+}
+
+// GetTLSConfig loads and returns the TLS configuration from the server's TLS cert and key files.
+func (s *pkiService) GetTLSConfig() (*tls.Config, error) {
+	serverRuntime := config.GetServerRuntime()
+	certFilePath := path.Join(serverRuntime.ServerHome, serverRuntime.Config.TLS.CertFile)
+	keyFilePath := path.Join(serverRuntime.ServerHome, serverRuntime.Config.TLS.KeyFile)
+	return LoadTLSConfig(&serverRuntime.Config, certFilePath, keyFilePath)
 }
 
 // pkiAlgorithmToJWSAlgorithms returns the JWS algorithm strings supported for the given PKI algorithm.

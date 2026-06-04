@@ -101,6 +101,7 @@ const translations = {
     'status.inactive': 'Inactive',
     'status.enabled': 'Enabled',
     'status.disabled': 'Disabled',
+    'status.readOnly': 'Read Only',
     'status.completed': 'Completed',
     'status.failed': 'Failed',
 
@@ -149,11 +150,12 @@ const translations = {
 
     // Welcome screen
     'welcome.header': 'Welcome',
+    'welcome.dismissed': 'Welcome window can be reopened through the user dropdown menu.',
     'welcome.sections.start': 'Start',
     'welcome.sections.recent': 'Recent',
     'welcome.sections.tryoutProduct': 'Tryout',
-    'welcome.tryoutProduct.b2c': 'Securing Consumer App (B2C)',
-    'welcome.tryoutProduct.b2cDesc': 'Tryout user journeys for a consumer-facing app',
+    'welcome.tryoutProduct.consumerApp': 'Securing Consumer App',
+    'welcome.tryoutProduct.consumerAppDesc': 'Tryout user journeys for a consumer-facing app',
     'welcome.tryoutProduct.aiAgents': 'Securing AI Agents',
     'welcome.tryoutProduct.aiAgentsDesc': 'Tryout identity patterns for AI agents and tools',
     'welcome.tryoutProduct.mcp': 'Securing MCP',
@@ -185,6 +187,255 @@ const translations = {
     'welcome.createProject.cards.runServer.description':
       '{{productName}} will run in immutable mode with the attached configurations.',
     'welcome.createProject.actions.getStarted': 'Get Started',
+    'welcome.wayfinderSampleSetup.title': 'Setup Wayfinder Sample',
+    'welcome.wayfinderSampleSetup.oneTimeSetup': 'One-time setup',
+    'welcome.wayfinderSampleSetup.setupComplete': 'Already set up — you can skip this section',
+    'welcome.wayfinderSampleSetup.steps.getSample.title': 'Get the Wayfinder Sample',
+    'welcome.wayfinderSampleSetup.steps.getSample.description':
+      'Download the latest Wayfinder sample distribution. It ships with the web frontend, AI agent service, Wayfinder server, and a thunderid-config/ directory with the configuration bundle.',
+    'welcome.wayfinderSampleSetup.steps.configure.title': 'Configure Wayfinder Sample in {{productName}}',
+    'welcome.wayfinderSampleSetup.steps.configure.description':
+      'Select your extracted Wayfinder sample folder. The importer reads the thunderid-config/ directory and applies the configuration to {{productName}}. Skip this step if already done.',
+    'welcome.wayfinderSampleSetup.steps.run.title': 'Run the Sample',
+    'welcome.wayfinderSampleSetup.steps.run.description':
+      'Start all Wayfinder services from the extracted sample directory.',
+    'welcome.wayfinderSampleDownload.recommendedLabel': 'Recommended for this device',
+    'welcome.wayfinderSampleDownload.selectedLabel': 'Selected download',
+    'welcome.wayfinderSampleDownload.downloadButton': 'Download for {{osLabel}}',
+    'welcome.wayfinderSampleDownload.otherPlatforms': 'Other download options',
+    'welcome.wayfinderSampleDownload.hidePlatforms': 'Hide other platforms',
+
+    'welcome.wayfinderFolderImport.actions.selectFolder': 'Select Wayfinder Sample Folder',
+    'welcome.wayfinderFolderImport.actions.change': 'Change',
+    'welcome.wayfinderFolderImport.actions.importConfig': 'Configure in ThunderID',
+    'welcome.wayfinderFolderImport.actions.reImport': 'Re-import',
+    'welcome.wayfinderFolderImport.actions.reSelectFolder': 'Re-select Folder',
+    'welcome.wayfinderFolderImport.status.importing': 'Importing configuration…',
+    'welcome.wayfinderFolderImport.status.alreadyDone': 'Wayfinder sample already configured in {{productName}}',
+    'welcome.wayfinderFolderImport.status.lastImported': 'Last imported on {{date}} — you can skip this step.',
+    'welcome.wayfinderFolderImport.status.success': 'Wayfinder sample configured in {{productName}} successfully',
+    'welcome.wayfinderFolderImport.status.resourcesImported_one': '{{count}} resource imported',
+    'welcome.wayfinderFolderImport.status.resourcesImported_other': '{{count}} resources imported',
+    'welcome.wayfinderFolderImport.status.envNotFound': 'thunderid-config/*.env — not found',
+    'welcome.wayfinderFolderImport.errors.cannotReadFolder': 'Could not read the selected folder.',
+    'welcome.wayfinderFolderImport.errors.importFailed': 'Import failed. Please try again.',
+    'welcome.wayfinderFolderImport.errors.partialFailure': 'Import completed with {{count}} failed resource(s).',
+
+    'welcome.tryout.breadcrumb': 'Try It Out',
+    'welcome.tryout.title': 'Try It Out',
+    'welcome.tryout.actions.readDocs': 'Read Documentation for more guides and details',
+    'welcome.tryout.importConfigs.title': 'Configure Wayfinder Sample in {{productName}}',
+    'welcome.tryout.importConfigs.description':
+      'Select your extracted Wayfinder sample folder. The importer reads the thunderid-config/ directory inside and applies the configuration to {{productName}}.',
+
+    'welcome.getStarted.breadcrumb': 'Get started',
+    'welcome.getStarted.actions.skipToConsole': 'Skip to console',
+    'welcome.getStarted.title': 'Get Started',
+    'welcome.getStarted.subtitle': 'Onboard your first application and start securing it with {{productName}}.',
+    'welcome.getStarted.options.onboardApp.title': 'Onboard your first app',
+    'welcome.getStarted.options.onboardApp.description':
+      'Register your application in {{productName}} and integrate authentication step by step.',
+    'welcome.getStarted.options.onboardApp.action': 'Add Application',
+    'welcome.getStarted.options.skip.title': 'Skip for now',
+    'welcome.getStarted.options.skip.description':
+      'Head straight to the console and explore {{productName}} on your own.',
+    'welcome.getStarted.options.skip.action': 'Go to Console',
+
+    'welcome.consumerAppTryout.breadcrumb': 'Tryout Securing Consumer App',
+    'welcome.consumerAppTryout.overline': 'Securing Consumer App',
+    'welcome.consumerAppTryout.title': 'Secure Your Consumer App',
+    'welcome.consumerAppTryout.subtitle':
+      'Run consumer app use cases against the Wayfinder sample, a fictional consumer travel-booking app.',
+    'welcome.consumerAppTryout.steps.getSample.title': 'Get the Wayfinder Sample',
+    'welcome.consumerAppTryout.steps.getSample.description':
+      'Download the latest Wayfinder sample distribution. It ships with a thunderid-config/ directory containing a declarative YAML bundle and a thunderid.env file with the environment variables it references.',
+    'welcome.consumerAppTryout.steps.getSample.action': 'Download Sample',
+    'welcome.consumerAppTryout.steps.importConfigs.title': 'Configure Wayfinder Sample in {{productName}}',
+    'welcome.consumerAppTryout.steps.importConfigs.description':
+      'Select your extracted Wayfinder sample folder. The importer reads the thunderid-config/ directory inside and applies the configuration to {{productName}}.',
+    'welcome.consumerAppTryout.steps.runSample.title': 'Run the Sample',
+    'welcome.consumerAppTryout.steps.runSample.description':
+      'Start all Wayfinder services from the extracted sample directory.',
+    'welcome.consumerAppTryout.steps.runSample.action': 'See Run Instructions',
+    'welcome.consumerAppTryout.steps.login.title': 'Log In to the App',
+    'welcome.consumerAppTryout.steps.login.description':
+      'Open the Wayfinder sample app and sign in with the demo credentials below.',
+
+    'welcome.consumerAppTryout.scenarios.title': 'Try use cases',
+    'welcome.consumerAppTryout.scenarios.tabs.login': 'Log In',
+    'welcome.consumerAppTryout.scenarios.tabs.signup': 'Self Sign-Up',
+    'welcome.consumerAppTryout.scenarios.tabs.profile': 'View Profile',
+    'welcome.consumerAppTryout.scenarios.tabs.recovery': 'Account Recovery',
+    'welcome.consumerAppTryout.scenarios.tabs.onboard': 'Onboard Staff',
+
+    'welcome.consumerAppTryout.scenarios.login.description':
+      'Sign in with the demo consumer account to explore the Wayfinder app.',
+    'welcome.consumerAppTryout.scenarios.login.step1': 'Open the Wayfinder app at <a>http://localhost:5173</a>.',
+    'welcome.consumerAppTryout.scenarios.login.step2': 'Click Sign in and use the credentials below.',
+
+    'welcome.consumerAppTryout.scenarios.signup.description':
+      'Register a new customer account and see ThunderID assign the Traveler role automatically on completion.',
+    'welcome.consumerAppTryout.scenarios.signup.step1': 'Open <a>http://localhost:5173</a> and click Sign in.',
+    'welcome.consumerAppTryout.scenarios.signup.step2': 'On the ThunderID page, click Sign up.',
+    'welcome.consumerAppTryout.scenarios.signup.step3': 'Fill in the registration form using the sample details below.',
+    'welcome.consumerAppTryout.scenarios.signup.sampleFields.username': 'Username',
+    'welcome.consumerAppTryout.scenarios.signup.sampleFields.email': 'Email',
+    'welcome.consumerAppTryout.scenarios.signup.sampleFields.givenName': 'Given name',
+    'welcome.consumerAppTryout.scenarios.signup.sampleFields.familyName': 'Family name',
+    'welcome.consumerAppTryout.scenarios.signup.step4':
+      'Submit. ThunderID creates a Customer user, records terms acceptance, and assigns the Traveler role.',
+    'welcome.consumerAppTryout.scenarios.signup.step5':
+      'The browser redirects back to Wayfinder with the new account authenticated.',
+
+    'welcome.consumerAppTryout.scenarios.profile.description':
+      'Explore the self-service profile page — view account details, edit attributes, and change your password.',
+    'welcome.consumerAppTryout.scenarios.profile.step1': 'Sign in as john.doe at <a>http://localhost:5173</a>.',
+    'welcome.consumerAppTryout.scenarios.profile.step2':
+      'Click the username in the top-right corner and select Profile.',
+    'welcome.consumerAppTryout.scenarios.profile.step3':
+      'View account details, edit profile attributes, or change your password. The page calls the identity provider directly with your session token.',
+
+    'welcome.consumerAppTryout.scenarios.recovery.description':
+      'Walk through the password recovery flow — John forgets his password and resets it via email.',
+    'welcome.consumerAppTryout.scenarios.recovery.smtpNote':
+      "Recovery emails require a configured SMTP server. Add your SMTP settings under email.smtp in {{productName}}'s deployment.yaml and restart the server before trying this flow.",
+    'welcome.consumerAppTryout.scenarios.recovery.step1': 'Open <a>http://localhost:5173</a> and click Sign in.',
+    'welcome.consumerAppTryout.scenarios.recovery.step2': 'On the ThunderID sign-in page, click Forgot password?',
+    'welcome.consumerAppTryout.scenarios.recovery.step3': 'Enter john.doe as the username and submit.',
+    'welcome.consumerAppTryout.scenarios.recovery.step4':
+      "ThunderID sends a recovery email to John's registered address.",
+    'welcome.consumerAppTryout.scenarios.recovery.step5': 'Open the link in the email and set a new password.',
+    'welcome.consumerAppTryout.scenarios.recovery.step6': 'Sign in again with the new credentials.',
+
+    'welcome.consumerAppTryout.scenarios.onboard.description':
+      'Invite and onboard a new staff member using the staff invitation flow. The invited user selects a role (Support or DestinationsAdmin) during onboarding.',
+    'welcome.consumerAppTryout.scenarios.onboard.smtpNote':
+      "Staff invitation emails require a configured SMTP server. Add your SMTP settings under email.smtp in {{productName}}'s deployment.yaml and restart the server before trying this flow.",
+    'welcome.consumerAppTryout.scenarios.onboard.step1':
+      'Sign in as alex.carter (OpsAdmin) at <a>http://localhost:5173</a> using the credentials below.',
+    'welcome.consumerAppTryout.scenarios.onboard.step2':
+      'Navigate to the staff management section and invite a new staff member by email.',
+    'welcome.consumerAppTryout.scenarios.onboard.step3':
+      'The invited user receives an onboarding email. They open the link and complete the onboarding flow, choosing between the Support and DestinationsAdmin roles.',
+    'welcome.consumerAppTryout.scenarios.onboard.step4':
+      'Once onboarded, the new staff member can sign in to the app with their chosen role permissions active.',
+
+    'welcome.aiAgentsTryout.breadcrumb': 'Tryout Securing AI Agents',
+    'welcome.aiAgentsTryout.overline': 'Securing AI Agents',
+    'welcome.aiAgentsTryout.subtitle':
+      'Run AI agent use cases against the Wayfinder sample, a travel-booking app with a built-in AI chat assistant.',
+    'welcome.aiAgentsTryout.steps.getSample.title': 'Get the Wayfinder Sample',
+    'welcome.aiAgentsTryout.steps.getSample.description':
+      'Download the latest Wayfinder sample distribution. It ships with a thunderid-config/ directory, the Wayfinder web frontend, the AI Agent service, and the Wayfinder Server.',
+    'welcome.aiAgentsTryout.steps.importConfigs.title': 'Configure Wayfinder Sample in {{productName}}',
+    'welcome.aiAgentsTryout.steps.importConfigs.description':
+      'Select your extracted Wayfinder sample folder. The importer reads the thunderid-config/ directory inside and applies the configuration to {{productName}}.',
+    'welcome.aiAgentsTryout.steps.configureSample.title': 'Configure the Sample',
+    'welcome.aiAgentsTryout.steps.configureSample.description':
+      'Copy each .env.example to .env in backend/, ai-agent/, and frontend/. Fill in your LLM API key in ai-agent/.env — an Anthropic key from console.anthropic.com or a Gemini key from aistudio.google.com.',
+    'welcome.aiAgentsTryout.steps.runSample.title': 'Run the Sample',
+    'welcome.aiAgentsTryout.steps.runSample.description':
+      'Start all Wayfinder services from the extracted sample directory.',
+    'welcome.aiAgentsTryout.steps.login.title': 'Log In to the App',
+    'welcome.aiAgentsTryout.steps.login.description':
+      'Open the Wayfinder sample app and sign in with the demo credentials below.',
+
+    'welcome.aiAgentsTryout.scenarios.title': 'Try use cases',
+    'welcome.aiAgentsTryout.scenarios.apiKeyNote':
+      'The AI agent requires an LLM API key. Edit ai-agent/.env in the sample directory and set ANTHROPIC_API_KEY or GOOGLE_API_KEY before starting the services.',
+    'welcome.aiAgentsTryout.scenarios.tabs.protect': 'Protect the Agent',
+    'welcome.aiAgentsTryout.scenarios.tabs.browse': 'Browse with Agent',
+    'welcome.aiAgentsTryout.scenarios.tabs.book': 'Book on Behalf',
+
+    'welcome.aiAgentsTryout.scenarios.protect.description':
+      'See scope-based access control in action — John can use the AI concierge, but Jane cannot.',
+    'welcome.aiAgentsTryout.scenarios.protect.step1':
+      'Open <a>http://localhost:5173</a> and sign in as john.doe / john.doe.',
+    'welcome.aiAgentsTryout.scenarios.protect.step2':
+      "Open the chat widget (bottom-right corner) and send any message. The concierge responds — John's token carries the agent:access scope.",
+    'welcome.aiAgentsTryout.scenarios.protect.step3': 'Sign out and sign in as jane.smith / jane.smith.',
+    'welcome.aiAgentsTryout.scenarios.protect.step4':
+      'Open the chat and send a message. The request is rejected with a 403 — Jane does not have the Wayfinder Chat User role.',
+    'welcome.aiAgentsTryout.scenarios.protect.johnLabel': 'John Doe — has agent:access (Wayfinder Chat User role)',
+    'welcome.aiAgentsTryout.scenarios.protect.janeLabel': 'Jane Smith — no agent:access',
+
+    'welcome.aiAgentsTryout.scenarios.browse.description':
+      'Watch the agent use its own machine-to-machine token to call read-only tools — no user consent popup required.',
+    'welcome.aiAgentsTryout.scenarios.browse.step1':
+      'Sign in as john.doe at <a>http://localhost:5173</a> and open the chat widget.',
+    'welcome.aiAgentsTryout.scenarios.browse.step2':
+      'Ask a browsing question, for example: "What flights are there from Colombo to Singapore?"',
+    'welcome.aiAgentsTryout.scenarios.browse.step3':
+      'The agent calls the Wayfinder MCP server with its own M2M token (client_credentials grant). No popup appears.',
+    'welcome.aiAgentsTryout.scenarios.browse.step4':
+      'You can also try: "Suggest a few flight deals." The agent calls the recommend_bookings tool, which requires the booking:recommend scope — granted to the Wayfinder Concierge via its Recommender role.',
+
+    'welcome.aiAgentsTryout.scenarios.book.description':
+      'Trigger the on-behalf-of consent flow — the agent pauses, asks for your permission, and only proceeds after you approve.',
+    'welcome.aiAgentsTryout.scenarios.book.step1':
+      'Sign in as john.doe at <a>http://localhost:5173</a> and open the chat widget.',
+    'welcome.aiAgentsTryout.scenarios.book.step2': 'Ask the agent to book something, for example: "Book flight 2".',
+    'welcome.aiAgentsTryout.scenarios.book.step3':
+      'The agent returns a consent request. A popup opens — sign in as john.doe and select which booking permissions to grant (booking:read, booking:create, booking:cancel).',
+    'welcome.aiAgentsTryout.scenarios.book.step4':
+      'After approval the agent retries the action using a user-context token. The booking succeeds.',
+    'welcome.aiAgentsTryout.scenarios.book.step5':
+      'To see the rejection path, repeat the flow but deny booking:create in the consent screen. The agent returns a 403.',
+
+    'welcome.mcpTryout.breadcrumb': 'Tryout Securing MCP',
+    'welcome.mcpTryout.overline': 'Securing MCP',
+    'welcome.mcpTryout.subtitle':
+      'Connect an external MCP client to the Wayfinder MCP server, signed in through {{productName}}.',
+    'welcome.mcpTryout.steps.prerequisite.title': 'Complete AI Agents Setup',
+    'welcome.mcpTryout.steps.prerequisite.description':
+      'This tryout extends the AI Agents environment. Complete the Securing AI Agents tryout setup first — the same bundle seeds the EXTERNAL-MCP-CLIENT application used here.',
+    'welcome.mcpTryout.steps.importConfigs.title': 'Configure Wayfinder Sample in {{productName}}',
+    'welcome.mcpTryout.steps.importConfigs.description':
+      'Select your extracted Wayfinder sample folder. The importer reads the thunderid-config/ directory inside and applies the configuration to {{productName}}.',
+    'welcome.mcpTryout.steps.verifyApp.title': 'Verify the Application',
+    'welcome.mcpTryout.steps.verifyApp.description':
+      'In the {{productName}} Console, open Applications and confirm EXTERNAL-MCP-CLIENT is listed.',
+    'welcome.mcpTryout.steps.verifyApp.action': 'Open Applications',
+    'welcome.mcpTryout.steps.installInspector.title': 'Install MCP Inspector',
+    'welcome.mcpTryout.steps.installInspector.description':
+      'Launch MCP Inspector locally — a browser-based reference UI for MCP servers with built-in OAuth support.',
+    'welcome.mcpTryout.steps.allowCors.title': 'Allow Inspector in CORS',
+    'welcome.mcpTryout.steps.allowCors.description':
+      "Add Inspector's origin to {{productName}}'s CORS allow-list in repository/conf/deployment.yaml, then restart {{productName}}.",
+
+    'welcome.mcpTryout.scenarios.title': 'Try use cases',
+    'welcome.mcpTryout.scenarios.tabs.connect': 'Connect & Sign In',
+    'welcome.mcpTryout.scenarios.tabs.permissions': 'Test Permissions',
+
+    'welcome.mcpTryout.scenarios.connect.description':
+      'Point MCP Inspector at the Wayfinder MCP server, authenticate through {{productName}}, and grant booking permissions at the consent screen.',
+    'welcome.mcpTryout.scenarios.connect.step1':
+      'Open <a>http://localhost:6274</a> in your browser (Inspector should already be running from the setup step above).',
+    'welcome.mcpTryout.scenarios.connect.step2':
+      'Set Transport to Streamable HTTP and Server URL to http://localhost:8787/mcp.',
+    'welcome.mcpTryout.scenarios.connect.step3':
+      'Enable OAuth. Set Client ID to EXTERNAL-MCP-CLIENT and leave Client Secret blank (public client).',
+    'welcome.mcpTryout.scenarios.connect.step4':
+      'Click Connect. You are redirected to {{productName}} — sign in as john.doe / john.doe.',
+    'welcome.mcpTryout.scenarios.connect.step5':
+      'At the consent screen select the booking permissions to grant (booking:read, booking:create, booking:cancel) and confirm.',
+    'welcome.mcpTryout.scenarios.connect.connectionLabel': 'Connection details',
+    'welcome.mcpTryout.scenarios.connect.fields.transport': 'Transport',
+    'welcome.mcpTryout.scenarios.connect.fields.serverUrl': 'Server URL',
+    'welcome.mcpTryout.scenarios.connect.fields.clientId': 'Client ID',
+    'welcome.mcpTryout.scenarios.connect.fields.clientSecret': 'Client Secret',
+
+    'welcome.mcpTryout.scenarios.permissions.description':
+      'Call MCP tools and observe how {{productName}} enforces the scopes you granted at consent. Reconnect with different permissions to see the difference.',
+    'welcome.mcpTryout.scenarios.permissions.step1':
+      'In the Tools tab, call create_booking. Set type=flight, itemId=flight-cmb-sin-01, travelers=1. The call succeeds if you granted booking:create.',
+    'welcome.mcpTryout.scenarios.permissions.step2':
+      'Call delete_all_bookings. If booking:cancel was not granted you get: "Insufficient scope for tool delete_all_bookings. Required: booking:cancel".',
+    'welcome.mcpTryout.scenarios.permissions.step3':
+      'To narrow or expand permissions, disconnect from Inspector and reconnect.',
+    'welcome.mcpTryout.scenarios.permissions.step4':
+      'Re-authenticate as john.doe and toggle different scopes at the consent screen, then retry the previously denied tool call — it now succeeds.',
+
     'welcome.setupComplete.breadcrumb': 'Complete',
     'welcome.setupComplete.title': "You're all set!",
     'welcome.setupComplete.subtitle':
@@ -3044,6 +3295,61 @@ const translations = {
   // ============================================================================
   // How Solution Works Illustration - Shared illustration translations
   // ============================================================================
+  consumerAppIllustration: {
+    step1Title: 'Get the Wayfinder Sample',
+    step1Sub: 'Download the sample distribution',
+    step2Title: 'Register Application',
+    step2Line1: 'Set redirect URIs',
+    step2Line2: 'and client credentials',
+    step2Line3: 'in the console',
+    step2Sub: 'Creates the app in the console',
+    step3Title: 'Run the Sample',
+    step3Sub: 'Linux / macOS or Windows',
+  },
+  aiAgentsIllustration: {
+    consumers: 'Consumers',
+    johnDoe: 'John Doe',
+    janeSmith: 'Jane Smith',
+    use: 'Use',
+    wayfinderWeb: 'Wayfinder Web',
+    wayfinderWebSub: 'Browser SPA with chat widget',
+    wayfinderWebDetail: 'Book travel, chat with the agent',
+    identityAuthority: 'Identity Authority',
+    managesIdentities: 'Manages identities',
+    issuesTokens: 'and issues tokens',
+    aiAgent: 'AI Agent',
+    aiAgentSub: 'Wayfinder Concierge',
+    drivesConversation: 'Drives the conversation',
+    wayfinderServer: 'Wayfinder Server',
+    wayfinderServerSub: 'Booking API + MCP tools',
+    holdsData: 'Holds flights, hotels, bookings',
+    signIn: 'Sign in',
+    issueUserToken: 'Issue user token',
+    chat: 'Chat',
+    authenticatedCalls: 'Authenticated calls',
+    callMcpTools: 'Call MCP tools',
+    getAgentTokens: 'Get agent tokens',
+    issueAgentTokens: 'Issue agent / on-behalf-of tokens',
+    validateTokens: 'Validate tokens',
+  },
+  mcpIllustration: {
+    user: 'User',
+    johnDoe: 'John Doe',
+    use: 'Use',
+    externalMcpClient: 'External MCP Client',
+    mcpInspector: 'MCP Inspector',
+    discoversSignsIn: 'Discovers, signs in, calls MCP tools',
+    identityAuthority: 'Identity Authority',
+    managesIdentities: 'Manages identities',
+    issuesTokens: 'and issues tokens',
+    wayfinderServer: 'Wayfinder Server',
+    wayfinderServerSub: 'Booking API + MCP tools',
+    holdsData: 'Holds flights, hotels, bookings',
+    signIn: 'Sign in',
+    issueTokens: 'Issue tokens',
+    callMcpTools: 'Call MCP tools',
+    validateTokens: 'Validate tokens',
+  },
   howSolutionWorksIllustration: {
     validateTest: 'Validate / Test',
     configureProject: 'Configure Project',

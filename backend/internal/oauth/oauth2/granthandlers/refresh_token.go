@@ -186,7 +186,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 		attrs = cacheEntry.Attributes
 	}
 
-	accessToken, err := h.tokenBuilder.BuildAccessToken(ctx, &tokenservice.AccessTokenBuildContext{
+	accessTokenCtx := &tokenservice.AccessTokenBuildContext{
 		Subject:          refreshTokenClaims.Sub,
 		Audiences:        audiences,
 		ClientID:         tokenRequest.ClientID,
@@ -198,7 +198,13 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 		ClaimsRequest:    refreshTokenClaims.ClaimsRequest,
 		ClaimsLocales:    refreshTokenClaims.ClaimsLocales,
 		DPoPJkt:          dpop.GetJkt(ctx),
-	})
+	}
+	// Replay the on-behalf-of decision frozen at issuance, sourced from the stored marker
+	// rather than the client's current setting.
+	if refreshTokenClaims.ActorSub != "" {
+		accessTokenCtx.ActorClaims = &tokenservice.SubjectTokenClaims{Sub: refreshTokenClaims.ActorSub}
+	}
+	accessToken, err := h.tokenBuilder.BuildAccessToken(ctx, accessTokenCtx)
 	if err != nil {
 		logger.Error("Failed to generate access token", log.Error(err))
 		return nil, &model.ErrorResponse{
@@ -288,6 +294,9 @@ func (h *refreshTokenGrantHandler) IssueRefreshToken(
 		ClaimsRequest:        claimsRequest,
 		ClaimsLocales:        claimsLocales,
 		DPoPJkt:              dpopJktForRefresh(ctx, oauthApp),
+	}
+	if oauthApp.ShouldAppendActorClaim() {
+		tokenCtx.ActorSub = oauthApp.ID
 	}
 
 	// Build refresh token using token builder

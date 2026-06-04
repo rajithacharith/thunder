@@ -28,6 +28,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/application/model"
 	"github.com/thunder-id/thunderid/internal/cert"
+	"github.com/thunder-id/thunderid/internal/entity"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/inboundclient"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
@@ -746,7 +747,7 @@ func toProcessedDTO(
 		if e != nil {
 			ouID = e.OUID
 		}
-		oauthProcessed := inboundclient.BuildOAuthClient(dao.ID, clientID, ouID, oauthProfile)
+		oauthProcessed := inboundclient.BuildOAuthClient(dao.ID, clientID, ouID, entity.EntityCategoryApp, oauthProfile)
 		dto.InboundAuthConfig = []inboundmodel.InboundAuthConfigProcessed{
 			{Type: inboundmodel.OAuthInboundAuthType, OAuthConfig: oauthProcessed},
 		}
@@ -781,6 +782,7 @@ func buildOAuthProfileFromProcessed(inboundAuth inboundmodel.InboundAuthConfigPr
 		PublicClient:                       oa.PublicClient,
 		RequirePushedAuthorizationRequests: oa.RequirePushedAuthorizationRequests,
 		DPoPBoundAccessTokens:              oa.DPoPBoundAccessTokens,
+		IncludeActClaim:                    oa.IncludeActClaim,
 		Scopes:                             oa.Scopes,
 		ScopeClaims:                        oa.ScopeClaims,
 		Token:                              oa.Token,
@@ -1557,6 +1559,7 @@ func buildApplicationResponse(dto *model.ApplicationProcessedDTO) *model.Applica
 					PublicClient:                       oauthAppConfig.PublicClient,
 					RequirePushedAuthorizationRequests: oauthAppConfig.RequirePushedAuthorizationRequests,
 					DPoPBoundAccessTokens:              oauthAppConfig.DPoPBoundAccessTokens,
+					IncludeActClaim:                    oauthAppConfig.IncludeActClaim,
 					Token:                              oauthAppConfig.Token,
 					Scopes:                             oauthAppConfig.Scopes,
 					UserInfo:                           oauthAppConfig.UserInfo,
@@ -1681,6 +1684,7 @@ func buildOAuthInboundAuthConfigProcessedDTO(
 			PublicClient:                       inboundAuthConfig.OAuthConfig.PublicClient,
 			RequirePushedAuthorizationRequests: inboundAuthConfig.OAuthConfig.RequirePushedAuthorizationRequests,
 			DPoPBoundAccessTokens:              inboundAuthConfig.OAuthConfig.DPoPBoundAccessTokens,
+			IncludeActClaim:                    inboundAuthConfig.OAuthConfig.IncludeActClaim,
 			Token:                              oauthToken,
 			Scopes:                             inboundAuthConfig.OAuthConfig.Scopes,
 			UserInfo:                           userInfo,
@@ -1741,6 +1745,7 @@ func buildReturnApplicationDTO(
 				PublicClient:                       inboundAuthConfig.OAuthConfig.PublicClient,
 				RequirePushedAuthorizationRequests: inboundAuthConfig.OAuthConfig.RequirePushedAuthorizationRequests,
 				DPoPBoundAccessTokens:              inboundAuthConfig.OAuthConfig.DPoPBoundAccessTokens,
+				IncludeActClaim:                    inboundAuthConfig.OAuthConfig.IncludeActClaim,
 				Token:                              oauthToken,
 				Scopes:                             inboundAuthConfig.OAuthConfig.Scopes,
 				UserInfo:                           userInfo,

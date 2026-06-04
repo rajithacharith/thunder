@@ -34,6 +34,7 @@ import (
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/security"
 )
 
 const (
@@ -223,7 +224,8 @@ func makeAgentEntityParser(
 			InboundAuthProfile: req.InboundAuthProfile,
 			InboundAuthConfig:  req.InboundAuthConfig,
 		}
-		clientID, clientSecret, _, svcErr := agentSvc.ValidateAgent(context.Background(), agent, req.ID)
+		clientID, clientSecret, _, svcErr := agentSvc.ValidateAgent(
+			security.WithRuntimeContext(context.Background()), agent, req.ID)
 		if svcErr != nil {
 			return nil, nil, nil, fmt.Errorf("failed to validate agent '%s': %v", req.ID, svcErr)
 		}
@@ -275,7 +277,8 @@ func makeAgentInboundParser(agentSvc AgentServiceInterface) func([]byte) (*inbou
 			InboundAuthProfile: req.InboundAuthProfile,
 			InboundAuthConfig:  req.InboundAuthConfig,
 		}
-		_, _, resolvedClient, svcErr := agentSvc.ValidateAgent(context.Background(), agent, req.ID)
+		_, _, resolvedClient, svcErr := agentSvc.ValidateAgent(
+			security.WithRuntimeContext(context.Background()), agent, req.ID)
 		if svcErr != nil {
 			return nil, fmt.Errorf("failed to validate agent '%s': %v", req.ID, svcErr)
 		}

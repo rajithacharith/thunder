@@ -459,6 +459,13 @@ func buildEmailLinkPasswordRecoveryFlow() testutils.Flow {
 				"executor": map[string]interface{}{
 					"name": "EmailExecutor",
 					"mode": "send",
+					"inputs": []map[string]interface{}{
+						{
+							"identifier": "email",
+							"type":       "EMAIL_INPUT",
+							"required":   true,
+						},
+					},
 				},
 				"onSuccess": "email_sent_status",
 				"onFailure": "email_sent_status",

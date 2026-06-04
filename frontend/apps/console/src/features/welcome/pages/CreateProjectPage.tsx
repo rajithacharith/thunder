@@ -34,6 +34,7 @@ import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import HowSolutionWorksIllustration from '../components/HowSolutionWorksIllustration';
+import useWelcomeClose from '../hooks/useWelcomeClose';
 
 const MotionBox = motion.create(Box);
 
@@ -44,12 +45,10 @@ export default function CreateProjectPage(): JSX.Element {
   const productName = config.brand.product_name;
 
   const handleContinue = (): void => {
-    void navigate('/home');
+    void navigate('/welcome/get-started');
   };
 
-  const handleClose = (): void => {
-    void navigate('/home');
-  };
+  const handleClose = useWelcomeClose();
 
   return (
     <Box sx={{minHeight: '100vh', display: 'flex', flexDirection: 'column'}}>
@@ -160,7 +159,7 @@ export default function CreateProjectPage(): JSX.Element {
               animate={{opacity: 1, scale: 1}}
               transition={{duration: 0.5, delay: 0.2}}
               sx={{
-                my: 8,
+                my: 4,
                 display: 'flex',
                 justifyContent: 'center',
                 overflow: 'auto',

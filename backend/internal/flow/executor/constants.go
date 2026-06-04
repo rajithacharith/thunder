@@ -29,6 +29,7 @@ const (
 	ExecutorNameOIDCAuth                     = "OIDCAuthExecutor"
 	ExecutorNameGitHubAuth                   = "GithubOAuthExecutor"
 	ExecutorNameGoogleAuth                   = "GoogleOIDCAuthExecutor"
+	ExecutorNameOpenID4VPVerify              = "OpenID4VPVerifyExecutor"
 	ExecutorNameIdentifying                  = "IdentifyingExecutor"
 	ExecutorNameAuthAssert                   = "AuthAssertExecutor"
 	ExecutorNameProvisioning                 = "ProvisioningExecutor"
@@ -102,6 +103,7 @@ const (
 	propertyKeyDynamicInputsIncludeOptionalCredentials = "includeOptionalCredentials"
 	propertyKeyMaxDynamicInputsPerPrompt               = "maxPerPrompt"
 	propertyKeyInviteBaseURL                           = "inviteBaseURL"
+	propertyKeyPresentationDefinitionID                = "presentation_definition_id"
 )
 
 // nonSearchableInputs contains the list of user inputs/ attributes that are non-searchable.
@@ -109,11 +111,14 @@ var nonSearchableInputs = []string{"password", "code", "nonce", "otp", "token", 
 
 // Failure reason constants
 const (
-	failureReasonUserNotAuthenticated = "User is not authenticated"
-	failureReasonUserNotFound         = "User not found"
-	failureReasonInvalidCredentials   = "Invalid credentials provided" // #nosec G101
-	failureReasonFailedToIdentifyUser = "Failed to identify user"
-	failureReasonAmbiguousUser        = "User identity is ambiguous"
-	failureReasonInvalidOTP           = "invalid OTP provided"
-	failureReasonInvalidMagicLink     = "Invalid magic link token"
+	failureReasonUserNotAuthenticated   = "User is not authenticated"
+	failureReasonUserNotFound           = "User not found"
+	failureReasonInvalidCredentials     = "Invalid credentials provided" // #nosec G101
+	failureReasonFailedToIdentifyUser   = "Failed to identify user"
+	failureReasonAmbiguousUser          = "User identity is ambiguous"
+	failureReasonInvalidOTP             = "invalid OTP provided"
+	failureReasonInvalidMagicLink       = "Invalid magic link token"
+	failureReasonOpenID4VPNotConfigured = "OpenID4VP verifier is not configured"
+	failureReasonOpenID4VPInitiate      = "Failed to initiate the OpenID4VP request"
+	failureReasonOpenID4VPExpired       = "The OpenID4VP request expired before a response was received"
 )
