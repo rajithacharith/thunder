@@ -43,9 +43,13 @@ describe('Application Templates Models', () => {
     });
 
     it('should have all expected properties', () => {
-      const expectedKeys = ['REACT', 'EXPRESS', 'NEXTJS', 'VANILLA_JS', 'VUE', 'NUXT', 'NODEJS', 'OTHER'];
+      const expectedKeys = ['REACT', 'EXPRESS', 'NEXTJS', 'VANILLA_JS', 'VUE', 'NUXT', 'NODEJS', 'OTHER', 'MCP_CLIENT'];
 
       expect(Object.keys(TechnologyApplicationTemplate)).toEqual(expectedKeys);
+    });
+
+    it('should have MCP_CLIENT template', () => {
+      expect(TechnologyApplicationTemplate.MCP_CLIENT).toBe('MCP_CLIENT');
     });
   });
 
