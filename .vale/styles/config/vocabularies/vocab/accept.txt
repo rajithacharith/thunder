@@ -169,7 +169,10 @@ Twilio
 client_id
 [Dd]ownscope
 [Dd]ownscoping
+[Dd]ownscoped
 [Ss]uperset
 Grafana
 Jaeger'?s?
 Tempo
+untrusted
+iss

@@ -203,24 +203,6 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: 'Protocols',
-          collapsed: true,
-          collapsible: true,
-          items: [
-            {
-              type: 'doc',
-              id: 'guides/guides/protocols/oauth2',
-              label: 'OAuth 2.0 Configuration',
-            },
-            {
-              type: 'doc',
-              id: 'guides/guides/protocols/dynamic-client-registration',
-              label: 'Dynamic Client Registration',
-            },
-          ],
-        },
-        {
-          type: 'category',
           label: 'Users',
           collapsed: true,
           collapsible: true,
@@ -430,6 +412,104 @@ const sidebars: SidebarsConfig = {
               type: 'doc',
               id: 'guides/guides/i18n/resolve-translations',
               label: 'Resolve Translations',
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Protocols & Standards',
+          collapsed: true,
+          collapsible: true,
+          link: {
+            type: 'doc',
+            id: 'guides/guides/protocols/index',
+          },
+          items: [
+            {
+              type: 'category',
+              label: 'OAuth & OIDC',
+              collapsed: true,
+              collapsible: true,
+              link: {
+                type: 'doc',
+                id: 'guides/guides/protocols/oauth-oidc/index',
+              },
+              items: [
+                {
+                  type: 'category',
+                  label: 'Grant Types',
+                  collapsed: true,
+                  collapsible: true,
+                  items: [
+                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/authorization-code', label: 'Authorization Code'},
+                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/client-credentials', label: 'Client Credentials'},
+                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/refresh-token', label: 'Refresh Token'},
+                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/token-exchange', label: 'Token Exchange'},
+                  ],
+                },
+                {
+                  type: 'category',
+                  label: 'Client Authentication',
+                  collapsed: true,
+                  collapsible: true,
+                  items: [
+                    {
+                      type: 'doc',
+                      id: 'guides/guides/protocols/oauth-oidc/client-authentication-methods',
+                      label: 'Client Authentication Methods',
+                    },
+                  ],
+                },
+                {
+                  type: 'category',
+                  label: 'Security Extensions',
+                  collapsed: true,
+                  collapsible: true,
+                  items: [
+                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/pkce', label: 'PKCE'},
+                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/par', label: 'Pushed Authorization Requests'},
+                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/dpop', label: 'DPoP — Sender-Constrained Tokens'},
+                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/issuer-identification', label: 'Issuer Identification'},
+                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/resource-indicators', label: 'Resource Indicators'},
+                  ],
+                },
+                {
+                  type: 'category',
+                  label: 'Token Operations',
+                  collapsed: true,
+                  collapsible: true,
+                  items: [
+                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/token-introspection', label: 'Token Introspection'},
+                  ],
+                },
+                {
+                  type: 'category',
+                  label: 'Discovery & Registration',
+                  collapsed: true,
+                  collapsible: true,
+                  items: [
+                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/server-metadata', label: 'Server Metadata'},
+                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/jwks', label: 'JWKS'},
+                    {
+                      type: 'doc',
+                      id: 'guides/guides/protocols/oauth-oidc/dynamic-client-registration',
+                      label: 'Dynamic Client Registration',
+                    },
+                  ],
+                },
+                {
+                  type: 'category',
+                  label: 'OIDC',
+                  collapsed: true,
+                  collapsible: true,
+                  items: [
+                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/openid-connect', label: 'OpenID Connect'},
+                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/userinfo', label: 'UserInfo'},
+                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/claims-and-scopes', label: 'Claims & Scopes'},
+                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/token-formats', label: 'Token Formats'},
+                  ],
+                },
+              ],
             },
           ],
         },
