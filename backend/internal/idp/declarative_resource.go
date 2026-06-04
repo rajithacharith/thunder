@@ -225,7 +225,9 @@ func validateIDPWrapper(dto interface{}) error {
 
 	// Use the full validateIDP function which validates properties and applies defaults
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IDPDeclarativeResource"))
-	svcErr := validateIDP(idpDTO, logger)
+	// Declarative resources are validated at server startup, outside any request,
+	// so there is no request context (or trace ID) to propagate.
+	svcErr := validateIDP(context.Background(), idpDTO, logger)
 	if svcErr != nil {
 		return fmt.Errorf("validation failed: %s", svcErr.Error)
 	}
