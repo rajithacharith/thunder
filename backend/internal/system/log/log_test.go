@@ -20,6 +20,7 @@ package log
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"log/slog"
 	"os"
@@ -30,6 +31,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/system/constants"
+	sysContext "github.com/thunder-id/thunderid/internal/system/context"
 )
 
 type LogTestSuite struct {
@@ -322,6 +324,111 @@ func (suite *LogTestSuite) TestMaskedMap() {
 		MaskedMap("filters", input)
 		assert.Equal(t, "alice@example.com", input["email"])
 	})
+}
+
+// newContextTestLogger creates a Logger backed by a contextHandler writing to buf.
+func newContextTestLogger(buf *bytes.Buffer) *Logger {
+	handlerOptions := &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}
+	return &Logger{
+		internal: slog.New(&contextHandler{Handler: slog.NewTextHandler(buf, handlerOptions)}),
+	}
+}
+
+func (suite *LogTestSuite) TestContextLogMethodsWithTraceID() {
+	var buf bytes.Buffer
+	log := newContextTestLogger(&buf)
+
+	ctx := sysContext.WithTraceID(context.Background(), "test-trace-123")
+
+	log.DebugWithContext(ctx, "Debug message", Field{Key: "test", Value: "debug"})
+	log.InfoWithContext(ctx, "Info message", Field{Key: "test", Value: "info"})
+	log.WarnWithContext(ctx, "Warning message", Field{Key: "test", Value: "warn"})
+	log.ErrorWithContext(ctx, "Error message", Field{Key: "test", Value: "error"})
+
+	output := buf.String()
+	assert.Contains(suite.T(), output, "Debug message")
+	assert.Contains(suite.T(), output, "Info message")
+	assert.Contains(suite.T(), output, "Warning message")
+	assert.Contains(suite.T(), output, "Error message")
+
+	lines := bytes.Split(bytes.TrimSpace(buf.Bytes()), []byte("\n"))
+	assert.Equal(suite.T(), 4, len(lines))
+	for _, line := range lines {
+		assert.Contains(suite.T(), string(line), LoggerKeyTraceID+"=test-trace-123")
+	}
+}
+
+func (suite *LogTestSuite) TestContextLogMethodsWithoutTraceID() {
+	var buf bytes.Buffer
+	log := newContextTestLogger(&buf)
+
+	ctx := context.Background()
+
+	log.DebugWithContext(ctx, "Debug message")
+	log.InfoWithContext(ctx, "Info message")
+	log.WarnWithContext(ctx, "Warning message")
+	log.ErrorWithContext(ctx, "Error message")
+
+	output := buf.String()
+	assert.Contains(suite.T(), output, "Info message")
+	assert.NotContains(suite.T(), output, LoggerKeyTraceID+"=")
+}
+
+func (suite *LogTestSuite) TestDeprecatedMethodsEmitNoTraceID() {
+	var buf bytes.Buffer
+	log := newContextTestLogger(&buf)
+
+	log.Info("Info message") //nolint:staticcheck // Deprecated method must keep working until removal
+
+	output := buf.String()
+	assert.Contains(suite.T(), output, "Info message")
+	assert.NotContains(suite.T(), output, LoggerKeyTraceID+"=")
+}
+
+func (suite *LogTestSuite) TestContextHandlerPreservedByWith() {
+	var buf bytes.Buffer
+	log := newContextTestLogger(&buf)
+
+	ctx := sysContext.WithTraceID(context.Background(), "test-trace-456")
+
+	derivedLogger := log.With(Field{Key: "component", Value: "TestComponent"})
+	derivedLogger.InfoWithContext(ctx, "Derived log message")
+
+	output := buf.String()
+	assert.Contains(suite.T(), output, "Derived log message")
+	assert.Contains(suite.T(), output, "component=TestComponent")
+	assert.Contains(suite.T(), output, LoggerKeyTraceID+"=test-trace-456")
+}
+
+func (suite *LogTestSuite) TestContextHandlerPreservedByWithGroup() {
+	var buf bytes.Buffer
+	handlerOptions := &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}
+	internal := slog.New(&contextHandler{Handler: slog.NewTextHandler(&buf, handlerOptions)})
+
+	ctx := sysContext.WithTraceID(context.Background(), "test-trace-789")
+
+	internal.WithGroup("group").InfoContext(ctx, "Grouped log message", slog.String("key", "value"))
+
+	output := buf.String()
+	assert.Contains(suite.T(), output, "Grouped log message")
+	assert.Contains(suite.T(), output, "group.key=value")
+	assert.Contains(suite.T(), output, LoggerKeyTraceID+"=test-trace-789")
+}
+
+func (suite *LogTestSuite) TestGetLoggerUsesContextHandler() {
+	logger = nil
+	once = sync.Once{}
+
+	err := os.Setenv(constants.LogLevelEnvironmentVariable, "info")
+	assert.NoError(suite.T(), err)
+
+	log := GetLogger()
+	_, ok := log.internal.Handler().(*contextHandler)
+	assert.True(suite.T(), ok, "GetLogger should wrap the handler with contextHandler")
 }
 
 func (suite *LogTestSuite) TestConvertFields() {

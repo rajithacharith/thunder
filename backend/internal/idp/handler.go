@@ -60,7 +60,7 @@ func (ih *idpHandler) HandleIDPPostRequest(w http.ResponseWriter, r *http.Reques
 
 	properties, err := getSanitizedProperties(createRequest.Properties)
 	if err != nil {
-		logger.Error("Failed to sanitize properties", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to sanitize properties", log.Error(err))
 		writeServiceErrorResponse(w, &serviceerror.InternalServerError)
 		return
 	}
@@ -79,7 +79,8 @@ func (ih *idpHandler) HandleIDPPostRequest(w http.ResponseWriter, r *http.Reques
 
 	idpResponse, err := getIDPResponse(*createdIDP)
 	if err != nil {
-		logger.Error("Failed to convert IDP to response", log.String("idp", createdIDP.Name), log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to convert IDP to response",
+			log.String("idp", createdIDP.Name), log.Error(err))
 		writeServiceErrorResponse(w, &serviceerror.InternalServerError)
 		return
 	}
@@ -134,7 +135,7 @@ func (ih *idpHandler) HandleIDPGetRequest(w http.ResponseWriter, r *http.Request
 
 	idpResponse, err := getIDPResponse(*idp)
 	if err != nil {
-		logger.Error("Failed to convert IDP to response", log.String("idp", idp.Name), log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to convert IDP to response", log.String("idp", idp.Name), log.Error(err))
 		writeServiceErrorResponse(w, &serviceerror.InternalServerError)
 		return
 	}
@@ -170,7 +171,7 @@ func (ih *idpHandler) HandleIDPPutRequest(w http.ResponseWriter, r *http.Request
 
 	properties, err := getSanitizedProperties(updateRequest.Properties)
 	if err != nil {
-		logger.Error("Failed to sanitize properties", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to sanitize properties", log.Error(err))
 		writeServiceErrorResponse(w, &serviceerror.InternalServerError)
 		return
 	}
@@ -191,7 +192,7 @@ func (ih *idpHandler) HandleIDPPutRequest(w http.ResponseWriter, r *http.Request
 
 	idpResponse, err := getIDPResponse(*idp)
 	if err != nil {
-		logger.Error("Failed to convert IDP to response", log.String("idp", idp.Name), log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to convert IDP to response", log.String("idp", idp.Name), log.Error(err))
 		writeServiceErrorResponse(w, &serviceerror.InternalServerError)
 		return
 	}
