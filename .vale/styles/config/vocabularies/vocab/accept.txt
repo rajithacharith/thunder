@@ -167,6 +167,7 @@ Twilio
 [Ll]oopback
 [Ss]treamable
 client_id
+resource_type
 [Dd]ownscope
 [Dd]ownscoping
 [Dd]ownscoped
