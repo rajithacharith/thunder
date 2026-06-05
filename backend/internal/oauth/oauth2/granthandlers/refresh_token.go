@@ -104,7 +104,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 	refreshTokenClaims, err := h.tokenValidator.ValidateRefreshToken(
 		ctx, tokenRequest.RefreshToken, tokenRequest.ClientID)
 	if err != nil {
-		logger.Debug("Failed to validate refresh token", log.Error(err))
+		logger.DebugWithContext(ctx, "Failed to validate refresh token", log.Error(err))
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorInvalidGrant,
 			ErrorDescription: "Invalid refresh token",
@@ -168,7 +168,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 	if refreshTokenClaims.AttributeCacheID != "" {
 		cacheEntry, fetchErr = h.attrCacheService.GetAttributeCache(ctx, refreshTokenClaims.AttributeCacheID)
 		if fetchErr != nil {
-			logger.Error("Failed to get user attributes from attribute cache",
+			logger.ErrorWithContext(ctx, "Failed to get user attributes from attribute cache",
 				log.String("error", fetchErr.ErrorDescription.DefaultValue))
 			return nil, &model.ErrorResponse{
 				Error:            constants.ErrorServerError,
@@ -176,7 +176,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 			}
 		}
 		if cacheEntry == nil {
-			logger.Error("Attribute cache entry not found for cache ID",
+			logger.ErrorWithContext(ctx, "Attribute cache entry not found for cache ID",
 				log.String("cache_id", refreshTokenClaims.AttributeCacheID))
 			return nil, &model.ErrorResponse{
 				Error:            constants.ErrorServerError,
@@ -206,7 +206,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 	}
 	accessToken, err := h.tokenBuilder.BuildAccessToken(ctx, accessTokenCtx)
 	if err != nil {
-		logger.Error("Failed to generate access token", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to generate access token", log.Error(err))
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorServerError,
 			ErrorDescription: "Failed to generate access token",
@@ -229,7 +229,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 			ClaimsRequest:  refreshTokenClaims.ClaimsRequest,
 		})
 		if idErr != nil {
-			logger.Error("Failed to generate ID token", log.Error(idErr))
+			logger.ErrorWithContext(ctx, "Failed to generate ID token", log.Error(idErr))
 			return nil, &model.ErrorResponse{
 				Error:            constants.ErrorServerError,
 				ErrorDescription: "Failed to generate token",
@@ -245,14 +245,14 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 	// Issue a new refresh token if renew_on_grant is enabled; otherwise reuse the existing one.
 	// RFC 8707 §5: the refresh token preserves the full original audience, not the narrowed one.
 	if renewRefreshToken {
-		logger.Debug("Renewing refresh token", log.String("client_id", tokenRequest.ClientID))
+		logger.DebugWithContext(ctx, "Renewing refresh token", log.String("client_id", tokenRequest.ClientID))
 		errResp := h.IssueRefreshToken(ctx, tokenResponse, oauthApp,
 			refreshTokenClaims.Sub, refreshTokenClaims.Audiences,
 			refreshTokenClaims.GrantType, newTokenScopes,
 			refreshTokenClaims.ClaimsRequest, refreshTokenClaims.ClaimsLocales,
 			refreshTokenClaims.AttributeCacheID)
 		if errResp != nil && errResp.Error != "" {
-			logger.Error("Failed to issue refresh token", log.String("error", errResp.Error))
+			logger.ErrorWithContext(ctx, "Failed to issue refresh token", log.String("error", errResp.Error))
 			return nil, errResp
 		}
 	} else {
@@ -357,7 +357,7 @@ func (h *refreshTokenGrantHandler) extendCacheTTL(
 	desiredTTL := int(maxExpiry-now) + constants.AttributeCacheTTLBufferSeconds
 	if desiredTTL > cacheEntry.TTLSeconds {
 		if extErr := h.attrCacheService.ExtendAttributeCacheTTL(ctx, cacheID, desiredTTL); extErr != nil {
-			logger.Error("Failed to extend attribute cache TTL",
+			logger.ErrorWithContext(ctx, "Failed to extend attribute cache TTL",
 				log.String("cache_id", cacheID),
 				log.String("error", extErr.Error.String()))
 			return &model.ErrorResponse{

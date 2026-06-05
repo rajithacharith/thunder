@@ -84,7 +84,7 @@ func (s *magicLinkAuthnService) GenerateMagicLink(ctx context.Context,
 	queryParams map[string]string,
 	additionalClaims map[string]interface{},
 	magicLinkURL string) (string, *serviceerror.ServiceError) {
-	s.logger.Debug("Generating magic link", log.MaskedString("subject", subject))
+	s.logger.DebugWithContext(ctx, "Generating magic link", log.MaskedString("subject", subject))
 
 	if subject == "" {
 		return "", &ErrorTokenGenerationFailed
@@ -116,7 +116,7 @@ func (s *magicLinkAuthnService) GenerateMagicLink(ctx context.Context,
 	}
 
 	verifyURL := s.buildMagicLinkURL(magicLinkURL, token, queryParams)
-	s.logger.Debug("Magic link generated successfully",
+	s.logger.DebugWithContext(ctx, "Magic link generated successfully",
 		log.MaskedString("subject", subject))
 
 	return verifyURL, nil
@@ -127,7 +127,7 @@ func (s *magicLinkAuthnService) GenerateMagicLink(ctx context.Context,
 // allowing callers to handle registration flows.
 func (s *magicLinkAuthnService) Authenticate(ctx context.Context,
 	token string, subjectAttribute string) (*MagicLinkAuthnResult, *serviceerror.ServiceError) {
-	s.logger.Debug("Authenticating with magic link token")
+	s.logger.DebugWithContext(ctx, "Authenticating with magic link token")
 
 	token = strings.TrimSpace(token)
 	if token == "" {
@@ -158,7 +158,7 @@ func (s *magicLinkAuthnService) Authenticate(ctx context.Context,
 		return nil, resolveErr
 	}
 
-	s.logger.Debug("Magic link authentication successful", log.String("userId", user.ID))
+	s.logger.DebugWithContext(ctx, "Magic link authentication successful", log.String("userId", user.ID))
 	return &MagicLinkAuthnResult{InternalEntity: user}, nil
 }
 
@@ -169,7 +169,7 @@ func (s *magicLinkAuthnService) verifyToken(ctx context.Context, token string) *
 		if verifyErr.Code == jwt.ErrorTokenExpired.Code {
 			return &ErrorExpiredToken
 		}
-		s.logger.Debug("Invalid magic link token", log.String("errorCode", verifyErr.Code))
+		s.logger.DebugWithContext(ctx, "Invalid magic link token", log.String("errorCode", verifyErr.Code))
 		return &ErrorInvalidToken
 	}
 	return nil

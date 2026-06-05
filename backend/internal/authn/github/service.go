@@ -86,7 +86,7 @@ func (g *githubOAuthAuthnService) FetchUserInfo(ctx context.Context, idpID, acce
 	// If email is already present in the user info or email scope is not requested, return it directly.
 	email := authnoauth.GetStringUserClaimValue(userInfo, "email")
 	if email != "" || !g.shouldFetchEmail(oAuthClientConfig.Scopes) {
-		logger.Debug("Email is already present in the user info or email scope not requested")
+		logger.DebugWithContext(ctx, "Email is already present in the user info or email scope not requested")
 		authnoauth.ProcessSubClaim(userInfo)
 		return userInfo, nil
 	}
@@ -159,7 +159,7 @@ func (g *githubOAuthAuthnService) GetOAuthClientConfig(ctx context.Context, idpI
 func (g *githubOAuthAuthnService) Authenticate(ctx context.Context, idpID, code string) (
 	*authncm.FederatedAuthResult, *serviceerror.ServiceError) {
 	logger := g.logger.With(log.String("idpId", idpID))
-	logger.Debug("Performing federated GitHub OAuth authentication")
+	logger.DebugWithContext(ctx, "Performing federated GitHub OAuth authentication")
 
 	tokenResp, svcErr := g.ExchangeCodeForToken(ctx, idpID, code, true)
 	if svcErr != nil {
@@ -178,7 +178,7 @@ func (g *githubOAuthAuthnService) Authenticate(ctx context.Context, idpID, code 
 		}
 	}
 	if sub == "" {
-		logger.Debug("sub claim not found in user info")
+		logger.DebugWithContext(ctx, "sub claim not found in user info")
 		return nil, &authncm.ErrorSubClaimNotFound
 	}
 

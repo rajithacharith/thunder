@@ -131,23 +131,23 @@ func collectMissingInputs(ctx *NodeContext, presentedOptionalInputs map[string]s
 			continue
 		}
 		if _, ok := ctx.RuntimeData[input.Identifier]; ok {
-			logger.Debug("Input available in runtime data, skipping",
+			logger.DebugWithContext(ctx.Context, "Input available in runtime data, skipping",
 				log.String("identifier", input.Identifier), log.Bool("isRequired", input.Required))
 			continue
 		}
 		if value, ok := ctx.ForwardedData[input.Identifier]; ok {
 			if _, isString := value.(string); isString {
-				logger.Debug("Input available in forwarded data, skipping",
+				logger.DebugWithContext(ctx.Context, "Input available in forwarded data, skipping",
 					log.String("identifier", input.Identifier), log.Bool("isRequired", input.Required))
 				continue
 			}
 		}
 		if !input.Required && IsOptionalInputPrompted(presentedOptionalInputs, input.Identifier) {
-			logger.Debug("Optional input already prompted, skipping",
+			logger.DebugWithContext(ctx.Context, "Optional input already prompted, skipping",
 				log.String("identifier", input.Identifier))
 			continue
 		}
-		logger.Debug("Input not available in the context",
+		logger.DebugWithContext(ctx.Context, "Input not available in the context",
 			log.String("identifier", input.Identifier), log.Bool("isRequired", input.Required))
 		missing = append(missing, input)
 	}

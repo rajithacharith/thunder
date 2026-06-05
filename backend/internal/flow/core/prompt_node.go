@@ -77,7 +77,7 @@ func newPromptNode(id string, properties map[string]interface{},
 // Execute executes the prompt node logic based on the current context.
 func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceerror.ServiceError) {
 	logger := n.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
-	logger.Debug("Executing prompt node")
+	logger.DebugWithContext(ctx.Context, "Executing prompt node")
 
 	nodeResp := &common.NodeResponse{
 		Inputs:         make([]common.Input, 0),
@@ -92,7 +92,8 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 			var errResp serviceerror.ServiceError
 			if err := json.Unmarshal([]byte(jsonStr), &errResp); err == nil {
 				nodeResp.Error = &errResp
-				logger.Debug("Prompt node is handling a failure", log.String("errorCode", errResp.Code))
+				logger.DebugWithContext(ctx.Context, "Prompt node is handling a failure",
+					log.String("errorCode", errResp.Code))
 			}
 			delete(ctx.RuntimeData, "failureReasonJSON")
 			// Clear this prompt's inputs and current action
@@ -105,7 +106,7 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 
 	// Check if this is a display-only prompt node
 	if n.IsDisplayOnly() {
-		logger.Debug("Display-only prompt node, returning display content")
+		logger.DebugWithContext(ctx.Context, "Display-only prompt node, returning display content")
 
 		if ctx.Verbose && n.GetMeta() != nil {
 			nodeResp.Meta = n.GetMeta()
@@ -128,7 +129,7 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 	}
 
 	if n.resolvePromptInputs(ctx, nodeResp) {
-		logger.Debug("All required inputs and actions are available")
+		logger.DebugWithContext(ctx.Context, "All required inputs and actions are available")
 		if n.applyValidationFailureRePrompt(ctx, nodeResp) {
 			return nodeResp, nil
 		}
@@ -137,7 +138,8 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 			if nextNode := n.getNextNodeForActionRef(ctx.CurrentAction); nextNode != "" {
 				nodeResp.NextNodeID = nextNode
 			} else {
-				logger.Debug(ErrInvalidActionProvided.Error.DefaultValue, log.String("actionRef", ctx.CurrentAction))
+				logger.DebugWithContext(ctx.Context, ErrInvalidActionProvided.Error.DefaultValue,
+					log.String("actionRef", ctx.CurrentAction))
 				nodeResp.Status = common.NodeStatusFailure
 				nodeResp.Error = &ErrInvalidActionProvided
 				return nodeResp, nil
@@ -158,7 +160,7 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 	}
 
 	// If required inputs or action is not yet available, prompt for user interaction
-	logger.Debug("Required inputs or action not available, prompting user",
+	logger.DebugWithContext(ctx.Context, "Required inputs or action not available, prompting user",
 		log.Any("inputs", nodeResp.Inputs), log.Any("actions", nodeResp.Actions))
 
 	// Include meta in the response if verbose mode is enabled
@@ -251,7 +253,7 @@ func (n *promptNode) executeLoginOptions(ctx *NodeContext,
 	if ctx.CurrentAction != "" {
 		if allowedRaw := ctx.RuntimeData[common.RuntimeKeyAllowedLoginOptions]; allowedRaw != "" {
 			if !slices.Contains(strings.Fields(allowedRaw), ctx.CurrentAction) {
-				logger.Debug("Selected action is not in allowed login options",
+				logger.DebugWithContext(ctx.Context, "Selected action is not in allowed login options",
 					log.String("actionRef", ctx.CurrentAction))
 				nodeResp.Status = common.NodeStatusFailure
 				nodeResp.Error = &ErrInvalidActionProvided
@@ -282,7 +284,8 @@ func (n *promptNode) executeLoginOptions(ctx *NodeContext,
 	// Auto-select the sole remaining option so the user skips a single-choice chooser.
 	if len(actions) == 1 && len(requestedAuthClasses) > 0 {
 		ctx.CurrentAction = actions[0].Ref
-		logger.Debug("Auto-selected single login option", log.String("actionRef", ctx.CurrentAction))
+		logger.DebugWithContext(ctx.Context, "Auto-selected single login option",
+			log.String("actionRef", ctx.CurrentAction))
 		if n.resolvePromptInputs(ctx, nodeResp) {
 			if n.applyValidationFailureRePrompt(ctx, nodeResp) {
 				return nodeResp, nil
@@ -310,7 +313,8 @@ func (n *promptNode) finalizeLoginOptionsAction(ctx *NodeContext, nodeResp *comm
 	logger := n.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	nextNode := n.getNextNodeForActionRef(ctx.CurrentAction)
 	if nextNode == "" {
-		logger.Debug(ErrInvalidActionProvided.Error.DefaultValue, log.String("actionRef", ctx.CurrentAction))
+		logger.DebugWithContext(ctx.Context, ErrInvalidActionProvided.Error.DefaultValue,
+			log.String("actionRef", ctx.CurrentAction))
 		nodeResp.Status = common.NodeStatusFailure
 		nodeResp.Error = &ErrInvalidActionProvided
 		return nodeResp, nil
@@ -450,10 +454,10 @@ func (n *promptNode) hasRequiredInputs(ctx *NodeContext, nodeResp *common.NodeRe
 				return !n.appendMissingInputs(ctx, nodeResp, prompt.Inputs)
 			}
 		}
-		logger.Debug("Selected action not found in prompts, treating as no action selected",
+		logger.DebugWithContext(ctx.Context, "Selected action not found in prompts, treating as no action selected",
 			log.String("action", ctx.CurrentAction))
 	} else {
-		logger.Debug("No action selected, checking inputs from all prompts")
+		logger.DebugWithContext(ctx.Context, "No action selected, checking inputs from all prompts")
 	}
 
 	// If no action selected or action not found, validate inputs from all prompts
@@ -488,7 +492,8 @@ func (n *promptNode) enrichInputsFromForwardedData(ctx *NodeContext, nodeResp *c
 	// Type assert to []common.Input.
 	forwardedInputs, ok := forwardedInputsData.([]common.Input)
 	if !ok {
-		n.logger.Debug("ForwardedData contains 'inputs' key but value is not []common.Input, skipping enrichment")
+		n.logger.DebugWithContext(ctx.Context,
+			"ForwardedData contains 'inputs' key but value is not []common.Input, skipping enrichment")
 		return
 	}
 
@@ -504,20 +509,20 @@ func (n *promptNode) enrichInputsFromForwardedData(ctx *NodeContext, nodeResp *c
 		if idx, exists := existingIndexMap[fwdInput.Identifier]; exists {
 			if fwdInput.Required && !nodeResp.Inputs[idx].Required {
 				nodeResp.Inputs[idx].Required = true
-				n.logger.Debug("Updated input required flag from ForwardedData",
+				n.logger.DebugWithContext(ctx.Context, "Updated input required flag from ForwardedData",
 					log.String("identifier", fwdInput.Identifier))
 			}
 			if fwdInput.Type == common.InputTypePassword &&
 				nodeResp.Inputs[idx].Type != common.InputTypePassword {
 				nodeResp.Inputs[idx].Type = common.InputTypePassword
-				n.logger.Debug("Updated input type to password from ForwardedData",
+				n.logger.DebugWithContext(ctx.Context, "Updated input type to password from ForwardedData",
 					log.String("identifier", fwdInput.Identifier))
 			}
 			if fwdInput.Type == common.InputTypeSelect &&
 				nodeResp.Inputs[idx].Type == common.InputTypeSelect &&
 				len(fwdInput.Options) > 0 {
 				nodeResp.Inputs[idx].Options = fwdInput.Options
-				n.logger.Debug("Enriched input with options from ForwardedData",
+				n.logger.DebugWithContext(ctx.Context, "Enriched input with options from ForwardedData",
 					log.String("identifier", fwdInput.Identifier),
 					log.Int("optionsCount", len(fwdInput.Options)))
 			}
@@ -536,7 +541,7 @@ func (n *promptNode) enrichInputsFromForwardedData(ctx *NodeContext, nodeResp *c
 		}
 		nodeResp.Inputs = append(nodeResp.Inputs, fwdInput)
 		existingIndexMap[fwdInput.Identifier] = len(nodeResp.Inputs) - 1
-		n.logger.Debug("Added dynamically-derived input from ForwardedData",
+		n.logger.DebugWithContext(ctx.Context, "Added dynamically-derived input from ForwardedData",
 			log.String("identifier", fwdInput.Identifier))
 	}
 }
@@ -577,7 +582,8 @@ func (n *promptNode) tryAutoSelectSingleAction(ctx *NodeContext) bool {
 	// Skip auto-select for confirmation prompts (no inputs) - they should wait for explicit action
 	if len(actions) == 1 && ctx.CurrentAction == "" && len(allInputs) > 0 {
 		ctx.CurrentAction = actions[0].Ref
-		n.logger.Debug("Auto-selected single action", log.String(log.LoggerKeyExecutionID, ctx.ExecutionID),
+		n.logger.DebugWithContext(ctx.Context, "Auto-selected single action",
+			log.String(log.LoggerKeyExecutionID, ctx.ExecutionID),
 			log.String("actionRef", actions[0].Ref))
 		return true
 	}

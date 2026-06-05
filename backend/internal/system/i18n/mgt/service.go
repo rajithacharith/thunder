@@ -213,7 +213,7 @@ func (s *i18nService) SetTranslationOverridesForNamespace(
 		return nil
 	}
 	if err := s.store.UpsertTranslations(ctx, translations); err != nil {
-		s.logger.Error("Failed to set translation overrides for namespace", log.Error(err))
+		s.logger.ErrorWithContext(ctx, "Failed to set translation overrides for namespace", log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 	return nil
@@ -400,7 +400,7 @@ func (s *i18nService) DeleteTranslationsByKey(
 		return &ErrorInvalidKey
 	}
 	if err := s.store.DeleteTranslationsByKey(ctx, namespace, key); err != nil {
-		s.logger.Error("Failed to delete translations by namespace and key", log.Error(err))
+		s.logger.ErrorWithContext(ctx, "Failed to delete translations by namespace and key", log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 	return nil
@@ -414,7 +414,7 @@ func (s *i18nService) DeleteTranslationsByNamespace(
 		return &ErrorInvalidNamespace
 	}
 	if err := s.store.DeleteTranslationsByNamespace(ctx, namespace); err != nil {
-		s.logger.Error("Failed to delete translations by namespace", log.Error(err))
+		s.logger.ErrorWithContext(ctx, "Failed to delete translations by namespace", log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 	return nil

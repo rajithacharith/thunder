@@ -106,10 +106,10 @@ func (g *googleOIDCAuthnService) ValidateTokenResponse(ctx context.Context, idpI
 func (g *googleOIDCAuthnService) ValidateIDToken(
 	ctx context.Context, idpID, idToken string) *serviceerror.ServiceError {
 	logger := g.logger.With(log.String("idpId", idpID))
-	logger.Debug("Validating ID token")
+	logger.DebugWithContext(ctx, "Validating ID token")
 
 	if strings.TrimSpace(idToken) == "" {
-		logger.Debug("ID token is empty")
+		logger.DebugWithContext(ctx, "ID token is empty")
 		return &authnoidc.ErrorInvalidIDToken
 	}
 
@@ -123,14 +123,15 @@ func (g *googleOIDCAuthnService) ValidateIDToken(
 	if oAuthClientConfig.OAuthEndpoints.JwksEndpoint != "" {
 		err := g.jwtService.VerifyJWTSignatureWithJWKS(idToken, oAuthClientConfig.OAuthEndpoints.JwksEndpoint)
 		if err != nil {
-			logger.Debug("ID token signature validation failed", log.String("error", err.Error.DefaultValue))
+			logger.DebugWithContext(ctx, "ID token signature validation failed",
+				log.String("error", err.Error.DefaultValue))
 			return &authnoidc.ErrorInvalidIDTokenSignature
 		}
 	} else {
-		logger.Debug("Skipping ID token signature validation as JWKS endpoint is not configured")
+		logger.DebugWithContext(ctx, "Skipping ID token signature validation as JWKS endpoint is not configured")
 	}
 
-	logger.Debug("Validating Google specific ID token claims")
+	logger.DebugWithContext(ctx, "Validating Google specific ID token claims")
 
 	// Extract ID token claims for Google-specific validation
 	claims, err := jwt.DecodeJWTPayload(idToken)
@@ -141,7 +142,7 @@ func (g *googleOIDCAuthnService) ValidateIDToken(
 	// Validate issuer
 	iss, ok := claims["iss"].(string)
 	if !ok || (iss != Issuer1 && iss != Issuer2) {
-		logger.Debug("Invalid ID token issuer", log.String("issuer", iss))
+		logger.DebugWithContext(ctx, "Invalid ID token issuer", log.String("issuer", iss))
 		return serviceerror.CustomServiceError(authnoidc.ErrorInvalidIDToken, core.I18nMessage{
 			Key:          "error.authnservice.google.invalid_id_token_issuer_description",
 			DefaultValue: "The issuer of the ID token is not a valid Google issuer",
@@ -151,7 +152,7 @@ func (g *googleOIDCAuthnService) ValidateIDToken(
 	// Validate audience
 	aud, ok := claims["aud"].(string)
 	if !ok || aud != oAuthClientConfig.ClientID {
-		logger.Debug("Invalid ID token audience", log.String("audience", aud),
+		logger.DebugWithContext(ctx, "Invalid ID token audience", log.String("audience", aud),
 			log.MaskedString("clientId", oAuthClientConfig.ClientID))
 		return serviceerror.CustomServiceError(authnoidc.ErrorInvalidIDToken, core.I18nMessage{
 			Key:          "error.authnservice.google.invalid_id_token_audience_description",
@@ -165,14 +166,14 @@ func (g *googleOIDCAuthnService) ValidateIDToken(
 	// Validate expiration time
 	exp, ok := claims["exp"].(float64)
 	if !ok {
-		logger.Debug("Invalid ID token expiration claim", log.Any("exp", claims["exp"]))
+		logger.DebugWithContext(ctx, "Invalid ID token expiration claim", log.Any("exp", claims["exp"]))
 		return serviceerror.CustomServiceError(authnoidc.ErrorInvalidIDToken, core.I18nMessage{
 			Key:          "error.authnservice.google.invalid_id_token_exp_claim_description",
 			DefaultValue: "The ID token expiration claim is missing or invalid",
 		})
 	}
 	if time.Now().Unix() >= int64(exp)+leeway {
-		logger.Debug("ID token has expired", log.Int("exp", int(exp)))
+		logger.DebugWithContext(ctx, "ID token has expired", log.Int("exp", int(exp)))
 		return serviceerror.CustomServiceError(authnoidc.ErrorInvalidIDToken, core.I18nMessage{
 			Key:          "error.authnservice.google.invalid_id_token_expired_description",
 			DefaultValue: "The ID token has expired",
@@ -182,14 +183,14 @@ func (g *googleOIDCAuthnService) ValidateIDToken(
 	// Check if token was issued in the future (with leeway for clock skew)
 	iat, ok := claims["iat"].(float64)
 	if !ok {
-		logger.Debug("Invalid ID token issued-at claim", log.Any("iat", claims["iat"]))
+		logger.DebugWithContext(ctx, "Invalid ID token issued-at claim", log.Any("iat", claims["iat"]))
 		return serviceerror.CustomServiceError(authnoidc.ErrorInvalidIDToken, core.I18nMessage{
 			Key:          "error.authnservice.google.invalid_id_token_iat_claim_description",
 			DefaultValue: "The ID token issued-at (iat) claim is missing or invalid",
 		})
 	}
 	if time.Now().Unix() < int64(iat)-leeway {
-		logger.Debug("ID token was issued in the future", log.Int("iat", int(iat)))
+		logger.DebugWithContext(ctx, "ID token was issued in the future", log.Int("iat", int(iat)))
 		return serviceerror.CustomServiceError(authnoidc.ErrorInvalidIDToken, core.I18nMessage{
 			Key:          "error.authnservice.google.invalid_id_token_future_iat_description",
 			DefaultValue: "The ID token was issued in the future",
@@ -198,11 +199,11 @@ func (g *googleOIDCAuthnService) ValidateIDToken(
 
 	// Check for specific domain if configured in additional params
 	if hd, found := claims["hd"]; found {
-		logger.Debug("hd claim found in ID token")
+		logger.DebugWithContext(ctx, "hd claim found in ID token")
 		if domain, exists := oAuthClientConfig.AdditionalParams["hd"]; exists && domain != "" {
-			logger.Debug("Validating hosted domain (hd) claim")
+			logger.DebugWithContext(ctx, "Validating hosted domain (hd) claim")
 			if hdStr, ok := hd.(string); !ok || hdStr != domain {
-				logger.Debug("Invalid hosted domain (hd) claim", log.String("hd", hdStr),
+				logger.DebugWithContext(ctx, "Invalid hosted domain (hd) claim", log.String("hd", hdStr),
 					log.String("expectedDomain", domain))
 				return serviceerror.CustomServiceError(authnoidc.ErrorInvalidIDToken, core.I18nMessage{
 					Key:          "error.authnservice.google.invalid_id_token_hosted_domain_description",
@@ -244,7 +245,7 @@ func (g *googleOIDCAuthnService) GetOAuthClientConfig(ctx context.Context, idpID
 func (g *googleOIDCAuthnService) Authenticate(ctx context.Context, idpID, code string) (
 	*common.FederatedAuthResult, *serviceerror.ServiceError) {
 	logger := g.logger.With(log.String("idpId", idpID))
-	logger.Debug("Performing federated Google OIDC authentication")
+	logger.DebugWithContext(ctx, "Performing federated Google OIDC authentication")
 
 	tokenResp, svcErr := g.ExchangeCodeForToken(ctx, idpID, code, true)
 	if svcErr != nil {
@@ -263,7 +264,7 @@ func (g *googleOIDCAuthnService) Authenticate(ctx context.Context, idpID, code s
 		}
 	}
 	if sub == "" {
-		logger.Debug("sub claim not found in ID token")
+		logger.DebugWithContext(ctx, "sub claim not found in ID token")
 		return nil, &common.ErrorSubClaimNotFound
 	}
 

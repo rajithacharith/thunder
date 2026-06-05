@@ -349,7 +349,7 @@ func (s *groupStore) DeleteGroup(ctx context.Context, id string) error {
 	}
 
 	if result == 0 {
-		logger.Debug("Group not found with id: " + id)
+		logger.DebugWithContext(ctx, "Group not found with id: "+id)
 	}
 
 	return nil

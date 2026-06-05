@@ -84,7 +84,7 @@ func (lh *layoutMgtHandler) HandleLayoutListRequest(w http.ResponseWriter, r *ht
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, layoutListResponse)
 
-	lh.logger.Debug("Successfully listed layout configurations with pagination",
+	lh.logger.DebugWithContext(r.Context(), "Successfully listed layout configurations with pagination",
 		log.Int("limit", limit), log.Int("offset", offset),
 		log.Int("totalResults", layoutListResponse.TotalResults),
 		log.Int("count", layoutListResponse.Count))
@@ -117,7 +117,8 @@ func (lh *layoutMgtHandler) HandleLayoutPostRequest(w http.ResponseWriter, r *ht
 
 	sysutils.WriteSuccessResponse(w, http.StatusCreated, layoutResponse)
 
-	lh.logger.Debug("Successfully created layout configuration", log.String("id", createdLayout.ID))
+	lh.logger.DebugWithContext(r.Context(), "Successfully created layout configuration",
+		log.String("id", createdLayout.ID))
 }
 
 // HandleLayoutGetRequest handles the get layout configuration request.
@@ -142,7 +143,7 @@ func (lh *layoutMgtHandler) HandleLayoutGetRequest(w http.ResponseWriter, r *htt
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, layoutResponse)
 
-	lh.logger.Debug("Successfully retrieved layout configuration", log.String("id", id))
+	lh.logger.DebugWithContext(r.Context(), "Successfully retrieved layout configuration", log.String("id", id))
 }
 
 // HandleLayoutPutRequest handles the update layout configuration request.
@@ -173,7 +174,7 @@ func (lh *layoutMgtHandler) HandleLayoutPutRequest(w http.ResponseWriter, r *htt
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, layoutResponse)
 
-	lh.logger.Debug("Successfully updated layout configuration", log.String("id", id))
+	lh.logger.DebugWithContext(r.Context(), "Successfully updated layout configuration", log.String("id", id))
 }
 
 // HandleLayoutDeleteRequest handles the delete layout configuration request.
@@ -186,7 +187,7 @@ func (lh *layoutMgtHandler) HandleLayoutDeleteRequest(w http.ResponseWriter, r *
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusNoContent, nil)
-	lh.logger.Debug("Successfully deleted layout configuration", log.String("id", id))
+	lh.logger.DebugWithContext(r.Context(), "Successfully deleted layout configuration", log.String("id", id))
 }
 
 // parsePaginationParams parses limit and offset query parameters from the request.

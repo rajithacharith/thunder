@@ -77,7 +77,7 @@ func newOUExecutor(
 // Execute executes the ou creation logic.
 func (o *ouExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := o.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
-	logger.Debug("Executing OU creation executor")
+	logger.DebugWithContext(ctx.Context, "Executing OU creation executor")
 
 	execResp := &common.ExecutorResponse{
 		AdditionalData: make(map[string]string),
@@ -85,14 +85,14 @@ func (o *ouExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, e
 	}
 
 	if !o.ValidatePrerequisites(ctx, execResp) {
-		logger.Debug("Prerequisites validation failed for OU creation")
+		logger.DebugWithContext(ctx.Context, "Prerequisites validation failed for OU creation")
 		execResp.Status = common.ExecFailure
 		execResp.Error = &ErrOUCreationPrereqFailed
 		return execResp, nil
 	}
 
 	if !o.HasRequiredInputs(ctx, execResp) {
-		logger.Debug("Required inputs for OU creation is not provided")
+		logger.DebugWithContext(ctx.Context, "Required inputs for OU creation is not provided")
 		execResp.Status = common.ExecUserInputRequired
 		return execResp, nil
 	}
@@ -100,7 +100,8 @@ func (o *ouExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, e
 	// Create the OU using the OU service.
 	ouRequest, err := o.getOrganizationUnitRequest(ctx)
 	if err != nil {
-		logger.Error("Failed to build organization unit request", log.String("error", err.Error()))
+		logger.ErrorWithContext(ctx.Context, "Failed to build organization unit request",
+			log.String("error", err.Error()))
 		return nil, err
 	}
 	createdOU, svcErr := o.ouService.CreateOrganizationUnit(ctx.Context, ouRequest)
@@ -124,20 +125,21 @@ func (o *ouExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, e
 			return execResp, nil
 		}
 
-		logger.Error("Error occurred while creating organization unit: ", log.String("errorCode", svcErr.Code),
+		logger.ErrorWithContext(ctx.Context, "Error occurred while creating organization unit: ",
+			log.String("errorCode", svcErr.Code),
 			log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
 		return nil, errors.New("failed to create organization unit")
 	}
 
 	if createdOU.ID == "" {
-		logger.Error("Organization unit creation failed: received empty OU ID")
+		logger.ErrorWithContext(ctx.Context, "Organization unit creation failed: received empty OU ID")
 		return nil, errors.New("failed to create organization unit")
 	}
 
 	// Set the created OU ID in the runtime data for further use in the flow.
 	execResp.RuntimeData[ouIDKey] = createdOU.ID
 
-	logger.Debug("Organization unit created successfully", log.String(ouIDKey, createdOU.ID))
+	logger.DebugWithContext(ctx.Context, "Organization unit created successfully", log.String(ouIDKey, createdOU.ID))
 	execResp.Status = common.ExecComplete
 	return execResp, nil
 }

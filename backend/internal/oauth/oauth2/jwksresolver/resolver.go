@@ -75,7 +75,7 @@ func (r *Resolver) ResolveEncryptionKey(
 	policy KeyUsePolicy,
 ) (crypto.PublicKey, string, *serviceerror.ServiceError) {
 	if certificate == nil || certificate.Type == "" {
-		r.logger.Error("No certificate configured for encryption key resolution")
+		r.logger.ErrorWithContext(ctx, "No certificate configured for encryption key resolution")
 		return nil, "", &serviceerror.InternalServerError
 	}
 
@@ -90,7 +90,7 @@ func (r *Resolver) ResolveEncryptionKey(
 		}
 		jwksData = body
 	default:
-		r.logger.Error("Unsupported certificate type for encryption key resolution",
+		r.logger.ErrorWithContext(ctx, "Unsupported certificate type for encryption key resolution",
 			log.String("type", string(certificate.Type)))
 		return nil, "", &serviceerror.InternalServerError
 	}
@@ -102,26 +102,28 @@ func (r *Resolver) ResolveEncryptionKey(
 // It does not log JWKS body, key material, or HTTP response headers.
 func (r *Resolver) fetchJWKS(ctx context.Context, jwksURI string) ([]byte, *serviceerror.ServiceError) {
 	if r.httpClient == nil {
-		r.logger.Error("HTTP client is not configured for JWKS resolver")
+		r.logger.ErrorWithContext(ctx, "HTTP client is not configured for JWKS resolver")
 		return nil, &serviceerror.InternalServerError
 	}
 	if err := syshttp.IsSSRFSafeURL(jwksURI); err != nil {
-		r.logger.Error("JWKS URI is not SSRF-safe", log.String("endpoint", jwksEndpoint(jwksURI)), log.Error(err))
+		r.logger.ErrorWithContext(ctx, "JWKS URI is not SSRF-safe",
+			log.String("endpoint", jwksEndpoint(jwksURI)), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, jwksURI, nil)
 	if err != nil {
-		r.logger.Error("Failed to build JWKS request", log.Error(err))
+		r.logger.ErrorWithContext(ctx, "Failed to build JWKS request", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	resp, err := r.httpClient.Do(req)
 	if err != nil {
-		r.logger.Error("Failed to fetch JWKS from URI", log.String("endpoint", jwksEndpoint(jwksURI)), log.Error(err))
+		r.logger.ErrorWithContext(ctx, "Failed to fetch JWKS from URI",
+			log.String("endpoint", jwksEndpoint(jwksURI)), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		r.logger.Error("JWKS URI returned non-200 status",
+		r.logger.ErrorWithContext(ctx, "JWKS URI returned non-200 status",
 			log.String("endpoint", jwksEndpoint(jwksURI)), log.Int("statusCode", resp.StatusCode))
 		return nil, &serviceerror.InternalServerError
 	}
@@ -129,11 +131,12 @@ func (r *Resolver) fetchJWKS(ctx context.Context, jwksURI string) ([]byte, *serv
 	limitedReader := io.LimitReader(resp.Body, maxJWKSBytes+1)
 	body, err := io.ReadAll(limitedReader)
 	if err != nil {
-		r.logger.Error("Failed to read JWKS response body", log.Error(err))
+		r.logger.ErrorWithContext(ctx, "Failed to read JWKS response body", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	if len(body) > maxJWKSBytes {
-		r.logger.Error("JWKS URI response exceeds 1 MB size limit", log.String("endpoint", jwksEndpoint(jwksURI)))
+		r.logger.ErrorWithContext(ctx, "JWKS URI response exceeds 1 MB size limit",
+			log.String("endpoint", jwksEndpoint(jwksURI)))
 		return nil, &serviceerror.InternalServerError
 	}
 	return body, nil

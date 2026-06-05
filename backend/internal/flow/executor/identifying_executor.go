@@ -118,7 +118,7 @@ func (i *identifyingExecutor) IdentifyUser(filters map[string]interface{},
 // Execute executes the identifying executor logic.
 func (i *identifyingExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := i.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
-	logger.Debug("Executing identifying executor")
+	logger.DebugWithContext(ctx.Context, "Executing identifying executor")
 
 	execResp := &common.ExecutorResponse{
 		AdditionalData: make(map[string]string),
@@ -127,7 +127,7 @@ func (i *identifyingExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRe
 
 	// Check if required inputs are provided
 	if !i.HasRequiredInputs(ctx, execResp) {
-		logger.Debug("Required inputs for identifying executor are not provided")
+		logger.DebugWithContext(ctx.Context, "Required inputs for identifying executor are not provided")
 		execResp.Status = common.ExecUserInputRequired
 		return execResp, nil
 	}
@@ -151,7 +151,7 @@ func (i *identifyingExecutor) executeIdentify(ctx *core.NodeContext,
 
 	userID, err := i.IdentifyUser(userSearchAttributes, execResp)
 	if err != nil {
-		logger.Debug("Failed to identify user due to error: " + err.Error())
+		logger.DebugWithContext(ctx.Context, "Failed to identify user due to error: "+err.Error())
 		execResp.Status = common.ExecFailure
 		execResp.Error = &ErrFailedToIdentifyUser
 		return execResp, nil
@@ -171,7 +171,7 @@ func (i *identifyingExecutor) executeIdentify(ctx *core.NodeContext,
 	}
 
 	if userID == nil || *userID == "" {
-		logger.Debug("User not found for the provided attributes")
+		logger.DebugWithContext(ctx.Context, "User not found for the provided attributes")
 		execResp.Status = common.ExecUserInputRequired
 		execResp.Inputs = i.GetRequiredInputs(ctx)
 		execResp.Error = &ErrUserNotFound
@@ -181,7 +181,7 @@ func (i *identifyingExecutor) executeIdentify(ctx *core.NodeContext,
 	execResp.RuntimeData[userAttributeUserID] = *userID
 	execResp.Status = common.ExecComplete
 
-	logger.Debug("Identifying executor completed successfully",
+	logger.DebugWithContext(ctx.Context, "Identifying executor completed successfully",
 		log.MaskedString(log.LoggerKeyUserID, *userID))
 
 	return execResp, nil
@@ -191,7 +191,7 @@ func (i *identifyingExecutor) executeIdentify(ctx *core.NodeContext,
 func (i *identifyingExecutor) executeResolve(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*common.ExecutorResponse, error) {
 	logger := i.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
-	logger.Debug("Executing identifying executor in resolve mode")
+	logger.DebugWithContext(ctx.Context, "Executing identifying executor in resolve mode")
 
 	userSearchAttributes := i.buildSearchAttributes(ctx)
 
@@ -218,7 +218,7 @@ func (i *identifyingExecutor) executeResolve(ctx *core.NodeContext,
 
 	switch len(candidates) {
 	case 0:
-		logger.Debug("No matching users after filtering")
+		logger.DebugWithContext(ctx.Context, "No matching users after filtering")
 		execResp.Status = common.ExecUserInputRequired
 		execResp.Inputs = i.GetRequiredInputs(ctx)
 		execResp.Error = &ErrUserNotFound
@@ -226,7 +226,7 @@ func (i *identifyingExecutor) executeResolve(ctx *core.NodeContext,
 	case 1:
 		execResp.RuntimeData[userAttributeUserID] = candidates[0].ID
 		execResp.Status = common.ExecComplete
-		logger.Debug("User resolved successfully",
+		logger.DebugWithContext(ctx.Context, "User resolved successfully",
 			log.MaskedString("userID", candidates[0].ID))
 		return execResp, nil
 	default:

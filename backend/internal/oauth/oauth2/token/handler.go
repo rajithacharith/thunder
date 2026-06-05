@@ -87,7 +87,7 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 	// Get authenticated client from context (set by ClientAuthMiddleware).
 	clientInfo := clientauth.GetOAuthClient(r.Context())
 	if clientInfo == nil {
-		logger.Error("OAuth client not found in context - ClientAuthMiddleware must be applied")
+		logger.ErrorWithContext(ctx, "OAuth client not found in context - ClientAuthMiddleware must be applied")
 		utils.WriteJSONError(w, constants.ErrorServerError,
 			"Something went wrong", http.StatusInternalServerError, nil)
 		return
@@ -127,7 +127,7 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 			}
 			description := tokenError.ErrorDescription
 			if tokenError.Error == constants.ErrorInvalidDPoPProof {
-				logger.Debug("DPoP proof rejected", log.String("error", description))
+				logger.DebugWithContext(ctx, "DPoP proof rejected", log.String("error", description))
 				description = "Invalid DPoP proof"
 			}
 			utils.WriteJSONError(w, tokenError.Error, description, statusCode, nil)
@@ -138,7 +138,7 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	logger.Debug("Token response sending", log.String("client_id", clientInfo.ClientID))
+	logger.DebugWithContext(ctx, "Token response sending", log.String("client_id", clientInfo.ClientID))
 
 	// Must include the following headers when sensitive data is returned.
 	w.Header().Set(sysconst.CacheControlHeaderName, sysconst.CacheControlNoStore)

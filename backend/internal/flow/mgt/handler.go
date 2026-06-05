@@ -82,7 +82,7 @@ func (h *flowMgtHandler) listFlows(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteSuccessResponse(w, http.StatusOK, flowList)
-	h.logger.Debug("Flows listed successfully", log.Int(logKeyCount, flowList.Count))
+	h.logger.DebugWithContext(ctx, "Flows listed successfully", log.Int(logKeyCount, flowList.Count))
 }
 
 // createFlow handles POST requests to create a new flow definition.
@@ -102,7 +102,7 @@ func (h *flowMgtHandler) createFlow(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteSuccessResponse(w, http.StatusCreated, createdFlow)
-	h.logger.Debug("Flow created successfully", log.String(logKeyFlowID, createdFlow.ID))
+	h.logger.DebugWithContext(ctx, "Flow created successfully", log.String(logKeyFlowID, createdFlow.ID))
 }
 
 // getFlow handles GET requests to retrieve a flow definition by its ID.
@@ -121,7 +121,7 @@ func (h *flowMgtHandler) getFlow(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteSuccessResponse(w, http.StatusOK, flow)
-	h.logger.Debug("Flow retrieved successfully", log.String(logKeyFlowID, flowID))
+	h.logger.DebugWithContext(ctx, "Flow retrieved successfully", log.String(logKeyFlowID, flowID))
 }
 
 // updateFlow handles PUT requests to update an existing flow definition.
@@ -147,7 +147,7 @@ func (h *flowMgtHandler) updateFlow(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteSuccessResponse(w, http.StatusOK, updatedFlow)
-	h.logger.Debug("Flow updated successfully", log.String(logKeyFlowID, flowID))
+	h.logger.DebugWithContext(ctx, "Flow updated successfully", log.String(logKeyFlowID, flowID))
 }
 
 // deleteFlow handles DELETE requests to remove a flow definition by its ID.
@@ -166,7 +166,7 @@ func (h *flowMgtHandler) deleteFlow(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-	h.logger.Debug("Flow deleted successfully", log.String(logKeyFlowID, flowID))
+	h.logger.DebugWithContext(ctx, "Flow deleted successfully", log.String(logKeyFlowID, flowID))
 }
 
 // Flow version management HTTP handler methods
@@ -187,7 +187,7 @@ func (h *flowMgtHandler) listFlowVersions(w http.ResponseWriter, r *http.Request
 	}
 
 	utils.WriteSuccessResponse(w, http.StatusOK, versionList)
-	h.logger.Debug("Flow versions listed successfully", log.String(logKeyFlowID, flowID))
+	h.logger.DebugWithContext(ctx, "Flow versions listed successfully", log.String(logKeyFlowID, flowID))
 }
 
 // getFlowVersion handles GET requests to retrieve a specific version of a flow definition.
@@ -214,7 +214,7 @@ func (h *flowMgtHandler) getFlowVersion(w http.ResponseWriter, r *http.Request) 
 	}
 
 	utils.WriteSuccessResponse(w, http.StatusOK, flowVersion)
-	h.logger.Debug("Flow version retrieved successfully",
+	h.logger.DebugWithContext(ctx, "Flow version retrieved successfully",
 		log.String(logKeyFlowID, flowID), log.Int(logKeyVersion, version))
 }
 
@@ -240,7 +240,7 @@ func (h *flowMgtHandler) restoreFlowVersion(w http.ResponseWriter, r *http.Reque
 	}
 
 	utils.WriteSuccessResponse(w, http.StatusOK, flow)
-	h.logger.Debug("Flow version restored successfully",
+	h.logger.DebugWithContext(ctx, "Flow version restored successfully",
 		log.String(logKeyFlowID, flowID), log.Int(logKeyVersion, request.Version))
 }
 

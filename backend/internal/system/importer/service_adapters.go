@@ -49,7 +49,7 @@ func (s *importService) resolveImportOUHandle(
 ) (string, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ImportService"))
 	if ouID != "" && ouHandle != "" {
-		logger.Warn("Both ou_id and ou_handle provided; ou_handle ignored",
+		logger.WarnWithContext(ctx, "Both ou_id and ou_handle provided; ou_handle ignored",
 			log.String("resourceType", resourceType),
 			log.String("resourceID", resourceID),
 			log.String("resourceName", resourceName))

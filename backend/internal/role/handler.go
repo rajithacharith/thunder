@@ -79,7 +79,7 @@ func (rh *roleHandler) HandleRoleListRequest(w http.ResponseWriter, r *http.Requ
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, roleListResponse)
 
-	logger.Debug("Successfully listed roles with pagination",
+	logger.DebugWithContext(ctx, "Successfully listed roles with pagination",
 		log.Int("limit", limit), log.Int("offset", offset),
 		log.Int("totalResults", roleListResponse.TotalResults),
 		log.Int("count", roleListResponse.Count))
@@ -112,7 +112,7 @@ func (rh *roleHandler) HandleRolePostRequest(w http.ResponseWriter, r *http.Requ
 
 	sysutils.WriteSuccessResponse(w, http.StatusCreated, createdRole)
 
-	logger.Debug("Successfully created role", log.String("roleId", createdRole.ID))
+	logger.DebugWithContext(ctx, "Successfully created role", log.String("roleId", createdRole.ID))
 }
 
 // HandleRoleGetRequest handles the get role by id request.
@@ -132,7 +132,7 @@ func (rh *roleHandler) HandleRoleGetRequest(w http.ResponseWriter, r *http.Reque
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, role)
 
-	logger.Debug("Successfully retrieved role", log.String("role id", id))
+	logger.DebugWithContext(ctx, "Successfully retrieved role", log.String("role id", id))
 }
 
 // HandleRolePutRequest handles the update role request.
@@ -163,7 +163,7 @@ func (rh *roleHandler) HandleRolePutRequest(w http.ResponseWriter, r *http.Reque
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, role)
 
-	logger.Debug("Successfully updated role", log.String("role id", id))
+	logger.DebugWithContext(ctx, "Successfully updated role", log.String("role id", id))
 }
 
 // HandleRoleDeleteRequest handles the delete role request.
@@ -179,7 +179,7 @@ func (rh *roleHandler) HandleRoleDeleteRequest(w http.ResponseWriter, r *http.Re
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusNoContent, nil)
-	logger.Debug("Successfully deleted role", log.String("role id", id))
+	logger.DebugWithContext(ctx, "Successfully deleted role", log.String("role id", id))
 }
 
 // HandleRoleAssignmentsGetRequest handles the get role assignments request.
@@ -233,7 +233,7 @@ func (rh *roleHandler) HandleRoleAssignmentsGetRequest(w http.ResponseWriter, r 
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, assignmentListResponse)
 
-	logger.Debug("Successfully retrieved role assignments", log.String("role id", id),
+	logger.DebugWithContext(ctx, "Successfully retrieved role assignments", log.String("role id", id),
 		log.Int("limit", limit), log.Int("offset", offset),
 		log.Bool("includeDisplay", includeDisplay),
 		log.String("assigneeType", assigneeType),
@@ -265,7 +265,7 @@ func (rh *roleHandler) HandleRoleAddAssignmentsRequest(w http.ResponseWriter, r 
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusNoContent, nil)
-	logger.Debug("Successfully added assignments to role", log.String("role id", id))
+	logger.DebugWithContext(ctx, "Successfully added assignments to role", log.String("role id", id))
 }
 
 // HandleRoleRemoveAssignmentsRequest handles the remove assignments from role request.
@@ -292,7 +292,7 @@ func (rh *roleHandler) HandleRoleRemoveAssignmentsRequest(w http.ResponseWriter,
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusNoContent, nil)
-	logger.Debug("Successfully removed assignments from role", log.String("role id", id))
+	logger.DebugWithContext(ctx, "Successfully removed assignments from role", log.String("role id", id))
 }
 
 // handleError handles service errors and returns appropriate HTTP responses.

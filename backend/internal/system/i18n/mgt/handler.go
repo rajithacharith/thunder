@@ -56,7 +56,7 @@ func (h *i18nHandler) HandleListLanguages(w http.ResponseWriter, r *http.Request
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, resp)
-	logger.Debug("Successfully retrieved languages", log.Int("count", len(localeCodes)))
+	logger.DebugWithContext(r.Context(), "Successfully retrieved languages", log.Int("count", len(localeCodes)))
 }
 
 // HandleResolveTranslationsByLanguage handles GET /i18n/languages/{language}/translations/resolve
@@ -76,7 +76,7 @@ func (h *i18nHandler) HandleResolveTranslationsByLanguage(w http.ResponseWriter,
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, resp)
-	logger.Debug("Successfully resolved translations",
+	logger.DebugWithContext(r.Context(), "Successfully resolved translations",
 		log.String("language", sanitizedLanguage),
 		log.String("namespace", sanitizedNamespace),
 		log.Int("totalResults", resp.TotalResults))
@@ -102,7 +102,7 @@ func (h *i18nHandler) HandleSetOverrideTranslationsByLanguage(w http.ResponseWri
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, resp)
-	logger.Debug("Successfully set override translations",
+	logger.DebugWithContext(r.Context(), "Successfully set override translations",
 		log.String("language", sanitizedLanguage),
 		log.Int("totalResults", resp.TotalResults))
 }
@@ -121,7 +121,8 @@ func (h *i18nHandler) HandleClearOverrideTranslationsByLanguage(w http.ResponseW
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-	logger.Debug("Successfully cleared override translations", log.String("language", sanitizedLanguage))
+	logger.DebugWithContext(r.Context(), "Successfully cleared override translations",
+		log.String("language", sanitizedLanguage))
 }
 
 // HandleResolveTranslation handles GET /i18n/languages/{language}/translations/ns/{namespace}/keys/{key}/resolve
@@ -143,7 +144,7 @@ func (h *i18nHandler) HandleResolveTranslation(w http.ResponseWriter, r *http.Re
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, resp)
-	logger.Debug("Successfully resolved translation",
+	logger.DebugWithContext(r.Context(), "Successfully resolved translation",
 		log.String("language", sanitizedLanguage),
 		log.String("namespace", sanitizedNamespace),
 		log.String("key", sanitizedKey))
@@ -177,7 +178,7 @@ func (h *i18nHandler) HandleSetOverrideTranslation(w http.ResponseWriter, r *htt
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, resp)
-	logger.Debug("Successfully set override translation",
+	logger.DebugWithContext(r.Context(), "Successfully set override translation",
 		log.String("language", sanitizedLanguage),
 		log.String("namespace", sanitizedNamespace),
 		log.String("key", sanitizedKey))
@@ -203,7 +204,7 @@ func (h *i18nHandler) HandleClearOverrideTranslation(w http.ResponseWriter, r *h
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-	logger.Debug("Successfully cleared override translation",
+	logger.DebugWithContext(r.Context(), "Successfully cleared override translation",
 		log.String("language", sanitizedLanguage),
 		log.String("namespace", sanitizedNamespace),
 		log.String("key", sanitizedKey))

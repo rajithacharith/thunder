@@ -161,7 +161,7 @@ func (rs *resourceService) CreateResourceServer(
 	ctx context.Context,
 	resourceServer ResourceServer,
 ) (*ResourceServer, *serviceerror.ServiceError) {
-	rs.logger.Debug("Creating resource server", log.String("name", resourceServer.Name))
+	rs.logger.DebugWithContext(ctx, "Creating resource server", log.String("name", resourceServer.Name))
 
 	if err := rs.validateResourceServerCreate(resourceServer); err != nil {
 		return nil, err
@@ -171,21 +171,22 @@ func (rs *resourceService) CreateResourceServer(
 	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, resourceServer.OUID)
 	if svcErr != nil {
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
-			rs.logger.Debug("Organization unit not found", log.String("ouID", resourceServer.OUID))
+			rs.logger.DebugWithContext(ctx, "Organization unit not found", log.String("ouID", resourceServer.OUID))
 			return nil, &ErrorOrganizationUnitNotFound
 		}
-		rs.logger.Error("Failed to validate organization unit", log.String("error", svcErr.Error.DefaultValue))
+		rs.logger.ErrorWithContext(ctx, "Failed to validate organization unit",
+			log.String("error", svcErr.Error.DefaultValue))
 		return nil, &serviceerror.InternalServerError
 	}
 
 	// Check name uniqueness
 	nameExists, err := rs.resourceStore.CheckResourceServerNameExists(ctx, resourceServer.Name)
 	if err != nil {
-		rs.logger.Error("Failed to check resource server name", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to check resource server name", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	if nameExists {
-		rs.logger.Debug("Resource server name already exists", log.String("name", resourceServer.Name))
+		rs.logger.DebugWithContext(ctx, "Resource server name already exists", log.String("name", resourceServer.Name))
 		return nil, &ErrorNameConflict
 	}
 
@@ -193,11 +194,11 @@ func (rs *resourceService) CreateResourceServer(
 	if resourceServer.Handle != "" {
 		handleExists, err := rs.resourceStore.CheckResourceServerHandleExists(ctx, resourceServer.Handle)
 		if err != nil {
-			rs.logger.Error("Failed to check resource server handle", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to check resource server handle", log.Error(err))
 			return nil, &serviceerror.InternalServerError
 		}
 		if handleExists {
-			rs.logger.Debug("Resource server handle already exists",
+			rs.logger.DebugWithContext(ctx, "Resource server handle already exists",
 				log.String("handle", resourceServer.Handle))
 			return nil, &ErrorHandleConflict
 		}
@@ -207,11 +208,11 @@ func (rs *resourceService) CreateResourceServer(
 	if resourceServer.Identifier != "" {
 		identifierExists, err := rs.resourceStore.CheckResourceServerIdentifierExists(ctx, resourceServer.Identifier)
 		if err != nil {
-			rs.logger.Error("Failed to check resource server identifier", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to check resource server identifier", log.Error(err))
 			return nil, &serviceerror.InternalServerError
 		}
 		if identifierExists {
-			rs.logger.Debug("Resource server identifier already exists",
+			rs.logger.DebugWithContext(ctx, "Resource server identifier already exists",
 				log.String("identifier", resourceServer.Identifier))
 			return nil, &ErrorIdentifierConflict
 		}
@@ -237,7 +238,7 @@ func (rs *resourceService) CreateResourceServer(
 		var err error
 		id, err = utils.GenerateUUIDv7()
 		if err != nil {
-			rs.logger.Error("Failed to generate UUID", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to generate UUID", log.Error(err))
 			return nil, &serviceerror.InternalServerError
 		}
 	} else {
@@ -246,7 +247,7 @@ func (rs *resourceService) CreateResourceServer(
 			return nil, svcErr
 		}
 		if svcErr == nil {
-			rs.logger.Debug("Resource server ID already exists", log.String("id", id))
+			rs.logger.DebugWithContext(ctx, "Resource server ID already exists", log.String("id", id))
 			return nil, &ErrorResourceServerIDConflict
 		}
 	}
@@ -255,7 +256,7 @@ func (rs *resourceService) CreateResourceServer(
 	var createdRS *ResourceServer
 	if err := rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if err := rs.resourceStore.CreateResourceServer(txCtx, id, resourceServer); err != nil {
-			rs.logger.Error("Failed to create resource server", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to create resource server", log.Error(err))
 			return err
 		}
 
@@ -273,7 +274,7 @@ func (rs *resourceService) CreateResourceServer(
 		return nil, &serviceerror.InternalServerError
 	}
 
-	rs.logger.Debug("Successfully created resource server", log.String("id", id))
+	rs.logger.DebugWithContext(ctx, "Successfully created resource server", log.String("id", id))
 	return createdRS, nil
 }
 
@@ -288,10 +289,10 @@ func (rs *resourceService) GetResourceServer(
 	resourceServer, err := rs.resourceStore.GetResourceServer(ctx, id)
 	if err != nil {
 		if errors.Is(err, errResourceServerNotFound) {
-			rs.logger.Debug("Resource server not found", log.String("id", id))
+			rs.logger.DebugWithContext(ctx, "Resource server not found", log.String("id", id))
 			return nil, &ErrorResourceServerNotFound
 		}
-		rs.logger.Error("Failed to get resource server", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to get resource server", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -309,11 +310,11 @@ func (rs *resourceService) GetResourceServerByIdentifier(
 	resourceServer, err := rs.resourceStore.GetResourceServerByIdentifier(ctx, identifier)
 	if err != nil {
 		if errors.Is(err, errResourceServerNotFound) {
-			rs.logger.Debug("Resource server not found for identifier",
+			rs.logger.DebugWithContext(ctx, "Resource server not found for identifier",
 				log.String("identifier", identifier))
 			return nil, &ErrorResourceServerNotFound
 		}
-		rs.logger.Error("Failed to get resource server by identifier", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to get resource server by identifier", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -333,7 +334,7 @@ func (rs *resourceService) GetResourceServerList(
 		if errors.Is(err, errResultLimitExceededInCompositeMode) {
 			return nil, &ErrResultLimitExceededInCompositeMode
 		}
-		rs.logger.Error("Failed to get resource server count", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to get resource server count", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -342,7 +343,7 @@ func (rs *resourceService) GetResourceServerList(
 		if errors.Is(err, errResultLimitExceededInCompositeMode) {
 			return nil, &ErrResultLimitExceededInCompositeMode
 		}
-		rs.logger.Error("Failed to list resource servers", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to list resource servers", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -373,16 +374,16 @@ func (rs *resourceService) UpdateResourceServer(
 	existingResServer, err := rs.resourceStore.GetResourceServer(ctx, id)
 	if err != nil {
 		if errors.Is(err, errResourceServerNotFound) {
-			rs.logger.Debug("Resource server not found", log.String("id", id))
+			rs.logger.DebugWithContext(ctx, "Resource server not found", log.String("id", id))
 			return nil, &ErrorResourceServerNotFound
 		}
-		rs.logger.Error("Failed to check resource server existence", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to check resource server existence", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
 	// Check if resource server is declarative (immutable)
 	if rs.IsResourceServerDeclarative(id) {
-		rs.logger.Debug("Cannot modify declarative resource server", log.String("id", id))
+		rs.logger.DebugWithContext(ctx, "Cannot modify declarative resource server", log.String("id", id))
 		return nil, serviceerror.CustomServiceError(ErrorImmutableResourceServer, core.I18nMessage{
 			Key:          ErrorImmutableResourceServer.ErrorDescription.Key,
 			DefaultValue: fmt.Sprintf(ErrorImmutableResourceServer.ErrorDescription.DefaultValue, id),
@@ -405,11 +406,11 @@ func (rs *resourceService) UpdateResourceServer(
 	} else if resourceServer.Identifier != existingResServer.Identifier {
 		identifierExists, err := rs.resourceStore.CheckResourceServerIdentifierExists(ctx, resourceServer.Identifier)
 		if err != nil {
-			rs.logger.Error("Failed to check resource server identifier", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to check resource server identifier", log.Error(err))
 			return nil, &serviceerror.InternalServerError
 		}
 		if identifierExists {
-			rs.logger.Debug("Resource server identifier already exists",
+			rs.logger.DebugWithContext(ctx, "Resource server identifier already exists",
 				log.String("identifier", resourceServer.Identifier))
 			return nil, &ErrorIdentifierConflict
 		}
@@ -428,7 +429,7 @@ func (rs *resourceService) UpdateResourceServer(
 	if existingResServer.Name != resourceServer.Name {
 		nameExists, err := rs.resourceStore.CheckResourceServerNameExists(ctx, resourceServer.Name)
 		if err != nil {
-			rs.logger.Error("Failed to check resource server name", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to check resource server name", log.Error(err))
 			return nil, &serviceerror.InternalServerError
 		}
 		if nameExists {
@@ -439,7 +440,7 @@ func (rs *resourceService) UpdateResourceServer(
 	var updatedRS *ResourceServer
 	if err := rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if err := rs.resourceStore.UpdateResourceServer(txCtx, id, resourceServer); err != nil {
-			rs.logger.Error("Failed to update resource server", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to update resource server", log.Error(err))
 			return err
 		}
 
@@ -468,7 +469,7 @@ func (rs *resourceService) DeleteResourceServer(ctx context.Context, id string) 
 
 	// Check if resource server is declarative (immutable)
 	if rs.IsResourceServerDeclarative(id) {
-		rs.logger.Debug("Cannot delete declarative resource server", log.String("id", id))
+		rs.logger.DebugWithContext(ctx, "Cannot delete declarative resource server", log.String("id", id))
 		return serviceerror.CustomServiceError(ErrorImmutableResourceServer, core.I18nMessage{
 			Key:          ErrorImmutableResourceServer.ErrorDescription.Key,
 			DefaultValue: fmt.Sprintf(ErrorImmutableResourceServer.ErrorDescription.DefaultValue, id),
@@ -480,14 +481,14 @@ func (rs *resourceService) DeleteResourceServer(ctx context.Context, id string) 
 		if errors.Is(err, errResourceServerNotFound) {
 			return nil // Idempotent delete
 		}
-		rs.logger.Error("Failed to check resource server existence", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to check resource server existence", log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 
 	// Check for dependencies
 	hasDeps, err := rs.resourceStore.CheckResourceServerHasDependencies(ctx, id)
 	if err != nil {
-		rs.logger.Error("Failed to check dependencies", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to check dependencies", log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 	if hasDeps {
@@ -497,7 +498,7 @@ func (rs *resourceService) DeleteResourceServer(ctx context.Context, id string) 
 	// Use transaction for write operation
 	if err := rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if err := rs.resourceStore.DeleteResourceServer(txCtx, id); err != nil {
-			rs.logger.Error("Failed to delete resource server", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to delete resource server", log.Error(err))
 			return err
 		}
 		return nil
@@ -538,7 +539,7 @@ func (rs *resourceService) CreateResource(
 			if errors.Is(err, errResourceNotFound) {
 				return nil, &ErrorParentResourceNotFound
 			}
-			rs.logger.Error("Failed to check parent resource", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to check parent resource", log.Error(err))
 			return nil, &serviceerror.InternalServerError
 		}
 		parentResource = &res
@@ -549,7 +550,7 @@ func (rs *resourceService) CreateResource(
 		ctx, resourceServerID, resource.Handle, resource.Parent,
 	)
 	if err != nil {
-		rs.logger.Error("Failed to check resource handle", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to check resource handle", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	if handleExists {
@@ -561,7 +562,7 @@ func (rs *resourceService) CreateResource(
 
 	id, err := utils.GenerateUUIDv7()
 	if err != nil {
-		rs.logger.Error("Failed to generate UUID", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to generate UUID", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -571,14 +572,14 @@ func (rs *resourceService) CreateResource(
 		if err := rs.resourceStore.CreateResource(
 			txCtx, id, resourceServerID, resource.Parent, resource,
 		); err != nil {
-			rs.logger.Error("Failed to create resource", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to create resource", log.Error(err))
 			return err
 		}
 
 		if err := rs.syncConsentOnPermissionCreate(
 			txCtx, resource.Permission, resource.Description,
 		); err != nil {
-			rs.logger.Error("Failed to sync consent element for resource", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to sync consent element for resource", log.Error(err))
 			return err
 		}
 
@@ -617,7 +618,7 @@ func (rs *resourceService) GetResource(
 		if errors.Is(err, errResourceNotFound) {
 			return nil, &ErrorResourceNotFound
 		}
-		rs.logger.Error("Failed to get resource", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to get resource", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -658,7 +659,7 @@ func (rs *resourceService) GetResourceList(
 		if errors.Is(err, errResultLimitExceededInCompositeMode) {
 			return nil, &ErrResultLimitExceededInCompositeMode
 		}
-		rs.logger.Error("Failed to get top-level resource count", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to get top-level resource count", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -667,7 +668,7 @@ func (rs *resourceService) GetResourceList(
 		if errors.Is(err, errResultLimitExceededInCompositeMode) {
 			return nil, &ErrResultLimitExceededInCompositeMode
 		}
-		rs.logger.Error("Failed to list resources", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to list resources", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -696,7 +697,7 @@ func (rs *resourceService) GetAllResourceList(
 
 	totalCount, err := rs.resourceStore.GetResourceListCount(ctx, resourceServerID)
 	if err != nil {
-		rs.logger.Error("Failed to get resource count", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to get resource count", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	if totalCount == 0 {
@@ -708,7 +709,7 @@ func (rs *resourceService) GetAllResourceList(
 		if errors.Is(err, errResultLimitExceededInCompositeMode) {
 			return nil, &ErrResultLimitExceededInCompositeMode
 		}
-		rs.logger.Error("Failed to list all resources", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to list all resources", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	return resources, nil
@@ -725,7 +726,7 @@ func (rs *resourceService) UpdateResource(
 
 	// Check if resource server is declarative (immutable)
 	if rs.IsResourceServerDeclarative(resourceServerID) {
-		rs.logger.Debug(
+		rs.logger.DebugWithContext(ctx,
 			"Cannot modify resource in declarative resource server",
 			log.String("resource_server_id", resourceServerID),
 		)
@@ -747,7 +748,7 @@ func (rs *resourceService) UpdateResource(
 		if errors.Is(err, errResourceNotFound) {
 			return nil, &ErrorResourceNotFound
 		}
-		rs.logger.Error("Failed to check resource existence", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to check resource existence", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -764,14 +765,14 @@ func (rs *resourceService) UpdateResource(
 	var updatedResource *Resource
 	if err := rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if err := rs.resourceStore.UpdateResource(txCtx, id, resourceServerID, updateResource); err != nil {
-			rs.logger.Error("Failed to update resource", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to update resource", log.Error(err))
 			return err
 		}
 
 		if err := rs.syncConsentOnPermissionUpdate(
 			txCtx, currentResource.Permission, updateResource.Description,
 		); err != nil {
-			rs.logger.Error("Failed to sync consent element for resource", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to sync consent element for resource", log.Error(err))
 			return err
 		}
 
@@ -799,7 +800,7 @@ func (rs *resourceService) DeleteResource(
 
 	// Check if resource server is declarative (immutable)
 	if rs.IsResourceServerDeclarative(resourceServerID) {
-		rs.logger.Debug(
+		rs.logger.DebugWithContext(ctx,
 			"Cannot delete resource in declarative resource server",
 			log.String("resource_server_id", resourceServerID),
 		)
@@ -815,7 +816,7 @@ func (rs *resourceService) DeleteResource(
 		if errors.Is(err, errResourceServerNotFound) {
 			return nil // Idempotent delete
 		}
-		rs.logger.Error("Failed to check resource server", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to check resource server", log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 
@@ -825,14 +826,14 @@ func (rs *resourceService) DeleteResource(
 		if errors.Is(err, errResourceNotFound) {
 			return nil // Idempotent delete
 		}
-		rs.logger.Error("Failed to check resource existence", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to check resource existence", log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 
 	// Check for dependencies
 	hasDeps, err := rs.resourceStore.CheckResourceHasDependencies(ctx, id)
 	if err != nil {
-		rs.logger.Error("Failed to check dependencies", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to check dependencies", log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 	if hasDeps {
@@ -842,13 +843,13 @@ func (rs *resourceService) DeleteResource(
 	// Use transaction for write operation
 	if err := rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if err := rs.resourceStore.DeleteResource(txCtx, id, resourceServerID); err != nil {
-			rs.logger.Error("Failed to delete resource", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to delete resource", log.Error(err))
 			return err
 		}
 		if err := rs.syncConsentOnPermissionDelete(
 			txCtx, currentResource.Permission,
 		); err != nil {
-			rs.logger.Error("Failed to sync consent element for resource delete", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to sync consent element for resource delete", log.Error(err))
 			return err
 		}
 		return nil
@@ -893,7 +894,7 @@ func (rs *resourceService) CreateAction(
 		ctx, resourceServerID, resourceID, action.Handle,
 	)
 	if err != nil {
-		rs.logger.Error("Failed to check action handle", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to check action handle", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	if handleExists {
@@ -905,7 +906,7 @@ func (rs *resourceService) CreateAction(
 
 	id, err := utils.GenerateUUIDv7()
 	if err != nil {
-		rs.logger.Error("Failed to generate UUID", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to generate UUID", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -913,14 +914,14 @@ func (rs *resourceService) CreateAction(
 	var createdAction *Action
 	if err := rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if err := rs.resourceStore.CreateAction(txCtx, id, resourceServerID, resourceID, action); err != nil {
-			rs.logger.Error("Failed to create action", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to create action", log.Error(err))
 			return err
 		}
 
 		if err := rs.syncConsentOnPermissionCreate(
 			txCtx, action.Permission, action.Description,
 		); err != nil {
-			rs.logger.Error("Failed to sync consent element for action", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to sync consent element for action", log.Error(err))
 			return err
 		}
 
@@ -975,7 +976,7 @@ func (rs *resourceService) GetAction(
 		if errors.Is(err, errActionNotFound) {
 			return nil, &ErrorActionNotFound
 		}
-		rs.logger.Error("Failed to get action", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to get action", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	return &action, nil
@@ -1021,7 +1022,7 @@ func (rs *resourceService) GetActionList(
 		if errors.Is(err, errResultLimitExceededInCompositeMode) {
 			return nil, &ErrResultLimitExceededInCompositeMode
 		}
-		rs.logger.Error("Failed to get action count", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to get action count", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -1030,7 +1031,7 @@ func (rs *resourceService) GetActionList(
 		if errors.Is(err, errResultLimitExceededInCompositeMode) {
 			return nil, &ErrResultLimitExceededInCompositeMode
 		}
-		rs.logger.Error("Failed to list actions", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to list actions", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -1094,7 +1095,7 @@ func (rs *resourceService) UpdateAction(
 		if errors.Is(err, errActionNotFound) {
 			return nil, &ErrorActionNotFound
 		}
-		rs.logger.Error("Failed to get action", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to get action", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -1111,14 +1112,14 @@ func (rs *resourceService) UpdateAction(
 		if err := rs.resourceStore.UpdateAction(
 			txCtx, id, resourceServerID, resID, updateAction,
 		); err != nil {
-			rs.logger.Error("Failed to update action", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to update action", log.Error(err))
 			return err
 		}
 
 		if err := rs.syncConsentOnPermissionUpdate(
 			txCtx, currentAction.Permission, updateAction.Description,
 		); err != nil {
-			rs.logger.Error("Failed to sync consent element for action", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to sync consent element for action", log.Error(err))
 			return err
 		}
 
@@ -1153,7 +1154,7 @@ func (rs *resourceService) DeleteAction(
 
 	// Check if resource server is declarative (immutable)
 	if rs.IsResourceServerDeclarative(resourceServerID) {
-		rs.logger.Debug(
+		rs.logger.DebugWithContext(ctx,
 			"Cannot delete action in declarative resource server",
 			log.String("resource_server_id", resourceServerID),
 		)
@@ -1188,7 +1189,7 @@ func (rs *resourceService) DeleteAction(
 	// Check if action exists
 	exists, err := rs.resourceStore.IsActionExist(ctx, id, resourceServerID, resID)
 	if err != nil {
-		rs.logger.Error("Failed to check action existence", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to check action existence", log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 	if !exists {
@@ -1208,7 +1209,7 @@ func (rs *resourceService) DeleteAction(
 		default:
 			// Any other failure must abort: deleting without syncing would leave the consent
 			// element orphaned.
-			rs.logger.Error("Failed to load action for consent sync", log.Error(getErr))
+			rs.logger.ErrorWithContext(ctx, "Failed to load action for consent sync", log.Error(getErr))
 			return &serviceerror.InternalServerError
 		}
 	}
@@ -1216,12 +1217,12 @@ func (rs *resourceService) DeleteAction(
 	// Use transaction for write operation
 	if err := rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if err := rs.resourceStore.DeleteAction(txCtx, id, resourceServerID, resID); err != nil {
-			rs.logger.Error("Failed to delete action", log.Error(err))
+			rs.logger.ErrorWithContext(ctx, "Failed to delete action", log.Error(err))
 			return err
 		}
 		if permissionToSync != "" {
 			if err := rs.syncConsentOnPermissionDelete(txCtx, permissionToSync); err != nil {
-				rs.logger.Error("Failed to sync consent element for action delete", log.Error(err))
+				rs.logger.ErrorWithContext(ctx, "Failed to sync consent element for action delete", log.Error(err))
 				return err
 			}
 		}
@@ -1240,7 +1241,7 @@ func (rs *resourceService) ValidatePermissions(
 	resourceServerID string,
 	permissions []string,
 ) ([]string, *serviceerror.ServiceError) {
-	rs.logger.Debug("Validating permissions",
+	rs.logger.DebugWithContext(ctx, "Validating permissions",
 		log.String("resourceServerId", resourceServerID),
 		log.Int("permissionCount", len(permissions)))
 
@@ -1252,12 +1253,12 @@ func (rs *resourceService) ValidatePermissions(
 	_, err := rs.resourceStore.GetResourceServer(ctx, resourceServerID)
 	if err != nil {
 		if !errors.Is(err, errResourceServerNotFound) {
-			rs.logger.Error("Failed to validate resource server existence",
+			rs.logger.ErrorWithContext(ctx, "Failed to validate resource server existence",
 				log.String("resourceServerId", resourceServerID),
 				log.Error(err))
 			return nil, &serviceerror.InternalServerError
 		}
-		rs.logger.Debug("Resource server not found",
+		rs.logger.DebugWithContext(ctx, "Resource server not found",
 			log.String("resourceServerId", resourceServerID))
 		// Return all permissions as invalid if resource server doesn't exist
 		return permissions, nil
@@ -1266,7 +1267,7 @@ func (rs *resourceService) ValidatePermissions(
 	// Call store to validate permissions
 	invalidPermissions, storeErr := rs.resourceStore.ValidatePermissions(ctx, resourceServerID, permissions)
 	if storeErr != nil {
-		rs.logger.Error("Failed to validate permissions in store",
+		rs.logger.ErrorWithContext(ctx, "Failed to validate permissions in store",
 			log.String("resourceServerId", resourceServerID),
 			log.Error(storeErr))
 		return nil, &serviceerror.InternalServerError
@@ -1287,7 +1288,7 @@ func (rs *resourceService) FindResourceServersByPermissions(
 
 	resourceServers, err := rs.resourceStore.FindResourceServersByPermissions(ctx, permissions)
 	if err != nil {
-		rs.logger.Error("Failed to find resource servers by permissions", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to find resource servers by permissions", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	return resourceServers, nil
@@ -1300,7 +1301,7 @@ func (rs *resourceService) ResolveResourceServerOUHandle(
 	ctx context.Context, server *ResourceServer,
 ) *serviceerror.ServiceError {
 	if server.OUID != "" && server.OUHandle != "" {
-		rs.logger.Warn("Both ou_id and ou_handle provided for resource server; ou_handle ignored",
+		rs.logger.WarnWithContext(ctx, "Both ou_id and ou_handle provided for resource server; ou_handle ignored",
 			log.String("resourceServerID", server.ID), log.String("name", server.Name))
 		return nil
 	}
@@ -1330,7 +1331,7 @@ func (rs *resourceService) validateAndGetResourceServer(
 		if errors.Is(err, errResourceServerNotFound) {
 			return ResourceServer{}, &ErrorResourceServerNotFound
 		}
-		rs.logger.Error("Failed to check resource server", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to check resource server", log.Error(err))
 		return ResourceServer{}, &serviceerror.InternalServerError
 	}
 	return resourceServer, nil
@@ -1347,7 +1348,7 @@ func (rs *resourceService) validateAndGetResourceByID(
 		if errors.Is(err, errResourceNotFound) {
 			return Resource{}, &ErrorResourceNotFound
 		}
-		rs.logger.Error("Failed to check resource", log.Error(err))
+		rs.logger.ErrorWithContext(ctx, "Failed to check resource", log.Error(err))
 		return Resource{}, &serviceerror.InternalServerError
 	}
 	return resource, nil

@@ -85,7 +85,7 @@ func (h *flowExecutionHandler) HandleFlowExecutionRequest(w http.ResponseWriter,
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, flowResp)
 
-	logger.Debug("Flow execution request handled successfully",
+	logger.DebugWithContext(r.Context(), "Flow execution request handled successfully",
 		log.String(log.LoggerKeyExecutionID, flowResp.ExecutionID))
 }
 

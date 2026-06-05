@@ -262,7 +262,7 @@ func (c *defaultClient) createConsentElements(ctx context.Context, ouID string, 
 
 	result, err := sysutils.DecodeJSONResponse[elementsCreateResponseDTO](resp)
 	if err != nil {
-		c.logger.Error("Failed to decode create-elements response", log.Error(err))
+		c.logger.ErrorWithContext(ctx, "Failed to decode create-elements response", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -294,7 +294,7 @@ func (c *defaultClient) listConsentElements(ctx context.Context, ouID string, ns
 
 	result, err := sysutils.DecodeJSONResponse[elementListResponseDTO](resp)
 	if err != nil {
-		c.logger.Error("Failed to decode list-elements response", log.Error(err))
+		c.logger.ErrorWithContext(ctx, "Failed to decode list-elements response", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -336,7 +336,7 @@ func (c *defaultClient) updateConsentElement(ctx context.Context, ouID, elementI
 
 	result, err := sysutils.DecodeJSONResponse[elementResponseDTO](resp)
 	if err != nil {
-		c.logger.Error("Failed to decode update-element response", log.Error(err))
+		c.logger.ErrorWithContext(ctx, "Failed to decode update-element response", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	el := c.dtoToConsentElement(result)
@@ -391,7 +391,7 @@ func (c *defaultClient) validateConsentElements(ctx context.Context, ouID string
 
 	result, err := sysutils.DecodeJSONResponse[[]string](resp)
 	if err != nil {
-		c.logger.Error("Failed to decode validate-elements response", log.Error(err))
+		c.logger.ErrorWithContext(ctx, "Failed to decode validate-elements response", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -430,7 +430,7 @@ func (c *defaultClient) createConsentPurpose(ctx context.Context, ouID string, p
 
 	result, err := sysutils.DecodeJSONResponse[purposeResponseDTO](resp)
 	if err != nil {
-		c.logger.Error("Failed to decode create-purpose response", log.Error(err))
+		c.logger.ErrorWithContext(ctx, "Failed to decode create-purpose response", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	p := c.dtoToConsentPurpose(result)
@@ -463,7 +463,7 @@ func (c *defaultClient) listConsentPurposes(ctx context.Context, ouID, groupID s
 
 	result, err := sysutils.DecodeJSONResponse[purposeListResponseDTO](resp)
 	if err != nil {
-		c.logger.Error("Failed to decode list-purposes response", log.Error(err))
+		c.logger.ErrorWithContext(ctx, "Failed to decode list-purposes response", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -505,7 +505,7 @@ func (c *defaultClient) updateConsentPurpose(ctx context.Context, ouID, purposeI
 
 	result, err := sysutils.DecodeJSONResponse[purposeResponseDTO](resp)
 	if err != nil {
-		c.logger.Error("Failed to decode update-purpose response", log.Error(err))
+		c.logger.ErrorWithContext(ctx, "Failed to decode update-purpose response", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	p := c.dtoToConsentPurpose(result)
@@ -565,7 +565,7 @@ func (c *defaultClient) createConsent(ctx context.Context, ouID string, req *Con
 
 	result, err := sysutils.DecodeJSONResponse[consentResponseDTO](resp)
 	if err != nil {
-		c.logger.Error("Failed to decode create-consent response", log.Error(err))
+		c.logger.ErrorWithContext(ctx, "Failed to decode create-consent response", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	out := c.dtoToConsent(result)
@@ -597,7 +597,7 @@ func (c *defaultClient) searchConsents(ctx context.Context, ouID string, filter 
 
 	result, err := sysutils.DecodeJSONResponse[consentSearchResponseDTO](resp)
 	if err != nil {
-		c.logger.Error("Failed to decode search-consents response", log.Error(err))
+		c.logger.ErrorWithContext(ctx, "Failed to decode search-consents response", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -663,7 +663,7 @@ func (c *defaultClient) validateConsent(ctx context.Context, ouID, consentID str
 
 	result, err := sysutils.DecodeJSONResponse[consentValidateResponseDTO](resp)
 	if err != nil {
-		c.logger.Error("Failed to decode validate-consent response", log.Error(err))
+		c.logger.ErrorWithContext(ctx, "Failed to decode validate-consent response", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -698,7 +698,7 @@ func (c *defaultClient) updateConsent(ctx context.Context, ouID, consentID strin
 
 	result, err := sysutils.DecodeJSONResponse[consentResponseDTO](resp)
 	if err != nil {
-		c.logger.Error("Failed to decode update-consent response", log.Error(err))
+		c.logger.ErrorWithContext(ctx, "Failed to decode update-consent response", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	out := c.dtoToConsent(result)
@@ -1065,7 +1065,7 @@ func (c *defaultClient) doRequest(ctx context.Context, method, url, ouID, groupI
 		var merr error
 		encodedBody, merr = json.Marshal(body)
 		if merr != nil {
-			c.logger.Debug("Failed to marshal request body", log.Error(merr))
+			c.logger.DebugWithContext(ctx, "Failed to marshal request body", log.Error(merr))
 			return nil, &ErrorInvalidRequestFormat
 		}
 	}
@@ -1078,7 +1078,7 @@ func (c *defaultClient) doRequest(ctx context.Context, method, url, ouID, groupI
 		if attempt > 0 {
 			select {
 			case <-ctx.Done():
-				c.logger.Warn("Consent request cancelled during retry", log.Error(ctx.Err()))
+				c.logger.WarnWithContext(ctx, "Consent request cancelled during retry", log.Error(ctx.Err()))
 				return nil, &serviceerror.InternalServerError
 			case <-time.After(backoff):
 			}
@@ -1096,7 +1096,7 @@ func (c *defaultClient) doRequest(ctx context.Context, method, url, ouID, groupI
 		req, err := http.NewRequestWithContext(reqCtx, method, url, bodyReader)
 		if err != nil {
 			cancel()
-			c.logger.Error("Failed to create HTTP request", log.Error(err))
+			c.logger.ErrorWithContext(ctx, "Failed to create HTTP request", log.Error(err))
 			return nil, &serviceerror.InternalServerError
 		}
 
@@ -1109,7 +1109,7 @@ func (c *defaultClient) doRequest(ctx context.Context, method, url, ouID, groupI
 		if err != nil {
 			cancel()
 			lastErr = err
-			c.logger.Warn("Error reaching consent service, will retry if attempts remain",
+			c.logger.WarnWithContext(ctx, "Error reaching consent service, will retry if attempts remain",
 				log.Error(err), log.Int("attempt", attempt+1), log.Int("maxAttempts", maxAttempts))
 			continue
 		}
@@ -1117,7 +1117,7 @@ func (c *defaultClient) doRequest(ctx context.Context, method, url, ouID, groupI
 		// For 5xx responses, retry if attempts remain; on the last attempt return the
 		// response so checkStatus can inspect the final status code and body.
 		if resp.StatusCode >= http.StatusInternalServerError {
-			c.logger.Warn("Consent service returned server error, will retry if attempts remain",
+			c.logger.WarnWithContext(ctx, "Consent service returned server error, will retry if attempts remain",
 				log.Int("status", resp.StatusCode), log.Int("attempt", attempt+1),
 				log.Int("maxAttempts", maxAttempts))
 
@@ -1139,7 +1139,7 @@ func (c *defaultClient) doRequest(ctx context.Context, method, url, ouID, groupI
 		return resp, nil
 	}
 
-	c.logger.Error("All retry attempts exceeded for consent service request",
+	c.logger.ErrorWithContext(ctx, "All retry attempts exceeded for consent service request",
 		log.String("method", method), log.Error(lastErr))
 
 	return nil, &serviceerror.InternalServerError

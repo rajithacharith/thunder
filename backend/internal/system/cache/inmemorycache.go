@@ -176,7 +176,7 @@ func newInMemoryCache[T any](name string, enabled bool,
 }
 
 // Set adds or updates an entry in the cache.
-func (c *inMemoryCache[T]) Set(_ context.Context, key CacheKey, value T) error {
+func (c *inMemoryCache[T]) Set(ctx context.Context, key CacheKey, value T) error {
 	if !c.enabled {
 		return nil
 	}
@@ -235,11 +235,11 @@ func (c *inMemoryCache[T]) Set(_ context.Context, key CacheKey, value T) error {
 	}
 	c.cache[key] = inMemoryCacheEntry
 
-	logger.Debug("Cache entry set", log.String("key", key.ToString()))
+	logger.DebugWithContext(ctx, "Cache entry set", log.String("key", key.ToString()))
 
 	// Check if there's a requirement to evict an entry
 	if len(c.cache) > c.size {
-		logger.Debug("Cache size exceeded, evicting an entry")
+		logger.DebugWithContext(ctx, "Cache size exceeded, evicting an entry")
 		c.evict()
 	}
 
@@ -247,7 +247,7 @@ func (c *inMemoryCache[T]) Set(_ context.Context, key CacheKey, value T) error {
 }
 
 // Get retrieves a value from the cache.
-func (c *inMemoryCache[T]) Get(_ context.Context, key CacheKey) (T, bool) {
+func (c *inMemoryCache[T]) Get(ctx context.Context, key CacheKey) (T, bool) {
 	if !c.enabled {
 		var zero T
 		return zero, false
@@ -287,12 +287,12 @@ func (c *inMemoryCache[T]) Get(_ context.Context, key CacheKey) (T, bool) {
 		heap.Fix(c.lfuHeap, entry.heapItem.index)
 	}
 
-	logger.Debug("Cache hit", log.String("key", key.ToString()))
+	logger.DebugWithContext(ctx, "Cache hit", log.String("key", key.ToString()))
 	return entry.Value, true
 }
 
 // Delete removes an entry from the cache.
-func (c *inMemoryCache[T]) Delete(_ context.Context, key CacheKey) error {
+func (c *inMemoryCache[T]) Delete(ctx context.Context, key CacheKey) error {
 	if !c.enabled {
 		return nil
 	}
@@ -308,7 +308,7 @@ func (c *inMemoryCache[T]) Delete(_ context.Context, key CacheKey) error {
 }
 
 // Clear removes all entries from the cache.
-func (c *inMemoryCache[T]) Clear(_ context.Context) error {
+func (c *inMemoryCache[T]) Clear(ctx context.Context) error {
 	if !c.enabled {
 		return nil
 	}
@@ -327,7 +327,7 @@ func (c *inMemoryCache[T]) Clear(_ context.Context) error {
 	c.missCount.Store(0)
 	c.evictCount.Store(0)
 
-	logger.Debug("Cleared all entries in the cache")
+	logger.DebugWithContext(ctx, "Cleared all entries in the cache")
 	return nil
 }
 

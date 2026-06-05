@@ -74,7 +74,7 @@ func (e *emailExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse
 // executeSend resolves the email template, constructs the email, and sends it.
 func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := e.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
-	logger.Debug("Executing email executor in send mode")
+	logger.DebugWithContext(ctx.Context, "Executing email executor in send mode")
 
 	execResp := &common.ExecutorResponse{
 		AdditionalData: make(map[string]string),
@@ -83,7 +83,7 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 
 	// 1. Check for SkipDelivery FIRST
 	if skip, ok := ctx.RuntimeData[common.RuntimeKeySkipDelivery]; ok && skip == dataValueTrue {
-		logger.Debug("Delivery marked as skipped, completing without sending email")
+		logger.DebugWithContext(ctx.Context, "Delivery marked as skipped, completing without sending email")
 		execResp.Status = common.ExecComplete
 		return execResp, nil
 	}
@@ -92,7 +92,7 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 		execResp.AdditionalData[common.DataEmailSent] = dataValueFalse
 		execResp.Status = common.ExecFailure
 		execResp.Error = &ErrEmailServiceNotConfigured
-		logger.Debug("Email client not configured")
+		logger.DebugWithContext(ctx.Context, "Email client not configured")
 		return execResp, nil
 	}
 
@@ -106,7 +106,7 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 		return nil, err
 	}
 	if recipient == "" {
-		logger.Debug("Email recipient not found")
+		logger.DebugWithContext(ctx.Context, "Email recipient not found")
 		execResp.Status = common.ExecFailure
 		execResp.Error = &ErrEmailRecipientMissing
 		return execResp, nil
@@ -150,7 +150,7 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 		return execResp, nil
 	}
 
-	logger.Debug("Email sent successfully", log.MaskedString("recipient", recipient))
+	logger.DebugWithContext(ctx.Context, "Email sent successfully", log.MaskedString("recipient", recipient))
 
 	execResp.AdditionalData[common.DataEmailSent] = dataValueTrue
 	execResp.Status = common.ExecComplete
@@ -193,7 +193,8 @@ func (e *emailExecutor) resolveRecipientEmail(ctx *core.NodeContext, logger *log
 		if recipientEmail, err := GetUserAttribute(user, emailAttr); err == nil {
 			return recipientEmail, nil
 		}
-		logger.Debug("Email attribute not found in user entity", log.String("attribute", emailAttr))
+		logger.DebugWithContext(ctx.Context, "Email attribute not found in user entity",
+			log.String("attribute", emailAttr))
 	}
 
 	return "", nil
@@ -228,7 +229,7 @@ func (e *emailExecutor) resolveTemplateData(ctx *core.NodeContext) template.Temp
 					templateData[k] = v
 				}
 			default:
-				e.logger.Debug("Forwarded template data is of unknown type",
+				e.logger.DebugWithContext(ctx.Context, "Forwarded template data is of unknown type",
 					log.String("type", fmt.Sprintf("%T", forwardedTemplateData)))
 			}
 		}
