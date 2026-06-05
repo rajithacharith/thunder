@@ -213,6 +213,14 @@ $REACT_SDK_SAMPLE_APP_DIR = Join-Path $SAMPLE_BASE_DIR "apps/react-sdk-sample"
 $REACT_API_SAMPLE_APP_DIR = Join-Path $SAMPLE_BASE_DIR "apps/react-api-based-sample"
 $WAYFINDER_SAMPLE_APP_DIR = Join-Path $SAMPLE_BASE_DIR "apps/wayfinder-sample"
 
+# Quick start declarative bundles staged into the console's welcome feature so they're inlined
+# into the console JS bundle at build time.
+# Add a new bundle as a single line. Name may include "/" for grouping.
+$QUICKSTART_SAMPLE_BUNDLES = @(
+    @{ Name = "wayfinder"; Source = (Join-Path $WAYFINDER_SAMPLE_APP_DIR "thunderid-config") }
+)
+$QUICKSTART_BUNDLE_STAGE_DIR = Join-Path $FRONTEND_CONSOLE_APP_SOURCE_DIR "src/features/welcome/data/sample-bundles"
+
 # Default ports
 $GATE_APP_DEFAULT_PORT = 5190
 $CONSOLE_APP_DEFAULT_PORT = 5191
@@ -454,7 +462,9 @@ function Build-Frontend {
     Write-Host "================================================================"
     Write-Host "Building frontend apps..."
     Ensure-Pnpm
-    
+
+    Sync-QuickstartBundles
+
     # Install dependencies
     try {
         Write-Host "Installing frontend dependencies..."
@@ -669,6 +679,25 @@ function Prepare-Frontend-For-Packaging {
     }
 
     Write-Host "================================================================"
+}
+
+function Sync-QuickstartBundles {
+    # Stage Quick start declarative bundles into the console's public dir.
+    Write-Host "Syncing quick start sample bundles to console welcome data dir..."
+    if (Test-Path $QUICKSTART_BUNDLE_STAGE_DIR) {
+        Remove-Item -Path $QUICKSTART_BUNDLE_STAGE_DIR -Recurse -Force
+    }
+    foreach ($bundle in $QUICKSTART_SAMPLE_BUNDLES) {
+        $dest_dir = Join-Path $QUICKSTART_BUNDLE_STAGE_DIR $bundle.Name
+        if (Test-Path $bundle.Source) {
+            Write-Host "  Staging '$($bundle.Name)' from $($bundle.Source)"
+            New-Item -Path $dest_dir -ItemType Directory -Force | Out-Null
+            Copy-Item -Path (Join-Path $bundle.Source "*") -Destination $dest_dir -Recurse -Force
+        }
+        else {
+            Write-Host "  Warning: Quick start bundle source not found at $($bundle.Source) (dest '$($bundle.Name)')"
+        }
+    }
 }
 
 function Package {
@@ -1932,7 +1961,9 @@ function Run-Frontend {
     Write-Host "================================================================"
     Write-Host "Running frontend apps..."
     Ensure-Pnpm
-    
+
+    Sync-QuickstartBundles
+
     # Install dependencies
     try {
         Write-Host "Installing frontend dependencies..."

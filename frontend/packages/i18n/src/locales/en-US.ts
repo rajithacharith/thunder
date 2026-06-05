@@ -192,10 +192,10 @@ const translations = {
     'welcome.wayfinderSampleSetup.setupComplete': 'Already set up — you can skip this section',
     'welcome.wayfinderSampleSetup.steps.getSample.title': 'Get the Wayfinder Sample',
     'welcome.wayfinderSampleSetup.steps.getSample.description':
-      'Download the latest Wayfinder sample distribution. It ships with the web frontend, AI agent service, Wayfinder server, and a thunderid-config/ directory with the configuration bundle.',
+      'Download the latest Wayfinder sample distribution and extract the archive. It ships with the web frontend, AI agent service, and Wayfinder server.',
     'welcome.wayfinderSampleSetup.steps.configure.title': 'Configure Wayfinder Sample in {{productName}}',
     'welcome.wayfinderSampleSetup.steps.configure.description':
-      'Select your extracted Wayfinder sample folder. The importer reads the thunderid-config/ directory and applies the configuration to {{productName}}. Skip this step if already done.',
+      'Apply the Wayfinder sample configurations to {{productName}}. Skip this step if already done.',
     'welcome.wayfinderSampleSetup.steps.run.title': 'Run the Sample',
     'welcome.wayfinderSampleSetup.steps.run.description':
       'Start all Wayfinder services from the extracted sample directory.',
@@ -225,8 +225,7 @@ const translations = {
     'welcome.tryout.title': 'Try It Out',
     'welcome.tryout.actions.readDocs': 'Read Documentation for more guides and details',
     'welcome.tryout.importConfigs.title': 'Configure Wayfinder Sample in {{productName}}',
-    'welcome.tryout.importConfigs.description':
-      'Select your extracted Wayfinder sample folder. The importer reads the thunderid-config/ directory inside and applies the configuration to {{productName}}.',
+    'welcome.tryout.importConfigs.description': 'Apply the Wayfinder sample configurations to {{productName}}.',
 
     'welcome.getStarted.breadcrumb': 'Get started',
     'welcome.getStarted.actions.skipToConsole': 'Skip to console',
@@ -248,11 +247,11 @@ const translations = {
       'Run consumer app use cases against the Wayfinder sample, a fictional consumer travel-booking app.',
     'welcome.consumerAppTryout.steps.getSample.title': 'Get the Wayfinder Sample',
     'welcome.consumerAppTryout.steps.getSample.description':
-      'Download the latest Wayfinder sample distribution. It ships with a thunderid-config/ directory containing a declarative YAML bundle and a thunderid.env file with the environment variables it references.',
+      'Download the latest Wayfinder sample distribution and extract the archive. It ships with the web frontend, AI agent service, and Wayfinder server.',
     'welcome.consumerAppTryout.steps.getSample.action': 'Download Sample',
     'welcome.consumerAppTryout.steps.importConfigs.title': 'Configure Wayfinder Sample in {{productName}}',
     'welcome.consumerAppTryout.steps.importConfigs.description':
-      'Select your extracted Wayfinder sample folder. The importer reads the thunderid-config/ directory inside and applies the configuration to {{productName}}.',
+      'Apply the Wayfinder sample configurations to {{productName}}.',
     'welcome.consumerAppTryout.steps.runSample.title': 'Run the Sample',
     'welcome.consumerAppTryout.steps.runSample.description':
       'Start all Wayfinder services from the extracted sample directory.',
@@ -326,10 +325,10 @@ const translations = {
       'Run AI agent use cases against the Wayfinder sample, a travel-booking app with a built-in AI chat assistant.',
     'welcome.aiAgentsTryout.steps.getSample.title': 'Get the Wayfinder Sample',
     'welcome.aiAgentsTryout.steps.getSample.description':
-      'Download the latest Wayfinder sample distribution. It ships with a thunderid-config/ directory, the Wayfinder web frontend, the AI Agent service, and the Wayfinder Server.',
+      'Download the latest Wayfinder sample distribution and extract the archive. It ships with the Wayfinder web frontend, the AI Agent service, and the Wayfinder Server.',
     'welcome.aiAgentsTryout.steps.importConfigs.title': 'Configure Wayfinder Sample in {{productName}}',
     'welcome.aiAgentsTryout.steps.importConfigs.description':
-      'Select your extracted Wayfinder sample folder. The importer reads the thunderid-config/ directory inside and applies the configuration to {{productName}}.',
+      'Apply the Wayfinder sample configurations to {{productName}}.',
     'welcome.aiAgentsTryout.steps.configureSample.title': 'Configure the Sample',
     'welcome.aiAgentsTryout.steps.configureSample.description':
       'Copy each .env.example to .env in backend/, ai-agent/, and frontend/. Fill in your LLM API key in ai-agent/.env — an Anthropic key from console.anthropic.com or a Gemini key from aistudio.google.com.',
@@ -391,7 +390,7 @@ const translations = {
       'This tryout extends the AI Agents environment. Complete the Securing AI Agents tryout setup first — the same bundle seeds the EXTERNAL-MCP-CLIENT application used here.',
     'welcome.mcpTryout.steps.importConfigs.title': 'Configure Wayfinder Sample in {{productName}}',
     'welcome.mcpTryout.steps.importConfigs.description':
-      'Select your extracted Wayfinder sample folder. The importer reads the thunderid-config/ directory inside and applies the configuration to {{productName}}.',
+      'Apply the Wayfinder sample configurations to {{productName}}.',
     'welcome.mcpTryout.steps.verifyApp.title': 'Verify the Application',
     'welcome.mcpTryout.steps.verifyApp.description':
       'In the {{productName}} Console, open Applications and confirm EXTERNAL-MCP-CLIENT is listed.',
