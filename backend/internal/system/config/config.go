@@ -478,6 +478,16 @@ type EntityTypeConfig struct {
 	Store string `yaml:"store" json:"store"`
 }
 
+// GroupConfig holds the group service configuration.
+type GroupConfig struct {
+	// Store defines the storage mode for groups.
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
+	Store string `yaml:"store" json:"store"`
+}
+
 // RoleConfig holds the role service configuration.
 type RoleConfig struct {
 	// Store defines the storage mode for roles.
@@ -757,6 +767,7 @@ type Config struct {
 	AuthnProvider        AuthnProviderConfig    `yaml:"authn_provider" json:"authn_provider"`
 	UserProvider         UserProviderConfig     `yaml:"user_provider" json:"user_provider"`
 	EntityProvider       EntityProviderConfig   `yaml:"entity_provider" json:"entity_provider"`
+	Group                GroupConfig            `yaml:"group" json:"group"`
 	Role                 RoleConfig             `yaml:"role" json:"role"`
 	Theme                ThemeConfig            `yaml:"theme" json:"theme"`
 	Layout               LayoutConfig           `yaml:"layout" json:"layout"`
