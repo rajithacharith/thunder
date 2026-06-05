@@ -201,7 +201,7 @@ RESPONSE=$(api_call POST "/agent-types" '{
       "type": "string",
       "displayName": "Model",
       "required": false,
-      "enum": ["GPT-5", "Claude", "Gemini", "Llama", "Mistral", "Other"]
+      "enum": ["claude-opus-4.7", "claude-opus-4.6", "claude-sonnet-4.6", "claude-sonnet-4.5", "claude-haiku-4.5", "openai-gpt-5.4", "openai-gpt-5.3", "gemini-3.5", "gemini-3.1", "gemini-3", "other"]
     },
     "department": {
       "type": "string",
