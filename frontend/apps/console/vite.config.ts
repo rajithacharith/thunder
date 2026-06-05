@@ -60,6 +60,36 @@ const prismjsGlobalFix = {
 // https://vite.dev/config/
 export default defineConfig({
   base: BASE_URL,
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/@mui/x-data-grid') || id.includes('node_modules/@mui/x-virtualizer')) {
+            return 'vendor-mui-x';
+          }
+          if (
+            id.includes('node_modules/@mui/material') ||
+            id.includes('node_modules/@mui/system') ||
+            id.includes('node_modules/@mui/styled-engine')
+          ) {
+            return 'vendor-mui';
+          }
+          if (id.includes('node_modules/@emotion/')) {
+            return 'vendor-emotion';
+          }
+          if (id.includes('node_modules/@wso2/oxygen-ui')) {
+            return 'vendor-oxygen';
+          }
+          if (id.includes('node_modules/react-i18next') || id.includes('node_modules/i18next')) {
+            return 'vendor-i18n';
+          }
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) {
+            return 'vendor-react';
+          }
+        },
+      },
+    },
+  },
   define: {
     VERSION: JSON.stringify(VERSION),
     ANALYZER_ENABLED: JSON.stringify(ANALYZER_ENABLED),
