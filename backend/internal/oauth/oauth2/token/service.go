@@ -374,9 +374,11 @@ func publishTokenIssuanceFailedEvent(
 		WithData(event.DataKey.ClientID, clientID).
 		WithData(event.DataKey.GrantType, grantType).
 		WithData(event.DataKey.Scope, scope).
-		WithData(event.DataKey.Error, message).
-		WithData(event.DataKey.ErrorCode, fmt.Sprintf("%d", statusCode)).
-		WithData(event.DataKey.ErrorType, errorType).
+		WithData(event.DataKey.Error, map[string]interface{}{
+			"code":    fmt.Sprintf("%d", statusCode),
+			"type":    errorType,
+			"message": message,
+		}).
 		WithData(event.DataKey.DurationMs, fmt.Sprintf("%d", duration))
 
 	svc.PublishEvent(evt)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -26,6 +26,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
@@ -86,7 +87,7 @@ func (o *ouExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, e
 	if !o.ValidatePrerequisites(ctx, execResp) {
 		logger.Debug("Prerequisites validation failed for OU creation")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Prerequisites validation failed for OU creation"
+		execResp.Error = &ErrOUCreationPrereqFailed
 		return execResp, nil
 	}
 
@@ -110,11 +111,14 @@ func (o *ouExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, e
 
 			switch svcErr.Code {
 			case ou.ErrorOrganizationUnitNameConflict.Code:
-				execResp.FailureReason = "An organization unit with the same name already exists."
+				execResp.Error = &ErrOUNameConflict
 			case ou.ErrorOrganizationUnitHandleConflict.Code:
-				execResp.FailureReason = "An organization unit with the same handle already exists."
+				execResp.Error = &ErrOUHandleConflict
 			default:
-				execResp.FailureReason = "Failed to create organization unit: " + svcErr.ErrorDescription.DefaultValue
+				execResp.Error = serviceerror.CustomServiceError(ErrOUCreationFailed, i18ncore.I18nMessage{
+					Key:          ErrOUCreationFailed.ErrorDescription.Key,
+					DefaultValue: "Failed to create organization unit:" + svcErr.ErrorDescription.DefaultValue,
+				})
 			}
 
 			return execResp, nil

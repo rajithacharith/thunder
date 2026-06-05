@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -119,13 +119,8 @@ func (s *flowExecService) Execute(ctx context.Context,
 					WithStatus(event.StatusFailure).
 					WithData(event.DataKey.EntityID, appID).
 					WithData(event.DataKey.FlowType, flowType).
-					WithData(event.DataKey.Error, loadErr.Error.DefaultValue).
-					WithData(event.DataKey.ErrorCode, loadErr.Code).
-					WithData(event.DataKey.ErrorType, string(loadErr.Type))
+					WithData(event.DataKey.Error, processServiceErrorForEventPublish(loadErr))
 
-				if loadErr.ErrorDescription.DefaultValue != "" {
-					evt.WithData(event.DataKey.Message, loadErr.ErrorDescription.DefaultValue)
-				}
 				s.observabilitySvc.PublishEvent(evt)
 			}
 			return nil, loadErr

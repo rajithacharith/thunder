@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -52,7 +52,11 @@ export interface AcceptInviteFlowResponse {
     };
     redirectURL?: string;
   };
-  failureReason?: string;
+  error?: {
+    code: string;
+    description: {key: string; default?: string; defaultValue?: string};
+    message: {key: string; default?: string; defaultValue?: string};
+  };
   flowId: string;
   flowStatus: 'INCOMPLETE' | 'COMPLETE' | 'ERROR';
   type?: 'VIEW' | 'REDIRECTION';
@@ -150,8 +154,7 @@ const BaseAcceptInvite: Component = defineComponent({
     // ── Helpers ──
 
     const handleError = (error: any): void => {
-      const errorMessage: string =
-        error?.failureReason || extractErrorMessage(error, t, 'components.acceptInvite.errors.generic');
+      const errorMessage: string = extractErrorMessage(error, t, 'components.acceptInvite.errors.generic');
       apiError.value = error instanceof Error ? error : new Error(errorMessage);
       props.onError?.(apiError.value);
     };
@@ -312,6 +315,11 @@ const BaseAcceptInvite: Component = defineComponent({
         formValues.value = {};
         formErrors.value = {};
         touchedFields.value = {};
+
+        // Display error from INCOMPLETE response
+        if (response?.error) {
+          handleError(response);
+        }
       } catch (err) {
         handleError(err);
       } finally {

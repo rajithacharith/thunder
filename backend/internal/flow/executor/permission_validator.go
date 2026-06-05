@@ -71,7 +71,7 @@ func (e *permissionValidator) Execute(ctx *core.NodeContext) (*common.ExecutorRe
 	if ctx.Context == nil {
 		logger.Debug("No context available - blocking access")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Insufficient permissions"
+		execResp.Error = &ErrInsufficientPermissions
 		return execResp, nil
 	}
 
@@ -88,7 +88,7 @@ func (e *permissionValidator) Execute(ctx *core.NodeContext) (*common.ExecutorRe
 		logger.Debug("Request lacks required scope",
 			log.Any("requiredScopes", requiredScopes))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Insufficient permissions"
+		execResp.Error = &ErrInsufficientPermissions
 		return execResp, nil
 	}
 

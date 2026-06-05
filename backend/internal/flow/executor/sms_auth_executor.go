@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -31,6 +31,8 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	notifcommon "github.com/thunder-id/thunderid/internal/notification/common"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
@@ -188,9 +190,13 @@ func (s *smsOTPAuthExecutor) InitiateOTP(ctx *core.NodeContext,
 
 	// Handle registration flows.
 	if ctx.FlowType == common.FlowTypeRegistration {
-		if execResp.Status == common.ExecFailure && execResp.FailureReason != failureReasonUserNotFound {
-			logger.Error("Failed to identify user during registration flow", log.Error(err))
-			return fmt.Errorf("failed to identify user during registration flow: %w", err)
+		if execResp.Status == common.ExecFailure &&
+			(execResp.Error == nil || execResp.Error.Code != ErrUserNotFound.Code) {
+			if execResp.Error != nil {
+				return fmt.Errorf("failed to identify user during registration flow: %s, error code: %s",
+					execResp.Error.ErrorDescription.DefaultValue, execResp.Error.Code)
+			}
+			return fmt.Errorf("failed to identify user during registration flow")
 		}
 
 		if userID != nil && *userID != "" {
@@ -198,12 +204,15 @@ func (s *smsOTPAuthExecutor) InitiateOTP(ctx *core.NodeContext,
 			// Prompt the user to provide a different mobile number.
 			execResp.Status = common.ExecUserInputRequired
 			execResp.Inputs = []common.Input{s.resolvePhoneInput(ctx, mobileNumberInput)}
-			execResp.FailureReason = "User already exists with the provided mobile number."
+			execResp.Error = serviceerror.CustomServiceError(ErrUserAlreadyExists, i18ncore.I18nMessage{
+				Key:          ErrUserAlreadyExists.ErrorDescription.Key,
+				DefaultValue: "User already exists with the provided mobile number",
+			})
 			return nil
 		}
 
 		execResp.Status = ""
-		execResp.FailureReason = ""
+		execResp.Error = nil
 	} else {
 		if execResp.Status == common.ExecFailure {
 			return nil
@@ -331,20 +340,20 @@ func (s *smsOTPAuthExecutor) satisfyPrerequisites(ctx *core.NodeContext,
 	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	execResp.Status = ""
-	execResp.FailureReason = ""
+	execResp.Error = nil
 
 	logger.Debug("Trying to resolve user ID from context data")
 	userIDResolved, err := s.resolveUserID(ctx)
 	if err != nil {
 		logger.Error("Failed to resolve user ID from context data", log.Error(err))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Failed to resolve user ID from context data"
+		execResp.Error = &ErrUserIDMissingInContext
 		return
 	}
 	if !userIDResolved {
 		logger.Debug("User ID could not be resolved from context data")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "User ID could not be resolved from context data"
+		execResp.Error = &ErrUserIDMissingInContext
 		return
 	}
 	userID := ctx.RuntimeData[userAttributeUserID]
@@ -358,7 +367,7 @@ func (s *smsOTPAuthExecutor) satisfyPrerequisites(ctx *core.NodeContext,
 	if err != nil {
 		logger.Error("Failed to retrieve mobile number", log.MaskedString(log.LoggerKeyUserID, userID), log.Error(err))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Failed to retrieve mobile number"
+		execResp.Error = errFailedToRetrieveAttribute("mobile number")
 		return
 	}
 	if execResp.Status == common.ExecFailure {
@@ -368,9 +377,9 @@ func (s *smsOTPAuthExecutor) satisfyPrerequisites(ctx *core.NodeContext,
 	logger.Debug("Mobile number retrieved successfully", log.MaskedString(log.LoggerKeyUserID, userID))
 	ctx.RuntimeData[s.resolvePhoneInput(ctx, mobileNumberInput).Identifier] = mobileNumber
 
-	// Reset the executor response status and failure reason.
+	// Reset the executor response status and error.
 	execResp.Status = ""
-	execResp.FailureReason = ""
+	execResp.Error = nil
 }
 
 // resolveUserID resolves the user ID from the context based on various attributes.
@@ -491,7 +500,7 @@ func (s *smsOTPAuthExecutor) getUserMobileNumber(userID string, ctx *core.NodeCo
 	if mobileNumber == "" {
 		logger.Debug("Mobile number not found in user attributes or context")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Mobile number not found in user attributes or context"
+		execResp.Error = errAttributeNotFoundFor("mobile")
 		return "", nil
 	}
 
@@ -560,7 +569,7 @@ func (s *smsOTPAuthExecutor) validateAttempts(ctx *core.NodeContext, execResp *c
 		logger.Debug("Maximum OTP attempts reached", log.MaskedString(log.LoggerKeyUserID, userID),
 			log.Int("attemptCount", attemptCount))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = fmt.Sprintf("maximum OTP attempts reached: %d", attemptCount)
+		execResp.Error = errMaxOTPAttemptsReachedFor(attemptCount)
 		return 0, nil
 	}
 
@@ -596,7 +605,7 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 		logger.Debug("Provided OTP is empty", log.MaskedString(log.LoggerKeyUserID, userID))
 		execResp.Status = common.ExecUserInputRequired
 		execResp.Inputs = s.GetRequiredInputs(ctx)
-		execResp.FailureReason = failureReasonInvalidOTP
+		execResp.Error = &ErrInvalidOTP
 		return nil, nil
 	}
 
@@ -622,7 +631,7 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 				logger.Debug("OTP verification failed", log.MaskedString(log.LoggerKeyUserID, userID))
 				execResp.Status = common.ExecUserInputRequired
 				execResp.Inputs = s.GetRequiredInputs(ctx)
-				execResp.FailureReason = failureReasonInvalidOTP
+				execResp.Error = &ErrInvalidOTP
 				return nil, nil
 			}
 			logger.Error("Failed to verify OTP",
@@ -632,11 +641,14 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 		execResp.AuthUser = newAuthUser
 		if authnResult.IsExistingUser {
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = "User already exists with the provided mobile number."
+			execResp.Error = serviceerror.CustomServiceError(ErrUserAlreadyExists, i18ncore.I18nMessage{
+				Key:          ErrUserAlreadyExists.ErrorDescription.Key,
+				DefaultValue: "User already exists with the provided mobile number",
+			})
 			return nil, nil
 		}
 		execResp.Status = common.ExecComplete
-		execResp.FailureReason = ""
+		execResp.Error = nil
 		return &authncm.AuthenticatedUser{
 			IsAuthenticated: false,
 			Attributes: map[string]interface{}{
@@ -652,7 +664,7 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 			logger.Debug("OTP verification failed", log.MaskedString(log.LoggerKeyUserID, userID))
 			execResp.Status = common.ExecUserInputRequired
 			execResp.Inputs = s.GetRequiredInputs(ctx)
-			execResp.FailureReason = failureReasonInvalidOTP
+			execResp.Error = &ErrInvalidOTP
 			return nil, nil
 		}
 		logger.Error("Failed to verify OTP",
