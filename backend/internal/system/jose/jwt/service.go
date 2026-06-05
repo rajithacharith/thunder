@@ -124,21 +124,21 @@ func (js *jwtService) GenerateJWT(
 		jwsAlg = jws.Algorithm(alg)
 	}
 	if js.cryptoProvider == nil {
-		js.logger.Error("Crypto provider not initialized for JWT generation")
+		js.logger.ErrorWithContext(ctx, "Crypto provider not initialized for JWT generation")
 		return "", 0, &serviceerror.InternalServerError
 	}
 
 	// Validate that claims["aud"] is present and of an accepted type.
 	audValue, hasAud := claims["aud"]
 	if !hasAud {
-		js.logger.Error("GenerateJWT called without aud in claims")
+		js.logger.ErrorWithContext(ctx, "GenerateJWT called without aud in claims")
 		return "", 0, &serviceerror.InternalServerError
 	}
 	switch audValue.(type) {
 	case string, []string:
 		// valid
 	default:
-		js.logger.Error("GenerateJWT called with unsupported aud type in claims")
+		js.logger.ErrorWithContext(ctx, "GenerateJWT called with unsupported aud type in claims")
 		return "", 0, &serviceerror.InternalServerError
 	}
 
@@ -156,7 +156,7 @@ func (js *jwtService) GenerateJWT(
 
 	headerJSON, err := json.Marshal(header)
 	if err != nil {
-		js.logger.Error("Failed to marshal JWT header: " + err.Error())
+		js.logger.ErrorWithContext(ctx, "Failed to marshal JWT header: "+err.Error())
 		return "", 0, &serviceerror.InternalServerError
 	}
 
@@ -174,7 +174,7 @@ func (js *jwtService) GenerateJWT(
 
 	jti, err := utils.GenerateUUIDv7()
 	if err != nil {
-		js.logger.Error("Failed to generate UUID", log.Error(err))
+		js.logger.ErrorWithContext(ctx, "Failed to generate UUID", log.Error(err))
 		return "", 0, &serviceerror.InternalServerError
 	}
 
@@ -197,7 +197,7 @@ func (js *jwtService) GenerateJWT(
 
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
-		js.logger.Error("Failed to marshal JWT payload: " + err.Error())
+		js.logger.ErrorWithContext(ctx, "Failed to marshal JWT payload: "+err.Error())
 		return "", 0, &serviceerror.InternalServerError
 	}
 
@@ -209,7 +209,7 @@ func (js *jwtService) GenerateJWT(
 	signingInput := headerBase64 + "." + payloadBase64
 	signature, err := js.cryptoProvider.Sign(ctx, js.keyRef, js.signAlg, []byte(signingInput))
 	if err != nil {
-		js.logger.Error("Failed to sign JWT: " + err.Error())
+		js.logger.ErrorWithContext(ctx, "Failed to sign JWT: "+err.Error())
 		return "", 0, &serviceerror.InternalServerError
 	}
 
@@ -224,7 +224,7 @@ func (js *jwtService) VerifyJWT(
 	ctx context.Context, jwtToken string, expectedAud, expectedIss string,
 ) *serviceerror.ServiceError {
 	if js.cryptoProvider == nil {
-		js.logger.Error("Crypto provider not initialized for JWT verification")
+		js.logger.ErrorWithContext(ctx, "Crypto provider not initialized for JWT verification")
 		return &serviceerror.InternalServerError
 	}
 
@@ -270,7 +270,7 @@ func (js *jwtService) VerifyJWTWithJWKS(
 // VerifyJWTSignature verifies the signature of a JWT token using the server's public key.
 func (js *jwtService) VerifyJWTSignature(ctx context.Context, jwtToken string) *serviceerror.ServiceError {
 	if js.cryptoProvider == nil {
-		js.logger.Error("Crypto provider not initialized for JWT verification")
+		js.logger.ErrorWithContext(ctx, "Crypto provider not initialized for JWT verification")
 		return &serviceerror.InternalServerError
 	}
 	parts := strings.Split(jwtToken, ".")
@@ -302,7 +302,7 @@ func (js *jwtService) VerifyJWTSignature(ctx context.Context, jwtToken string) *
 	// Retrieve all public keys from the provider and match by thumbprint
 	keys, providerErr := js.cryptoProvider.GetPublicKeys(ctx, kmprovider.PublicKeyFilter{})
 	if providerErr != nil {
-		js.logger.Error("Failed to retrieve public keys for JWT verification: " + providerErr.Error())
+		js.logger.ErrorWithContext(ctx, "Failed to retrieve public keys for JWT verification: "+providerErr.Error())
 		return &serviceerror.InternalServerError
 	}
 	var matchedKey *kmprovider.PublicKeyInfo

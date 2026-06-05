@@ -110,7 +110,7 @@ func authenticate(
 
 	case constants.TokenEndpointAuthMethodPrivateKeyJWT:
 		if clientAssertionType != constants.SupportedClientAssertionType {
-			logger.Debug("Invalid client assertion: unsupported client assertion type")
+			logger.DebugWithContext(ctx, "Invalid client assertion: unsupported client assertion type")
 			return nil, errInvalidClientAssertion
 		}
 		extracted, err := extractClientIDFromAssertion(clientAssertion)
@@ -132,7 +132,8 @@ func authenticate(
 
 	oauthApp, err := inboundClient.GetOAuthClientByClientID(ctx, clientID)
 	if err != nil {
-		logger.Error("Failed to retrieve OAuth client", log.Error(err), log.MaskedString("clientID", clientID))
+		logger.ErrorWithContext(ctx, "Failed to retrieve OAuth client",
+			log.Error(err), log.MaskedString("clientID", clientID))
 		return nil, errInvalidClientCredentials
 	}
 	if oauthApp == nil {
@@ -149,7 +150,7 @@ func authenticate(
 	case constants.TokenEndpointAuthMethodPrivateKeyJWT:
 		if err := validateClientAssertion(oauthApp, jwtService, endpointURL, clientID,
 			clientAssertion); err != nil {
-			logger.Debug("Invalid client assertion: " + err.Error())
+			logger.DebugWithContext(ctx, "Invalid client assertion: "+err.Error())
 			return nil, errInvalidClientAssertion
 		}
 	case constants.TokenEndpointAuthMethodClientSecretBasic,
@@ -159,7 +160,7 @@ func authenticate(
 			map[string]interface{}{"clientSecret": clientSecret},
 			nil, nil, authnprovidermgr.AuthUser{})
 		if authnErr != nil {
-			logger.Debug("Client secret authentication failed",
+			logger.DebugWithContext(ctx, "Client secret authentication failed",
 				log.MaskedString("clientID", clientID))
 			return nil, errInvalidClientCredentials
 		}

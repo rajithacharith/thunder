@@ -95,7 +95,7 @@ func (s *agentService) CreateAgent(ctx context.Context, agent *model.Agent) (
 		var err error
 		agentID, err = sysutils.GenerateUUIDv7()
 		if err != nil {
-			s.logger.Error("Failed to generate agent ID", log.Error(err))
+			s.logger.ErrorWithContext(ctx, "Failed to generate agent ID", log.Error(err))
 			return nil, &serviceerror.InternalServerError
 		}
 	}
@@ -110,7 +110,7 @@ func (s *agentService) CreateAgent(ctx context.Context, agent *model.Agent) (
 	e, sysCredsJSON, buildErr := buildAgentEntity(agentID, agent.Type, agent.OUID, agent.Attributes,
 		agent.Name, agent.Description, owner, clientID, clientSecret)
 	if buildErr != nil {
-		s.logger.Error("Failed to build agent entity", log.Error(buildErr))
+		s.logger.ErrorWithContext(ctx, "Failed to build agent entity", log.Error(buildErr))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -119,7 +119,8 @@ func (s *agentService) CreateAgent(ctx context.Context, agent *model.Agent) (
 		if mapped := mapEntityError(entErr); mapped != nil {
 			return nil, mapped
 		}
-		s.logger.Error("Failed to create agent entity", log.String("agentID", agentID), log.Error(entErr))
+		s.logger.ErrorWithContext(ctx, "Failed to create agent entity",
+			log.String("agentID", agentID), log.Error(entErr))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -167,7 +168,8 @@ func (s *agentService) GetAgent(ctx context.Context, agentID string, includeDisp
 		if errors.Is(err, entity.ErrEntityNotFound) {
 			return nil, &ErrorAgentNotFound
 		}
-		s.logger.Error("Failed to retrieve agent entity", log.String("agentID", agentID), log.Error(err))
+		s.logger.ErrorWithContext(ctx, "Failed to retrieve agent entity",
+			log.String("agentID", agentID), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	if e.Category != entity.EntityCategoryAgent {
@@ -199,13 +201,13 @@ func (s *agentService) GetAgentList(ctx context.Context, limit, offset int,
 
 	totalCount, err := s.entityService.GetEntityListCount(ctx, entity.EntityCategoryAgent, filters)
 	if err != nil {
-		s.logger.Error("Failed to get agent list count", log.Error(err))
+		s.logger.ErrorWithContext(ctx, "Failed to get agent list count", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
 	entities, err := s.entityService.GetEntityList(ctx, entity.EntityCategoryAgent, limit, offset, filters)
 	if err != nil {
-		s.logger.Error("Failed to get agent list", log.Error(err))
+		s.logger.ErrorWithContext(ctx, "Failed to get agent list", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -229,7 +231,7 @@ func (s *agentService) UpdateAgent(ctx context.Context, agentID string,
 		if errors.Is(err, entity.ErrEntityNotFound) {
 			return nil, &ErrorAgentNotFound
 		}
-		s.logger.Error("Failed to retrieve agent entity for update",
+		s.logger.ErrorWithContext(ctx, "Failed to retrieve agent entity for update",
 			log.String("agentID", agentID), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
@@ -252,7 +254,7 @@ func (s *agentService) UpdateAgent(ctx context.Context, agentID string,
 	var existingOAuthMethod string
 	existingOAuth, oauthErr := s.inboundClientService.GetOAuthProfileByEntityID(ctx, agentID)
 	if oauthErr != nil && !errors.Is(oauthErr, inboundclient.ErrInboundClientNotFound) {
-		s.logger.Error("Failed to load existing OAuth profile",
+		s.logger.ErrorWithContext(ctx, "Failed to load existing OAuth profile",
 			log.String("agentID", agentID), log.Error(oauthErr))
 		return nil, &serviceerror.InternalServerError
 	}
@@ -297,7 +299,7 @@ func (s *agentService) UpdateAgent(ctx context.Context, agentID string,
 	}
 	sysAttrsJSON, marshalErr := buildSystemAttributesJSON(req.Name, req.Description, owner, clientID)
 	if marshalErr != nil {
-		s.logger.Error("Failed to build system attributes for update", log.Error(marshalErr))
+		s.logger.ErrorWithContext(ctx, "Failed to build system attributes for update", log.Error(marshalErr))
 		return nil, &serviceerror.InternalServerError
 	}
 	updatedEntity.SystemAttributes = sysAttrsJSON
@@ -306,7 +308,7 @@ func (s *agentService) UpdateAgent(ctx context.Context, agentID string,
 		if mapped := mapEntityError(err); mapped != nil {
 			return nil, mapped
 		}
-		s.logger.Error("Failed to update agent entity", log.String("agentID", agentID), log.Error(err))
+		s.logger.ErrorWithContext(ctx, "Failed to update agent entity", log.String("agentID", agentID), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -314,7 +316,7 @@ func (s *agentService) UpdateAgent(ctx context.Context, agentID string,
 		sysCredsJSON, credErr := buildSystemCredentialsJSON(clientSecret)
 		if credErr == nil && sysCredsJSON != nil {
 			if err := s.entityService.UpdateSystemCredentials(ctx, agentID, sysCredsJSON); err != nil {
-				s.logger.Error("Failed to update agent system credentials",
+				s.logger.ErrorWithContext(ctx, "Failed to update agent system credentials",
 					log.String("agentID", agentID), log.Error(err))
 				return nil, &serviceerror.InternalServerError
 			}
@@ -354,7 +356,8 @@ func (s *agentService) DeleteAgent(ctx context.Context, agentID string) *service
 		if errors.Is(err, entity.ErrEntityNotFound) {
 			return &ErrorAgentNotFound
 		}
-		s.logger.Error("Failed to retrieve agent for delete", log.String("agentID", agentID), log.Error(err))
+		s.logger.ErrorWithContext(ctx, "Failed to retrieve agent for delete",
+			log.String("agentID", agentID), log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 	if existing.Category != entity.EntityCategoryAgent {
@@ -369,7 +372,7 @@ func (s *agentService) DeleteAgent(ctx context.Context, agentID string) *service
 		if svcErr := s.translateInboundClientError(err); svcErr != nil {
 			return svcErr
 		}
-		s.logger.Error("Failed to delete inbound client for agent",
+		s.logger.ErrorWithContext(ctx, "Failed to delete inbound client for agent",
 			log.Error(err), log.String("agentID", agentID))
 		return &serviceerror.InternalServerError
 	}
@@ -378,7 +381,7 @@ func (s *agentService) DeleteAgent(ctx context.Context, agentID string) *service
 		if errors.Is(err, entity.ErrEntityNotFound) {
 			return nil
 		}
-		s.logger.Error("Failed to delete agent entity", log.String("agentID", agentID), log.Error(err))
+		s.logger.ErrorWithContext(ctx, "Failed to delete agent entity", log.String("agentID", agentID), log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 	return nil
@@ -402,7 +405,8 @@ func (s *agentService) GetAgentGroups(ctx context.Context, agentID string, limit
 		if errors.Is(err, entity.ErrEntityNotFound) {
 			return nil, &ErrorAgentNotFound
 		}
-		s.logger.Error("Failed to retrieve agent for groups", log.String("agentID", agentID), log.Error(err))
+		s.logger.ErrorWithContext(ctx, "Failed to retrieve agent for groups",
+			log.String("agentID", agentID), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	if existing.Category != entity.EntityCategoryAgent {
@@ -411,13 +415,14 @@ func (s *agentService) GetAgentGroups(ctx context.Context, agentID string, limit
 
 	totalCount, err := s.entityService.GetGroupCountForEntity(ctx, agentID)
 	if err != nil {
-		s.logger.Error("Failed to get agent group count", log.String("agentID", agentID), log.Error(err))
+		s.logger.ErrorWithContext(ctx, "Failed to get agent group count",
+			log.String("agentID", agentID), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
 	groups, err := s.entityService.GetEntityGroups(ctx, agentID, limit, offset)
 	if err != nil {
-		s.logger.Error("Failed to get agent groups", log.String("agentID", agentID), log.Error(err))
+		s.logger.ErrorWithContext(ctx, "Failed to get agent groups", log.String("agentID", agentID), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -453,7 +458,7 @@ func (s *agentService) ValidateAgent(ctx context.Context, agent *model.Agent, ex
 			if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
 				return "", "", inboundmodel.InboundClient{}, &ErrorOrganizationUnitNotFound
 			}
-			s.logger.Error("Failed to resolve OU handle", log.Any("error", svcErr))
+			s.logger.ErrorWithContext(ctx, "Failed to resolve OU handle", log.Any("error", svcErr))
 			return "", "", inboundmodel.InboundClient{}, &serviceerror.InternalServerError
 		}
 		agent.OUID = ou.ID
@@ -475,7 +480,7 @@ func (s *agentService) ValidateAgent(ctx context.Context, agent *model.Agent, ex
 		if clientID == "" {
 			generated, err := oauthutils.GenerateOAuth2ClientID()
 			if err != nil {
-				s.logger.Error("Failed to generate client ID", log.Error(err))
+				s.logger.ErrorWithContext(ctx, "Failed to generate client ID", log.Error(err))
 				return "", "", inboundmodel.InboundClient{}, &serviceerror.InternalServerError
 			}
 			clientID = generated
@@ -488,7 +493,7 @@ func (s *agentService) ValidateAgent(ctx context.Context, agent *model.Agent, ex
 		if requiresClientSecret(oauthCfg) && oauthCfg.ClientSecret == "" {
 			generated, err := oauthutils.GenerateOAuth2ClientSecret()
 			if err != nil {
-				s.logger.Error("Failed to generate client secret", log.Error(err))
+				s.logger.ErrorWithContext(ctx, "Failed to generate client secret", log.Error(err))
 				return "", "", inboundmodel.InboundClient{}, &serviceerror.InternalServerError
 			}
 			clientSecret = generated
@@ -501,7 +506,7 @@ func (s *agentService) ValidateAgent(ctx context.Context, agent *model.Agent, ex
 		if svcErr := translateInboundClientFKError(err); svcErr != nil {
 			return "", "", inboundmodel.InboundClient{}, svcErr
 		}
-		s.logger.Error("Failed to resolve inbound auth profile handles", log.Error(err))
+		s.logger.ErrorWithContext(ctx, "Failed to resolve inbound auth profile handles", log.Error(err))
 		return "", "", inboundmodel.InboundClient{}, &serviceerror.InternalServerError
 	}
 
@@ -516,7 +521,7 @@ func (s *agentService) ValidateAgent(ctx context.Context, agent *model.Agent, ex
 			if svcErr := s.translateInboundClientError(err); svcErr != nil {
 				return "", "", inboundmodel.InboundClient{}, svcErr
 			}
-			s.logger.Error("Inbound client validation failed", log.Error(err))
+			s.logger.ErrorWithContext(ctx, "Inbound client validation failed", log.Error(err))
 			return "", "", inboundmodel.InboundClient{}, &serviceerror.InternalServerError
 		}
 	}
@@ -527,7 +532,7 @@ func (s *agentService) ValidateAgent(ctx context.Context, agent *model.Agent, ex
 // deleteEntityCompensation deletes the entity row as a best-effort rollback after a failed downstream operation.
 func (s *agentService) deleteEntityCompensation(ctx context.Context, agentID string) {
 	if err := s.entityService.DeleteEntity(ctx, agentID); err != nil {
-		s.logger.Error("Failed to delete entity during compensation",
+		s.logger.ErrorWithContext(ctx, "Failed to delete entity during compensation",
 			log.String("agentID", agentID), log.Error(err))
 	}
 }
@@ -542,7 +547,7 @@ func (s *agentService) validateOUExists(ctx context.Context, ouID string) *servi
 		if err.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
 			return &ErrorOrganizationUnitNotFound
 		}
-		s.logger.Error("Failed to verify OU existence", log.String("ouID", ouID), log.Any("error", err))
+		s.logger.ErrorWithContext(ctx, "Failed to verify OU existence", log.String("ouID", ouID), log.Any("error", err))
 		return &serviceerror.InternalServerError
 	}
 	if !exists {
@@ -562,7 +567,7 @@ func (s *agentService) resolveUpdateOUID(
 			if ouSvcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
 				return "", &ErrorOrganizationUnitNotFound
 			}
-			s.logger.Error("Failed to resolve OU handle", log.Any("error", ouSvcErr))
+			s.logger.ErrorWithContext(ctx, "Failed to resolve OU handle", log.Any("error", ouSvcErr))
 			return "", &serviceerror.InternalServerError
 		}
 		req.OUID = ou.ID
@@ -604,7 +609,8 @@ func (s *agentService) validateOwnerExists(ctx context.Context, ownerID string) 
 		if errors.Is(err, entity.ErrEntityNotFound) {
 			return &ErrorOwnerNotFound
 		}
-		s.logger.Error("Failed to verify owner existence", log.String("ownerID", ownerID), log.Error(err))
+		s.logger.ErrorWithContext(ctx, "Failed to verify owner existence",
+			log.String("ownerID", ownerID), log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 	return nil
@@ -623,7 +629,7 @@ func (s *agentService) validateNameUnique(ctx context.Context, name, excludeID s
 		if errors.Is(err, entity.ErrAmbiguousEntity) {
 			return &ErrorAgentAlreadyExistsWithName
 		}
-		s.logger.Error("Failed to verify agent name uniqueness", log.Error(err))
+		s.logger.ErrorWithContext(ctx, "Failed to verify agent name uniqueness", log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 	if id == nil || *id == "" {
@@ -661,7 +667,7 @@ func (s *agentService) resolveOAuthCredentials(ctx context.Context,
 	if clientID == "" {
 		generated, err := oauthutils.GenerateOAuth2ClientID()
 		if err != nil {
-			s.logger.Error("Failed to generate client ID", log.Error(err))
+			s.logger.ErrorWithContext(ctx, "Failed to generate client ID", log.Error(err))
 			return "", "", &serviceerror.InternalServerError
 		}
 		clientID = generated
@@ -683,7 +689,7 @@ func (s *agentService) resolveOAuthCredentials(ctx context.Context,
 		if !existingWasSecretBased {
 			generated, err := oauthutils.GenerateOAuth2ClientSecret()
 			if err != nil {
-				s.logger.Error("Failed to generate client secret", log.Error(err))
+				s.logger.ErrorWithContext(ctx, "Failed to generate client secret", log.Error(err))
 				return "", "", &serviceerror.InternalServerError
 			}
 			clientSecret = generated
@@ -700,7 +706,7 @@ func (s *agentService) isClientIDTaken(
 		if errors.Is(err, entity.ErrEntityNotFound) {
 			return false, nil
 		}
-		s.logger.Error("Failed to check client ID availability", log.MaskedString("clientID", clientID),
+		s.logger.ErrorWithContext(ctx, "Failed to check client ID availability", log.MaskedString("clientID", clientID),
 			log.Error(err))
 		return false, &serviceerror.InternalServerError
 	}
@@ -729,7 +735,7 @@ func (s *agentService) createInboundForAgent(ctx context.Context, agentID string
 		if svcErr := s.translateInboundClientError(err); svcErr != nil {
 			return inboundmodel.InboundClient{}, nil, svcErr
 		}
-		s.logger.Error("Failed to create inbound client for agent",
+		s.logger.ErrorWithContext(ctx, "Failed to create inbound client for agent",
 			log.Error(err), log.String("agentID", agentID))
 		return inboundmodel.InboundClient{}, nil, &serviceerror.InternalServerError
 	}
@@ -752,7 +758,7 @@ func (s *agentService) reconcileInboundForUpdate(ctx context.Context, agentID st
 				if svcErr := s.translateInboundClientError(err); svcErr != nil {
 					return inboundmodel.InboundClient{}, nil, svcErr
 				}
-				s.logger.Error("Failed to remove inbound client during update",
+				s.logger.ErrorWithContext(ctx, "Failed to remove inbound client during update",
 					log.Error(err), log.String("agentID", agentID))
 				return inboundmodel.InboundClient{}, nil, &serviceerror.InternalServerError
 			}
@@ -776,7 +782,7 @@ func (s *agentService) reconcileInboundForUpdate(ctx context.Context, agentID st
 			if svcErr := s.translateInboundClientError(err); svcErr != nil {
 				return inboundmodel.InboundClient{}, nil, svcErr
 			}
-			s.logger.Error("Failed to update inbound client",
+			s.logger.ErrorWithContext(ctx, "Failed to update inbound client",
 				log.Error(err), log.String("agentID", agentID))
 			return inboundmodel.InboundClient{}, nil, &serviceerror.InternalServerError
 		}
@@ -788,7 +794,7 @@ func (s *agentService) reconcileInboundForUpdate(ctx context.Context, agentID st
 		if svcErr := s.translateInboundClientError(err); svcErr != nil {
 			return inboundmodel.InboundClient{}, nil, svcErr
 		}
-		s.logger.Error("Failed to create inbound client during update",
+		s.logger.ErrorWithContext(ctx, "Failed to create inbound client during update",
 			log.Error(err), log.String("agentID", agentID))
 		return inboundmodel.InboundClient{}, nil, &serviceerror.InternalServerError
 	}
@@ -815,7 +821,7 @@ func (s *agentService) composeGetResponse(ctx context.Context, e *entity.Entity)
 	inbound, err := s.inboundClientService.GetInboundClientByEntityID(ctx, e.ID)
 	if err != nil {
 		if !errors.Is(err, inboundclient.ErrInboundClientNotFound) {
-			s.logger.Error("Failed to load inbound client for agent",
+			s.logger.ErrorWithContext(ctx, "Failed to load inbound client for agent",
 				log.String("agentID", e.ID), log.Error(err))
 			return nil, &serviceerror.InternalServerError
 		}
@@ -833,7 +839,7 @@ func (s *agentService) composeGetResponse(ctx context.Context, e *entity.Entity)
 
 	oauth, oauthErr := s.inboundClientService.GetOAuthProfileByEntityID(ctx, e.ID)
 	if oauthErr != nil && !errors.Is(oauthErr, inboundclient.ErrInboundClientNotFound) {
-		s.logger.Error("Failed to load OAuth profile for agent",
+		s.logger.ErrorWithContext(ctx, "Failed to load OAuth profile for agent",
 			log.String("agentID", e.ID), log.Error(oauthErr))
 		return nil, &serviceerror.InternalServerError
 	}
@@ -905,7 +911,8 @@ func (s *agentService) buildListResponse(ctx context.Context, entities []entity.
 func (s *agentService) lookupOUHandle(ctx context.Context, ouID string) string {
 	handles, err := s.ouService.GetOrganizationUnitHandlesByIDs(ctx, []string{ouID})
 	if err != nil {
-		s.logger.Debug("Failed to resolve OU handle for agent", log.String("ouID", ouID), log.Any("error", err))
+		s.logger.DebugWithContext(ctx, "Failed to resolve OU handle for agent",
+			log.String("ouID", ouID), log.Any("error", err))
 		return ""
 	}
 	return handles[ouID]
@@ -949,7 +956,7 @@ func (s *agentService) populateOUHandlesForList(ctx context.Context, agents []mo
 	}
 	handles, err := s.ouService.GetOrganizationUnitHandlesByIDs(ctx, ids)
 	if err != nil {
-		s.logger.Debug("Failed to resolve OU handles for agent list", log.Any("error", err))
+		s.logger.DebugWithContext(ctx, "Failed to resolve OU handles for agent list", log.Any("error", err))
 		return
 	}
 	for i := range agents {

@@ -72,13 +72,13 @@ func (b *graphBuilder) GetGraph(ctx context.Context, flow *CompleteFlowDefinitio
 	logger := b.logger.With(log.String("flowID", flow.ID))
 	// Check cache first
 	if cachedGraph, ok := b.graphCache.Get(ctx, flow.ID); ok {
-		logger.Debug("Graph retrieved from cache")
+		logger.DebugWithContext(ctx, "Graph retrieved from cache")
 		return cachedGraph, nil
 	}
 
 	graph, err := b.buildGraph(flow)
 	if err != nil {
-		logger.Error("Failed to build graph", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to build graph", log.Error(err))
 		return nil, serviceerror.CustomServiceError(ErrorGraphBuildFailure, i18ncore.I18nMessage{
 			Key:          "error.flowmgtservice.graph_build_failure_description",
 			DefaultValue: err.Error(),
@@ -87,9 +87,9 @@ func (b *graphBuilder) GetGraph(ctx context.Context, flow *CompleteFlowDefinitio
 
 	// Cache the built graph
 	if cacheErr := b.graphCache.Set(ctx, flow.ID, graph); cacheErr != nil {
-		logger.Error("Failed to cache graph", log.Error(cacheErr))
+		logger.ErrorWithContext(ctx, "Failed to cache graph", log.Error(cacheErr))
 	}
-	logger.Debug("Graph built and cached successfully")
+	logger.DebugWithContext(ctx, "Graph built and cached successfully")
 
 	return graph, nil
 }
@@ -101,9 +101,10 @@ func (b *graphBuilder) InvalidateCache(ctx context.Context, flowID string) {
 	}
 
 	if err := b.graphCache.Invalidate(ctx, flowID); err != nil {
-		b.logger.Error("Failed to delete graph from cache", log.String("flowID", flowID), log.Error(err))
+		b.logger.ErrorWithContext(ctx, "Failed to delete graph from cache",
+			log.String("flowID", flowID), log.Error(err))
 	}
-	b.logger.Debug("Graph cache invalidated", log.String("flowID", flowID))
+	b.logger.DebugWithContext(ctx, "Graph cache invalidated", log.String("flowID", flowID))
 }
 
 // buildGraph converts a CompleteFlowDefinition to a core.GraphInterface for execution.

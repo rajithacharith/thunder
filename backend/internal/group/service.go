@@ -115,13 +115,13 @@ func (gs *groupService) listAllGroups(ctx context.Context, limit, offset int, in
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	totalCount, err := gs.groupStore.GetGroupListCount(ctx)
 	if err != nil {
-		logger.Error("Failed to get group count", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to get group count", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
 	groups, err := gs.groupStore.GetGroupList(ctx, limit, offset)
 	if err != nil {
-		logger.Error("Failed to list groups", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to list groups", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -164,7 +164,7 @@ func (gs *groupService) listGroupsByOUIDs(ctx context.Context, ouIDs []string, l
 
 	totalCount, err := gs.groupStore.GetGroupListCountByOUIDs(ctx, ouIDs)
 	if err != nil {
-		logger.Error("Failed to get group count by OU IDs", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to get group count by OU IDs", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -180,7 +180,7 @@ func (gs *groupService) listGroupsByOUIDs(ctx context.Context, ouIDs []string, l
 
 	groups, err := gs.groupStore.GetGroupListByOUIDs(ctx, ouIDs, limit, offset)
 	if err != nil {
-		logger.Error("Failed to list groups by OU IDs", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to list groups by OU IDs", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -209,7 +209,7 @@ func (gs *groupService) GetGroupsByPath(
 	ctx context.Context, handlePath string, limit, offset int, includeDisplay bool,
 ) (*GroupListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Debug("Getting groups by path", log.String("path", handlePath))
+	logger.DebugWithContext(ctx, "Getting groups by path", log.String("path", handlePath))
 
 	serviceError := gs.validateAndProcessHandlePath(handlePath)
 	if serviceError != nil {
@@ -235,13 +235,13 @@ func (gs *groupService) GetGroupsByPath(
 
 	totalCount, err := gs.groupStore.GetGroupsByOrganizationUnitCount(ctx, oUID)
 	if err != nil {
-		logger.Error("Failed to get group count by organization unit", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to get group count by organization unit", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
 	groups, err := gs.groupStore.GetGroupsByOrganizationUnit(ctx, oUID, limit, offset)
 	if err != nil {
-		logger.Error("Failed to list groups by organization unit", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to list groups by organization unit", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -270,7 +270,7 @@ func (gs *groupService) GetGroupsByPath(
 func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequest) (
 	*Group, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Debug("Creating group", log.String("name", request.Name))
+	logger.DebugWithContext(ctx, "Creating group", log.String("name", request.Name))
 
 	if err := gs.validateCreateGroupRequest(request); err != nil {
 		return nil, err
@@ -310,7 +310,7 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 		if err := gs.groupStore.CheckGroupNameConflictForCreate(
 			txCtx, request.Name, request.OUID); err != nil {
 			if errors.Is(err, ErrGroupNameConflict) {
-				logger.Debug("Group name conflict detected", log.String("name", request.Name))
+				logger.DebugWithContext(ctx, "Group name conflict detected", log.String("name", request.Name))
 				capturedSvcErr = &ErrorGroupNameConflict
 				return errors.New("rollback for group name conflict")
 			}
@@ -348,7 +348,7 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 	}
 
 	if err != nil {
-		logger.Error("Failed to create group", log.Error(err), log.String("name", request.Name))
+		logger.ErrorWithContext(ctx, "Failed to create group", log.Error(err), log.String("name", request.Name))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -359,7 +359,8 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 	}
 	createdGroup.Members = resolvedMembers
 
-	logger.Debug("Successfully created group", log.String("id", createdGroup.ID), log.String("name", createdGroup.Name))
+	logger.DebugWithContext(ctx, "Successfully created group",
+		log.String("id", createdGroup.ID), log.String("name", createdGroup.Name))
 	return createdGroup, nil
 }
 
@@ -368,7 +369,8 @@ func (gs *groupService) CreateGroupByPath(
 	ctx context.Context, handlePath string, request CreateGroupByPathRequest,
 ) (*Group, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Debug("Creating group by path", log.String("path", handlePath), log.String("name", request.Name))
+	logger.DebugWithContext(ctx, "Creating group by path",
+		log.String("path", handlePath), log.String("name", request.Name))
 
 	serviceError := gs.validateAndProcessHandlePath(handlePath)
 	if serviceError != nil {
@@ -399,7 +401,7 @@ func (gs *groupService) GetGroup(
 	ctx context.Context, groupID string, includeDisplay bool,
 ) (*Group, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Debug("Retrieving group", log.String("id", groupID))
+	logger.DebugWithContext(ctx, "Retrieving group", log.String("id", groupID))
 
 	if groupID == "" {
 		return nil, &ErrorMissingGroupID
@@ -408,10 +410,10 @@ func (gs *groupService) GetGroup(
 	groupDAO, err := gs.groupStore.GetGroup(ctx, groupID)
 	if err != nil {
 		if errors.Is(err, ErrGroupNotFound) {
-			logger.Debug("Group not found", log.String("id", groupID))
+			logger.DebugWithContext(ctx, "Group not found", log.String("id", groupID))
 			return nil, &ErrorGroupNotFound
 		}
-		logger.Error("Failed to retrieve group", log.String("id", groupID), log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to retrieve group", log.String("id", groupID), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -431,14 +433,15 @@ func (gs *groupService) GetGroup(
 		handleMap, svcErr := gs.ouService.GetOrganizationUnitHandlesByIDs(
 			ctx, []string{group.OUID})
 		if svcErr != nil {
-			logger.Warn("Failed to resolve OU handle for group, skipping",
+			logger.WarnWithContext(ctx, "Failed to resolve OU handle for group, skipping",
 				log.String("id", groupID), log.Any("error", svcErr))
 		} else if handle, ok := handleMap[group.OUID]; ok {
 			group.OUHandle = handle
 		}
 	}
 
-	logger.Debug("Successfully retrieved group", log.String("id", group.ID), log.String("name", group.Name))
+	logger.DebugWithContext(ctx, "Successfully retrieved group",
+		log.String("id", group.ID), log.String("name", group.Name))
 	return &group, nil
 }
 
@@ -446,7 +449,7 @@ func (gs *groupService) GetGroup(
 func (gs *groupService) UpdateGroup(
 	ctx context.Context, groupID string, request UpdateGroupRequest) (*Group, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Debug("Updating group", log.String("id", groupID), log.String("name", request.Name))
+	logger.DebugWithContext(ctx, "Updating group", log.String("id", groupID), log.String("name", request.Name))
 
 	if groupID == "" {
 		return nil, &ErrorMissingGroupID
@@ -463,7 +466,7 @@ func (gs *groupService) UpdateGroup(
 		existingGroupDAO, err := gs.groupStore.GetGroup(txCtx, groupID)
 		if err != nil {
 			if errors.Is(err, ErrGroupNotFound) {
-				logger.Debug("Group not found", log.String("id", groupID))
+				logger.DebugWithContext(ctx, "Group not found", log.String("id", groupID))
 				capturedSvcErr = &ErrorGroupNotFound
 				return errors.New("rollback for group not found")
 			}
@@ -508,7 +511,8 @@ func (gs *groupService) UpdateGroup(
 				txCtx, request.Name, request.OUID, groupID)
 			if err != nil {
 				if errors.Is(err, ErrGroupNameConflict) {
-					logger.Debug("Group name conflict detected during update", log.String("name", request.Name))
+					logger.DebugWithContext(ctx, "Group name conflict detected during update",
+						log.String("name", request.Name))
 					capturedSvcErr = &ErrorGroupNameConflict
 					return errors.New("rollback for group name conflict")
 				}
@@ -537,18 +541,19 @@ func (gs *groupService) UpdateGroup(
 	}
 
 	if err != nil {
-		logger.Error("Failed to update group", log.Error(err), log.String("groupID", groupID))
+		logger.ErrorWithContext(ctx, "Failed to update group", log.Error(err), log.String("groupID", groupID))
 		return nil, &serviceerror.InternalServerError
 	}
 
-	logger.Debug("Successfully updated group", log.String("id", groupID), log.String("name", request.Name))
+	logger.DebugWithContext(ctx, "Successfully updated group",
+		log.String("id", groupID), log.String("name", request.Name))
 	return updatedGroup, nil
 }
 
 // DeleteGroup delete the specified group by its id.
 func (gs *groupService) DeleteGroup(ctx context.Context, groupID string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Debug("Deleting group", log.String("id", groupID))
+	logger.DebugWithContext(ctx, "Deleting group", log.String("id", groupID))
 
 	if groupID == "" {
 		return &ErrorMissingGroupID
@@ -560,7 +565,7 @@ func (gs *groupService) DeleteGroup(ctx context.Context, groupID string) *servic
 		existingGroupDAO, err := gs.groupStore.GetGroup(txCtx, groupID)
 		if err != nil {
 			if errors.Is(err, ErrGroupNotFound) {
-				logger.Debug("Group not found", log.String("id", groupID))
+				logger.DebugWithContext(ctx, "Group not found", log.String("id", groupID))
 				capturedSvcErr = &ErrorGroupNotFound
 				return errors.New("rollback for group not found")
 			}
@@ -588,11 +593,11 @@ func (gs *groupService) DeleteGroup(ctx context.Context, groupID string) *servic
 	}
 
 	if err != nil {
-		logger.Error("Failed to delete group", log.Error(err), log.String("groupID", groupID))
+		logger.ErrorWithContext(ctx, "Failed to delete group", log.Error(err), log.String("groupID", groupID))
 		return &serviceerror.InternalServerError
 	}
 
-	logger.Debug("Successfully deleted group", log.String("id", groupID))
+	logger.DebugWithContext(ctx, "Successfully deleted group", log.String("id", groupID))
 	return nil
 }
 
@@ -612,10 +617,10 @@ func (gs *groupService) GetGroupMembers(ctx context.Context, groupID string, lim
 	existingGroupDAO, err := gs.groupStore.GetGroup(ctx, groupID)
 	if err != nil {
 		if errors.Is(err, ErrGroupNotFound) {
-			logger.Debug("Group not found", log.String("id", groupID))
+			logger.DebugWithContext(ctx, "Group not found", log.String("id", groupID))
 			return nil, &ErrorGroupNotFound
 		}
-		logger.Error("Failed to retrieve group", log.String("id", groupID), log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to retrieve group", log.String("id", groupID), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -630,13 +635,13 @@ func (gs *groupService) GetGroupMembers(ctx context.Context, groupID string, lim
 
 	totalCount, err := gs.groupStore.GetGroupMemberCount(ctx, groupID)
 	if err != nil {
-		logger.Error("Failed to get group member count", log.String("groupID", groupID), log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to get group member count", log.String("groupID", groupID), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
 	members, err := gs.groupStore.GetGroupMembers(ctx, groupID, limit, offset)
 	if err != nil {
-		logger.Error("Failed to get group members", log.String("groupID", groupID), log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to get group members", log.String("groupID", groupID), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -686,7 +691,7 @@ func (gs *groupService) resolveMembers(
 	if len(entityIDs) > 0 {
 		entities, err := gs.entityService.GetEntitiesByIDs(ctx, entityIDs)
 		if err != nil {
-			logger.Error("Failed to batch-fetch entities for member resolution", log.Error(err))
+			logger.ErrorWithContext(ctx, "Failed to batch-fetch entities for member resolution", log.Error(err))
 			return nil, &serviceerror.InternalServerError
 		}
 		entityMap = make(map[string]*entity.Entity, len(entities))
@@ -710,7 +715,7 @@ func (gs *groupService) resolveMembers(
 		var svcErr *serviceerror.ServiceError
 		groupsMap, svcErr = gs.GetGroupsByIDs(ctx, groupIDs)
 		if svcErr != nil {
-			logger.Warn("Failed to batch-fetch groups for display resolution", log.Any("error", svcErr))
+			logger.WarnWithContext(ctx, "Failed to batch-fetch groups for display resolution", log.Any("error", svcErr))
 		}
 	}
 
@@ -722,7 +727,7 @@ func (gs *groupService) resolveMembers(
 		case memberTypeEntity:
 			e, ok := entityMap[members[i].ID]
 			if !ok {
-				logger.Warn("Skipping orphaned entity member", log.String("id", members[i].ID))
+				logger.WarnWithContext(ctx, "Skipping orphaned entity member", log.String("id", members[i].ID))
 				continue
 			}
 			// Set the public type from the entity category ("user", "app", or "agent").
@@ -803,10 +808,10 @@ func (gs *groupService) modifyGroupMembers(
 	existingGroup, err := gs.groupStore.GetGroup(ctx, groupID)
 	if err != nil {
 		if errors.Is(err, ErrGroupNotFound) {
-			logger.Debug("Group not found", log.String("id", groupID))
+			logger.DebugWithContext(ctx, "Group not found", log.String("id", groupID))
 			return nil, &ErrorGroupNotFound
 		}
-		logger.Error("Failed to fetch group", log.String("id", groupID), log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to fetch group", log.String("id", groupID), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -839,7 +844,7 @@ func (gs *groupService) modifyGroupMembers(
 		existingGroupDAO, err := gs.groupStore.GetGroup(txCtx, groupID)
 		if err != nil {
 			if errors.Is(err, ErrGroupNotFound) {
-				logger.Debug("Group not found", log.String("id", groupID))
+				logger.DebugWithContext(ctx, "Group not found", log.String("id", groupID))
 				capturedSvcErr = &ErrorGroupNotFound
 				return errors.New("rollback for group not found")
 			}
@@ -874,7 +879,7 @@ func (gs *groupService) modifyGroupMembers(
 	}
 
 	if err != nil {
-		logger.Error(errMsg, log.String("id", groupID), log.Error(err))
+		logger.ErrorWithContext(ctx, errMsg, log.String("id", groupID), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -884,7 +889,7 @@ func (gs *groupService) modifyGroupMembers(
 		return nil, svcErr
 	}
 	updatedGroup.Members = resolvedMembers
-	logger.Debug(successMsg, log.String("id", groupID))
+	logger.DebugWithContext(ctx, successMsg, log.String("id", groupID))
 	return &updatedGroup, nil
 }
 
@@ -956,7 +961,7 @@ func (gs *groupService) validateEntityMembers(
 
 	entities, err := gs.entityService.GetEntitiesByIDs(ctx, entityIDs)
 	if err != nil {
-		logger.Error("Failed to fetch entities for member validation", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to fetch entities for member validation", log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 
@@ -969,7 +974,7 @@ func (gs *groupService) validateEntityMembers(
 		claimed := typeByID[e.ID]
 		actual := MemberType(e.Category)
 		if claimed != actual {
-			logger.Debug("Member type mismatch", log.String("id", e.ID),
+			logger.DebugWithContext(ctx, "Member type mismatch", log.String("id", e.ID),
 				log.String("claimed", string(claimed)), log.String("actual", string(actual)))
 			return &ErrorInvalidMemberID
 		}
@@ -993,12 +998,13 @@ func (gs *groupService) validateEntityMembers(
 
 	outOfScopeIDs, err := gs.entityService.ValidateEntityIDsInOUs(ctx, userIDs, accessibleOUs.IDs)
 	if err != nil {
-		logger.Error("Failed to validate user IDs in OUs", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to validate user IDs in OUs", log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 
 	if len(outOfScopeIDs) > 0 {
-		logger.Debug("User IDs outside accessible OUs", log.MaskedStrings("outOfScopeIDs", outOfScopeIDs))
+		logger.DebugWithContext(ctx, "User IDs outside accessible OUs",
+			log.MaskedStrings("outOfScopeIDs", outOfScopeIDs))
 		return &serviceerror.ErrorUnauthorized
 	}
 
@@ -1029,7 +1035,7 @@ func (gs *groupService) validateOU(ctx context.Context, ouID string) *serviceerr
 
 	isExists, err := gs.ouService.IsOrganizationUnitExists(ctx, ouID)
 	if err != nil {
-		logger.Error("Failed to check organization unit existence", log.Any("error: ", err))
+		logger.ErrorWithContext(ctx, "Failed to check organization unit existence", log.Any("error: ", err))
 		return &serviceerror.InternalServerError
 	}
 
@@ -1058,7 +1064,7 @@ func resolveDisplayAttributePaths(
 	displayPaths, svcErr := schemaService.GetDisplayAttributesByNames(ctx, entitytype.TypeCategoryUser, uniqueTypes)
 	if svcErr != nil {
 		if logger != nil {
-			logger.Warn("Failed to resolve display attribute paths, skipping display resolution",
+			logger.WarnWithContext(ctx, "Failed to resolve display attribute paths, skipping display resolution",
 				log.Any("error", svcErr))
 		}
 		return nil
@@ -1087,12 +1093,12 @@ func (gs *groupService) ValidateGroupIDs(ctx context.Context, groupIDs []string)
 
 	invalidGroupIDs, err := gs.groupStore.ValidateGroupIDs(ctx, groupIDs)
 	if err != nil {
-		logger.Error("Failed to validate group IDs", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to validate group IDs", log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 
 	if len(invalidGroupIDs) > 0 {
-		logger.Debug("Invalid group IDs found", log.Any("invalidGroupIDs", invalidGroupIDs))
+		logger.DebugWithContext(ctx, "Invalid group IDs found", log.Any("invalidGroupIDs", invalidGroupIDs))
 		return &ErrorInvalidGroupMemberID
 	}
 
@@ -1121,7 +1127,7 @@ func (gs *groupService) GetGroupsByIDs(
 
 	groupDAOs, err := gs.groupStore.GetGroupsByIDs(ctx, uniqueIDs)
 	if err != nil {
-		logger.Error("Failed to get groups by IDs", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to get groups by IDs", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -1173,7 +1179,7 @@ func (gs *groupService) populateGroupOUHandles(ctx context.Context, groups []Gro
 
 	handleMap, svcErr := gs.ouService.GetOrganizationUnitHandlesByIDs(ctx, ouIDs)
 	if svcErr != nil {
-		logger.Warn("Failed to resolve OU handles for groups, skipping", log.Any("error", svcErr))
+		logger.WarnWithContext(ctx, "Failed to resolve OU handles for groups, skipping", log.Any("error", svcErr))
 		return
 	}
 
@@ -1208,7 +1214,7 @@ func (gs *groupService) checkGroupAccess(
 
 	hasAccess, err := gs.authzService.IsActionAllowed(ctx, action, &actionCtx)
 	if err != nil {
-		logger.Error("Failed to check authorization", log.String("err", err.Error.DefaultValue))
+		logger.ErrorWithContext(ctx, "Failed to check authorization", log.String("err", err.Error.DefaultValue))
 		return &serviceerror.InternalServerError
 	}
 	if !hasAccess {

@@ -69,7 +69,7 @@ func newSMSExecutor(flowFactory core.FlowFactoryInterface,
 // then renders the SMS body from a template and sends it.
 func (e *smsExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := e.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
-	logger.Debug("Executing SMS executor")
+	logger.DebugWithContext(ctx.Context, "Executing SMS executor")
 
 	execResp := &common.ExecutorResponse{
 		AdditionalData: make(map[string]string),
@@ -84,14 +84,15 @@ func (e *smsExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, 
 
 	recipient := resolveRecipientMobile(ctx, phoneAttr)
 	if recipient == "" {
-		logger.Debug("SMS recipient not found in user inputs or runtime data")
+		logger.DebugWithContext(ctx.Context, "SMS recipient not found in user inputs or runtime data")
 		execResp.Status = common.ExecFailure
 		execResp.Error = &ErrSMSRecipientMissing
 		return execResp, nil
 	}
 
 	if !isValidPhoneNumber(recipient) {
-		logger.Debug("SMS recipient is not a valid phone number", log.String("phoneAttr", phoneAttr))
+		logger.DebugWithContext(ctx.Context, "SMS recipient is not a valid phone number",
+			log.String("phoneAttr", phoneAttr))
 		execResp.Status = common.ExecFailure
 		execResp.Error = &ErrSMSInvalidPhone
 		return execResp, nil
@@ -141,7 +142,7 @@ func (e *smsExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, 
 		return nil, fmt.Errorf("SMS send failed: %s", notifSvcErr.ErrorDescription)
 	}
 
-	logger.Debug("SMS sent successfully", log.MaskedString("recipient", recipient))
+	logger.DebugWithContext(ctx.Context, "SMS sent successfully", log.MaskedString("recipient", recipient))
 
 	execResp.AdditionalData[common.DataSMSSent] = dataValueTrue
 	execResp.Status = common.ExecComplete

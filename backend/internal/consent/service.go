@@ -85,7 +85,7 @@ func (s *consentService) DeleteConsentElement(ctx context.Context, ouID string,
 	elementID string) *serviceerror.ServiceError {
 	svcErr := s.client.deleteConsentElement(ctx, ouID, elementID)
 	if svcErr != nil && svcErr.Code == ErrorConsentElementNotFound.Code {
-		s.logger.Debug("Consent element not found during delete, skipping",
+		s.logger.DebugWithContext(ctx, "Consent element not found during delete, skipping",
 			log.String("elementID", elementID))
 		return nil
 	}
@@ -131,7 +131,7 @@ func (s *consentService) DeleteConsentPurpose(ctx context.Context, ouID string,
 	purposeID string) *serviceerror.ServiceError {
 	svcErr := s.client.deleteConsentPurpose(ctx, ouID, purposeID)
 	if svcErr != nil && svcErr.Code == ErrorConsentPurposeNotFound.Code {
-		s.logger.Debug("Consent purpose not found during delete, skipping",
+		s.logger.DebugWithContext(ctx, "Consent purpose not found during delete, skipping",
 			log.String("purposeID", purposeID))
 		return nil
 	}

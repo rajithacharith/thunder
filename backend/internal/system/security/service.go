@@ -202,7 +202,7 @@ func (s *securityService) handleAuthError(
 	}
 
 	if skipSecurity {
-		s.logger.Debug(
+		s.logger.DebugWithContext(ctx,
 			"Proceeding without authentication/authorization enforcement as skipSecurity is enabled",
 			log.Error(err),
 			log.String("path", path))

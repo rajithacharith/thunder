@@ -141,7 +141,7 @@ func (js *jweService) Encrypt(payload []byte, recipientPublicKey crypto.PublicKe
 func (js *jweService) Decrypt(ctx context.Context, jweToken string) ([]byte, *serviceerror.ServiceError) {
 	header, headerBase64, encryptedKey, iv, ciphertext, tag, err := DecodeJWE(jweToken)
 	if err != nil {
-		js.logger.Debug("Failed to decode JWE: " + err.Error())
+		js.logger.DebugWithContext(ctx, "Failed to decode JWE: "+err.Error())
 		return nil, &ErrorDecodingJWE
 	}
 
@@ -160,21 +160,21 @@ func (js *jweService) Decrypt(ctx context.Context, jweToken string) ([]byte, *se
 	// Build cryptolib params for CEK decryption using the server's key.
 	params, paramsErr := buildDecryptParams(alg, enc, header)
 	if paramsErr != nil {
-		js.logger.Debug("Failed to build decrypt params: " + paramsErr.Error())
+		js.logger.DebugWithContext(ctx, "Failed to build decrypt params: "+paramsErr.Error())
 		return nil, &ErrorUnsupportedJWEAlgorithm
 	}
 
 	// Decrypt CEK via the runtime crypto provider (uses server's private key).
 	cek, err := js.cryptoProvider.Decrypt(ctx, &js.keyRef, params, encryptedKey)
 	if err != nil {
-		js.logger.Error("Failed to decrypt CEK: " + err.Error())
+		js.logger.ErrorWithContext(ctx, "Failed to decrypt CEK: "+err.Error())
 		return nil, &ErrorJWEDecryptionFailed
 	}
 
 	// Decrypt content.
 	payload, err := decryptContent(ciphertext, iv, tag, cek, enc, []byte(headerBase64))
 	if err != nil {
-		js.logger.Error("Failed to decrypt content: " + err.Error())
+		js.logger.ErrorWithContext(ctx, "Failed to decrypt content: "+err.Error())
 		return nil, &ErrorJWEDecryptionFailed
 	}
 

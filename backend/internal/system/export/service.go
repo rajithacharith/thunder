@@ -263,7 +263,7 @@ func (es *exportService) exportResourcesWithExporter(
 		// Export all resources
 		ids, err := exporter.GetAllResourceIDs(ctx)
 		if err != nil {
-			logger.Warn("Failed to get all resources",
+			logger.WarnWithContext(ctx, "Failed to get all resources",
 				log.String("resourceType", resourceType), log.Any("error", err))
 			return []ExportFile{}, variableValues, []declarativeresource.ExportError{}
 		}
@@ -276,7 +276,7 @@ func (es *exportService) exportResourcesWithExporter(
 		// Get the resource
 		resource, _, svcErr := exporter.GetResourceByID(ctx, resourceID)
 		if svcErr != nil {
-			logger.Warn("Failed to get resource for export",
+			logger.WarnWithContext(ctx, "Failed to get resource for export",
 				log.String("resourceType", resourceType),
 				log.String("resourceID", resourceID),
 				log.String("error", svcErr.Error.DefaultValue))
@@ -302,14 +302,14 @@ func (es *exportService) exportResourcesWithExporter(
 
 		if options.Format == formatJSON {
 			// Convert to JSON format (could be implemented later)
-			logger.Warn("JSON format not yet implemented, falling back to YAML")
+			logger.WarnWithContext(ctx, "JSON format not yet implemented, falling back to YAML")
 			options.Format = formatYAML
 		}
 
 		templateContent, vars, err := es.generateTemplateFromStruct(
 			resource, exporter.GetParameterizerType(), validatedName, exporter)
 		if err != nil {
-			logger.Warn("Failed to generate template from struct",
+			logger.WarnWithContext(ctx, "Failed to generate template from struct",
 				log.String("resourceType", resourceType),
 				log.String("resourceID", resourceID),
 				log.String("error", err.Error()))

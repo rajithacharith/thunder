@@ -94,7 +94,7 @@ func (s *oAuthAuthnService) GetOAuthClientConfig(ctx context.Context, idpID stri
 				DefaultValue: "Error while retrieving identity provider: " + svcErr.ErrorDescription.DefaultValue,
 			})
 		}
-		logger.Error("Error while retrieving identity provider", log.String("errorCode", svcErr.Code),
+		logger.ErrorWithContext(ctx, "Error while retrieving identity provider", log.String("errorCode", svcErr.Code),
 			log.String("description", svcErr.ErrorDescription.DefaultValue))
 		return nil, &serviceerror.InternalServerError
 	}
@@ -104,7 +104,7 @@ func (s *oAuthAuthnService) GetOAuthClientConfig(ctx context.Context, idpID stri
 
 	oAuthClientConfig, err := parseIDPConfig(idp)
 	if err != nil {
-		logger.Error("Failed to parse identity provider configurations", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to parse identity provider configurations", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -115,14 +115,14 @@ func (s *oAuthAuthnService) GetOAuthClientConfig(ctx context.Context, idpID stri
 func (s *oAuthAuthnService) BuildAuthorizeURL(
 	ctx context.Context, idpID string) (string, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("idpId", idpID))
-	logger.Debug("Building authorize URL")
+	logger.DebugWithContext(ctx, "Building authorize URL")
 
 	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(ctx, idpID)
 	if svcErr != nil {
 		return "", svcErr
 	}
 	if oAuthClientConfig.OAuthEndpoints.AuthorizationEndpoint == "" {
-		logger.Error("Authorization endpoint is not configured for the identity provider")
+		logger.ErrorWithContext(ctx, "Authorization endpoint is not configured for the identity provider")
 		return "", &serviceerror.InternalServerError
 	}
 
@@ -145,7 +145,7 @@ func (s *oAuthAuthnService) BuildAuthorizeURL(
 	authZURL, err := sysutils.GetURIWithQueryParams(oAuthClientConfig.OAuthEndpoints.AuthorizationEndpoint,
 		queryParams)
 	if err != nil {
-		logger.Error("Failed to build authorize URL", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to build authorize URL", log.Error(err))
 		return "", &serviceerror.InternalServerError
 	}
 
@@ -157,7 +157,7 @@ func (s *oAuthAuthnService) BuildAuthorizeURL(
 func (s *oAuthAuthnService) ExchangeCodeForToken(ctx context.Context, idpID, code string, validateResponse bool) (
 	*TokenResponse, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("idpId", idpID))
-	logger.Debug("Exchanging authorization code for token")
+	logger.DebugWithContext(ctx, "Exchanging authorization code for token")
 
 	if strings.TrimSpace(code) == "" {
 		return nil, &ErrorEmptyAuthorizationCode
@@ -168,7 +168,7 @@ func (s *oAuthAuthnService) ExchangeCodeForToken(ctx context.Context, idpID, cod
 		return nil, svcErr
 	}
 	if oAuthClientConfig.OAuthEndpoints.TokenEndpoint == "" {
-		logger.Error("Token endpoint is not configured for the identity provider")
+		logger.ErrorWithContext(ctx, "Token endpoint is not configured for the identity provider")
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -304,7 +304,7 @@ func (s *oAuthAuthnService) GetInternalUser(sub string) (*entityprovider.Entity,
 func (s *oAuthAuthnService) Authenticate(ctx context.Context, idpID, code string) (
 	*common.FederatedAuthResult, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("idpId", idpID))
-	logger.Debug("Performing federated OAuth authentication")
+	logger.DebugWithContext(ctx, "Performing federated OAuth authentication")
 
 	tokenResp, svcErr := s.ExchangeCodeForToken(ctx, idpID, code, true)
 	if svcErr != nil {
@@ -323,7 +323,7 @@ func (s *oAuthAuthnService) Authenticate(ctx context.Context, idpID, code string
 		}
 	}
 	if sub == "" {
-		logger.Debug("sub claim not found in user info")
+		logger.DebugWithContext(ctx, "sub claim not found in user info")
 		return nil, &common.ErrorSubClaimNotFound
 	}
 

@@ -86,18 +86,18 @@ func (c *redisCache[T]) Set(ctx context.Context, key CacheKey, value T) error {
 
 	data, err := json.Marshal(value)
 	if err != nil {
-		logger.Warn("Failed to marshal value for Redis cache", log.Error(err))
+		logger.WarnWithContext(ctx, "Failed to marshal value for Redis cache", log.Error(err))
 		return err
 	}
 
 	fullKey := c.buildKey(key)
 
 	if err := c.client.Set(ctx, fullKey, data, c.ttl).Err(); err != nil {
-		logger.Warn("Failed to set value in Redis cache", log.Error(err))
+		logger.WarnWithContext(ctx, "Failed to set value in Redis cache", log.Error(err))
 		return err
 	}
 
-	logger.Debug("Cache entry set in Redis", log.String("key", key.ToString()))
+	logger.DebugWithContext(ctx, "Cache entry set in Redis", log.String("key", key.ToString()))
 	return nil
 }
 
@@ -119,20 +119,20 @@ func (c *redisCache[T]) Get(ctx context.Context, key CacheKey) (T, bool) {
 			atomic.AddInt64(&c.missCount, 1)
 			return zero, false
 		}
-		logger.Warn("Failed to get value from Redis cache", log.Error(err))
+		logger.WarnWithContext(ctx, "Failed to get value from Redis cache", log.Error(err))
 		atomic.AddInt64(&c.missCount, 1)
 		return zero, false
 	}
 
 	var value T
 	if err := json.Unmarshal(data, &value); err != nil {
-		logger.Warn("Failed to unmarshal value from Redis cache", log.Error(err))
+		logger.WarnWithContext(ctx, "Failed to unmarshal value from Redis cache", log.Error(err))
 		atomic.AddInt64(&c.missCount, 1)
 		return zero, false
 	}
 
 	atomic.AddInt64(&c.hitCount, 1)
-	logger.Debug("Cache hit from Redis", log.String("key", key.ToString()))
+	logger.DebugWithContext(ctx, "Cache hit from Redis", log.String("key", key.ToString()))
 	return value, true
 }
 

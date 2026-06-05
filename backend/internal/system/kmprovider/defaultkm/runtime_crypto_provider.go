@@ -119,7 +119,7 @@ func (s *runtimeCryptoService) Decrypt(
 }
 
 func (s *runtimeCryptoService) Sign(
-	_ context.Context, keyRef kmprovider.KeyRef, algorithm cryptolib.SignAlgorithm, content []byte,
+	ctx context.Context, keyRef kmprovider.KeyRef, algorithm cryptolib.SignAlgorithm, content []byte,
 ) ([]byte, error) {
 	if s.pkiService == nil {
 		return nil, errors.New("PKI service not initialized")
@@ -133,7 +133,7 @@ func (s *runtimeCryptoService) Sign(
 }
 
 func (s *runtimeCryptoService) GetPublicKeys(
-	_ context.Context, filter kmprovider.PublicKeyFilter,
+	ctx context.Context, filter kmprovider.PublicKeyFilter,
 ) ([]kmprovider.PublicKeyInfo, error) {
 	if s.pkiService == nil {
 		return nil, errors.New("PKI service not initialized")
@@ -160,7 +160,7 @@ func (s *runtimeCryptoService) GetPublicKeys(
 			case "P-521":
 				alg = cryptolib.AlgorithmES512
 			default:
-				s.logger.Warn("Unsupported EC curve; skipping",
+				s.logger.WarnWithContext(ctx, "Unsupported EC curve; skipping",
 					log.String("keyID", id),
 					log.String("curve", pub.Curve.Params().Name))
 				continue
@@ -168,7 +168,7 @@ func (s *runtimeCryptoService) GetPublicKeys(
 		case ed25519.PublicKey:
 			alg = cryptolib.AlgorithmEdDSA
 		default:
-			s.logger.Debug("Unsupported public key type; skipping", log.String("keyID", id))
+			s.logger.DebugWithContext(ctx, "Unsupported public key type; skipping", log.String("keyID", id))
 			continue
 		}
 
@@ -193,7 +193,7 @@ func (s *runtimeCryptoService) GetPublicKeys(
 }
 
 func (s *runtimeCryptoService) GetTLSMaterial(
-	_ context.Context,
+	ctx context.Context,
 ) (*kmprovider.TLSMaterial, error) {
 	if s.pkiService == nil {
 		return nil, errors.New("PKI service not initialized")

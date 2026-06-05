@@ -94,9 +94,11 @@ func newOIDCAuthExecutor(
 }
 
 // Execute executes the OIDC authentication logic.
+//
+//nolint:dupl // OAuth and OIDC executors share the same execute skeleton with type-specific behavior.
 func (o *oidcAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := o.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
-	logger.Debug("Executing OIDC authentication executor")
+	logger.DebugWithContext(ctx.Context, "Executing OIDC authentication executor")
 
 	execResp := &common.ExecutorResponse{
 		AdditionalData: make(map[string]string),
@@ -104,7 +106,7 @@ func (o *oidcAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRespo
 	}
 
 	if !o.HasRequiredInputs(ctx, execResp) {
-		logger.Debug("Required inputs for OIDC authentication executor is not provided")
+		logger.DebugWithContext(ctx.Context, "Required inputs for OIDC authentication executor is not provided")
 		err := o.BuildAuthorizeFlow(ctx, execResp)
 		if err != nil {
 			return nil, err
@@ -116,7 +118,7 @@ func (o *oidcAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRespo
 		}
 	}
 
-	logger.Debug("OIDC authentication executor execution completed",
+	logger.DebugWithContext(ctx.Context, "OIDC authentication executor execution completed",
 		log.String("status", string(execResp.Status)),
 		log.Bool("isAuthenticated", execResp.AuthenticatedUser.IsAuthenticated))
 
@@ -127,7 +129,7 @@ func (o *oidcAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRespo
 func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) error {
 	logger := o.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
-	logger.Debug("Processing OIDC authentication response")
+	logger.DebugWithContext(ctx.Context, "Processing OIDC authentication response")
 
 	code, ok := ctx.UserInputs[userInputCode]
 	if !ok || code == "" {
@@ -143,7 +145,7 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 	if returnedState, ok := ctx.UserInputs[userInputState]; ok && returnedState != "" {
 		expectedState := ctx.RuntimeData[common.RuntimeKeyOAuthState]
 		if returnedState != expectedState {
-			logger.Debug("OAuth state mismatch")
+			logger.DebugWithContext(ctx.Context, "OAuth state mismatch")
 			execResp.Status = common.ExecFailure
 			execResp.Error = &ErrInvalidOAuthState
 			return nil
@@ -172,13 +174,13 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 			return nil
 		}
 
-		logger.Error("OIDC authentication failed", log.String("errorCode", svcErr.Code),
+		logger.ErrorWithContext(ctx.Context, "OIDC authentication failed", log.String("errorCode", svcErr.Code),
 			log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
 		return errors.New("OIDC authentication failed")
 	}
 
 	if basicResult == nil {
-		logger.Error("authnProvider.AuthenticateUser returned nil result")
+		logger.ErrorWithContext(ctx.Context, "authnProvider.AuthenticateUser returned nil result")
 		return errors.New("OIDC authentication failed")
 	}
 
@@ -224,7 +226,7 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 		return nil
 	}
 	if contextUser == nil {
-		logger.Error("Failed to resolve context user after OIDC authentication")
+		logger.ErrorWithContext(ctx.Context, "Failed to resolve context user after OIDC authentication")
 		return errors.New("unexpected error occurred while resolving user")
 	}
 

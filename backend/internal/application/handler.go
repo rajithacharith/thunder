@@ -200,7 +200,7 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
 	if len(appDTO.InboundAuthConfig) > 0 {
 		if appDTO.InboundAuthConfig[0].Type != inboundmodel.OAuthInboundAuthType {
-			logger.Error("Unsupported inbound authentication type returned",
+			logger.ErrorWithContext(ctx, "Unsupported inbound authentication type returned",
 				log.String("type", string(appDTO.InboundAuthConfig[0].Type)))
 
 			errResp := apierror.ErrorResponse{
@@ -213,7 +213,7 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 		}
 
 		if appDTO.InboundAuthConfig[0].OAuthConfig == nil {
-			logger.Error("OAuth application configuration is nil")
+			logger.ErrorWithContext(ctx, "OAuth application configuration is nil")
 
 			errResp := apierror.ErrorResponse{
 				Code:        serviceerror.InternalServerError.Code,
@@ -227,7 +227,7 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 		returnInboundAuthConfigs := make([]inboundmodel.InboundAuthConfig, 0, len(appDTO.InboundAuthConfig))
 		for _, config := range appDTO.InboundAuthConfig {
 			if config.OAuthConfig == nil {
-				logger.Error("OAuth application configuration is nil")
+				logger.ErrorWithContext(ctx, "OAuth application configuration is nil")
 				errResp := apierror.ErrorResponse{
 					Code:        serviceerror.InternalServerError.Code,
 					Message:     serviceerror.InternalServerError.Error,
@@ -493,7 +493,7 @@ func (ah *applicationHandler) handleError(w http.ResponseWriter, r *http.Request
 
 	if statusCode == http.StatusInternalServerError {
 		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationHandler"))
-		logger.Error("Internal server error processing application request",
+		logger.ErrorWithContext(r.Context(), "Internal server error processing application request",
 			log.String("method", r.Method),
 			log.String("path", r.URL.Path),
 			log.String("error_code", svcErr.Code),

@@ -93,12 +93,12 @@ func newMagicLinkAuthExecutor(
 // Execute executes the Magic Link authentication logic.
 func (m *magicLinkAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := m.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
-	logger.Debug("Executing Magic Link authentication executor")
+	logger.DebugWithContext(ctx.Context, "Executing Magic Link authentication executor")
 
 	execResp := newMagicLinkExecutorResponse()
 
 	if !m.ValidatePrerequisites(ctx, execResp) {
-		logger.Debug("Prerequisites not met for Magic Link authentication executor")
+		logger.DebugWithContext(ctx.Context, "Prerequisites not met for Magic Link authentication executor")
 		return execResp, nil
 	}
 
@@ -119,7 +119,8 @@ func (m *magicLinkAuthExecutor) executeGenerate(ctx *core.NodeContext) (*common.
 	if err != nil {
 		return execResp, err
 	}
-	logger.Debug("Magic link generation completed", log.String("status", string(execResp.Status)))
+	logger.DebugWithContext(ctx.Context, "Magic link generation completed",
+		log.String("status", string(execResp.Status)))
 	return execResp, nil
 }
 
@@ -148,7 +149,8 @@ func (m *magicLinkAuthExecutor) InitiateMagicLink(ctx *core.NodeContext,
 		}
 		if userID != nil && *userID != "" {
 			// ANTI-ENUMERATION: Pretend it succeeded but skip sending the magic link.
-			logger.Debug("Registration attempted for existing user. Skipping delivery to prevent enumeration.")
+			logger.DebugWithContext(ctx.Context,
+				"Registration attempted for existing user. Skipping delivery to prevent enumeration.")
 			execResp.RuntimeData[common.RuntimeKeySkipDelivery] = dataValueTrue
 			execResp.Status = common.ExecComplete
 			return execResp, nil
@@ -164,7 +166,7 @@ func (m *magicLinkAuthExecutor) InitiateMagicLink(ctx *core.NodeContext,
 		} else {
 			identifiedUserID, providerErr := m.entityProvider.IdentifyEntity(searchAttrs)
 			if providerErr != nil || identifiedUserID == nil || *identifiedUserID == "" {
-				logger.Debug("User not found, completing without delivery for anti-enumeration")
+				logger.DebugWithContext(ctx.Context, "User not found, completing without delivery for anti-enumeration")
 				execResp.RuntimeData[common.RuntimeKeySkipDelivery] = dataValueTrue
 				execResp.Status = common.ExecComplete
 				return execResp, nil
@@ -303,7 +305,7 @@ func (m *magicLinkAuthExecutor) executeVerify(ctx *core.NodeContext) (*common.Ex
 	execResp := newMagicLinkExecutorResponse()
 
 	if !m.HasRequiredInputs(ctx, execResp) {
-		logger.Debug("Required inputs for Magic Link verification are not provided")
+		logger.DebugWithContext(ctx.Context, "Required inputs for Magic Link verification are not provided")
 		execResp.Status = common.ExecUserInputRequired
 		return execResp, nil
 	}
@@ -347,7 +349,7 @@ func (m *magicLinkAuthExecutor) executeVerify(ctx *core.NodeContext) (*common.Ex
 
 	if ctx.FlowType == common.FlowTypeRegistration {
 		if authnResult.IsExistingUser {
-			logger.Debug("User already exists during magic link registration verification.")
+			logger.DebugWithContext(ctx.Context, "User already exists during magic link registration verification.")
 			execResp.Status = common.ExecFailure
 			execResp.Error = &ErrUserAlreadyExists
 			return execResp, nil
@@ -364,7 +366,7 @@ func (m *magicLinkAuthExecutor) executeVerify(ctx *core.NodeContext) (*common.Ex
 	execResp.AuthenticatedUser = *authenticatedUser
 
 	execResp.Status = common.ExecComplete
-	logger.Debug("Magic link verify completed successfully")
+	logger.DebugWithContext(ctx.Context, "Magic link verify completed successfully")
 	return execResp, nil
 }
 
@@ -374,13 +376,13 @@ func (m *magicLinkAuthExecutor) validateFlowClaims(ctx *core.NodeContext,
 	token string, logger *log.Logger) (string, *serviceerror.ServiceError) {
 	payload, decodeErr := jwt.DecodeJWTPayload(token)
 	if decodeErr != nil {
-		logger.Debug("Failed to decode magic link token", log.Error(decodeErr))
+		logger.DebugWithContext(ctx.Context, "Failed to decode magic link token", log.Error(decodeErr))
 		return "", &ErrInvalidMagicLinkToken
 	}
 
 	executionIDClaim := utils.ConvertInterfaceValueToString(payload["executionId"])
 	if executionIDClaim == "" || executionIDClaim != ctx.ExecutionID {
-		logger.Debug("Magic link token executionId mismatch")
+		logger.DebugWithContext(ctx.Context, "Magic link token executionId mismatch")
 		return "", &ErrInvalidMagicLinkToken
 	}
 
@@ -389,11 +391,11 @@ func (m *magicLinkAuthExecutor) validateFlowClaims(ctx *core.NodeContext,
 		return "", &ErrInvalidMagicLinkToken
 	}
 	if usedJti, exists := ctx.RuntimeData[common.RuntimeKeyMagicLinkUsedJti]; exists && usedJti == jtiClaim {
-		logger.Debug("Magic link token has already been used", log.String("jti", jtiClaim))
+		logger.DebugWithContext(ctx.Context, "Magic link token has already been used", log.String("jti", jtiClaim))
 		return "", &ErrInvalidMagicLinkToken
 	}
 
-	logger.Debug("Magic link token validated successfully")
+	logger.DebugWithContext(ctx.Context, "Magic link token validated successfully")
 	return jtiClaim, nil
 }
 

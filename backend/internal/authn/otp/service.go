@@ -78,7 +78,7 @@ func newOTPAuthnService(otpSvc notification.OTPServiceInterface,
 func (s *otpAuthnService) SendOTP(ctx context.Context, senderID string, channel notifcommon.ChannelType,
 	recipient string) (string, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Debug("Sending OTP for authentication", log.MaskedString("recipient", recipient),
+	logger.DebugWithContext(ctx, "Sending OTP for authentication", log.MaskedString("recipient", recipient),
 		log.String("channel", string(channel)))
 
 	if svcErr := s.validateOTPSendRequest(senderID, channel, recipient); svcErr != nil {
@@ -95,7 +95,7 @@ func (s *otpAuthnService) SendOTP(ctx context.Context, senderID string, channel 
 		return "", s.handleOTPServiceError(svcErr, false, logger)
 	}
 
-	logger.Debug("OTP sent successfully, session token generated")
+	logger.DebugWithContext(ctx, "OTP sent successfully, session token generated")
 	return result.SessionToken, nil
 }
 
@@ -103,7 +103,7 @@ func (s *otpAuthnService) SendOTP(ctx context.Context, senderID string, channel 
 func (s *otpAuthnService) Authenticate(ctx context.Context, sessionToken,
 	otp string) (*OTPAuthnResult, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Debug("Verifying OTP for authentication")
+	logger.DebugWithContext(ctx, "Verifying OTP for authentication")
 
 	if svcErr := s.validateOTPVerifyRequest(sessionToken, otp); svcErr != nil {
 		return nil, svcErr
