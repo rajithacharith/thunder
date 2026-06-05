@@ -49,6 +49,7 @@ type FlowExecServiceInterface interface {
 	Execute(ctx context.Context, appID, executionID, flowType string, verbose bool,
 		action string, inputs map[string]string, challengeToken string) (*FlowStep, *serviceerror.ServiceError)
 	InitiateFlow(ctx context.Context, initContext *FlowInitContext) (string, *serviceerror.ServiceError)
+	InitiateAndExecute(ctx context.Context, initContext *FlowInitContext) (*FlowStep, *serviceerror.ServiceError)
 }
 
 const (
@@ -163,7 +164,7 @@ func (s *flowExecService) Execute(ctx context.Context,
 		}
 	} else {
 		if isNewFlow(executionID) {
-			if storeErr := s.storeContext(ctx, engineCtx, logger); storeErr != nil {
+			if storeErr := s.storeContext(ctx, engineCtx, 0, logger); storeErr != nil {
 				logger.ErrorWithContext(ctx, "Failed to store initial flow context",
 					log.String(log.LoggerKeyExecutionID, engineCtx.ExecutionID), log.Error(storeErr))
 				return nil, &serviceerror.InternalServerError
@@ -444,12 +445,14 @@ func (s *flowExecService) updateContext(ctx context.Context, engineCtx *EngineCo
 
 // storeContext stores the flow context in the store.
 func (s *flowExecService) storeContext(ctx context.Context, engineCtx *EngineContext,
-	logger *log.Logger) error {
+	expirySeconds int64, logger *log.Logger) error {
 	if engineCtx.ExecutionID == "" {
 		return fmt.Errorf("flow ID cannot be empty")
 	}
 
-	expirySeconds := s.getFlowExpirySeconds(engineCtx.FlowType)
+	if expirySeconds <= 0 {
+		expirySeconds = s.getFlowExpirySeconds(engineCtx.FlowType)
+	}
 
 	encryptedEngineCtx, err := s.encryptEngineContext(ctx, engineCtx)
 	if err != nil {
@@ -639,7 +642,7 @@ func (s *flowExecService) InitiateFlow(ctx context.Context,
 	engineCtx.RuntimeData = initContext.RuntimeData
 
 	// Store the context without executing the flow
-	if storeErr := s.storeContext(ctx, engineCtx, logger); storeErr != nil {
+	if storeErr := s.storeContext(ctx, engineCtx, 0, logger); storeErr != nil {
 		logger.ErrorWithContext(ctx, "Failed to store initial flow context",
 			log.String(log.LoggerKeyExecutionID, engineCtx.ExecutionID),
 			log.Error(storeErr))
@@ -649,6 +652,62 @@ func (s *flowExecService) InitiateFlow(ctx context.Context,
 	logger.DebugWithContext(ctx, "Flow initiated successfully",
 		log.String(log.LoggerKeyExecutionID, engineCtx.ExecutionID))
 	return engineCtx.ExecutionID, nil
+}
+
+// InitiateAndExecute initializes a new flow with the provided context, sets runtime data and
+// initial user inputs, executes the flow, stores the context if the flow pauses, and returns
+// the FlowStep. The caller uses FlowStep.ExecutionID to associate the flow with their session.
+//
+// InitialInputs are placed directly into UserInputs before execution so executor nodes that
+// read from ctx.UserInputs (e.g. the identifying executor) can resolve data without requiring
+// an interactive input step from the user.
+func (s *flowExecService) InitiateAndExecute(ctx context.Context,
+	initContext *FlowInitContext) (*FlowStep, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowExecService"))
+
+	if initContext == nil || initContext.FlowType == "" {
+		return nil, &ErrorInvalidFlowInitContext
+	}
+
+	flowType, err := validateFlowType(initContext.FlowType)
+	if err != nil {
+		return nil, err
+	}
+
+	if flowType != common.FlowTypeUserOnboarding && initContext.ApplicationID == "" {
+		return nil, &ErrorInvalidFlowInitContext
+	}
+
+	engineCtx, err := s.initContext(ctx, initContext.ApplicationID, flowType, true, logger)
+	if err != nil {
+		logger.ErrorWithContext(ctx, "Failed to initialize flow context",
+			log.String("appID", initContext.ApplicationID),
+			log.String("flowType", initContext.FlowType),
+			log.String("error", err.Error.DefaultValue))
+		return nil, err
+	}
+
+	engineCtx.RuntimeData = initContext.RuntimeData
+	prepareContext(engineCtx, "", initContext.InitialInputs)
+
+	flowStep, flowErr := s.flowEngine.Execute(engineCtx)
+	if flowErr != nil {
+		logger.ErrorWithContext(ctx, "Failed to execute flow",
+			log.String(log.LoggerKeyExecutionID, engineCtx.ExecutionID),
+			log.String("error", flowErr.Error.DefaultValue))
+		return nil, flowErr
+	}
+
+	if flowStep.Status == common.FlowStatusIncomplete {
+		if storeErr := s.storeContext(ctx, engineCtx, initContext.ExpirySeconds, logger); storeErr != nil {
+			logger.ErrorWithContext(ctx, "Failed to store flow context after execution",
+				log.String(log.LoggerKeyExecutionID, engineCtx.ExecutionID),
+				log.Error(storeErr))
+			return nil, &serviceerror.InternalServerError
+		}
+	}
+
+	return &flowStep, nil
 }
 
 // getFlowContext retrieves the flow context from the store and decrypts it if needed.

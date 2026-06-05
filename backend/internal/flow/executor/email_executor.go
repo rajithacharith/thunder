@@ -100,7 +100,6 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 		return nil, errors.New("template service is not configured")
 	}
 
-	// 2. Resolve recipient email properly
 	recipient, err := e.resolveRecipientEmail(ctx, logger)
 	if err != nil {
 		return nil, err
@@ -143,7 +142,6 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 		IsHTML:  rendered.IsHTML,
 	}
 
-	// Graceful failure for all client and system email transport errors
 	if err := e.emailClient.Send(emailData); err != nil {
 		execResp.Status = common.ExecFailure
 		execResp.Error = &ErrEmailSendFailed
@@ -159,7 +157,6 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 
 // resolveRecipientEmail retrieves the recipient email from user inputs, runtime data, or forwarded data.
 func (e *emailExecutor) resolveRecipientEmail(ctx *core.NodeContext, logger *log.Logger) (string, error) {
-	// Strict mode: Fail immediately if the flow canvas didn't configure the email input.
 	input, ok := findInputByType(ctx.NodeInputs, common.InputTypeEmail)
 	if !ok {
 		return "", errors.New("email input configuration is missing from node inputs")
@@ -171,9 +168,11 @@ func (e *emailExecutor) resolveRecipientEmail(ctx *core.NodeContext, logger *log
 			return emailStr, nil
 		}
 	}
+
 	if recipientEmail, ok := ctx.RuntimeData[emailAttr]; ok && recipientEmail != "" {
 		return recipientEmail, nil
 	}
+
 	if recipientEmail, ok := ctx.UserInputs[emailAttr]; ok && recipientEmail != "" {
 		return recipientEmail, nil
 	}
@@ -189,11 +188,10 @@ func (e *emailExecutor) resolveRecipientEmail(ctx *core.NodeContext, logger *log
 			}
 			return "", fmt.Errorf("failed to fetch user from entity provider: %w", providerErr)
 		}
-
 		if recipientEmail, err := GetUserAttribute(user, emailAttr); err == nil {
 			return recipientEmail, nil
 		}
-		logger.DebugWithContext(ctx.Context, "Email attribute not found in user entity",
+		logger.DebugWithContext(ctx.Context, "Email attribute not found on user entity",
 			log.String("attribute", emailAttr))
 	}
 

@@ -116,6 +116,8 @@ type FlowInitContext struct {
 	ApplicationID string
 	FlowType      string
 	RuntimeData   map[string]string
+	InitialInputs map[string]string
+	ExpirySeconds int64
 }
 
 // FlowContextDB represents the database row for a flow context.

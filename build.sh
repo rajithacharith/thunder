@@ -123,6 +123,8 @@ REACT_API_SAMPLE_APP_FOLDER="sample-app-react-api-based-${REACT_API_SAMPLE_APP_V
 WAYFINDER_SAMPLE_APP_VERSION=$(grep -o '"version": *"[^"]*"' samples/apps/wayfinder-sample/package.json | sed 's/"version": *"\(.*\)"/\1/')
 WAYFINDER_SAMPLE_APP_FOLDER="sample-app-wayfinder-${WAYFINDER_SAMPLE_APP_VERSION}-${SAMPLE_PACKAGE_OS}-${SAMPLE_PACKAGE_ARCH}"
 
+
+
 # Directories
 TARGET_DIR=target
 OUTPUT_DIR=$TARGET_DIR/out
@@ -147,6 +149,7 @@ VANILLA_SAMPLE_APP_SERVER_DIR=$VANILLA_SAMPLE_APP_DIR/server
 REACT_SDK_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-sdk-sample
 REACT_API_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-api-based-sample
 WAYFINDER_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/wayfinder-sample
+
 
 # Quick start declarative bundles staged into the console's welcome feature so they're inlined
 # into the console JS bundle at build time.

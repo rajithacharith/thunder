@@ -23,14 +23,21 @@ import { z } from "zod";
 import { resolveUser } from "./auth.js";
 import {
   createBookingRecord,
+  createUpgradeRequest,
   deleteBookingsForUser,
+  findBusinessFlightsForRoute,
   findDuplicateBooking,
+  findFlightById,
   findFlights,
   findHotels,
   findRecommendedFlights,
+  getOnePendingUpgrade,
+  getUpgradeRequestById,
   listBookedFlights,
   listLocations,
-  listTrips
+  listTrips,
+  updateBookingFlight,
+  updateUpgradeStatus
 } from "./db.js";
 
 // Per-tool scope requirements. Mirrors the REST API's requireScope() guards so
@@ -45,7 +52,11 @@ const TOOL_SCOPES = {
   get_profile: null,
   get_flight_bookings: "booking:read",
   create_booking: "booking:create",
-  delete_all_bookings: "booking:cancel"
+  delete_all_bookings: "booking:cancel",
+  find_upgrade_options: "upgrade:search",
+  request_upgrade: "booking:upgrade",
+  get_pending_upgrade: "upgrade:read",
+  process_upgrade: "upgrade:process"
 };
 
 function generateBookingReference() {
@@ -252,6 +263,130 @@ function createTravelMcpServer(user) {
     })
   );
 
+  tool(
+    "find_upgrade_options",
+    "Find available Business class flights for the same route as a booked Economy flight. Call this before request_upgrade to show the user what upgrade options exist.",
+    {
+      fromCity: z.string().describe("Departure city of the booked flight, e.g. Colombo."),
+      toCity: z.string().describe("Arrival city of the booked flight, e.g. Singapore.")
+    },
+    async ({ fromCity, toCity }) => toToolContent(findBusinessFlightsForRoute({ fromCity, toCity }))
+  );
+
+  tool(
+    "request_upgrade",
+    "Submit a flight upgrade request for the current user. Upgrades an existing Economy booking to a Business class flight on the same route. The request is queued and processed asynchronously — inform the user it will be handled shortly.",
+    {
+      bookingId: z.string().describe("The ID of the existing Economy flight booking to upgrade."),
+      toFlightId: z.string().describe("The ID of the target Business class flight.")
+    },
+    async ({ bookingId, toFlightId }) => {
+      const allBookings = listBookedFlights(user.id);
+      const existingBooking = allBookings.find((b) => b.id === bookingId);
+
+      if (!existingBooking) {
+        throw new Error("Booking not found or does not belong to the current user.");
+      }
+
+      if (existingBooking.flight.cabin?.toLowerCase() !== "economy") {
+        throw new Error("Only Economy bookings can be upgraded.");
+      }
+
+      const targetFlight = findFlightById(toFlightId);
+
+      if (!targetFlight) {
+        throw new Error("Target upgrade flight not found.");
+      }
+
+      if (targetFlight.cabin?.toLowerCase() !== "business") {
+        throw new Error("Target flight must be a Business class flight.");
+      }
+
+      if (
+        targetFlight.from.toLowerCase() !== existingBooking.flight.from.toLowerCase() ||
+        targetFlight.to.toLowerCase() !== existingBooking.flight.to.toLowerCase()
+      ) {
+        throw new Error("Target flight must be on the same route as the booked flight.");
+      }
+
+      const priceDifference = Math.max(0, targetFlight.price - existingBooking.flight.price);
+
+      if (!user.email) {
+        throw new Error("User email is required to create an upgrade request but was not found in the token claims.");
+      }
+
+      const upgradeRequest = createUpgradeRequest({
+        id: `upgrade-${randomUUID()}`,
+        userId: user.id,
+        email: user.email,
+        bookingId,
+        fromFlightId: existingBooking.flight.id,
+        toFlightId,
+        priceDifference,
+        createdAt: new Date().toISOString()
+      });
+
+      return toToolContent({
+        ...upgradeRequest,
+        message: "Upgrade request submitted. It will be processed shortly and you will be notified via your registered device."
+      });
+    }
+  );
+
+  tool(
+    "get_pending_upgrade",
+    "For the upgrade scheduler agent only. Returns the count of pending upgrade requests and one request to process next. Requires upgrade:read scope (M2M token).",
+    {},
+    async () => toToolContent(getOnePendingUpgrade())
+  );
+
+  tool(
+    "process_upgrade",
+    "Process a specific upgrade request. Validates that the authenticated user owns the request, updates the booking to the Business class flight, and marks the request as success or failed. Requires upgrade:process scope (CIBA user token).",
+    {
+      upgradeRequestId: z.string().describe("The ID of the upgrade request to process.")
+    },
+    async ({ upgradeRequestId }) => {
+      const upgradeRequest = getUpgradeRequestById(upgradeRequestId);
+
+      if (!upgradeRequest) {
+        throw new Error("Upgrade request not found.");
+      }
+
+      if (upgradeRequest.userId !== user.id) {
+        const err = new Error("Not authorized to process this upgrade request.");
+        err.code = "insufficient_scope";
+        throw err;
+      }
+
+      if (upgradeRequest.status !== "pending") {
+        throw new Error(`Upgrade request is already ${upgradeRequest.status}.`);
+      }
+
+      const now = new Date().toISOString();
+
+      try {
+        const { updated } = updateBookingFlight({ bookingId: upgradeRequest.bookingId, newFlightId: upgradeRequest.toFlightId });
+        if (!updated) {
+          updateUpgradeStatus({ id: upgradeRequestId, status: "failed", updatedAt: now });
+          throw new Error(`Booking ${upgradeRequest.bookingId} could not be updated — it may no longer exist.`);
+        }
+        updateUpgradeStatus({ id: upgradeRequestId, status: "success", updatedAt: now });
+
+        return toToolContent({
+          upgradeRequestId,
+          status: "success",
+          bookingId: upgradeRequest.bookingId,
+          newFlightId: upgradeRequest.toFlightId,
+          updatedAt: now
+        });
+      } catch (err) {
+        updateUpgradeStatus({ id: upgradeRequestId, status: "failed", updatedAt: now });
+        throw new Error(`Upgrade processing failed: ${err.message}`);
+      }
+    }
+  );
+
   return server;
 }
 
@@ -328,7 +463,11 @@ export function getProtectedResourceMetadata(request) {
       "booking:read",
       "booking:create",
       "booking:cancel",
-      "booking:recommend"
+      "booking:recommend",
+      "booking:upgrade",
+      "upgrade:read",
+      "upgrade:search",
+      "upgrade:process"
     ],
     bearer_methods_supported: ["header"]
   };

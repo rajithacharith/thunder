@@ -113,6 +113,9 @@ func (a *authAssertExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRes
 
 		execResp.Status = common.ExecComplete
 		execResp.Assertion = token
+		if callbackType, ok := ctx.NodeProperties[propertyKeyCallbackType].(string); ok && callbackType != "" {
+			execResp.AdditionalData[propertyKeyCallbackType] = callbackType
+		}
 	} else {
 		execResp.Status = common.ExecFailure
 		execResp.Error = &ErrUserNotAuthenticated
@@ -167,6 +170,13 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 
 	if completedACR, exists := ctx.RuntimeData[common.RuntimeKeySelectedAuthClass]; exists && completedACR != "" {
 		jwtClaims[oauth2const.ClaimCompletedAuthClass] = completedACR
+	}
+
+	// Bind the assertion to the originating CIBA request when present, so the CIBA callback can
+	// verify that this assertion authorizes the specific auth_req_id it accompanies. This key is
+	// only set for CIBA-initiated flows, leaving the interactive authorization_code assertion unchanged.
+	if cibaAuthReqID, exists := ctx.RuntimeData[common.RuntimeKeyCIBAAuthReqID]; exists && cibaAuthReqID != "" {
+		jwtClaims[oauth2const.ClaimCIBAAuthReqID] = cibaAuthReqID
 	}
 
 	requiredAttributes := a.getRequiredUserAttributes(ctx)

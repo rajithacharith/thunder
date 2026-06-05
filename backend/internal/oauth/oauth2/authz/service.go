@@ -583,69 +583,26 @@ func (as *authorizeService) verifyAssertion(ctx context.Context, assertion strin
 	return nil
 }
 
-// decodeAttributesFromAssertion decodes user attributes from the flow assertion JWT.
+// decodeAttributesFromAssertion decodes user attributes from the flow assertion JWT using the
+// shared base decoder. authorized_permissions is auth-code-specific and extracted separately
+// from the raw payload returned alongside the common claims.
 func decodeAttributesFromAssertion(assertion string) (assertionClaims, time.Time, error) {
-	claims := assertionClaims{}
-
-	_, jwtPayload, err := jwt.DecodeJWT(assertion)
+	base, payload, err := oauth2utils.DecodeFlowAssertionClaims(assertion)
 	if err != nil {
-		return claims, time.Time{}, fmt.Errorf("failed to decode the JWT token: %w", err)
+		return assertionClaims{}, time.Time{}, err
 	}
 
-	// Extract authentication time from iat claim.
-	authTime := time.Time{}
-	if iatValue, ok := jwtPayload["iat"]; ok {
-		switch v := iatValue.(type) {
-		case float64:
-			authTime = time.Unix(int64(v), 0)
-		case int64:
-			authTime = time.Unix(v, 0)
-		case int:
-			authTime = time.Unix(int64(v), 0)
-		default:
-			return claims, time.Time{}, errors.New("JWT 'iat' claim has unexpected type")
-		}
+	claims := assertionClaims{
+		userID:           base.UserID,
+		attributeCacheID: base.AttributeCacheID,
+		completedACR:     base.CompletedACR,
 	}
 
-	for key, value := range jwtPayload {
-		// Extract sub claim.
-		if key == oauth2const.ClaimSub {
-			if strValue, ok := value.(string); ok {
-				claims.userID = strValue
-			} else {
-				return claims, time.Time{}, errors.New("JWT 'sub' claim is not a string")
-			}
-			continue
-		}
-
-		// Extract authorized_permissions claim.
-		if key == "authorized_permissions" {
-			if strValue, ok := value.(string); ok {
-				claims.authorizedPermissions = strValue
-			}
-			continue
-		}
-
-		if key == "aci" {
-			strValue, ok := value.(string)
-			if !ok {
-				return claims, time.Time{}, errors.New("JWT 'aci' claim is not a string")
-			}
-			claims.attributeCacheID = strValue
-			continue
-		}
-
-		if key == oauth2const.ClaimCompletedAuthClass {
-			strValue, ok := value.(string)
-			if !ok {
-				return claims, time.Time{}, errors.New("JWT 'completed_auth_class' claim is not a string")
-			}
-			claims.completedACR = strValue
-			continue
-		}
+	if v, ok := payload["authorized_permissions"].(string); ok {
+		claims.authorizedPermissions = v
 	}
 
-	return claims, authTime, nil
+	return claims, base.AuthTime, nil
 }
 
 // createAuthorizationCode generates an authorization code based on the provided

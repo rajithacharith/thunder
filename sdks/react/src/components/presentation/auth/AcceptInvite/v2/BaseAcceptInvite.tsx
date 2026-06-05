@@ -61,6 +61,11 @@ export interface AcceptInviteFlowResponse {
  */
 export interface BaseAcceptInviteRenderProps {
   /**
+   * Additional data from the current flow step (e.g. consentPrompt for consent nodes).
+   */
+  additionalData: Record<string, any>;
+
+  /**
    * Flow components from the current step.
    */
   components: any[];
@@ -511,7 +516,38 @@ const BaseAcceptInvite: FC<BaseAcceptInviteProps> = ({
 
       try {
         // Build payload with form values
-        const inputs: any = data || formValues;
+        const inputs: any = {...(data || formValues)};
+
+        // Auto-compile consent_decisions if we are on a consent prompt step.
+        // Mirrors the same logic in SignIn to ensure the server receives a
+        // properly structured JSON payload rather than individual checkbox keys.
+        const currentAdditionalData = (currentFlow?.data?.additionalData as Record<string, any>) ?? {};
+        if (currentAdditionalData['consentPrompt']) {
+          try {
+            const raw: any = currentAdditionalData['consentPrompt'];
+            const purposes: any[] = typeof raw === 'string' ? JSON.parse(raw) : raw.purposes || raw;
+            const isDeny = component?.variant?.toLowerCase() !== 'primary';
+            const decisions = {
+              purposes: purposes.map((p: any) => ({
+                approved: !isDeny,
+                purposeName: p.purposeName,
+                elements: [
+                  ...(p.essential || []).map((e: any) => ({approved: !isDeny, name: e.name})),
+                  ...(p.optional || []).map((e: any) => {
+                    const key = `__consent_opt__${p.purposeId}__${e.name}`;
+                    return {approved: isDeny ? false : inputs[key] !== 'false', name: e.name};
+                  }),
+                ],
+              })),
+            };
+            inputs['consent_decisions'] = JSON.stringify(decisions);
+            Object.keys(inputs).forEach((k: string) => {
+              if (k.startsWith('__consent_opt__')) delete inputs[k];
+            });
+          } catch {
+            // Leave inputs as-is if consent building fails
+          }
+        }
 
         const payload: Record<string, any> = {
           executionId: currentFlow.executionId,
@@ -695,9 +731,11 @@ const BaseAcceptInvite: FC<BaseAcceptInviteProps> = ({
   const components: any = currentFlow?.data?.components || currentFlow?.data?.meta?.components || [];
   const {title, subtitle} = extractHeadings(components);
   const componentsWithoutHeadings: any = filterHeadings(components);
+  const additionalData: Record<string, any> = (currentFlow?.data?.additionalData as Record<string, any>) ?? {};
 
   // Render props
   const renderProps: BaseAcceptInviteRenderProps = {
+    additionalData,
     components,
     error: apiError,
     executionId,

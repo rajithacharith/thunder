@@ -245,6 +245,17 @@ const (
 	RuntimeKeySelectedAuthClass = "selected_auth_class"
 	// RuntimeKeyAllowedLoginOptions holds the space-separated action refs allowed on a LOGIN_OPTIONS node.
 	RuntimeKeyAllowedLoginOptions = "allowed_login_options"
+	// RuntimeKeyCIBAAuthReqID holds the CIBA auth_req_id bound to the current flow execution, if applicable.
+	RuntimeKeyCIBAAuthReqID = "cibaAuthReqId"
+	// RuntimeKeyBindingMessage holds the human-readable binding message displayed to the user
+	// on both the consumption device and the authentication device to correlate the CIBA request.
+	RuntimeKeyBindingMessage = "bindingMessage"
+)
+
+// User input key constants for well-known keys used in UserInputs across flow executors.
+const (
+	// UserInputKeyLoginHint is the UserInputs key for the CIBA login_hint value.
+	UserInputKeyLoginHint = "login_hint"
 )
 
 // TODO: Define a go type for InputType when formalizing input types

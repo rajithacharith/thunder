@@ -104,6 +104,8 @@ const (
 	propertyKeyMaxDynamicInputsPerPrompt               = "maxPerPrompt"
 	propertyKeyInviteBaseURL                           = "inviteBaseURL"
 	propertyKeyPresentationDefinitionID                = "presentation_definition_id"
+	propertyKeyCallbackType                            = "callbackType"
+	propertyKeyLoginHintAttribute                      = "loginHintAttribute"
 )
 
 // nonSearchableInputs contains the list of user inputs/ attributes that are non-searchable.

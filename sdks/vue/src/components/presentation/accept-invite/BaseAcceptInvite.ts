@@ -66,6 +66,7 @@ export interface AcceptInviteFlowResponse {
  * Render props passed to the default scoped slot.
  */
 export interface BaseAcceptInviteRenderProps {
+  additionalData: Record<string, any>;
   completionTitle?: string;
   components: any[];
   error?: Error | null;
@@ -408,6 +409,7 @@ const BaseAcceptInvite: Component = defineComponent({
       // Scoped slot
       if (slots['default']) {
         const renderProps: BaseAcceptInviteRenderProps = {
+          additionalData: (currentFlow.value?.data?.additionalData as Record<string, any>) ?? {},
           completionTitle: completionTitle.value,
           components,
           error: apiError.value,

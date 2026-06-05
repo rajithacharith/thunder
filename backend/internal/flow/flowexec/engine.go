@@ -212,6 +212,11 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 	if ctx.Assertion != "" {
 		flowStep.Assertion = ctx.Assertion
 	}
+	// Carry accumulated AdditionalData (e.g. callbackType from AuthAssertExecutor) into the
+	// FlowStep so the client can read it on flow completion.
+	if len(ctx.AdditionalData) > 0 {
+		flowStep.Data.AdditionalData = ctx.AdditionalData
+	}
 
 	// Publish flow completed event
 	flowEndTime := time.Now().UnixMilli()
