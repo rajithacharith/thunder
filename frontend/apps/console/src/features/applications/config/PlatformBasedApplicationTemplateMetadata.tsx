@@ -31,6 +31,7 @@ const PlatformBasedApplicationTemplateMetadata: ApplicationTemplateMetadata<Plat
     titleKey: 'applications:onboarding.configure.stack.platform.browser.title',
     descriptionKey: 'applications:onboarding.configure.stack.platform.browser.description',
     template: BrowserPlatformTemplate as ApplicationTemplate,
+    categories: ['web'],
   },
   {
     value: PlatformApplicationTemplate.FULL_STACK,
@@ -38,6 +39,7 @@ const PlatformBasedApplicationTemplateMetadata: ApplicationTemplateMetadata<Plat
     titleKey: 'applications:onboarding.configure.stack.platform.full_stack.title',
     descriptionKey: 'applications:onboarding.configure.stack.platform.full_stack.description',
     template: FullStackPlatformTemplate as ApplicationTemplate,
+    categories: ['web', 'backend'],
   },
   {
     value: PlatformApplicationTemplate.MOBILE,
@@ -45,6 +47,7 @@ const PlatformBasedApplicationTemplateMetadata: ApplicationTemplateMetadata<Plat
     titleKey: 'applications:onboarding.configure.stack.platform.mobile.title',
     descriptionKey: 'applications:onboarding.configure.stack.platform.mobile.description',
     template: MobilePlatformTemplate as ApplicationTemplate,
+    categories: ['mobile'],
   },
   {
     value: PlatformApplicationTemplate.BACKEND,
@@ -52,6 +55,7 @@ const PlatformBasedApplicationTemplateMetadata: ApplicationTemplateMetadata<Plat
     titleKey: 'applications:onboarding.configure.stack.platform.backend.title',
     descriptionKey: 'applications:onboarding.configure.stack.platform.backend.description',
     template: BackendPlatformTemplate as ApplicationTemplate,
+    categories: ['backend'],
   },
 ];
 

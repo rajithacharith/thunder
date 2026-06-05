@@ -16,7 +16,9 @@
  * under the License.
  */
 
+import {MCP} from '@wso2/oxygen-ui-icons-react';
 import ExpressTemplate from '../data/application-templates/technology-based/express.json';
+import MCPClientTemplate from '../data/application-templates/technology-based/mcp-client.json';
 import NextJSTemplate from '../data/application-templates/technology-based/nextjs.json';
 import NodeTemplate from '../data/application-templates/technology-based/node.json';
 import NuxtTemplate from '../data/application-templates/technology-based/nuxt.json';
@@ -52,6 +54,7 @@ const TechnologyBasedApplicationTemplateMetadata: ApplicationTemplateMetadata<Te
     titleKey: 'applications:onboarding.configure.stack.technology.react.title',
     descriptionKey: 'applications:onboarding.configure.stack.technology.react.description',
     template: ReactTemplate as ApplicationTemplate,
+    categories: ['web'],
   },
   {
     value: TechnologyApplicationTemplate.EXPRESS,
@@ -67,6 +70,7 @@ const TechnologyBasedApplicationTemplateMetadata: ApplicationTemplateMetadata<Te
     titleKey: 'applications:onboarding.configure.stack.technology.express.title',
     descriptionKey: 'applications:onboarding.configure.stack.technology.express.description',
     template: ExpressTemplate as ApplicationTemplate,
+    categories: ['backend'],
   },
   {
     value: TechnologyApplicationTemplate.NEXTJS,
@@ -99,6 +103,7 @@ const TechnologyBasedApplicationTemplateMetadata: ApplicationTemplateMetadata<Te
     titleKey: 'applications:onboarding.configure.stack.technology.nextjs.title',
     descriptionKey: 'applications:onboarding.configure.stack.technology.nextjs.description',
     template: NextJSTemplate as ApplicationTemplate,
+    categories: ['web', 'backend'],
   },
   {
     value: TechnologyApplicationTemplate.VANILLA_JS,
@@ -111,6 +116,7 @@ const TechnologyBasedApplicationTemplateMetadata: ApplicationTemplateMetadata<Te
     titleKey: 'applications:onboarding.configure.stack.technology.vanillaJs.title',
     descriptionKey: 'applications:onboarding.configure.stack.technology.vanillaJs.description',
     template: VanillaJSTemplate as ApplicationTemplate,
+    categories: ['web'],
   },
   {
     value: TechnologyApplicationTemplate.VUE,
@@ -123,6 +129,7 @@ const TechnologyBasedApplicationTemplateMetadata: ApplicationTemplateMetadata<Te
     titleKey: 'applications:onboarding.configure.stack.technology.vue.title',
     descriptionKey: 'applications:onboarding.configure.stack.technology.vue.description',
     template: VueTemplate as ApplicationTemplate,
+    categories: ['web'],
   },
   {
     value: TechnologyApplicationTemplate.NUXT,
@@ -137,6 +144,7 @@ const TechnologyBasedApplicationTemplateMetadata: ApplicationTemplateMetadata<Te
     titleKey: 'applications:onboarding.configure.stack.technology.nuxt.title',
     descriptionKey: 'applications:onboarding.configure.stack.technology.nuxt.description',
     template: NuxtTemplate as ApplicationTemplate,
+    categories: ['web', 'backend'],
   },
   {
     value: TechnologyApplicationTemplate.NODEJS,
@@ -155,6 +163,15 @@ const TechnologyBasedApplicationTemplateMetadata: ApplicationTemplateMetadata<Te
     titleKey: 'applications:onboarding.configure.stack.technology.nodejs.title',
     descriptionKey: 'applications:onboarding.configure.stack.technology.nodejs.description',
     template: NodeTemplate as ApplicationTemplate,
+    categories: ['backend'],
+  },
+  {
+    value: TechnologyApplicationTemplate.MCP_CLIENT,
+    icon: <MCP size={40} />,
+    titleKey: 'applications:onboarding.configure.stack.technology.mcpClient.title',
+    descriptionKey: 'applications:onboarding.configure.stack.technology.mcpClient.description',
+    template: MCPClientTemplate as ApplicationTemplate,
+    categories: ['ai'],
   },
 ];
 

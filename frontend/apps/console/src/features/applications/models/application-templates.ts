@@ -36,6 +36,7 @@ export const TechnologyApplicationTemplate = {
   NUXT: 'NUXT',
   NODEJS: 'NODEJS',
   OTHER: 'OTHER',
+  MCP_CLIENT: 'MCP_CLIENT',
 } as const;
 
 /**
@@ -205,12 +206,20 @@ export interface ApplicationTemplate {
   integrationGuides?: IntegrationGuides;
 }
 
+/**
+ * Template category used for filtering in the unified template gallery.
+ *
+ * @public
+ */
+export type TemplateCategory = 'web' | 'backend' | 'mobile' | 'ai';
+
 export interface ApplicationTemplateMetadata<T = TechnologyApplicationTemplate | PlatformApplicationTemplate> {
   value: T;
   icon: JSX.Element;
   titleKey: string;
   descriptionKey: string;
   template: ApplicationTemplate;
+  categories: TemplateCategory[];
   disabled?: boolean;
 }
 
