@@ -86,8 +86,10 @@ function callerTag(user) {
   }
 
   const type = user.rawClaims?.grant_type === "client_credentials" ? "m2m" : "user";
+  const base = `${type}:${user.id || "-"}`;
+  const actor = user.rawClaims?.act?.sub;
 
-  return `${type}:${user.id || "-"}`;
+  return actor ? `${base} (on-behalf-of agent ${actor})` : base;
 }
 
 function logMcpToolCall(body, user) {

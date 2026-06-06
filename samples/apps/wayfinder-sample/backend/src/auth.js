@@ -133,6 +133,7 @@ export async function getAuthenticatedUser(request) {
     givenName: parsedToken.payload.given_name,
     familyName: parsedToken.payload.family_name,
     scopes,
+    actor: parsedToken.payload.act?.sub || null,
     rawClaims: parsedToken.payload
   };
 }
