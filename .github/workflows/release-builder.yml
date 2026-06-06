@@ -885,8 +885,8 @@ jobs:
             RELEASE_VERSION="${RELEASE_VERSION#v}"
           fi
           
-          # Extract introduction (everything before first --- divider)
-          INTRO=$(awk 'BEGIN{flag=1} /^---$/{flag=0; exit} flag{print}' README.md)
+          # Extract introduction (everything before ## Architecture)
+          INTRO=$(awk '/^## Architecture/{exit} {print}' README.md)
           
           # Extract Quick Start section
           QUICKSTART=$(sed -n '/^## ⚡ Quickstart/,/^---$/p' README.md | head -n -1)
