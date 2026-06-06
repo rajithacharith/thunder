@@ -288,6 +288,7 @@ async function exchangeCodeForUserToken(code: string, codeVerifier: string): Pro
         const claims = JSON.parse(Buffer.from(payload.access_token.split(".")[1], "base64url").toString("utf8"));
         console.log("[obo] user token claims:", JSON.stringify({
             sub: claims.sub,
+            act: claims.act,
             authorized_permissions: claims.authorized_permissions,
             scope: claims.scope,
             aud: claims.aud,
