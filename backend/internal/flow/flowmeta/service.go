@@ -102,7 +102,7 @@ func (fms *flowMetaService) GetFlowMetadata(
 	lang, ns := resolveLanguageAndNamespace(language, namespace)
 
 	if metaType == "" {
-		fms.populateI18nMetadata(response, lang, ns)
+		fms.populateI18nMetadata(ctx, response, lang, ns)
 		return response, nil
 	}
 
@@ -120,7 +120,7 @@ func (fms *flowMetaService) GetFlowMetadata(
 	}
 
 	fms.populateDesignMetadata(ctx, metaType, id, ouID, response)
-	fms.populateI18nMetadata(response, lang, ns)
+	fms.populateI18nMetadata(ctx, response, lang, ns)
 
 	fms.logger.DebugWithContext(ctx, "Successfully retrieved flow metadata",
 		log.String("type", string(metaType)),
@@ -280,8 +280,9 @@ func (fms *flowMetaService) populateDesignMetadata(
 	}
 }
 
-func (fms *flowMetaService) populateI18nMetadata(response *FlowMetadataResponse, lang string, ns string) {
-	i18nResp, i18nErr := fms.i18nService.ResolveTranslations(lang, ns)
+func (fms *flowMetaService) populateI18nMetadata(
+	ctx context.Context, response *FlowMetadataResponse, lang string, ns string) {
+	i18nResp, i18nErr := fms.i18nService.ResolveTranslations(ctx, lang, ns)
 	if i18nErr != nil {
 		fms.logger.Debug("Failed to get i18n translations",
 			log.String("language", lang),
@@ -293,7 +294,7 @@ func (fms *flowMetaService) populateI18nMetadata(response *FlowMetadataResponse,
 		response.I18n.Translations = i18nResp.Translations
 	}
 
-	languages, i18nErr := fms.i18nService.ListLanguages()
+	languages, i18nErr := fms.i18nService.ListLanguages(ctx)
 	if i18nErr != nil {
 		fms.logger.Debug("Failed to list languages",
 			log.String("error", i18nErr.Error.DefaultValue))

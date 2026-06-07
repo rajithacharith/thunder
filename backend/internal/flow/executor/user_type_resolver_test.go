@@ -1305,7 +1305,7 @@ func (suite *UserTypeResolverTestSuite) TestPromptUserSelection_ForwardsInputsIn
 		ForwardedData: map[string]interface{}{},
 	}
 
-	suite.executor.promptUserSelection(execResp, options)
+	suite.executor.promptUserSelection(context.Background(), execResp, options)
 
 	// Verify status and inputs are set
 	assert.Equal(suite.T(), common.ExecUserInputRequired, execResp.Status)
@@ -1334,7 +1334,7 @@ func (suite *UserTypeResolverTestSuite) TestPromptUserSelection_WithEmptyOptions
 		ForwardedData: map[string]interface{}{},
 	}
 
-	suite.executor.promptUserSelection(execResp, options)
+	suite.executor.promptUserSelection(context.Background(), execResp, options)
 
 	// Verify status is set
 	assert.Equal(suite.T(), common.ExecUserInputRequired, execResp.Status)
@@ -1361,7 +1361,7 @@ func (suite *UserTypeResolverTestSuite) TestPromptUserSelection_PreservesExistin
 		},
 	}
 
-	suite.executor.promptUserSelection(execResp, options)
+	suite.executor.promptUserSelection(context.Background(), execResp, options)
 
 	// Verify existing ForwardedData is preserved
 	assert.NotNil(suite.T(), execResp.ForwardedData)

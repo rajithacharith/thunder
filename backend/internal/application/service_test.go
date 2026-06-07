@@ -2751,7 +2751,7 @@ func (suite *ServiceTestSuite) TestValidateApplication_ErrorFromProcessInboundAu
 // ErrOAuthIDTokenUnsupportedEncryptionAlg to a ServiceError.
 func (suite *ServiceTestSuite) TestTranslateIDTokenValidationError_UnsupportedEncryptionAlg() {
 	svcErr := (&applicationService{}).
-		translateInboundClientError(inboundclient.ErrOAuthIDTokenUnsupportedEncryptionAlg)
+		translateInboundClientError(context.Background(), inboundclient.ErrOAuthIDTokenUnsupportedEncryptionAlg)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), ErrorInvalidOAuthConfiguration.Code, svcErr.Code)
 }
@@ -2760,7 +2760,7 @@ func (suite *ServiceTestSuite) TestTranslateIDTokenValidationError_UnsupportedEn
 // ErrOAuthIDTokenUnsupportedEncryptionEnc to a ServiceError.
 func (suite *ServiceTestSuite) TestTranslateIDTokenValidationError_UnsupportedEncryptionEnc() {
 	svcErr := (&applicationService{}).
-		translateInboundClientError(inboundclient.ErrOAuthIDTokenUnsupportedEncryptionEnc)
+		translateInboundClientError(context.Background(), inboundclient.ErrOAuthIDTokenUnsupportedEncryptionEnc)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), ErrorInvalidOAuthConfiguration.Code, svcErr.Code)
 }
@@ -2769,7 +2769,7 @@ func (suite *ServiceTestSuite) TestTranslateIDTokenValidationError_UnsupportedEn
 // ErrOAuthIDTokenEncryptionAlgRequiresEnc to a ServiceError.
 func (suite *ServiceTestSuite) TestTranslateIDTokenValidationError_EncryptionAlgRequiresEnc() {
 	svcErr := (&applicationService{}).
-		translateInboundClientError(inboundclient.ErrOAuthIDTokenEncryptionAlgRequiresEnc)
+		translateInboundClientError(context.Background(), inboundclient.ErrOAuthIDTokenEncryptionAlgRequiresEnc)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), ErrorInvalidOAuthConfiguration.Code, svcErr.Code)
 }
@@ -2778,7 +2778,7 @@ func (suite *ServiceTestSuite) TestTranslateIDTokenValidationError_EncryptionAlg
 // ErrOAuthIDTokenEncryptionEncRequiresAlg to a ServiceError.
 func (suite *ServiceTestSuite) TestTranslateIDTokenValidationError_EncryptionEncRequiresAlg() {
 	svcErr := (&applicationService{}).
-		translateInboundClientError(inboundclient.ErrOAuthIDTokenEncryptionEncRequiresAlg)
+		translateInboundClientError(context.Background(), inboundclient.ErrOAuthIDTokenEncryptionEncRequiresAlg)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), ErrorInvalidOAuthConfiguration.Code, svcErr.Code)
 }
@@ -2787,7 +2787,7 @@ func (suite *ServiceTestSuite) TestTranslateIDTokenValidationError_EncryptionEnc
 // ErrOAuthIDTokenEncryptionRequiresCertificate to a ServiceError.
 func (suite *ServiceTestSuite) TestTranslateIDTokenValidationError_EncryptionRequiresCertificate() {
 	svcErr := (&applicationService{}).translateInboundClientError(
-		inboundclient.ErrOAuthIDTokenEncryptionRequiresCertificate)
+		context.Background(), inboundclient.ErrOAuthIDTokenEncryptionRequiresCertificate)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), ErrorInvalidOAuthConfiguration.Code, svcErr.Code)
 }
@@ -2796,7 +2796,7 @@ func (suite *ServiceTestSuite) TestTranslateIDTokenValidationError_EncryptionReq
 // ErrOAuthIDTokenJWKSURINotSSRFSafe to a ServiceError.
 func (suite *ServiceTestSuite) TestTranslateIDTokenValidationError_JWKSURINotSSRFSafe() {
 	svcErr := (&applicationService{}).
-		translateInboundClientError(inboundclient.ErrOAuthIDTokenJWKSURINotSSRFSafe)
+		translateInboundClientError(context.Background(), inboundclient.ErrOAuthIDTokenJWKSURINotSSRFSafe)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), ErrorInvalidOAuthConfiguration.Code, svcErr.Code)
 	assert.Equal(suite.T(),

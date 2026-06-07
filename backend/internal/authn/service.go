@@ -425,7 +425,7 @@ func (as *authenticationService) validateAndAppendAuthAssertion(
 	}
 
 	// Get authentication assertion result
-	assertionResult, svcErr := as.getAssertionResult(existingAssurance, authenticatorRef)
+	assertionResult, svcErr := as.getAssertionResult(ctx, existingAssurance, authenticatorRef)
 	if svcErr != nil {
 		return svcErr
 	}
@@ -449,18 +449,18 @@ func (as *authenticationService) validateAndAppendAuthAssertion(
 }
 
 // getAssertionResult generates or updates an assertion result based on existing context.
-func (as *authenticationService) getAssertionResult(existingContext *assert.AssuranceContext,
+func (as *authenticationService) getAssertionResult(ctx context.Context, existingContext *assert.AssuranceContext,
 	newAuthenticator *common.AuthenticatorReference) (
 	*assert.AssertionResult, *serviceerror.ServiceError) {
 	var assertionResult *assert.AssertionResult
 	var svcErr *serviceerror.ServiceError
 	if existingContext != nil && newAuthenticator != nil {
 		// Update existing assurance with new authenticator
-		assertionResult, svcErr = as.authAssertionGenerator.UpdateAssertion(
+		assertionResult, svcErr = as.authAssertionGenerator.UpdateAssertion(ctx,
 			existingContext, *newAuthenticator)
 	} else if newAuthenticator != nil {
 		// Generate new assurance from authenticator
-		assertionResult, svcErr = as.authAssertionGenerator.GenerateAssertion(
+		assertionResult, svcErr = as.authAssertionGenerator.GenerateAssertion(ctx,
 			[]common.AuthenticatorReference{*newAuthenticator})
 	}
 

@@ -95,7 +95,7 @@ func (r *Resolver) ResolveEncryptionKey(
 		return nil, "", &serviceerror.InternalServerError
 	}
 
-	return r.parseEncryptionKeyFromJWKS(jwksData, encryptionAlg, policy)
+	return r.parseEncryptionKeyFromJWKS(ctx, jwksData, encryptionAlg, policy)
 }
 
 // fetchJWKS fetches the JWKS document from the given URI with SSRF protection and a 1 MB size cap.
@@ -144,7 +144,7 @@ func (r *Resolver) fetchJWKS(ctx context.Context, jwksURI string) ([]byte, *serv
 
 // parseEncryptionKeyFromJWKS finds the first RSA enc key in the JWKS that matches encryptionAlg.
 // Returns the public key and its kid (empty when absent in the JWK entry).
-func (r *Resolver) parseEncryptionKeyFromJWKS(
+func (r *Resolver) parseEncryptionKeyFromJWKS(ctx context.Context,
 	jwksData []byte,
 	encryptionAlg string,
 	policy KeyUsePolicy,
@@ -153,7 +153,7 @@ func (r *Resolver) parseEncryptionKeyFromJWKS(
 		Keys []map[string]interface{} `json:"keys"`
 	}
 	if err := json.Unmarshal(jwksData, &jwksObj); err != nil {
-		r.logger.Error("Failed to parse JWKS for encryption key resolution", log.Error(err))
+		r.logger.ErrorWithContext(ctx, "Failed to parse JWKS for encryption key resolution", log.Error(err))
 		return nil, "", &serviceerror.InternalServerError
 	}
 
@@ -185,7 +185,7 @@ func (r *Resolver) parseEncryptionKeyFromJWKS(
 		}
 	}
 
-	r.logger.Error("No suitable RSA encryption key found in JWKS", log.String("alg", encryptionAlg))
+	r.logger.ErrorWithContext(ctx, "No suitable RSA encryption key found in JWKS", log.String("alg", encryptionAlg))
 	return nil, "", &serviceerror.InternalServerError
 }
 

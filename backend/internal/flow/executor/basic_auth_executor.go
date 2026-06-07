@@ -190,7 +190,7 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 
 	// For registration flows, only check if user exists.
 	if ctx.FlowType == common.FlowTypeRegistration {
-		_, err := b.IdentifyUser(userIdentifiers, execResp)
+		_, err := b.IdentifyUser(ctx.Context, userIdentifiers, execResp)
 		if err != nil {
 			return nil, err
 		}

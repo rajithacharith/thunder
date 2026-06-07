@@ -121,7 +121,7 @@ func (g *googleOIDCAuthnService) ValidateIDToken(
 
 	// Validate ID token signature using JWKS endpoint if available
 	if oAuthClientConfig.OAuthEndpoints.JwksEndpoint != "" {
-		err := g.jwtService.VerifyJWTSignatureWithJWKS(idToken, oAuthClientConfig.OAuthEndpoints.JwksEndpoint)
+		err := g.jwtService.VerifyJWTSignatureWithJWKS(ctx, idToken, oAuthClientConfig.OAuthEndpoints.JwksEndpoint)
 		if err != nil {
 			logger.DebugWithContext(ctx, "ID token signature validation failed",
 				log.String("error", err.Error.DefaultValue))
@@ -229,8 +229,9 @@ func (g *googleOIDCAuthnService) FetchUserInfo(ctx context.Context, idpID, acces
 }
 
 // GetInternalUser retrieves the internal user based on the external subject identifier.
-func (g *googleOIDCAuthnService) GetInternalUser(sub string) (*entityprovider.Entity, *serviceerror.ServiceError) {
-	return g.internal.GetInternalUser(sub)
+func (g *googleOIDCAuthnService) GetInternalUser(
+	ctx context.Context, sub string) (*entityprovider.Entity, *serviceerror.ServiceError) {
+	return g.internal.GetInternalUser(ctx, sub)
 }
 
 // GetOAuthClientConfig retrieves and validates the OAuth client configuration for the given identity provider ID.
@@ -272,7 +273,7 @@ func (g *googleOIDCAuthnService) Authenticate(ctx context.Context, idpID, code s
 		Sub:    sub,
 		Claims: claims,
 	}
-	user, svcErr := g.GetInternalUser(sub)
+	user, svcErr := g.GetInternalUser(ctx, sub)
 	if svcErr != nil {
 		if svcErr.Code == common.ErrorUserNotFound.Code {
 			return result, nil

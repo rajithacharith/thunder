@@ -120,7 +120,7 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 		return execResp, nil
 	}
 
-	userID, err := p.IdentifyUser(identifyingAttrs, execResp)
+	userID, err := p.IdentifyUser(ctx.Context, identifyingAttrs, execResp)
 	if err != nil {
 		logger.ErrorWithContext(ctx.Context, "Failed to identify user", log.Error(err))
 		execResp.Status = common.ExecFailure
@@ -259,7 +259,7 @@ func (p *provisioningExecutor) buildProvisioningResponse(ctx *core.NodeContext, 
 	retAttributes := make(map[string]interface{})
 	if len(createdEntity.Attributes) > 0 {
 		if err := json.Unmarshal(createdEntity.Attributes, &retAttributes); err != nil {
-			logger.Error("Failed to unmarshal user attributes", log.Error(err))
+			logger.ErrorWithContext(ctx.Context, "Failed to unmarshal user attributes", log.Error(err))
 			return err
 		}
 	}

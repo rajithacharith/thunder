@@ -957,10 +957,10 @@ func (s *inboundClientService) validateFKs(ctx context.Context, c *inboundmodel.
 	if err := s.validateRecoveryFlowID(ctx, c.RecoveryFlowID); err != nil {
 		return err
 	}
-	if err := s.validateThemeID(c.ThemeID); err != nil {
+	if err := s.validateThemeID(ctx, c.ThemeID); err != nil {
 		return err
 	}
-	if err := s.validateLayoutID(c.LayoutID); err != nil {
+	if err := s.validateLayoutID(ctx, c.LayoutID); err != nil {
 		return err
 	}
 	if err := s.validateAllowedUserTypes(ctx, c.AllowedUserTypes); err != nil {
@@ -1015,11 +1015,11 @@ func (s *inboundClientService) validateRecoveryFlowID(ctx context.Context, flowI
 }
 
 // validateThemeID validates that the theme ID exists.
-func (s *inboundClientService) validateThemeID(themeID string) error {
+func (s *inboundClientService) validateThemeID(ctx context.Context, themeID string) error {
 	if themeID == "" || s.themeMgt == nil {
 		return nil
 	}
-	exists, svcErr := s.themeMgt.IsThemeExist(themeID)
+	exists, svcErr := s.themeMgt.IsThemeExist(ctx, themeID)
 	if svcErr != nil || !exists {
 		return ErrFKThemeNotFound
 	}
@@ -1027,11 +1027,11 @@ func (s *inboundClientService) validateThemeID(themeID string) error {
 }
 
 // validateLayoutID validates that the layout ID exists.
-func (s *inboundClientService) validateLayoutID(layoutID string) error {
+func (s *inboundClientService) validateLayoutID(ctx context.Context, layoutID string) error {
 	if layoutID == "" || s.layoutMgt == nil {
 		return nil
 	}
-	exists, svcErr := s.layoutMgt.IsLayoutExist(layoutID)
+	exists, svcErr := s.layoutMgt.IsLayoutExist(ctx, layoutID)
 	if svcErr != nil || !exists {
 		return ErrFKLayoutNotFound
 	}

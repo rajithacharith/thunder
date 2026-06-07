@@ -1336,7 +1336,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithEncryption_Inli
 	const encryptedJWE = "a.b.c.d.e"
 
 	mockJWE.On("Encrypt",
-		mock.MatchedBy(func(payload []byte) bool {
+		mock.Anything, mock.MatchedBy(func(payload []byte) bool {
 			// Payload must be the signed JWS — three dot-separated parts.
 			return strings.Count(string(payload), ".") == 2
 		}),
@@ -1452,7 +1452,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_EncryptionFailed() {
 	}
 	mockJWE := jwemock.NewJWEServiceInterfaceMock(suite.T())
 	mockJWE.On("Encrypt",
-		mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything,
 		jwe.KeyEncAlgorithm("RSA-OAEP-256"),
 		jwe.ContentEncAlgorithm("A256GCM"),
 		"JWT",
@@ -1519,7 +1519,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithEncryption_JWKS
 
 	mockJWE := jwemock.NewJWEServiceInterfaceMock(suite.T())
 	mockJWE.On("Encrypt",
-		mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything,
 		jwe.KeyEncAlgorithm("RSA-OAEP-256"),
 		jwe.ContentEncAlgorithm("A256GCM"),
 		"JWT",

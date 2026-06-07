@@ -602,7 +602,7 @@ func (s *flowMgtService) tryInferRegistrationFlow(ctx context.Context, authFlowI
 	logger.DebugWithContext(ctx, "Inferring registration flow from authentication flow",
 		log.String("flowName", authFlowDef.Name))
 
-	regFlowDef, inferErr := s.inferenceService.InferRegistrationFlow(authFlowDef)
+	regFlowDef, inferErr := s.inferenceService.InferRegistrationFlow(ctx, authFlowDef)
 	if inferErr != nil {
 		logger.ErrorWithContext(ctx, "Failed to infer registration flow", log.Error(inferErr))
 		return

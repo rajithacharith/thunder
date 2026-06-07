@@ -104,7 +104,7 @@ func (ah *authorizeHandler) HandleAuthCallbackPostRequest(w http.ResponseWriter,
 		redirectURI, authErr := ah.authZService.HandleAuthorizationCallback(ctx, authID, assertion)
 		if authErr != nil {
 			if authErr.SendErrorToClient {
-				ah.writeAuthZResponseToClientRedirect(w, authErr)
+				ah.writeAuthZResponseToClientRedirect(ctx, w, authErr)
 				return
 			}
 			ah.writeAuthZResponseToErrorPage(w, authErr.Code, authErr.Message, authErr.State)
@@ -317,7 +317,8 @@ func (ah *authorizeHandler) writeAuthZResponseToErrorPage(w http.ResponseWriter,
 
 // writeAuthZResponseToClientRedirect writes the authorization error response redirecting to the
 // client's registered redirect URI.
-func (ah *authorizeHandler) writeAuthZResponseToClientRedirect(w http.ResponseWriter, authErr *AuthorizationError) {
+func (ah *authorizeHandler) writeAuthZResponseToClientRedirect(
+	ctx context.Context, w http.ResponseWriter, authErr *AuthorizationError) {
 	queryParams := map[string]string{
 		oauth2const.RequestParamError:            authErr.Code,
 		oauth2const.RequestParamErrorDescription: authErr.Message,
@@ -329,7 +330,7 @@ func (ah *authorizeHandler) writeAuthZResponseToClientRedirect(w http.ResponseWr
 
 	redirectURI, err := oauth2utils.GetURIWithQueryParams(authErr.ClientRedirectURI, queryParams)
 	if err != nil {
-		ah.logger.Error("Failed to construct client redirect URI", log.Error(err))
+		ah.logger.ErrorWithContext(ctx, "Failed to construct client redirect URI", log.Error(err))
 		ah.writeAuthZResponseToErrorPage(w, oauth2const.ErrorServerError,
 			"Failed to process authorization request", authErr.State)
 		return

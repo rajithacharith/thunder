@@ -263,7 +263,7 @@ func (s *otpService) sendSMSOTP(ctx context.Context, recipient, otp string,
 		return &serviceerror.InternalServerError
 	}
 
-	_client, clientSvcErr := s.clientProvider.GetClient(sender)
+	_client, clientSvcErr := s.clientProvider.GetClient(ctx, sender)
 	if clientSvcErr != nil {
 		return clientSvcErr
 	}
@@ -273,7 +273,7 @@ func (s *otpService) sendSMSOTP(ctx context.Context, recipient, otp string,
 	}
 
 	notifData := common.NotificationData{Recipient: recipient, Body: rendered.Body}
-	if err := _client.Send(common.ChannelTypeSMS, notifData); err != nil {
+	if err := _client.Send(ctx, common.ChannelTypeSMS, notifData); err != nil {
 		logger.ErrorWithContext(ctx, "Failed to send SMS OTP", log.Error(err))
 		return &serviceerror.InternalServerError
 	}

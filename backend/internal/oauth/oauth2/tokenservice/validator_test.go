@@ -2094,7 +2094,7 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 
 	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
 		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
-	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", mock.Anything, token, testExternalJWKS).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -2120,7 +2120,7 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 
 	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
 		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
-	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", mock.Anything, token, testExternalJWKS).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -2145,7 +2145,7 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 
 	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
 		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
-	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", mock.Anything, token, testExternalJWKS).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -2168,7 +2168,7 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 
 	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
 		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
-	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", mock.Anything, token, testExternalJWKS).Return(nil)
 
 	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
@@ -2192,7 +2192,7 @@ func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP
 
 	suite.mockIDPService.On("GetIdentityProvidersByProperty", context.Background(),
 		idp.PropIssuer, testExternalIssuer).Return(idpDTOs, nil)
-	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).
+	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", mock.Anything, token, testExternalJWKS).
 		Return(&serviceerror.ServiceError{
 			Type:  serviceerror.ServerErrorType,
 			Code:  "SIGNATURE_VERIFICATION_FAILED",

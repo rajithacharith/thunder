@@ -108,7 +108,7 @@ func (w *passkeyService) StartRegistration(
 	if svcErr != nil {
 		return nil, svcErr
 	}
-	credentials := w.decodePasskeyCredentials(req.UserID, entries)
+	credentials := w.decodePasskeyCredentials(ctx, req.UserID, entries)
 
 	// Build relying party display name
 	rpDisplayName := req.RelyingPartyName
@@ -143,7 +143,7 @@ func (w *passkeyService) StartRegistration(
 	}
 
 	// Store session data in cache with TTL
-	sessionToken, svcErr := w.storeSessionData(sessionData)
+	sessionToken, svcErr := w.storeSessionData(ctx, sessionData)
 	if svcErr != nil {
 		logger.ErrorWithContext(ctx, "Failed to store session data", log.String("error", svcErr.Error.DefaultValue))
 		return nil, svcErr
@@ -217,7 +217,7 @@ func (w *passkeyService) FinishRegistration(ctx context.Context, req *PasskeyReg
 		log.String("credentialType", parsedCredential.Type))
 
 	// Retrieve session data from cache
-	sessionData, userID, relyingPartyID, svcErr := w.retrieveSessionData(req.SessionToken)
+	sessionData, userID, relyingPartyID, svcErr := w.retrieveSessionData(ctx, req.SessionToken)
 	if svcErr != nil {
 		logger.ErrorWithContext(ctx, "Failed to retrieve session data", log.String("error", svcErr.Error.DefaultValue))
 		return nil, svcErr
@@ -234,7 +234,7 @@ func (w *passkeyService) FinishRegistration(ctx context.Context, req *PasskeyReg
 	if svcErr != nil {
 		return nil, svcErr
 	}
-	credentials := w.decodePasskeyCredentials(userID, entries)
+	credentials := w.decodePasskeyCredentials(ctx, userID, entries)
 
 	logger.DebugWithContext(ctx, "Retrieved existing credentials for entity",
 		log.MaskedString("entityID", userID),
@@ -274,7 +274,7 @@ func (w *passkeyService) FinishRegistration(ctx context.Context, req *PasskeyReg
 	}
 
 	// Clear session data
-	w.clearSessionData(req.SessionToken)
+	w.clearSessionData(ctx, req.SessionToken)
 
 	return &PasskeyRegistrationFinishData{
 		CredentialID:   credentialID,
@@ -338,7 +338,7 @@ func (w *passkeyService) StartAuthentication(ctx context.Context, req *PasskeyAu
 		if svcErr != nil {
 			return nil, svcErr
 		}
-		credentials := w.decodePasskeyCredentials(req.UserID, entries)
+		credentials := w.decodePasskeyCredentials(ctx, req.UserID, entries)
 
 		logger.DebugWithContext(ctx, "Retrieved credentials for authentication",
 			log.MaskedString("entityID", req.UserID),
@@ -362,7 +362,7 @@ func (w *passkeyService) StartAuthentication(ctx context.Context, req *PasskeyAu
 	}
 
 	// Store session data in cache with TTL
-	sessionToken, svcErr := w.storeSessionData(sessionData)
+	sessionToken, svcErr := w.storeSessionData(ctx, sessionData)
 	if svcErr != nil {
 		logger.ErrorWithContext(ctx, "Failed to store session data", log.String("error", svcErr.Error.DefaultValue))
 		return nil, svcErr
@@ -396,7 +396,7 @@ func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyA
 	}
 
 	// Retrieve session data from cache
-	sessionData, sessionUserID, relyingPartyID, svcErr := w.retrieveSessionData(req.SessionToken)
+	sessionData, sessionUserID, relyingPartyID, svcErr := w.retrieveSessionData(ctx, req.SessionToken)
 	if svcErr != nil {
 		logger.ErrorWithContext(ctx, "Failed to retrieve session data", log.String("error", svcErr.Error.DefaultValue))
 		return nil, svcErr
@@ -446,7 +446,7 @@ func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyA
 	if svcErr != nil {
 		return nil, svcErr
 	}
-	credentials := w.decodePasskeyCredentials(userID, entries)
+	credentials := w.decodePasskeyCredentials(ctx, userID, entries)
 
 	logger.DebugWithContext(ctx, "Retrieved credentials for authentication verification",
 		log.MaskedString("entityID", userID),
@@ -515,7 +515,7 @@ func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyA
 		log.Any("newSignCount", credential.Authenticator.SignCount))
 
 	// Clear session data
-	w.clearSessionData(req.SessionToken)
+	w.clearSessionData(ctx, req.SessionToken)
 
 	// Build authentication response
 	authResponse := &common.AuthenticationResponse{
@@ -569,7 +569,7 @@ func (w *passkeyService) getStoredPasskeyEntries(
 
 // decodePasskeyCredentials converts stored passkey entries into decoded webauthnCredential
 // values, skipping any entries with empty or malformed values.
-func (w *passkeyService) decodePasskeyCredentials(
+func (w *passkeyService) decodePasskeyCredentials(ctx context.Context,
 	entityID string, entries []entity.StoredCredential,
 ) []webauthnCredential {
 	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
@@ -577,12 +577,12 @@ func (w *passkeyService) decodePasskeyCredentials(
 	credentials := make([]webauthnCredential, 0, len(entries))
 	for _, entry := range entries {
 		if entry.Value == "" {
-			logger.Error("Empty credential value", log.MaskedString("entityID", entityID))
+			logger.ErrorWithContext(ctx, "Empty credential value", log.MaskedString("entityID", entityID))
 			continue
 		}
 		var credential webauthnCredential
 		if err := json.Unmarshal([]byte(entry.Value), &credential); err != nil {
-			logger.Error("Failed to unmarshal passkey credential",
+			logger.ErrorWithContext(ctx, "Failed to unmarshal passkey credential",
 				log.MaskedString("entityID", entityID),
 				log.Error(err))
 			continue

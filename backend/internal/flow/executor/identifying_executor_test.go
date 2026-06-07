@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -80,7 +81,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_Success() {
 	userID := testUserID
 	suite.mockEntityProvider.On("IdentifyEntity", filters).Return(&userID, nil)
 
-	result, err := suite.executor.IdentifyUser(filters, execResp)
+	result, err := suite.executor.IdentifyUser(context.Background(), filters, execResp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -97,7 +98,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_UserNotFound() {
 	suite.mockEntityProvider.On("IdentifyEntity", filters).Return(nil,
 		entityprovider.NewEntityProviderError(entityprovider.ErrorCodeEntityNotFound, "", ""))
 
-	result, err := suite.executor.IdentifyUser(filters, execResp)
+	result, err := suite.executor.IdentifyUser(context.Background(), filters, execResp)
 
 	assert.NoError(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -115,7 +116,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_ServiceError() {
 	suite.mockEntityProvider.On("IdentifyEntity", filters).Return(nil,
 		entityprovider.NewEntityProviderError(entityprovider.ErrorCodeSystemError, "", ""))
 
-	result, err := suite.executor.IdentifyUser(filters, execResp)
+	result, err := suite.executor.IdentifyUser(context.Background(), filters, execResp)
 
 	assert.NoError(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -133,7 +134,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_EmptyUserID() {
 
 	suite.mockEntityProvider.On("IdentifyEntity", filters).Return(&emptyID, nil)
 
-	result, err := suite.executor.IdentifyUser(filters, execResp)
+	result, err := suite.executor.IdentifyUser(context.Background(), filters, execResp)
 
 	assert.NoError(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -161,7 +162,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_FilterNonSearchableA
 		return &userID
 	}(), nil)
 
-	result, err := suite.executor.IdentifyUser(filters, execResp)
+	result, err := suite.executor.IdentifyUser(context.Background(), filters, execResp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -178,7 +179,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_WithEmail() {
 
 	suite.mockEntityProvider.On("IdentifyEntity", filters).Return(&emailUserID, nil)
 
-	result, err := suite.executor.IdentifyUser(filters, execResp)
+	result, err := suite.executor.IdentifyUser(context.Background(), filters, execResp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -195,7 +196,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_WithMobileNumber() {
 
 	suite.mockEntityProvider.On("IdentifyEntity", filters).Return(&mobileUserID, nil)
 
-	result, err := suite.executor.IdentifyUser(filters, execResp)
+	result, err := suite.executor.IdentifyUser(context.Background(), filters, execResp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)

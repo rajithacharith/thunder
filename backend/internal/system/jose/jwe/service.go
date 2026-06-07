@@ -35,7 +35,7 @@ import (
 
 // JWEServiceInterface defines the interface for JWE operations.
 type JWEServiceInterface interface {
-	Encrypt(payload []byte, recipientPublicKey crypto.PublicKey,
+	Encrypt(ctx context.Context, payload []byte, recipientPublicKey crypto.PublicKey,
 		alg KeyEncAlgorithm, enc ContentEncAlgorithm, cty string, kid string) (string, *serviceerror.ServiceError)
 	Decrypt(ctx context.Context, jweToken string) ([]byte, *serviceerror.ServiceError)
 }
@@ -62,7 +62,7 @@ func newJWEService(cryptoProvider kmprovider.RuntimeCryptoProvider) (JWEServiceI
 // Encrypt encrypts the payload using the recipient's public key.
 // cty is the content type placed in the JWE protected header (e.g. "json" or "JWT").
 // kid identifies the recipient's key; it is stamped in the header only when non-empty.
-func (js *jweService) Encrypt(payload []byte, recipientPublicKey crypto.PublicKey,
+func (js *jweService) Encrypt(ctx context.Context, payload []byte, recipientPublicKey crypto.PublicKey,
 	alg KeyEncAlgorithm, enc ContentEncAlgorithm, cty string, kid string) (string, *serviceerror.ServiceError) {
 	if !isSupportedEnc(enc) {
 		return "", &ErrorUnsupportedEncryptionAlgorithm
@@ -76,7 +76,7 @@ func (js *jweService) Encrypt(payload []byte, recipientPublicKey crypto.PublicKe
 	// Establish the CEK via cryptolib key establishment.
 	encryptedKey, details, err := cryptolib.Encrypt(recipientPublicKey, &params, nil)
 	if err != nil {
-		js.logger.Error("Failed to encrypt CEK: " + err.Error())
+		js.logger.ErrorWithContext(ctx, "Failed to encrypt CEK: "+err.Error())
 		return "", &ErrorUnsupportedJWEAlgorithm
 	}
 
@@ -99,7 +99,7 @@ func (js *jweService) Encrypt(payload []byte, recipientPublicKey crypto.PublicKe
 	if details.EPK != nil {
 		epkMap, epkErr := epkToMap(details.EPK)
 		if epkErr != nil {
-			js.logger.Error("Failed to encode EPK: " + epkErr.Error())
+			js.logger.ErrorWithContext(ctx, "Failed to encode EPK: "+epkErr.Error())
 			return "", &serviceerror.InternalServerError
 		}
 		header["epk"] = epkMap
@@ -113,7 +113,7 @@ func (js *jweService) Encrypt(payload []byte, recipientPublicKey crypto.PublicKe
 
 	headerJSON, jsonErr := json.Marshal(header)
 	if jsonErr != nil {
-		js.logger.Error("Failed to marshal JWE header: " + jsonErr.Error())
+		js.logger.ErrorWithContext(ctx, "Failed to marshal JWE header: "+jsonErr.Error())
 		return "", &serviceerror.InternalServerError
 	}
 	headerBase64 := base64.RawURLEncoding.EncodeToString(headerJSON)
@@ -121,7 +121,7 @@ func (js *jweService) Encrypt(payload []byte, recipientPublicKey crypto.PublicKe
 	// Encrypt the content payload.
 	iv, ciphertext, tag, err := encryptContent(payload, cek, enc, []byte(headerBase64))
 	if err != nil {
-		js.logger.Error("Failed to encrypt content: " + err.Error())
+		js.logger.ErrorWithContext(ctx, "Failed to encrypt content: "+err.Error())
 		return "", &serviceerror.InternalServerError
 	}
 

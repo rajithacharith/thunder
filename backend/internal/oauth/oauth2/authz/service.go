@@ -238,7 +238,7 @@ func (as *authorizeService) handleStandardAuthorizationRequest(
 	}
 
 	// Validate the authorization request.
-	sendErrorToApp, errorCode, errorMessage := as.authZValidator.validateInitialAuthorizationRequest(msg, app)
+	sendErrorToApp, errorCode, errorMessage := as.authZValidator.validateInitialAuthorizationRequest(ctx, msg, app)
 	if errorCode != "" {
 		authErr := &AuthorizationError{
 			Code:    errorCode,

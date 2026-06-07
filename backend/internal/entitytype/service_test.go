@@ -837,7 +837,7 @@ func TestValidateEntityTypeDefinitionSuccess(t *testing.T) {
 		Schema: validSchema,
 	}
 
-	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+	err := validateEntityTypeDefinition(context.Background(), TypeCategoryUser, schema)
 
 	require.Nil(t, err)
 }
@@ -852,7 +852,7 @@ func TestValidateEntityTypeDefinitionReturnsErrorWhenNameIsEmpty(t *testing.T) {
 		Schema: validSchema,
 	}
 
-	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+	err := validateEntityTypeDefinition(context.Background(), TypeCategoryUser, schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
@@ -868,7 +868,7 @@ func TestValidateEntityTypeDefinitionReturnsErrorWhenOUIDIsEmpty(t *testing.T) {
 		Schema: validSchema,
 	}
 
-	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+	err := validateEntityTypeDefinition(context.Background(), TypeCategoryUser, schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
@@ -884,7 +884,7 @@ func TestValidateEntityTypeDefinitionAllowsNonUUIDOUID(t *testing.T) {
 		Schema: validSchema,
 	}
 
-	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+	err := validateEntityTypeDefinition(context.Background(), TypeCategoryUser, schema)
 
 	require.Nil(t, err)
 }
@@ -898,7 +898,7 @@ func TestValidateEntityTypeDefinitionReturnsErrorWhenSchemaIsEmpty(t *testing.T)
 		Schema: json.RawMessage{},
 	}
 
-	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+	err := validateEntityTypeDefinition(context.Background(), TypeCategoryUser, schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
@@ -914,7 +914,7 @@ func TestValidateEntityTypeDefinitionReturnsErrorWhenSchemaIsNil(t *testing.T) {
 		Schema: nil,
 	}
 
-	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+	err := validateEntityTypeDefinition(context.Background(), TypeCategoryUser, schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
@@ -931,7 +931,7 @@ func TestValidateEntityTypeDefinitionReturnsErrorWhenSchemaCompilationFails(t *t
 		Schema: invalidSchema,
 	}
 
-	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+	err := validateEntityTypeDefinition(context.Background(), TypeCategoryUser, schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
@@ -948,7 +948,7 @@ func TestValidateEntityTypeDefinitionReturnsErrorForInvalidJSON(t *testing.T) {
 		Schema: invalidSchema,
 	}
 
-	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+	err := validateEntityTypeDefinition(context.Background(), TypeCategoryUser, schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
@@ -964,7 +964,7 @@ func TestValidateEntityTypeDefinitionReturnsErrorForEmptySchemaObject(t *testing
 		Schema: emptySchema,
 	}
 
-	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+	err := validateEntityTypeDefinition(context.Background(), TypeCategoryUser, schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
@@ -1007,7 +1007,7 @@ func TestValidateEntityTypeDefinitionWithComplexSchema(t *testing.T) {
 		Schema: complexSchema,
 	}
 
-	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+	err := validateEntityTypeDefinition(context.Background(), TypeCategoryUser, schema)
 
 	require.Nil(t, err)
 }
@@ -1022,7 +1022,7 @@ func TestValidateEntityTypeDefinitionReturnsErrorForMissingTypeField(t *testing.
 		Schema: schemaWithoutType,
 	}
 
-	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+	err := validateEntityTypeDefinition(context.Background(), TypeCategoryUser, schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
@@ -1039,7 +1039,7 @@ func TestValidateEntityTypeDefinitionReturnsErrorForInvalidType(t *testing.T) {
 		Schema: schemaWithInvalidType,
 	}
 
-	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+	err := validateEntityTypeDefinition(context.Background(), TypeCategoryUser, schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
@@ -1082,7 +1082,7 @@ func TestValidateEntityTypeDefinitionWithMultipleValidationErrors(t *testing.T) 
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateEntityTypeDefinition(TypeCategoryUser, tc.schema)
+			err := validateEntityTypeDefinition(context.Background(), TypeCategoryUser, tc.schema)
 
 			require.NotNil(t, err)
 			require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
@@ -1099,7 +1099,7 @@ func TestValidateEntityTypeDefinitionWithValidDisplayAttribute(t *testing.T) {
 		Schema:           json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
-	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+	err := validateEntityTypeDefinition(context.Background(), TypeCategoryUser, schema)
 
 	require.Nil(t, err)
 }
@@ -1112,7 +1112,7 @@ func TestValidateEntityTypeDefinitionRejectsNonExistentDisplayAttribute(t *testi
 		Schema:           json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
-	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+	err := validateEntityTypeDefinition(context.Background(), TypeCategoryUser, schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidDisplayAttribute.Code, err.Code)
@@ -1126,7 +1126,7 @@ func TestValidateEntityTypeDefinitionRejectsNonDisplayableDisplayAttribute(t *te
 		Schema:           json.RawMessage(`{"active":{"type":"boolean"}}`),
 	}
 
-	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+	err := validateEntityTypeDefinition(context.Background(), TypeCategoryUser, schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorNonDisplayableAttribute.Code, err.Code)
@@ -1140,7 +1140,7 @@ func TestValidateEntityTypeDefinitionRejectsCredentialDisplayAttribute(t *testin
 		Schema:           json.RawMessage(`{"password":{"type":"string","credential":true}}`),
 	}
 
-	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+	err := validateEntityTypeDefinition(context.Background(), TypeCategoryUser, schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorCredentialDisplayAttribute.Code, err.Code)
@@ -1153,7 +1153,7 @@ func TestValidateEntityTypeDefinitionWithNilSystemAttributes(t *testing.T) {
 		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
-	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+	err := validateEntityTypeDefinition(context.Background(), TypeCategoryUser, schema)
 
 	require.Nil(t, err)
 }

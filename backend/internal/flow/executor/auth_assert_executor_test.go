@@ -156,9 +156,12 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success(
 		},
 	}
 
-	suite.mockAssertGenerator.On("GenerateAssertion", mock.MatchedBy(func(refs []authncm.AuthenticatorReference) bool {
-		return len(refs) == 1 && refs[0].Authenticator == authncm.AuthenticatorCredentials
-	})).Return(&authnassert.AssertionResult{
+	suite.mockAssertGenerator.On(
+		"GenerateAssertion",
+		mock.Anything,
+		mock.MatchedBy(func(refs []authncm.AuthenticatorReference) bool {
+			return len(refs) == 1 && refs[0].Authenticator == authncm.AuthenticatorCredentials
+		})).Return(&authnassert.AssertionResult{
 		Context: &authnassert.AssuranceContext{},
 	}, nil)
 
@@ -321,7 +324,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AssertionGenerationFails_S
 		Application: appmodel.Application{},
 	}
 
-	suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything).
+	suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything, mock.Anything).
 		Return(nil, &serviceerror.ServiceError{
 			Type:  serviceerror.ServerErrorType,
 			Error: i18ncore.I18nMessage{Key: "error.test.internal_error", DefaultValue: "internal error"},
@@ -434,7 +437,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributesFromUserProvider_
 
 	suite.mockEntityProvider.On("GetEntity", "user-123").Return(existingUser, nil)
 
-	resultAttrs, err := suite.executor.getUserAttributesFromUserProvider("user-123")
+	resultAttrs, err := suite.executor.getUserAttributesFromUserProvider(context.Background(), "user-123")
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resultAttrs)
@@ -447,7 +450,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributesFromUserProvider_
 	suite.mockEntityProvider.On("GetEntity", "user-123").
 		Return(nil, &entityprovider.EntityProviderError{Message: "user not found"})
 
-	resultAttrs, err := suite.executor.getUserAttributesFromUserProvider("user-123")
+	resultAttrs, err := suite.executor.getUserAttributesFromUserProvider(context.Background(), "user-123")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), resultAttrs)
@@ -462,7 +465,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributesFromUserProvider_
 
 	suite.mockEntityProvider.On("GetEntity", "user-123").Return(existingUser, nil)
 
-	resultAttrs, err := suite.executor.getUserAttributesFromUserProvider("user-123")
+	resultAttrs, err := suite.executor.getUserAttributesFromUserProvider(context.Background(), "user-123")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), resultAttrs)

@@ -637,7 +637,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestValidateAndApplyScopes_NoSco
 	refreshTokenScopes := []string{"read", "write", "delete"}
 	logger := log.GetLogger()
 
-	result, errResp := suite.handler.validateAndApplyScopes("", refreshTokenScopes, logger)
+	result, errResp := suite.handler.validateAndApplyScopes(context.Background(), "", refreshTokenScopes, logger)
 
 	assert.Nil(suite.T(), errResp)
 	assert.Equal(suite.T(), refreshTokenScopes, result)
@@ -648,7 +648,11 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestValidateAndApplyScopes_Reque
 	refreshTokenScopes := []string{"read", "write", "delete"}
 	logger := log.GetLogger()
 
-	result, errResp := suite.handler.validateAndApplyScopes("read write", refreshTokenScopes, logger)
+	result, errResp := suite.handler.validateAndApplyScopes(
+		context.Background(),
+		"read write",
+		refreshTokenScopes,
+		logger)
 
 	assert.Nil(suite.T(), errResp)
 	assert.Len(suite.T(), result, 2)
@@ -661,7 +665,11 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestValidateAndApplyScopes_SomeR
 	refreshTokenScopes := []string{"read", "write"}
 	logger := log.GetLogger()
 
-	result, errResp := suite.handler.validateAndApplyScopes("read write delete admin", refreshTokenScopes, logger)
+	result, errResp := suite.handler.validateAndApplyScopes(
+		context.Background(),
+		"read write delete admin",
+		refreshTokenScopes,
+		logger)
 
 	assert.NotNil(suite.T(), errResp)
 	assert.Equal(suite.T(), constants.ErrorInvalidScope, errResp.Error)
@@ -672,7 +680,11 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestValidateAndApplyScopes_NoMat
 	refreshTokenScopes := []string{"read", "write"}
 	logger := log.GetLogger()
 
-	result, errResp := suite.handler.validateAndApplyScopes("admin delete", refreshTokenScopes, logger)
+	result, errResp := suite.handler.validateAndApplyScopes(
+		context.Background(),
+		"admin delete",
+		refreshTokenScopes,
+		logger)
 
 	assert.NotNil(suite.T(), errResp)
 	assert.Equal(suite.T(), constants.ErrorInvalidScope, errResp.Error)
