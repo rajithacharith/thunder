@@ -69,7 +69,7 @@ describe('getTemplateFieldConstraints', () => {
     expect(constraints?.oauth2?.tokenEndpointAuthMethod).toBeDefined();
   });
 
-  it('returns null for the "mcp-client" template (no field constraints)', () => {
-    expect(getTemplateFieldConstraints('mcp-client')).toBeNull();
+  it('returns null for the "custom" template (no field constraints)', () => {
+    expect(getTemplateFieldConstraints('custom')).toBeNull();
   });
 });
