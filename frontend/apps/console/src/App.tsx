@@ -55,7 +55,9 @@ const TranslationCreatePage = lazy(() =>
   import('@thunderid/configure-translations').then((m) => ({default: m.TranslationCreatePage})),
 );
 const TranslationsEditPage = lazy(() =>
-  import('@thunderid/configure-translations').then((m) => ({default: m.TranslationsEditPage})),
+  import('./lib/monaco-setup').then(() =>
+    import('@thunderid/configure-translations').then((m) => ({default: m.TranslationsEditPage})),
+  ),
 );
 const TranslationsListPage = lazy(() =>
   import('@thunderid/configure-translations').then((m) => ({default: m.TranslationsListPage})),
