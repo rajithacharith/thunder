@@ -1182,8 +1182,8 @@ aside.theme-doc-sidebar-container {
 /* Scalar side bar item text transformation — removed: tags now use correct
    Title Case directly in the spec files, so no CSS override is needed. */
 
-/* Hide the introduction in side panel & content in Scalar since it's redundant with the content in the main page. */
-.apis-page .scalar-api-reference aside .group\/items > .group\/item:first-child {
+/* Hide the Introduction sidebar entry — identified by its stable data-sidebar-id slug, not by position. */
+.apis-page .scalar-api-reference aside [data-sidebar-id$="/description/introduction"] {
   display: none;
 }
 
