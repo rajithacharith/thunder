@@ -1372,11 +1372,13 @@ func (s *inboundClientService) syncConsentOnUpdate(ctx context.Context,
 			return err
 		}
 	}
+
 	allPurposes, err := s.consentService.ListConsentPurposes(ctx, ouID, entityID)
 	if err != nil {
 		return s.wrapConsentServiceError(err)
 	}
 	existing := consent.FilterAttributePurposes(allPurposes)
+
 	if len(existing) == 0 {
 		if len(newAttrs) > 0 {
 			purpose := consent.ConsentPurposeInput{
@@ -1392,6 +1394,7 @@ func (s *inboundClientService) syncConsentOnUpdate(ctx context.Context,
 		}
 		return nil
 	}
+
 	if len(newAttrs) == 0 {
 		// No attributes requested; remove only the attribute purpose. The permission purpose, if any,
 		// is left alone — it has an independent lifecycle bound to the resource service.
@@ -1405,6 +1408,11 @@ func (s *inboundClientService) syncConsentOnUpdate(ctx context.Context,
 		}
 		return nil
 	}
+
+	if isConsentAttributesUnchanged(existing[0].Elements, newAttrs) {
+		return nil
+	}
+
 	updated := consent.ConsentPurposeInput{
 		Name:        consent.AttributesPurposeName(entityID),
 		Description: "Consent purpose for application " + entityName,
@@ -1415,7 +1423,22 @@ func (s *inboundClientService) syncConsentOnUpdate(ctx context.Context,
 	if _, updateErr := s.consentService.UpdateConsentPurpose(ctx, ouID, existing[0].ID, &updated); updateErr != nil {
 		return s.wrapConsentServiceError(updateErr)
 	}
+
 	return nil
+}
+
+// isConsentAttributesUnchanged reports whether the elements on an existing attribute consent
+// purpose are the same set as the requested attributes (i.e. nothing to sync).
+func isConsentAttributesUnchanged(existing []consent.PurposeElement, requested map[string]bool) bool {
+	if len(existing) != len(requested) {
+		return false
+	}
+	for _, el := range existing {
+		if !requested[el.Name] {
+			return false
+		}
+	}
+	return true
 }
 
 // syncConsentOnDelete removes every consent purpose (attribute and permission) owned by the
