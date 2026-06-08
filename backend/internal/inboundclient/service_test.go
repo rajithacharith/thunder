@@ -2307,3 +2307,70 @@ func (suite *InboundClientServiceTestSuite) TestSyncConsentOnUpdate_IgnoresPermi
 	err := svc.syncConsentOnUpdate(context.Background(), "app1", "App 1", client, nil)
 	assert.NoError(suite.T(), err)
 }
+
+func (suite *InboundClientServiceTestSuite) TestSyncConsentOnUpdate_SkipsUpdateWhenAttributeSetUnchanged() {
+	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
+	cm.EXPECT().ValidateConsentElements(mock.Anything, "default", mock.MatchedBy(func(names []string) bool {
+		if len(names) != 2 {
+			return false
+		}
+		got := map[string]bool{}
+		for _, n := range names {
+			got[n] = true
+		}
+		return got["email"] && got["given_name"]
+	})).Return([]string{"email", "given_name"}, nil)
+	cm.EXPECT().ListConsentPurposes(mock.Anything, "default", "app1").Return([]consent.ConsentPurpose{
+		{
+			ID:        "attr-p",
+			Namespace: consent.NamespaceAttribute,
+			// Elements returned by the consent service do not carry a per-element Namespace.
+			Elements: []consent.PurposeElement{
+				{Name: "email"},
+				{Name: "given_name"},
+			},
+		},
+	}, nil)
+	// Crucially, no UpdateConsentPurpose expectation — the mock would fail if it were called.
+
+	svc := newInboundClientServiceWithConsent(cm)
+	client := &inboundmodel.InboundClient{
+		Assertion: &inboundmodel.AssertionConfig{UserAttributes: []string{"email", "given_name"}},
+	}
+	err := svc.syncConsentOnUpdate(context.Background(), "app1", "App 1", client, nil)
+	assert.NoError(suite.T(), err)
+}
+
+func (suite *InboundClientServiceTestSuite) TestSyncConsentOnUpdate_UpdatesWhenAttributeSetChanged() {
+	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
+	cm.EXPECT().ValidateConsentElements(mock.Anything, "default", mock.Anything).
+		Return([]string{"email", "family_name"}, nil)
+	cm.EXPECT().ListConsentPurposes(mock.Anything, "default", "app1").Return([]consent.ConsentPurpose{
+		{
+			ID:        "attr-p",
+			Namespace: consent.NamespaceAttribute,
+			Elements: []consent.PurposeElement{
+				{Name: "email"},
+				{Name: "given_name"},
+			},
+		},
+	}, nil)
+	cm.EXPECT().UpdateConsentPurpose(mock.Anything, "default", "attr-p",
+		mock.MatchedBy(func(input *consent.ConsentPurposeInput) bool {
+			if input.GroupID != "app1" {
+				return false
+			}
+			names := map[string]bool{}
+			for _, el := range input.Elements {
+				names[el.Name] = true
+			}
+			return len(names) == 2 && names["email"] && names["family_name"]
+		})).Return(&consent.ConsentPurpose{ID: "attr-p"}, nil)
+
+	svc := newInboundClientServiceWithConsent(cm)
+	client := &inboundmodel.InboundClient{
+		Assertion: &inboundmodel.AssertionConfig{UserAttributes: []string{"email", "family_name"}},
+	}
+	err := svc.syncConsentOnUpdate(context.Background(), "app1", "App 1", client, nil)
+	assert.NoError(suite.T(), err)
+}
