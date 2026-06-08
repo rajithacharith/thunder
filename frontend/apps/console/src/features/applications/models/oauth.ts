@@ -384,6 +384,13 @@ export interface OAuth2Config {
    * @example { profile: ['name', 'given_name'], email: ['email', 'email_verified'] }
    */
   scopeClaims?: ScopeClaims;
+
+  /**
+   * OAuth client certificate (JWKS or JWKS URI).
+   * Required when tokenEndpointAuthMethod is 'private_key_jwt'.
+   * null means no certificate is configured.
+   */
+  certificate?: {type: string; value?: string} | null;
 }
 
 /**
