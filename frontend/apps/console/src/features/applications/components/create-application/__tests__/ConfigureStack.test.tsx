@@ -104,9 +104,6 @@ describe('ConfigureStack', () => {
       expect(screen.getByText('applications:onboarding.configure.stack.technology.express.title')).toBeInTheDocument();
       expect(screen.getByText('applications:onboarding.configure.stack.technology.react.title')).toBeInTheDocument();
       expect(screen.getByText('applications:onboarding.configure.stack.technology.nextjs.title')).toBeInTheDocument();
-      expect(
-        screen.getByText('applications:onboarding.configure.stack.technology.mcpClient.title'),
-      ).toBeInTheDocument();
     });
 
     it('renders all platform templates', () => {
@@ -116,6 +113,7 @@ describe('ConfigureStack', () => {
       expect(screen.getByText('applications:onboarding.configure.stack.platform.full_stack.title')).toBeInTheDocument();
       expect(screen.getByText('applications:onboarding.configure.stack.platform.mobile.title')).toBeInTheDocument();
       expect(screen.getByText('applications:onboarding.configure.stack.platform.backend.title')).toBeInTheDocument();
+      expect(screen.getByText('applications:onboarding.configure.stack.platform.custom.title')).toBeInTheDocument();
     });
 
     it('renders category filter chips', () => {
@@ -125,7 +123,6 @@ describe('ConfigureStack', () => {
       expect(screen.getByText('applications:onboarding.configure.stack.category.web')).toBeInTheDocument();
       expect(screen.getByText('applications:onboarding.configure.stack.category.backend')).toBeInTheDocument();
       expect(screen.getByText('applications:onboarding.configure.stack.category.mobile')).toBeInTheDocument();
-      expect(screen.getByText('applications:onboarding.configure.stack.category.ai')).toBeInTheDocument();
     });
 
     it('does not show "Coming Soon" badge when no templates are disabled', () => {
@@ -150,9 +147,6 @@ describe('ConfigureStack', () => {
       expect(
         screen.queryByText('applications:onboarding.configure.stack.technology.express.title'),
       ).not.toBeInTheDocument();
-      expect(
-        screen.queryByText('applications:onboarding.configure.stack.technology.mcpClient.title'),
-      ).not.toBeInTheDocument();
     });
 
     it('shows only backend templates after clicking Backend filter', async () => {
@@ -162,20 +156,6 @@ describe('ConfigureStack', () => {
       await user.click(screen.getByText('applications:onboarding.configure.stack.category.backend'));
 
       expect(screen.getByText('applications:onboarding.configure.stack.technology.express.title')).toBeInTheDocument();
-      expect(
-        screen.queryByText('applications:onboarding.configure.stack.technology.react.title'),
-      ).not.toBeInTheDocument();
-    });
-
-    it('shows only MCP Client after clicking AI filter', async () => {
-      const user = userEvent.setup();
-      renderWithContext({oauthConfig: null, onOAuthConfigChange: vi.fn(), onReadyChange: vi.fn()});
-
-      await user.click(screen.getByText('applications:onboarding.configure.stack.category.ai'));
-
-      expect(
-        screen.getByText('applications:onboarding.configure.stack.technology.mcpClient.title'),
-      ).toBeInTheDocument();
       expect(
         screen.queryByText('applications:onboarding.configure.stack.technology.react.title'),
       ).not.toBeInTheDocument();
@@ -199,9 +179,6 @@ describe('ConfigureStack', () => {
       await user.click(screen.getByText('applications:onboarding.configure.stack.category.web'));
       await user.click(screen.getByText('applications:onboarding.configure.stack.category.all'));
 
-      expect(
-        screen.getByText('applications:onboarding.configure.stack.technology.mcpClient.title'),
-      ).toBeInTheDocument();
       expect(screen.getByText('applications:onboarding.configure.stack.technology.express.title')).toBeInTheDocument();
     });
   });
@@ -267,7 +244,7 @@ describe('ConfigureStack', () => {
       expect(setSelectedPlatform).toHaveBeenCalledWith(PlatformApplicationTemplate.BROWSER);
     });
 
-    it('selects the MCP Client template', async () => {
+    it('selects the Custom platform template', async () => {
       const user = userEvent.setup();
       const setSelectedTechnology = vi.fn();
       const setSelectedPlatform = vi.fn();
@@ -277,10 +254,10 @@ describe('ConfigureStack', () => {
         {setSelectedTechnology, setSelectedPlatform},
       );
 
-      await user.click(screen.getByText('applications:onboarding.configure.stack.technology.mcpClient.title'));
+      await user.click(screen.getByText('applications:onboarding.configure.stack.platform.custom.title'));
 
-      expect(setSelectedTechnology).toHaveBeenCalledWith(TechnologyApplicationTemplate.MCP_CLIENT);
-      expect(setSelectedPlatform).toHaveBeenCalledWith(null);
+      expect(setSelectedTechnology).toHaveBeenCalledWith(null);
+      expect(setSelectedPlatform).toHaveBeenCalledWith(PlatformApplicationTemplate.CUSTOM);
     });
   });
 

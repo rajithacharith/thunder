@@ -36,7 +36,6 @@ export const TechnologyApplicationTemplate = {
   NUXT: 'NUXT',
   NODEJS: 'NODEJS',
   OTHER: 'OTHER',
-  MCP_CLIENT: 'MCP_CLIENT',
 } as const;
 
 /**
@@ -50,6 +49,7 @@ export const PlatformApplicationTemplate = {
   BROWSER: 'BROWSER',
   MOBILE: 'MOBILE',
   FULL_STACK: 'FULL_STACK',
+  CUSTOM: 'CUSTOM',
 } as const;
 
 /**
@@ -211,7 +211,7 @@ export interface ApplicationTemplate {
  *
  * @public
  */
-export type TemplateCategory = 'web' | 'backend' | 'mobile' | 'ai';
+export type TemplateCategory = 'web' | 'backend' | 'mobile';
 
 export interface ApplicationTemplateMetadata<T = TechnologyApplicationTemplate | PlatformApplicationTemplate> {
   value: T;

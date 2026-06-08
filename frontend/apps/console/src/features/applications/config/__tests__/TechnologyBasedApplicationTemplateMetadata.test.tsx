@@ -213,13 +213,12 @@ describe('TechnologyBasedApplicationTemplateMetadata', () => {
       });
     });
 
-    it('should have at least React, Next.js, Vanilla JS, and MCP Client templates', () => {
+    it('should have at least React, Next.js, Vanilla JS, and Express templates', () => {
       const configuredValues = TechnologyBasedApplicationTemplateMetadata.map((m) => m.value);
       expect(configuredValues).toContain(TechnologyApplicationTemplate.EXPRESS);
       expect(configuredValues).toContain(TechnologyApplicationTemplate.REACT);
       expect(configuredValues).toContain(TechnologyApplicationTemplate.NEXTJS);
       expect(configuredValues).toContain(TechnologyApplicationTemplate.VANILLA_JS);
-      expect(configuredValues).toContain(TechnologyApplicationTemplate.MCP_CLIENT);
     });
 
     it('should assign web category to React, Vue, Vanilla JS, and Nuxt', () => {
@@ -247,58 +246,6 @@ describe('TechnologyBasedApplicationTemplateMetadata', () => {
         const meta = TechnologyBasedApplicationTemplateMetadata.find((m) => m.value === value);
         expect(meta?.categories).toContain('backend');
       });
-    });
-
-    it('should assign ai category to MCP Client', () => {
-      const meta = TechnologyBasedApplicationTemplateMetadata.find(
-        (m) => m.value === TechnologyApplicationTemplate.MCP_CLIENT,
-      );
-      expect(meta?.categories).toEqual(['ai']);
-    });
-  });
-
-  describe('MCP Client Technology', () => {
-    const mcpMetadata = TechnologyBasedApplicationTemplateMetadata.find(
-      (m) => m.value === TechnologyApplicationTemplate.MCP_CLIENT,
-    );
-
-    it('should exist', () => {
-      expect(mcpMetadata).toBeDefined();
-    });
-
-    it('should have correct value', () => {
-      expect(mcpMetadata?.value).toBe(TechnologyApplicationTemplate.MCP_CLIENT);
-    });
-
-    it('should have an icon component', () => {
-      expect(mcpMetadata?.icon).toBeDefined();
-      const {container} = render(<div>{mcpMetadata?.icon}</div>);
-      expect(container.firstChild?.firstChild).toBeTruthy();
-    });
-
-    it('should have correct i18n keys', () => {
-      expect(mcpMetadata?.titleKey).toBe('applications:onboarding.configure.stack.technology.mcpClient.title');
-      expect(mcpMetadata?.descriptionKey).toBe(
-        'applications:onboarding.configure.stack.technology.mcpClient.description',
-      );
-    });
-
-    it('should have a template with name and creationFlow', () => {
-      expect(mcpMetadata?.template).toBeDefined();
-      expect(mcpMetadata?.template.defaults?.name).toBe('MCP Client Application');
-      expect(mcpMetadata?.template.creationFlow?.steps).toEqual(['NAME', 'CONFIGURE']);
-    });
-
-    it('should have no field constraints', () => {
-      expect(mcpMetadata?.template.fieldConstraints).toBeUndefined();
-    });
-
-    it('should have ai category', () => {
-      expect(mcpMetadata?.categories).toEqual(['ai']);
-    });
-
-    it('should not be disabled', () => {
-      expect(mcpMetadata?.disabled).not.toBe(true);
     });
   });
 
