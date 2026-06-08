@@ -27,6 +27,7 @@ Authorization codes are single-use, bound to the redirect URI and client, and sh
 | Response type | `code` only (implicit and hybrid response types are not supported) |
 | PKCE | **Required** for public clients (`publicClient: true`); recommended for confidential clients |
 | Redirect URI matching | Exact match against the application's registered `redirect_uris` |
+| Redirect URI at token endpoint | Required only when included in the authorization request ([RFC 6749 §4.1.3](https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.3)); identical value enforced when present |
 | `state` parameter | Required by RFC 6749 §10.12 / OAuth 2.1 — the client must validate it on callback |
 | `iss` in response | Always included (see [Issuer Identification](../issuer-identification)) |
 | Code lifetime | Single-use, short TTL; binding to client + redirect_uri enforced on exchange |

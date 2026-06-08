@@ -89,15 +89,6 @@ func (h *authorizationCodeGrantHandler) ValidateGrant(ctx context.Context, token
 		}
 	}
 
-	// TODO: Redirect uri is not mandatory when excluded in the authorize request and is valid scenario.
-	//  This should be removed when supporting other means of authorization.
-	if tokenRequest.RedirectURI == "" {
-		return &model.ErrorResponse{
-			Error:            constants.ErrorInvalidRequest,
-			ErrorDescription: "Redirect URI is required",
-		}
-	}
-
 	if errResp := resourceindicators.ValidateResourceURIs(tokenRequest.Resources); errResp != nil {
 		return errResp
 	}
@@ -301,8 +292,8 @@ func validateAuthorizationCode(tokenRequest *model.TokenRequest,
 		}
 	}
 
-	// redirect_uri is not mandatory in certain scenarios. Should match if provided with the authorization.
-	if code.RedirectURI != "" && tokenRequest.RedirectURI != code.RedirectURI {
+	// RFC 6749 §4.1.3: required only if included in the authorize request.
+	if code.RedirectURIProvided && tokenRequest.RedirectURI != code.RedirectURI {
 		return &model.ErrorResponse{
 			Error:            constants.ErrorInvalidGrant,
 			ErrorDescription: "Invalid redirect URI",

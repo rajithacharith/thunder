@@ -149,16 +149,17 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) SetupTest() {
 	}
 
 	suite.testAuthzCode = authz.AuthorizationCode{
-		CodeID:           "test-code-id",
-		Code:             "test-auth-code",
-		ClientID:         testClientID,
-		RedirectURI:      "https://client.example.com/callback",
-		AuthorizedUserID: testUserID,
-		AttributeCacheID: "",
-		TimeCreated:      time.Now().Add(-5 * time.Minute),
-		ExpiryTime:       time.Now().Add(5 * time.Minute),
-		Scopes:           "read write",
-		State:            authz.AuthCodeStateActive,
+		CodeID:              "test-code-id",
+		Code:                "test-auth-code",
+		ClientID:            testClientID,
+		RedirectURI:         "https://client.example.com/callback",
+		RedirectURIProvided: true,
+		AuthorizedUserID:    testUserID,
+		AttributeCacheID:    "",
+		TimeCreated:         time.Now().Add(-5 * time.Minute),
+		ExpiryTime:          time.Now().Add(5 * time.Minute),
+		Scopes:              "read write",
+		State:               authz.AuthCodeStateActive,
 	}
 }
 
@@ -226,18 +227,48 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_MissingCl
 	assert.Equal(suite.T(), "client_id is required", err.ErrorDescription)
 }
 
-func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_MissingRedirectURI() {
+func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_OmittedRedirectURI() {
 	tokenReq := &model.TokenRequest{
 		GrantType:   string(constants.GrantTypeAuthorizationCode),
 		ClientID:    testClientID,
 		Code:        "test-code",
-		RedirectURI: "", // Missing redirect URI
+		RedirectURI: "",
 	}
 
 	err := suite.handler.ValidateGrant(context.Background(), tokenReq, suite.oauthApp)
-	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
-	assert.Equal(suite.T(), "Redirect URI is required", err.ErrorDescription)
+	assert.Nil(suite.T(), err)
+}
+
+func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_RedirectURIOmittedAtAuthorizeAndToken() {
+	// Auth code records that redirect_uri was not provided at authorize.
+	codeNotProvided := suite.testAuthzCode
+	codeNotProvided.RedirectURIProvided = false
+
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
+		Return(&codeNotProvided, nil)
+
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).Return(&model.TokenDTO{
+		Token:     "test-jwt-token",
+		TokenType: constants.TokenTypeBearer,
+		IssuedAt:  time.Now().Unix(),
+		ExpiresIn: 3600,
+		Scopes:    []string{"read", "write"},
+		ClientID:  testClientID,
+		Subject:   testUserID,
+	}, nil)
+
+	tokenReq := &model.TokenRequest{
+		GrantType: string(constants.GrantTypeAuthorizationCode),
+		ClientID:  testClientID,
+		Code:      "test-auth-code",
+		// RedirectURI omitted at the token endpoint.
+	}
+
+	result, err := suite.handler.HandleGrant(context.Background(), tokenReq, suite.oauthApp)
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), "test-jwt-token", result.AccessToken.Token)
 }
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_Success() {
@@ -501,17 +532,46 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCo
 	assert.Equal(suite.T(), "Invalid redirect URI", err.ErrorDescription)
 }
 
-func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCode_EmptyRedirectURIInCode() {
-	authzCodeWithEmptyURI := suite.testAuthzCode
-	authzCodeWithEmptyURI.RedirectURI = ""
+func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCode_RedirectURINotProvided() {
+	codeNotProvided := suite.testAuthzCode
+	codeNotProvided.RedirectURIProvided = false
 
-	tokenReq := &model.TokenRequest{
+	// Token endpoint omits redirect_uri — must succeed.
+	tokenReqOmitted := &model.TokenRequest{
+		ClientID:    testClientID,
+		RedirectURI: "",
+	}
+	assert.Nil(suite.T(), validateAuthorizationCode(tokenReqOmitted, codeNotProvided))
+
+	// Token endpoint sends a different value — also succeeds (comparison skipped).
+	tokenReqOther := &model.TokenRequest{
 		ClientID:    testClientID,
 		RedirectURI: "https://any.example.com/callback",
 	}
+	assert.Nil(suite.T(), validateAuthorizationCode(tokenReqOther, codeNotProvided))
+}
 
-	err := validateAuthorizationCode(tokenReq, authzCodeWithEmptyURI)
-	assert.Nil(suite.T(), err)
+func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCode_RedirectURIProvidedRequiresMatch() {
+	// Token endpoint sends a mismatched value — invalid_grant.
+	tokenReqMismatch := &model.TokenRequest{
+		ClientID:    testClientID,
+		RedirectURI: "https://wrong.example.com/callback",
+	}
+	err := validateAuthorizationCode(tokenReqMismatch, suite.testAuthzCode)
+	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), constants.ErrorInvalidGrant, err.Error)
+	assert.Equal(suite.T(), "Invalid redirect URI", err.ErrorDescription)
+
+	// Token endpoint omits redirect_uri — also invalid_grant, since the stored
+	// value cannot be matched.
+	tokenReqOmitted := &model.TokenRequest{
+		ClientID:    testClientID,
+		RedirectURI: "",
+	}
+	err = validateAuthorizationCode(tokenReqOmitted, suite.testAuthzCode)
+	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), constants.ErrorInvalidGrant, err.Error)
+	assert.Equal(suite.T(), "Invalid redirect URI", err.ErrorDescription)
 }
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCode_ExpiredCode() {
