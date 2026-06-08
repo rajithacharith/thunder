@@ -159,6 +159,22 @@ func parseToNotificationSenderDTO(data []byte) (*common.NotificationSenderDTO, e
 		return nil, err
 	}
 
+	return buildNotificationSenderDTOFromRequest(senderRequest)
+}
+
+// ParseNotificationSenderDTOFromNode decodes a yaml.Node into a NotificationSenderDTO.
+func ParseNotificationSenderDTOFromNode(node *yaml.Node) (*common.NotificationSenderDTO, error) {
+	var senderRequest common.NotificationSenderRequestWithID
+	if err := node.Decode(&senderRequest); err != nil {
+		return nil, err
+	}
+
+	return buildNotificationSenderDTOFromRequest(senderRequest)
+}
+
+func buildNotificationSenderDTOFromRequest(
+	senderRequest common.NotificationSenderRequestWithID,
+) (*common.NotificationSenderDTO, error) {
 	senderDTO := &common.NotificationSenderDTO{
 		ID:          senderRequest.ID,
 		Name:        senderRequest.Name,

@@ -36,6 +36,8 @@ import (
 	flowmgt "github.com/thunder-id/thunderid/internal/flow/mgt"
 	"github.com/thunder-id/thunderid/internal/group"
 	"github.com/thunder-id/thunderid/internal/idp"
+	"github.com/thunder-id/thunderid/internal/notification"
+	notificationcommon "github.com/thunder-id/thunderid/internal/notification/common"
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
@@ -178,6 +180,14 @@ type agentAdapter interface {
 		*agentmodel.AgentCompleteResponse, *serviceerror.ServiceError)
 }
 
+type notificationSenderAdapter interface {
+	CreateSender(ctx context.Context, sender notificationcommon.NotificationSenderDTO) (
+		*notificationcommon.NotificationSenderDTO, *serviceerror.ServiceError)
+	GetSender(ctx context.Context, id string) (*notificationcommon.NotificationSenderDTO, *serviceerror.ServiceError)
+	UpdateSender(ctx context.Context, id string, sender notificationcommon.NotificationSenderDTO) (
+		*notificationcommon.NotificationSenderDTO, *serviceerror.ServiceError)
+}
+
 // ImportServiceInterface defines runtime resource import and declarative resource deletion operations.
 type ImportServiceInterface interface {
 	ImportResources(ctx context.Context, request *ImportRequest) (*ImportResponse, *serviceerror.ServiceError)
@@ -194,20 +204,21 @@ const (
 )
 
 type importService struct {
-	applicationService    applicationAdapter
-	idpService            idpAdapter
-	flowService           flowAdapter
-	ouService             ouAdapter
-	entityTypeService     entityTypeAdapter
-	roleService           roleAdapter
-	roleAssignmentService roleAssignmentAdapter
-	groupService          groupAdapter
-	resourceService       resourceServerAdapter
-	themeService          themeAdapter
-	layoutService         layoutAdapter
-	userService           userAdapter
-	translationService    translationAdapter
-	agentService          agentAdapter
+	applicationService        applicationAdapter
+	idpService                idpAdapter
+	flowService               flowAdapter
+	ouService                 ouAdapter
+	entityTypeService         entityTypeAdapter
+	roleService               roleAdapter
+	roleAssignmentService     roleAssignmentAdapter
+	groupService              groupAdapter
+	resourceService           resourceServerAdapter
+	themeService              themeAdapter
+	layoutService             layoutAdapter
+	userService               userAdapter
+	translationService        translationAdapter
+	agentService              agentAdapter
+	notificationSenderService notificationSenderAdapter
 }
 
 func newImportService(
@@ -225,22 +236,24 @@ func newImportService(
 	userService userAdapter,
 	translationService translationAdapter,
 	agentService agentAdapter,
+	notificationSenderService notificationSenderAdapter,
 ) ImportServiceInterface {
 	return &importService{
-		applicationService:    applicationService,
-		idpService:            idpService,
-		flowService:           flowService,
-		ouService:             ouService,
-		entityTypeService:     entityTypeService,
-		roleService:           roleService,
-		roleAssignmentService: roleAssignmentService,
-		groupService:          groupService,
-		resourceService:       resourceService,
-		themeService:          themeService,
-		layoutService:         layoutService,
-		userService:           userService,
-		translationService:    translationService,
-		agentService:          agentService,
+		applicationService:        applicationService,
+		idpService:                idpService,
+		flowService:               flowService,
+		ouService:                 ouService,
+		entityTypeService:         entityTypeService,
+		roleService:               roleService,
+		roleAssignmentService:     roleAssignmentService,
+		groupService:              groupService,
+		resourceService:           resourceService,
+		themeService:              themeService,
+		layoutService:             layoutService,
+		userService:               userService,
+		translationService:        translationService,
+		agentService:              agentService,
+		notificationSenderService: notificationSenderService,
 	}
 }
 
@@ -394,6 +407,8 @@ func (s *importService) importDocument(
 		return s.importTranslation(doc, dryRun)
 	case resourceTypeAgent:
 		return s.importAgent(ctx, doc, options, dryRun, flowIDAliases)
+	case resourceTypeNotificationSender:
+		return s.importNotificationSender(ctx, doc, options, dryRun)
 	default:
 		return ImportItemOutcome{
 			ResourceType: doc.ResourceType,
@@ -401,6 +416,90 @@ func (s *importService) importDocument(
 			Code:         ErrorInvalidImportRequest.Code,
 			Message:      "unsupported resource document",
 		}
+	}
+}
+
+func (s *importService) importNotificationSender(
+	ctx context.Context, doc parsedDocument, options *ImportOptions, dryRun bool,
+) ImportItemOutcome {
+	if s.notificationSenderService == nil {
+		return ImportItemOutcome{
+			ResourceType: resourceTypeNotificationSender,
+			Status:       statusFailed,
+			Code:         ErrorInvalidImportRequest.Code,
+			Message:      "notification sender adapter is not configured",
+		}
+	}
+
+	req, err := notification.ParseNotificationSenderDTOFromNode(doc.Node)
+	if err != nil {
+		return ImportItemOutcome{
+			ResourceType: resourceTypeNotificationSender,
+			Status:       statusFailed,
+			Code:         ErrorInvalidYAMLContent.Code,
+			Message:      fmt.Sprintf("failed to decode notification sender document: %v", err),
+		}
+	}
+
+	if dryRun {
+		if options.IsUpsertEnabled() && req.ID != "" {
+			_, svcErr := s.notificationSenderService.GetSender(ctx, req.ID)
+			if svcErr == nil {
+				return successOutcome(resourceTypeNotificationSender, req.ID, req.Name, operationUpdate)
+			}
+
+			if !isNotFoundServiceError(svcErr) {
+				return serviceErrorOutcome(resourceTypeNotificationSender, req.ID, req.Name, operationUpdate, svcErr)
+			}
+		}
+
+		return successOutcome(resourceTypeNotificationSender, req.ID, req.Name, operationCreate)
+	}
+
+	if options.IsUpsertEnabled() && req.ID != "" {
+		updated, svcErr := s.notificationSenderService.UpdateSender(ctx, req.ID, *req)
+		if svcErr == nil {
+			return ImportItemOutcome{
+				ResourceType: resourceTypeNotificationSender,
+				ResourceID:   updated.ID,
+				ResourceName: updated.Name,
+				Operation:    operationUpdate,
+				Status:       statusSuccess,
+			}
+		}
+
+		if !isNotFoundServiceError(svcErr) {
+			return ImportItemOutcome{
+				ResourceType: resourceTypeNotificationSender,
+				ResourceID:   req.ID,
+				ResourceName: req.Name,
+				Operation:    operationUpdate,
+				Status:       statusFailed,
+				Code:         svcErr.Code,
+				Message:      svcErr.Error.DefaultValue,
+			}
+		}
+	}
+
+	created, svcErr := s.notificationSenderService.CreateSender(ctx, *req)
+	if svcErr != nil {
+		return ImportItemOutcome{
+			ResourceType: resourceTypeNotificationSender,
+			ResourceID:   req.ID,
+			ResourceName: req.Name,
+			Operation:    operationCreate,
+			Status:       statusFailed,
+			Code:         svcErr.Code,
+			Message:      svcErr.Error.DefaultValue,
+		}
+	}
+
+	return ImportItemOutcome{
+		ResourceType: resourceTypeNotificationSender,
+		ResourceID:   created.ID,
+		ResourceName: created.Name,
+		Operation:    operationCreate,
+		Status:       statusSuccess,
 	}
 }
 
