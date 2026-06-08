@@ -273,6 +273,12 @@ func parseToResourceServer(data []byte) (*ResourceServer, error) {
 	if rs.Name == "" {
 		return nil, fmt.Errorf("resource server name cannot be empty")
 	}
+	if rs.Type != "" && !rs.Type.IsValid() {
+		return nil, fmt.Errorf("invalid type %q for resource server '%s'", rs.Type, rs.Name)
+	}
+	if rs.Type == "" {
+		rs.Type = ResourceServerTypeCustom
+	}
 
 	return &rs, nil
 }

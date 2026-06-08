@@ -220,6 +220,72 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_Success() {
 	suite.mockOU.AssertExpectations(suite.T())
 }
 
+func (suite *ResourceServiceTestSuite) TestCreateResourceServer_WithType() {
+	rs := ResourceServer{
+		Name:       "test-rs",
+		Handle:     "test-handle",
+		Identifier: "test-identifier",
+		Type:       ResourceServerTypeMCP,
+		OUID:       "ou-123",
+	}
+
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
+		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
+	suite.mockStore.On("CheckResourceServerNameExists", mock.Anything, "test-rs").Return(false, nil)
+	suite.mockStore.On("CheckResourceServerHandleExists", mock.Anything, "test-handle").Return(false, nil)
+	suite.mockStore.On("CheckResourceServerIdentifierExists", mock.Anything, "test-identifier").Return(false, nil)
+	suite.mockStore.On("CreateResourceServer", mock.Anything,
+		mock.AnythingOfType("string"), mock.MatchedBy(func(r ResourceServer) bool {
+			return r.Type == ResourceServerTypeMCP
+		})).Return(nil)
+
+	result, err := suite.service.CreateResourceServer(context.Background(), rs)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal(ResourceServerTypeMCP, result.Type)
+	suite.mockStore.AssertExpectations(suite.T())
+}
+
+func (suite *ResourceServiceTestSuite) TestCreateResourceServer_DefaultsToCustom() {
+	rs := ResourceServer{
+		Name:   "test-rs",
+		Handle: "test-handle",
+		OUID:   "ou-123",
+	}
+
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
+		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
+	suite.mockStore.On("CheckResourceServerNameExists", mock.Anything, "test-rs").Return(false, nil)
+	suite.mockStore.On("CheckResourceServerHandleExists", mock.Anything, "test-handle").Return(false, nil)
+	suite.mockStore.On("CreateResourceServer", mock.Anything,
+		mock.AnythingOfType("string"), mock.MatchedBy(func(r ResourceServer) bool {
+			return r.Type == ResourceServerTypeCustom
+		})).Return(nil)
+
+	result, err := suite.service.CreateResourceServer(context.Background(), rs)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal(ResourceServerTypeCustom, result.Type)
+	suite.mockStore.AssertExpectations(suite.T())
+}
+
+func (suite *ResourceServiceTestSuite) TestCreateResourceServer_InvalidType() {
+	rs := ResourceServer{
+		Name:   "test-rs",
+		Handle: "test-handle",
+		Type:   ResourceServerType("BOGUS"),
+		OUID:   "ou-123",
+	}
+
+	result, err := suite.service.CreateResourceServer(context.Background(), rs)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(ErrorInvalidRequestFormat.Code, err.Code)
+}
+
 func (suite *ResourceServiceTestSuite) TestCreateResourceServer_ValidationErrors() {
 	testCases := []struct {
 		name           string
@@ -574,6 +640,45 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_Success() {
 	suite.Equal("updated-rs", result.Name)
 	suite.Equal("original-handler", result.Handle)
 	suite.Equal("new-identifier", result.Identifier)
+}
+
+func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_PreservesType() {
+	rs := ResourceServer{
+		Name:        "updated-rs",
+		Description: "Updated",
+		Handle:      "original-handler",
+		Identifier:  "original-identifier",
+		Type:        ResourceServerTypeMCP, // Should be ignored; type is immutable
+		OUID:        "ou-123",
+	}
+
+	existingRS := ResourceServer{
+		ID:          "rs-123",
+		Name:        "old-name",
+		Description: "Old",
+		Handle:      "original-handler",
+		Identifier:  "original-identifier",
+		Type:        ResourceServerTypeAPI,
+		OUID:        "ou-123",
+		Delimiter:   ":",
+	}
+
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
+	suite.mockStore.On("GetResourceServer", mock.Anything, "rs-123").Return(existingRS, nil)
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
+		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
+	suite.mockStore.On("CheckResourceServerNameExists", mock.Anything, "updated-rs").Return(false, nil)
+	suite.mockStore.On("UpdateResourceServer", mock.Anything,
+		"rs-123", mock.MatchedBy(func(r ResourceServer) bool {
+			return r.Type == ResourceServerTypeAPI
+		})).Return(nil)
+
+	result, err := suite.service.UpdateResourceServer(context.Background(), "rs-123", rs)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal(ResourceServerTypeAPI, result.Type)
+	suite.mockStore.AssertExpectations(suite.T())
 }
 
 func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_NotFound() {
