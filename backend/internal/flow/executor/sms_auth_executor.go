@@ -181,7 +181,7 @@ func (s *smsOTPAuthExecutor) InitiateOTP(ctx *core.NodeContext,
 		}
 
 		filter := map[string]interface{}{phoneAttr: mobileNumber}
-		userID, err = s.IdentifyUser(filter, execResp)
+		userID, err = s.IdentifyUser(ctx.Context, filter, execResp)
 		if err != nil {
 			logger.ErrorWithContext(ctx.Context, "Failed to identify user", log.Error(err))
 			return fmt.Errorf("failed to identify user: %w", err)

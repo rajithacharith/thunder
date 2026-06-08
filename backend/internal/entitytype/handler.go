@@ -19,6 +19,7 @@
 package entitytype
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -282,7 +283,7 @@ func validateUpdateEntityTypeRequest(
 		return UpdateEntityTypeRequest{}, true
 	}
 
-	sanitizedRequest := h.sanitizeUpdateEntityTypeRequest(*updateRequest)
+	sanitizedRequest := h.sanitizeUpdateEntityTypeRequest(r.Context(), *updateRequest)
 	return sanitizedRequest, false
 }
 
@@ -303,7 +304,7 @@ func (h *entityTypeHandler) sanitizeCreateEntityTypeRequest(
 }
 
 // sanitizeUpdateEntityTypeRequest sanitizes the update entity type request input.
-func (h *entityTypeHandler) sanitizeUpdateEntityTypeRequest(
+func (h *entityTypeHandler) sanitizeUpdateEntityTypeRequest(ctx context.Context,
 	request UpdateEntityTypeRequest,
 ) UpdateEntityTypeRequest {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, entityTypeHandlerLoggerComponentName))
@@ -313,7 +314,7 @@ func (h *entityTypeHandler) sanitizeUpdateEntityTypeRequest(
 	sanitizedOUID := sysutils.SanitizeString(request.OUID)
 
 	if originalName != sanitizedName {
-		logger.Debug("Sanitized entity type name in update request",
+		logger.DebugWithContext(ctx, "Sanitized entity type name in update request",
 			log.MaskedString("original", originalName),
 			log.MaskedString("sanitized", sanitizedName))
 	}

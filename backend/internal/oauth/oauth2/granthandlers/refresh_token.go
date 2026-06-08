@@ -115,7 +115,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 		return nil, errResp
 	}
 
-	newTokenScopes, scopeErr := h.validateAndApplyScopes(tokenRequest.Scope, refreshTokenClaims.Scopes, logger)
+	newTokenScopes, scopeErr := h.validateAndApplyScopes(ctx, tokenRequest.Scope, refreshTokenClaims.Scopes, logger)
 	if scopeErr != nil {
 		return nil, scopeErr
 	}
@@ -372,12 +372,12 @@ func (h *refreshTokenGrantHandler) extendCacheTTL(
 // validateAndApplyScopes validates and applies OAuth2 scope downscoping logic per RFC 6749 §6.
 // If no scopes are requested, all refresh token scopes are granted.
 // If scopes are requested, they must be a subset of the original grant; otherwise an invalid_scope error is returned.
-func (h *refreshTokenGrantHandler) validateAndApplyScopes(requestedScopes string,
+func (h *refreshTokenGrantHandler) validateAndApplyScopes(ctx context.Context, requestedScopes string,
 	refreshTokenScopes []string, logger *log.Logger) ([]string, *model.ErrorResponse) {
 	trimmedRequestedScopes := tokenservice.ParseScopes(requestedScopes)
 
 	if len(trimmedRequestedScopes) == 0 {
-		logger.Debug("No scopes requested. Granting all scopes from refresh token",
+		logger.DebugWithContext(ctx, "No scopes requested. Granting all scopes from refresh token",
 			log.Any("scopes", refreshTokenScopes))
 		return refreshTokenScopes, nil
 	}
@@ -391,6 +391,6 @@ func (h *refreshTokenGrantHandler) validateAndApplyScopes(requestedScopes string
 		}
 	}
 
-	logger.Debug("Applied scope downscoping", log.Any("grantedScopes", trimmedRequestedScopes))
+	logger.DebugWithContext(ctx, "Applied scope downscoping", log.Any("grantedScopes", trimmedRequestedScopes))
 	return trimmedRequestedScopes, nil
 }

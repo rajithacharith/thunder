@@ -1351,28 +1351,30 @@ func (suite *InboundClientServiceTestSuite) TestValidateRecoveryFlowID_AllBranch
 	)
 }
 
+//nolint:dupl // Theme and layout validators share the same branch structure with type-specific services.
 func (suite *InboundClientServiceTestSuite) TestValidateThemeID_AllBranches() {
 	tm := thememock.NewThemeMgtServiceInterfaceMock(suite.T())
-	tm.EXPECT().IsThemeExist("missing").Return(false, nil).Once()
-	tm.EXPECT().IsThemeExist("err").Return(false, &serviceerror.ServiceError{Code: "X"}).Once()
-	tm.EXPECT().IsThemeExist("ok").Return(true, nil).Once()
+	tm.EXPECT().IsThemeExist(mock.Anything, "missing").Return(false, nil).Once()
+	tm.EXPECT().IsThemeExist(mock.Anything, "err").Return(false, &serviceerror.ServiceError{Code: "X"}).Once()
+	tm.EXPECT().IsThemeExist(mock.Anything, "ok").Return(true, nil).Once()
 	svc := &inboundClientService{themeMgt: tm}
-	assert.ErrorIs(suite.T(), svc.validateThemeID("missing"), ErrFKThemeNotFound)
-	assert.ErrorIs(suite.T(), svc.validateThemeID("err"), ErrFKThemeNotFound)
-	assert.NoError(suite.T(), svc.validateThemeID("ok"))
-	assert.NoError(suite.T(), (&inboundClientService{}).validateThemeID(""))
+	assert.ErrorIs(suite.T(), svc.validateThemeID(context.Background(), "missing"), ErrFKThemeNotFound)
+	assert.ErrorIs(suite.T(), svc.validateThemeID(context.Background(), "err"), ErrFKThemeNotFound)
+	assert.NoError(suite.T(), svc.validateThemeID(context.Background(), "ok"))
+	assert.NoError(suite.T(), (&inboundClientService{}).validateThemeID(context.Background(), ""))
 }
 
+//nolint:dupl // Theme and layout validators share the same branch structure with type-specific services.
 func (suite *InboundClientServiceTestSuite) TestValidateLayoutID_AllBranches() {
 	lm := layoutmock.NewLayoutMgtServiceInterfaceMock(suite.T())
-	lm.EXPECT().IsLayoutExist("missing").Return(false, nil).Once()
-	lm.EXPECT().IsLayoutExist("err").Return(false, &serviceerror.ServiceError{Code: "X"}).Once()
-	lm.EXPECT().IsLayoutExist("ok").Return(true, nil).Once()
+	lm.EXPECT().IsLayoutExist(mock.Anything, "missing").Return(false, nil).Once()
+	lm.EXPECT().IsLayoutExist(mock.Anything, "err").Return(false, &serviceerror.ServiceError{Code: "X"}).Once()
+	lm.EXPECT().IsLayoutExist(mock.Anything, "ok").Return(true, nil).Once()
 	svc := &inboundClientService{layoutMgt: lm}
-	assert.ErrorIs(suite.T(), svc.validateLayoutID("missing"), ErrFKLayoutNotFound)
-	assert.ErrorIs(suite.T(), svc.validateLayoutID("err"), ErrFKLayoutNotFound)
-	assert.NoError(suite.T(), svc.validateLayoutID("ok"))
-	assert.NoError(suite.T(), (&inboundClientService{}).validateLayoutID(""))
+	assert.ErrorIs(suite.T(), svc.validateLayoutID(context.Background(), "missing"), ErrFKLayoutNotFound)
+	assert.ErrorIs(suite.T(), svc.validateLayoutID(context.Background(), "err"), ErrFKLayoutNotFound)
+	assert.NoError(suite.T(), svc.validateLayoutID(context.Background(), "ok"))
+	assert.NoError(suite.T(), (&inboundClientService{}).validateLayoutID(context.Background(), ""))
 }
 
 func (suite *InboundClientServiceTestSuite) TestValidateAllowedUserTypes_NoOpWhenEmpty() {

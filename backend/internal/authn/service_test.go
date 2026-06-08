@@ -199,7 +199,7 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentials() {
 				suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything,
 					mock.Anything, mock.Anything).
 					Return(authnprovidermgr.AuthUser{}, &authnprovidercm.AttributesResponse{}, nil).Once()
-				suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything).Return(
+				suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything, mock.Anything).Return(
 					&assert.AssertionResult{
 						Context: &assert.AssuranceContext{
 							AAL: assert.AALLevel1,
@@ -235,7 +235,7 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentials() {
 					mock.Anything, mock.Anything).
 					Return(authnprovidermgr.AuthUser{}, &authnprovidercm.AttributesResponse{}, nil).Once()
 				suite.mockJWTService.On("VerifyJWT", mock.Anything, mock.Anything, "", mock.Anything).Return(nil).Once()
-				suite.mockAssertGenerator.On("UpdateAssertion", mock.Anything, mock.Anything).Return(
+				suite.mockAssertGenerator.On("UpdateAssertion", mock.Anything, mock.Anything, mock.Anything).Return(
 					&assert.AssertionResult{
 						Context: &assert.AssuranceContext{
 							AAL: assert.AALLevel2,
@@ -311,7 +311,7 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsJWTG
 		}, nil)
 	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(authnprovidermgr.AuthUser{}, &authnprovidercm.AttributesResponse{}, nil)
-	suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything).Return(
+	suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything, mock.Anything).Return(
 		&assert.AssertionResult{
 			Context: &assert.AssuranceContext{
 				AAL: assert.AALLevel1,
@@ -508,7 +508,7 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTP() {
 				suite.mockAuthnProvider.On("AuthenticateUser",
 					mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 					Return(authnprovidermgr.AuthUser{}, testAuthnResult, nil).Once()
-				suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything).Return(
+				suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything, mock.Anything).Return(
 					&assert.AssertionResult{
 						Context: &assert.AssuranceContext{
 							AAL: assert.AALLevel1,
@@ -538,7 +538,7 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTP() {
 					Return(authnprovidermgr.AuthUser{}, testAuthnResult, nil).Once()
 				suite.mockJWTService.
 					On("VerifyJWT", mock.Anything, existingAssertion, "", mock.Anything).Return(nil).Once()
-				suite.mockAssertGenerator.On("UpdateAssertion", mock.Anything, mock.Anything).Return(
+				suite.mockAssertGenerator.On("UpdateAssertion", mock.Anything, mock.Anything, mock.Anything).Return(
 					&assert.AssertionResult{
 						Context: &assert.AssuranceContext{
 							AAL: assert.AALLevel2,
@@ -850,7 +850,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationWithAsse
 						OUID:           testOrgUnit,
 						IsExistingUser: true,
 					}, nil).Once()
-				suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything).Return(
+				suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything, mock.Anything).Return(
 					&assert.AssertionResult{
 						Context: &assert.AssuranceContext{
 							AAL: assert.AALLevel1,
@@ -887,7 +887,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationWithAsse
 						OUID:           testOrgUnit,
 						IsExistingUser: true,
 					}, nil).Once()
-				suite.mockAssertGenerator.On("UpdateAssertion", mock.Anything, mock.Anything).Return(
+				suite.mockAssertGenerator.On("UpdateAssertion", mock.Anything, mock.Anything, mock.Anything).Return(
 					&assert.AssertionResult{
 						Context: &assert.AssuranceContext{
 							AAL: assert.AALLevel2,
@@ -1234,7 +1234,7 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionS
 	}
 	logger := log.GetLogger()
 
-	suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything).Return(
+	suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything, mock.Anything).Return(
 		&assert.AssertionResult{
 			Context: &assert.AssuranceContext{
 				AAL: assert.AALLevel1,
@@ -1432,7 +1432,7 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTPJWTGenerationError() {
 	suite.mockAuthnProvider.On("AuthenticateUser",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(authnprovidermgr.AuthUser{}, testAuthnResult, nil)
-	suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything).Return(
+	suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything, mock.Anything).Return(
 		&assert.AssertionResult{
 			Context: &assert.AssuranceContext{
 				AAL: assert.AALLevel1,
@@ -1517,7 +1517,7 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionG
 
 	// Create a service with a mock assertion generator that returns an error
 	mockAssertGenerator := assertmock.NewAuthAssertGeneratorInterfaceMock(suite.T())
-	mockAssertGenerator.On("GenerateAssertion", mock.Anything).
+	mockAssertGenerator.On("GenerateAssertion", mock.Anything, mock.Anything).
 		Return(nil, &serviceerror.ServiceError{
 			Type: serviceerror.ServerErrorType,
 			Code: "ASSERTION_ERROR",
@@ -1559,7 +1559,7 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionU
 
 	// Create a service with a mock assertion generator that returns an error on update
 	mockAssertGenerator := assertmock.NewAuthAssertGeneratorInterfaceMock(suite.T())
-	mockAssertGenerator.On("UpdateAssertion", mock.Anything, mock.Anything).
+	mockAssertGenerator.On("UpdateAssertion", mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, &serviceerror.ServiceError{
 			Type: serviceerror.ServerErrorType,
 			Code: "UPDATE_ERROR",
@@ -1799,9 +1799,12 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Suc
 			},
 		},
 	}
-	suite.mockAssertGenerator.On("GenerateAssertion", mock.MatchedBy(func(refs []common.AuthenticatorReference) bool {
-		return len(refs) == 1 && refs[0].Authenticator == common.AuthenticatorPasskey
-	})).Return(mockAssertionResult, nil).Once()
+	suite.mockAssertGenerator.On(
+		"GenerateAssertion",
+		mock.Anything,
+		mock.MatchedBy(func(refs []common.AuthenticatorReference) bool {
+			return len(refs) == 1 && refs[0].Authenticator == common.AuthenticatorPasskey
+		})).Return(mockAssertionResult, nil).Once()
 
 	suite.mockJWTService.On("GenerateJWT", mock.Anything, testUserID, mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
@@ -1882,7 +1885,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Wit
 			},
 		},
 	}
-	suite.mockAssertGenerator.On("UpdateAssertion", mock.Anything, mock.Anything).
+	suite.mockAssertGenerator.On("UpdateAssertion", mock.Anything, mock.Anything, mock.Anything).
 		Return(mockUpdatedResult, nil).Once()
 
 	suite.mockJWTService.On("GenerateJWT", mock.Anything, testUserID, mock.Anything, mock.Anything,

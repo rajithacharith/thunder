@@ -148,7 +148,7 @@ func (s *oidcAuthnService) ValidateIDToken(ctx context.Context, idpID, idToken s
 
 	// Validate ID token signature using JWKS endpoint if available
 	if oAuthClientConfig.OAuthEndpoints.JwksEndpoint != "" {
-		err := s.jwtService.VerifyJWTWithJWKS(idToken, oAuthClientConfig.OAuthEndpoints.JwksEndpoint, "", "")
+		err := s.jwtService.VerifyJWTWithJWKS(ctx, idToken, oAuthClientConfig.OAuthEndpoints.JwksEndpoint, "", "")
 		if err != nil {
 			logger.DebugWithContext(ctx, "ID token signature validation failed",
 				log.String("error", err.Error.DefaultValue))
@@ -192,8 +192,9 @@ func (s *oidcAuthnService) FetchUserInfo(ctx context.Context, idpID, accessToken
 }
 
 // GetInternalUser retrieves the internal user based on the external subject identifier.
-func (s *oidcAuthnService) GetInternalUser(sub string) (*entityprovider.Entity, *serviceerror.ServiceError) {
-	return s.internal.GetInternalUser(sub)
+func (s *oidcAuthnService) GetInternalUser(
+	ctx context.Context, sub string) (*entityprovider.Entity, *serviceerror.ServiceError) {
+	return s.internal.GetInternalUser(ctx, sub)
 }
 
 // Authenticate performs the full OIDC authentication flow: exchanges the code for a token,
@@ -247,7 +248,7 @@ func (s *oidcAuthnService) Authenticate(ctx context.Context, idpID, code string)
 		Sub:    sub,
 		Claims: claims,
 	}
-	user, svcErr := s.GetInternalUser(sub)
+	user, svcErr := s.GetInternalUser(ctx, sub)
 	if svcErr != nil {
 		if svcErr.Code == authncm.ErrorUserNotFound.Code {
 			return result, nil

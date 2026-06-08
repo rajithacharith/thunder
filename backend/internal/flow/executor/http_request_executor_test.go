@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -541,7 +542,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestParseAndValidateConfig_TimeoutLim
 		"timeout": "60", // Exceeds max of 30
 	}
 
-	config, err := suite.executor.parseAndValidateConfig(properties)
+	config, err := suite.executor.parseAndValidateConfig(context.Background(), properties)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), maxHTTPRequestTimeout, config.Timeout, "Timeout should be capped at maximum")
 
@@ -550,7 +551,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestParseAndValidateConfig_TimeoutLim
 		"url": "https://example.com/api/test",
 	}
 
-	config2, err := suite.executor.parseAndValidateConfig(properties2)
+	config2, err := suite.executor.parseAndValidateConfig(context.Background(), properties2)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), defaultHTTPTimeout, config2.Timeout)
 }
@@ -563,7 +564,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestParseAndValidateConfig_RetryLimit
 		"errorHandling": errorHandlingJSON,
 	}
 
-	config, err := suite.executor.parseAndValidateConfig(properties)
+	config, err := suite.executor.parseAndValidateConfig(context.Background(), properties)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), maxHTTPRequestRetryCount, config.ErrorHandling.RetryCount)
 	assert.Equal(suite.T(), maxHTTPRequestRetryDelay, config.ErrorHandling.RetryDelay)

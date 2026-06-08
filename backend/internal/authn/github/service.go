@@ -78,7 +78,7 @@ func (g *githubOAuthAuthnService) FetchUserInfo(ctx context.Context, idpID, acce
 		return nil, svcErr
 	}
 
-	userInfo, svcErr := g.internal.FetchUserInfoWithClientConfig(oAuthClientConfig, accessToken)
+	userInfo, svcErr := g.internal.FetchUserInfoWithClientConfig(ctx, oAuthClientConfig, accessToken)
 	if svcErr != nil {
 		return userInfo, svcErr
 	}
@@ -143,8 +143,9 @@ func (g *githubOAuthAuthnService) fetchPrimaryEmail(
 }
 
 // GetInternalUser retrieves the internal user based on the external subject identifier.
-func (g *githubOAuthAuthnService) GetInternalUser(sub string) (*entityprovider.Entity, *serviceerror.ServiceError) {
-	return g.internal.GetInternalUser(sub)
+func (g *githubOAuthAuthnService) GetInternalUser(
+	ctx context.Context, sub string) (*entityprovider.Entity, *serviceerror.ServiceError) {
+	return g.internal.GetInternalUser(ctx, sub)
 }
 
 // GetOAuthClientConfig retrieves and validates the OAuth client configuration for the given identity provider ID.
@@ -186,7 +187,7 @@ func (g *githubOAuthAuthnService) Authenticate(ctx context.Context, idpID, code 
 		Sub:    sub,
 		Claims: userInfo,
 	}
-	user, svcErr := g.GetInternalUser(sub)
+	user, svcErr := g.GetInternalUser(ctx, sub)
 	if svcErr != nil {
 		if svcErr.Code == authncm.ErrorUserNotFound.Code {
 			return result, nil

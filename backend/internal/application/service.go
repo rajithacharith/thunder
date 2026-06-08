@@ -85,9 +85,9 @@ func newApplicationService(
 	}
 }
 
-func (as *applicationService) deleteEntityCompensation(appID string) {
+func (as *applicationService) deleteEntityCompensation(ctx context.Context, appID string) {
 	if delErr := as.entityProvider.DeleteEntity(appID); delErr != nil {
-		as.logger.Error("Failed to delete entity during compensation", log.Error(delErr),
+		as.logger.ErrorWithContext(ctx, "Failed to delete entity during compensation", log.Error(delErr),
 			log.String("appID", appID))
 	}
 }
@@ -146,8 +146,8 @@ func (as *applicationService) CreateApplication(ctx context.Context, app *model.
 	if err := as.inboundClientService.CreateInboundClient(ctx, &inboundClient, app.Certificate, oauthProfile,
 		clientSecret != "", app.Name); err != nil {
 		// Compensate: delete entity since config creation failed.
-		as.deleteEntityCompensation(appID)
-		if svcErr := as.translateInboundClientError(err); svcErr != nil {
+		as.deleteEntityCompensation(ctx, appID)
+		if svcErr := as.translateInboundClientError(ctx, err); svcErr != nil {
 			return nil, svcErr
 		}
 		as.logger.ErrorWithContext(ctx, "Failed to create application", log.Error(err), log.String("appID", appID))
@@ -187,7 +187,7 @@ func (as *applicationService) ValidateApplication(ctx context.Context, app *mode
 	if app.Name == "" {
 		return nil, nil, &ErrorInvalidApplicationName
 	}
-	nameExists, nameCheckErr := as.isIdentifierTaken(fieldName, app.Name, app.ID)
+	nameExists, nameCheckErr := as.isIdentifierTaken(ctx, fieldName, app.Name, app.ID)
 	if nameCheckErr != nil {
 		return nil, nil, nameCheckErr
 	}
@@ -195,7 +195,7 @@ func (as *applicationService) ValidateApplication(ctx context.Context, app *mode
 		return nil, nil, &ErrorApplicationAlreadyExistsWithName
 	}
 
-	inboundAuthConfig, svcErr := as.processInboundAuthConfig(app, nil)
+	inboundAuthConfig, svcErr := as.processInboundAuthConfig(ctx, app, nil)
 	if svcErr != nil {
 		return nil, nil, svcErr
 	}
@@ -231,7 +231,7 @@ func (as *applicationService) ValidateApplication(ctx context.Context, app *mode
 		hasClientSecret = inboundAuthConfig.OAuthConfig.ClientSecret != ""
 	}
 	if err := as.inboundClientService.Validate(ctx, &inboundClient, oauthProfile, hasClientSecret); err != nil {
-		if svcErr := as.translateInboundClientError(err); svcErr != nil {
+		if svcErr := as.translateInboundClientError(ctx, err); svcErr != nil {
 			return nil, nil, svcErr
 		}
 		as.logger.ErrorWithContext(ctx, "Inbound client validation failed", log.Error(err))
@@ -382,14 +382,14 @@ func (as *applicationService) UpdateApplication(ctx context.Context, appID strin
 	if err := as.inboundClientService.UpdateInboundClient(
 		ctx, &inboundClient, app.Certificate, oauthProfile, oauthSecretSupplied, newOAuthClientID, app.Name,
 	); err != nil {
-		if svcErr := as.translateInboundClientError(err); svcErr != nil {
+		if svcErr := as.translateInboundClientError(ctx, err); svcErr != nil {
 			return nil, svcErr
 		}
 		as.logger.ErrorWithContext(ctx, "Failed to update application", log.Error(err), log.String("appID", appID))
 		return nil, &serviceerror.InternalServerError
 	}
 
-	if svcErr := as.updateEntityDataForApplicationUpdate(appID, app, inboundAuthConfig); svcErr != nil {
+	if svcErr := as.updateEntityDataForApplicationUpdate(ctx, appID, app, inboundAuthConfig); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -422,7 +422,7 @@ func (as *applicationService) UpdateApplication(ctx context.Context, appID strin
 		inboundAuthConfig, oauthToken, userInfo, scopeClaims), nil
 }
 
-func (as *applicationService) updateEntityDataForApplicationUpdate(
+func (as *applicationService) updateEntityDataForApplicationUpdate(ctx context.Context,
 	appID string,
 	app *model.ApplicationDTO,
 	inboundAuthConfig *inboundmodel.InboundAuthConfigWithSecret,
@@ -434,7 +434,7 @@ func (as *applicationService) updateEntityDataForApplicationUpdate(
 
 	sysAttrsJSON, marshalErr := buildSystemAttributes(app, clientID)
 	if marshalErr != nil {
-		as.logger.Error("Failed to build entity system attributes for update", log.Error(marshalErr))
+		as.logger.ErrorWithContext(ctx, "Failed to build entity system attributes for update", log.Error(marshalErr))
 		return &serviceerror.InternalServerError
 	}
 
@@ -442,7 +442,8 @@ func (as *applicationService) updateEntityDataForApplicationUpdate(
 		if svcErr := mapEntityProviderError(epErr); svcErr != nil {
 			return svcErr
 		}
-		as.logger.Error("Failed to update entity system attributes", log.String("appID", appID), log.Error(epErr))
+		as.logger.ErrorWithContext(ctx, "Failed to update entity system attributes",
+			log.String("appID", appID), log.Error(epErr))
 		return &serviceerror.InternalServerError
 	}
 
@@ -456,7 +457,7 @@ func (as *applicationService) updateEntityDataForApplicationUpdate(
 			if svcErr := mapEntityProviderError(epErr); svcErr != nil {
 				return svcErr
 			}
-			as.logger.Error("Failed to clear entity system credentials",
+			as.logger.ErrorWithContext(ctx, "Failed to clear entity system credentials",
 				log.String("appID", appID), log.Error(epErr))
 			return &serviceerror.InternalServerError
 		}
@@ -468,7 +469,7 @@ func (as *applicationService) updateEntityDataForApplicationUpdate(
 
 	sysCredsJSON, marshalErr := buildSystemCredentials(inboundAuthConfig.OAuthConfig.ClientSecret)
 	if marshalErr != nil {
-		as.logger.Error("Failed to build entity system credentials for update", log.Error(marshalErr))
+		as.logger.ErrorWithContext(ctx, "Failed to build entity system credentials for update", log.Error(marshalErr))
 		return &serviceerror.InternalServerError
 	}
 
@@ -476,7 +477,8 @@ func (as *applicationService) updateEntityDataForApplicationUpdate(
 		if svcErr := mapEntityProviderError(epErr); svcErr != nil {
 			return svcErr
 		}
-		as.logger.Error("Failed to update entity system credentials", log.String("appID", appID), log.Error(epErr))
+		as.logger.ErrorWithContext(ctx, "Failed to update entity system credentials",
+			log.String("appID", appID), log.Error(epErr))
 		return &serviceerror.InternalServerError
 	}
 
@@ -524,7 +526,7 @@ func (as *applicationService) DeleteApplication(ctx context.Context, appID strin
 		if errors.Is(appErr, inboundclient.ErrInboundClientNotFound) {
 			return nil
 		}
-		if svcErr := as.translateInboundClientError(appErr); svcErr != nil {
+		if svcErr := as.translateInboundClientError(ctx, appErr); svcErr != nil {
 			return svcErr
 		}
 		as.logger.ErrorWithContext(ctx, "Failed to delete application", log.Error(appErr), log.String("appID", appID))
@@ -547,13 +549,14 @@ func (as *applicationService) DeleteApplication(ctx context.Context, appID strin
 // isIdentifierTaken checks if an entity with the given identifier already exists.
 // If excludeID is non-empty, the entity with that ID is excluded from the check
 // (used during declarative loading and updates where the entity already exists).
-func (as *applicationService) isIdentifierTaken(key, value, excludeID string) (bool, *serviceerror.ServiceError) {
+func (as *applicationService) isIdentifierTaken(
+	ctx context.Context, key, value, excludeID string) (bool, *serviceerror.ServiceError) {
 	entityID, epErr := as.entityProvider.IdentifyEntity(map[string]interface{}{key: value})
 	if epErr != nil {
 		if epErr.Code == entityprovider.ErrorCodeEntityNotFound {
 			return false, nil
 		}
-		as.logger.Error("Failed to check identifier availability",
+		as.logger.ErrorWithContext(ctx, "Failed to check identifier availability",
 			log.String("key", key), log.String("value", value), log.Error(epErr))
 		return false, &serviceerror.InternalServerError
 	}
@@ -572,7 +575,7 @@ func (as *applicationService) getApplication(
 ) (*model.ApplicationProcessedDTO, *serviceerror.ServiceError) {
 	inboundClient, err := as.inboundClientService.GetInboundClientByEntityID(ctx, appID)
 	if err != nil {
-		return nil, as.mapStoreError(err)
+		return nil, as.mapStoreError(ctx, err)
 	}
 	if inboundClient == nil {
 		return nil, &ErrorApplicationNotFound
@@ -895,7 +898,7 @@ func (as *applicationService) validateApplicationForUpdate(
 
 	// If the application name is changed, check if an application with the new name already exists.
 	if existingApp.Name != app.Name {
-		nameExists, nameCheckErr := as.isIdentifierTaken(fieldName, app.Name, appID)
+		nameExists, nameCheckErr := as.isIdentifierTaken(ctx, fieldName, app.Name, appID)
 		if nameCheckErr != nil {
 			return nil, nil, nameCheckErr
 		}
@@ -908,7 +911,7 @@ func (as *applicationService) validateApplicationForUpdate(
 		return nil, nil, svcErr
 	}
 
-	inboundAuthConfig, svcErr := as.processInboundAuthConfig(app, existingApp)
+	inboundAuthConfig, svcErr := as.processInboundAuthConfig(ctx, app, existingApp)
 	if svcErr != nil {
 		return nil, nil, svcErr
 	}
@@ -1042,7 +1045,7 @@ func validateAcrValues(acrValues []string) *serviceerror.ServiceError {
 // translateInboundClientError maps inbound-client sentinel errors and typed wrappers to
 // application-service errors. Returns nil when the input does not correspond to a known
 // inbound-client error, allowing the caller to log and fall back to InternalServerError.
-func (as *applicationService) translateInboundClientError(err error) *serviceerror.ServiceError {
+func (as *applicationService) translateInboundClientError(ctx context.Context, err error) *serviceerror.ServiceError {
 	if err == nil {
 		return nil
 	}
@@ -1066,7 +1069,7 @@ func (as *applicationService) translateInboundClientError(err error) *serviceerr
 	}
 	var opErr *inboundclient.CertOperationError
 	if errors.As(err, &opErr) {
-		return as.translateCertOperationError(opErr)
+		return as.translateCertOperationError(ctx, opErr)
 	}
 	var consentErr *inboundclient.ConsentSyncError
 	if errors.As(err, &consentErr) {
@@ -1336,10 +1339,10 @@ func translateCertValidationError(err error) *serviceerror.ServiceError {
 // into an application-service ServiceError. Server-side failures are logged and surfaced as
 // InternalServerError; client-side failures are wrapped in ErrorCertificateClientError with an
 // operation-specific description.
-func (as *applicationService) translateCertOperationError(
+func (as *applicationService) translateCertOperationError(ctx context.Context,
 	err *inboundclient.CertOperationError) *serviceerror.ServiceError {
 	if !err.IsClientError() {
-		as.logger.Error("Certificate operation failed",
+		as.logger.ErrorWithContext(ctx, "Certificate operation failed",
 			log.Any("operation", err.Operation),
 			log.Any("refType", err.RefType),
 			log.Any("serviceError", err.Underlying))
@@ -1389,7 +1392,7 @@ func translateConsentSyncError(err *inboundclient.ConsentSyncError) *serviceerro
 	return &serviceerror.InternalServerError
 }
 
-func (as *applicationService) processInboundAuthConfig(app *model.ApplicationDTO,
+func (as *applicationService) processInboundAuthConfig(ctx context.Context, app *model.ApplicationDTO,
 	existingApp *model.ApplicationProcessedDTO) (
 	*inboundmodel.InboundAuthConfigWithSecret, *serviceerror.ServiceError) {
 	inboundAuthConfig, err := validateOAuthParamsForCreateAndUpdate(app)
@@ -1417,7 +1420,7 @@ func (as *applicationService) processInboundAuthConfig(app *model.ApplicationDTO
 				return nil, svcErr
 			}
 		} else if clientID != existingClientID {
-			if taken, svcErr := as.isIdentifierTaken(fieldClientID, clientID, existingApp.ID); svcErr != nil {
+			if taken, svcErr := as.isIdentifierTaken(ctx, fieldClientID, clientID, existingApp.ID); svcErr != nil {
 				return nil, svcErr
 			} else if taken {
 				return nil, &ErrorApplicationAlreadyExistsWithClientID
@@ -1429,7 +1432,7 @@ func (as *applicationService) processInboundAuthConfig(app *model.ApplicationDTO
 				return nil, svcErr
 			}
 		} else {
-			if taken, svcErr := as.isIdentifierTaken(fieldClientID, clientID, app.ID); svcErr != nil {
+			if taken, svcErr := as.isIdentifierTaken(ctx, fieldClientID, clientID, app.ID); svcErr != nil {
 				return nil, svcErr
 			} else if taken {
 				return nil, &ErrorApplicationAlreadyExistsWithClientID
@@ -1495,7 +1498,7 @@ func (as *applicationService) enrichApplicationWithCertificate(ctx context.Conte
 	appCert, opErr := as.inboundClientService.GetCertificate(
 		ctx, cert.CertificateReferenceTypeApplication, application.ID)
 	if opErr != nil {
-		if mapped := as.translateCertOperationError(opErr); mapped != nil {
+		if mapped := as.translateCertOperationError(ctx, opErr); mapped != nil {
 			return nil, mapped
 		}
 		return nil, &serviceerror.InternalServerError
@@ -1508,7 +1511,7 @@ func (as *applicationService) enrichApplicationWithCertificate(ctx context.Conte
 			oauthCert, oauthCertOpErr := as.inboundClientService.GetCertificate(ctx,
 				cert.CertificateReferenceTypeOAuthApp, inboundAuthConfig.OAuthConfig.ClientID)
 			if oauthCertOpErr != nil {
-				if mapped := as.translateCertOperationError(oauthCertOpErr); mapped != nil {
+				if mapped := as.translateCertOperationError(ctx, oauthCertOpErr); mapped != nil {
 					return nil, mapped
 				}
 				return nil, &serviceerror.InternalServerError
@@ -1765,11 +1768,11 @@ func buildReturnApplicationDTO(
 }
 
 // mapStoreError maps inbound client store errors to application service errors.
-func (as *applicationService) mapStoreError(err error) *serviceerror.ServiceError {
+func (as *applicationService) mapStoreError(ctx context.Context, err error) *serviceerror.ServiceError {
 	if errors.Is(err, inboundclient.ErrInboundClientNotFound) {
 		return &ErrorApplicationNotFound
 	}
-	as.logger.Error("Failed to retrieve application", log.Error(err))
+	as.logger.ErrorWithContext(ctx, "Failed to retrieve application", log.Error(err))
 	return &serviceerror.InternalServerError
 }
 

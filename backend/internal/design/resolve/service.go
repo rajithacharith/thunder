@@ -112,7 +112,7 @@ func (drs *designResolveService) ResolveDesign(
 			return nil, &serviceerror.InternalServerError
 		}
 
-		themeConfig, svcErr := drs.themeMgtService.GetTheme(app.ThemeID)
+		themeConfig, svcErr := drs.themeMgtService.GetTheme(ctx, app.ThemeID)
 		if svcErr != nil {
 			if svcErr.Code == thememgt.ErrorThemeNotFound.Code {
 				drs.logger.ErrorWithContext(ctx, "Data integrity issue: application references non-existent theme",
@@ -133,7 +133,7 @@ func (drs *designResolveService) ResolveDesign(
 			return nil, &serviceerror.InternalServerError
 		}
 
-		layoutConfig, svcErr := drs.layoutMgtService.GetLayout(app.LayoutID)
+		layoutConfig, svcErr := drs.layoutMgtService.GetLayout(ctx, app.LayoutID)
 		if svcErr != nil {
 			if svcErr.Code == layoutmgt.ErrorLayoutNotFound.Code {
 				drs.logger.ErrorWithContext(ctx, "Data integrity issue: application references non-existent layout",

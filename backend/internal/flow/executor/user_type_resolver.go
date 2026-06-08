@@ -293,7 +293,7 @@ func (u *userTypeResolver) handleUserOnboardingFlows(ctx *core.NodeContext,
 		options = append(options, schema.Name)
 	}
 
-	u.promptUserSelection(execResp, options)
+	u.promptUserSelection(ctx.Context, execResp, options)
 	return execResp, nil
 }
 
@@ -485,7 +485,7 @@ func (u *userTypeResolver) resolveUserTypeFromMultipleAllowed(ctx context.Contex
 		"Prompting for user type selection as multiple user types are available for self registration",
 		log.Any("userTypes", selfRegUserTypes))
 
-	u.promptUserSelection(execResp, selfRegUserTypes)
+	u.promptUserSelection(ctx, execResp, selfRegUserTypes)
 	return nil
 }
 
@@ -513,8 +513,9 @@ func (u *userTypeResolver) getEntityTypeAndOU(
 }
 
 // promptUserSelection prompts the user to select a user type from the provided options.
-func (u *userTypeResolver) promptUserSelection(execResp *common.ExecutorResponse, options []string) {
-	u.logger.Debug("Prompting user for user type selection", log.Any("userTypes", options))
+func (u *userTypeResolver) promptUserSelection(
+	ctx context.Context, execResp *common.ExecutorResponse, options []string) {
+	u.logger.DebugWithContext(ctx, "Prompting user for user type selection", log.Any("userTypes", options))
 
 	execResp.Status = common.ExecUserInputRequired
 

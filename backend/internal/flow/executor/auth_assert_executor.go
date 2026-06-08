@@ -147,7 +147,7 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 
 	// Generate assertion from engaged authenticators
 	if len(authenticatorRefs) > 0 {
-		assertionResult, svcErr := a.authAssertGenerator.GenerateAssertion(authenticatorRefs)
+		assertionResult, svcErr := a.authAssertGenerator.GenerateAssertion(ctx.Context, authenticatorRefs)
 		if svcErr != nil {
 			if svcErr.Type == serviceerror.ServerErrorType {
 				logger.ErrorWithContext(ctx.Context, "Failed to generate auth assertion",
@@ -366,7 +366,7 @@ func (a *authAssertExecutor) resolveUserAttributes(ctx *core.NodeContext, reques
 				fetchedAttributes, err = a.getUserAttributesFromAuthnProvider(ctx.Context,
 					requestedAttributes, metadata, ctx.AuthUser)
 			} else {
-				fetchedAttributes, err = a.getUserAttributesFromUserProvider(ctx.AuthenticatedUser.UserID)
+				fetchedAttributes, err = a.getUserAttributesFromUserProvider(ctx.Context, ctx.AuthenticatedUser.UserID)
 			}
 			if err != nil {
 				return nil, err
@@ -398,7 +398,7 @@ func (a *authAssertExecutor) appendComputedAttributes(
 
 	// Fetch all user groups once if either groups or roles are requested.
 	if (groupsRequested || rolesRequested) && ctx.AuthenticatedUser.UserID != "" {
-		allGroups, err := a.fetchAllUserGroups(ctx.AuthenticatedUser.UserID)
+		allGroups, err := a.fetchAllUserGroups(ctx.Context, ctx.AuthenticatedUser.UserID)
 		if err != nil {
 			return err
 		}
@@ -467,27 +467,28 @@ func (a *authAssertExecutor) getUserAttributesFromAuthnProvider(ctx context.Cont
 }
 
 // getUserAttributesFromUserProvider retrieves user attributes from the user provider.
-func (a *authAssertExecutor) getUserAttributesFromUserProvider(userID string) (
+func (a *authAssertExecutor) getUserAttributesFromUserProvider(ctx context.Context, userID string) (
 	map[string]interface{}, error) {
 	logger := a.logger.With(log.MaskedString(log.LoggerKeyUserID, userID))
 
 	var jsonAttrs json.RawMessage
 	res, err := a.entityProvider.GetEntity(userID)
 	if err != nil {
-		logger.Error("Failed to fetch user attributes",
+		logger.ErrorWithContext(ctx, "Failed to fetch user attributes",
 			log.MaskedString(log.LoggerKeyUserID, userID), log.Any("error", err))
 		return nil, errors.New("something went wrong while fetching user attributes: " + err.Error())
 	}
 	jsonAttrs = res.Attributes
 
 	if len(jsonAttrs) == 0 {
-		logger.Error("No user attributes returned")
+		logger.ErrorWithContext(ctx, "No user attributes returned")
 		return nil, errors.New("no user attributes returned")
 	}
 
 	var attrs map[string]interface{}
 	if err := json.Unmarshal(jsonAttrs, &attrs); err != nil {
-		logger.Error("Failed to unmarshal user attributes", log.MaskedString(log.LoggerKeyUserID, userID),
+		logger.ErrorWithContext(ctx, "Failed to unmarshal user attributes",
+			log.MaskedString(log.LoggerKeyUserID, userID),
 			log.Error(err))
 		return nil, errors.New("something went wrong while unmarshalling user attributes: " + err.Error())
 	}
@@ -529,14 +530,15 @@ func (a *authAssertExecutor) appendOUDetailsToClaims(
 
 // fetchAllUserGroups retrieves all groups a user belongs to, including groups inherited through
 // nested group membership.
-func (a *authAssertExecutor) fetchAllUserGroups(userID string) ([]entityprovider.EntityGroup, error) {
+func (a *authAssertExecutor) fetchAllUserGroups(
+	ctx context.Context, userID string) ([]entityprovider.EntityGroup, error) {
 	if a.entityProvider == nil || userID == "" {
 		return nil, nil
 	}
 
 	groups, err := a.entityProvider.GetTransitiveEntityGroups(userID)
 	if err != nil {
-		a.logger.Error("Failed to fetch transitive user groups",
+		a.logger.ErrorWithContext(ctx, "Failed to fetch transitive user groups",
 			log.MaskedString(log.LoggerKeyUserID, userID), log.Any("error", err))
 		return nil, errors.New("something went wrong while fetching user groups: " + err.Error())
 	}

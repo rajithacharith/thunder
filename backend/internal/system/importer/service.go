@@ -144,15 +144,19 @@ type resourceServerAdapter interface {
 }
 
 type themeAdapter interface {
-	CreateTheme(theme thememgt.CreateThemeRequestWithID) (*thememgt.Theme, *serviceerror.ServiceError)
-	GetTheme(id string) (*thememgt.Theme, *serviceerror.ServiceError)
-	UpdateTheme(id string, theme thememgt.UpdateThemeRequest) (*thememgt.Theme, *serviceerror.ServiceError)
+	CreateTheme(ctx context.Context,
+		theme thememgt.CreateThemeRequestWithID) (*thememgt.Theme, *serviceerror.ServiceError)
+	GetTheme(ctx context.Context, id string) (*thememgt.Theme, *serviceerror.ServiceError)
+	UpdateTheme(ctx context.Context,
+		id string, theme thememgt.UpdateThemeRequest) (*thememgt.Theme, *serviceerror.ServiceError)
 }
 
 type layoutAdapter interface {
-	CreateLayout(layout layoutmgt.CreateLayoutRequest) (*layoutmgt.Layout, *serviceerror.ServiceError)
-	GetLayout(id string) (*layoutmgt.Layout, *serviceerror.ServiceError)
-	UpdateLayout(id string, layout layoutmgt.UpdateLayoutRequest) (*layoutmgt.Layout, *serviceerror.ServiceError)
+	CreateLayout(ctx context.Context,
+		layout layoutmgt.CreateLayoutRequest) (*layoutmgt.Layout, *serviceerror.ServiceError)
+	GetLayout(ctx context.Context, id string) (*layoutmgt.Layout, *serviceerror.ServiceError)
+	UpdateLayout(ctx context.Context,
+		id string, layout layoutmgt.UpdateLayoutRequest) (*layoutmgt.Layout, *serviceerror.ServiceError)
 }
 
 type userAdapter interface {
@@ -164,7 +168,7 @@ type userAdapter interface {
 }
 
 type translationAdapter interface {
-	SetTranslationOverrides(language string, translations map[string]map[string]string) (
+	SetTranslationOverrides(ctx context.Context, language string, translations map[string]map[string]string) (
 		*i18nmgt.LanguageTranslationsResponse,
 		*serviceerror.ServiceError)
 }
@@ -385,13 +389,13 @@ func (s *importService) importDocument(
 	case resourceTypeResourceServer:
 		return s.importResourceServer(ctx, doc, options, dryRun)
 	case resourceTypeTheme:
-		return s.importTheme(doc, options, dryRun)
+		return s.importTheme(ctx, doc, options, dryRun)
 	case resourceTypeLayout:
-		return s.importLayout(doc, options, dryRun)
+		return s.importLayout(ctx, doc, options, dryRun)
 	case resourceTypeUser:
 		return s.importUser(ctx, doc, options, dryRun)
 	case resourceTypeTranslation:
-		return s.importTranslation(doc, dryRun)
+		return s.importTranslation(ctx, doc, dryRun)
 	case resourceTypeAgent:
 		return s.importAgent(ctx, doc, options, dryRun, flowIDAliases)
 	default:

@@ -155,14 +155,14 @@ func (s *userInfoService) buildResponseFromClaims(
 	tokenClaims := accessTokenClaims.Claims
 	sub := accessTokenClaims.Sub
 
-	if svcErr := s.validateGrantType(tokenClaims); svcErr != nil {
+	if svcErr := s.validateGrantType(ctx, tokenClaims); svcErr != nil {
 		return nil, svcErr
 	}
 
 	scopes := s.extractScopes(tokenClaims)
 
 	// Validate that the 'openid' scope is present
-	if svcErr := s.validateOpenIDScope(scopes); svcErr != nil {
+	if svcErr := s.validateOpenIDScope(ctx, scopes); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -187,7 +187,7 @@ func (s *userInfoService) buildResponseFromClaims(
 		return nil, &serviceerror.InternalServerError
 	}
 
-	response, svcErr := s.buildUserInfoResponse(sub, scopes, userAttributes, oauthApp, tokenClaims)
+	response, svcErr := s.buildUserInfoResponse(ctx, sub, scopes, userAttributes, oauthApp, tokenClaims)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -234,7 +234,7 @@ func (s *userInfoService) generateJWEUserInfo(
 		return nil, &serviceerror.InternalServerError
 	}
 
-	compact, svcErr := s.jweService.Encrypt(
+	compact, svcErr := s.jweService.Encrypt(ctx,
 		payload, rpKey,
 		jwe.KeyEncAlgorithm(cfg.EncryptionAlg),
 		jwe.ContentEncAlgorithm(cfg.EncryptionEnc),
@@ -269,7 +269,7 @@ func (s *userInfoService) generateNestedJWTUserInfo(
 		return nil, svcErr
 	}
 
-	compact, svcErr := s.jweService.Encrypt(
+	compact, svcErr := s.jweService.Encrypt(ctx,
 		[]byte(jwsResp.JWTBody), rpKey,
 		jwe.KeyEncAlgorithm(cfg.EncryptionAlg),
 		jwe.ContentEncAlgorithm(cfg.EncryptionEnc),
@@ -336,7 +336,8 @@ func (s *userInfoService) generateJWSUserInfo(
 }
 
 // validateGrantType validates that the token was not issued using client_credentials grant.
-func (s *userInfoService) validateGrantType(claims map[string]interface{}) *serviceerror.ServiceError {
+func (s *userInfoService) validateGrantType(
+	ctx context.Context, claims map[string]interface{}) *serviceerror.ServiceError {
 	grantTypeValue, ok := claims["grant_type"]
 	if !ok {
 		return nil
@@ -348,7 +349,7 @@ func (s *userInfoService) validateGrantType(claims map[string]interface{}) *serv
 	}
 
 	if constants.GrantType(grantTypeString) == constants.GrantTypeClientCredentials {
-		s.logger.Debug("UserInfo endpoint called with client_credentials grant token",
+		s.logger.DebugWithContext(ctx, "UserInfo endpoint called with client_credentials grant token",
 			log.String("grant_type", grantTypeString))
 		return &errorClientCredentialsNotSupported
 	}
@@ -372,9 +373,9 @@ func (s *userInfoService) extractScopes(claims map[string]interface{}) []string 
 }
 
 // validateOpenIDScope validates that the access token contains the required 'openid' scope.
-func (s *userInfoService) validateOpenIDScope(scopes []string) *serviceerror.ServiceError {
+func (s *userInfoService) validateOpenIDScope(ctx context.Context, scopes []string) *serviceerror.ServiceError {
 	if !slices.Contains(scopes, constants.ScopeOpenID) {
-		s.logger.Debug("UserInfo request missing required 'openid' scope",
+		s.logger.DebugWithContext(ctx, "UserInfo request missing required 'openid' scope",
 			log.String("scopes", tokenservice.JoinScopes(scopes)))
 		return &errorInsufficientScope
 	}
@@ -401,7 +402,7 @@ func (s *userInfoService) getOAuthApp(
 
 // buildUserInfoResponse builds the final UserInfo response from sub, scopes, and user attributes.
 // It also processes any explicit claims request embedded in the access token.
-func (s *userInfoService) buildUserInfoResponse(
+func (s *userInfoService) buildUserInfoResponse(ctx context.Context,
 	sub string,
 	scopes []string,
 	userAttributes map[string]interface{},
@@ -414,7 +415,7 @@ func (s *userInfoService) buildUserInfoResponse(
 
 	// Build claims from scopes and explicit claims request
 	// Extract only the UserInfo claims map from the access token
-	claimsRequest, svcErr := s.extractClaimsRequest(tokenClaims)
+	claimsRequest, svcErr := s.extractClaimsRequest(ctx, tokenClaims)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -448,7 +449,7 @@ func (s *userInfoService) buildUserInfoResponse(
 }
 
 // extractClaimsRequest extracts the claims request from the access token if present.
-func (s *userInfoService) extractClaimsRequest(
+func (s *userInfoService) extractClaimsRequest(ctx context.Context,
 	tokenClaims map[string]interface{},
 ) (*model.ClaimsRequest, *serviceerror.ServiceError) {
 	claimsRequestStr, ok := tokenClaims[constants.ClaimClaimsRequest].(string)
@@ -458,7 +459,7 @@ func (s *userInfoService) extractClaimsRequest(
 
 	claimsRequest, err := oauth2utils.ParseClaimsRequest(claimsRequestStr)
 	if err != nil {
-		s.logger.Error("Failed to parse claims request from access token", log.Error(err))
+		s.logger.ErrorWithContext(ctx, "Failed to parse claims request from access token", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 

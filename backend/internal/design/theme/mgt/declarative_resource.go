@@ -64,7 +64,7 @@ func (e *themeExporter) GetAllResourceIDs(ctx context.Context) ([]string, *servi
 	offset := 0
 
 	for {
-		themeList, err := e.service.GetThemeList(pageSize, offset)
+		themeList, err := e.service.GetThemeList(ctx, pageSize, offset)
 		if err != nil {
 			return nil, err
 		}
@@ -90,7 +90,7 @@ func (e *themeExporter) GetAllResourceIDs(ctx context.Context) ([]string, *servi
 func (e *themeExporter) GetResourceByID(ctx context.Context, id string) (
 	interface{}, string, *serviceerror.ServiceError,
 ) {
-	theme, err := e.service.GetTheme(id)
+	theme, err := e.service.GetTheme(ctx, id)
 	if err != nil {
 		return nil, "", err
 	}

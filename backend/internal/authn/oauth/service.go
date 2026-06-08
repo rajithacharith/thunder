@@ -45,7 +45,7 @@ type OAuthAuthnCoreServiceInterface interface {
 		*TokenResponse, *serviceerror.ServiceError)
 	FetchUserInfo(ctx context.Context, idpID, accessToken string) (
 		map[string]interface{}, *serviceerror.ServiceError)
-	GetInternalUser(sub string) (*entityprovider.Entity, *serviceerror.ServiceError)
+	GetInternalUser(ctx context.Context, sub string) (*entityprovider.Entity, *serviceerror.ServiceError)
 	GetOAuthClientConfig(ctx context.Context, idpID string) (*OAuthClientConfig, *serviceerror.ServiceError)
 	Authenticate(ctx context.Context, idpID, code string) (*common.FederatedAuthResult, *serviceerror.ServiceError)
 }
@@ -53,8 +53,8 @@ type OAuthAuthnCoreServiceInterface interface {
 // OAuthAuthnServiceInterface defines the contract for OAuth based authenticator services.
 type OAuthAuthnServiceInterface interface {
 	OAuthAuthnCoreServiceInterface
-	ValidateTokenResponse(idpID string, tokenResp *TokenResponse) *serviceerror.ServiceError
-	FetchUserInfoWithClientConfig(oAuthClientConfig *OAuthClientConfig, accessToken string) (
+	ValidateTokenResponse(ctx context.Context, idpID string, tokenResp *TokenResponse) *serviceerror.ServiceError
+	FetchUserInfoWithClientConfig(ctx context.Context, oAuthClientConfig *OAuthClientConfig, accessToken string) (
 		map[string]interface{}, *serviceerror.ServiceError)
 }
 
@@ -172,7 +172,7 @@ func (s *oAuthAuthnService) ExchangeCodeForToken(ctx context.Context, idpID, cod
 		return nil, &serviceerror.InternalServerError
 	}
 
-	httpReq, svcErr := buildTokenRequest(oAuthClientConfig, code, logger)
+	httpReq, svcErr := buildTokenRequest(ctx, oAuthClientConfig, code, logger)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -183,7 +183,7 @@ func (s *oAuthAuthnService) ExchangeCodeForToken(ctx context.Context, idpID, cod
 	}
 
 	if validateResponse {
-		svcErr = s.ValidateTokenResponse(idpID, tokenResp)
+		svcErr = s.ValidateTokenResponse(ctx, idpID, tokenResp)
 		if svcErr != nil {
 			return nil, svcErr
 		}
@@ -195,17 +195,17 @@ func (s *oAuthAuthnService) ExchangeCodeForToken(ctx context.Context, idpID, cod
 // ValidateTokenResponse validates the token response returned by the identity provider.
 // ExchangeCodeForToken method calls this method to validate the token response if validateResponse is set
 // to true. Hence generally you may not need to call this method explicitly.
-func (s *oAuthAuthnService) ValidateTokenResponse(
+func (s *oAuthAuthnService) ValidateTokenResponse(ctx context.Context,
 	idpID string, tokenResp *TokenResponse) *serviceerror.ServiceError {
 	logger := s.logger.With(log.String("idpId", idpID))
-	logger.Debug("Validating token response")
+	logger.DebugWithContext(ctx, "Validating token response")
 
 	if tokenResp == nil {
-		logger.Debug("Empty token response received from identity provider")
+		logger.DebugWithContext(ctx, "Empty token response received from identity provider")
 		return &ErrorInvalidTokenResponse
 	}
 	if tokenResp.AccessToken == "" {
-		logger.Debug("Access token is empty in the token response")
+		logger.DebugWithContext(ctx, "Access token is empty in the token response")
 		return &ErrorInvalidTokenResponse
 	}
 
@@ -220,25 +220,25 @@ func (s *oAuthAuthnService) FetchUserInfo(ctx context.Context, idpID, accessToke
 		return nil, svcErr
 	}
 
-	return s.FetchUserInfoWithClientConfig(oAuthClientConfig, accessToken)
+	return s.FetchUserInfoWithClientConfig(ctx, oAuthClientConfig, accessToken)
 }
 
 // FetchUserInfoWithClientConfig retrieves user information using the provided OAuth client configuration.
-func (s *oAuthAuthnService) FetchUserInfoWithClientConfig(oAuthClientConfig *OAuthClientConfig,
+func (s *oAuthAuthnService) FetchUserInfoWithClientConfig(ctx context.Context, oAuthClientConfig *OAuthClientConfig,
 	accessToken string) (map[string]interface{}, *serviceerror.ServiceError) {
 	logger := s.logger
-	logger.Debug("Fetching user info")
+	logger.DebugWithContext(ctx, "Fetching user info")
 
 	if strings.TrimSpace(accessToken) == "" {
 		return nil, &ErrorEmptyAccessToken
 	}
 
 	if oAuthClientConfig.OAuthEndpoints.UserInfoEndpoint == "" {
-		logger.Error("User info endpoint is not configured for the identity provider")
+		logger.ErrorWithContext(ctx, "User info endpoint is not configured for the identity provider")
 		return nil, &serviceerror.InternalServerError
 	}
 
-	httpReq, svcErr := buildUserInfoRequest(oAuthClientConfig.OAuthEndpoints.UserInfoEndpoint,
+	httpReq, svcErr := buildUserInfoRequest(ctx, oAuthClientConfig.OAuthEndpoints.UserInfoEndpoint,
 		accessToken, logger)
 	if svcErr != nil {
 		return nil, svcErr
@@ -254,9 +254,10 @@ func (s *oAuthAuthnService) FetchUserInfoWithClientConfig(oAuthClientConfig *OAu
 }
 
 // GetInternalUser retrieves the internal user based on the external subject identifier.
-func (s *oAuthAuthnService) GetInternalUser(sub string) (*entityprovider.Entity, *serviceerror.ServiceError) {
+func (s *oAuthAuthnService) GetInternalUser(
+	ctx context.Context, sub string) (*entityprovider.Entity, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.MaskedString("sub", sub))
-	logger.Debug("Retrieving internal user for the given sub claim")
+	logger.DebugWithContext(ctx, "Retrieving internal user for the given sub claim")
 
 	if strings.TrimSpace(sub) == "" {
 		return nil, &ErrorEmptySubClaim
@@ -268,20 +269,20 @@ func (s *oAuthAuthnService) GetInternalUser(sub string) (*entityprovider.Entity,
 	userID, upErr := s.entityProvider.IdentifyEntity(filters)
 	if upErr != nil {
 		if upErr.Code == entityprovider.ErrorCodeEntityNotFound {
-			logger.Debug("No user found for the provided sub claim")
+			logger.DebugWithContext(ctx, "No user found for the provided sub claim")
 			return nil, &common.ErrorUserNotFound
 		}
 		if upErr.Code == entityprovider.ErrorCodeAmbiguousEntity {
-			logger.Debug("Multiple users found for the provided sub claim")
+			logger.DebugWithContext(ctx, "Multiple users found for the provided sub claim")
 			return nil, &common.ErrorAmbiguousUser
 		}
-		logger.Error("Error while identifying user", log.String("errorCode", string(upErr.Code)),
+		logger.ErrorWithContext(ctx, "Error while identifying user", log.String("errorCode", string(upErr.Code)),
 			log.String("description", upErr.Description))
 		return nil, &serviceerror.InternalServerError
 	}
 
 	if userID == nil {
-		logger.Debug("User id is nil, no user found for the provided sub claim")
+		logger.DebugWithContext(ctx, "User id is nil, no user found for the provided sub claim")
 		return nil, &common.ErrorUserNotFound
 	}
 
@@ -290,7 +291,7 @@ func (s *oAuthAuthnService) GetInternalUser(sub string) (*entityprovider.Entity,
 		if upErr.Code == entityprovider.ErrorCodeEntityNotFound {
 			return nil, &common.ErrorUserNotFound
 		}
-		logger.Error("Error while retrieving user", log.String("errorCode", string(upErr.Code)),
+		logger.ErrorWithContext(ctx, "Error while retrieving user", log.String("errorCode", string(upErr.Code)),
 			log.String("description", upErr.Description))
 		return nil, &serviceerror.InternalServerError
 	}
@@ -331,7 +332,7 @@ func (s *oAuthAuthnService) Authenticate(ctx context.Context, idpID, code string
 		Sub:    sub,
 		Claims: userInfo,
 	}
-	user, svcErr := s.GetInternalUser(sub)
+	user, svcErr := s.GetInternalUser(ctx, sub)
 	if svcErr != nil {
 		if svcErr.Code == common.ErrorUserNotFound.Code {
 			return result, nil

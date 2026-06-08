@@ -19,6 +19,7 @@
 package oauth
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -90,7 +91,7 @@ func parseIDPConfig(idp *idpPkg.IDPDTO) (*OAuthClientConfig, error) {
 }
 
 // buildTokenRequest constructs the HTTP request to exchange the authorization code for tokens.
-func buildTokenRequest(oAuthClientConfig *OAuthClientConfig, code string, logger *log.Logger) (
+func buildTokenRequest(ctx context.Context, oAuthClientConfig *OAuthClientConfig, code string, logger *log.Logger) (
 	*http.Request, *serviceerror.ServiceError) {
 	form := url.Values{}
 	form.Set(oauth2const.RequestParamClientID, oAuthClientConfig.ClientID)
@@ -102,7 +103,7 @@ func buildTokenRequest(oAuthClientConfig *OAuthClientConfig, code string, logger
 	httpReq, err := http.NewRequest(http.MethodPost, oAuthClientConfig.OAuthEndpoints.TokenEndpoint,
 		strings.NewReader(form.Encode()))
 	if err != nil {
-		logger.Error("Failed to create token request", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to create token request", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -144,11 +145,11 @@ func sendTokenRequest(httpReq *http.Request, httpClient httpservice.HTTPClientIn
 }
 
 // buildUserInfoRequest constructs the HTTP request to fetch user information from the identity provider.
-func buildUserInfoRequest(userInfoEndpoint string, accessToken string, logger *log.Logger) (
+func buildUserInfoRequest(ctx context.Context, userInfoEndpoint string, accessToken string, logger *log.Logger) (
 	*http.Request, *serviceerror.ServiceError) {
 	req, err := http.NewRequest(http.MethodGet, userInfoEndpoint, nil)
 	if err != nil {
-		logger.Error("Failed to create userinfo request", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to create userinfo request", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 

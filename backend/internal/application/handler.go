@@ -19,6 +19,7 @@
 package application
 
 import (
+	"context"
 	"net/http"
 
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
@@ -121,7 +122,7 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
 	if len(createdAppDTO.InboundAuthConfig) > 0 {
-		success := ah.processInboundAuthConfig(logger, createdAppDTO, &returnApp)
+		success := ah.processInboundAuthConfig(ctx, logger, createdAppDTO, &returnApp)
 		if !success {
 			errResp := apierror.ErrorResponse{
 				Code:        serviceerror.InternalServerError.Code,
@@ -369,7 +370,7 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
 	if len(updatedAppDTO.InboundAuthConfig) > 0 {
-		success := ah.processInboundAuthConfig(logger, updatedAppDTO, &returnApp)
+		success := ah.processInboundAuthConfig(ctx, logger, updatedAppDTO, &returnApp)
 		if !success {
 			errResp := apierror.ErrorResponse{
 				Code:        serviceerror.InternalServerError.Code,
@@ -408,25 +409,26 @@ func (ah *applicationHandler) HandleApplicationDeleteRequest(w http.ResponseWrit
 }
 
 // processInboundAuthConfig prepares the response for OAuth app configuration.
-func (ah *applicationHandler) processInboundAuthConfig(logger *log.Logger, appDTO *model.ApplicationDTO,
+func (ah *applicationHandler) processInboundAuthConfig(
+	ctx context.Context, logger *log.Logger, appDTO *model.ApplicationDTO,
 	returnApp *model.ApplicationCompleteResponse) bool {
 	if len(appDTO.InboundAuthConfig) > 0 {
 		if appDTO.InboundAuthConfig[0].Type != inboundmodel.OAuthInboundAuthType {
-			logger.Error("Unsupported inbound authentication type returned",
+			logger.ErrorWithContext(ctx, "Unsupported inbound authentication type returned",
 				log.String("type", string(appDTO.InboundAuthConfig[0].Type)))
 
 			return false
 		}
 
 		if appDTO.InboundAuthConfig[0].OAuthConfig == nil {
-			logger.Error("OAuth application configuration is nil")
+			logger.ErrorWithContext(ctx, "OAuth application configuration is nil")
 			return false
 		}
 
 		returnInboundAuthConfigs := make([]inboundmodel.InboundAuthConfigWithSecret, 0, len(appDTO.InboundAuthConfig))
 		for _, config := range appDTO.InboundAuthConfig {
 			if config.OAuthConfig == nil {
-				logger.Error("OAuth application configuration is nil")
+				logger.ErrorWithContext(ctx, "OAuth application configuration is nil")
 				return false
 			}
 			redirectURIs := config.OAuthConfig.RedirectURIs
