@@ -218,6 +218,11 @@ func (rs *resourceService) CreateResourceServer(
 		}
 	}
 
+	// Set default type if not provided
+	if resourceServer.Type == "" {
+		resourceServer.Type = ResourceServerTypeCustom
+	}
+
 	// Set default delimiter if not provided
 	if resourceServer.Delimiter == "" {
 		resourceServer.Delimiter = rs.defaultDelimiter
@@ -266,6 +271,7 @@ func (rs *resourceService) CreateResourceServer(
 			Description: resourceServer.Description,
 			Handle:      resourceServer.Handle,
 			Identifier:  resourceServer.Identifier,
+			Type:        resourceServer.Type,
 			OUID:        resourceServer.OUID,
 			Delimiter:   resourceServer.Delimiter,
 		}
@@ -393,6 +399,9 @@ func (rs *resourceService) UpdateResourceServer(
 	// Delimiter is always preserved from the existing record
 	resourceServer.Delimiter = existingResServer.Delimiter
 
+	// Type is immutable and always preserved from the existing record
+	resourceServer.Type = existingResServer.Type
+
 	// Handle is immutable after creation. Preserve existing when omitted; reject any change.
 	if resourceServer.Handle == "" {
 		resourceServer.Handle = existingResServer.Handle
@@ -450,6 +459,7 @@ func (rs *resourceService) UpdateResourceServer(
 			Description: resourceServer.Description,
 			Handle:      resourceServer.Handle,
 			Identifier:  resourceServer.Identifier,
+			Type:        resourceServer.Type,
 			OUID:        resourceServer.OUID,
 			Delimiter:   resourceServer.Delimiter,
 		}
@@ -1360,6 +1370,9 @@ func (rs *resourceService) validateResourceServerCreate(resourceServer ResourceS
 		return &ErrorInvalidRequestFormat
 	}
 	if resourceServer.OUID == "" {
+		return &ErrorInvalidRequestFormat
+	}
+	if resourceServer.Type != "" && !resourceServer.Type.IsValid() {
 		return &ErrorInvalidRequestFormat
 	}
 	if resourceServer.Delimiter != "" {

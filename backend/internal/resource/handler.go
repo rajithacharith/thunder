@@ -77,6 +77,7 @@ func (h *resourceHandler) HandleResourceServerPostRequest(w http.ResponseWriter,
 		Description: sanitized.Description,
 		Handle:      sanitized.Handle,
 		Identifier:  sanitized.Identifier,
+		Type:        sanitized.Type,
 		OUID:        sanitized.OUID,
 		Delimiter:   sanitized.Delimiter,
 	}
@@ -547,6 +548,7 @@ func sanitizeCreateResourceServerRequest(req *CreateResourceServerRequest) Creat
 		Description: sysutils.SanitizeString(req.Description),
 		Handle:      sysutils.SanitizeString(req.Handle),
 		Identifier:  sysutils.SanitizeString(req.Identifier),
+		Type:        req.Type,
 		OUID:        sysutils.SanitizeString(req.OUID),
 		Delimiter:   sysutils.SanitizeString(req.Delimiter),
 	}
@@ -609,12 +611,17 @@ func sanitizeUpdateActionRequest(req *UpdateActionRequest) UpdateActionRequest {
 
 // toResourceServerResponse transforms a ResourceServer to ResourceServerResponse.
 func toResourceServerResponse(rs *ResourceServer) *ResourceServerResponse {
+	resType := rs.Type
+	if resType == "" {
+		resType = ResourceServerTypeCustom
+	}
 	return &ResourceServerResponse{
 		ID:          rs.ID,
 		Name:        rs.Name,
 		Description: rs.Description,
 		Handle:      rs.Handle,
 		Identifier:  rs.Identifier,
+		Type:        resType,
 		OUID:        rs.OUID,
 		Delimiter:   rs.Delimiter,
 		IsReadOnly:  rs.IsReadOnly,

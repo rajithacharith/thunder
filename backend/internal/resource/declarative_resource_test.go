@@ -295,6 +295,85 @@ ou_id: "ou1"
 	assert.Contains(t, err.Error(), "name cannot be empty")
 }
 
+func TestParseToResourceServer_TypeMCP(t *testing.T) {
+	yamlData := []byte(`
+id: "rs1"
+name: "Test Server"
+type: "MCP"
+ou_id: "ou1"
+`)
+
+	dto, err := parseToResourceServer(yamlData)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, dto)
+	assert.Equal(t, ResourceServerTypeMCP, dto.Type)
+}
+
+func TestParseToResourceServer_TypeDefaultsToCustom(t *testing.T) {
+	yamlData := []byte(`
+id: "rs1"
+name: "Test Server"
+ou_id: "ou1"
+`)
+
+	dto, err := parseToResourceServer(yamlData)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, dto)
+	assert.Equal(t, ResourceServerTypeCustom, dto.Type)
+}
+
+func TestParseToResourceServer_InvalidType(t *testing.T) {
+	yamlData := []byte(`
+id: "rs1"
+name: "Test Server"
+type: "BOGUS"
+ou_id: "ou1"
+`)
+
+	dto, err := parseToResourceServer(yamlData)
+
+	assert.Error(t, err)
+	assert.Nil(t, dto)
+	assert.Contains(t, err.Error(), "invalid type")
+}
+
+func TestParseAndValidateResourceServerWrapper_TypeMCP(t *testing.T) {
+	yamlData := []byte(`
+id: "rs1"
+name: "Test Server"
+handle: "test-api"
+type: "MCP"
+ou_id: "ou1"
+`)
+
+	parser := parseAndValidateResourceServerWrapper(nil)
+	result, err := parser(yamlData)
+
+	assert.NoError(t, err)
+	rs, ok := result.(*ResourceServer)
+	assert.True(t, ok)
+	assert.Equal(t, ResourceServerTypeMCP, rs.Type)
+}
+
+func TestParseAndValidateResourceServerWrapper_InvalidType(t *testing.T) {
+	yamlData := []byte(`
+id: "rs1"
+name: "Test Server"
+handle: "test-api"
+type: "BOGUS"
+ou_id: "ou1"
+`)
+
+	parser := parseAndValidateResourceServerWrapper(nil)
+	result, err := parser(yamlData)
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "invalid type")
+}
+
 func TestBuildPermissionString(t *testing.T) {
 	resourceHandleMap := map[string]*Resource{
 		"users": {
