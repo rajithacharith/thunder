@@ -117,6 +117,7 @@ func (s *parService) HandlePushedAuthorizationRequest(
 		return nil, errResp.Error, errResp.ErrorDescription
 	}
 
+	redirectURIProvided := redirectURI != ""
 	if redirectURI == "" && len(oauthApp.RedirectURIs) == 1 {
 		redirectURI = oauthApp.RedirectURIs[0]
 	}
@@ -125,6 +126,7 @@ func (s *parService) HandlePushedAuthorizationRequest(
 		State:               params[oauth2const.RequestParamState],
 		ClientID:            oauthApp.ClientID,
 		RedirectURI:         redirectURI,
+		RedirectURIProvided: redirectURIProvided,
 		ResponseType:        params[oauth2const.RequestParamResponseType],
 		StandardScopes:      oidcScopes,
 		PermissionScopes:    nonOidcScopes,
