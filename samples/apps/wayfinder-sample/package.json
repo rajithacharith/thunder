@@ -3,9 +3,15 @@
   "private": true,
   "version": "0.43.0",
   "description": "Wayfinder travel sample demonstrating an AI agent with its own ThunderID-managed identity.",
+  "workspaces": [
+    "backend",
+    "ai-agent",
+    "frontend"
+  ],
   "scripts": {
-    "install:all": "npm --prefix backend install && npm --prefix ai-agent install && npm --prefix frontend install",
-    "build:all": "npm --prefix frontend run build",
-    "start:all": "bash start.sh"
+    "dev": "concurrently \"npm --workspace backend run start\" \"npm --workspace ai-agent run start\" \"npm --workspace frontend run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
   }
 }

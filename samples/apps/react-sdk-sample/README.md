@@ -59,13 +59,9 @@ Open `dist/runtime.json` and set the `clientId` to the value you used in `thunde
 ### 3. Start the Application
 
 ```bash
-./start.sh
+npm install
+npm start
 ```
-
-The start script will:
-- Serve the application on port 3000
-- Use HTTPS if SSL certificates are present in the `dist` folder
-- Fall back to HTTP if certificates are not found
 
 ### 4. Access the Application
 

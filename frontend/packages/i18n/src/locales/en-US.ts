@@ -199,11 +199,7 @@ const translations = {
     'welcome.wayfinderSampleSetup.steps.run.title': 'Run the Sample',
     'welcome.wayfinderSampleSetup.steps.run.description':
       'Start all Wayfinder services from the extracted sample directory.',
-    'welcome.wayfinderSampleDownload.recommendedLabel': 'Recommended for this device',
-    'welcome.wayfinderSampleDownload.selectedLabel': 'Selected download',
-    'welcome.wayfinderSampleDownload.downloadButton': 'Download for {{osLabel}}',
-    'welcome.wayfinderSampleDownload.otherPlatforms': 'Other download options',
-    'welcome.wayfinderSampleDownload.hidePlatforms': 'Hide other platforms',
+    'welcome.wayfinderSampleDownload.downloadButton': 'Download',
 
     'welcome.wayfinderFolderImport.actions.selectFolder': 'Select Wayfinder Sample Folder',
     'welcome.wayfinderFolderImport.actions.change': 'Change',
