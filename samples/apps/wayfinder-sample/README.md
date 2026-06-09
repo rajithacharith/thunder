@@ -76,7 +76,7 @@ wayfinder-sample/
 └── README.md
 ```
 
-Each subdirectory has its own README with the environment variables it reads and a `npm start` command.
+Each subdirectory has its own README with the environment variables it reads.
 
 ## Prerequisites
 
@@ -193,13 +193,13 @@ The agent secret defaults to `wayfinder-agent-secret` (matching `thunderid.env`)
 
 ## Run
 
-In three terminals:
+From the sample root, install all workspace dependencies:
 
 ```bash
 cd backend  && npm install && npm run seed && npm start   # http://localhost:8787 (REST + /mcp)
 cd ai-agent && npm install && npm start                   # http://localhost:8790/chat
 cd frontend && npm install && npm run dev                 # http://localhost:5173
-```text
+```
 
 The Wayfinder server hosts both the REST API on `/api/*` and the MCP server on `/mcp`. `npm run seed` initializes the local SQLite database with sample flights, hotels, and trips. Run it once on first setup.
 
