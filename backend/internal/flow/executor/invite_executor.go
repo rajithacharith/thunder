@@ -179,6 +179,9 @@ func (e *inviteExecutor) generateInviteLink(ctx *core.NodeContext, inviteToken s
 	if ctx.EntityID != "" {
 		queryParams.Set(oauth2const.AppID, ctx.EntityID)
 	}
+	if authReqID, ok := ctx.RuntimeData[common.RuntimeKeyCIBAAuthReqID]; ok && authReqID != "" {
+		queryParams.Set(oauth2const.RequestParamAuthReqID, authReqID)
+	}
 
 	if baseURL, ok := ctx.NodeProperties[propertyKeyInviteBaseURL].(string); ok && baseURL != "" {
 		if u, err := url.Parse(baseURL); err == nil {

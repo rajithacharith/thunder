@@ -317,6 +317,41 @@ func (suite *InviteExecutorTestSuite) TestGetExecutionPolicy_EmptyMode_ReturnsNi
 	assert.Nil(suite.T(), policy)
 }
 
+func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_IncludesAuthReqIDWhenPresent() {
+	ctx := &core.NodeContext{
+		ExecutionID:  "test-flow-id",
+		EntityID:     "test-app-id",
+		ExecutorMode: ExecutorModeGenerate,
+		UserInputs:   make(map[string]string),
+		RuntimeData: map[string]string{
+			common.RuntimeKeyCIBAAuthReqID: "ciba-req-123",
+		},
+	}
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Contains(suite.T(), resp.RuntimeData[common.RuntimeKeyInviteLink], "auth_req_id=ciba-req-123")
+	assert.Contains(suite.T(), resp.RuntimeData[common.RuntimeKeyInviteLink], "executionId=test-flow-id")
+}
+
+func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_NoAuthReqIDWhenAbsent() {
+	ctx := &core.NodeContext{
+		ExecutionID:  "test-flow-id",
+		EntityID:     "test-app-id",
+		ExecutorMode: ExecutorModeGenerate,
+		UserInputs:   make(map[string]string),
+		RuntimeData:  make(map[string]string),
+	}
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.NotContains(suite.T(), resp.RuntimeData[common.RuntimeKeyInviteLink], "auth_req_id")
+}
+
 func TestInviteExecutorSuite(t *testing.T) {
 	suite.Run(t, new(InviteExecutorTestSuite))
 }

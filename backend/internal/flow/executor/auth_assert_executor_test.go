@@ -1825,3 +1825,57 @@ func (suite *AuthAssertExecutorTestSuite) TestIntersectPermissionSpaceList_Drops
 func (suite *AuthAssertExecutorTestSuite) TestIntersectPermissionSpaceList_NoOverlap() {
 	assert.Equal(suite.T(), "", intersectPermissionSpaceList("a b", "c d"))
 }
+
+func (suite *AuthAssertExecutorTestSuite) TestExecute_CallbackType_EmittedWhenSet() {
+	ctx := &core.NodeContext{
+		ExecutionID: "flow-ciba",
+		EntityID:    "app-1",
+		FlowType:    common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "user-1",
+		},
+		NodeProperties: map[string]interface{}{
+			propertyKeyCallbackType: "urn:openid:params:grant-type:ciba",
+		},
+		RuntimeData:      map[string]string{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+	}
+
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-1", mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), "jwt-token", resp.Assertion)
+	assert.Equal(suite.T(), "urn:openid:params:grant-type:ciba", resp.AdditionalData[propertyKeyCallbackType])
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestExecute_CallbackType_AbsentWhenNotSet() {
+	ctx := &core.NodeContext{
+		ExecutionID: "flow-authcode",
+		EntityID:    "app-1",
+		FlowType:    common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "user-1",
+		},
+		NodeProperties:   map[string]interface{}{},
+		RuntimeData:      map[string]string{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+	}
+
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-1", mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	_, hasCallbackType := resp.AdditionalData[propertyKeyCallbackType]
+	assert.False(suite.T(), hasCallbackType, "callbackType must not be present for auth code flows")
+}

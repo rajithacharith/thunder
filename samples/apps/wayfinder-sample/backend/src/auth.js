@@ -126,7 +126,7 @@ export async function getAuthenticatedUser(request) {
     ? parsedToken.payload.scope.split(" ").filter(Boolean)
     : [];
 
-  return {
+  const user = {
     id: parsedToken.payload.sub,
     username: parsedToken.payload.username || parsedToken.payload.preferred_username,
     email: parsedToken.payload.email,
@@ -136,6 +136,8 @@ export async function getAuthenticatedUser(request) {
     actor: parsedToken.payload.act?.sub || null,
     rawClaims: parsedToken.payload
   };
+
+  return user;
 }
 
 export async function resolveUser(request) {
