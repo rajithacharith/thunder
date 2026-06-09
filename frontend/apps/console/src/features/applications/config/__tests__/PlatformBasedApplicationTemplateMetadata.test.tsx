@@ -206,7 +206,7 @@ describe('PlatformBasedApplicationTemplateMetadata', () => {
     it('should have a template with name and creationFlow', () => {
       expect(customMetadata?.template).toBeDefined();
       expect(customMetadata?.template.defaults?.name).toBe('My Application');
-      expect(customMetadata?.template.creationFlow?.steps).toEqual(['NAME', 'COMPLETE']);
+      expect(customMetadata?.template.creationFlow?.steps).toEqual(['NAME', 'ORGANIZATION_UNIT', 'COMPLETE']);
     });
 
     it('should have no field constraints', () => {
