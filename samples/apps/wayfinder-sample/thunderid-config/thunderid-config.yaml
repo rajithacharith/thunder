@@ -1532,7 +1532,7 @@ permissions:
       - booking:create
       - booking:cancel
 assignments:
-  - id: wayfinder-ayeha
+  - id: wayfinder-john-doe
     type: user
   - id: wayfinder-jane-smith
     type: user
@@ -1576,7 +1576,7 @@ permissions:
       - booking:upgrade
       - upgrade:process
 assignments:
-  - id: wayfinder-ayeha
+  - id: wayfinder-john-doe
     type: user
 
 ---
@@ -1592,7 +1592,7 @@ permissions:
       - booking:create
       - booking:cancel
 assignments:
-  - id: wayfinder-ayeha
+  - id: wayfinder-john-doe
     type: user
   - id: wayfinder-jane-smith
     type: user
@@ -1629,17 +1629,17 @@ assignments:
 
 ---
 # resource_type: user
-id: wayfinder-ayeha
+id: wayfinder-john-doe
 type: Customer
 ou_handle: default
 attributes:
-  username: ayesha
-  given_name: Ayesha
-  family_name: Dissanayaka
-  email: dilusham@wso2.com
-  mobileNumber: "+94771234567"
+  username: john.doe
+  given_name: John
+  family_name: Doe
+  email: john.doe@example.com
+  mobileNumber: "+15550192837"
 credentials:
-  password: "{{.AYESHA_PASSWORD}}"
+  password: "{{.JOHN_DOE_PASSWORD}}"
 
 ---
 # resource_type: user
@@ -1651,7 +1651,7 @@ attributes:
   given_name: Jane
   family_name: Smith
   email: jane.smith@example.com
-  mobileNumber: "+94779876543"
+  mobileNumber: "+15550384756"
 credentials:
   password: "{{.JANE_SMITH_PASSWORD}}"
 
