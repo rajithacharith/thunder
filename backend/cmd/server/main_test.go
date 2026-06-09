@@ -584,6 +584,51 @@ func TestRegisterStaticFileHandlers(t *testing.T) {
 		assert.Contains(t, rr.Body.String(), "console app")
 	})
 
+	t.Run("serves js files as application/javascript", func(t *testing.T) {
+		jsContent := []byte("console.log('hello');")
+		requireWriteFile(t, filepath.Join(gateDir, "app.js"), jsContent)
+
+		mux := http.NewServeMux()
+		registerStaticFileHandlers(logger, mux, tmpDir)
+
+		req := httptest.NewRequest(http.MethodGet, "/gate/app.js", nil)
+		rr := httptest.NewRecorder()
+		mux.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, "application/javascript; charset=utf-8", rr.Header().Get("Content-Type"))
+	})
+
+	t.Run("serves console js files as application/javascript", func(t *testing.T) {
+		jsContent := []byte("console.log('hello');")
+		requireWriteFile(t, filepath.Join(consoleDir, "app.js"), jsContent)
+
+		mux := http.NewServeMux()
+		registerStaticFileHandlers(logger, mux, tmpDir)
+
+		req := httptest.NewRequest(http.MethodGet, "/console/app.js", nil)
+		rr := httptest.NewRecorder()
+		mux.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, "application/javascript; charset=utf-8", rr.Header().Get("Content-Type"))
+	})
+
+	t.Run("serves mjs files as application/javascript", func(t *testing.T) {
+		mjsContent := []byte("export default {};")
+		requireWriteFile(t, filepath.Join(gateDir, "app.mjs"), mjsContent)
+
+		mux := http.NewServeMux()
+		registerStaticFileHandlers(logger, mux, tmpDir)
+
+		req := httptest.NewRequest(http.MethodGet, "/gate/app.mjs", nil)
+		rr := httptest.NewRecorder()
+		mux.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, "application/javascript; charset=utf-8", rr.Header().Get("Content-Type"))
+	})
+
 	t.Run("handles missing directories gracefully", func(t *testing.T) {
 		emptyTmpDir := t.TempDir()
 		mux := http.NewServeMux()

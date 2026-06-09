@@ -24,6 +24,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"mime"
 	"net"
 	"net/http"
 	"os"
@@ -267,6 +268,13 @@ func gracefulShutdown(
 
 // registerStaticFileHandlers registers static file handlers for frontend applications.
 func registerStaticFileHandlers(logger *log.Logger, mux *http.ServeMux, serverHome string) {
+	// Override the OS-level MIME mapping so .js/.mjs files are served as
+	// application/javascript. Most proxies (Envoy, NGINX, Cloudflare) only
+	// compress application/javascript in their default allowlists, not
+	// text/javascript, which is Go's default on some systems.
+	_ = mime.AddExtensionType(".js", "application/javascript; charset=utf-8")
+	_ = mime.AddExtensionType(".mjs", "application/javascript; charset=utf-8")
+
 	// Serve gate application from /gate
 	gateDir := path.Join(serverHome, "apps", "gate")
 	if directoryExists(gateDir) {
