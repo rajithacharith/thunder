@@ -16,16 +16,27 @@
  * under the License.
  */
 
-import {render} from '@testing-library/react';
-import {describe, it, expect, vi} from 'vitest';
+import {render, screen, waitFor} from '@testing-library/react';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import App from '../App';
 
-// Mock the ProtectedRoute component
 vi.mock('@thunderid/react-router', () => ({
   ProtectedRoute: ({children}: {children: React.ReactNode}) => <div data-testid="protected-route">{children}</div>,
 }));
 
-// Mock all the page components
+vi.mock('@thunderid/configure-translations', () => ({
+  TranslationCreateProvider: ({children}: {children: React.ReactNode}) => children as React.ReactElement,
+  TranslationCreatePage: () => <div data-testid="translation-create-page" />,
+  TranslationsEditPage: () => <div data-testid="translations-edit-page" />,
+  TranslationsListPage: () => <div data-testid="translations-list-page" />,
+}));
+
+vi.mock('../lib/monaco-setup', () => ({}));
+
+vi.mock('../features/home/pages/HomePage', () => ({
+  default: () => <div data-testid="home-page" />,
+}));
+
 vi.mock('../features/users/pages/UsersListPage', () => ({
   default: () => <div data-testid="users-list-page">Users List Page</div>,
 }));
@@ -62,9 +73,10 @@ vi.mock('../features/applications/pages/ApplicationCreatePage', () => ({
   default: () => <div data-testid="application-create-page">Application Create Page</div>,
 }));
 
-vi.mock('../layouts/DashboardLayout', () => ({
-  default: () => <div data-testid="dashboard-layout">Dashboard Layout</div>,
-}));
+vi.mock('../layouts/DashboardLayout', async () => {
+  const {Outlet} = await import('react-router');
+  return {default: () => <Outlet />};
+});
 
 vi.mock('../layouts/FullScreenLayout', () => ({
   default: () => <div data-testid="full-screen-layout">Full Screen Layout</div>,
@@ -75,8 +87,20 @@ vi.mock('../features/welcome/components/WelcomeRedirect', () => ({
 }));
 
 describe('App', () => {
+  afterEach(() => {
+    window.history.pushState({}, '', '/');
+  });
+
   it('renders without crashing', () => {
     const {container} = render(<App />);
     expect(container).toBeInTheDocument();
+  });
+
+  it('loads TranslationsEditPage lazily via the monaco-setup chain', async () => {
+    window.history.pushState({}, '', '/translations/en');
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByTestId('translations-edit-page')).toBeInTheDocument();
+    });
   });
 });
