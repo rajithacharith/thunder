@@ -216,7 +216,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		logger.Fatal("Failed to initialize template service", log.Error(err))
 	}
 
-	notifSenderMgtSvc, otpService, notifSenderSvc, notificationExporter, err := notification.Initialize(
+	_, otpService, notifSenderSvc, notificationExporter, err := notification.Initialize(
 		mux, jwtService, templateService)
 	if err != nil {
 		logger.Fatal("Failed to initialize NotificationService", log.Error(err))
@@ -352,7 +352,6 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		userService,
 		i18nService,
 		agentService,
-		notifSenderMgtSvc,
 	)
 
 	flowExecService, err := flowexec.Initialize(mux, flowMgtService, inboundClientService, entityProvider,

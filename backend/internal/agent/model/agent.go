@@ -24,7 +24,6 @@ package model
 import (
 	"encoding/json"
 
-	"github.com/thunder-id/thunderid/internal/entity"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -147,11 +146,18 @@ type AgentListResponse struct {
 	Links        []utils.Link         `json:"links"`
 }
 
+// AgentGroup is the group representation used in agent group list responses.
+type AgentGroup struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	OUID string `json:"ouId"`
+}
+
 // AgentGroupListResponse is the paginated response for an agent's group memberships.
 type AgentGroupListResponse struct {
-	TotalResults int                  `json:"totalResults"`
-	StartIndex   int                  `json:"startIndex"`
-	Count        int                  `json:"count"`
-	Groups       []entity.EntityGroup `json:"groups"`
-	Links        []utils.Link         `json:"links"`
+	TotalResults int          `json:"totalResults"`
+	StartIndex   int          `json:"startIndex"`
+	Count        int          `json:"count"`
+	Groups       []AgentGroup `json:"groups"`
+	Links        []utils.Link `json:"links"`
 }

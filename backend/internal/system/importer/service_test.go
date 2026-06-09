@@ -37,8 +37,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/group"
 	"github.com/thunder-id/thunderid/internal/idp"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
-	"github.com/thunder-id/thunderid/internal/notification"
-	notificationcommon "github.com/thunder-id/thunderid/internal/notification/common"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
@@ -708,7 +706,6 @@ func newTestImportService(appSvc *fakeApplicationService) ImportServiceInterface
 		nil,
 		nil,
 		nil,
-		nil,
 	)
 }
 
@@ -885,7 +882,7 @@ func TestImportResources_PreservesExplicitFalseOptions(t *testing.T) {
 }
 
 func TestImportResources_ApplicationAdapterNotConfigured(t *testing.T) {
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: "id: app-1\nname: My App\nauth_flow_id: flow-1\n",
@@ -902,7 +899,7 @@ func TestImportResources_ApplicationAdapterNotConfigured(t *testing.T) {
 func TestImportResources_RoleImportIncludesAssignments(t *testing.T) {
 	roleSvc := &fakeRoleService{}
 	roleAssignmentSvc := &fakeRoleAssignmentService{}
-	svc := newImportService(nil, nil, nil, nil, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: role-1",
@@ -932,7 +929,7 @@ func TestImportResources_RoleImportIncludesAssignments(t *testing.T) {
 
 func TestImportResources_GroupImportIncludesMembers(t *testing.T) {
 	groupSvc := &fakeGroupService{}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: group-new",
@@ -959,7 +956,7 @@ func TestImportResources_GroupImportIncludesMembers(t *testing.T) {
 func TestImportResources_RoleImportNoAssignments(t *testing.T) {
 	roleSvc := &fakeRoleService{}
 	roleAssignmentSvc := &fakeRoleAssignmentService{}
-	svc := newImportService(nil, nil, nil, nil, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: role-new",
@@ -981,7 +978,7 @@ func TestImportResources_RoleImportNoAssignments(t *testing.T) {
 func TestImportResources_RoleUpsertUpdateIncludesAssignments(t *testing.T) {
 	roleSvc := &fakeRoleService{}
 	roleAssignmentSvc := &fakeRoleAssignmentService{}
-	svc := newImportService(nil, nil, nil, nil, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: role-1",
@@ -1014,7 +1011,7 @@ func TestImportResources_RoleAssignmentFailureReturnsError(t *testing.T) {
 		Code:  "ROLE-4001",
 		Error: core.I18nMessage{DefaultValue: "invalid assignee"},
 	}}
-	svc := newImportService(nil, nil, nil, nil, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil)
 
 	// role-1 exists in the fake → update path → AddAssignments is called separately → fails
 	content := strings.Join([]string{
@@ -1037,7 +1034,7 @@ func TestImportResources_RoleAssignmentFailureReturnsError(t *testing.T) {
 
 func TestImportResources_GroupImportNoMembers(t *testing.T) {
 	groupSvc := &fakeGroupService{}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: group-new",
@@ -1057,7 +1054,7 @@ func TestImportResources_GroupImportNoMembers(t *testing.T) {
 
 func TestImportResources_GroupUpsertUpdateIncludesMembers(t *testing.T) {
 	groupSvc := &fakeGroupService{}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: group-1",
@@ -1089,7 +1086,7 @@ func TestImportResources_GroupMemberFailureReturnsError(t *testing.T) {
 		Code:  "GRP-4001",
 		Error: core.I18nMessage{DefaultValue: "invalid member"},
 	}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: group-new",
@@ -1110,7 +1107,7 @@ func TestImportResources_GroupMemberFailureReturnsError(t *testing.T) {
 
 func TestImportResources_UserCredentialFailureRollsBackCreate(t *testing.T) {
 	userSvc := &fakeUserService{updateCredentialsShouldFail: true}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, userSvc, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, userSvc, nil, nil)
 
 	content := strings.Join([]string{
 		"id: user-1",
@@ -1135,7 +1132,7 @@ func TestImportResources_UserCredentialFailureRollsBackCreate(t *testing.T) {
 
 func TestImportResources_OrganizationUnitUpsertCreatePreservesID(t *testing.T) {
 	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: ou-123",
@@ -1163,7 +1160,7 @@ func TestImportResources_FlowUpsertCreatePreservesID(t *testing.T) {
 		byKey: map[string]*flowmgt.CompleteFlowDefinition{},
 	}
 
-	svc := newImportService(nil, nil, flowSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, flowSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: missing-flow-id",
@@ -1201,7 +1198,7 @@ func TestImportResources_FlowUpsertDuplicateHandleFallsBackToHandleUpdate(t *tes
 	}
 	flowSvc.byKey[string(common.FlowTypeRegistration)+":registration-flow"] = flowSvc.byID["existing-flow-id"]
 
-	svc := newImportService(nil, nil, flowSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, flowSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: missing-flow-id",
@@ -1241,7 +1238,7 @@ func TestImportResources_ApplicationFlowReferencesAreRemappedFromFlowAlias(t *te
 		flowSvc.byID["existing-registration-flow-id"]
 
 	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
-	svc := newImportService(appSvc, nil, flowSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(appSvc, nil, flowSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"# resource_type: flow",
@@ -1276,7 +1273,7 @@ func TestImportResources_ApplicationFlowReferencesAreRemappedFromFlowAlias(t *te
 //nolint:dupl // Test pattern repeated across resource types to verify ID preservation behavior
 func TestImportResources_ThemeUpsertCreatePreservesID(t *testing.T) {
 	themeSvc := &fakeThemeService{byID: map[string]*thememgt.Theme{}, byHandle: map[string]*thememgt.Theme{}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, themeSvc, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, themeSvc, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: thm-123",
@@ -1306,7 +1303,7 @@ func TestImportResources_EntityTypeUpsertCreatePreservesID(t *testing.T) {
 		byID:   map[string]*entitytype.EntityType{},
 		byName: map[string]*entitytype.EntityType{},
 	}
-	svc := newImportService(nil, nil, nil, nil, entityTypeSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, entityTypeSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: usrs-123",
@@ -1342,9 +1339,7 @@ func TestImportResources_UpsertCreatePreservesIDsAcrossResourceTypes(t *testing.
 		byKey: map[string]*flowmgt.CompleteFlowDefinition{},
 	}
 
-	svc := newImportService(
-		nil, nil, flowSvc, ouSvc, entityTypeSvc, nil, nil, nil, nil, themeSvc, nil, nil, nil, nil, nil,
-	)
+	svc := newImportService(nil, nil, flowSvc, ouSvc, entityTypeSvc, nil, nil, nil, nil, themeSvc, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: ou-123",
@@ -1420,7 +1415,7 @@ func TestImportResources_EntityTypeOUHandlePassedToService(t *testing.T) {
 		byID:   map[string]*entitytype.EntityType{},
 		byName: map[string]*entitytype.EntityType{},
 	}
-	svc := newImportService(nil, nil, nil, nil, entityTypeSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, entityTypeSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: usrs-123",
@@ -1528,7 +1523,7 @@ func TestImportResources_FileTargetReturnsError(t *testing.T) {
 		DeclarativeResources: config.DeclarativeResources{Enabled: true},
 	}))
 
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: "id: app-1\nname: My App\nauth_flow_id: flow-1\n",
@@ -1550,7 +1545,7 @@ func TestDeleteResource_RemovesDeclarativeFile(t *testing.T) {
 		DeclarativeResources: config.DeclarativeResources{Enabled: true},
 	}))
 
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resourceDir := filepath.Join(tempHome, "repository", "resources", "applications")
 	require.NoError(t, os.MkdirAll(resourceDir, 0o750))
@@ -1576,7 +1571,7 @@ func TestDeleteResource_RemovesDeclarativeFile(t *testing.T) {
 
 func TestImportResources_ApplicationOUHandlePassedToService(t *testing.T) {
 	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
-	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: strings.Join([]string{
@@ -1596,7 +1591,7 @@ func TestImportResources_ApplicationOUHandlePassedToService(t *testing.T) {
 
 func TestImportResources_ApplicationAuthFlowHandlePassedToService(t *testing.T) {
 	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
-	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: strings.Join([]string{
@@ -1616,7 +1611,7 @@ func TestImportResources_ApplicationAuthFlowHandlePassedToService(t *testing.T) 
 
 func TestImportResources_ApplicationRegistrationFlowHandlePassedToService(t *testing.T) {
 	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
-	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: strings.Join([]string{
@@ -1638,7 +1633,7 @@ func TestImportResources_ApplicationRegistrationFlowHandlePassedToService(t *tes
 
 func TestImportResources_ApplicationRecoveryFlowHandlePassedToService(t *testing.T) {
 	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
-	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: strings.Join([]string{
@@ -1661,7 +1656,7 @@ func TestImportResources_ApplicationRecoveryFlowHandlePassedToService(t *testing
 func TestImportResources_DryRunSkipsApplicationHandleResolution(t *testing.T) {
 	// With dry-run, handle resolution is skipped — unknown handles must not cause failure.
 	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
-	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: strings.Join([]string{
@@ -1733,7 +1728,7 @@ const agentYAML = "# resource_type: agent\n" +
 
 func TestImportAgent_Create(t *testing.T) {
 	agentSvc := &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{Content: agentYAML})
 
@@ -1750,7 +1745,7 @@ func TestImportAgent_UpsertUpdate(t *testing.T) {
 	agentSvc := &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{
 		"agent-1": {ID: "agent-1", Name: "Test Agent"},
 	}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: agentYAML,
@@ -1767,7 +1762,7 @@ func TestImportAgent_UpsertUpdate(t *testing.T) {
 
 func TestImportAgent_UpsertFallbackCreate(t *testing.T) {
 	agentSvc := &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: agentYAML,
@@ -1784,7 +1779,7 @@ func TestImportAgent_UpsertFallbackCreate(t *testing.T) {
 
 func TestImportAgent_DryRunCreate(t *testing.T) {
 	agentSvc := &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: agentYAML,
@@ -1803,7 +1798,7 @@ func TestImportAgent_DryRunUpsert(t *testing.T) {
 	agentSvc := &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{
 		"agent-1": {ID: "agent-1", Name: "Test Agent"},
 	}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: agentYAML,
@@ -1820,7 +1815,7 @@ func TestImportAgent_DryRunUpsert(t *testing.T) {
 }
 
 func TestImportAgent_NilAdapter(t *testing.T) {
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{Content: agentYAML})
 
@@ -1868,7 +1863,7 @@ func (e *errAgentService) UpdateAgent(
 
 func TestImportAgent_DecodeError(t *testing.T) {
 	agentSvc := &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc)
 
 	// ID field is a sequence, not a string — decode into AgentRequestWithID will fail.
 	invalidYAML := "# resource_type: agent\nid:\n  - bad\nname: Test\n"
@@ -1886,7 +1881,7 @@ func TestImportAgent_DryRunUpsertNonNotFoundError(t *testing.T) {
 		inner:  &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{}},
 		getErr: internalErr,
 	}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: agentYAML,
@@ -1908,7 +1903,7 @@ func TestImportAgent_UpsertUpdateError(t *testing.T) {
 		}},
 		updateErr: updateErr,
 	}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: agentYAML,
@@ -1927,7 +1922,7 @@ func TestImportAgent_UpsertGetNonNotFoundError(t *testing.T) {
 		inner:  &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{}},
 		getErr: internalErr,
 	}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: agentYAML,
@@ -1946,7 +1941,7 @@ func TestImportAgent_CreateError(t *testing.T) {
 		inner:     &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{}},
 		createErr: createErr,
 	}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{Content: agentYAML})
 
@@ -1999,7 +1994,7 @@ func TestImportAgent_FlowAliasRemapsFlowIDs(t *testing.T) {
 				byKey: map[string]*flowmgt.CompleteFlowDefinition{},
 			}
 			agentSvc := &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{}}
-			svc := newImportService(nil, nil, flowSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil)
+			svc := newImportService(nil, nil, flowSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc)
 
 			content := strings.Join([]string{
 				"# resource_type: flow",
@@ -2031,7 +2026,7 @@ func TestImportAgent_FlowAliasRemapsFlowIDs(t *testing.T) {
 
 func TestImportAgent_StripsClientSecretForPublicAgentWithNoneAuthMethod(t *testing.T) {
 	agentSvc := &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc)
 
 	content := strings.Join([]string{
 		"# resource_type: agent",
@@ -2121,9 +2116,7 @@ func TestImportRole_OUHandleResolved(t *testing.T) {
 	}}
 	roleSvc := &fakeRoleService{}
 	roleAssignmentSvc := &fakeRoleAssignmentService{}
-	svc := newImportService(
-		nil, nil, nil, ouSvc, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil, nil,
-	)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: role-new",
@@ -2148,9 +2141,7 @@ func TestImportRole_OUHandleNotFound(t *testing.T) {
 	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
 	roleSvc := &fakeRoleService{}
 	roleAssignmentSvc := &fakeRoleAssignmentService{}
-	svc := newImportService(
-		nil, nil, nil, ouSvc, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil, nil,
-	)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: role-new",
@@ -2174,9 +2165,7 @@ func TestImportRole_OUIDWinsOverHandle(t *testing.T) {
 	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
 	roleSvc := &fakeRoleService{}
 	roleAssignmentSvc := &fakeRoleAssignmentService{}
-	svc := newImportService(
-		nil, nil, nil, ouSvc, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil, nil,
-	)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: role-new",
@@ -2203,7 +2192,7 @@ func TestImportGroup_OUHandleResolved(t *testing.T) {
 		"ou-default": {ID: "ou-default", Handle: "default"},
 	}}
 	groupSvc := &fakeGroupService{}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: group-new",
@@ -2226,7 +2215,7 @@ func TestImportGroup_OUHandleResolved(t *testing.T) {
 func TestImportGroup_OUHandleNotFound(t *testing.T) {
 	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
 	groupSvc := &fakeGroupService{}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: group-new",
@@ -2248,7 +2237,7 @@ func TestImportGroup_OUHandleNotFound(t *testing.T) {
 func TestImportGroup_OUIDWinsOverHandle(t *testing.T) {
 	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
 	groupSvc := &fakeGroupService{}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: group-new",
@@ -2274,7 +2263,7 @@ func TestImportUser_OUHandleResolved(t *testing.T) {
 		"ou-default": {ID: "ou-default", Handle: "default"},
 	}}
 	userSvc := &fakeUserService{}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, nil, nil, nil, userSvc, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, nil, nil, nil, userSvc, nil, nil)
 
 	content := strings.Join([]string{
 		"id: user-new",
@@ -2302,7 +2291,7 @@ func TestImportUser_OUHandleResolved(t *testing.T) {
 func TestImportUser_OUHandleNotFound(t *testing.T) {
 	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
 	userSvc := &fakeUserService{}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, nil, nil, nil, userSvc, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, nil, nil, nil, userSvc, nil, nil)
 
 	content := strings.Join([]string{
 		"id: user-new",
@@ -2326,7 +2315,7 @@ func TestImportUser_OUHandleNotFound(t *testing.T) {
 func TestImportUser_OUIDWinsOverHandle(t *testing.T) {
 	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
 	userSvc := &fakeUserService{}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, nil, nil, nil, userSvc, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, nil, nil, nil, userSvc, nil, nil)
 
 	content := strings.Join([]string{
 		"id: user-new",
@@ -2357,7 +2346,7 @@ func TestImportResourceServer_OUHandleResolved(t *testing.T) {
 		"ou-default": {ID: "ou-default", Handle: "default"},
 	}}
 	rsSvc := &fakeResourceServerService{}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, rsSvc, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, rsSvc, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"# resource_type: resource_server",
@@ -2387,7 +2376,7 @@ func TestImportResourceServer_OUHandleResolved(t *testing.T) {
 func TestImportResourceServer_OUHandleNotFound(t *testing.T) {
 	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
 	rsSvc := &fakeResourceServerService{}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, rsSvc, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, rsSvc, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"# resource_type: resource_server",
@@ -2413,7 +2402,7 @@ func TestImportResourceServer_OUHandleNotFound(t *testing.T) {
 func TestImportResourceServer_OUIDWinsOverHandle(t *testing.T) {
 	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
 	rsSvc := &fakeResourceServerService{}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, rsSvc, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, rsSvc, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"# resource_type: resource_server",
@@ -2441,7 +2430,7 @@ func TestImportResourceServer_OUIDWinsOverHandle(t *testing.T) {
 
 func TestImportResources_IDPPropertiesArePassedToService(t *testing.T) {
 	idpSvc := &fakeIDPService{byID: map[string]*idp.IDPDTO{}, byName: map[string]*idp.IDPDTO{}}
-	svc := newImportService(nil, idpSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, idpSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	// is_secret with empty value avoids the encryption path while still verifying the flag is parsed.
 	content := strings.Join([]string{
@@ -2483,7 +2472,7 @@ func TestImportResources_IDPUpsertUpdatePropertiesArePassedToService(t *testing.
 		byID:   map[string]*idp.IDPDTO{"idp-1": existing},
 		byName: map[string]*idp.IDPDTO{"google-idp": existing},
 	}
-	svc := newImportService(nil, idpSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, idpSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: idp-1",
@@ -2512,275 +2501,4 @@ func TestImportResources_IDPUpsertUpdatePropertiesArePassedToService(t *testing.
 	plainValue, err2 := updated.Properties[0].GetValue()
 	require.NoError(t, err2)
 	assert.Equal(t, "updated-client-id", plainValue)
-}
-
-// fakeNotificationSenderService is a test double for the notificationSenderAdapter.
-type fakeNotificationSenderService struct {
-	created  []notificationcommon.NotificationSenderDTO
-	updated  []notificationcommon.NotificationSenderDTO
-	existing map[string]*notificationcommon.NotificationSenderDTO
-}
-
-func (f *fakeNotificationSenderService) CreateSender(
-	_ context.Context, sender notificationcommon.NotificationSenderDTO,
-) (*notificationcommon.NotificationSenderDTO, *serviceerror.ServiceError) {
-	if sender.ID == "" {
-		sender.ID = "generated-sender-id"
-	}
-	f.created = append(f.created, sender)
-	if f.existing == nil {
-		f.existing = map[string]*notificationcommon.NotificationSenderDTO{}
-	}
-	f.existing[sender.ID] = &sender
-	return &sender, nil
-}
-
-func (f *fakeNotificationSenderService) GetSender(
-	_ context.Context, id string,
-) (*notificationcommon.NotificationSenderDTO, *serviceerror.ServiceError) {
-	if s, ok := f.existing[id]; ok {
-		return s, nil
-	}
-	return nil, &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
-		Code:  notification.ErrorSenderNotFound.Code,
-		Error: core.I18nMessage{DefaultValue: "Sender not found"},
-	}
-}
-
-func (f *fakeNotificationSenderService) UpdateSender(
-	_ context.Context, id string, sender notificationcommon.NotificationSenderDTO,
-) (*notificationcommon.NotificationSenderDTO, *serviceerror.ServiceError) {
-	if _, ok := f.existing[id]; !ok {
-		return nil, &serviceerror.ServiceError{
-			Type:  serviceerror.ClientErrorType,
-			Code:  notification.ErrorSenderNotFound.Code,
-			Error: core.I18nMessage{DefaultValue: "Sender not found"},
-		}
-	}
-	sender.ID = id
-	f.updated = append(f.updated, sender)
-	f.existing[id] = &sender
-	return &sender, nil
-}
-
-const notificationSenderYAML = "# resource_type: notification_sender\n" +
-	"id: sender-1\nname: Test SMS Sender\nprovider: twilio\n" +
-	"properties:\n- name: account_sid\n  value: AC123\n"
-
-func TestImportNotificationSender_Create(t *testing.T) {
-	senderSvc := &fakeNotificationSenderService{existing: map[string]*notificationcommon.NotificationSenderDTO{}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, senderSvc)
-
-	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{Content: notificationSenderYAML})
-
-	require.Nil(t, svcErr)
-	require.NotNil(t, resp)
-	require.Len(t, resp.Results, 1)
-	assert.Equal(t, statusSuccess, resp.Results[0].Status)
-	assert.Equal(t, operationCreate, resp.Results[0].Operation)
-	assert.Equal(t, resourceTypeNotificationSender, resp.Results[0].ResourceType)
-	assert.Len(t, senderSvc.created, 1)
-	assert.Equal(t, "Test SMS Sender", senderSvc.created[0].Name)
-}
-
-func TestImportNotificationSender_UpsertUpdate(t *testing.T) {
-	existing := &notificationcommon.NotificationSenderDTO{ID: "sender-1", Name: "Test SMS Sender"}
-	senderSvc := &fakeNotificationSenderService{
-		existing: map[string]*notificationcommon.NotificationSenderDTO{"sender-1": existing},
-	}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, senderSvc)
-
-	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
-		Content: notificationSenderYAML,
-		Options: &ImportOptions{Upsert: boolPtr(true)},
-	})
-
-	require.Nil(t, svcErr)
-	require.NotNil(t, resp)
-	require.Len(t, resp.Results, 1)
-	assert.Equal(t, statusSuccess, resp.Results[0].Status)
-	assert.Equal(t, operationUpdate, resp.Results[0].Operation)
-	assert.Len(t, senderSvc.updated, 1)
-}
-
-// TestImportNotificationSender_UpsertFallsBackToCreate verifies the fix for the bug where
-// MNS-1001 was missing from notFoundErrorCodes, causing an update failure to surface instead
-// of falling through to create.
-func TestImportNotificationSender_UpsertFallsBackToCreate(t *testing.T) {
-	senderSvc := &fakeNotificationSenderService{existing: map[string]*notificationcommon.NotificationSenderDTO{}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, senderSvc)
-
-	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
-		Content: notificationSenderYAML,
-		Options: &ImportOptions{Upsert: boolPtr(true)},
-	})
-
-	require.Nil(t, svcErr)
-	require.NotNil(t, resp)
-	require.Len(t, resp.Results, 1)
-	assert.Equal(t, statusSuccess, resp.Results[0].Status)
-	assert.Equal(t, operationCreate, resp.Results[0].Operation)
-	assert.Len(t, senderSvc.created, 1)
-}
-
-func TestImportNotificationSender_NilAdapter(t *testing.T) {
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-
-	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{Content: notificationSenderYAML})
-
-	require.Nil(t, svcErr)
-	require.NotNil(t, resp)
-	require.Len(t, resp.Results, 1)
-	assert.Equal(t, statusFailed, resp.Results[0].Status)
-	assert.Equal(t, ErrorInvalidImportRequest.Code, resp.Results[0].Code)
-	assert.Equal(t, "notification sender adapter is not configured", resp.Results[0].Message)
-}
-
-func TestImportNotificationSender_DecodeError(t *testing.T) {
-	senderSvc := &fakeNotificationSenderService{existing: map[string]*notificationcommon.NotificationSenderDTO{}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, senderSvc)
-
-	// provider field is a sequence, not a string — node decode into NotificationSenderRequestWithID fails.
-	invalidYAML := "# resource_type: notification_sender\nid: s1\nname: Bad\nprovider:\n  - invalid\n"
-	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{Content: invalidYAML})
-
-	require.Nil(t, svcErr)
-	require.Len(t, resp.Results, 1)
-	assert.Equal(t, statusFailed, resp.Results[0].Status)
-	assert.Equal(t, ErrorInvalidYAMLContent.Code, resp.Results[0].Code)
-	assert.Contains(t, resp.Results[0].Message, "failed to decode notification sender document")
-}
-
-func TestImportNotificationSender_DryRunCreate(t *testing.T) {
-	senderSvc := &fakeNotificationSenderService{existing: map[string]*notificationcommon.NotificationSenderDTO{}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, senderSvc)
-
-	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
-		Content: notificationSenderYAML,
-		DryRun:  true,
-	})
-
-	require.Nil(t, svcErr)
-	require.Len(t, resp.Results, 1)
-	assert.Equal(t, statusSuccess, resp.Results[0].Status)
-	assert.Equal(t, operationCreate, resp.Results[0].Operation)
-	assert.Empty(t, senderSvc.created)
-}
-
-func TestImportNotificationSender_DryRunUpsertExisting(t *testing.T) {
-	existing := &notificationcommon.NotificationSenderDTO{ID: "sender-1", Name: "Test SMS Sender"}
-	senderSvc := &fakeNotificationSenderService{
-		existing: map[string]*notificationcommon.NotificationSenderDTO{"sender-1": existing},
-	}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, senderSvc)
-
-	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
-		Content: notificationSenderYAML,
-		DryRun:  true,
-		Options: &ImportOptions{Upsert: boolPtr(true)},
-	})
-
-	require.Nil(t, svcErr)
-	require.Len(t, resp.Results, 1)
-	assert.Equal(t, statusSuccess, resp.Results[0].Status)
-	assert.Equal(t, operationUpdate, resp.Results[0].Operation)
-	assert.Empty(t, senderSvc.updated)
-}
-
-func TestImportNotificationSender_DryRunUpsertNonNotFoundError(t *testing.T) {
-	internalErr := &serviceerror.ServiceError{
-		Code:  "MNS-9999",
-		Error: core.I18nMessage{DefaultValue: "internal error"},
-	}
-	senderSvc := &errNotificationSenderService{
-		inner:  &fakeNotificationSenderService{existing: map[string]*notificationcommon.NotificationSenderDTO{}},
-		getErr: internalErr,
-	}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, senderSvc)
-
-	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
-		Content: notificationSenderYAML,
-		DryRun:  true,
-		Options: &ImportOptions{Upsert: boolPtr(true)},
-	})
-
-	require.Nil(t, svcErr)
-	require.Len(t, resp.Results, 1)
-	assert.Equal(t, statusFailed, resp.Results[0].Status)
-	assert.Equal(t, "MNS-9999", resp.Results[0].Code)
-}
-
-// errNotificationSenderService wraps fakeNotificationSenderService with injectable per-method errors.
-type errNotificationSenderService struct {
-	inner     *fakeNotificationSenderService
-	createErr *serviceerror.ServiceError
-	getErr    *serviceerror.ServiceError
-	updateErr *serviceerror.ServiceError
-}
-
-func (e *errNotificationSenderService) CreateSender(
-	ctx context.Context, sender notificationcommon.NotificationSenderDTO,
-) (*notificationcommon.NotificationSenderDTO, *serviceerror.ServiceError) {
-	if e.createErr != nil {
-		return nil, e.createErr
-	}
-	return e.inner.CreateSender(ctx, sender)
-}
-
-func (e *errNotificationSenderService) GetSender(
-	ctx context.Context, id string,
-) (*notificationcommon.NotificationSenderDTO, *serviceerror.ServiceError) {
-	if e.getErr != nil {
-		return nil, e.getErr
-	}
-	return e.inner.GetSender(ctx, id)
-}
-
-func (e *errNotificationSenderService) UpdateSender(
-	ctx context.Context, id string, sender notificationcommon.NotificationSenderDTO,
-) (*notificationcommon.NotificationSenderDTO, *serviceerror.ServiceError) {
-	if e.updateErr != nil {
-		return nil, e.updateErr
-	}
-	return e.inner.UpdateSender(ctx, id, sender)
-}
-
-func TestImportNotificationSender_UpsertUpdateError(t *testing.T) {
-	updateErr := &serviceerror.ServiceError{Code: "MNS-9998", Error: core.I18nMessage{DefaultValue: "update failed"}}
-	senderSvc := &errNotificationSenderService{
-		inner: &fakeNotificationSenderService{existing: map[string]*notificationcommon.NotificationSenderDTO{
-			"sender-1": {ID: "sender-1", Name: "Test SMS Sender"},
-		}},
-		updateErr: updateErr,
-	}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, senderSvc)
-
-	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
-		Content: notificationSenderYAML,
-		Options: &ImportOptions{Upsert: boolPtr(true)},
-	})
-
-	require.Nil(t, svcErr)
-	require.Len(t, resp.Results, 1)
-	assert.Equal(t, statusFailed, resp.Results[0].Status)
-	assert.Equal(t, operationUpdate, resp.Results[0].Operation)
-	assert.Equal(t, "MNS-9998", resp.Results[0].Code)
-}
-
-func TestImportNotificationSender_CreateError(t *testing.T) {
-	createErr := &serviceerror.ServiceError{Code: "MNS-9997", Error: core.I18nMessage{DefaultValue: "create failed"}}
-	senderSvc := &errNotificationSenderService{
-		inner:     &fakeNotificationSenderService{existing: map[string]*notificationcommon.NotificationSenderDTO{}},
-		createErr: createErr,
-	}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, senderSvc)
-
-	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{Content: notificationSenderYAML})
-
-	require.Nil(t, svcErr)
-	require.Len(t, resp.Results, 1)
-	assert.Equal(t, statusFailed, resp.Results[0].Status)
-	assert.Equal(t, operationCreate, resp.Results[0].Operation)
-	assert.Equal(t, "MNS-9997", resp.Results[0].Code)
 }
