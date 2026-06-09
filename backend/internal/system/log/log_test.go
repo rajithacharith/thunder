@@ -164,10 +164,11 @@ func (suite *LogTestSuite) TestLogMethods() {
 	}
 	log := logger
 
-	log.Debug("Debug message", Field{Key: "test", Value: "debug"})
-	log.Info("Info message", Field{Key: "test", Value: "info"})
-	log.Warn("Warning message", Field{Key: "test", Value: "warn"})
-	log.Error("Error message", Field{Key: "test", Value: "error"})
+	ctx := context.Background()
+	log.DebugWithContext(ctx, "Debug message", Field{Key: "test", Value: "debug"})
+	log.InfoWithContext(ctx, "Info message", Field{Key: "test", Value: "info"})
+	log.WarnWithContext(ctx, "Warning message", Field{Key: "test", Value: "warn"})
+	log.ErrorWithContext(ctx, "Error message", Field{Key: "test", Value: "error"})
 
 	output := buf.String()
 	assert.Contains(suite.T(), output, "Debug message")
@@ -199,7 +200,7 @@ func (suite *LogTestSuite) TestLoggerWith() {
 	contextLogger := log.With(Field{Key: "context", Value: "test"})
 	assert.NotNil(suite.T(), contextLogger)
 
-	contextLogger.Info("Context log message")
+	contextLogger.InfoWithContext(context.Background(), "Context log message")
 
 	output := buf.String()
 	assert.Contains(suite.T(), output, "context=test")

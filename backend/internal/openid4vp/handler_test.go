@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -352,9 +353,172 @@ func TestAPIRegisterRoutesAddsInitiateAndStatus(t *testing.T) {
 	assert.Equal(t, "PENDING", sr.Status)
 }
 
+func TestHandleRequestObjectWriteError(t *testing.T) {
+	b := newPIDBuilder(t)
+	svc, _ := newTestService(t, b)
+	h := newOpenID4VPHandler(svc, nil, "", 0, 0)
+
+	init, err := svc.Initiate(context.Background(), testDefinitionID)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodGet, "/openid4vp/request?state="+url.QueryEscape(init.State), nil)
+	rec := &failingResponseWriter{header: http.Header{}}
+	h.HandleRequestObject(rec, req)
+
+	assert.Equal(t, http.StatusOK, rec.status)
+	assert.True(t, rec.writeCalled)
+}
+
+func TestHandleResponseParseFormError(t *testing.T) {
+	b := newPIDBuilder(t)
+	svc, _ := newTestService(t, b)
+	h := newOpenID4VPHandler(svc, nil, "", 0, 0)
+
+	req := httptest.NewRequest(http.MethodPost, "/openid4vp/response", strings.NewReader("%zz"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	h.HandleResponse(rec, req)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Equal(t, ErrorInvalidRequest.Code, decodeErrorCode(t, rec))
+}
+
+func TestAPIInitiateServiceError(t *testing.T) {
+	svc := &stubService{initiateErr: errors.New("boom")}
+	h := newOpenID4VPHandler(svc, &resultTokenIssuerFake{}, apiBaseURL, 0, 0)
+
+	body, _ := json.Marshal(initiateRequest{DefinitionID: testDefinitionID, RPID: "rp"})
+	rec := postJSON(h.HandleInitiate, body)
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+}
+
+func TestAPIStatusLookupServiceError(t *testing.T) {
+	svc := &stubService{lookupErr: errors.New("boom")}
+	h := newOpenID4VPHandler(svc, &resultTokenIssuerFake{}, apiBaseURL, 0, 0)
+
+	rec := getStatus(h.HandleStatus, "txn")
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+}
+
+func TestAPIStatusEmptyTxn(t *testing.T) {
+	h, _ := newTestRPHandler(t)
+	rec := getStatus(h.HandleStatus, "")
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Equal(t, ErrorInvalidRequest.Code, decodeErrorCode(t, rec))
+}
+
+func TestAPIStatusCompletedIssuerNotConfigured(t *testing.T) {
+	b := newPIDBuilder(t)
+	svc, store := newTestService(t, b)
+	h := newOpenID4VPHandler(svc, nil, apiBaseURL, 300*time.Second, 0)
+
+	ir := initiateForTest(t, h, store)
+	rs := store.m[ir.TxnID]
+	rs.Status = StatusCompleted
+	rs.Result = &VerifiedPresentation{Subject: "sub"}
+
+	rec := getStatus(h.HandleStatus, ir.TxnID)
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+}
+
+func TestAPIStatusCompletedIssuerError(t *testing.T) {
+	b := newPIDBuilder(t)
+	svc, store := newTestService(t, b)
+	issuer := &resultTokenIssuerFake{errToThrow: errors.New("sign failed")}
+	h := newOpenID4VPHandler(svc, issuer, apiBaseURL, 300*time.Second, 0)
+
+	ir := initiateForTest(t, h, store)
+	rs := store.m[ir.TxnID]
+	rs.Status = StatusCompleted
+	rs.Result = &VerifiedPresentation{Subject: "sub"}
+
+	rec := getStatus(h.HandleStatus, ir.TxnID)
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+}
+
+func TestAPIStatusUnknownStatusValue(t *testing.T) {
+	b := newPIDBuilder(t)
+	svc, store := newTestService(t, b)
+	issuer := &resultTokenIssuerFake{}
+	h := newOpenID4VPHandler(svc, issuer, apiBaseURL, 300*time.Second, 0)
+
+	ir := initiateForTest(t, h, store)
+	store.m[ir.TxnID].Status = Status("BOGUS")
+
+	rec := getStatus(h.HandleStatus, ir.TxnID)
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+}
+
 // =============================================================================
 // Shared test helpers
 // =============================================================================
+
+func initiateForTest(t *testing.T, h *openID4VPHandler, store *fakeStore) initiateResponse {
+	t.Helper()
+	rec := postJSON(h.HandleInitiate, mustJSON(t, initiateRequest{
+		DefinitionID: testDefinitionID, RPID: "rp",
+	}))
+	require.Equal(t, http.StatusOK, rec.Code)
+	var ir initiateResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &ir))
+	require.NotNil(t, store.m[ir.TxnID])
+	return ir
+}
+
+// failingResponseWriter records the written status code and fails every Write.
+type failingResponseWriter struct {
+	header      http.Header
+	status      int
+	writeCalled bool
+}
+
+func (w *failingResponseWriter) Header() http.Header { return w.header }
+
+func (w *failingResponseWriter) Write([]byte) (int, error) {
+	w.writeCalled = true
+	return 0, errors.New("write failed")
+}
+
+func (w *failingResponseWriter) WriteHeader(code int) { w.status = code }
+
+// stubService implements OpenID4VPServiceInterface to drive handler error
+// branches that a real *service does not reach in unit tests.
+type stubService struct {
+	initiateErr error
+	lookupErr   error
+}
+
+func (s *stubService) Initiate(context.Context, string) (*Initiation, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (s *stubService) Result(context.Context, string) (*RequestState, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (s *stubService) RequestObject(context.Context, string) (string, error) {
+	return "", errors.New("not implemented")
+}
+
+func (s *stubService) SubmitResponse(context.Context, string, []byte) (*VerifiedPresentation, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (s *stubService) ResultRedirectURI(string) string { return "" }
+
+func (s *stubService) InitiateForRP(context.Context, string, string) (*Initiation, error) {
+	if s.initiateErr != nil {
+		return nil, s.initiateErr
+	}
+	return &Initiation{State: "stub-state"}, nil
+}
+
+func (s *stubService) LookupState(context.Context, string) (*RequestState, error) {
+	if s.lookupErr != nil {
+		return nil, s.lookupErr
+	}
+	return &RequestState{State: "stub-state", Status: StatusPending}, nil
+}
 
 func postForm(h *openID4VPHandler, form url.Values) *httptest.ResponseRecorder {
 	req := httptest.NewRequest(http.MethodPost, "/openid4vp/response", strings.NewReader(form.Encode()))

@@ -323,7 +323,7 @@ func (ts *tokenService) publishTokenIssuanceStartedEvent(ctx context.Context, cl
 		WithData(event.DataKey.GrantType, grantType).
 		WithData(event.DataKey.Scope, scope)
 
-	ts.observabilitySvc.PublishEvent(evt)
+	ts.observabilitySvc.PublishEvent(ctx, evt)
 }
 
 func (ts *tokenService) publishTokenIssuedEvent(
@@ -346,7 +346,7 @@ func (ts *tokenService) publishTokenIssuedEvent(
 		WithData(event.DataKey.Scope, scope).
 		WithData(event.DataKey.DurationMs, fmt.Sprintf("%d", duration))
 
-	ts.observabilitySvc.PublishEvent(evt)
+	ts.observabilitySvc.PublishEvent(ctx, evt)
 }
 
 // publishTokenIssuanceFailedEvent is a package-level helper shared by tokenService and tokenHandler.
@@ -381,5 +381,5 @@ func publishTokenIssuanceFailedEvent(
 		}).
 		WithData(event.DataKey.DurationMs, fmt.Sprintf("%d", duration))
 
-	svc.PublishEvent(evt)
+	svc.PublishEvent(ctx, evt)
 }

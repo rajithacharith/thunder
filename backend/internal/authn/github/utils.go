@@ -19,6 +19,7 @@
 package github
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -30,11 +31,11 @@ import (
 )
 
 // buildUserEmailRequest constructs the HTTP request to fetch user emails from GitHub.
-func buildUserEmailRequest(userEmailEndpoint string, accessToken string, logger *log.Logger) (
+func buildUserEmailRequest(ctx context.Context, userEmailEndpoint string, accessToken string, logger *log.Logger) (
 	*http.Request, *serviceerror.ServiceError) {
 	req, err := http.NewRequest(http.MethodGet, userEmailEndpoint, nil)
 	if err != nil {
-		logger.Error("Failed to create user email request", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to create user email request", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 

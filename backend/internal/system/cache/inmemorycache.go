@@ -116,7 +116,8 @@ func getEvictionPolicy(cacheConfig config.CacheConfig, cacheProperty config.Cach
 	case string(evictionPolicyLFU):
 		return evictionPolicyLFU
 	default:
-		log.GetLogger().Warn("Unknown eviction policy, defaulting to LRU")
+		// Cache infrastructure logging has no request scope, so context.Background() is used.
+		log.GetLogger().WarnWithContext(context.Background(), "Unknown eviction policy, defaulting to LRU")
 		return evictionPolicyLRU
 	}
 }
@@ -142,11 +143,13 @@ func getCacheSize(cacheConfig config.CacheConfig, cacheProperty config.CacheProp
 // newInMemoryCache creates a new instance of InMemoryCache.
 func newInMemoryCache[T any](name string, enabled bool,
 	cacheConfig config.CacheConfig, cacheProperty config.CacheProperty) CacheInterface[T] {
+	// Cache infrastructure logging has no request scope, so context.Background() is used.
+	ctx := context.Background()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "InMemoryCache"),
 		log.String("name", name))
 
 	if !enabled {
-		logger.Warn("In-memory cache is disabled, returning empty cache")
+		logger.WarnWithContext(ctx, "In-memory cache is disabled, returning empty cache")
 		return &inMemoryCache[T]{
 			name:    name,
 			enabled: false,
@@ -157,7 +160,7 @@ func newInMemoryCache[T any](name string, enabled bool,
 	size := getCacheSize(cacheConfig, cacheProperty)
 	evictionPolicy := getEvictionPolicy(cacheConfig, cacheProperty)
 
-	logger.Debug("Initializing In-memory cache", log.String("evictionPolicy", string(evictionPolicy)),
+	logger.DebugWithContext(ctx, "Initializing In-memory cache", log.String("evictionPolicy", string(evictionPolicy)),
 		log.Int("size", size), log.Any("ttl", ttl))
 
 	lfuHeapInstance := &lfuHeap{}
@@ -395,7 +398,8 @@ func (c *inMemoryCache[T]) evictOldest() {
 		if entry, exists := c.cache[key]; exists {
 			c.deleteEntry(key, entry)
 			c.evictCount.Add(1)
-			logger.Debug("Cache entry evicted", log.String("key", key.ToString()))
+			// Cache eviction is infrastructure-scoped, not tied to a request.
+			logger.DebugWithContext(context.Background(), "Cache entry evicted", log.String("key", key.ToString()))
 		}
 	}
 }
@@ -415,7 +419,9 @@ func (c *inMemoryCache[T]) evictLeastFrequent() {
 	if entry, exists := c.cache[leastFrequentItem.key]; exists {
 		c.deleteEntry(leastFrequentItem.key, entry)
 		c.evictCount.Add(1)
-		logger.Debug("Cache entry evicted (LFU)", log.String("key", leastFrequentItem.key.ToString()),
+		// Cache eviction is infrastructure-scoped, not tied to a request.
+		logger.DebugWithContext(context.Background(), "Cache entry evicted (LFU)",
+			log.String("key", leastFrequentItem.key.ToString()),
 			log.Any("accessCount", leastFrequentItem.accessCount))
 	}
 }
@@ -433,13 +439,15 @@ func (c *inMemoryCache[T]) deleteEntry(key CacheKey, entry *inMemoryCacheEntry[T
 
 // CleanupExpired removes all expired entries from the cache.
 func (c *inMemoryCache[T]) CleanupExpired() {
+	// Cache infrastructure logging has no request scope, so context.Background() is used.
+	ctx := context.Background()
 	if !c.enabled {
 		return
 	}
 
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "InMemoryCache"),
 		log.String("name", c.GetName()))
-	logger.Debug("Cleaning up expired entries from the cache")
+	logger.DebugWithContext(ctx, "Cleaning up expired entries from the cache")
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -455,9 +463,9 @@ func (c *inMemoryCache[T]) CleanupExpired() {
 
 	if logger.IsDebugEnabled() {
 		if cleaned > 0 {
-			logger.Debug("Expired cache entries cleaned", log.Int("count", cleaned))
+			logger.DebugWithContext(ctx, "Expired cache entries cleaned", log.Int("count", cleaned))
 		} else {
-			logger.Debug("No expired entries found in the cache")
+			logger.DebugWithContext(ctx, "No expired entries found in the cache")
 		}
 	}
 }

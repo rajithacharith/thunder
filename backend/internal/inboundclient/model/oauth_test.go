@@ -19,6 +19,7 @@
 package model_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -248,7 +249,7 @@ func (suite *OAuthClientTestSuite) TestValidateRedirectURI_ValidWithSingleRegist
 		RedirectURIs: []string{"https://example.com/callback"},
 	}
 
-	suite.NoError(c.ValidateRedirectURI("https://example.com/callback"))
+	suite.NoError(c.ValidateRedirectURI(context.Background(), "https://example.com/callback"))
 }
 
 func (suite *OAuthClientTestSuite) TestValidateRedirectURI_ValidHTTPLocalhostWithPort() {
@@ -256,7 +257,7 @@ func (suite *OAuthClientTestSuite) TestValidateRedirectURI_ValidHTTPLocalhostWit
 		RedirectURIs: []string{"http://localhost:3000/callback"},
 	}
 
-	suite.NoError(c.ValidateRedirectURI("http://localhost:3000/callback"))
+	suite.NoError(c.ValidateRedirectURI(context.Background(), "http://localhost:3000/callback"))
 }
 
 func (suite *OAuthClientTestSuite) TestValidateRedirectURI_ValidHTTPSWithPath() {
@@ -264,7 +265,7 @@ func (suite *OAuthClientTestSuite) TestValidateRedirectURI_ValidHTTPSWithPath() 
 		RedirectURIs: []string{"https://app.example.com/oauth/callback"},
 	}
 
-	suite.NoError(c.ValidateRedirectURI("https://app.example.com/oauth/callback"))
+	suite.NoError(c.ValidateRedirectURI(context.Background(), "https://app.example.com/oauth/callback"))
 }
 
 func (suite *OAuthClientTestSuite) TestValidateRedirectURI_ValidCustomScheme() {
@@ -272,7 +273,7 @@ func (suite *OAuthClientTestSuite) TestValidateRedirectURI_ValidCustomScheme() {
 		RedirectURIs: []string{"myapp://callback"},
 	}
 
-	suite.NoError(c.ValidateRedirectURI("myapp://callback"))
+	suite.NoError(c.ValidateRedirectURI(context.Background(), "myapp://callback"))
 }
 
 func (suite *OAuthClientTestSuite) TestValidateRedirectURI_ValidWithQueryParameters() {
@@ -280,7 +281,7 @@ func (suite *OAuthClientTestSuite) TestValidateRedirectURI_ValidWithQueryParamet
 		RedirectURIs: []string{"https://example.com/callback?param=value"},
 	}
 
-	suite.NoError(c.ValidateRedirectURI("https://example.com/callback?param=value"))
+	suite.NoError(c.ValidateRedirectURI(context.Background(), "https://example.com/callback?param=value"))
 }
 
 func (suite *OAuthClientTestSuite) TestValidateRedirectURI_InvalidWithFragment() {
@@ -288,7 +289,7 @@ func (suite *OAuthClientTestSuite) TestValidateRedirectURI_InvalidWithFragment()
 		RedirectURIs: []string{"https://example.com/callback#fragment"},
 	}
 
-	err := c.ValidateRedirectURI("https://example.com/callback#fragment")
+	err := c.ValidateRedirectURI(context.Background(), "https://example.com/callback#fragment")
 	suite.EqualError(err, errRedirectURIFragment)
 }
 
@@ -297,7 +298,7 @@ func (suite *OAuthClientTestSuite) TestValidateRedirectURI_NotRegistered() {
 		RedirectURIs: []string{"https://example.com/callback"},
 	}
 
-	err := c.ValidateRedirectURI("https://different.com/callback")
+	err := c.ValidateRedirectURI(context.Background(), "https://different.com/callback")
 	suite.EqualError(err, errRedirectURINotRegistered)
 }
 
@@ -306,7 +307,7 @@ func (suite *OAuthClientTestSuite) TestValidateRedirectURI_EmptyWithSingleFullyQ
 		RedirectURIs: []string{"https://example.com/callback"},
 	}
 
-	suite.NoError(c.ValidateRedirectURI(""))
+	suite.NoError(c.ValidateRedirectURI(context.Background(), ""))
 }
 
 func (suite *OAuthClientTestSuite) TestValidateRedirectURI_EmptyWithMultipleURIs() {
@@ -317,7 +318,7 @@ func (suite *OAuthClientTestSuite) TestValidateRedirectURI_EmptyWithMultipleURIs
 		},
 	}
 
-	err := c.ValidateRedirectURI("")
+	err := c.ValidateRedirectURI(context.Background(), "")
 	suite.EqualError(err, errRedirectURIRequired)
 }
 
@@ -326,7 +327,7 @@ func (suite *OAuthClientTestSuite) TestValidateRedirectURI_EmptyWithPartialRegis
 		RedirectURIs: []string{"/callback"},
 	}
 
-	err := c.ValidateRedirectURI("")
+	err := c.ValidateRedirectURI(context.Background(), "")
 	suite.EqualError(err, errRedirectURINotFullyQualified)
 }
 
@@ -335,7 +336,7 @@ func (suite *OAuthClientTestSuite) TestValidateRedirectURI_EmptyWithInvalidRegis
 		RedirectURIs: []string{"://invalid"},
 	}
 
-	err := c.ValidateRedirectURI("")
+	err := c.ValidateRedirectURI(context.Background(), "")
 	suite.EqualError(err, errRedirectURINotFullyQualified)
 }
 
@@ -344,7 +345,7 @@ func (suite *OAuthClientTestSuite) TestValidateRedirectURI_EmptyRedirectURIsList
 		RedirectURIs: []string{},
 	}
 
-	err := c.ValidateRedirectURI("")
+	err := c.ValidateRedirectURI(context.Background(), "")
 	suite.EqualError(err, errRedirectURIRequired)
 }
 
@@ -353,7 +354,7 @@ func (suite *OAuthClientTestSuite) TestValidateRedirectURI_NilRedirectURIsList()
 		RedirectURIs: nil,
 	}
 
-	err := c.ValidateRedirectURI("")
+	err := c.ValidateRedirectURI(context.Background(), "")
 	suite.EqualError(err, errRedirectURIRequired)
 }
 
@@ -457,7 +458,10 @@ func (suite *OAuthHelperTestSuite) TestIsAllowedResponseType_NilList() {
 }
 
 func (suite *OAuthHelperTestSuite) TestValidateRedirectURI_ValidSingleURI() {
-	err := model.ValidateRedirectURI([]string{"https://example.com/callback"}, "https://example.com/callback")
+	err := model.ValidateRedirectURI(
+		context.Background(),
+		[]string{"https://example.com/callback"},
+		"https://example.com/callback")
 	suite.NoError(err)
 }
 
@@ -467,23 +471,26 @@ func (suite *OAuthHelperTestSuite) TestValidateRedirectURI_ValidMultipleURIs() {
 		"https://example.com/callback2",
 	}
 
-	err := model.ValidateRedirectURI(redirectURIs, "https://example.com/callback2")
+	err := model.ValidateRedirectURI(context.Background(), redirectURIs, "https://example.com/callback2")
 	suite.NoError(err)
 }
 
 func (suite *OAuthHelperTestSuite) TestValidateRedirectURI_InvalidNotRegistered() {
-	err := model.ValidateRedirectURI([]string{"https://example.com/callback"}, "https://different.com/callback")
+	err := model.ValidateRedirectURI(
+		context.Background(),
+		[]string{"https://example.com/callback"},
+		"https://different.com/callback")
 	suite.EqualError(err, errRedirectURINotRegistered)
 }
 
 func (suite *OAuthHelperTestSuite) TestValidateRedirectURI_InvalidWithFragment() {
 	uri := "https://example.com/callback#fragment"
-	err := model.ValidateRedirectURI([]string{uri}, uri)
+	err := model.ValidateRedirectURI(context.Background(), []string{uri}, uri)
 	suite.EqualError(err, errRedirectURIFragment)
 }
 
 func (suite *OAuthHelperTestSuite) TestValidateRedirectURI_EmptyURIWithSingleFullyQualified() {
-	err := model.ValidateRedirectURI([]string{"https://example.com/callback"}, "")
+	err := model.ValidateRedirectURI(context.Background(), []string{"https://example.com/callback"}, "")
 	suite.NoError(err)
 }
 
@@ -493,63 +500,72 @@ func (suite *OAuthHelperTestSuite) TestValidateRedirectURI_EmptyURIWithMultiple(
 		"https://example.com/callback2",
 	}
 
-	err := model.ValidateRedirectURI(redirectURIs, "")
+	err := model.ValidateRedirectURI(context.Background(), redirectURIs, "")
 	suite.EqualError(err, errRedirectURIRequired)
 }
 
 func (suite *OAuthHelperTestSuite) TestValidateRedirectURI_EmptyURIWithPartialRegistered() {
-	err := model.ValidateRedirectURI([]string{"/callback"}, "")
+	err := model.ValidateRedirectURI(context.Background(), []string{"/callback"}, "")
 	suite.EqualError(err, errRedirectURINotFullyQualified)
 }
 
 func (suite *OAuthHelperTestSuite) TestValidateRedirectURI_EmptyURIWithNoScheme() {
-	err := model.ValidateRedirectURI([]string{"example.com/callback"}, "")
+	err := model.ValidateRedirectURI(context.Background(), []string{"example.com/callback"}, "")
 	suite.EqualError(err, errRedirectURINotFullyQualified)
 }
 
 func (suite *OAuthHelperTestSuite) TestValidateRedirectURI_EmptyURIWithNoHost() {
-	err := model.ValidateRedirectURI([]string{"https:///callback"}, "")
+	err := model.ValidateRedirectURI(context.Background(), []string{"https:///callback"}, "")
 	suite.EqualError(err, errRedirectURINotFullyQualified)
 }
 
 func (suite *OAuthHelperTestSuite) TestValidateRedirectURI_EmptyURIList() {
-	err := model.ValidateRedirectURI([]string{}, "")
+	err := model.ValidateRedirectURI(context.Background(), []string{}, "")
 	suite.EqualError(err, errRedirectURIRequired)
 }
 
 func (suite *OAuthHelperTestSuite) TestValidateRedirectURI_NilList() {
-	err := model.ValidateRedirectURI(nil, "")
+	err := model.ValidateRedirectURI(context.Background(), nil, "")
 	suite.EqualError(err, errRedirectURIRequired)
 }
 
 func (suite *OAuthHelperTestSuite) TestValidateRedirectURI_CustomScheme() {
-	err := model.ValidateRedirectURI([]string{"myapp://callback"}, "myapp://callback")
+	err := model.ValidateRedirectURI(context.Background(), []string{"myapp://callback"}, "myapp://callback")
 	suite.NoError(err)
 }
 
 func (suite *OAuthHelperTestSuite) TestValidateRedirectURI_LocalhostHTTP() {
-	err := model.ValidateRedirectURI([]string{"http://localhost:3000/callback"}, "http://localhost:3000/callback")
+	err := model.ValidateRedirectURI(
+		context.Background(),
+		[]string{"http://localhost:3000/callback"},
+		"http://localhost:3000/callback")
 	suite.NoError(err)
 }
 
 func (suite *OAuthHelperTestSuite) TestValidateRedirectURI_WithQueryParams() {
 	uri := "https://example.com/callback?foo=bar"
-	suite.NoError(model.ValidateRedirectURI([]string{uri}, uri))
+	suite.NoError(model.ValidateRedirectURI(context.Background(), []string{uri}, uri))
 }
 
 func (suite *OAuthHelperTestSuite) TestValidateRedirectURI_IPAddress() {
-	err := model.ValidateRedirectURI([]string{"https://192.168.1.1/callback"}, "https://192.168.1.1/callback")
+	err := model.ValidateRedirectURI(
+		context.Background(),
+		[]string{"https://192.168.1.1/callback"},
+		"https://192.168.1.1/callback")
 	suite.NoError(err)
 }
 
 func (suite *OAuthHelperTestSuite) TestValidateRedirectURI_Localhost127() {
-	err := model.ValidateRedirectURI([]string{"http://127.0.0.1:8080/callback"}, "http://127.0.0.1:8080/callback")
+	err := model.ValidateRedirectURI(
+		context.Background(),
+		[]string{"http://127.0.0.1:8080/callback"},
+		"http://127.0.0.1:8080/callback")
 	suite.NoError(err)
 }
 
 func (suite *OAuthHelperTestSuite) TestValidateRedirectURI_InvalidURLFormat() {
 	uri := "http://example.com/callback\x00invalid"
-	err := model.ValidateRedirectURI([]string{uri}, uri)
+	err := model.ValidateRedirectURI(context.Background(), []string{uri}, uri)
 	suite.Error(err)
 	assert.Contains(suite.T(), err.Error(), "invalid redirect URI")
 }
@@ -605,7 +621,7 @@ func (suite *OAuthHelperTestSuite) TestMatchAnyRedirectURIPattern_WildcardEnable
 	cfg.OAuth.AllowWildcardRedirectURI = true
 	suite.Require().NoError(sysconfig.InitializeServerRuntime("/tmp/test", cfg))
 
-	err := model.ValidateRedirectURI(
+	err := model.ValidateRedirectURI(context.Background(),
 		[]string{"https://app.example.com/*"},
 		"https://app.example.com/cb",
 	)
@@ -613,7 +629,7 @@ func (suite *OAuthHelperTestSuite) TestMatchAnyRedirectURIPattern_WildcardEnable
 }
 
 func (suite *OAuthHelperTestSuite) TestMatchAnyRedirectURIPattern_WildcardDisabled_NoMatch() {
-	err := model.ValidateRedirectURI(
+	err := model.ValidateRedirectURI(context.Background(),
 		[]string{"https://app.example.com/*"},
 		"https://app.example.com/cb",
 	)
@@ -626,7 +642,7 @@ func (suite *OAuthHelperTestSuite) TestMatchAnyRedirectURIPattern_HostWildcardEn
 	cfg.OAuth.AllowWildcardRedirectURI = true
 	suite.Require().NoError(sysconfig.InitializeServerRuntime("/tmp/test", cfg))
 
-	err := model.ValidateRedirectURI(
+	err := model.ValidateRedirectURI(context.Background(),
 		[]string{"https://tenant-app-*-*.gateway.example.com/cb"},
 		"https://tenant-app-019dfc78-f19ab4f2.gateway.example.com/cb",
 	)
@@ -640,7 +656,7 @@ func (suite *OAuthHelperTestSuite) TestMatchAnyRedirectURIPattern_HostWildcardEn
 	suite.Require().NoError(sysconfig.InitializeServerRuntime("/tmp/test", cfg))
 
 	// Hyphen inside the dynamic part is not in [0-9a-zA-Z]+, so this must fail.
-	err := model.ValidateRedirectURI(
+	err := model.ValidateRedirectURI(context.Background(),
 		[]string{"https://app-*-prod.example.com/cb"},
 		"https://app-foo-bar-prod.example.com/cb",
 	)
@@ -650,7 +666,7 @@ func (suite *OAuthHelperTestSuite) TestMatchAnyRedirectURIPattern_HostWildcardEn
 func (suite *OAuthHelperTestSuite) TestMatchAnyRedirectURIPattern_HostWildcardDisabled_NoMatch() {
 	// Default: AllowWildcardRedirectURI = false. Note the pattern would never have made it
 	// past registration with the flag off, but we still verify the matcher returns no match.
-	err := model.ValidateRedirectURI(
+	err := model.ValidateRedirectURI(context.Background(),
 		[]string{"https://app-*.example.com/cb"},
 		"https://app-prod.example.com/cb",
 	)
@@ -663,7 +679,7 @@ func (suite *OAuthHelperTestSuite) TestMatchAnyRedirectURIPattern_HostWildcardDo
 	cfg.OAuth.AllowWildcardRedirectURI = true
 	suite.Require().NoError(sysconfig.InitializeServerRuntime("/tmp/test", cfg))
 
-	err := model.ValidateRedirectURI(
+	err := model.ValidateRedirectURI(context.Background(),
 		[]string{"https://app-*.example.com/cb"},
 		"https://app-foo.evil.example.com/cb",
 	)

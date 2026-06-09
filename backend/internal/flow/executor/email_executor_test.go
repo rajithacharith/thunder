@@ -108,7 +108,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UserInviteTemplate_Suc
 		Body:    "<html><body>Complete Registration</body></html>",
 		IsHTML:  true,
 	}
-	suite.mockEmailClient.On("Send", expectedEmail).Return(nil)
+	suite.mockEmailClient.On("Send", mock.Anything, expectedEmail).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -155,7 +155,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_Invit
 		Body:    "<html><body>Click to register</body></html>",
 		IsHTML:  true,
 	}
-	suite.mockEmailClient.On("Send", expectedEmail).Return(nil)
+	suite.mockEmailClient.On("Send", mock.Anything, expectedEmail).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -204,7 +204,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UsesRuntimeRecipientOv
 		Body:    "<html><body>Complete Registration</body></html>",
 		IsHTML:  true,
 	}
-	suite.mockEmailClient.On("Send", expectedEmail).Return(nil)
+	suite.mockEmailClient.On("Send", mock.Anything, expectedEmail).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -249,7 +249,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmailFromRuntimeData()
 		Body:    "<html><body>Complete Registration</body></html>",
 		IsHTML:  true,
 	}
-	suite.mockEmailClient.On("Send", expectedEmail).Return(nil)
+	suite.mockEmailClient.On("Send", mock.Anything, expectedEmail).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -314,7 +314,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingInviteLink() {
 		Body:    "<html><body>Complete Registration</body></html>",
 		IsHTML:  true,
 	}
-	suite.mockEmailClient.On("Send", expectedEmail).Return(nil)
+	suite.mockEmailClient.On("Send", mock.Anything, expectedEmail).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -356,7 +356,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_Missi
 		Body:    "<html><body>Click to register</body></html>",
 		IsHTML:  true,
 	}
-	suite.mockEmailClient.On("Send", expectedEmail).Return(nil)
+	suite.mockEmailClient.On("Send", mock.Anything, expectedEmail).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -549,7 +549,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ClientError() {
 		Body:    "<html><body>Complete Registration</body></html>",
 		IsHTML:  true,
 	}
-	suite.mockEmailClient.On("Send", expectedEmail).Return(email.ErrorInvalidRecipient)
+	suite.mockEmailClient.On("Send", mock.Anything, expectedEmail).Return(email.ErrorInvalidRecipient)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -608,7 +608,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_KnownSMTPErrors() {
 				Body:    "<html><body>Complete Registration</body></html>",
 				IsHTML:  true,
 			}
-			suite.mockEmailClient.On("Send", expectedEmail).Return(tc.sendErr)
+			suite.mockEmailClient.On("Send", mock.Anything, expectedEmail).Return(tc.sendErr)
 
 			resp, err := suite.executor.Execute(ctx)
 
@@ -657,7 +657,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UnexpectedError() {
 		Body:    "<html><body>Complete Registration</body></html>",
 		IsHTML:  true,
 	}
-	suite.mockEmailClient.On("Send", expectedEmail).Return(fmt.Errorf("unexpected internal error"))
+	suite.mockEmailClient.On("Send", mock.Anything, expectedEmail).Return(fmt.Errorf("unexpected internal error"))
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -767,8 +767,8 @@ func (suite *EmailExecutorTestSuite) assertExecuteSendSuccess(ctx *core.NodeCont
 	}, nil)
 
 	var sentEmail email.EmailData
-	suite.mockEmailClient.On("Send", mock.Anything).Run(func(args mock.Arguments) {
-		sentEmail = args.Get(0).(email.EmailData)
+	suite.mockEmailClient.On("Send", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		sentEmail = args.Get(1).(email.EmailData)
 	}).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -819,7 +819,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ResolvesEmailFromForwa
 		Body:    "<html><body>Complete Registration</body></html>",
 		IsHTML:  true,
 	}
-	suite.mockEmailClient.On("Send", expectedEmail).Return(nil)
+	suite.mockEmailClient.On("Send", mock.Anything, expectedEmail).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -867,7 +867,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UsesNodePropertiesAndF
 		Body:    "<html><body>Magic Link</body></html>",
 		IsHTML:  true,
 	}
-	suite.mockEmailClient.On("Send", expectedEmail).Return(nil)
+	suite.mockEmailClient.On("Send", mock.Anything, expectedEmail).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -912,7 +912,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ResolvesEmailUsingConf
 		Body:    "<html><body>Complete Registration</body></html>",
 		IsHTML:  true,
 	}
-	suite.mockEmailClient.On("Send", expectedEmail).Return(nil)
+	suite.mockEmailClient.On("Send", mock.Anything, expectedEmail).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -962,7 +962,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ResolvesEmailFromEntit
 		Body:    "<html><body>Complete Registration</body></html>",
 		IsHTML:  true,
 	}
-	suite.mockEmailClient.On("Send", expectedEmail).Return(nil)
+	suite.mockEmailClient.On("Send", mock.Anything, expectedEmail).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -1209,7 +1209,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ApplicationNameInTempl
 		IsHTML:  false,
 	}, nil)
 
-	suite.mockEmailClient.On("Send", mock.MatchedBy(func(d email.EmailData) bool {
+	suite.mockEmailClient.On("Send", mock.Anything, mock.MatchedBy(func(d email.EmailData) bool {
 		return len(d.To) == 1 && d.To[0] == "user@example.com"
 	})).Return(nil)
 

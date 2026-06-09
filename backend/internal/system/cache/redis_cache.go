@@ -45,11 +45,13 @@ type redisCache[T any] struct {
 // newRedisCache creates a new instance of redisCache.
 func newRedisCache[T any](name string, enabled bool, client *redis.Client, keyPrefix string,
 	cacheConfig config.CacheConfig, cacheProperty config.CacheProperty) CacheInterface[T] {
+	// Cache infrastructure logging has no request scope, so context.Background() is used.
+	ctx := context.Background()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "RedisCache"),
 		log.String("name", name))
 
 	if !enabled {
-		logger.Warn("Redis cache is disabled, returning empty cache")
+		logger.WarnWithContext(ctx, "Redis cache is disabled, returning empty cache")
 		return &redisCache[T]{
 			name:    name,
 			enabled: false,
@@ -58,7 +60,7 @@ func newRedisCache[T any](name string, enabled bool, client *redis.Client, keyPr
 
 	ttl := getCacheTTL(cacheConfig, cacheProperty)
 
-	logger.Debug("Initializing Redis cache", log.Any("ttl", ttl),
+	logger.DebugWithContext(ctx, "Initializing Redis cache", log.Any("ttl", ttl),
 		log.String("keyPrefix", keyPrefix))
 
 	return &redisCache[T]{
@@ -145,7 +147,7 @@ func (c *redisCache[T]) Delete(ctx context.Context, key CacheKey) error {
 	fullKey := c.buildKey(key)
 
 	if err := c.client.Del(ctx, fullKey).Err(); err != nil {
-		log.GetLogger().Warn("Failed to delete value from Redis cache",
+		log.GetLogger().WarnWithContext(ctx, "Failed to delete value from Redis cache",
 			log.Error(err))
 		return err
 	}

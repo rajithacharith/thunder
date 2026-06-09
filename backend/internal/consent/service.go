@@ -38,7 +38,8 @@ type consentService struct {
 func newConsentService(client consentClientInterface) ConsentServiceInterface {
 	isEnabled := config.GetServerRuntime().Config.Consent.Enabled
 	if !isEnabled {
-		log.GetLogger().Debug("Consent service is disabled in the configuration")
+		// Service construction runs during application startup, outside any request.
+		log.GetLogger().DebugWithContext(context.Background(), "Consent service is disabled in the configuration")
 	}
 
 	return &consentService{

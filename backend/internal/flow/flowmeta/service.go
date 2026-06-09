@@ -284,7 +284,7 @@ func (fms *flowMetaService) populateI18nMetadata(
 	ctx context.Context, response *FlowMetadataResponse, lang string, ns string) {
 	i18nResp, i18nErr := fms.i18nService.ResolveTranslations(ctx, lang, ns)
 	if i18nErr != nil {
-		fms.logger.Debug("Failed to get i18n translations",
+		fms.logger.DebugWithContext(ctx, "Failed to get i18n translations",
 			log.String("language", lang),
 			log.String("namespace", ns),
 			log.String("error", i18nErr.Error.DefaultValue))
@@ -296,7 +296,7 @@ func (fms *flowMetaService) populateI18nMetadata(
 
 	languages, i18nErr := fms.i18nService.ListLanguages(ctx)
 	if i18nErr != nil {
-		fms.logger.Debug("Failed to list languages",
+		fms.logger.DebugWithContext(ctx, "Failed to list languages",
 			log.String("error", i18nErr.Error.DefaultValue))
 		response.I18n.Languages = []string{i18nmgt.SystemLanguage}
 		return

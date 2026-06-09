@@ -417,7 +417,7 @@ packages:
       pkgname: rolemock
       filename: "{{.InterfaceName}}_mock.go"
 
-  github.com/thunder-id/thunderid/internal/observability:
+  github.com/thunder-id/thunderid/internal/system/observability:
     config:
       all: true
       dir: tests/mocks/observability/observabilitymock
@@ -425,7 +425,7 @@ packages:
       pkgname: observabilitymock
       filename: "{{.InterfaceName}}_mock.go"
 
-  github.com/thunder-id/thunderid/internal/observability/adapter:
+  github.com/thunder-id/thunderid/internal/system/observability/adapter:
     config:
       all: true
       dir: tests/mocks/observability/adaptermock

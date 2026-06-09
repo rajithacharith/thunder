@@ -55,7 +55,7 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 			Message:     ErrorInvalidRequestFormat.Error,
 			Description: ErrorInvalidRequestFormat.ErrorDescription,
 		}
-		sysutils.WriteErrorResponse(w, http.StatusBadRequest, errResp)
+		sysutils.WriteErrorResponse(ctx, w, http.StatusBadRequest, errResp)
 		return
 	}
 
@@ -89,7 +89,7 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 	// Create the app using the application service.
 	createdAppDTO, svcErr := ah.service.CreateApplication(ctx, &appDTO)
 	if svcErr != nil {
-		ah.handleError(w, r, svcErr)
+		ah.handleError(ctx, w, r, svcErr)
 		return
 	}
 
@@ -129,12 +129,12 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 				Message:     serviceerror.InternalServerError.Error,
 				Description: serviceerror.InternalServerError.ErrorDescription,
 			}
-			sysutils.WriteErrorResponse(w, http.StatusInternalServerError, errResp)
+			sysutils.WriteErrorResponse(ctx, w, http.StatusInternalServerError, errResp)
 			return
 		}
 	}
 
-	sysutils.WriteSuccessResponse(w, http.StatusCreated, returnApp)
+	sysutils.WriteSuccessResponse(ctx, w, http.StatusCreated, returnApp)
 }
 
 // HandleApplicationListRequest handles the application request.
@@ -142,11 +142,11 @@ func (ah *applicationHandler) HandleApplicationListRequest(w http.ResponseWriter
 	ctx := r.Context()
 	listResponse, svcErr := ah.service.GetApplicationList(ctx)
 	if svcErr != nil {
-		ah.handleError(w, r, svcErr)
+		ah.handleError(ctx, w, r, svcErr)
 		return
 	}
 
-	sysutils.WriteSuccessResponse(w, http.StatusOK, listResponse)
+	sysutils.WriteSuccessResponse(ctx, w, http.StatusOK, listResponse)
 }
 
 // HandleApplicationGetRequest handles the application request.
@@ -161,13 +161,13 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 			Message:     ErrorInvalidApplicationID.Error,
 			Description: ErrorInvalidApplicationID.ErrorDescription,
 		}
-		sysutils.WriteErrorResponse(w, http.StatusBadRequest, errResp)
+		sysutils.WriteErrorResponse(ctx, w, http.StatusBadRequest, errResp)
 		return
 	}
 
 	appDTO, svcErr := ah.service.GetApplication(ctx, id)
 	if svcErr != nil {
-		ah.handleError(w, r, svcErr)
+		ah.handleError(ctx, w, r, svcErr)
 		return
 	}
 
@@ -209,7 +209,7 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 				Message:     serviceerror.InternalServerError.Error,
 				Description: serviceerror.InternalServerError.ErrorDescription,
 			}
-			sysutils.WriteErrorResponse(w, http.StatusInternalServerError, errResp)
+			sysutils.WriteErrorResponse(ctx, w, http.StatusInternalServerError, errResp)
 			return
 		}
 
@@ -221,7 +221,7 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 				Message:     serviceerror.InternalServerError.Error,
 				Description: serviceerror.InternalServerError.ErrorDescription,
 			}
-			sysutils.WriteErrorResponse(w, http.StatusInternalServerError, errResp)
+			sysutils.WriteErrorResponse(ctx, w, http.StatusInternalServerError, errResp)
 			return
 		}
 
@@ -234,7 +234,7 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 					Message:     serviceerror.InternalServerError.Error,
 					Description: serviceerror.InternalServerError.ErrorDescription,
 				}
-				sysutils.WriteErrorResponse(w, http.StatusInternalServerError, errResp)
+				sysutils.WriteErrorResponse(ctx, w, http.StatusInternalServerError, errResp)
 				return
 			}
 			redirectURIs := config.OAuthConfig.RedirectURIs
@@ -276,7 +276,7 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 		returnApp.ClientID = appDTO.InboundAuthConfig[0].OAuthConfig.ClientID
 	}
 
-	sysutils.WriteSuccessResponse(w, http.StatusOK, returnApp)
+	sysutils.WriteSuccessResponse(ctx, w, http.StatusOK, returnApp)
 }
 
 // HandleApplicationPutRequest handles the application request.
@@ -291,7 +291,7 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 			Message:     ErrorInvalidApplicationID.Error,
 			Description: ErrorInvalidApplicationID.ErrorDescription,
 		}
-		sysutils.WriteErrorResponse(w, http.StatusBadRequest, errResp)
+		sysutils.WriteErrorResponse(ctx, w, http.StatusBadRequest, errResp)
 		return
 	}
 
@@ -302,7 +302,7 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 			Message:     ErrorInvalidRequestFormat.Error,
 			Description: ErrorInvalidRequestFormat.ErrorDescription,
 		}
-		sysutils.WriteErrorResponse(w, http.StatusBadRequest, errResp)
+		sysutils.WriteErrorResponse(ctx, w, http.StatusBadRequest, errResp)
 		return
 	}
 
@@ -337,7 +337,7 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 	// Update the application using the application service.
 	updatedAppDTO, svcErr := ah.service.UpdateApplication(ctx, id, &updateReqAppDTO)
 	if svcErr != nil {
-		ah.handleError(w, r, svcErr)
+		ah.handleError(ctx, w, r, svcErr)
 		return
 	}
 
@@ -377,12 +377,12 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 				Message:     serviceerror.InternalServerError.Error,
 				Description: serviceerror.InternalServerError.ErrorDescription,
 			}
-			sysutils.WriteErrorResponse(w, http.StatusInternalServerError, errResp)
+			sysutils.WriteErrorResponse(ctx, w, http.StatusInternalServerError, errResp)
 			return
 		}
 	}
 
-	sysutils.WriteSuccessResponse(w, http.StatusOK, returnApp)
+	sysutils.WriteSuccessResponse(ctx, w, http.StatusOK, returnApp)
 }
 
 // HandleApplicationDeleteRequest handles the application request.
@@ -395,17 +395,17 @@ func (ah *applicationHandler) HandleApplicationDeleteRequest(w http.ResponseWrit
 			Message:     ErrorInvalidApplicationID.Error,
 			Description: ErrorInvalidApplicationID.ErrorDescription,
 		}
-		sysutils.WriteErrorResponse(w, http.StatusBadRequest, errResp)
+		sysutils.WriteErrorResponse(ctx, w, http.StatusBadRequest, errResp)
 		return
 	}
 
 	svcErr := ah.service.DeleteApplication(ctx, id)
 	if svcErr != nil {
-		ah.handleError(w, r, svcErr)
+		ah.handleError(ctx, w, r, svcErr)
 		return
 	}
 
-	sysutils.WriteSuccessResponse(w, http.StatusNoContent, nil)
+	sysutils.WriteSuccessResponse(ctx, w, http.StatusNoContent, nil)
 }
 
 // processInboundAuthConfig prepares the response for OAuth app configuration.
@@ -476,7 +476,7 @@ func (ah *applicationHandler) processInboundAuthConfig(
 
 // handleError handles service errors and returns appropriate HTTP responses.
 // When the resolved status is 500, the error is logged with request context.
-func (ah *applicationHandler) handleError(w http.ResponseWriter, r *http.Request,
+func (ah *applicationHandler) handleError(ctx context.Context, w http.ResponseWriter, r *http.Request,
 	svcErr *serviceerror.ServiceError) {
 	errResp := apierror.ErrorResponse{
 		Code:        svcErr.Code,
@@ -495,7 +495,7 @@ func (ah *applicationHandler) handleError(w http.ResponseWriter, r *http.Request
 
 	if statusCode == http.StatusInternalServerError {
 		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationHandler"))
-		logger.ErrorWithContext(r.Context(), "Internal server error processing application request",
+		logger.ErrorWithContext(ctx, "Internal server error processing application request",
 			log.String("method", r.Method),
 			log.String("path", r.URL.Path),
 			log.String("error_code", svcErr.Code),
@@ -503,7 +503,7 @@ func (ah *applicationHandler) handleError(w http.ResponseWriter, r *http.Request
 		)
 	}
 
-	sysutils.WriteErrorResponse(w, statusCode, errResp)
+	sysutils.WriteErrorResponse(ctx, w, statusCode, errResp)
 }
 
 // processInboundAuthConfigFromRequest processes inbound auth config from request to DTO.

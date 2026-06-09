@@ -204,7 +204,7 @@ func (s *ResourceServerExporterTestSuite) TestValidateResource_Success() {
 		OUID:        "ou1",
 	}
 
-	name, err := s.exporter.ValidateResource(dto, "rs1", s.logger)
+	name, err := s.exporter.ValidateResource(context.Background(), dto, "rs1", s.logger)
 
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), "Test Server", name)
@@ -213,7 +213,7 @@ func (s *ResourceServerExporterTestSuite) TestValidateResource_Success() {
 func (s *ResourceServerExporterTestSuite) TestValidateResource_InvalidType() {
 	invalidData := "not a resource server dto"
 
-	name, err := s.exporter.ValidateResource(invalidData, "rs1", s.logger)
+	name, err := s.exporter.ValidateResource(context.Background(), invalidData, "rs1", s.logger)
 
 	assert.Equal(s.T(), "", name)
 	assert.NotNil(s.T(), err)
@@ -226,7 +226,7 @@ func (s *ResourceServerExporterTestSuite) TestValidateResource_EmptyName() {
 		OUID: "ou1",
 	}
 
-	name, err := s.exporter.ValidateResource(dto, "rs1", s.logger)
+	name, err := s.exporter.ValidateResource(context.Background(), dto, "rs1", s.logger)
 
 	assert.Equal(s.T(), "", name)
 	assert.NotNil(s.T(), err)

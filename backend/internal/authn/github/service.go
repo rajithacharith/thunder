@@ -92,7 +92,7 @@ func (g *githubOAuthAuthnService) FetchUserInfo(ctx context.Context, idpID, acce
 	}
 
 	// Fetch primary email from the GitHub user emails endpoint.
-	primaryEmail, svcErr := g.fetchPrimaryEmail(oAuthClientConfig, accessToken)
+	primaryEmail, svcErr := g.fetchPrimaryEmail(ctx, oAuthClientConfig, accessToken)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -110,18 +110,18 @@ func (g *githubOAuthAuthnService) shouldFetchEmail(scopes []string) bool {
 }
 
 // fetchPrimaryEmail fetches the primary email of the user from the GitHub user emails endpoint.
-func (g *githubOAuthAuthnService) fetchPrimaryEmail(
+func (g *githubOAuthAuthnService) fetchPrimaryEmail(ctx context.Context,
 	oAuthClientConfig *authnoauth.OAuthClientConfig, accessToken string) (
 	string, *serviceerror.ServiceError) {
 	logger := g.logger
-	logger.Debug("Fetching primary email from GitHub user emails endpoint")
+	logger.DebugWithContext(ctx, "Fetching primary email from GitHub user emails endpoint")
 
 	if oAuthClientConfig.OAuthEndpoints.UserEmailEndpoint == "" {
-		logger.Error("User email endpoint is not configured in OAuth client config")
+		logger.ErrorWithContext(ctx, "User email endpoint is not configured in OAuth client config")
 		return "", &serviceerror.InternalServerError
 	}
 
-	req, svcErr := buildUserEmailRequest(oAuthClientConfig.OAuthEndpoints.UserEmailEndpoint, accessToken, logger)
+	req, svcErr := buildUserEmailRequest(ctx, oAuthClientConfig.OAuthEndpoints.UserEmailEndpoint, accessToken, logger)
 	if svcErr != nil {
 		return "", svcErr
 	}

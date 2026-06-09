@@ -107,17 +107,17 @@ func (ah *authorizeHandler) HandleAuthCallbackPostRequest(w http.ResponseWriter,
 				ah.writeAuthZResponseToClientRedirect(ctx, w, authErr)
 				return
 			}
-			ah.writeAuthZResponseToErrorPage(w, authErr.Code, authErr.Message, authErr.State)
+			ah.writeAuthZResponseToErrorPage(ctx, w, authErr.Code, authErr.Message, authErr.State)
 			return
 		}
-		ah.writeAuthZResponse(w, redirectURI)
+		ah.writeAuthZResponse(ctx, w, redirectURI)
 
 	case oauth2const.TypeConsentResponseFromUser:
 		// TODO: Handle the consent response from the user.
 		//  Verify whether we need separate session data key for consent flow.
 		//  Alternatively could add consent info also to the same session object.
 	default:
-		utils.WriteJSONError(w, oauth2const.ErrorInvalidRequest, "Invalid authorization request",
+		utils.WriteJSONError(ctx, w, oauth2const.ErrorInvalidRequest, "Invalid authorization request",
 			http.StatusBadRequest, nil)
 	}
 }
@@ -146,7 +146,7 @@ func (ah *authorizeHandler) getOAuthMessage(r *http.Request, w http.ResponseWrit
 
 	if err != nil {
 		ah.logger.DebugWithContext(r.Context(), "Invalid authorize request", log.Error(err))
-		utils.WriteJSONError(w, oauth2const.ErrorInvalidRequest, "Invalid authorization request",
+		utils.WriteJSONError(r.Context(), w, oauth2const.ErrorInvalidRequest, "Invalid authorization request",
 			http.StatusBadRequest, nil)
 	}
 
@@ -285,16 +285,21 @@ func (ah *authorizeHandler) redirectToErrorPage(w http.ResponseWriter, r *http.R
 }
 
 // writeAuthZResponse writes the authorization response to the HTTP response writer.
-func (ah *authorizeHandler) writeAuthZResponse(w http.ResponseWriter, redirectURI string) {
+func (ah *authorizeHandler) writeAuthZResponse(ctx context.Context, w http.ResponseWriter, redirectURI string) {
 	authZResp := AuthZPostResponse{
 		RedirectURI: redirectURI,
 	}
-	utils.WriteSuccessResponse(w, http.StatusOK, authZResp)
+	utils.WriteSuccessResponse(ctx, w, http.StatusOK, authZResp)
 }
 
 // writeAuthZResponseToErrorPage writes the authorization response redirecting to the error page.
 // The state parameter is included in the redirect if non-empty.
-func (ah *authorizeHandler) writeAuthZResponseToErrorPage(w http.ResponseWriter, code, msg, state string) {
+func (
+	ah *authorizeHandler) writeAuthZResponseToErrorPage(ctx context.Context,
+	w http.ResponseWriter,
+	code,
+	msg,
+	state string) {
 	redirectURI, err := getErrorPageRedirectURL(code, msg)
 	if err != nil {
 		http.Error(w, "Failed to redirect to error page", http.StatusInternalServerError)
@@ -312,7 +317,7 @@ func (ah *authorizeHandler) writeAuthZResponseToErrorPage(w http.ResponseWriter,
 		}
 	}
 
-	ah.writeAuthZResponse(w, redirectURI)
+	ah.writeAuthZResponse(ctx, w, redirectURI)
 }
 
 // writeAuthZResponseToClientRedirect writes the authorization error response redirecting to the
@@ -331,10 +336,10 @@ func (ah *authorizeHandler) writeAuthZResponseToClientRedirect(
 	redirectURI, err := oauth2utils.GetURIWithQueryParams(authErr.ClientRedirectURI, queryParams)
 	if err != nil {
 		ah.logger.ErrorWithContext(ctx, "Failed to construct client redirect URI", log.Error(err))
-		ah.writeAuthZResponseToErrorPage(w, oauth2const.ErrorServerError,
+		ah.writeAuthZResponseToErrorPage(ctx, w, oauth2const.ErrorServerError,
 			"Failed to process authorization request", authErr.State)
 		return
 	}
 
-	ah.writeAuthZResponse(w, redirectURI)
+	ah.writeAuthZResponse(ctx, w, redirectURI)
 }

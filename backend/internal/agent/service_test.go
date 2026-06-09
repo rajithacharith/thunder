@@ -984,21 +984,21 @@ func (suite *AgentServiceTestSuite) TestMapEntityError_Unknown() {
 
 func (suite *AgentServiceTestSuite) TestTranslateInboundClientError_InvalidRedirectURI() {
 	svc, _, _, _ := suite.setupService()
-	svcErr := svc.translateInboundClientError(inboundclient.ErrOAuthInvalidRedirectURI)
+	svcErr := svc.translateInboundClientError(context.Background(), inboundclient.ErrOAuthInvalidRedirectURI)
 	suite.Require().NotNil(svcErr)
 	assert.Equal(suite.T(), ErrorInvalidRedirectURI.Code, svcErr.Code)
 }
 
 func (suite *AgentServiceTestSuite) TestTranslateInboundClientError_InvalidGrantType() {
 	svc, _, _, _ := suite.setupService()
-	svcErr := svc.translateInboundClientError(inboundclient.ErrOAuthInvalidGrantType)
+	svcErr := svc.translateInboundClientError(context.Background(), inboundclient.ErrOAuthInvalidGrantType)
 	suite.Require().NotNil(svcErr)
 	assert.Equal(suite.T(), ErrorInvalidGrantType.Code, svcErr.Code)
 }
 
 func (suite *AgentServiceTestSuite) TestTranslateInboundClientError_Unknown() {
 	svc, _, _, _ := suite.setupService()
-	svcErr := svc.translateInboundClientError(errors.New("unknown error"))
+	svcErr := svc.translateInboundClientError(context.Background(), errors.New("unknown error"))
 	assert.Nil(suite.T(), svcErr)
 }
 
@@ -1245,7 +1245,7 @@ func (suite *AgentServiceTestSuite) TestTranslateCertOperationError() {
 			opErr := &inboundclient.CertOperationError{
 				Operation: tc.op, RefType: tc.refType, Underlying: tc.underlying,
 			}
-			svcErr := s.translateCertOperationError(opErr)
+			svcErr := s.translateCertOperationError(context.Background(), opErr)
 			suite.Require().NotNil(svcErr)
 			suite.Equal(tc.wantCode, svcErr.Code)
 			suite.Equal(tc.wantDescKey, svcErr.ErrorDescription.Key)
@@ -1259,14 +1259,18 @@ func (suite *AgentServiceTestSuite) TestTranslateCertOperationError() {
 		RefType:    cert.CertificateReferenceTypeApplication,
 		Underlying: &serviceerror.ServiceError{Type: serviceerror.ServerErrorType, Code: "X-S"},
 	}
-	suite.Equal(serviceerror.InternalServerError.Code, s.translateCertOperationError(serverErrOp).Code)
+	suite.Equal(
+		serviceerror.InternalServerError.Code,
+		s.translateCertOperationError(context.Background(), serverErrOp).Code)
 
 	// Unknown operation returns InternalServerError.
 	unknownOp := &inboundclient.CertOperationError{
 		Operation:  "weird",
 		Underlying: &serviceerror.ServiceError{Type: serviceerror.ClientErrorType, Code: "X-?"},
 	}
-	suite.Equal(serviceerror.InternalServerError.Code, s.translateCertOperationError(unknownOp).Code)
+	suite.Equal(
+		serviceerror.InternalServerError.Code,
+		s.translateCertOperationError(context.Background(), unknownOp).Code)
 }
 
 // --- translateConsentSyncError ---

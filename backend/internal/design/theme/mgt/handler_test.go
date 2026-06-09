@@ -554,7 +554,7 @@ func (suite *ThemeHandlerTestSuite) TestHandleError_StatusCodeMapping() {
 	for _, tc := range tests {
 		suite.Run(tc.name, func() {
 			w := httptest.NewRecorder()
-			handleError(w, tc.svcErr)
+			handleError(context.Background(), w, tc.svcErr)
 			assert.Equal(suite.T(), tc.expectedStatus, w.Code)
 		})
 	}

@@ -147,7 +147,7 @@ func (s *inboundClientService) CreateInboundClient(ctx context.Context, client *
 		}
 	}
 	applyInboundDefaults(client, oauthProfile)
-	oauthClientID := s.resolveClientID(client.ID)
+	oauthClientID := s.resolveClientID(ctx, client.ID)
 	return s.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if _, vErr, opErr := s.createCertificate(
 			txCtx, cert.CertificateReferenceTypeApplication, client.ID, appCert,
@@ -221,7 +221,7 @@ func (s *inboundClientService) UpdateInboundClient(ctx context.Context, client *
 	}
 	applyInboundDefaults(client, oauthProfile)
 	// Capture existing OAuth client_id before the caller updates entity system attributes.
-	oldOAuthClientID := s.resolveClientID(client.ID)
+	oldOAuthClientID := s.resolveClientID(ctx, client.ID)
 	return s.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if _, vErr, opErr := s.syncCertificate(
 			txCtx, cert.CertificateReferenceTypeApplication, client.ID, appCert,
@@ -322,13 +322,13 @@ func (s *inboundClientService) ResolveInboundAuthProfileHandles(
 }
 
 // resolveClientID returns the OAuth client_id from an entity's system attributes, or "" if absent.
-func (s *inboundClientService) resolveClientID(entityID string) string {
+func (s *inboundClientService) resolveClientID(ctx context.Context, entityID string) string {
 	if s.entityProvider == nil {
 		return ""
 	}
 	e, epErr := s.entityProvider.GetEntity(entityID)
 	if epErr != nil {
-		s.logger.Warn("Failed to resolve OAuth client_id from entity provider",
+		s.logger.WarnWithContext(ctx, "Failed to resolve OAuth client_id from entity provider",
 			log.String("entityID", entityID), log.Error(epErr))
 		return ""
 	}
@@ -349,7 +349,7 @@ func (s *inboundClientService) DeleteInboundClient(ctx context.Context, entityID
 		return ErrCannotModifyDeclarative
 	}
 	// Capture OAuth client_id before the caller deletes the entity itself.
-	oauthClientID := s.resolveClientID(entityID)
+	oauthClientID := s.resolveClientID(ctx, entityID)
 	return s.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if s.consentService != nil && s.consentService.IsEnabled() {
 			if err := s.syncConsentOnDelete(txCtx, entityID); err != nil {

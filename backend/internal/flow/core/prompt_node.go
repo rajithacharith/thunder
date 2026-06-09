@@ -19,6 +19,7 @@
 package core
 
 import (
+	"context"
 	"encoding/json"
 	"slices"
 	"strings"
@@ -135,7 +136,7 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 		}
 
 		if ctx.CurrentAction != "" {
-			if nextNode := n.getNextNodeForActionRef(ctx.CurrentAction); nextNode != "" {
+			if nextNode := n.getNextNodeForActionRef(ctx.Context, ctx.CurrentAction); nextNode != "" {
 				nodeResp.NextNodeID = nextNode
 			} else {
 				logger.DebugWithContext(ctx.Context, ErrInvalidActionProvided.Error.DefaultValue,
@@ -184,7 +185,7 @@ func (n *promptNode) applyValidationFailureRePrompt(ctx *NodeContext, nodeResp *
 		return false
 	}
 	n.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID)).
-		Debug("Input validation failed", log.Int("errorCount", len(fieldErrors)))
+		DebugWithContext(ctx.Context, "Input validation failed", log.Int("errorCount", len(fieldErrors)))
 
 	matchingAction := n.findActionByRef(ctx.CurrentAction)
 
@@ -311,7 +312,7 @@ func (n *promptNode) executeLoginOptions(ctx *NodeContext,
 func (n *promptNode) finalizeLoginOptionsAction(ctx *NodeContext, nodeResp *common.NodeResponse,
 	authClassToAction map[string]string) (*common.NodeResponse, *serviceerror.ServiceError) {
 	logger := n.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
-	nextNode := n.getNextNodeForActionRef(ctx.CurrentAction)
+	nextNode := n.getNextNodeForActionRef(ctx.Context, ctx.CurrentAction)
 	if nextNode == "" {
 		logger.DebugWithContext(ctx.Context, ErrInvalidActionProvided.Error.DefaultValue,
 			log.String("actionRef", ctx.CurrentAction))
@@ -634,11 +635,11 @@ func (n *promptNode) getAllActions() []common.Action {
 }
 
 // getNextNodeForActionRef finds the next node for the given action reference.
-func (n *promptNode) getNextNodeForActionRef(actionRef string) string {
+func (n *promptNode) getNextNodeForActionRef(ctx context.Context, actionRef string) string {
 	actions := n.getAllActions()
 	for i := range actions {
 		if actions[i].Ref == actionRef {
-			n.logger.Debug("Action selected successfully", log.String("actionRef", actions[i].Ref),
+			n.logger.DebugWithContext(ctx, "Action selected successfully", log.String("actionRef", actions[i].Ref),
 				log.String("nextNode", actions[i].NextNode))
 			return actions[i].NextNode
 		}

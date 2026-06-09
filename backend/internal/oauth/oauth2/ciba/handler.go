@@ -19,6 +19,7 @@
 package ciba
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/clientauth"
@@ -50,7 +51,7 @@ func newCIBAHandler(cibaService CIBAServiceInterface) CIBAHandlerInterface {
 // HandleBackchannelAuthRequest handles a POST /oauth2/bc-authorize request.
 func (h *cibaHandler) HandleBackchannelAuthRequest(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		utils.WriteJSONError(w, oauth2const.ErrorInvalidRequest, "Failed to parse request body",
+		utils.WriteJSONError(r.Context(), w, oauth2const.ErrorInvalidRequest, "Failed to parse request body",
 			http.StatusBadRequest, nil)
 		return
 	}
@@ -58,8 +59,9 @@ func (h *cibaHandler) HandleBackchannelAuthRequest(w http.ResponseWriter, r *htt
 	// Get authenticated client from context (set by ClientAuthMiddleware).
 	clientInfo := clientauth.GetOAuthClient(r.Context())
 	if clientInfo == nil {
-		h.logger.Error("OAuth client not found in context - ClientAuthMiddleware must be applied")
-		utils.WriteJSONError(w, oauth2const.ErrorServerError, "Something went wrong",
+		h.logger.ErrorWithContext(r.Context(),
+			"OAuth client not found in context - ClientAuthMiddleware must be applied")
+		utils.WriteJSONError(r.Context(), w, oauth2const.ErrorServerError, "Something went wrong",
 			http.StatusInternalServerError, nil)
 		return
 	}
@@ -73,13 +75,13 @@ func (h *cibaHandler) HandleBackchannelAuthRequest(w http.ResponseWriter, r *htt
 	// or login_hint_token. Zero or multiple hints are both invalid_request.
 	hintsProvided := countNonEmpty(loginHint, idTokenHint, loginHintToken)
 	if hintsProvided == 0 {
-		utils.WriteJSONError(w, oauth2const.ErrorInvalidRequest,
+		utils.WriteJSONError(r.Context(), w, oauth2const.ErrorInvalidRequest,
 			"One of login_hint, id_token_hint, or login_hint_token is required",
 			http.StatusBadRequest, nil)
 		return
 	}
 	if hintsProvided > 1 {
-		utils.WriteJSONError(w, oauth2const.ErrorInvalidRequest,
+		utils.WriteJSONError(r.Context(), w, oauth2const.ErrorInvalidRequest,
 			"Only one of login_hint, id_token_hint, or login_hint_token may be provided",
 			http.StatusBadRequest, nil)
 		return
@@ -89,14 +91,14 @@ func (h *cibaHandler) HandleBackchannelAuthRequest(w http.ResponseWriter, r *htt
 	// by this OP. Return invalid_request with a clear message so clients can adapt.
 	// TODO: implement id_token_hint — resolve user from a previously issued ID token
 	if idTokenHint != "" {
-		utils.WriteJSONError(w, oauth2const.ErrorInvalidRequest,
+		utils.WriteJSONError(r.Context(), w, oauth2const.ErrorInvalidRequest,
 			"id_token_hint is not supported, use login_hint",
 			http.StatusBadRequest, nil)
 		return
 	}
 	// TODO: implement login_hint_token — resolve user from a signed hint JWT
 	if loginHintToken != "" {
-		utils.WriteJSONError(w, oauth2const.ErrorInvalidRequest,
+		utils.WriteJSONError(r.Context(), w, oauth2const.ErrorInvalidRequest,
 			"login_hint_token is not supported, use login_hint",
 			http.StatusBadRequest, nil)
 		return
@@ -112,22 +114,22 @@ func (h *cibaHandler) HandleBackchannelAuthRequest(w http.ResponseWriter, r *htt
 
 	response, cibaErr := h.cibaService.InitiateBackchannelAuth(r.Context(), request, clientInfo.OAuthApp)
 	if cibaErr != nil {
-		writeCIBAError(w, cibaErr)
+		writeCIBAError(r.Context(), w, cibaErr)
 		return
 	}
 
 	w.Header().Set(sysconst.CacheControlHeaderName, sysconst.CacheControlNoStore)
 	w.Header().Set(sysconst.PragmaHeaderName, sysconst.PragmaNoCache)
-	utils.WriteSuccessResponse(w, http.StatusOK, response)
+	utils.WriteSuccessResponse(r.Context(), w, http.StatusOK, response)
 }
 
 // writeCIBAError maps a CIBAError to the appropriate HTTP status code and writes the JSON response.
-func writeCIBAError(w http.ResponseWriter, cibaErr *CIBAError) {
+func writeCIBAError(ctx context.Context, w http.ResponseWriter, cibaErr *CIBAError) {
 	statusCode := http.StatusBadRequest
 	if cibaErr.Code == oauth2const.ErrorServerError {
 		statusCode = http.StatusInternalServerError
 	}
-	utils.WriteJSONError(w, cibaErr.Code, cibaErr.Message, statusCode, nil)
+	utils.WriteJSONError(ctx, w, cibaErr.Code, cibaErr.Message, statusCode, nil)
 }
 
 // countNonEmpty returns the number of non-empty strings in the provided values.

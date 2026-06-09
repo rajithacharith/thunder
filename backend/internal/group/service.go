@@ -273,7 +273,7 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 	logger.DebugWithContext(ctx, "Creating group", log.String("name", request.Name))
 
 	if isGroupDeclarativeModeEnabled() {
-		logger.Debug("Cannot create group in declarative-only mode")
+		logger.DebugWithContext(ctx, "Cannot create group in declarative-only mode")
 		return nil, &ErrorDeclarativeModeGroupCreateNotAllowed
 	}
 
@@ -465,10 +465,11 @@ func (gs *groupService) UpdateGroup(
 	}
 
 	if isDeclarative, err := gs.groupStore.IsGroupDeclarative(ctx, groupID); err != nil {
-		logger.Warn("Failed to check if group is declarative", log.String("groupID", groupID), log.Error(err))
+		logger.WarnWithContext(ctx, "Failed to check if group is declarative",
+			log.String("groupID", groupID), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	} else if isDeclarative {
-		logger.Debug("Cannot update declarative group", log.String("id", groupID))
+		logger.DebugWithContext(ctx, "Cannot update declarative group", log.String("id", groupID))
 		return nil, &ErrorImmutableGroup
 	}
 
@@ -573,10 +574,11 @@ func (gs *groupService) DeleteGroup(ctx context.Context, groupID string) *servic
 	}
 
 	if isDeclarative, err := gs.groupStore.IsGroupDeclarative(ctx, groupID); err != nil {
-		logger.Warn("Failed to check if group is declarative", log.String("groupID", groupID), log.Error(err))
+		logger.WarnWithContext(ctx, "Failed to check if group is declarative",
+			log.String("groupID", groupID), log.Error(err))
 		return &serviceerror.InternalServerError
 	} else if isDeclarative {
-		logger.Debug("Cannot delete declarative group", log.String("id", groupID))
+		logger.DebugWithContext(ctx, "Cannot delete declarative group", log.String("id", groupID))
 		return &ErrorImmutableGroup
 	}
 
@@ -783,7 +785,7 @@ func (gs *groupService) resolveMembers(
 func (gs *groupService) AddGroupMembers(
 	ctx context.Context, groupID string, members []Member) (*Group, *serviceerror.ServiceError) {
 	log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)).
-		Debug("Adding members to group", log.String("id", groupID))
+		DebugWithContext(ctx, "Adding members to group", log.String("id", groupID))
 	return gs.modifyGroupMembers(ctx, groupID, members,
 		gs.groupStore.AddGroupMembers,
 		"Failed to add members to group",
@@ -795,7 +797,7 @@ func (gs *groupService) AddGroupMembers(
 func (gs *groupService) RemoveGroupMembers(
 	ctx context.Context, groupID string, members []Member) (*Group, *serviceerror.ServiceError) {
 	log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)).
-		Debug("Removing members from group", log.String("id", groupID))
+		DebugWithContext(ctx, "Removing members from group", log.String("id", groupID))
 	return gs.modifyGroupMembers(ctx, groupID, members,
 		gs.groupStore.RemoveGroupMembers,
 		"Failed to remove members from group",

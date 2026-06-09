@@ -196,8 +196,18 @@ func (l *Logger) ErrorWithContext(ctx context.Context, msg string, fields ...Fie
 }
 
 // Fatal logs a fatal message with custom fields and exits the application.
+//
+// Deprecated: Fatal does not propagate the request context, so log entries
+// miss the trace ID (correlation ID). Use FatalWithContext instead. Refs #2038.
 func (l *Logger) Fatal(msg string, fields ...Field) {
 	l.internal.Error(msg, convertFields(fields)...)
+	os.Exit(1)
+}
+
+// FatalWithContext logs a fatal message with custom fields and exits the application,
+// automatically including the trace ID (correlation ID) from the context if present.
+func (l *Logger) FatalWithContext(ctx context.Context, msg string, fields ...Field) {
+	l.internal.ErrorContext(ctx, msg, convertFields(fields)...)
 	os.Exit(1)
 }
 

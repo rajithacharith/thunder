@@ -169,7 +169,7 @@ func (e *resourceServerExporter) GetResourceByID(ctx context.Context, id string)
 }
 
 // ValidateResource validates a resource server resource.
-func (e *resourceServerExporter) ValidateResource(
+func (e *resourceServerExporter) ValidateResource(ctx context.Context,
 	resource interface{}, id string, logger *log.Logger,
 ) (string, *declarativeresource.ExportError) {
 	server, ok := resource.(*ResourceServer)
@@ -177,7 +177,7 @@ func (e *resourceServerExporter) ValidateResource(
 		return "", declarativeresource.CreateTypeError(resourceTypeResourceServer, id)
 	}
 
-	if err := declarativeresource.ValidateResourceName(
+	if err := declarativeresource.ValidateResourceName(ctx,
 		server.Name, resourceTypeResourceServer, id, "RS_VALIDATION_ERROR", logger); err != nil {
 		return "", err
 	}

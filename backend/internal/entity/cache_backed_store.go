@@ -266,7 +266,7 @@ func identifierCacheKey(filterKey, filterValue string) cache.CacheKey {
 
 // parseEntityAttributes unmarshals the entity's SystemAttributes and Attributes
 // into a single merged map. SystemAttributes take precedence on key collisions.
-func (s *cacheBackedEntityStore) parseEntityAttributes(entity *Entity) map[string]interface{} {
+func (s *cacheBackedEntityStore) parseEntityAttributes(ctx context.Context, entity *Entity) map[string]interface{} {
 	if entity == nil {
 		return nil
 	}
@@ -277,7 +277,7 @@ func (s *cacheBackedEntityStore) parseEntityAttributes(entity *Entity) map[strin
 		}
 		var attrs map[string]interface{}
 		if err := json.Unmarshal(raw, &attrs); err != nil {
-			s.logger.Warn("Failed to unmarshal entity attributes for cache key resolution",
+			s.logger.WarnWithContext(ctx, "Failed to unmarshal entity attributes for cache key resolution",
 				log.String("entityID", entity.ID), log.Error(err))
 			continue
 		}
@@ -292,7 +292,7 @@ func (s *cacheBackedEntityStore) cacheEntityIDByIdentifiers(ctx context.Context,
 	if entity == nil || entity.ID == "" {
 		return
 	}
-	attrs := s.parseEntityAttributes(entity)
+	attrs := s.parseEntityAttributes(ctx, entity)
 	for key := range s.cacheableIdentifiers {
 		val, _ := attrs[key].(string)
 		if val == "" {
@@ -322,7 +322,7 @@ func (s *cacheBackedEntityStore) invalidateIdentifierCache(ctx context.Context, 
 		}
 		entity = &fetched
 	}
-	attrs := s.parseEntityAttributes(entity)
+	attrs := s.parseEntityAttributes(ctx, entity)
 	for key := range s.cacheableIdentifiers {
 		val, _ := attrs[key].(string)
 		if val == "" {

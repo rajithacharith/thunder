@@ -185,7 +185,8 @@ func (ds *discoveryService) getSupportedSubjectTypes() []string {
 func (ds *discoveryService) getSupportedSigningAlgorithms(ctx context.Context) ([]string, error) {
 	keys, err := ds.cryptoProvider.GetPublicKeys(ctx, kmprovider.PublicKeyFilter{})
 	if err != nil {
-		log.GetLogger().Error("Failed to retrieve public keys for signing algorithm discovery", log.Error(err))
+		log.GetLogger().ErrorWithContext(ctx,
+			"Failed to retrieve public keys for signing algorithm discovery", log.Error(err))
 		return nil, err
 	}
 	result := make([]string, 0, len(keys))
@@ -198,7 +199,8 @@ func (ds *discoveryService) getSupportedSigningAlgorithms(ctx context.Context) (
 	}
 	if len(result) == 0 {
 		err = errors.New("no valid signing algorithms found")
-		log.GetLogger().Error("No valid signing algorithms found in registered public keys", log.Error(err))
+		log.GetLogger().ErrorWithContext(ctx,
+			"No valid signing algorithms found in registered public keys", log.Error(err))
 		return nil, err
 	}
 	return result, nil
