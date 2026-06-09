@@ -111,27 +111,6 @@ describe('ImportConfigurationUploadPage', () => {
     expect(screen.getByText('upload.errors.uploadYaml')).toBeInTheDocument();
   });
 
-  it('accepts notification_sender as a known resource type without error', async () => {
-    const user = userEvent.setup();
-    render(<ImportConfigurationUploadPage />);
-
-    const yamlContent = '# resource_type: notification_sender\nid: sms-sender\nname: SMS Sender\nprovider: twilio\n';
-    const yamlFile = new File([yamlContent], 'config.yaml', {type: 'text/yaml'});
-    Object.defineProperty(yamlFile, 'text', {value: () => Promise.resolve(yamlContent)});
-
-    await user.upload(document.getElementById('file-upload') as HTMLInputElement, yamlFile);
-    await user.click(screen.getByRole('button', {name: 'common:actions.continue'}));
-
-    await waitFor(
-      () => {
-        expect(mockNavigate).toHaveBeenCalledWith('/welcome/open-project/validate', expect.anything());
-      },
-      {timeout: 5000},
-    );
-
-    expect(screen.queryByText(/upload.errors.unknownResourceType/)).not.toBeInTheDocument();
-  });
-
   it('shows file name after valid yaml file is selected', async () => {
     const user = userEvent.setup();
     render(<ImportConfigurationUploadPage />);

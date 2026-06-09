@@ -33,7 +33,6 @@ export const ALLOWED_RESOURCE_TYPES = [
   'resource_server',
   'role',
   'agent',
-  'notification_sender',
 ] as const;
 
 export type ResourceType = (typeof ALLOWED_RESOURCE_TYPES)[number];
