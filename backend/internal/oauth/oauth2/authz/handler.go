@@ -19,6 +19,7 @@
 package authz
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -72,7 +73,7 @@ func (ah *authorizeHandler) HandleAuthorizeGetRequest(w http.ResponseWriter, r *
 			}
 			redirectURI, err := oauth2utils.GetURIWithQueryParams(authErr.ClientRedirectURI, queryParams)
 			if err != nil {
-				ah.logger.Error("Failed to construct client redirect URI", log.Error(err))
+				ah.logger.ErrorWithContext(ctx, "Failed to construct client redirect URI", log.Error(err))
 				ah.redirectToErrorPage(w, r, oauth2const.ErrorServerError, "Failed to process authorization request")
 				return
 			}
@@ -103,7 +104,7 @@ func (ah *authorizeHandler) HandleAuthCallbackPostRequest(w http.ResponseWriter,
 		redirectURI, authErr := ah.authZService.HandleAuthorizationCallback(ctx, authID, assertion)
 		if authErr != nil {
 			if authErr.SendErrorToClient {
-				ah.writeAuthZResponseToClientRedirect(w, authErr)
+				ah.writeAuthZResponseToClientRedirect(ctx, w, authErr)
 				return
 			}
 			ah.writeAuthZResponseToErrorPage(w, authErr.Code, authErr.Message, authErr.State)
@@ -126,7 +127,8 @@ func (ah *authorizeHandler) getOAuthMessage(r *http.Request, w http.ResponseWrit
 	logger := ah.logger
 
 	if r == nil || w == nil {
-		logger.Error("Request or response writer is nil")
+		// The request may be nil here, so there is no request context to propagate.
+		logger.ErrorWithContext(context.Background(), "Request or response writer is nil")
 		return nil
 	}
 
@@ -143,7 +145,7 @@ func (ah *authorizeHandler) getOAuthMessage(r *http.Request, w http.ResponseWrit
 	}
 
 	if err != nil {
-		ah.logger.Debug("Invalid authorize request", log.Error(err))
+		ah.logger.DebugWithContext(r.Context(), "Invalid authorize request", log.Error(err))
 		utils.WriteJSONError(w, oauth2const.ErrorInvalidRequest, "Invalid authorization request",
 			http.StatusBadRequest, nil)
 	}
@@ -224,17 +226,20 @@ func (ah *authorizeHandler) redirectToLoginPage(w http.ResponseWriter, r *http.R
 	logger := ah.logger
 
 	if w == nil || r == nil {
-		logger.Error("Response writer or request is nil. Cannot redirect to login page.")
+		// The request may be nil here, so there is no request context to propagate.
+		logger.ErrorWithContext(context.Background(),
+			"Response writer or request is nil. Cannot redirect to login page.")
 		return
 	}
+	ctx := r.Context()
 
 	redirectURI, err := getLoginPageRedirectURI(queryParams)
 	if err != nil {
-		logger.Error("Failed to construct login page URL", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to construct login page URL", log.Error(err))
 		ah.redirectToErrorPage(w, r, oauth2const.ErrorServerError, "Failed to process authorization request")
 		return
 	}
-	logger.Debug("Redirecting to login page")
+	logger.DebugWithContext(ctx, "Redirecting to login page")
 
 	http.Redirect(w, r, redirectURI, http.StatusFound)
 }
@@ -261,17 +266,20 @@ func (ah *authorizeHandler) redirectToErrorPage(w http.ResponseWriter, r *http.R
 	logger := ah.logger
 
 	if w == nil || r == nil {
-		logger.Error("Response writer or request is nil. Cannot redirect to error page.")
+		// The request may be nil here, so there is no request context to propagate.
+		logger.ErrorWithContext(context.Background(),
+			"Response writer or request is nil. Cannot redirect to error page.")
 		return
 	}
+	ctx := r.Context()
 
 	redirectURL, err := getErrorPageRedirectURL(code, msg)
 	if err != nil {
-		logger.Error("Failed to construct error page URL", log.Error(err))
+		logger.ErrorWithContext(ctx, "Failed to construct error page URL", log.Error(err))
 		http.Error(w, "Failed to redirect to error page", http.StatusInternalServerError)
 		return
 	}
-	logger.Debug("Redirecting to error page")
+	logger.DebugWithContext(ctx, "Redirecting to error page")
 
 	http.Redirect(w, r, redirectURL, http.StatusFound)
 }
@@ -309,7 +317,8 @@ func (ah *authorizeHandler) writeAuthZResponseToErrorPage(w http.ResponseWriter,
 
 // writeAuthZResponseToClientRedirect writes the authorization error response redirecting to the
 // client's registered redirect URI.
-func (ah *authorizeHandler) writeAuthZResponseToClientRedirect(w http.ResponseWriter, authErr *AuthorizationError) {
+func (ah *authorizeHandler) writeAuthZResponseToClientRedirect(
+	ctx context.Context, w http.ResponseWriter, authErr *AuthorizationError) {
 	queryParams := map[string]string{
 		oauth2const.RequestParamError:            authErr.Code,
 		oauth2const.RequestParamErrorDescription: authErr.Message,
@@ -321,7 +330,7 @@ func (ah *authorizeHandler) writeAuthZResponseToClientRedirect(w http.ResponseWr
 
 	redirectURI, err := oauth2utils.GetURIWithQueryParams(authErr.ClientRedirectURI, queryParams)
 	if err != nil {
-		ah.logger.Error("Failed to construct client redirect URI", log.Error(err))
+		ah.logger.ErrorWithContext(ctx, "Failed to construct client redirect URI", log.Error(err))
 		ah.writeAuthZResponseToErrorPage(w, oauth2const.ErrorServerError,
 			"Failed to process authorization request", authErr.State)
 		return

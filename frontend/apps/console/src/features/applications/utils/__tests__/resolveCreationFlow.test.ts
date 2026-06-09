@@ -17,8 +17,12 @@
  */
 
 import {describe, expect, it} from 'vitest';
+import CustomPlatformTemplateJson from '../../data/application-templates/platform-based/custom.json';
 import {ApplicationCreateFlowStep} from '../../models/application-create-flow';
+import type {ApplicationTemplate} from '../../models/application-templates';
 import resolveCreationFlow from '../resolveCreationFlow';
+
+const CustomPlatformTemplate = CustomPlatformTemplateJson as ApplicationTemplate;
 
 describe('resolveCreationFlow', () => {
   it('returns the default user-facing flow (8 steps) when template is null', () => {
@@ -61,5 +65,10 @@ describe('resolveCreationFlow', () => {
       ApplicationCreateFlowStep.NAME,
       ApplicationCreateFlowStep.COMPLETE,
     ]);
+  });
+
+  it('returns only NAME and COMPLETE steps for the custom platform template', () => {
+    const flow = resolveCreationFlow(CustomPlatformTemplate);
+    expect(flow.steps).toEqual([ApplicationCreateFlowStep.NAME, ApplicationCreateFlowStep.COMPLETE]);
   });
 });

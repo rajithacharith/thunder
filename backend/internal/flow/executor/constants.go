@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -104,21 +104,9 @@ const (
 	propertyKeyMaxDynamicInputsPerPrompt               = "maxPerPrompt"
 	propertyKeyInviteBaseURL                           = "inviteBaseURL"
 	propertyKeyPresentationDefinitionID                = "presentation_definition_id"
+	propertyKeyCallbackType                            = "callbackType"
+	propertyKeyLoginHintAttribute                      = "loginHintAttribute"
 )
 
 // nonSearchableInputs contains the list of user inputs/ attributes that are non-searchable.
 var nonSearchableInputs = []string{"password", "code", "nonce", "otp", "token", "userInputMagicLinkToken"}
-
-// Failure reason constants
-const (
-	failureReasonUserNotAuthenticated   = "User is not authenticated"
-	failureReasonUserNotFound           = "User not found"
-	failureReasonInvalidCredentials     = "Invalid credentials provided" // #nosec G101
-	failureReasonFailedToIdentifyUser   = "Failed to identify user"
-	failureReasonAmbiguousUser          = "User identity is ambiguous"
-	failureReasonInvalidOTP             = "invalid OTP provided"
-	failureReasonInvalidMagicLink       = "Invalid magic link token"
-	failureReasonOpenID4VPNotConfigured = "OpenID4VP verifier is not configured"
-	failureReasonOpenID4VPInitiate      = "Failed to initiate the OpenID4VP request"
-	failureReasonOpenID4VPExpired       = "The OpenID4VP request expired before a response was received"
-)

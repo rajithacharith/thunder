@@ -51,7 +51,7 @@ func (h *jwksHandler) HandleJWKSRequest(w http.ResponseWriter, r *http.Request) 
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, jwksResponse)
-	logger.Debug("JWKS response successfully sent")
+	logger.DebugWithContext(ctx, "JWKS response successfully sent")
 }
 
 // logAndWriteError logs server errors and writes an appropriate error response to the HTTP response writer.

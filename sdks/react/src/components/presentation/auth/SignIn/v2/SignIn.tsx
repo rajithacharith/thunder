@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -35,7 +35,7 @@ import useThunderID from '../../../../../contexts/ThunderID/useThunderID';
 import useTranslation from '../../../../../hooks/useTranslation';
 import {useOAuthCallback} from '../../../../../hooks/v2/useOAuthCallback';
 import {initiateOAuthRedirect} from '../../../../../utils/oauth';
-import {normalizeFlowResponse} from '../../../../../utils/v2/flowTransformer';
+import {extractErrorMessage, normalizeFlowResponse} from '../../../../../utils/v2/flowTransformer';
 import {handlePasskeyAuthentication, handlePasskeyRegistration} from '../../../../../utils/v2/passkey';
 
 /**
@@ -481,11 +481,7 @@ const SignIn: FC<SignInProps> = ({
       const err: any = error;
       await clearFlowState();
 
-      // Extract error message from response or error object
-      const errorMessage: any = err?.failureReason || (err instanceof Error ? err.message : String(err));
-
-      // Set error with the extracted message
-      setError(new Error(errorMessage));
+      setError(err instanceof ThunderIDRuntimeError ? err : new Error(extractErrorMessage(err, t)));
       initializationAttemptedRef.current = false;
     }
   };
@@ -691,10 +687,7 @@ const SignIn: FC<SignInProps> = ({
       // Handle Error flow status - flow has failed and is invalidated
       if (response.flowStatus === EmbeddedSignInFlowStatusV2.Error) {
         await clearFlowState();
-        // Extract failureReason from response if available
-        const failureReason: any = (response as any)?.failureReason;
-        const errorMessage: any = failureReason || 'Authentication flow failed. Please try again.';
-        const err: any = new Error(errorMessage);
+        const err: any = new Error(extractErrorMessage(response, t));
         setError(err);
         cleanupFlowUrlParams();
         // Throw the error so it's caught by the catch block and propagated to BaseSignIn
@@ -747,19 +740,16 @@ const SignIn: FC<SignInProps> = ({
         // Clean up executionId from URL after setting it in state
         cleanupFlowUrlParams();
 
-        // Display failure reason from INCOMPLETE response
-        if ((response as any)?.failureReason) {
-          setFlowError(new Error((response as any).failureReason));
+        // Display error from INCOMPLETE response
+        if ((response as any)?.error) {
+          setFlowError(new Error(extractErrorMessage(response, t)));
         }
       }
     } catch (error) {
       const err: any = error;
       await clearFlowState();
 
-      // Extract error message from response or error object
-      const errorMessage: any = err?.failureReason || (err instanceof Error ? err.message : String(err));
-
-      setError(new Error(errorMessage));
+      setError(err instanceof ThunderIDRuntimeError ? err : new Error(extractErrorMessage(err, t)));
       return;
     } finally {
       setIsSubmitting(false);

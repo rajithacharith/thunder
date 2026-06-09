@@ -106,7 +106,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestExtractAttributeNamesAsMap_Inval
 // ----- wrapConsentServiceError (entitytype) -----
 
 func (s *EntityTypeServiceConsentTestSuite) TestWrapConsentServiceError_Nil() {
-	result := wrapConsentServiceError(nil, nil)
+	result := wrapConsentServiceError(context.Background(), nil, nil)
 
 	s.Nil(result)
 }
@@ -117,7 +117,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestWrapConsentServiceError_ClientEr
 		Code: "CSE-1007",
 	}
 
-	result := wrapConsentServiceError(clientErr, log.GetLogger())
+	result := wrapConsentServiceError(context.Background(), clientErr, log.GetLogger())
 
 	s.NotNil(result)
 	s.Equal(serviceerror.ClientErrorType, result.Type)
@@ -130,7 +130,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestWrapConsentServiceError_ServerEr
 		Code: "CSE-500",
 	}
 
-	result := wrapConsentServiceError(serverErr, log.GetLogger())
+	result := wrapConsentServiceError(context.Background(), serverErr, log.GetLogger())
 
 	s.NotNil(result)
 	s.Equal(serviceerror.ServerErrorType, result.Type)

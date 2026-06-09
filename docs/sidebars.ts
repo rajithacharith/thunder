@@ -594,6 +594,25 @@ const sidebars: SidebarsConfig = {
                 },
               ],
             },
+            {
+              type: 'category',
+              label: 'Try In Your Own App',
+              collapsible: true,
+              collapsed: true,
+              link: {type: 'doc', id: 'use-cases/b2c/try-in-your-own-app'},
+              items: [
+                {type: 'doc', id: 'use-cases/b2c/try-in-your-own-app/add-login', label: 'Login', key: 'own-app-login'},
+                {type: 'doc', id: 'use-cases/b2c/try-in-your-own-app/self-sign-up', label: 'Self Sign-Up', key: 'own-app-self-sign-up'},
+                {type: 'doc', id: 'use-cases/b2c/try-in-your-own-app/profile-section', label: 'View Profile', key: 'own-app-profile-section'},
+                {type: 'doc', id: 'use-cases/b2c/try-in-your-own-app/account-recovery', label: 'Account Recovery', key: 'own-app-account-recovery'},
+                {
+                  type: 'doc',
+                  id: 'use-cases/b2c/try-in-your-own-app/onboard-internal-users',
+                  label: 'Onboard Internal Users',
+                  key: 'own-app-onboard-internal-users',
+                },
+              ],
+            },
           ],
         },
         {
@@ -777,9 +796,21 @@ const sidebars: SidebarsConfig = {
           collapsed: true,
           items: [
             {
-              type: 'doc',
-              id: 'guides/deployment-patterns/docker',
+              type: 'category',
               label: 'Docker',
+              collapsible: true,
+              collapsed: false,
+              link: {
+                type: 'doc',
+                id: 'guides/deployment-patterns/docker',
+              },
+              items: [
+                {
+                  type: 'doc',
+                  id: 'guides/deployment-patterns/docker-production',
+                  label: 'Production Recommendations',
+                },
+              ],
             },
             {
               type: 'doc',

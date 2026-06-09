@@ -957,10 +957,10 @@ func (s *inboundClientService) validateFKs(ctx context.Context, c *inboundmodel.
 	if err := s.validateRecoveryFlowID(ctx, c.RecoveryFlowID); err != nil {
 		return err
 	}
-	if err := s.validateThemeID(c.ThemeID); err != nil {
+	if err := s.validateThemeID(ctx, c.ThemeID); err != nil {
 		return err
 	}
-	if err := s.validateLayoutID(c.LayoutID); err != nil {
+	if err := s.validateLayoutID(ctx, c.LayoutID); err != nil {
 		return err
 	}
 	if err := s.validateAllowedUserTypes(ctx, c.AllowedUserTypes); err != nil {
@@ -1015,11 +1015,11 @@ func (s *inboundClientService) validateRecoveryFlowID(ctx context.Context, flowI
 }
 
 // validateThemeID validates that the theme ID exists.
-func (s *inboundClientService) validateThemeID(themeID string) error {
+func (s *inboundClientService) validateThemeID(ctx context.Context, themeID string) error {
 	if themeID == "" || s.themeMgt == nil {
 		return nil
 	}
-	exists, svcErr := s.themeMgt.IsThemeExist(themeID)
+	exists, svcErr := s.themeMgt.IsThemeExist(ctx, themeID)
 	if svcErr != nil || !exists {
 		return ErrFKThemeNotFound
 	}
@@ -1027,11 +1027,11 @@ func (s *inboundClientService) validateThemeID(themeID string) error {
 }
 
 // validateLayoutID validates that the layout ID exists.
-func (s *inboundClientService) validateLayoutID(layoutID string) error {
+func (s *inboundClientService) validateLayoutID(ctx context.Context, layoutID string) error {
 	if layoutID == "" || s.layoutMgt == nil {
 		return nil
 	}
-	exists, svcErr := s.layoutMgt.IsLayoutExist(layoutID)
+	exists, svcErr := s.layoutMgt.IsLayoutExist(ctx, layoutID)
 	if svcErr != nil || !exists {
 		return ErrFKLayoutNotFound
 	}
@@ -1053,7 +1053,7 @@ func (s *inboundClientService) validateAllowedUserTypes(
 		entityTypeList, svcErr := s.entityType.GetEntityTypeList(
 			security.WithRuntimeContext(ctx), entitytype.TypeCategoryUser, limit, offset, false)
 		if svcErr != nil {
-			s.logger.Error("Failed to retrieve user type list for validation",
+			s.logger.ErrorWithContext(ctx, "Failed to retrieve user type list for validation",
 				log.String("error", svcErr.Error.DefaultValue), log.String("code", svcErr.Code))
 			return ErrUserSchemaLookupFailed
 		}
@@ -1372,11 +1372,13 @@ func (s *inboundClientService) syncConsentOnUpdate(ctx context.Context,
 			return err
 		}
 	}
+
 	allPurposes, err := s.consentService.ListConsentPurposes(ctx, ouID, entityID)
 	if err != nil {
 		return s.wrapConsentServiceError(err)
 	}
 	existing := consent.FilterAttributePurposes(allPurposes)
+
 	if len(existing) == 0 {
 		if len(newAttrs) > 0 {
 			purpose := consent.ConsentPurposeInput{
@@ -1392,12 +1394,13 @@ func (s *inboundClientService) syncConsentOnUpdate(ctx context.Context,
 		}
 		return nil
 	}
+
 	if len(newAttrs) == 0 {
 		// No attributes requested; remove only the attribute purpose. The permission purpose, if any,
 		// is left alone — it has an independent lifecycle bound to the resource service.
 		if delErr := s.consentService.DeleteConsentPurpose(ctx, ouID, existing[0].ID); delErr != nil {
 			if delErr.Code == consent.ErrorDeletingConsentPurposeWithAssociatedRecords.Code {
-				s.logger.Warn("Cannot delete attribute consent purpose due to existing consents",
+				s.logger.WarnWithContext(ctx, "Cannot delete attribute consent purpose due to existing consents",
 					log.String("entityID", entityID))
 				return nil
 			}
@@ -1405,6 +1408,11 @@ func (s *inboundClientService) syncConsentOnUpdate(ctx context.Context,
 		}
 		return nil
 	}
+
+	if isConsentAttributesUnchanged(existing[0].Elements, newAttrs) {
+		return nil
+	}
+
 	updated := consent.ConsentPurposeInput{
 		Name:        consent.AttributesPurposeName(entityID),
 		Description: "Consent purpose for application " + entityName,
@@ -1415,7 +1423,22 @@ func (s *inboundClientService) syncConsentOnUpdate(ctx context.Context,
 	if _, updateErr := s.consentService.UpdateConsentPurpose(ctx, ouID, existing[0].ID, &updated); updateErr != nil {
 		return s.wrapConsentServiceError(updateErr)
 	}
+
 	return nil
+}
+
+// isConsentAttributesUnchanged reports whether the elements on an existing attribute consent
+// purpose are the same set as the requested attributes (i.e. nothing to sync).
+func isConsentAttributesUnchanged(existing []consent.PurposeElement, requested map[string]bool) bool {
+	if len(existing) != len(requested) {
+		return false
+	}
+	for _, el := range existing {
+		if !requested[el.Name] {
+			return false
+		}
+	}
+	return true
 }
 
 // syncConsentOnDelete removes every consent purpose (attribute and permission) owned by the
@@ -1431,7 +1454,7 @@ func (s *inboundClientService) syncConsentOnDelete(ctx context.Context, entityID
 	for _, p := range purposes {
 		if delErr := s.consentService.DeleteConsentPurpose(ctx, ouID, p.ID); delErr != nil {
 			if delErr.Code == consent.ErrorDeletingConsentPurposeWithAssociatedRecords.Code {
-				s.logger.Warn("Cannot delete consent purpose due to existing consents",
+				s.logger.WarnWithContext(ctx, "Cannot delete consent purpose due to existing consents",
 					log.String("entityID", entityID), log.String("purposeID", p.ID),
 					log.String("purposeNamespace", string(p.Namespace)))
 				continue

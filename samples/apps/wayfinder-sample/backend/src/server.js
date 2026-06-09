@@ -57,8 +57,9 @@ function logRequest(method, pathname, claims) {
   }
   const type = claims.grant_type === "client_credentials" ? "m2m" : "user";
   const aud = Array.isArray(claims.aud) ? claims.aud.join(",") : (claims.aud || "-");
+  const act = claims.act?.sub ? ` | act: ${claims.act.sub}` : "";
   console.log(
-    `${method} ${pathname} | type: ${type} | client_id: ${claims.client_id || "-"} | sub: ${claims.sub || "-"} | aud: ${aud} | scope: ${claims.scope || "-"}`
+    `${method} ${pathname} | type: ${type} | client_id: ${claims.client_id || "-"} | sub: ${claims.sub || "-"}${act} | aud: ${aud} | scope: ${claims.scope || "-"}`
   );
 }
 

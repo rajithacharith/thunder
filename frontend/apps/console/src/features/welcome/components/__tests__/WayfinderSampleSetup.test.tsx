@@ -63,9 +63,9 @@ vi.mock('../TerminalBlock', () => ({
   ),
 }));
 
-vi.mock('../WayfinderFolderImport', () => ({
+vi.mock('../WayfinderConfigImport', () => ({
   default: ({onSuccess}: {onSuccess?: () => void}) => (
-    <div data-testid="wayfinder-folder-import">
+    <div data-testid="wayfinder-config-import">
       <button onClick={onSuccess} type="button">
         mock-import-success
       </button>
@@ -134,14 +134,14 @@ describe('WayfinderSampleSetup', () => {
   it('expands by default when not previously imported', () => {
     mockLocalStorageGetItem.mockReturnValue(null);
     render(<WayfinderSampleSetup />);
-    expect(screen.getByTestId('wayfinder-folder-import')).toBeInTheDocument();
+    expect(screen.getByTestId('wayfinder-config-import')).toBeInTheDocument();
     expect(screen.getByTestId('terminal-block')).toBeInTheDocument();
   });
 
   it('collapses by default when previously imported', () => {
     mockLocalStorageGetItem.mockReturnValue('1234567890');
     render(<WayfinderSampleSetup />);
-    expect(screen.queryByTestId('wayfinder-folder-import')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('wayfinder-config-import')).not.toBeInTheDocument();
   });
 
   it('shows setupComplete message when done and collapsed', () => {
@@ -206,15 +206,17 @@ describe('WayfinderSampleSetup', () => {
     });
   });
 
-  it('collapses and marks done after import success', async () => {
+  it('stays expanded after import success but persists collapsed intent for next visit', async () => {
     const user = userEvent.setup();
     render(<WayfinderSampleSetup />);
 
-    expect(screen.getByTestId('wayfinder-folder-import')).toBeInTheDocument();
+    expect(screen.getByTestId('wayfinder-config-import')).toBeInTheDocument();
+    expect(screen.getByTestId('terminal-block')).toBeInTheDocument();
 
     await user.click(screen.getByText('mock-import-success'));
 
-    expect(screen.queryByTestId('wayfinder-folder-import')).not.toBeInTheDocument();
+    expect(screen.getByTestId('wayfinder-config-import')).toBeInTheDocument();
+    expect(screen.getByTestId('terminal-block')).toBeInTheDocument();
     expect(mockSessionStorageSetItem).toHaveBeenCalledWith('thunderid-wayfinder-setup-expanded', 'false');
   });
 

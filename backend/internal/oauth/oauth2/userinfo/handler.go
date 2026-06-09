@@ -19,6 +19,7 @@
 package userinfo
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -85,13 +86,14 @@ func (h *userInfoHandler) handleBearerRequest(
 		return
 	}
 
-	result, svcErr := h.service.GetUserInfo(r.Context(), accessToken)
+	ctx := r.Context()
+	result, svcErr := h.service.GetUserInfo(ctx, accessToken)
 	if svcErr != nil {
-		h.writeServiceErrorResponse(w, svcErr, svcErr == &errorBearerDowngrade)
+		h.writeServiceErrorResponse(ctx, w, svcErr, svcErr == &errorBearerDowngrade)
 		return
 	}
 
-	h.writeUserInfoResponse(w, result)
+	h.writeUserInfoResponse(ctx, w, result)
 }
 
 // handleDPoPRequest serves the request under the DPoP scheme.
@@ -111,17 +113,18 @@ func (h *userInfoHandler) handleDPoPRequest(
 		return
 	}
 
+	ctx := r.Context()
 	result, svcErr := h.service.GetUserInfoForDPoP(
-		r.Context(), accessToken, dpopHeaders[0], r.Method, h.userInfoEndpoint)
+		ctx, accessToken, dpopHeaders[0], r.Method, h.userInfoEndpoint)
 	if svcErr != nil {
-		h.writeServiceErrorResponse(w, svcErr, true)
+		h.writeServiceErrorResponse(ctx, w, svcErr, true)
 		return
 	}
 
-	h.writeUserInfoResponse(w, result)
+	h.writeUserInfoResponse(ctx, w, result)
 }
 
-func (h *userInfoHandler) writeUserInfoResponse(w http.ResponseWriter, result *UserInfoResponse) {
+func (h *userInfoHandler) writeUserInfoResponse(ctx context.Context, w http.ResponseWriter, result *UserInfoResponse) {
 	w.Header().Set(serverconst.CacheControlHeaderName, serverconst.CacheControlNoStore)
 	w.Header().Set(serverconst.PragmaHeaderName, serverconst.PragmaNoCache)
 
@@ -138,12 +141,12 @@ func (h *userInfoHandler) writeUserInfoResponse(w http.ResponseWriter, result *U
 		utils.WriteSuccessResponse(w, http.StatusOK, result.JSONBody)
 	}
 
-	h.logger.Debug("UserInfo response sent successfully")
+	h.logger.DebugWithContext(ctx, "UserInfo response sent successfully")
 }
 
 // writeServiceErrorResponse writes a service error response. The dpop flag selects
 // between WWW-Authenticate: Bearer and WWW-Authenticate: DPoP.
-func (h *userInfoHandler) writeServiceErrorResponse(
+func (h *userInfoHandler) writeServiceErrorResponse(ctx context.Context,
 	w http.ResponseWriter, svcErr *serviceerror.ServiceError, dpop bool,
 ) {
 	var statusCode int
@@ -162,7 +165,7 @@ func (h *userInfoHandler) writeServiceErrorResponse(
 	}
 
 	if statusCode == http.StatusInternalServerError {
-		h.logger.Error("Internal server error processing userinfo request",
+		h.logger.ErrorWithContext(ctx, "Internal server error processing userinfo request",
 			log.String("errorCode", svcErr.Code),
 			log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
 		utils.WriteJSONError(w, constants.ErrorServerError,

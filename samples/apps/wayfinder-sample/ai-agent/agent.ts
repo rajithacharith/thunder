@@ -48,6 +48,15 @@ const agentConfig = {
     agentSecret: process.env.AGENT_SECRET || "",
 };
 
+// Separate CIBA-only credentials for the upgrade scheduler.
+// Uses default-ciba-email-flow; kept separate from the main agent because
+// auth_flow_handle is shared between authorization_code and CIBA — they need
+// different flows (interactive browser login vs backchannel email notification).
+const upgradeAgentConfig = {
+    agentID: process.env.UPGRADE_AGENT_ID || "",
+    agentSecret: process.env.UPGRADE_AGENT_SECRET || "",
+};
+
 const LLM_PROVIDER = (process.env.LLM_PROVIDER || "anthropic").toLowerCase();
 
 function createModel(): BaseChatModel {
@@ -94,12 +103,19 @@ Strict rules:
 - Be concise. Skip recaps of the user's question and trailing pleasantries unless asked.
 - NEVER fabricate a booking confirmation, booking reference, or booking status. To create a booking you MUST call the create_booking tool and use only the values it returns. If the tool returns an error, report it to the user — do not invent a success response.
 
+Flights and cabin classes:
+- Flights come in two cabin classes: Economy and Business.
+- Economy flights are the default lower-cost option.
+- Business class flights exist on the same routes as Economy flights — same airline, same schedule, higher price.
+- When listing flights, always show the cabin class alongside the price so the user knows what they are looking at.
+
 Example of how to render a list of flights — copy this style exactly. ALWAYS include the flight ID on every flight so the user can refer to it later (e.g. "book flight-cmb-sin-01"):
 
 Available flights from Colombo to Singapore
 
 Flight 1 — Meridian Airways
 - ID: flight-cmb-sin-03
+- Cabin: Economy
 - Departure: 01:10
 - Arrival: 09:20
 - Duration: 5h 40m
@@ -108,6 +124,7 @@ Flight 1 — Meridian Airways
 
 Flight 2 — Serendib Air
 - ID: flight-cmb-sin-01
+- Cabin: Economy
 - Departure: 08:45
 - Arrival: 15:05
 - Duration: 3h 50m
@@ -121,12 +138,22 @@ When create_booking returns a successful result, format it using only the return
 Booking WF-76855E8F (confirmed)
 - Route: Colombo → Singapore
 - Airline: Meridian Airways
+- Cabin: Economy
 - Departure: 01:10
 - Arrival: 09:20
 - Duration: 5h 40m
 - Stops: 1
 - Price: USD 276
 - Travelers: 1
+
+Flight upgrades:
+- A user can request an upgrade from an Economy booking to a Business class flight on the same route.
+- When the user asks about upgrading, call search_flights with the same from/to as their booked flight and show the Business class results. Use get_flight_bookings first if you need to confirm the route.
+- Show the user the Business class options including the price difference vs their current Economy booking price.
+- If the user confirms they want to upgrade a specific booking to a specific Business flight, call request_upgrade with the bookingId and toFlightId.
+- After request_upgrade succeeds, tell the user exactly this: "Your upgrade request has been submitted and will be processed shortly. You will receive an approval notification on your registered device."
+- NEVER tell the user the upgrade is complete or confirmed at this stage — it is only queued. The upgrade is processed asynchronously by a background agent.
+- Do not call request_upgrade without first confirming the bookingId and toFlightId from the user or from get_flight_bookings / search_flights tool results.
 
 Some tools require user authorization. The system handles this automatically at the infrastructure level — always call the tool normally and let the system manage consent.`;
 
@@ -150,9 +177,10 @@ const USER_CONTEXT_TOOLS = new Set<string>([
     "delete_all_bookings",
     "get_flight_bookings",
     "get_profile",
+    "request_upgrade",
 ]);
 
-const OBO_SCOPES = "booking:read booking:create booking:cancel";
+const OBO_SCOPES = "booking:read booking:create booking:cancel booking:upgrade";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -288,6 +316,7 @@ async function exchangeCodeForUserToken(code: string, codeVerifier: string): Pro
         const claims = JSON.parse(Buffer.from(payload.access_token.split(".")[1], "base64url").toString("utf8"));
         console.log("[obo] user token claims:", JSON.stringify({
             sub: claims.sub,
+            act: claims.act,
             authorized_permissions: claims.authorized_permissions,
             scope: claims.scope,
             aud: claims.aud,
@@ -300,6 +329,106 @@ async function exchangeCodeForUserToken(code: string, codeVerifier: string): Pro
         accessToken: payload.access_token,
         expiresAt: Date.now() + (payload.expires_in ?? 3600) * 1000,
     };
+}
+
+// ---------------------------------------------------------------------------
+// CIBA helpers — used by the upgrade scheduler to get per-user tokens
+// ---------------------------------------------------------------------------
+
+async function initiateCiba(loginHint: string, bindingMessage: string): Promise<{ authReqId: string; interval: number; expiresIn: number }> {
+    const body = new URLSearchParams({
+        login_hint: loginHint,
+        scope: `openid upgrade:process`,
+        binding_message: bindingMessage,
+    });
+
+    const basicAuth = Buffer.from(`${upgradeAgentConfig.agentID}:${upgradeAgentConfig.agentSecret}`).toString("base64");
+
+    const response = await fetch(`${THUNDER_BASE_URL}/oauth2/bc-authorize`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Authorization: `Basic ${basicAuth}`,
+            Accept: "application/json",
+        },
+        body,
+    });
+
+    const text = await response.text();
+
+    if (!response.ok) {
+        throw new Error(`CIBA bc-authorize failed (${response.status}): ${text}`);
+    }
+
+    let payload: { auth_req_id?: string; expires_in?: number; interval?: number };
+    try {
+        payload = JSON.parse(text);
+    } catch {
+        throw new Error(`CIBA bc-authorize returned non-JSON: ${text}`);
+    }
+
+    if (!payload.auth_req_id) {
+        throw new Error(`CIBA bc-authorize response missing auth_req_id: ${text}`);
+    }
+
+    return {
+        authReqId: payload.auth_req_id,
+        interval: payload.interval ?? 5,
+        expiresIn: payload.expires_in ?? 120,
+    };
+}
+
+type CibaPollResult =
+    | { status: "approved"; accessToken: string }
+    | { status: "pending" }
+    | { status: "slow_down" }
+    | { status: "expired" }
+    | { status: "denied" }
+    | { status: "error"; message: string };
+
+async function pollCibaToken(authReqId: string): Promise<CibaPollResult> {
+    const body = new URLSearchParams({
+        grant_type: "urn:openid:params:grant-type:ciba",
+        auth_req_id: authReqId,
+    });
+
+    const basicAuth = Buffer.from(`${upgradeAgentConfig.agentID}:${upgradeAgentConfig.agentSecret}`).toString("base64");
+
+    const response = await fetch(`${THUNDER_BASE_URL}/oauth2/token`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Authorization: `Basic ${basicAuth}`,
+            Accept: "application/json",
+        },
+        body,
+    });
+
+    const text = await response.text();
+    let payload: { access_token?: string; error?: string; error_description?: string };
+
+    try {
+        payload = JSON.parse(text);
+    } catch {
+        return { status: "error", message: `Non-JSON response from token endpoint: ${text}` };
+    }
+
+    if (response.ok && payload.access_token) {
+        return { status: "approved", accessToken: payload.access_token };
+    }
+
+    const errorCode = payload.error;
+
+    if (errorCode === "authorization_pending") return { status: "pending" };
+    if (errorCode === "slow_down") return { status: "slow_down" };
+    if (errorCode === "expired_token") return { status: "expired" };
+    if (errorCode === "access_denied") return { status: "denied" };
+
+    return { status: "error", message: payload.error_description ?? errorCode ?? "Unknown CIBA error" };
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // ---------------------------------------------------------------------------
@@ -350,16 +479,28 @@ function wrapToolForSession(originalTool: DynamicStructuredTool, session: Sessio
         responseFormat: "content_and_artifact",
         func: async (args: Record<string, unknown>) => {
             if (!session.userToken || session.userToken.expiresAt <= Date.now() + 5_000) {
-                const scope = OBO_SCOPES;
-                const requestId = randomUUID();
-                const state = randomUUID();
-                const verifier = generatePkceVerifier();
-                const challenge = pkceChallengeFromVerifier(verifier);
-                const authorizeUrl = buildAuthorizeUrl(state, challenge, scope);
+                if (!session.pendingConsent) {
+                    const scope = OBO_SCOPES;
+                    const requestId = randomUUID();
+                    const state = randomUUID();
+                    const verifier = generatePkceVerifier();
+                    const challenge = pkceChallengeFromVerifier(verifier);
+                    const authorizeUrl = buildAuthorizeUrl(state, challenge, scope);
 
-                session.pendingConsent = { verifier, state, requestId };
-                session.consentError = new ConsentRequiredError(authorizeUrl, state, requestId, scope);
-                console.log(`[obo] ${originalTool.name} → consent required (scope=${scope})`);
+                    session.pendingConsent = { verifier, state, requestId };
+                    session.consentError = new ConsentRequiredError(authorizeUrl, state, requestId, scope);
+                    console.log(`[obo] ${originalTool.name} → consent required (scope=${scope})`);
+                } else {
+                    // Re-surface the existing consent error so subsequent /chat responses
+                    // still carry type: "need_user_consent" for the frontend.
+                    console.log(`[obo] ${originalTool.name} → consent already pending, reusing`);
+                    if (!session.consentError && session.pendingConsent) {
+                        const { state, requestId } = session.pendingConsent;
+                        const scope = OBO_SCOPES;
+                        const authorizeUrl = buildAuthorizeUrl(state, pkceChallengeFromVerifier(session.pendingConsent.verifier), scope);
+                        session.consentError = new ConsentRequiredError(authorizeUrl, state, requestId, scope);
+                    }
+                }
 
                 return ["This action requires user authorization. The system will handle the consent flow.", null];
             }
@@ -420,7 +561,7 @@ let mcpTokenFingerprint = "";
 async function fetchAgentToken(): Promise<TokenState> {
     const body = new URLSearchParams({
         grant_type: "client_credentials",
-        scope: "booking:recommend",
+        scope: "booking:recommend upgrade:search",
     });
     const basicAuth = Buffer.from(`${agentConfig.agentID}:${agentConfig.agentSecret}`).toString("base64");
 
@@ -468,6 +609,67 @@ async function getOrRefreshAgentToken(): Promise<string> {
     const ttl = Math.round((agentTokenState.expiresAt - Date.now()) / 1000);
     console.log(`[ai-agent] M2M token acquired (expires in ${ttl}s)`);
     return agentTokenState.accessToken;
+}
+
+// ---------------------------------------------------------------------------
+// Upgrade agent M2M token — separate from the main agent token.
+// Uses upgradeAgentConfig credentials with upgrade:read scope so the
+// scheduler can call get_pending_upgrade without the main agent's token.
+// ---------------------------------------------------------------------------
+
+let upgradeAgentTokenState: TokenState | null = null;
+
+async function fetchUpgradeAgentToken(): Promise<TokenState> {
+    const body = new URLSearchParams({
+        grant_type: "client_credentials",
+        scope: "upgrade:read upgrade:search",
+    });
+    const basicAuth = Buffer.from(`${upgradeAgentConfig.agentID}:${upgradeAgentConfig.agentSecret}`).toString("base64");
+
+    const response = await fetch(`${THUNDER_BASE_URL}/oauth2/token`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Authorization: `Basic ${basicAuth}`,
+            Accept: "application/json",
+        },
+        body,
+    });
+
+    const text = await response.text();
+    if (!response.ok) {
+        throw new Error(`Upgrade agent token request failed (${response.status}): ${text}`);
+    }
+
+    let payload: { access_token?: string; expires_in?: number };
+    try {
+        payload = JSON.parse(text);
+    } catch {
+        throw new Error(`Upgrade agent token endpoint returned non-JSON: ${text}`);
+    }
+    if (!payload.access_token) {
+        throw new Error(`Upgrade agent token response missing access_token: ${text}`);
+    }
+
+    let expiresAt: number;
+    try {
+        const claims = JSON.parse(Buffer.from(payload.access_token.split(".")[1], "base64url").toString());
+        expiresAt = (claims.exp ?? Math.floor(Date.now() / 1000) + 3600) * 1000;
+    } catch {
+        expiresAt = Date.now() + (payload.expires_in ?? 3600) * 1000;
+    }
+
+    return { accessToken: payload.access_token, expiresAt };
+}
+
+async function getOrRefreshUpgradeAgentToken(): Promise<string> {
+    if (upgradeAgentTokenState && upgradeAgentTokenState.expiresAt > Date.now() + 30_000) {
+        return upgradeAgentTokenState.accessToken;
+    }
+    upgradeAgentTokenState = await fetchUpgradeAgentToken();
+    const ttl = Math.round((upgradeAgentTokenState.expiresAt - Date.now()) / 1000);
+    console.log(`[upgrade-scheduler] M2M token acquired (expires in ${ttl}s)`);
+    return upgradeAgentTokenState.accessToken;
 }
 
 async function ensureMcpConnection(): Promise<void> {
@@ -718,6 +920,188 @@ async function handleConsent(request: IncomingMessage, response: ServerResponse)
 // Server
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Upgrade scheduler — runs independently of HTTP requests.
+// Picks one pending upgrade request at a time, authenticates the user via CIBA,
+// calls process_upgrade with the CIBA user token, then immediately checks for
+// the next pending request. Sleeps 30s only when there are no pending requests.
+// ---------------------------------------------------------------------------
+
+async function processOneUpgrade(): Promise<boolean> {
+    // Use the upgrade agent's own M2M token (upgrade:read scope) to call get_pending_upgrade.
+    // This is separate from the main agent's mcpBaseTools which use booking:recommend scope.
+    const upgradeM2MToken = await getOrRefreshUpgradeAgentToken();
+
+    const upgradeM2MClient = new MultiServerMCPClient({
+        travel: {
+            transport: "http",
+            url: MCP_SERVER_URL,
+            headers: { Authorization: `Bearer ${upgradeM2MToken}` },
+        },
+    });
+
+    let getPendingTool: DynamicStructuredTool | undefined;
+    try {
+        const tools = (await upgradeM2MClient.getTools()) as DynamicStructuredTool[];
+        getPendingTool = tools.find((t) => t.name === "get_pending_upgrade");
+    } catch (err) {
+        console.error("[upgrade-scheduler] Failed to connect upgrade agent MCP client:", err);
+        await upgradeM2MClient.close().catch(() => {});
+        return false;
+    }
+
+    if (!getPendingTool) {
+        console.warn("[upgrade-scheduler] get_pending_upgrade tool not available on MCP server");
+        await upgradeM2MClient.close().catch(() => {});
+        return false;
+    }
+
+    let pendingResult: { pendingCount: number; request: { id: string; userId: string; email: string; bookingId: string; fromFlightId: string; toFlightId: string; priceDifference: number; route: { from: string; to: string; airline: string }; fromCabin: string; toCabin: string } | null } | null = null;
+
+    try {
+        const raw = await getPendingTool.func({}, undefined, undefined);
+        const text = Array.isArray(raw)
+            ? (raw[0] as string)
+            : typeof raw === "string"
+            ? raw
+            : JSON.stringify(raw);
+        pendingResult = JSON.parse(typeof text === "string" ? text : JSON.stringify(text));
+    } catch (err) {
+        console.error("[upgrade-scheduler] Failed to fetch pending upgrades:", err);
+        await upgradeM2MClient.close().catch(() => {});
+        return false;
+    } finally {
+        await upgradeM2MClient.close().catch(() => {});
+    }
+
+    if (!pendingResult || !pendingResult.request) {
+        console.log(`[upgrade-scheduler] No pending upgrades (count: ${pendingResult?.pendingCount ?? 0})`);
+        return false;
+    }
+
+    const { request, pendingCount } = pendingResult;
+    console.log(`[upgrade-scheduler] Found ${pendingCount} pending upgrade(s). Processing: ${request.id} for user: ${request.email}`);
+
+    const priceDiff = request.priceDifference > 0 ? `+$${request.priceDifference.toFixed(0)}` : "no extra cost";
+    const bindingMessage = `WF-UPG: Approve ${request.route.from}→${request.route.to} ${request.fromCabin}→${request.toCabin} upgrade (${priceDiff})?`;
+
+    let authReqId: string;
+    let pollIntervalSeconds: number;
+
+    try {
+        const cibaResponse = await initiateCiba(request.email, bindingMessage);
+        authReqId = cibaResponse.authReqId;
+        pollIntervalSeconds = cibaResponse.interval;
+        console.log(`[upgrade-scheduler] CIBA initiated for ${request.email} | auth_req_id: ${authReqId}`);
+    } catch (err) {
+        console.error(`[upgrade-scheduler] CIBA initiation failed for ${request.email}:`, err);
+        return false; // Sleep before retrying to avoid overwhelming Thunder
+    }
+
+    // Poll until approved, denied, or expired
+    let currentIntervalMs = Math.max(pollIntervalSeconds + 1, 6) * 1000;
+    let cibaUserToken: string | null = null;
+
+    for (;;) {
+        await sleep(currentIntervalMs);
+
+        let pollResult: CibaPollResult;
+
+        try {
+            pollResult = await pollCibaToken(authReqId);
+        } catch (err) {
+            console.error(`[upgrade-scheduler] CIBA poll error for ${request.id}:`, err);
+            return true;
+        }
+
+        if (pollResult.status === "approved") {
+            cibaUserToken = pollResult.accessToken;
+            console.log(`[upgrade-scheduler] CIBA approved for ${request.email}`);
+            break;
+        }
+
+        if (pollResult.status === "slow_down") {
+            currentIntervalMs += 5000;
+            console.log(`[upgrade-scheduler] CIBA slow_down — increasing poll interval to ${currentIntervalMs}ms`);
+            continue;
+        }
+
+        if (pollResult.status === "pending") {
+            continue;
+        }
+
+        // denied / expired / error
+        console.log(`[upgrade-scheduler] CIBA ${pollResult.status} for upgrade ${request.id} (user: ${request.email})`);
+        return true;
+    }
+
+    if (!cibaUserToken) {
+        return true;
+    }
+
+    // Call process_upgrade using a one-shot MCP client with the CIBA user token
+    try {
+        const userMcpClient = new MultiServerMCPClient({
+            travel: {
+                transport: "http",
+                url: MCP_SERVER_URL,
+                headers: { Authorization: `Bearer ${cibaUserToken}` },
+            },
+        });
+
+        const userTools = (await userMcpClient.getTools()) as DynamicStructuredTool[];
+        const processUpgradeTool = userTools.find((t) => t.name === "process_upgrade");
+
+        if (!processUpgradeTool) {
+            console.error(`[upgrade-scheduler] process_upgrade tool not found with CIBA token`);
+            await userMcpClient.close().catch(() => {});
+            return true;
+        }
+
+        const result = await processUpgradeTool.func({ upgradeRequestId: request.id }, undefined, undefined);
+        console.log(`[upgrade-scheduler] Upgrade ${request.id} processed successfully:`, JSON.stringify(result).slice(0, 200));
+
+        await userMcpClient.close().catch(() => {});
+    } catch (err) {
+        console.error(`[upgrade-scheduler] process_upgrade failed for ${request.id}:`, err);
+    }
+
+    return true;
+}
+
+function startUpgradeScheduler(): void {
+    if (!THUNDER_BASE_URL || !agentConfig.agentID || !agentConfig.agentSecret) {
+        console.log("[upgrade-scheduler] Thunder not configured — upgrade scheduler disabled.");
+        return;
+    }
+
+    if (!upgradeAgentConfig.agentID || !upgradeAgentConfig.agentSecret) {
+        console.log("[upgrade-scheduler] Upgrade agent not configured (UPGRADE_AGENT_ID / UPGRADE_AGENT_SECRET missing) — upgrade scheduler disabled.");
+        return;
+    }
+
+    console.log("[upgrade-scheduler] Starting upgrade scheduler (30s sleep when idle).");
+
+    async function loop(): Promise<void> {
+        for (;;) {
+            try {
+                const hadWork = await processOneUpgrade();
+
+                if (!hadWork) {
+                    // No pending requests — sleep 30s before checking again
+                    await sleep(30_000);
+                }
+                // If hadWork is true there may be more — loop immediately
+            } catch (err) {
+                console.error("[upgrade-scheduler] Unexpected error in scheduler loop:", err);
+                await sleep(30_000);
+            }
+        }
+    }
+
+    loop().catch((err) => console.error("[upgrade-scheduler] Fatal loop error:", err));
+}
+
 async function runAgentServer() {
     const baseTools = await createAgent();
     const port = Number(process.env.PORT || process.env.AGENT_PORT || 8790);
@@ -770,6 +1154,7 @@ async function runAgentServer() {
         console.log(`Chat endpoint: POST http://${host}:${port}/chat`);
         console.log(`Consent endpoint: POST http://${host}:${port}/chat/consent`);
         console.log(`Health check: GET http://${host}:${port}/health`);
+        startUpgradeScheduler();
     });
 
     const shutdown = async () => {

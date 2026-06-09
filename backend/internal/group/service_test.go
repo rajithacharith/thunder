@@ -30,6 +30,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/entity"
 	oupkg "github.com/thunder-id/thunderid/internal/ou"
+	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/security"
@@ -76,6 +77,20 @@ func newAuthzError(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
 
 type GroupServiceTestSuite struct {
 	suite.Suite
+}
+
+func (suite *GroupServiceTestSuite) SetupSuite() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetServerRuntime()
+	if err := config.InitializeServerRuntime("/tmp/test", testConfig); err != nil {
+		suite.Fail("Failed to initialize runtime", err)
+	}
+}
+
+func (suite *GroupServiceTestSuite) TearDownSuite() {
+	config.ResetServerRuntime()
 }
 
 func TestGroupServiceTestSuite(t *testing.T) {
@@ -1123,6 +1138,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				OUID:        "ou-new",
 			},
 			setup: func(args *setupArgs) {
+				args.store.On("IsGroupDeclarative", mock.Anything, "grp-001").Return(false, nil).Once()
 				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001", Name: "old", Description: "legacy",
 						OUID: "ou-old"}, nil).
@@ -1149,6 +1165,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				OUID: "ou-new",
 			},
 			setup: func(args *setupArgs) {
+				args.store.On("IsGroupDeclarative", mock.Anything, "grp-001").Return(false, nil).Once()
 				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001", Name: "old", OUID: "ou-old"}, nil).
 					Once()
@@ -1169,6 +1186,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				OUID: "ou",
 			},
 			setup: func(args *setupArgs) {
+				args.store.On("IsGroupDeclarative", mock.Anything, "grp-001").Return(false, nil).Once()
 				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{}, ErrGroupNotFound).
 					Once()
@@ -1183,6 +1201,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				OUID: "ou",
 			},
 			setup: func(args *setupArgs) {
+				args.store.On("IsGroupDeclarative", mock.Anything, "grp-001").Return(false, nil).Once()
 				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{}, errors.New("db error")).
 					Once()
@@ -1197,6 +1216,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				OUID: "ou-new",
 			},
 			setup: func(args *setupArgs) {
+				args.store.On("IsGroupDeclarative", mock.Anything, "grp-001").Return(false, nil).Once()
 				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001", Name: "name", OUID: "ou-old"}, nil).
 					Once()
@@ -1214,6 +1234,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				OUID: "ou",
 			},
 			setup: func(args *setupArgs) {
+				args.store.On("IsGroupDeclarative", mock.Anything, "grp-001").Return(false, nil).Once()
 				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001", Name: "old", OUID: "ou"}, nil).
 					Once()
@@ -1231,6 +1252,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				OUID: "ou",
 			},
 			setup: func(args *setupArgs) {
+				args.store.On("IsGroupDeclarative", mock.Anything, "grp-001").Return(false, nil).Once()
 				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001", Name: "old-name", OUID: "ou"}, nil).
 					Once()
@@ -1251,6 +1273,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				OUID: testOUID1,
 			},
 			setup: func(args *setupArgs) {
+				args.store.On("IsGroupDeclarative", mock.Anything, "grp-001").Return(false, nil).Once()
 				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001", OUID: testOUID1}, nil).Once()
 			},
@@ -1278,6 +1301,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				OUID: testOUID2,
 			},
 			setup: func(args *setupArgs) {
+				args.store.On("IsGroupDeclarative", mock.Anything, "grp-001").Return(false, nil).Once()
 				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001", OUID: testOUID1}, nil).Once()
 				args.ou.On("IsOrganizationUnitExists", mock.Anything, testOUID2).
@@ -1377,6 +1401,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 			name: "success",
 			id:   "grp-001",
 			setup: func(storeMock *groupStoreInterfaceMock) {
+				storeMock.On("IsGroupDeclarative", mock.Anything, "grp-001").Return(false, nil).Once()
 				storeMock.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001"}, nil).
 					Once()
@@ -1394,6 +1419,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 			name: "get group error",
 			id:   "grp-001",
 			setup: func(storeMock *groupStoreInterfaceMock) {
+				storeMock.On("IsGroupDeclarative", mock.Anything, "grp-001").Return(false, nil).Once()
 				storeMock.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{}, errors.New("db error")).
 					Once()
@@ -1404,6 +1430,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 			name: "delete error",
 			id:   "grp-001",
 			setup: func(storeMock *groupStoreInterfaceMock) {
+				storeMock.On("IsGroupDeclarative", mock.Anything, "grp-001").Return(false, nil).Once()
 				storeMock.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001"}, nil).
 					Once()
@@ -1417,6 +1444,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 			name: "group not found",
 			id:   "grp-001",
 			setup: func(storeMock *groupStoreInterfaceMock) {
+				storeMock.On("IsGroupDeclarative", mock.Anything, "grp-001").Return(false, nil).Once()
 				storeMock.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{}, ErrGroupNotFound).
 					Once()
@@ -1427,6 +1455,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 			name: "access denied",
 			id:   "grp-001",
 			setup: func(storeMock *groupStoreInterfaceMock) {
+				storeMock.On("IsGroupDeclarative", mock.Anything, "grp-001").Return(false, nil).Once()
 				storeMock.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001", OUID: testOUID1}, nil).Once()
 			},

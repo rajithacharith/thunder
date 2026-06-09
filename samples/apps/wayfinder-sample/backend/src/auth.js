@@ -126,15 +126,18 @@ export async function getAuthenticatedUser(request) {
     ? parsedToken.payload.scope.split(" ").filter(Boolean)
     : [];
 
-  return {
+  const user = {
     id: parsedToken.payload.sub,
     username: parsedToken.payload.username || parsedToken.payload.preferred_username,
     email: parsedToken.payload.email,
     givenName: parsedToken.payload.given_name,
     familyName: parsedToken.payload.family_name,
     scopes,
+    actor: parsedToken.payload.act?.sub || null,
     rawClaims: parsedToken.payload
   };
+
+  return user;
 }
 
 export async function resolveUser(request) {

@@ -64,7 +64,7 @@ func (e *layoutExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serv
 	offset := 0
 
 	for {
-		layoutList, err := e.service.GetLayoutList(pageSize, offset)
+		layoutList, err := e.service.GetLayoutList(ctx, pageSize, offset)
 		if err != nil {
 			return nil, err
 		}
@@ -90,7 +90,7 @@ func (e *layoutExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serv
 func (e *layoutExporter) GetResourceByID(ctx context.Context, id string) (
 	interface{}, string, *serviceerror.ServiceError,
 ) {
-	layout, err := e.service.GetLayout(id)
+	layout, err := e.service.GetLayout(ctx, id)
 	if err != nil {
 		return nil, "", err
 	}

@@ -462,7 +462,6 @@ export default function ApplicationCreatePage(): JSX.Element {
             oauthConfig={oauthConfig}
             onOAuthConfigChange={setOAuthConfig}
             onReadyChange={handleTechnologyStepReadyChange}
-            stackTypes={{technology: true, platform: true}}
           />
         );
 

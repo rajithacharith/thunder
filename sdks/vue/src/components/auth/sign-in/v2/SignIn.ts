@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -46,7 +46,7 @@ import useI18n from '../../../../composables/useI18n';
 import useThunderID from '../../../../composables/useThunderID';
 import {useOAuthCallback} from '../../../../composables/v2/useOAuthCallback';
 import {initiateOAuthRedirect} from '../../../../utils/oauth';
-import {normalizeFlowResponse} from '../../../../utils/v2/flowTransformer';
+import {extractErrorMessage, normalizeFlowResponse} from '../../../../utils/v2/flowTransformer';
 import {handlePasskeyAuthentication, handlePasskeyRegistration} from '../../../../utils/v2/passkey';
 
 const EXECUTION_ID_STORAGE_KEY = 'thunderid_execution_id';
@@ -270,8 +270,7 @@ const SignIn: Component = defineComponent({
       } catch (error: unknown) {
         const err: any = error as any;
         clearFlowState();
-        const errorMessage: string = err?.failureReason || (err instanceof Error ? err.message : String(err));
-        setError(new Error(errorMessage));
+        setError(new Error(extractErrorMessage(err, t)));
         initializationAttempted = false;
       }
     };
@@ -381,9 +380,7 @@ const SignIn: Component = defineComponent({
         // Handle error flow status
         if (response.flowStatus === EmbeddedSignInFlowStatusV2.Error) {
           clearFlowState();
-          const failureReason: string =
-            (response as any)?.failureReason || 'Authentication flow failed. Please try again.';
-          const err: Error = new Error(failureReason);
+          const err: Error = new Error(extractErrorMessage(response, t));
           setError(err);
           cleanupFlowUrlParams();
           throw err;
@@ -420,8 +417,8 @@ const SignIn: Component = defineComponent({
           isFlowInitialized.value = true;
           cleanupFlowUrlParams();
 
-          if ((response as any)?.failureReason) {
-            flowError.value = new Error((response as any).failureReason);
+          if ((response as any)?.error) {
+            flowError.value = new Error(extractErrorMessage(response, t));
           }
         }
       } catch (error: unknown) {
@@ -431,8 +428,7 @@ const SignIn: Component = defineComponent({
           throw err;
         }
         clearFlowState();
-        const errorMessage: string = err?.failureReason || (err instanceof Error ? err.message : String(err));
-        setError(new Error(errorMessage));
+        setError(new Error(extractErrorMessage(err, t)));
       } finally {
         isSubmitting.value = false;
       }

@@ -62,7 +62,7 @@ func (eh *exportHandler) HandleExportRequest(w http.ResponseWriter, r *http.Requ
 	exportResponse, svcErr := eh.service.ExportResources(r.Context(), exportRequest)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ServerErrorType {
-			logger.Error("Error exporting resources", log.Any("serviceError", svcErr))
+			logger.ErrorWithContext(r.Context(), "Error exporting resources", log.Any("serviceError", svcErr))
 		}
 		eh.handleError(w, svcErr)
 		return
@@ -97,6 +97,7 @@ func buildCombinedResources(files []ExportFile) string {
 
 // HandleExportZipRequest handles the export request and returns a ZIP file containing all resources.
 func (eh *exportHandler) HandleExportZipRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ExportHandler"))
 
 	exportRequest, err := sysutils.DecodeJSONBody[ExportRequest](r)
@@ -114,7 +115,7 @@ func (eh *exportHandler) HandleExportZipRequest(w http.ResponseWriter, r *http.R
 	exportResponse, svcErr := eh.service.ExportResources(r.Context(), exportRequest)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ServerErrorType {
-			logger.Error("Error exporting resources", log.Any("serviceError", svcErr))
+			logger.ErrorWithContext(ctx, "Error exporting resources", log.Any("serviceError", svcErr))
 		}
 		eh.handleError(w, svcErr)
 		return
@@ -122,7 +123,7 @@ func (eh *exportHandler) HandleExportZipRequest(w http.ResponseWriter, r *http.R
 
 	// Generate ZIP file and send response
 	if err := eh.generateAndSendZipResponse(w, logger, exportResponse); err != nil {
-		logger.Error("Error generating ZIP response", log.Error(err))
+		logger.ErrorWithContext(ctx, "Error generating ZIP response", log.Error(err))
 		errResp := apierror.ErrorResponse{
 			Code:        serviceerror.InternalServerError.Code,
 			Message:     serviceerror.InternalServerError.Error,

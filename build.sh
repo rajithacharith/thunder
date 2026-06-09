@@ -123,6 +123,8 @@ REACT_API_SAMPLE_APP_FOLDER="sample-app-react-api-based-${REACT_API_SAMPLE_APP_V
 WAYFINDER_SAMPLE_APP_VERSION=$(grep -o '"version": *"[^"]*"' samples/apps/wayfinder-sample/package.json | sed 's/"version": *"\(.*\)"/\1/')
 WAYFINDER_SAMPLE_APP_FOLDER="sample-app-wayfinder-${WAYFINDER_SAMPLE_APP_VERSION}-${SAMPLE_PACKAGE_OS}-${SAMPLE_PACKAGE_ARCH}"
 
+
+
 # Directories
 TARGET_DIR=target
 OUTPUT_DIR=$TARGET_DIR/out
@@ -147,6 +149,16 @@ VANILLA_SAMPLE_APP_SERVER_DIR=$VANILLA_SAMPLE_APP_DIR/server
 REACT_SDK_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-sdk-sample
 REACT_API_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-api-based-sample
 WAYFINDER_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/wayfinder-sample
+
+
+# Quick start declarative bundles staged into the console's welcome feature so they're inlined
+# into the console JS bundle at build time.
+# Add a new bundle as a single line: "<dest-name>:<source-dir>".
+# <dest-name> may include "/" for grouping (e.g. "wayfinder/redirect-based").
+QUICKSTART_SAMPLE_BUNDLES=(
+    "wayfinder:$WAYFINDER_SAMPLE_APP_DIR/thunderid-config"
+)
+QUICKSTART_BUNDLE_STAGE_DIR="$FRONTEND_CONSOLE_APP_SOURCE_DIR/src/features/welcome/data/sample-bundles"
 
 # Default ports
 GATE_APP_DEFAULT_PORT=5190
@@ -376,11 +388,13 @@ function build_frontend() {
     echo "================================================================"
     echo "Building frontend apps..."
     ensure_pnpm
-    
+
+    sync_quickstart_bundles
+
     # Install dependencies
     echo "Installing frontend dependencies..."
     pnpm install --frozen-lockfile
-    
+
     echo "Building frontend applications & packages..."
     pnpm build:frontend
     
@@ -520,6 +534,26 @@ function prepare_frontend_for_packaging() {
     fi
 
     echo "================================================================"
+}
+
+function sync_quickstart_bundles() {
+    # Stage Quick start declarative bundles into the console's public dir.
+    echo "Syncing quick start sample bundles to console welcome data dir..."
+    rm -rf "$QUICKSTART_BUNDLE_STAGE_DIR"
+    for entry in "${QUICKSTART_SAMPLE_BUNDLES[@]}"; do
+        local dest_name="${entry%%:*}"
+        local src_dir="${entry#*:}"
+        local dest_dir="$QUICKSTART_BUNDLE_STAGE_DIR/$dest_name"
+        if [ -d "$src_dir" ]; then
+            echo "  Staging '$dest_name' from $src_dir"
+            mkdir -p "$dest_dir"
+            shopt -s dotglob
+            cp -r "$src_dir/"* "$dest_dir"
+            shopt -u dotglob
+        else
+            echo "  Warning: quick start bundle source not found at $src_dir (dest '$dest_name')"
+        fi
+    done
 }
 
 function package() {
@@ -1348,7 +1382,9 @@ function run_frontend() {
     echo "================================================================"
     echo "Running frontend apps..."
     ensure_pnpm
-    
+
+    sync_quickstart_bundles
+
     # Install dependencies
     echo "Installing frontend dependencies..."
     pnpm install --frozen-lockfile

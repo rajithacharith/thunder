@@ -25,6 +25,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
@@ -47,7 +48,7 @@ func (suite *I18nHandlerTestSuite) SetupTest() {
 
 func (suite *I18nHandlerTestSuite) TestHandleListLanguages_Success() {
 	expectedLangs := []string{"en-US", "fr-FR"}
-	suite.mockService.On("ListLanguages").Return(expectedLangs, nil)
+	suite.mockService.On("ListLanguages", mock.Anything).Return(expectedLangs, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/i18n/languages", nil)
 	w := httptest.NewRecorder()
@@ -64,7 +65,7 @@ func (suite *I18nHandlerTestSuite) TestHandleListLanguages_Success() {
 }
 
 func (suite *I18nHandlerTestSuite) TestHandleListLanguages_ServiceError() {
-	suite.mockService.On("ListLanguages").Return(nil, &serviceerror.InternalServerError)
+	suite.mockService.On("ListLanguages", mock.Anything).Return(nil, &serviceerror.InternalServerError)
 
 	req := httptest.NewRequest(http.MethodGet, "/i18n/languages", nil)
 	w := httptest.NewRecorder()
@@ -82,7 +83,7 @@ func (suite *I18nHandlerTestSuite) TestHandleResolveTranslationsByLanguage_Succe
 			"common": {"welcome": "Welcome"},
 		},
 	}
-	suite.mockService.On("ResolveTranslations", "en-US", "common").
+	suite.mockService.On("ResolveTranslations", mock.Anything, "en-US", "common").
 		Return(expectedResp, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/i18n/languages/en-US/translations/resolve?namespace=common", nil)
@@ -99,7 +100,7 @@ func (suite *I18nHandlerTestSuite) TestHandleResolveTranslationsByLanguage_Succe
 }
 
 func (suite *I18nHandlerTestSuite) TestHandleResolveTranslationsByLanguage_ServiceError() {
-	suite.mockService.On("ResolveTranslations", "en-US", "").
+	suite.mockService.On("ResolveTranslations", mock.Anything, "en-US", "").
 		Return(nil, &ErrorInvalidLanguage)
 
 	req := httptest.NewRequest(http.MethodGet, "/i18n/languages/en-US/translations/resolve", nil)
@@ -125,7 +126,7 @@ func (suite *I18nHandlerTestSuite) TestHandleSetOverrideTranslationsByLanguage_S
 		Translations: inputTranslations,
 	}
 
-	suite.mockService.On("SetTranslationOverrides", "en-US", inputTranslations).Return(expectedResp, nil)
+	suite.mockService.On("SetTranslationOverrides", mock.Anything, "en-US", inputTranslations).Return(expectedResp, nil)
 
 	body, _ := json.Marshal(request)
 	req := httptest.NewRequest(http.MethodPost, "/i18n/languages/en-US/translations", bytes.NewBuffer(body))
@@ -149,7 +150,7 @@ func (suite *I18nHandlerTestSuite) TestHandleSetOverrideTranslationsByLanguage_I
 }
 
 func (suite *I18nHandlerTestSuite) TestHandleClearOverrideTranslationsByLanguage_Success() {
-	suite.mockService.On("ClearTranslationOverrides", "en-US").Return(nil)
+	suite.mockService.On("ClearTranslationOverrides", mock.Anything, "en-US").Return(nil)
 
 	req := httptest.NewRequest(http.MethodDelete, "/i18n/languages/en-US/translations", nil)
 	req.SetPathValue("language", "en-US")
@@ -167,7 +168,7 @@ func (suite *I18nHandlerTestSuite) TestHandleResolveTranslation_Success() {
 		Key:       "key",
 		Value:     "val",
 	}
-	suite.mockService.On("ResolveTranslationsForKey", "en-US", "ns", "key").Return(expectedResp, nil)
+	suite.mockService.On("ResolveTranslationsForKey", mock.Anything, "en-US", "ns", "key").Return(expectedResp, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/i18n/languages/en-US/translations/ns/ns/keys/key/resolve", nil)
 	req.SetPathValue("language", "en-US")
@@ -189,7 +190,7 @@ func (suite *I18nHandlerTestSuite) TestHandleSetOverrideTranslation_Success() {
 		Value:     "new val",
 	}
 
-	suite.mockService.On("SetTranslationOverrideForKey", "en-US", "ns", "key", "new val").
+	suite.mockService.On("SetTranslationOverrideForKey", mock.Anything, "en-US", "ns", "key", "new val").
 		Return(expectedResp, nil)
 
 	body, _ := json.Marshal(request)
@@ -206,7 +207,7 @@ func (suite *I18nHandlerTestSuite) TestHandleSetOverrideTranslation_Success() {
 }
 
 func (suite *I18nHandlerTestSuite) TestHandleClearOverrideTranslation_Success() {
-	suite.mockService.On("ClearTranslationOverrideForKey", "en-US", "ns", "key").Return(nil)
+	suite.mockService.On("ClearTranslationOverrideForKey", mock.Anything, "en-US", "ns", "key").Return(nil)
 
 	req := httptest.NewRequest(http.MethodDelete, "/i18n/languages/en-US/translations/ns/ns/keys/key", nil)
 	req.SetPathValue("language", "en-US")

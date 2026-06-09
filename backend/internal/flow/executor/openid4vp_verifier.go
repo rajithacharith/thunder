@@ -28,6 +28,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/openid4vp"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
@@ -81,9 +82,9 @@ func (e *openid4vpVerifier) Execute(ctx *core.NodeContext) (*common.ExecutorResp
 	}
 
 	if e.service == nil {
-		logger.Error("OpenID4VP verifier service is not configured")
+		logger.ErrorWithContext(ctx.Context, "OpenID4VP verifier service is not configured")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = failureReasonOpenID4VPNotConfigured
+		execResp.Error = &ErrOpenID4VPNotConfigured
 		return execResp, nil
 	}
 
@@ -101,10 +102,10 @@ func (e *openid4vpVerifier) initiate(
 	definitionID := presentationDefinitionID(ctx)
 	init, err := e.service.Initiate(ctx.Context, definitionID)
 	if err != nil {
-		logger.Error("Failed to initiate OpenID4VP request",
+		logger.ErrorWithContext(ctx.Context, "Failed to initiate OpenID4VP request",
 			log.String("definitionID", definitionID), log.Error(err))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = failureReasonOpenID4VPInitiate
+		execResp.Error = &ErrOpenID4VPInitiateFailed
 		return execResp, nil
 	}
 
@@ -138,16 +139,16 @@ func (e *openid4vpVerifier) poll(
 ) (*common.ExecutorResponse, error) {
 	rs, err := e.service.Result(ctx.Context, state)
 	if err != nil {
-		logger.Debug("OpenID4VP request state not found or expired", log.Error(err))
+		logger.DebugWithContext(ctx.Context, "OpenID4VP request state not found or expired", log.Error(err))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = failureReasonOpenID4VPExpired
+		execResp.Error = &ErrOpenID4VPExpired
 		return execResp, nil
 	}
 
 	switch rs.Status {
 	case openid4vp.StatusCompleted:
 		e.setAuthenticatedUser(execResp, rs.Result)
-		if !e.resolveLocalUser(rs.Result, execResp, logger) {
+		if !e.resolveLocalUser(ctx.Context, rs.Result, execResp, logger) {
 			execResp.RuntimeData[common.RuntimeKeyUserEligibleForProvisioning] = dataValueTrue
 		}
 		e.resolveUserType(ctx, execResp, logger)
@@ -156,9 +157,14 @@ func (e *openid4vpVerifier) poll(
 		}
 		execResp.Status = common.ExecComplete
 	case openid4vp.StatusFailed:
-		logger.Debug("OpenID4VP presentation verification failed", log.String("reason", rs.FailureReason))
+		logger.DebugWithContext(ctx.Context, "OpenID4VP presentation verification failed",
+			log.String("reason", rs.FailureReason))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = rs.FailureReason
+		execResp.Error = serviceerror.CustomServiceError(ErrOpenID4VPVerificationFailed,
+			i18ncore.I18nMessage{
+				Key:          ErrOpenID4VPVerificationFailed.ErrorDescription.Key,
+				DefaultValue: "OpenID4VP presentation verification failed: " + rs.FailureReason,
+			})
 	default:
 		// Still pending: keep the state, re-emit the QR data so the wait view
 		// keeps rendering it across polls, and keep the client polling.
@@ -185,7 +191,7 @@ func (e *openid4vpVerifier) resolveUserType(
 			if svcErr.Type == serviceerror.ClientErrorType {
 				continue
 			}
-			logger.Error("Failed to retrieve user type", log.String("userType", name))
+			logger.ErrorWithContext(ctx.Context, "Failed to retrieve user type", log.String("userType", name))
 			return
 		}
 		if et.AllowSelfRegistration {
@@ -203,7 +209,7 @@ func (e *openid4vpVerifier) resolveUserType(
 // attributes the provisioning executor stores — rather than all JWT claims
 // (sub, iss, vct, etc.) which are not stored as user attributes.
 // Returns true and sets execResp.AuthenticatedUser.UserID when found.
-func (e *openid4vpVerifier) resolveLocalUser(
+func (e *openid4vpVerifier) resolveLocalUser(ctx context.Context,
 	vp *openid4vp.VerifiedPresentation, execResp *common.ExecutorResponse, logger *log.Logger,
 ) bool {
 	if e.entityProvider == nil || vp == nil || len(vp.DisclosedPaths) == 0 {
@@ -226,7 +232,7 @@ func (e *openid4vpVerifier) resolveLocalUser(
 	if err != nil || userID == nil || *userID == "" {
 		return false
 	}
-	logger.Debug("Found existing local account for EUDI credential",
+	logger.DebugWithContext(ctx, "Found existing local account for EUDI credential",
 		log.MaskedString(log.LoggerKeyUserID, *userID))
 	execResp.AuthenticatedUser.UserID = *userID
 	return true
@@ -238,7 +244,7 @@ func (e *openid4vpVerifier) setAuthenticatedUser(
 ) {
 	if vp == nil {
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = failureReasonOpenID4VPExpired
+		execResp.Error = &ErrOpenID4VPExpired
 		return
 	}
 	attributes := make(map[string]interface{}, len(vp.Claims)+2)

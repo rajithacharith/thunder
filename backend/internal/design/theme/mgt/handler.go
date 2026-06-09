@@ -49,13 +49,14 @@ func newThemeMgtHandler(themeMgtService ThemeMgtServiceInterface) *themeMgtHandl
 
 // HandleThemeListRequest handles the list theme configurations request.
 func (th *themeMgtHandler) HandleThemeListRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
 	}
 
-	themeList, svcErr := th.themeMgtService.GetThemeList(limit, offset)
+	themeList, svcErr := th.themeMgtService.GetThemeList(ctx, limit, offset)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -87,7 +88,7 @@ func (th *themeMgtHandler) HandleThemeListRequest(w http.ResponseWriter, r *http
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, themeListResponse)
 
-	th.logger.Debug("Successfully listed theme configurations with pagination",
+	th.logger.DebugWithContext(ctx, "Successfully listed theme configurations with pagination",
 		log.Int("limit", limit), log.Int("offset", offset),
 		log.Int("totalResults", themeListResponse.TotalResults),
 		log.Int("count", themeListResponse.Count))
@@ -95,13 +96,14 @@ func (th *themeMgtHandler) HandleThemeListRequest(w http.ResponseWriter, r *http
 
 // HandleThemePostRequest handles the create theme configuration request.
 func (th *themeMgtHandler) HandleThemePostRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	createRequest, err := sysutils.DecodeJSONBody[CreateThemeRequest](r)
 	if err != nil {
 		handleError(w, &ErrorInvalidThemeData)
 		return
 	}
 
-	createdTheme, svcErr := th.themeMgtService.CreateTheme(CreateThemeRequestWithID{
+	createdTheme, svcErr := th.themeMgtService.CreateTheme(ctx, CreateThemeRequestWithID{
 		Handle:      createRequest.Handle,
 		DisplayName: createRequest.DisplayName,
 		Description: createRequest.Description,
@@ -124,13 +126,15 @@ func (th *themeMgtHandler) HandleThemePostRequest(w http.ResponseWriter, r *http
 
 	sysutils.WriteSuccessResponse(w, http.StatusCreated, themeResponse)
 
-	th.logger.Debug("Successfully created theme configuration", log.String("id", createdTheme.ID))
+	th.logger.DebugWithContext(ctx, "Successfully created theme configuration",
+		log.String("id", createdTheme.ID))
 }
 
 // HandleThemeGetRequest handles the get theme configuration request.
 func (th *themeMgtHandler) HandleThemeGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	id := r.PathValue("id")
-	theme, svcErr := th.themeMgtService.GetTheme(id)
+	theme, svcErr := th.themeMgtService.GetTheme(ctx, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -148,11 +152,12 @@ func (th *themeMgtHandler) HandleThemeGetRequest(w http.ResponseWriter, r *http.
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, themeResponse)
 
-	th.logger.Debug("Successfully retrieved theme configuration", log.String("id", id))
+	th.logger.DebugWithContext(ctx, "Successfully retrieved theme configuration", log.String("id", id))
 }
 
 // HandleThemePutRequest handles the update theme configuration request.
 func (th *themeMgtHandler) HandleThemePutRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	id := r.PathValue("id")
 	updateRequest, err := sysutils.DecodeJSONBody[UpdateThemeRequest](r)
 	if err != nil {
@@ -160,7 +165,7 @@ func (th *themeMgtHandler) HandleThemePutRequest(w http.ResponseWriter, r *http.
 		return
 	}
 
-	updatedTheme, svcErr := th.themeMgtService.UpdateTheme(id, *updateRequest)
+	updatedTheme, svcErr := th.themeMgtService.UpdateTheme(ctx, id, *updateRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -178,20 +183,21 @@ func (th *themeMgtHandler) HandleThemePutRequest(w http.ResponseWriter, r *http.
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, themeResponse)
 
-	th.logger.Debug("Successfully updated theme configuration", log.String("id", id))
+	th.logger.DebugWithContext(ctx, "Successfully updated theme configuration", log.String("id", id))
 }
 
 // HandleThemeDeleteRequest handles the delete theme configuration request.
 func (th *themeMgtHandler) HandleThemeDeleteRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	id := r.PathValue("id")
-	svcErr := th.themeMgtService.DeleteTheme(id)
+	svcErr := th.themeMgtService.DeleteTheme(ctx, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusNoContent, nil)
-	th.logger.Debug("Successfully deleted theme configuration", log.String("id", id))
+	th.logger.DebugWithContext(ctx, "Successfully deleted theme configuration", log.String("id", id))
 }
 
 // parsePaginationParams parses limit and offset query parameters from the request.
