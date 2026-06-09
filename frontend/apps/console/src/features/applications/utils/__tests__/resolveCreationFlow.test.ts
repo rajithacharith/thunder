@@ -69,6 +69,10 @@ describe('resolveCreationFlow', () => {
 
   it('returns only NAME and COMPLETE steps for the custom platform template', () => {
     const flow = resolveCreationFlow(CustomPlatformTemplate);
-    expect(flow.steps).toEqual([ApplicationCreateFlowStep.NAME, ApplicationCreateFlowStep.COMPLETE]);
+    expect(flow.steps).toEqual([
+      ApplicationCreateFlowStep.NAME,
+      ApplicationCreateFlowStep.ORGANIZATION_UNIT,
+      ApplicationCreateFlowStep.COMPLETE,
+    ]);
   });
 });

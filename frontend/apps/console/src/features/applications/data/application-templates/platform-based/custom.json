@@ -3,7 +3,7 @@
   "displayName": "Custom",
   "description": "Fully customizable application with all configuration options available",
   "creationFlow": {
-    "steps": ["NAME", "COMPLETE"]
+    "steps": ["NAME", "ORGANIZATION_UNIT", "COMPLETE"]
   },
   "defaults": {
     "name": "My Application",
