@@ -28,6 +28,7 @@ import (
 	flowmgt "github.com/thunder-id/thunderid/internal/flow/mgt"
 	"github.com/thunder-id/thunderid/internal/group"
 	"github.com/thunder-id/thunderid/internal/idp"
+	"github.com/thunder-id/thunderid/internal/notification"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
@@ -52,6 +53,7 @@ var notFoundErrorCodes = map[string]struct{}{
 	layoutmgt.ErrorLayoutNotFound.Code:        {},
 	user.ErrorUserNotFound.Code:               {},
 	agent.ErrorAgentNotFound.Code:             {},
+	notification.ErrorSenderNotFound.Code:     {},
 }
 
 var (
