@@ -484,7 +484,7 @@ With environment variable substitution:
 ./start.sh resources.yml --env my.env
 ```
 
-Each document in the file must declare its type with a `# resource_type: <type>` comment at the top. Supported types:
+Each document in the file must declare its type with a `resource_type: <type>` field. Supported types:
 
 ```text
 application, flow, group, identity_provider, layout, notification_sender,
@@ -494,12 +494,12 @@ organization_unit, resource_server, role, theme, translation, user, user_schema
 Example single file:
 
 ```yaml
-# resource_type: application
+resource_type: application
 name: My App
 ouHandle: default
 authFlowHandle: default-flow
 ---
-# resource_type: group
+resource_type: group
 name: admins
 description: Administrators
 ```
@@ -522,7 +522,7 @@ repository/
       admins.yaml
 ```
 
-The file must use the same `# resource_type: <type>` document headers as the single-file startup format. On startup, <ProductName /> scans all `*.yaml` and `*.yml` files at that root level and loads every document whose `resource_type` matches a configured declarative resource type.
+The file must use the same `resource_type: <type>` document fields as the single-file startup format. On startup, <ProductName /> scans all `*.yaml` and `*.yml` files at that root level and loads every document whose `resource_type` matches a configured declarative resource type.
 
 :::note
 If any `*.yaml` or `*.yml` file is found at the `config/resources/` root, per-type subdirectories (priority 3) are skipped entirely for that resource type.
@@ -536,7 +536,7 @@ Two mounting modes are available. Use the one that fits your resource layout.
 
 #### Combined File Mode
 
-Use `singleFile.keys` to mount one or more combined YAML files (multi-document format with `# resource_type: <type>` headers) directly under `config/resources`. Each key in your ConfigMap or Secret is mounted as `<key>.yaml` at that path. <ProductName /> scans the directory at startup and loads every document whose `resource_type` matches a configured declarative resource type.
+Use `singleFile.keys` to mount one or more combined YAML files (multi-document format with `resource_type: <type>` fields) directly under `config/resources`. Each key in your ConfigMap or Secret is mounted as `<key>.yaml` at that path. <ProductName /> scans the directory at startup and loads every document whose `resource_type` matches a configured declarative resource type.
 
 ```yaml
 declarativeResources:
