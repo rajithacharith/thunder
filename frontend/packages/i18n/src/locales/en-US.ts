@@ -203,7 +203,7 @@ const translations = {
 
     'welcome.wayfinderFolderImport.actions.selectFolder': 'Select Wayfinder Sample Folder',
     'welcome.wayfinderFolderImport.actions.change': 'Change',
-    'welcome.wayfinderFolderImport.actions.importConfig': 'Configure in ThunderID',
+    'welcome.wayfinderFolderImport.actions.importConfig': 'Configure in {{productName}}',
     'welcome.wayfinderFolderImport.actions.reconfigure': 'Reconfigure',
     'welcome.wayfinderFolderImport.actions.reSelectFolder': 'Re-select Folder',
     'welcome.wayfinderFolderImport.status.importing': 'Importing configuration…',
@@ -269,18 +269,19 @@ const translations = {
     'welcome.applicationTryout.scenarios.login.step2': 'Click Sign in and use the credentials below.',
 
     'welcome.applicationTryout.scenarios.signup.description':
-      'Register a new customer account and see ThunderID assign the Traveler role automatically on completion.',
+      'Register a new customer account and see {{productName}} assign the Traveler role automatically on completion.',
     'welcome.applicationTryout.scenarios.signup.step1': 'Open <a>http://localhost:5173</a> and click Sign in.',
-    'welcome.applicationTryout.scenarios.signup.step2': 'On the ThunderID page, click Sign up.',
-    'welcome.applicationTryout.scenarios.signup.step3': 'Fill in the registration form using the sample details below.',
+    'welcome.applicationTryout.scenarios.signup.step2': 'On the {{productName}} page, click Sign up.',
+    'welcome.applicationTryout.scenarios.signup.step3':
+      'Fill in the registration form using the sample details below. Enter a password of your choice.',
     'welcome.applicationTryout.scenarios.signup.sampleFields.username': 'Username',
     'welcome.applicationTryout.scenarios.signup.sampleFields.email': 'Email',
-    'welcome.applicationTryout.scenarios.signup.sampleFields.givenName': 'Given name',
-    'welcome.applicationTryout.scenarios.signup.sampleFields.familyName': 'Family name',
+    'welcome.applicationTryout.scenarios.signup.sampleFields.givenName': 'First name',
+    'welcome.applicationTryout.scenarios.signup.sampleFields.familyName': 'Last name',
+    'welcome.applicationTryout.scenarios.signup.sampleFields.mobileNumber': 'Mobile number',
     'welcome.applicationTryout.scenarios.signup.step4':
-      'Submit. ThunderID creates a Customer user, records terms acceptance, and assigns the Traveler role.',
-    'welcome.applicationTryout.scenarios.signup.step5':
-      'The browser redirects back to Wayfinder with the new account authenticated.',
+      'Submit. {{productName}} creates a Customer user and assigns the Traveler role.',
+    'welcome.applicationTryout.scenarios.signup.step5': 'The browser redirects back to Wayfinder.',
 
     'welcome.applicationTryout.scenarios.profile.description':
       'Explore the self-service profile page — view account details, edit attributes, and change your password.',
@@ -288,32 +289,35 @@ const translations = {
     'welcome.applicationTryout.scenarios.profile.step2':
       'Click the username in the top-right corner and select Profile.',
     'welcome.applicationTryout.scenarios.profile.step3':
-      'View account details, edit profile attributes, or change your password. The page calls the identity provider directly with your session token.',
+      'View account details, edit profile attributes, or change your password. The page calls {{productName}} directly with your session token.',
 
     'welcome.applicationTryout.scenarios.recovery.description':
       'Walk through the password recovery flow — John forgets his password and resets it via email.',
     'welcome.applicationTryout.scenarios.recovery.smtpNote':
       "Recovery emails require a configured SMTP server. Add your SMTP settings under email.smtp in {{productName}}'s deployment.yaml and restart the server before trying this flow.",
     'welcome.applicationTryout.scenarios.recovery.step1': 'Open <a>http://localhost:5173</a> and click Sign in.',
-    'welcome.applicationTryout.scenarios.recovery.step2': 'On the ThunderID sign-in page, click Forgot password?',
+    'welcome.applicationTryout.scenarios.recovery.step2': 'On the {{productName}} sign-in page, click Forgot password?',
     'welcome.applicationTryout.scenarios.recovery.step3': 'Enter john.doe as the username and submit.',
     'welcome.applicationTryout.scenarios.recovery.step4':
-      "ThunderID sends a recovery email to John's registered address.",
+      "{{productName}} sends a recovery email to John's registered address.",
     'welcome.applicationTryout.scenarios.recovery.step5': 'Open the link in the email and set a new password.',
     'welcome.applicationTryout.scenarios.recovery.step6': 'Sign in again with the new credentials.',
 
     'welcome.applicationTryout.scenarios.onboard.description':
-      'Invite and onboard a new staff member using the staff invitation flow. The invited user selects a role (Support or DestinationsAdmin) during onboarding.',
+      'Invite and onboard two new staff members entirely from the {{productName}} Console: Sam Rivera (Support) and Maya Patel (DestinationsAdmin). The admin picks the staff role and sends the invitation, and the matching role is attached automatically when the invitee completes their profile.',
     'welcome.applicationTryout.scenarios.onboard.smtpNote':
-      "Staff invitation emails require a configured SMTP server. Add your SMTP settings under email.smtp in {{productName}}'s deployment.yaml and restart the server before trying this flow.",
-    'welcome.applicationTryout.scenarios.onboard.step1':
-      'Sign in as alex.carter (OpsAdmin) at <a>http://localhost:5173</a> using the credentials below.',
-    'welcome.applicationTryout.scenarios.onboard.step2':
-      'Navigate to the staff management section and invite a new staff member by email.',
-    'welcome.applicationTryout.scenarios.onboard.step3':
-      'The invited user receives an onboarding email. They open the link and complete the onboarding flow, choosing between the Support and DestinationsAdmin roles.',
+      "Staff invitation requires a configured SMTP server and the user onboarding flow enabled. Add your SMTP settings under email.smtp and set flow.user_onboarding_flow_handle to wayfinder-onboarding-flow in {{productName}}'s deployment.yaml, then restart the server before trying this flow.",
+    'welcome.applicationTryout.scenarios.onboard.step1': 'Sign in to the {{productName}} Console as your admin user.',
+    'welcome.applicationTryout.scenarios.onboard.step2': 'Navigate to Users and select Add User.',
+    'welcome.applicationTryout.scenarios.onboard.step3': 'Select Staff as the user type.',
     'welcome.applicationTryout.scenarios.onboard.step4':
-      'Once onboarded, the new staff member can sign in to the app with their chosen role permissions active.',
+      "Pick Support as the role, enter Sam Rivera's email (sam.rivera@example.com), and click Send invitation. An invite link is emailed to Sam.",
+    'welcome.applicationTryout.scenarios.onboard.step5':
+      "Open the email in Sam's inbox and open the link. The browser opens a Complete Your Profile page.",
+    'welcome.applicationTryout.scenarios.onboard.step6':
+      "Fill in the additional attributes and submit. Sam's account is now active with the Support role attached.",
+    'welcome.applicationTryout.scenarios.onboard.step7':
+      'Repeat the flow for Maya Patel (email maya.patel@example.com), picking DestinationsAdmin as the role.',
 
     'welcome.aiAgentsTryout.breadcrumb': 'Tryout Securing AI Agents',
     'welcome.aiAgentsTryout.overline': 'Securing AI Agents',

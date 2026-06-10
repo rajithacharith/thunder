@@ -213,7 +213,9 @@ describe('TryoutSecuringApplicationPage', () => {
 
     await user.click(screen.getByText('common:welcome.applicationTryout.scenarios.tabs.signup'));
 
-    expect(screen.getByText('common:welcome.applicationTryout.scenarios.signup.description')).toBeInTheDocument();
+    expect(
+      screen.getByText('common:welcome.applicationTryout.scenarios.signup.description:ThunderID'),
+    ).toBeInTheDocument();
   });
 
   it('shows profile scenario when profile tab is clicked', async () => {

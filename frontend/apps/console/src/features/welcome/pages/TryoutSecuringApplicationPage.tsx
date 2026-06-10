@@ -412,12 +412,12 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                 {scenarioTab === 'signup' && (
                   <Stack spacing={2}>
                     <Typography variant="body2" color="text.secondary">
-                      {t('common:welcome.applicationTryout.scenarios.signup.description')}
+                      {t('common:welcome.applicationTryout.scenarios.signup.description', {productName})}
                     </Typography>
                     <StepList
                       steps={[
                         tLink('welcome.applicationTryout.scenarios.signup.step1'),
-                        t('common:welcome.applicationTryout.scenarios.signup.step2'),
+                        t('common:welcome.applicationTryout.scenarios.signup.step2', {productName}),
                         t('common:welcome.applicationTryout.scenarios.signup.step3'),
                       ]}
                     />
@@ -439,12 +439,16 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                           label: t('common:welcome.applicationTryout.scenarios.signup.sampleFields.familyName'),
                           value: 'Wilson',
                         },
+                        {
+                          label: t('common:welcome.applicationTryout.scenarios.signup.sampleFields.mobileNumber'),
+                          value: '+15550148812',
+                        },
                       ]}
                     />
                     <StepList
                       startFrom={4}
                       steps={[
-                        t('common:welcome.applicationTryout.scenarios.signup.step4'),
+                        t('common:welcome.applicationTryout.scenarios.signup.step4', {productName}),
                         t('common:welcome.applicationTryout.scenarios.signup.step5'),
                       ]}
                     />
@@ -460,7 +464,7 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                       steps={[
                         tLink('welcome.applicationTryout.scenarios.profile.step1'),
                         t('common:welcome.applicationTryout.scenarios.profile.step2'),
-                        t('common:welcome.applicationTryout.scenarios.profile.step3'),
+                        t('common:welcome.applicationTryout.scenarios.profile.step3', {productName}),
                       ]}
                     />
                     <CredentialsBlock username="john.doe" password="john.doe" />
@@ -478,9 +482,9 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                     <StepList
                       steps={[
                         tLink('welcome.applicationTryout.scenarios.recovery.step1'),
-                        t('common:welcome.applicationTryout.scenarios.recovery.step2'),
+                        t('common:welcome.applicationTryout.scenarios.recovery.step2', {productName}),
                         t('common:welcome.applicationTryout.scenarios.recovery.step3'),
-                        t('common:welcome.applicationTryout.scenarios.recovery.step4'),
+                        t('common:welcome.applicationTryout.scenarios.recovery.step4', {productName}),
                         t('common:welcome.applicationTryout.scenarios.recovery.step5'),
                         t('common:welcome.applicationTryout.scenarios.recovery.step6'),
                       ]}
@@ -491,19 +495,20 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                 {scenarioTab === 'onboard' && (
                   <Stack spacing={2}>
                     <Typography variant="body2" color="text.secondary">
-                      {t('common:welcome.applicationTryout.scenarios.onboard.description')}
+                      {t('common:welcome.applicationTryout.scenarios.onboard.description', {productName})}
                     </Typography>
                     <Alert severity="info" sx={{fontSize: '0.8rem'}}>
                       {t('common:welcome.applicationTryout.scenarios.onboard.smtpNote', {productName})}
                     </Alert>
-                    <StepList steps={[tLink('welcome.applicationTryout.scenarios.onboard.step1')]} />
-                    <CredentialsBlock username="alex.carter" password="alex.carter" />
                     <StepList
-                      startFrom={2}
                       steps={[
+                        t('common:welcome.applicationTryout.scenarios.onboard.step1', {productName}),
                         t('common:welcome.applicationTryout.scenarios.onboard.step2'),
                         t('common:welcome.applicationTryout.scenarios.onboard.step3'),
                         t('common:welcome.applicationTryout.scenarios.onboard.step4'),
+                        t('common:welcome.applicationTryout.scenarios.onboard.step5'),
+                        t('common:welcome.applicationTryout.scenarios.onboard.step6'),
+                        t('common:welcome.applicationTryout.scenarios.onboard.step7'),
                       ]}
                     />
                   </Stack>

@@ -36,11 +36,6 @@ schema: {
       "displayName": "Last Name",
       "required": false
     },
-    "sub": {
-      "type": "string",
-      "displayName": "Federated Subject",
-      "required": false
-    },
     "mobileNumber": {
       "type": "string",
       "displayName": "Mobile Number",
@@ -241,6 +236,7 @@ nodes:
     type: TASK_EXECUTION
     properties:
       assignRole: wayfinder-traveler-role
+      includeOptional: true
     executor:
       name: ProvisioningExecutor
       inputs:
@@ -650,7 +646,7 @@ nodes:
         - align: center
           type: TEXT
           id: text_header_user_details_s
-          label: Complete your profile
+          label: Complete Your Profile
           variant: HEADING_1
         - type: BLOCK
           id: block_user_details_s
@@ -770,7 +766,7 @@ nodes:
         - align: center
           type: TEXT
           id: text_header_user_details_d
-          label: Complete your profile
+          label: Complete Your Profile
           variant: HEADING_1
         - type: BLOCK
           id: block_user_details_d
@@ -831,7 +827,6 @@ assertion:
     - family_name
     - email
     - groups
-    - sub
     - username
 allowed_user_types:
   - Customer
@@ -870,7 +865,6 @@ inbound_auth_config:
           - username
           - given_name
           - family_name
-          - sub
         group:
           - groups
 

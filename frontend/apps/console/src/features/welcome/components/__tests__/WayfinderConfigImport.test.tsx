@@ -87,13 +87,17 @@ describe('WayfinderConfigImport', () => {
 
   it('renders the import button when idle', () => {
     render(<WayfinderConfigImport />);
-    expect(screen.getByText('common:welcome.wayfinderFolderImport.actions.importConfig')).toBeInTheDocument();
+    expect(
+      screen.getByText('common:welcome.wayfinderFolderImport.actions.importConfig:{"productName":"ThunderID"}'),
+    ).toBeInTheDocument();
   });
 
   it('disables the button when the bundle is missing declarative content', () => {
     mockUseGetSampleBundle.mockReturnValueOnce(undefined);
     render(<WayfinderConfigImport />);
-    const button = screen.getByText('common:welcome.wayfinderFolderImport.actions.importConfig').closest('button');
+    const button = screen
+      .getByText('common:welcome.wayfinderFolderImport.actions.importConfig:{"productName":"ThunderID"}')
+      .closest('button');
     expect(button).toBeDisabled();
   });
 
@@ -105,7 +109,9 @@ describe('WayfinderConfigImport', () => {
     const onSuccess = vi.fn();
     render(<WayfinderConfigImport onSuccess={onSuccess} />);
 
-    await userEvent.click(screen.getByText('common:welcome.wayfinderFolderImport.actions.importConfig'));
+    await userEvent.click(
+      screen.getByText('common:welcome.wayfinderFolderImport.actions.importConfig:{"productName":"ThunderID"}'),
+    );
 
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalledWith({
@@ -130,7 +136,9 @@ describe('WayfinderConfigImport', () => {
     mockMutateAsync.mockRejectedValueOnce(new Error('boom'));
     render(<WayfinderConfigImport />);
 
-    await userEvent.click(screen.getByText('common:welcome.wayfinderFolderImport.actions.importConfig'));
+    await userEvent.click(
+      screen.getByText('common:welcome.wayfinderFolderImport.actions.importConfig:{"productName":"ThunderID"}'),
+    );
 
     await waitFor(() => {
       expect(screen.getByText('common:welcome.wayfinderFolderImport.errors.importFailed')).toBeInTheDocument();
@@ -149,7 +157,9 @@ describe('WayfinderConfigImport', () => {
     const onSuccess = vi.fn();
     render(<WayfinderConfigImport onSuccess={onSuccess} />);
 
-    await userEvent.click(screen.getByText('common:welcome.wayfinderFolderImport.actions.importConfig'));
+    await userEvent.click(
+      screen.getByText('common:welcome.wayfinderFolderImport.actions.importConfig:{"productName":"ThunderID"}'),
+    );
 
     await waitFor(() => {
       expect(
@@ -173,7 +183,9 @@ describe('WayfinderConfigImport', () => {
 
     await userEvent.click(screen.getByText('common:welcome.wayfinderFolderImport.actions.reconfigure'));
 
-    expect(screen.getByText('common:welcome.wayfinderFolderImport.actions.importConfig')).toBeInTheDocument();
+    expect(
+      screen.getByText('common:welcome.wayfinderFolderImport.actions.importConfig:{"productName":"ThunderID"}'),
+    ).toBeInTheDocument();
   });
 
   it('skips comments and blank lines when parsing the env bundle', async () => {
@@ -186,7 +198,9 @@ describe('WayfinderConfigImport', () => {
     mockMutateAsync.mockResolvedValueOnce({summary: {imported: 1, failed: 0}, results: []});
     render(<WayfinderConfigImport />);
 
-    await userEvent.click(screen.getByText('common:welcome.wayfinderFolderImport.actions.importConfig'));
+    await userEvent.click(
+      screen.getByText('common:welcome.wayfinderFolderImport.actions.importConfig:{"productName":"ThunderID"}'),
+    );
 
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalledWith({

@@ -192,7 +192,7 @@ export default function WayfinderConfigImport({onSuccess = undefined}: Wayfinder
           onClick={() => void handleImport()}
           disabled={!bundle?.configs.declarative}
         >
-          {t('common:welcome.wayfinderFolderImport.actions.importConfig')}
+          {t('common:welcome.wayfinderFolderImport.actions.importConfig', {productName})}
         </Button>
       </Box>
 
