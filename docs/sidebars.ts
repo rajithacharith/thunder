@@ -728,7 +728,7 @@ const sidebars: SidebarsConfig = {
           collapsible: true,
           collapsed: true,
           items: [
-            {type: 'doc', id: 'use-cases/sts/krakend/krakend', label: 'Protect APIs on KrakenD'},
+            {type: 'doc', id: 'use-cases/sts/krakend', label: 'Protect APIs on KrakenD'},
           ],
         },
       ],
