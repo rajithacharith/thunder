@@ -89,9 +89,27 @@ vi.mock('../../components/WayfinderSampleSetup', () => ({
   default: () => <div data-testid="wayfinder-sample-setup" />,
 }));
 
-import TryoutSecuringConsumerApp from '../TryoutSecuringConsumerAppPage';
+vi.mock('@/components/AppBreadcrumbs', () => ({
+  default: ({items}: {items: {key: string; label: string; onClick?: () => void}[]}) => (
+    <nav>
+      {items.map((item) => (
+        <span
+          key={item.key}
+          onClick={item.onClick}
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && item.onClick?.()}
+          role={item.onClick ? 'button' : undefined}
+          tabIndex={item.onClick ? 0 : undefined}
+        >
+          {item.label}
+        </span>
+      ))}
+    </nav>
+  ),
+}));
 
-describe('TryoutSecuringConsumerAppPage', () => {
+import TryoutSecuringApplicationPage from '../TryoutSecuringApplicationPage';
+
+describe('TryoutSecuringApplicationPage', () => {
   beforeEach(() => {
     vi.stubGlobal('sessionStorage', {
       setItem: mockSessionStorageSetItem,
@@ -108,49 +126,49 @@ describe('TryoutSecuringConsumerAppPage', () => {
   });
 
   it('renders without crashing', () => {
-    const {container} = render(<TryoutSecuringConsumerApp />);
+    const {container} = render(<TryoutSecuringApplicationPage />);
     expect(container).toBeInTheDocument();
   });
 
   it('renders close button', () => {
-    render(<TryoutSecuringConsumerApp />);
+    render(<TryoutSecuringApplicationPage />);
     expect(screen.getByRole('button', {name: /common:actions\.close/i})).toBeInTheDocument();
   });
 
   it('renders breadcrumb', () => {
-    render(<TryoutSecuringConsumerApp />);
+    render(<TryoutSecuringApplicationPage />);
     expect(screen.getByText('common:welcome.header')).toBeInTheDocument();
-    expect(screen.getByText('common:welcome.consumerAppTryout.breadcrumb')).toBeInTheDocument();
+    expect(screen.getByText('common:welcome.applicationTryout.breadcrumb')).toBeInTheDocument();
   });
 
   it('renders overline and title', () => {
-    render(<TryoutSecuringConsumerApp />);
-    expect(screen.getByText('common:welcome.consumerAppTryout.overline')).toBeInTheDocument();
+    render(<TryoutSecuringApplicationPage />);
+    expect(screen.getByText('common:welcome.applicationTryout.overline')).toBeInTheDocument();
     expect(screen.getByText('common:welcome.tryout.title')).toBeInTheDocument();
   });
 
   it('renders WayfinderSampleSetup', () => {
-    render(<TryoutSecuringConsumerApp />);
+    render(<TryoutSecuringApplicationPage />);
     expect(screen.getByTestId('wayfinder-sample-setup')).toBeInTheDocument();
   });
 
   it('renders scenario tabs', () => {
-    render(<TryoutSecuringConsumerApp />);
-    expect(screen.getByText('common:welcome.consumerAppTryout.scenarios.tabs.login')).toBeInTheDocument();
-    expect(screen.getByText('common:welcome.consumerAppTryout.scenarios.tabs.signup')).toBeInTheDocument();
-    expect(screen.getByText('common:welcome.consumerAppTryout.scenarios.tabs.profile')).toBeInTheDocument();
-    expect(screen.getByText('common:welcome.consumerAppTryout.scenarios.tabs.recovery')).toBeInTheDocument();
-    expect(screen.getByText('common:welcome.consumerAppTryout.scenarios.tabs.onboard')).toBeInTheDocument();
+    render(<TryoutSecuringApplicationPage />);
+    expect(screen.getByText('common:welcome.applicationTryout.scenarios.tabs.login')).toBeInTheDocument();
+    expect(screen.getByText('common:welcome.applicationTryout.scenarios.tabs.signup')).toBeInTheDocument();
+    expect(screen.getByText('common:welcome.applicationTryout.scenarios.tabs.profile')).toBeInTheDocument();
+    expect(screen.getByText('common:welcome.applicationTryout.scenarios.tabs.recovery')).toBeInTheDocument();
+    expect(screen.getByText('common:welcome.applicationTryout.scenarios.tabs.onboard')).toBeInTheDocument();
   });
 
   it('shows login scenario by default', () => {
-    render(<TryoutSecuringConsumerApp />);
-    expect(screen.getByText('common:welcome.consumerAppTryout.scenarios.login.description')).toBeInTheDocument();
+    render(<TryoutSecuringApplicationPage />);
+    expect(screen.getByText('common:welcome.applicationTryout.scenarios.login.description')).toBeInTheDocument();
   });
 
   it('navigates to /home and sets session storage on close', async () => {
     const user = userEvent.setup();
-    render(<TryoutSecuringConsumerApp />);
+    render(<TryoutSecuringApplicationPage />);
 
     await user.click(screen.getByRole('button', {name: /common:actions\.close/i}));
 
@@ -161,7 +179,7 @@ describe('TryoutSecuringConsumerAppPage', () => {
 
   it('navigates to /welcome on breadcrumb welcome click', async () => {
     const user = userEvent.setup();
-    render(<TryoutSecuringConsumerApp />);
+    render(<TryoutSecuringApplicationPage />);
 
     await user.click(screen.getByText('common:welcome.header'));
 
@@ -172,7 +190,7 @@ describe('TryoutSecuringConsumerAppPage', () => {
     const mockOpen = vi.fn();
     vi.stubGlobal('open', mockOpen);
     const user = userEvent.setup();
-    render(<TryoutSecuringConsumerApp />);
+    render(<TryoutSecuringApplicationPage />);
 
     await user.click(screen.getByText('common:welcome.tryout.actions.readDocs'));
 
@@ -184,27 +202,27 @@ describe('TryoutSecuringConsumerAppPage', () => {
   });
 
   it('navigates to /welcome on breadcrumb Enter keypress', () => {
-    render(<TryoutSecuringConsumerApp />);
+    render(<TryoutSecuringApplicationPage />);
     fireEvent.keyDown(screen.getByText('common:welcome.header'), {key: 'Enter'});
     expect(mockNavigate).toHaveBeenCalledWith('/welcome');
   });
 
   it('shows signup scenario when signup tab is clicked', async () => {
     const user = userEvent.setup();
-    render(<TryoutSecuringConsumerApp />);
+    render(<TryoutSecuringApplicationPage />);
 
-    await user.click(screen.getByText('common:welcome.consumerAppTryout.scenarios.tabs.signup'));
+    await user.click(screen.getByText('common:welcome.applicationTryout.scenarios.tabs.signup'));
 
-    expect(screen.getByText('common:welcome.consumerAppTryout.scenarios.signup.description')).toBeInTheDocument();
+    expect(screen.getByText('common:welcome.applicationTryout.scenarios.signup.description')).toBeInTheDocument();
   });
 
   it('shows profile scenario when profile tab is clicked', async () => {
     const user = userEvent.setup();
-    render(<TryoutSecuringConsumerApp />);
+    render(<TryoutSecuringApplicationPage />);
 
-    await user.click(screen.getByText('common:welcome.consumerAppTryout.scenarios.tabs.profile'));
+    await user.click(screen.getByText('common:welcome.applicationTryout.scenarios.tabs.profile'));
 
-    expect(screen.getByText('common:welcome.consumerAppTryout.scenarios.profile.description')).toBeInTheDocument();
+    expect(screen.getByText('common:welcome.applicationTryout.scenarios.profile.description')).toBeInTheDocument();
   });
 
   describe('credential interactions', () => {
@@ -228,7 +246,7 @@ describe('TryoutSecuringConsumerAppPage', () => {
 
     it('toggles password visibility in credentials block', async () => {
       const user = userEvent.setup();
-      render(<TryoutSecuringConsumerApp />);
+      render(<TryoutSecuringApplicationPage />);
 
       await user.click(screen.getAllByRole('button', {name: 'Show password'})[0]);
 
@@ -237,7 +255,7 @@ describe('TryoutSecuringConsumerAppPage', () => {
 
     it('copies username to clipboard in credentials block', async () => {
       const user = userEvent.setup();
-      render(<TryoutSecuringConsumerApp />);
+      render(<TryoutSecuringApplicationPage />);
 
       await user.click(screen.getAllByRole('button', {name: 'Copy username'})[0]);
 
@@ -246,11 +264,11 @@ describe('TryoutSecuringConsumerAppPage', () => {
 
     it('copies a form field when signup tab copy button is clicked', async () => {
       const user = userEvent.setup();
-      render(<TryoutSecuringConsumerApp />);
+      render(<TryoutSecuringApplicationPage />);
 
-      await user.click(screen.getByText('common:welcome.consumerAppTryout.scenarios.tabs.signup'));
+      await user.click(screen.getByText('common:welcome.applicationTryout.scenarios.tabs.signup'));
       const copyButtons = screen.getAllByRole('button', {
-        name: /^Copy common:welcome\.consumerAppTryout\.scenarios\.signup\.sampleFields\./,
+        name: /^Copy common:welcome\.applicationTryout\.scenarios\.signup\.sampleFields\./,
       });
       await user.click(copyButtons[0]);
 

@@ -113,11 +113,11 @@ describe('WayfinderSampleDownload', () => {
     expect(button).toHaveAttribute('href', mockAsset.downloadUrl);
   });
 
-  it('shows the release tag chip', async () => {
+  it('shows the asset filename', async () => {
     mockUseWayfinderReleases.mockReturnValue({data: mockReleasesData, isError: false});
     render(<WayfinderSampleDownload releasesUrl="https://example.com/releases.json" />);
 
-    expect(await screen.findByText('v1.0.0')).toBeInTheDocument();
+    expect(await screen.findByText('sample-app-wayfinder-1.0.0.zip')).toBeInTheDocument();
   });
 
   it('shows the size chip when sizeLabel is present', async () => {

@@ -17,22 +17,10 @@
  */
 
 import {useConfig} from '@thunderid/contexts';
-import {
-  Box,
-  Button,
-  Stack,
-  Tab,
-  Tabs,
-  Typography,
-  IconButton,
-  LinearProgress,
-  Breadcrumbs,
-  Alert,
-} from '@wso2/oxygen-ui';
+import {Box, Button, Stack, Tab, Tabs, Typography, IconButton, LinearProgress, Alert} from '@wso2/oxygen-ui';
 import {
   AppWindow,
   Check,
-  ChevronRight,
   Copy,
   ExternalLink,
   X,
@@ -52,7 +40,7 @@ import {Trans, useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import WayfinderSampleSetup from '../components/WayfinderSampleSetup';
 import useWelcomeClose from '../hooks/useWelcomeClose';
-
+import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 const MotionBox = motion.create(Box);
 
 type ScenarioTab = 'login' | 'signup' | 'profile' | 'recovery' | 'onboard';
@@ -268,26 +256,25 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
   const productName = config.brand.product_name;
   const docsBaseUrl = (config.brand.docs_url ?? '').replace(/\/$/, '');
 
+  const handleClose = useWelcomeClose();
   const [scenarioTab, setScenarioTab] = useState<ScenarioTab>('login');
 
-  const handleClose = useWelcomeClose();
-
   const tabDefs: {value: ScenarioTab; label: string; icon: JSX.Element}[] = [
-    {value: 'login', label: t('common:welcome.consumerAppTryout.scenarios.tabs.login'), icon: <LogIn size={15} />},
-    {value: 'signup', label: t('common:welcome.consumerAppTryout.scenarios.tabs.signup'), icon: <UserPlus size={15} />},
+    {value: 'login', label: t('common:welcome.applicationTryout.scenarios.tabs.login'), icon: <LogIn size={15} />},
+    {value: 'signup', label: t('common:welcome.applicationTryout.scenarios.tabs.signup'), icon: <UserPlus size={15} />},
     {
       value: 'profile',
-      label: t('common:welcome.consumerAppTryout.scenarios.tabs.profile'),
+      label: t('common:welcome.applicationTryout.scenarios.tabs.profile'),
       icon: <UserCircle size={15} />,
     },
     {
       value: 'recovery',
-      label: t('common:welcome.consumerAppTryout.scenarios.tabs.recovery'),
+      label: t('common:welcome.applicationTryout.scenarios.tabs.recovery'),
       icon: <KeyRound size={15} />,
     },
     {
       value: 'onboard',
-      label: t('common:welcome.consumerAppTryout.scenarios.tabs.onboard'),
+      label: t('common:welcome.applicationTryout.scenarios.tabs.onboard'),
       icon: <UserCheck size={15} />,
     },
   ];
@@ -317,27 +304,12 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
             >
               <X size={24} />
             </IconButton>
-            <Breadcrumbs separator={<ChevronRight size={16} />} aria-label="breadcrumb">
-              <Typography
-                variant="h5"
-                color="inherit"
-                role="button"
-                tabIndex={0}
-                onClick={() => void navigate('/welcome')}
-                onKeyDown={(e: React.KeyboardEvent) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    void navigate('/welcome');
-                  }
-                }}
-                sx={{cursor: 'pointer', '&:hover': {textDecoration: 'underline'}}}
-              >
-                {t('common:welcome.header')}
-              </Typography>
-              <Typography variant="h5" color="text.primary">
-                {t('common:welcome.consumerAppTryout.breadcrumb')}
-              </Typography>
-            </Breadcrumbs>
+            <AppBreadcrumbs
+              items={[
+                {key: 'welcome', label: t('common:welcome.header'), onClick: () => void navigate('/welcome')},
+                {key: 'tryout', label: t('common:welcome.applicationTryout.breadcrumb')},
+              ]}
+            />
           </Stack>
         </Box>
 
@@ -374,7 +346,7 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                 }}
               >
                 <AppWindow size={13} />
-                {t('common:welcome.consumerAppTryout.overline')}
+                {t('common:welcome.applicationTryout.overline')}
               </Typography>
               <Typography
                 variant="h1"
@@ -387,14 +359,14 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                 color="text.secondary"
                 sx={{fontSize: {xs: '1rem', sm: '1.125rem'}, maxWidth: '580px', mx: 'auto'}}
               >
-                {t('common:welcome.consumerAppTryout.subtitle', {productName})}
+                {t('common:welcome.applicationTryout.subtitle', {productName})}
               </Typography>
             </Box>
 
             <WayfinderSampleSetup />
 
             <Typography variant="h3" sx={{fontSize: '1.25rem', fontWeight: 600, mt: 6, mb: 3}}>
-              {t('common:welcome.consumerAppTryout.scenarios.title')}
+              {t('common:welcome.applicationTryout.scenarios.title')}
             </Typography>
 
             {/* Scenario Tabs */}
@@ -425,12 +397,12 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                 {scenarioTab === 'login' && (
                   <Stack spacing={2}>
                     <Typography variant="body2" color="text.secondary">
-                      {t('common:welcome.consumerAppTryout.scenarios.login.description')}
+                      {t('common:welcome.applicationTryout.scenarios.login.description')}
                     </Typography>
                     <StepList
                       steps={[
-                        tLink('welcome.consumerAppTryout.scenarios.login.step1'),
-                        t('common:welcome.consumerAppTryout.scenarios.login.step2'),
+                        tLink('welcome.applicationTryout.scenarios.login.step1'),
+                        t('common:welcome.applicationTryout.scenarios.login.step2'),
                       ]}
                     />
                     <CredentialsBlock username="john.doe" password="john.doe" />
@@ -440,31 +412,31 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                 {scenarioTab === 'signup' && (
                   <Stack spacing={2}>
                     <Typography variant="body2" color="text.secondary">
-                      {t('common:welcome.consumerAppTryout.scenarios.signup.description')}
+                      {t('common:welcome.applicationTryout.scenarios.signup.description')}
                     </Typography>
                     <StepList
                       steps={[
-                        tLink('welcome.consumerAppTryout.scenarios.signup.step1'),
-                        t('common:welcome.consumerAppTryout.scenarios.signup.step2'),
-                        t('common:welcome.consumerAppTryout.scenarios.signup.step3'),
+                        tLink('welcome.applicationTryout.scenarios.signup.step1'),
+                        t('common:welcome.applicationTryout.scenarios.signup.step2'),
+                        t('common:welcome.applicationTryout.scenarios.signup.step3'),
                       ]}
                     />
                     <FormFieldsBlock
                       fields={[
                         {
-                          label: t('common:welcome.consumerAppTryout.scenarios.signup.sampleFields.username'),
+                          label: t('common:welcome.applicationTryout.scenarios.signup.sampleFields.username'),
                           value: 'emma.wilson',
                         },
                         {
-                          label: t('common:welcome.consumerAppTryout.scenarios.signup.sampleFields.email'),
+                          label: t('common:welcome.applicationTryout.scenarios.signup.sampleFields.email'),
                           value: 'emma.wilson@example.com',
                         },
                         {
-                          label: t('common:welcome.consumerAppTryout.scenarios.signup.sampleFields.givenName'),
+                          label: t('common:welcome.applicationTryout.scenarios.signup.sampleFields.givenName'),
                           value: 'Emma',
                         },
                         {
-                          label: t('common:welcome.consumerAppTryout.scenarios.signup.sampleFields.familyName'),
+                          label: t('common:welcome.applicationTryout.scenarios.signup.sampleFields.familyName'),
                           value: 'Wilson',
                         },
                       ]}
@@ -472,8 +444,8 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                     <StepList
                       startFrom={4}
                       steps={[
-                        t('common:welcome.consumerAppTryout.scenarios.signup.step4'),
-                        t('common:welcome.consumerAppTryout.scenarios.signup.step5'),
+                        t('common:welcome.applicationTryout.scenarios.signup.step4'),
+                        t('common:welcome.applicationTryout.scenarios.signup.step5'),
                       ]}
                     />
                   </Stack>
@@ -482,13 +454,13 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                 {scenarioTab === 'profile' && (
                   <Stack spacing={2}>
                     <Typography variant="body2" color="text.secondary">
-                      {t('common:welcome.consumerAppTryout.scenarios.profile.description')}
+                      {t('common:welcome.applicationTryout.scenarios.profile.description')}
                     </Typography>
                     <StepList
                       steps={[
-                        tLink('welcome.consumerAppTryout.scenarios.profile.step1'),
-                        t('common:welcome.consumerAppTryout.scenarios.profile.step2'),
-                        t('common:welcome.consumerAppTryout.scenarios.profile.step3'),
+                        tLink('welcome.applicationTryout.scenarios.profile.step1'),
+                        t('common:welcome.applicationTryout.scenarios.profile.step2'),
+                        t('common:welcome.applicationTryout.scenarios.profile.step3'),
                       ]}
                     />
                     <CredentialsBlock username="john.doe" password="john.doe" />
@@ -498,19 +470,19 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                 {scenarioTab === 'recovery' && (
                   <Stack spacing={2}>
                     <Typography variant="body2" color="text.secondary">
-                      {t('common:welcome.consumerAppTryout.scenarios.recovery.description')}
+                      {t('common:welcome.applicationTryout.scenarios.recovery.description')}
                     </Typography>
                     <Alert severity="info" sx={{fontSize: '0.8rem'}}>
-                      {t('common:welcome.consumerAppTryout.scenarios.recovery.smtpNote', {productName})}
+                      {t('common:welcome.applicationTryout.scenarios.recovery.smtpNote', {productName})}
                     </Alert>
                     <StepList
                       steps={[
-                        tLink('welcome.consumerAppTryout.scenarios.recovery.step1'),
-                        t('common:welcome.consumerAppTryout.scenarios.recovery.step2'),
-                        t('common:welcome.consumerAppTryout.scenarios.recovery.step3'),
-                        t('common:welcome.consumerAppTryout.scenarios.recovery.step4'),
-                        t('common:welcome.consumerAppTryout.scenarios.recovery.step5'),
-                        t('common:welcome.consumerAppTryout.scenarios.recovery.step6'),
+                        tLink('welcome.applicationTryout.scenarios.recovery.step1'),
+                        t('common:welcome.applicationTryout.scenarios.recovery.step2'),
+                        t('common:welcome.applicationTryout.scenarios.recovery.step3'),
+                        t('common:welcome.applicationTryout.scenarios.recovery.step4'),
+                        t('common:welcome.applicationTryout.scenarios.recovery.step5'),
+                        t('common:welcome.applicationTryout.scenarios.recovery.step6'),
                       ]}
                     />
                   </Stack>
@@ -519,19 +491,19 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                 {scenarioTab === 'onboard' && (
                   <Stack spacing={2}>
                     <Typography variant="body2" color="text.secondary">
-                      {t('common:welcome.consumerAppTryout.scenarios.onboard.description')}
+                      {t('common:welcome.applicationTryout.scenarios.onboard.description')}
                     </Typography>
                     <Alert severity="info" sx={{fontSize: '0.8rem'}}>
-                      {t('common:welcome.consumerAppTryout.scenarios.onboard.smtpNote', {productName})}
+                      {t('common:welcome.applicationTryout.scenarios.onboard.smtpNote', {productName})}
                     </Alert>
-                    <StepList steps={[tLink('welcome.consumerAppTryout.scenarios.onboard.step1')]} />
+                    <StepList steps={[tLink('welcome.applicationTryout.scenarios.onboard.step1')]} />
                     <CredentialsBlock username="alex.carter" password="alex.carter" />
                     <StepList
                       startFrom={2}
                       steps={[
-                        t('common:welcome.consumerAppTryout.scenarios.onboard.step2'),
-                        t('common:welcome.consumerAppTryout.scenarios.onboard.step3'),
-                        t('common:welcome.consumerAppTryout.scenarios.onboard.step4'),
+                        t('common:welcome.applicationTryout.scenarios.onboard.step2'),
+                        t('common:welcome.applicationTryout.scenarios.onboard.step3'),
+                        t('common:welcome.applicationTryout.scenarios.onboard.step4'),
                       ]}
                     />
                   </Stack>

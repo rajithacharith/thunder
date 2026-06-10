@@ -72,6 +72,29 @@ vi.mock('@wso2/oxygen-ui-icons-react', async (importOriginal) => {
   };
 });
 
+vi.mock('@/components/AppBreadcrumbs', () => ({
+  default: ({items}: {items: {key: string; label: string; onClick?: () => void}[]}) => (
+    <nav>
+      {items.map((item) => (
+        <span
+          key={item.key}
+          onClick={item.onClick}
+          onKeyDown={
+            item.onClick
+              ? (e: React.KeyboardEvent) => {
+                  if (e.key === 'Enter' || e.key === ' ') item.onClick?.();
+                }
+              : undefined
+          }
+          role={item.onClick ? 'button' : undefined}
+        >
+          {item.label}
+        </span>
+      ))}
+    </nav>
+  ),
+}));
+
 import GetStartedPage from '../GetStartedPage';
 
 describe('GetStartedPage', () => {
@@ -123,14 +146,14 @@ describe('GetStartedPage', () => {
     expect(screen.getByText('common:welcome.getStarted.actions.skipToConsole')).toBeInTheDocument();
   });
 
-  it('navigates to /applications/create on onboard app click', async () => {
+  it('navigates to /welcome/get-started/applications/create on onboard app click', async () => {
     const user = userEvent.setup();
     render(<GetStartedPage />);
 
     const actionButton = screen.getByText('common:welcome.getStarted.options.onboardApp.action');
     await user.click(actionButton);
 
-    expect(mockNavigate).toHaveBeenCalledWith('/applications/create');
+    expect(mockNavigate).toHaveBeenCalledWith('/welcome/get-started/applications/create');
   });
 
   it('navigates to /home and sets session storage on skip', async () => {
@@ -144,13 +167,13 @@ describe('GetStartedPage', () => {
     expect(mockShowToast).toHaveBeenCalledWith('common:welcome.dismissed', 'info');
   });
 
-  it('navigates to /welcome on close', async () => {
+  it('navigates to /home on close', async () => {
     const user = userEvent.setup();
     render(<GetStartedPage />);
 
     await user.click(screen.getByRole('button', {name: /common:actions\.close/i}));
 
-    expect(mockNavigate).toHaveBeenCalledWith('/welcome');
+    expect(mockNavigate).toHaveBeenCalledWith('/home');
   });
 
   it('navigates to /welcome on welcome breadcrumb click', async () => {
