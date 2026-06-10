@@ -254,7 +254,7 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
   const navigate = useNavigate();
   const {config} = useConfig();
   const productName = config.brand.product_name;
-  const docsBaseUrl = (config.brand.docs_url ?? '').replace(/\/$/, '');
+  const docsBaseUrl = (config.brand.documentation?.baseUrl ?? '').replace(/\/$/, '');
 
   const handleClose = useWelcomeClose();
   const [scenarioTab, setScenarioTab] = useState<ScenarioTab>('login');

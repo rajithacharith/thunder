@@ -30,7 +30,10 @@ vi.mock('@thunderid/contexts', async (importOriginal) => {
       config: {
         brand: {
           product_name: 'ThunderID',
-          docs_url: 'https://docs.example.com/',
+          documentation: {
+            baseUrl: 'https://docs.example.com/',
+            releasesUrl: 'https://docs.example.com/data/releases.json',
+          },
           favicon: {light: 'assets/images/favicon.ico', dark: 'assets/images/favicon-inverted.ico'},
         },
       },

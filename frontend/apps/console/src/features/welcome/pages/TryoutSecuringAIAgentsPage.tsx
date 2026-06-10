@@ -194,7 +194,7 @@ export default function TryoutSecuringAIAgentsPage(): JSX.Element {
   const {config} = useConfig();
   const handleClose = useWelcomeClose();
   const productName = config.brand.product_name;
-  const docsBaseUrl = (config.brand.docs_url ?? '').replace(/\/$/, '');
+  const docsBaseUrl = (config.brand.documentation?.baseUrl ?? '').replace(/\/$/, '');
 
   const [scenarioTab, setScenarioTab] = useState<ScenarioTab>('protect');
 

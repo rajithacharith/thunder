@@ -34,7 +34,7 @@ export default function WayfinderSampleSetup(): JSX.Element {
   const productName = config.brand.product_name;
   const importedKey = getWayfinderConfiguredStorageKey(productName);
   const expandedKey = getWayfinderSetupExpandedStorageKey(productName);
-  const releasesUrl = config.brand.docs_url ? `${new URL(config.brand.docs_url).origin}/data/releases.json` : '';
+  const releasesUrl = config.brand.documentation?.releasesUrl ?? '';
 
   const [isDone, setIsDone] = useState(() => !!sessionStorage.getItem(importedKey));
   const [expanded, setExpanded] = useState(() => {
