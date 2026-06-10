@@ -157,16 +157,10 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 
 // resolveRecipientEmail retrieves the recipient email from user inputs, runtime data, or forwarded data.
 func (e *emailExecutor) resolveRecipientEmail(ctx *core.NodeContext, logger *log.Logger) (string, error) {
-	input, ok := findInputByType(ctx.NodeInputs, common.InputTypeEmail)
-	if !ok {
-		return "", errors.New("email input configuration is missing from node inputs")
-	}
-	emailAttr := input.Identifier
+	emailAttr := resolveInputIdentifierByType(ctx, common.InputTypeEmail, userAttributeEmail)
 
-	if recipientEmail, ok := ctx.ForwardedData[emailAttr]; ok {
-		if emailStr, isString := recipientEmail.(string); isString && emailStr != "" {
-			return emailStr, nil
-		}
+	if recipientEmail, ok := ctx.ForwardedData[emailAttr].(string); ok && recipientEmail != "" {
+		return recipientEmail, nil
 	}
 
 	if recipientEmail, ok := ctx.RuntimeData[emailAttr]; ok && recipientEmail != "" {

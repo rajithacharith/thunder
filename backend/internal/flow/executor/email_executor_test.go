@@ -1156,12 +1156,12 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_InvalidNodePropertySce
 	suite.Nil(resp)
 }
 
-func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingEmailInputConfig_Fails() {
+func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingEmailInputConfig_FallsBackToDefault() {
 	ctx := &core.NodeContext{
 		ExecutionID:  "test-execution-id",
 		FlowType:     common.FlowTypeUserOnboarding,
 		ExecutorMode: ExecutorModeSend,
-		NodeInputs:   []common.Input{}, // Missing EMAIL_INPUT
+		NodeInputs:   []common.Input{},
 		UserInputs: map[string]string{
 			"email": "user@example.com",
 		},
@@ -1170,11 +1170,26 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingEmailInputConfi
 		},
 	}
 
+	suite.mockTemplateService.On("Render",
+		ctx.Context,
+		template.ScenarioType("USER_INVITE"),
+		template.TemplateTypeEmail,
+		template.TemplateData{},
+	).Return(&template.RenderedTemplate{
+		Subject: "Invite",
+		Body:    "Welcome",
+		IsHTML:  false,
+	}, nil)
+
+	suite.mockEmailClient.On("Send", mock.Anything, mock.MatchedBy(func(d email.EmailData) bool {
+		return len(d.To) == 1 && d.To[0] == "user@example.com"
+	})).Return(nil)
+
 	resp, err := suite.executor.Execute(ctx)
 
-	suite.Error(err)
-	suite.Contains(err.Error(), "email input configuration is missing from node inputs")
-	suite.Nil(resp)
+	suite.NoError(err)
+	suite.NotNil(resp)
+	suite.Equal(common.ExecComplete, resp.Status)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ApplicationNameInTemplateData() {
