@@ -17,11 +17,10 @@
  */
 
 import {useConfig} from '@thunderid/contexts';
-import {Box, Button, Stack, Tab, Tabs, Typography, IconButton, LinearProgress, Breadcrumbs} from '@wso2/oxygen-ui';
+import {Box, Button, Stack, Tab, Tabs, Typography, IconButton, LinearProgress} from '@wso2/oxygen-ui';
 import {
   BookOpen,
   Check,
-  ChevronRight,
   Copy,
   ExternalLink,
   Link2,
@@ -39,6 +38,7 @@ import {useNavigate} from 'react-router';
 import TerminalBlock from '../components/TerminalBlock';
 import WayfinderSampleSetup from '../components/WayfinderSampleSetup';
 import useWelcomeClose from '../hooks/useWelcomeClose';
+import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 
 const MotionBox = motion.create(Box);
 
@@ -256,27 +256,12 @@ export default function TryoutSecuringMCPPage(): JSX.Element {
             >
               <X size={24} />
             </IconButton>
-            <Breadcrumbs separator={<ChevronRight size={16} />} aria-label="breadcrumb">
-              <Typography
-                variant="h5"
-                color="inherit"
-                role="button"
-                tabIndex={0}
-                onClick={() => void navigate('/welcome')}
-                onKeyDown={(e: React.KeyboardEvent) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    void navigate('/welcome');
-                  }
-                }}
-                sx={{cursor: 'pointer', '&:hover': {textDecoration: 'underline'}}}
-              >
-                {t('common:welcome.header')}
-              </Typography>
-              <Typography variant="h5" color="text.primary">
-                {t('common:welcome.mcpTryout.breadcrumb')}
-              </Typography>
-            </Breadcrumbs>
+            <AppBreadcrumbs
+              items={[
+                {key: 'welcome', label: t('common:welcome.header'), onClick: () => void navigate('/welcome')},
+                {key: 'tryout', label: t('common:welcome.mcpTryout.breadcrumb')},
+              ]}
+            />
           </Stack>
         </Box>
 

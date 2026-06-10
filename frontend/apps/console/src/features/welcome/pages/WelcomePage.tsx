@@ -74,13 +74,13 @@ export default function WelcomePage(): JSX.Element {
 
   const learnProduct = [
     {
-      id: 'learn-consumer-app',
+      id: 'learn-securing-application',
       icon: <Users size={18} />,
-      label: t('common:welcome.tryoutProduct.consumerApp'),
-      description: t('common:welcome.tryoutProduct.consumerAppDesc'),
+      label: t('common:welcome.tryoutProduct.securingApplication'),
+      description: t('common:welcome.tryoutProduct.securingApplicationDesc'),
       action: () => {
         sessionStorage.setItem(getWelcomeDismissedStorageKey(productName), 'true');
-        void navigate('/welcome/tryout/consumer-app');
+        void navigate('/welcome/tryout/securing-application');
       },
     },
     {

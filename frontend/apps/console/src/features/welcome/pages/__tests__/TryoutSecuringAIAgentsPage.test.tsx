@@ -87,6 +87,24 @@ vi.mock('../../components/WayfinderSampleSetup', () => ({
   default: () => <div data-testid="wayfinder-sample-setup" />,
 }));
 
+vi.mock('@/components/AppBreadcrumbs', () => ({
+  default: ({items}: {items: {key: string; label: string; onClick?: () => void}[]}) => (
+    <nav>
+      {items.map((item) => (
+        <span
+          key={item.key}
+          onClick={item.onClick}
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && item.onClick?.()}
+          role={item.onClick ? 'button' : undefined}
+          tabIndex={item.onClick ? 0 : undefined}
+        >
+          {item.label}
+        </span>
+      ))}
+    </nav>
+  ),
+}));
+
 import TryoutSecuringAIAgentsPage from '../TryoutSecuringAIAgentsPage';
 
 describe('TryoutSecuringAIAgentsPage', () => {

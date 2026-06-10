@@ -4,8 +4,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "tsx agent.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "tsx agent.ts"
   },
   "keywords": [],
   "author": "",

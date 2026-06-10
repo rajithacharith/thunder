@@ -60,15 +60,17 @@ vi.mock('@thunderid/contexts', async (importOriginal) => {
 
 import WayfinderConfigImport from '../WayfinderConfigImport';
 
+const RESOLVED_IMPORTED_KEY = 'thunderid:wayfinder-config-imported';
+
 describe('WayfinderConfigImport', () => {
-  const mockLocalStorageGetItem = vi.fn();
-  const mockLocalStorageSetItem = vi.fn();
+  const mockSessionStorageGetItem = vi.fn();
+  const mockSessionStorageSetItem = vi.fn();
 
   beforeEach(() => {
-    mockLocalStorageGetItem.mockReturnValue(null);
-    vi.stubGlobal('localStorage', {
-      getItem: mockLocalStorageGetItem,
-      setItem: mockLocalStorageSetItem,
+    mockSessionStorageGetItem.mockReturnValue(null);
+    vi.stubGlobal('sessionStorage', {
+      getItem: mockSessionStorageGetItem,
+      setItem: mockSessionStorageSetItem,
       removeItem: vi.fn(),
       clear: vi.fn(),
     });
@@ -112,12 +114,12 @@ describe('WayfinderConfigImport', () => {
         options: {upsert: true},
       });
     });
-    expect(mockLocalStorageSetItem).toHaveBeenCalledWith('thunderid-wayfinder-config-imported', expect.any(String));
+    expect(mockSessionStorageSetItem).toHaveBeenCalledWith(RESOLVED_IMPORTED_KEY, expect.any(String));
     expect(onSuccess).toHaveBeenCalled();
   });
 
-  it('shows the already-imported state when localStorage has a previous timestamp', () => {
-    mockLocalStorageGetItem.mockReturnValue('1700000000000');
+  it('shows the already-imported state when sessionStorage has a previous timestamp', () => {
+    mockSessionStorageGetItem.mockReturnValue('1700000000000');
     render(<WayfinderConfigImport />);
     expect(
       screen.getByText('common:welcome.wayfinderFolderImport.status.alreadyDone:{"productName":"ThunderID"}'),
@@ -160,16 +162,16 @@ describe('WayfinderConfigImport', () => {
   });
 
   it('renders the last-imported date caption in the already-done state', () => {
-    mockLocalStorageGetItem.mockReturnValue('1700000000000');
+    mockSessionStorageGetItem.mockReturnValue('1700000000000');
     render(<WayfinderConfigImport />);
     expect(screen.getByText(/common:welcome.wayfinderFolderImport.status.lastImported:/)).toBeInTheDocument();
   });
 
-  it('resets to idle when the user clicks Re-Import from already-done state', async () => {
-    mockLocalStorageGetItem.mockReturnValue('1700000000000');
+  it('resets to idle when the user clicks Reconfigure from already-done state', async () => {
+    mockSessionStorageGetItem.mockReturnValue('1700000000000');
     render(<WayfinderConfigImport />);
 
-    await userEvent.click(screen.getByText('common:welcome.wayfinderFolderImport.actions.reImport'));
+    await userEvent.click(screen.getByText('common:welcome.wayfinderFolderImport.actions.reconfigure'));
 
     expect(screen.getByText('common:welcome.wayfinderFolderImport.actions.importConfig')).toBeInTheDocument();
   });

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {Box, Button, Chip, Stack} from '@wso2/oxygen-ui';
+import {Box, Button, Stack, Typography} from '@wso2/oxygen-ui';
 import {Download} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useMemo} from 'react';
@@ -30,7 +30,6 @@ export default function WayfinderSampleDownload({releasesUrl}: {releasesUrl: str
   const {data, isError: errored} = useWayfinderReleases(releasesUrl);
 
   const release = data ? (data.latestRelease ?? data.releases?.[0] ?? null) : null;
-  const tag = release?.tagName ?? '';
   const asset = useMemo(() => release?.assets.find((a) => PATTERN.test(a.name)) ?? null, [release]);
 
   if (errored || !asset) return null;
@@ -49,9 +48,15 @@ export default function WayfinderSampleDownload({releasesUrl}: {releasesUrl: str
         borderRadius: 2,
       }}
     >
-      <Stack direction="row" spacing={1} sx={{flexWrap: 'wrap'}}>
-        {tag && <Chip label={tag} size="small" />}
-        {asset.sizeLabel && <Chip label={asset.sizeLabel} size="small" variant="outlined" />}
+      <Stack direction="column" spacing={0.25}>
+        <Typography variant="body2" fontWeight={500}>
+          {asset.name}
+        </Typography>
+        {asset.sizeLabel && (
+          <Typography variant="caption" color="text.secondary">
+            {asset.sizeLabel}
+          </Typography>
+        )}
       </Stack>
       <Button
         variant="contained"
