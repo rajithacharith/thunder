@@ -217,9 +217,9 @@ func (g *googleOIDCAuthnService) ValidateIDToken(
 }
 
 // GetIDTokenClaims extracts and returns the claims from the Google ID token.
-func (g *googleOIDCAuthnService) GetIDTokenClaims(idToken string) (
+func (g *googleOIDCAuthnService) GetIDTokenClaims(ctx context.Context, idToken string) (
 	map[string]interface{}, *serviceerror.ServiceError) {
-	return g.internal.GetIDTokenClaims(idToken)
+	return g.internal.GetIDTokenClaims(ctx, idToken)
 }
 
 // FetchUserInfo retrieves user information from Google, ensuring email resolution if necessary.
@@ -253,7 +253,7 @@ func (g *googleOIDCAuthnService) Authenticate(ctx context.Context, idpID, code s
 		return nil, svcErr
 	}
 
-	claims, svcErr := g.GetIDTokenClaims(tokenResp.IDToken)
+	claims, svcErr := g.GetIDTokenClaims(ctx, tokenResp.IDToken)
 	if svcErr != nil {
 		return nil, svcErr
 	}

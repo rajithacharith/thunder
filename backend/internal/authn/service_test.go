@@ -1017,26 +1017,26 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationProvider
 }
 
 func (suite *AuthenticationServiceTestSuite) TestValidateIDPTypeExactMatch() {
-	err := suite.service.validateIDPType(idp.IDPTypeOAuth, idp.IDPTypeOAuth, nil)
+	err := suite.service.validateIDPType(context.Background(), idp.IDPTypeOAuth, idp.IDPTypeOAuth, nil)
 	suite.Nil(err)
 }
 
 func (suite *AuthenticationServiceTestSuite) TestValidateIDPTypeEmptyRequested() {
-	err := suite.service.validateIDPType("", idp.IDPTypeOAuth, nil)
+	err := suite.service.validateIDPType(context.Background(), "", idp.IDPTypeOAuth, nil)
 	suite.Nil(err)
 }
 
 func (suite *AuthenticationServiceTestSuite) TestValidateIDPTypeCrossAllowed() {
-	err := suite.service.validateIDPType(idp.IDPTypeOAuth, idp.IDPTypeOIDC, nil)
+	err := suite.service.validateIDPType(context.Background(), idp.IDPTypeOAuth, idp.IDPTypeOIDC, nil)
 	suite.Nil(err)
 
-	err = suite.service.validateIDPType(idp.IDPTypeOIDC, idp.IDPTypeOAuth, nil)
+	err = suite.service.validateIDPType(context.Background(), idp.IDPTypeOIDC, idp.IDPTypeOAuth, nil)
 	suite.Nil(err)
 }
 
 func (suite *AuthenticationServiceTestSuite) TestValidateIDPTypeMismatch() {
 	logger := log.GetLogger()
-	err := suite.service.validateIDPType(idp.IDPTypeGoogle, idp.IDPTypeGitHub, logger)
+	err := suite.service.validateIDPType(context.Background(), idp.IDPTypeGoogle, idp.IDPTypeGitHub, logger)
 	suite.NotNil(err)
 	suite.Equal(common.ErrorInvalidIDPType.Code, err.Code)
 }
@@ -1053,7 +1053,7 @@ func (suite *AuthenticationServiceTestSuite) TestHandleIDPServiceErrorServerErro
 	}
 	logger := log.GetLogger()
 
-	result := suite.service.handleIDPServiceError(idpID, svcErr, logger)
+	result := suite.service.handleIDPServiceError(context.Background(), idpID, svcErr, logger)
 
 	suite.NotNil(result)
 	suite.Equal(serviceerror.InternalServerError.Code, result.Code)

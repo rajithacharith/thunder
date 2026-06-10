@@ -288,7 +288,7 @@ func (suite *GroupExporterTestSuite) TestValidateResource_Success() {
 	}
 	logger := log.GetLogger()
 
-	name, exportErr := suite.exporter.ValidateResource(resource, "group1", logger)
+	name, exportErr := suite.exporter.ValidateResource(context.Background(), resource, "group1", logger)
 
 	suite.Nil(exportErr)
 	assert.Equal(suite.T(), "Admins", name)
@@ -306,7 +306,7 @@ func (suite *GroupExporterTestSuite) TestValidateResource_WithMembers() {
 	}
 	logger := log.GetLogger()
 
-	name, exportErr := suite.exporter.ValidateResource(resource, "group1", logger)
+	name, exportErr := suite.exporter.ValidateResource(context.Background(), resource, "group1", logger)
 
 	suite.Nil(exportErr)
 	assert.Equal(suite.T(), "Admins", name)
@@ -316,7 +316,7 @@ func (suite *GroupExporterTestSuite) TestValidateResource_WithMembers() {
 func (suite *GroupExporterTestSuite) TestValidateResource_WrongType() {
 	logger := log.GetLogger()
 
-	name, exportErr := suite.exporter.ValidateResource("not a group", "group1", logger)
+	name, exportErr := suite.exporter.ValidateResource(context.Background(), "not a group", "group1", logger)
 
 	suite.NotNil(exportErr)
 	assert.Empty(suite.T(), name)
@@ -331,7 +331,7 @@ func (suite *GroupExporterTestSuite) TestValidateResource_EmptyName() {
 	}
 	logger := log.GetLogger()
 
-	name, exportErr := suite.exporter.ValidateResource(resource, "group1", logger)
+	name, exportErr := suite.exporter.ValidateResource(context.Background(), resource, "group1", logger)
 
 	suite.NotNil(exportErr)
 	assert.Empty(suite.T(), name)

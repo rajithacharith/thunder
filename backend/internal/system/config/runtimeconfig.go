@@ -19,6 +19,7 @@
 package config
 
 import (
+	"context"
 	"net"
 	"net/url"
 	"strconv"
@@ -58,7 +59,8 @@ func InitializeServerRuntime(serverHome string, config *Config) error {
 
 		parsedPath, err := url.Parse(loginPath)
 		if err != nil || parsedPath == nil {
-			log.GetLogger().Warn(
+			// Runtime initialization runs during application startup, outside any request.
+			log.GetLogger().WarnWithContext(context.Background(),
 				"Invalid gate client login path configured. Falling back to default '/signin'",
 				log.String("configuredPath", loginPath),
 				log.Error(err),

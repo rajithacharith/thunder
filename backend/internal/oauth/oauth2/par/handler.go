@@ -63,14 +63,14 @@ func (h *parHandler) HandlePARRequest(w http.ResponseWriter, r *http.Request) {
 	clientInfo := clientauth.GetOAuthClient(ctx)
 	if clientInfo == nil {
 		h.logger.ErrorWithContext(ctx, "OAuth client not found in context - ClientAuthMiddleware must be applied")
-		utils.WriteJSONError(w, oauth2const.ErrorServerError,
+		utils.WriteJSONError(ctx, w, oauth2const.ErrorServerError,
 			"Something went wrong", http.StatusInternalServerError, nil)
 		return
 	}
 
 	// Parse form-encoded body.
 	if err := r.ParseForm(); err != nil {
-		utils.WriteJSONError(w, oauth2const.ErrorInvalidRequest, "Failed to parse request body",
+		utils.WriteJSONError(ctx, w, oauth2const.ErrorInvalidRequest, "Failed to parse request body",
 			http.StatusBadRequest, nil)
 		return
 	}
@@ -93,7 +93,7 @@ func (h *parHandler) HandlePARRequest(w http.ResponseWriter, r *http.Request) {
 				log.String("error", errDesc))
 			errDesc = "Invalid DPoP proof"
 		}
-		utils.WriteJSONError(w, errCode, errDesc, statusCode, nil)
+		utils.WriteJSONError(ctx, w, errCode, errDesc, statusCode, nil)
 		return
 	}
 
@@ -117,11 +117,11 @@ func (h *parHandler) HandlePARRequest(w http.ResponseWriter, r *http.Request) {
 			)
 			statusCode = http.StatusInternalServerError
 		}
-		utils.WriteJSONError(w, errCode, errDesc, statusCode, nil)
+		utils.WriteJSONError(ctx, w, errCode, errDesc, statusCode, nil)
 		return
 	}
 
-	utils.WriteSuccessResponse(w, http.StatusCreated, resp)
+	utils.WriteSuccessResponse(ctx, w, http.StatusCreated, resp)
 }
 
 // verifyDPoPHeader verifies the DPoP proof header if present and returns the JKT, error code, and error description.

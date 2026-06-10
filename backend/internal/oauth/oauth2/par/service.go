@@ -79,7 +79,7 @@ func (s *parService) HandlePushedAuthorizationRequest(
 
 	// Validate the redirect URI.
 	redirectURI := params[oauth2const.RequestParamRedirectURI]
-	if err := oauthApp.ValidateRedirectURI(redirectURI); err != nil {
+	if err := oauthApp.ValidateRedirectURI(ctx, redirectURI); err != nil {
 		return nil, oauth2const.ErrorInvalidRequest, "Invalid redirect URI"
 	}
 

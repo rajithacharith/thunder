@@ -60,7 +60,7 @@ const (
 
 // parameterizerInterface defines the interface for template parameterization.
 type parameterizerInterface interface {
-	ToParameterizedYAML(obj interface{},
+	ToParameterizedYAML(ctx context.Context, obj interface{},
 		resourceType string, resourceName string,
 		rules *declarativeresource.ResourceRules) (string, map[string]string, error)
 }
@@ -152,7 +152,7 @@ func (es *exportService) ExportResources(
 
 		exporter, exists := es.registry.Get(resourceType)
 		if !exists {
-			log.GetLogger().Warn("No exporter registered for resource type",
+			log.GetLogger().WarnWithContext(ctx, "No exporter registered for resource type",
 				log.String("resourceType", resourceType))
 			continue
 		}
@@ -290,7 +290,7 @@ func (es *exportService) exportResourcesWithExporter(
 		}
 
 		// Validate resource
-		validatedName, exportErr := exporter.ValidateResource(resource, resourceID, logger)
+		validatedName, exportErr := exporter.ValidateResource(ctx, resource, resourceID, logger)
 		if exportErr != nil {
 			exportErrors = append(exportErrors, *exportErr)
 			continue
@@ -306,7 +306,7 @@ func (es *exportService) exportResourcesWithExporter(
 			options.Format = formatYAML
 		}
 
-		templateContent, vars, err := es.generateTemplateFromStruct(
+		templateContent, vars, err := es.generateTemplateFromStruct(ctx,
 			resource, exporter.GetParameterizerType(), validatedName, exporter)
 		if err != nil {
 			logger.WarnWithContext(ctx, "Failed to generate template from struct",
@@ -344,7 +344,7 @@ func (es *exportService) exportResourcesWithExporter(
 	return exportFiles, variableValues, exportErrors
 }
 
-func (es *exportService) generateTemplateFromStruct(data interface{},
+func (es *exportService) generateTemplateFromStruct(ctx context.Context, data interface{},
 	paramResourceType string, resourceName string,
 	exporter declarativeresource.ResourceExporter) (string, map[string]string, error) {
 	var rules *declarativeresource.ResourceRules
@@ -353,7 +353,7 @@ func (es *exportService) generateTemplateFromStruct(data interface{},
 	} else {
 		rules = exporter.GetResourceRules()
 	}
-	template, vars, err := es.parameterizer.ToParameterizedYAML(
+	template, vars, err := es.parameterizer.ToParameterizedYAML(ctx,
 		data, paramResourceType, resourceName, rules)
 	if err != nil {
 		return "", nil, err

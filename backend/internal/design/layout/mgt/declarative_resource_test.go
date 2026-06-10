@@ -89,7 +89,7 @@ func (s *DeclarativeResourceTestSuite) TestLayoutExporter_GetResourceRules() {
 func (s *DeclarativeResourceTestSuite) TestLayoutExporter_ValidateResource_InvalidType() {
 	exporter := &layoutExporter{}
 
-	name, err := exporter.ValidateResource("not a layout", "layout1", nil)
+	name, err := exporter.ValidateResource(context.Background(), "not a layout", "layout1", nil)
 
 	s.NotNil(err)
 	s.Empty(name)
@@ -352,7 +352,7 @@ func (s *DeclarativeResourceTestSuite) TestLayoutExporter_ValidateResource_Empty
 	}
 
 	// Even with empty layout, validation should succeed (just logs warning)
-	name, err := exporter.ValidateResource(layout, "layout1", testLogger)
+	name, err := exporter.ValidateResource(context.Background(), layout, "layout1", testLogger)
 
 	// The empty layout should not cause validation error in ValidateResource
 	// (it logs a warning instead)

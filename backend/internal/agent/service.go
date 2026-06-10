@@ -369,7 +369,7 @@ func (s *agentService) DeleteAgent(ctx context.Context, agentID string) *service
 
 	if err := s.inboundClientService.DeleteInboundClient(ctx, agentID); err != nil &&
 		!errors.Is(err, inboundclient.ErrInboundClientNotFound) {
-		if svcErr := s.translateInboundClientError(err); svcErr != nil {
+		if svcErr := s.translateInboundClientError(ctx, err); svcErr != nil {
 			return svcErr
 		}
 		s.logger.ErrorWithContext(ctx, "Failed to delete inbound client for agent",
@@ -518,7 +518,7 @@ func (s *agentService) ValidateAgent(ctx context.Context, agent *model.Agent, ex
 		oauthProfile := buildOAuthProfile(agent.InboundAuthConfig)
 		hasSecret := clientSecret != ""
 		if err := s.inboundClientService.Validate(ctx, &client, oauthProfile, hasSecret); err != nil {
-			if svcErr := s.translateInboundClientError(err); svcErr != nil {
+			if svcErr := s.translateInboundClientError(ctx, err); svcErr != nil {
 				return "", "", inboundmodel.InboundClient{}, svcErr
 			}
 			s.logger.ErrorWithContext(ctx, "Inbound client validation failed", log.Error(err))
@@ -732,7 +732,7 @@ func (s *agentService) createInboundForAgent(ctx context.Context, agentID string
 	hasSecret := clientSecret != ""
 	if err := s.inboundClientService.CreateInboundClient(ctx, &client, agent.Certificate,
 		oauthProfile, hasSecret, agent.Name); err != nil {
-		if svcErr := s.translateInboundClientError(err); svcErr != nil {
+		if svcErr := s.translateInboundClientError(ctx, err); svcErr != nil {
 			return inboundmodel.InboundClient{}, nil, svcErr
 		}
 		s.logger.ErrorWithContext(ctx, "Failed to create inbound client for agent",
@@ -755,7 +755,7 @@ func (s *agentService) reconcileInboundForUpdate(ctx context.Context, agentID st
 		if hasExisting {
 			if err := s.inboundClientService.DeleteInboundClient(ctx, agentID); err != nil &&
 				!errors.Is(err, inboundclient.ErrInboundClientNotFound) {
-				if svcErr := s.translateInboundClientError(err); svcErr != nil {
+				if svcErr := s.translateInboundClientError(ctx, err); svcErr != nil {
 					return inboundmodel.InboundClient{}, nil, svcErr
 				}
 				s.logger.ErrorWithContext(ctx, "Failed to remove inbound client during update",
@@ -779,7 +779,7 @@ func (s *agentService) reconcileInboundForUpdate(ctx context.Context, agentID st
 		}
 		if err := s.inboundClientService.UpdateInboundClient(ctx, &client, req.Certificate,
 			oauthProfile, hasSecret, clientID, entityName); err != nil {
-			if svcErr := s.translateInboundClientError(err); svcErr != nil {
+			if svcErr := s.translateInboundClientError(ctx, err); svcErr != nil {
 				return inboundmodel.InboundClient{}, nil, svcErr
 			}
 			s.logger.ErrorWithContext(ctx, "Failed to update inbound client",
@@ -791,7 +791,7 @@ func (s *agentService) reconcileInboundForUpdate(ctx context.Context, agentID st
 
 	if err := s.inboundClientService.CreateInboundClient(ctx, &client, req.Certificate,
 		oauthProfile, hasSecret, newName); err != nil {
-		if svcErr := s.translateInboundClientError(err); svcErr != nil {
+		if svcErr := s.translateInboundClientError(ctx, err); svcErr != nil {
 			return inboundmodel.InboundClient{}, nil, svcErr
 		}
 		s.logger.ErrorWithContext(ctx, "Failed to create inbound client during update",
@@ -854,7 +854,7 @@ func (s *agentService) composeGetResponse(ctx context.Context, e *entity.Entity)
 
 	entityCert, certOpErr := s.inboundClientService.GetCertificate(ctx, cert.CertificateReferenceTypeApplication, e.ID)
 	if certOpErr != nil {
-		return nil, s.translateCertOperationError(certOpErr)
+		return nil, s.translateCertOperationError(ctx, certOpErr)
 	}
 	resp.Certificate = entityCert
 
@@ -862,7 +862,7 @@ func (s *agentService) composeGetResponse(ctx context.Context, e *entity.Entity)
 		oauthCert, oauthCertOpErr := s.inboundClientService.GetCertificate(
 			ctx, cert.CertificateReferenceTypeOAuthApp, clientID)
 		if oauthCertOpErr != nil {
-			return nil, s.translateCertOperationError(oauthCertOpErr)
+			return nil, s.translateCertOperationError(ctx, oauthCertOpErr)
 		}
 		if len(resp.InboundAuthConfig) > 0 && resp.InboundAuthConfig[0].OAuthConfig != nil {
 			resp.InboundAuthConfig[0].OAuthConfig.Certificate = oauthCert
@@ -1315,7 +1315,7 @@ func mapEntityError(err error) *serviceerror.ServiceError {
 }
 
 // translateInboundClientError maps inbound-client-layer errors to agent-service errors.
-func (s *agentService) translateInboundClientError(err error) *serviceerror.ServiceError {
+func (s *agentService) translateInboundClientError(ctx context.Context, err error) *serviceerror.ServiceError {
 	if err == nil {
 		return nil
 	}
@@ -1339,7 +1339,7 @@ func (s *agentService) translateInboundClientError(err error) *serviceerror.Serv
 	}
 	var opErr *inboundclient.CertOperationError
 	if errors.As(err, &opErr) {
-		return s.translateCertOperationError(opErr)
+		return s.translateCertOperationError(ctx, opErr)
 	}
 	var consentErr *inboundclient.ConsentSyncError
 	if errors.As(err, &consentErr) {
@@ -1600,9 +1600,10 @@ func translateCertValidationError(err error) *serviceerror.ServiceError {
 }
 
 // translateCertOperationError maps a typed CertOperationError to an agent-service error.
-func (s *agentService) translateCertOperationError(err *inboundclient.CertOperationError) *serviceerror.ServiceError {
+func (s *agentService) translateCertOperationError(
+	ctx context.Context, err *inboundclient.CertOperationError) *serviceerror.ServiceError {
 	if !err.IsClientError() {
-		s.logger.Error("Certificate operation failed",
+		s.logger.ErrorWithContext(ctx, "Certificate operation failed",
 			log.Any("operation", err.Operation),
 			log.Any("refType", err.RefType),
 			log.Any("serviceError", err.Underlying))

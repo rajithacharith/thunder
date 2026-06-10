@@ -19,6 +19,7 @@
 package callback
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -272,7 +273,7 @@ func (suite *CallbackDispatcherTestSuite) TestWriteRedirectWithError_WithState()
 		State:             "abc123",
 	}
 	w := httptest.NewRecorder()
-	suite.dispatcher.writeRedirectWithError(w, authErr)
+	suite.dispatcher.writeRedirectWithError(context.Background(), w, authErr)
 
 	suite.Equal(http.StatusOK, w.Code)
 	var resp oauth2authz.AuthZPostResponse
@@ -290,7 +291,7 @@ func (suite *CallbackDispatcherTestSuite) TestWriteRedirectWithError_WithoutStat
 		State:             "",
 	}
 	w := httptest.NewRecorder()
-	suite.dispatcher.writeRedirectWithError(w, authErr)
+	suite.dispatcher.writeRedirectWithError(context.Background(), w, authErr)
 
 	suite.Equal(http.StatusOK, w.Code)
 	var resp oauth2authz.AuthZPostResponse
@@ -310,7 +311,7 @@ func (suite *CallbackDispatcherTestSuite) TestWriteRedirectWithError_URIConstruc
 		State:             "s1",
 	}
 	w := httptest.NewRecorder()
-	suite.dispatcher.writeRedirectWithError(w, authErr)
+	suite.dispatcher.writeRedirectWithError(context.Background(), w, authErr)
 
 	suite.Equal(http.StatusOK, w.Code)
 	var resp oauth2authz.AuthZPostResponse
@@ -322,7 +323,12 @@ func (suite *CallbackDispatcherTestSuite) TestWriteRedirectWithError_URIConstruc
 
 func (suite *CallbackDispatcherTestSuite) TestWriteErrorPageRedirect_WithState() {
 	w := httptest.NewRecorder()
-	suite.dispatcher.writeErrorPageRedirect(w, oauth2const.ErrorServerError, "something broke", "stateXYZ")
+	suite.dispatcher.writeErrorPageRedirect(
+		context.Background(),
+		w,
+		oauth2const.ErrorServerError,
+		"something broke",
+		"stateXYZ")
 
 	suite.Equal(http.StatusOK, w.Code)
 	var resp oauth2authz.AuthZPostResponse
@@ -333,7 +339,12 @@ func (suite *CallbackDispatcherTestSuite) TestWriteErrorPageRedirect_WithState()
 
 func (suite *CallbackDispatcherTestSuite) TestWriteErrorPageRedirect_WithoutState() {
 	w := httptest.NewRecorder()
-	suite.dispatcher.writeErrorPageRedirect(w, oauth2const.ErrorServerError, "something broke", "")
+	suite.dispatcher.writeErrorPageRedirect(
+		context.Background(),
+		w,
+		oauth2const.ErrorServerError,
+		"something broke",
+		"")
 
 	suite.Equal(http.StatusOK, w.Code)
 	var resp oauth2authz.AuthZPostResponse

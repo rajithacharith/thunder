@@ -23,6 +23,7 @@
 package callback
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -87,13 +88,13 @@ func (d *callbackDispatcher) handleFlowCallback(w http.ResponseWriter, r *http.R
 
 	req, err := utils.DecodeJSONBody[flowCallbackRequest](r)
 	if err != nil {
-		utils.WriteJSONError(w, oauth2const.ErrorInvalidRequest, "Invalid request body",
+		utils.WriteJSONError(ctx, w, oauth2const.ErrorInvalidRequest, "Invalid request body",
 			http.StatusBadRequest, nil)
 		return
 	}
 
 	if req.AuthID == "" || req.Assertion == "" {
-		utils.WriteJSONError(w, oauth2const.ErrorInvalidRequest, "authId and assertion are required",
+		utils.WriteJSONError(ctx, w, oauth2const.ErrorInvalidRequest, "authId and assertion are required",
 			http.StatusBadRequest, nil)
 		return
 	}
@@ -108,13 +109,13 @@ func (d *callbackDispatcher) handleFlowCallback(w http.ResponseWriter, r *http.R
 		redirectURI, authErr := d.authZService.HandleAuthorizationCallback(ctx, req.AuthID, req.Assertion)
 		if authErr != nil {
 			if authErr.SendErrorToClient {
-				d.writeRedirectWithError(w, authErr)
+				d.writeRedirectWithError(ctx, w, authErr)
 				return
 			}
-			d.writeErrorPageRedirect(w, authErr.Code, authErr.Message, authErr.State)
+			d.writeErrorPageRedirect(ctx, w, authErr.Code, authErr.Message, authErr.State)
 			return
 		}
-		utils.WriteSuccessResponse(w, http.StatusOK, oauth2authz.AuthZPostResponse{RedirectURI: redirectURI})
+		utils.WriteSuccessResponse(ctx, w, http.StatusOK, oauth2authz.AuthZPostResponse{RedirectURI: redirectURI})
 
 	case string(oauth2const.GrantTypeCIBA):
 		cibaErr := d.cibaService.HandleCallback(ctx, req.AuthID, req.Assertion)
@@ -123,18 +124,21 @@ func (d *callbackDispatcher) handleFlowCallback(w http.ResponseWriter, r *http.R
 			if cibaErr.Code == oauth2const.ErrorServerError {
 				statusCode = http.StatusInternalServerError
 			}
-			utils.WriteJSONError(w, cibaErr.Code, cibaErr.Message, statusCode, nil)
+			utils.WriteJSONError(ctx, w, cibaErr.Code, cibaErr.Message, statusCode, nil)
 			return
 		}
-		utils.WriteSuccessResponse(w, http.StatusOK, map[string]string{"status": "OK"})
+		utils.WriteSuccessResponse(ctx, w, http.StatusOK, map[string]string{"status": "OK"})
 
 	default:
-		utils.WriteJSONError(w, oauth2const.ErrorInvalidRequest,
+		utils.WriteJSONError(ctx, w, oauth2const.ErrorInvalidRequest,
 			"Unsupported callback type", http.StatusBadRequest, nil)
 	}
 }
 
-func (d *callbackDispatcher) writeRedirectWithError(w http.ResponseWriter, authErr *oauth2authz.AuthorizationError) {
+func (
+	d *callbackDispatcher) writeRedirectWithError(ctx context.Context,
+	w http.ResponseWriter,
+	authErr *oauth2authz.AuthorizationError) {
 	queryParams := map[string]string{
 		oauth2const.RequestParamError:            authErr.Code,
 		oauth2const.RequestParamErrorDescription: authErr.Message,
@@ -145,15 +149,20 @@ func (d *callbackDispatcher) writeRedirectWithError(w http.ResponseWriter, authE
 	}
 	redirectURI, err := oauth2utils.GetURIWithQueryParams(authErr.ClientRedirectURI, queryParams)
 	if err != nil {
-		d.logger.Error("Failed to construct client redirect URI", log.Error(err))
-		d.writeErrorPageRedirect(w, oauth2const.ErrorServerError,
+		d.logger.ErrorWithContext(ctx, "Failed to construct client redirect URI", log.Error(err))
+		d.writeErrorPageRedirect(ctx, w, oauth2const.ErrorServerError,
 			"Failed to process authorization request", authErr.State)
 		return
 	}
-	utils.WriteSuccessResponse(w, http.StatusOK, oauth2authz.AuthZPostResponse{RedirectURI: redirectURI})
+	utils.WriteSuccessResponse(ctx, w, http.StatusOK, oauth2authz.AuthZPostResponse{RedirectURI: redirectURI})
 }
 
-func (d *callbackDispatcher) writeErrorPageRedirect(w http.ResponseWriter, code, msg, state string) {
+func (
+	d *callbackDispatcher) writeErrorPageRedirect(ctx context.Context,
+	w http.ResponseWriter,
+	code,
+	msg,
+	state string) {
 	gateClientConfig := config.GetServerRuntime().Config.GateClient
 	errorPageURL := (&url.URL{
 		Scheme: gateClientConfig.Scheme,
@@ -172,5 +181,5 @@ func (d *callbackDispatcher) writeErrorPageRedirect(w http.ResponseWriter, code,
 		http.Error(w, "Failed to redirect to error page", http.StatusInternalServerError)
 		return
 	}
-	utils.WriteSuccessResponse(w, http.StatusOK, oauth2authz.AuthZPostResponse{RedirectURI: redirectURI})
+	utils.WriteSuccessResponse(ctx, w, http.StatusOK, oauth2authz.AuthZPostResponse{RedirectURI: redirectURI})
 }

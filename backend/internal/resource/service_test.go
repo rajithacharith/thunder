@@ -5107,7 +5107,7 @@ func (suite *ResourceServiceTestSuite) TestSyncHelpers_TolerateNilConsentService
 
 func (suite *ResourceServiceTestSuite) TestWrapConsentServiceError_NilPassthrough() {
 	svc := newSyncTestService(suite.T(), nil)
-	require.Nil(suite.T(), svc.wrapConsentServiceError(nil))
+	require.Nil(suite.T(), svc.wrapConsentServiceError(context.Background(), nil))
 }
 
 func (suite *ResourceServiceTestSuite) TestConsentSyncError_Error() {

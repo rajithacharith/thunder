@@ -1967,7 +1967,7 @@ func TestResolveClientSecret_PublicClient(t *testing.T) {
 		},
 	}
 
-	err := resolveClientSecret(inboundAuthConfig, nil)
+	err := resolveClientSecret(context.Background(), inboundAuthConfig, nil)
 
 	assert.Nil(t, err)
 	assert.Equal(t, "", inboundAuthConfig.OAuthConfig.ClientSecret)
@@ -1984,7 +1984,7 @@ func TestResolveClientSecret_SecretAlreadyProvided(t *testing.T) {
 		},
 	}
 
-	err := resolveClientSecret(inboundAuthConfig, nil)
+	err := resolveClientSecret(context.Background(), inboundAuthConfig, nil)
 
 	assert.Nil(t, err)
 	assert.Equal(t, providedSecret, inboundAuthConfig.OAuthConfig.ClientSecret)
@@ -2000,7 +2000,7 @@ func TestResolveClientSecret_GenerateForNewConfidentialClient(t *testing.T) {
 		},
 	}
 
-	err := resolveClientSecret(inboundAuthConfig, nil)
+	err := resolveClientSecret(context.Background(), inboundAuthConfig, nil)
 
 	assert.Nil(t, err)
 	assert.NotEmpty(t, inboundAuthConfig.OAuthConfig.ClientSecret)
@@ -2030,7 +2030,7 @@ func TestResolveClientSecret_PreserveExistingSecret(t *testing.T) {
 		},
 	}
 
-	err := resolveClientSecret(inboundAuthConfig, existingApp)
+	err := resolveClientSecret(context.Background(), inboundAuthConfig, existingApp)
 
 	assert.Nil(t, err)
 	// Secret should remain empty (not generated) because existing app has a secret
@@ -2047,7 +2047,7 @@ func TestResolveClientSecret_NoExistingApp(t *testing.T) {
 		},
 	}
 
-	err := resolveClientSecret(inboundAuthConfig, nil)
+	err := resolveClientSecret(context.Background(), inboundAuthConfig, nil)
 
 	assert.Nil(t, err)
 	assert.NotEmpty(t, inboundAuthConfig.OAuthConfig.ClientSecret)
@@ -2075,7 +2075,7 @@ func TestResolveClientSecret_ExistingAppWithoutSecret(t *testing.T) {
 		},
 	}
 
-	err := resolveClientSecret(inboundAuthConfig, existingApp)
+	err := resolveClientSecret(context.Background(), inboundAuthConfig, existingApp)
 
 	assert.Nil(t, err)
 	// Should generate a new secret since existing app doesn't have one

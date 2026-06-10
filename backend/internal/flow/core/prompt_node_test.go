@@ -19,6 +19,7 @@
 package core
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -946,13 +947,13 @@ func (s *PromptOnlyNodeTestSuite) TestGetNextNodeForActionRef() {
 	})
 
 	// Test finding existing actions
-	nextNode := promptNode.getNextNodeForActionRef("login")
+	nextNode := promptNode.getNextNodeForActionRef(context.Background(), "login")
 	s.Equal("auth_node", nextNode)
 
-	nextNode = promptNode.getNextNodeForActionRef("signup")
+	nextNode = promptNode.getNextNodeForActionRef(context.Background(), "signup")
 	s.Equal("register_node", nextNode)
 
-	nextNode = promptNode.getNextNodeForActionRef("cancel")
+	nextNode = promptNode.getNextNodeForActionRef(context.Background(), "cancel")
 	s.Equal("exit_node", nextNode)
 }
 
@@ -971,7 +972,7 @@ func (s *PromptOnlyNodeTestSuite) TestGetNextNodeForActionRefNotFound() {
 	})
 
 	// Test finding non-existent action
-	nextNode := promptNode.getNextNodeForActionRef("nonexistent")
+	nextNode := promptNode.getNextNodeForActionRef(context.Background(), "nonexistent")
 	s.Equal("", nextNode, "Should return empty string when action not found")
 }
 
@@ -987,7 +988,7 @@ func (s *PromptOnlyNodeTestSuite) TestGetNextNodeForActionRefEmptyRef() {
 	})
 
 	// Test with empty action ref
-	nextNode := promptNode.getNextNodeForActionRef("")
+	nextNode := promptNode.getNextNodeForActionRef(context.Background(), "")
 	s.Equal("", nextNode, "Should return empty string for empty action ref")
 }
 

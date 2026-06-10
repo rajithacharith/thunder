@@ -116,7 +116,7 @@ func (e *agentExporter) GetResourceByID(
 }
 
 // ValidateResource validates an agent resource prior to export.
-func (e *agentExporter) ValidateResource(
+func (e *agentExporter) ValidateResource(ctx context.Context,
 	resource interface{}, id string, logger *log.Logger,
 ) (string, *declarativeresource.ExportError) {
 	a, ok := resource.(*model.AgentGetResponse)
@@ -124,7 +124,7 @@ func (e *agentExporter) ValidateResource(
 		return "", declarativeresource.CreateTypeError(resourceTypeAgent, id)
 	}
 
-	if err := declarativeresource.ValidateResourceName(
+	if err := declarativeresource.ValidateResourceName(ctx,
 		a.Name, resourceTypeAgent, id, "AGT_VALIDATION_ERROR", logger); err != nil {
 		return "", err
 	}

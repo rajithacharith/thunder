@@ -98,7 +98,7 @@ func (e *applicationExporter) GetResourceByID(ctx context.Context, id string) (
 }
 
 // ValidateResource validates an application resource.
-func (e *applicationExporter) ValidateResource(
+func (e *applicationExporter) ValidateResource(ctx context.Context,
 	resource interface{}, id string, logger *log.Logger,
 ) (string, *declarativeresource.ExportError) {
 	app, ok := resource.(*model.Application)
@@ -106,7 +106,7 @@ func (e *applicationExporter) ValidateResource(
 		return "", declarativeresource.CreateTypeError(resourceTypeApplication, id)
 	}
 
-	if err := declarativeresource.ValidateResourceName(
+	if err := declarativeresource.ValidateResourceName(ctx,
 		app.Name, resourceTypeApplication, id, "APP_VALIDATION_ERROR", logger); err != nil {
 		return "", err
 	}

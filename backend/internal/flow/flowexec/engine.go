@@ -19,6 +19,7 @@
 package flowexec
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"maps"
@@ -136,7 +137,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 			continue
 		}
 
-		svcErr := fe.setNodeExecutor(currentNode, logger)
+		svcErr := fe.setNodeExecutor(ctx.Context, currentNode, logger)
 		if svcErr != nil {
 			return flowStep, svcErr
 		}
@@ -301,13 +302,14 @@ func getNodeInputs(node core.NodeInterface) []common.Input {
 }
 
 // setNodeExecutor sets the executor for the given node if it is not already set.
-func (fe *flowEngine) setNodeExecutor(node core.NodeInterface, logger *log.Logger) *serviceerror.ServiceError {
+func (fe *flowEngine) setNodeExecutor(
+	ctx context.Context, node core.NodeInterface, logger *log.Logger) *serviceerror.ServiceError {
 	if node.GetType() != common.NodeTypeTaskExecution {
 		return nil
 	}
 	executableNode, ok := node.(core.ExecutorBackedNodeInterface)
 	if !ok {
-		logger.Error("Task execution node does not implement ExecutorBackedNodeInterface",
+		logger.ErrorWithContext(ctx, "Task execution node does not implement ExecutorBackedNodeInterface",
 			log.String("nodeID", node.GetID()))
 		return &serviceerror.InternalServerError
 	}
@@ -317,17 +319,19 @@ func (fe *flowEngine) setNodeExecutor(node core.NodeInterface, logger *log.Logge
 		return nil
 	}
 
-	logger.Debug("Executor not set for the node. Constructing executor.", log.String("nodeID", node.GetID()))
+	logger.DebugWithContext(ctx, "Executor not set for the node. Constructing executor.",
+		log.String("nodeID", node.GetID()))
 
 	executorName := executableNode.GetExecutorName()
 	if executorName == "" {
-		logger.Error("Executor name not configured for executable node", log.String("nodeID", node.GetID()))
+		logger.ErrorWithContext(ctx, "Executor name not configured for executable node",
+			log.String("nodeID", node.GetID()))
 		return &serviceerror.InternalServerError
 	}
 
 	executor, err := fe.getExecutorByName(executorName)
 	if err != nil {
-		logger.Error("Error constructing executor for node", log.String("nodeID", node.GetID()),
+		logger.ErrorWithContext(ctx, "Error constructing executor for node", log.String("nodeID", node.GetID()),
 			log.String("executorName", executorName), log.Error(err))
 		return &serviceerror.InternalServerError
 	}
@@ -833,7 +837,7 @@ func (fe *flowEngine) validateSegmentResumePolicy(ctx *EngineContext, logger *lo
 		return false
 	}
 
-	if svcErr := fe.setNodeExecutor(segStartNode, logger); svcErr != nil {
+	if svcErr := fe.setNodeExecutor(ctx.Context, segStartNode, logger); svcErr != nil {
 		return false
 	}
 
@@ -1011,7 +1015,7 @@ func publishNodeExecutionStartedEvent(
 		WithData(event.DataKey.AttemptNumber, fmt.Sprintf("%d", attemptNumber)).
 		WithData(event.DataKey.EntityID, ctx.AppID)
 
-	obsSvc.PublishEvent(evt)
+	obsSvc.PublishEvent(ctx.Context, evt)
 }
 
 // publishNodeExecutionCompletedEvent publishes an observability event when node execution completes or fails.
@@ -1096,7 +1100,7 @@ func publishNodeExecutionCompletedEvent(ctx *EngineContext, node core.NodeInterf
 		evt.WithData(event.DataKey.UserID, ctx.AuthenticatedUser.UserID)
 	}
 
-	obsSvc.PublishEvent(evt)
+	obsSvc.PublishEvent(ctx.Context, evt)
 }
 
 // publishFlowStartedEvent publishes an observability event when flow execution starts.
@@ -1120,7 +1124,7 @@ func publishFlowStartedEvent(ctx *EngineContext, obsSvc observability.Observabil
 		evt.WithData(event.DataKey.UserID, ctx.AuthenticatedUser.UserID)
 	}
 
-	obsSvc.PublishEvent(evt)
+	obsSvc.PublishEvent(ctx.Context, evt)
 }
 
 // publishFlowCompletedEvent publishes an observability event when flow execution completes successfully.
@@ -1153,7 +1157,7 @@ func publishFlowCompletedEvent(
 		evt.WithData(event.DataKey.UserID, ctx.AuthenticatedUser.UserID)
 	}
 
-	obsSvc.PublishEvent(evt)
+	obsSvc.PublishEvent(ctx.Context, evt)
 }
 
 // publishFlowFailedEvent publishes an observability event when flow execution fails.
@@ -1187,7 +1191,7 @@ func publishFlowFailedEvent(ctx *EngineContext, svcErr *serviceerror.ServiceErro
 		evt.WithData(event.DataKey.UserID, ctx.AuthenticatedUser.UserID)
 	}
 
-	obsSvc.PublishEvent(evt)
+	obsSvc.PublishEvent(ctx.Context, evt)
 }
 
 // processServiceErrorForEventPublish processes a service error to extract relevant information

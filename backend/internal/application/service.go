@@ -1416,7 +1416,7 @@ func (as *applicationService) processInboundAuthConfig(ctx context.Context, app 
 		}
 
 		if clientID == "" {
-			if svcErr := generateAndAssignClientID(inboundAuthConfig); svcErr != nil {
+			if svcErr := generateAndAssignClientID(ctx, inboundAuthConfig); svcErr != nil {
 				return nil, svcErr
 			}
 		} else if clientID != existingClientID {
@@ -1428,7 +1428,7 @@ func (as *applicationService) processInboundAuthConfig(ctx context.Context, app 
 		}
 	} else { // For create operation
 		if clientID == "" {
-			if svcErr := generateAndAssignClientID(inboundAuthConfig); svcErr != nil {
+			if svcErr := generateAndAssignClientID(ctx, inboundAuthConfig); svcErr != nil {
 				return nil, svcErr
 			}
 		} else {
@@ -1440,7 +1440,7 @@ func (as *applicationService) processInboundAuthConfig(ctx context.Context, app 
 		}
 	}
 
-	if svcErr := resolveClientSecret(inboundAuthConfig, existingApp); svcErr != nil {
+	if svcErr := resolveClientSecret(ctx, inboundAuthConfig, existingApp); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -1448,10 +1448,12 @@ func (as *applicationService) processInboundAuthConfig(ctx context.Context, app 
 }
 
 // generateAndAssignClientID generates an OAuth 2.0 compliant client ID and assigns it to the inbound auth config.
-func generateAndAssignClientID(inboundAuthConfig *inboundmodel.InboundAuthConfigWithSecret) *serviceerror.ServiceError {
+func generateAndAssignClientID(
+	ctx context.Context, inboundAuthConfig *inboundmodel.InboundAuthConfigWithSecret,
+) *serviceerror.ServiceError {
 	generatedClientID, err := oauthutils.GenerateOAuth2ClientID()
 	if err != nil {
-		log.GetLogger().Error("Failed to generate OAuth client ID", log.Error(err))
+		log.GetLogger().ErrorWithContext(ctx, "Failed to generate OAuth client ID", log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 	inboundAuthConfig.OAuthConfig.ClientID = generatedClientID
@@ -1459,6 +1461,7 @@ func generateAndAssignClientID(inboundAuthConfig *inboundmodel.InboundAuthConfig
 }
 
 func resolveClientSecret(
+	ctx context.Context,
 	inboundAuthConfig *inboundmodel.InboundAuthConfigWithSecret,
 	existingApp *model.ApplicationProcessedDTO,
 ) *serviceerror.ServiceError {
@@ -1484,7 +1487,7 @@ func resolveClientSecret(
 
 	generatedClientSecret, err := oauthutils.GenerateOAuth2ClientSecret()
 	if err != nil {
-		log.GetLogger().Error("Failed to generate OAuth client secret", log.Error(err))
+		log.GetLogger().ErrorWithContext(ctx, "Failed to generate OAuth client secret", log.Error(err))
 		return &serviceerror.InternalServerError
 	}
 

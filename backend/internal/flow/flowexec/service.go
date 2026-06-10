@@ -122,7 +122,7 @@ func (s *flowExecService) Execute(ctx context.Context,
 					WithData(event.DataKey.FlowType, flowType).
 					WithData(event.DataKey.Error, processServiceErrorForEventPublish(loadErr))
 
-				s.observabilitySvc.PublishEvent(evt)
+				s.observabilitySvc.PublishEvent(ctx, evt)
 			}
 			return nil, loadErr
 		}

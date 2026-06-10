@@ -2033,9 +2033,9 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NodeRespErrorPu
 	mockObservability.On("IsEnabled").Return(true)
 
 	var capturedEvent *event.Event
-	mockObservability.On("PublishEvent", mock.AnythingOfType("*event.Event")).
+	mockObservability.On("PublishEvent", mock.Anything, mock.AnythingOfType("*event.Event")).
 		Run(func(args mock.Arguments) {
-			capturedEvent = args.Get(0).(*event.Event)
+			capturedEvent = args.Get(1).(*event.Event)
 		}).Return()
 
 	mockNode := coremock.NewNodeInterfaceMock(t)
@@ -2098,9 +2098,9 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NodeErrTakesPre
 	mockObservability.On("IsEnabled").Return(true)
 
 	var capturedEvent *event.Event
-	mockObservability.On("PublishEvent", mock.AnythingOfType("*event.Event")).
+	mockObservability.On("PublishEvent", mock.Anything, mock.AnythingOfType("*event.Event")).
 		Run(func(args mock.Arguments) {
-			capturedEvent = args.Get(0).(*event.Event)
+			capturedEvent = args.Get(1).(*event.Event)
 		}).Return()
 
 	mockNode := coremock.NewNodeInterfaceMock(t)
@@ -2159,9 +2159,9 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NoErrorPublishe
 	mockObservability.On("IsEnabled").Return(true)
 
 	var capturedEvent *event.Event
-	mockObservability.On("PublishEvent", mock.AnythingOfType("*event.Event")).
+	mockObservability.On("PublishEvent", mock.Anything, mock.AnythingOfType("*event.Event")).
 		Run(func(args mock.Arguments) {
-			capturedEvent = args.Get(0).(*event.Event)
+			capturedEvent = args.Get(1).(*event.Event)
 		}).Return()
 
 	mockNode := coremock.NewNodeInterfaceMock(t)

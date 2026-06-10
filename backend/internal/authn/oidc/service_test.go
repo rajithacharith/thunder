@@ -330,14 +330,14 @@ func (suite *OIDCAuthnServiceTestSuite) TestGetIDTokenClaimsSuccess() {
 		"eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ." +
 		"SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 
-	claims, err := suite.service.GetIDTokenClaims(idToken)
+	claims, err := suite.service.GetIDTokenClaims(context.Background(), idToken)
 	suite.Nil(err)
 	suite.NotNil(claims)
 	suite.Equal("1234567890", claims["sub"])
 }
 
 func (suite *OIDCAuthnServiceTestSuite) TestGetIDTokenClaimsEmptyToken() {
-	claims, err := suite.service.GetIDTokenClaims("")
+	claims, err := suite.service.GetIDTokenClaims(context.Background(), "")
 	suite.Nil(claims)
 	suite.NotNil(err)
 	suite.Equal(ErrorInvalidIDToken.Code, err.Code)
@@ -413,7 +413,7 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseValidateIDToken
 
 func (suite *OIDCAuthnServiceTestSuite) TestGetIDTokenClaimsMalformedToken() {
 	// Malformed token (not three parts) should return invalid token error
-	claims, err := suite.service.GetIDTokenClaims("not.a.valid.token")
+	claims, err := suite.service.GetIDTokenClaims(context.Background(), "not.a.valid.token")
 	suite.Nil(claims)
 	suite.NotNil(err)
 	suite.Equal(ErrorInvalidIDToken.Code, err.Code)

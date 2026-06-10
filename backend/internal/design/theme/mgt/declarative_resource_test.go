@@ -89,7 +89,7 @@ func (s *ThemeDeclarativeSuite) TestThemeExporter_GetResourceRules() {
 func (s *ThemeDeclarativeSuite) TestThemeExporter_ValidateResource_InvalidType() {
 	exporter := &themeExporter{}
 
-	name, err := exporter.ValidateResource("not a theme", "theme1", nil)
+	name, err := exporter.ValidateResource(context.Background(), "not a theme", "theme1", nil)
 
 	s.NotNil(err)
 	s.Empty(name)
@@ -348,7 +348,7 @@ func (s *ThemeDeclarativeSuite) TestThemeExporter_ValidateResource_EmptyThemeWar
 	}
 
 	// Even with empty theme, validation should succeed (just logs warning)
-	name, err := exporter.ValidateResource(theme, "theme1", testLogger)
+	name, err := exporter.ValidateResource(context.Background(), theme, "theme1", testLogger)
 
 	// The empty theme should not cause validation error in ValidateResource
 	// (it logs a warning instead)

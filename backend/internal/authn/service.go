@@ -141,7 +141,7 @@ func (as *authenticationService) AuthenticateWithCredentials(ctx context.Context
 	newAuthUser, basicResult, svcErr := as.authnProvider.AuthenticateUser(ctx, identifiers, credentials, nil, nil,
 		authnprovidermgr.AuthUser{})
 	if svcErr != nil {
-		return nil, as.mapCredentialsAuthnError(svcErr, logger)
+		return nil, as.mapCredentialsAuthnError(ctx, svcErr, logger)
 	}
 
 	if basicResult == nil {
@@ -151,7 +151,7 @@ func (as *authenticationService) AuthenticateWithCredentials(ctx context.Context
 
 	_, attrsResponse, svcErr := as.authnProvider.GetUserAttributes(ctx, nil, nil, newAuthUser)
 	if svcErr != nil {
-		return nil, as.mapCredentialsGetAttributesError(svcErr, logger)
+		return nil, as.mapCredentialsGetAttributesError(ctx, svcErr, logger)
 	}
 
 	authResponse := &common.AuthenticationResponse{
@@ -256,10 +256,10 @@ func (as *authenticationService) StartIDPAuthentication(ctx context.Context, req
 
 	identityProvider, svcErr := as.idpService.GetIdentityProvider(ctx, idpID)
 	if svcErr != nil {
-		return nil, as.handleIDPServiceError(idpID, svcErr, logger)
+		return nil, as.handleIDPServiceError(ctx, idpID, svcErr, logger)
 	}
 
-	if svcErr := as.validateIDPType(requestedType, identityProvider.Type, logger); svcErr != nil {
+	if svcErr := as.validateIDPType(ctx, requestedType, identityProvider.Type, logger); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -319,7 +319,7 @@ func (as *authenticationService) FinishIDPAuthentication(ctx context.Context, re
 		return nil, svcErr
 	}
 
-	if svcErr := as.validateIDPType(requestedType, sessionData.IDPType, logger); svcErr != nil {
+	if svcErr := as.validateIDPType(ctx, requestedType, sessionData.IDPType, logger); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -333,7 +333,7 @@ func (as *authenticationService) FinishIDPAuthentication(ctx context.Context, re
 	_, basicResult, svcErr := as.authnProvider.AuthenticateUser(
 		ctx, nil, credentials, nil, nil, authnprovidermgr.AuthUser{})
 	if svcErr != nil {
-		return nil, as.mapFederatedAuthnError(svcErr, logger)
+		return nil, as.mapFederatedAuthnError(ctx, svcErr, logger)
 	}
 	if basicResult == nil {
 		logger.ErrorWithContext(ctx, "Federated authenticate response is nil")
@@ -520,7 +520,7 @@ func (as *authenticationService) extractClaimsFromAssertion(ctx context.Context,
 }
 
 // mapFederatedAuthnError maps provider manager errors to federated-authentication-specific service errors.
-func (as *authenticationService) mapFederatedAuthnError(svcErr *serviceerror.ServiceError,
+func (as *authenticationService) mapFederatedAuthnError(ctx context.Context, svcErr *serviceerror.ServiceError,
 	logger *log.Logger) *serviceerror.ServiceError {
 	switch svcErr.Code {
 	case authnprovidermgr.ErrorAuthenticationFailed.Code:
@@ -530,14 +530,14 @@ func (as *authenticationService) mapFederatedAuthnError(svcErr *serviceerror.Ser
 	case authnprovidermgr.ErrorInvalidRequest.Code:
 		return &ErrorFederatedAuthenticationFailed
 	default:
-		logger.Error("Error occurred while performing federated authentication",
+		logger.ErrorWithContext(ctx, "Error occurred while performing federated authentication",
 			log.String("errorCode", svcErr.Code), log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
 		return &serviceerror.InternalServerError
 	}
 }
 
 // mapCredentialsAuthnError maps provider manager errors to credentials-specific service errors.
-func (as *authenticationService) mapCredentialsAuthnError(svcErr *serviceerror.ServiceError,
+func (as *authenticationService) mapCredentialsAuthnError(ctx context.Context, svcErr *serviceerror.ServiceError,
 	logger *log.Logger) *serviceerror.ServiceError {
 	switch svcErr.Code {
 	case authnprovidermgr.ErrorAuthenticationFailed.Code:
@@ -547,27 +547,29 @@ func (as *authenticationService) mapCredentialsAuthnError(svcErr *serviceerror.S
 	case authnprovidermgr.ErrorInvalidRequest.Code:
 		return &ErrorEmptyAttributesOrCredentials
 	default:
-		logger.Error("Error occurred while authenticating with credentials",
+		logger.ErrorWithContext(ctx, "Error occurred while authenticating with credentials",
 			log.String("errorCode", svcErr.Code), log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
 		return &serviceerror.InternalServerError
 	}
 }
 
 // mapCredentialsGetAttributesError maps provider manager errors from GetUserAttributes to credentials-specific errors.
-func (as *authenticationService) mapCredentialsGetAttributesError(svcErr *serviceerror.ServiceError,
+func (as *authenticationService) mapCredentialsGetAttributesError(
+	ctx context.Context, svcErr *serviceerror.ServiceError,
 	logger *log.Logger) *serviceerror.ServiceError {
 	switch svcErr.Code {
 	case authnprovidermgr.ErrorGetAttributesClientError.Code:
 		return &ErrorInvalidToken
 	default:
-		logger.Error("Error occurred while getting attributes for credentials authentication",
+		logger.ErrorWithContext(ctx, "Error occurred while getting attributes for credentials authentication",
 			log.String("errorCode", svcErr.Code), log.String("errorDescription", svcErr.ErrorDescription.DefaultValue))
 		return &serviceerror.InternalServerError
 	}
 }
 
 // handleIDPServiceError handles errors from IDP service.
-func (as *authenticationService) handleIDPServiceError(idpID string, svcErr *serviceerror.ServiceError,
+func (as *authenticationService) handleIDPServiceError(
+	ctx context.Context, idpID string, svcErr *serviceerror.ServiceError,
 	logger *log.Logger) *serviceerror.ServiceError {
 	if svcErr.Type == serviceerror.ClientErrorType {
 		errDesc := fmt.Sprintf(
@@ -581,12 +583,13 @@ func (as *authenticationService) handleIDPServiceError(idpID string, svcErr *ser
 		})
 	}
 
-	logger.Error("Error occurred while retrieving IDP", log.String("idpId", idpID), log.Any("error", svcErr))
+	logger.ErrorWithContext(ctx, "Error occurred while retrieving IDP",
+		log.String("idpId", idpID), log.Any("error", svcErr))
 	return &serviceerror.InternalServerError
 }
 
 // validateIDPType validates that the requested IDP type matches the actual IDP type.
-func (as *authenticationService) validateIDPType(requestedType, actualType idp.IDPType,
+func (as *authenticationService) validateIDPType(ctx context.Context, requestedType, actualType idp.IDPType,
 	logger *log.Logger) *serviceerror.ServiceError {
 	if requestedType != "" && requestedType != actualType {
 		// Allow cross-type authentication for certain types
@@ -595,7 +598,7 @@ func (as *authenticationService) validateIDPType(requestedType, actualType idp.I
 			return nil
 		}
 
-		logger.Debug("IDP type mismatch", log.String("requested", string(requestedType)),
+		logger.DebugWithContext(ctx, "IDP type mismatch", log.String("requested", string(requestedType)),
 			log.String("actual", string(actualType)))
 		return &common.ErrorInvalidIDPType
 	}

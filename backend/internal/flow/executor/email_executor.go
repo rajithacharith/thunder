@@ -142,7 +142,7 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 		IsHTML:  rendered.IsHTML,
 	}
 
-	if err := e.emailClient.Send(emailData); err != nil {
+	if err := e.emailClient.Send(ctx.Context, emailData); err != nil {
 		execResp.Status = common.ExecFailure
 		execResp.Error = &ErrEmailSendFailed
 		return execResp, nil

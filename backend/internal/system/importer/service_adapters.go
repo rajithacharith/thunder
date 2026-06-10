@@ -914,7 +914,7 @@ func (s *importService) importAgent(
 		attributesJSON = raw
 	}
 
-	normalizeAgentOAuthConfigForImport(&req)
+	normalizeAgentOAuthConfigForImport(ctx, &req)
 
 	createReq := &agentmodel.Agent{
 		ID:                 req.ID,
@@ -991,7 +991,7 @@ func getAgentOAuthConfigForImport(req *agentmodel.AgentRequestWithID) *inboundmo
 	return nil
 }
 
-func normalizeAgentOAuthConfigForImport(req *agentmodel.AgentRequestWithID) {
+func normalizeAgentOAuthConfigForImport(ctx context.Context, req *agentmodel.AgentRequestWithID) {
 	oauthConfig := getAgentOAuthConfigForImport(req)
 	if oauthConfig == nil {
 		return
@@ -1000,7 +1000,8 @@ func normalizeAgentOAuthConfigForImport(req *agentmodel.AgentRequestWithID) {
 	if oauthConfig.PublicClient &&
 		oauthConfig.TokenEndpointAuthMethod == oauth2const.TokenEndpointAuthMethodNone &&
 		oauthConfig.ClientSecret != "" {
-		log.GetLogger().Debug("Dropping client_secret for public agent import with token endpoint auth method 'none'",
+		log.GetLogger().DebugWithContext(ctx,
+			"Dropping client_secret for public agent import with token endpoint auth method 'none'",
 			log.String("agentID", req.ID),
 			log.String("name", req.Name),
 			log.String("clientID", oauthConfig.ClientID))

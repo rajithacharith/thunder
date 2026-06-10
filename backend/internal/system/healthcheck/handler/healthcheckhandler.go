@@ -52,7 +52,7 @@ func (hch *HealthCheckHandler) HandleReadinessRequest(w http.ResponseWriter, r *
 	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "HealthCheckHandler"))
 
-	serverstatus := hch.Service.CheckReadiness()
+	serverstatus := hch.Service.CheckReadiness(ctx)
 
 	statusCode := http.StatusOK
 	if serverstatus.Status != model.StatusUp {
@@ -64,7 +64,7 @@ func (hch *HealthCheckHandler) HandleReadinessRequest(w http.ResponseWriter, r *
 			log.String("serverstatus", string(serverstatus.Status)))
 	}
 
-	sysutils.WriteSuccessResponse(w, statusCode, serverstatus)
+	sysutils.WriteSuccessResponse(ctx, w, statusCode, serverstatus)
 
 	logger.DebugWithContext(ctx, "Health Check Readiness response sent")
 }

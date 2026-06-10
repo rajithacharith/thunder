@@ -39,7 +39,7 @@ const (
 type OIDCAuthnCoreServiceInterface interface {
 	authnoauth.OAuthAuthnCoreServiceInterface
 	ValidateIDToken(ctx context.Context, idpID, idToken string) *serviceerror.ServiceError
-	GetIDTokenClaims(idToken string) (map[string]interface{}, *serviceerror.ServiceError)
+	GetIDTokenClaims(ctx context.Context, idToken string) (map[string]interface{}, *serviceerror.ServiceError)
 }
 
 // OIDCAuthnServiceInterface defines the contract for OIDC based authenticator services.
@@ -166,19 +166,19 @@ func (s *oidcAuthnService) ValidateIDToken(ctx context.Context, idpID, idToken s
 }
 
 // GetIDTokenClaims extracts and returns the claims from the ID token.
-func (s *oidcAuthnService) GetIDTokenClaims(idToken string) (
+func (s *oidcAuthnService) GetIDTokenClaims(ctx context.Context, idToken string) (
 	map[string]interface{}, *serviceerror.ServiceError) {
 	logger := s.logger
-	logger.Debug("Extracting claims from ID token")
+	logger.DebugWithContext(ctx, "Extracting claims from ID token")
 
 	if strings.TrimSpace(idToken) == "" {
-		logger.Debug("ID token is empty")
+		logger.DebugWithContext(ctx, "ID token is empty")
 		return nil, &ErrorInvalidIDToken
 	}
 
 	claims, err := jwt.DecodeJWTPayload(idToken)
 	if err != nil {
-		logger.Debug("Failed to decode ID token payload", log.Error(err))
+		logger.DebugWithContext(ctx, "Failed to decode ID token payload", log.Error(err))
 		return nil, &ErrorInvalidIDToken
 	}
 
@@ -210,7 +210,7 @@ func (s *oidcAuthnService) Authenticate(ctx context.Context, idpID, code string)
 		return nil, svcErr
 	}
 
-	claims, svcErr := s.GetIDTokenClaims(tokenResp.IDToken)
+	claims, svcErr := s.GetIDTokenClaims(ctx, tokenResp.IDToken)
 	if svcErr != nil {
 		return nil, svcErr
 	}

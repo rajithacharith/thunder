@@ -1551,7 +1551,7 @@ func (rs *resourceService) syncConsentOnPermissionCreate(
 
 	validNames, err := rs.consentService.ValidateConsentElements(ctx, ouID, []string{permission})
 	if err != nil {
-		return rs.wrapConsentServiceError(err)
+		return rs.wrapConsentServiceError(ctx, err)
 	}
 	for _, n := range validNames {
 		if n == permission {
@@ -1564,7 +1564,7 @@ func (rs *resourceService) syncConsentOnPermissionCreate(
 		Description: description,
 		Namespace:   consent.NamespacePermission,
 	}}); createErr != nil {
-		return rs.wrapConsentServiceError(createErr)
+		return rs.wrapConsentServiceError(ctx, createErr)
 	}
 	return nil
 }
@@ -1582,7 +1582,7 @@ func (rs *resourceService) syncConsentOnPermissionDelete(ctx context.Context, pe
 
 	existing, err := rs.consentService.ListConsentElements(ctx, ouID, consent.NamespacePermission, permission)
 	if err != nil {
-		return rs.wrapConsentServiceError(err)
+		return rs.wrapConsentServiceError(ctx, err)
 	}
 	if len(existing) == 0 {
 		return nil
@@ -1593,7 +1593,7 @@ func (rs *resourceService) syncConsentOnPermissionDelete(ctx context.Context, pe
 		if delErr.Code == consent.ErrorDeletingConsentElementWithAssociatedPurpose.Code {
 			return nil
 		}
-		return rs.wrapConsentServiceError(delErr)
+		return rs.wrapConsentServiceError(ctx, delErr)
 	}
 	return nil
 }
@@ -1612,7 +1612,7 @@ func (rs *resourceService) syncConsentOnPermissionUpdate(
 
 	existing, err := rs.consentService.ListConsentElements(ctx, ouID, consent.NamespacePermission, permission)
 	if err != nil {
-		return rs.wrapConsentServiceError(err)
+		return rs.wrapConsentServiceError(ctx, err)
 	}
 	if len(existing) == 0 {
 		return rs.syncConsentOnPermissionCreate(ctx, permission, description)
@@ -1627,7 +1627,7 @@ func (rs *resourceService) syncConsentOnPermissionUpdate(
 			Description: description,
 			Namespace:   consent.NamespacePermission,
 		}); updErr != nil {
-		return rs.wrapConsentServiceError(updErr)
+		return rs.wrapConsentServiceError(ctx, updErr)
 	}
 	return nil
 }
@@ -1636,12 +1636,12 @@ func (rs *resourceService) syncConsentOnPermissionUpdate(
 // distinguish consent-service failures from other store or service errors during resource CRUD.
 // Server-class failures are logged here so operators get a record even when the transaction
 // closure collapses the error to InternalServerError on the way out.
-func (rs *resourceService) wrapConsentServiceError(err *serviceerror.ServiceError) error {
+func (rs *resourceService) wrapConsentServiceError(ctx context.Context, err *serviceerror.ServiceError) error {
 	if err == nil {
 		return nil
 	}
 	if err.Type == serviceerror.ServerErrorType {
-		rs.logger.Error("Consent service returned a server-class error during resource sync",
+		rs.logger.ErrorWithContext(ctx, "Consent service returned a server-class error during resource sync",
 			log.String("code", err.Code),
 			log.String("description", err.ErrorDescription.DefaultValue))
 	}

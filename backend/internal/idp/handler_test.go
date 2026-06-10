@@ -20,6 +20,7 @@ package idp
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -511,7 +512,7 @@ func (s *IDPHandlerTestSuite) TestWriteServiceErrorResponse() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			rr := httptest.NewRecorder()
-			writeServiceErrorResponse(rr, &tc.serviceError)
+			writeServiceErrorResponse(context.Background(), rr, &tc.serviceError)
 
 			s.Equal(tc.expectedStatus, rr.Code)
 		})
