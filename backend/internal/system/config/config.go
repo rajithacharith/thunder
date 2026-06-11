@@ -286,6 +286,10 @@ type FlowConfig struct {
 	MaxVersionHistory        int    `yaml:"max_version_history" json:"max_version_history"`
 	AutoInferRegistration    bool   `yaml:"auto_infer_registration" json:"auto_infer_registration"`
 	Store                    string `yaml:"store" json:"store"`
+	// Executors lists built-in executor names to register (e.g. BasicAuthExecutor).
+	// When empty, all built-in executors are registered. When set, only listed executors
+	// are available; omit only executors you intentionally disable on this node.
+	Executors []string `yaml:"executors" json:"executors"`
 }
 
 // CryptoConfig holds the cryptographic configuration details.

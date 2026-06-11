@@ -30,3 +30,5 @@ oauth:
 
 flow:
   max_version_history: 3
+  # executors: []  # optional; omit or leave empty to register all built-in executors.
+  # When set, list executor names (e.g. BasicAuthExecutor) to register only that subset.
