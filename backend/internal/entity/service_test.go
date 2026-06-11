@@ -486,3 +486,34 @@ func (s *ServiceTestSuite) TestAuthenticateEntity_DelegatesToByID() {
 	s.NoError(err)
 	s.Equal(id, result.EntityID)
 }
+
+// --- SetGroupMembershipProvider / GetTransitiveEntityGroups ---
+
+func (s *ServiceTestSuite) TestGetTransitiveEntityGroups_ProviderNil() {
+	groups, err := s.svc.GetTransitiveEntityGroups(s.ctx, "user1")
+
+	s.NoError(err)
+	s.Empty(groups)
+}
+
+func (s *ServiceTestSuite) TestSetGroupMembershipProvider_DelegatesOnCall() {
+	provider := NewGroupMembershipProviderMock(s.T())
+	expected := []EntityGroup{{ID: "grp1", Name: "Admins", OUID: "ou1"}}
+	provider.On("GetTransitiveGroupsForEntity", s.ctx, "user1").Return(expected, nil).Once()
+
+	s.svc.SetGroupMembershipProvider(provider)
+	groups, err := s.svc.GetTransitiveEntityGroups(s.ctx, "user1")
+
+	s.NoError(err)
+	s.Equal(expected, groups)
+}
+
+func (s *ServiceTestSuite) TestGetTransitiveEntityGroups_ProviderError() {
+	provider := NewGroupMembershipProviderMock(s.T())
+	provider.On("GetTransitiveGroupsForEntity", s.ctx, "user1").Return(nil, s.testErr).Once()
+
+	s.svc.SetGroupMembershipProvider(provider)
+	_, err := s.svc.GetTransitiveEntityGroups(s.ctx, "user1")
+
+	s.ErrorIs(err, s.testErr)
+}

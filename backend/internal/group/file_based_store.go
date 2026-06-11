@@ -23,8 +23,9 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/thunder-id/thunderid/internal/entity"
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
-	"github.com/thunder-id/thunderid/internal/system/declarative_resource/entity"
+	entitystore "github.com/thunder-id/thunderid/internal/system/declarative_resource/entity"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
 )
@@ -36,7 +37,7 @@ type fileBasedGroupStore struct {
 // newFileBasedGroupStore creates a new file-based store for groups.
 func newFileBasedGroupStore() (groupStoreInterface, transaction.Transactioner) {
 	return &fileBasedGroupStore{
-		GenericFileBasedStore: declarativeresource.NewGenericFileBasedStore(entity.KeyTypeGroup),
+		GenericFileBasedStore: declarativeresource.NewGenericFileBasedStore(entitystore.KeyTypeGroup),
 	}, transaction.NewNoOpTransactioner()
 }
 
@@ -484,6 +485,67 @@ func groupFromDeclarativeData(id string, data interface{}) (groupDeclarativeReso
 		return groupDeclarativeResource{}, ErrGroupDataCorrupted
 	}
 	return *grp, nil
+}
+
+// GetTransitiveGroupsForEntity returns all declarative groups that have the given entity as a
+// member, including groups reachable through nested MemberTypeGroup edges. A BFS walk is used to
+// follow group-to-group references; a visited set prevents infinite loops on cyclic group graphs.
+func (f *fileBasedGroupStore) GetTransitiveGroupsForEntity(
+	ctx context.Context, entityID string,
+) ([]entity.EntityGroup, error) {
+	list, err := f.GenericFileBasedStore.List()
+	if err != nil {
+		return nil, err
+	}
+
+	// Build an ID-keyed lookup so BFS can find parent groups in O(1).
+	allGroups := make(map[string]groupDeclarativeResource, len(list))
+	for _, item := range list {
+		grpData, err := groupFromDeclarativeData(item.ID.ID, item.Data)
+		if err != nil {
+			continue
+		}
+		allGroups[grpData.ID] = grpData
+	}
+
+	visited := make(map[string]bool)
+	result := make([]entity.EntityGroup, 0)
+
+	// Seed: groups that directly contain entityID as a non-group member.
+	queue := make([]string, 0)
+	for _, grp := range allGroups {
+		for _, member := range grp.Members {
+			if member.Type != MemberTypeGroup && member.ID == entityID {
+				if !visited[grp.ID] {
+					visited[grp.ID] = true
+					queue = append(queue, grp.ID)
+					result = append(result, entity.EntityGroup{ID: grp.ID, Name: grp.Name, OUID: grp.OUID})
+				}
+				break
+			}
+		}
+	}
+
+	// BFS: walk MemberTypeGroup edges upward to parent groups.
+	for len(queue) > 0 {
+		currentID := queue[0]
+		queue = queue[1:]
+		for _, grp := range allGroups {
+			if visited[grp.ID] {
+				continue
+			}
+			for _, member := range grp.Members {
+				if member.Type == MemberTypeGroup && member.ID == currentID {
+					visited[grp.ID] = true
+					queue = append(queue, grp.ID)
+					result = append(result, entity.EntityGroup{ID: grp.ID, Name: grp.Name, OUID: grp.OUID})
+					break
+				}
+			}
+		}
+	}
+
+	return result, nil
 }
 
 // isGroupNotFoundError checks whether the error signals a missing entity.

@@ -60,6 +60,10 @@ func Initialize(
 		}
 	}
 
+	// Register the group store as the membership provider on the entity service so that
+	// GetTransitiveEntityGroups is owned entirely by the group layer (DB + declarative).
+	entityService.SetGroupMembershipProvider(store)
+
 	// Create resolver for OU package to query group data without cross-DB access.
 	ouGroupResolver := newOUGroupResolver(store)
 
