@@ -200,6 +200,12 @@ flow:
   default_auth_flow_handle: {{ .Values.configuration.flow.defaultAuthFlowHandle | quote }}
   max_version_history: {{ .Values.configuration.flow.maxVersionHistory }}
   auto_infer_registration: {{ .Values.configuration.flow.autoInferRegistration }}
+{{- if .Values.configuration.flow.executors }}
+  executors:
+  {{- range .Values.configuration.flow.executors }}
+    - {{ . | quote }}
+  {{- end }}
+{{- end }}
 
 cors:
   allowed_origins:

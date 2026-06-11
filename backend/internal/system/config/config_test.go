@@ -26,6 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	yaml "gopkg.in/yaml.v3"
 )
 
 type ConfigTestSuite struct {
@@ -1088,4 +1089,19 @@ func (suite *ConfigTestSuite) TestAuthClassValidate_EmptyAMRReference() {
 	err := cfg.Validate()
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "references an empty AMR key")
+}
+
+func (suite *ConfigTestSuite) TestFlowConfig_ExecutorsYAMLField() {
+	const yamlFragment = `
+flow:
+  max_version_history: 3
+  executors:
+    - BasicAuthExecutor
+    - InviteExecutor
+`
+	var cfg Config
+	err := yaml.Unmarshal([]byte(yamlFragment), &cfg)
+	suite.Require().NoError(err)
+	suite.Equal([]string{"BasicAuthExecutor", "InviteExecutor"}, cfg.Flow.Executors)
+	suite.Equal(3, cfg.Flow.MaxVersionHistory)
 }

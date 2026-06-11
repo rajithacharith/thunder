@@ -311,6 +311,10 @@ Components are the individual UI elements inside a View node. Add them to a Blan
 
 Executors are backend operation nodes. Each Executor performs one specific operation and exposes up to three outcome paths: success (green dot), failure (red dot), and incomplete (yellow dot). Following is the list of available executors.
 
+:::warning
+Every flow you deploy must reference only executors that are registered on the server. If you configure `flow.executors` to register a subset of built-in executors, flows that reference executors outside that list fail validation at startup unless you register a custom executor with the same name.
+:::
+
 | Executor | Description | Configuration Prerequisites |
 |----------|-------------|---------------|
 | **Identifier + Password** | Verifies a username (or email) and password against the user store. | — |

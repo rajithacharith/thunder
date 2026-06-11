@@ -262,8 +262,12 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 
 	attributeCacheService := attributecache.Initialize()
 
-	// Initialize flow and executor services.
-	flowFactory, graphCache := flowcore.Initialize(cacheManager)
+	// Initialize OpenID4VP verifier service
+	openid4vpVerifierSvc, err := openid4vp.Initialize(mux, runtimeCryptoSvc, cacheManager, jwtService)
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize OpenID4VP verifier service", log.Error(err))
+	}
+
 	var emailClient email.EmailClientInterface
 	emailClient, err = email.Initialize()
 	if err != nil {
@@ -272,19 +276,34 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 			"EmailExecutor will be registered but will not send emails.", log.Error(err))
 		emailClient = nil
 	}
-	// Initialize the OpenID4VP verifier engine and register its wallet-facing
-	// endpoints. Presentation definitions are registered from configuration by
-	// the engine itself.
-	openid4vpVerifierSvc, err := openid4vp.Initialize(mux, runtimeCryptoSvc, cacheManager, jwtService)
-	if err != nil {
-		logger.Fatal(ctx, "Failed to initialize OpenID4VP verifier service", log.Error(err))
-	}
-
-	execRegistry := executor.Initialize(flowFactory, ouService, idpService, notifSenderSvc, jwtService, authAssertGen,
-		consentEnforcer, authnProvider, otpCoreService, passkeyService, magicLinkService, authZService,
-		entityTypeService, groupService, roleService, roleAssignmentService, entityProvider,
-		attributeCacheService, emailClient, templateService, oauthAuthnService, oidcAuthnService,
-		githubAuthnService, googleAuthnService, openid4vpVerifierSvc)
+	flowFactory, graphCache, execRegistry := initializeFlowCoreAndExecutor(ctx, logger,
+		cacheManager, executor.ExecutorDependencies{
+			OUService:             ouService,
+			IDPService:            idpService,
+			NotifSenderSvc:        notifSenderSvc,
+			JWTService:            jwtService,
+			AuthAssertGen:         authAssertGen,
+			ConsentEnforcer:       consentEnforcer,
+			AuthnProvider:         authnProvider,
+			OTPService:            otpCoreService,
+			PasskeyService:        passkeyService,
+			MagicLinkService:      magicLinkService,
+			AuthZService:          authZService,
+			EntityTypeService:     entityTypeService,
+			GroupService:          groupService,
+			RoleService:           roleService,
+			RoleAssignmentService: roleAssignmentService,
+			EntityProvider:        entityProvider,
+			AttributeCacheSvc:     attributeCacheService,
+			EmailClient:           emailClient,
+			TemplateService:       templateService,
+			OAuthSvc:              oauthAuthnService,
+			OIDCSvc:               oidcAuthnService,
+			GithubSvc:             githubAuthnService,
+			GoogleSvc:             googleAuthnService,
+			OpenID4VPVerifierSvc:  openid4vpVerifierSvc,
+		},
+	)
 
 	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(
 		mux, mcpServer, cacheManager, flowFactory, execRegistry, graphCache)
@@ -389,6 +408,25 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 // unregisterServices unregisters all services that require cleanup during shutdown.
 func unregisterServices() {
 	observabilitySvc.Shutdown()
+}
+
+// initializeFlowCoreAndExecutor initializes the flow core and executor services.
+func initializeFlowCoreAndExecutor(
+	ctx context.Context,
+	logger *log.Logger,
+	cacheManager cache.CacheManagerInterface,
+	deps executor.ExecutorDependencies,
+) (flowcore.FlowFactoryInterface, flowcore.GraphCacheInterface, executor.ExecutorRegistryInterface) {
+	// Initialize flow core services.
+	flowFactory, graphCache := flowcore.Initialize(cacheManager)
+	deps.FlowFactory = flowFactory
+
+	// Initialize flow executor registry
+	execRegistry, err := executor.Initialize(deps, config.GetServerRuntime().Config.Flow)
+	if err != nil {
+		logger.Fatal(ctx, "Failed to register flow executors", log.Error(err))
+	}
+	return flowFactory, graphCache, execRegistry
 }
 
 // buildHashConfig constructs a cryptolib.HashConfig from the server configuration.

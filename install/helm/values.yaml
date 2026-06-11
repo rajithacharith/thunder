@@ -378,6 +378,9 @@ configuration:
     defaultAuthFlowHandle: "default-basic-flow"
     maxVersionHistory: 3
     autoInferRegistration: true
+    # Optional whitelist of built-in executor names to register at startup.
+    # Leave empty to register all built-in executors.
+    executors: []
 
   # CORS configuration
   cors:
