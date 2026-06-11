@@ -16,12 +16,9 @@
  * under the License.
  */
 
-import {render, screen, userEvent, waitFor, fireEvent} from '@thunderid/test-utils';
+import {render, screen, userEvent, fireEvent} from '@thunderid/test-utils';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-const {mockDetectPlatform} = vi.hoisted(() => ({mockDetectPlatform: vi.fn()}));
-const mockLocalStorageGetItem = vi.fn();
-const mockLocalStorageSetItem = vi.fn();
 const mockSessionStorageGetItem = vi.fn();
 const mockSessionStorageSetItem = vi.fn();
 
@@ -33,7 +30,10 @@ vi.mock('@thunderid/contexts', async (importOriginal) => {
       config: {
         brand: {
           product_name: 'ThunderID',
-          docs_url: 'https://docs.example.com/',
+          documentation: {
+            baseUrl: 'https://docs.example.com/',
+            releasesUrl: 'https://docs.example.com/data/releases.json',
+          },
         },
       },
     }),
@@ -41,6 +41,7 @@ vi.mock('@thunderid/contexts', async (importOriginal) => {
 });
 
 vi.mock('react-i18next', () => ({
+  Trans: ({i18nKey}: {i18nKey: string}) => i18nKey,
   useTranslation: () => ({
     t: (key: string, opts?: Record<string, unknown>) => {
       if (opts?.productName) return `${key}:${opts.productName as string}`;
@@ -49,15 +50,9 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('../../utils/downloadAssets', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../utils/downloadAssets')>();
-  return {...actual, detectPlatform: mockDetectPlatform};
-});
-
 vi.mock('../TerminalBlock', () => ({
-  default: ({command, tabs}: {command: string; tabs?: React.ReactNode}) => (
+  default: ({command}: {command: string}) => (
     <div>
-      {tabs}
       <pre data-testid="terminal-block">{command}</pre>
     </div>
   ),
@@ -90,24 +85,22 @@ vi.mock('@wso2/oxygen-ui-icons-react', async (importOriginal) => {
   };
 });
 
+import getWayfinderConfiguredStorageKey from '../../utils/getWayfinderConfiguredStorageKey';
+import getWayfinderSetupExpandedStorageKey from '../../utils/getWayfinderSetupExpandedStorageKey';
 import WayfinderSampleSetup from '../WayfinderSampleSetup';
+
+const PRODUCT_NAME = 'ThunderID';
+const IMPORTED_KEY = getWayfinderConfiguredStorageKey(PRODUCT_NAME);
+const EXPANDED_KEY = getWayfinderSetupExpandedStorageKey(PRODUCT_NAME);
 
 describe('WayfinderSampleSetup', () => {
   beforeEach(() => {
-    mockDetectPlatform.mockResolvedValue({os: 'linux', arch: 'x64'});
-    vi.stubGlobal('localStorage', {
-      getItem: mockLocalStorageGetItem,
-      setItem: mockLocalStorageSetItem,
-      removeItem: vi.fn(),
-      clear: vi.fn(),
-    });
     vi.stubGlobal('sessionStorage', {
       getItem: mockSessionStorageGetItem,
       setItem: mockSessionStorageSetItem,
       removeItem: vi.fn(),
       clear: vi.fn(),
     });
-    mockLocalStorageGetItem.mockReturnValue(null);
     mockSessionStorageGetItem.mockReturnValue(null);
   });
 
@@ -132,21 +125,27 @@ describe('WayfinderSampleSetup', () => {
   });
 
   it('expands by default when not previously imported', () => {
-    mockLocalStorageGetItem.mockReturnValue(null);
+    mockSessionStorageGetItem.mockReturnValue(null);
     render(<WayfinderSampleSetup />);
     expect(screen.getByTestId('wayfinder-config-import')).toBeInTheDocument();
     expect(screen.getByTestId('terminal-block')).toBeInTheDocument();
   });
 
   it('collapses by default when previously imported', () => {
-    mockLocalStorageGetItem.mockReturnValue('1234567890');
+    mockSessionStorageGetItem.mockImplementation((key: string) => {
+      if (key === IMPORTED_KEY) return '1234567890';
+      return null;
+    });
     render(<WayfinderSampleSetup />);
     expect(screen.queryByTestId('wayfinder-config-import')).not.toBeInTheDocument();
   });
 
   it('shows setupComplete message when done and collapsed', () => {
-    mockLocalStorageGetItem.mockReturnValue('1234567890');
-    mockSessionStorageGetItem.mockReturnValue('false');
+    mockSessionStorageGetItem.mockImplementation((key: string) => {
+      if (key === IMPORTED_KEY) return '1234567890';
+      if (key === EXPANDED_KEY) return 'false';
+      return null;
+    });
     render(<WayfinderSampleSetup />);
     expect(screen.getByText('common:welcome.wayfinderSampleSetup.setupComplete')).toBeInTheDocument();
   });
@@ -161,12 +160,15 @@ describe('WayfinderSampleSetup', () => {
     await user.click(header);
 
     expect(screen.queryByTestId('terminal-block')).not.toBeInTheDocument();
-    expect(mockSessionStorageSetItem).toHaveBeenCalledWith('thunderid-wayfinder-setup-expanded', 'false');
+    expect(mockSessionStorageSetItem).toHaveBeenCalledWith(EXPANDED_KEY, 'false');
   });
 
   it('respects sessionStorage expanded=true even when already imported', () => {
-    mockLocalStorageGetItem.mockReturnValue('1234567890');
-    mockSessionStorageGetItem.mockReturnValue('true');
+    mockSessionStorageGetItem.mockImplementation((key: string) => {
+      if (key === IMPORTED_KEY) return '1234567890';
+      if (key === EXPANDED_KEY) return 'true';
+      return null;
+    });
     render(<WayfinderSampleSetup />);
     expect(screen.getByTestId('terminal-block')).toBeInTheDocument();
   });
@@ -183,27 +185,9 @@ describe('WayfinderSampleSetup', () => {
     expect(screen.getByText('common:welcome.wayfinderSampleSetup.steps.run.title')).toBeInTheDocument();
   });
 
-  it('shows unix command by default', () => {
+  it('shows npm run command', () => {
     render(<WayfinderSampleSetup />);
-    expect(screen.getByTestId('terminal-block')).toHaveTextContent('./start.sh');
-  });
-
-  it('switches to windows command when OS tab is changed', async () => {
-    const user = userEvent.setup();
-    render(<WayfinderSampleSetup />);
-
-    await user.click(screen.getByRole('tab', {name: 'Windows'}));
-
-    expect(screen.getByTestId('terminal-block')).toHaveTextContent('.\\start.ps1');
-  });
-
-  it('auto-selects windows tab when platform is win', async () => {
-    mockDetectPlatform.mockResolvedValue({os: 'win', arch: 'x64'});
-    render(<WayfinderSampleSetup />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('terminal-block')).toHaveTextContent('.\\start.ps1');
-    });
+    expect(screen.getByTestId('terminal-block')).toHaveTextContent('npm i && npm run dev');
   });
 
   it('stays expanded after import success but persists collapsed intent for next visit', async () => {
@@ -217,7 +201,7 @@ describe('WayfinderSampleSetup', () => {
 
     expect(screen.getByTestId('wayfinder-config-import')).toBeInTheDocument();
     expect(screen.getByTestId('terminal-block')).toBeInTheDocument();
-    expect(mockSessionStorageSetItem).toHaveBeenCalledWith('thunderid-wayfinder-setup-expanded', 'false');
+    expect(mockSessionStorageSetItem).toHaveBeenCalledWith(EXPANDED_KEY, 'false');
   });
 
   it('toggles expand/collapse when header receives Enter keypress', () => {

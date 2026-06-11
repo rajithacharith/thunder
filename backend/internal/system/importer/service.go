@@ -284,14 +284,14 @@ func (s *importService) ImportResources(
 
 	resolvedContent, err := resolveTemplate(request.Content, request.Variables)
 	if err != nil {
-		log.GetLogger().Warn("Import template resolution failed", log.String("error", err.Error()))
+		log.GetLogger().Warn(ctx, "Import template resolution failed", log.String("error", err.Error()))
 		return nil, serviceerror.CustomServiceError(ErrorTemplateResolutionFailed,
 			core.I18nMessage{Key: "error.import.dynamic", DefaultValue: err.Error()})
 	}
 
 	docs, err := parseDocuments(resolvedContent)
 	if err != nil {
-		log.GetLogger().Warn("Import YAML parsing failed", log.String("error", err.Error()))
+		log.GetLogger().Warn(ctx, "Import YAML parsing failed", log.String("error", err.Error()))
 		return nil, serviceerror.CustomServiceError(ErrorInvalidYAMLContent,
 			core.I18nMessage{Key: "error.import.dynamic", DefaultValue: err.Error()})
 	}
@@ -711,7 +711,7 @@ func (s *importService) importApplication(
 	}
 
 	appDTO := applicationRequestToDTO(&req)
-	normalizeOAuthConfigForImport(appDTO)
+	normalizeOAuthConfigForImport(ctx, appDTO)
 	if dryRun {
 		if options.IsUpsertEnabled() && req.ID != "" {
 			_, svcErr := s.applicationService.GetApplication(ctx, req.ID)
@@ -780,10 +780,11 @@ func (s *importService) importApplication(
 			)
 		}
 
-		log.GetLogger().Warn("Application import create failed", failureLogFields...)
+		log.GetLogger().Warn(ctx, "Application import create failed", failureLogFields...)
 
 		if svcErr.Code == invalidOAuthConfigurationCode {
-			log.GetLogger().Debug("Application import failed due to invalid OAuth configuration", failureLogFields...)
+			log.GetLogger().Debug(ctx,
+				"Application import failed due to invalid OAuth configuration", failureLogFields...)
 		}
 
 		return ImportItemOutcome{
@@ -886,7 +887,7 @@ func getOAuthConfigForImportLog(appDTO *appmodel.ApplicationDTO) *inboundmodel.O
 	return nil
 }
 
-func normalizeOAuthConfigForImport(appDTO *appmodel.ApplicationDTO) {
+func normalizeOAuthConfigForImport(ctx context.Context, appDTO *appmodel.ApplicationDTO) {
 	oauthConfig := getOAuthConfigForImportLog(appDTO)
 	if oauthConfig == nil {
 		return
@@ -895,7 +896,8 @@ func normalizeOAuthConfigForImport(appDTO *appmodel.ApplicationDTO) {
 	if oauthConfig.PublicClient &&
 		oauthConfig.TokenEndpointAuthMethod == oauth2const.TokenEndpointAuthMethodNone &&
 		oauthConfig.ClientSecret != "" {
-		log.GetLogger().Debug("Dropping client_secret for public client import with token endpoint auth method 'none'",
+		log.GetLogger().Debug(ctx,
+			"Dropping client_secret for public client import with token endpoint auth method 'none'",
 			log.String("appID", appDTO.ID),
 			log.String("name", appDTO.Name),
 			log.String("clientID", oauthConfig.ClientID))

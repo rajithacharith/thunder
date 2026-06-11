@@ -21,6 +21,7 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -70,6 +71,8 @@ var (
 //
 // If a file cannot be read, an error is returned.
 func SubstituteFilePaths(content []byte, baseDir string) ([]byte, error) {
+	// This runs outside any request, so context.Background() is used (no request trace ID).
+	ctx := context.Background()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ConfigUtil"))
 	isError := false
 
@@ -85,7 +88,7 @@ func SubstituteFilePaths(content []byte, baseDir string) ([]byte, error) {
 			path = sub[2]
 		}
 		if path == "" {
-			logger.Warn("Empty file path in placeholder", log.String("placeholder", match))
+			logger.Warn(ctx, "Empty file path in placeholder", log.String("placeholder", match))
 			return ""
 		}
 
@@ -96,7 +99,7 @@ func SubstituteFilePaths(content []byte, baseDir string) ([]byte, error) {
 
 		data, err := readFileContent(path)
 		if err != nil {
-			logger.Error("Failed to read file content", log.String("filePath", path), log.Error(err))
+			logger.Error(ctx, "Failed to read file content", log.String("filePath", path), log.Error(err))
 			isError = true
 			return ""
 		}

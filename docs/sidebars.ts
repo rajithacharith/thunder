@@ -722,6 +722,15 @@ const sidebars: SidebarsConfig = {
             },
           ],
         },
+        {
+          type: 'category',
+          label: 'Secure Token Service (STS)',
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {type: 'doc', id: 'use-cases/sts/krakend', label: 'Protect APIs on KrakenD'},
+          ],
+        },
       ],
     },
 
@@ -746,9 +755,22 @@ const sidebars: SidebarsConfig = {
           collapsed: true,
           items: [
             {
-              type: 'doc',
-              id: 'guides/key-concepts/authentication/passwordless/passkeys',
-              label: 'Passkeys',
+              type: 'category',
+              label: 'Passwordless',
+              collapsible: true,
+              collapsed: true,
+              items: [
+                {
+                  type: 'doc',
+                  id: 'guides/key-concepts/authentication/passwordless/passkeys',
+                  label: 'Passkeys',
+                },
+                {
+                  type: 'doc',
+                  id: 'guides/key-concepts/authentication/passwordless/magiclink',
+                  label: 'Magic Link',
+                },
+              ],
             },
             {
               type: 'doc',

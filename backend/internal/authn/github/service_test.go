@@ -420,7 +420,7 @@ func (suite *GithubOAuthAuthnServiceTestSuite) TestFetchPrimaryEmailEdgeCases() 
 	gsvc, ok := suite.service.(*githubOAuthAuthnService)
 	suite.True(ok)
 
-	email, svcErr := gsvc.fetchPrimaryEmail(config, testAccessToken)
+	email, svcErr := gsvc.fetchPrimaryEmail(context.Background(), config, testAccessToken)
 	suite.Nil(svcErr)
 	suite.Equal("", email)
 
@@ -430,7 +430,7 @@ func (suite *GithubOAuthAuthnServiceTestSuite) TestFetchPrimaryEmailEdgeCases() 
 	resp2 := &http.Response{StatusCode: 200, Body: io.NopCloser(bytes.NewReader(badJSON))}
 
 	suite.mockHTTPClient.On("Do", mock.Anything).Return(resp2, nil).Once()
-	email2, svcErr2 := gsvc.fetchPrimaryEmail(config, testAccessToken)
+	email2, svcErr2 := gsvc.fetchPrimaryEmail(context.Background(), config, testAccessToken)
 	suite.Nil(svcErr2)
 	suite.Equal("", email2)
 }

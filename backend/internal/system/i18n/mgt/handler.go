@@ -19,6 +19,7 @@
 package mgt
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
@@ -48,7 +49,7 @@ func (h *i18nHandler) HandleListLanguages(w http.ResponseWriter, r *http.Request
 
 	localeCodes, svcErr := h.i18nService.ListLanguages(ctx)
 	if svcErr != nil {
-		handleError(w, svcErr)
+		handleError(ctx, w, svcErr)
 		return
 	}
 
@@ -56,8 +57,8 @@ func (h *i18nHandler) HandleListLanguages(w http.ResponseWriter, r *http.Request
 		Languages: localeCodes,
 	}
 
-	sysutils.WriteSuccessResponse(w, http.StatusOK, resp)
-	logger.DebugWithContext(ctx, "Successfully retrieved languages", log.Int("count", len(localeCodes)))
+	sysutils.WriteSuccessResponse(ctx, w, http.StatusOK, resp)
+	logger.Debug(ctx, "Successfully retrieved languages", log.Int("count", len(localeCodes)))
 }
 
 // HandleResolveTranslationsByLanguage handles GET /i18n/languages/{language}/translations/resolve
@@ -73,12 +74,12 @@ func (h *i18nHandler) HandleResolveTranslationsByLanguage(w http.ResponseWriter,
 
 	resp, svcErr := h.i18nService.ResolveTranslations(ctx, sanitizedLanguage, sanitizedNamespace)
 	if svcErr != nil {
-		handleError(w, svcErr)
+		handleError(ctx, w, svcErr)
 		return
 	}
 
-	sysutils.WriteSuccessResponse(w, http.StatusOK, resp)
-	logger.DebugWithContext(ctx, "Successfully resolved translations",
+	sysutils.WriteSuccessResponse(ctx, w, http.StatusOK, resp)
+	logger.Debug(ctx, "Successfully resolved translations",
 		log.String("language", sanitizedLanguage),
 		log.String("namespace", sanitizedNamespace),
 		log.Int("totalResults", resp.TotalResults))
@@ -94,18 +95,18 @@ func (h *i18nHandler) HandleSetOverrideTranslationsByLanguage(w http.ResponseWri
 
 	req, err := sysutils.DecodeJSONBody[SetTranslationsRequest](r)
 	if err != nil {
-		handleError(w, &ErrorInvalidRequestFormat)
+		handleError(ctx, w, &ErrorInvalidRequestFormat)
 		return
 	}
 
 	resp, svcErr := h.i18nService.SetTranslationOverrides(ctx, sanitizedLanguage, req.Translations)
 	if svcErr != nil {
-		handleError(w, svcErr)
+		handleError(ctx, w, svcErr)
 		return
 	}
 
-	sysutils.WriteSuccessResponse(w, http.StatusOK, resp)
-	logger.DebugWithContext(ctx, "Successfully set override translations",
+	sysutils.WriteSuccessResponse(ctx, w, http.StatusOK, resp)
+	logger.Debug(ctx, "Successfully set override translations",
 		log.String("language", sanitizedLanguage),
 		log.Int("totalResults", resp.TotalResults))
 }
@@ -120,12 +121,12 @@ func (h *i18nHandler) HandleClearOverrideTranslationsByLanguage(w http.ResponseW
 
 	svcErr := h.i18nService.ClearTranslationOverrides(ctx, sanitizedLanguage)
 	if svcErr != nil {
-		handleError(w, svcErr)
+		handleError(ctx, w, svcErr)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-	logger.DebugWithContext(ctx, "Successfully cleared override translations",
+	logger.Debug(ctx, "Successfully cleared override translations",
 		log.String("language", sanitizedLanguage))
 }
 
@@ -144,12 +145,12 @@ func (h *i18nHandler) HandleResolveTranslation(w http.ResponseWriter, r *http.Re
 
 	resp, svcErr := h.i18nService.ResolveTranslationsForKey(ctx, sanitizedLanguage, sanitizedNamespace, sanitizedKey)
 	if svcErr != nil {
-		handleError(w, svcErr)
+		handleError(ctx, w, svcErr)
 		return
 	}
 
-	sysutils.WriteSuccessResponse(w, http.StatusOK, resp)
-	logger.DebugWithContext(ctx, "Successfully resolved translation",
+	sysutils.WriteSuccessResponse(ctx, w, http.StatusOK, resp)
+	logger.Debug(ctx, "Successfully resolved translation",
 		log.String("language", sanitizedLanguage),
 		log.String("namespace", sanitizedNamespace),
 		log.String("key", sanitizedKey))
@@ -170,7 +171,7 @@ func (h *i18nHandler) HandleSetOverrideTranslation(w http.ResponseWriter, r *htt
 
 	req, err := sysutils.DecodeJSONBody[SetTranslationRequest](r)
 	if err != nil {
-		handleError(w, &ErrorInvalidRequestFormat)
+		handleError(ctx, w, &ErrorInvalidRequestFormat)
 		return
 	}
 
@@ -179,12 +180,12 @@ func (h *i18nHandler) HandleSetOverrideTranslation(w http.ResponseWriter, r *htt
 	resp, svcErr := h.i18nService.SetTranslationOverrideForKey(ctx,
 		sanitizedLanguage, sanitizedNamespace, sanitizedKey, sanitizedValue)
 	if svcErr != nil {
-		handleError(w, svcErr)
+		handleError(ctx, w, svcErr)
 		return
 	}
 
-	sysutils.WriteSuccessResponse(w, http.StatusOK, resp)
-	logger.DebugWithContext(ctx, "Successfully set override translation",
+	sysutils.WriteSuccessResponse(ctx, w, http.StatusOK, resp)
+	logger.Debug(ctx, "Successfully set override translation",
 		log.String("language", sanitizedLanguage),
 		log.String("namespace", sanitizedNamespace),
 		log.String("key", sanitizedKey))
@@ -206,19 +207,19 @@ func (h *i18nHandler) HandleClearOverrideTranslation(w http.ResponseWriter, r *h
 
 	svcErr := h.i18nService.ClearTranslationOverrideForKey(ctx, sanitizedLanguage, sanitizedNamespace, sanitizedKey)
 	if svcErr != nil {
-		handleError(w, svcErr)
+		handleError(ctx, w, svcErr)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-	logger.DebugWithContext(ctx, "Successfully cleared override translation",
+	logger.Debug(ctx, "Successfully cleared override translation",
 		log.String("language", sanitizedLanguage),
 		log.String("namespace", sanitizedNamespace),
 		log.String("key", sanitizedKey))
 }
 
 // handleError handles service errors and returns appropriate HTTP responses.
-func handleError(w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
+func handleError(ctx context.Context, w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
 	statusCode := http.StatusInternalServerError
 	if svcErr.Type == serviceerror.ClientErrorType {
 		statusCode = http.StatusBadRequest
@@ -234,5 +235,5 @@ func handleError(w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
 		Description: svcErr.ErrorDescription,
 	}
 
-	sysutils.WriteErrorResponse(w, statusCode, errResp)
+	sysutils.WriteErrorResponse(ctx, w, statusCode, errResp)
 }

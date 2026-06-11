@@ -98,7 +98,7 @@ func (e *themeExporter) GetResourceByID(ctx context.Context, id string) (
 }
 
 // ValidateResource validates a theme resource.
-func (e *themeExporter) ValidateResource(
+func (e *themeExporter) ValidateResource(ctx context.Context,
 	resource interface{}, id string, logger *log.Logger,
 ) (string, *declarativeresource.ExportError) {
 	theme, ok := resource.(*Theme)
@@ -106,7 +106,7 @@ func (e *themeExporter) ValidateResource(
 		return "", declarativeresource.CreateTypeError(resourceTypeTheme, id)
 	}
 
-	err := declarativeresource.ValidateResourceName(
+	err := declarativeresource.ValidateResourceName(ctx,
 		theme.DisplayName, resourceTypeTheme, id, "THEME_VALIDATION_ERROR", logger,
 	)
 	if err != nil {
@@ -114,7 +114,7 @@ func (e *themeExporter) ValidateResource(
 	}
 
 	if len(theme.Theme) == 0 {
-		logger.Warn("Theme has no theme configuration",
+		logger.Warn(ctx, "Theme has no theme configuration",
 			log.String("themeID", id), log.String("displayName", theme.DisplayName))
 	}
 

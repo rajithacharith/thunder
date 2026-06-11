@@ -19,6 +19,7 @@
 import {readFileSync, copyFileSync, existsSync, writeFileSync} from 'fs';
 import {resolve, dirname} from 'path';
 import {fileURLToPath} from 'url';
+import {prismjsInjectCore} from '@thunderid/build-plugins/vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import react from '@vitejs/plugin-react';
 import {visualizer} from 'rollup-plugin-visualizer';
@@ -44,18 +45,6 @@ if (existsSync(rootVersionFile)) {
 
 const VERSION = readFileSync(publicVersionFile, 'utf-8').trim();
 const ANALYZER_ENABLED = process.env.ANALYZE === 'true' || false;
-
-// prismjs language files reference `Prism` as a global with no import — add one so
-// Rollup sees the dependency edge and evaluates the core before any language file.
-const prismjsGlobalFix = {
-  name: 'prismjs-global-fix',
-  transform(code: string, id: string) {
-    if (/[/\\]prismjs[/\\]components[/\\]prism-(?!core)/.test(id)) {
-      return {code: `import Prism from 'prismjs';\n${code}`, map: null};
-    }
-    return null;
-  },
-};
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -95,7 +84,7 @@ export default defineConfig({
     ANALYZER_ENABLED: JSON.stringify(ANALYZER_ENABLED),
   },
   plugins: [
-    prismjsGlobalFix,
+    prismjsInjectCore(),
     basicSsl(),
     svgr(),
     react({
@@ -137,6 +126,7 @@ export default defineConfig({
       // when using linked packages
       react: resolve(__dirname, './node_modules/react'),
       'react-dom': resolve(__dirname, './node_modules/react-dom'),
+      'react-router': resolve(__dirname, './node_modules/react-router'),
     },
     conditions: ['browser', 'module', 'import', 'default'],
   },

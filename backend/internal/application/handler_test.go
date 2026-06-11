@@ -1214,7 +1214,7 @@ func (suite *HandlerTestSuite) TestHandleError_ClientError() {
 
 	svcErr := &ErrorInvalidApplicationName
 
-	handler.handleError(w, r, svcErr)
+	handler.handleError(context.Background(), w, r, svcErr)
 
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 	assert.Equal(suite.T(), "application/json", w.Header().Get("Content-Type"))
@@ -1234,7 +1234,7 @@ func (suite *HandlerTestSuite) TestHandleError_NotFoundError() {
 
 	svcErr := &ErrorApplicationNotFound
 
-	handler.handleError(w, r, svcErr)
+	handler.handleError(context.Background(), w, r, svcErr)
 
 	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
 	assert.Equal(suite.T(), "application/json", w.Header().Get("Content-Type"))
@@ -1254,7 +1254,7 @@ func (suite *HandlerTestSuite) TestHandleError_ServerError() {
 
 	svcErr := &serviceerror.InternalServerError
 
-	handler.handleError(w, r, svcErr)
+	handler.handleError(context.Background(), w, r, svcErr)
 
 	assert.Equal(suite.T(), http.StatusInternalServerError, w.Code)
 	assert.Equal(suite.T(), "application/json", w.Header().Get("Content-Type"))

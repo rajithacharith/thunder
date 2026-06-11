@@ -90,14 +90,14 @@ func (e *idpExporter) GetResourceByID(ctx context.Context, id string) (
 }
 
 // ValidateResource validates an identity provider resource.
-func (e *idpExporter) ValidateResource(
+func (e *idpExporter) ValidateResource(ctx context.Context,
 	resource interface{}, id string, logger *log.Logger) (string, *declarativeresource.ExportError) {
 	idpDTO, ok := resource.(*IDPDTO)
 	if !ok {
 		return "", declarativeresource.CreateTypeError(resourceTypeIdentityProvider, id)
 	}
 
-	err := declarativeresource.ValidateResourceName(
+	err := declarativeresource.ValidateResourceName(ctx,
 		idpDTO.Name, resourceTypeIdentityProvider, id, "IDP_VALIDATION_ERROR", logger,
 	)
 	if err != nil {
@@ -105,7 +105,7 @@ func (e *idpExporter) ValidateResource(
 	}
 
 	if len(idpDTO.Properties) == 0 {
-		logger.Warn("Identity provider has no properties",
+		logger.Warn(ctx, "Identity provider has no properties",
 			log.String("idpID", id), log.String("name", idpDTO.Name))
 	}
 

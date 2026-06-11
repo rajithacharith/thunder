@@ -54,8 +54,8 @@ func (av *authorizationValidator) validateInitialAuthorizationRequest(ctx contex
 		return false, constants.ErrorInvalidRequest, "Missing client_id parameter"
 	}
 
-	if err := oauthApp.ValidateRedirectURI(redirectURI); err != nil {
-		logger.DebugWithContext(ctx, "Validation failed for redirect URI", log.Error(err))
+	if err := oauthApp.ValidateRedirectURI(ctx, redirectURI); err != nil {
+		logger.Debug(ctx, "Validation failed for redirect URI", log.Error(err))
 		return false, constants.ErrorInvalidRequest, "Invalid redirect URI"
 	}
 

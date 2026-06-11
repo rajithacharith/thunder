@@ -17,24 +17,12 @@
  */
 
 import {useConfig} from '@thunderid/contexts';
-import {
-  Alert,
-  Box,
-  Button,
-  Stack,
-  Tab,
-  Tabs,
-  Typography,
-  IconButton,
-  LinearProgress,
-  Breadcrumbs,
-} from '@wso2/oxygen-ui';
+import {Alert, Box, Button, Stack, Tab, Tabs, Typography, IconButton, LinearProgress} from '@wso2/oxygen-ui';
 import {
   BookOpen,
   Bot,
   CalendarCheck,
   Check,
-  ChevronRight,
   Copy,
   ExternalLink,
   Eye,
@@ -50,6 +38,7 @@ import {Trans, useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import WayfinderSampleSetup from '../components/WayfinderSampleSetup';
 import useWelcomeClose from '../hooks/useWelcomeClose';
+import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 
 const MotionBox = motion.create(Box);
 
@@ -205,7 +194,7 @@ export default function TryoutSecuringAIAgentsPage(): JSX.Element {
   const {config} = useConfig();
   const handleClose = useWelcomeClose();
   const productName = config.brand.product_name;
-  const docsBaseUrl = (config.brand.docs_url ?? '').replace(/\/$/, '');
+  const docsBaseUrl = (config.brand.documentation?.baseUrl ?? '').replace(/\/$/, '');
 
   const [scenarioTab, setScenarioTab] = useState<ScenarioTab>('protect');
 
@@ -238,27 +227,12 @@ export default function TryoutSecuringAIAgentsPage(): JSX.Element {
             >
               <X size={24} />
             </IconButton>
-            <Breadcrumbs separator={<ChevronRight size={16} />} aria-label="breadcrumb">
-              <Typography
-                variant="h5"
-                color="inherit"
-                role="button"
-                tabIndex={0}
-                onClick={() => void navigate('/welcome')}
-                onKeyDown={(e: React.KeyboardEvent) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    void navigate('/welcome');
-                  }
-                }}
-                sx={{cursor: 'pointer', '&:hover': {textDecoration: 'underline'}}}
-              >
-                {t('common:welcome.header')}
-              </Typography>
-              <Typography variant="h5" color="text.primary">
-                {t('common:welcome.aiAgentsTryout.breadcrumb')}
-              </Typography>
-            </Breadcrumbs>
+            <AppBreadcrumbs
+              items={[
+                {key: 'welcome', label: t('common:welcome.header'), onClick: () => void navigate('/welcome')},
+                {key: 'tryout', label: t('common:welcome.aiAgentsTryout.breadcrumb')},
+              ]}
+            />
           </Stack>
         </Box>
 

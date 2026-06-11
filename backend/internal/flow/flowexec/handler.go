@@ -19,6 +19,7 @@
 package flowexec
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
@@ -44,7 +45,7 @@ func (h *flowExecutionHandler) HandleFlowExecutionRequest(w http.ResponseWriter,
 
 	flowR, err := sysutils.DecodeJSONBody[FlowRequest](r)
 	if err != nil {
-		sysutils.WriteErrorResponse(w, http.StatusBadRequest, APIErrorFlowRequestJSONDecodeError)
+		sysutils.WriteErrorResponse(r.Context(), w, http.StatusBadRequest, APIErrorFlowRequestJSONDecodeError)
 		return
 	}
 
@@ -61,7 +62,7 @@ func (h *flowExecutionHandler) HandleFlowExecutionRequest(w http.ResponseWriter,
 		r.Context(), appID, executionID, flowTypeStr, verbose, action, inputs, challengeToken)
 
 	if flowErr != nil {
-		handleFlowError(w, flowErr)
+		handleFlowError(r.Context(), w, flowErr)
 		return
 	}
 
@@ -83,14 +84,14 @@ func (h *flowExecutionHandler) HandleFlowExecutionRequest(w http.ResponseWriter,
 		ChallengeToken: flowStep.ChallengeToken,
 	}
 
-	sysutils.WriteSuccessResponse(w, http.StatusOK, flowResp)
+	sysutils.WriteSuccessResponse(r.Context(), w, http.StatusOK, flowResp)
 
-	logger.DebugWithContext(r.Context(), "Flow execution request handled successfully",
+	logger.Debug(r.Context(), "Flow execution request handled successfully",
 		log.String(log.LoggerKeyExecutionID, flowResp.ExecutionID))
 }
 
 // handleFlowError handles errors that occur during flow execution as an API error response.
-func handleFlowError(w http.ResponseWriter, flowErr *serviceerror.ServiceError) {
+func handleFlowError(ctx context.Context, w http.ResponseWriter, flowErr *serviceerror.ServiceError) {
 	errResp := apierror.ErrorResponse{
 		Code:        flowErr.Code,
 		Message:     flowErr.Error,
@@ -102,7 +103,7 @@ func handleFlowError(w http.ResponseWriter, flowErr *serviceerror.ServiceError) 
 		statusCode = http.StatusBadRequest
 	}
 
-	sysutils.WriteErrorResponse(w, statusCode, errResp)
+	sysutils.WriteErrorResponse(ctx, w, statusCode, errResp)
 }
 
 // convertToAPIError converts service errors that occur during flow step execution as an API error response.

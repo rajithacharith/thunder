@@ -19,6 +19,7 @@
 package github
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -30,11 +31,11 @@ import (
 )
 
 // buildUserEmailRequest constructs the HTTP request to fetch user emails from GitHub.
-func buildUserEmailRequest(userEmailEndpoint string, accessToken string, logger *log.Logger) (
+func buildUserEmailRequest(ctx context.Context, userEmailEndpoint string, accessToken string, logger *log.Logger) (
 	*http.Request, *serviceerror.ServiceError) {
 	req, err := http.NewRequest(http.MethodGet, userEmailEndpoint, nil)
 	if err != nil {
-		logger.Error("Failed to create user email request", log.Error(err))
+		logger.Error(ctx, "Failed to create user email request", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -50,25 +51,25 @@ func sendUserEmailRequest(httpReq *http.Request, httpClient syshttp.HTTPClientIn
 	ctx := httpReq.Context()
 	resp, err := httpClient.Do(httpReq)
 	if err != nil {
-		logger.ErrorWithContext(ctx, "User email request to GitHub failed", log.Error(err))
+		logger.Error(ctx, "User email request to GitHub failed", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
-			logger.ErrorWithContext(ctx, "Failed to close user email response body", log.Error(closeErr))
+			logger.Error(ctx, "Failed to close user email response body", log.Error(closeErr))
 		}
 	}()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		logger.ErrorWithContext(ctx, "User email endpoint returned an error response",
+		logger.Error(ctx, "User email endpoint returned an error response",
 			log.Int("statusCode", resp.StatusCode), log.String("response", string(body)))
 		return nil, &serviceerror.InternalServerError
 	}
 
 	var emails []map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&emails); err != nil {
-		logger.ErrorWithContext(ctx, "Failed to decode user email response", log.Error(err))
+		logger.Error(ctx, "Failed to decode user email response", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 

@@ -785,9 +785,9 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestGetIDTokenClaimsSuccess() {
 		"sub":  "1234567890",
 		"name": "John Doe",
 	}
-	suite.mockOIDCService.On("GetIDTokenClaims", idToken).Return(claims, nil)
+	suite.mockOIDCService.On("GetIDTokenClaims", mock.Anything, idToken).Return(claims, nil)
 
-	result, err := suite.service.GetIDTokenClaims(idToken)
+	result, err := suite.service.GetIDTokenClaims(context.Background(), idToken)
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal("1234567890", result["sub"])

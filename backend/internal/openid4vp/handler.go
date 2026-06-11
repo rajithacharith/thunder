@@ -19,6 +19,7 @@
 package openid4vp
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -82,13 +83,13 @@ func newOpenID4VPHandler(
 func (h *openID4VPHandler) HandleRequestObject(w http.ResponseWriter, r *http.Request) {
 	state := sysutils.SanitizeString(r.URL.Query().Get("state"))
 	if state == "" {
-		writeServiceErrorResponse(w, &ErrorInvalidRequest)
+		writeServiceErrorResponse(r.Context(), w, &ErrorInvalidRequest)
 		return
 	}
 
 	jar, err := h.service.RequestObject(r.Context(), state)
 	if err != nil {
-		writeServiceErrorResponse(w, toServiceError(err))
+		writeServiceErrorResponse(r.Context(), w, toServiceError(err))
 		return
 	}
 
@@ -96,26 +97,26 @@ func (h *openID4VPHandler) HandleRequestObject(w http.ResponseWriter, r *http.Re
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(http.StatusOK)
 	if _, werr := w.Write([]byte(jar)); werr != nil {
-		log.GetLogger().Error("Failed to write request object response", log.Error(werr))
+		log.GetLogger().Error(r.Context(), "Failed to write request object response", log.Error(werr))
 	}
 }
 
 // HandleResponse ingests the wallet's encrypted VP response.
 func (h *openID4VPHandler) HandleResponse(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		writeServiceErrorResponse(w, &ErrorInvalidRequest)
+		writeServiceErrorResponse(r.Context(), w, &ErrorInvalidRequest)
 		return
 	}
 
 	state := sysutils.SanitizeString(r.FormValue("state"))
 	response := r.FormValue("response")
 	if state == "" || response == "" {
-		writeServiceErrorResponse(w, &ErrorInvalidRequest)
+		writeServiceErrorResponse(r.Context(), w, &ErrorInvalidRequest)
 		return
 	}
 
 	if _, err := h.service.SubmitResponse(r.Context(), state, []byte(response)); err != nil {
-		writeServiceErrorResponse(w, toServiceError(err))
+		writeServiceErrorResponse(r.Context(), w, toServiceError(err))
 		return
 	}
 
@@ -123,28 +124,28 @@ func (h *openID4VPHandler) HandleResponse(w http.ResponseWriter, r *http.Request
 	if redirect := h.service.ResultRedirectURI(state); redirect != "" {
 		body["redirect_uri"] = redirect
 	}
-	sysutils.WriteSuccessResponse(w, http.StatusOK, body)
+	sysutils.WriteSuccessResponse(r.Context(), w, http.StatusOK, body)
 }
 
 // HandleInitiate starts a verifier transaction on behalf of an RP.
 func (h *openID4VPHandler) HandleInitiate(w http.ResponseWriter, r *http.Request) {
 	var req initiateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeServiceErrorResponse(w, &ErrorInvalidRequest)
+		writeServiceErrorResponse(r.Context(), w, &ErrorInvalidRequest)
 		return
 	}
 	if strings.TrimSpace(req.DefinitionID) == "" || strings.TrimSpace(req.RPID) == "" {
-		writeServiceErrorResponse(w, &ErrorInvalidRequest)
+		writeServiceErrorResponse(r.Context(), w, &ErrorInvalidRequest)
 		return
 	}
 	init, err := h.service.InitiateForRP(r.Context(), req.DefinitionID, req.RPID)
 	if err != nil {
 		if isUnregisteredDefinition(err) {
-			writeServiceErrorResponse(w, &ErrorUnknownDefinition)
+			writeServiceErrorResponse(r.Context(), w, &ErrorUnknownDefinition)
 			return
 		}
-		log.GetLogger().Error("Failed to initiate OpenID4VP transaction", log.Error(err))
-		writeServiceErrorResponse(w, toServiceError(err))
+		log.GetLogger().Error(r.Context(), "Failed to initiate OpenID4VP transaction", log.Error(err))
+		writeServiceErrorResponse(r.Context(), w, toServiceError(err))
 		return
 	}
 
@@ -160,42 +161,42 @@ func (h *openID4VPHandler) HandleInitiate(w http.ResponseWriter, r *http.Request
 		StatusURL: h.rpStatusBase + init.State,
 		ExpiresAt: expiresAt.UTC().Format(time.RFC3339),
 	}
-	sysutils.WriteSuccessResponse(w, http.StatusOK, resp)
+	sysutils.WriteSuccessResponse(r.Context(), w, http.StatusOK, resp)
 }
 
 // HandleStatus issues a result token on COMPLETED; FAILED/EXPIRED carry a diagnostic but no token.
 func (h *openID4VPHandler) HandleStatus(w http.ResponseWriter, r *http.Request) {
 	txnID := strings.TrimSpace(extractTxnID(r))
 	if txnID == "" {
-		writeServiceErrorResponse(w, &ErrorInvalidRequest)
+		writeServiceErrorResponse(r.Context(), w, &ErrorInvalidRequest)
 		return
 	}
 
 	rs, err := h.service.LookupState(r.Context(), txnID)
 	switch {
 	case errors.Is(err, ErrUnknownState):
-		writeServiceErrorResponse(w, &ErrorUnknownState)
+		writeServiceErrorResponse(r.Context(), w, &ErrorUnknownState)
 		return
 	case errors.Is(err, ErrExpiredState):
-		sysutils.WriteSuccessResponse(w, http.StatusOK, statusResponse{Status: "EXPIRED"})
+		sysutils.WriteSuccessResponse(r.Context(), w, http.StatusOK, statusResponse{Status: "EXPIRED"})
 		return
 	case err != nil:
-		writeServiceErrorResponse(w, toServiceError(err))
+		writeServiceErrorResponse(r.Context(), w, toServiceError(err))
 		return
 	}
 
 	switch rs.Status {
 	case StatusPending:
-		sysutils.WriteSuccessResponse(w, http.StatusOK, statusResponse{Status: "PENDING"})
+		sysutils.WriteSuccessResponse(r.Context(), w, http.StatusOK, statusResponse{Status: "PENDING"})
 	case StatusFailed:
-		sysutils.WriteSuccessResponse(w, http.StatusOK, statusResponse{
+		sysutils.WriteSuccessResponse(r.Context(), w, http.StatusOK, statusResponse{
 			Status: "FAILED",
 			Error:  rs.FailureReason,
 		})
 	case StatusCompleted:
 		if h.issuer == nil {
-			log.GetLogger().Error("Result token issuer not configured")
-			writeServiceErrorResponse(w, &serviceerror.InternalServerError)
+			log.GetLogger().Error(r.Context(), "Result token issuer not configured")
+			writeServiceErrorResponse(r.Context(), w, &serviceerror.InternalServerError)
 			return
 		}
 		rpID := rs.RPID
@@ -205,16 +206,16 @@ func (h *openID4VPHandler) HandleStatus(w http.ResponseWriter, r *http.Request) 
 		token, tokenErr := h.issuer.issueResultToken(
 			r.Context(), rpID, rs, int64(h.resultTokenValidity.Seconds()))
 		if tokenErr != nil {
-			log.GetLogger().Error("Failed to issue result token", log.Error(tokenErr))
-			writeServiceErrorResponse(w, &serviceerror.InternalServerError)
+			log.GetLogger().Error(r.Context(), "Failed to issue result token", log.Error(tokenErr))
+			writeServiceErrorResponse(r.Context(), w, &serviceerror.InternalServerError)
 			return
 		}
-		sysutils.WriteSuccessResponse(w, http.StatusOK, statusResponse{
+		sysutils.WriteSuccessResponse(r.Context(), w, http.StatusOK, statusResponse{
 			Status:      "COMPLETED",
 			ResultToken: token,
 		})
 	default:
-		writeServiceErrorResponse(w, &serviceerror.InternalServerError)
+		writeServiceErrorResponse(r.Context(), w, &serviceerror.InternalServerError)
 	}
 }
 
@@ -233,12 +234,12 @@ func extractTxnID(r *http.Request) string {
 	return strings.TrimPrefix(r.URL.Path, apiStatusPrefix)
 }
 
-func writeServiceErrorResponse(w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
+func writeServiceErrorResponse(ctx context.Context, w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
 	statusCode := http.StatusInternalServerError
 	if svcErr.Type == serviceerror.ClientErrorType {
 		statusCode = clientErrorStatusCode(svcErr.Code)
 	}
-	sysutils.WriteErrorResponse(w, statusCode, apierror.ErrorResponse{
+	sysutils.WriteErrorResponse(ctx, w, statusCode, apierror.ErrorResponse{
 		Code:        svcErr.Code,
 		Message:     svcErr.Error,
 		Description: svcErr.ErrorDescription,

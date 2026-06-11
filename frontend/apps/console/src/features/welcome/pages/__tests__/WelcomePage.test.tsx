@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {render, screen, userEvent} from '@thunderid/test-utils';
+import {render, screen, userEvent, fireEvent} from '@thunderid/test-utils';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
 const mockNavigate = vi.fn();
@@ -30,7 +30,10 @@ vi.mock('@thunderid/contexts', async (importOriginal) => {
       config: {
         brand: {
           product_name: 'ThunderID',
-          docs_url: 'https://docs.example.com/',
+          documentation: {
+            baseUrl: 'https://docs.example.com/',
+            releasesUrl: 'https://docs.example.com/data/releases.json',
+          },
           favicon: {light: 'assets/images/favicon.ico', dark: 'assets/images/favicon-inverted.ico'},
         },
       },
@@ -142,7 +145,7 @@ describe('WelcomePage', () => {
 
   it('renders learn product items', () => {
     render(<WelcomePage />);
-    expect(screen.getByText('common:welcome.tryoutProduct.consumerApp')).toBeInTheDocument();
+    expect(screen.getByText('common:welcome.tryoutProduct.securingApplication')).toBeInTheDocument();
     expect(screen.getByText('common:welcome.tryoutProduct.aiAgents')).toBeInTheDocument();
   });
 
@@ -165,7 +168,7 @@ describe('WelcomePage', () => {
 
   it('renders learn product items that navigate on click', () => {
     render(<WelcomePage />);
-    expect(screen.getByText('common:welcome.tryoutProduct.consumerApp')).toBeInTheDocument();
+    expect(screen.getByText('common:welcome.tryoutProduct.securingApplication')).toBeInTheDocument();
     expect(screen.getByText('common:welcome.tryoutProduct.aiAgents')).toBeInTheDocument();
   });
 
@@ -185,14 +188,14 @@ describe('WelcomePage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/welcome/open-project');
   });
 
-  it('navigates to /welcome/tryout/consumer-app when consumer app item is clicked', async () => {
+  it('navigates to /welcome/tryout/securing-application when securing application item is clicked', async () => {
     const user = userEvent.setup();
     render(<WelcomePage />);
 
-    await user.click(screen.getByText('common:welcome.tryoutProduct.consumerApp'));
+    await user.click(screen.getByText('common:welcome.tryoutProduct.securingApplication'));
 
     expect(mockSessionStorageSetItem).toHaveBeenCalledWith('thunderid:welcome:dismissed', 'true');
-    expect(mockNavigate).toHaveBeenCalledWith('/welcome/tryout/consumer-app');
+    expect(mockNavigate).toHaveBeenCalledWith('/welcome/tryout/securing-application');
   });
 
   it('opens AI agents docs URL on ai-agents item click', async () => {
@@ -223,5 +226,82 @@ describe('WelcomePage', () => {
       '_blank',
       'noopener,noreferrer',
     );
+  });
+
+  it('triggers new project action on start card Enter keypress', () => {
+    render(<WelcomePage />);
+    const card = screen.getByText('common:welcome.start.newProject').closest('[role="button"]')!;
+    fireEvent.keyDown(card, {key: 'Enter'});
+    expect(mockSessionStorageSetItem).toHaveBeenCalledWith('thunderid:welcome:dismissed', 'true');
+    expect(mockNavigate).toHaveBeenCalledWith('/welcome/create-project');
+  });
+
+  it('triggers open import action on start card Space keypress', () => {
+    render(<WelcomePage />);
+    const card = screen.getByText('common:welcome.start.openImport').closest('[role="button"]')!;
+    fireEvent.keyDown(card, {key: ' '});
+    expect(mockSessionStorageSetItem).toHaveBeenCalledWith('thunderid:welcome:dismissed', 'true');
+    expect(mockNavigate).toHaveBeenCalledWith('/welcome/open-project');
+  });
+
+  it('triggers walkthrough action on Enter keypress', () => {
+    const mockOpen = vi.fn();
+    vi.stubGlobal('open', mockOpen);
+    render(<WelcomePage />);
+    const item = screen.getByText('common:welcome.walkthrough.learnFundamentals').closest('[role="button"]')!;
+    fireEvent.keyDown(item, {key: 'Enter'});
+    expect(mockOpen).toHaveBeenCalledWith('https://docs.example.com', '_blank', 'noopener,noreferrer');
+  });
+
+  it('triggers walkthrough action on Space keypress', () => {
+    const mockOpen = vi.fn();
+    vi.stubGlobal('open', mockOpen);
+    render(<WelcomePage />);
+    const item = screen.getByText('common:welcome.walkthrough.learnFundamentals').closest('[role="button"]')!;
+    fireEvent.keyDown(item, {key: ' '});
+    expect(mockOpen).toHaveBeenCalledWith('https://docs.example.com', '_blank', 'noopener,noreferrer');
+  });
+
+  it('ignores non-Enter/Space keypresses on start card', () => {
+    render(<WelcomePage />);
+    const card = screen.getByText('common:welcome.start.newProject').closest('[role="button"]')!;
+    fireEvent.keyDown(card, {key: 'Tab'});
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('triggers securing application action on learn product Enter keypress', () => {
+    render(<WelcomePage />);
+    const item = screen.getByText('common:welcome.tryoutProduct.securingApplication').closest('[role="button"]')!;
+    fireEvent.keyDown(item, {key: 'Enter'});
+    expect(mockSessionStorageSetItem).toHaveBeenCalledWith('thunderid:welcome:dismissed', 'true');
+    expect(mockNavigate).toHaveBeenCalledWith('/welcome/tryout/securing-application');
+  });
+
+  it('triggers ai-agents action on learn product Space keypress', () => {
+    const mockOpen = vi.fn();
+    vi.stubGlobal('open', mockOpen);
+    render(<WelcomePage />);
+    const item = screen.getByText('common:welcome.tryoutProduct.aiAgents').closest('[role="button"]')!;
+    fireEvent.keyDown(item, {key: ' '});
+    expect(mockOpen).toHaveBeenCalledWith(
+      'https://docs.example.com/use-cases/ai-agents/try-it-out',
+      '_blank',
+      'noopener,noreferrer',
+    );
+  });
+
+  it('renders productName in hero title', () => {
+    render(<WelcomePage />);
+    expect(screen.getByText('ThunderID')).toBeInTheDocument();
+  });
+
+  it('renders hero subtitle', () => {
+    render(<WelcomePage />);
+    expect(screen.getByText('common:welcome.hero.subtitle')).toBeInTheDocument();
+  });
+
+  it('renders sections headings', () => {
+    render(<WelcomePage />);
+    expect(screen.getByText('common:welcome.sections.start')).toBeInTheDocument();
   });
 });

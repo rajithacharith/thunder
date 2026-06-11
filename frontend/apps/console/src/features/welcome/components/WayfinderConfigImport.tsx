@@ -25,8 +25,8 @@ import {useTranslation} from 'react-i18next';
 import useImportConfiguration from '../../import-export/api/useImportConfiguration';
 import type {ImportResponse} from '../../import-export/models/import-configuration';
 import {useGetSampleBundle} from '../api/useGetSampleBundles';
+import getWayfinderConfiguredStorageKey from '../utils/getWayfinderConfiguredStorageKey';
 
-const IMPORTED_KEY = 'thunderid-wayfinder-config-imported';
 const WAYFINDER_BUNDLE_KEY = 'wayfinder';
 
 type Status = 'idle' | 'importing' | 'success' | 'alreadyDone' | 'error';
@@ -76,17 +76,18 @@ export default function WayfinderConfigImport({onSuccess = undefined}: Wayfinder
   const {t} = useTranslation(['common']);
   const {config} = useConfig();
   const productName = config.brand.product_name;
+  const importedKey = getWayfinderConfiguredStorageKey(productName);
   const {mutateAsync: importConfig} = useImportConfiguration();
   const bundle = useGetSampleBundle(WAYFINDER_BUNDLE_KEY);
 
   const [status, setStatus] = useState<Status>(() => {
-    const ts = localStorage.getItem(IMPORTED_KEY);
+    const ts = sessionStorage.getItem(importedKey);
     return ts ? 'alreadyDone' : 'idle';
   });
   const [result, setResult] = useState<ImportResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const previousTs = localStorage.getItem(IMPORTED_KEY);
+  const previousTs = sessionStorage.getItem(importedKey);
 
   const handleImport = async (): Promise<void> => {
     if (!bundle?.configs.declarative) {
@@ -109,7 +110,7 @@ export default function WayfinderConfigImport({onSuccess = undefined}: Wayfinder
         setErrorMsg(t('common:welcome.wayfinderFolderImport.errors.partialFailure', {count: response.summary.failed}));
         setStatus('error');
       } else {
-        localStorage.setItem(IMPORTED_KEY, Date.now().toString());
+        sessionStorage.setItem(importedKey, Date.now().toString());
         setStatus('success');
         onSuccess?.();
       }
@@ -152,13 +153,13 @@ export default function WayfinderConfigImport({onSuccess = undefined}: Wayfinder
         )}
         <Box>
           <Button
-            variant="text"
+            variant="outlined"
             size="small"
             startIcon={<RefreshCw size={13} />}
-            sx={{pl: 0, color: 'text.secondary', fontSize: '0.75rem'}}
+            sx={{px: 2, fontSize: '0.75rem'}}
             onClick={handleReset}
           >
-            {t('common:welcome.wayfinderFolderImport.actions.reImport')}
+            {t('common:welcome.wayfinderFolderImport.actions.reconfigure')}
           </Button>
         </Box>
       </Stack>
@@ -191,7 +192,7 @@ export default function WayfinderConfigImport({onSuccess = undefined}: Wayfinder
           onClick={() => void handleImport()}
           disabled={!bundle?.configs.declarative}
         >
-          {t('common:welcome.wayfinderFolderImport.actions.importConfig')}
+          {t('common:welcome.wayfinderFolderImport.actions.importConfig', {productName})}
         </Button>
       </Box>
 

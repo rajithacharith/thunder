@@ -50,7 +50,7 @@ func createMockExecutorForRegistry(t *testing.T, name string,
 	return mockExec
 }
 
-func (suite *ExecutorRegistryTestSuite) TestNewExecutorRegistry_CreatesEmptyRegistry() {
+func (suite *ExecutorRegistryTestSuite) TestnewExecutorRegistry_CreatesEmptyRegistry() {
 	registry := newExecutorRegistry()
 
 	assert.NotNil(suite.T(), registry)
@@ -73,6 +73,12 @@ func (suite *ExecutorRegistryTestSuite) TestRegisterExecutor_EmptyName() {
 	suite.registry.RegisterExecutor("", mockExecutor)
 
 	assert.False(suite.T(), suite.registry.IsRegistered(""))
+}
+
+func (suite *ExecutorRegistryTestSuite) TestRegisterExecutor_NilExecutor() {
+	suite.registry.RegisterExecutor("nil-executor", nil)
+
+	assert.False(suite.T(), suite.registry.IsRegistered("nil-executor"))
 }
 
 func (suite *ExecutorRegistryTestSuite) TestRegisterExecutor_DuplicateRegistration() {

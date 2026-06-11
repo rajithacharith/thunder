@@ -22,6 +22,7 @@
 package model
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"slices"
@@ -222,8 +223,8 @@ func (o *OAuthClient) IsAllowedTokenEndpointAuthMethod(method oauth2const.TokenE
 }
 
 // ValidateRedirectURI validates the given redirect URI against this client's registered URIs.
-func (o *OAuthClient) ValidateRedirectURI(redirectURI string) error {
-	return ValidateRedirectURI(o.RedirectURIs, redirectURI)
+func (o *OAuthClient) ValidateRedirectURI(ctx context.Context, redirectURI string) error {
+	return ValidateRedirectURI(ctx, o.RedirectURIs, redirectURI)
 }
 
 // RequiresPKCE reports whether PKCE is required for this client.
@@ -278,7 +279,7 @@ func IsAllowedResponseType(responseTypes []oauth2const.ResponseType, responseTyp
 }
 
 // ValidateRedirectURI validates the provided redirect URI against the registered list.
-func ValidateRedirectURI(redirectURIs []string, redirectURI string) error {
+func ValidateRedirectURI(ctx context.Context, redirectURIs []string, redirectURI string) error {
 	logger := log.GetLogger()
 
 	if redirectURI == "" {
@@ -302,7 +303,7 @@ func ValidateRedirectURI(redirectURIs []string, redirectURI string) error {
 
 	parsedRedirectURI, err := utils.ParseURL(redirectURI)
 	if err != nil {
-		logger.Error("Failed to parse redirect URI", log.Error(err))
+		logger.Error(ctx, "Failed to parse redirect URI", log.Error(err))
 		return fmt.Errorf("invalid redirect URI: %s", err.Error())
 	}
 	if parsedRedirectURI.Fragment != "" {

@@ -52,6 +52,29 @@ vi.mock('@/assets/images/illustrations/how-solution-works.svg?react', () => ({
   default: () => <svg data-testid="illustration" />,
 }));
 
+vi.mock('@/components/AppBreadcrumbs', () => ({
+  default: ({items}: {items: {key: string; label: string; onClick?: () => void}[]}) => (
+    <nav>
+      {items.map((item) => (
+        <span
+          key={item.key}
+          onClick={item.onClick}
+          onKeyDown={
+            item.onClick
+              ? (e: React.KeyboardEvent) => {
+                  if (e.key === 'Enter' || e.key === ' ') item.onClick?.();
+                }
+              : undefined
+          }
+          role={item.onClick ? 'button' : undefined}
+        >
+          {item.label}
+        </span>
+      ))}
+    </nav>
+  ),
+}));
+
 import CreateProjectPage from '../CreateProjectPage';
 
 afterEach(() => {

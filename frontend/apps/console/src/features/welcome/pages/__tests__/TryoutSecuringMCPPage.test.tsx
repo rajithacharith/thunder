@@ -31,7 +31,10 @@ vi.mock('@thunderid/contexts', async (importOriginal) => {
       config: {
         brand: {
           product_name: 'ThunderID',
-          docs_url: 'https://docs.example.com/',
+          documentation: {
+            baseUrl: 'https://docs.example.com/',
+            releasesUrl: 'https://docs.example.com/data/releases.json',
+          },
           favicon: {light: 'assets/images/favicon.ico', dark: 'assets/images/favicon-inverted.ico'},
         },
       },
@@ -88,6 +91,24 @@ vi.mock('../../components/WayfinderSampleSetup', () => ({
 
 vi.mock('../../components/TerminalBlock', () => ({
   default: ({command}: {command: string}) => <pre data-testid="terminal-block">{command}</pre>,
+}));
+
+vi.mock('@/components/AppBreadcrumbs', () => ({
+  default: ({items}: {items: {key: string; label: string; onClick?: () => void}[]}) => (
+    <nav>
+      {items.map((item) => (
+        <span
+          key={item.key}
+          onClick={item.onClick}
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && item.onClick?.()}
+          role={item.onClick ? 'button' : undefined}
+          tabIndex={item.onClick ? 0 : undefined}
+        >
+          {item.label}
+        </span>
+      ))}
+    </nav>
+  ),
 }));
 
 import TryoutSecuringMCPPage from '../TryoutSecuringMCPPage';

@@ -17,49 +17,40 @@
  */
 
 import {useConfig} from '@thunderid/contexts';
-import {Box, Divider, Stack, Tab, Tabs, Typography} from '@wso2/oxygen-ui';
+import {Box, Divider, Stack, Typography} from '@wso2/oxygen-ui';
 import {CheckCircle, ChevronRight, Database, Download, Play, Settings} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
-import {useEffect, useState} from 'react';
-import {useTranslation} from 'react-i18next';
+import {useState} from 'react';
+import {Trans, useTranslation} from 'react-i18next';
 import TerminalBlock from './TerminalBlock';
 import WayfinderConfigImport from './WayfinderConfigImport';
 import WayfinderSampleDownload from './WayfinderSampleDownload';
-import {detectPlatform} from '../utils/downloadAssets';
-
-const IMPORTED_KEY = 'thunderid-wayfinder-config-imported';
-const EXPANDED_KEY = 'thunderid-wayfinder-setup-expanded';
+import getWayfinderConfiguredStorageKey from '../utils/getWayfinderConfiguredStorageKey';
+import getWayfinderSetupExpandedStorageKey from '../utils/getWayfinderSetupExpandedStorageKey';
 
 export default function WayfinderSampleSetup(): JSX.Element {
   const {t} = useTranslation(['common']);
   const {config} = useConfig();
   const productName = config.brand.product_name;
-  const releasesUrl = config.brand.docs_url ? `${new URL(config.brand.docs_url).origin}/data/releases.json` : '';
+  const importedKey = getWayfinderConfiguredStorageKey(productName);
+  const expandedKey = getWayfinderSetupExpandedStorageKey(productName);
+  const releasesUrl = config.brand.documentation?.releasesUrl ?? '';
 
-  const [osTab, setOsTab] = useState<'unix' | 'windows'>('unix');
-  const [isDone, setIsDone] = useState(() => !!localStorage.getItem(IMPORTED_KEY));
+  const [isDone, setIsDone] = useState(() => !!sessionStorage.getItem(importedKey));
   const [expanded, setExpanded] = useState(() => {
-    const saved = sessionStorage.getItem(EXPANDED_KEY);
+    const saved = sessionStorage.getItem(expandedKey);
     if (saved !== null) return saved === 'true';
-    return !localStorage.getItem(IMPORTED_KEY);
+    return !sessionStorage.getItem(importedKey);
   });
-
-  useEffect(() => {
-    detectPlatform()
-      .then((p) => {
-        if (p.os === 'win') setOsTab('windows');
-      })
-      .catch(() => undefined);
-  }, []);
 
   const handleImportSuccess = (): void => {
     setIsDone(true);
-    sessionStorage.setItem(EXPANDED_KEY, 'false');
+    sessionStorage.setItem(expandedKey, 'false');
   };
 
   const toggle = (): void =>
     setExpanded((v) => {
-      sessionStorage.setItem(EXPANDED_KEY, String(!v));
+      sessionStorage.setItem(expandedKey, String(!v));
       return !v;
     });
 
@@ -83,8 +74,6 @@ export default function WayfinderSampleSetup(): JSX.Element {
       {n}
     </Box>
   );
-
-  const cmd = osTab === 'unix' ? './start.sh' : '.\\start.ps1';
 
   return (
     <Box
@@ -177,7 +166,10 @@ export default function WayfinderSampleSetup(): JSX.Element {
                   </Typography>
                 </Stack>
                 <Typography variant="body2" color="text.secondary" sx={{mb: 1.5}}>
-                  {t('common:welcome.wayfinderSampleSetup.steps.getSample.description')}
+                  <Trans
+                    i18nKey="common:welcome.wayfinderSampleSetup.steps.getSample.description"
+                    components={{strong: <strong />}}
+                  />
                 </Typography>
                 {releasesUrl ? <WayfinderSampleDownload releasesUrl={releasesUrl} /> : null}
               </Box>
@@ -221,15 +213,7 @@ export default function WayfinderSampleSetup(): JSX.Element {
                 <Typography variant="body2" color="text.secondary" sx={{mb: 1.5}}>
                   {t('common:welcome.wayfinderSampleSetup.steps.run.description')}
                 </Typography>
-                <TerminalBlock
-                  command={cmd}
-                  tabs={
-                    <Tabs value={osTab} onChange={(_e, v: 'unix' | 'windows') => setOsTab(v)} sx={{minHeight: 40}}>
-                      <Tab label="Linux / macOS" value="unix" sx={{minHeight: 40, fontSize: '0.75rem'}} />
-                      <Tab label="Windows" value="windows" sx={{minHeight: 40, fontSize: '0.75rem'}} />
-                    </Tabs>
-                  }
-                />
+                <TerminalBlock command={'npm i && npm run dev'} />
               </Box>
             </Stack>
           </Box>

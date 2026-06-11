@@ -16,48 +16,26 @@
  * under the License.
  */
 
-import {render, screen, userEvent, fireEvent} from '@thunderid/test-utils';
+import {render, screen} from '@thunderid/test-utils';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-
-vi.mock('framer-motion', () => ({
-  motion: {
-    create: (Component: React.ElementType) => Component,
-  },
-}));
 
 vi.mock('@wso2/oxygen-ui-icons-react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@wso2/oxygen-ui-icons-react')>();
   return {
     ...actual,
-    ChevronDown: () => <span data-testid="icon-chevron-down" />,
-    ChevronUp: () => <span data-testid="icon-chevron-up" />,
     Download: () => <span data-testid="icon-download" />,
   };
 });
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, opts?: Record<string, unknown>) => {
-      if (opts) {
-        return `${key}:${JSON.stringify(opts)}`;
-      }
-      return key;
-    },
+    t: (key: string) => key,
   }),
 }));
 
-const {mockDetectPlatform, mockUseWayfinderReleases} = vi.hoisted(() => ({
-  mockDetectPlatform: vi.fn(),
+const {mockUseWayfinderReleases} = vi.hoisted(() => ({
   mockUseWayfinderReleases: vi.fn(),
 }));
-
-vi.mock('../../utils/downloadAssets', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../utils/downloadAssets')>();
-  return {
-    ...actual,
-    detectPlatform: mockDetectPlatform,
-  };
-});
 
 vi.mock('../../api/useWayfinderReleases', () => ({
   default: (...args: unknown[]): unknown => mockUseWayfinderReleases(...args),
@@ -66,15 +44,9 @@ vi.mock('../../api/useWayfinderReleases', () => ({
 import WayfinderSampleDownload from '../WayfinderSampleDownload';
 
 const mockAsset = {
-  name: 'sample-app-wayfinder-1.0.0-linux-x64.zip',
-  downloadUrl: 'https://example.com/sample-app-wayfinder-1.0.0-linux-x64.zip',
+  name: 'sample-app-wayfinder-1.0.0.zip',
+  downloadUrl: 'https://example.com/sample-app-wayfinder-1.0.0.zip',
   sizeLabel: '10 MB',
-};
-
-const mockAssetMacos = {
-  name: 'sample-app-wayfinder-1.0.0-macos-arm64.zip',
-  downloadUrl: 'https://example.com/sample-app-wayfinder-1.0.0-macos-arm64.zip',
-  sizeLabel: '12 MB',
 };
 
 const mockReleasesData = {
@@ -88,18 +60,15 @@ const mockReleasesData = {
 describe('WayfinderSampleDownload', () => {
   afterEach(() => {
     vi.clearAllMocks();
-    vi.unstubAllGlobals();
   });
 
   it('returns null when isError is true', () => {
-    mockDetectPlatform.mockResolvedValue({os: 'linux', arch: 'x64'});
     mockUseWayfinderReleases.mockReturnValue({data: undefined, isError: true});
     const {container} = render(<WayfinderSampleDownload releasesUrl="https://example.com/releases.json" />);
     expect(container).toBeEmptyDOMElement();
   });
 
   it('returns null when assets array is empty', () => {
-    mockDetectPlatform.mockResolvedValue({os: 'linux', arch: 'x64'});
     mockUseWayfinderReleases.mockReturnValue({
       data: {latestRelease: {tagName: 'v1.0.0', assets: []}, releases: []},
       isError: false,
@@ -109,113 +78,52 @@ describe('WayfinderSampleDownload', () => {
   });
 
   it('returns null when data is not yet loaded', () => {
-    mockDetectPlatform.mockResolvedValue({os: 'linux', arch: 'x64'});
     mockUseWayfinderReleases.mockReturnValue({data: undefined, isError: false});
     const {container} = render(<WayfinderSampleDownload releasesUrl="https://example.com/releases.json" />);
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('shows download button with OS label', async () => {
-    mockDetectPlatform.mockResolvedValue({os: 'linux', arch: 'x64'});
-    mockUseWayfinderReleases.mockReturnValue({data: mockReleasesData, isError: false});
-    render(<WayfinderSampleDownload releasesUrl="https://example.com/releases.json" />);
-
-    expect(await screen.findByText(/common:welcome\.wayfinderSampleDownload\.downloadButton/)).toBeInTheDocument();
-  });
-
-  it('shows "Recommended for this device" label when platform matches', async () => {
-    mockDetectPlatform.mockResolvedValue({os: 'linux', arch: 'x64'});
-    mockUseWayfinderReleases.mockReturnValue({data: mockReleasesData, isError: false});
-    render(<WayfinderSampleDownload releasesUrl="https://example.com/releases.json" />);
-
-    expect(await screen.findByText('common:welcome.wayfinderSampleDownload.recommendedLabel')).toBeInTheDocument();
-  });
-
-  it('shows "Selected download" label when platform does not match exactly', async () => {
-    mockDetectPlatform.mockResolvedValue({os: 'macos', arch: 'arm64'});
-    mockUseWayfinderReleases.mockReturnValue({data: mockReleasesData, isError: false});
-    render(<WayfinderSampleDownload releasesUrl="https://example.com/releases.json" />);
-
-    expect(await screen.findByText('common:welcome.wayfinderSampleDownload.selectedLabel')).toBeInTheDocument();
-  });
-
-  it('does not show "Other download options" toggle when only one OS group', async () => {
-    mockDetectPlatform.mockResolvedValue({os: 'linux', arch: 'x64'});
-    mockUseWayfinderReleases.mockReturnValue({data: mockReleasesData, isError: false});
-    render(<WayfinderSampleDownload releasesUrl="https://example.com/releases.json" />);
-
-    await screen.findByText(/common:welcome\.wayfinderSampleDownload\.downloadButton/);
-    expect(screen.queryByText('common:welcome.wayfinderSampleDownload.otherPlatforms')).not.toBeInTheDocument();
-  });
-
-  it('shows "Other download options" toggle when multiple OS groups exist', async () => {
-    mockDetectPlatform.mockResolvedValue({os: 'linux', arch: 'x64'});
-    const multiOsData = {
-      latestRelease: {
-        tagName: 'v1.0.0',
-        assets: [mockAsset, mockAssetMacos],
+  it('returns null when no asset matches the expected filename pattern', () => {
+    mockUseWayfinderReleases.mockReturnValue({
+      data: {
+        latestRelease: {
+          tagName: 'v1.0.0',
+          assets: [{name: 'README.md', downloadUrl: 'https://example.com/README.md', sizeLabel: '1 KB'}],
+        },
+        releases: [],
       },
-      releases: [],
-    };
-    mockUseWayfinderReleases.mockReturnValue({data: multiOsData, isError: false});
-    render(<WayfinderSampleDownload releasesUrl="https://example.com/releases.json" />);
-
-    expect(await screen.findByText('common:welcome.wayfinderSampleDownload.otherPlatforms')).toBeInTheDocument();
+      isError: false,
+    });
+    const {container} = render(<WayfinderSampleDownload releasesUrl="https://example.com/releases.json" />);
+    expect(container).toBeEmptyDOMElement();
   });
 
-  it('toggling "Other platforms" button shows other download options', async () => {
-    mockDetectPlatform.mockResolvedValue({os: 'linux', arch: 'x64'});
-    const multiOsData = {
-      latestRelease: {
-        tagName: 'v1.0.0',
-        assets: [mockAsset, mockAssetMacos],
-      },
-      releases: [],
-    };
-    mockUseWayfinderReleases.mockReturnValue({data: multiOsData, isError: false});
-    const user = userEvent.setup();
-    render(<WayfinderSampleDownload releasesUrl="https://example.com/releases.json" />);
-
-    const toggle = await screen.findByText('common:welcome.wayfinderSampleDownload.otherPlatforms');
-    await user.click(toggle);
-
-    expect(await screen.findByText('common:welcome.wayfinderSampleDownload.hidePlatforms')).toBeInTheDocument();
-  });
-
-  it('handles detectPlatform rejection gracefully', async () => {
-    mockDetectPlatform.mockRejectedValue(new Error('platform detection failed'));
+  it('shows download button when a matching asset is found', async () => {
     mockUseWayfinderReleases.mockReturnValue({data: mockReleasesData, isError: false});
     render(<WayfinderSampleDownload releasesUrl="https://example.com/releases.json" />);
 
-    expect(await screen.findByText(/common:welcome\.wayfinderSampleDownload\.downloadButton/)).toBeInTheDocument();
+    expect(await screen.findByText('common:welcome.wayfinderSampleDownload.downloadButton')).toBeInTheDocument();
   });
 
-  it('toggles other platforms on Enter keypress', async () => {
-    mockDetectPlatform.mockResolvedValue({os: 'linux', arch: 'x64'});
-    const multiOsData = {
-      latestRelease: {
-        tagName: 'v1.0.0',
-        assets: [
-          {
-            name: 'sample-app-wayfinder-1.0.0-linux-x64.zip',
-            downloadUrl: 'https://example.com/linux-x64.zip',
-            sizeLabel: '10 MB',
-          },
-          {
-            name: 'sample-app-wayfinder-1.0.0-macos-arm64.zip',
-            downloadUrl: 'https://example.com/macos-arm64.zip',
-            sizeLabel: '12 MB',
-          },
-        ],
-      },
-      releases: [],
-    };
-    mockUseWayfinderReleases.mockReturnValue({data: multiOsData, isError: false});
+  it('download button links to the asset URL', async () => {
+    mockUseWayfinderReleases.mockReturnValue({data: mockReleasesData, isError: false});
     render(<WayfinderSampleDownload releasesUrl="https://example.com/releases.json" />);
 
-    const toggle = await screen.findByText('common:welcome.wayfinderSampleDownload.otherPlatforms');
-    fireEvent.keyDown(toggle.closest('[role="button"]') ?? toggle, {key: 'Enter'});
+    const button = await screen.findByRole('link', {name: /downloadButton/});
+    expect(button).toHaveAttribute('href', mockAsset.downloadUrl);
+  });
 
-    expect(await screen.findByText('common:welcome.wayfinderSampleDownload.hidePlatforms')).toBeInTheDocument();
+  it('shows the asset filename', async () => {
+    mockUseWayfinderReleases.mockReturnValue({data: mockReleasesData, isError: false});
+    render(<WayfinderSampleDownload releasesUrl="https://example.com/releases.json" />);
+
+    expect(await screen.findByText('sample-app-wayfinder-1.0.0.zip')).toBeInTheDocument();
+  });
+
+  it('shows the size chip when sizeLabel is present', async () => {
+    mockUseWayfinderReleases.mockReturnValue({data: mockReleasesData, isError: false});
+    render(<WayfinderSampleDownload releasesUrl="https://example.com/releases.json" />);
+
+    expect(await screen.findByText('10 MB')).toBeInTheDocument();
   });
 });

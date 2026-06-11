@@ -56,6 +56,9 @@ DBeaver
 VSCode
 PascalCase
 Rolldown
+[Rr]ollup
+[Pp]rismjs
+[Pp]repends?
 [Rr]edirect-?[Uu][Rr][Ii]s
 [Ee]xecution[Ii][Dd]
 ACL
@@ -188,3 +191,6 @@ txn
 rp_id
 EUDI
 [Vv]erifiable
+[Kk]rakenD
+[Gg]oroutines?
+jsDelivr

@@ -20,6 +20,7 @@ package mgt
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -220,6 +221,102 @@ func (suite *I18nHandlerTestSuite) TestHandleClearOverrideTranslation_Success() 
 	suite.Equal(http.StatusNoContent, w.Code)
 }
 
+func (suite *I18nHandlerTestSuite) TestHandleSetOverrideTranslationsByLanguage_ServiceError() {
+	inputTranslations := map[string]map[string]string{
+		"common": {"key": "value"},
+	}
+	request := SetTranslationsRequest{
+		Translations: inputTranslations,
+	}
+
+	suite.mockService.On("SetTranslationOverrides", mock.Anything, "en-US", inputTranslations).
+		Return(nil, &serviceerror.InternalServerError)
+
+	body, _ := json.Marshal(request)
+	req := httptest.NewRequest(http.MethodPost, "/i18n/languages/en-US/translations", bytes.NewBuffer(body))
+	req.SetPathValue("language", "en-US")
+	w := httptest.NewRecorder()
+
+	suite.handler.HandleSetOverrideTranslationsByLanguage(w, req)
+
+	suite.Equal(http.StatusInternalServerError, w.Code)
+}
+
+func (suite *I18nHandlerTestSuite) TestHandleClearOverrideTranslationsByLanguage_ServiceError() {
+	suite.mockService.On("ClearTranslationOverrides", mock.Anything, "en-US").
+		Return(&ErrorInvalidLanguage)
+
+	req := httptest.NewRequest(http.MethodDelete, "/i18n/languages/en-US/translations", nil)
+	req.SetPathValue("language", "en-US")
+	w := httptest.NewRecorder()
+
+	suite.handler.HandleClearOverrideTranslationsByLanguage(w, req)
+
+	suite.Equal(http.StatusBadRequest, w.Code)
+}
+
+func (suite *I18nHandlerTestSuite) TestHandleResolveTranslation_ServiceError() {
+	suite.mockService.On("ResolveTranslationsForKey", mock.Anything, "en-US", "ns", "key").
+		Return(nil, &serviceerror.InternalServerError)
+
+	req := httptest.NewRequest(http.MethodGet, "/i18n/languages/en-US/translations/ns/ns/keys/key/resolve", nil)
+	req.SetPathValue("language", "en-US")
+	req.SetPathValue("namespace", "ns")
+	req.SetPathValue("key", "key")
+	w := httptest.NewRecorder()
+
+	suite.handler.HandleResolveTranslation(w, req)
+
+	suite.Equal(http.StatusInternalServerError, w.Code)
+}
+
+func (suite *I18nHandlerTestSuite) TestHandleSetOverrideTranslation_InvalidJSON() {
+	req := httptest.NewRequest(http.MethodPost, "/i18n/languages/en-US/translations/ns/ns/keys/key",
+		bytes.NewBufferString("invalid"))
+	req.SetPathValue("language", "en-US")
+	req.SetPathValue("namespace", "ns")
+	req.SetPathValue("key", "key")
+	w := httptest.NewRecorder()
+
+	suite.handler.HandleSetOverrideTranslation(w, req)
+
+	suite.Equal(http.StatusBadRequest, w.Code)
+}
+
+func (suite *I18nHandlerTestSuite) TestHandleSetOverrideTranslation_ServiceError() {
+	request := SetTranslationRequest{Value: "new val"}
+
+	suite.mockService.On("SetTranslationOverrideForKey", mock.Anything, "en-US", "ns", "key", "new val").
+		Return(nil, &serviceerror.InternalServerError)
+
+	body, _ := json.Marshal(request)
+	req := httptest.NewRequest(http.MethodPost, "/i18n/languages/en-US/translations/ns/ns/keys/key",
+		bytes.NewBuffer(body))
+	req.SetPathValue("language", "en-US")
+	req.SetPathValue("namespace", "ns")
+	req.SetPathValue("key", "key")
+	w := httptest.NewRecorder()
+
+	suite.handler.HandleSetOverrideTranslation(w, req)
+
+	suite.Equal(http.StatusInternalServerError, w.Code)
+}
+
+func (suite *I18nHandlerTestSuite) TestHandleClearOverrideTranslation_ServiceError() {
+	suite.mockService.On("ClearTranslationOverrideForKey", mock.Anything, "en-US", "ns", "key").
+		Return(&ErrorInvalidLanguage)
+
+	req := httptest.NewRequest(http.MethodDelete, "/i18n/languages/en-US/translations/ns/ns/keys/key", nil)
+	req.SetPathValue("language", "en-US")
+	req.SetPathValue("namespace", "ns")
+	req.SetPathValue("key", "key")
+	w := httptest.NewRecorder()
+
+	suite.handler.HandleClearOverrideTranslation(w, req)
+
+	suite.Equal(http.StatusBadRequest, w.Code)
+}
+
 func (suite *I18nHandlerTestSuite) TestHandleError_NotFound() {
 	// Testing manual error construction/mapping in handleError
 	svcErr := &serviceerror.ServiceError{
@@ -228,7 +325,7 @@ func (suite *I18nHandlerTestSuite) TestHandleError_NotFound() {
 	}
 
 	w := httptest.NewRecorder()
-	handleError(w, svcErr)
+	handleError(context.Background(), w, svcErr)
 
 	suite.Equal(http.StatusNotFound, w.Code)
 }

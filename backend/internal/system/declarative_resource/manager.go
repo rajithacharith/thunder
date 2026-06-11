@@ -20,6 +20,7 @@ package declarativeresource
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -45,7 +46,8 @@ func GetConfigsFromFile(filePath, resourceType string) ([][]byte, error) {
 	}
 	defer func() {
 		if cerr := file.Close(); cerr != nil {
-			log.GetLogger().Warn("Failed to close resources file", log.Error(cerr))
+			// Declarative resource files are loaded at startup, outside any request.
+			log.GetLogger().Warn(context.Background(), "Failed to close resources file", log.Error(cerr))
 		}
 	}()
 	fileContent, err := io.ReadAll(file)
@@ -153,6 +155,9 @@ func GetConfigsFromRootDir(resourceType string) ([][]byte, error) {
 
 // GetConfigs reads all configuration files from the specified directory within the resources directory.
 func GetConfigs(configDirectoryPath string) ([][]byte, error) {
+	// Declarative config files are loaded at startup, outside any request,
+	// so context.Background() is used (no request trace ID to propagate).
+	ctx := context.Background()
 	logger := log.GetLogger().With(log.String("component", "FileBasedRuntime"))
 	serverHome := config.GetServerRuntime().ServerHome
 	immutableConfigFilePath := path.Join(serverHome, "repository/resources/")
@@ -162,7 +167,7 @@ func GetConfigs(configDirectoryPath string) ([][]byte, error) {
 		if os.IsNotExist(err) {
 			return [][]byte{}, nil
 		}
-		logger.Error("Failed to read configuration directory",
+		logger.Error(ctx, "Failed to read configuration directory",
 			log.String("path", absoluteDirectoryPath), log.Error(err))
 		return nil, err
 	}
@@ -198,14 +203,15 @@ func GetConfigs(configDirectoryPath string) ([][]byte, error) {
 				// #nosec G304 -- File path is controlled and within a trusted directory
 				fileContent, err := os.ReadFile(filePath)
 				if err != nil {
-					logger.Warn("Failed to read configuration file", log.String("filePath", fileName), log.Error(err))
+					logger.Warn(ctx, "Failed to read configuration file",
+						log.String("filePath", fileName), log.Error(err))
 					configChan <- configResult{content: nil, err: err}
 					return
 				}
 				// Substitute environment variables
 				processedContent, err := utils.SubstituteEnvironmentVariables(fileContent)
 				if err != nil {
-					logger.Warn("Failed to substitute environment variables in configuration file",
+					logger.Warn(ctx, "Failed to substitute environment variables in configuration file",
 						log.String("filePath", fileName), log.Error(err))
 					configChan <- configResult{content: nil, err: err}
 					return

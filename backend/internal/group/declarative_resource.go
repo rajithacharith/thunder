@@ -110,7 +110,7 @@ func (e *groupExporter) GetResourceByID(
 }
 
 // ValidateResource validates a group resource.
-func (e *groupExporter) ValidateResource(
+func (e *groupExporter) ValidateResource(ctx context.Context,
 	resource interface{}, id string, logger *log.Logger,
 ) (string, *declarativeresource.ExportError) {
 	grp, ok := resource.(*groupDeclarativeResource)
@@ -118,7 +118,7 @@ func (e *groupExporter) ValidateResource(
 		return "", declarativeresource.CreateTypeError(resourceTypeGroup, id)
 	}
 
-	if err := declarativeresource.ValidateResourceName(
+	if err := declarativeresource.ValidateResourceName(ctx,
 		grp.Name, resourceTypeGroup, id, "GROUP_VALIDATION_ERROR", logger); err != nil {
 		return "", err
 	}
@@ -193,7 +193,9 @@ func loadDeclarativeResources(
 			if v, ok := data.(*groupDeclarativeResource); ok {
 				return v.ID
 			}
-			log.GetLogger().Error("IDExtractor: type assertion failed for groupDeclarativeResource")
+			// Declarative resource loading runs during startup, outside any request.
+			log.GetLogger().Error(context.Background(),
+				"IDExtractor: type assertion failed for groupDeclarativeResource")
 			return ""
 		},
 	}
