@@ -81,7 +81,6 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 		RuntimeData:    make(map[string]string),
 	}
 
-	// 1. Check for SkipDelivery FIRST
 	if skip, ok := ctx.RuntimeData[common.RuntimeKeySkipDelivery]; ok && skip == dataValueTrue {
 		logger.Debug(ctx.Context, "Delivery marked as skipped, completing without sending email")
 		execResp.Status = common.ExecComplete
@@ -111,7 +110,6 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 		return execResp, nil
 	}
 
-	// 3. Fail-Fast Template Resolution (No guessing!)
 	var scenario template.ScenarioType
 	if tmplProp, ok := ctx.NodeProperties[propertyKeyEmailTemplate]; ok {
 		tmplStr, ok := tmplProp.(string)
@@ -127,7 +125,6 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 		return nil, fmt.Errorf("missing required property: %s", propertyKeyEmailTemplate)
 	}
 
-	// 4. Generic Template Data (Supports Invites AND Magic Links)
 	templateData := e.resolveTemplateData(ctx)
 
 	rendered, svcErr := e.templateService.Render(ctx.Context, scenario, template.TemplateTypeEmail, templateData)
@@ -196,19 +193,15 @@ func (e *emailExecutor) resolveRecipientEmail(ctx *core.NodeContext, logger *log
 func (e *emailExecutor) resolveTemplateData(ctx *core.NodeContext) template.TemplateData {
 	templateData := template.TemplateData{}
 
-	// 1. PRIMARY: Dump the persistent flow state into the template.
 	if ctx.RuntimeData != nil {
 		for k, v := range ctx.RuntimeData {
 			templateData[k] = fmt.Sprintf("%v", v)
 		}
 	}
 
-	// 2. SYSTEM: Always provide the app name
 	if ctx.Application.Name != "" {
 		templateData["appName"] = ctx.Application.Name
 	}
-
-	// 3. FALLBACK: Check ForwardedData (with safe type switching)
 	if ctx.ForwardedData != nil {
 		if forwardedTemplateData, ok := ctx.ForwardedData[common.ForwardedDataKeyTemplateData]; ok {
 			switch data := forwardedTemplateData.(type) {
