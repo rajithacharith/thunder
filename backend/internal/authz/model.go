@@ -18,14 +18,46 @@
 
 package authz
 
-// GetAuthorizedPermissionsRequest represents the request for getting authorized permissions.
-type GetAuthorizedPermissionsRequest struct {
-	EntityID             string   `json:"entityId,omitempty"`
-	GroupIDs             []string `json:"groupIds,omitempty"`
-	RequestedPermissions []string `json:"requestedPermissions"`
+// Subject identifies the principal for an access evaluation.
+type Subject struct {
+	Type       string                 `json:"type,omitempty"`
+	ID         string                 `json:"id"`
+	GroupIDs   []string               `json:"groupIds,omitempty"`
+	Properties map[string]interface{} `json:"properties,omitempty"`
 }
 
-// GetAuthorizedPermissionsResponse represents the response with authorized permissions.
-type GetAuthorizedPermissionsResponse struct {
-	AuthorizedPermissions []string `json:"authorizedPermissions"`
+// ResourceServer identifies the resource server for an access evaluation.
+type ResourceServer struct {
+	Handle     string                 `json:"handle"`
+	Properties map[string]interface{} `json:"properties,omitempty"`
+}
+
+// Permission identifies the permission string being evaluated.
+type Permission struct {
+	Name       string                 `json:"name"`
+	Properties map[string]interface{} `json:"properties,omitempty"`
+}
+
+// AccessEvaluationRequest represents a single fine-grained access evaluation request.
+type AccessEvaluationRequest struct {
+	Subject        Subject                `json:"subject"`
+	ResourceServer ResourceServer         `json:"resourceServer"`
+	Permission     Permission             `json:"permission"`
+	Context        map[string]interface{} `json:"context,omitempty"`
+}
+
+// AccessEvaluationResponse represents a single fine-grained access evaluation response.
+type AccessEvaluationResponse struct {
+	Decision bool                   `json:"decision"`
+	Context  map[string]interface{} `json:"context,omitempty"`
+}
+
+// AccessEvaluationsRequest represents a batched fine-grained access evaluation request.
+type AccessEvaluationsRequest struct {
+	Evaluations []AccessEvaluationRequest `json:"evaluations"`
+}
+
+// AccessEvaluationsResponse represents a batched fine-grained access evaluation response.
+type AccessEvaluationsResponse struct {
+	Evaluations []AccessEvaluationResponse `json:"evaluations"`
 }
