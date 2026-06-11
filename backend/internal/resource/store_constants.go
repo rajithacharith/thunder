@@ -96,6 +96,14 @@ var (
 			WHERE IDENTIFIER = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
+	// queryGetResourceServerByHandle retrieves a resource server by handle.
+	queryGetResourceServerByHandle = dbmodel.DBQuery{
+		ID: "RSQ-RES_MGT-38",
+		Query: `SELECT ID, OU_ID, NAME, DESCRIPTION, HANDLE, IDENTIFIER, TYPE, PROPERTIES
+			FROM "RESOURCE_SERVER"
+			WHERE HANDLE = $1 AND DEPLOYMENT_ID = $2`,
+	}
+
 	// queryCheckResourceServerHasDependencies checks if resource server has resources or actions.
 	queryCheckResourceServerHasDependencies = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-09",

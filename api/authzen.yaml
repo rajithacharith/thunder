@@ -1,0 +1,376 @@
+openapi: 3.0.3
+
+info:
+  title: AuthZEN API
+  description: AuthZEN policy decision point discovery, access evaluation, batch evaluation, and action search endpoints.
+  version: "1.0"
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: https://{host}:{port}
+    variables:
+      host:
+        default: "localhost"
+      port:
+        default: "8090"
+
+tags:
+  - name: AuthZEN
+    description: AuthZEN policy decision point and access evaluation APIs.
+
+security:
+  - OAuth2: [system]
+
+paths:
+  /.well-known/authzen-configuration:
+    get:
+      summary: Get AuthZEN PDP metadata
+      description: Returns metadata for the AuthZEN policy decision point and the supported access API endpoints.
+      tags:
+        - AuthZEN
+      security: []
+      responses:
+        "200":
+          description: AuthZEN metadata response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthZENMetadataResponse"
+
+  /access/v1/evaluation:
+    post:
+      summary: Evaluate access
+      description: |
+        Evaluates whether a subject can perform an action on a resource.
+
+        The resource `type` maps to a ThunderID resource server handle. The action `name`
+        maps to a permission registered under that resource server. If the subject type is
+        omitted, subject type validation is skipped. Unknown resources and unregistered actions
+        are returned as denied decisions with an error context instead of transport errors.
+      tags:
+        - AuthZEN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccessEvaluationRequest"
+            examples:
+              bookingRead:
+                summary: Evaluate booking read access
+                value:
+                  subject:
+                    type: user
+                    id: user1
+                  resource:
+                    type: booking
+                    id: booking123
+                  action:
+                    name: booking:read
+      responses:
+        "200":
+          description: Access evaluation result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessEvaluationResponse"
+        "400":
+          $ref: "#/components/responses/AuthZENClientError"
+        "500":
+          $ref: "#/components/responses/AuthZENServerError"
+
+  /access/v1/evaluations:
+    post:
+      summary: Evaluate access in batch
+      description: |
+        Evaluates multiple access requests and preserves the request order in the response.
+        Item-level validation failures are returned as denied decisions with an explanatory
+        context where possible. An empty `evaluations` array returns a transport error.
+      tags:
+        - AuthZEN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccessEvaluationsRequest"
+            examples:
+              bookingActions:
+                summary: Evaluate multiple booking actions
+                value:
+                  evaluations:
+                    - subject:
+                        type: user
+                        id: user1
+                      resource:
+                        type: booking
+                        id: booking123
+                      action:
+                        name: booking:read
+                    - subject:
+                        type: user
+                        id: user1
+                      resource:
+                        type: booking
+                        id: booking123
+                      action:
+                        name: booking:delete
+      responses:
+        "200":
+          description: Batched access evaluation result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessEvaluationsResponse"
+        "400":
+          $ref: "#/components/responses/AuthZENClientError"
+        "500":
+          $ref: "#/components/responses/AuthZENServerError"
+
+  /access/v1/search/action:
+    post:
+      summary: Search allowed actions
+      description: Returns the actions that the subject is authorized to perform on the resource.
+      tags:
+        - AuthZEN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccessActionSearchRequest"
+            examples:
+              bookingActions:
+                summary: Search allowed booking actions
+                value:
+                  subject:
+                    type: user
+                    id: user1
+                  resource:
+                    type: booking
+                    id: booking123
+      responses:
+        "200":
+          description: Allowed action search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessSearchResponse"
+        "400":
+          $ref: "#/components/responses/AuthZENClientError"
+        "500":
+          $ref: "#/components/responses/AuthZENServerError"
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://localhost:8090/oauth2/authorize
+          tokenUrl: https://localhost:8090/oauth2/token
+          scopes:
+            system: Access to system management APIs
+        clientCredentials:
+          tokenUrl: https://localhost:8090/oauth2/token
+          scopes:
+            system: Access to system management APIs
+
+  responses:
+    AuthZENClientError:
+      description: Invalid AuthZEN request.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AuthZENErrorResponse"
+          examples:
+            missingSubject:
+              value:
+                error: Missing subject
+            invalidRequestFormat:
+              value:
+                error: Invalid request format
+    AuthZENServerError:
+      description: AuthZEN server error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AuthZENErrorResponse"
+          examples:
+            internalServerError:
+              value:
+                error: Internal server error
+
+  schemas:
+    AuthZENMetadataResponse:
+      type: object
+      required:
+        - policy_decision_point
+        - access_evaluation_endpoint
+      properties:
+        policy_decision_point:
+          type: string
+          format: uri
+          description: Base URL of the policy decision point.
+        access_evaluation_endpoint:
+          type: string
+          format: uri
+          description: Endpoint for single access evaluation.
+        access_evaluations_endpoint:
+          type: string
+          format: uri
+          description: Endpoint for batch access evaluation.
+        search_action_endpoint:
+          type: string
+          format: uri
+          description: Endpoint for action search.
+
+    Subject:
+      type: object
+      required:
+        - id
+      properties:
+        type:
+          type: string
+          description: Subject type. When omitted or blank, subject type validation is skipped.
+          example: user
+        id:
+          type: string
+          description: Subject identifier.
+          example: user1
+        properties:
+          type: object
+          additionalProperties: true
+          description: Additional subject attributes.
+
+    Resource:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          description: ThunderID resource server handle.
+          example: booking
+        id:
+          type: string
+          description: Resource identifier.
+          example: booking123
+        properties:
+          type: object
+          additionalProperties: true
+          description: Additional resource attributes.
+
+    Action:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Permission name registered under the resource server.
+          example: booking:read
+        properties:
+          type: object
+          additionalProperties: true
+          description: Additional action attributes.
+
+    AccessEvaluationRequest:
+      type: object
+      required:
+        - subject
+        - resource
+        - action
+      properties:
+        subject:
+          $ref: "#/components/schemas/Subject"
+        resource:
+          $ref: "#/components/schemas/Resource"
+        action:
+          $ref: "#/components/schemas/Action"
+        context:
+          type: object
+          additionalProperties: true
+          description: Request context for the evaluation.
+
+    AccessEvaluationResponse:
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          type: boolean
+          description: Whether the subject is authorized for the requested action.
+        context:
+          type: object
+          additionalProperties: true
+          description: Decision context. Denied decisions may include a reason.
+          example:
+            reason: Subject is not authorized to perform the requested action
+
+    AccessEvaluationsRequest:
+      type: object
+      required:
+        - evaluations
+      properties:
+        evaluations:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/AccessEvaluationRequest"
+
+    AccessEvaluationsResponse:
+      type: object
+      required:
+        - evaluations
+      properties:
+        evaluations:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccessEvaluationResponse"
+
+    AccessActionSearchRequest:
+      type: object
+      required:
+        - subject
+        - resource
+      properties:
+        subject:
+          $ref: "#/components/schemas/Subject"
+        resource:
+          $ref: "#/components/schemas/Resource"
+        context:
+          type: object
+          additionalProperties: true
+          description: Request context for the action search.
+
+    AccessSearchResponse:
+      type: object
+      required:
+        - results
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/Action"
+
+    AuthZENErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message.
+          enum:
+            - Invalid request format
+            - Missing subject
+            - Missing resource
+            - Missing action
+            - Missing evaluations
+            - Invalid subject
+            - Invalid action
+            - Invalid resource
+            - Internal server error

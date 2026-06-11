@@ -156,6 +156,23 @@ func (f *fileBasedResourceStore) CheckResourceServerIdentifierExists(
 	return true, nil
 }
 
+func (f *fileBasedResourceStore) GetResourceServerByHandle(
+	ctx context.Context, handle string) (ResourceServer, error) {
+	data, err := f.GenericFileBasedStore.GetByField(handle, func(d interface{}) string {
+		return d.(*ResourceServer).Handle
+	})
+	if err != nil {
+		return ResourceServer{}, errResourceServerNotFound
+	}
+
+	rs, ok := data.(*ResourceServer)
+	if !ok {
+		return ResourceServer{}, errors.New("data corrupted")
+	}
+
+	return *rs, nil
+}
+
 func (f *fileBasedResourceStore) GetResourceServerByIdentifier(
 	ctx context.Context, identifier string) (ResourceServer, error) {
 	data, err := f.GenericFileBasedStore.GetByField(identifier, func(d interface{}) string {
