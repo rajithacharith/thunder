@@ -110,6 +110,9 @@ out
 out-tsc
 backend/bin
 backend/server
+
+# E2E extracted distribution
+tests/e2e/distribution/
 frontend/packages/*/modules
 samples/apps/*/server/app
 
