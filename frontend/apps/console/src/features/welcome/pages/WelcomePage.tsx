@@ -67,7 +67,7 @@ export default function WelcomePage(): JSX.Element {
       description: t('common:welcome.start.openImportDesc', {productName}),
       action: () => {
         sessionStorage.setItem(getWelcomeDismissedStorageKey(productName), 'true');
-        void navigate('/welcome/open-project');
+        void navigate('/welcome/import-configuration');
       },
     },
   ];
@@ -88,8 +88,10 @@ export default function WelcomePage(): JSX.Element {
       icon: <Bot size={18} />,
       label: t('common:welcome.tryoutProduct.aiAgents'),
       description: t('common:welcome.tryoutProduct.aiAgentsDesc'),
-      action: () => window.open(`${docsBaseUrl}/use-cases/ai-agents/try-it-out`, '_blank', 'noopener,noreferrer'),
-      endIcon: <ExternalLink size={14} />,
+      action: () => {
+        sessionStorage.setItem(getWelcomeDismissedStorageKey(productName), 'true');
+        void navigate('/welcome/tryout/ai-agents');
+      },
     },
     {
       id: 'learn-mcp',

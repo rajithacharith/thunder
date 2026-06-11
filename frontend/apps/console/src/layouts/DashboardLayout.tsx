@@ -91,7 +91,7 @@ function SidebarFooterButtons(): ReactNode {
         variant="outlined"
         aria-label={t('navigation:pages.openProject')}
         startIcon={<FolderOpen size={18} />}
-        onClick={() => void navigate('/open-project')}
+        onClick={() => void navigate('/import-configuration')}
         sx={ICON_BUTTON_SX}
       />
       <Button

@@ -151,6 +151,30 @@ function tLink(i18nKey: string, href: string): JSX.Element {
   return <Trans ns="common" i18nKey={i18nKey} components={{a: <ExternalAppLink href={href} />}} />;
 }
 
+function tCode(i18nKey: string): JSX.Element {
+  return (
+    <Trans
+      ns="common"
+      i18nKey={i18nKey}
+      components={{
+        code: (
+          <Box
+            component="code"
+            sx={{
+              fontFamily: 'monospace',
+              fontSize: '0.85em',
+              color: 'primary.main',
+              bgcolor: 'action.selected',
+              borderRadius: 0.5,
+              px: 0.5,
+            }}
+          />
+        ),
+      }}
+    />
+  );
+}
+
 function CodeBlock({code}: {code: string}): JSX.Element {
   const [copied, setCopied] = useState(false);
   const handleCopy = (): void => {
@@ -463,8 +487,8 @@ export default function TryoutSecuringMCPPage(): JSX.Element {
                       </Typography>
                       <StepList
                         steps={[
-                          t('common:welcome.mcpTryout.scenarios.permissions.step1'),
-                          t('common:welcome.mcpTryout.scenarios.permissions.step2'),
+                          tCode('common:welcome.mcpTryout.scenarios.permissions.step1'),
+                          tCode('common:welcome.mcpTryout.scenarios.permissions.step2'),
                           t('common:welcome.mcpTryout.scenarios.permissions.step3'),
                           t('common:welcome.mcpTryout.scenarios.permissions.step4'),
                         ]}

@@ -229,7 +229,7 @@ describe('DashboardLayout', () => {
     const openProjectButton = screen.getByRole('button', {name: /navigation:pages\.openProject/i});
     await user.click(openProjectButton);
 
-    expect(mockNavigate).toHaveBeenCalledWith('/open-project');
+    expect(mockNavigate).toHaveBeenCalledWith('/import-configuration');
   });
 
   it('navigates to export page when export button is clicked', async () => {

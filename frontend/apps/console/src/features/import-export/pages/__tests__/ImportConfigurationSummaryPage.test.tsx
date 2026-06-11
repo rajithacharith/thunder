@@ -188,7 +188,7 @@ describe('ImportConfigurationSummaryPage', () => {
       const uploadLink = screen.getByText('upload.breadcrumb.openProject');
       await userEvent.click(uploadLink);
 
-      expect(mockNavigate).toHaveBeenCalledWith('/open-project');
+      expect(mockNavigate).toHaveBeenCalledWith('/import-configuration');
     });
   });
 

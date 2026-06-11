@@ -356,12 +356,43 @@ function ChatWidgetCore({ getToken }) {
   ]);
   const [draft, setDraft] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [accessDenied, setAccessDenied] = useState(false);
+  const accessCheckedRef = useRef(false);
   const sessionIdRef = useRef(null);
   const pendingRetryRef = useRef(null);
   const getTokenRef = useRef(getToken);
   const messagesEndRef = useRef(null);
 
   getTokenRef.current = getToken;
+
+  useEffect(() => {
+    if (!isOpen || accessCheckedRef.current || !getTokenRef.current) {
+      return;
+    }
+
+    accessCheckedRef.current = true;
+
+    async function checkAccess() {
+      try {
+        const token = await getTokenRef.current();
+        if (!token) return;
+
+        const res = await fetch(`${AGENT_CHAT_URL}/access`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.status === 403) {
+          const data = await res.json();
+          setAccessDenied(true);
+          setMessages([createChatMessage("assistant", data.error || "You are not authorized to use this assistant.")]);
+        }
+      } catch {
+        // Network error — let the user try anyway; /chat will reject if needed.
+      }
+    }
+
+    void checkAccess();
+  }, [isOpen]);
 
   async function sendChatMessage(message, addToUI = true) {
     if (addToUI) {
@@ -585,14 +616,15 @@ function ChatWidgetCore({ getToken }) {
               <span>Ask the travel assistant</span>
               <input
                 value={draft}
-                placeholder="Ask about flights or bookings"
+                placeholder={accessDenied ? "Chat unavailable" : "Ask about flights or bookings"}
+                disabled={accessDenied}
                 onChange={(event) => setDraft(event.target.value)}
               />
             </label>
             <button
               className="chat-send-button"
               type="submit"
-              disabled={!draft.trim() || isProcessing}
+              disabled={accessDenied || !draft.trim() || isProcessing}
               aria-label="Send message"
             >
               <Send size={18} />

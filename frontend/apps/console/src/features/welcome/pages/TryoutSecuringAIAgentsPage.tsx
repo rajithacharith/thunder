@@ -17,7 +17,7 @@
  */
 
 import {useConfig} from '@thunderid/contexts';
-import {Alert, Box, Button, Stack, Tab, Tabs, Typography, IconButton, LinearProgress} from '@wso2/oxygen-ui';
+import {Box, Button, Stack, Tab, Tabs, Typography, IconButton, LinearProgress} from '@wso2/oxygen-ui';
 import {
   BookOpen,
   Bot,
@@ -36,6 +36,7 @@ import type {JSX, ReactNode} from 'react';
 import {useState} from 'react';
 import {Trans, useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
+import AIAgentApiKeySetup from '../components/AIAgentApiKeySetup';
 import WayfinderSampleSetup from '../components/WayfinderSampleSetup';
 import useWelcomeClose from '../hooks/useWelcomeClose';
 import AppBreadcrumbs from '@/components/AppBreadcrumbs';
@@ -184,8 +185,72 @@ function AppLink({children = null}: {children?: ReactNode}): JSX.Element {
   );
 }
 
+function ChatPromptBlock({text}: {text: string}): JSX.Element {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = (): void => {
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <Box
+      sx={{
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 2,
+        px: 2,
+        py: 1.5,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+        bgcolor: 'action.hover',
+      }}
+    >
+      <Typography variant="body2" fontFamily="monospace" sx={{flex: 1, fontStyle: 'italic'}}>
+        {`"${text}"`}
+      </Typography>
+      <IconButton
+        size="small"
+        aria-label="Copy prompt"
+        onClick={handleCopy}
+        sx={{color: copied ? 'success.main' : 'text.secondary', flexShrink: 0}}
+      >
+        {copied ? <Check size={14} /> : <Copy size={14} />}
+      </IconButton>
+    </Box>
+  );
+}
+
 function tLink(i18nKey: string): JSX.Element {
   return <Trans ns="common" i18nKey={i18nKey} components={{a: <AppLink />}} />;
+}
+
+function tCode(i18nKey: string): JSX.Element {
+  return (
+    <Trans
+      ns="common"
+      i18nKey={i18nKey}
+      components={{
+        code: (
+          <Box
+            component="code"
+            sx={{
+              px: 0.5,
+              py: 0.4,
+              borderRadius: 0.5,
+              bgcolor: 'action.selected',
+              fontFamily: 'monospace',
+              fontSize: '0.8em',
+              color: 'text.main',
+            }}
+          />
+        ),
+      }}
+    />
+  );
 }
 
 export default function TryoutSecuringAIAgentsPage(): JSX.Element {
@@ -195,6 +260,7 @@ export default function TryoutSecuringAIAgentsPage(): JSX.Element {
   const handleClose = useWelcomeClose();
   const productName = config.brand.product_name;
   const docsBaseUrl = (config.brand.documentation?.baseUrl ?? '').replace(/\/$/, '');
+  const releasesUrl = config.brand.documentation?.releasesUrl ?? '';
 
   const [scenarioTab, setScenarioTab] = useState<ScenarioTab>('protect');
 
@@ -286,18 +352,19 @@ export default function TryoutSecuringAIAgentsPage(): JSX.Element {
 
             <WayfinderSampleSetup />
 
+            <Box sx={{mt: 3}}>
+              <AIAgentApiKeySetup releasesUrl={releasesUrl} />
+            </Box>
+
             <MotionBox
               initial={{opacity: 0, y: 10}}
               animate={{opacity: 1, y: 0}}
               transition={{duration: 0.4, delay: 0.3}}
               sx={{mt: 3}}
             >
-              <Typography variant="h3" sx={{fontSize: '1.25rem', fontWeight: 600, mb: 2}}>
+              <Typography variant="h3" sx={{fontSize: '1.25rem', fontWeight: 600, mt: 6, mb: 3}}>
                 {t('common:welcome.aiAgentsTryout.scenarios.title')}
               </Typography>
-              <Alert severity="info" icon={<Bot size={16} />} sx={{mb: 2, fontSize: '0.8rem'}}>
-                {t('common:welcome.aiAgentsTryout.scenarios.apiKeyNote')}
-              </Alert>
 
               <Box sx={{border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden'}}>
                 <Tabs
@@ -324,26 +391,37 @@ export default function TryoutSecuringAIAgentsPage(): JSX.Element {
                       <Typography variant="body2" color="text.secondary">
                         {t('common:welcome.aiAgentsTryout.scenarios.protect.description')}
                       </Typography>
-                      <StepList
-                        steps={[
-                          tLink('welcome.aiAgentsTryout.scenarios.protect.step1'),
-                          t('common:welcome.aiAgentsTryout.scenarios.protect.step2'),
-                          t('common:welcome.aiAgentsTryout.scenarios.protect.step3'),
-                          t('common:welcome.aiAgentsTryout.scenarios.protect.step4'),
-                        ]}
-                      />
+                      <StepList steps={[tLink('welcome.aiAgentsTryout.scenarios.protect.step1')]} />
                       <Stack spacing={1}>
-                        <Typography variant="caption" color="text.secondary">
-                          {t('common:welcome.aiAgentsTryout.scenarios.protect.johnLabel')}
+                        <Typography
+                          variant="caption"
+                          color="success.main"
+                          sx={{display: 'inline-flex', alignItems: 'center', gap: 0.5}}
+                        >
+                          <Check size={12} />
+                          {tCode('welcome.aiAgentsTryout.scenarios.protect.johnLabel')}
                         </Typography>
                         <CredentialsBlock username="john.doe" password="john.doe" />
                       </Stack>
+                      <StepList
+                        startFrom={2}
+                        steps={[
+                          tCode('welcome.aiAgentsTryout.scenarios.protect.step2'),
+                          t('common:welcome.aiAgentsTryout.scenarios.protect.step3'),
+                        ]}
+                      />
                       <Stack spacing={1}>
-                        <Typography variant="caption" color="text.secondary">
-                          {t('common:welcome.aiAgentsTryout.scenarios.protect.janeLabel')}
+                        <Typography
+                          variant="caption"
+                          color="error.main"
+                          sx={{display: 'inline-flex', alignItems: 'center', gap: 0.5}}
+                        >
+                          <X size={12} />
+                          {tCode('welcome.aiAgentsTryout.scenarios.protect.janeLabel')}
                         </Typography>
                         <CredentialsBlock username="jane.smith" password="jane.smith" />
                       </Stack>
+                      <StepList startFrom={4} steps={[t('common:welcome.aiAgentsTryout.scenarios.protect.step4')]} />
                     </Stack>
                   )}
 
@@ -352,15 +430,18 @@ export default function TryoutSecuringAIAgentsPage(): JSX.Element {
                       <Typography variant="body2" color="text.secondary">
                         {t('common:welcome.aiAgentsTryout.scenarios.browse.description')}
                       </Typography>
+                      <StepList steps={[tLink('welcome.aiAgentsTryout.scenarios.browse.step1')]} />
+                      <CredentialsBlock username="john.doe" password="john.doe" />
+                      <StepList steps={[t('common:welcome.aiAgentsTryout.scenarios.browse.step2')]} startFrom={2} />
+                      <ChatPromptBlock text="What flights are there from Colombo to Singapore?" />
                       <StepList
+                        startFrom={3}
                         steps={[
-                          tLink('welcome.aiAgentsTryout.scenarios.browse.step1'),
-                          t('common:welcome.aiAgentsTryout.scenarios.browse.step2'),
                           t('common:welcome.aiAgentsTryout.scenarios.browse.step3'),
-                          t('common:welcome.aiAgentsTryout.scenarios.browse.step4'),
+                          tCode('welcome.aiAgentsTryout.scenarios.browse.step4'),
                         ]}
                       />
-                      <CredentialsBlock username="john.doe" password="john.doe" />
+                      <ChatPromptBlock text={t('common:welcome.aiAgentsTryout.scenarios.browse.step4Prompt')} />
                     </Stack>
                   )}
 
@@ -369,16 +450,17 @@ export default function TryoutSecuringAIAgentsPage(): JSX.Element {
                       <Typography variant="body2" color="text.secondary">
                         {t('common:welcome.aiAgentsTryout.scenarios.book.description')}
                       </Typography>
+                      <StepList steps={[tLink('welcome.aiAgentsTryout.scenarios.book.step1')]} />
+                      <CredentialsBlock username="john.doe" password="john.doe" />
+                      <StepList startFrom={2} steps={[t('common:welcome.aiAgentsTryout.scenarios.book.step2')]} />
+                      <ChatPromptBlock text={t('common:welcome.aiAgentsTryout.scenarios.book.step2Prompt')} />
                       <StepList
+                        startFrom={3}
                         steps={[
-                          tLink('welcome.aiAgentsTryout.scenarios.book.step1'),
-                          t('common:welcome.aiAgentsTryout.scenarios.book.step2'),
-                          t('common:welcome.aiAgentsTryout.scenarios.book.step3'),
+                          tCode('common:welcome.aiAgentsTryout.scenarios.book.step3'),
                           t('common:welcome.aiAgentsTryout.scenarios.book.step4'),
-                          t('common:welcome.aiAgentsTryout.scenarios.book.step5'),
                         ]}
                       />
-                      <CredentialsBlock username="john.doe" password="john.doe" />
                     </Stack>
                   )}
                 </Box>
