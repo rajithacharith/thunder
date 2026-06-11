@@ -22,11 +22,9 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"encoding/asn1"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"strings"
 	"time"
 
@@ -490,29 +488,7 @@ func verifyJWS(token string, key crypto.PublicKey) error {
 	}
 	signingInput := parts[0] + "." + parts[1]
 
-	// JWS ECDSA signatures use fixed-length P1363 format (r||s per RFC 7518 §3.4).
-	// cryptolib.Verify calls ecdsa.VerifyASN1, so convert to ASN.1/DER first.
-	switch signAlg {
-	case cryptolib.ECDSASHA256, cryptolib.ECDSASHA384, cryptolib.ECDSASHA512:
-		signature, err = p1363ToDER(signature)
-		if err != nil {
-			return fmt.Errorf("invalid ECDSA signature encoding: %w", err)
-		}
-	}
-
 	return cryptolib.Verify([]byte(signingInput), signature, signAlg, key)
-}
-
-// p1363ToDER converts a JWS ECDSA signature from fixed-length P1363 (r||s)
-// to ASN.1/DER format as expected by ecdsa.VerifyASN1.
-func p1363ToDER(sig []byte) ([]byte, error) {
-	if len(sig) == 0 || len(sig)%2 != 0 {
-		return nil, fmt.Errorf("P1363 signature must have even non-zero length, got %d", len(sig))
-	}
-	n := len(sig) / 2
-	r := new(big.Int).SetBytes(sig[:n])
-	s := new(big.Int).SetBytes(sig[n:])
-	return asn1.Marshal(struct{ R, S *big.Int }{r, s})
 }
 
 // decodeJWTPayload decodes the JSON claims set (the second segment) of a compact JWS.
