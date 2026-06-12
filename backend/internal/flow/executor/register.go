@@ -287,7 +287,7 @@ func registerBuiltInExecutors(reg ExecutorRegistryInterface, deps ExecutorDepend
 		}
 	}
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ExecutorRegistry"))
-	logger.Info(context.Background(), "Registered built-in flow executors",
+	logger.Debug(context.Background(), "Registered built-in flow executors",
 		log.Int("count", len(resolved)),
 		log.Any("executors", resolved))
 	return nil
