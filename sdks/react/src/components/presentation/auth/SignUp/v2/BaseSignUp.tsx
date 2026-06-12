@@ -490,6 +490,40 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
   );
 
   /**
+   * Determine whether a completed flow finished on a display-only screen.
+   * Such a completion must be rendered, not redirected past.
+   */
+  const isDisplayOnlyCompletion = (response: EmbeddedSignUpFlowResponseV2): boolean => {
+    const data: any = response?.data;
+    const components: unknown[] | undefined = data?.components ?? data?.meta?.components;
+
+    return (
+      response?.flowStatus === EmbeddedSignUpFlowStatusV2.Complete &&
+      Array.isArray(components) &&
+      components.length > 0 &&
+      !(response as {assertion?: string})?.assertion &&
+      !data?.redirectURL &&
+      !(response as any)?.redirectUrl
+    );
+  };
+
+  /**
+   * Handle a completed flow. A flow can complete on a display-only screen; in
+   * that case render the screen and skip onComplete so the wrapper does not
+   * immediately redirect away from it. Otherwise hand off to onComplete.
+   */
+  const handleFlowCompletion = (response: EmbeddedSignUpFlowResponseV2): void => {
+    if (isDisplayOnlyCompletion(response)) {
+      const normalized: any = normalizeFlowResponseLocal(response);
+      setCurrentFlow(normalized);
+      setupFormFields(normalized);
+      return;
+    }
+
+    onComplete?.(response);
+  };
+
+  /**
    * Handle input value changes.
    * Only updates the value without marking as touched.
    * Touched state is set on blur to avoid premature validation.
@@ -581,7 +615,7 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
               handleError(continueResponse);
               onError?.(continueResponse);
             } else if (continueResponse.flowStatus === EmbeddedSignUpFlowStatusV2.Complete) {
-              onComplete?.(continueResponse);
+              handleFlowCompletion(continueResponse as EmbeddedSignUpFlowResponseV2);
             } else if (continueResponse.flowStatus === EmbeddedSignUpFlowStatusV2.Incomplete) {
               const normalizedContinueResponse: any = normalizeFlowResponseLocal(continueResponse);
               setCurrentFlow(normalizedContinueResponse);
@@ -660,7 +694,7 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
                     handleError(continueResponse);
                     onError?.(continueResponse);
                   } else if (continueResponse.flowStatus === EmbeddedSignUpFlowStatusV2.Complete) {
-                    onComplete?.(continueResponse);
+                    handleFlowCompletion(continueResponse as EmbeddedSignUpFlowResponseV2);
                   } else if (continueResponse.flowStatus === EmbeddedSignUpFlowStatusV2.Incomplete) {
                     const normalizedContinueResponse: any = normalizeFlowResponseLocal(continueResponse);
                     setCurrentFlow(normalizedContinueResponse);
@@ -750,7 +784,7 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
       }
 
       if (response.flowStatus === EmbeddedSignUpFlowStatusV2.Complete) {
-        onComplete?.(response);
+        handleFlowCompletion(response as EmbeddedSignUpFlowResponseV2);
         return;
       }
 
@@ -831,7 +865,7 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
       onFlowChange?.(processedResponse);
 
       if (processedResponse.flowStatus === EmbeddedSignUpFlowStatusV2.Complete) {
-        onComplete?.(processedResponse);
+        handleFlowCompletion(processedResponse as EmbeddedSignUpFlowResponseV2);
       } else {
         setCurrentFlow(processedResponse);
         setupFormFields(processedResponse);
@@ -974,7 +1008,7 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
           }
 
           if (response.flowStatus === EmbeddedSignUpFlowStatusV2.Complete) {
-            onComplete?.(response);
+            handleFlowCompletion(response as EmbeddedSignUpFlowResponseV2);
             return;
           }
 
