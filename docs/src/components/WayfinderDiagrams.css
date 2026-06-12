@@ -1,0 +1,600 @@
+/* Wayfinder organization — story diagram on B2C Try It Out overview */
+
+.uc-b2c-wayfinder-org,
+.uc-b2c-wayfinder-arch {
+  margin: 1.5rem 0 2.5rem;
+}
+
+.uc-b2c-wayfinder-org__svg,
+.uc-b2c-wayfinder-arch__svg {
+  width: 100%;
+  height: auto;
+  max-width: 960px;
+  display: block;
+  margin: 0 auto;
+  color: color-mix(in srgb, var(--ifm-color-primary) 60%, var(--ifm-color-emphasis-500));
+}
+
+.uc-b2c-wayfinder-org__svg text,
+.uc-b2c-wayfinder-arch__svg text {
+  fill: var(--ifm-font-color-base);
+  font-size: 12px;
+  font-family: var(--ifm-font-family-base);
+}
+
+.uc-b2c-wayfinder-org__header rect {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 12%, var(--ifm-background-surface-color));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 55%, var(--ifm-color-emphasis-400));
+  stroke-width: 1.6;
+}
+
+.uc-b2c-wayfinder-org__header-title {
+  font-weight: 700;
+  font-size: 20px !important;
+}
+
+.uc-b2c-wayfinder-org__header-sub {
+  font-size: 12px !important;
+  fill: var(--ifm-color-emphasis-700) !important;
+}
+
+.uc-b2c-wayfinder-org__edges line {
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 45%, var(--ifm-color-emphasis-400));
+  stroke-width: 1.4;
+}
+
+.uc-b2c-wayfinder-org__col rect {
+  fill: var(--ifm-background-surface-color);
+  stroke: var(--ifm-color-emphasis-300);
+  stroke-width: 1;
+}
+
+.uc-b2c-wayfinder-org__col-title {
+  font-weight: 700;
+  font-size: 16px !important;
+}
+
+.uc-b2c-wayfinder-org__col-sub {
+  font-size: 12px !important;
+  fill: var(--ifm-color-emphasis-700) !important;
+  font-style: italic;
+}
+
+.uc-b2c-wayfinder-org__divider {
+  stroke: var(--ifm-color-emphasis-200);
+  stroke-width: 1;
+}
+
+.uc-b2c-wayfinder-org__icon > circle {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 16%, var(--ifm-background-color));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 55%, var(--ifm-color-emphasis-400));
+  stroke-width: 1.4;
+}
+
+.uc-b2c-wayfinder-org__icon--lead > circle {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 28%, var(--ifm-background-color));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 70%, var(--ifm-color-emphasis-400));
+  stroke-width: 1.6;
+}
+
+.uc-b2c-wayfinder-person-glyph circle,
+.uc-b2c-wayfinder-person-glyph path {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 90%, #fff);
+  stroke: none;
+}
+
+.uc-b2c-wayfinder-org__cast-name {
+  font-weight: 700;
+  font-size: 13px !important;
+}
+
+.uc-b2c-wayfinder-org__cast-role {
+  font-size: 11.5px !important;
+  fill: var(--ifm-color-emphasis-700) !important;
+}
+
+/* Wayfinder architecture — integration diagram on B2C Try It Out overview */
+
+.uc-b2c-wayfinder-arch__app rect {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 5%, var(--ifm-background-surface-color));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 20%, var(--ifm-color-emphasis-200));
+  stroke-width: 1;
+}
+
+[data-theme='dark'] .uc-b2c-wayfinder-arch__app rect {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 12%, rgba(255, 255, 255, 0.06));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 28%, rgba(255, 255, 255, 0.12));
+}
+
+.uc-b2c-wayfinder-arch__idp rect {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 12%, var(--ifm-background-surface-color));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 45%, var(--ifm-color-emphasis-300));
+  stroke-width: 1.5;
+}
+
+[data-theme='dark'] .uc-b2c-wayfinder-arch__idp rect {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 18%, rgba(255, 255, 255, 0.07));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 50%, rgba(255, 255, 255, 0.2));
+}
+
+.uc-b2c-wayfinder-arch__idp-logo path {
+  fill: var(--ifm-color-primary);
+}
+
+.uc-b2c-wayfinder-arch__app-title,
+.uc-b2c-wayfinder-arch__idp-title {
+  font-weight: 700;
+  font-size: 17px !important;
+}
+
+.uc-b2c-wayfinder-arch__sub {
+  font-size: 13px !important;
+  fill: var(--ifm-color-primary) !important;
+  font-weight: 600;
+}
+
+.uc-b2c-wayfinder-arch__divider {
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 12%, var(--ifm-color-emphasis-200));
+  stroke-width: 1;
+}
+
+.uc-b2c-wayfinder-arch__box-desc {
+  fill: color-mix(in srgb, var(--ifm-font-color-base) 70%, transparent) !important;
+  font-size: 12px !important;
+}
+
+.uc-b2c-wayfinder-arch__edges line,
+.uc-b2c-wayfinder-arch__edges polyline {
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 55%, var(--ifm-color-emphasis-400));
+  stroke-width: 1.4;
+}
+
+.uc-b2c-wayfinder-arch__edge-label {
+  font-size: 12px !important;
+  fill: var(--ifm-color-emphasis-700) !important;
+  font-style: italic;
+}
+
+.uc-b2c-wayfinder-arch__icon > circle {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 16%, var(--ifm-background-color));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 55%, var(--ifm-color-emphasis-400));
+  stroke-width: 1.4;
+}
+
+.uc-b2c-wayfinder-arch__group-label {
+  font-weight: 700;
+  font-size: 12px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  fill: var(--ifm-color-primary) !important;
+}
+
+.uc-b2c-wayfinder-arch__cast-name {
+  font-weight: 700;
+  font-size: 13px !important;
+}
+
+/* ── Wayfinder Cast diagram ────────────────────────── */
+.uc-b2c-wayfinder-cast {
+  margin: 1.5rem 0 2rem;
+}
+
+.uc-b2c-wayfinder-cast__svg {
+  width: 100%;
+  height: auto;
+  max-width: 960px;
+  display: block;
+  margin: 0 auto;
+  font-family: var(--ifm-font-family-base);
+  overflow: visible;
+}
+
+.uc-b2c-wayfinder-cast__svg text {
+  fill: var(--ifm-font-color-base);
+  font-family: var(--ifm-font-family-base);
+  font-size: 14px;
+}
+
+.uc-b2c-wayfinder-cast__group-accent {
+  fill: var(--ifm-color-primary);
+}
+
+.uc-b2c-wayfinder-cast__separator {
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 15%, var(--ifm-color-emphasis-200));
+  stroke-width: 1;
+}
+
+.uc-b2c-wayfinder-cast__group-label {
+  fill: var(--ifm-color-primary) !important;
+  font-size: 13px !important;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.uc-b2c-wayfinder-cast__card rect {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 6%, var(--ifm-background-surface-color));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 22%, var(--ifm-color-emphasis-200));
+  stroke-width: 1;
+}
+
+[data-theme='dark'] .uc-b2c-wayfinder-cast__card rect {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 12%, rgba(255, 255, 255, 0.06));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 28%, rgba(255, 255, 255, 0.12));
+}
+
+.uc-b2c-wayfinder-cast__card--lead rect {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 12%, var(--ifm-background-surface-color));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 45%, var(--ifm-color-emphasis-300));
+  stroke-width: 1.5;
+}
+
+[data-theme='dark'] .uc-b2c-wayfinder-cast__card--lead rect {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 18%, rgba(255, 255, 255, 0.07));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 50%, rgba(255, 255, 255, 0.2));
+}
+
+.uc-b2c-wayfinder-cast__card-name {
+  font-weight: 700;
+  font-size: 18px !important;
+}
+
+.uc-b2c-wayfinder-cast__card-role {
+  fill: var(--ifm-color-primary) !important;
+  font-size: 14px !important;
+  font-weight: 600;
+}
+
+.uc-b2c-wayfinder-cast__card-divider {
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 12%, var(--ifm-color-emphasis-200));
+  stroke-width: 1;
+  fill: none;
+}
+
+.uc-b2c-wayfinder-cast__card-desc {
+  fill: color-mix(in srgb, var(--ifm-font-color-base) 80%, transparent) !important;
+  font-size: 15px !important;
+}
+
+.uc-accordion {
+  margin-top: 1rem;
+}
+
+.uc-accordion-item {
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--ifm-color-emphasis-100) 20%, transparent);
+  margin: 0 0 0.65rem;
+  overflow: hidden;
+}
+
+.uc-accordion-item summary {
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+  padding: 0.8rem 2.6rem 0.8rem 0.9rem;
+  position: relative;
+}
+
+.uc-accordion-item summary::marker,
+.uc-accordion-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.uc-accordion-item summary::after {
+  content: '+';
+  position: absolute;
+  right: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ifm-color-primary);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.uc-accordion-item[open] summary::after {
+  content: '-';
+}
+
+.uc-accordion-content {
+  padding: 0 0.9rem 0.9rem;
+  animation: uc-fade-in 220ms ease;
+}
+
+.uc-accordion-content p {
+  margin: 0 0 0.45rem;
+}
+
+.uc-accordion-content ul {
+  margin: 0.45rem 0 0;
+}
+
+[data-theme='dark'] .uc-fact-card {
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--ifm-color-emphasis-300) 16%, transparent),
+    transparent
+  );
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.42);
+}
+
+[data-theme='dark'] .uc-stage-list li,
+[data-theme='dark'] .uc-cap-card,
+[data-theme='dark'] .uc-accordion-item {
+  background: color-mix(in srgb, var(--ifm-color-emphasis-300) 14%, transparent);
+}
+
+[data-theme='dark'] .uc-building-blocks,
+[data-theme='dark'] .uc-building-blocks__panel,
+[data-theme='dark'] .uc-solution-chooser,
+[data-theme='dark'] .uc-identity-sources-diagram {
+  background:
+    radial-gradient(620px 220px at 10% 0%, color-mix(in srgb, var(--ifm-color-primary) 11%, transparent), transparent),
+    color-mix(in srgb, var(--ifm-color-emphasis-300) 16%, transparent);
+}
+
+[data-theme='dark'] .uc-building-blocks__group-header p {
+  color: color-mix(in srgb, var(--ifm-font-color-base) 82%, var(--ifm-color-emphasis-600));
+}
+
+[data-theme='dark'] .uc-card:hover {
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+}
+
+@keyframes uc-enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes uc-enter-left {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes uc-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 996px) {
+  .uc-fact-grid,
+  .uc-cap-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uc-root,
+  .uc-line,
+  .uc-card-1,
+  .uc-card-2,
+  .uc-card-3,
+  .uc-tag,
+  .uc-fact-card,
+  .uc-stage-list li,
+  .uc-accordion-content {
+    animation: none !important;
+  }
+
+  .uc-fact-card,
+  .uc-cap-card {
+    transition: none !important;
+  }
+}
+
+/* Wayfinder organization — story diagram on AI Agents Try It Out overview */
+
+.uc-agent-wayfinder-org,
+.uc-agent-wayfinder-arch {
+  margin: 1.5rem 0 2.5rem;
+}
+
+.uc-agent-wayfinder-org__svg,
+.uc-agent-wayfinder-arch__svg {
+  width: 100%;
+  height: auto;
+  max-width: 960px;
+  display: block;
+  margin: 0 auto;
+  color: color-mix(in srgb, var(--ifm-color-primary) 60%, var(--ifm-color-emphasis-500));
+}
+
+.uc-agent-wayfinder-org__svg text,
+.uc-agent-wayfinder-arch__svg text {
+  fill: var(--ifm-font-color-base);
+  font-size: 12px;
+  font-family: var(--ifm-font-family-base);
+}
+
+.uc-agent-wayfinder-org__header rect {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 12%, var(--ifm-background-surface-color));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 55%, var(--ifm-color-emphasis-400));
+  stroke-width: 1.6;
+}
+
+.uc-agent-wayfinder-org__header-title {
+  font-weight: 700;
+  font-size: 20px !important;
+}
+
+.uc-agent-wayfinder-org__header-sub {
+  font-size: 12px !important;
+  fill: var(--ifm-color-emphasis-700) !important;
+}
+
+.uc-agent-wayfinder-org__edges line {
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 45%, var(--ifm-color-emphasis-400));
+  stroke-width: 1.4;
+}
+
+.uc-agent-wayfinder-org__col rect {
+  fill: var(--ifm-background-surface-color);
+  stroke: var(--ifm-color-emphasis-300);
+  stroke-width: 1;
+}
+
+.uc-agent-wayfinder-org__col--agent rect {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 6%, var(--ifm-background-surface-color));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 35%, var(--ifm-color-emphasis-300));
+  stroke-width: 1.2;
+}
+
+.uc-agent-wayfinder-org__col-title {
+  font-weight: 700;
+  font-size: 16px !important;
+}
+
+.uc-agent-wayfinder-org__col-sub {
+  font-size: 12px !important;
+  fill: var(--ifm-color-emphasis-700) !important;
+  font-style: italic;
+}
+
+.uc-agent-wayfinder-org__divider {
+  stroke: var(--ifm-color-emphasis-200);
+  stroke-width: 1;
+}
+
+.uc-agent-wayfinder-org__icon > circle {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 16%, var(--ifm-background-color));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 55%, var(--ifm-color-emphasis-400));
+  stroke-width: 1.4;
+}
+
+.uc-agent-wayfinder-org__icon--agent > circle {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 28%, var(--ifm-background-color));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 70%, var(--ifm-color-emphasis-400));
+  stroke-width: 1.6;
+}
+
+.uc-agent-wayfinder-person-glyph circle,
+.uc-agent-wayfinder-person-glyph path {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 90%, #fff);
+  stroke: none;
+}
+
+.uc-agent-wayfinder-agent-glyph rect,
+.uc-agent-wayfinder-agent-glyph circle {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 90%, #fff);
+  stroke: none;
+}
+
+.uc-agent-wayfinder-agent-glyph line {
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 90%, #fff);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  fill: none;
+}
+
+.uc-agent-wayfinder-org__cast-name {
+  font-weight: 700;
+  font-size: 13px !important;
+}
+
+.uc-agent-wayfinder-org__cast-role {
+  font-size: 11.5px !important;
+  fill: var(--ifm-color-emphasis-700) !important;
+}
+
+.uc-agent-wayfinder-org__cast-detail {
+  font-size: 11px !important;
+  fill: var(--ifm-color-emphasis-600) !important;
+  font-style: italic;
+}
+
+/* Wayfinder architecture — integration diagram on AI Agents Try It Out overview */
+
+.uc-agent-wayfinder-arch__idp rect {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 12%, var(--ifm-background-surface-color));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 55%, var(--ifm-color-emphasis-400));
+  stroke-width: 1.6;
+}
+
+.uc-agent-wayfinder-arch__idp-title {
+  font-weight: 700;
+  font-size: 18px !important;
+}
+
+.uc-agent-wayfinder-arch__app rect,
+.uc-agent-wayfinder-arch__svc rect {
+  fill: var(--ifm-background-surface-color);
+  stroke: var(--ifm-color-emphasis-400);
+  stroke-width: 1.4;
+}
+
+.uc-agent-wayfinder-arch__svc--agent rect {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 6%, var(--ifm-background-surface-color));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 45%, var(--ifm-color-emphasis-400));
+  stroke-width: 1.4;
+}
+
+.uc-agent-wayfinder-arch__app-title {
+  font-weight: 700;
+  font-size: 16px !important;
+}
+
+.uc-agent-wayfinder-arch__sub {
+  font-size: 12px !important;
+  fill: var(--ifm-color-emphasis-700) !important;
+}
+
+.uc-agent-wayfinder-arch__detail {
+  font-size: 11.5px !important;
+  fill: var(--ifm-color-emphasis-600) !important;
+}
+
+.uc-agent-wayfinder-arch__divider {
+  stroke: var(--ifm-color-emphasis-200);
+  stroke-width: 1;
+}
+
+.uc-agent-wayfinder-arch__edges line,
+.uc-agent-wayfinder-arch__edges polyline {
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 55%, var(--ifm-color-emphasis-400));
+  stroke-width: 1.4;
+  fill: none;
+}
+
+.uc-agent-wayfinder-arch__edge-label {
+  font-size: 11.5px !important;
+  fill: var(--ifm-color-emphasis-700) !important;
+  font-style: italic;
+}
+
+.uc-agent-wayfinder-arch__icon > circle {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 16%, var(--ifm-background-color));
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 55%, var(--ifm-color-emphasis-400));
+  stroke-width: 1.4;
+}
+
+.uc-agent-wayfinder-arch__group-label {
+  font-weight: 700;
+  font-size: 12px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  fill: var(--ifm-color-emphasis-700) !important;
+}
+
+.uc-agent-wayfinder-arch__cast-name {
+  font-weight: 700;
+  font-size: 13px !important;
+}
+

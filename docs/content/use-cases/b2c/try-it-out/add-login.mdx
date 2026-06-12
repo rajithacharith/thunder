@@ -4,24 +4,27 @@ description: Walk a sign-in through the Wayfinder sample with John Doe as the us
 sidebar_position: 2
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Login
 
-In this walkthrough, John Doe signs in to Wayfinder from his laptop and arrives at the dashboard with his upcoming trips visible. The app receives an access token bound to the `wayfinder-booking` resource server, carrying the three booking permissions attached to his `Traveler` role.
+In this walkthrough, John Doe signs in to Wayfinder from his laptop and arrives at the dashboard with his upcoming trips visible. The app receives an access token bound to the `booking-api` resource server, carrying the three booking permissions attached to his `Traveler` role.
 
 :::note Prerequisites
-Complete [Set Up Your Environment](../../try-it-out#set-up-your-environment) before starting this walkthrough.
+Complete [Set Up Your Environment](../setup#set-up-your-environment) before starting this walkthrough.
 :::
 
 :::info Background
-[Add Login to Your Application](../../customer-identity#add-login-to-your-application) covers the requirements story behind this use case.
+[B2C overview](../../#building-blocks-of-the-b2c-identity-journey) covers the requirements story behind this use case.
 :::
 
 ## Pick Your Pattern
 
-[Solution Patterns](../../solution-patterns) describes three ways to add identity to a consumer app. Each section below walks John's sign-in through one pattern.
+[Integration Patterns](../../integration-patterns) describes three ways to add identity to a consumer app. Select your pattern to see the walkthrough.
 
-<details open>
-  <summary>Redirect-based</summary>
+<Tabs>
+  <TabItem value="redirect" label="Redirect-based" default>
 
 In the redirect-based pattern, the consumer app sends the user to <ProductName /> for the entire sign-in experience and returns them as a signed-in user with tokens attached. The Wayfinder web frontend is configured exactly this way. Selecting **Sign in** triggers an OIDC redirect, and <ProductName /> shows the sign-in page. The browser then returns to the app with an authorization code that the app exchanges for tokens.
 
@@ -37,31 +40,25 @@ In the redirect-based pattern, the consumer app sends the user to <ProductName /
 - Add Google as a sign-in option on the flow and verify that a **Sign in with Google** button appears on the <ProductName /> page.
 - Restrict the application's allowed scopes so the token only carries `booking:read`. Attempt a booking and confirm the API rejects it.
 
-</details>
+</TabItem>
+<TabItem value="app-native-steps" label="App-native step-by-step">
 
-<details>
-  <summary>App-native step-by-step (verbose flow)</summary>
+Coming soon. See the [App-native pattern](../../integration-patterns#app-native) for what to expect.
 
-Coming soon. See the [App-native pattern](../../solution-patterns#app-native) for what to expect.
+</TabItem>
+<TabItem value="app-native-managed" label="App-native managed">
 
-</details>
+Coming soon. See the [App-native pattern](../../integration-patterns#app-native) for what to expect.
 
-<details>
-  <summary>App-native managed (non-verbose flow)</summary>
+</TabItem>
+<TabItem value="direct-api" label="Direct API">
 
-Coming soon. See the [App-native pattern](../../solution-patterns#app-native) for what to expect.
+Coming soon. See the [Direct API pattern](../../integration-patterns#direct-api) for what to expect.
 
-</details>
-
-<details>
-  <summary>Direct API</summary>
-
-Coming soon. See the [Direct API pattern](../../solution-patterns#direct-api) for what to expect.
-
-</details>
+</TabItem>
+</Tabs>
 
 ## Going Deeper
 
 - Want to understand how the access token gets its booking permissions? See [Resources and Permissions](../../identity-concepts#resources-and-permissions) and [Roles](../../identity-concepts#roles) in the Identity Concepts.
-- Prefer to set up the application and `Traveler` role manually? See [Set Up the Foundation](../../configure-it-yourself#set-up-the-foundation) in Configure It Yourself.
-- Building login in your own app instead of Wayfinder? See [Login — Try In Your Own App](../../try-in-your-own-app/add-login).
+- Prefer to set up the application and `Traveler` role manually? See [Set Up the Foundation](../configure-it-yourself#set-up-the-foundation) in Configure It Yourself.

@@ -1,0 +1,115 @@
+---
+title: Set Up Sample Application
+description: Run the B2C use cases against the Wayfinder sample, a fictional consumer travel-booking app.
+sidebar_position: 1
+sidebar_label: Set up sample application
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Set Up Sample Application
+
+This page walks you through the quick path: download the sample, import a pre-built bundle into <ProductName />, and run the app. Everything the walkthroughs need is created in one step.
+
+:::tip Prefer to build the setup manually?
+Skip the bundle import and follow [Configure It Yourself](../configure-it-yourself) instead. It creates the same resources step by step through the console and API.
+:::
+
+## Set Up Your Environment
+
+<Stepper stepNode="h3" as="h4">
+
+### Run <ProductName />
+
+Get <ProductName /> running locally. Follow [Get <ProductName />](/docs/next/guides/getting-started/get-thunderid) for download, setup, and start commands.
+
+### Configure the Server
+
+Edit `repository/conf/deployment.yaml` and add the Wayfinder origin under `cors.allowed_origins`. Leave any existing entries in place.
+
+```yaml
+cors:
+  allowed_origins:
+    # ...existing entries...
+    - "{{WayFinderSampleUrl}}"
+```
+
+Restart <ProductName /> after the change.
+
+### Get the Wayfinder Sample
+
+Download the latest Wayfinder sample distribution. It ships with a `thunderid-config/` directory containing a declarative YAML bundle and a `thunderid.env` file with the environment variables it references.
+
+<SampleDownload sample="sample-app-wayfinder" />
+
+### Import the Sample Bundle
+
+Apply the bundle through the <ProductName /> Console. It creates everything the walkthroughs share.
+
+1. Sign in to the <ProductName /> Console at <ConsoleUrl />.
+2. On first sign-in, a welcome screen appears with an **Open** button. (Later, reach the same screen from the user profile menu in the top-right corner of the Console.)
+3. Click **Open** and select your `thunderid-config/thunderid-config.yaml` file from the sample distribution.
+4. Select your `thunderid-config/thunderid.env` file to provide the environment variables referenced in the YAML.
+5. The Console imports the files and reports the resources it created when the import completes.
+
+### Run the Sample
+
+Start all Wayfinder services from the extracted sample directory:
+
+<Tabs groupId="os">
+<TabItem value="unix" label="Linux / macOS">
+
+```bash
+./start.sh
+```
+
+</TabItem>
+<TabItem value="windows" label="Windows">
+
+```powershell
+.\start.ps1
+```
+
+</TabItem>
+</Tabs>
+
+The sample opens at <WayFinderSampleUrl />.
+
+</Stepper>
+
+## Walkthroughs
+
+Pick a walkthrough to begin. Each one starts from the setup above.
+
+<NextSteps>
+  <NextStepsCard
+    title="Login"
+    description="John Doe signs in to Wayfinder and arrives at the dashboard."
+    href="../add-login"
+  />
+  <NextStepsCard
+    title="Self Sign-Up"
+    description="Emma Wilson signs up with email and password."
+    href="../self-sign-up"
+  />
+  <NextStepsCard
+    title="View Profile"
+    description="John views and updates his profile."
+    href="../profile-section"
+  />
+  <NextStepsCard
+    title="Account Recovery"
+    description="John resets a forgotten password through an email link."
+    href="../account-recovery"
+  />
+  <NextStepsCard
+    title="Onboard Internal Users"
+    description="Alex invites staff members from the console."
+    href="../onboard-internal-users"
+  />
+</NextSteps>
+
+## Going Deeper
+
+- Curious how the bundle maps to <ProductName /> concepts? See [Identity Concepts](../../identity-concepts).

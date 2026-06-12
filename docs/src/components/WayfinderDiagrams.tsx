@@ -16,8 +16,7 @@
  * under the License.
  */
 
-import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
-import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
+import './WayfinderDiagrams.css';
 
 // Reusable person-silhouette icon. PersonIcon viewBox is 56x56; the
 // returned <g> renders within whatever transform / scale the caller
@@ -186,6 +185,83 @@ export function WayfinderOrganization() {
 }
 
 /**
+ * Cast diagram for the B2C Try It Out section. Shows the consumer and staff
+ * personas used across the walkthroughs, with Alex Carter as the lead admin
+ * above Sam Rivera and Maya Patel.
+ */
+export function WayfinderCast() {
+  return (
+    <div className="uc-b2c-wayfinder-cast">
+      <svg
+        className="uc-b2c-wayfinder-cast__svg"
+        viewBox="0 0 960 492"
+        xmlns="http://www.w3.org/2000/svg"
+        role="img"
+        aria-label="Wayfinder cast: consumers and staff"
+      >
+        {/* Consumers section */}
+        <rect x="20" y="12" width="3" height="16" className="uc-b2c-wayfinder-cast__group-accent" />
+        <text x="30" y="24" className="uc-b2c-wayfinder-cast__group-label">Consumers</text>
+
+        <g className="uc-b2c-wayfinder-cast__card" transform="translate(20, 36)">
+          <rect width="280" height="148" rx="10" />
+          <text x="16" y="32" className="uc-b2c-wayfinder-cast__card-name">John Doe</text>
+          <text x="16" y="56" className="uc-b2c-wayfinder-cast__card-role">Returning traveller</text>
+          <line x1="16" y1="69" x2="264" y2="69" className="uc-b2c-wayfinder-cast__card-divider" />
+          <text x="16" y="92" className="uc-b2c-wayfinder-cast__card-desc">Signs in, manages his profile,</text>
+          <text x="16" y="114" className="uc-b2c-wayfinder-cast__card-desc">and recovers his password</text>
+        </g>
+
+        <g className="uc-b2c-wayfinder-cast__card" transform="translate(340, 36)">
+          <rect width="280" height="148" rx="10" />
+          <text x="16" y="32" className="uc-b2c-wayfinder-cast__card-name">Jane Smith</text>
+          <text x="16" y="56" className="uc-b2c-wayfinder-cast__card-role">Returning traveller</text>
+          <line x1="16" y1="69" x2="264" y2="69" className="uc-b2c-wayfinder-cast__card-divider" />
+          <text x="16" y="92" className="uc-b2c-wayfinder-cast__card-desc">Signs in and books trips</text>
+          <text x="16" y="114" className="uc-b2c-wayfinder-cast__card-desc">as an existing customer</text>
+        </g>
+
+        <g className="uc-b2c-wayfinder-cast__card" transform="translate(660, 36)">
+          <rect width="280" height="148" rx="10" />
+          <text x="16" y="32" className="uc-b2c-wayfinder-cast__card-name">Emma Wilson</text>
+          <text x="16" y="56" className="uc-b2c-wayfinder-cast__card-role">New traveller</text>
+          <line x1="16" y1="69" x2="264" y2="69" className="uc-b2c-wayfinder-cast__card-divider" />
+          <text x="16" y="92" className="uc-b2c-wayfinder-cast__card-desc">Signs up with email and password</text>
+        </g>
+
+        {/* Staff section */}
+        <rect x="20" y="212" width="3" height="16" className="uc-b2c-wayfinder-cast__group-accent" />
+        <text x="30" y="224" className="uc-b2c-wayfinder-cast__group-label">Staff</text>
+
+        <g className="uc-b2c-wayfinder-cast__card uc-b2c-wayfinder-cast__card--lead" transform="translate(20, 236)">
+          <rect width="920" height="106" rx="10" />
+          <text x="16" y="32" className="uc-b2c-wayfinder-cast__card-name">Alex Carter</text>
+          <text x="16" y="56" className="uc-b2c-wayfinder-cast__card-role">Operations admin</text>
+          <line x1="16" y1="69" x2="904" y2="69" className="uc-b2c-wayfinder-cast__card-divider" />
+          <text x="16" y="92" className="uc-b2c-wayfinder-cast__card-desc">Onboards internal staff from the console</text>
+        </g>
+
+        <g className="uc-b2c-wayfinder-cast__card" transform="translate(20, 358)">
+          <rect width="440" height="118" rx="10" />
+          <text x="16" y="32" className="uc-b2c-wayfinder-cast__card-name">Sam Rivera</text>
+          <text x="16" y="56" className="uc-b2c-wayfinder-cast__card-role">Support agent</text>
+          <line x1="16" y1="69" x2="424" y2="69" className="uc-b2c-wayfinder-cast__card-divider" />
+          <text x="16" y="92" className="uc-b2c-wayfinder-cast__card-desc">Helps users with support requests</text>
+        </g>
+
+        <g className="uc-b2c-wayfinder-cast__card" transform="translate(500, 358)">
+          <rect width="440" height="118" rx="10" />
+          <text x="16" y="32" className="uc-b2c-wayfinder-cast__card-name">Maya Patel</text>
+          <text x="16" y="56" className="uc-b2c-wayfinder-cast__card-role">Destinations curator</text>
+          <line x1="16" y1="69" x2="424" y2="69" className="uc-b2c-wayfinder-cast__card-divider" />
+          <text x="16" y="92" className="uc-b2c-wayfinder-cast__card-desc">Manages destination content</text>
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+/**
  * Architecture diagram. Consumers (John, Jane, Emma) sit at the top next
  * to the Wayfinder Web app; ThunderID and Wayfinder Server sit below
  * the app, symmetrically. Pattern-agnostic — the arrow labels do not
@@ -196,7 +272,7 @@ export function WayfinderArchitecture() {
     <div className="uc-b2c-wayfinder-arch">
       <svg
         className="uc-b2c-wayfinder-arch__svg"
-        viewBox="0 0 960 720"
+        viewBox="0 0 960 560"
         xmlns="http://www.w3.org/2000/svg"
         role="img"
         aria-label="Wayfinder app, server, and ThunderID integration"
@@ -215,162 +291,80 @@ export function WayfinderArchitecture() {
           </marker>
         </defs>
 
-        {/* Consumers — top, near the Wayfinder Web app */}
+        {/* Consumers — compact icons above Wayfinder Web */}
         <g className="uc-b2c-wayfinder-arch__consumers">
-          <text x="480" y="32" textAnchor="middle" className="uc-b2c-wayfinder-arch__group-label">
-            Consumers
-          </text>
-
-          {/* John Doe */}
-          <g transform="translate(358,46)">
-            <g transform="scale(0.78)">
-              <PersonIcon className="uc-b2c-wayfinder-arch__icon" />
-            </g>
-          </g>
-          <text x="380" y="116" textAnchor="middle" className="uc-b2c-wayfinder-arch__cast-name">
-            John
-          </text>
-
-          {/* Jane Smith */}
-          <g transform="translate(458,46)">
-            <g transform="scale(0.78)">
-              <PersonIcon className="uc-b2c-wayfinder-arch__icon" />
-            </g>
-          </g>
-          <text x="480" y="116" textAnchor="middle" className="uc-b2c-wayfinder-arch__cast-name">
-            Jane
-          </text>
-
-          {/* Emma Wilson */}
-          <g transform="translate(558,46)">
-            <g transform="scale(0.78)">
-              <PersonIcon className="uc-b2c-wayfinder-arch__icon" />
-            </g>
-          </g>
-          <text x="580" y="116" textAnchor="middle" className="uc-b2c-wayfinder-arch__cast-name">
-            Emma
-          </text>
+          <text x="240" y="24" textAnchor="middle" className="uc-b2c-wayfinder-arch__group-label">Consumers</text>
+          <g transform="translate(122,34)"><g transform="scale(0.65)"><PersonIcon className="uc-b2c-wayfinder-arch__icon" /></g></g>
+          <text x="140" y="92" textAnchor="middle" className="uc-b2c-wayfinder-arch__cast-name">John</text>
+          <g transform="translate(222,34)"><g transform="scale(0.65)"><PersonIcon className="uc-b2c-wayfinder-arch__icon" /></g></g>
+          <text x="240" y="92" textAnchor="middle" className="uc-b2c-wayfinder-arch__cast-name">Jane</text>
+          <g transform="translate(322,34)"><g transform="scale(0.65)"><PersonIcon className="uc-b2c-wayfinder-arch__icon" /></g></g>
+          <text x="340" y="92" textAnchor="middle" className="uc-b2c-wayfinder-arch__cast-name">Emma</text>
         </g>
 
-        {/* Arrow from consumers down to Wayfinder Web */}
+        {/* Consumers → Wayfinder Web */}
         <g className="uc-b2c-wayfinder-arch__edges">
-          <line x1="480" y1="130" x2="480" y2="170" markerEnd="url(#uc-b2c-arch-arrow)" />
-          <text x="494" y="156" className="uc-b2c-wayfinder-arch__edge-label">
-            use
-          </text>
+          <line x1="240" y1="94" x2="240" y2="162" markerEnd="url(#uc-b2c-arch-arrow)" />
         </g>
 
-        {/* Wayfinder Web — middle */}
-        <g className="uc-b2c-wayfinder-arch__app" transform="translate(290,180)">
-          <rect width="380" height="130" rx="12" />
-          <text x="190" y="40" textAnchor="middle" className="uc-b2c-wayfinder-arch__app-title">
-            Wayfinder Web
-          </text>
-          <text x="190" y="64" textAnchor="middle" className="uc-b2c-wayfinder-arch__sub">
-            Browser-based SPA
-          </text>
-          <line x1="40" y1="80" x2="340" y2="80" className="uc-b2c-wayfinder-arch__divider" />
-          <text x="190" y="104" textAnchor="middle" className="uc-b2c-wayfinder-arch__detail">
-            Book travel
-          </text>
+        {/* Wayfinder Web — left column */}
+        <g className="uc-b2c-wayfinder-arch__app" transform="translate(60,162)">
+          <rect width="340" height="115" rx="12" />
+          <text x="170" y="28" textAnchor="middle" className="uc-b2c-wayfinder-arch__app-title">Wayfinder Web</text>
+          <text x="170" y="50" textAnchor="middle" className="uc-b2c-wayfinder-arch__sub">Where consumers sign in and book</text>
+          <line x1="16" y1="62" x2="324" y2="62" className="uc-b2c-wayfinder-arch__divider" />
+          <text x="170" y="80" textAnchor="middle" className="uc-b2c-wayfinder-arch__box-desc">Delegates auth to ThunderID;</text>
+          <text x="170" y="97" textAnchor="middle" className="uc-b2c-wayfinder-arch__box-desc">carries tokens to the API</text>
         </g>
 
-        {/* ThunderID — bottom left */}
-        <g className="uc-b2c-wayfinder-arch__idp" transform="translate(80,400)">
-          <rect width="320" height="140" rx="12" />
-          <text x="160" y="40" textAnchor="middle" className="uc-b2c-wayfinder-arch__idp-title">
-            ThunderID
-          </text>
-          <text x="160" y="64" textAnchor="middle" className="uc-b2c-wayfinder-arch__sub">
-            Identity Authority
-          </text>
-          <line x1="40" y1="80" x2="280" y2="80" className="uc-b2c-wayfinder-arch__divider" />
-          <text x="160" y="104" textAnchor="middle" className="uc-b2c-wayfinder-arch__detail">
-            Manages users, issues tokens
-          </text>
-        </g>
-
-        {/* Wayfinder Server — bottom right */}
-        <g className="uc-b2c-wayfinder-arch__app" transform="translate(560,400)">
-          <rect width="320" height="140" rx="12" />
-          <text x="160" y="40" textAnchor="middle" className="uc-b2c-wayfinder-arch__app-title">
-            Wayfinder Server
-          </text>
-          <text x="160" y="64" textAnchor="middle" className="uc-b2c-wayfinder-arch__sub">
-            Booking API
-          </text>
-          <line x1="40" y1="80" x2="280" y2="80" className="uc-b2c-wayfinder-arch__divider" />
-          <text x="160" y="104" textAnchor="middle" className="uc-b2c-wayfinder-arch__detail">
-            Holds bookings, flights, hotels
-          </text>
-        </g>
-
-        {/* Arrows from Wayfinder Web to ThunderID and Server */}
+        {/* WW ↔ ThunderID: OIDC / OAuth 2.0 */}
         <g className="uc-b2c-wayfinder-arch__edges">
-          {/* Wayfinder Web ↔ ThunderID */}
-          <line x1="380" y1="310" x2="240" y2="400" markerEnd="url(#uc-b2c-arch-arrow)" />
-          <line x1="220" y1="400" x2="360" y2="310" markerEnd="url(#uc-b2c-arch-arrow)" />
-          <text x="232" y="346" className="uc-b2c-wayfinder-arch__edge-label">
-            Sign-in,
-          </text>
-          <text x="232" y="362" className="uc-b2c-wayfinder-arch__edge-label">
-            sign-up, recovery
-          </text>
-
-          {/* Wayfinder Web ↔ Wayfinder Server */}
-          <line x1="580" y1="310" x2="720" y2="400" markerEnd="url(#uc-b2c-arch-arrow)" />
-          <line x1="740" y1="400" x2="600" y2="310" markerEnd="url(#uc-b2c-arch-arrow)" />
-          <text x="666" y="346" className="uc-b2c-wayfinder-arch__edge-label">
-            Authenticated
-          </text>
-          <text x="666" y="362" className="uc-b2c-wayfinder-arch__edge-label">
-            API calls
-          </text>
+          <line x1="400" y1="219" x2="540" y2="219" markerEnd="url(#uc-b2c-arch-arrow)" markerStart="url(#uc-b2c-arch-arrow)" />
+          <text x="470" y="201" textAnchor="middle" className="uc-b2c-wayfinder-arch__edge-label">Sign-in flow</text>
+          <text x="470" y="214" textAnchor="middle" className="uc-b2c-wayfinder-arch__edge-label">OIDC / OAuth 2.0</text>
         </g>
 
-        {/* Arrow from staff up to ThunderID */}
+        {/* ThunderID — right column */}
+        <g className="uc-b2c-wayfinder-arch__idp" transform="translate(540,162)">
+          <rect width="320" height="115" rx="12" />
+<text x="160" y="28" textAnchor="middle" className="uc-b2c-wayfinder-arch__idp-title">ThunderID</text>
+          <text x="160" y="50" textAnchor="middle" className="uc-b2c-wayfinder-arch__sub">Identity provider</text>
+          <line x1="16" y1="62" x2="304" y2="62" className="uc-b2c-wayfinder-arch__divider" />
+          <text x="160" y="92" textAnchor="middle" className="uc-b2c-wayfinder-arch__box-desc">Signs users in and issues tokens</text>
+        </g>
+
+        {/* WW → Server: access token */}
         <g className="uc-b2c-wayfinder-arch__edges">
-          <line x1="240" y1="590" x2="240" y2="550" markerEnd="url(#uc-b2c-arch-arrow)" />
-          <text x="254" y="576" className="uc-b2c-wayfinder-arch__edge-label">
-            Console
-          </text>
+          <line x1="200" y1="277" x2="200" y2="406" markerEnd="url(#uc-b2c-arch-arrow)" />
+          <text x="214" y="334" className="uc-b2c-wayfinder-arch__edge-label">Authenticated</text>
+          <text x="214" y="349" className="uc-b2c-wayfinder-arch__edge-label">API calls</text>
         </g>
 
-        {/* Staff — below ThunderID, mirroring consumers above Wayfinder Web */}
+        {/* Wayfinder Server — left column, row 2 */}
+        <g className="uc-b2c-wayfinder-arch__app" transform="translate(60,406)">
+          <rect width="340" height="115" rx="12" />
+          <text x="170" y="28" textAnchor="middle" className="uc-b2c-wayfinder-arch__app-title">Wayfinder Server</text>
+          <text x="170" y="50" textAnchor="middle" className="uc-b2c-wayfinder-arch__sub">Booking API</text>
+          <line x1="16" y1="62" x2="324" y2="62" className="uc-b2c-wayfinder-arch__divider" />
+          <text x="170" y="80" textAnchor="middle" className="uc-b2c-wayfinder-arch__box-desc">Validates access tokens and</text>
+          <text x="170" y="97" textAnchor="middle" className="uc-b2c-wayfinder-arch__box-desc">serves booking data</text>
+        </g>
+
+        {/* Staff → ThunderID: console access */}
+        <g className="uc-b2c-wayfinder-arch__edges">
+          <line x1="700" y1="318" x2="700" y2="279" markerEnd="url(#uc-b2c-arch-arrow)" />
+          <text x="714" y="303" className="uc-b2c-wayfinder-arch__edge-label">Admin console</text>
+        </g>
+
+        {/* Staff / Admins — below ThunderID */}
         <g className="uc-b2c-wayfinder-arch__consumers">
-          <text x="240" y="610" textAnchor="middle" className="uc-b2c-wayfinder-arch__group-label">
-            Staff
-          </text>
-
-          {/* Alex Carter */}
-          <g transform="translate(118,624)">
-            <g transform="scale(0.78)">
-              <PersonIcon className="uc-b2c-wayfinder-arch__icon" />
-            </g>
-          </g>
-          <text x="140" y="694" textAnchor="middle" className="uc-b2c-wayfinder-arch__cast-name">
-            Alex
-          </text>
-
-          {/* Sam Rivera */}
-          <g transform="translate(218,624)">
-            <g transform="scale(0.78)">
-              <PersonIcon className="uc-b2c-wayfinder-arch__icon" />
-            </g>
-          </g>
-          <text x="240" y="694" textAnchor="middle" className="uc-b2c-wayfinder-arch__cast-name">
-            Sam
-          </text>
-
-          {/* Maya Patel */}
-          <g transform="translate(318,624)">
-            <g transform="scale(0.78)">
-              <PersonIcon className="uc-b2c-wayfinder-arch__icon" />
-            </g>
-          </g>
-          <text x="340" y="694" textAnchor="middle" className="uc-b2c-wayfinder-arch__cast-name">
-            Maya
-          </text>
+          <text x="700" y="334" textAnchor="middle" className="uc-b2c-wayfinder-arch__group-label">Staff / Admins</text>
+          <g transform="translate(578,346)"><g transform="scale(0.65)"><PersonIcon className="uc-b2c-wayfinder-arch__icon" /></g></g>
+          <text x="596" y="403" textAnchor="middle" className="uc-b2c-wayfinder-arch__cast-name">Alex</text>
+          <g transform="translate(678,346)"><g transform="scale(0.65)"><PersonIcon className="uc-b2c-wayfinder-arch__icon" /></g></g>
+          <text x="696" y="403" textAnchor="middle" className="uc-b2c-wayfinder-arch__cast-name">Sam</text>
+          <g transform="translate(778,346)"><g transform="scale(0.65)"><PersonIcon className="uc-b2c-wayfinder-arch__icon" /></g></g>
+          <text x="796" y="403" textAnchor="middle" className="uc-b2c-wayfinder-arch__cast-name">Maya</text>
         </g>
       </svg>
     </div>
@@ -561,9 +555,6 @@ export function WayfinderAgentArchitecture() {
         {/* Arrow from consumers down to Wayfinder Web */}
         <g className="uc-agent-wayfinder-arch__edges">
           <line x1="290" y1="130" x2="290" y2="170" markerEnd="url(#uc-agent-arch-arrow)" />
-          <text x="304" y="156" className="uc-agent-wayfinder-arch__edge-label">
-            Use
-          </text>
         </g>
 
         {/* Wayfinder Web — middle-left */}
@@ -631,296 +622,26 @@ export function WayfinderAgentArchitecture() {
 
         {/* Edges */}
         <g className="uc-agent-wayfinder-arch__edges">
-          {/* Wayfinder Web ↔ ThunderID */}
+          {/* Wayfinder Web ↔ ThunderID (sign-in, user token) */}
           <line x1="500" y1="220" x2="700" y2="220" markerEnd="url(#uc-agent-arch-arrow)" />
           <line x1="700" y1="250" x2="500" y2="250" markerEnd="url(#uc-agent-arch-arrow)" />
-          <text x="600" y="212" textAnchor="middle" className="uc-agent-wayfinder-arch__edge-label">
-            Sign in
-          </text>
-          <text x="600" y="272" textAnchor="middle" className="uc-agent-wayfinder-arch__edge-label">
-            Issue user token
-          </text>
 
-          {/* Wayfinder Web → AI Agent */}
+          {/* Wayfinder Web → AI Agent (chat) */}
           <line x1="170" y1="300" x2="170" y2="400" markerEnd="url(#uc-agent-arch-arrow)" />
-          <text x="184" y="354" className="uc-agent-wayfinder-arch__edge-label">
-            Chat
-          </text>
 
-          {/* Wayfinder Web ↔ Wayfinder Server */}
+          {/* Wayfinder Web ↔ Wayfinder Server (authenticated API calls) */}
           <line x1="430" y1="300" x2="495" y2="400" markerEnd="url(#uc-agent-arch-arrow)" />
           <line x1="525" y1="400" x2="460" y2="300" markerEnd="url(#uc-agent-arch-arrow)" />
-          <text x="430" y="354" className="uc-agent-wayfinder-arch__edge-label">
-            Authenticated
-          </text>
-          <text x="430" y="370" className="uc-agent-wayfinder-arch__edge-label">
-            calls
-          </text>
 
-          {/* AI Agent ↔ ThunderID — routed under the bottom row to avoid Wayfinder Server */}
+          {/* AI Agent ↔ ThunderID (M2M / OBO tokens) — routed under the bottom row to avoid Wayfinder Server */}
           <polyline points="290,540 290,580 810,580 810,540" markerEnd="url(#uc-agent-arch-arrow)" />
           <polyline points="770,540 770,595 250,595 250,540" markerEnd="url(#uc-agent-arch-arrow)" />
-          <text x="550" y="574" textAnchor="middle" className="uc-agent-wayfinder-arch__edge-label">
-            Get agent tokens
-          </text>
-          <text x="550" y="610" textAnchor="middle" className="uc-agent-wayfinder-arch__edge-label">
-            Issue agent / on-behalf-of tokens
-          </text>
 
-          {/* AI Agent → Wayfinder Server */}
+          {/* AI Agent → Wayfinder Server (MCP tool calls) */}
           <line x1="340" y1="500" x2="380" y2="500" markerEnd="url(#uc-agent-arch-arrow)" />
-          <text x="360" y="494" textAnchor="middle" className="uc-agent-wayfinder-arch__edge-label">
-            Call MCP tools
-          </text>
 
-          {/* Wayfinder Server → ThunderID */}
+          {/* Wayfinder Server → ThunderID (JWKS for JWT validation) */}
           <line x1="640" y1="450" x2="700" y2="465" markerEnd="url(#uc-agent-arch-arrow)" />
-          <text x="650" y="442" className="uc-agent-wayfinder-arch__edge-label">
-            Validate tokens
-          </text>
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-// Tool-silhouette icon for the external MCP client. Outer circle matches
-// PersonIcon / AgentIcon so all three sit at the same size. Inner glyph is
-// a tiny "MCP" plug-and-socket — a small connector shape distinguishes the
-// external client from human consumers and from the in-product agent.
-function McpClientIcon({className = undefined}: {className?: string}) {
-  return (
-    <g className={className}>
-      <circle cx="28" cy="28" r="26" />
-      <g transform="translate(28,28)" className="uc-agent-wayfinder-agent-glyph">
-        <rect x="-12" y="-10" width="24" height="20" rx="3" />
-        <line x1="-12" y1="-3" x2="-18" y2="-3" />
-        <line x1="-12" y1="3" x2="-18" y2="3" />
-        <line x1="12" y1="-3" x2="18" y2="-3" />
-        <line x1="12" y1="3" x2="18" y2="3" />
-        <circle cx="0" cy="0" r="3" />
-      </g>
-    </g>
-  );
-}
-
-/**
- * "Meet Wayfinder" diagram for the MCP Authorization tryout. Mirrors
- * WayfinderAgentOrganization in layout — a Wayfinder header card with
- * trunk connectors splitting into two columns. Both columns are MCP
- * clients reaching the same Wayfinder MCP server; the left column is
- * the in-product agent (covered in the AI Agents tryout) and the right
- * column is the external client (the focus of this tryout).
- */
-export function WayfinderMcpOrganization() {
-  return (
-    <div className="uc-agent-wayfinder-org">
-      <svg
-        className="uc-agent-wayfinder-org__svg"
-        viewBox="0 0 960 540"
-        xmlns="http://www.w3.org/2000/svg"
-        role="img"
-        aria-label="In-product and external MCP clients reaching the Wayfinder MCP server"
-      >
-        {/* Header */}
-        <g className="uc-agent-wayfinder-org__header">
-          <rect x="240" y="20" width="480" height="80" rx="12" />
-          <text x="480" y="52" textAnchor="middle" className="uc-agent-wayfinder-org__header-title">
-            Wayfinder
-          </text>
-          <text x="480" y="78" textAnchor="middle" className="uc-agent-wayfinder-org__header-sub">
-            Travel-Booking with an embedded MCP server
-          </text>
-        </g>
-
-        {/* Trunk connectors */}
-        <g className="uc-agent-wayfinder-org__edges">
-          <line x1="480" y1="100" x2="480" y2="122" />
-          <line x1="260" y1="122" x2="700" y2="122" />
-          <line x1="260" y1="122" x2="260" y2="148" />
-          <line x1="700" y1="122" x2="700" y2="148" />
-        </g>
-
-        {/* AI Agent column — Wayfinder Concierge */}
-        <g className="uc-agent-wayfinder-org__col uc-agent-wayfinder-org__col--agent" transform="translate(80,148)">
-          <rect width="360" height="372" rx="10" />
-          <text x="180" y="38" textAnchor="middle" className="uc-agent-wayfinder-org__col-title">
-            AI Agent
-          </text>
-          <text x="180" y="60" textAnchor="middle" className="uc-agent-wayfinder-org__col-sub">
-            Built into the Wayfinder app
-          </text>
-          <line x1="40" y1="78" x2="320" y2="78" className="uc-agent-wayfinder-org__divider" />
-
-          <g transform="translate(156,150)">
-            <g transform="scale(0.86)">
-              <AgentIcon className="uc-agent-wayfinder-org__icon uc-agent-wayfinder-org__icon--agent" />
-            </g>
-          </g>
-          <text x="180" y="226" textAnchor="middle" className="uc-agent-wayfinder-org__cast-name">
-            Wayfinder Concierge
-          </text>
-          <text x="180" y="246" textAnchor="middle" className="uc-agent-wayfinder-org__cast-role">
-            Calls MCP tools through chat
-          </text>
-        </g>
-
-        {/* External MCP Client column — MCP Inspector */}
-        <g className="uc-agent-wayfinder-org__col uc-agent-wayfinder-org__col--agent" transform="translate(520,148)">
-          <rect width="360" height="372" rx="10" />
-          <text x="180" y="38" textAnchor="middle" className="uc-agent-wayfinder-org__col-title">
-            External MCP Client
-          </text>
-          <text x="180" y="60" textAnchor="middle" className="uc-agent-wayfinder-org__col-sub">
-            Connects from outside the app
-          </text>
-          <line x1="40" y1="78" x2="320" y2="78" className="uc-agent-wayfinder-org__divider" />
-
-          <g transform="translate(156,150)">
-            <g transform="scale(0.86)">
-              <McpClientIcon className="uc-agent-wayfinder-org__icon uc-agent-wayfinder-org__icon--agent" />
-            </g>
-          </g>
-          <text x="180" y="226" textAnchor="middle" className="uc-agent-wayfinder-org__cast-name">
-            MCP Inspector
-          </text>
-          <text x="180" y="246" textAnchor="middle" className="uc-agent-wayfinder-org__cast-role">
-            Calls MCP tools directly
-          </text>
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-/**
- * Architecture diagram for the MCP Authorization tryout. The left column
- * stacks User → External MCP Client → Wayfinder Server in a symmetric
- * column centered at x=290; ThunderID is the identity authority on the
- * right. Labels stay abstract — no endpoints, no implementation notes.
- */
-export function WayfinderMcpArchitecture() {
-  const {siteConfig} = useDocusaurusContext();
-  const productName =
-    (siteConfig.customFields?.product as DocusaurusProductConfig | undefined)?.project.name ?? siteConfig.title;
-  return (
-    <div className="uc-agent-wayfinder-arch">
-      <svg
-        className="uc-agent-wayfinder-arch__svg"
-        viewBox="0 0 960 620"
-        xmlns="http://www.w3.org/2000/svg"
-        role="img"
-        aria-label={`External MCP client, Wayfinder Server, and ${productName}`}
-      >
-        <defs>
-          <marker
-            id="uc-mcp-arch-arrow"
-            viewBox="0 0 10 10"
-            refX="9"
-            refY="5"
-            markerWidth="6"
-            markerHeight="6"
-            orient="auto-start-reverse"
-          >
-            <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
-          </marker>
-        </defs>
-
-        {/* User — top of the left column */}
-        <g className="uc-agent-wayfinder-arch__consumers">
-          <text x="290" y="32" textAnchor="middle" className="uc-agent-wayfinder-arch__group-label">
-            User
-          </text>
-
-          <g transform="translate(268,46)">
-            <g transform="scale(0.78)">
-              <PersonIcon className="uc-agent-wayfinder-arch__icon" />
-            </g>
-          </g>
-          <text x="290" y="116" textAnchor="middle" className="uc-agent-wayfinder-arch__cast-name">
-            John Doe
-          </text>
-        </g>
-
-        {/* User → External MCP Client */}
-        <g className="uc-agent-wayfinder-arch__edges">
-          <line x1="290" y1="130" x2="290" y2="170" markerEnd="url(#uc-mcp-arch-arrow)" />
-          <text x="304" y="156" className="uc-agent-wayfinder-arch__edge-label">
-            Use
-          </text>
-        </g>
-
-        {/* External MCP Client — middle of the left column */}
-        <g className="uc-agent-wayfinder-arch__app" transform="translate(80,170)">
-          <rect width="420" height="130" rx="12" />
-          <text x="210" y="40" textAnchor="middle" className="uc-agent-wayfinder-arch__app-title">
-            External MCP Client
-          </text>
-          <text x="210" y="64" textAnchor="middle" className="uc-agent-wayfinder-arch__sub">
-            MCP Inspector
-          </text>
-          <line x1="40" y1="80" x2="380" y2="80" className="uc-agent-wayfinder-arch__divider" />
-          <text x="210" y="104" textAnchor="middle" className="uc-agent-wayfinder-arch__detail">
-            Discovers, signs in, calls MCP tools
-          </text>
-        </g>
-
-        {/* ThunderID — right column, full height of the middle stack */}
-        <g className="uc-agent-wayfinder-arch__idp" transform="translate(700,170)">
-          <rect width="220" height="370" rx="12" />
-          <text x="110" y="46" textAnchor="middle" className="uc-agent-wayfinder-arch__idp-title">
-            {productName}
-          </text>
-          <text x="110" y="72" textAnchor="middle" className="uc-agent-wayfinder-arch__sub">
-            Identity Authority
-          </text>
-          <line x1="30" y1="92" x2="190" y2="92" className="uc-agent-wayfinder-arch__divider" />
-          <text x="110" y="124" textAnchor="middle" className="uc-agent-wayfinder-arch__detail">
-            Manages identities
-          </text>
-          <text x="110" y="148" textAnchor="middle" className="uc-agent-wayfinder-arch__detail">
-            and issues tokens
-          </text>
-        </g>
-
-        {/* Wayfinder Server — bottom of the left column, mirrors External MCP Client */}
-        <g className="uc-agent-wayfinder-arch__svc" transform="translate(80,400)">
-          <rect width="420" height="140" rx="12" />
-          <text x="210" y="40" textAnchor="middle" className="uc-agent-wayfinder-arch__app-title">
-            Wayfinder Server
-          </text>
-          <text x="210" y="64" textAnchor="middle" className="uc-agent-wayfinder-arch__sub">
-            Booking API + MCP tools
-          </text>
-          <line x1="40" y1="80" x2="380" y2="80" className="uc-agent-wayfinder-arch__divider" />
-          <text x="210" y="110" textAnchor="middle" className="uc-agent-wayfinder-arch__detail">
-            Holds flights, hotels, bookings
-          </text>
-        </g>
-
-        {/* Edges */}
-        <g className="uc-agent-wayfinder-arch__edges">
-          {/* External MCP Client ↔ ThunderID */}
-          <line x1="500" y1="220" x2="700" y2="220" markerEnd="url(#uc-mcp-arch-arrow)" />
-          <line x1="700" y1="250" x2="500" y2="250" markerEnd="url(#uc-mcp-arch-arrow)" />
-          <text x="600" y="212" textAnchor="middle" className="uc-agent-wayfinder-arch__edge-label">
-            Sign in
-          </text>
-          <text x="600" y="272" textAnchor="middle" className="uc-agent-wayfinder-arch__edge-label">
-            Issue tokens
-          </text>
-
-          {/* External MCP Client → Wayfinder Server */}
-          <line x1="290" y1="300" x2="290" y2="400" markerEnd="url(#uc-mcp-arch-arrow)" />
-          <text x="304" y="354" className="uc-agent-wayfinder-arch__edge-label">
-            Call MCP tools
-          </text>
-
-          {/* Wayfinder Server → ThunderID */}
-          <line x1="500" y1="470" x2="700" y2="470" markerEnd="url(#uc-mcp-arch-arrow)" />
-          <text x="600" y="462" textAnchor="middle" className="uc-agent-wayfinder-arch__edge-label">
-            Validate tokens
-          </text>
         </g>
       </svg>
     </div>

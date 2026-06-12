@@ -37,13 +37,13 @@ interface BranchCard {
 
 const cards: BranchCard[] = [
   {
-    href: '/docs/next/use-cases/b2c/customer-identity',
+    href: '/docs/next/use-cases/b2c/',
     animationClass: 'uc-card-1',
     icon: <FingerprintIcon size={26} />,
     accentColor: '#3b82f6',
     iconBackground: 'rgba(59,130,246,0.10)',
     category: 'Consumer Apps',
-    title: 'B2C - Customer Identity',
+    title: 'B2C - Overview',
     description:
       'Frictionless sign-up and sign-in for consumer apps. Passkeys, social login, and step-up authentication.',
     bullets: [
