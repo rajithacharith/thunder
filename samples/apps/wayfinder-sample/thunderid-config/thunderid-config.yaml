@@ -248,7 +248,7 @@ nodes:
           identifier: password
           type: PASSWORD_INPUT
           required: true
-    onSuccess: auth_assert
+    onSuccess: registration_complete
     onIncomplete: prompt_schema_attrs
   - id: prompt_schema_attrs
     type: PROMPT
@@ -274,11 +274,42 @@ nodes:
         action:
           ref: action_schema_attrs
           nextNode: provisioning
-  - id: auth_assert
-    type: TASK_EXECUTION
-    executor:
-      name: AuthAssertExecutor
-    onSuccess: end
+  - id: registration_complete
+    type: PROMPT
+    meta:
+      components:
+        - align: center
+          type: TEXT
+          id: registration_complete_icon
+          label: "✅"
+          variant: HEADING_1
+        - align: center
+          type: TEXT
+          id: registration_complete_heading
+          label: Account Created
+          variant: HEADING_1
+        - align: center
+          type: TEXT
+          id: registration_complete_message
+          label: Your Wayfinder account is ready. Sign in to start exploring.
+          variant: HEADING_6
+        - type: STACK
+          id: registration_complete_link_stack
+          category: BLOCK
+          align: center
+          direction: row
+          justify: center
+          gap: 2
+          items: 1
+          resourceType: ELEMENT
+          components:
+            - type: RICH_TEXT
+              id: registration_complete_link
+              category: DISPLAY
+              resourceType: ELEMENT
+              label: '<h3 class="rich-text-heading-h3"><a href="{{meta(application.url)}}" target="_blank" rel="noopener noreferrer" class="rich-text-link"><span class="rich-text-pre-wrap">Go to Wayfinder</span></a></h3>'
+    message: Registration complete
+    next: end
   - id: end
     type: END
 
