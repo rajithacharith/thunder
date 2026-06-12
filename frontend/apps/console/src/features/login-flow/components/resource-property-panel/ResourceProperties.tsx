@@ -150,7 +150,6 @@ function ResourceProperties({
         <>
           {renderElementId()}
           <ExecutionExtendedProperties resource={resource} onChange={handleChange} />
-          {renderElementPropertyFactory()}
         </>
       );
     case ElementCategories.Display:
