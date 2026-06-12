@@ -1,0 +1,54 @@
+---
+title: Tokens & APIs
+description: Session strategy, token lifetimes, and API protection patterns for B2C consumer applications.
+sidebar_position: 9
+---
+
+
+# Tokens & APIs
+
+After sign-in, the application holds a token or session that represents the user, and your APIs need to know what it means. This section covers what is issued, how it lives, and how downstream services trust it.
+
+## Session and Token Strategy
+
+Once a user signs in, the application holds a token or session that represents them. The shape of that credential decides how long the user stays signed in, how quickly access can be revoked when needed, and how much load lands on the identity product. Most B2C apps make this decision once and live with it for years, so it pays to pick deliberately.
+
+Three patterns cover most consumer scenarios:
+
+- **Stateless tokens:** short-lived access tokens backed by longer refresh tokens, with no server-side session record. Scales easily because no lookup is needed to validate a token. Revocation is best-effort and waits for the token to expire.
+- **Server-backed sessions:** every refresh and session is backed by a server-side record ThunderID can revoke instantly, which gives you true sign-out-everywhere.
+- **Sliding-expiry sessions:** sessions extend on each use, so returning users rarely have to sign in again, in return for longer-lived credentials.
+
+Many consumer apps combine the second and third into a long, sliding, revocable session.
+
+The choice shapes other concerns. A revocable session is needed for sign-out-everywhere to work reliably. Long-lived sessions should be paired with refresh-token rotation to limit the damage if a token leaks.
+
+**Capabilities:**
+
+- Stateless JWT access tokens with refresh tokens
+- Server-side session record backing each refresh
+- Instant token and session revocation
+- Refresh-token rotation on use
+- Sliding-expiry sessions for stay-signed-in
+- Configurable access, refresh, and session lifetimes
+- Single logout across application surfaces
+
+## Protect APIs the App Calls
+
+Sign-in is one half of identity; the other is protecting the APIs your app calls after sign-in. ThunderID issues tokens during sign-in, and the same tokens carry the user's permissions to your APIs. The API does not have to know who the user is; it only needs to validate the token and check the permissions inside.
+
+Validation typically happens at the API edge, in a gateway or middleware that verifies JWT signatures or calls ThunderID's introspection endpoint. Permissions are expressed as scopes (what the app may do) and audiences (which API the token is valid for). Grouping related APIs into a resource server lets multiple endpoints share one set of permission rules instead of each endpoint enforcing them ad-hoc.
+
+**Capabilities:**
+
+- Issue an OAuth2 access token to the app on sign-in
+- Validate the token at the API edge via JWT signature verification or introspection
+- Scope-based authorization checks
+- Bind a token to a specific API via audience or resource indicator
+- Group related APIs into a resource server so they share permission rules
+
+## Continue Designing Your Architecture
+
+Review the other architecture decisions that shape your B2C application.
+
+<B2CArchitectureDecisions currentDecision="tokens-and-apis" />

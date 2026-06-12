@@ -9,11 +9,11 @@ sidebar_position: 3
 In this walkthrough, Emma signs up for Wayfinder with her email and a password, and arrives at the dashboard ready to make her first booking. <ProductName /> creates a `Customer` user record from her input and attaches the `Traveler` role so she has booking permissions from her first session.
 
 :::note Prerequisites
-Complete [Set Up Your Environment](../../try-it-out#set-up-your-environment) before starting this walkthrough.
+Complete [Set Up Your Environment](../setup#set-up-your-environment) before starting this walkthrough.
 :::
 
 :::info Background
-[Enable Self Sign-Up](../../customer-identity#enable-self-sign-up) covers the requirements story behind this use case.
+[B2C overview](../../#building-blocks-of-the-b2c-identity-journey) covers the requirements story behind this use case.
 :::
 
 ## Pick Your Pattern
@@ -28,39 +28,38 @@ In the redirect-based pattern, the consumer app sends the user to <ProductName /
 1. Open <WayFinderSampleUrl />. The Wayfinder home page loads.
 2. Select **Sign in**. The browser navigates to <ProductName />.
 3. Select **Sign up**. The browser navigates to the <ProductName /> sign-up page.
-4. Fill in Emma's details (username `emma.wilson`, email `emma.wilson@example.com`, first name `Emma`, last name `Wilson`, mobile number `+15550148812`, and a password), then submit.
-5. <ProductName /> runs the sign-up flow: it creates a `Customer` user and assigns the `Traveler` role.
-6. <ProductName /> shows a confirmation screen with a link to redirect back to the Wayfinder app.
+4. Fill in Emma's details — username `emma.wilson`, email `emma.wilson@example.com`, given name `Emma`, family name `Wilson`, and a password — then submit.
+5. <ProductName /> runs the sign-up flow: it creates a `Customer` user, records her terms acceptance, and assigns the `Traveler` role.
+6. The browser returns to Wayfinder. Emma arrives at the dashboard, ready to make her first booking.
 
 **Try a Variant**
 
-- Add Google as a federated sign-up option. See **Federation** under [Cross-Cutting Capabilities](../../customer-identity#cross-cutting-capabilities).
+- Add Google as a federated sign-up option. See the building blocks in [B2C overview](../../#building-blocks-of-the-b2c-identity-journey).
 
 </details>
 
 <details>
-  <summary>App-native step-by-step (verbose flow)</summary>
+  <summary>App-native step-by-step</summary>
 
-Coming soon. See the [App-native pattern](../../solution-patterns#app-native) for what to expect.
+Coming soon. See the [App-native pattern](../../integration-patterns#app-native) for what to expect.
 
 </details>
 
 <details>
-  <summary>App-native managed (non-verbose flow)</summary>
+  <summary>App-native managed</summary>
 
-Coming soon. See the [App-native pattern](../../solution-patterns#app-native) for what to expect.
+Coming soon. See the [App-native pattern](../../integration-patterns#app-native) for what to expect.
 
 </details>
 
 <details>
   <summary>Direct API</summary>
 
-Coming soon. See the [Direct API pattern](../../solution-patterns#direct-api) for what to expect.
+Coming soon. See the [Direct API pattern](../../integration-patterns#direct-api) for what to expect.
 
 </details>
 
 ## Going Deeper
 
 - Want to understand how user records and roles come together? See [User Types](../../identity-concepts#user-types), [Roles](../../identity-concepts#roles), and [Flows](../../identity-concepts#flows) in the Identity Concepts.
-- Prefer to build the registration flow manually? See [Build the Registration Flow](../../configure-it-yourself#build-the-registration-flow) in Configure It Yourself.
-- Building self sign-up in your own app instead of Wayfinder? See [Self Sign-Up — Try In Your Own App](../../try-in-your-own-app/self-sign-up).
+- Prefer to build the registration flow manually? See [Build the Registration Flow](../configure-it-yourself#build-the-registration-flow) in Configure It Yourself.

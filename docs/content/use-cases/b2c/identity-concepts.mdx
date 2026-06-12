@@ -1,12 +1,12 @@
 ---
 title: Identity Concepts
-description: How the Wayfinder sample maps to product concepts such as user types, resource servers, permissions, roles, applications, and flows.
+description: How the Wayfinder sample maps to product concepts — user types, resource servers, permissions, roles, applications, and flows.
 sidebar_position: 5
 ---
 
 # Identity Concepts
 
-This page explains the identity concepts behind the Wayfinder sample you set up in [Try It Out](../try-it-out). Each section describes one <ProductName /> concept and shows how the sample uses it.
+This page explains the identity concepts behind the Wayfinder sample you set up in [Try It Out](../try-it-out/setup). Each section describes one <ProductName /> concept and shows how the sample uses it.
 
 ## Organization
 
@@ -30,7 +30,7 @@ A **resource server** represents the APIs of a single backend. Each resource ser
 Wayfinder's booking API is one resource server with a single `booking` resource that has three actions: `read`, `create`, and `cancel`. The generated permissions are `booking:read`, `booking:create`, and `booking:cancel`.
 
 ```
-wayfinder-booking                       (Resource Server)
+booking-api                             (Resource Server)
 └── booking                             (Resource)
     ├── read     →  booking:read        (Permission)
     ├── create   →  booking:create
