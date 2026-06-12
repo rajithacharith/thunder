@@ -635,7 +635,9 @@ export default function ApplicationCreatePage(): JSX.Element {
                         sx={{minWidth: 100}}
                         onClick={handleNextStep}
                       >
-                        {t('common:actions.continue')}
+                        {visibleSteps.indexOf(currentStep) === visibleSteps.length - 1
+                          ? t('common:actions.finish')
+                          : t('common:actions.continue')}
                       </Button>
                     </Box>
                   )}
