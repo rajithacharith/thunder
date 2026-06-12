@@ -779,3 +779,208 @@ func buildTestAssertion(claims map[string]interface{}) string {
 	enc := base64.RawURLEncoding
 	return enc.EncodeToString(header) + "." + enc.EncodeToString(payload) + "." + enc.EncodeToString([]byte("sig"))
 }
+
+const testIssuer = "https://thunder.example.com"
+const testEntityID = "entity-abc-123"
+
+func (suite *CIBAServiceTestSuite) withIssuer() {
+	config.ResetServerRuntime()
+	testCfg := &config.Config{}
+	testCfg.JWT.Issuer = testIssuer
+	_ = config.InitializeServerRuntime("test", testCfg)
+}
+
+func (suite *CIBAServiceTestSuite) validIDTokenHint() string {
+	return buildTestAssertion(map[string]interface{}{
+		"iss": testIssuer,
+		"aud": "client-1",
+		"sub": testEntityID,
+		"exp": float64(time.Now().Add(10 * time.Minute).Unix()),
+	})
+}
+
+func (suite *CIBAServiceTestSuite) TestInitiate_WithIDTokenHint_Success() {
+	suite.withIssuer()
+	hint := suite.validIDTokenHint()
+	suite.mockJWTService.EXPECT().VerifyJWTSignature(mock.Anything, hint).Return(nil)
+	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.MatchedBy(
+		func(initCtx *flowexec.FlowInitContext) bool {
+			return initCtx.InitialInputs[flowcm.UserInputKeyLoginHint] == testEntityID
+		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: flowcm.FlowStatusIncomplete}, nil)
+	suite.expectStoreAddSuccess()
+
+	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
+		IDTokenHint: hint,
+		Scope:       "openid",
+	}, suite.oauthApp)
+
+	suite.Nil(cibaErr)
+	suite.NotNil(resp)
+}
+
+func (suite *CIBAServiceTestSuite) TestInitiate_WithIDTokenHint_InvalidJWT() {
+	suite.withIssuer()
+
+	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
+		IDTokenHint: "not.a.valid.jwt.at.all",
+		Scope:       "openid",
+	}, suite.oauthApp)
+
+	suite.Nil(resp)
+	suite.NotNil(cibaErr)
+	suite.Equal(oauth2const.ErrorInvalidRequest, cibaErr.Code)
+}
+
+func (suite *CIBAServiceTestSuite) TestInitiate_WithIDTokenHint_WrongIssuer() {
+	suite.withIssuer()
+	hint := buildTestAssertion(map[string]interface{}{
+		"iss": "https://foreign.example.com",
+		"aud": "client-1",
+		"sub": testEntityID,
+		"exp": float64(time.Now().Add(10 * time.Minute).Unix()),
+	})
+
+	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
+		IDTokenHint: hint,
+		Scope:       "openid",
+	}, suite.oauthApp)
+
+	suite.Nil(resp)
+	suite.NotNil(cibaErr)
+	suite.Equal(oauth2const.ErrorInvalidRequest, cibaErr.Code)
+}
+
+func (suite *CIBAServiceTestSuite) TestInitiate_WithIDTokenHint_AudNotChecked() {
+	suite.withIssuer()
+	hint := buildTestAssertion(map[string]interface{}{
+		"iss": testIssuer,
+		"aud": "some-other-client",
+		"sub": testEntityID,
+		"exp": float64(time.Now().Add(10 * time.Minute).Unix()),
+	})
+	suite.mockJWTService.EXPECT().VerifyJWTSignature(mock.Anything, hint).Return(nil)
+	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.Anything).
+		Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: flowcm.FlowStatusIncomplete}, nil)
+	suite.expectStoreAddSuccess()
+
+	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
+		IDTokenHint: hint,
+		Scope:       "openid",
+	}, suite.oauthApp)
+
+	suite.Nil(cibaErr)
+	suite.NotNil(resp)
+}
+
+func (suite *CIBAServiceTestSuite) TestInitiate_WithIDTokenHint_SubMissing() {
+	suite.withIssuer()
+	hint := buildTestAssertion(map[string]interface{}{
+		"iss": testIssuer,
+		"aud": "client-1",
+		"exp": float64(time.Now().Add(10 * time.Minute).Unix()),
+	})
+
+	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
+		IDTokenHint: hint,
+		Scope:       "openid",
+	}, suite.oauthApp)
+
+	suite.Nil(resp)
+	suite.NotNil(cibaErr)
+	suite.Equal(oauth2const.ErrorInvalidRequest, cibaErr.Code)
+}
+
+func (suite *CIBAServiceTestSuite) TestInitiate_WithIDTokenHint_ExpMissing() {
+	suite.withIssuer()
+	hint := buildTestAssertion(map[string]interface{}{
+		"iss": testIssuer,
+		"aud": "client-1",
+		"sub": testEntityID,
+	})
+	suite.mockJWTService.EXPECT().VerifyJWTSignature(mock.Anything, hint).Return(nil)
+
+	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
+		IDTokenHint: hint,
+		Scope:       "openid",
+	}, suite.oauthApp)
+
+	suite.Nil(resp)
+	suite.NotNil(cibaErr)
+	suite.Equal(oauth2const.ErrorInvalidRequest, cibaErr.Code)
+}
+
+func (suite *CIBAServiceTestSuite) TestInitiate_WithIDTokenHint_SignatureFailed() {
+	suite.withIssuer()
+	hint := suite.validIDTokenHint()
+	suite.mockJWTService.EXPECT().VerifyJWTSignature(mock.Anything, hint).
+		Return(&serviceerror.ServiceError{Code: "JWT-1004"})
+
+	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
+		IDTokenHint: hint,
+		Scope:       "openid",
+	}, suite.oauthApp)
+
+	suite.Nil(resp)
+	suite.NotNil(cibaErr)
+	suite.Equal(oauth2const.ErrorInvalidRequest, cibaErr.Code)
+}
+
+func (suite *CIBAServiceTestSuite) TestInitiate_WithIDTokenHint_KeyNotFound() {
+	suite.withIssuer()
+	hint := suite.validIDTokenHint()
+	suite.mockJWTService.EXPECT().VerifyJWTSignature(mock.Anything, hint).
+		Return(&serviceerror.ServiceError{Code: "JWT-1006"})
+
+	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
+		IDTokenHint: hint,
+		Scope:       "openid",
+	}, suite.oauthApp)
+
+	suite.Nil(resp)
+	suite.NotNil(cibaErr)
+	suite.Equal(oauth2const.ErrorInvalidRequest, cibaErr.Code)
+}
+
+func (suite *CIBAServiceTestSuite) TestInitiate_WithIDTokenHint_ExpiredBeyondThreshold() {
+	suite.withIssuer()
+	pastExp := time.Now().Unix() - cibaIDTokenHintDefaultMaxAgeDays*24*60*60 - 1
+	hint := buildTestAssertion(map[string]interface{}{
+		"iss": testIssuer,
+		"aud": "client-1",
+		"sub": testEntityID,
+		"exp": float64(pastExp),
+	})
+	suite.mockJWTService.EXPECT().VerifyJWTSignature(mock.Anything, hint).Return(nil)
+
+	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
+		IDTokenHint: hint,
+		Scope:       "openid",
+	}, suite.oauthApp)
+
+	suite.Nil(resp)
+	suite.NotNil(cibaErr)
+	suite.Equal(oauth2const.ErrorInvalidRequest, cibaErr.Code)
+}
+
+func (suite *CIBAServiceTestSuite) TestInitiate_WithIDTokenHint_ExpiredWithinThreshold() {
+	suite.withIssuer()
+	recentPastExp := time.Now().Unix() - (cibaIDTokenHintDefaultMaxAgeDays * 24 * 60 * 60 / 2)
+	hint := buildTestAssertion(map[string]interface{}{
+		"iss": testIssuer,
+		"aud": "client-1",
+		"sub": testEntityID,
+		"exp": float64(recentPastExp),
+	})
+	suite.mockJWTService.EXPECT().VerifyJWTSignature(mock.Anything, hint).Return(nil)
+	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.Anything).
+		Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: flowcm.FlowStatusIncomplete}, nil)
+	suite.expectStoreAddSuccess()
+
+	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
+		IDTokenHint: hint,
+		Scope:       "openid",
+	}, suite.oauthApp)
+
+	suite.Nil(cibaErr)
+	suite.NotNil(resp)
+}

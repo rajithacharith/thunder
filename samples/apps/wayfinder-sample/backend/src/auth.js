@@ -87,6 +87,8 @@ function verifySignature(token, jwk) {
   return verifier.verify(key, token.signature);
 }
 
+const CLOCK_SKEW_TOLERANCE_SECS = 30;
+
 function validateClaims(payload) {
   const now = Math.floor(Date.now() / 1000);
   const issuer = getIssuer();
@@ -96,11 +98,11 @@ function validateClaims(payload) {
     throw new Error("Invalid token issuer");
   }
 
-  if (payload.exp && payload.exp < now) {
+  if (payload.exp && payload.exp < now - CLOCK_SKEW_TOLERANCE_SECS) {
     throw new Error("Token has expired");
   }
 
-  if (payload.nbf && payload.nbf > now) {
+  if (payload.nbf && payload.nbf > now + CLOCK_SKEW_TOLERANCE_SECS) {
     throw new Error("Token is not active yet");
   }
 
@@ -111,6 +113,43 @@ function validateClaims(payload) {
       throw new Error("Invalid token audience");
     }
   }
+}
+
+export async function validateIdToken(token) {
+  const parsedToken = parseJwt(token);
+
+  if (parsedToken.header.alg !== "RS256") {
+    throw new Error("Unsupported token algorithm");
+  }
+
+  const jwks = await getJwks();
+  const jwk = jwks.keys?.find((key) => key.kid === parsedToken.header.kid);
+
+  if (!jwk) {
+    throw new Error("Signing key not found");
+  }
+
+  if (!verifySignature(parsedToken, jwk)) {
+    throw new Error("Invalid token signature");
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const issuer = getIssuer();
+  const payload = parsedToken.payload;
+
+  if (payload.iss !== issuer) {
+    throw new Error("Invalid token issuer");
+  }
+
+  if (payload.exp && payload.exp < now - CLOCK_SKEW_TOLERANCE_SECS) {
+    throw new Error("Token has expired");
+  }
+
+  if (payload.nbf && payload.nbf > now + CLOCK_SKEW_TOLERANCE_SECS) {
+    throw new Error("Token is not active yet");
+  }
+
+  return payload;
 }
 
 export async function getAuthenticatedUser(request) {

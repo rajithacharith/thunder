@@ -87,15 +87,7 @@ func (h *cibaHandler) HandleBackchannelAuthRequest(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// id_token_hint and login_hint_token are valid per the CIBA spec but not yet implemented
-	// by this OP. Return invalid_request with a clear message so clients can adapt.
-	// TODO: implement id_token_hint — resolve user from a previously issued ID token
-	if idTokenHint != "" {
-		utils.WriteJSONError(r.Context(), w, oauth2const.ErrorInvalidRequest,
-			"id_token_hint is not supported, use login_hint",
-			http.StatusBadRequest, nil)
-		return
-	}
+	// login_hint_token is valid per the CIBA spec but not yet implemented by this OP.
 	// TODO: implement login_hint_token — resolve user from a signed hint JWT
 	if loginHintToken != "" {
 		utils.WriteJSONError(r.Context(), w, oauth2const.ErrorInvalidRequest,
@@ -106,6 +98,7 @@ func (h *cibaHandler) HandleBackchannelAuthRequest(w http.ResponseWriter, r *htt
 
 	request := &BackchannelAuthRequest{
 		LoginHint:       loginHint,
+		IDTokenHint:     idTokenHint,
 		Scope:           r.FormValue(oauth2const.RequestParamScope),
 		BindingMessage:  r.FormValue(oauth2const.RequestParamBindingMessage),
 		RequestedExpiry: r.FormValue(oauth2const.RequestParamRequestedExpiry),

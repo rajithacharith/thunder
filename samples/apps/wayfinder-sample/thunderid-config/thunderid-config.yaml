@@ -881,7 +881,7 @@ nodes:
   - id: identify_user
     type: TASK_EXECUTION
     properties:
-      loginHintAttribute: email
+      loginHintAttribute: "{{.CIBA_LOGIN_HINT_ATTRIBUTE}}"
     executor:
       name: IdentifyingExecutor
       inputs:
@@ -1085,7 +1085,7 @@ nodes:
   - id: identify_user
     type: TASK_EXECUTION
     properties:
-      loginHintAttribute: email
+      loginHintAttribute: "{{.CIBA_LOGIN_HINT_ATTRIBUTE}}"
     executor:
       name: IdentifyingExecutor
       inputs:
@@ -1419,6 +1419,7 @@ name: WAYFINDER-CONCIERGE
 description: Wayfinder Concierge AI agent for the Wayfinder Travel sample
 ou_handle: default
 type: default
+logo_url: "emoji:✈️"
 auth_flow_handle: wayfinder-agent-auth-flow
 inbound_auth_config:
   - type: oauth2
@@ -1454,6 +1455,7 @@ name: WAYFINDER-UPGRADE-AGENT
 description: Upgrade scheduler agent — initiates CIBA for users with pending flight upgrade requests
 ou_handle: default
 type: default
+logo_url: "emoji:✈️"
 auth_flow_handle: wayfinder-ciba-email-flow
 allowed_user_types:
   - Customer

@@ -38,6 +38,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
 	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
 	"github.com/thunder-id/thunderid/internal/resource"
+	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/utils"
@@ -45,6 +46,8 @@ import (
 
 // cibaMaxBindingMessageLength is the maximum number of characters allowed in a binding_message.
 const cibaMaxBindingMessageLength = 256
+
+const cibaIDTokenHintDefaultMaxAgeDays = 30
 
 // CIBAServiceInterface defines the interface for the CIBA backchannel authentication service.
 // It covers the full lifecycle: initiation, callback, and token-endpoint polling operations.
@@ -155,19 +158,22 @@ func (s *cibaService) InitiateBackchannelAuth(
 		runtimeData[flowcm.RuntimeKeyRequestedAuthClasses] = request.ACRValues
 	}
 
-	// Execute the flow server-side. login_hint is placed in InitialInputs so the identifying
-	// executor resolves the user from ctx.UserInputs without an interactive input step.
-	// authReqID is in RuntimeData so invite_executor can include it in the notification link
-	// and auth_assert_executor can bind it as the ciba_auth_req_id claim in the assertion.
-	// The flow runs until it pauses at the display-only prompt node placed after the
-	// notification executor, signaling that the notification has been sent to the user.
+	loginHint := request.LoginHint
+	if request.IDTokenHint != "" {
+		sub, hintErr := s.validateIDTokenHint(ctx, request.IDTokenHint)
+		if hintErr != nil {
+			return nil, hintErr
+		}
+		loginHint = sub
+	}
+
 	flowStep, flowErr := s.flowExecService.InitiateAndExecute(ctx, &flowexec.FlowInitContext{
 		ApplicationID: oauthApp.ID,
 		FlowType:      string(flowcm.FlowTypeAuthentication),
 		RuntimeData:   runtimeData,
 		ExpirySeconds: expiresIn,
 		InitialInputs: map[string]string{
-			flowcm.UserInputKeyLoginHint: request.LoginHint,
+			flowcm.UserInputKeyLoginHint: loginHint,
 		},
 	})
 	if flowErr != nil {
@@ -348,12 +354,63 @@ func mapFlowErrorToCIBAError(failureReason string) *CIBAError {
 	}
 }
 
+// validateIDTokenHint decodes and validates the id_token_hint, returning the subject claim on success.
+func (s *cibaService) validateIDTokenHint(ctx context.Context, idTokenHint string) (string, *CIBAError) {
+	payload, err := jwt.DecodeJWTPayload(idTokenHint)
+	if err != nil {
+		return "", &CIBAError{Code: oauth2const.ErrorInvalidRequest, Message: "id_token_hint is not a valid JWT"}
+	}
+
+	configuredIssuer := config.GetServerRuntime().Config.JWT.Issuer
+	if iss, _ := payload[oauth2const.ClaimIss].(string); iss != configuredIssuer {
+		return "", &CIBAError{
+			Code:    oauth2const.ErrorInvalidRequest,
+			Message: "id_token_hint was not issued by this server",
+		}
+	}
+
+	sub, _ := payload[oauth2const.ClaimSub].(string)
+	if sub == "" {
+		return "", &CIBAError{Code: oauth2const.ErrorInvalidRequest, Message: "id_token_hint is missing the sub claim"}
+	}
+
+	if sigErr := s.jwtService.VerifyJWTSignature(ctx, idTokenHint); sigErr != nil {
+		s.logger.Debug(ctx, "id_token_hint signature verification failed",
+			log.String("error_code", sigErr.Code))
+		return "", &CIBAError{
+			Code:    oauth2const.ErrorInvalidRequest,
+			Message: "id_token_hint signature verification failed",
+		}
+	}
+
+	exp, ok := payload[oauth2const.ClaimExp].(float64)
+	if !ok {
+		return "", &CIBAError{
+			Code:    oauth2const.ErrorInvalidRequest,
+			Message: "id_token_hint is missing the exp claim",
+		}
+	}
+
+	maxAgeDays := config.GetServerRuntime().Config.OAuth.CIBA.IDTokenHintMaxAgeDays
+	if maxAgeDays == 0 {
+		maxAgeDays = cibaIDTokenHintDefaultMaxAgeDays
+	}
+	if time.Now().Unix() > int64(exp)+int64(maxAgeDays)*24*60*60 {
+		return "", &CIBAError{
+			Code:    oauth2const.ErrorInvalidRequest,
+			Message: "id_token_hint has exceeded the maximum allowed staleness period",
+		}
+	}
+
+	return sub, nil
+}
+
 // validateBackchannelAuthRequest validates the required parameters of a backchannel authentication request.
 func validateBackchannelAuthRequest(request *BackchannelAuthRequest, scopes []string) *CIBAError {
-	if request.LoginHint == "" {
+	if request.LoginHint == "" && request.IDTokenHint == "" {
 		return &CIBAError{
 			Code:    oauth2const.ErrorInvalidRequest,
-			Message: "login_hint is required",
+			Message: "A user hint is required",
 		}
 	}
 	if len(scopes) == 0 {

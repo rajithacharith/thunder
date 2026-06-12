@@ -157,7 +157,8 @@ The agent's client secret defaults to `wayfinder-agent-secret` (set in `thunderi
 | `JOHN_DOE_PASSWORD` | Yes | Password for the `john.doe` demo user |
 | `JANE_SMITH_PASSWORD` | Yes | Password for the `jane.smith` demo user |
 | `ALEX_CARTER_PASSWORD` | Yes | Password for the `alex.carter` demo user |
-| `CIBA_SMS_SENDER_ID` | **SMS only** | Notification sender ID for the CIBA SMS flow. Required only if you switch the upgrade agent to `wayfinder-ciba-sms-flow`. Obtain the sender ID after running the SMS setup script (see [CIBA Upgrade — SMS channel](#ciba-upgrade--sms-channel) below). |
+| `CIBA_LOGIN_HINT_ATTRIBUTE` | Yes | Attribute used by the CIBA flow's `IdentifyingExecutor` to resolve the login hint to a user. Set to `email` (default) when using `login_hint`, or `userID` when using `id_token_hint`. |
+| `SMS_SENDER_ID` | **SMS only** | Notification sender ID for the CIBA SMS flow. Required only if you switch the upgrade agent to `wayfinder-ciba-sms-flow`. Obtain the sender ID after running the SMS setup script (see [CIBA Upgrade — SMS channel](#ciba-upgrade--sms-channel) below). |
 
 ### Manual Setup
 
@@ -195,6 +196,15 @@ The only placeholder you must replace is in `ai-agent/.env`:
 - `ANTHROPIC_API_KEY=` (or `GOOGLE_API_KEY=`) — your LLM API key.
 
 The agent secret defaults to `wayfinder-agent-secret` (matching `thunderid.env`). Everything else in the examples is local development defaults that match the run instructions below.
+
+### Upgrade Scheduler
+
+The background scheduler that processes CIBA upgrade requests is **disabled by default**. Enable it only after the CIBA email (or SMS) flow is configured in ThunderID and the upgrade agent credentials are set:
+
+| Variable | Default | Description |
+|---|---|---|
+| `UPGRADE_SCHEDULER_ENABLED` | `false` | Set to `true` to start the scheduler. When disabled the agent starts normally but no CIBA polls are made. |
+| `CIBA_HINT_TYPE` | `login_hint` | Hint type sent to `bc-authorize`. `login_hint` uses the user's email address; `id_token_hint` uses the user's OIDC ID token stored at upgrade-request time. Changing this also requires updating `CIBA_LOGIN_HINT_ATTRIBUTE` in `thunderid-config/thunderid.env` and re-importing the ThunderID config. |
 
 ## Run
 
@@ -249,7 +259,10 @@ Sign out and sign in as `jane.smith` / `jane.smith`. Jane can browse flights, ho
 
 The Wayfinder Concierge supports requesting cabin upgrades. The upgrade is processed asynchronously by a background scheduler that authenticates the customer out-of-band using **CIBA (Client-Initiated Backchannel Authentication)**.
 
-**Before trying this feature**, update `john.doe`'s profile in Thunder Console with a real email address and mobile number — the CIBA notification is delivered to these contacts.
+**Before trying this feature:**
+
+1. Set `UPGRADE_SCHEDULER_ENABLED=true` in `ai-agent/.env` and restart the agent — the scheduler is disabled by default.
+2. Update `john.doe`'s profile in Thunder Console with a real email address — the CIBA notification is delivered there.
 
 Sign in as `john.doe` and try:
 
@@ -260,7 +273,7 @@ I want to upgrade my Colombo to Singapore booking to business class. What are my
 Upgrade my booking to flight-cmb-sin-01-biz
 ```text
 
-The agent submits the upgrade request and tells you that a notification will be sent. Sign out — within 30 seconds the upgrade scheduler picks up the request and emails you an approval link. Open the link, enter your password, approve the consent screen (first time only), and the upgrade is processed automatically.
+The agent submits the upgrade request and tells you that a notification will be sent. Make sure the scheduler is running (`UPGRADE_SCHEDULER_ENABLED=true`). Within 30 seconds it picks up the request and emails you an approval link. Open the link, enter your password, approve the consent screen (first time only), and the upgrade is processed automatically.
 
 Sign back in and ask:
 
@@ -283,7 +296,7 @@ By default the upgrade agent uses `wayfinder-ciba-email-flow`. To switch to SMS 
    Pass your SMS provider credentials in the request body. Thunder returns the created sender's `id`. Copy that value into `thunderid-config/thunderid.env`:
 
    ```env
-   CIBA_SMS_SENDER_ID=<sender-id-from-api>
+   SMS_SENDER_ID=<sender-id-from-api>
    ```
 
    Re-import `thunderid-config.yaml` so the CIBA SMS flow picks up the new sender ID.
@@ -295,3 +308,30 @@ By default the upgrade agent uses `wayfinder-ciba-email-flow`. To switch to SMS 
 Now request another upgrade on a different route (e.g. Colombo → Dubai). The notification arrives as an SMS instead of an email. Because you already approved the consent during the email flow, the consent screen is skipped — just enter your password and the upgrade is processed.
 
 > See [CIBA_DEMO_GUIDE.md](CIBA_DEMO_GUIDE.md) for a full end-to-end walkthrough of both channels.
+
+### Demo Scripts
+
+Helper scripts in `scripts/` let you reset and control demo state without going through the UI.
+
+| Script | What it does |
+|---|---|
+| `scripts/lock-business-class.sh` | Makes all Business class flights **unavailable**, so every upgrade request requires CIBA approval. Run this to reset the demo to its default state or to force the CIBA flow on demand. |
+| `scripts/unlock-business-class.sh` | Makes all Business class flights **available** again and immediately triggers the upgrade scheduler to process any pending requests. Use this after approving a CIBA notification to see the upgrade applied at once, rather than waiting for the next scheduler cycle. |
+| `scripts/reset-db.sh` | Deletes the SQLite database and re-seeds it with the default demo data. Run this to start over with a clean slate — all bookings, upgrades, and session data are wiped. |
+
+**Typical try-out flow:**
+
+```bash
+# 1. Lock Business class so upgrades require CIBA approval
+./scripts/lock-business-class.sh
+
+# 2. Ask the agent to upgrade a booking — it will initiate CIBA and pause
+# 3. Approve the notification (email or SMS link)
+
+# 4. Unlock and trigger processing — the upgrade completes immediately
+./scripts/unlock-business-class.sh
+
+# 5. Ask the agent to check your bookings — it now shows Business class
+```
+
+Set `WAYFINDER_BACKEND_URL` and `WAYFINDER_AGENT_URL` to override the default `http://localhost:8787` / `http://localhost:8790` endpoints if your services run on different ports.

@@ -70,6 +70,7 @@ type CIBAError struct {
 // BackchannelAuthRequest carries the parsed parameters of a backchannel authentication request.
 type BackchannelAuthRequest struct {
 	LoginHint       string
+	IDTokenHint     string
 	Scope           string
 	BindingMessage  string
 	RequestedExpiry string

@@ -163,20 +163,26 @@ func (suite *CIBAHandlerTestSuite) TestBackchannelAuth_MultipleHints() {
 	suite.Equal(oauth2const.ErrorInvalidRequest, body["error"])
 }
 
-func (suite *CIBAHandlerTestSuite) TestBackchannelAuth_IDTokenHintUnsupported() {
+func (suite *CIBAHandlerTestSuite) TestBackchannelAuth_IDTokenHintRoutedToService() {
 	client := &clientauth.OAuthClientInfo{
 		ClientID: "client-1",
 		OAuthApp: &inboundmodel.OAuthClient{ClientID: "client-1"},
 	}
+	suite.mockService.EXPECT().InitiateBackchannelAuth(mock.Anything, mock.MatchedBy(
+		func(r *BackchannelAuthRequest) bool {
+			return r.IDTokenHint == "eyJhbGci" && r.LoginHint == "" && r.Scope == "openid"
+		}), client.OAuthApp).Return(&BackchannelAuthResponse{
+		AuthReqID: "auth-req-1",
+		ExpiresIn: 120,
+		Interval:  5,
+	}, nil)
+
 	req := suite.newAuthRequest("id_token_hint=eyJhbGci&scope=openid", client)
 	w := httptest.NewRecorder()
 
 	suite.handler.HandleBackchannelAuthRequest(w, req)
 
-	suite.Equal(http.StatusBadRequest, w.Code)
-	var body map[string]string
-	suite.NoError(json.NewDecoder(w.Body).Decode(&body))
-	suite.Equal(oauth2const.ErrorInvalidRequest, body["error"])
+	suite.Equal(http.StatusOK, w.Code)
 }
 
 func (suite *CIBAHandlerTestSuite) TestBackchannelAuth_LoginHintTokenUnsupported() {
