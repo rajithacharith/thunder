@@ -35,11 +35,13 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/security"
 	"github.com/thunder-id/thunderid/internal/system/sysauthz"
+	"github.com/thunder-id/thunderid/internal/system/transaction"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 	"github.com/thunder-id/thunderid/tests/mocks/entitymock"
 	"github.com/thunder-id/thunderid/tests/mocks/entitytypemock"
 	"github.com/thunder-id/thunderid/tests/mocks/oumock"
 	"github.com/thunder-id/thunderid/tests/mocks/sysauthzmock"
+	"github.com/thunder-id/thunderid/tests/mocks/transactionmock"
 )
 
 // stubTransactioner is a stub implementation of Transactioner for testing.
@@ -1950,6 +1952,146 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateGroupIDs() {
 			suite.Require().Equal(*tc.expectErr, *err)
 
 			storeMock.AssertExpectations(suite.T())
+		})
+	}
+}
+
+func (suite *GroupServiceTestSuite) TestGroupService_AddMembersToGroups() {
+	defaultMembers := []Member{{ID: "usr-001", Type: MemberTypeUser}}
+	testCases := []struct {
+		name     string
+		members  []Member
+		groupIDs []string
+		setup    func(*groupStoreInterfaceMock, *entitymock.EntityServiceInterfaceMock)
+		txErr    error
+		wantErr  *serviceerror.ServiceError
+	}{
+		{
+			name:     "empty group IDs",
+			members:  defaultMembers,
+			groupIDs: []string{},
+			wantErr:  nil,
+		},
+		{
+			name:     "empty members",
+			members:  []Member{},
+			groupIDs: []string{"grp-001"},
+			wantErr:  nil,
+		},
+		{
+			name:     "validate store error",
+			members:  defaultMembers,
+			groupIDs: []string{"grp-001"},
+			setup: func(storeMock *groupStoreInterfaceMock, _ *entitymock.EntityServiceInterfaceMock) {
+				storeMock.On("ValidateGroupIDs", mock.Anything, []string{"grp-001"}).
+					Return(nil, errors.New("db error")).Once()
+			},
+			wantErr: &serviceerror.InternalServerError,
+		},
+		{
+			name:     "invalid group IDs",
+			members:  defaultMembers,
+			groupIDs: []string{"grp-bad"},
+			setup: func(storeMock *groupStoreInterfaceMock, _ *entitymock.EntityServiceInterfaceMock) {
+				storeMock.On("ValidateGroupIDs", mock.Anything, []string{"grp-bad"}).
+					Return([]string{"grp-bad"}, nil).Once()
+			},
+			wantErr: &ErrorInvalidGroupMemberID,
+		},
+		{
+			name:     "add group members fails",
+			members:  defaultMembers,
+			groupIDs: []string{"grp-001"},
+			setup: func(storeMock *groupStoreInterfaceMock, _ *entitymock.EntityServiceInterfaceMock) {
+				storeMock.On("ValidateGroupIDs", mock.Anything, []string{"grp-001"}).
+					Return(nil, nil).Once()
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
+					Return(GroupDAO{}, ErrGroupNotFound).Once()
+			},
+			wantErr: &ErrorGroupNotFound,
+		},
+		{
+			name:     "transactioner error",
+			members:  defaultMembers,
+			groupIDs: []string{"grp-001"},
+			setup: func(storeMock *groupStoreInterfaceMock, _ *entitymock.EntityServiceInterfaceMock) {
+				storeMock.On("ValidateGroupIDs", mock.Anything, []string{"grp-001"}).
+					Return(nil, nil).Once()
+			},
+			txErr:   errors.New("tx failed"),
+			wantErr: &serviceerror.InternalServerError,
+		},
+		{
+			name:     "success single group",
+			members:  defaultMembers,
+			groupIDs: []string{"grp-001"},
+			setup: func(storeMock *groupStoreInterfaceMock, entityMock *entitymock.EntityServiceInterfaceMock) {
+				storeMock.On("ValidateGroupIDs", mock.Anything, []string{"grp-001"}).
+					Return(nil, nil).Once()
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
+					Return(GroupDAO{ID: "grp-001", OUID: testOUID1, Name: "g1"}, nil)
+				entityMock.On("GetEntitiesByIDs", mock.Anything, []string{"usr-001"}).
+					Return([]entity.Entity{{ID: "usr-001", Category: entity.EntityCategoryUser}}, nil)
+				storeMock.On("AddGroupMembers", mock.Anything, "grp-001", mock.Anything).
+					Return(nil).Once()
+			},
+			wantErr: nil,
+		},
+		{
+			name:     "success multiple groups",
+			members:  defaultMembers,
+			groupIDs: []string{"grp-001", "grp-002"},
+			setup: func(storeMock *groupStoreInterfaceMock, entityMock *entitymock.EntityServiceInterfaceMock) {
+				storeMock.On("ValidateGroupIDs", mock.Anything, []string{"grp-001", "grp-002"}).
+					Return(nil, nil).Once()
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
+					Return(GroupDAO{ID: "grp-001", OUID: testOUID1, Name: "g1"}, nil)
+				storeMock.On("GetGroup", mock.Anything, "grp-002").
+					Return(GroupDAO{ID: "grp-002", OUID: testOUID1, Name: "g2"}, nil)
+				entityMock.On("GetEntitiesByIDs", mock.Anything, []string{"usr-001"}).
+					Return([]entity.Entity{{ID: "usr-001", Category: entity.EntityCategoryUser}}, nil)
+				storeMock.On("AddGroupMembers", mock.Anything, "grp-001", mock.Anything).Return(nil).Once()
+				storeMock.On("AddGroupMembers", mock.Anything, "grp-002", mock.Anything).Return(nil).Once()
+			},
+			wantErr: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		suite.Run(tc.name, func() {
+			storeMock := newGroupStoreInterfaceMock(suite.T())
+			entityMock := entitymock.NewEntityServiceInterfaceMock(suite.T())
+			if tc.setup != nil {
+				tc.setup(storeMock, entityMock)
+			}
+
+			var txner transaction.Transactioner
+			if tc.txErr != nil {
+				txMock := transactionmock.NewTransactionerMock(suite.T())
+				txMock.On("Transact", mock.Anything, mock.Anything).Return(tc.txErr)
+				txner = txMock
+			} else {
+				txner = &stubTransactioner{}
+			}
+			svc := &groupService{
+				authzService:  newAllowAllAuthz(suite.T()),
+				groupStore:    storeMock,
+				entityService: entityMock,
+				transactioner: txner,
+			}
+
+			err := svc.AddMembersToGroups(context.Background(), tc.members, tc.groupIDs)
+
+			if tc.wantErr != nil {
+				suite.Require().NotNil(err)
+				suite.Require().Equal(*tc.wantErr, *err)
+			} else {
+				suite.Require().Nil(err)
+			}
+
+			storeMock.AssertExpectations(suite.T())
+			entityMock.AssertExpectations(suite.T())
 		})
 	}
 }

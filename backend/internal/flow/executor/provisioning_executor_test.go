@@ -191,21 +191,12 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success() {
 		return u.OUID == testOUID && u.Type == testUserType
 	}), mock.Anything).Return(createdUser, nil)
 
-	// Mock group assignment
-	suite.mockGroupService.On("AddGroupMembers", mock.Anything, "test-group-id",
-		mock.MatchedBy(func(members []group.Member) bool {
-			return len(members) == 1 &&
-				members[0].ID == testNewUserID &&
-				members[0].Type == group.MemberTypeUser
-		})).Return(nil, nil)
-
-	// Mock role assignment
-	suite.mockRoleAssignmentService.On("AddAssignments", mock.Anything, "test-role-id",
-		mock.MatchedBy(func(assignments []role.RoleAssignment) bool {
-			return len(assignments) == 1 &&
-				assignments[0].ID == testNewUserID &&
-				assignments[0].Type == role.AssigneeTypeUser
-		})).Return(nil)
+	suite.mockGroupService.On("AddMembersToGroups",
+		mock.Anything, []group.Member{{ID: testNewUserID, Type: group.MemberTypeUser}}, []string{"test-group-id"}).
+		Return((*serviceerror.ServiceError)(nil))
+	suite.mockRoleAssignmentService.On("AddAssigneesToRoles", mock.Anything,
+		[]role.RoleAssignment{{ID: testNewUserID, Type: role.AssigneeTypeUser}}, []string{"test-role-id"}).
+		Return((*serviceerror.ServiceError)(nil))
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -736,8 +727,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_SkipProvisioning_Proceed
 	suite.mockEntityProvider.AssertExpectations(suite.T())
 
 	// Verify no group/role methods were called
-	suite.mockGroupService.AssertNotCalled(suite.T(), "GetGroup")
-	suite.mockRoleAssignmentService.AssertNotCalled(suite.T(), "AddAssignments")
+	suite.mockGroupService.AssertNotCalled(suite.T(), "AddMembersToGroups")
+	suite.mockRoleAssignmentService.AssertNotCalled(suite.T(), "AddAssigneesToRoles")
 }
 
 func (suite *ProvisioningExecutorTestSuite) TestExecute_UserEligibleForProvisioning() {
@@ -1136,74 +1127,10 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_GroupAssignmentF
 
 	suite.mockEntityProvider.On("CreateEntity", mock.Anything, mock.Anything).Return(createdUser, nil)
 
-	// Mock group assignment fails (e.g., group doesn't exist)
-	suite.mockGroupService.On("AddGroupMembers", mock.Anything, "test-group-id", mock.Anything).
-		Return(nil, &serviceerror.ServiceError{
-			Error: i18ncore.I18nMessage{Key: "error.test.group_not_found", DefaultValue: "Group not found"},
-		})
-
-	// Role assignment should still be attempted
-	suite.mockRoleAssignmentService.On("AddAssignments", mock.Anything, "test-role-id", mock.Anything).Return(nil)
-
-	resp, err := suite.executor.Execute(ctx)
-
-	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	assert.Contains(suite.T(), resp.Error.Error.DefaultValue, "Failed to assign groups and roles")
-	assert.Contains(suite.T(), resp.Error.Error.DefaultValue, "group")
-
-	// Verify role assignment WAS attempted despite group failure
-	suite.mockRoleService.AssertExpectations(suite.T())
-}
-
-// Test both group and role assignment failure - provisioning should fail with combined error
-func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_BothGroupAndRoleAssignmentFail() {
-	suite.expectSchemaForProvisioning()
-	attrs := map[string]interface{}{"username": "newuser"}
-	attrsJSON, _ := json.Marshal(attrs)
-
-	ctx := &core.NodeContext{
-		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
-		UserInputs: map[string]string{
-			"username": "newuser",
-		},
-		RuntimeData: map[string]string{
-			ouIDKey:     testOUID,
-			userTypeKey: testUserType,
-		},
-		NodeInputs: []common.Input{
-			{Identifier: "username", Type: "string", Required: true},
-		},
-		NodeProperties: map[string]interface{}{
-			"assignGroup": "test-group-id",
-			"assignRole":  "test-role-id",
-		},
-	}
-
-	suite.mockEntityProvider.On("IdentifyEntity", attrs).Return(nil,
-		entityprovider.NewEntityProviderError(entityprovider.ErrorCodeEntityNotFound, "", ""))
-
-	createdUser := &entityprovider.Entity{
-		ID:         testNewUserID,
-		OUID:       testOUID,
-		Type:       testUserType,
-		Attributes: attrsJSON,
-	}
-
-	suite.mockEntityProvider.On("CreateEntity", mock.Anything, mock.Anything).Return(createdUser, nil)
-
-	// Mock group assignment fails
-	suite.mockGroupService.On("AddGroupMembers", mock.Anything, "test-group-id", mock.Anything).
-		Return(nil, &serviceerror.ServiceError{
-			Error: i18ncore.I18nMessage{Key: "error.test.group_not_found", DefaultValue: "Group not found"},
-		})
-
-	// Mock role assignment also fails
-	suite.mockRoleAssignmentService.On("AddAssignments", mock.Anything, "test-role-id", mock.Anything).
+	suite.mockGroupService.On("AddMembersToGroups",
+		mock.Anything, []group.Member{{ID: testNewUserID, Type: group.MemberTypeUser}}, []string{"test-group-id"}).
 		Return(&serviceerror.ServiceError{
-			Error: i18ncore.I18nMessage{Key: "error.test.role_not_found", DefaultValue: "Role not found"},
+			Error: i18ncore.I18nMessage{Key: "error.test.group_not_found", DefaultValue: "Group not found"},
 		})
 
 	resp, err := suite.executor.Execute(ctx)
@@ -1213,7 +1140,6 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_BothGroupAndRole
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
 	assert.Equal(suite.T(), ErrProvisioningAssignmentFailed.Error.DefaultValue, resp.Error.Error.DefaultValue)
 
-	// Verify both services were called (new behavior: try both even if one fails)
 	suite.mockGroupService.AssertExpectations(suite.T())
 	suite.mockRoleService.AssertExpectations(suite.T())
 }
@@ -1255,12 +1181,11 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_RoleAssignmentFa
 
 	suite.mockEntityProvider.On("CreateEntity", mock.Anything, mock.Anything).Return(createdUser, nil)
 
-	// Group assignment succeeds
-	suite.mockGroupService.On("AddGroupMembers", mock.Anything, "test-group-id", mock.Anything).
-		Return(nil, nil)
-
-	// Role assignment fails (e.g., role doesn't exist)
-	suite.mockRoleAssignmentService.On("AddAssignments", mock.Anything, "test-role-id", mock.Anything).
+	suite.mockGroupService.On("AddMembersToGroups",
+		mock.Anything, []group.Member{{ID: testNewUserID, Type: group.MemberTypeUser}}, []string{"test-group-id"}).
+		Return((*serviceerror.ServiceError)(nil))
+	suite.mockRoleAssignmentService.On("AddAssigneesToRoles", mock.Anything,
+		[]role.RoleAssignment{{ID: testNewUserID, Type: role.AssigneeTypeUser}}, []string{"test-role-id"}).
 		Return(&serviceerror.ServiceError{
 			Error: i18ncore.I18nMessage{Key: "error.test.role_not_found", DefaultValue: "Role not found"},
 		})
@@ -1270,11 +1195,10 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_RoleAssignmentFa
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	assert.Contains(suite.T(), resp.Error.Error.DefaultValue, "Failed to assign groups and roles")
-	assert.Contains(suite.T(), resp.Error.Error.DefaultValue, "role")
+	assert.Equal(suite.T(), ErrProvisioningAssignmentFailed.Error.DefaultValue, resp.Error.Error.DefaultValue)
 
-	// Verify both group and role services were called
 	suite.mockGroupService.AssertExpectations(suite.T())
+	suite.mockRoleAssignmentService.AssertExpectations(suite.T())
 	suite.mockRoleService.AssertExpectations(suite.T())
 }
 
@@ -1315,15 +1239,12 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_GroupWithExistingMembers
 
 	suite.mockEntityProvider.On("CreateEntity", mock.Anything, mock.Anything).Return(createdUser, nil)
 
-	// Mock group assignment - AddGroupMembers only adds the new user, not existing members
-	suite.mockGroupService.On("AddGroupMembers", mock.Anything, "test-group-id",
-		mock.MatchedBy(func(members []group.Member) bool {
-			return len(members) == 1 &&
-				members[0].ID == testNewUserID &&
-				members[0].Type == group.MemberTypeUser
-		})).Return(nil, nil)
-
-	suite.mockRoleAssignmentService.On("AddAssignments", mock.Anything, "test-role-id", mock.Anything).Return(nil)
+	suite.mockGroupService.On("AddMembersToGroups",
+		mock.Anything, []group.Member{{ID: testNewUserID, Type: group.MemberTypeUser}}, []string{"test-group-id"}).
+		Return((*serviceerror.ServiceError)(nil))
+	suite.mockRoleAssignmentService.On("AddAssigneesToRoles", mock.Anything,
+		[]role.RoleAssignment{{ID: testNewUserID, Type: role.AssigneeTypeUser}}, []string{"test-role-id"}).
+		Return((*serviceerror.ServiceError)(nil))
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -1371,10 +1292,12 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_AuthFlow_AutoProvisionin
 
 	suite.mockEntityProvider.On("CreateEntity", mock.Anything, mock.Anything).Return(createdUser, nil)
 
-	// Mock successful group and role assignment
-	suite.mockGroupService.On("AddGroupMembers", mock.Anything, "test-group-id", mock.Anything).
-		Return(nil, nil)
-	suite.mockRoleAssignmentService.On("AddAssignments", mock.Anything, "test-role-id", mock.Anything).Return(nil)
+	suite.mockGroupService.On("AddMembersToGroups",
+		mock.Anything, []group.Member{{ID: "user-provisioned", Type: group.MemberTypeUser}}, []string{"test-group-id"}).
+		Return((*serviceerror.ServiceError)(nil))
+	suite.mockRoleAssignmentService.On("AddAssigneesToRoles", mock.Anything,
+		[]role.RoleAssignment{{ID: "user-provisioned", Type: role.AssigneeTypeUser}}, []string{"test-role-id"}).
+		Return((*serviceerror.ServiceError)(nil))
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -1430,21 +1353,12 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success_WithGroupAndRole
 		return u.OUID == testOUID && u.Type == testUserType
 	}), mock.Anything).Return(createdUser, nil)
 
-	// Mock group assignment
-	suite.mockGroupService.On("AddGroupMembers", mock.Anything, "test-group-id",
-		mock.MatchedBy(func(members []group.Member) bool {
-			return len(members) == 1 &&
-				members[0].ID == testNewUserID &&
-				members[0].Type == group.MemberTypeUser
-		})).Return(nil, nil)
-
-	// Mock role assignment
-	suite.mockRoleAssignmentService.On("AddAssignments", mock.Anything, "test-role-id",
-		mock.MatchedBy(func(assignments []role.RoleAssignment) bool {
-			return len(assignments) == 1 &&
-				assignments[0].ID == testNewUserID &&
-				assignments[0].Type == role.AssigneeTypeUser
-		})).Return(nil)
+	suite.mockGroupService.On("AddMembersToGroups",
+		mock.Anything, []group.Member{{ID: testNewUserID, Type: group.MemberTypeUser}}, []string{"test-group-id"}).
+		Return((*serviceerror.ServiceError)(nil))
+	suite.mockRoleAssignmentService.On("AddAssigneesToRoles", mock.Anything,
+		[]role.RoleAssignment{{ID: testNewUserID, Type: role.AssigneeTypeUser}}, []string{"test-role-id"}).
+		Return((*serviceerror.ServiceError)(nil))
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -1457,6 +1371,58 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success_WithGroupAndRole
 	suite.mockEntityProvider.AssertExpectations(suite.T())
 	suite.mockGroupService.AssertExpectations(suite.T())
 	suite.mockRoleService.AssertExpectations(suite.T())
+}
+
+func (suite *ProvisioningExecutorTestSuite) TestExecute_Success_WithMultipleGroupsAndRoles() {
+	suite.expectSchemaForProvisioning()
+	attrs := map[string]interface{}{"username": "newuser"}
+	attrsJSON, _ := json.Marshal(attrs)
+
+	ctx := &core.NodeContext{
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
+		UserInputs:  map[string]string{"username": "newuser"},
+		RuntimeData: map[string]string{
+			ouIDKey:     testOUID,
+			userTypeKey: testUserType,
+		},
+		NodeInputs: []common.Input{
+			{Identifier: "username", Type: "string", Required: true},
+		},
+		NodeProperties: map[string]interface{}{
+			"assignGroup": "group-1, group-2",
+			"assignRole":  "role-1, role-2",
+		},
+	}
+
+	suite.mockEntityProvider.On("IdentifyEntity", attrs).Return(nil,
+		entityprovider.NewEntityProviderError(entityprovider.ErrorCodeEntityNotFound, "", ""))
+
+	createdUser := &entityprovider.Entity{
+		ID:         testNewUserID,
+		OUID:       testOUID,
+		Type:       testUserType,
+		Attributes: attrsJSON,
+	}
+	suite.mockEntityProvider.On("CreateEntity", mock.Anything, mock.Anything).Return(createdUser, nil)
+
+	suite.mockGroupService.On("AddMembersToGroups",
+		mock.Anything, []group.Member{{ID: testNewUserID, Type: group.MemberTypeUser}}, []string{"group-1", "group-2"}).
+		Return((*serviceerror.ServiceError)(nil))
+	suite.mockRoleAssignmentService.On("AddAssigneesToRoles", mock.Anything,
+		[]role.RoleAssignment{{ID: testNewUserID, Type: role.AssigneeTypeUser}}, []string{"role-1", "role-2"}).
+		Return((*serviceerror.ServiceError)(nil))
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), testNewUserID, resp.AuthenticatedUser.UserID)
+
+	suite.mockEntityProvider.AssertExpectations(suite.T())
+	suite.mockGroupService.AssertExpectations(suite.T())
+	suite.mockRoleAssignmentService.AssertExpectations(suite.T())
 }
 
 // Cross-OU provisioning tests
@@ -2830,28 +2796,28 @@ func (suite *ProvisioningExecutorTestSuite) TestHasRequiredInputs_NilRuntimeData
 	assert.NotNil(suite.T(), execResp.RuntimeData)
 }
 
-func (suite *ProvisioningExecutorTestSuite) TestGetGroupToAssign_NonStringValue_ReturnsEmpty() {
+func (suite *ProvisioningExecutorTestSuite) TestGetGroupsToAssign_NonStringValue_ReturnsNil() {
 	ctx := &core.NodeContext{
 		NodeProperties: map[string]interface{}{
 			propertyKeyAssignGroup: 42,
 		},
 	}
 
-	result := suite.executor.getGroupToAssign(ctx)
+	result := suite.executor.getGroupsToAssign(ctx)
 
-	assert.Equal(suite.T(), "", result)
+	assert.Nil(suite.T(), result)
 }
 
-func (suite *ProvisioningExecutorTestSuite) TestGetRoleToAssign_NonStringValue_ReturnsEmpty() {
+func (suite *ProvisioningExecutorTestSuite) TestGetRolesToAssign_NonStringValue_ReturnsNil() {
 	ctx := &core.NodeContext{
 		NodeProperties: map[string]interface{}{
 			propertyKeyAssignRole: true,
 		},
 	}
 
-	result := suite.executor.getRoleToAssign(ctx)
+	result := suite.executor.getRolesToAssign(ctx)
 
-	assert.Equal(suite.T(), "", result)
+	assert.Nil(suite.T(), result)
 }
 
 func (suite *ProvisioningExecutorTestSuite) TestFetchSchemaAttributeInfos_NilService_ReturnsNil() {

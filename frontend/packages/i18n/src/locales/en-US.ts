@@ -2636,9 +2636,9 @@ const translations = {
     'core.executions.provisioning.maxPerPrompt.hint':
       'Number of dynamic inputs to show per prompt when connected to this provisioning executor.',
     'core.executions.provisioning.assignGroup.label': 'Assign Group',
-    'core.executions.provisioning.assignGroup.placeholder': 'Group ID to assign',
+    'core.executions.provisioning.assignGroup.placeholder': 'Comma-separated group IDs to assign',
     'core.executions.provisioning.assignRole.label': 'Assign Role',
-    'core.executions.provisioning.assignRole.placeholder': 'Role ID to assign',
+    'core.executions.provisioning.assignRole.placeholder': 'Comma-separated role IDs to assign',
     'core.placeholders.dynamicInputPlaceholder.title': 'Dynamic Input',
     'core.placeholders.dynamicInputPlaceholder.hint': 'Resolves input fields passed from runtime.',
 

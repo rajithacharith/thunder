@@ -115,6 +115,71 @@ func (_c *GroupServiceInterfaceMock_AddGroupMembers_Call) RunAndReturn(run func(
 	return _c
 }
 
+// AddMembersToGroups provides a mock function for the type GroupServiceInterfaceMock
+func (_mock *GroupServiceInterfaceMock) AddMembersToGroups(ctx context.Context, members []group.Member, groupIDs []string) *serviceerror.ServiceError {
+	ret := _mock.Called(ctx, members, groupIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AddMembersToGroups")
+	}
+
+	var r0 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []group.Member, []string) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(ctx, members, groupIDs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*serviceerror.ServiceError)
+		}
+	}
+	return r0
+}
+
+// GroupServiceInterfaceMock_AddMembersToGroups_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddMembersToGroups'
+type GroupServiceInterfaceMock_AddMembersToGroups_Call struct {
+	*mock.Call
+}
+
+// AddMembersToGroups is a helper method to define mock.On call
+//   - ctx context.Context
+//   - members []group.Member
+//   - groupIDs []string
+func (_e *GroupServiceInterfaceMock_Expecter) AddMembersToGroups(ctx interface{}, members interface{}, groupIDs interface{}) *GroupServiceInterfaceMock_AddMembersToGroups_Call {
+	return &GroupServiceInterfaceMock_AddMembersToGroups_Call{Call: _e.mock.On("AddMembersToGroups", ctx, members, groupIDs)}
+}
+
+func (_c *GroupServiceInterfaceMock_AddMembersToGroups_Call) Run(run func(ctx context.Context, members []group.Member, groupIDs []string)) *GroupServiceInterfaceMock_AddMembersToGroups_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []group.Member
+		if args[1] != nil {
+			arg1 = args[1].([]group.Member)
+		}
+		var arg2 []string
+		if args[2] != nil {
+			arg2 = args[2].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *GroupServiceInterfaceMock_AddMembersToGroups_Call) Return(serviceError *serviceerror.ServiceError) *GroupServiceInterfaceMock_AddMembersToGroups_Call {
+	_c.Call.Return(serviceError)
+	return _c
+}
+
+func (_c *GroupServiceInterfaceMock_AddMembersToGroups_Call) RunAndReturn(run func(ctx context.Context, members []group.Member, groupIDs []string) *serviceerror.ServiceError) *GroupServiceInterfaceMock_AddMembersToGroups_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateGroup provides a mock function for the type GroupServiceInterfaceMock
 func (_mock *GroupServiceInterfaceMock) CreateGroup(ctx context.Context, request group.CreateGroupRequest) (*group.Group, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, request)
