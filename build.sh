@@ -581,79 +581,21 @@ function package() {
     echo "================================================================"
 }
 
-function build_sample_app() {
-    echo "================================================================"
-    echo "Building sample apps..."
-
-    # Build React Vanilla sample
-    echo "=== Building React Vanilla sample app ==="
-    echo "=== Ensuring React Vanilla sample app certificates exist ==="
-    ensure_certificates "$VANILLA_SAMPLE_APP_DIR" "server"
-
-    cd "$VANILLA_SAMPLE_APP_DIR" || exit 1
-    echo "Installing React Vanilla sample dependencies..."
-    pnpm install --frozen-lockfile
-
-    echo "Building React Vanilla sample app..."
-    pnpm run build
-
-    cd - || exit 1
-    echo "✅ React Vanilla sample app built successfully."
-
-    # Build React SDK sample
-    echo "=== Building React SDK sample app ==="
-
-    # Ensure certificates exist for React SDK sample
-    echo "=== Ensuring React SDK sample app certificates exist ==="
-    ensure_certificates "$REACT_SDK_SAMPLE_APP_DIR" "server"
-
-    cd "$REACT_SDK_SAMPLE_APP_DIR" || exit 1
-    echo "Installing React SDK sample dependencies..."
-    pnpm install
-
-    echo "Building React SDK sample app..."
-    pnpm run build
-
-    cd - || exit 1
-    echo "✅ React SDK sample app built successfully."
-
-    # Build React API-based sample
-    echo "=== Building React API-based sample app ==="
-
-    # Ensure certificates exist for React API-based sample
-    echo "=== Ensuring React API-based sample app certificates exist ==="
-    ensure_certificates "$REACT_API_SAMPLE_APP_DIR" "server"
-
-    cd "$REACT_API_SAMPLE_APP_DIR" || exit 1
-    echo "Installing React API-based sample dependencies..."
-    pnpm install --frozen-lockfile
-
-    echo "Building React API-based sample app..."
-    pnpm run build
-
-    cd - || exit 1
-    echo "✅ React API-based sample app built successfully."
-
-    # Build Wayfinder sample (Wayfinder)
-    echo "=== Building Wayfinder sample app ==="
-
-    cd "$WAYFINDER_SAMPLE_APP_DIR" || exit 1
-    echo "Installing Wayfinder sample dependencies..."
-    npm install
-
-    echo "Building Wayfinder sample frontend..."
-    (cd frontend && npm run build)
-
-    cd "$SCRIPT_DIR" || exit 1
-
-    echo "✅ Wayfinder sample app built successfully."
-
-    echo "================================================================"
-}
-
 function package_sample_app() {
     echo "================================================================"
     echo "Packaging sample apps..."
+    ensure_pnpm
+
+    # pnpm pack rewrites workspace: dependencies to real versions, which
+    # requires the workspace to be installed.
+    echo "Installing workspace dependencies..."
+    pnpm install --frozen-lockfile
+
+    # Samples are packaged from source; ship certificates for the samples that
+    # expect them at the package root (react-api-based ignores them via .gitignore).
+    echo "=== Ensuring sample app certificates exist ==="
+    ensure_certificates "$VANILLA_SAMPLE_APP_DIR" "server"
+    ensure_certificates "$REACT_SDK_SAMPLE_APP_DIR" "server"
 
     # Package React Vanilla sample
     echo "=== Packaging React Vanilla sample app ==="
@@ -731,6 +673,11 @@ function package_react_api_based_sample() {
 
     tar xzf "$tgz" -C "$DIST_DIR"
     mv "$DIST_DIR/package" "$DIST_DIR/$REACT_API_SAMPLE_APP_FOLDER"
+
+    # Certs are gitignored in this sample so pnpm pack excludes them; inject them
+    # into the package root where vite.config.ts expects them.
+    ensure_certificates "$DIST_DIR/$REACT_API_SAMPLE_APP_FOLDER" "server"
+
     (cd "$DIST_DIR" && find "$REACT_API_SAMPLE_APP_FOLDER" | sort | zip "$REACT_API_SAMPLE_APP_FOLDER.zip" -@)
     rm -rf "${DIST_DIR:?}/$REACT_API_SAMPLE_APP_FOLDER" "$tgz"
 
@@ -1291,11 +1238,6 @@ case "$1" in
     lint_sdks)
         lint_sdks
         ;;
-    build_samples)
-        build_sdks_js
-        build_sample_app
-        package_sample_app
-        ;;
     package_samples)
         package_sample_app
         ;;
@@ -1304,7 +1246,6 @@ case "$1" in
         build_frontend
         build_sdks
         package
-        build_sample_app
         package_sample_app
         ;;
     test_unit)
@@ -1346,7 +1287,7 @@ case "$1" in
         echo "  build_sdks               - Build all SDK packages"
         echo "  test_sdks                - Run tests for all SDK packages"
         echo "  lint_sdks                - Run linting for all SDK packages"
-        echo "  build_samples            - Build the sample applications"
+        echo "  package_samples          - Package the sample applications (samples are distributed as source)"
         echo "  test_unit                - Run unit tests with coverage"
         echo "  test_integration         - Run integration tests. Use -run and -package for filtering"
         echo "  merge_coverage           - Merge unit and integration test coverage reports"
