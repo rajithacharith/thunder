@@ -177,11 +177,10 @@ $BUILD_DIR = Join-Path $OUTPUT_DIR ".build"
 $LOCAL_CERT_DIR = Join-Path $OUTPUT_DIR ".cert"
 $BACKEND_BASE_DIR = "backend"
 $BACKEND_DIR = Join-Path $BACKEND_BASE_DIR "cmd/server"
-$REPOSITORY_DIR = Join-Path $BACKEND_BASE_DIR "cmd/server/repository"
-$REPOSITORY_DB_DIR = Join-Path $REPOSITORY_DIR "database"
+$REPOSITORY_DB_DIR = Join-Path $BACKEND_DIR "database"
 $SERVER_SCRIPTS_DIR = Join-Path $BACKEND_BASE_DIR "scripts"
 $SERVER_DB_SCRIPTS_DIR = Join-Path $BACKEND_BASE_DIR "dbscripts"
-$SECURITY_DIR = "repository/resources/security"
+$SECURITY_DIR = "config/certs"
 $FRONTEND_BASE_DIR = "frontend"
 $GATE_APP_DIST_DIR = "apps/gate"
 $CONSOLE_APP_DIST_DIR = "apps/console"
@@ -211,7 +210,7 @@ $DOCS_DEFAULT_PORT = 3000
 # Read Configuration from deployment.yaml
 # ============================================================================
 
-$CONFIG_FILE = "./backend/cmd/server/repository/conf/deployment.yaml"
+$CONFIG_FILE = "./backend/cmd/server/deployment.yaml"
 
 # Function to read config with fallback
 function Read-Config {
@@ -611,7 +610,11 @@ function Prepare-Backend-For-Packaging {
 
     $package_folder = Join-Path $DIST_DIR $PRODUCT_FOLDER
     Copy-Item -Path (Join-Path $BUILD_DIR $binary_name) -Destination $package_folder -Force
-    Copy-Item -Path $REPOSITORY_DIR -Destination $package_folder -Recurse -Force
+    Copy-Item -Path (Join-Path $BACKEND_DIR "deployment.yaml") -Destination $package_folder -Force
+    Copy-Item -Path (Join-Path $BACKEND_DIR "config") -Destination $package_folder -Recurse -Force
+    if (Test-Path $REPOSITORY_DB_DIR) {
+        Copy-Item -Path $REPOSITORY_DB_DIR -Destination $package_folder -Recurse -Force
+    }
     Copy-Item -Path $VERSION_FILE -Destination $package_folder -Force
     Copy-Item -Path $SERVER_SCRIPTS_DIR -Destination $package_folder -Recurse -Force
     Copy-Item -Path $SERVER_DB_SCRIPTS_DIR -Destination $package_folder -Recurse -Force
@@ -629,7 +632,7 @@ function Prepare-Backend-For-Packaging {
     Write-Host "================================================================"
 
     Write-Host "=== Ensuring crypto file exists in the distribution ==="
-    Ensure-Crypto-File -conf_dir (Join-Path $package_folder "repository/conf")
+    Ensure-Crypto-File -key_dir (Join-Path $package_folder "config/certs")
     Write-Host "================================================================"
 }
 
@@ -713,7 +716,7 @@ function Package {
         }
     } else {
         Write-Host "Skipping consent server packaging (--without-consent)..."
-        $targetYaml = Join-Path $package_folder "repository/conf/deployment.yaml"
+        $targetYaml = Join-Path $package_folder "deployment.yaml"
         $yqPatched = $false
         if (Get-Command yq -ErrorAction SilentlyContinue) {
             & yq eval '.consent.enabled = false' -i $targetYaml
@@ -1350,12 +1353,10 @@ function Ensure-Certificates {
 
 function Ensure-Crypto-File {
     param(
-        [string]$conf_dir
+        [string]$key_dir
     )
 
-    # Resolve the .. path segment to get a clean key directory path
-    $KEY_DIR_Temp = Join-Path $conf_dir ".." "resources/security"
-    $KEY_DIR = (Resolve-Path -Path $KEY_DIR_Temp).Path
+    $KEY_DIR = $key_dir
     $KEY_FILE = Join-Path $KEY_DIR "crypto.key"
 
     Write-Host "================================================================"
@@ -1583,7 +1584,7 @@ function Run-Backend {
     Ensure-Certificates -cert_dir $VANILLA_SAMPLE_APP_DIR -cert_name_prefix "server"
 
     Write-Host "=== Ensuring crypto file exists for run ==="
-    Ensure-Crypto-File -conf_dir (Join-Path $BACKEND_DIR "repository/conf")
+    Ensure-Crypto-File -key_dir (Join-Path $BACKEND_DIR "config/certs")
 
     Write-Host "Initializing databases..."
     Initialize-Databases
