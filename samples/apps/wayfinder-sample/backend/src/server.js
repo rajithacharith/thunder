@@ -42,7 +42,9 @@ import {
   findRecommendedFlights,
   listBookedFlights,
   listLocations,
-  listTrips
+  listTrips,
+  setAllBusinessFlightsAvailable,
+  setAllBusinessFlightsUnavailable
 } from "./db.js";
 import { getProtectedResourceMetadata, handleMcpRequest } from "./mcp.js";
 
@@ -316,6 +318,24 @@ async function route(request, response) {
 
       return sendJson(response, 200, {
         data: { deleted: result.deleted, username }
+      }, request);
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/demo/unlock-business-class") {
+      const result = setAllBusinessFlightsAvailable();
+
+      return sendJson(response, 200, {
+        message: `Made ${result.updated} Business class flights available for direct upgrade.`,
+        ...result
+      }, request);
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/demo/lock-business-class") {
+      const result = setAllBusinessFlightsUnavailable();
+
+      return sendJson(response, 200, {
+        message: `Made ${result.updated} Business class flights unavailable (CIBA approval required).`,
+        ...result
       }, request);
     }
 

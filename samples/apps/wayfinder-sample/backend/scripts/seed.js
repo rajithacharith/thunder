@@ -39,7 +39,8 @@ const flights = [
     currency: "USD",
     cabin: "Economy",
     dates: "Jun 12 - Jun 18",
-    tags: JSON.stringify(["Best value", "Nonstop"])
+    tags: JSON.stringify(["Best value", "Nonstop"]),
+    available: 1
   },
   {
     id: "flight-sfo-tyo-01",
@@ -54,7 +55,8 @@ const flights = [
     currency: "USD",
     cabin: "Economy",
     dates: "Jul 04 - Jul 16",
-    tags: JSON.stringify(["Nonstop", "Popular"])
+    tags: JSON.stringify(["Nonstop", "Popular"]),
+    available: 1
   },
   {
     id: "flight-lon-lis-01",
@@ -69,7 +71,8 @@ const flights = [
     currency: "USD",
     cabin: "Economy",
     dates: "Aug 21 - Aug 27",
-    tags: JSON.stringify(["Weekend"])
+    tags: JSON.stringify(["Weekend"]),
+    available: 1
   },
   {
     id: "flight-cmb-dxb-01",
@@ -84,7 +87,8 @@ const flights = [
     currency: "USD",
     cabin: "Economy",
     dates: "Jun 20 - Jun 26",
-    tags: JSON.stringify(["Evening"])
+    tags: JSON.stringify(["Evening"]),
+    available: 1
   },
   {
     id: "flight-cmb-sin-02",
@@ -99,7 +103,8 @@ const flights = [
     currency: "USD",
     cabin: "Economy",
     dates: "Jun 12 - Jun 18",
-    tags: JSON.stringify(["Flexible ticket", "Carry-on included"])
+    tags: JSON.stringify(["Flexible ticket", "Carry-on included"]),
+    available: 1
   },
   {
     id: "flight-cmb-sin-03",
@@ -114,7 +119,8 @@ const flights = [
     currency: "USD",
     cabin: "Economy",
     dates: "Jun 12 - Jun 18",
-    tags: JSON.stringify(["Lowest price", "1 stop"])
+    tags: JSON.stringify(["Lowest price", "1 stop"]),
+    available: 1
   },
   {
     id: "flight-cmb-tyo-01",
@@ -129,7 +135,8 @@ const flights = [
     currency: "USD",
     cabin: "Economy",
     dates: "Jul 04 - Jul 16",
-    tags: JSON.stringify(["Good connection", "Meal included"])
+    tags: JSON.stringify(["Good connection", "Meal included"]),
+    available: 1
   },
   {
     id: "flight-dxb-lon-01",
@@ -144,7 +151,8 @@ const flights = [
     currency: "USD",
     cabin: "Economy",
     dates: "Sep 02 - Sep 09",
-    tags: JSON.stringify(["Nonstop", "Morning"])
+    tags: JSON.stringify(["Nonstop", "Morning"]),
+    available: 1
   },
   {
     id: "flight-sin-syd-01",
@@ -159,7 +167,8 @@ const flights = [
     currency: "USD",
     cabin: "Economy",
     dates: "Oct 10 - Oct 18",
-    tags: JSON.stringify(["Overnight", "Nonstop"])
+    tags: JSON.stringify(["Overnight", "Nonstop"]),
+    available: 1
   },
   {
     id: "flight-cmb-sin-01-biz",
@@ -174,7 +183,8 @@ const flights = [
     currency: "USD",
     cabin: "Business",
     dates: "Jun 12 - Jun 18",
-    tags: JSON.stringify(["Nonstop", "Business class"])
+    tags: JSON.stringify(["Nonstop", "Business class"]),
+    available: 0
   },
   {
     id: "flight-sfo-tyo-01-biz",
@@ -189,7 +199,8 @@ const flights = [
     currency: "USD",
     cabin: "Business",
     dates: "Jul 04 - Jul 16",
-    tags: JSON.stringify(["Nonstop", "Business class"])
+    tags: JSON.stringify(["Nonstop", "Business class"]),
+    available: 0
   },
   {
     id: "flight-lon-lis-01-biz",
@@ -204,7 +215,8 @@ const flights = [
     currency: "USD",
     cabin: "Business",
     dates: "Aug 21 - Aug 27",
-    tags: JSON.stringify(["Business class"])
+    tags: JSON.stringify(["Business class"]),
+    available: 0
   },
   {
     id: "flight-cmb-dxb-01-biz",
@@ -219,7 +231,8 @@ const flights = [
     currency: "USD",
     cabin: "Business",
     dates: "Jun 20 - Jun 26",
-    tags: JSON.stringify(["Business class"])
+    tags: JSON.stringify(["Business class"]),
+    available: 0
   },
   {
     id: "flight-cmb-sin-02-biz",
@@ -234,7 +247,8 @@ const flights = [
     currency: "USD",
     cabin: "Business",
     dates: "Jun 12 - Jun 18",
-    tags: JSON.stringify(["Business class", "Flexible ticket"])
+    tags: JSON.stringify(["Business class", "Flexible ticket"]),
+    available: 0
   },
   {
     id: "flight-cmb-sin-03-biz",
@@ -249,7 +263,8 @@ const flights = [
     currency: "USD",
     cabin: "Business",
     dates: "Jun 12 - Jun 18",
-    tags: JSON.stringify(["Business class", "1 stop"])
+    tags: JSON.stringify(["Business class", "1 stop"]),
+    available: 0
   },
   {
     id: "flight-cmb-tyo-01-biz",
@@ -264,7 +279,8 @@ const flights = [
     currency: "USD",
     cabin: "Business",
     dates: "Jul 04 - Jul 16",
-    tags: JSON.stringify(["Business class", "Meal included"])
+    tags: JSON.stringify(["Business class", "Meal included"]),
+    available: 0
   },
   {
     id: "flight-dxb-lon-01-biz",
@@ -279,7 +295,8 @@ const flights = [
     currency: "USD",
     cabin: "Business",
     dates: "Sep 02 - Sep 09",
-    tags: JSON.stringify(["Nonstop", "Business class"])
+    tags: JSON.stringify(["Nonstop", "Business class"]),
+    available: 0
   },
   {
     id: "flight-sin-syd-01-biz",
@@ -294,7 +311,8 @@ const flights = [
     currency: "USD",
     cabin: "Business",
     dates: "Oct 10 - Oct 18",
-    tags: JSON.stringify(["Overnight", "Nonstop", "Business class"])
+    tags: JSON.stringify(["Overnight", "Nonstop", "Business class"]),
+    available: 0
   }
 ];
 
@@ -483,7 +501,8 @@ db.exec(`
     currency TEXT NOT NULL,
     cabin TEXT NOT NULL,
     dates TEXT NOT NULL,
-    tags TEXT NOT NULL
+    tags TEXT NOT NULL,
+    available INTEGER NOT NULL DEFAULT 1
   );
 
   CREATE TABLE hotels (
@@ -526,14 +545,13 @@ db.exec(`
     username TEXT NOT NULL,
     booking_id TEXT NOT NULL,
     from_flight_id TEXT NOT NULL,
-    to_flight_id TEXT NOT NULL,
-    price_difference REAL NOT NULL,
+    to_flight_id TEXT,
+    price_difference REAL NOT NULL DEFAULT 0,
     status TEXT NOT NULL DEFAULT 'pending',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY (booking_id) REFERENCES bookings(id),
-    FOREIGN KEY (from_flight_id) REFERENCES flights(id),
-    FOREIGN KEY (to_flight_id) REFERENCES flights(id)
+    FOREIGN KEY (from_flight_id) REFERENCES flights(id)
   );
 `);
 
@@ -551,7 +569,8 @@ const insertFlight = db.prepare(`
     currency,
     cabin,
     dates,
-    tags
+    tags,
+    available
   ) VALUES (
     @id,
     @from,
@@ -565,7 +584,8 @@ const insertFlight = db.prepare(`
     @currency,
     @cabin,
     @dates,
-    @tags
+    @tags,
+    @available
   )
 `);
 

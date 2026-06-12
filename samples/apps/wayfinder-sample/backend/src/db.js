@@ -47,8 +47,9 @@ function ensureSchema(database) {
       username TEXT NOT NULL,
       booking_id TEXT NOT NULL,
       from_flight_id TEXT NOT NULL,
-      to_flight_id TEXT NOT NULL,
-      price_difference REAL NOT NULL,
+      to_flight_id TEXT,
+      price_difference REAL NOT NULL DEFAULT 0,
+      id_token TEXT,
       status TEXT NOT NULL DEFAULT 'pending',
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
@@ -60,6 +61,54 @@ function ensureSchema(database) {
 
   if (!hasBookingReference) {
     database.exec("ALTER TABLE bookings ADD COLUMN booking_reference TEXT;");
+  }
+
+  // Migrate flights: add available column (economy=1, business=0) for existing seeded databases.
+  const flightColumns = database.prepare("PRAGMA table_info(flights)").all();
+  if (flightColumns.length > 0) {
+    const hasAvailable = flightColumns.some((c) => c.name === "available");
+
+    if (!hasAvailable) {
+      database.exec("ALTER TABLE flights ADD COLUMN available INTEGER NOT NULL DEFAULT 1;");
+      database.exec("UPDATE flights SET available = 0 WHERE LOWER(cabin) = 'business';");
+    }
+  }
+
+  // Migrate upgrade_requests: to_flight_id must be nullable for the availability-based flow
+  // where the matching Business class flight is resolved at processing time, not at request time.
+  const upgradeColumns = database.prepare("PRAGMA table_info(upgrade_requests)").all();
+  const toFlightCol = upgradeColumns.find((c) => c.name === "to_flight_id");
+  const hasIdToken = upgradeColumns.some((c) => c.name === "id_token");
+
+  if (toFlightCol && toFlightCol.notnull === 1) {
+    const idTokenSelect = hasIdToken ? "id_token" : "NULL";
+    const hasPriceDiff = upgradeColumns.some((c) => c.name === "price_difference");
+    const priceSelect = hasPriceDiff ? "price_difference" : "0";
+
+    database.transaction(() => {
+      database.exec(`
+        CREATE TABLE upgrade_requests_new (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          username TEXT NOT NULL,
+          booking_id TEXT NOT NULL,
+          from_flight_id TEXT NOT NULL,
+          to_flight_id TEXT,
+          price_difference REAL NOT NULL DEFAULT 0,
+          id_token TEXT,
+          status TEXT NOT NULL DEFAULT 'pending',
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+        INSERT INTO upgrade_requests_new (id, user_id, username, booking_id, from_flight_id, to_flight_id, price_difference, id_token, status, created_at, updated_at)
+          SELECT id, user_id, username, booking_id, from_flight_id, to_flight_id, ${priceSelect}, ${idTokenSelect}, status, created_at, updated_at
+          FROM upgrade_requests;
+        DROP TABLE upgrade_requests;
+        ALTER TABLE upgrade_requests_new RENAME TO upgrade_requests;
+      `);
+    })();
+  } else if (!hasIdToken) {
+    database.exec("ALTER TABLE upgrade_requests ADD COLUMN id_token TEXT;");
   }
 
   const bookingsWithoutReference = database
@@ -116,7 +165,8 @@ function mapFlight(row) {
     currency: row.currency,
     cabin: row.cabin,
     dates: row.dates,
-    tags: parseJsonArray(row.tags)
+    tags: parseJsonArray(row.tags),
+    available: row.available ?? 1
   };
 }
 
@@ -164,7 +214,8 @@ export function findFlights({ from, to, cabin }) {
     params.cabin = `%${cabin}%`;
   }
 
-  const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+  conditions.push("available = 1");
+  const whereClause = `WHERE ${conditions.join(" AND ")}`;
   const rows = getDatabase()
     .prepare(`SELECT * FROM flights ${whereClause} ORDER BY price ASC`)
     .all(params);
@@ -174,7 +225,7 @@ export function findFlights({ from, to, cabin }) {
 
 export function findRecommendedFlights({ limit = 3 } = {}) {
   const rows = getDatabase()
-    .prepare("SELECT * FROM flights ORDER BY RANDOM() LIMIT @limit")
+    .prepare("SELECT * FROM flights WHERE available = 1 ORDER BY RANDOM() LIMIT @limit")
     .all({ limit });
 
   return rows.map(mapFlight);
@@ -414,6 +465,7 @@ export function findBusinessFlightsForRoute({ fromCity, toCity }) {
        WHERE LOWER(from_city) = LOWER(@fromCity)
          AND LOWER(to_city) = LOWER(@toCity)
          AND LOWER(cabin) = 'business'
+         AND available = 1
        ORDER BY price ASC`
     )
     .all({ fromCity, toCity });
@@ -421,17 +473,73 @@ export function findBusinessFlightsForRoute({ fromCity, toCity }) {
   return rows.map(mapFlight);
 }
 
-export function createUpgradeRequest({ id, userId, email, bookingId, fromFlightId, toFlightId, priceDifference, createdAt }) {
+export function findMatchingBusinessFlight(economyFlightId) {
+  const bizId = `${economyFlightId}-biz`;
+  const row = getDatabase()
+    .prepare("SELECT * FROM flights WHERE id = @id")
+    .get({ id: bizId });
+
+  return row ? mapFlight(row) : null;
+}
+
+export function setAllBusinessFlightsAvailable() {
+  const result = getDatabase()
+    .prepare("UPDATE flights SET available = 1 WHERE LOWER(cabin) = 'business'")
+    .run();
+
+  return { updated: result.changes };
+}
+
+export function setAllBusinessFlightsUnavailable() {
+  const result = getDatabase()
+    .prepare("UPDATE flights SET available = 0 WHERE LOWER(cabin) = 'business'")
+    .run();
+
+  return { updated: result.changes };
+}
+
+export function getBookingById(bookingId) {
+  const row = getDatabase()
+    .prepare(
+      `SELECT
+         bookings.id AS booking_id,
+         bookings.booking_reference,
+         bookings.username,
+         bookings.travelers,
+         bookings.status,
+         bookings.created_at,
+         flights.*
+       FROM bookings
+       INNER JOIN flights ON bookings.item_id = flights.id
+       WHERE bookings.id = @bookingId
+         AND bookings.type = 'flight'`
+    )
+    .get({ bookingId });
+
+  if (!row) return null;
+
+  return {
+    id: row.booking_id,
+    bookingReference: row.booking_reference,
+    username: row.username,
+    travelers: row.travelers,
+    status: row.status,
+    createdAt: row.created_at,
+    flight: mapFlight(row)
+  };
+}
+
+export function createUpgradeRequest({ id, userId, email, idToken, bookingId, fromFlightId, createdAt }) {
   getDatabase()
     .prepare(
       `INSERT INTO upgrade_requests
-         (id, user_id, username, booking_id, from_flight_id, to_flight_id, price_difference, status, created_at, updated_at)
+         (id, user_id, username, booking_id, from_flight_id, id_token, status, created_at, updated_at)
        VALUES
-         (@id, @userId, @email, @bookingId, @fromFlightId, @toFlightId, @priceDifference, 'pending', @createdAt, @createdAt)`
+         (@id, @userId, @email, @bookingId, @fromFlightId, @idToken, 'pending', @createdAt, @createdAt)`
     )
-    .run({ id, userId, email: email ?? null, bookingId, fromFlightId, toFlightId, priceDifference, createdAt });
+    .run({ id, userId, email: email ?? null, idToken: idToken ?? null, bookingId, fromFlightId, createdAt });
 
-  return { id, userId, email, bookingId, fromFlightId, toFlightId, priceDifference, status: "pending", createdAt };
+  return { id, userId, email, bookingId, fromFlightId, status: "pending", createdAt };
 }
 
 export function getOnePendingUpgrade() {
@@ -452,11 +560,9 @@ export function getOnePendingUpgrade() {
       `SELECT ur.*,
               ur.username AS email,
               f_from.from_city, f_from.to_city, f_from.airline,
-              f_from.price AS from_price, f_from.cabin AS from_cabin,
-              f_to.price AS to_price, f_to.cabin AS to_cabin
+              f_from.price AS from_price, f_from.cabin AS from_cabin
        FROM upgrade_requests ur
        JOIN flights f_from ON ur.from_flight_id = f_from.id
-       JOIN flights f_to ON ur.to_flight_id = f_to.id
        WHERE ur.status = 'pending'
        ORDER BY ur.created_at ASC
        LIMIT 1`
@@ -467,22 +573,26 @@ export function getOnePendingUpgrade() {
     return { pendingCount: 0, request: null };
   }
 
+  const bizFlight = findMatchingBusinessFlight(row.from_flight_id);
+
   return {
     pendingCount,
     request: {
       id: row.id,
       userId: row.user_id,
       email: row.email,
+      idToken: row.id_token ?? null,
       bookingId: row.booking_id,
       fromFlightId: row.from_flight_id,
-      toFlightId: row.to_flight_id,
-      priceDifference: row.price_difference,
+      toFlightId: bizFlight ? bizFlight.id : null,
+      priceDifference: bizFlight ? Math.max(0, bizFlight.price - row.from_price) : 0,
       status: row.status,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       route: { from: row.from_city, to: row.to_city, airline: row.airline },
       fromCabin: row.from_cabin,
-      toCabin: row.to_cabin
+      toCabin: bizFlight ? bizFlight.cabin : null,
+      toFlightAvailable: bizFlight ? bizFlight.available === 1 : false
     }
   };
 }

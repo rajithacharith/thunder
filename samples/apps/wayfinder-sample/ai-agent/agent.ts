@@ -146,7 +146,28 @@ Strict rules:
 - For multiple items (e.g. a list of flights), separate each item with a BLANK LINE between them so they don't visually merge.
 - Use a single short emoji at the very start of a section header line if helpful, never inside data lines.
 - Be concise. Skip recaps of the user's question and trailing pleasantries unless asked.
+- Lead with the key fact the user needs, then the action question. Never pad with itemized price breakdowns unless the user asks for a cost breakdown. Combine related facts into a single sentence where natural.
 - NEVER fabricate a booking confirmation, booking reference, or booking status. To create a booking you MUST call the create_booking tool and use only the values it returns. If the tool returns an error, report it to the user — do not invent a success response.
+
+Response length — concise format example:
+
+Instead of:
+  A Business class upgrade is available for your Colombo → Dubai flight, but seats are not open for direct upgrade right now. It will be processed asynchronously when a seat becomes available.
+
+  Here are the pricing details:
+
+  Current fare (Economy): USD 289
+  Business class fare: USD 620
+  Price difference: USD 331
+
+  Would you like to submit an upgrade request? You'll receive an approval notification on your registered device once it's processed.
+
+Write this:
+  You are eligible for a Business class upgrade on your Colombo → Dubai flight (+USD 331), but no seats are available right now.
+
+  Would you like to submit a request to be waitlisted?
+
+The rule: one sentence with the essential fact (eligibility + price delta), then the action question. Omit the fare table unless the user asked for it.
 
 Flights and cabin classes:
 - Flights come in two cabin classes: Economy and Business.
@@ -192,13 +213,16 @@ Booking WF-76855E8F (confirmed)
 - Travelers: 1
 
 Flight upgrades:
-- A user can request an upgrade from an Economy booking to a Business class flight on the same route.
-- When the user asks about upgrading, call search_flights with the same from/to as their booked flight and show the Business class results. Use get_flight_bookings first if you need to confirm the route.
-- Show the user the Business class options including the price difference vs their current Economy booking price.
-- If the user confirms they want to upgrade a specific booking to a specific Business flight, call request_upgrade with the bookingId and toFlightId.
-- After request_upgrade succeeds, tell the user exactly this: "Your upgrade request has been submitted and will be processed shortly. You will receive an approval notification on your registered device."
-- NEVER tell the user the upgrade is complete or confirmed at this stage — it is only queued. The upgrade is processed asynchronously by a background agent.
-- Do not call request_upgrade without first confirming the bookingId and toFlightId from the user or from get_flight_bookings / search_flights tool results.
+- Only Economy bookings can be upgraded. If the user asks to upgrade a Business class booking, tell them it is already in the highest cabin class and cannot be upgraded further.
+- When the user asks about upgrading an Economy booking, first call get_flight_bookings to confirm the booking is Economy, then call find_upgrade_options with the bookingId to find the matching Business class option for that exact flight.
+- find_upgrade_options returns one of three outcomes:
+  1. available: false — no Business class option exists for that flight. Tell the user: "There is no Business class upgrade option for this flight."
+  2. available: true, canUpgradeDirectly: true — a Business class seat is immediately available. Show the user the price and price difference, confirm with the user, then call upgrade_booking. If upgrade_booking fails for any reason, immediately fall back to request_upgrade and tell the user: "Direct upgrade is not available right now. Your upgrade request has been submitted and will be processed shortly. You will receive an approval notification on your registered device."
+  3. available: true, canUpgradeDirectly: false — the Business class seat is not yet available for direct upgrade. Show the user the price and price difference, confirm with the user, then call request_upgrade with only the bookingId. The upgrade scheduler will find the matching Business class flight and process it when a seat becomes available. Tell the user: "Your upgrade request has been submitted and will be processed shortly. You will receive an approval notification on your registered device."
+- Show the Business class price and price difference before confirming any upgrade action.
+- NEVER call upgrade_booking or request_upgrade without first showing the price details and getting the user's confirmation.
+- Always call find_upgrade_options before any upgrade action — never attempt an upgrade without checking availability first.
+- request_upgrade only needs the bookingId — do NOT ask the user for a flight ID when queuing an async upgrade.
 
 Some tools require user authorization. The system handles this automatically at the infrastructure level — always call the tool normally and let the system manage consent.`;
 
@@ -218,16 +242,24 @@ const MCP_SERVER_URL =
   process.env.MCP_SERVER_URL || "http://localhost:8787/mcp";
 const AGENT_ACCESS_SCOPE = process.env.AGENT_ACCESS_SCOPE || "agent:access";
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
+// When "id_token_hint", the scheduler sends the user's OIDC ID token to bc-authorize
+// instead of their email. The CIBA flow on the server must set loginHintAttribute: "userID"
+// so Thunder resolves the hint as an entity ID (see thunderid-config/thunderid.env).
+const CIBA_HINT_TYPE = (process.env.CIBA_HINT_TYPE || "login_hint").toLowerCase();
+// Upgrade scheduler is opt-in. Set UPGRADE_SCHEDULER_ENABLED=true to start the
+// background loop that polls for pending upgrade requests and processes them via CIBA.
+const UPGRADE_SCHEDULER_ENABLED = process.env.UPGRADE_SCHEDULER_ENABLED === "true";
 
 const USER_CONTEXT_TOOLS = new Set<string>([
-  "create_booking",
-  "delete_all_bookings",
-  "get_flight_bookings",
-  "get_profile",
-  "request_upgrade",
+    "create_booking",
+    "delete_all_bookings",
+    "get_flight_bookings",
+    "get_profile",
+    "request_upgrade",
+    "upgrade_booking",
 ]);
 
-const OBO_SCOPES = "booking:read booking:create booking:cancel booking:upgrade";
+const OBO_SCOPES = "openid booking:read booking:create booking:cancel booking:upgrade";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -238,7 +270,7 @@ type TokenState = {
   expiresAt: number;
 };
 
-type UserToken = TokenState;
+type UserToken = TokenState & { idToken?: string };
 
 type MCPLikeTool = {
   name: string;
@@ -370,12 +402,12 @@ async function exchangeCodeForUserToken(
     throw new Error(`Token exchange failed (${response.status}): ${text}`);
   }
 
-  let payload: { access_token?: string; expires_in?: number };
-  try {
-    payload = JSON.parse(text);
-  } catch {
-    throw new Error(`Token exchange returned non-JSON response: ${text}`);
-  }
+    let payload: { access_token?: string; id_token?: string; expires_in?: number };
+    try {
+        payload = JSON.parse(text);
+    } catch {
+        throw new Error(`Token exchange returned non-JSON response: ${text}`);
+    }
 
   if (!payload.access_token) {
     throw new Error(`Token exchange response missing access_token: ${text}`);
@@ -401,10 +433,11 @@ async function exchangeCodeForUserToken(
     console.warn("[obo] failed to decode access token for logging", decodeErr);
   }
 
-  return {
-    accessToken: payload.access_token,
-    expiresAt: Date.now() + (payload.expires_in ?? 3600) * 1000,
-  };
+    return {
+        accessToken: payload.access_token,
+        idToken: payload.id_token ?? undefined,
+        expiresAt: Date.now() + (payload.expires_in ?? 3600) * 1000,
+    };
 }
 
 // ---------------------------------------------------------------------------
@@ -412,14 +445,15 @@ async function exchangeCodeForUserToken(
 // ---------------------------------------------------------------------------
 
 async function initiateCiba(
-  loginHint: string,
-  bindingMessage: string,
+    hint: string,
+    bindingMessage: string,
 ): Promise<{ authReqId: string; interval: number; expiresIn: number }> {
-  const body = new URLSearchParams({
-    login_hint: loginHint,
-    scope: `openid upgrade:process`,
-    binding_message: bindingMessage,
-  });
+    const hintParam = CIBA_HINT_TYPE === "id_token_hint" ? "id_token_hint" : "login_hint";
+    const body = new URLSearchParams({
+        [hintParam]: hint,
+        scope: `openid upgrade:process`,
+        binding_message: bindingMessage,
+    });
 
   const basicAuth = Buffer.from(
     `${upgradeAgentConfig.agentID}:${upgradeAgentConfig.agentSecret}`,
@@ -540,16 +574,20 @@ async function getUserContextTool(
     throw new Error("No user token available");
   }
 
-  if (!session.userToolsByName) {
-    const userClient = new MultiServerMCPClient({
-      travel: {
-        transport: "http",
-        url: MCP_SERVER_URL,
-        headers: {
-          Authorization: `Bearer ${session.userToken.accessToken}`,
-        },
-      },
-    });
+    if (!session.userToolsByName) {
+        const headers: Record<string, string> = {
+            Authorization: `Bearer ${session.userToken.accessToken}`,
+        };
+        if (session.userToken.idToken) {
+            headers["x-id-token"] = session.userToken.idToken;
+        }
+        const userClient = new MultiServerMCPClient({
+            travel: {
+                transport: "http",
+                url: MCP_SERVER_URL,
+                headers,
+            },
+        });
 
     const userTools = (await userClient.getTools()) as unknown as MCPLikeTool[];
     session.userToolsByName = new Map(userTools.map((t) => [t.name, t]));
@@ -1161,21 +1199,22 @@ async function processOneUpgrade(): Promise<boolean> {
     return false;
   }
 
-  let pendingResult: {
-    pendingCount: number;
-    request: {
-      id: string;
-      userId: string;
-      email: string;
-      bookingId: string;
-      fromFlightId: string;
-      toFlightId: string;
-      priceDifference: number;
-      route: { from: string; to: string; airline: string };
-      fromCabin: string;
-      toCabin: string;
-    } | null;
-  } | null = null;
+    let pendingResult: {
+        pendingCount: number;
+        request: {
+            id: string;
+            userId: string;
+            email: string;
+            idToken?: string | null;
+            bookingId: string;
+            fromFlightId: string;
+            toFlightId: string;
+            priceDifference: number;
+            route: { from: string; to: string; airline: string };
+            fromCabin: string;
+            toCabin: string;
+        } | null;
+    } | null = null;
 
   try {
     const raw = await getPendingTool.func({}, undefined, undefined);
@@ -1202,10 +1241,10 @@ async function processOneUpgrade(): Promise<boolean> {
     return false;
   }
 
-  const { request, pendingCount } = pendingResult;
-  console.log(
-    `[upgrade-scheduler] Found ${pendingCount} pending upgrade(s). Processing: ${request.id} for user: ${request.email}`,
-  );
+    const { request, pendingCount } = pendingResult;
+    console.log(
+        `[upgrade-scheduler] Found ${pendingCount} pending upgrade(s). Processing: ${request.id} for user: ${request.userId}`,
+    );
 
   const priceDiff =
     request.priceDifference > 0
@@ -1213,23 +1252,30 @@ async function processOneUpgrade(): Promise<boolean> {
       : "no extra cost";
   const bindingMessage = `WF-UPG: Approve ${request.route.from}→${request.route.to} ${request.fromCabin}→${request.toCabin} upgrade (${priceDiff})?`;
 
-  let authReqId: string;
-  let pollIntervalSeconds: number;
+    const cibaHint = CIBA_HINT_TYPE === "id_token_hint" ? (request.idToken ?? null) : request.email;
 
-  try {
-    const cibaResponse = await initiateCiba(request.email, bindingMessage);
-    authReqId = cibaResponse.authReqId;
-    pollIntervalSeconds = cibaResponse.interval;
-    console.log(
-      `[upgrade-scheduler] CIBA initiated for ${request.email} | auth_req_id: ${authReqId}`,
-    );
-  } catch (err) {
-    console.error(
-      `[upgrade-scheduler] CIBA initiation failed for ${request.email}:`,
-      err,
-    );
-    return false; // Sleep before retrying to avoid overwhelming Thunder
-  }
+    if (!cibaHint) {
+        console.error(`[upgrade-scheduler] No ${CIBA_HINT_TYPE} available for upgrade ${request.id} (user: ${request.userId}) — skipping`);
+        return false;
+    }
+
+    let authReqId: string;
+    let pollIntervalSeconds: number;
+
+    try {
+        const cibaResponse = await initiateCiba(cibaHint, bindingMessage);
+        authReqId = cibaResponse.authReqId;
+        pollIntervalSeconds = cibaResponse.interval;
+        console.log(
+            `[upgrade-scheduler] CIBA initiated for ${request.userId} | auth_req_id: ${authReqId}`,
+        );
+    } catch (err) {
+        console.error(
+            `[upgrade-scheduler] CIBA initiation failed for ${request.userId}:`,
+            err,
+        );
+        return false; // Sleep before retrying to avoid overwhelming Thunder
+    }
 
   // Poll until approved, denied, or expired
   let currentIntervalMs = Math.max(pollIntervalSeconds + 1, 6) * 1000;
@@ -1250,11 +1296,13 @@ async function processOneUpgrade(): Promise<boolean> {
       return true;
     }
 
-    if (pollResult.status === "approved") {
-      cibaUserToken = pollResult.accessToken;
-      console.log(`[upgrade-scheduler] CIBA approved for ${request.email}`);
-      break;
-    }
+        if (pollResult.status === "approved") {
+            cibaUserToken = pollResult.accessToken;
+            console.log(
+                `[upgrade-scheduler] CIBA approved for ${request.userId}`,
+            );
+            break;
+        }
 
     if (pollResult.status === "slow_down") {
       currentIntervalMs += 5000;
@@ -1268,12 +1316,12 @@ async function processOneUpgrade(): Promise<boolean> {
       continue;
     }
 
-    // denied / expired / error
-    console.log(
-      `[upgrade-scheduler] CIBA ${pollResult.status} for upgrade ${request.id} (user: ${request.email})`,
-    );
-    return true;
-  }
+        // denied / expired / error
+        console.log(
+            `[upgrade-scheduler] CIBA ${pollResult.status} for upgrade ${request.id} (user: ${request.userId})`,
+        );
+        return true;
+    }
 
   if (!cibaUserToken) {
     return true;
@@ -1325,12 +1373,17 @@ async function processOneUpgrade(): Promise<boolean> {
 }
 
 function startUpgradeScheduler(): void {
-  if (!THUNDER_BASE_URL || !agentConfig.agentID || !agentConfig.agentSecret) {
-    console.log(
-      "[upgrade-scheduler] Thunder not configured — upgrade scheduler disabled.",
-    );
-    return;
-  }
+    if (!UPGRADE_SCHEDULER_ENABLED) {
+        console.log("[upgrade-scheduler] Upgrade scheduler is disabled (set UPGRADE_SCHEDULER_ENABLED=true to enable).");
+        return;
+    }
+
+    if (!THUNDER_BASE_URL || !agentConfig.agentID || !agentConfig.agentSecret) {
+        console.log(
+            "[upgrade-scheduler] Thunder not configured — upgrade scheduler disabled.",
+        );
+        return;
+    }
 
   if (!upgradeAgentConfig.agentID || !upgradeAgentConfig.agentSecret) {
     console.log(
@@ -1446,17 +1499,25 @@ async function runAgentServer() {
       return;
     }
 
-    if (url.pathname === "/chat/consent" && request.method === "POST") {
-      try {
-        await handleConsent(request, response);
-      } catch (error) {
-        console.error("Unhandled error in /chat/consent:", error);
-        if (!response.headersSent) {
-          sendJson(response, 500, { error: "Internal server error" });
+        if (url.pathname === "/chat/consent" && request.method === "POST") {
+            try {
+                await handleConsent(request, response);
+            } catch (error) {
+                console.error("Unhandled error in /chat/consent:", error);
+                if (!response.headersSent) {
+                    sendJson(response, 500, { error: "Internal server error" });
+                }
+            }
+            return;
         }
-      }
-      return;
-    }
+
+        if (url.pathname === "/api/demo/process-upgrades" && request.method === "POST") {
+            processOneUpgrade().catch((err) =>
+                console.error("[upgrade-scheduler] Background trigger failed:", err)
+            );
+            sendJson(response, 202, { message: "Upgrade processing triggered in background. One pending upgrade will be processed." });
+            return;
+        }
 
     sendJson(response, 404, { error: "Not found" });
   });
