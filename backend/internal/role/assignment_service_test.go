@@ -679,3 +679,62 @@ func (suite *RoleAssignmentServiceTestSuite) TestGetRoleAssignmentsByType_ListSt
 	suite.NotNil(err)
 	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
+
+// AddAssigneesToRoles Tests
+
+func (suite *RoleAssignmentServiceTestSuite) TestAddAssigneesToRoles_EmptyRoleIDs() {
+	assignments := []RoleAssignment{{ID: testUserID1, Type: AssigneeTypeUser}}
+	err := suite.service.AddAssigneesToRoles(context.Background(), assignments, []string{})
+	suite.Nil(err)
+}
+
+func (suite *RoleAssignmentServiceTestSuite) TestAddAssigneesToRoles_AddAssignmentsFails() {
+	assignments := []RoleAssignment{{ID: testUserID1, Type: AssigneeTypeUser}}
+	suite.mockStore.On("IsRoleExist", mock.Anything, "role1").Return(false, nil).Once()
+
+	err := suite.service.AddAssigneesToRoles(context.Background(), assignments, []string{"role1"})
+
+	suite.NotNil(err)
+	suite.Equal(ErrorRoleNotFound.Code, err.Code)
+}
+
+func (suite *RoleAssignmentServiceTestSuite) TestAddAssigneesToRoles_TransactionerError() {
+	assignments := []RoleAssignment{{ID: testUserID1, Type: AssigneeTypeUser}}
+	suite.transactioner.err = errors.New("tx begin failed")
+
+	err := suite.service.AddAssigneesToRoles(context.Background(), assignments, []string{"role1"})
+
+	suite.NotNil(err)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
+}
+
+func (suite *RoleAssignmentServiceTestSuite) TestAddAssigneesToRoles_Success() {
+	assignments := []RoleAssignment{{ID: testUserID1, Type: AssigneeTypeUser}}
+	normalized := []RoleAssignment{{ID: testUserID1, Type: assigneeTypeEntity}}
+
+	suite.mockStore.On("IsRoleExist", mock.Anything, "role1").Return(true, nil).Once()
+	suite.mockEntityService.On("GetEntitiesByIDs", mock.Anything, []string{testUserID1}).
+		Return([]entity.Entity{{ID: testUserID1, Category: entity.EntityCategoryUser}}, nil).Once()
+	suite.mockStore.On("AddAssignments", mock.Anything, "role1", normalized).Return(nil).Once()
+
+	err := suite.service.AddAssigneesToRoles(context.Background(), assignments, []string{"role1"})
+
+	suite.Nil(err)
+}
+
+func (suite *RoleAssignmentServiceTestSuite) TestAddAssigneesToRoles_MultipleRoles_Success() {
+	assignments := []RoleAssignment{{ID: testUserID1, Type: AssigneeTypeUser}}
+	normalized := []RoleAssignment{{ID: testUserID1, Type: assigneeTypeEntity}}
+
+	suite.mockStore.On("IsRoleExist", mock.Anything, "role1").Return(true, nil).Once()
+	suite.mockStore.On("IsRoleExist", mock.Anything, "role2").Return(true, nil).Once()
+	suite.mockEntityService.On("GetEntitiesByIDs", mock.Anything, []string{testUserID1}).
+		Return([]entity.Entity{{ID: testUserID1, Category: entity.EntityCategoryUser}}, nil).Times(2)
+	suite.mockStore.On("AddAssignments", mock.Anything, "role1", normalized).Return(nil).Once()
+	suite.mockStore.On("AddAssignments", mock.Anything, "role2", normalized).Return(nil).Once()
+
+	err := suite.service.AddAssigneesToRoles(
+		context.Background(), assignments, []string{"role1", "role2"})
+
+	suite.Nil(err)
+}

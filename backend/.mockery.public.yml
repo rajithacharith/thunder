@@ -562,3 +562,11 @@ packages:
       structname: '{{.InterfaceName}}Mock'
       pkgname: templatemock
       filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/thunder-id/thunderid/internal/system/transaction:
+    config:
+      all: true
+      dir: tests/mocks/transactionmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: transactionmock
+      filename: "{{.InterfaceName}}_mock.go"

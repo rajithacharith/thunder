@@ -43,6 +43,8 @@ type RoleAssignmentServiceInterface interface {
 		includeDisplay bool, assigneeType string) (*AssignmentList, *serviceerror.ServiceError)
 	AddAssignments(ctx context.Context, id string, assignments []RoleAssignment) *serviceerror.ServiceError
 	RemoveAssignments(ctx context.Context, id string, assignments []RoleAssignment) *serviceerror.ServiceError
+	AddAssigneesToRoles(ctx context.Context, assignments []RoleAssignment,
+		roleIDs []string) *serviceerror.ServiceError
 }
 
 // roleAssignmentService is the default implementation of RoleAssignmentServiceInterface.
@@ -283,6 +285,37 @@ func (as *roleAssignmentService) RemoveAssignments(
 	}
 
 	logger.Debug(ctx, "Successfully removed assignments from role", log.String("id", id))
+	return nil
+}
+
+// AddAssigneesToRoles adds assignees to multiple roles in a single transaction.
+// A single failure rolls back all role assignments.
+func (as *roleAssignmentService) AddAssigneesToRoles(
+	ctx context.Context,
+	assignments []RoleAssignment,
+	roleIDs []string,
+) *serviceerror.ServiceError {
+	if len(roleIDs) == 0 || len(assignments) == 0 {
+		return nil
+	}
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, assignmentLoggerComponentName))
+	var capturedSvcErr *serviceerror.ServiceError
+	err := as.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		for _, rid := range roleIDs {
+			if svcErr := as.AddAssignments(txCtx, rid, assignments); svcErr != nil {
+				capturedSvcErr = svcErr
+				return fmt.Errorf("failed to assign role %s: %s", rid, svcErr.Error.DefaultValue)
+			}
+		}
+		return nil
+	})
+	if capturedSvcErr != nil {
+		return capturedSvcErr
+	}
+	if err != nil {
+		logger.Error(ctx, "Failed to add assignees to roles", log.Error(err))
+		return &serviceerror.InternalServerError
+	}
 	return nil
 }
 

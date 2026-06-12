@@ -38,6 +38,71 @@ func (_m *RoleAssignmentServiceInterfaceMock) EXPECT() *RoleAssignmentServiceInt
 	return &RoleAssignmentServiceInterfaceMock_Expecter{mock: &_m.Mock}
 }
 
+// AddAssigneesToRoles provides a mock function for the type RoleAssignmentServiceInterfaceMock
+func (_mock *RoleAssignmentServiceInterfaceMock) AddAssigneesToRoles(ctx context.Context, assignments []RoleAssignment, roleIDs []string) *serviceerror.ServiceError {
+	ret := _mock.Called(ctx, assignments, roleIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AddAssigneesToRoles")
+	}
+
+	var r0 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []RoleAssignment, []string) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(ctx, assignments, roleIDs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*serviceerror.ServiceError)
+		}
+	}
+	return r0
+}
+
+// RoleAssignmentServiceInterfaceMock_AddAssigneesToRoles_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddAssigneesToRoles'
+type RoleAssignmentServiceInterfaceMock_AddAssigneesToRoles_Call struct {
+	*mock.Call
+}
+
+// AddAssigneesToRoles is a helper method to define mock.On call
+//   - ctx context.Context
+//   - assignments []RoleAssignment
+//   - roleIDs []string
+func (_e *RoleAssignmentServiceInterfaceMock_Expecter) AddAssigneesToRoles(ctx interface{}, assignments interface{}, roleIDs interface{}) *RoleAssignmentServiceInterfaceMock_AddAssigneesToRoles_Call {
+	return &RoleAssignmentServiceInterfaceMock_AddAssigneesToRoles_Call{Call: _e.mock.On("AddAssigneesToRoles", ctx, assignments, roleIDs)}
+}
+
+func (_c *RoleAssignmentServiceInterfaceMock_AddAssigneesToRoles_Call) Run(run func(ctx context.Context, assignments []RoleAssignment, roleIDs []string)) *RoleAssignmentServiceInterfaceMock_AddAssigneesToRoles_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []RoleAssignment
+		if args[1] != nil {
+			arg1 = args[1].([]RoleAssignment)
+		}
+		var arg2 []string
+		if args[2] != nil {
+			arg2 = args[2].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *RoleAssignmentServiceInterfaceMock_AddAssigneesToRoles_Call) Return(serviceError *serviceerror.ServiceError) *RoleAssignmentServiceInterfaceMock_AddAssigneesToRoles_Call {
+	_c.Call.Return(serviceError)
+	return _c
+}
+
+func (_c *RoleAssignmentServiceInterfaceMock_AddAssigneesToRoles_Call) RunAndReturn(run func(ctx context.Context, assignments []RoleAssignment, roleIDs []string) *serviceerror.ServiceError) *RoleAssignmentServiceInterfaceMock_AddAssigneesToRoles_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // AddAssignments provides a mock function for the type RoleAssignmentServiceInterfaceMock
 func (_mock *RoleAssignmentServiceInterfaceMock) AddAssignments(ctx context.Context, id string, assignments []RoleAssignment) *serviceerror.ServiceError {
 	ret := _mock.Called(ctx, id, assignments)
