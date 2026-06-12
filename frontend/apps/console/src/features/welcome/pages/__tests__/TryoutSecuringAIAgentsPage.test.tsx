@@ -260,5 +260,15 @@ describe('TryoutSecuringAIAgentsPage', () => {
 
       expect(writeTextSpy).toHaveBeenCalledWith('john.doe');
     });
+
+    it('copies chat prompt to clipboard when copy prompt button is clicked', async () => {
+      const user = userEvent.setup();
+      render(<TryoutSecuringAIAgentsPage />);
+
+      await user.click(screen.getByText('common:welcome.aiAgentsTryout.scenarios.tabs.browse'));
+      await user.click(screen.getAllByRole('button', {name: /Copy prompt/i})[0]);
+
+      expect(writeTextSpy).toHaveBeenCalled();
+    });
   });
 });

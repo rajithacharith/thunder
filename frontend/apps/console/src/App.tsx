@@ -338,7 +338,7 @@ export default function App(): JSX.Element {
               <Route index element={<ExportPage />} />
             </Route>
             <Route
-              path="/open-project"
+              path="/import-configuration"
               element={
                 <ProtectedRoute>
                   <FullScreenLayout />
@@ -359,9 +359,9 @@ export default function App(): JSX.Element {
             >
               <Route index element={<WelcomePage />} />
               <Route path="create-project" element={<CreateProjectPage />} />
-              <Route path="open-project" element={<ImportConfigurationUploadPage />} />
-              <Route path="open-project/validate" element={<ImportConfigurationValidatePage />} />
-              <Route path="open-project/summary" element={<ImportConfigurationSummaryPage />} />
+              <Route path="import-configuration" element={<ImportConfigurationUploadPage />} />
+              <Route path="import-configuration/validate" element={<ImportConfigurationValidatePage />} />
+              <Route path="import-configuration/summary" element={<ImportConfigurationSummaryPage />} />
               <Route path="get-started" element={<GetStartedPage />} />
               <Route
                 path="get-started/applications/create"

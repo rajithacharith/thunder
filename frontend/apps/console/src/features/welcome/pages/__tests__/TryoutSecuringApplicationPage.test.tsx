@@ -165,9 +165,17 @@ describe('TryoutSecuringApplicationPage', () => {
     expect(screen.getByText('common:welcome.applicationTryout.scenarios.tabs.onboard')).toBeInTheDocument();
   });
 
+  it('renders coming soon chip on disabled tabs', () => {
+    render(<TryoutSecuringApplicationPage />);
+    const chips = screen.getAllByText('common:welcome.getStarted.options.comingSoon');
+    expect(chips.length).toBeGreaterThanOrEqual(2);
+  });
+
   it('shows login scenario by default', () => {
     render(<TryoutSecuringApplicationPage />);
-    expect(screen.getByText('common:welcome.applicationTryout.scenarios.login.description')).toBeInTheDocument();
+    expect(
+      screen.getByText('common:welcome.applicationTryout.scenarios.login.description:ThunderID'),
+    ).toBeInTheDocument();
   });
 
   it('navigates to /home and sets session storage on close', async () => {
@@ -280,8 +288,10 @@ describe('TryoutSecuringApplicationPage', () => {
       render(<TryoutSecuringApplicationPage />);
 
       await user.click(screen.getAllByRole('button', {name: 'Show password'})[0]);
-
       expect(screen.getAllByRole('button', {name: 'Hide password'})[0]).toBeInTheDocument();
+
+      await user.click(screen.getAllByRole('button', {name: 'Hide password'})[0]);
+      expect(screen.getAllByRole('button', {name: 'Show password'})[0]).toBeInTheDocument();
     });
 
     it('copies username to clipboard in credentials block', async () => {
@@ -302,6 +312,35 @@ describe('TryoutSecuringApplicationPage', () => {
         name: /^Copy common:welcome\.applicationTryout\.scenarios\.signup\.sampleFields\./,
       });
       await user.click(copyButtons[0]);
+
+      expect(writeTextSpy).toHaveBeenCalledWith('emma.wilson');
+    });
+
+    it('masks signup password field and toggles visibility', async () => {
+      const user = userEvent.setup();
+      render(<TryoutSecuringApplicationPage />);
+
+      await user.click(screen.getByText('common:welcome.applicationTryout.scenarios.tabs.signup'));
+
+      expect(screen.getByText('••••••••')).toBeInTheDocument();
+
+      const showPasswordButton = screen.getByRole('button', {name: 'Show password'});
+      await user.click(showPasswordButton);
+
+      expect(screen.queryByText('••••••••')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', {name: 'Hide password'})).toBeInTheDocument();
+    });
+
+    it('copies masked password value when copy is clicked on signup password field', async () => {
+      const user = userEvent.setup();
+      render(<TryoutSecuringApplicationPage />);
+
+      await user.click(screen.getByText('common:welcome.applicationTryout.scenarios.tabs.signup'));
+
+      const passwordCopyButton = screen.getByRole('button', {
+        name: `Copy common:welcome.applicationTryout.scenarios.signup.sampleFields.password`,
+      });
+      await user.click(passwordCopyButton);
 
       expect(writeTextSpy).toHaveBeenCalledWith('emma.wilson');
     });

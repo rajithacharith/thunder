@@ -17,7 +17,19 @@
  */
 
 import {useConfig} from '@thunderid/contexts';
-import {Box, Button, Stack, Tab, Tabs, Typography, IconButton, LinearProgress, Alert} from '@wso2/oxygen-ui';
+import {
+  Box,
+  Button,
+  Chip,
+  Divider,
+  Stack,
+  Tab,
+  Tabs,
+  Typography,
+  IconButton,
+  LinearProgress,
+  Alert,
+} from '@wso2/oxygen-ui';
 import {
   AppWindow,
   Check,
@@ -29,8 +41,9 @@ import {
   EyeOff,
   KeyRound,
   LogIn,
+  Share2,
+  ShieldCheck,
   UserCheck,
-  UserCircle,
   UserPlus,
 } from '@wso2/oxygen-ui-icons-react';
 import {motion} from 'framer-motion';
@@ -46,7 +59,7 @@ const MotionBox = motion.create(Box);
 const WAYFINDER_SAMPLE_URL = 'http://localhost:5173';
 const WAYFINDER_MAIL_URL = 'http://localhost:8788';
 
-type ScenarioTab = 'login' | 'signup' | 'profile' | 'recovery' | 'onboard';
+type ScenarioTab = 'login' | 'signup' | 'recovery' | 'onboard' | 'mfa' | 'social';
 
 interface CredentialRowProps {
   field: 'username' | 'password';
@@ -219,10 +232,12 @@ function tLink(i18nKey: string, values?: Record<string, unknown>): JSX.Element {
 interface FormField {
   label: string;
   value: string;
+  isPassword?: boolean;
 }
 
 function FormFieldsBlock({fields}: {fields: FormField[]}): JSX.Element {
   const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
+  const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
 
   const handleCopy = (label: string, value: string): void => {
     void navigator.clipboard.writeText(value).then(() => {
@@ -231,37 +246,64 @@ function FormFieldsBlock({fields}: {fields: FormField[]}): JSX.Element {
     });
   };
 
+  const togglePasswordVisibility = (label: string): void => {
+    setVisiblePasswords((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) {
+        next.delete(label);
+      } else {
+        next.add(label);
+      }
+      return next;
+    });
+  };
+
   return (
     <Box sx={{border: '1px solid', borderColor: 'divider', borderRadius: 1.5, overflow: 'hidden'}}>
-      {fields.map((f, i) => (
-        <Box
-          key={f.label}
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            px: 2,
-            py: 0.75,
-            borderTop: i === 0 ? 'none' : '1px solid',
-            borderColor: 'divider',
-          }}
-        >
-          <Typography variant="caption" color="text.secondary" sx={{minWidth: 96, flexShrink: 0}}>
-            {f.label}
-          </Typography>
-          <Typography variant="body2" fontFamily="monospace" sx={{flex: 1}}>
-            {f.value}
-          </Typography>
-          <IconButton
-            size="small"
-            aria-label={`Copy ${f.label}`}
-            onClick={() => handleCopy(f.label, f.value)}
-            sx={{color: copiedLabel === f.label ? 'success.main' : 'text.secondary', flexShrink: 0}}
+      {fields.map((f, i) => {
+        const isVisible = !f.isPassword || visiblePasswords.has(f.label);
+        return (
+          <Box
+            key={f.label}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              px: 2,
+              py: 0.75,
+              borderTop: i === 0 ? 'none' : '1px solid',
+              borderColor: 'divider',
+            }}
           >
-            {copiedLabel === f.label ? <Check size={13} /> : <Copy size={13} />}
-          </IconButton>
-        </Box>
-      ))}
+            <Typography variant="caption" color="text.secondary" sx={{minWidth: 96, flexShrink: 0}}>
+              {f.label}
+            </Typography>
+            <Typography variant="body2" fontFamily="monospace" sx={{flex: 1}}>
+              {isVisible ? f.value : '••••••••'}
+            </Typography>
+            <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0}}>
+              {f.isPassword && (
+                <IconButton
+                  size="small"
+                  aria-label={isVisible ? 'Hide password' : 'Show password'}
+                  onClick={() => togglePasswordVisibility(f.label)}
+                  sx={{color: 'text.secondary'}}
+                >
+                  {isVisible ? <EyeOff size={13} /> : <Eye size={13} />}
+                </IconButton>
+              )}
+              <IconButton
+                size="small"
+                aria-label={`Copy ${f.label}`}
+                onClick={() => handleCopy(f.label, f.value)}
+                sx={{color: copiedLabel === f.label ? 'success.main' : 'text.secondary'}}
+              >
+                {copiedLabel === f.label ? <Check size={13} /> : <Copy size={13} />}
+              </IconButton>
+            </Box>
+          </Box>
+        );
+      })}
     </Box>
   );
 }
@@ -276,14 +318,9 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
   const handleClose = useWelcomeClose();
   const [scenarioTab, setScenarioTab] = useState<ScenarioTab>('login');
 
-  const tabDefs: {value: ScenarioTab; label: string; icon: JSX.Element}[] = [
+  const tabDefs: {value: ScenarioTab; label: string; icon: JSX.Element; disabled?: boolean}[] = [
     {value: 'login', label: t('common:welcome.applicationTryout.scenarios.tabs.login'), icon: <LogIn size={15} />},
     {value: 'signup', label: t('common:welcome.applicationTryout.scenarios.tabs.signup'), icon: <UserPlus size={15} />},
-    {
-      value: 'profile',
-      label: t('common:welcome.applicationTryout.scenarios.tabs.profile'),
-      icon: <UserCircle size={15} />,
-    },
     {
       value: 'recovery',
       label: t('common:welcome.applicationTryout.scenarios.tabs.recovery'),
@@ -293,6 +330,18 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
       value: 'onboard',
       label: t('common:welcome.applicationTryout.scenarios.tabs.onboard'),
       icon: <UserCheck size={15} />,
+    },
+    {
+      value: 'mfa',
+      label: t('common:welcome.applicationTryout.scenarios.tabs.mfa'),
+      icon: <ShieldCheck size={15} />,
+      disabled: true,
+    },
+    {
+      value: 'social',
+      label: t('common:welcome.applicationTryout.scenarios.tabs.social'),
+      icon: <Share2 size={15} />,
+      disabled: true,
     },
   ];
 
@@ -406,7 +455,27 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                 }}
               >
                 {tabDefs.map((tab) => (
-                  <Tab key={tab.value} value={tab.value} label={tab.label} icon={tab.icon} iconPosition="start" />
+                  <Tab
+                    key={tab.value}
+                    value={tab.value}
+                    icon={tab.icon}
+                    iconPosition="start"
+                    disabled={tab.disabled}
+                    label={
+                      tab.disabled ? (
+                        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.75}}>
+                          {tab.label}
+                          <Chip
+                            label={t('common:welcome.getStarted.options.comingSoon')}
+                            size="small"
+                            sx={{height: 16, fontSize: '0.6rem', pointerEvents: 'none'}}
+                          />
+                        </Box>
+                      ) : (
+                        tab.label
+                      )
+                    }
+                  />
                 ))}
               </Tabs>
 
@@ -414,7 +483,7 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                 {scenarioTab === 'login' && (
                   <Stack spacing={2}>
                     <Typography variant="body2" color="text.secondary">
-                      {t('common:welcome.applicationTryout.scenarios.login.description')}
+                      {t('common:welcome.applicationTryout.scenarios.login.description', {productName})}
                     </Typography>
                     <StepList
                       steps={[
@@ -423,6 +492,22 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                       ]}
                     />
                     <CredentialsBlock username="john.doe" password="john.doe" />
+
+                    <Divider />
+
+                    <Typography variant="subtitle2" fontWeight={600}>
+                      {t('common:welcome.applicationTryout.scenarios.tabs.profile')}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {t('common:welcome.applicationTryout.scenarios.profile.description')}
+                    </Typography>
+                    <StepList
+                      startFrom={3}
+                      steps={[
+                        t('common:welcome.applicationTryout.scenarios.profile.step2'),
+                        t('common:welcome.applicationTryout.scenarios.profile.step3', {productName}),
+                      ]}
+                    />
                   </Stack>
                 )}
 
@@ -445,6 +530,16 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                           value: 'emma.wilson',
                         },
                         {
+                          label: t('common:welcome.applicationTryout.scenarios.signup.sampleFields.password'),
+                          value: 'emma.wilson',
+                          isPassword: true,
+                        },
+                      ]}
+                    />
+                    <StepList startFrom={4} steps={[t('common:welcome.applicationTryout.scenarios.signup.step4')]} />
+                    <FormFieldsBlock
+                      fields={[
+                        {
                           label: t('common:welcome.applicationTryout.scenarios.signup.sampleFields.email'),
                           value: 'emma.wilson@example.com',
                         },
@@ -463,28 +558,9 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                       ]}
                     />
                     <StepList
-                      startFrom={4}
-                      steps={[
-                        t('common:welcome.applicationTryout.scenarios.signup.step4', {productName}),
-                        t('common:welcome.applicationTryout.scenarios.signup.step5'),
-                      ]}
+                      startFrom={5}
+                      steps={[t('common:welcome.applicationTryout.scenarios.signup.step5', {productName})]}
                     />
-                  </Stack>
-                )}
-
-                {scenarioTab === 'profile' && (
-                  <Stack spacing={2}>
-                    <Typography variant="body2" color="text.secondary">
-                      {t('common:welcome.applicationTryout.scenarios.profile.description')}
-                    </Typography>
-                    <StepList
-                      steps={[
-                        tLink('welcome.applicationTryout.scenarios.profile.step1'),
-                        t('common:welcome.applicationTryout.scenarios.profile.step2'),
-                        t('common:welcome.applicationTryout.scenarios.profile.step3', {productName}),
-                      ]}
-                    />
-                    <CredentialsBlock username="john.doe" password="john.doe" />
                   </Stack>
                 )}
 

@@ -33,7 +33,7 @@ vi.mock('react-router', async () => {
   return {
     ...actual,
     useNavigate: () => mockNavigate,
-    useLocation: () => ({state: mockLocationState, pathname: '/welcome/open-project/validate'}),
+    useLocation: () => ({state: mockLocationState, pathname: '/welcome/import-configuration/validate'}),
   };
 });
 
@@ -125,7 +125,7 @@ describe('ImportConfigurationValidatePage', () => {
     expect(screen.getByRole('button', {name: 'validate.actions.uploadDifferentFile'})).toBeInTheDocument();
   });
 
-  it('navigates to /welcome/open-project when upload different file is clicked', async () => {
+  it('navigates to /welcome/import-configuration when upload different file is clicked', async () => {
     mockLocationState = {
       parseErrors: [{resourceType: 'bad_type', fileName: 'config.yaml', error: 'parse error'}],
       parseStats: {successCount: 0, failCount: 1},
@@ -136,7 +136,7 @@ describe('ImportConfigurationValidatePage', () => {
 
     await user.click(screen.getByRole('button', {name: 'validate.actions.uploadDifferentFile'}));
 
-    expect(mockNavigate).toHaveBeenCalledWith('/welcome/open-project');
+    expect(mockNavigate).toHaveBeenCalledWith('/welcome/import-configuration');
   });
 
   it('renders breadcrumb with welcome header', () => {
@@ -186,7 +186,10 @@ describe('ImportConfigurationValidatePage', () => {
       vi.advanceTimersByTime(500);
     });
 
-    expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/open-project/summary'), expect.anything());
+    expect(mockNavigate).toHaveBeenCalledWith(
+      expect.stringContaining('/import-configuration/summary'),
+      expect.anything(),
+    );
 
     vi.useRealTimers();
   });

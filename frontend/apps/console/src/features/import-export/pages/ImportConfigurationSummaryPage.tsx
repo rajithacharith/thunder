@@ -1083,9 +1083,9 @@ export default function ImportConfigurationSummaryPage(): JSX.Element {
                 ? [{key: 'welcome', label: t('common:welcome.header'), onClick: () => void navigate('/welcome')}]
                 : []),
               {
-                key: 'open-project',
+                key: 'import-configuration',
                 label: t('upload.breadcrumb.openProject'),
-                onClick: () => void navigate(`${isWelcomeFlow ? '/welcome' : ''}/open-project`),
+                onClick: () => void navigate(`${isWelcomeFlow ? '/welcome' : ''}/import-configuration`),
               },
               {key: 'summary', label: t('summary.breadcrumb')},
             ]}

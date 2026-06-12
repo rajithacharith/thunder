@@ -112,7 +112,7 @@ export default function CreateProjectPage(): JSX.Element {
                   mb: 2,
                 }}
               >
-                {t('common:welcome.createProject.title')}
+                {t('common:welcome.createProject.title', {productName})}
               </Typography>
 
               <Typography

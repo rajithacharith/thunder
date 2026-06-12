@@ -181,7 +181,7 @@ describe('ImportConfigurationUploadPage', () => {
     await waitFor(
       () => {
         expect(mockNavigate).toHaveBeenCalledWith(
-          '/welcome/open-project/validate',
+          '/welcome/import-configuration/validate',
           expect.objectContaining({
             state: expect.objectContaining({
               method: 'file',
@@ -215,7 +215,7 @@ describe('ImportConfigurationUploadPage', () => {
     await waitFor(
       () => {
         expect(mockNavigate).toHaveBeenCalledWith(
-          '/welcome/open-project/validate',
+          '/welcome/import-configuration/validate',
           expect.objectContaining({state: expect.objectContaining({method: 'file'}) as Record<string, unknown>}),
         );
       },
