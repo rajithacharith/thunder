@@ -769,171 +769,24 @@ function Package {
     Write-Host "================================================================"
 }
 
-function Build-Sample-App {
-    Write-Host "================================================================"
-    Write-Host "Building sample apps..."
-
-    # Build React Vanilla sample
-    Write-Host "=== Building React Vanilla sample app ==="
-    Write-Host "=== Ensuring React Vanilla sample app certificates exist ==="
-    Ensure-Certificates -cert_dir $VANILLA_SAMPLE_APP_DIR -cert_name_prefix "server"
-
-    Push-Location $VANILLA_SAMPLE_APP_DIR
-    try {
-        Write-Host "Installing React Vanilla sample dependencies..."
-        & npm ci
-        if ($LASTEXITCODE -ne 0) {
-            throw "npm ci failed with exit code $LASTEXITCODE"
-        }
-
-        Write-Host "Building React Vanilla sample app (TypeScript + Vite)..."
-
-        Write-Host " - Running TypeScript build (tsc -b)..."
-        & npx tsc -b
-        if ($LASTEXITCODE -ne 0) {
-            throw "tsc build failed with exit code $LASTEXITCODE"
-        }
-
-        Write-Host " - Running Vite build..."
-        & npx vite build
-        if ($LASTEXITCODE -ne 0) {
-            throw "vite build failed with exit code $LASTEXITCODE"
-        }
-
-        # Replicate npm script: copy dist to server/app and copy certs
-        $serverDir = Join-Path $VANILLA_SAMPLE_APP_DIR "server"
-        $serverAppDir = Join-Path $serverDir "app"
-        if (Test-Path $serverAppDir) {
-            Remove-Item -Path $serverAppDir -Recurse -Force
-        }
-        New-Item -Path $serverAppDir -ItemType Directory -Force | Out-Null
-
-        $distFull = Resolve-Path -Path "dist" | Select-Object -ExpandProperty Path
-        Copy-Item -Path (Join-Path $distFull "*") -Destination $serverAppDir -Recurse -Force
-
-        # Copy server certs into server directory
-        if (Test-Path (Join-Path $VANILLA_SAMPLE_APP_DIR "server.key")) {
-            Copy-Item -Path (Join-Path $VANILLA_SAMPLE_APP_DIR "server.key") -Destination $serverDir -Force
-        }
-        if (Test-Path (Join-Path $VANILLA_SAMPLE_APP_DIR "server.cert")) {
-            Copy-Item -Path (Join-Path $VANILLA_SAMPLE_APP_DIR "server.cert") -Destination $serverDir -Force
-        }
-
-        # Install server dependencies
-        Push-Location $serverDir
-        try {
-            Write-Host " - Installing server dependencies..."
-            & npm ci
-            if ($LASTEXITCODE -ne 0) {
-                throw "npm ci (server) failed with exit code $LASTEXITCODE"
-            }
-        }
-        finally {
-            Pop-Location
-        }
-    }
-    finally {
-        Pop-Location
-    }
-
-    Write-Host "✅ React Vanilla sample app built successfully."
-
-    # Build React SDK sample
-    Write-Host "=== Building React SDK sample app ==="
-
-    # Ensure certificates exist for React SDK sample
-    Write-Host "=== Ensuring React SDK sample app certificates exist ==="
-    Ensure-Certificates -cert_dir $REACT_SDK_SAMPLE_APP_DIR -cert_name_prefix "server"
-
-    Push-Location $REACT_SDK_SAMPLE_APP_DIR
-    try {
-        Write-Host "Installing React SDK sample dependencies..."
-        & npm ci
-        if ($LASTEXITCODE -ne 0) {
-            throw "npm ci failed with exit code $LASTEXITCODE"
-        }
-
-        Write-Host "Building React SDK sample app..."
-        & npm run build
-        if ($LASTEXITCODE -ne 0) {
-            throw "npm run build failed with exit code $LASTEXITCODE"
-        }
-    }
-    finally {
-        Pop-Location
-    }
-
-    Write-Host "✅ React SDK sample app built successfully."
-
-    # Build React API-based sample
-    Write-Host "=== Building React API-based sample app ==="
-
-    # Ensure certificates exist for React API-based sample
-    Write-Host "=== Ensuring React API-based sample app certificates exist ==="
-    Ensure-Certificates -cert_dir $REACT_API_SAMPLE_APP_DIR
-
-    Push-Location $REACT_API_SAMPLE_APP_DIR
-    try {
-        Write-Host "Installing React API-based sample dependencies..."
-        & npm ci
-        if ($LASTEXITCODE -ne 0) {
-            throw "npm ci failed with exit code $LASTEXITCODE"
-        }
-
-        Write-Host "Building React API-based sample app..."
-        & npm run build
-        if ($LASTEXITCODE -ne 0) {
-            throw "npm run build failed with exit code $LASTEXITCODE"
-        }
-    }
-    finally {
-        Pop-Location
-    }
-
-    Write-Host "✅ React API-based sample app built successfully."
-
-    # Build Wayfinder sample (Wayfinder)
-    Write-Host "=== Building Wayfinder sample app ==="
-
-    Push-Location (Join-Path $WAYFINDER_SAMPLE_APP_DIR "frontend")
-    try {
-        Write-Host "Installing Wayfinder sample frontend dependencies..."
-        & npm ci
-        if ($LASTEXITCODE -ne 0) {
-            throw "npm ci failed with exit code $LASTEXITCODE"
-        }
-
-        Write-Host "Building Wayfinder sample frontend..."
-        & npm run build
-        if ($LASTEXITCODE -ne 0) {
-            throw "npm run build failed with exit code $LASTEXITCODE"
-        }
-    }
-    finally {
-        Pop-Location
-    }
-
-    foreach ($svc in @("backend", "ai-agent")) {
-        Write-Host "Installing Wayfinder sample $svc dependencies..."
-        Push-Location (Join-Path $WAYFINDER_SAMPLE_APP_DIR $svc)
-        try {
-            & npm ci
-            if ($LASTEXITCODE -ne 0) {
-                throw "npm ci ($svc) failed with exit code $LASTEXITCODE"
-            }
-        }
-        finally {
-            Pop-Location
-        }
-    }
-
-    Write-Host "✅ Wayfinder sample app built successfully."
-    Write-Host "================================================================"
-}
-
 function Package-Sample-App {
     Write-Host "================================================================"
     Write-Host "Packaging sample apps..."
+    Ensure-Pnpm
+
+    # pnpm pack rewrites workspace: dependencies to real versions, which
+    # requires the workspace to be installed.
+    Write-Host "Installing workspace dependencies..."
+    & pnpm install --frozen-lockfile
+    if ($LASTEXITCODE -ne 0) {
+        throw "pnpm install failed with exit code $LASTEXITCODE"
+    }
+
+    # Samples are packaged from source; ship certificates for the samples that
+    # expect them at the package root (react-api-based ignores them via .gitignore).
+    Write-Host "=== Ensuring sample app certificates exist ==="
+    Ensure-Certificates -cert_dir $VANILLA_SAMPLE_APP_DIR -cert_name_prefix "server"
+    Ensure-Certificates -cert_dir $REACT_SDK_SAMPLE_APP_DIR -cert_name_prefix "server"
 
     # Package React Vanilla sample
     Write-Host "=== Packaging React Vanilla sample app ==="
@@ -1022,6 +875,10 @@ function Package-React-API-Based-Sample {
 
     tar xzf $tgz.FullName -C $DIST_DIR
     Rename-Item -Path (Join-Path $DIST_DIR "package") -NewName $REACT_API_SAMPLE_APP_FOLDER
+
+    # Certs are gitignored in this sample so pnpm pack excludes them; inject them
+    # into the package root where vite.config.ts expects them.
+    Ensure-Certificates -cert_dir (Join-Path $DIST_DIR $REACT_API_SAMPLE_APP_FOLDER) -cert_name_prefix "server"
 
     Write-Host "Creating React API-based sample zip file..."
     $distAbs = (Resolve-Path -Path $DIST_DIR).Path
@@ -1907,7 +1764,6 @@ switch ($Command) {
         Build-Frontend
         Build-SDKs
         Package
-        Build-Sample-App
         Package-Sample-App
     }
     'build_backend' {
@@ -1928,9 +1784,6 @@ switch ($Command) {
     }
     'lint_sdks' {
         Lint-SDKs
-    }
-    'build_samples' {
-        Build-Sample-App
     }
     'package_samples' {
         Package-Sample-App
@@ -1961,7 +1814,7 @@ switch ($Command) {
         Test-Integration
     }
     default {
-        Write-Host "Usage: $($MyInvocation.MyCommand.Name) {clean|build|build_backend|build_frontend|build_docs|build_samples|package_samples|test_unit|test_integration|merge_coverage|run|run_backend|run_frontend|run_docs|test}"
+        Write-Host "Usage: $($MyInvocation.MyCommand.Name) {clean|build|build_backend|build_frontend|build_docs|package_samples|test_unit|test_integration|merge_coverage|run|run_backend|run_frontend|run_docs|test}"
         exit 1
     }
 }

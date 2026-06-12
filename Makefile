@@ -49,7 +49,7 @@ prepare:
 clean:
 	./build.sh clean $(OS) $(ARCH)
 
-build: build_frontend build_backend build_sdks build_samples
+build: build_frontend build_backend build_sdks package_samples
 
 build_backend:
 	./build.sh build_backend $(OS) $(ARCH)
@@ -62,9 +62,6 @@ build_docs:
 
 package_samples:
 	./build.sh package_samples
-
-build_samples:
-	./build.sh build_samples
 
 test:
 	./build.sh test $(OS) $(ARCH)
@@ -187,7 +184,7 @@ test_e2e:
 	chmod +x tests/e2e/run-e2e.sh
 	tests/e2e/run-e2e.sh
 
-pr_checks: verify_mocks lint format_check test_unit test_frontend test_integration build_backend build_frontend build_samples
+pr_checks: verify_mocks lint format_check test_unit test_frontend test_integration build_backend build_frontend package_samples
 
 help:
 	@echo "Makefile targets:"
@@ -199,7 +196,6 @@ help:
 	@echo "  build_frontend                - Build the frontend applications."
 	@echo "  build_docs                    - Build the documentation."
 	@echo "  package_samples               - Package sample applications."
-	@echo "  build_samples                 - Build sample applications."
 	@echo "  test_unit                     - Run unit tests."
 	@echo "  test_integration              - Run integration tests. Use RUN= for test filter, PACKAGE= for package filter."
 	@echo "  build_with_coverage  		   - Build with coverage flags, run unit and integration tests, and generate combined coverage report."
@@ -232,7 +228,7 @@ help:
 	@echo "  generate_i18n                 - Extract i18n messages and generate defaults.go."
 	@echo "  help                          - Show this help message."
 
-.PHONY: all prepare clean build build_backend build_frontend build_docs build_samples package_samples run
+.PHONY: all prepare clean build build_backend build_frontend build_docs package_samples run
 .PHONY: docker-build docker-build-latest docker-build-multiarch
 .PHONY: docker-build-multiarch-latest docker-build-multiarch-push
 .PHONY: test_unit test_integration build_with_coverage build_with_coverage_only test

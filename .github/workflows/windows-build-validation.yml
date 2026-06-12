@@ -146,10 +146,9 @@ jobs:
         with:
           node-version: 'lts/*'
 
-      - name: 🧩 Build and Package Sample Apps
+      - name: 📦 Package Sample Apps
         shell: pwsh
         run: |
-          ./build.ps1 build_samples
           ./build.ps1 package_samples
 
       - name: 📦 Upload Built Sample App
