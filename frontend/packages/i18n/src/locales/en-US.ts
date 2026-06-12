@@ -153,36 +153,35 @@ const translations = {
     'welcome.dismissed': 'Welcome window can be reopened through the user dropdown menu.',
     'welcome.sections.start': 'Start',
     'welcome.sections.recent': 'Recent',
-    'welcome.sections.tryoutProduct': 'Tryout',
-    'welcome.tryoutProduct.securingApplication': 'Securing Application',
-    'welcome.tryoutProduct.securingApplicationDesc': 'Tryout user journeys for a web application',
-    'welcome.tryoutProduct.aiAgents': 'Securing AI Agents',
-    'welcome.tryoutProduct.aiAgentsDesc': 'Tryout identity patterns for AI agents and tools',
-    'welcome.tryoutProduct.mcp': 'Securing MCP',
-    'welcome.tryoutProduct.mcpDesc': 'Try authorizing MCP clients to your MCP server',
-    'welcome.start.newProject': 'New / Continue',
-    'welcome.start.newProjectDesc': 'Configure a new project or edit existing',
-    'welcome.start.openImport': 'Open',
-    'welcome.start.openImportDesc': 'Import an existing {{productName}} configuration',
+    'welcome.sections.tryoutProduct': 'Try Sample',
+    'welcome.tryoutProduct.securingApplication': 'Secured Web Application',
+    'welcome.tryoutProduct.securingApplicationDesc': 'Tryout user journeys of a secured web application',
+    'welcome.tryoutProduct.aiAgents': 'Secured AI Agent',
+    'welcome.tryoutProduct.aiAgentsDesc': 'Tryout identity security patterns for AI agents and tools',
+    'welcome.tryoutProduct.mcp': 'Secured MCP Server',
+    'welcome.tryoutProduct.mcpDesc': 'Tryout authorizing MCP client to a secured MCP server',
+    'welcome.start.newProject': 'New',
+    'welcome.start.newProjectDesc': 'Onboard your first resource to start',
+    'welcome.start.openImport': 'Import',
+    'welcome.start.openImportDesc': 'Import an existing {{productName}} configuration file',
     'welcome.start.startSamples': 'Start with samples',
     'welcome.start.connectTo': 'Connect to \u2026',
-    'welcome.noRecentItems': 'No recent projects found',
+    'welcome.noRecentItems': 'No recent items found',
     'welcome.hero.titlePrefix': 'Welcome to',
-    'welcome.hero.subtitle': 'Design and configure your Identity & Access Management project',
+    'welcome.hero.subtitle': 'Secure your digital resources and manage user identities and access',
     'welcome.walkthrough.getStartedDesigner': 'Get started',
     'welcome.walkthrough.getStartedDesignerDesc': 'Learn how to design and customize your identity experience',
     'welcome.walkthrough.learnFundamentals': 'Learn the Fundamentals',
     'welcome.walkthrough.learnFundamentalsDesc': 'Understand core concepts and architecture',
     'welcome.createProject.breadcrumb': 'New',
-    'welcome.createProject.title': "Let's Create Your Identity Project",
+    'welcome.createProject.title': 'How {{productName}} Works!',
     'welcome.createProject.subtitle':
-      'This wizard will guide you through minimal configuration for your project and generate the necessary configs to run {{productName}}.',
-    'welcome.createProject.cards.configure.title': 'Configure Project',
+      'Onboard your digital resources, configure security, verify the setup, and run {{productName}} with your configuration in production deployment.',
+    'welcome.createProject.cards.configure.title': 'Configure',
     'welcome.createProject.cards.configure.description':
-      "Set up your project's authentication flows, choose sign-in methods, and customize the user experience.",
+      'Set up authentication flows, choose sign-in methods, and customize the user experience.',
     'welcome.createProject.cards.verify.title': 'Verify',
-    'welcome.createProject.cards.verify.description':
-      'Test your project configuration to ensure everything works as expected.',
+    'welcome.createProject.cards.verify.description': 'Test your configuration to ensure everything works as expected.',
     'welcome.createProject.cards.runServer.title': 'Run Server',
     'welcome.createProject.cards.runServer.description':
       '{{productName}} will run in immutable mode with the attached configurations.',
@@ -192,7 +191,7 @@ const translations = {
     'welcome.wayfinderSampleSetup.setupComplete': 'Already set up — you can skip this section',
     'welcome.wayfinderSampleSetup.steps.getSample.title': 'Get the Wayfinder Sample',
     'welcome.wayfinderSampleSetup.steps.getSample.description':
-      'Download the latest Wayfinder sample distribution and extract the archive. It ships with the <strong>web frontend</strong>, <strong>AI agent service</strong>, and <strong>Wayfinder server</strong>.',
+      'Download the latest Wayfinder sample distribution and extract the archive. It ships with the <strong>web frontend</strong>, <strong>AI agent service</strong>, <strong>MCP</strong>, <strong>SMTP mail server</strong> and <strong>Wayfinder server</strong>.',
     'welcome.wayfinderSampleSetup.steps.configure.title': 'Configure Wayfinder Sample in {{productName}}',
     'welcome.wayfinderSampleSetup.steps.configure.description':
       'Apply the Wayfinder sample configurations to {{productName}}. Skip this step if already done.',
@@ -226,24 +225,31 @@ const translations = {
     'welcome.getStarted.breadcrumb': 'Get started',
     'welcome.getStarted.actions.skipToConsole': 'Skip to console',
     'welcome.getStarted.title': 'Get Started',
-    'welcome.getStarted.subtitle': 'Onboard your first application and start securing it with {{productName}}.',
-    'welcome.getStarted.options.onboardApp.title': 'Onboard your first app',
+    'welcome.getStarted.subtitle': 'Onboard your first resource and start securing it with {{productName}}.',
+    'welcome.getStarted.options.onboardApp.title': 'Web Application',
     'welcome.getStarted.options.onboardApp.description':
       'Register your application in {{productName}} and integrate authentication step by step.',
     'welcome.getStarted.options.onboardApp.action': 'Add Application',
+    'welcome.getStarted.options.secureAiAgent.title': 'Secure an AI Agent',
+    'welcome.getStarted.options.secureAiAgent.description':
+      'Protect your AI agents with token-based access control and scope enforcement.',
+    'welcome.getStarted.options.secureMcp.title': 'Secure MCP Server / Client',
+    'welcome.getStarted.options.secureMcp.description':
+      'Authorize MCP clients to access your MCP server with fine-grained permissions.',
+    'welcome.getStarted.options.comingSoon': 'Coming Soon',
     'welcome.getStarted.options.skip.title': 'Skip for now',
     'welcome.getStarted.options.skip.description':
       'Head straight to the console and explore {{productName}} on your own.',
     'welcome.getStarted.options.skip.action': 'Go to Console',
 
-    'welcome.applicationTryout.breadcrumb': 'Tryout Securing Application',
-    'welcome.applicationTryout.overline': 'Securing Application',
+    'welcome.applicationTryout.breadcrumb': 'Tryout Secured Web Application',
+    'welcome.applicationTryout.overline': 'Secured Web Application',
     'welcome.applicationTryout.title': 'Secure Your Application',
     'welcome.applicationTryout.subtitle':
-      'Run consumer application use cases against the Wayfinder sample, a fictional travel-booking application.',
+      'Run web application use cases against the Wayfinder sample, a fictional travel-booking application.',
     'welcome.applicationTryout.steps.getSample.title': 'Get the Wayfinder Sample',
     'welcome.applicationTryout.steps.getSample.description':
-      'Download the latest Wayfinder sample distribution and extract the archive. It ships with the web frontend, AI agent service, and Wayfinder server.',
+      'Download the latest Wayfinder sample distribution and extract the archive. It ships with the web frontend, AI agent service, MCP, SMTP mail server and Wayfinder server.',
     'welcome.applicationTryout.steps.getSample.action': 'Download Sample',
     'welcome.applicationTryout.steps.importConfigs.title': 'Configure Wayfinder Sample in {{productName}}',
     'welcome.applicationTryout.steps.importConfigs.description':
@@ -252,19 +258,21 @@ const translations = {
     'welcome.applicationTryout.steps.runSample.description':
       'Start all Wayfinder services from the extracted sample directory.',
     'welcome.applicationTryout.steps.runSample.action': 'See Run Instructions',
-    'welcome.applicationTryout.steps.login.title': 'Log In to the App',
+    'welcome.applicationTryout.steps.login.title': 'Sign-In to the App',
     'welcome.applicationTryout.steps.login.description':
       'Open the Wayfinder sample app and sign in with the demo credentials below.',
 
-    'welcome.applicationTryout.scenarios.title': 'Try these with the Wayfinder sample',
-    'welcome.applicationTryout.scenarios.tabs.login': 'Log In',
+    'welcome.applicationTryout.scenarios.title': 'Try the following user journeys',
+    'welcome.applicationTryout.scenarios.tabs.login': 'Sign-In',
     'welcome.applicationTryout.scenarios.tabs.signup': 'Self Sign-Up',
     'welcome.applicationTryout.scenarios.tabs.profile': 'View Profile',
     'welcome.applicationTryout.scenarios.tabs.recovery': 'Account Recovery',
-    'welcome.applicationTryout.scenarios.tabs.onboard': 'Onboard Staff',
+    'welcome.applicationTryout.scenarios.tabs.onboard': 'Staff Sign-Up',
+    'welcome.applicationTryout.scenarios.tabs.mfa': 'Multi-Factor Authentication',
+    'welcome.applicationTryout.scenarios.tabs.social': 'Social Login',
 
     'welcome.applicationTryout.scenarios.login.description':
-      'Sign in with the demo consumer account to explore the Wayfinder app.',
+      'Sign in with the test user account to explore {{productName}} Sign in experience.',
     'welcome.applicationTryout.scenarios.login.step1': 'Open the Wayfinder app at <a>http://localhost:5173</a>.',
     'welcome.applicationTryout.scenarios.login.step2': 'Click Sign in and use the credentials below.',
 
@@ -272,27 +280,27 @@ const translations = {
       'Register a new customer account and see {{productName}} assign the Traveler role automatically on completion.',
     'welcome.applicationTryout.scenarios.signup.step1': 'Open <a>http://localhost:5173</a> and click Sign in.',
     'welcome.applicationTryout.scenarios.signup.step2': 'On the {{productName}} page, click Sign up.',
-    'welcome.applicationTryout.scenarios.signup.step3':
-      'Fill in the registration form using the sample details below. Enter a password of your choice.',
+    'welcome.applicationTryout.scenarios.signup.step3': 'Fill in below sample details and click Continue.',
     'welcome.applicationTryout.scenarios.signup.sampleFields.username': 'Username',
+    'welcome.applicationTryout.scenarios.signup.sampleFields.password': 'Password',
     'welcome.applicationTryout.scenarios.signup.sampleFields.email': 'Email',
     'welcome.applicationTryout.scenarios.signup.sampleFields.givenName': 'First name',
     'welcome.applicationTryout.scenarios.signup.sampleFields.familyName': 'Last name',
     'welcome.applicationTryout.scenarios.signup.sampleFields.mobileNumber': 'Mobile number',
     'welcome.applicationTryout.scenarios.signup.step4':
-      'Submit. {{productName}} creates a Customer user and assigns the Traveler role.',
-    'welcome.applicationTryout.scenarios.signup.step5': 'The browser redirects back to Wayfinder.',
-
+      'Fill in the registration form using these sample details and click Submit.',
+    'welcome.applicationTryout.scenarios.signup.step5':
+      '{{productName}} will create a Customer user and assign the Traveler role. The browser shows a confirmation screen with a link to redirect back to the Wayfinder app.',
     'welcome.applicationTryout.scenarios.profile.description':
-      'Explore the self-service profile page — view account details, edit attributes, and change your password.',
-    'welcome.applicationTryout.scenarios.profile.step1': 'Sign in as john.doe at <a>http://localhost:5173</a>.',
+      'Explore the self-service profile page - view account details, edit attributes, and change your password.',
+    'welcome.applicationTryout.scenarios.profile.step1': 'Sign in as John at <a>http://localhost:5173</a>.',
     'welcome.applicationTryout.scenarios.profile.step2':
       'Click the username in the top-right corner and select Profile.',
     'welcome.applicationTryout.scenarios.profile.step3':
       'View account details, edit profile attributes, or change your password. The page calls {{productName}} directly with your session token.',
 
     'welcome.applicationTryout.scenarios.recovery.description':
-      'Walk through the password recovery flow — John forgets his password and resets it via email.',
+      'Walk through the password recovery flow - John forgets his password and resets it via email.',
     'welcome.applicationTryout.scenarios.recovery.step1': 'Open <a>http://localhost:5173</a> and click Sign in.',
     'welcome.applicationTryout.scenarios.recovery.step2': 'On the {{productName}} sign-in page, click Forgot password?',
     'welcome.applicationTryout.scenarios.recovery.step3': 'Enter john.doe as the username and submit.',
@@ -317,27 +325,34 @@ const translations = {
     'welcome.applicationTryout.scenarios.onboard.step7':
       'Repeat the flow for Maya Patel (email maya.patel@example.com), picking DestinationsAdmin as the role.',
 
-    'welcome.aiAgentsTryout.breadcrumb': 'Tryout Securing AI Agents',
-    'welcome.aiAgentsTryout.overline': 'Securing AI Agents',
+    'welcome.aiAgentsTryout.breadcrumb': 'Tryout Secured AI Agent',
+    'welcome.aiAgentsTryout.overline': 'Secured AI Agent',
     'welcome.aiAgentsTryout.subtitle':
       'Run AI agent use cases against the Wayfinder sample, a travel-booking app with a built-in AI chat assistant.',
     'welcome.aiAgentsTryout.steps.getSample.title': 'Get the Wayfinder Sample',
     'welcome.aiAgentsTryout.steps.getSample.description':
-      'Download the latest Wayfinder sample distribution and extract the archive. It ships with the Wayfinder web frontend, the AI Agent service, and the Wayfinder Server.',
+      'Download the latest Wayfinder sample distribution and extract the archive. It ships with the web frontend, AI agent service, MCP, SMTP mail server and Wayfinder server.',
     'welcome.aiAgentsTryout.steps.importConfigs.title': 'Configure Wayfinder Sample in {{productName}}',
     'welcome.aiAgentsTryout.steps.importConfigs.description':
       'Apply the Wayfinder sample configurations to {{productName}}.',
-    'welcome.aiAgentsTryout.steps.configureSample.title': 'Configure the Sample',
+    'welcome.aiAgentsTryout.steps.configureSample.title': 'Configure the AI Provider Details in Wayfinder Sample',
     'welcome.aiAgentsTryout.steps.configureSample.description':
       'Copy each .env.example to .env in backend/, ai-agent/, and frontend/. Fill in your LLM API key in ai-agent/.env — an Anthropic key from console.anthropic.com or a Gemini key from aistudio.google.com.',
     'welcome.aiAgentsTryout.steps.runSample.title': 'Run the Sample',
     'welcome.aiAgentsTryout.steps.runSample.description':
       'Start all Wayfinder services from the extracted sample directory.',
-    'welcome.aiAgentsTryout.steps.login.title': 'Log In to the App',
+    'welcome.aiAgentsTryout.steps.login.title': 'Sign-In to the App',
     'welcome.aiAgentsTryout.steps.login.description':
       'Open the Wayfinder sample app and sign in with the demo credentials below.',
 
-    'welcome.aiAgentsTryout.scenarios.title': 'Try these with the Wayfinder sample',
+    'welcome.aiAgentsTryout.apiKeySetup.getKey.title': 'Get an LLM API key',
+    'welcome.aiAgentsTryout.apiKeySetup.getKey.description':
+      'The AI agent needs access to an LLM. Obtain a free API key from one of the providers below.',
+    'welcome.aiAgentsTryout.apiKeySetup.setKey.title': 'Add the key to ai-agent/.env',
+    'welcome.aiAgentsTryout.apiKeySetup.setKey.description':
+      'Open ai-agent/.env and set the key for the provider you chose.',
+
+    'welcome.aiAgentsTryout.scenarios.title': 'Try the following AI agents security patterns',
     'welcome.aiAgentsTryout.scenarios.apiKeyNote':
       'The AI agent requires an LLM API key. Edit ai-agent/.env in the sample directory and set ANTHROPIC_API_KEY or GOOGLE_API_KEY before starting the services.',
     'welcome.aiAgentsTryout.scenarios.tabs.protect': 'Protect the Agent',
@@ -345,42 +360,42 @@ const translations = {
     'welcome.aiAgentsTryout.scenarios.tabs.book': 'Book on Behalf',
 
     'welcome.aiAgentsTryout.scenarios.protect.description':
-      'See scope-based access control in action — John can use the AI concierge, but Jane cannot.',
-    'welcome.aiAgentsTryout.scenarios.protect.step1':
-      'Open <a>http://localhost:5173</a> and sign in as john.doe / john.doe.',
+      'See scope-based access control in action - John can use the AI concierge, but Jane cannot.',
+    'welcome.aiAgentsTryout.scenarios.protect.step1': 'Open <a>http://localhost:5173</a> and sign in as John Doe.',
     'welcome.aiAgentsTryout.scenarios.protect.step2':
-      "Open the chat widget (bottom-right corner) and send any message. The concierge responds — John's token carries the agent:access scope.",
-    'welcome.aiAgentsTryout.scenarios.protect.step3': 'Sign out and sign in as jane.smith / jane.smith.',
+      "Open the chat widget (bottom-right corner) and send any message. The concierge responds — John's token carries the <code>agent:access</code> scope.",
+    'welcome.aiAgentsTryout.scenarios.protect.step3': 'Sign out and sign in as Jane Smith.',
     'welcome.aiAgentsTryout.scenarios.protect.step4':
-      'Open the chat and send a message. The request is rejected with a 403 — Jane does not have the Wayfinder Chat User role.',
-    'welcome.aiAgentsTryout.scenarios.protect.johnLabel': 'John Doe — has agent:access (Wayfinder Chat User role)',
-    'welcome.aiAgentsTryout.scenarios.protect.janeLabel': 'Jane Smith — no agent:access',
+      'Open the chat. Since Jane does not have the Wayfinder Chat User role. Chat agent will not be accessible and the widget will show an error message instead.',
+    'welcome.aiAgentsTryout.scenarios.protect.johnLabel': 'John Have access to chat with Wayfinder chat agent',
+    'welcome.aiAgentsTryout.scenarios.protect.janeLabel': 'Jane does not have access to chat with Wayfinder chat agent',
 
     'welcome.aiAgentsTryout.scenarios.browse.description':
-      'Watch the agent use its own machine-to-machine token to call read-only tools — no user consent popup required.',
+      'Watch the agent use its own Machine-to-Machine (M2M) token to call read-only tools - no user consent popup required.',
     'welcome.aiAgentsTryout.scenarios.browse.step1':
-      'Sign in as john.doe at <a>http://localhost:5173</a> and open the chat widget.',
-    'welcome.aiAgentsTryout.scenarios.browse.step2':
-      'Ask a browsing question, for example: "What flights are there from Colombo to Singapore?"',
+      'Sign in as John at <a>http://localhost:5173</a> and open the chat widget.',
+    'welcome.aiAgentsTryout.scenarios.browse.step2': 'Ask a browsing question in the chat:',
     'welcome.aiAgentsTryout.scenarios.browse.step3':
       'The agent calls the Wayfinder MCP server with its own M2M token (client_credentials grant). No popup appears.',
     'welcome.aiAgentsTryout.scenarios.browse.step4':
-      'You can also try: "Suggest a few flight deals." The agent calls the recommend_bookings tool, which requires the booking:recommend scope — granted to the Wayfinder Concierge via its Recommender role.',
+      'You can also try asking for flight deals — the agent calls the recommend_bookings tool, which requires the <code>booking:recommend</code> scope — granted to the Wayfinder Concierge via its Recommender role.',
+    'welcome.aiAgentsTryout.scenarios.browse.step4Prompt': 'Suggest a few flight deals.',
 
     'welcome.aiAgentsTryout.scenarios.book.description':
-      'Trigger the on-behalf-of consent flow — the agent pauses, asks for your permission, and only proceeds after you approve.',
+      'Trigger the on-behalf-of consent flow - the agent pauses, asks for your permission, and only proceeds after you approve.',
     'welcome.aiAgentsTryout.scenarios.book.step1':
-      'Sign in as john.doe at <a>http://localhost:5173</a> and open the chat widget.',
-    'welcome.aiAgentsTryout.scenarios.book.step2': 'Ask the agent to book something, for example: "Book flight 2".',
+      'Sign in as John at <a>http://localhost:5173</a> and open the chat widget.',
+    'welcome.aiAgentsTryout.scenarios.book.step2': 'Ask the agent to book something, for example:',
+    'welcome.aiAgentsTryout.scenarios.book.step2Prompt': 'Book flight 2',
     'welcome.aiAgentsTryout.scenarios.book.step3':
-      'The agent returns a consent request. A popup opens — sign in as john.doe and select which booking permissions to grant (booking:read, booking:create, booking:cancel).',
+      'The agent returns a consent request. A popup opens - sign in as John and select which booking permissions to grant (<code>booking:read</code>, <code>booking:create</code>, <code>booking:cancel</code>).',
     'welcome.aiAgentsTryout.scenarios.book.step4':
-      'After approval the agent retries the action using a user-context token. The booking succeeds.',
+      "Click Authorize. The agent will retries the action using a user's context token. And you should see the booking confirmation in the chat window shortly after.",
     'welcome.aiAgentsTryout.scenarios.book.step5':
-      'To see the rejection path, repeat the flow but deny booking:create in the consent screen. The agent returns a 403.',
+      'To see the rejection path, repeat the flow but deny <code>booking:create</code> in the consent screen. The agent returns a 403.',
 
-    'welcome.mcpTryout.breadcrumb': 'Tryout Securing MCP',
-    'welcome.mcpTryout.overline': 'Securing MCP',
+    'welcome.mcpTryout.breadcrumb': 'Tryout Secured MCP Server',
+    'welcome.mcpTryout.overline': 'Secured MCP Server',
     'welcome.mcpTryout.subtitle':
       'Connect an external MCP client to the Wayfinder MCP server, signed in through {{productName}}.',
     'welcome.mcpTryout.steps.prerequisite.title': 'Complete AI Agents Setup',
@@ -400,7 +415,7 @@ const translations = {
     'welcome.mcpTryout.steps.allowCors.description':
       "Add Inspector's origin to {{productName}}'s CORS allow-list in repository/conf/deployment.yaml, then restart {{productName}}.",
 
-    'welcome.mcpTryout.scenarios.title': 'Try these with the Wayfinder sample',
+    'welcome.mcpTryout.scenarios.title': 'Try the following user journeys',
     'welcome.mcpTryout.scenarios.tabs.connect': 'Connect & Sign In',
     'welcome.mcpTryout.scenarios.tabs.permissions': 'Test Permissions',
 
@@ -415,7 +430,7 @@ const translations = {
     'welcome.mcpTryout.scenarios.connect.step4':
       'Click Connect. You are redirected to {{productName}} — sign in as john.doe / john.doe.',
     'welcome.mcpTryout.scenarios.connect.step5':
-      'At the consent screen select the booking permissions to grant (booking:read, booking:create, booking:cancel) and confirm.',
+      'At the consent screen select the booking permissions to grant (<code>booking:read</code>, <code>booking:create</code>, <code>booking:cancel</code>) and confirm.',
     'welcome.mcpTryout.scenarios.connect.connectionLabel': 'Connection details',
     'welcome.mcpTryout.scenarios.connect.fields.transport': 'Transport',
     'welcome.mcpTryout.scenarios.connect.fields.serverUrl': 'Server URL',
@@ -425,9 +440,9 @@ const translations = {
     'welcome.mcpTryout.scenarios.permissions.description':
       'Call MCP tools and observe how {{productName}} enforces the scopes you granted at consent. Reconnect with different permissions to see the difference.',
     'welcome.mcpTryout.scenarios.permissions.step1':
-      'In the Tools tab, call create_booking. Set type=flight, itemId=flight-cmb-sin-01, travelers=1. The call succeeds if you granted booking:create.',
+      'In the Tools tab, call create_booking. Set type=flight, itemId=flight-cmb-sin-01, travelers=1. The call succeeds if you granted <code>booking:create</code>.',
     'welcome.mcpTryout.scenarios.permissions.step2':
-      'Call delete_all_bookings. If booking:cancel was not granted you get: "Insufficient scope for tool delete_all_bookings. Required: booking:cancel".',
+      'Call delete_all_bookings. If <code>booking:cancel</code> was not granted you get: "Insufficient scope for tool delete_all_bookings. Required: <code>booking:cancel</code>".',
     'welcome.mcpTryout.scenarios.permissions.step3':
       'To narrow or expand permissions, disconnect from Inspector and reconnect.',
     'welcome.mcpTryout.scenarios.permissions.step4':
@@ -614,6 +629,8 @@ const translations = {
     'categories.resources': 'Resources',
     'categories.configure': 'Configure',
     'categories.customize': 'Customize',
+    'pages.importConfiguration': 'Import Configuration',
+    'pages.openProject': 'Import Configuration',
     'pages.home': 'Home',
     'pages.users': 'Users',
     'pages.userTypes': 'User Types',
@@ -2167,9 +2184,9 @@ const translations = {
     'export.page.loading': 'Loading export configuration...',
     'export.page.loadError': 'Failed to load export configuration: {{message}}',
 
-    'upload.breadcrumb.openProject': 'Open Project',
-    'upload.title': 'Open Project',
-    'upload.subtitle': 'Upload your {{configFileName}} configuration file or provide a URL to import',
+    'upload.breadcrumb.openProject': 'Import Configuration',
+    'upload.title': 'Import Configuration',
+    'upload.subtitle': 'Upload your {{configFileName}} configuration file to import',
     'upload.tabs.uploadFile': 'Upload File',
     'upload.tabs.fromUrl': 'From URL',
     'upload.actions.changeFile': 'Change File',
@@ -3371,7 +3388,7 @@ const translations = {
     import: 'Attach',
     runInProduction: 'Run {{productName}} in Production',
     runtimeComponentsOnly: '(with required runtime components only)',
-    designConfigure: 'Design / Configure {{productName}} Project',
+    designConfigure: 'Configure {{productName}}',
     designComponents: '(with design components)',
     commandProduction: './start.sh project-foo.yml --env production.env',
     commandStart: './start.sh',

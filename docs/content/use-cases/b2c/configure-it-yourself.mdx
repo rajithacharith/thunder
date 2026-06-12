@@ -116,7 +116,7 @@ The registration flow drives [Self Sign-Up](../try-it-out/self-sign-up). It:
 - Prompts for username and password.
 - Runs basic-auth and provisioning, with `properties.assignRole` set to attach the `Traveler` role automatically.
 - Prompts for any remaining required schema attributes (rendered dynamically from the user type).
-- Returns an auth assertion so the new user lands signed in.
+- Ends on a confirmation screen with a link back to the application, where the user can sign in with their new credentials.
 
 1. Save the JSON below as `wayfinder-registration-flow.json` and POST it to the flows API:
 
@@ -203,7 +203,7 @@ The registration flow drives [Self Sign-Up](../try-it-out/self-sign-up). It:
        {
          "id": "provisioning",
          "type": "TASK_EXECUTION",
-         "properties": { "assignRole": "wayfinder-traveler-role" },
+         "properties": { "assignRole": "wayfinder-traveler-role", "includeOptional": true },
          "executor": {
            "name": "ProvisioningExecutor",
            "inputs": [
@@ -211,7 +211,7 @@ The registration flow drives [Self Sign-Up](../try-it-out/self-sign-up). It:
              { "ref": "input_password", "identifier": "password", "type": "PASSWORD_INPUT", "required": true }
            ]
          },
-         "onSuccess": "auth_assert",
+         "onSuccess": "registration_complete",
          "onIncomplete": "prompt_schema_attrs"
        },
        {
@@ -235,10 +235,31 @@ The registration flow drives [Self Sign-Up](../try-it-out/self-sign-up). It:
          ]
        },
        {
-         "id": "auth_assert",
-         "type": "TASK_EXECUTION",
-         "executor": { "name": "AuthAssertExecutor" },
-         "onSuccess": "end"
+         "id": "registration_complete",
+         "type": "PROMPT",
+         "meta": {
+           "components": [
+             { "align": "center", "type": "TEXT", "id": "registration_complete_icon", "label": "✅", "variant": "HEADING_1" },
+             { "align": "center", "type": "TEXT", "id": "registration_complete_heading", "label": "Account Created", "variant": "HEADING_1" },
+             { "align": "center", "type": "TEXT", "id": "registration_complete_message", "label": "Your Wayfinder account is ready. Sign in to start exploring.", "variant": "HEADING_6" },
+             {
+               "type": "STACK",
+               "id": "registration_complete_link_stack",
+               "category": "BLOCK",
+               "align": "center",
+               "direction": "row",
+               "justify": "center",
+               "gap": 2,
+               "items": 1,
+               "resourceType": "ELEMENT",
+               "components": [
+                 { "type": "RICH_TEXT", "id": "registration_complete_link", "category": "DISPLAY", "resourceType": "ELEMENT", "label": "<h3 class=\"rich-text-heading-h3\"><a href=\"{{meta(application.url)}}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"rich-text-link\"><span class=\"rich-text-pre-wrap\">Go to Wayfinder</span></a></h3>" }
+               ]
+             }
+           ]
+         },
+         "message": "Registration complete",
+         "next": "end"
        },
        { "id": "end", "type": "END" }
      ]

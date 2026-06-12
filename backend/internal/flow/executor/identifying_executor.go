@@ -81,6 +81,20 @@ func (i *identifyingExecutor) IdentifyUser(ctx context.Context, filters map[stri
 	logger := i.logger
 	logger.Debug(ctx, "Identifying user with filters")
 
+	if entityID, ok := filters[userAttributeUserID].(string); ok && entityID != "" {
+		entity, epErr := i.entityProvider.GetEntity(entityID)
+		if epErr != nil {
+			if epErr.Code == entityprovider.ErrorCodeEntityNotFound {
+				execResp.Error = &ErrUserNotFound
+			} else {
+				execResp.Error = &ErrFailedToIdentifyUser
+			}
+			execResp.Status = common.ExecFailure
+			return nil, nil
+		}
+		return &entity.ID, nil
+	}
+
 	// filter out non-searchable attributes
 	var searchableFilter = make(map[string]interface{})
 	for key, value := range filters {
@@ -126,7 +140,17 @@ func (i *identifyingExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRe
 		RuntimeData:    make(map[string]string),
 	}
 
-	if !i.HasRequiredInputs(ctx, execResp) {
+	loginHint := ctx.UserInputs[common.UserInputKeyLoginHint]
+	loginHintAttr, _ := ctx.NodeProperties[propertyKeyLoginHintAttribute].(string)
+
+	if loginHintAttr != "" {
+		if loginHint == "" {
+			execResp.Inputs = append(execResp.Inputs,
+				common.Input{Identifier: common.UserInputKeyLoginHint, Required: true})
+			execResp.Status = common.ExecUserInputRequired
+			return execResp, nil
+		}
+	} else if !i.HasRequiredInputs(ctx, execResp) {
 		logger.Debug(ctx.Context, "Required inputs for identifying executor are not provided")
 		execResp.Status = common.ExecUserInputRequired
 		return execResp, nil

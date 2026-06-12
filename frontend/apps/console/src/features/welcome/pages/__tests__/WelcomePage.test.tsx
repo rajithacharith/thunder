@@ -185,7 +185,7 @@ describe('WelcomePage', () => {
     await user.click(screen.getByText('common:welcome.start.openImport'));
 
     expect(mockSessionStorageSetItem).toHaveBeenCalledWith('thunderid:welcome:dismissed', 'true');
-    expect(mockNavigate).toHaveBeenCalledWith('/welcome/open-project');
+    expect(mockNavigate).toHaveBeenCalledWith('/welcome/import-configuration');
   });
 
   it('navigates to /welcome/tryout/securing-application when securing application item is clicked', async () => {
@@ -198,19 +198,14 @@ describe('WelcomePage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/welcome/tryout/securing-application');
   });
 
-  it('opens AI agents docs URL on ai-agents item click', async () => {
-    const mockOpen = vi.fn();
-    vi.stubGlobal('open', mockOpen);
+  it('navigates to ai-agents tryout page on ai-agents item click', async () => {
     const user = userEvent.setup();
     render(<WelcomePage />);
 
     await user.click(screen.getByText('common:welcome.tryoutProduct.aiAgents'));
 
-    expect(mockOpen).toHaveBeenCalledWith(
-      'https://docs.example.com/use-cases/ai-agents/try-it-out',
-      '_blank',
-      'noopener,noreferrer',
-    );
+    expect(mockSessionStorageSetItem).toHaveBeenCalledWith('thunderid:welcome:dismissed', 'true');
+    expect(mockNavigate).toHaveBeenCalledWith('/welcome/tryout/ai-agents');
   });
 
   it('opens MCP docs URL on mcp item click', async () => {
@@ -241,7 +236,7 @@ describe('WelcomePage', () => {
     const card = screen.getByText('common:welcome.start.openImport').closest('[role="button"]')!;
     fireEvent.keyDown(card, {key: ' '});
     expect(mockSessionStorageSetItem).toHaveBeenCalledWith('thunderid:welcome:dismissed', 'true');
-    expect(mockNavigate).toHaveBeenCalledWith('/welcome/open-project');
+    expect(mockNavigate).toHaveBeenCalledWith('/welcome/import-configuration');
   });
 
   it('triggers walkthrough action on Enter keypress', () => {
@@ -278,16 +273,11 @@ describe('WelcomePage', () => {
   });
 
   it('triggers ai-agents action on learn product Space keypress', () => {
-    const mockOpen = vi.fn();
-    vi.stubGlobal('open', mockOpen);
     render(<WelcomePage />);
     const item = screen.getByText('common:welcome.tryoutProduct.aiAgents').closest('[role="button"]')!;
     fireEvent.keyDown(item, {key: ' '});
-    expect(mockOpen).toHaveBeenCalledWith(
-      'https://docs.example.com/use-cases/ai-agents/try-it-out',
-      '_blank',
-      'noopener,noreferrer',
-    );
+    expect(mockSessionStorageSetItem).toHaveBeenCalledWith('thunderid:welcome:dismissed', 'true');
+    expect(mockNavigate).toHaveBeenCalledWith('/welcome/tryout/ai-agents');
   });
 
   it('renders productName in hero title', () => {

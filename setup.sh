@@ -373,6 +373,7 @@ cleanup() {
     if [ -n "$CONSENT_PID" ]; then
         pkill -P $CONSENT_PID 2>/dev/null || true
         kill $CONSENT_PID 2>/dev/null || true
+        wait $CONSENT_PID 2>/dev/null || true
     fi
 }
 trap cleanup EXIT INT TERM

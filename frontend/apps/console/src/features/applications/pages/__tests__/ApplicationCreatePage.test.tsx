@@ -415,6 +415,22 @@ describe('ApplicationCreatePage', () => {
   });
 
   describe('Step Navigation', () => {
+    it('should show Continue on non-last steps and Finish on the last step', async () => {
+      renderWithProviders();
+
+      // Select backend platform so visible steps are [STACK, NAME]
+      await user.click(screen.getByTestId('select-backend-platform'));
+
+      // On STACK (not the last step), button should read Continue
+      expect(screen.getByTestId('application-wizard-next-button')).toHaveTextContent(/continue/i);
+
+      // STACK → NAME
+      await user.click(screen.getByTestId('application-wizard-next-button'));
+
+      // On NAME (last visible step for the backend flow), button should read Finish
+      expect(screen.getByTestId('application-wizard-next-button')).toHaveTextContent(/finish/i);
+    });
+
     it('should disable Continue button when name is empty', async () => {
       renderWithProviders();
 
@@ -696,7 +712,7 @@ describe('ApplicationCreatePage', () => {
         expect(screen.getByTestId('application-configure-details')).toBeInTheDocument();
       });
       // CONFIGURE → Create
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       await waitFor(() => {
         expect(mockCreateApplication).toHaveBeenCalled();
@@ -741,7 +757,7 @@ describe('ApplicationCreatePage', () => {
         expect(screen.getByTestId('application-configure-details')).toBeInTheDocument();
       });
       // CONFIGURE → Create
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       await waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/applications/app-123');
@@ -781,7 +797,7 @@ describe('ApplicationCreatePage', () => {
       const selectEmbeddedBtn = screen.getByTestId('select-embedded-approach');
       await user.click(selectEmbeddedBtn);
       // EXPERIENCE → Create (embedded skips configure)
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       await waitFor(() => {
         expect(mockCreateApplication).toHaveBeenCalled();
@@ -821,7 +837,7 @@ describe('ApplicationCreatePage', () => {
       });
       await user.click(screen.getByTestId('select-embedded-approach'));
       // EXPERIENCE → Create (embedded skips configure)
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       // Should NOT show configure details step
       await waitFor(() => {
@@ -863,7 +879,7 @@ describe('ApplicationCreatePage', () => {
         expect(screen.getByTestId('application-configure-details')).toBeInTheDocument();
       });
       // CONFIGURE → Create
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       await waitFor(
         () => {
@@ -904,7 +920,7 @@ describe('ApplicationCreatePage', () => {
         expect(screen.getByTestId('application-configure-details')).toBeInTheDocument();
       });
       // CONFIGURE → Create
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       await waitFor(
         () => {
@@ -959,7 +975,7 @@ describe('ApplicationCreatePage', () => {
         expect(screen.getByTestId('application-configure-details')).toBeInTheDocument();
       });
       // CONFIGURE → Create
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       await waitFor(() => {
         expect(mockCreateApplication).toHaveBeenCalled();
@@ -1074,7 +1090,7 @@ describe('ApplicationCreatePage', () => {
         expect(screen.getByTestId('application-configure-details')).toBeInTheDocument();
       });
       // CONFIGURE → Create
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       // Should show COMPLETE step with client secret
       await waitFor(() => {
@@ -1120,7 +1136,7 @@ describe('ApplicationCreatePage', () => {
         expect(screen.getByTestId('application-configure-details')).toBeInTheDocument();
       });
       // CONFIGURE → Create
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       // Should navigate directly to application details page
       await waitFor(() => {
@@ -1175,7 +1191,7 @@ describe('ApplicationCreatePage', () => {
         expect(screen.getByTestId('application-configure-details')).toBeInTheDocument();
       });
       // CONFIGURE → Create
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       // Should show COMPLETE step
       await waitFor(() => {
@@ -1236,7 +1252,7 @@ describe('ApplicationCreatePage', () => {
         expect(screen.getByTestId('application-configure-details')).toBeInTheDocument();
       });
       // CONFIGURE → Create
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       // Should show COMPLETE step
       await waitFor(() => {
@@ -1297,7 +1313,7 @@ describe('ApplicationCreatePage', () => {
         expect(screen.getByTestId('application-configure-details')).toBeInTheDocument();
       });
       // CONFIGURE → Create
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       // Should show COMPLETE step
       await waitFor(() => {
@@ -1327,7 +1343,7 @@ describe('ApplicationCreatePage', () => {
       await user.type(screen.getByTestId('app-name-input'), 'My Backend App');
 
       // NAME → [create immediately]
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       await waitFor(() => {
         expect(mockCreateApplication).toHaveBeenCalled();
@@ -1353,7 +1369,7 @@ describe('ApplicationCreatePage', () => {
       await user.type(screen.getByTestId('app-name-input'), 'My Backend App');
 
       // NAME → create
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       await waitFor(() => {
         expect(mockCreateApplication).toHaveBeenCalled();
@@ -1380,7 +1396,7 @@ describe('ApplicationCreatePage', () => {
       await user.type(screen.getByTestId('app-name-input'), 'My Backend App');
 
       // NAME → create
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       await waitFor(() => {
         expect(mockCreateApplication).toHaveBeenCalled();
@@ -1404,7 +1420,7 @@ describe('ApplicationCreatePage', () => {
       await user.type(screen.getByTestId('app-name-input'), 'My Backend App');
 
       // NAME → create
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       await waitFor(() => {
         expect(mockCreateApplication).toHaveBeenCalled();
@@ -1441,7 +1457,7 @@ describe('ApplicationCreatePage', () => {
       await user.type(screen.getByTestId('app-name-input'), 'My Backend App');
 
       // NAME → create → COMPLETE
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       await waitFor(() => {
         expect(screen.getByTestId('application-show-client-secret')).toBeInTheDocument();
@@ -1480,7 +1496,7 @@ describe('ApplicationCreatePage', () => {
       await user.type(screen.getByTestId('app-name-input'), 'My Backend App');
 
       // NAME → create (no auth flow selected)
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       await waitFor(() => {
         expect(mockCreateApplication).toHaveBeenCalled();
@@ -1525,7 +1541,7 @@ describe('ApplicationCreatePage', () => {
       await user.type(screen.getByTestId('hosting-url-input'), 'https://myapp.example.com');
 
       // CONFIGURE → Create
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       await waitFor(() => {
         expect(mockCreateApplication).toHaveBeenCalled();
@@ -1568,7 +1584,7 @@ describe('ApplicationCreatePage', () => {
 
       // Do not type a hosting URL — proceed directly
       // CONFIGURE → Create
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       await waitFor(() => {
         expect(mockCreateApplication).toHaveBeenCalled();
@@ -1647,7 +1663,7 @@ describe('ApplicationCreatePage', () => {
       // EXPERIENCE → CONFIGURE
       await user.click(screen.getByRole('button', {name: /continue/i}));
       // CONFIGURE → Create
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       // Verify generateFlowGraph called
       await waitFor(() => {
@@ -1717,7 +1733,7 @@ describe('ApplicationCreatePage', () => {
       // EXPERIENCE → CONFIGURE
       await user.click(screen.getByRole('button', {name: /continue/i}));
       // CONFIGURE → Create
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByTestId('application-wizard-next-button'));
 
       await waitFor(() => {
         expect(screen.getByText('Flow generation failed')).toBeInTheDocument();

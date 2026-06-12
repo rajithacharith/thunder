@@ -103,7 +103,7 @@ export default function ImportConfigurationValidatePage(): JSX.Element {
             // Navigate to summary after all steps complete (only if no errors)
             setTimeout(() => {
               (async () => {
-                await navigate(`${isWelcomeFlow ? '/welcome' : ''}/open-project/summary`, {
+                await navigate(`${isWelcomeFlow ? '/welcome' : ''}/import-configuration/summary`, {
                   state: location.state as Record<string, unknown>,
                 });
               })().catch((_error: unknown) => {
@@ -147,7 +147,7 @@ export default function ImportConfigurationValidatePage(): JSX.Element {
               ...(isWelcomeFlow
                 ? [{key: 'welcome', label: t('common:welcome.header'), onClick: () => void navigate('/welcome')}]
                 : []),
-              {key: 'open-project', label: t('upload.breadcrumb.openProject')},
+              {key: 'import-configuration', label: t('upload.breadcrumb.openProject')},
             ]}
           />
         </Stack>
@@ -319,7 +319,7 @@ export default function ImportConfigurationValidatePage(): JSX.Element {
                 <Button variant="outlined" onClick={handleCancel}>
                   {t('common:actions.cancel')}
                 </Button>
-                <Button variant="outlined" color="error" onClick={() => void navigate('/welcome/open-project')}>
+                <Button variant="outlined" color="error" onClick={() => void navigate('/welcome/import-configuration')}>
                   {t('validate.actions.uploadDifferentFile')}
                 </Button>
               </Stack>

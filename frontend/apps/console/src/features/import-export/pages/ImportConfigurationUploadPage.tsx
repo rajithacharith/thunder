@@ -291,7 +291,7 @@ export default function ImportConfigurationUploadPage(): JSX.Element {
       }
 
       // Navigate to validation page
-      await navigate('/welcome/open-project/validate', {
+      await navigate('/welcome/import-configuration/validate', {
         state: {
           method: 'file',
           file: selectedFile,
@@ -339,7 +339,7 @@ export default function ImportConfigurationUploadPage(): JSX.Element {
               ...(isWelcomeFlow
                 ? [{key: 'welcome', label: t('common:welcome.header'), onClick: () => void navigate('/welcome')}]
                 : []),
-              {key: 'open-project', label: t('upload.breadcrumb.openProject')},
+              {key: 'import-configuration', label: t('upload.breadcrumb.openProject')},
             ]}
           />
         </Stack>

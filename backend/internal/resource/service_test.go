@@ -575,6 +575,55 @@ func (suite *ResourceServiceTestSuite) TestGetResourceServer_StoreError() {
 	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
 }
 
+func (suite *ResourceServiceTestSuite) TestGetResourceServerByHandle_Success() {
+	expectedRS := ResourceServer{
+		ID:     "rs-123",
+		Name:   "test-rs",
+		Handle: "test-handle",
+		OUID:   "ou-123",
+	}
+
+	suite.mockStore.On("GetResourceServerByHandle", mock.Anything, "test-handle").
+		Return(expectedRS, nil)
+
+	result, err := suite.service.GetResourceServerByHandle(context.Background(), "test-handle")
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal("rs-123", result.ID)
+	suite.Equal("test-handle", result.Handle)
+}
+
+func (suite *ResourceServiceTestSuite) TestGetResourceServerByHandle_MissingHandle() {
+	result, err := suite.service.GetResourceServerByHandle(context.Background(), "")
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(ErrorResourceServerNotFound.Code, err.Code)
+}
+
+func (suite *ResourceServiceTestSuite) TestGetResourceServerByHandle_NotFound() {
+	suite.mockStore.On("GetResourceServerByHandle", mock.Anything, "test-handle").
+		Return(ResourceServer{}, errResourceServerNotFound)
+
+	result, err := suite.service.GetResourceServerByHandle(context.Background(), "test-handle")
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(ErrorResourceServerNotFound.Code, err.Code)
+}
+
+func (suite *ResourceServiceTestSuite) TestGetResourceServerByHandle_StoreError() {
+	suite.mockStore.On("GetResourceServerByHandle", mock.Anything, "test-handle").
+		Return(ResourceServer{}, errors.New("database error"))
+
+	result, err := suite.service.GetResourceServerByHandle(context.Background(), "test-handle")
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
+}
+
 func (suite *ResourceServiceTestSuite) TestGetResourceServerList_Success() {
 	resourceServers := []ResourceServer{
 		{ID: "rs-1", Name: "RS 1"},

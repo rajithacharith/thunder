@@ -183,7 +183,7 @@ security_audit:
 	cd frontend && pnpm audit --audit-level=high
 	cd tests/e2e && npm audit --audit-level=high
 
-test_e2e: prepare
+test_e2e:
 	chmod +x tests/e2e/run-e2e.sh
 	tests/e2e/run-e2e.sh
 

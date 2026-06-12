@@ -67,6 +67,9 @@ type ResourceServiceInterface interface {
 		ctx context.Context, id string, rs ResourceServer,
 	) (*ResourceServer, *serviceerror.ServiceError)
 	DeleteResourceServer(ctx context.Context, id string) *serviceerror.ServiceError
+	GetResourceServerByHandle(
+		ctx context.Context, handle string,
+	) (*ResourceServer, *serviceerror.ServiceError)
 	GetResourceServerByIdentifier(
 		ctx context.Context, identifier string,
 	) (*ResourceServer, *serviceerror.ServiceError)
@@ -299,6 +302,28 @@ func (rs *resourceService) GetResourceServer(
 			return nil, &ErrorResourceServerNotFound
 		}
 		rs.logger.Error(ctx, "Failed to get resource server", log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	}
+
+	return &resourceServer, nil
+}
+
+// GetResourceServerByHandle retrieves a resource server by its handle.
+func (rs *resourceService) GetResourceServerByHandle(
+	ctx context.Context, handle string,
+) (*ResourceServer, *serviceerror.ServiceError) {
+	if handle == "" {
+		return nil, &ErrorResourceServerNotFound
+	}
+
+	resourceServer, err := rs.resourceStore.GetResourceServerByHandle(ctx, handle)
+	if err != nil {
+		if errors.Is(err, errResourceServerNotFound) {
+			rs.logger.Debug(ctx, "Resource server not found for handle",
+				log.String("handle", handle))
+			return nil, &ErrorResourceServerNotFound
+		}
+		rs.logger.Error(ctx, "Failed to get resource server by handle", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 

@@ -38,6 +38,7 @@ var publicPaths = []string{
 	"/flow/meta",
 	"/oauth2/**",
 	"/openid4vp/**",
+	"/.well-known/authzen-configuration",
 	"/.well-known/openid-configuration/**",
 	"/.well-known/oauth-authorization-server/**",
 	"/.well-known/oauth-protected-resource",

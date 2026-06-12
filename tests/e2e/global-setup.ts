@@ -31,7 +31,7 @@ async function globalSetup() {
   console.log("🚀 Running global setup...");
 
   // Load environment variables
-  const envPath = path.resolve(__dirname, "../.env");
+  const envPath = path.resolve(__dirname, ".env");
   dotenv.config({ path: envPath });
 
   // Verify required environment variables
