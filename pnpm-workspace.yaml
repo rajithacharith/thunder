@@ -132,6 +132,8 @@ overrides:
   js-cookie: 3.0.7
   # JUSTIFICATION: @langchain/langgraph requires uuid@^10.0.0 (not yet bumped upstream to v11). Fixes predictable RNG vulnerability in uuid < 11.1.1.
   uuid: 11.1.1
+  # JUSTIFICATION: Transitive dep via docusaurus. Fixes CVE-2026-48038 (GHSA-q7cg-457f-vx79) — uncaught RangeError DoS in joi on deeply nested input through recursive link() schemas.
+  joi: '>=18.2.1'
 
 packageExtensions:
   '@hookform/resolvers':
