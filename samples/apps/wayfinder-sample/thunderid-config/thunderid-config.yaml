@@ -235,7 +235,7 @@ nodes:
   - id: provisioning
     type: TASK_EXECUTION
     properties:
-      assignRole: wayfinder-traveler-role
+      assignRole: wayfinder-traveler-role, chat-user-role
       includeOptional: true
     executor:
       name: ProvisioningExecutor

@@ -59,6 +59,8 @@ type GroupServiceInterface interface {
 	GetGroupsByIDs(ctx context.Context, groupIDs []string) (map[string]*Group, *serviceerror.ServiceError)
 	AddGroupMembers(ctx context.Context, groupID string, members []Member) (*Group, *serviceerror.ServiceError)
 	RemoveGroupMembers(ctx context.Context, groupID string, members []Member) (*Group, *serviceerror.ServiceError)
+	AddMembersToGroups(ctx context.Context, members []Member,
+		groupIDs []string) *serviceerror.ServiceError
 }
 
 // groupService is the default implementation of the GroupServiceInterface.
@@ -1166,6 +1168,40 @@ func (gs *groupService) GetGroupsByIDs(
 	}
 
 	return result, nil
+}
+
+// AddMembersToGroups adds members to multiple groups in a single transaction. All group IDs are
+// validated before the transaction begins; a single failure rolls back all assignments.
+func (gs *groupService) AddMembersToGroups(
+	ctx context.Context,
+	members []Member,
+	groupIDs []string,
+) *serviceerror.ServiceError {
+	if len(groupIDs) == 0 || len(members) == 0 {
+		return nil
+	}
+	if svcErr := gs.ValidateGroupIDs(ctx, groupIDs); svcErr != nil {
+		return svcErr
+	}
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	var capturedSvcErr *serviceerror.ServiceError
+	err := gs.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		for _, gid := range groupIDs {
+			if _, svcErr := gs.AddGroupMembers(txCtx, gid, members); svcErr != nil {
+				capturedSvcErr = svcErr
+				return fmt.Errorf("failed to add members to group %s: %s", gid, svcErr.Error.DefaultValue)
+			}
+		}
+		return nil
+	})
+	if capturedSvcErr != nil {
+		return capturedSvcErr
+	}
+	if err != nil {
+		logger.Error(ctx, "Failed to add members to groups", log.Error(err))
+		return &serviceerror.InternalServerError
+	}
+	return nil
 }
 
 // convertGroupDAOToGroup constructs a Group from a GroupDAO.

@@ -19,10 +19,10 @@
 package executor
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	authncm "github.com/thunder-id/thunderid/internal/authn/common"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
@@ -638,7 +638,7 @@ func (p *provisioningExecutor) getUserType(ctx *core.NodeContext) string {
 	return userType
 }
 
-// assignGroupsAndRoles assigns the newly created user to configured group and role.
+// assignGroupsAndRoles assigns the newly created user to configured groups and roles.
 // If no group or role is configured, the assignments are skipped.
 func (p *provisioningExecutor) assignGroupsAndRoles(
 	ctx *core.NodeContext,
@@ -646,153 +646,80 @@ func (p *provisioningExecutor) assignGroupsAndRoles(
 ) error {
 	logger := p.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
-	// Get configured group and role from properties
-	groupID := p.getGroupToAssign(ctx)
-	roleID := p.getRoleToAssign(ctx)
+	groupIDs := p.getGroupsToAssign(ctx)
+	roleIDs := p.getRolesToAssign(ctx)
 
-	// Skip if no group or role configured
-	if groupID == "" && roleID == "" {
+	if len(groupIDs) == 0 && len(roleIDs) == 0 {
 		logger.Debug(ctx.Context, "No group or role configured for assignment, skipping")
 		return nil
 	}
 
-	logger.Debug(ctx.Context, "Assigning group and role to provisioned user",
+	logger.Debug(ctx.Context, "Assigning groups and roles to provisioned user",
 		log.MaskedString(log.LoggerKeyUserID, userID),
-		log.String("groupID", groupID),
-		log.String("roleID", roleID))
+		log.String("groupIDs", strings.Join(groupIDs, ",")),
+		log.String("roleIDs", strings.Join(roleIDs, ",")))
 
-	var groupErr, roleErr error
-	// Assign to group
-	if groupID != "" {
-		if err := p.assignToGroup(ctx.Context, userID, groupID, logger); err != nil {
-			groupErr = fmt.Errorf("failed to assign user to group %s: %w", groupID, err)
+	if len(groupIDs) > 0 {
+		if svcErr := p.groupService.AddMembersToGroups(
+			ctx.Context, []group.Member{{ID: userID, Type: group.MemberTypeUser}}, groupIDs); svcErr != nil {
+			return fmt.Errorf("group assignment failed: %s", svcErr.Error.DefaultValue)
 		}
-	}
-	// Assign to role
-	if roleID != "" {
-		if err := p.assignToRole(ctx.Context, userID, roleID, logger); err != nil {
-			roleErr = fmt.Errorf("failed to assign user to role %s: %w", roleID, err)
-		}
-	}
-	if groupErr != nil || roleErr != nil {
-		if groupErr != nil && roleErr != nil {
-			return fmt.Errorf("group assignment error: %w; role assignment error: %s", groupErr, roleErr.Error())
-		}
-		if groupErr != nil {
-			return groupErr
-		}
-		return roleErr
 	}
 
-	logger.Debug(ctx.Context, "Successfully assigned group and role",
+	if len(roleIDs) > 0 {
+		if svcErr := p.roleAssignmentService.AddAssigneesToRoles(
+			ctx.Context, []role.RoleAssignment{{ID: userID, Type: role.AssigneeTypeUser}}, roleIDs); svcErr != nil {
+			return fmt.Errorf("role assignment failed: %s", svcErr.Error.DefaultValue)
+		}
+	}
+
+	logger.Debug(ctx.Context, "Successfully assigned groups and roles",
 		log.MaskedString(log.LoggerKeyUserID, userID))
 	return nil
 }
 
-// getGroupToAssign retrieves the group ID from node properties.
-func (p *provisioningExecutor) getGroupToAssign(ctx *core.NodeContext) string {
+// getGroupsToAssign parses the assignGroup node property into a slice of group IDs.
+// The property value is a comma-separated string; a single ID produces a one-element slice.
+func (p *provisioningExecutor) getGroupsToAssign(ctx *core.NodeContext) []string {
 	if len(ctx.NodeProperties) == 0 {
-		return ""
+		return nil
 	}
-
-	groupValue, ok := ctx.NodeProperties[propertyKeyAssignGroup]
+	val, ok := ctx.NodeProperties[propertyKeyAssignGroup]
 	if !ok {
-		return ""
+		return nil
 	}
-
-	// Handle string value
-	if strVal, ok := groupValue.(string); ok {
-		return strVal
+	strVal, ok := val.(string)
+	if !ok {
+		return nil
 	}
-
-	return ""
+	return splitTrimmed(strVal)
 }
 
-// getRoleToAssign retrieves the role ID from node properties.
-func (p *provisioningExecutor) getRoleToAssign(ctx *core.NodeContext) string {
+// getRolesToAssign parses the assignRole node property into a slice of role IDs.
+// The property value is a comma-separated string; a single ID produces a one-element slice.
+func (p *provisioningExecutor) getRolesToAssign(ctx *core.NodeContext) []string {
 	if len(ctx.NodeProperties) == 0 {
-		return ""
+		return nil
 	}
-
-	roleValue, ok := ctx.NodeProperties[propertyKeyAssignRole]
+	val, ok := ctx.NodeProperties[propertyKeyAssignRole]
 	if !ok {
-		return ""
+		return nil
 	}
-
-	// Handle string value
-	if strVal, ok := roleValue.(string); ok {
-		return strVal
+	strVal, ok := val.(string)
+	if !ok {
+		return nil
 	}
-
-	return ""
+	return splitTrimmed(strVal)
 }
 
-// assignToGroup adds the user to the specified group.
-func (p *provisioningExecutor) assignToGroup(
-	ctx context.Context,
-	userID string,
-	groupID string,
-	logger *log.Logger,
-) error {
-	logger.Debug(ctx, "Adding user to group",
-		log.MaskedString(log.LoggerKeyUserID, userID),
-		log.String("groupID", groupID))
-
-	members := []group.Member{
-		{
-			ID:   userID,
-			Type: group.MemberTypeUser,
-		},
+// splitTrimmed splits s by commas and trims whitespace from each element, discarding empty entries.
+func splitTrimmed(s string) []string {
+	parts := strings.Split(s, ",")
+	result := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if t := strings.TrimSpace(p); t != "" {
+			result = append(result, t)
+		}
 	}
-
-	_, svcErr := p.groupService.AddGroupMembers(ctx, groupID, members)
-	if svcErr != nil {
-		logger.Error(ctx, "Failed to add user to group",
-			log.String("groupID", groupID),
-			log.MaskedString(log.LoggerKeyUserID, userID),
-			log.String("error", svcErr.Error.DefaultValue))
-		return fmt.Errorf("failed to add user to group: %s", svcErr.Error.DefaultValue)
-	}
-
-	logger.Debug(ctx, "Successfully added user to group",
-		log.MaskedString(log.LoggerKeyUserID, userID),
-		log.String("groupID", groupID))
-	return nil
-}
-
-// assignToRole adds the user to the specified role.
-func (p *provisioningExecutor) assignToRole(
-	ctx context.Context, userID string, roleID string, logger *log.Logger) error {
-	if p.roleAssignmentService == nil {
-		logger.Error(ctx, "Role assignment service is not configured",
-			log.String("roleID", roleID),
-			log.MaskedString(log.LoggerKeyUserID, userID))
-		return fmt.Errorf("role assignment service not configured")
-	}
-
-	logger.Debug(ctx, "Adding user to role",
-		log.MaskedString(log.LoggerKeyUserID, userID),
-		log.String("roleID", roleID))
-
-	// AddAssignments appends to existing assignments (doesn't replace)
-	assignments := []role.RoleAssignment{
-		{
-			ID:   userID,
-			Type: role.AssigneeTypeUser,
-		},
-	}
-
-	svcErr := p.roleAssignmentService.AddAssignments(ctx, roleID, assignments)
-	if svcErr != nil {
-		logger.Error(ctx, "Failed to add role assignment",
-			log.String("roleID", roleID),
-			log.MaskedString(log.LoggerKeyUserID, userID),
-			log.String("error", svcErr.Error.DefaultValue))
-		return fmt.Errorf("failed to assign role: %s", svcErr.Error.DefaultValue)
-	}
-
-	logger.Debug(ctx, "Successfully assigned role",
-		log.MaskedString(log.LoggerKeyUserID, userID),
-		log.String("roleID", roleID))
-	return nil
+	return result
 }
