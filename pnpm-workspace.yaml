@@ -134,6 +134,8 @@ overrides:
   uuid: 11.1.1
   # JUSTIFICATION: Transitive dep via docusaurus. Fixes CVE-2026-48038 (GHSA-q7cg-457f-vx79) — uncaught RangeError DoS in joi on deeply nested input through recursive link() schemas.
   joi: '>=18.2.1'
+  # JUSTIFICATION: Fixes GHSA-gv7w-rqvm-qjhr — esbuild Deno module downloads native binaries without integrity verification, enabling RCE via NPM_CONFIG_REGISTRY.
+  esbuild: '>=0.28.1'
 
 packageExtensions:
   '@hookform/resolvers':
