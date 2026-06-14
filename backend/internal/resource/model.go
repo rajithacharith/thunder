@@ -229,8 +229,8 @@ type ResourceServer struct {
 	Handle      string             `yaml:"handle" json:"handle"`
 	Identifier  string             `yaml:"identifier,omitempty" json:"identifier,omitempty"`
 	Type        ResourceServerType `yaml:"type,omitempty" json:"type,omitempty"`
-	OUID        string             `yaml:"ou_id,omitempty" json:"ouId"`
-	OUHandle    string             `yaml:"ou_handle,omitempty" json:"-"`
+	OUID        string             `yaml:"ouId,omitempty" json:"ouId"`
+	OUHandle    string             `yaml:"ouHandle,omitempty" json:"-"`
 	Delimiter   string             `yaml:"delimiter,omitempty" json:"delimiter,omitempty" yamlfmt:"quoted"`
 	IsReadOnly  bool               `yaml:"-" json:"-"`
 	Resources   []Resource         `yaml:"resources,omitempty" json:"resources,omitempty"`

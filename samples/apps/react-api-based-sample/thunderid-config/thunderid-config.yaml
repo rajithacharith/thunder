@@ -2,9 +2,9 @@
 id: 019e3a5c-04ea-7d18-8ae6-f828b1f3d60f
 category: user
 name: Customer
-ou_handle: default
-allow_self_registration: true
-system_attributes:
+ouHandle: default
+allowSelfRegistration: true
+systemAttributes:
   display: username
 schema: {
     "username": {

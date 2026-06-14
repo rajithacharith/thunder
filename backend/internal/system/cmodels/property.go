@@ -38,7 +38,7 @@ type Property struct {
 type PropertyDTO struct {
 	Name     string `json:"name" yaml:"name"`
 	Value    string `json:"value" yaml:"value"`
-	IsSecret bool   `json:"isSecret" yaml:"is_secret,omitempty"`
+	IsSecret bool   `json:"isSecret" yaml:"isSecret,omitempty"`
 }
 
 // NewProperty creates a new Property instance with the given parameters.

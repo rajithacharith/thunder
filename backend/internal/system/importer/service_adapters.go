@@ -49,7 +49,7 @@ func (s *importService) resolveImportOUHandle(
 ) (string, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ImportService"))
 	if ouID != "" && ouHandle != "" {
-		logger.Warn(ctx, "Both ou_id and ou_handle provided; ou_handle ignored",
+		logger.Warn(ctx, "Both ouId and ouHandle provided; ouHandle ignored",
 			log.String("resourceType", resourceType),
 			log.String("resourceID", resourceID),
 			log.String("resourceName", resourceName))
@@ -72,8 +72,8 @@ type roleDeclarativeYAML struct {
 	ID          string                     `yaml:"id"`
 	Name        string                     `yaml:"name"`
 	Description string                     `yaml:"description,omitempty"`
-	OUID        string                     `yaml:"ou_id,omitempty"`
-	OUHandle    string                     `yaml:"ou_handle,omitempty"`
+	OUID        string                     `yaml:"ouId,omitempty"`
+	OUHandle    string                     `yaml:"ouHandle,omitempty"`
 	Permissions []role.ResourcePermissions `yaml:"permissions"`
 	Assignments []role.RoleAssignment      `yaml:"assignments,omitempty"`
 }
@@ -81,8 +81,8 @@ type roleDeclarativeYAML struct {
 type userDeclarativeYAML struct {
 	ID          string                 `yaml:"id"`
 	Type        string                 `yaml:"type"`
-	OUID        string                 `yaml:"ou_id,omitempty"`
-	OUHandle    string                 `yaml:"ou_handle,omitempty"`
+	OUID        string                 `yaml:"ouId,omitempty"`
+	OUHandle    string                 `yaml:"ouHandle,omitempty"`
 	Attributes  map[string]interface{} `yaml:"attributes"`
 	Credentials map[string]interface{} `yaml:"credentials,omitempty"`
 }
@@ -91,10 +91,10 @@ type entityTypeDeclarativeYAML struct {
 	ID                    string                       `yaml:"id"`
 	Category              entitytype.TypeCategory      `yaml:"category,omitempty"`
 	Name                  string                       `yaml:"name"`
-	OUID                  string                       `yaml:"organization_unit_id,omitempty"`
-	OUHandle              string                       `yaml:"ou_handle,omitempty"`
-	AllowSelfRegistration bool                         `yaml:"allow_self_registration,omitempty"`
-	SystemAttributes      *entitytype.SystemAttributes `yaml:"system_attributes,omitempty"`
+	OUID                  string                       `yaml:"ouId,omitempty"`
+	OUHandle              string                       `yaml:"ouHandle,omitempty"`
+	AllowSelfRegistration bool                         `yaml:"allowSelfRegistration,omitempty"`
+	SystemAttributes      *entitytype.SystemAttributes `yaml:"systemAttributes,omitempty"`
 	Schema                interface{}                  `yaml:"schema"`
 }
 
@@ -382,8 +382,8 @@ func (s *importService) importGroup(
 		ID          string         `yaml:"id"`
 		Name        string         `yaml:"name"`
 		Description string         `yaml:"description,omitempty"`
-		OUID        string         `yaml:"ou_id,omitempty"`
-		OUHandle    string         `yaml:"ou_handle,omitempty"`
+		OUID        string         `yaml:"ouId,omitempty"`
+		OUHandle    string         `yaml:"ouHandle,omitempty"`
 		Members     []group.Member `yaml:"members,omitempty"`
 	}
 	if err := doc.Node.Decode(&raw); err != nil {

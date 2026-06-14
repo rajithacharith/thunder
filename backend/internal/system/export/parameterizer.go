@@ -628,7 +628,7 @@ func (p *parameterizer) propertyToYAMLNode(propValue reflect.Value, resourceName
 	// Generate template variable name
 	propValueStr := fmt.Sprintf("{{.%s}}", p.generatePropertyVarName(resourceName, propName))
 
-	// Build the YAML node: {name: "...", value: "...", is_secret: true/false}
+	// Build the YAML node: {name: "...", value: "...", isSecret: true/false}
 	// Add name
 	node.Content = append(node.Content,
 		&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: "name"},
@@ -641,10 +641,10 @@ func (p *parameterizer) propertyToYAMLNode(propValue reflect.Value, resourceName
 		&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: propValueStr},
 	)
 
-	// Add is_secret if true (omit if false for cleaner YAML)
+	// Add isSecret if true (omit if false for cleaner YAML)
 	if isSecret {
 		node.Content = append(node.Content,
-			&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: "is_secret"},
+			&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: "isSecret"},
 			&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!bool", Value: "true"},
 		)
 	}
@@ -1028,7 +1028,7 @@ func (p *parameterizer) convertFieldToInterface(v reflect.Value) interface{} {
 }
 
 // convertStructPathsToYAMLPaths converts Go struct field paths to YAML field paths
-// e.g., "InboundAuthConfig[].OAuthConfig.ClientID" -> "inbound_auth_config[].config.client_id"
+// e.g., "InboundAuthConfig[].OAuthConfig.ClientID" -> "inboundAuthConfig[].config.clientId"
 func (p *parameterizer) convertStructPathsToYAMLPaths(
 	ctx context.Context, obj interface{}, rules *resourceRules) *resourceRules {
 	logger := log.GetLogger().With(log.String("component", "Parameterizer"))

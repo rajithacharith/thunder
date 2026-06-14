@@ -365,8 +365,8 @@ func (suite *InitTestSuite) TestParseToEntityTypeDTO_ValidYAML() {
 	yamlData := `
 id: "schema-001"
 name: "Employee Schema"
-organization_unit_id: "550e8400-e29b-41d4-a716-446655440000"
-allow_self_registration: true
+ouId: "550e8400-e29b-41d4-a716-446655440000"
+allowSelfRegistration: true
 schema: |
   {
     "type": "object",
@@ -394,7 +394,7 @@ func (suite *InitTestSuite) TestParseToEntityTypeDTO_MinimalYAML() {
 	yamlData := `
 id: "minimal-schema"
 name: "Minimal Schema"
-organization_unit_id: "550e8400-e29b-41d4-a716-446655440000"
+ouId: "550e8400-e29b-41d4-a716-446655440000"
 schema: |
   {
     "type": "object",
@@ -433,8 +433,8 @@ func (suite *InitTestSuite) TestParseToEntityTypeDTO_ComplexSchema() {
 	yamlData := `
 id: "complex-schema"
 name: "Complex Schema"
-organization_unit_id: "550e8400-e29b-41d4-a716-446655440000"
-allow_self_registration: true
+ouId: "550e8400-e29b-41d4-a716-446655440000"
+allowSelfRegistration: true
 schema: |
   {
     "type": "object",
@@ -479,7 +479,7 @@ func BenchmarkParseToEntityTypeDTO(b *testing.B) {
 	yamlData := `
 id: "benchmark-schema"
 name: "Benchmark Schema"
-organization_unit_id: "550e8400-e29b-41d4-a716-446655440000"
+ouId: "550e8400-e29b-41d4-a716-446655440000"
 schema: |
   {
     "type": "object",
@@ -503,8 +503,8 @@ func TestParseToEntityTypeDTO_Standalone(t *testing.T) {
 	yamlData := `
 id: "standalone-schema"
 name: "Standalone Schema"
-organization_unit_id: "550e8400-e29b-41d4-a716-446655440000"
-allow_self_registration: false
+ouId: "550e8400-e29b-41d4-a716-446655440000"
+allowSelfRegistration: false
 schema: |
   {
     "type": "object",
@@ -793,7 +793,7 @@ func TestParseToEntityTypeDTO_InvalidJSONSchema(t *testing.T) {
 	yamlData := `
 id: "invalid-json-schema"
 name: "Invalid JSON Schema"
-organization_unit_id: "550e8400-e29b-41d4-a716-446655440000"
+ouId: "550e8400-e29b-41d4-a716-446655440000"
 schema: |
   {invalid json here}
 `
@@ -810,7 +810,7 @@ func TestParseToEntityTypeDTO_EmptySchemaField(t *testing.T) {
 	yamlData := `
 id: "empty-schema"
 name: "Empty Schema"
-organization_unit_id: "550e8400-e29b-41d4-a716-446655440000"
+ouId: "550e8400-e29b-41d4-a716-446655440000"
 schema: ""
 `
 
@@ -1019,7 +1019,7 @@ func TestParseAndValidateEntityTypeFlow(t *testing.T) {
 			yamlData: `
 id: "flow-test-001"
 name: "Flow Test Schema"
-organization_unit_id: "550e8400-e29b-41d4-a716-446655440000"
+ouId: "550e8400-e29b-41d4-a716-446655440000"
 schema: |
   {
     "email": {"type": "string", "required": true}
@@ -1033,7 +1033,7 @@ schema: |
 			yamlData: `
 id: "flow-test-002"
 name: "Invalid Schema"
-organization_unit_id: "550e8400-e29b-41d4-a716-446655440000"
+ouId: "550e8400-e29b-41d4-a716-446655440000"
 schema: |
   {
     "email": {"required": true}
@@ -1048,7 +1048,7 @@ schema: |
 			yamlData: `
 id: "flow-test-003"
 name: ""
-organization_unit_id: "550e8400-e29b-41d4-a716-446655440000"
+ouId: "550e8400-e29b-41d4-a716-446655440000"
 schema: |
   {
     "email": {"type": "string"}
@@ -1166,7 +1166,7 @@ func TestInitialize_WithDeclarativeResourcesEnabled_ValidationFailure(t *testing
 	// Create a YAML file with invalid configuration (empty name)
 	invalidSchemaYAML := `id: "invalid-schema"
 name: ""
-organization_unit_id: "550e8400-e29b-41d4-a716-446655440000"
+ouId: "550e8400-e29b-41d4-a716-446655440000"
 schema: |
   {
     "email": {"type": "string"}
@@ -1225,8 +1225,8 @@ func TestInitialize_WithDeclarativeResourcesEnabled_OUHandleNotFound(t *testing.
 	// Create a YAML file that uses an ou_handle that cannot be resolved
 	validSchemaYAML := `id: "test-schema"
 name: "Test Schema"
-ou_handle: "nonexistent-handle"
-allow_self_registration: true
+ouHandle: "nonexistent-handle"
+allowSelfRegistration: true
 schema: |
   {
     "email": {"type": "string", "required": true}
@@ -1302,7 +1302,7 @@ func TestInitialize_WithDeclarativeResourcesEnabled_InvalidJSONSchema(t *testing
 	// Create a YAML file with invalid JSON in schema field
 	invalidJSONYAML := `id: "invalid-json-schema"
 name: "Invalid JSON Schema"
-organization_unit_id: "550e8400-e29b-41d4-a716-446655440000"
+ouId: "550e8400-e29b-41d4-a716-446655440000"
 schema: |
   {invalid json here}
 `

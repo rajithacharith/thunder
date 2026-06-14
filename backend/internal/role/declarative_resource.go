@@ -190,8 +190,8 @@ type roleDeclarativeResource struct {
 	ID          string                      `yaml:"id"`
 	Name        string                      `yaml:"name"`
 	Description string                      `yaml:"description,omitempty"`
-	OUID        string                      `yaml:"ou_id,omitempty"`
-	OUHandle    string                      `yaml:"ou_handle,omitempty"`
+	OUID        string                      `yaml:"ouId,omitempty"`
+	OUHandle    string                      `yaml:"ouHandle,omitempty"`
 	Permissions []roleDeclarativePermission `yaml:"permissions"`
 	Assignments []RoleAssignment            `yaml:"assignments,omitempty"`
 }
@@ -256,7 +256,7 @@ func validateRoleWrapper(
 		}
 	}
 	if role.OUID == "" {
-		return fmt.Errorf("ou_id or ou_handle is required for role '%s'", role.Name)
+		return fmt.Errorf("ouId or ouHandle is required for role '%s'", role.Name)
 	}
 
 	for _, assignment := range role.Assignments {

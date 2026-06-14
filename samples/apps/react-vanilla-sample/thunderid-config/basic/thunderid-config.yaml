@@ -2,9 +2,9 @@
 id: 019e3a5c-04ea-7d18-8ae6-f828b1f3d60f
 category: user
 name: Customer
-ou_handle: default
-allow_self_registration: true
-system_attributes:
+ouHandle: default
+allowSelfRegistration: true
+systemAttributes:
   display: username
 schema: {
     "username": {
@@ -51,70 +51,70 @@ schema: {
 ---
 # resource_type: application
 id: 019e3a5c-0500-7f3e-a66e-66fc7918c3a7
-ou_handle: default
+ouHandle: default
 name: Sample App
 description: Sample application for testing
 url: https://localhost:3000
-logo_url: emoji:🎁
-tos_uri: https://localhost:3000/terms
-policy_uri: https://localhost:3000/privacy
+logoUrl: emoji:🎁
+tosUri: https://localhost:3000/terms
+policyUri: https://localhost:3000/privacy
 contacts:
   - admin@example.com
   - support@example.com
-auth_flow_handle: default-basic-flow
-registration_flow_handle: default-basic-flow
-is_registration_flow_enabled: true
-is_recovery_flow_enabled: false
+authFlowHandle: default-basic-flow
+registrationFlowHandle: default-basic-flow
+isRegistrationFlowEnabled: true
+isRecoveryFlowEnabled: false
 assertion:
-  validity_period: 3600
-login_consent:
-  validity_period: 0
-allowed_user_types:
+  validityPeriod: 3600
+loginConsent:
+  validityPeriod: 0
+allowedUserTypes:
   - Customer
-inbound_auth_config:
+inboundAuthConfig:
   - type: oauth2
     config:
-      client_id: {{.SAMPLE_APP_CLIENT_ID}}
-      redirect_uris:
+      clientId: {{.SAMPLE_APP_CLIENT_ID}}
+      redirectUris:
         {{- range .SAMPLE_APP_REDIRECT_URIS}}
         - {{.}}
         {{- end}}
-      grant_types:
+      grantTypes:
         - authorization_code
-      response_types:
+      responseTypes:
         - code
-      token_endpoint_auth_method: none
-      pkce_required: true
-      public_client: true
-      require_pushed_authorization_requests: false
+      tokenEndpointAuthMethod: none
+      pkceRequired: true
+      publicClient: true
+      requirePushedAuthorizationRequests: false
       token:
-        access_token:
-          validity_period: 3600
-          user_attributes:
+        accessToken:
+          validityPeriod: 3600
+          userAttributes:
             - given_name
             - family_name
             - email
             - groups
-        id_token:
-          validity_period: 3600
-          user_attributes:
+        idToken:
+          validityPeriod: 3600
+          userAttributes:
             - given_name
             - family_name
             - email
             - groups
-          response_type: JWT
+          responseType: JWT
       scopes:
         - openid
         - profile
         - email
-      user_info:
-        response_type: JSON
-        user_attributes:
+      userInfo:
+        responseType: JSON
+        userAttributes:
           - given_name
           - family_name
           - email
           - groups
-      scope_claims:
+      scopeClaims:
         email:
           - email
           - email_verified

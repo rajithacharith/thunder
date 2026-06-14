@@ -2,9 +2,9 @@
 id: wayfinder-customer-type
 category: user
 name: Customer
-ou_handle: default
-allow_self_registration: true
-system_attributes:
+ouHandle: default
+allowSelfRegistration: true
+systemAttributes:
   display: username
 schema: {
     "username": {
@@ -48,9 +48,9 @@ schema: {
 id: wayfinder-staff-type
 category: user
 name: Staff
-ou_handle: default
-allow_self_registration: false
-system_attributes:
+ouHandle: default
+allowSelfRegistration: false
+systemAttributes:
   display: username
 schema: {
     "username": {
@@ -85,7 +85,7 @@ id: wayfinder-agent-rs
 name: Wayfinder Agent
 description: Controls access to the Wayfinder Concierge agent
 identifier: wayfinder-agent
-ou_handle: default
+ouHandle: default
 delimiter: ":"
 resources:
   - name: Agent
@@ -105,7 +105,7 @@ description: Protects the Wayfinder booking domain — same scopes guard the RES
 # MCP Inspector reads that metadata and passes the value back as resource=...
 # on /token; Thunder rejects with invalid_target unless this identifier matches.
 identifier: http://localhost:8787/mcp
-ou_handle: default
+ouHandle: default
 delimiter: ":"
 resources:
   - name: Booking
@@ -844,52 +844,52 @@ nodes:
 id: wayfinder-app
 name: Wayfinder
 description: Wayfinder Travel sample application
-ou_handle: default
+ouHandle: default
 url: http://localhost:5173
-logo_url: "emoji:✈️"
-registration_flow_handle: wayfinder-registration-flow
-recovery_flow_handle: wayfinder-recovery-flow
-is_registration_flow_enabled: true
-is_recovery_flow_enabled: true
+logoUrl: "emoji:✈️"
+registrationFlowHandle: wayfinder-registration-flow
+recoveryFlowHandle: wayfinder-recovery-flow
+isRegistrationFlowEnabled: true
+isRecoveryFlowEnabled: true
 assertion:
-  validity_period: 3600
-  user_attributes:
+  validityPeriod: 3600
+  userAttributes:
     - given_name
     - family_name
     - email
     - groups
     - username
-allowed_user_types:
+allowedUserTypes:
   - Customer
-inbound_auth_config:
+inboundAuthConfig:
   - type: oauth2
     config:
-      client_id: "{{.WAYFINDER_CLIENT_ID}}"
-      redirect_uris:
+      clientId: "{{.WAYFINDER_CLIENT_ID}}"
+      redirectUris:
         - http://localhost:5173
-      grant_types:
+      grantTypes:
         - authorization_code
-      response_types:
+      responseTypes:
         - code
-      token_endpoint_auth_method: none
-      pkce_required: true
-      public_client: true
+      tokenEndpointAuthMethod: none
+      pkceRequired: true
+      publicClient: true
       token:
-        access_token:
-          validity_period: 3600
-          user_attributes:
+        accessToken:
+          validityPeriod: 3600
+          userAttributes:
             - given_name
             - family_name
             - email
             - groups
-        id_token:
-          validity_period: 3600
-          user_attributes:
+        idToken:
+          validityPeriod: 3600
+          userAttributes:
             - given_name
             - family_name
             - email
             - groups
-      scope_claims:
+      scopeClaims:
         email:
           - email
         profile:
@@ -1448,29 +1448,29 @@ nodes:
 id: wayfinder-concierge
 name: WAYFINDER-CONCIERGE
 description: Wayfinder Concierge AI agent for the Wayfinder Travel sample
-ou_handle: default
+ouHandle: default
 type: default
-logo_url: "emoji:✈️"
-auth_flow_handle: wayfinder-agent-auth-flow
-inbound_auth_config:
+logoUrl: "emoji:✈️"
+authFlowHandle: wayfinder-agent-auth-flow
+inboundAuthConfig:
   - type: oauth2
     config:
-      client_id: "{{.AGENT_CLIENT_ID}}"
-      client_secret: "{{.AGENT_CLIENT_SECRET}}"
-      redirect_uris:
+      clientId: "{{.AGENT_CLIENT_ID}}"
+      clientSecret: "{{.AGENT_CLIENT_SECRET}}"
+      redirectUris:
         - http://localhost:5173/agent-callback
-      grant_types:
+      grantTypes:
         - client_credentials
         - authorization_code
-      response_types:
+      responseTypes:
         - code
-      token_endpoint_auth_method: client_secret_basic
-      pkce_required: false
-      public_client: false
+      tokenEndpointAuthMethod: client_secret_basic
+      pkceRequired: false
+      publicClient: false
       token:
-        access_token:
-          validity_period: 3600
-          user_attributes:
+        accessToken:
+          validityPeriod: 3600
+          userAttributes:
             - email
 
 ---
@@ -1484,26 +1484,26 @@ inbound_auth_config:
 id: wayfinder-upgrade-agent
 name: WAYFINDER-UPGRADE-AGENT
 description: Upgrade scheduler agent — initiates CIBA for users with pending flight upgrade requests
-ou_handle: default
+ouHandle: default
 type: default
-logo_url: "emoji:✈️"
-auth_flow_handle: wayfinder-ciba-email-flow
-allowed_user_types:
+logoUrl: "emoji:✈️"
+authFlowHandle: wayfinder-ciba-email-flow
+allowedUserTypes:
   - Customer
-inbound_auth_config:
+inboundAuthConfig:
   - type: oauth2
     config:
-      client_id: "{{.UPGRADE_AGENT_CLIENT_ID}}"
-      client_secret: "{{.UPGRADE_AGENT_CLIENT_SECRET}}"
-      grant_types:
+      clientId: "{{.UPGRADE_AGENT_CLIENT_ID}}"
+      clientSecret: "{{.UPGRADE_AGENT_CLIENT_SECRET}}"
+      grantTypes:
         - client_credentials
         - urn:openid:params:grant-type:ciba
-      token_endpoint_auth_method: client_secret_basic
-      public_client: false
+      tokenEndpointAuthMethod: client_secret_basic
+      publicClient: false
       token:
-        access_token:
-          validity_period: 3600
-          user_attributes:
+        accessToken:
+          validityPeriod: 3600
+          userAttributes:
             - given_name
             - family_name
             - email
@@ -1518,42 +1518,42 @@ inbound_auth_config:
 id: external-mcp-client
 name: External MCP Client
 description: Public OAuth client for external MCP clients connecting to the Wayfinder MCP server.
-ou_handle: default
+ouHandle: default
 url: http://localhost:8787/mcp
 # Reuse the Concierge's auth flow so the OAuth consent screen surfaces the
 # requested booking:* scopes during the MCP Authorization tryout. Without
 # this, Thunder falls back to the default sign-in-only flow and no consent
 # step is shown.
-auth_flow_handle: wayfinder-agent-auth-flow
-allowed_user_types:
+authFlowHandle: wayfinder-agent-auth-flow
+allowedUserTypes:
   - Customer
-inbound_auth_config:
+inboundAuthConfig:
   - type: oauth2
     config:
-      client_id: EXTERNAL-MCP-CLIENT
-      redirect_uris:
+      clientId: EXTERNAL-MCP-CLIENT
+      redirectUris:
         - http://localhost:6274/oauth/callback/debug
         - http://localhost:6274/oauth/callback
-      grant_types:
+      grantTypes:
         - authorization_code
         - refresh_token
-      response_types:
+      responseTypes:
         - code
-      token_endpoint_auth_method: none
-      pkce_required: true
-      public_client: true
+      tokenEndpointAuthMethod: none
+      pkceRequired: true
+      publicClient: true
       token:
-        access_token:
-          validity_period: 3600
+        accessToken:
+          validityPeriod: 3600
 
 ---
 # resource_type: role
 id: wayfinder-traveler-role
 name: Traveler
 description: Consumer role with full booking permissions
-ou_handle: default
+ouHandle: default
 permissions:
-  - resource_server_id: wayfinder-booking-rs
+  - resourceServerId: wayfinder-booking-rs
     permissions:
       - booking:read
       - booking:create
@@ -1569,21 +1569,21 @@ assignments:
 id: wayfinder-support-role
 name: Support
 description: Staff role for consumer support workflows
-ou_handle: default
+ouHandle: default
 
 ---
 # resource_type: role
 id: wayfinder-destinations-admin-role
 name: DestinationsAdmin
 description: Staff role for curating featured destinations
-ou_handle: default
+ouHandle: default
 
 ---
 # resource_type: role
 id: wayfinder-ops-admin-role
 name: OpsAdmin
 description: Staff role for inviting and managing other staff
-ou_handle: default
+ouHandle: default
 assignments:
   - id: wayfinder-alex-carter
     type: user
@@ -1593,12 +1593,12 @@ assignments:
 id: chat-user-role
 name: Chat User
 description: Grants access to use the Wayfinder Concierge agent and request flight upgrades through it
-ou_handle: default
+ouHandle: default
 permissions:
-  - resource_server_id: wayfinder-agent-rs
+  - resourceServerId: wayfinder-agent-rs
     permissions:
       - agent:access
-  - resource_server_id: wayfinder-booking-rs
+  - resourceServerId: wayfinder-booking-rs
     permissions:
       - booking:upgrade
       - upgrade:process
@@ -1611,9 +1611,9 @@ assignments:
 id: booking-user-role
 name: Booking User
 description: Grants booking permissions for the Wayfinder sample
-ou_handle: default
+ouHandle: default
 permissions:
-  - resource_server_id: wayfinder-booking-rs
+  - resourceServerId: wayfinder-booking-rs
     permissions:
       - booking:read
       - booking:create
@@ -1629,9 +1629,9 @@ assignments:
 id: recommender-role
 name: Recommender
 description: Grants access to booking:recommend and upgrade:search permissions, assigned to the Wayfinder Concierge agent
-ou_handle: default
+ouHandle: default
 permissions:
-  - resource_server_id: wayfinder-booking-rs
+  - resourceServerId: wayfinder-booking-rs
     permissions:
       - booking:recommend
       - upgrade:search
@@ -1644,9 +1644,9 @@ assignments:
 id: upgrade-scheduler-role
 name: Upgrade Scheduler
 description: Grants upgrade:read to the upgrade scheduler agent so its M2M token can list pending upgrade requests
-ou_handle: default
+ouHandle: default
 permissions:
-  - resource_server_id: wayfinder-booking-rs
+  - resourceServerId: wayfinder-booking-rs
     permissions:
       - upgrade:read
       - upgrade:search
@@ -1658,7 +1658,7 @@ assignments:
 # resource_type: user
 id: wayfinder-john-doe
 type: Customer
-ou_handle: default
+ouHandle: default
 attributes:
   username: john.doe
   given_name: John
@@ -1672,7 +1672,7 @@ credentials:
 # resource_type: user
 id: wayfinder-jane-smith
 type: Customer
-ou_handle: default
+ouHandle: default
 attributes:
   username: jane.smith
   given_name: Jane
@@ -1686,7 +1686,7 @@ credentials:
 # resource_type: user
 id: wayfinder-alex-carter
 type: Staff
-ou_handle: default
+ouHandle: default
 attributes:
   username: alex.carter
   email: alex.carter@example.com
