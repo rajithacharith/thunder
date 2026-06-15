@@ -783,8 +783,8 @@ func appendAttributesFromClaimsParameter(claimsRequest *oauth2model.ClaimsReques
 		}
 	}
 
-	// Append user info attributes
-	if claimsRequest.UserInfo != nil && userInfoAllowedSet != nil {
+	// Append user info attributes (verified_claims is held separately in VerifiedUserInfo)
+	if userInfoAllowedSet != nil {
 		for name, value := range claimsRequest.UserInfo {
 			if userInfoAllowedSet[name] {
 				if value != nil && value.Essential {
@@ -860,12 +860,10 @@ func validateSubClaimConstraint(claimsRequest *oauth2model.ClaimsRequest, actual
 		}
 	}
 
-	// Check userinfo sub claim constraint.
-	if claimsRequest.UserInfo != nil {
-		if subReq, exists := claimsRequest.UserInfo["sub"]; exists && subReq != nil {
-			if !subReq.MatchesValue(actualSubject) {
-				return errors.New("sub claim in userinfo does not match requested value")
-			}
+	// Check userinfo sub claim constraint (verified_claims is held separately in VerifiedUserInfo).
+	if subReq, exists := claimsRequest.UserInfo["sub"]; exists && subReq != nil {
+		if !subReq.MatchesValue(actualSubject) {
+			return errors.New("sub claim in userinfo does not match requested value")
 		}
 	}
 
