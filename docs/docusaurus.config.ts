@@ -157,7 +157,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     },
   ],
 
-  plugins: [webpackPlugin, personaPlugin],
+  plugins: [
+    webpackPlugin,
+    personaPlugin,
+    './plugins/docusaurus-plugin-llms-txt',
+    './plugins/docusaurus-plugin-markdown-export',
+  ],
 
   presets: [
     [
