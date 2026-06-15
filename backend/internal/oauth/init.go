@@ -22,14 +22,13 @@ package oauth
 import (
 	"net/http"
 
-	"github.com/thunder-id/thunderid/internal/application"
+	"github.com/thunder-id/thunderid/internal/actorprovider"
 	"github.com/thunder-id/thunderid/internal/attributecache"
 	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/authz"
-	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/flowexec"
 	"github.com/thunder-id/thunderid/internal/idp"
-	"github.com/thunder-id/thunderid/internal/inboundclient"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/jwks"
 	oauth2authz "github.com/thunder-id/thunderid/internal/oauth/oauth2/authz"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/callback"
@@ -47,7 +46,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/scope"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
-	"github.com/thunder-id/thunderid/internal/system/config"
 	syshttp "github.com/thunder-id/thunderid/internal/system/http"
 	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
@@ -59,8 +57,7 @@ import (
 // Initialize initializes all OAuth-related services and registers their routes.
 func Initialize(
 	mux *http.ServeMux,
-	applicationService application.ApplicationServiceInterface,
-	inboundClient inboundclient.InboundClientServiceInterface,
+	actorProvider actorprovider.ActorProviderInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	jwtService jwt.JWTServiceInterface,
 	jweService jwe.JWEServiceInterface,
@@ -70,39 +67,39 @@ func Initialize(
 	ouService ou.OrganizationUnitServiceInterface,
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	authzService authz.AuthorizationServiceInterface,
-	entityProvider entityprovider.EntityProviderInterface,
 	resourceService resource.ResourceServiceInterface,
 	i18nService i18nmgt.I18nServiceInterface,
 	idpService idp.IDPServiceInterface,
+	cfg oauthconfig.Config,
 ) error {
 	jwks.Initialize(mux, runtimeCrypto)
 	httpClient := syshttp.NewHTTPClientWithCheckRedirect(func(req *http.Request, _ []*http.Request) error {
 		return syshttp.IsSSRFSafeURL(req.URL.String())
 	})
 	resolver := jwksresolver.Initialize(httpClient)
-	tokenBuilder, tokenValidator := tokenservice.Initialize(jwtService, jweService, resolver, idpService)
+	tokenBuilder, tokenValidator := tokenservice.Initialize(cfg, jwtService, jweService, resolver, idpService)
 	scopeValidator := scope.Initialize()
-	discoveryService := discovery.Initialize(mux, runtimeCrypto)
-	jtiStore := jti.Initialize(config.GetServerRuntime().Config.Server.Identifier)
-	dpopVerifier := dpop.Initialize(jtiStore)
-	parService := par.Initialize(mux, inboundClient, authnProvider, jwtService, discoveryService,
-		resourceService, dpopVerifier)
-	cibaService := ciba.Initialize(mux, jwtService, inboundClient, authnProvider, flowExecService,
-		discoveryService, resourceService)
-	oauth2AuthzService, err := oauth2authz.Initialize(mux, inboundClient, resourceService,
-		jwtService, flowExecService, parService)
+	discoveryService := discovery.Initialize(mux, runtimeCrypto, cfg)
+	jtiStore := jti.Initialize(cfg)
+	dpopVerifier := dpop.Initialize(cfg, jtiStore)
+	parService := par.Initialize(mux, actorProvider, authnProvider, jwtService, discoveryService,
+		resourceService, dpopVerifier, cfg)
+	cibaService := ciba.Initialize(mux, jwtService, actorProvider, authnProvider, flowExecService,
+		discoveryService, resourceService, cfg)
+	oauth2AuthzService, err := oauth2authz.Initialize(mux, actorProvider, resourceService,
+		jwtService, flowExecService, parService, cfg)
 	if err != nil {
 		return err
 	}
 	grantHandlerProvider := granthandlers.Initialize(
 		jwtService, oauth2AuthzService, tokenBuilder, tokenValidator,
-		attributeCacheSvc, ouService, authzService, entityProvider, resourceService, cibaService)
-	token.Initialize(mux, jwtService, inboundClient, authnProvider, grantHandlerProvider,
-		scopeValidator, observabilitySvc, discoveryService, dpopVerifier)
-	introspect.Initialize(mux, jwtService, inboundClient, authnProvider, discoveryService)
+		attributeCacheSvc, ouService, authzService, actorProvider, resourceService, cibaService, cfg)
+	token.Initialize(mux, jwtService, actorProvider, authnProvider, grantHandlerProvider,
+		scopeValidator, observabilitySvc, discoveryService, dpopVerifier, cfg)
+	introspect.Initialize(mux, jwtService, actorProvider, authnProvider, discoveryService)
 	userinfo.Initialize(mux, jwtService, jweService, resolver,
-		tokenValidator, inboundClient, attributeCacheSvc,
-		discoveryService, dpopVerifier)
-	callback.Initialize(mux, oauth2AuthzService, cibaService)
+		tokenValidator, actorProvider, attributeCacheSvc,
+		discoveryService, dpopVerifier, cfg)
+	callback.Initialize(mux, oauth2AuthzService, cibaService, cfg)
 	return nil
 }

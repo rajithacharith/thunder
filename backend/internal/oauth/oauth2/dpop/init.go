@@ -19,13 +19,13 @@
 package dpop
 
 import (
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/jti"
-	"github.com/thunder-id/thunderid/internal/system/config"
 )
 
 // Initialize wires the DPoP verifier with the given JTI replay-cache backend.
-func Initialize(jtiStore jti.JTIStoreInterface) VerifierInterface {
-	dpopCfg := config.GetServerRuntime().Config.OAuth.DPoP
+func Initialize(cfg oauthconfig.Config, jtiStore jti.JTIStoreInterface) VerifierInterface {
+	dpopCfg := cfg.OAuth.DPoP
 
 	return newVerifier(
 		jtiStore,

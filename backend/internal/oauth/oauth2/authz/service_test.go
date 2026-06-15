@@ -28,19 +28,35 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/thunder-id/thunderid/internal/actorprovider"
 	flowcm "github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/flowexec"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	oauth2model "github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/flowexecmock"
 	"github.com/thunder-id/thunderid/tests/mocks/inboundclientmock"
 	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
 )
+
+func authorizeServiceCfgFromRuntime() oauthconfig.Config {
+	runtime := config.GetServerRuntime()
+	return oauthconfig.Config{
+		JWT:        runtime.Config.JWT,
+		OAuth:      runtime.Config.OAuth,
+		GateClient: runtime.Config.GateClient,
+	}
+}
+
+func resolveUserAttributesCacheTTLForTest(app *inboundmodel.OAuthClient) int64 {
+	return (&authorizeService{cfg: authorizeServiceCfgFromRuntime()}).resolveUserAttributesCacheTTL(app)
+}
 
 // stubTransactioner is a no-op Transactioner for use in service tests.
 type stubTransactioner struct{}
@@ -60,6 +76,7 @@ const (
 type AuthorizeServiceTestSuite struct {
 	suite.Suite
 	mockInboundClient   *inboundclientmock.InboundClientServiceInterfaceMock
+	mockEntityProvider  *entityprovidermock.EntityProviderInterfaceMock
 	mockJWTService      *jwtmock.JWTServiceInterfaceMock
 	mockAuthzCodeStore  *AuthorizationCodeStoreInterfaceMock
 	mockAuthReqStore    *authorizationRequestStoreInterfaceMock
@@ -97,6 +114,7 @@ func (suite *AuthorizeServiceTestSuite) BeforeTest(suiteName, testName string) {
 
 func (suite *AuthorizeServiceTestSuite) SetupTest() {
 	suite.mockInboundClient = inboundclientmock.NewInboundClientServiceInterfaceMock(suite.T())
+	suite.mockEntityProvider = entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.mockAuthzCodeStore = NewAuthorizationCodeStoreInterfaceMock(suite.T())
 	suite.mockAuthReqStore = newAuthorizationRequestStoreInterfaceMock(suite.T())
@@ -107,7 +125,8 @@ func (suite *AuthorizeServiceTestSuite) SetupTest() {
 // newService builds an authorizeService with all mocked dependencies.
 func (suite *AuthorizeServiceTestSuite) newService() *authorizeService {
 	return &authorizeService{
-		inboundClient:   suite.mockInboundClient,
+		cfg:             authorizeServiceCfgFromRuntime(),
+		inboundClient:   actorprovider.Initialize(suite.mockInboundClient, suite.mockEntityProvider),
 		authZValidator:  suite.mockValidator,
 		authCodeStore:   suite.mockAuthzCodeStore,
 		authReqStore:    suite.mockAuthReqStore,
@@ -1526,7 +1545,7 @@ func (suite *AuthorizeServiceTestSuite) TestResolveAttrCacheTTL_RefreshAllowed_U
 	}
 
 	// Refresh token validity (7200) > access token validity (3600) → max(7200) + authCode(600) + buffer(60) = 7860.
-	assert.Equal(suite.T(), int64(7860), resolveUserAttributesCacheTTL(app))
+	assert.Equal(suite.T(), int64(7860), resolveUserAttributesCacheTTLForTest(app))
 }
 
 func (suite *AuthorizeServiceTestSuite) TestResolveAttrCacheTTL_RefreshTokenAllowed_UsesAccessTokenWhenLonger() {
@@ -1550,7 +1569,7 @@ func (suite *AuthorizeServiceTestSuite) TestResolveAttrCacheTTL_RefreshTokenAllo
 	}
 
 	// Access token validity (7200) > refresh token validity (1800) → max(7200) + authCode(600) + buffer(60) = 7860.
-	assert.Equal(suite.T(), int64(7860), resolveUserAttributesCacheTTL(app))
+	assert.Equal(suite.T(), int64(7860), resolveUserAttributesCacheTTLForTest(app))
 }
 
 func (suite *AuthorizeServiceTestSuite) TestResolveUserAttributesCacheTTL_RefreshTokenAllowed_FallsBackToGlobalJWT() {
@@ -1572,7 +1591,7 @@ func (suite *AuthorizeServiceTestSuite) TestResolveUserAttributesCacheTTL_Refres
 	}
 
 	// JWT fallback (900) + authCode(600) + buffer(60) = 1560.
-	assert.Equal(suite.T(), int64(1560), resolveUserAttributesCacheTTL(app))
+	assert.Equal(suite.T(), int64(1560), resolveUserAttributesCacheTTLForTest(app))
 }
 
 func (suite *AuthorizeServiceTestSuite) TestResolveAttrCacheTTL_RefreshTokenNotAllowed_UsesAccessTokenValidity() {
@@ -1584,7 +1603,7 @@ func (suite *AuthorizeServiceTestSuite) TestResolveAttrCacheTTL_RefreshTokenNotA
 	}
 
 	// Access token validity (3600) + authCode(600) + buffer(60) = 4260.
-	assert.Equal(suite.T(), int64(4260), resolveUserAttributesCacheTTL(app))
+	assert.Equal(suite.T(), int64(4260), resolveUserAttributesCacheTTLForTest(app))
 }
 
 func (suite *AuthorizeServiceTestSuite) TestResolveAttrCacheTTL_NoRefreshToken_ZeroAccessTTL_FallsBackToGlobalJWT() {
@@ -1605,7 +1624,7 @@ func (suite *AuthorizeServiceTestSuite) TestResolveAttrCacheTTL_NoRefreshToken_Z
 	}
 
 	// JWT fallback (900) + authCode(600) + buffer(60) = 1560.
-	assert.Equal(suite.T(), int64(1560), resolveUserAttributesCacheTTL(app))
+	assert.Equal(suite.T(), int64(1560), resolveUserAttributesCacheTTLForTest(app))
 }
 
 func (suite *AuthorizeServiceTestSuite) TestResolveAttrCacheTTL_NoRefreshToken_NilToken_FallsBackToGlobalJWT() {
@@ -1623,7 +1642,7 @@ func (suite *AuthorizeServiceTestSuite) TestResolveAttrCacheTTL_NoRefreshToken_N
 	}
 
 	// JWT fallback (900) + authCode(600) + buffer(60) = 1560.
-	assert.Equal(suite.T(), int64(1560), resolveUserAttributesCacheTTL(app))
+	assert.Equal(suite.T(), int64(1560), resolveUserAttributesCacheTTLForTest(app))
 }
 
 func (suite *AuthorizeServiceTestSuite) TestResolveAttrCacheTTL_NoRefreshToken_NilAccessToken_FallsBackToGlobalJWT() {
@@ -1641,7 +1660,7 @@ func (suite *AuthorizeServiceTestSuite) TestResolveAttrCacheTTL_NoRefreshToken_N
 	}
 
 	// JWT fallback (900) + authCode(600) + buffer(60) = 1560.
-	assert.Equal(suite.T(), int64(1560), resolveUserAttributesCacheTTL(app))
+	assert.Equal(suite.T(), int64(1560), resolveUserAttributesCacheTTLForTest(app))
 }
 
 // determineClaimsForTokens is a test helper retained to keep existing token-claim tests readable.

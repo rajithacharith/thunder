@@ -23,18 +23,18 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/thunder-id/thunderid/internal/system/config"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/system/database/provider"
 )
 
 // newCIBAStore returns a Redis-backed store when the runtime database is configured for Redis,
 // and falls back to the SQL-backed store otherwise. This mirrors the selection pattern used
 // by the authz package for its authorization request and code stores.
-func newCIBAStore() CIBARequestStoreInterface {
-	if config.GetServerRuntime().Config.Database.Runtime.Type == provider.DataSourceTypeRedis {
-		return newRedisCIBARequestStore(provider.GetRedisProvider())
+func newCIBAStore(cfg oauthconfig.Config) CIBARequestStoreInterface {
+	if cfg.RuntimeDBType == provider.DataSourceTypeRedis {
+		return newRedisCIBARequestStore(provider.GetRedisProvider(), cfg.DeploymentID)
 	}
-	return newCIBARequestStore()
+	return newCIBARequestStore(cfg.DeploymentID)
 }
 
 // CIBARequestStoreInterface defines the interface for CIBA authentication request storage.
@@ -55,10 +55,10 @@ type cibaRequestStore struct {
 }
 
 // newCIBARequestStore creates a new instance of cibaRequestStore with injected dependencies.
-func newCIBARequestStore() CIBARequestStoreInterface {
+func newCIBARequestStore(deploymentID string) CIBARequestStoreInterface {
 	return &cibaRequestStore{
 		dbProvider:   provider.GetDBProvider(),
-		deploymentID: config.GetServerRuntime().Config.Server.Identifier,
+		deploymentID: deploymentID,
 	}
 }
 

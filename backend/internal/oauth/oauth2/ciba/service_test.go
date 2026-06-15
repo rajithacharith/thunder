@@ -31,6 +31,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/thunder-id/thunderid/internal/actorprovider"
 	flowcm "github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/flowexec"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
@@ -38,23 +39,26 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/flowexecmock"
 	"github.com/thunder-id/thunderid/tests/mocks/inboundclientmock"
 	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
 	"github.com/thunder-id/thunderid/tests/mocks/resourcemock"
+	"github.com/thunder-id/thunderid/tests/testhelpers"
 )
 
 const testUserID = "user-1"
 
 type CIBAServiceTestSuite struct {
 	suite.Suite
-	mockStore         *CIBARequestStoreInterfaceMock
-	mockFlowExec      *flowexecmock.FlowExecServiceInterfaceMock
-	mockJWTService    *jwtmock.JWTServiceInterfaceMock
-	mockInboundClient *inboundclientmock.InboundClientServiceInterfaceMock
-	mockResourceSvc   *resourcemock.ResourceServiceInterfaceMock
-	service           CIBAServiceInterface
-	oauthApp          *inboundmodel.OAuthClient
+	mockStore          *CIBARequestStoreInterfaceMock
+	mockFlowExec       *flowexecmock.FlowExecServiceInterfaceMock
+	mockJWTService     *jwtmock.JWTServiceInterfaceMock
+	mockInboundClient  *inboundclientmock.InboundClientServiceInterfaceMock
+	mockEntityProvider *entityprovidermock.EntityProviderInterfaceMock
+	mockResourceSvc    *resourcemock.ResourceServiceInterfaceMock
+	service            CIBAServiceInterface
+	oauthApp           *inboundmodel.OAuthClient
 }
 
 func TestCIBAServiceTestSuite(t *testing.T) {
@@ -69,9 +73,11 @@ func (suite *CIBAServiceTestSuite) SetupTest() {
 	suite.mockFlowExec = flowexecmock.NewFlowExecServiceInterfaceMock(suite.T())
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.mockInboundClient = inboundclientmock.NewInboundClientServiceInterfaceMock(suite.T())
+	suite.mockEntityProvider = entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
 	suite.mockResourceSvc = resourcemock.NewResourceServiceInterfaceMock(suite.T())
+	actorProv := actorprovider.Initialize(suite.mockInboundClient, suite.mockEntityProvider)
 	suite.service = newCIBAService(suite.mockStore, suite.mockFlowExec,
-		suite.mockJWTService, suite.mockInboundClient, suite.mockResourceSvc)
+		suite.mockJWTService, actorProv, suite.mockResourceSvc, testhelpers.OAuthConfig())
 	suite.oauthApp = &inboundmodel.OAuthClient{
 		ID:         "app-1",
 		ClientID:   "client-1",
@@ -487,7 +493,7 @@ func (suite *CIBAServiceTestSuite) TestResolveUserAttributesCacheTTL_RefreshToke
 			RefreshToken: &inboundmodel.RefreshTokenConfig{ValidityPeriod: 86400},
 		},
 	}
-	ttl := resolveUserAttributesCacheTTL(app)
+	ttl := (&cibaService{cfg: testhelpers.OAuthConfig()}).resolveUserAttributesCacheTTL(app)
 	suite.Greater(ttl, int64(86400))
 }
 
@@ -784,10 +790,11 @@ const testIssuer = "https://thunder.example.com"
 const testEntityID = "entity-abc-123"
 
 func (suite *CIBAServiceTestSuite) withIssuer() {
-	config.ResetServerRuntime()
-	testCfg := &config.Config{}
-	testCfg.JWT.Issuer = testIssuer
-	_ = config.InitializeServerRuntime("test", testCfg)
+	cfg := testhelpers.OAuthConfig()
+	cfg.JWT.Issuer = testIssuer
+	actorProv := actorprovider.Initialize(suite.mockInboundClient, suite.mockEntityProvider)
+	suite.service = newCIBAService(suite.mockStore, suite.mockFlowExec,
+		suite.mockJWTService, actorProv, suite.mockResourceSvc, cfg)
 }
 
 func (suite *CIBAServiceTestSuite) validIDTokenHint() string {

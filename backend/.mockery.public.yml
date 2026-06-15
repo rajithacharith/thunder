@@ -505,6 +505,14 @@ packages:
       pkgname: entityprovidermock
       filename: "{{.InterfaceName}}_mock.go"
 
+  github.com/thunder-id/thunderid/internal/actorprovider:
+    config:
+      all: true
+      dir: tests/mocks/actorprovidermock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: actorprovidermock
+      filename: "{{.InterfaceName}}_mock.go"
+
   github.com/thunder-id/thunderid/internal/authnprovider/provider:
     config:
       all: true

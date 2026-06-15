@@ -25,9 +25,9 @@ import (
 	"sort"
 
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/pkce"
-	"github.com/thunder-id/thunderid/internal/system/config"
 	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
@@ -40,16 +40,18 @@ type DiscoveryServiceInterface interface {
 
 // discoveryService implements DiscoveryServiceInterface
 type discoveryService struct {
-	baseURL        string
+	cfg            oauthconfig.Config
 	cryptoProvider kmprovider.RuntimeCryptoProvider
 }
 
 // newDiscoveryService creates a new discovery service instance
-func newDiscoveryService(cryptoProvider kmprovider.RuntimeCryptoProvider) DiscoveryServiceInterface {
-	runtime := config.GetServerRuntime()
-	ds := &discoveryService{cryptoProvider: cryptoProvider}
-	ds.baseURL = config.GetServerURL(&runtime.Config.Server)
-	return ds
+func newDiscoveryService(
+	cryptoProvider kmprovider.RuntimeCryptoProvider, cfg oauthconfig.Config,
+) DiscoveryServiceInterface {
+	return &discoveryService{
+		cfg:            cfg,
+		cryptoProvider: cryptoProvider,
+	}
 }
 
 // GetOAuth2AuthorizationServerMetadata returns OAuth 2.0 Authorization Server Metadata
@@ -105,31 +107,31 @@ func (ds *discoveryService) GetOIDCMetadata(ctx context.Context) (*OIDCProviderM
 }
 
 func (ds *discoveryService) getIssuer() string {
-	return config.GetServerRuntime().Config.JWT.Issuer
+	return ds.cfg.JWT.Issuer
 }
 
 func (ds *discoveryService) getAuthorizationEndpoint() string {
-	return ds.baseURL + constants.OAuth2AuthorizationEndpoint
+	return ds.cfg.BaseURL + constants.OAuth2AuthorizationEndpoint
 }
 
 func (ds *discoveryService) getTokenEndpoint() string {
-	return ds.baseURL + constants.OAuth2TokenEndpoint
+	return ds.cfg.BaseURL + constants.OAuth2TokenEndpoint
 }
 
 func (ds *discoveryService) getJWKSUri() string {
-	return ds.baseURL + constants.OAuth2JWKSEndpoint
+	return ds.cfg.BaseURL + constants.OAuth2JWKSEndpoint
 }
 
 func (ds *discoveryService) getIntrospectionEndpoint() string {
-	return ds.baseURL + constants.OAuth2IntrospectionEndpoint
+	return ds.cfg.BaseURL + constants.OAuth2IntrospectionEndpoint
 }
 
 func (ds *discoveryService) getUserInfoEndpoint() string {
-	return ds.baseURL + constants.OAuth2UserInfoEndpoint
+	return ds.cfg.BaseURL + constants.OAuth2UserInfoEndpoint
 }
 
 func (ds *discoveryService) getRegistrationEndpoint() string {
-	return ds.baseURL + constants.OAuth2DCREndpoint
+	return ds.cfg.BaseURL + constants.OAuth2DCREndpoint
 }
 
 func (ds *discoveryService) getSupportedScopes() []string {
@@ -157,19 +159,19 @@ func (ds *discoveryService) getSupportedCodeChallengeMethods() []string {
 }
 
 func (ds *discoveryService) getPAREndpoint() string {
-	return ds.baseURL + constants.OAuth2PAREndpoint
+	return ds.cfg.BaseURL + constants.OAuth2PAREndpoint
 }
 
 func (ds *discoveryService) getBackchannelAuthenticationEndpoint() string {
-	return ds.baseURL + constants.OAuth2BackchannelAuthEndpoint
+	return ds.cfg.BaseURL + constants.OAuth2BackchannelAuthEndpoint
 }
 
 func (ds *discoveryService) isGlobalPARRequired() bool {
-	return config.GetServerRuntime().Config.OAuth.PAR.RequirePAR
+	return ds.cfg.OAuth.PAR.RequirePAR
 }
 
 func (ds *discoveryService) getSupportedDPoPSigningAlgs() []string {
-	algs := config.GetServerRuntime().Config.OAuth.DPoP.AllowedAlgs
+	algs := ds.cfg.OAuth.DPoP.AllowedAlgs
 	if len(algs) == 0 {
 		return nil
 	}
@@ -207,7 +209,7 @@ func (ds *discoveryService) getSupportedSigningAlgorithms(ctx context.Context) (
 }
 
 func (ds *discoveryService) getSupportedAcrValues() []string {
-	acrAMR := config.GetServerRuntime().Config.OAuth.AuthClass.AcrAMR
+	acrAMR := ds.cfg.OAuth.AuthClass.AcrAMR
 	acrs := make([]string, 0, len(acrAMR))
 	for acr := range acrAMR {
 		acrs = append(acrs, acr)

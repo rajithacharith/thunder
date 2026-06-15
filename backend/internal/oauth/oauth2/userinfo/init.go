@@ -22,14 +22,14 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/thunder-id/thunderid/internal/actorprovider"
 	"github.com/thunder-id/thunderid/internal/attributecache"
-	"github.com/thunder-id/thunderid/internal/inboundclient"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/discovery"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/jwksresolver"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
-	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
@@ -42,16 +42,17 @@ func Initialize(
 	jweService jwe.JWEServiceInterface,
 	resolver *jwksresolver.Resolver,
 	tokenValidator tokenservice.TokenValidatorInterface,
-	inboundClient inboundclient.InboundClientServiceInterface,
+	actorProvider actorprovider.ActorProviderInterface,
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
 	dpopVerifier dpop.VerifierInterface,
+	cfg oauthconfig.Config,
 ) userInfoServiceInterface {
 	userInfoService := newUserInfoService(jwtService, jweService, resolver, tokenValidator,
-		inboundClient, attributeCacheSvc, dpopVerifier)
+		actorProvider, attributeCacheSvc, dpopVerifier, cfg)
 	userInfoEndpoint := discoveryService.GetOAuth2AuthorizationServerMetadata(
 		context.Background()).UserInfoEndpoint
-	dpopAlgs := config.GetServerRuntime().Config.OAuth.DPoP.AllowedAlgs
+	dpopAlgs := cfg.OAuth.DPoP.AllowedAlgs
 	userInfoHandler := newUserInfoHandler(userInfoService, userInfoEndpoint, dpopAlgs)
 	registerRoutes(mux, userInfoHandler)
 	return userInfoService

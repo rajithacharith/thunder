@@ -41,8 +41,8 @@ import (
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/tests/mocks/actorprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/authzmock"
-	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
 	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/tokenservicemock"
 	"github.com/thunder-id/thunderid/tests/mocks/oumock"
@@ -60,7 +60,7 @@ type ClientCredentialsGrantHandlerTestSuite struct {
 	mockTokenBuilder    *tokenservicemock.TokenBuilderInterfaceMock
 	mockOUService       *oumock.OrganizationUnitServiceInterfaceMock
 	mockAuthzService    *authzmock.AuthorizationServiceInterfaceMock
-	mockEntityProv      *entityprovidermock.EntityProviderInterfaceMock
+	mockEntityProvider  *actorprovidermock.ActorProviderInterfaceMock
 	mockResourceService *resourcemock.ResourceServiceInterfaceMock
 	handler             *clientCredentialsGrantHandler
 	oauthApp            *inboundmodel.OAuthClient
@@ -85,7 +85,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) SetupTest() {
 	suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	suite.mockAuthzService = authzmock.NewAuthorizationServiceInterfaceMock(suite.T())
-	suite.mockEntityProv = entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
+	suite.mockEntityProvider = actorprovidermock.NewActorProviderInterfaceMock(suite.T())
 	suite.mockResourceService = resourcemock.NewResourceServiceInterfaceMock(suite.T())
 	suite.mockResourceService.On("GetResourceServerByIdentifier", mock.Anything, mock.Anything).
 		Return(func(_ context.Context, identifier string) *resource.ResourceServer {
@@ -102,10 +102,10 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) SetupTest() {
 		tokenBuilder:    suite.mockTokenBuilder,
 		ouService:       suite.mockOUService,
 		authzService:    suite.mockAuthzService,
-		entityProv:      suite.mockEntityProv,
+		actorProvider:   suite.mockEntityProvider,
 		resourceService: suite.mockResourceService,
 	}
-	suite.mockEntityProv.On("GetTransitiveEntityGroups", mock.Anything).
+	suite.mockEntityProvider.On("GetActorGroups", mock.Anything).
 		Return([]entityprovider.EntityGroup{}, nil).Maybe()
 
 	suite.oauthApp = &inboundmodel.OAuthClient{
@@ -158,7 +158,7 @@ func mockEvaluateAccessBatch(
 func (suite *ClientCredentialsGrantHandlerTestSuite) TestNewClientCredentialsGrantHandler() {
 	handler := newClientCredentialsGrantHandler(
 		suite.mockTokenBuilder, suite.mockOUService, suite.mockAuthzService,
-		suite.mockEntityProv, suite.mockResourceService)
+		suite.mockEntityProvider, suite.mockResourceService)
 	assert.NotNil(suite.T(), handler)
 	assert.Implements(suite.T(), (*GrantHandlerInterface)(nil), handler)
 }
@@ -618,17 +618,17 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_ImplicitRSD
 	mockTokenBuilder := tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
 	mockAuthzService := authzmock.NewAuthorizationServiceInterfaceMock(suite.T())
 	mockResourceService := resourcemock.NewResourceServiceInterfaceMock(suite.T())
-	mockEntityProv := entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
+	mockEntityProvider := actorprovidermock.NewActorProviderInterfaceMock(suite.T())
 
 	handler := &clientCredentialsGrantHandler{
 		tokenBuilder:    mockTokenBuilder,
 		ouService:       suite.mockOUService,
 		authzService:    mockAuthzService,
-		entityProv:      mockEntityProv,
+		actorProvider:   mockEntityProvider,
 		resourceService: mockResourceService,
 	}
 
-	mockEntityProv.On("GetTransitiveEntityGroups", mock.Anything).
+	mockEntityProvider.On("GetActorGroups", mock.Anything).
 		Return([]entityprovider.EntityGroup{}, nil).Maybe()
 
 	// No resource param — ResolveResourceServers returns nil (no explicit identifiers).
@@ -680,17 +680,17 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_ImplicitRSD
 	mockTokenBuilder := tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
 	mockAuthzService := authzmock.NewAuthorizationServiceInterfaceMock(suite.T())
 	mockResourceService := resourcemock.NewResourceServiceInterfaceMock(suite.T())
-	mockEntityProv := entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
+	mockEntityProvider := actorprovidermock.NewActorProviderInterfaceMock(suite.T())
 
 	handler := &clientCredentialsGrantHandler{
 		tokenBuilder:    mockTokenBuilder,
 		ouService:       suite.mockOUService,
 		authzService:    mockAuthzService,
-		entityProv:      mockEntityProv,
+		actorProvider:   mockEntityProvider,
 		resourceService: mockResourceService,
 	}
 
-	mockEntityProv.On("GetTransitiveEntityGroups", mock.Anything).
+	mockEntityProvider.On("GetActorGroups", mock.Anything).
 		Return([]entityprovider.EntityGroup{}, nil).Maybe()
 
 	mockEvaluateAccessBatch(mockAuthzService, suite.oauthApp.ID, []string{"r1:s1"}, []string{"r1:s1"})

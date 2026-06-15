@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/thunder-id/thunderid/internal/actorprovider"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 )
 
@@ -81,7 +82,7 @@ func (suite *FlowMetaHandlerTestSuite) TestHandleGetFlowMetadata_Success_AppType
 
 	expectedResponse := &FlowMetadataResponse{
 		IsRegistrationFlowEnabled: true,
-		Application: &ApplicationMetadata{
+		Application: &actorprovider.ApplicationMetadata{
 			ID:        appID,
 			Name:      "Test App",
 			LogoURL:   "https://example.com/logo.png",
@@ -307,7 +308,7 @@ func (suite *FlowMetaHandlerTestSuite) TestHandleGetFlowMetadata_WithLanguagePar
 
 	expectedResponse := &FlowMetadataResponse{
 		IsRegistrationFlowEnabled: true,
-		Application: &ApplicationMetadata{
+		Application: &actorprovider.ApplicationMetadata{
 			ID:   appID,
 			Name: "Test App",
 		},
@@ -354,7 +355,7 @@ func (suite *FlowMetaHandlerTestSuite) TestHandleGetFlowMetadata_WithNamespacePa
 
 	expectedResponse := &FlowMetadataResponse{
 		IsRegistrationFlowEnabled: true,
-		Application: &ApplicationMetadata{
+		Application: &actorprovider.ApplicationMetadata{
 			ID:   appID,
 			Name: "Test App",
 		},

@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/jwksresolver"
@@ -41,6 +42,7 @@ type TokenBuilderInterface interface {
 
 // TokenBuilder implements TokenBuilderInterface.
 type tokenBuilder struct {
+	cfg          oauthconfig.Config
 	jwtService   jwt.JWTServiceInterface
 	jweService   jwe.JWEServiceInterface
 	jwksResolver *jwksresolver.Resolver
@@ -48,11 +50,13 @@ type tokenBuilder struct {
 
 // newTokenBuilder creates a new TokenBuilder instance.
 func newTokenBuilder(
+	cfg oauthconfig.Config,
 	jwtService jwt.JWTServiceInterface,
 	jweService jwe.JWEServiceInterface,
 	resolver *jwksresolver.Resolver,
 ) TokenBuilderInterface {
 	return &tokenBuilder{
+		cfg:          cfg,
 		jwtService:   jwtService,
 		jweService:   jweService,
 		jwksResolver: resolver,
@@ -68,7 +72,7 @@ func (tb *tokenBuilder) BuildAccessToken(
 		return nil, fmt.Errorf("build context cannot be nil")
 	}
 
-	tokenConfig := ResolveTokenConfig(tokenCtx.OAuthApp, TokenTypeAccess)
+	tokenConfig := ResolveTokenConfig(tb.cfg, tokenCtx.OAuthApp, TokenTypeAccess)
 
 	userAttributes := tb.buildAccessTokenUserAttributes(tokenCtx.UserAttributes, tokenCtx.OAuthApp)
 	jwtClaims, claimsErr := tb.buildAccessTokenClaims(tokenCtx, userAttributes)
@@ -243,7 +247,7 @@ func (tb *tokenBuilder) BuildRefreshToken(
 		return nil, fmt.Errorf("build context cannot be nil")
 	}
 
-	tokenConfig := ResolveTokenConfig(tokenCtx.OAuthApp, TokenTypeRefresh)
+	tokenConfig := ResolveTokenConfig(tb.cfg, tokenCtx.OAuthApp, TokenTypeRefresh)
 
 	claims, claimsErr := tb.buildRefreshTokenClaims(tokenCtx)
 	if claimsErr != nil {
@@ -333,7 +337,7 @@ func (tb *tokenBuilder) BuildIDToken(
 		return nil, fmt.Errorf("build context cannot be nil")
 	}
 
-	tokenConfig := ResolveTokenConfig(tokenCtx.OAuthApp, TokenTypeID)
+	tokenConfig := ResolveTokenConfig(tb.cfg, tokenCtx.OAuthApp, TokenTypeID)
 
 	jwtClaims := tb.buildIDTokenClaims(tokenCtx)
 

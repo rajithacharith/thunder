@@ -21,11 +21,9 @@ package flowexec
 import (
 	"net/http"
 
-	"github.com/thunder-id/thunderid/internal/entityprovider"
+	"github.com/thunder-id/thunderid/internal/actorprovider"
+	flowconfig "github.com/thunder-id/thunderid/internal/flow/config"
 	"github.com/thunder-id/thunderid/internal/flow/executor"
-	flowmgt "github.com/thunder-id/thunderid/internal/flow/mgt"
-	"github.com/thunder-id/thunderid/internal/inboundclient"
-	"github.com/thunder-id/thunderid/internal/system/config"
 	dbprovider "github.com/thunder-id/thunderid/internal/system/database/provider"
 	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
@@ -37,18 +35,18 @@ import (
 // The observabilitySvc parameter is optional (can be nil) - if nil, observability events won't be published.
 func Initialize(
 	mux *http.ServeMux,
-	flowMgtService flowmgt.FlowMgtServiceInterface,
-	inboundClientService inboundclient.InboundClientServiceInterface,
-	entityProvider entityprovider.EntityProviderInterface,
+	flowProvider FlowProviderInterface,
+	actorProvider actorprovider.ActorProviderInterface,
 	executorRegistry executor.ExecutorRegistryInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
 	cryptoSvc kmprovider.RuntimeCryptoProvider,
+	cfg flowconfig.Config,
 ) (FlowExecServiceInterface, error) {
 	var flowStore flowStoreInterface
 	var transactioner transaction.Transactioner
 
-	if config.GetServerRuntime().Config.Database.Runtime.Type == dbprovider.DataSourceTypeRedis {
-		flowStore = newRedisFlowStore(dbprovider.GetRedisProvider())
+	if cfg.RuntimeDBType == dbprovider.DataSourceTypeRedis {
+		flowStore = newRedisFlowStore(dbprovider.GetRedisProvider(), cfg.DeploymentID)
 		transactioner = transaction.NewNoOpTransactioner()
 	} else {
 		dbProvider := dbprovider.GetDBProvider()
@@ -57,11 +55,11 @@ func Initialize(
 		if err != nil {
 			return nil, err
 		}
-		flowStore = newFlowStore(dbProvider)
+		flowStore = newFlowStore(dbProvider, cfg.DeploymentID)
 	}
 	flowEngine := newFlowEngine(executorRegistry, observabilitySvc)
-	flowExecService := newFlowExecService(flowMgtService, flowStore, flowEngine,
-		inboundClientService, entityProvider, observabilitySvc, transactioner, cryptoSvc)
+	flowExecService := newFlowExecService(flowProvider, flowStore, flowEngine,
+		actorProvider, observabilitySvc, transactioner, cryptoSvc, cfg)
 
 	handler := newFlowExecutionHandler(flowExecService)
 	registerRoutes(mux, handler)

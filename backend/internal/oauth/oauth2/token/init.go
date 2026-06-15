@@ -22,14 +22,14 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/thunder-id/thunderid/internal/actorprovider"
 	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
-	"github.com/thunder-id/thunderid/internal/inboundclient"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/clientauth"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/discovery"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/granthandlers"
 	"github.com/thunder-id/thunderid/internal/oauth/scope"
-	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
 	"github.com/thunder-id/thunderid/internal/system/observability"
@@ -39,20 +39,21 @@ import (
 func Initialize(
 	mux *http.ServeMux,
 	jwtService jwt.JWTServiceInterface,
-	inboundClient inboundclient.InboundClientServiceInterface,
+	actorProvider actorprovider.ActorProviderInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	grantHandlerProvider granthandlers.GrantHandlerProviderInterface,
 	scopeValidator scope.ScopeValidatorInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
 	dpopVerifier dpop.VerifierInterface,
+	cfg oauthconfig.Config,
 ) TokenHandlerInterface {
 	tokenEndpoint := discoveryService.GetOAuth2AuthorizationServerMetadata(context.Background()).TokenEndpoint
-	dpopRequired := config.GetServerRuntime().Config.OAuth.DPoP.Required
+	dpopRequired := cfg.OAuth.DPoP.Required
 	tokenSvc := newTokenService(grantHandlerProvider, scopeValidator, observabilitySvc,
 		dpopVerifier, tokenEndpoint, dpopRequired)
 	tokenHandler := newTokenHandler(tokenSvc, observabilitySvc)
-	registerRoutes(mux, tokenHandler, inboundClient, authnProvider, jwtService, discoveryService)
+	registerRoutes(mux, tokenHandler, actorProvider, authnProvider, jwtService, discoveryService)
 	return tokenHandler
 }
 
@@ -60,7 +61,7 @@ func Initialize(
 func registerRoutes(
 	mux *http.ServeMux,
 	tokenHandler TokenHandlerInterface,
-	inboundClient inboundclient.InboundClientServiceInterface,
+	actorProvider actorprovider.ActorProviderInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	jwtService jwt.JWTServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
@@ -73,7 +74,7 @@ func registerRoutes(
 	}
 
 	endpointURL := discoveryService.GetOAuth2AuthorizationServerMetadata(context.Background()).TokenEndpoint
-	clientAuthMiddleware := clientauth.ClientAuthMiddleware(inboundClient, authnProvider, jwtService, endpointURL)
+	clientAuthMiddleware := clientauth.ClientAuthMiddleware(actorProvider, authnProvider, jwtService, endpointURL)
 	handler := clientAuthMiddleware(http.HandlerFunc(tokenHandler.HandleTokenRequest))
 
 	pattern, wrappedHandler := middleware.WithCORS(

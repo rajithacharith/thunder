@@ -80,6 +80,7 @@ func (s *JWEUserInfoTestSuite) TestGenerateJWEUserInfo_Success() {
 	).Return("compact.jwe.token", (*serviceerror.ServiceError)(nil))
 
 	svc := &userInfoService{
+		cfg:          userInfoTestConfig(),
 		jweService:   mockJWE,
 		jwksResolver: jwksresolver.Initialize(nil),
 		logger:       log.GetLogger(),
@@ -97,6 +98,7 @@ func (s *JWEUserInfoTestSuite) TestGenerateJWEUserInfo_Success() {
 // TestGenerateJWEUserInfo_NoCert verifies missing cert returns server error.
 func (s *JWEUserInfoTestSuite) TestGenerateJWEUserInfo_NoCert() {
 	svc := &userInfoService{
+		cfg:          userInfoTestConfig(),
 		jweService:   jwemock.NewJWEServiceInterfaceMock(s.T()),
 		jwksResolver: jwksresolver.Initialize(nil),
 		logger:       log.GetLogger(),
@@ -124,6 +126,7 @@ func (s *JWEUserInfoTestSuite) TestGenerateJWEUserInfo_EncryptFailure() {
 	).Return("", &serviceerror.InternalServerError)
 
 	svc := &userInfoService{
+		cfg:          userInfoTestConfig(),
 		jweService:   mockJWE,
 		jwksResolver: jwksresolver.Initialize(nil),
 		logger:       log.GetLogger(),
@@ -157,6 +160,7 @@ func (s *JWEUserInfoTestSuite) TestGenerateNestedJWTUserInfo_Success() {
 	).Return("nested.jwe.token", (*serviceerror.ServiceError)(nil))
 
 	svc := &userInfoService{
+		cfg:          userInfoTestConfig(),
 		jwtService:   mockJWT,
 		jweService:   mockJWE,
 		jwksResolver: jwksresolver.Initialize(nil),
@@ -197,6 +201,7 @@ func (s *JWEUserInfoTestSuite) TestGenerateJWEUserInfo_EncryptErrorPropagated() 
 	).Return("", unsupportedErr)
 
 	svc := &userInfoService{
+		cfg:          userInfoTestConfig(),
 		jweService:   mockJWE,
 		jwksResolver: jwksresolver.Initialize(nil),
 		logger:       log.GetLogger(),
@@ -219,7 +224,7 @@ func (s *JWEUserInfoTestSuite) TestGenerateJWSUserInfo_UnsupportedAlg() {
 		mock.Anything, mock.Anything, "ES256",
 	).Return("", int64(0), &jwt.ErrorUnsupportedJWSAlgorithm)
 
-	svc := &userInfoService{jwtService: mockJWT, logger: log.GetLogger()}
+	svc := &userInfoService{cfg: userInfoTestConfig(), jwtService: mockJWT, logger: log.GetLogger()}
 	cfg := &inboundmodel.UserInfoConfig{SigningAlg: "ES256"}
 
 	result, svcErr := svc.generateJWSUserInfo(
