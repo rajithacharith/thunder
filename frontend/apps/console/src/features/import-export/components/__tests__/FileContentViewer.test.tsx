@@ -31,7 +31,7 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({t: mockT}),
 }));
 
-vi.mock('@/lib/MonacoEditor', () => ({
+vi.mock('@monaco-editor/react', () => ({
   default: ({value, language}: {value: string; language: string}) => (
     <div data-testid="monaco-editor" data-language={language}>
       {value}

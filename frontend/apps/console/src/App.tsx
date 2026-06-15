@@ -80,10 +80,14 @@ const AgentCreatePage = lazy(() => import('./features/agents/pages/AgentCreatePa
 const AgentEditPage = lazy(() => import('./features/agents/pages/AgentEditPage'));
 const AgentsListPage = lazy(() => import('./features/agents/pages/AgentsListPage'));
 const ApplicationCreatePage = lazy(() => import('./features/applications/pages/ApplicationCreatePage'));
-const ApplicationEditPage = lazy(() => import('./features/applications/pages/ApplicationEditPage'));
+const ApplicationEditPage = lazy(() =>
+  import('./lib/monaco-setup').then(() => import('./features/applications/pages/ApplicationEditPage')),
+);
 const ApplicationsListPage = lazy(() => import('./features/applications/pages/ApplicationsListPage'));
 const DesignPage = lazy(() => import('./features/design/pages/DesignPage'));
-const LayoutBuilderPage = lazy(() => import('./features/design/pages/LayoutBuilderPage'));
+const LayoutBuilderPage = lazy(() =>
+  import('./lib/monaco-setup').then(() => import('./features/design/pages/LayoutBuilderPage')),
+);
 const ThemeBuilderPage = lazy(() => import('./features/design/pages/ThemeBuilderPage'));
 const ThemeCreatePage = lazy(() => import('./features/design/pages/ThemeCreatePage'));
 const FlowCreatePage = lazy(() => import('./features/flows/pages/FlowCreatePage'));
@@ -92,9 +96,11 @@ const CreateGroupPage = lazy(() => import('./features/groups/pages/CreateGroupPa
 const GroupEditPage = lazy(() => import('./features/groups/pages/GroupEditPage'));
 const GroupsListPage = lazy(() => import('./features/groups/pages/GroupsListPage'));
 const HomePage = lazy(() => import('./features/home/pages/HomePage'));
-const ExportPage = lazy(() => import('./features/import-export/pages/ExportPage'));
-const ImportConfigurationSummaryPage = lazy(
-  () => import('./features/import-export/pages/ImportConfigurationSummaryPage'),
+const ExportPage = lazy(() =>
+  import('./lib/monaco-setup').then(() => import('./features/import-export/pages/ExportPage')),
+);
+const ImportConfigurationSummaryPage = lazy(() =>
+  import('./lib/monaco-setup').then(() => import('./features/import-export/pages/ImportConfigurationSummaryPage')),
 );
 const ImportConfigurationUploadPage = lazy(
   () => import('./features/import-export/pages/ImportConfigurationUploadPage'),
