@@ -200,6 +200,10 @@ jobs:
           make clean
 
       - name: 🔨 Build Frontend
+        env:
+          # Activates the Codecov bundle-analysis plugin in the gate/console Vite
+          # builds, which uploads bundle stats to Codecov via GitHub OIDC.
+          CODECOV_BUNDLE_UPLOAD: "true"
         run: |
           make build_frontend
 

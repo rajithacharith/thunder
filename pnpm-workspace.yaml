@@ -28,6 +28,7 @@ allowBuilds:
 
 catalog:
   '@axe-core/playwright': 4.3.0
+  '@codecov/vite-plugin': 2.0.1
   '@hookform/resolvers': 5.2.2
   '@monaco-editor/react': 4.7.0
   '@rolldown/plugin-babel': '0.2.3'
@@ -153,6 +154,15 @@ packageExtensions:
   '@hookform/resolvers':
     peerDependencies:
       zod: '*'
+
+peerDependencyRules:
+  allowedVersions:
+    # JUSTIFICATION: @codecov/vite-plugin@2.0.1 declares a vite peer range of
+    # 4.x || 5.x || 6.x, but this workspace pins vite to 8.0.16. Bundle analysis
+    # was verified to run correctly against this build (the plugin collects stats
+    # during the build and uploads via OIDC in CI), so Vite 8 is explicitly
+    # allowed for this plugin's vite peer.
+    '@codecov/vite-plugin>vite': '8'
 
 auditConfig:
   ignoreCves: []
