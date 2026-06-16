@@ -169,7 +169,6 @@ const sidebars: SidebarsConfig = {
       ],
     },
 
-
     // Use Cases Section
     {
       type: 'html',
@@ -236,9 +235,7 @@ const sidebars: SidebarsConfig = {
                   label: 'Learn More',
                   collapsible: true,
                   collapsed: true,
-                  items: [
-                    {type: 'doc', id: 'use-cases/b2c/identity-concepts', label: 'Identity Concepts'},
-                  ],
+                  items: [{type: 'doc', id: 'use-cases/b2c/identity-concepts', label: 'Identity Concepts'}],
                 },
               ],
             },
@@ -250,9 +247,24 @@ const sidebars: SidebarsConfig = {
               link: {type: 'doc', id: 'use-cases/b2c/try-in-your-own-app'},
               items: [
                 {type: 'doc', id: 'use-cases/b2c/try-in-your-own-app/add-login', label: 'Login', key: 'own-app-login'},
-                {type: 'doc', id: 'use-cases/b2c/try-in-your-own-app/self-sign-up', label: 'Self Sign-Up', key: 'own-app-self-sign-up'},
-                {type: 'doc', id: 'use-cases/b2c/try-in-your-own-app/profile-section', label: 'View Profile', key: 'own-app-profile-section'},
-                {type: 'doc', id: 'use-cases/b2c/try-in-your-own-app/account-recovery', label: 'Account Recovery', key: 'own-app-account-recovery'},
+                {
+                  type: 'doc',
+                  id: 'use-cases/b2c/try-in-your-own-app/self-sign-up',
+                  label: 'Self Sign-Up',
+                  key: 'own-app-self-sign-up',
+                },
+                {
+                  type: 'doc',
+                  id: 'use-cases/b2c/try-in-your-own-app/profile-section',
+                  label: 'View Profile',
+                  key: 'own-app-profile-section',
+                },
+                {
+                  type: 'doc',
+                  id: 'use-cases/b2c/try-in-your-own-app/account-recovery',
+                  label: 'Account Recovery',
+                  key: 'own-app-account-recovery',
+                },
                 {
                   type: 'doc',
                   id: 'use-cases/b2c/try-in-your-own-app/onboard-internal-users',
@@ -283,7 +295,12 @@ const sidebars: SidebarsConfig = {
               collapsed: true,
               items: [
                 {type: 'doc', id: 'use-cases/ai-agents/overview', label: 'Agent Identity'},
-                {type: 'doc', id: 'use-cases/ai-agents/solution-patterns', label: 'Solution Patterns', key: 'ai-agents-solution-patterns'},
+                {
+                  type: 'doc',
+                  id: 'use-cases/ai-agents/solution-patterns',
+                  label: 'Solution Patterns',
+                  key: 'ai-agents-solution-patterns',
+                },
                 {
                   type: 'category',
                   label: 'Try It Out',
@@ -311,9 +328,7 @@ const sidebars: SidebarsConfig = {
           label: 'Secure Token Service (STS)',
           collapsible: true,
           collapsed: true,
-          items: [
-            {type: 'doc', id: 'use-cases/sts/krakend', label: 'Protect APIs on KrakenD'},
-          ],
+          items: [{type: 'doc', id: 'use-cases/sts/krakend', label: 'Protect APIs on KrakenD'}],
         },
       ],
     },
@@ -438,6 +453,12 @@ const sidebars: SidebarsConfig = {
                   id: 'guides/guides/identity-providers/connect-idp-to-application',
                   label: 'Connect IdP to Application',
                 },
+                {
+                  type: 'doc',
+                  id: 'guides/guides/identity-providers/token-exchange-idp',
+                  label: 'Token Exchange',
+                  key: 'idp-token-exchange',
+                },
               ],
             },
             {
@@ -496,7 +517,7 @@ const sidebars: SidebarsConfig = {
         {
           type: 'doc',
           id: 'guides/guides/trusted-issuer',
-          label: 'Trusted Issuer',
+          label: 'Secure Using a Third-Party IdP',
         },
         {
           type: 'doc',
@@ -580,10 +601,25 @@ const sidebars: SidebarsConfig = {
                   collapsed: true,
                   collapsible: true,
                   items: [
-                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/authorization-code', label: 'Authorization Code'},
-                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/client-credentials', label: 'Client Credentials'},
+                    {
+                      type: 'doc',
+                      id: 'guides/guides/protocols/oauth-oidc/authorization-code',
+                      label: 'Authorization Code',
+                    },
+                    {
+                      type: 'doc',
+                      id: 'guides/guides/protocols/oauth-oidc/client-credentials',
+                      label: 'Client Credentials',
+                    },
                     {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/refresh-token', label: 'Refresh Token'},
-                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/token-exchange', label: 'Token Exchange'},
+                    // Unique `key` avoids a translation-key collision with the "Token Exchange"
+                    // item under Identity Providers (i18n key is derived from the label).
+                    {
+                      type: 'doc',
+                      id: 'guides/guides/protocols/oauth-oidc/token-exchange',
+                      label: 'Token Exchange',
+                      key: 'oauth-token-exchange',
+                    },
                   ],
                 },
                 {
@@ -607,9 +643,21 @@ const sidebars: SidebarsConfig = {
                   items: [
                     {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/pkce', label: 'PKCE'},
                     {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/par', label: 'Pushed Authorization Requests'},
-                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/dpop', label: 'DPoP — Sender-Constrained Tokens'},
-                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/issuer-identification', label: 'Issuer Identification'},
-                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/resource-indicators', label: 'Resource Indicators'},
+                    {
+                      type: 'doc',
+                      id: 'guides/guides/protocols/oauth-oidc/dpop',
+                      label: 'DPoP — Sender-Constrained Tokens',
+                    },
+                    {
+                      type: 'doc',
+                      id: 'guides/guides/protocols/oauth-oidc/issuer-identification',
+                      label: 'Issuer Identification',
+                    },
+                    {
+                      type: 'doc',
+                      id: 'guides/guides/protocols/oauth-oidc/resource-indicators',
+                      label: 'Resource Indicators',
+                    },
                   ],
                 },
                 {
@@ -618,7 +666,11 @@ const sidebars: SidebarsConfig = {
                   collapsed: true,
                   collapsible: true,
                   items: [
-                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/token-introspection', label: 'Token Introspection'},
+                    {
+                      type: 'doc',
+                      id: 'guides/guides/protocols/oauth-oidc/token-introspection',
+                      label: 'Token Introspection',
+                    },
                   ],
                 },
                 {
