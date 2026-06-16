@@ -17,14 +17,23 @@
  */
 
 import {useConfig} from '@thunderid/contexts';
-import {Box, Button, Stack, Typography, Card, IconButton, LinearProgress, ColorSchemeSVG} from '@wso2/oxygen-ui';
+import {
+  Box,
+  Button,
+  Stack,
+  Typography,
+  Card,
+  IconButton,
+  LinearProgress,
+  ColorSchemeSVG,
+  AppBreadcrumbs,
+} from '@wso2/oxygen-ui';
 import {ChevronRight, X, Settings, PlayCircle, CheckCircle} from '@wso2/oxygen-ui-icons-react';
 import {motion} from 'framer-motion';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import HowSolutionWorksIllustration from '../components/HowSolutionWorksIllustration';
-import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 
 const MotionBox = motion.create(Box);
 

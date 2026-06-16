@@ -30,6 +30,7 @@ import {
   Stack,
   Tooltip,
   Typography,
+  AppBreadcrumbs,
 } from '@wso2/oxygen-ui';
 import {
   Bell,
@@ -56,7 +57,6 @@ import ResourceSummaryTable from '../components/ResourceSummaryTable';
 import TemplateVariableDisplay from '../components/TemplateVariableDisplay';
 import type {ConfigSummaryItem, ImportItemOutcome, ProductConfig} from '../models/import-configuration';
 import getEnvFileName from '../utils/getEnvFileName';
-import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 
 function parseEnvData(envData: string | null): Map<string, string> {
   const entries = new Map<string, string>();

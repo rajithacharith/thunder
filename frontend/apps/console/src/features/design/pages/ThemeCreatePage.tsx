@@ -18,7 +18,7 @@
 
 import {useCreateTheme, useGetTheme, useGetThemes, type Theme} from '@thunderid/design';
 import {kebabCase} from '@thunderid/utils';
-import {Alert, Box, Button, CircularProgress, IconButton, LinearProgress, Stack} from '@wso2/oxygen-ui';
+import {Alert, Box, Button, CircularProgress, IconButton, LinearProgress, Stack, AppBreadcrumbs} from '@wso2/oxygen-ui';
 import {X} from '@wso2/oxygen-ui-icons-react';
 import {useState, useCallback, useMemo, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -27,7 +27,6 @@ import GatePreview from '../../../components/GatePreview/GatePreview';
 import ConfigureThemeColor from '../components/create-theme/ConfigureThemeColor';
 import ConfigureThemeName from '../components/create-theme/ConfigureThemeName';
 import buildThemeFromPrimaryColor from '../utils/buildThemeFromPrimaryColor';
-import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 
 type ThemeCreateStep = 'NAME' | 'COLOR';
 

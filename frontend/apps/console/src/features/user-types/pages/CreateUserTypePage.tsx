@@ -17,7 +17,17 @@
  */
 
 import {useLogger} from '@thunderid/logger/react';
-import {Box, Stack, Button, IconButton, LinearProgress, Typography, Alert, Snackbar} from '@wso2/oxygen-ui';
+import {
+  Box,
+  Stack,
+  Button,
+  IconButton,
+  LinearProgress,
+  Typography,
+  Alert,
+  Snackbar,
+  AppBreadcrumbs,
+} from '@wso2/oxygen-ui';
 import {X} from '@wso2/oxygen-ui-icons-react';
 import {useState, useCallback, useMemo} from 'react';
 import type {JSX} from 'react';
@@ -30,7 +40,6 @@ import ConfigureProperties from '../components/create-user-type/ConfigurePropert
 import useUserTypeCreate from '../contexts/UserTypeCreate/useUserTypeCreate';
 import {UserTypeCreateFlowStep} from '../models/user-type-create-flow';
 import type {PropertyDefinition, UserTypeDefinition, CreateUserTypeRequest} from '../types/user-types';
-import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 
 export default function CreateUserTypePage(): JSX.Element {
   const {t} = useTranslation();

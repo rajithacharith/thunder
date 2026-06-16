@@ -35,8 +35,7 @@ import {
 import {
   Bot,
   Building,
-  Download,
-  FolderOpen,
+  FileOutput,
   Group,
   Home,
   Languages,
@@ -45,6 +44,7 @@ import {
   Palette,
   Server,
   ShieldCheck,
+  SquareArrowRightEnter,
   UserRoundCog,
   UsersRound,
   Workflow,
@@ -90,13 +90,13 @@ function SidebarFooterButtons(): ReactNode {
       <Button
         variant="outlined"
         aria-label={t('navigation:pages.openProject')}
-        startIcon={<FolderOpen size={18} />}
+        startIcon={<SquareArrowRightEnter size={18} />}
         onClick={() => void navigate('/import-configuration')}
         sx={ICON_BUTTON_SX}
       />
       <Button
         variant="outlined"
-        startIcon={<Download size={18} />}
+        startIcon={<FileOutput size={18} />}
         onClick={() => void navigate('/export')}
         sx={buttonSx}
       >

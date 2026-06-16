@@ -29,6 +29,7 @@ import {
   IconButton,
   LinearProgress,
   Alert,
+  AppBreadcrumbs,
 } from '@wso2/oxygen-ui';
 import {
   AppWindow,
@@ -53,7 +54,7 @@ import {Trans, useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import WayfinderSampleSetup from '../components/WayfinderSampleSetup';
 import useWelcomeClose from '../hooks/useWelcomeClose';
-import AppBreadcrumbs from '@/components/AppBreadcrumbs';
+
 const MotionBox = motion.create(Box);
 
 const WAYFINDER_SAMPLE_URL = 'http://localhost:5173';

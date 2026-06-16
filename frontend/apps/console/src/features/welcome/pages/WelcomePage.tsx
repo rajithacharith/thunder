@@ -19,13 +19,13 @@
 import {useConfig} from '@thunderid/contexts';
 import {Box, Card, IconButton, Stack, Typography, useTheme} from '@wso2/oxygen-ui';
 import {
-  FolderOpen,
   X,
   ChevronRight,
   PackagePlus,
   Bot,
   Users,
   ExternalLink,
+  SquareArrowRightEnter,
   Lightbulb,
   MCP,
 } from '@wso2/oxygen-ui-icons-react';
@@ -62,7 +62,7 @@ export default function WelcomePage(): JSX.Element {
     },
     {
       id: 'open-import',
-      icon: <FolderOpen size={20} />,
+      icon: <SquareArrowRightEnter size={20} />,
       label: t('common:welcome.start.openImport'),
       description: t('common:welcome.start.openImportDesc', {productName}),
       action: () => {

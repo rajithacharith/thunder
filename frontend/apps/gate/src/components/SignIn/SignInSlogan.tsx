@@ -18,7 +18,7 @@
 
 import {cn} from '@thunderid/utils';
 import {ColorSchemeImage, Stack, Typography} from '@wso2/oxygen-ui';
-import {Cloud, ShieldCheck, Zap, TerminalSquare} from '@wso2/oxygen-ui-icons-react';
+import {Bot, ShieldCheck, Zap} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 
 const items: {
@@ -27,24 +27,20 @@ const items: {
   description: string;
 }[] = [
   {
-    icon: <Cloud className="text-muted-foreground" />,
-    title: 'Flexible Identity Platform',
-    description: 'Centralizes identity management for both on-prem and cloud environments with no protocol lock-in.',
+    icon: <Bot className="text-muted-foreground" />,
+    title: 'Native Agent Identity',
+    description: 'Engineered with native Agent ID to secure end-to-end workflows among humans, agents, and resources.',
   },
   {
     icon: <ShieldCheck className="text-muted-foreground" />,
-    title: 'Zero-trust Security',
-    description: 'Leverage adaptive authentication, OIDC, and OAuth 2.0 to protect every login and session.',
-  },
-  {
-    icon: <TerminalSquare className="text-muted-foreground" />,
-    title: 'Developer-first Experience',
-    description: 'Configure auth flows and manage organizations with powerful SDKs and APIs.',
+    title: 'Post-Quantum Ready',
+    description: 'Built on a post-quantum cryptographic foundation to be inherently resistant to attacks by design.',
   },
   {
     icon: <Zap className="text-muted-foreground" />,
-    title: 'Extensible & Enterprise-ready',
-    description: 'Built for scale, integrates with your stack and CI/CD pipelines, and ready for any cloud.',
+    title: 'Lightweight, High-Performant Runtime',
+    description:
+      'Cloud-native, API-first runtime that integrates into modern CI/CD, GitOps, and containerized workflows.',
   },
 ];
 
