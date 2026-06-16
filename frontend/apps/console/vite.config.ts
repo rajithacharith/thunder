@@ -19,9 +19,10 @@
 import {readFileSync, copyFileSync, existsSync, writeFileSync} from 'fs';
 import {resolve, dirname} from 'path';
 import {fileURLToPath} from 'url';
+import babel from '@rolldown/plugin-babel';
 import {prismjsInjectCore} from '@thunderid/build-plugins/vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';
-import react from '@vitejs/plugin-react';
+import react, {reactCompilerPreset} from '@vitejs/plugin-react';
 import {visualizer} from 'rollup-plugin-visualizer';
 import svgr from 'vite-plugin-svgr';
 import {defineConfig} from 'vitest/config';
@@ -87,13 +88,10 @@ export default defineConfig({
     prismjsInjectCore(),
     basicSsl(),
     svgr(),
-    react({
-      babel: {
-        plugins: [['babel-plugin-react-compiler']],
-      },
+    react(),
+    babel({
+      presets: [reactCompilerPreset()],
     }),
-    // Add visualizer plugin for bundle analysis (only when ANALYZE=true)
-
     ...(ANALYZER_ENABLED
       ? [
           visualizer({

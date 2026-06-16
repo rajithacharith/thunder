@@ -1,6 +1,0 @@
-{
-  "$comment": "Audit advisory IDs to ignore for npm audit (E2E and sample-apps). Frontend CVE ignores are managed via auditConfig.ignoreCves in pnpm-workspace.yaml.",
-  "common": [],
-  "e2e": [],
-  "sample-apps": []
-}

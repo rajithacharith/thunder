@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import humanId from 'human-id';
+import {humanId} from 'human-id';
 
 /**
  * Generates random human-readable identifiers using the `human-id` library

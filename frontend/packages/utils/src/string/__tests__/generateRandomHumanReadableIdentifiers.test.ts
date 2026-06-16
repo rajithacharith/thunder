@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import humanId from 'human-id';
+import {humanId} from 'human-id';
 import {describe, expect, it, vi, beforeEach, afterEach} from 'vitest';
 import generateRandomHumanReadableIdentifiers from '../generateRandomHumanReadableIdentifiers';
 
 vi.mock('human-id', () => ({
-  default: vi.fn(() => 'blue falcon'),
+  humanId: vi.fn(() => 'blue falcon'),
 }));
 
 describe('generateRandomHumanReadableIdentifiers', () => {
@@ -292,7 +292,7 @@ describe('generateRandomHumanReadableIdentifiers', () => {
   describe('Integration', () => {
     it('should work with the real human-id module', async () => {
       const actual = await vi.importActual<typeof import('human-id')>('human-id');
-      vi.mocked(humanId).mockImplementation(actual.default);
+      vi.mocked(humanId).mockImplementation(actual.humanId);
 
       const suggestions = generateRandomHumanReadableIdentifiers();
 
