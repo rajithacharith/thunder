@@ -73,7 +73,7 @@ type ExportServiceInterface interface {
 // exportService implements the ExportServiceInterface.
 type exportService struct {
 	parameterizer parameterizerInterface
-	registry      *ResourceExporterRegistry
+	registry      *resourceExporterRegistry
 }
 
 // newExportService creates a new instance of exportService.
