@@ -913,7 +913,7 @@ Generates a time-limited OTP and sends it to the user's mobile number via SMS. R
 **When to use:** Any step requiring SMS-based verification. Place this executor *before* the OTP input View. Always paired with **Verify SMS OTP**.
 
 **Prerequisites:**
-- An SMS sender must be configured in <ProductName />
+- An SMS sender must be configured in <ProductName />. See [SMS Providers](../../notifications/sms-providers/).
 - `senderId` node property must be set — the executor hard-fails if `senderId` is not configured
 
 **Phone number resolution order:**
@@ -965,7 +965,7 @@ Validates the OTP code the user entered against the code dispatched by Send SMS 
 
 **Prerequisites:**
 - `otpSessionToken` (required) — set in runtime data by Send SMS OTP. Not a configurable node input. The executor fails if absent.
-- An SMS sender must be configured in <ProductName />
+- An SMS sender must be configured in <ProductName />. See [SMS Providers](../../notifications/sms-providers/).
 
 **View pairing:** Must be immediately preceded by the **SMS OTP View**, which collects the OTP code the user received.
 
@@ -1683,7 +1683,7 @@ Sends a transactional email using a configured template. Runs in the background 
 
 **Prerequisites:**
 - `email` (required) — the recipient email address must be resolvable before this executor runs. Not a configurable node input. Resolved in priority order: forwarded data from prior executors (e.g., Generate Invite, Magic Link) → user inputs → user store (looked up via `userID`). The executor fails if none of these resolve to a non-empty address.
-- An email service must be configured in <ProductName /> (Console > Settings > Notifications > Email). The executor returns failure status if no email client is configured.
+- An email service must be configured in <ProductName />. See [SMTP Server Configuration](../../smtp-server/smtp-server-configuration/). The executor returns failure status if no email client is configured.
 
 **Skip delivery:** If `skipDelivery` is set to `true`, the executor returns complete immediately without sending anything. Use this in test environments.
 
@@ -1732,7 +1732,7 @@ Sends a transactional SMS using a configured template and sender. Runs in the ba
 - **Registration flows:** Send welcome or verification SMS after account creation.
 
 **Prerequisites:**
-- An SMS sender must be configured in <ProductName /> (Console > Settings > Notifications > SMS)
+- An SMS sender must be configured in <ProductName />. See [SMS Providers](../../notifications/sms-providers/).
 - `senderId` node property must be set to the configured sender ID
 
 **Recipient resolution order:**

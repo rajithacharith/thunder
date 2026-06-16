@@ -469,6 +469,11 @@ const sidebars: SidebarsConfig = {
               items: [
                 {
                   type: 'doc',
+                  id: 'guides/guides/smtp-server/smtp-server-configuration',
+                  label: 'SMTP Server',
+                },
+                {
+                  type: 'doc',
                   id: 'guides/guides/notifications/sms-providers',
                   label: 'SMS Providers',
                 },
