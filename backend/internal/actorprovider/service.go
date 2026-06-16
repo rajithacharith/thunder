@@ -26,14 +26,17 @@ import (
 	"github.com/thunder-id/thunderid/internal/inboundclient"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
 // actorProvider delegates actor resolution to inbound-client and entity-provider services.
 type actorProvider struct {
 	inboundClient  inboundclient.InboundClientServiceInterface
 	entityProvider entityprovider.EntityProviderInterface
+	logger         *log.Logger
 }
 
+// newActorProvider creates a new actorProvider backed by the given inbound-client and entity-provider.
 func newActorProvider(
 	inboundClient inboundclient.InboundClientServiceInterface,
 	entityProvider entityprovider.EntityProviderInterface,
@@ -41,6 +44,7 @@ func newActorProvider(
 	return &actorProvider{
 		inboundClient:  inboundClient,
 		entityProvider: entityProvider,
+		logger:         log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ActorProvider")),
 	}
 }
 
@@ -53,7 +57,8 @@ func (p *actorProvider) GetOAuthClientByID(
 		if errors.Is(err, inboundclient.ErrInboundClientNotFound) {
 			return nil, &ErrorActorNotFound
 		}
-		return nil, &ErrorActorFetchFailed
+		p.logger.Error(ctx, "Failed to fetch OAuth client", log.String("id", id), log.Error(err))
+		return nil, &serviceerror.InternalServerError
 	}
 	return client, nil
 }
@@ -67,7 +72,8 @@ func (p *actorProvider) GetInboundClientByID(
 		if errors.Is(err, inboundclient.ErrInboundClientNotFound) {
 			return nil, &ErrorActorNotFound
 		}
-		return nil, &ErrorActorFetchFailed
+		p.logger.Error(ctx, "Failed to fetch inbound client", log.String("id", id), log.Error(err))
+		return nil, &serviceerror.InternalServerError
 	}
 	return client, nil
 }

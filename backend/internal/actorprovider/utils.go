@@ -21,32 +21,29 @@ package actorprovider
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	appmodel "github.com/thunder-id/thunderid/internal/application/model"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 )
 
 // BuildApplication assembles the runtime application view read from engineCtx.Application.
 // Entity-agnostic: works for any actor with an inbound-client row.
 func BuildApplication(
 	ctx context.Context, provider ActorProviderInterface, actorID string,
-) (*appmodel.Application, error) {
+) (*appmodel.Application, *serviceerror.ServiceError) {
 	client, svcErr := provider.GetInboundClientByID(ctx, actorID)
 	if svcErr != nil {
-		if svcErr.Code == ErrorActorNotFound.Code {
-			return nil, ErrActorNotFound
-		}
-		return nil, fmt.Errorf("retrieve inbound client: %s", svcErr.Error.DefaultValue)
+		return nil, svcErr
 	}
 	if client == nil {
-		return nil, ErrActorNotFound
+		return nil, &ErrorActorNotFound
 	}
 
 	entity, epErr := provider.GetActor(actorID)
 	if epErr != nil && epErr.Code != entityprovider.ErrorCodeEntityNotFound {
-		return nil, fmt.Errorf("retrieve actor: %w", epErr)
+		return nil, &serviceerror.InternalServerError
 	}
 
 	return assembleApplication(client, entity), nil

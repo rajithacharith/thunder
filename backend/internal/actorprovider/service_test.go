@@ -29,6 +29,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/inboundclient"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/inboundclientmock"
 )
@@ -77,7 +78,7 @@ func (s *ActorProviderTestSuite) TestGetOAuthClientByID_FetchFailed() {
 	client, svcErr := s.provider.GetOAuthClientByID(context.Background(), "client-1")
 
 	s.Nil(client)
-	s.Equal(ErrorActorFetchFailed.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *ActorProviderTestSuite) TestGetInboundClientByID_NotFound() {
@@ -97,7 +98,7 @@ func (s *ActorProviderTestSuite) TestGetInboundClientByID_FetchFailed() {
 	client, svcErr := s.provider.GetInboundClientByID(context.Background(), "app-1")
 
 	s.Nil(client)
-	s.Equal(ErrorActorFetchFailed.Code, svcErr.Code)
+	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *ActorProviderTestSuite) TestGetInboundClientByID_Delegates() {

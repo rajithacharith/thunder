@@ -22,7 +22,6 @@ package flowexec
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/thunder-id/thunderid/internal/actorprovider"
@@ -303,14 +302,14 @@ func (s *flowExecService) setApplicationToContext(engineCtx *EngineContext,
 		return nil
 	}
 
-	app, err := actorprovider.BuildApplication(engineCtx.Context, s.actorProvider, engineCtx.AppID)
-	if err != nil {
-		if errors.Is(err, actorprovider.ErrActorNotFound) {
+	app, svcErr := actorprovider.BuildApplication(engineCtx.Context, s.actorProvider, engineCtx.AppID)
+	if svcErr != nil {
+		if svcErr.Code == actorprovider.ErrorActorNotFound.Code {
 			return &ErrorInvalidAppID
 		}
 		logger.Error(engineCtx.Context, "Failed to build flow application",
-			log.String("appID", engineCtx.AppID), log.Error(err))
-		return &serviceerror.InternalServerError
+			log.String("appID", engineCtx.AppID), log.String("errorCode", svcErr.Code))
+		return svcErr
 	}
 	engineCtx.Application = *app
 	return nil

@@ -19,19 +19,14 @@
 package actorprovider
 
 import (
-	"errors"
-
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 )
 
-// ErrActorNotFound indicates the requested actor or inbound-client row does not exist.
-var ErrActorNotFound = errors.New("actor not found")
-
 // ErrorActorNotFound is returned when the requested actor cannot be resolved.
 var ErrorActorNotFound = serviceerror.ServiceError{
 	Type: serviceerror.ClientErrorType,
-	Code: "SSE-4041",
+	Code: "ACP-1001",
 	Error: core.I18nMessage{
 		Key:          "error.actor_not_found",
 		DefaultValue: "Actor not found",
@@ -39,19 +34,5 @@ var ErrorActorNotFound = serviceerror.ServiceError{
 	ErrorDescription: core.I18nMessage{
 		Key:          "error.actor_not_found_description",
 		DefaultValue: "The requested actor does not exist",
-	},
-}
-
-// ErrorActorFetchFailed is returned when actor resolution fails unexpectedly.
-var ErrorActorFetchFailed = serviceerror.ServiceError{
-	Type: serviceerror.ServerErrorType,
-	Code: "SSE-5002",
-	Error: core.I18nMessage{
-		Key:          "error.actor_fetch_failed",
-		DefaultValue: "Failed to fetch actor",
-	},
-	ErrorDescription: core.I18nMessage{
-		Key:          "error.actor_fetch_failed_description",
-		DefaultValue: "An unexpected error occurred while resolving the actor",
 	},
 }

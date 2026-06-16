@@ -66,9 +66,9 @@ func (s *UtilsTestSuite) TestBuildApplication_Success() {
 	s.mockInbound.On("GetInboundClientByEntityID", mock.Anything, "app-1").Return(client, nil)
 	s.mockEntity.On("GetEntity", "app-1").Return(entity, (*entityprovider.EntityProviderError)(nil))
 
-	app, err := BuildApplication(context.Background(), s.provider, "app-1")
+	app, svcErr := BuildApplication(context.Background(), s.provider, "app-1")
 
-	s.NoError(err)
+	s.Nil(svcErr)
 	s.Equal("app-1", app.ID)
 	s.Equal("My App", app.Name)
 	s.Equal("value", app.Metadata["key"])
@@ -81,10 +81,10 @@ func (s *UtilsTestSuite) TestBuildApplication_NilClient() {
 	mockProvider.EXPECT().GetInboundClientByID(mock.Anything, "app-1").
 		Return((*inboundmodel.InboundClient)(nil), (*serviceerror.ServiceError)(nil))
 
-	app, err := BuildApplication(context.Background(), mockProvider, "app-1")
+	app, svcErr := BuildApplication(context.Background(), mockProvider, "app-1")
 
 	s.Nil(app)
-	s.ErrorIs(err, ErrActorNotFound)
+	s.Equal(ErrorActorNotFound.Code, svcErr.Code)
 }
 
 func (s *UtilsTestSuite) TestBuildApplication_EntityLoadError() {
@@ -94,10 +94,10 @@ func (s *UtilsTestSuite) TestBuildApplication_EntityLoadError() {
 		(*entityprovider.Entity)(nil),
 		entityprovider.NewEntityProviderError("INTERNAL_ERROR", "boom", ""))
 
-	app, err := BuildApplication(context.Background(), s.provider, "app-1")
+	app, svcErr := BuildApplication(context.Background(), s.provider, "app-1")
 
 	s.Nil(app)
-	s.Error(err)
+	s.NotNil(svcErr)
 }
 
 func (s *UtilsTestSuite) TestBuildApplication_EntityNotFound() {
@@ -107,9 +107,9 @@ func (s *UtilsTestSuite) TestBuildApplication_EntityNotFound() {
 		(*entityprovider.Entity)(nil),
 		entityprovider.NewEntityProviderError(entityprovider.ErrorCodeEntityNotFound, "missing", ""))
 
-	app, err := BuildApplication(context.Background(), s.provider, "app-1")
+	app, svcErr := BuildApplication(context.Background(), s.provider, "app-1")
 
-	s.NoError(err)
+	s.Nil(svcErr)
 	s.Equal("app-1", app.ID)
 	s.Equal([]string{"customer"}, app.AllowedUserTypes)
 }
@@ -138,21 +138,21 @@ func (s *UtilsTestSuite) TestBuildApplication_NotFound() {
 	s.mockInbound.On("GetInboundClientByEntityID", mock.Anything, "missing").
 		Return((*inboundmodel.InboundClient)(nil), inboundclient.ErrInboundClientNotFound)
 
-	app, err := BuildApplication(context.Background(), s.provider, "missing")
+	app, svcErr := BuildApplication(context.Background(), s.provider, "missing")
 
 	s.Nil(app)
-	s.ErrorIs(err, ErrActorNotFound)
+	s.Equal(ErrorActorNotFound.Code, svcErr.Code)
 }
 
 func (s *UtilsTestSuite) TestBuildApplication_InboundClientError() {
 	s.mockInbound.On("GetInboundClientByEntityID", mock.Anything, "app-1").
 		Return((*inboundmodel.InboundClient)(nil), errors.New("db error"))
 
-	app, err := BuildApplication(context.Background(), s.provider, "app-1")
+	app, svcErr := BuildApplication(context.Background(), s.provider, "app-1")
 
 	s.Nil(app)
-	s.Error(err)
-	s.False(errors.Is(err, ErrActorNotFound))
+	s.NotNil(svcErr)
+	s.NotEqual(ErrorActorNotFound.Code, svcErr.Code)
 }
 
 func (s *UtilsTestSuite) TestBuildApplicationMetadata() {
@@ -201,9 +201,9 @@ func TestBuildApplication_InboundClientStoreError(t *testing.T) {
 	mockInbound.On("GetInboundClientByEntityID", mock.Anything, "app-1").
 		Return((*inboundmodel.InboundClient)(nil), errors.New("db error"))
 
-	app, err := BuildApplication(context.Background(), provider, "app-1")
+	app, svcErr := BuildApplication(context.Background(), provider, "app-1")
 
 	assert.Nil(t, app)
-	assert.Error(t, err)
-	assert.False(t, errors.Is(err, ErrActorNotFound))
+	assert.NotNil(t, svcErr)
+	assert.NotEqual(t, ErrorActorNotFound.Code, svcErr.Code)
 }

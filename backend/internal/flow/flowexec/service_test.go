@@ -1228,10 +1228,10 @@ func TestBuildApplication_InboundClientNotFound(t *testing.T) {
 	mockInbound.EXPECT().GetInboundClientByEntityID(mock.Anything, "app-x").
 		Return((*inboundmodel.InboundClient)(nil), inboundclient.ErrInboundClientNotFound)
 
-	app, err := actorprovider.BuildApplication(context.Background(), provider, "app-x")
+	app, svcErr := actorprovider.BuildApplication(context.Background(), provider, "app-x")
 
 	assert.Nil(t, app)
-	assert.ErrorIs(t, err, actorprovider.ErrActorNotFound)
+	assert.Equal(t, actorprovider.ErrorActorNotFound.Code, svcErr.Code)
 }
 
 func TestBuildApplication_InboundClientStoreError(t *testing.T) {
@@ -1239,11 +1239,11 @@ func TestBuildApplication_InboundClientStoreError(t *testing.T) {
 	mockInbound.EXPECT().GetInboundClientByEntityID(mock.Anything, "app-x").
 		Return((*inboundmodel.InboundClient)(nil), errors.New("boom"))
 
-	app, err := actorprovider.BuildApplication(context.Background(), provider, "app-x")
+	app, svcErr := actorprovider.BuildApplication(context.Background(), provider, "app-x")
 
 	assert.Nil(t, app)
-	assert.Error(t, err)
-	assert.False(t, errors.Is(err, actorprovider.ErrActorNotFound))
+	assert.NotNil(t, svcErr)
+	assert.NotEqual(t, actorprovider.ErrorActorNotFound.Code, svcErr.Code)
 }
 
 func TestBuildApplication_EntityLoadError(t *testing.T) {
@@ -1254,10 +1254,10 @@ func TestBuildApplication_EntityLoadError(t *testing.T) {
 		(*entityprovider.Entity)(nil),
 		entityprovider.NewEntityProviderError("INTERNAL_ERROR", "boom", ""))
 
-	app, err := actorprovider.BuildApplication(context.Background(), provider, "app-x")
+	app, svcErr := actorprovider.BuildApplication(context.Background(), provider, "app-x")
 
 	assert.Nil(t, app)
-	assert.Error(t, err)
+	assert.NotNil(t, svcErr)
 }
 
 func TestBuildApplication_EntityNotFound_ReturnsAppWithoutEntityFields(t *testing.T) {
@@ -1271,9 +1271,9 @@ func TestBuildApplication_EntityNotFound_ReturnsAppWithoutEntityFields(t *testin
 		(*entityprovider.Entity)(nil),
 		entityprovider.NewEntityProviderError(entityprovider.ErrorCodeEntityNotFound, "missing", ""))
 
-	app, err := actorprovider.BuildApplication(context.Background(), provider, "app-x")
+	app, svcErr := actorprovider.BuildApplication(context.Background(), provider, "app-x")
 
-	assert.NoError(t, err)
+	assert.Nil(t, svcErr)
 	assert.NotNil(t, app)
 	assert.Equal(t, "app-x", app.ID)
 	assert.Equal(t, "", app.Name)
@@ -1299,9 +1299,9 @@ func TestBuildApplication_Success_WithMetadataAndClientID(t *testing.T) {
 		},
 		(*entityprovider.EntityProviderError)(nil))
 
-	app, err := actorprovider.BuildApplication(context.Background(), provider, "app-x")
+	app, svcErr := actorprovider.BuildApplication(context.Background(), provider, "app-x")
 
-	assert.NoError(t, err)
+	assert.Nil(t, svcErr)
 	assert.NotNil(t, app)
 	assert.Equal(t, "Acme", app.Name)
 	assert.Equal(t, map[string]interface{}{"tier": "gold"}, app.Metadata)

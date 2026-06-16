@@ -35,8 +35,6 @@ var defaultMessages = map[string]string{
 	"design.resolve.error.missing_id_description": "The 'id' query parameter is required",
 	"design.resolve.error.unsupported_type": "Unsupported resolve type",
 	"design.resolve.error.unsupported_type_description": "The specified resolve type is not yet supported. Currently only 'APP' type is supported",
-	"error.actor_fetch_failed": "Failed to fetch actor",
-	"error.actor_fetch_failed_description": "An unexpected error occurred while resolving the actor",
 	"error.actor_not_found": "Actor not found",
 	"error.actor_not_found_description": "The requested actor does not exist",
 	"error.agentservice.agent_already_exists_with_client_id": "Client ID already in use",

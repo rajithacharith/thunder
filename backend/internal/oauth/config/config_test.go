@@ -21,15 +21,28 @@ package oauthconfig
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
 )
 
-func TestFromServerRuntime(t *testing.T) {
-	config.ResetServerRuntime()
-	defer config.ResetServerRuntime()
+type OAuthConfigTestSuite struct {
+	suite.Suite
+}
 
+func TestOAuthConfigTestSuite(t *testing.T) {
+	suite.Run(t, new(OAuthConfigTestSuite))
+}
+
+func (s *OAuthConfigTestSuite) SetupTest() {
+	config.ResetServerRuntime()
+}
+
+func (s *OAuthConfigTestSuite) TearDownTest() {
+	config.ResetServerRuntime()
+}
+
+func (s *OAuthConfigTestSuite) TestFromServerRuntime() {
 	cfg := &config.Config{
 		Server: config.ServerConfig{
 			Identifier: "dep-1",
@@ -54,14 +67,14 @@ func TestFromServerRuntime(t *testing.T) {
 		},
 	}
 	err := config.InitializeServerRuntime("/tmp/test-oauth-config", cfg)
-	assert.NoError(t, err)
+	s.Require().NoError(err)
 
 	result := FromServerRuntime()
 
-	assert.Equal(t, "dep-1", result.DeploymentID)
-	assert.Equal(t, "sqlite", result.RuntimeDBType)
-	assert.Equal(t, "https://thunder.io", result.BaseURL)
-	assert.Equal(t, "https://thunder.io", result.JWT.Issuer)
-	assert.Equal(t, int64(600), result.OAuth.PAR.ExpiresIn)
-	assert.Equal(t, "localhost", result.GateClient.Hostname)
+	s.Equal("dep-1", result.DeploymentID)
+	s.Equal("sqlite", result.RuntimeDBType)
+	s.Equal("https://thunder.io", result.BaseURL)
+	s.Equal("https://thunder.io", result.JWT.Issuer)
+	s.Equal(int64(600), result.OAuth.PAR.ExpiresIn)
+	s.Equal("localhost", result.GateClient.Hostname)
 }

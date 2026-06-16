@@ -21,15 +21,28 @@ package flowconfig
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
 )
 
-func TestFromServerRuntime(t *testing.T) {
-	config.ResetServerRuntime()
-	defer config.ResetServerRuntime()
+type FlowConfigTestSuite struct {
+	suite.Suite
+}
 
+func TestFlowConfigTestSuite(t *testing.T) {
+	suite.Run(t, new(FlowConfigTestSuite))
+}
+
+func (s *FlowConfigTestSuite) SetupTest() {
+	config.ResetServerRuntime()
+}
+
+func (s *FlowConfigTestSuite) TearDownTest() {
+	config.ResetServerRuntime()
+}
+
+func (s *FlowConfigTestSuite) TestFromServerRuntime() {
 	cfg := &config.Config{
 		Flow: config.FlowConfig{UserOnboardingFlowHandle: "onboarding-handle"},
 		Server: config.ServerConfig{
@@ -40,11 +53,11 @@ func TestFromServerRuntime(t *testing.T) {
 		},
 	}
 	err := config.InitializeServerRuntime("/tmp/test-flow-config", cfg)
-	assert.NoError(t, err)
+	s.Require().NoError(err)
 
 	result := FromServerRuntime()
 
-	assert.Equal(t, "onboarding-handle", result.Flow.UserOnboardingFlowHandle)
-	assert.Equal(t, "dep-1", result.DeploymentID)
-	assert.Equal(t, "postgres", result.RuntimeDBType)
+	s.Equal("onboarding-handle", result.Flow.UserOnboardingFlowHandle)
+	s.Equal("dep-1", result.DeploymentID)
+	s.Equal("postgres", result.RuntimeDBType)
 }
