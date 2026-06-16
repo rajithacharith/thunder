@@ -83,4 +83,34 @@ var (
 			DefaultValue: "The authentication request is invalid",
 		},
 	}
+
+	// ErrorAmbiguousUser is returned when the underlying provider finds multiple users
+	// matching the provided identifiers.
+	ErrorAmbiguousUser = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "AUTHN-MGR-1009",
+		Error: core.I18nMessage{
+			Key:          "error.authnmgrservice.ambiguous_user",
+			DefaultValue: "Ambiguous user",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.authnmgrservice.ambiguous_user_description",
+			DefaultValue: "Multiple users found matching the provided identifiers",
+		},
+	}
+
+	// ErrorGetEntityReferenceClientError is returned when the underlying provider rejects the
+	// entity reference fetch due to a client-side reason.
+	ErrorGetEntityReferenceClientError = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "AUTHN-MGR-1010",
+		Error: core.I18nMessage{
+			Key:          "error.authnmgrservice.get_entity_reference_client_error",
+			DefaultValue: "Failed to get entity reference",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.authnmgrservice.get_entity_reference_client_error_description",
+			DefaultValue: "The entity reference fetch was rejected by the provider",
+		},
+	}
 )

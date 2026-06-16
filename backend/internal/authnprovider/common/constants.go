@@ -18,13 +18,9 @@
 
 package common
 
-// Error codes.
 const (
-	ErrorCodeSystemError          = "AUP-0001"
-	ErrorCodeAuthenticationFailed = "AUP-0002"
-	ErrorCodeUserNotFound         = "AUP-0003"
-	ErrorCodeInvalidToken         = "AUP-0004"
-	ErrorCodeNotImplemented       = "AUP-0005"
-	ErrorCodeInvalidRequest       = "AUP-0006"
-	ErrorCodeAmbiguousUser        = "AUP-0007"
+	// UserAttributeUserID is the attribute key used to identify the user ID.
+	UserAttributeUserID = "userID"
+	// UserAttributeSub is the attribute key used to identify the subject (sub) claim in authentication results.
+	UserAttributeSub = "sub"
 )

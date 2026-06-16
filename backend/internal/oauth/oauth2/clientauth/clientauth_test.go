@@ -36,6 +36,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/actorprovider"
+	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
 	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/cert"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
@@ -80,7 +81,7 @@ func (suite *ClientAuthTestSuite) SetupTest() {
 	// Tests that need failure override this with a fresh mock.
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, &authnprovidermgr.AuthnBasicResult{UserID: testClientID},
+		Return(authnprovidermgr.AuthUser{}, authnprovidercm.AuthenticatedClaims{"userId": testClientID},
 			(*serviceerror.ServiceError)(nil)).Maybe()
 }
 
@@ -383,7 +384,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidClientSecret() {
 	failAuthnProvider := managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
 	failAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, (*authnprovidermgr.AuthnBasicResult)(nil),
+		Return(authnprovidermgr.AuthUser{}, (authnprovidercm.AuthenticatedClaims)(nil),
 			&serviceerror.ServiceError{
 				Type:             serviceerror.ClientErrorType,
 				Code:             authnprovidermgr.ErrorAuthenticationFailed.Code,

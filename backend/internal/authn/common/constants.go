@@ -48,3 +48,6 @@ const (
 	// FactorInherence represents "something you are" (e.g., biometrics).
 	FactorInherence AuthenticationFactor = "INHERENCE"
 )
+
+// UserAttributeUserID is the user attribute key for user ID in authentication results.
+const UserAttributeUserID = "userID"
