@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import type {CIBAInitiateOptions, CIBAInitiateResponse, CIBAPollOptions} from './ciba';
 import {SignInOptions, SignOutOptions, SignUpOptions} from './config';
 import {
   EmbeddedFlowExecuteRequestConfig,
@@ -99,6 +100,22 @@ export interface ThunderIDClient<T> {
    * @returns User object containing user details.
    */
   getUser(options?: any): Promise<User>;
+
+  /**
+   * Initiates a CIBA backchannel authentication request (CIBA Core 1.0 §7.1).
+   * Exactly one of loginHint, loginHintToken, or idTokenHint must be set.
+   */
+  initiateCIBA(options: CIBAInitiateOptions): Promise<CIBAInitiateResponse>;
+
+  /**
+   * Polls the token endpoint until the user approves, denies, or the request expires.
+   * Applies the mandatory interval increase on slow_down (CIBA Core 1.0 §7.3).
+   * On approval, stores the token in the SDK session and resolves with a TokenResponse.
+   *
+   * @param authReqId - The auth_req_id from initiateCIBA.
+   * @param interval  - Initial polling interval in seconds from initiateCIBA.
+   */
+  pollCIBA(authReqId: string, interval: number, options?: CIBAPollOptions): Promise<TokenResponse>;
 
   /**
    * Fetches the user profile along with its schemas and a flattened version of the profile.

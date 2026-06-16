@@ -58,6 +58,8 @@ export {default as ThunderIDAPIError} from './errors/ThunderIDAPIError';
 export {default as ThunderIDRuntimeError} from './errors/ThunderIDRuntimeError';
 export {ThunderIDAuthException} from './errors/exception';
 
+export type {CIBAInitiateOptions, CIBAInitiateResponse, CIBAErrorCode, CIBAPollOptions} from './models/ciba';
+
 export type {AllOrganizationsApiResponse} from './models/organization';
 export {Platform} from './models/platforms';
 export {
