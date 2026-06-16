@@ -8,7 +8,13 @@ reviews:
   auto_apply_labels: true
   labeling_instructions:
     - label: skip-changelog
-      instructions: "All changed files are under docs/"
+      instructions: |
+        Apply this label when ALL changed files in the PR are under the `docs/` directory.
+        On force-push or re-review, re-apply this label if the condition is still met.
+        Remove this label only if ALL of the following are true:
+          1. Non-docs files are present in the PR.
+          2. The label was previously applied automatically by CodeRabbit (not added manually by a developer).
+        Never remove this label if it was manually added by a developer, regardless of what files are changed.
 
   path_instructions:
     - path: "**/*.go"
