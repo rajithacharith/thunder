@@ -778,7 +778,7 @@ func (us *entityTypeService) resolveEntityTypeOUHandle(
 ) *serviceerror.ServiceError {
 	if entityType.OUID != "" && entityType.OUHandle != "" {
 		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, entityTypeLoggerComponentName))
-		logger.Warn(ctx, "Both ou_id and ou_handle provided for entity type; ou_handle ignored",
+		logger.Warn(ctx, "Both ouId and ouHandle provided for entity type; ouHandle ignored",
 			log.String("entityTypeID", entityType.ID), log.String("name", entityType.Name))
 		return nil
 	}

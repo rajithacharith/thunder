@@ -121,7 +121,7 @@ func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_WithValidato
 	s.Require().NoError(os.MkdirAll(resourceDir, 0750))
 
 	entityYAML := []byte(`id: "item-1"
-ou_id: "ou-1"
+ouId: "ou-1"
 type: "thing"
 category: "user"
 attributes: {}

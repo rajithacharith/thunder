@@ -1696,8 +1696,8 @@ func TestEntityTypeImportExportSymmetry(t *testing.T) {
 	type EntityType struct {
 		ID                    string          `yaml:"id"`
 		Name                  string          `yaml:"name"`
-		OUID                  string          `yaml:"organization_unit_id"`
-		AllowSelfRegistration bool            `yaml:"allow_self_registration,omitempty"`
+		OUID                  string          `yaml:"ouId"`
+		AllowSelfRegistration bool            `yaml:"allowSelfRegistration,omitempty"`
 		Schema                json.RawMessage `yaml:"schema"`
 	}
 
@@ -1705,8 +1705,8 @@ func TestEntityTypeImportExportSymmetry(t *testing.T) {
 	type EntityTypeRequestWithID struct {
 		ID                    string `yaml:"id"`
 		Name                  string `yaml:"name"`
-		OUID                  string `yaml:"organization_unit_id"`
-		AllowSelfRegistration bool   `yaml:"allow_self_registration,omitempty"`
+		OUID                  string `yaml:"ouId"`
+		AllowSelfRegistration bool   `yaml:"allowSelfRegistration,omitempty"`
 		Schema                string `yaml:"schema"` // Note: This is a string, not json.RawMessage
 	}
 
@@ -1856,8 +1856,8 @@ func TestEntityTypeExportFormat(t *testing.T) {
 	type EntityType struct {
 		ID                    string          `yaml:"id"`
 		Name                  string          `yaml:"name"`
-		OUID                  string          `yaml:"organization_unit_id"`
-		AllowSelfRegistration bool            `yaml:"allow_self_registration,omitempty"`
+		OUID                  string          `yaml:"ouId"`
+		AllowSelfRegistration bool            `yaml:"allowSelfRegistration,omitempty"`
 		Schema                json.RawMessage `yaml:"schema"`
 	}
 
@@ -1911,10 +1911,10 @@ func TestResourceServerExport_IdentifierAndOUIDNotParameterized(t *testing.T) {
 		"identifier must not be parameterized")
 
 	// ou_id must be the literal value, not a template variable
-	assert.Contains(t, result, "ou_id: 019ddcf3-c5d8-7375-80e3-c5bf524257c8",
-		"ou_id should be emitted as a literal value")
+	assert.Contains(t, result, "ouId: 019ddcf3-c5d8-7375-80e3-c5bf524257c8",
+		"ouId should be emitted as a literal value")
 	assert.NotContains(t, result, "{{.SYSTEM_OU_ID}}",
-		"ou_id must not be parameterized")
+		"ouId must not be parameterized")
 
 	// no variables should be extracted since rules are nil
 	assert.Empty(t, vars)

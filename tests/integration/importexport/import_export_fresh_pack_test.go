@@ -575,7 +575,7 @@ func (s *GroupRoleResourceImportExportSuite) TestGroupExportIncludesMembers() {
 
 	// Verify exported YAML contains expected group fields
 	s.Assert().Contains(yamlContent, "name: Export Members Group "+s.handleSuffix)
-	s.Assert().Contains(yamlContent, "ou_id: "+s.ouID)
+	s.Assert().Contains(yamlContent, "ouId: "+s.ouID)
 	s.Assert().Contains(yamlContent, "members:")
 	s.Assert().Contains(yamlContent, "id: "+s.userID)
 	s.Assert().Contains(yamlContent, "type: user")
@@ -633,7 +633,7 @@ func (s *GroupRoleResourceImportExportSuite) TestImportGroupWithMembers() {
 
 	yamlContent := fmt.Sprintf(`name: %s
 description: Imported group with a member
-ou_id: %s
+ouId: %s
 members:
   - id: %s
     type: user
@@ -675,7 +675,7 @@ func (s *GroupRoleResourceImportExportSuite) TestImportGroupWithoutMembers() {
 
 	yamlContent := fmt.Sprintf(`name: %s
 description: Imported group without members
-ou_id: %s
+ouId: %s
 `, groupName, s.ouID)
 
 	resp, err := s.importResources(importRequest{
@@ -716,7 +716,7 @@ func (s *GroupRoleResourceImportExportSuite) TestImportGroupUpsertUpdateWithMemb
 	yamlContent := fmt.Sprintf(`id: %s
 name: Upsert Members Group %s
 description: Updated via import
-ou_id: %s
+ouId: %s
 members:
   - id: %s
     type: user
@@ -762,7 +762,7 @@ func (s *GroupRoleResourceImportExportSuite) TestImportRoleWithAssignmentsCreate
 
 	yamlContent := fmt.Sprintf(`name: %s
 description: Imported role with group assignment
-ou_id: %s
+ouId: %s
 permissions: []
 assignments:
   - id: %s
@@ -823,7 +823,7 @@ func (s *GroupRoleResourceImportExportSuite) TestImportRoleWithAssignmentsUpdate
 	yamlContent := fmt.Sprintf(`id: %s
 name: Upsert Role %s
 description: Updated via import with assignment
-ou_id: %s
+ouId: %s
 permissions: []
 assignments:
   - id: %s
@@ -868,7 +868,7 @@ func (s *GroupRoleResourceImportExportSuite) TestImportRoleNoAssignments() {
 
 	yamlContent := fmt.Sprintf(`name: %s
 description: Imported role without assignments
-ou_id: %s
+ouId: %s
 permissions: []
 `, roleName, s.ouID)
 
@@ -906,7 +906,7 @@ func (s *GroupRoleResourceImportExportSuite) TestImportResourceServerWithNestedR
 name: Nested Resource Server %s
 description: Resource server with nested resources
 handle: %s
-ou_id: %s
+ouId: %s
 delimiter: ":"
 resources:
   - name: Parent Resource
@@ -981,7 +981,7 @@ func (s *GroupRoleResourceImportExportSuite) TestImportResourceServerUpsertNeste
 %sname: Upsert Resource Server %s
 description: Resource server for upsert test
 handle: %s
-ou_id: %s
+ouId: %s
 delimiter: ":"
 resources:
   - name: Upsert Parent

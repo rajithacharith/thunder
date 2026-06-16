@@ -3464,7 +3464,7 @@ func TestUserDeclarativeYAML_OUHandleParsed(t *testing.T) {
 	yamlData := []byte("" +
 		"id: user-1\n" +
 		"type: person\n" +
-		"ou_handle: default\n" +
+		"ouHandle: default\n" +
 		"attributes:\n" +
 		"  username: alice\n")
 

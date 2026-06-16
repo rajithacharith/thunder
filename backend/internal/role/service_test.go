@@ -1534,9 +1534,9 @@ func TestRoleDeclarativeYAML_OUHandleParsed(t *testing.T) {
 	yamlData := []byte(`
 id: role-1
 name: Admin
-ou_handle: default
+ouHandle: default
 permissions:
-  - resource_server_id: rs1
+  - resourceServerId: rs1
     permissions:
       - read
 `)

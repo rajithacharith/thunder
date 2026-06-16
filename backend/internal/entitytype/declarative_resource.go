@@ -242,7 +242,7 @@ func validateEntityType(schemaDTO *EntityType) error {
 	}
 
 	if strings.TrimSpace(schemaDTO.OUID) == "" {
-		return fmt.Errorf("organization_unit_id or ou_handle is required for entity type '%s'", schemaDTO.Name)
+		return fmt.Errorf("ouId or ouHandle is required for entity type '%s'", schemaDTO.Name)
 	}
 
 	// Validate schema definition is present and valid.

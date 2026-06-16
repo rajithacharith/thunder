@@ -48,22 +48,22 @@ func (s *ParseToApplicationDTOTestSuite) TestParseToApplicationDTO_AllFieldsPars
 id: test-app-001
 name: Test Application
 description: A test application
-auth_flow_id: flow-123
-registration_flow_id: flow-reg-456
-is_registration_flow_enabled: true
-theme_id: theme-blue
-layout_id: layout-standard
+authFlowId: flow-123
+registrationFlowId: flow-reg-456
+isRegistrationFlowEnabled: true
+themeId: theme-blue
+layoutId: layout-standard
 template: web
 url: https://example.com
-logo_url: https://example.com/logo.png
-tos_uri: https://example.com/tos
-policy_uri: https://example.com/policy
+logoUrl: https://example.com/logo.png
+tosUri: https://example.com/tos
+policyUri: https://example.com/policy
 contacts:
   - admin@example.com
   - support@example.com
 assertion:
-  validity_period: 3600
-  user_attributes:
+  validityPeriod: 3600
+  userAttributes:
     - email
     - username
 certificate:
@@ -72,7 +72,7 @@ certificate:
     -----BEGIN CERTIFICATE-----
     MIIDazCCAlOgAwIBAgI...
     -----END CERTIFICATE-----
-allowed_user_types:
+allowedUserTypes:
   - internal
   - external
 `
@@ -129,8 +129,8 @@ func (s *ParseToApplicationDTOTestSuite) TestParseToApplicationDTO_ThemeAndLayou
 	yamlData := `
 id: themed-app
 name: Themed Application
-theme_id: modern-theme
-layout_id: two-column
+themeId: modern-theme
+layoutId: two-column
 `
 
 	appDTO, err := parseToApplicationDTO([]byte(yamlData))
@@ -146,8 +146,8 @@ func (s *ParseToApplicationDTOTestSuite) TestParseToApplicationDTO_URIFieldsPars
 	yamlData := `
 id: legal-app
 name: Legal Application
-tos_uri: https://example.com/terms-of-service
-policy_uri: https://example.com/privacy-policy
+tosUri: https://example.com/terms-of-service
+policyUri: https://example.com/privacy-policy
 `
 
 	appDTO, err := parseToApplicationDTO([]byte(yamlData))
@@ -197,23 +197,23 @@ func (s *ParseToApplicationDTOTestSuite) TestParseToApplicationDTO_WithOAuthConf
 	yamlData := `
 id: oauth-app
 name: OAuth Application
-auth_flow_id: flow-123
+authFlowId: flow-123
 url: https://example.com
-inbound_auth_config:
+inboundAuthConfig:
   - type: oauth2
     config:
-      client_id: client-123
-      client_secret: secret-456
-      redirect_uris:
+      clientId: client-123
+      clientSecret: secret-456
+      redirectUris:
         - https://example.com/callback
-      grant_types:
+      grantTypes:
         - authorization_code
         - refresh_token
-      response_types:
+      responseTypes:
         - code
-      token_endpoint_auth_method: client_secret_basic
-      pkce_required: true
-      public_client: false
+      tokenEndpointAuthMethod: client_secret_basic
+      pkceRequired: true
+      publicClient: false
       scopes:
         - openid
         - email
@@ -248,10 +248,10 @@ func (s *ParseToApplicationDTOTestSuite) TestParseToApplicationDTO_TemplateAndOt
 id: template-app
 name: Template Application
 template: single-page-app
-theme_id: corporate-theme
-layout_id: horizontal
-tos_uri: https://example.com/tos
-policy_uri: https://example.com/policy
+themeId: corporate-theme
+layoutId: horizontal
+tosUri: https://example.com/tos
+policyUri: https://example.com/policy
 contacts:
   - admin@example.com
 `
@@ -288,12 +288,12 @@ func (s *ParseToApplicationDTOTestSuite) TestParseToApplicationDTO_PreservesOrde
 	yamlData := `
 id: type-test-app
 name: Type Test App
-is_registration_flow_enabled: false
-theme_id: ""
-layout_id: default
+isRegistrationFlowEnabled: false
+themeId: ""
+layoutId: default
 contacts:
   - test@example.com
-allowed_user_types:
+allowedUserTypes:
   - internal
   - external
   - guest
@@ -332,12 +332,12 @@ func (s *ParseToApplicationDTOTestSuite) TestMakeAppEntityParser_PublicClientWit
 	yamlData := []byte(`
 id: public-oauth-app
 name: Public OAuth Application
-inbound_auth_config:
+inboundAuthConfig:
   - type: oauth2
     config:
-      client_id: public-client-id-123
-      pkce_required: true
-      public_client: true
+      clientId: public-client-id-123
+      pkceRequired: true
+      publicClient: true
 `)
 
 	mockAppService := NewApplicationServiceInterfaceMock(s.T())
@@ -370,11 +370,11 @@ func (s *ParseToApplicationDTOTestSuite) TestMakeAppEntityParser_ConfidentialCli
 	yamlData := []byte(`
 id: confidential-oauth-app
 name: Confidential OAuth Application
-inbound_auth_config:
+inboundAuthConfig:
   - type: oauth2
     config:
-      client_id: confidential-client-id-123
-      client_secret: confidential-secret-456
+      clientId: confidential-client-id-123
+      clientSecret: confidential-secret-456
 `)
 
 	mockAppService := NewApplicationServiceInterfaceMock(s.T())
@@ -412,10 +412,10 @@ func (s *ParseToApplicationDTOTestSuite) TestMakeAppEntityParser_UsesValidatedGe
 	yamlData := []byte(`
 id: generated-credentials-app
 name: Generated Credentials App
-inbound_auth_config:
+inboundAuthConfig:
   - type: oauth2
     config:
-      grant_types:
+      grantTypes:
         - client_credentials
 `)
 
@@ -459,13 +459,13 @@ func (s *ParseToApplicationDTOTestSuite) TestMakeAppEntityParser_SelectsOAuthCon
 	yamlData := []byte(`
 id: mixed-inbound-app
 name: Mixed Inbound App
-inbound_auth_config:
+inboundAuthConfig:
   - type: saml
     config: {}
   - type: oauth2
     config:
-      client_id: oauth-client-id
-      client_secret: oauth-client-secret
+      clientId: oauth-client-id
+      clientSecret: oauth-client-secret
 `)
 
 	mockAppService := NewApplicationServiceInterfaceMock(s.T())
@@ -506,7 +506,7 @@ inbound_auth_config:
 }
 
 func (s *ParseToApplicationDTOTestSuite) TestParseToApplicationDTO_OUHandlePassedThrough() {
-	yamlData := []byte("id: app-1\nname: My App\nou_handle: default\n")
+	yamlData := []byte("id: app-1\nname: My App\nouHandle: default\n")
 
 	appDTO, err := parseToApplicationDTO(yamlData)
 

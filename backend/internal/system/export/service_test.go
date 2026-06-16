@@ -273,9 +273,9 @@ func (suite *ExportServiceTestSuite) TestExportResources_CompleteOAuthApplicatio
 	assert.Equal(suite.T(), "OAuth_Test_App_oauth-app-id.yaml", file.FileName)
 	assert.Equal(suite.T(), "applications", file.FolderPath)
 	assert.Contains(suite.T(), file.Content, "name: OAuth Test App")
-	assert.Contains(suite.T(), file.Content, "client_id: {{.O_AUTH_TEST_APP_CLIENT_ID}}")
-	assert.Contains(suite.T(), file.Content, "client_secret: {{.O_AUTH_TEST_APP_CLIENT_SECRET}}")
-	assert.Contains(suite.T(), file.Content, "redirect_uris:")
+	assert.Contains(suite.T(), file.Content, "clientId: {{.O_AUTH_TEST_APP_CLIENT_ID}}")
+	assert.Contains(suite.T(), file.Content, "clientSecret: {{.O_AUTH_TEST_APP_CLIENT_SECRET}}")
+	assert.Contains(suite.T(), file.Content, "redirectUris:")
 	assert.Contains(suite.T(), file.Content, "{{- range .O_AUTH_TEST_APP_REDIRECT_URIS}}")
 	assert.NotNil(suite.T(), result.EnvFile)
 	assert.Equal(suite.T(), ".env", result.EnvFile.FileName)
@@ -847,7 +847,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Proper
 	assert.Contains(suite.T(), yamlContent, "name: redirect_uri")
 
 	// Verify secret flags are preserved (YAML uses 'is_secret' field name)
-	assert.Contains(suite.T(), yamlContent, "is_secret: true")
+	assert.Contains(suite.T(), yamlContent, "isSecret: true")
 
 	// Verify basic IDP fields
 	assert.Contains(suite.T(), yamlContent, "name: Export Test IDP")
@@ -904,8 +904,8 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Proper
 	assert.Contains(suite.T(), yamlContent, "value:")
 
 	// Verify secret flags are preserved for secret properties
-	// Count occurrences of "is_secret: true" - should be 2 (client_secret and api_key)
-	secretCount := strings.Count(yamlContent, "is_secret: true")
+	// Count occurrences of "isSecret: true" - should be 2 (client_secret and api_key)
+	secretCount := strings.Count(yamlContent, "isSecret: true")
 	assert.Equal(suite.T(), 2, secretCount, "Should have exactly 2 secret properties")
 
 	// Verify the properties section exists and has proper structure

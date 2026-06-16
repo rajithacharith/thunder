@@ -114,13 +114,13 @@ provider: "twilio"
 properties:
   - name: "account_sid"
     value: "AC00112233445566778899aabbccddeeff"
-    is_secret: true
+    isSecret: true
   - name: "auth_token"
     value: "test-auth-token"
-    is_secret: true
+    isSecret: true
   - name: "sender_id"
     value: "+15551234567"
-    is_secret: false
+    isSecret: false
 `
 	err = os.WriteFile(filepath.Join(senderDir, "twilio-sender.yaml"), []byte(twilioYAML), 0600)
 	suite.NoError(err)
@@ -132,13 +132,13 @@ provider: "vonage"
 properties:
   - name: "api_key"
     value: "test-api-key"
-    is_secret: true
+    isSecret: true
   - name: "api_secret"
     value: "test-api-secret"
-    is_secret: true
+    isSecret: true
   - name: "sender_id"
     value: "VonageTest"
-    is_secret: false
+    isSecret: false
 `
 	err = os.WriteFile(filepath.Join(senderDir, "vonage-sender.yaml"), []byte(vonageYAML), 0600)
 	suite.NoError(err)
@@ -332,13 +332,13 @@ provider: "twilio"
 properties:
   - name: "account_sid"
     value: "{{.TWILIO_ACCOUNT_SID}}"
-    is_secret: false
+    isSecret: false
   - name: "auth_token"
     value: "{{.TWILIO_AUTH_TOKEN}}"
-    is_secret: true
+    isSecret: true
   - name: "sender_id"
     value: "{{.TWILIO_FROM_NUMBER}}"
-    is_secret: false
+    isSecret: false
 `
 
 	sender, err := parseToNotificationSenderDTO([]byte(yamlData))
@@ -428,13 +428,13 @@ provider: "vonage"
 properties:
   - name: "api_key"
     value: "{{.VONAGE_API_KEY}}"
-    is_secret: false
+    isSecret: false
   - name: "api_secret"
     value: "{{.VONAGE_API_SECRET}}"
-    is_secret: true
+    isSecret: true
   - name: "sender_id"
     value: "{{.VONAGE_FROM_NUMBER}}"
-    is_secret: false
+    isSecret: false
 `
 
 	sender, err := parseToNotificationSenderDTO([]byte(yamlData))
@@ -561,7 +561,7 @@ provider: "twilio"
 properties:
   - name: "account_sid"
     value: "test"
-    is_secret: false
+    isSecret: false
 `
 	err = os.WriteFile(filepath.Join(senderDir, "invalid-sender.yaml"), []byte(invalidSenderYAML), 0600)
 	suite.NoError(err)

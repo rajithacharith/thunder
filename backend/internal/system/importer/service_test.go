@@ -730,7 +730,7 @@ func TestImportResources_CreateApplication(t *testing.T) {
 	svc := newTestImportService(nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
-		Content: "id: app-1\nname: My App\nauth_flow_id: flow-1\n",
+		Content: "id: app-1\nname: My App\nauthFlowId: flow-1\n",
 		Options: &ImportOptions{Upsert: boolPtr(true), ContinueOnError: boolPtr(true), Target: importTargetRuntime},
 	})
 
@@ -749,7 +749,7 @@ func TestImportResources_UpdateApplication(t *testing.T) {
 	})
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
-		Content: "id: app-1\nname: My App\nauth_flow_id: flow-1\n",
+		Content: "id: app-1\nname: My App\nauthFlowId: flow-1\n",
 		Options: &ImportOptions{Upsert: boolPtr(true), ContinueOnError: boolPtr(true), Target: importTargetRuntime},
 	})
 
@@ -765,7 +765,7 @@ func TestImportResources_DryRunCreateApplicationWithoutWrite(t *testing.T) {
 	svc := newTestImportService(appSvc)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
-		Content: "id: app-1\nname: My App\nauth_flow_id: flow-1\n",
+		Content: "id: app-1\nname: My App\nauthFlowId: flow-1\n",
 		DryRun:  true,
 		Options: &ImportOptions{Upsert: boolPtr(true), ContinueOnError: boolPtr(true), Target: importTargetRuntime},
 	})
@@ -787,7 +787,7 @@ func TestImportResources_DryRunUpdateApplicationWithoutWrite(t *testing.T) {
 	svc := newTestImportService(appSvc)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
-		Content: "id: app-1\nname: My App\nauth_flow_id: flow-1\n",
+		Content: "id: app-1\nname: My App\nauthFlowId: flow-1\n",
 		DryRun:  true,
 		Options: &ImportOptions{Upsert: boolPtr(true), ContinueOnError: boolPtr(true), Target: importTargetRuntime},
 	})
@@ -804,7 +804,7 @@ func TestImportResources_DryRunValidationFailure(t *testing.T) {
 	svc := newTestImportService(nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
-		Content: "id:\n- app-1\nname: My App\nauth_flow_id: flow-1\n",
+		Content: "id:\n- app-1\nname: My App\nauthFlowId: flow-1\n",
 		DryRun:  true,
 		Options: &ImportOptions{Upsert: boolPtr(true), ContinueOnError: boolPtr(true), Target: importTargetRuntime},
 	})
@@ -848,7 +848,7 @@ func TestImportResources_DefaultsToRuntimeTarget(t *testing.T) {
 	svc := newTestImportService(appSvc)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
-		Content: "id: app-1\nname: My App\nauth_flow_id: flow-1\n",
+		Content: "id: app-1\nname: My App\nauthFlowId: flow-1\n",
 	})
 
 	require.Nil(t, err)
@@ -865,8 +865,8 @@ func TestImportResources_PreservesExplicitFalseOptions(t *testing.T) {
 
 	falseVal := false
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
-		Content: "id: app-1\nname: My App\nauth_flow_id: flow-1\n" +
-			"---\nid: app-2\nname: My App 2\nauth_flow_id: flow-1\n",
+		Content: "id: app-1\nname: My App\nauthFlowId: flow-1\n" +
+			"---\nid: app-2\nname: My App 2\nauthFlowId: flow-1\n",
 		Options: &ImportOptions{
 			Upsert:          &falseVal,
 			ContinueOnError: &falseVal,
@@ -885,7 +885,7 @@ func TestImportResources_ApplicationAdapterNotConfigured(t *testing.T) {
 	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
-		Content: "id: app-1\nname: My App\nauth_flow_id: flow-1\n",
+		Content: "id: app-1\nname: My App\nauthFlowId: flow-1\n",
 	})
 
 	require.Nil(t, err)
@@ -904,7 +904,7 @@ func TestImportResources_RoleImportIncludesAssignments(t *testing.T) {
 	content := strings.Join([]string{
 		"id: role-1",
 		"name: Admin",
-		"ou_id: ou-1",
+		"ouId: ou-1",
 		"permissions:",
 		"  - resource: api",
 		"    actions:",
@@ -934,7 +934,7 @@ func TestImportResources_GroupImportIncludesMembers(t *testing.T) {
 	content := strings.Join([]string{
 		"id: group-new",
 		"name: Engineers",
-		"ou_id: ou-1",
+		"ouId: ou-1",
 		"members:",
 		"  - id: user-1",
 		"    type: user",
@@ -961,7 +961,7 @@ func TestImportResources_RoleImportNoAssignments(t *testing.T) {
 	content := strings.Join([]string{
 		"id: role-new",
 		"name: Viewer",
-		"ou_id: ou-1",
+		"ouId: ou-1",
 		"permissions: []",
 		"",
 	}, "\n")
@@ -983,7 +983,7 @@ func TestImportResources_RoleUpsertUpdateIncludesAssignments(t *testing.T) {
 	content := strings.Join([]string{
 		"id: role-1",
 		"name: Admin",
-		"ou_id: ou-1",
+		"ouId: ou-1",
 		"permissions: []",
 		"assignments:",
 		"  - type: group",
@@ -1017,7 +1017,7 @@ func TestImportResources_RoleAssignmentFailureReturnsError(t *testing.T) {
 	content := strings.Join([]string{
 		"id: role-1",
 		"name: Admin",
-		"ou_id: ou-1",
+		"ouId: ou-1",
 		"permissions: []",
 		"assignments:",
 		"  - type: group",
@@ -1039,7 +1039,7 @@ func TestImportResources_GroupImportNoMembers(t *testing.T) {
 	content := strings.Join([]string{
 		"id: group-new",
 		"name: Empty",
-		"ou_id: ou-1",
+		"ouId: ou-1",
 		"",
 	}, "\n")
 
@@ -1059,7 +1059,7 @@ func TestImportResources_GroupUpsertUpdateIncludesMembers(t *testing.T) {
 	content := strings.Join([]string{
 		"id: group-1",
 		"name: Admins",
-		"ou_id: ou-1",
+		"ouId: ou-1",
 		"members:",
 		"  - id: u-99",
 		"    type: user",
@@ -1091,7 +1091,7 @@ func TestImportResources_GroupMemberFailureReturnsError(t *testing.T) {
 	content := strings.Join([]string{
 		"id: group-new",
 		"name: Engineers",
-		"ou_id: ou-1",
+		"ouId: ou-1",
 		"members:",
 		"  - id: u1",
 		"    type: user",
@@ -1112,7 +1112,7 @@ func TestImportResources_UserCredentialFailureRollsBackCreate(t *testing.T) {
 	content := strings.Join([]string{
 		"id: user-1",
 		"type: customer",
-		"ou_id: ou-1",
+		"ouId: ou-1",
 		"attributes:",
 		"  username: alice",
 		"credentials:",
@@ -1251,8 +1251,8 @@ func TestImportResources_ApplicationFlowReferencesAreRemappedFromFlowAlias(t *te
 		"---",
 		"# resource_type: application",
 		"name: My App",
-		"auth_flow_id: auth-flow-1",
-		"registration_flow_id: missing-registration-flow-id",
+		"authFlowId: auth-flow-1",
+		"registrationFlowId: missing-registration-flow-id",
 		"",
 	}, "\n")
 
@@ -1308,7 +1308,7 @@ func TestImportResources_EntityTypeUpsertCreatePreservesID(t *testing.T) {
 	content := strings.Join([]string{
 		"id: usrs-123",
 		"name: customer",
-		"organization_unit_id: ou-1",
+		"ouId: ou-1",
 		"schema:",
 		"  type: object",
 		"  properties: {}",
@@ -1358,7 +1358,7 @@ func TestImportResources_UpsertCreatePreservesIDsAcrossResourceTypes(t *testing.
 		"---",
 		"id: usrs-123",
 		"name: customer",
-		"organization_unit_id: ou-123",
+		"ouId: ou-123",
 		"schema:",
 		"  type: object",
 		"  properties: {}",
@@ -1420,7 +1420,7 @@ func TestImportResources_EntityTypeOUHandlePassedToService(t *testing.T) {
 	content := strings.Join([]string{
 		"id: usrs-123",
 		"name: customer",
-		"ou_handle: default",
+		"ouHandle: default",
 		"schema:",
 		"  type: object",
 		"  properties: {}",
@@ -1441,21 +1441,21 @@ func TestImportResources_StripsClientSecretForPublicClientWithNoneAuthMethod(t *
 	content := strings.Join([]string{
 		"id: app-1",
 		"name: My App",
-		"auth_flow_id: flow-1",
-		"inbound_auth_config:",
+		"authFlowId: flow-1",
+		"inboundAuthConfig:",
 		"  - type: oauth2",
 		"    config:",
-		"      client_id: app-client",
-		"      client_secret: should-be-removed",
-		"      redirect_uris:",
+		"      clientId: app-client",
+		"      clientSecret: should-be-removed",
+		"      redirectUris:",
 		"        - https://localhost:3000/callback",
-		"      grant_types:",
+		"      grantTypes:",
 		"        - authorization_code",
-		"      response_types:",
+		"      responseTypes:",
 		"        - code",
-		"      token_endpoint_auth_method: none",
-		"      pkce_required: true",
-		"      public_client: true",
+		"      tokenEndpointAuthMethod: none",
+		"      pkceRequired: true",
+		"      publicClient: true",
 		"",
 	}, "\n")
 	appSvc, resp, err := runOAuthClientSecretImport(t, content)
@@ -1473,20 +1473,20 @@ func TestImportResources_KeepsClientSecretForConfidentialClient(t *testing.T) {
 	content := strings.Join([]string{
 		"id: app-1",
 		"name: My App",
-		"auth_flow_id: flow-1",
-		"inbound_auth_config:",
+		"authFlowId: flow-1",
+		"inboundAuthConfig:",
 		"  - type: oauth2",
 		"    config:",
-		"      client_id: app-client",
-		"      client_secret: keep-me",
-		"      redirect_uris:",
+		"      clientId: app-client",
+		"      clientSecret: keep-me",
+		"      redirectUris:",
 		"        - https://localhost:3000/callback",
-		"      grant_types:",
+		"      grantTypes:",
 		"        - authorization_code",
-		"      response_types:",
+		"      responseTypes:",
 		"        - code",
-		"      token_endpoint_auth_method: client_secret_basic",
-		"      public_client: false",
+		"      tokenEndpointAuthMethod: client_secret_basic",
+		"      publicClient: false",
 		"",
 	}, "\n")
 	appSvc, resp, err := runOAuthClientSecretImport(t, content)
@@ -1526,7 +1526,7 @@ func TestImportResources_FileTargetReturnsError(t *testing.T) {
 	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
-		Content: "id: app-1\nname: My App\nauth_flow_id: flow-1\n",
+		Content: "id: app-1\nname: My App\nauthFlowId: flow-1\n",
 		Options: &ImportOptions{Upsert: boolPtr(true), ContinueOnError: boolPtr(true), Target: importTargetFile},
 	})
 
@@ -1551,7 +1551,7 @@ func TestDeleteResource_RemovesDeclarativeFile(t *testing.T) {
 	require.NoError(t, os.MkdirAll(resourceDir, 0o750))
 	require.NoError(t, os.WriteFile(
 		filepath.Join(resourceDir, "app-1.yaml"),
-		[]byte("# resource_type: application\nid: app-1\nname: My App\nauth_flow_id: flow-1\n"),
+		[]byte("# resource_type: application\nid: app-1\nname: My App\nauthFlowId: flow-1\n"),
 		0o600,
 	))
 
@@ -1577,7 +1577,7 @@ func TestImportResources_ApplicationOUHandlePassedToService(t *testing.T) {
 		Content: strings.Join([]string{
 			"# resource_type: application",
 			"name: My App",
-			"ou_handle: default",
+			"ouHandle: default",
 			"",
 		}, "\n"),
 	})
@@ -1597,7 +1597,7 @@ func TestImportResources_ApplicationAuthFlowHandlePassedToService(t *testing.T) 
 		Content: strings.Join([]string{
 			"# resource_type: application",
 			"name: My App",
-			"auth_flow_handle: login-flow",
+			"authFlowHandle: login-flow",
 			"",
 		}, "\n"),
 	})
@@ -1617,8 +1617,8 @@ func TestImportResources_ApplicationRegistrationFlowHandlePassedToService(t *tes
 		Content: strings.Join([]string{
 			"# resource_type: application",
 			"name: My App",
-			"registration_flow_handle: reg-flow",
-			"is_registration_flow_enabled: true",
+			"registrationFlowHandle: reg-flow",
+			"isRegistrationFlowEnabled: true",
 			"",
 		}, "\n"),
 	})
@@ -1639,8 +1639,8 @@ func TestImportResources_ApplicationRecoveryFlowHandlePassedToService(t *testing
 		Content: strings.Join([]string{
 			"# resource_type: application",
 			"name: My App",
-			"recovery_flow_handle: recovery-flow",
-			"is_recovery_flow_enabled: true",
+			"recoveryFlowHandle: recovery-flow",
+			"isRecoveryFlowEnabled: true",
 			"",
 		}, "\n"),
 	})
@@ -1662,8 +1662,8 @@ func TestImportResources_DryRunSkipsApplicationHandleResolution(t *testing.T) {
 		Content: strings.Join([]string{
 			"# resource_type: application",
 			"name: My App",
-			"ou_handle: nonexistent-ou",
-			"auth_flow_handle: nonexistent-flow",
+			"ouHandle: nonexistent-ou",
+			"authFlowHandle: nonexistent-flow",
 			"",
 		}, "\n"),
 		DryRun: true,
@@ -1724,7 +1724,7 @@ func (f *fakeAgentService) UpdateAgent(
 }
 
 const agentYAML = "# resource_type: agent\n" +
-	"id: agent-1\ntype: default\nou_id: root\nname: Test Agent\ndescription: desc\n"
+	"id: agent-1\ntype: default\nouId: root\nname: Test Agent\ndescription: desc\n"
 
 func TestImportAgent_Create(t *testing.T) {
 	agentSvc := &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{}}
@@ -1971,7 +1971,7 @@ func TestImportAgent_FlowAliasRemapsFlowIDs(t *testing.T) {
 			flowType:     "AUTHENTICATION",
 			agentID:      "agent-2",
 			agentName:    "Flow Agent",
-			agentFlowKey: "auth_flow_id",
+			agentFlowKey: "authFlowId",
 			getFlowID:    func(r *agentmodel.Agent) string { return r.AuthFlowID },
 		},
 		{
@@ -1982,7 +1982,7 @@ func TestImportAgent_FlowAliasRemapsFlowIDs(t *testing.T) {
 			flowType:     "REGISTRATION",
 			agentID:      "agent-3",
 			agentName:    "Reg Agent",
-			agentFlowKey: "registration_flow_id",
+			agentFlowKey: "registrationFlowId",
 			getFlowID:    func(r *agentmodel.Agent) string { return r.RegistrationFlowID },
 		},
 	}
@@ -2007,7 +2007,7 @@ func TestImportAgent_FlowAliasRemapsFlowIDs(t *testing.T) {
 				"# resource_type: agent",
 				"id: " + tc.agentID,
 				"type: default",
-				"ou_id: root",
+				"ouId: root",
 				"name: " + tc.agentName,
 				tc.agentFlowKey + ": " + tc.flowID,
 				"",
@@ -2032,15 +2032,15 @@ func TestImportAgent_StripsClientSecretForPublicAgentWithNoneAuthMethod(t *testi
 		"# resource_type: agent",
 		"id: agent-pub",
 		"type: default",
-		"ou_id: root",
+		"ouId: root",
 		"name: Public Agent",
-		"inbound_auth_config:",
+		"inboundAuthConfig:",
 		"  - type: oauth2",
 		"    config:",
-		"      client_id: pub-client",
-		"      client_secret: should-be-removed",
-		"      token_endpoint_auth_method: none",
-		"      public_client: true",
+		"      clientId: pub-client",
+		"      clientSecret: should-be-removed",
+		"      tokenEndpointAuthMethod: none",
+		"      publicClient: true",
 		"",
 	}, "\n")
 
@@ -2121,7 +2121,7 @@ func TestImportRole_OUHandleResolved(t *testing.T) {
 	content := strings.Join([]string{
 		"id: role-new",
 		"name: Viewer",
-		"ou_handle: default",
+		"ouHandle: default",
 		"permissions: []",
 		"",
 	}, "\n")
@@ -2146,7 +2146,7 @@ func TestImportRole_OUHandleNotFound(t *testing.T) {
 	content := strings.Join([]string{
 		"id: role-new",
 		"name: Viewer",
-		"ou_handle: missing",
+		"ouHandle: missing",
 		"permissions: []",
 		"",
 	}, "\n")
@@ -2170,8 +2170,8 @@ func TestImportRole_OUIDWinsOverHandle(t *testing.T) {
 	content := strings.Join([]string{
 		"id: role-new",
 		"name: Viewer",
-		"ou_id: ou-explicit",
-		"ou_handle: default",
+		"ouId: ou-explicit",
+		"ouHandle: default",
 		"permissions: []",
 		"",
 	}, "\n")
@@ -2197,7 +2197,7 @@ func TestImportGroup_OUHandleResolved(t *testing.T) {
 	content := strings.Join([]string{
 		"id: group-new",
 		"name: Engineers",
-		"ou_handle: default",
+		"ouHandle: default",
 		"",
 	}, "\n")
 
@@ -2220,7 +2220,7 @@ func TestImportGroup_OUHandleNotFound(t *testing.T) {
 	content := strings.Join([]string{
 		"id: group-new",
 		"name: Engineers",
-		"ou_handle: missing",
+		"ouHandle: missing",
 		"",
 	}, "\n")
 
@@ -2242,8 +2242,8 @@ func TestImportGroup_OUIDWinsOverHandle(t *testing.T) {
 	content := strings.Join([]string{
 		"id: group-new",
 		"name: Engineers",
-		"ou_id: ou-explicit",
-		"ou_handle: default",
+		"ouId: ou-explicit",
+		"ouHandle: default",
 		"",
 	}, "\n")
 
@@ -2268,7 +2268,7 @@ func TestImportUser_OUHandleResolved(t *testing.T) {
 	content := strings.Join([]string{
 		"id: user-new",
 		"type: person",
-		"ou_handle: default",
+		"ouHandle: default",
 		"attributes:",
 		"  username: alice",
 		"",
@@ -2296,7 +2296,7 @@ func TestImportUser_OUHandleNotFound(t *testing.T) {
 	content := strings.Join([]string{
 		"id: user-new",
 		"type: person",
-		"ou_handle: missing",
+		"ouHandle: missing",
 		"attributes:",
 		"  username: alice",
 		"",
@@ -2320,8 +2320,8 @@ func TestImportUser_OUIDWinsOverHandle(t *testing.T) {
 	content := strings.Join([]string{
 		"id: user-new",
 		"type: person",
-		"ou_id: ou-explicit",
-		"ou_handle: default",
+		"ouId: ou-explicit",
+		"ouHandle: default",
 		"attributes:",
 		"  username: alice",
 		"",
@@ -2354,7 +2354,7 @@ func TestImportResourceServer_OUHandleResolved(t *testing.T) {
 		"name: Test RS",
 		"handle: test-rs",
 		"identifier: test-rs",
-		"ou_handle: default",
+		"ouHandle: default",
 		"resources: []",
 		"",
 	}, "\n")
@@ -2384,7 +2384,7 @@ func TestImportResourceServer_OUHandleNotFound(t *testing.T) {
 		"name: Test RS",
 		"handle: test-rs",
 		"identifier: test-rs",
-		"ou_handle: missing",
+		"ouHandle: missing",
 		"resources: []",
 		"",
 	}, "\n")
@@ -2410,8 +2410,8 @@ func TestImportResourceServer_OUIDWinsOverHandle(t *testing.T) {
 		"name: Test RS",
 		"handle: test-rs",
 		"identifier: test-rs",
-		"ou_id: ou-explicit",
-		"ou_handle: default",
+		"ouId: ou-explicit",
+		"ouHandle: default",
 		"resources: []",
 		"",
 	}, "\n")
@@ -2440,7 +2440,7 @@ func TestImportResources_IDPPropertiesArePassedToService(t *testing.T) {
 		"- name: client_id",
 		"  value: my-client-id",
 		"- name: client_secret",
-		"  is_secret: true",
+		"  isSecret: true",
 		"",
 	}, "\n")
 

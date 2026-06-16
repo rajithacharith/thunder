@@ -486,7 +486,7 @@ func (rs *roleService) ResolveRoleOUHandle(
 ) *serviceerror.ServiceError {
 	if role.OUID != "" && role.OUHandle != "" {
 		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-		logger.Warn(ctx, "Both ou_id and ou_handle provided for role; ou_handle ignored",
+		logger.Warn(ctx, "Both ouId and ouHandle provided for role; ouHandle ignored",
 			log.String("roleID", role.ID), log.String("name", role.Name))
 		return nil
 	}

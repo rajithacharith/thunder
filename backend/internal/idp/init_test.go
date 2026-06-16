@@ -153,10 +153,10 @@ type: "GOOGLE"
 properties:
   - name: "client_id"
     value: "test_client_id"
-    is_secret: false
+    isSecret: false
   - name: "client_secret"
     value: "test_secret"
-    is_secret: false
+    isSecret: false
 `
 
 	idp, err := parseToIDPDTO([]byte(yamlData))
@@ -427,13 +427,13 @@ type: GOOGLE
 properties:
   - name: client_id
     value: google-client-id
-    is_secret: false
+    isSecret: false
   - name: client_secret
     value: google-client-secret
-    is_secret: true
+    isSecret: true
   - name: redirect_uri
     value: http://localhost:3000/callback
-    is_secret: false
+    isSecret: false
 `
 	err = os.WriteFile(idpDir+"/google_idp.yaml", []byte(googleIDPYAML), 0600)
 	assert.NoError(t, err)
@@ -446,13 +446,13 @@ type: GITHUB
 properties:
   - name: client_id
     value: github-client-id
-    is_secret: false
+    isSecret: false
   - name: client_secret
     value: github-client-secret
-    is_secret: true
+    isSecret: true
   - name: redirect_uri
     value: http://localhost:3000/callback
-    is_secret: false
+    isSecret: false
 `
 	err = os.WriteFile(idpDir+"/github_idp.yaml", []byte(githubIDPYAML), 0600)
 	assert.NoError(t, err)
@@ -580,7 +580,7 @@ type: GOOGLE
 properties:
   - name: "client_id"
     value: "test"
-    is_secret: false
+    isSecret: false
 `
 	err = os.WriteFile(idpDir+"/invalid-idp.yaml", []byte(invalidIDPYAML), 0600)
 	assert.NoError(t, err)
@@ -641,7 +641,7 @@ type: "UNSUPPORTED_TYPE"
 properties:
   - name: "client_id"
     value: "test"
-    is_secret: false
+    isSecret: false
 `
 	err = os.WriteFile(idpDir+"/invalid-type.yaml", []byte(invalidTypeYAML), 0600)
 	assert.NoError(t, err)

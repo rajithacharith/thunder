@@ -44,14 +44,14 @@ type OrganizationUnit struct {
 	Name            string    `json:"name" yaml:"name"`
 	Description     string    `json:"description,omitempty" yaml:"description,omitempty"`
 	Parent          *string   `json:"parent" yaml:"parent"`
-	ThemeID         string    `json:"themeId,omitempty" yaml:"theme_id,omitempty"`
-	LayoutID        string    `json:"layoutId,omitempty" yaml:"layout_id,omitempty"`
-	LogoURL         string    `json:"logoUrl,omitempty" yaml:"logo_url,omitempty"`
-	TosURI          string    `json:"tosUri,omitempty" yaml:"tos_uri,omitempty"`
-	PolicyURI       string    `json:"policyUri,omitempty" yaml:"policy_uri,omitempty"`
-	CookiePolicyURI string    `json:"cookiePolicyUri,omitempty" yaml:"cookie_policy_uri,omitempty"`
-	CreatedAt       time.Time `json:"createdAt" yaml:"created_at"`
-	UpdatedAt       time.Time `json:"updatedAt" yaml:"updated_at"`
+	ThemeID         string    `json:"themeId,omitempty" yaml:"themeId,omitempty"`
+	LayoutID        string    `json:"layoutId,omitempty" yaml:"layoutId,omitempty"`
+	LogoURL         string    `json:"logoUrl,omitempty" yaml:"logoUrl,omitempty"`
+	TosURI          string    `json:"tosUri,omitempty" yaml:"tosUri,omitempty"`
+	PolicyURI       string    `json:"policyUri,omitempty" yaml:"policyUri,omitempty"`
+	CookiePolicyURI string    `json:"cookiePolicyUri,omitempty" yaml:"cookiePolicyUri,omitempty"`
+	CreatedAt       time.Time `json:"createdAt" yaml:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt" yaml:"updatedAt"`
 }
 
 // OrganizationUnitRequest represents the request body for creating an organization unit.
@@ -76,12 +76,12 @@ type OrganizationUnitRequestWithID struct {
 	Name            string  `json:"name" yaml:"name"`
 	Description     string  `json:"description,omitempty" yaml:"description,omitempty"`
 	Parent          *string `json:"parent" yaml:"parent"`
-	ThemeID         string  `json:"themeId,omitempty" yaml:"theme_id,omitempty"`
-	LayoutID        string  `json:"layoutId,omitempty" yaml:"layout_id,omitempty"`
-	LogoURL         string  `json:"logoUrl,omitempty" yaml:"logo_url,omitempty"`
-	TosURI          string  `json:"tosUri,omitempty" yaml:"tos_uri,omitempty"`
-	PolicyURI       string  `json:"policyUri,omitempty" yaml:"policy_uri,omitempty"`
-	CookiePolicyURI string  `json:"cookiePolicyUri,omitempty" yaml:"cookie_policy_uri,omitempty"`
+	ThemeID         string  `json:"themeId,omitempty" yaml:"themeId,omitempty"`
+	LayoutID        string  `json:"layoutId,omitempty" yaml:"layoutId,omitempty"`
+	LogoURL         string  `json:"logoUrl,omitempty" yaml:"logoUrl,omitempty"`
+	TosURI          string  `json:"tosUri,omitempty" yaml:"tosUri,omitempty"`
+	PolicyURI       string  `json:"policyUri,omitempty" yaml:"policyUri,omitempty"`
+	CookiePolicyURI string  `json:"cookiePolicyUri,omitempty" yaml:"cookiePolicyUri,omitempty"`
 }
 
 // OrganizationUnitListResponse represents the response for listing organization units with pagination.

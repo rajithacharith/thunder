@@ -33,8 +33,8 @@ import (
 // deserialize nested maps; the entity parser converts it to json.RawMessage before storage.
 type AgentRequestWithID struct {
 	ID          string                 `json:"id"                    yaml:"id"`
-	OUID        string                 `json:"ouId,omitempty"        yaml:"ou_id,omitempty"`
-	OUHandle    string                 `json:"ouHandle,omitempty"    yaml:"ou_handle,omitempty"`
+	OUID        string                 `json:"ouId,omitempty"        yaml:"ouId,omitempty"`
+	OUHandle    string                 `json:"ouHandle,omitempty"    yaml:"ouHandle,omitempty"`
 	Type        string                 `json:"type"                  yaml:"type"`
 	Name        string                 `json:"name"                  yaml:"name"`
 	Description string                 `json:"description,omitempty" yaml:"description,omitempty"`
@@ -42,7 +42,7 @@ type AgentRequestWithID struct {
 	Attributes  map[string]interface{} `json:"attributes,omitempty"  yaml:"attributes,omitempty"`
 
 	inboundmodel.InboundAuthProfile `yaml:",inline"`
-	InboundAuthConfig               []inboundmodel.InboundAuthConfigWithSecret `json:"inboundAuthConfig,omitempty" yaml:"inbound_auth_config,omitempty"`
+	InboundAuthConfig               []inboundmodel.InboundAuthConfigWithSecret `json:"inboundAuthConfig,omitempty" yaml:"inboundAuthConfig,omitempty"`
 }
 
 // Agent is the service-level model for agent create operations.
@@ -107,7 +107,7 @@ type AgentCompleteResponse struct {
 // AgentGetResponse is returned on read operations. Excludes secrets (no clientSecret).
 type AgentGetResponse struct {
 	ID          string `json:"id,omitempty"          yaml:"id,omitempty"`
-	OUID        string `json:"ouId,omitempty"        yaml:"ou_id,omitempty"`
+	OUID        string `json:"ouId,omitempty"        yaml:"ouId,omitempty"`
 	OUHandle    string `json:"ouHandle,omitempty"    yaml:"-"`
 	Type        string `json:"type,omitempty"        yaml:"type,omitempty"`
 	Name        string `json:"name,omitempty"        yaml:"name,omitempty"`
@@ -120,7 +120,7 @@ type AgentGetResponse struct {
 	AttributesYAML map[string]interface{} `json:"-"                    yaml:"attributes,omitempty"`
 
 	inboundmodel.InboundAuthProfile `yaml:",inline"`
-	InboundAuthConfig               []inboundmodel.InboundAuthConfigWithSecret `json:"inboundAuthConfig,omitempty" yaml:"inbound_auth_config,omitempty"`
+	InboundAuthConfig               []inboundmodel.InboundAuthConfigWithSecret `json:"inboundAuthConfig,omitempty" yaml:"inboundAuthConfig,omitempty"`
 }
 
 // BasicAgentResponse is the summary view used in list responses.
