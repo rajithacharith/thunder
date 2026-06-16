@@ -328,9 +328,14 @@ func (s *oAuthAuthnService) Authenticate(ctx context.Context, idpID, code string
 		return nil, &common.ErrorSubClaimNotFound
 	}
 
+	mappedClaims, svcErr := s.resolveAttributeMappings(ctx, idpID, userInfo)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
 	result := &common.FederatedAuthResult{
 		Sub:    sub,
-		Claims: userInfo,
+		Claims: mappedClaims,
 	}
 	user, svcErr := s.GetInternalUser(ctx, sub)
 	if svcErr != nil {
@@ -345,4 +350,26 @@ func (s *oAuthAuthnService) Authenticate(ctx context.Context, idpID, code string
 	}
 	result.InternalEntity = user
 	return result, nil
+}
+
+// resolveAttributeMappings loads the identity provider and applies its configured attribute mappings to
+// claims. IDP-retrieval errors are wrapped in the authn domain so the IDP error code is not leaked.
+func (s *oAuthAuthnService) resolveAttributeMappings(ctx context.Context, idpID string,
+	claims map[string]interface{}) (map[string]interface{}, *serviceerror.ServiceError) {
+	idpDTO, svcErr := s.idpService.GetIdentityProvider(ctx, idpID)
+	if svcErr != nil {
+		if svcErr.Type == serviceerror.ClientErrorType {
+			return nil, serviceerror.CustomServiceError(ErrorClientErrorWhileRetrievingIDP, core.I18nMessage{
+				Key:          "error.oauthauthnservice.error_retrieving_idp_description",
+				DefaultValue: "Error while retrieving identity provider: " + svcErr.ErrorDescription.DefaultValue,
+			})
+		}
+		s.logger.Error(ctx, "Error while retrieving identity provider", log.String("errorCode", svcErr.Code),
+			log.String("description", svcErr.ErrorDescription.DefaultValue))
+		return nil, &serviceerror.InternalServerError
+	}
+	if idpDTO == nil {
+		return nil, &ErrorInvalidIDP
+	}
+	return idp.ApplyAttributeMappings(claims, idp.GetAttributeMappings(idpDTO)), nil
 }
