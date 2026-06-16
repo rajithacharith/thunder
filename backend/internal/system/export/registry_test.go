@@ -32,7 +32,7 @@ import (
 
 type RegistryTestSuite struct {
 	suite.Suite
-	registry *ResourceExporterRegistry
+	registry *resourceExporterRegistry
 }
 
 func TestRegistryTestSuite(t *testing.T) {
