@@ -4242,3 +4242,78 @@ a.connect-card {
   .dp-next-grid   { grid-template-columns: 1fr; }
 }
 
+/* ── Sequence Diagrams ── */
+
+.seq-diagram {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+}
+
+.seq-actor {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 10%, transparent);
+  stroke: var(--ifm-color-primary);
+  stroke-width: 1.5;
+}
+
+.seq-actor-label {
+  fill: var(--ifm-font-color-base);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.seq-lifeline {
+  stroke: var(--ifm-color-emphasis-300);
+  stroke-width: 1;
+  stroke-dasharray: 5 4;
+}
+
+.seq-message {
+  stroke: var(--ifm-color-emphasis-600);
+  stroke-width: 1.5;
+  fill: none;
+}
+
+.seq-arrowhead {
+  fill: var(--ifm-color-emphasis-600);
+}
+
+.seq-message-label {
+  fill: var(--ifm-font-color-base);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.seq-message-sublabel {
+  fill: var(--ifm-color-emphasis-600);
+  font-size: 11px;
+}
+
+.seq-note-bg {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 8%, transparent);
+  stroke: color-mix(in srgb, var(--ifm-color-primary) 30%, transparent);
+  stroke-width: 1;
+}
+
+.seq-note {
+  fill: var(--ifm-font-color-base);
+  font-size: 11px;
+}
+
+[data-theme='dark'] .seq-actor {
+  fill: color-mix(in srgb, var(--ifm-color-primary) 18%, transparent);
+}
+
+[data-theme='dark'] .seq-lifeline {
+  stroke: var(--ifm-color-emphasis-400);
+}
+
+[data-theme='dark'] .seq-message,
+[data-theme='dark'] .seq-arrowhead {
+  stroke: var(--ifm-color-emphasis-500);
+  fill: var(--ifm-color-emphasis-500);
+}
+
+[data-theme='dark'] .seq-message-sublabel {
+  fill: var(--ifm-color-emphasis-500);
+}
+
