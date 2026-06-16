@@ -35,6 +35,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/thunder-id/thunderid/internal/actorprovider"
 	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/cert"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
@@ -42,6 +43,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
+	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/inboundclientmock"
 	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
 )
@@ -54,17 +56,23 @@ const (
 
 type ClientAuthTestSuite struct {
 	suite.Suite
-	mockInboundClient *inboundclientmock.InboundClientServiceInterfaceMock
-	mockAuthnProvider *managermock.AuthnProviderManagerInterfaceMock
-	mockJwtService    *jwtmock.JWTServiceInterfaceMock
+	mockInboundClient  *inboundclientmock.InboundClientServiceInterfaceMock
+	mockEntityProvider *entityprovidermock.EntityProviderInterfaceMock
+	mockAuthnProvider  *managermock.AuthnProviderManagerInterfaceMock
+	mockJwtService     *jwtmock.JWTServiceInterfaceMock
 }
 
 func TestClientAuthTestSuite(t *testing.T) {
 	suite.Run(t, new(ClientAuthTestSuite))
 }
 
+func (suite *ClientAuthTestSuite) actorProvider() actorprovider.ActorProviderInterface {
+	return actorprovider.Initialize(suite.mockInboundClient, suite.mockEntityProvider)
+}
+
 func (suite *ClientAuthTestSuite) SetupTest() {
 	suite.mockInboundClient = inboundclientmock.NewInboundClientServiceInterfaceMock(suite.T())
+	suite.mockEntityProvider = entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
 	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
 	suite.mockJwtService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 
@@ -97,7 +105,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_Success_ClientSecretPost() {
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.Nil(suite.T(), authErr)
 	assert.NotNil(suite.T(), clientInfo)
@@ -125,7 +133,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_Success_ClientSecretBasic() {
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.Nil(suite.T(), authErr)
 	assert.NotNil(suite.T(), clientInfo)
@@ -156,7 +164,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_Success_ClientSecretBasic_URL
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.Nil(suite.T(), authErr)
 	assert.NotNil(suite.T(), clientInfo)
@@ -174,7 +182,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidBasicAuth_BadPercentEn
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -189,7 +197,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidBasicAuth_BadPercentEn
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -216,7 +224,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_Success_PublicClient() {
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.Nil(suite.T(), authErr)
 	assert.NotNil(suite.T(), clientInfo)
@@ -232,7 +240,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_MissingClientID() {
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -248,7 +256,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_EmptyClientIDInBasicAuth() {
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -263,7 +271,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_EmptyClientIDAndSecretInBasic
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -286,7 +294,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_MissingClientSecret() {
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -299,7 +307,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidBasicAuth() {
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -312,7 +320,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidAuthorizationHeader() 
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -331,7 +339,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_BothHeaderAndBody() {
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -353,7 +361,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_ClientNotFound() {
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -393,7 +401,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidClientSecret() {
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, failAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), failAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -417,7 +425,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_WrongAuthMethod() {
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -447,7 +455,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PublicClientWithSecret() {
 	// Try to use client_secret_post with public client
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -475,7 +483,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PublicClientMissingSecret() {
 	// Public client with authMethod = none should succeed
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.Nil(suite.T(), authErr)
 	assert.NotNil(suite.T(), clientInfo)
@@ -502,7 +510,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_ClientIDMismatch_HeaderVsBody
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -523,7 +531,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_ServiceError() {
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -605,7 +613,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_Success_PrivateKeyJWT() {
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.Nil(suite.T(), authErr)
 	assert.NotNil(suite.T(), clientInfo)
@@ -648,7 +656,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_Success_PrivateKeyJWT_WithCli
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.Nil(suite.T(), authErr)
 	assert.NotNil(suite.T(), clientInfo)
@@ -668,7 +676,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_UnsupportedAsse
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -687,7 +695,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_OnlyAssertionTy
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -711,7 +719,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_OnlyAssertionPr
 	// Then it checks assertion_type != SupportedClientAssertionType, which fails.
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -742,7 +750,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_InvalidAssertio
 
 			clientInfo, authErr := authenticate(
 				req.Context(), req,
-				suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+				suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 			assert.NotNil(suite.T(), authErr)
 			assert.Nil(suite.T(), clientInfo)
@@ -769,7 +777,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_ClientNotFound(
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -798,7 +806,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_AuthMethodNotAl
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -828,7 +836,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_AssertionValida
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -851,7 +859,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_ClientIDMismatc
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -873,7 +881,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_WithBasicAuth_M
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -896,7 +904,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_WithClientSecre
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -920,7 +928,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_ServiceError() 
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -943,7 +951,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_InvalidBase64Pa
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -969,7 +977,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_InvalidJSONPayl
 
 	clientInfo, authErr := authenticate(
 		req.Context(), req,
-		suite.mockInboundClient, suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
+		suite.actorProvider(), suite.mockAuthnProvider, suite.mockJwtService, testEndpointURL)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)

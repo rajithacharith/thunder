@@ -90,8 +90,8 @@ func (suite *AuthorizationCodeStoreTestSuite) TearDownTest() {
 	config.ResetServerRuntime()
 }
 
-func (suite *AuthorizationCodeStoreTestSuite) TestnewAuthorizationCodeStore() {
-	store := newAuthorizationCodeStore()
+func (suite *AuthorizationCodeStoreTestSuite) TestNewAuthorizationCodeStore() {
+	store := newAuthorizationCodeStore("test-deployment")
 	assert.NotNil(suite.T(), store)
 	assert.Implements(suite.T(), (*AuthorizationCodeStoreInterface)(nil), store)
 }

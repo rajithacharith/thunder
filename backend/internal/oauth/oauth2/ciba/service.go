@@ -29,16 +29,16 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/thunder-id/thunderid/internal/actorprovider"
 	flowcm "github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/flowexec"
-	"github.com/thunder-id/thunderid/internal/inboundclient"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/resourceindicators"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
 	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
 	"github.com/thunder-id/thunderid/internal/resource"
-	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/utils"
@@ -67,10 +67,11 @@ type CIBAServiceInterface interface {
 
 // cibaService implements the CIBAServiceInterface.
 type cibaService struct {
+	cfg             oauthconfig.Config
 	store           CIBARequestStoreInterface
 	flowExecService flowexec.FlowExecServiceInterface
 	jwtService      jwt.JWTServiceInterface
-	inboundClient   inboundclient.InboundClientServiceInterface
+	inboundClient   actorprovider.ActorProviderInterface
 	resourceService resource.ResourceServiceInterface
 	logger          *log.Logger
 }
@@ -80,14 +81,16 @@ func newCIBAService(
 	store CIBARequestStoreInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 	jwtService jwt.JWTServiceInterface,
-	inboundClient inboundclient.InboundClientServiceInterface,
+	actorProvider actorprovider.ActorProviderInterface,
 	resourceService resource.ResourceServiceInterface,
+	cfg oauthconfig.Config,
 ) CIBAServiceInterface {
 	return &cibaService{
+		cfg:             cfg,
 		store:           store,
 		flowExecService: flowExecService,
 		jwtService:      jwtService,
-		inboundClient:   inboundClient,
+		inboundClient:   actorProvider,
 		resourceService: resourceService,
 		logger:          log.GetLogger().With(log.String(log.LoggerKeyComponentName, "CIBAService")),
 	}
@@ -132,7 +135,7 @@ func (s *cibaService) InitiateBackchannelAuth(
 	if rsErr != nil {
 		return nil, &CIBAError{Code: rsErr.Error, Message: rsErr.ErrorDescription}
 	}
-	cacheTTL := strconv.FormatInt(resolveUserAttributesCacheTTL(oauthApp), 10)
+	cacheTTL := strconv.FormatInt(s.resolveUserAttributesCacheTTL(oauthApp), 10)
 
 	// authReqID is injected into runtime data for two reasons:
 	//   a) auth_assert_executor binds it as the ciba_auth_req_id claim in the assertion JWT,
@@ -325,10 +328,10 @@ func (s *cibaService) HandleCallback(ctx context.Context, authReqID, assertion s
 // as the assertion `aud`. It returns an empty string (skipping the audience check) on lookup
 // failure; the ciba_auth_req_id binding remains the primary protection in that case.
 func (s *cibaService) resolveExpectedAudience(ctx context.Context, clientID string) string {
-	app, err := s.inboundClient.GetOAuthClientByClientID(ctx, clientID)
-	if err != nil {
+	app, svcErr := s.inboundClient.GetOAuthClientByID(ctx, clientID)
+	if svcErr != nil {
 		s.logger.Warn(ctx, "Failed to resolve client for audience validation; skipping audience check",
-			log.Error(err))
+			log.String("error", svcErr.Error.DefaultValue))
 		return ""
 	}
 	if app == nil {
@@ -361,7 +364,7 @@ func (s *cibaService) validateIDTokenHint(ctx context.Context, idTokenHint strin
 		return "", &CIBAError{Code: oauth2const.ErrorInvalidRequest, Message: "id_token_hint is not a valid JWT"}
 	}
 
-	configuredIssuer := config.GetServerRuntime().Config.JWT.Issuer
+	configuredIssuer := s.cfg.JWT.Issuer
 	if iss, _ := payload[oauth2const.ClaimIss].(string); iss != configuredIssuer {
 		return "", &CIBAError{
 			Code:    oauth2const.ErrorInvalidRequest,
@@ -391,7 +394,7 @@ func (s *cibaService) validateIDTokenHint(ctx context.Context, idTokenHint strin
 		}
 	}
 
-	maxAgeDays := config.GetServerRuntime().Config.OAuth.CIBA.IDTokenHintMaxAgeDays
+	maxAgeDays := s.cfg.OAuth.CIBA.IDTokenHintMaxAgeDays
 	if maxAgeDays == 0 {
 		maxAgeDays = cibaIDTokenHintDefaultMaxAgeDays
 	}
@@ -488,10 +491,10 @@ func defaultBindingMessage(authReqID string) string {
 // validity periods is the base, plus the CIBA request lifetime to cover the poll window, plus a
 // fixed buffer. Setting this in the flow runtime data is what makes the auth assertion cache the
 // resolved attributes and emit the aci claim (consumed by the CIBA callback).
-func resolveUserAttributesCacheTTL(app *inboundmodel.OAuthClient) int64 {
-	maxTTL := tokenservice.ResolveTokenConfig(app, tokenservice.TokenTypeAccess).ValidityPeriod
+func (s *cibaService) resolveUserAttributesCacheTTL(app *inboundmodel.OAuthClient) int64 {
+	maxTTL := tokenservice.ResolveTokenConfig(s.cfg, app, tokenservice.TokenTypeAccess).ValidityPeriod
 	if app.IsAllowedGrantType(oauth2const.GrantTypeRefreshToken) {
-		refreshTTL := tokenservice.ResolveTokenConfig(app, tokenservice.TokenTypeRefresh).ValidityPeriod
+		refreshTTL := tokenservice.ResolveTokenConfig(s.cfg, app, tokenservice.TokenTypeRefresh).ValidityPeriod
 		if refreshTTL > maxTTL {
 			maxTTL = refreshTTL
 		}

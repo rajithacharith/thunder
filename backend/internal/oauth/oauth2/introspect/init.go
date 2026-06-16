@@ -22,8 +22,8 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/thunder-id/thunderid/internal/actorprovider"
 	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
-	"github.com/thunder-id/thunderid/internal/inboundclient"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/clientauth"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/discovery"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
@@ -34,13 +34,13 @@ import (
 func Initialize(
 	mux *http.ServeMux,
 	jwtService jwt.JWTServiceInterface,
-	inboundClient inboundclient.InboundClientServiceInterface,
+	actorProvider actorprovider.ActorProviderInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
 ) TokenIntrospectionServiceInterface {
 	introspectionService := newTokenIntrospectionService(jwtService)
 	introspectHandler := newTokenIntrospectionHandler(introspectionService)
-	registerRoutes(mux, introspectHandler, inboundClient, authnProvider, jwtService, discoveryService)
+	registerRoutes(mux, introspectHandler, actorProvider, authnProvider, jwtService, discoveryService)
 	return introspectionService
 }
 
@@ -48,7 +48,7 @@ func Initialize(
 func registerRoutes(
 	mux *http.ServeMux,
 	introspectHandler *tokenIntrospectionHandler,
-	inboundClient inboundclient.InboundClientServiceInterface,
+	actorProvider actorprovider.ActorProviderInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	jwtService jwt.JWTServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
@@ -61,7 +61,7 @@ func registerRoutes(
 	}
 
 	endpointURL := discoveryService.GetOAuth2AuthorizationServerMetadata(context.Background()).IntrospectionEndpoint
-	clientAuthMiddleware := clientauth.ClientAuthMiddleware(inboundClient, authnProvider, jwtService, endpointURL)
+	clientAuthMiddleware := clientauth.ClientAuthMiddleware(actorProvider, authnProvider, jwtService, endpointURL)
 	handler := clientAuthMiddleware(http.HandlerFunc(introspectHandler.HandleIntrospect))
 
 	pattern, wrappedHandler := middleware.WithCORS(

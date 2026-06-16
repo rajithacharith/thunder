@@ -28,11 +28,11 @@ import (
 	"net/http"
 	"net/url"
 
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	oauth2authz "github.com/thunder-id/thunderid/internal/oauth/oauth2/authz"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/ciba"
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
-	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
 	"github.com/thunder-id/thunderid/internal/system/utils"
@@ -49,16 +49,19 @@ type flowCallbackRequest struct {
 
 // callbackDispatcher dispatches flow assertion callbacks to the appropriate grant-type handler.
 type callbackDispatcher struct {
+	cfg          oauthconfig.Config
 	authZService oauth2authz.AuthorizeServiceInterface
 	cibaService  ciba.CIBAServiceInterface
 	logger       *log.Logger
 }
 
 func newCallbackDispatcher(
+	cfg oauthconfig.Config,
 	authZService oauth2authz.AuthorizeServiceInterface,
 	cibaService ciba.CIBAServiceInterface,
 ) *callbackDispatcher {
 	return &callbackDispatcher{
+		cfg:          cfg,
 		authZService: authZService,
 		cibaService:  cibaService,
 		logger:       log.GetLogger().With(log.String(log.LoggerKeyComponentName, "CallbackHandler")),
@@ -70,8 +73,9 @@ func Initialize(
 	mux *http.ServeMux,
 	authZService oauth2authz.AuthorizeServiceInterface,
 	cibaService ciba.CIBAServiceInterface,
+	cfg oauthconfig.Config,
 ) {
-	d := newCallbackDispatcher(authZService, cibaService)
+	d := newCallbackDispatcher(cfg, authZService, cibaService)
 	corsOpts := middleware.CORSOptions{
 		AllowedMethods:   []string{"POST"},
 		AllowedHeaders:   middleware.DefaultAllowedHeaders,
@@ -142,7 +146,7 @@ func (
 	queryParams := map[string]string{
 		oauth2const.RequestParamError:            authErr.Code,
 		oauth2const.RequestParamErrorDescription: authErr.Message,
-		oauth2const.RequestParamIss:              config.GetServerRuntime().Config.JWT.Issuer,
+		oauth2const.RequestParamIss:              d.cfg.JWT.Issuer,
 	}
 	if authErr.State != "" {
 		queryParams[oauth2const.RequestParamState] = authErr.State
@@ -163,7 +167,7 @@ func (
 	code,
 	msg,
 	state string) {
-	gateClientConfig := config.GetServerRuntime().Config.GateClient
+	gateClientConfig := d.cfg.GateClient
 	errorPageURL := (&url.URL{
 		Scheme: gateClientConfig.Scheme,
 		Host:   fmt.Sprintf("%s:%d", gateClientConfig.Hostname, gateClientConfig.Port),

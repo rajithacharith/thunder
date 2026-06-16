@@ -22,9 +22,10 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/thunder-id/thunderid/internal/actorprovider"
 	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/flow/flowexec"
-	"github.com/thunder-id/thunderid/internal/inboundclient"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/clientauth"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/discovery"
@@ -39,16 +40,17 @@ import (
 func Initialize(
 	mux *http.ServeMux,
 	jwtService jwt.JWTServiceInterface,
-	inboundClient inboundclient.InboundClientServiceInterface,
+	actorProvider actorprovider.ActorProviderInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
 	resourceService resource.ResourceServiceInterface,
+	cfg oauthconfig.Config,
 ) CIBAServiceInterface {
-	store := newCIBAStore()
-	cibaSvc := newCIBAService(store, flowExecService, jwtService, inboundClient, resourceService)
+	store := newCIBAStore(cfg)
+	cibaSvc := newCIBAService(store, flowExecService, jwtService, actorProvider, resourceService, cfg)
 	cibaHandler := newCIBAHandler(cibaSvc)
-	registerRoutes(mux, cibaHandler, inboundClient, authnProvider, jwtService, discoveryService)
+	registerRoutes(mux, cibaHandler, actorProvider, authnProvider, jwtService, discoveryService)
 	return cibaSvc
 }
 
@@ -57,7 +59,7 @@ func Initialize(
 func registerRoutes(
 	mux *http.ServeMux,
 	cibaHandler CIBAHandlerInterface,
-	inboundClient inboundclient.InboundClientServiceInterface,
+	actorProvider actorprovider.ActorProviderInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	jwtService jwt.JWTServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
@@ -71,7 +73,7 @@ func registerRoutes(
 
 	endpointURL := discoveryService.GetOAuth2AuthorizationServerMetadata(
 		context.Background()).BackchannelAuthenticationEndpoint
-	clientAuthMiddleware := clientauth.ClientAuthMiddleware(inboundClient, authnProvider, jwtService, endpointURL)
+	clientAuthMiddleware := clientauth.ClientAuthMiddleware(actorProvider, authnProvider, jwtService, endpointURL)
 	authHandler := clientAuthMiddleware(http.HandlerFunc(cibaHandler.HandleBackchannelAuthRequest))
 
 	authPattern, wrappedAuthHandler := middleware.WithCORS(

@@ -35,6 +35,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/authzmock"
 	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/cibamock"
+	"github.com/thunder-id/thunderid/tests/testhelpers"
 )
 
 type CallbackDispatcherTestSuite struct {
@@ -51,7 +52,7 @@ func TestCallbackDispatcherSuite(t *testing.T) {
 func (suite *CallbackDispatcherTestSuite) SetupTest() {
 	suite.mockAuthZ = authzmock.NewAuthorizeServiceInterfaceMock(suite.T())
 	suite.mockCIBA = cibamock.NewCIBAServiceInterfaceMock(suite.T())
-	suite.dispatcher = newCallbackDispatcher(suite.mockAuthZ, suite.mockCIBA)
+	suite.dispatcher = newCallbackDispatcher(testhelpers.OAuthConfig(), suite.mockAuthZ, suite.mockCIBA)
 
 	_ = config.InitializeServerRuntime("test", &config.Config{
 		JWT: config.JWTConfig{

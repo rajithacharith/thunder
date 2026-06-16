@@ -40,6 +40,7 @@ import (
 
 	certmodel "github.com/thunder-id/thunderid/internal/cert"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/jwksresolver"
 	"github.com/thunder-id/thunderid/internal/system/config"
@@ -82,6 +83,12 @@ func (suite *TokenBuilderTestSuite) SetupTest() {
 
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.builder = &tokenBuilder{
+		cfg: oauthconfig.Config{
+			JWT: config.JWTConfig{
+				Issuer:         "https://example.com",
+				ValidityPeriod: 3600,
+			},
+		},
 		jwtService: suite.mockJWTService,
 	}
 
@@ -98,7 +105,9 @@ func (suite *TokenBuilderTestSuite) SetupTest() {
 
 func (suite *TokenBuilderTestSuite) TestNewTokenBuilder() {
 	jwtService := jwtmock.NewJWTServiceInterfaceMock(suite.T())
-	builder := newTokenBuilder(jwtService, nil, nil)
+	builder := newTokenBuilder(oauthconfig.Config{
+		JWT: config.JWTConfig{Issuer: "https://example.com", ValidityPeriod: 3600},
+	}, jwtService, nil, nil)
 
 	assert.NotNil(suite.T(), builder)
 	assert.Implements(suite.T(), (*TokenBuilderInterface)(nil), builder)
@@ -1369,6 +1378,9 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithEncryption_Inli
 	).Return(signedJWS, time.Now().Unix(), (*serviceerror.ServiceError)(nil))
 
 	builder := &tokenBuilder{
+		cfg: oauthconfig.Config{
+			JWT: config.JWTConfig{Issuer: "https://example.com", ValidityPeriod: 3600},
+		},
 		jwtService:   suite.mockJWTService,
 		jweService:   mockJWE,
 		jwksResolver: jwksresolver.Initialize(nil),
@@ -1418,6 +1430,9 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_EncryptionKeyNotFound
 	).Return("header.payload.signature", time.Now().Unix(), (*serviceerror.ServiceError)(nil))
 
 	builder := &tokenBuilder{
+		cfg: oauthconfig.Config{
+			JWT: config.JWTConfig{Issuer: "https://example.com", ValidityPeriod: 3600},
+		},
 		jwtService:   suite.mockJWTService,
 		jweService:   mockJWE,
 		jwksResolver: jwksresolver.Initialize(nil),
@@ -1481,6 +1496,9 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_EncryptionFailed() {
 	).Return("header.payload.signature", time.Now().Unix(), (*serviceerror.ServiceError)(nil))
 
 	builder := &tokenBuilder{
+		cfg: oauthconfig.Config{
+			JWT: config.JWTConfig{Issuer: "https://example.com", ValidityPeriod: 3600},
+		},
 		jwtService:   suite.mockJWTService,
 		jweService:   mockJWE,
 		jwksResolver: jwksresolver.Initialize(nil),
@@ -1548,6 +1566,9 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithEncryption_JWKS
 	).Return("header.payload.signature", time.Now().Unix(), (*serviceerror.ServiceError)(nil))
 
 	builder := &tokenBuilder{
+		cfg: oauthconfig.Config{
+			JWT: config.JWTConfig{Issuer: "https://example.com", ValidityPeriod: 3600},
+		},
 		jwtService:   suite.mockJWTService,
 		jweService:   mockJWE,
 		jwksResolver: jwksresolver.Initialize(mockHTTP),
@@ -1596,6 +1617,9 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_NilJWEService() {
 	).Return("header.payload.signature", time.Now().Unix(), (*serviceerror.ServiceError)(nil))
 
 	builder := &tokenBuilder{
+		cfg: oauthconfig.Config{
+			JWT: config.JWTConfig{Issuer: "https://example.com", ValidityPeriod: 3600},
+		},
 		jwtService: suite.mockJWTService,
 		jweService: nil,
 	}
@@ -1631,6 +1655,9 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_NoEncryptionAlg() {
 	).Return("header.payload.signature", time.Now().Unix(), (*serviceerror.ServiceError)(nil))
 
 	builder := &tokenBuilder{
+		cfg: oauthconfig.Config{
+			JWT: config.JWTConfig{Issuer: "https://example.com", ValidityPeriod: 3600},
+		},
 		jwtService: suite.mockJWTService,
 		jweService: nil,
 	}
@@ -1674,6 +1701,9 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_UnsupportedCertType()
 	).Return("header.payload.signature", time.Now().Unix(), (*serviceerror.ServiceError)(nil))
 
 	builder := &tokenBuilder{
+		cfg: oauthconfig.Config{
+			JWT: config.JWTConfig{Issuer: "https://example.com", ValidityPeriod: 3600},
+		},
 		jwtService:   suite.mockJWTService,
 		jweService:   mockJWE,
 		jwksResolver: jwksresolver.Initialize(nil),

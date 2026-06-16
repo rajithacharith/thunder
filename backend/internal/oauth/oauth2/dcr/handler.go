@@ -22,7 +22,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/thunder-id/thunderid/internal/system/config"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/security"
@@ -31,13 +31,15 @@ import (
 
 // dcrHandler defines the handler for DCR API requests.
 type dcrHandler struct {
-	dcrService DCRServiceInterface
+	dcrInsecure bool
+	dcrService  DCRServiceInterface
 }
 
 // newDCRHandler creates a new instance of dcrHandler.
-func newDCRHandler(dcrService DCRServiceInterface) *dcrHandler {
+func newDCRHandler(dcrService DCRServiceInterface, cfg oauthconfig.Config) *dcrHandler {
 	return &dcrHandler{
-		dcrService: dcrService,
+		dcrInsecure: cfg.OAuth.DCR.Insecure,
+		dcrService:  dcrService,
 	}
 }
 
@@ -45,7 +47,7 @@ func newDCRHandler(dcrService DCRServiceInterface) *dcrHandler {
 func (dh *dcrHandler) HandleDCRRegistration(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// When DCR is not insecure, require a valid token with required permissions.
-	if !config.GetServerRuntime().Config.OAuth.DCR.Insecure && !dh.checkDCRAuthorization(r, w) {
+	if !dh.dcrInsecure && !dh.checkDCRAuthorization(r, w) {
 		return
 	}
 

@@ -34,8 +34,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/thunder-id/thunderid/internal/actorprovider"
 	"github.com/thunder-id/thunderid/internal/attributecache"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
@@ -43,6 +45,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/tests/mocks/attributecachemock"
+	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/inboundclientmock"
 	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
 	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/dpopmock"
@@ -54,6 +57,7 @@ type UserInfoServiceTestSuite struct {
 	mockJWTService            *jwtmock.JWTServiceInterfaceMock
 	mockTokenValidator        *tokenservicemock.TokenValidatorInterfaceMock
 	mockInboundClient         *inboundclientmock.InboundClientServiceInterfaceMock
+	mockEntityProvider        *entityprovidermock.EntityProviderInterfaceMock
 	mockAttributeCacheService *attributecachemock.AttributeCacheServiceInterfaceMock
 	userInfoService           userInfoServiceInterface
 	privateKey                *rsa.PrivateKey
@@ -63,16 +67,27 @@ func TestUserInfoServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(UserInfoServiceTestSuite))
 }
 
+const testUserInfoIssuer = "test-issuer"
+
+func userInfoTestConfig() oauthconfig.Config {
+	return oauthconfig.Config{
+		JWT: config.JWTConfig{Issuer: testUserInfoIssuer, ValidityPeriod: 600},
+	}
+}
+
 func (s *UserInfoServiceTestSuite) SetupTest() {
 	s.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(s.T())
 	s.mockTokenValidator = tokenservicemock.NewTokenValidatorInterfaceMock(s.T())
 	s.mockInboundClient = inboundclientmock.NewInboundClientServiceInterfaceMock(s.T())
+	s.mockEntityProvider = entityprovidermock.NewEntityProviderInterfaceMock(s.T())
 	s.mockAttributeCacheService = attributecachemock.NewAttributeCacheServiceInterfaceMock(s.T())
 	s.userInfoService = newUserInfoService(
 		s.mockJWTService, nil, nil, s.mockTokenValidator,
-		s.mockInboundClient, s.mockAttributeCacheService, nil)
+		actorprovider.Initialize(s.mockInboundClient, s.mockEntityProvider), s.mockAttributeCacheService, nil,
+		oauthconfig.Config{JWT: config.JWTConfig{Issuer: testUserInfoIssuer, ValidityPeriod: 600}},
+	)
 
-	// Initialize server runtime for tests
+	// Initialize server runtime for tests that still depend on global config.
 	config.ResetServerRuntime()
 	_ = config.InitializeServerRuntime(
 		"test-home",
@@ -1083,7 +1098,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_ResponseType() {
 		mock.Anything,
 		"user123",
 		issuer,
-		config.GetServerRuntime().Config.JWT.ValidityPeriod,
+		userInfoTestConfig().JWT.ValidityPeriod,
 		mock.Anything,
 		mock.Anything,
 		"RS256",
@@ -1129,9 +1144,10 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_BearerScheme_DPoPBoundToken_R
 // presented under the DPoP scheme is rejected.
 func (s *UserInfoServiceTestSuite) TestGetUserInfoForDPoP_NotBoundToken_Rejected() {
 	verifier := dpopmock.NewVerifierInterfaceMock(s.T())
+	actorProv := actorprovider.Initialize(s.mockInboundClient, s.mockEntityProvider)
 	s.userInfoService = newUserInfoService(
 		s.mockJWTService, nil, nil, s.mockTokenValidator,
-		s.mockInboundClient, s.mockAttributeCacheService, verifier)
+		actorProv, s.mockAttributeCacheService, verifier, userInfoTestConfig())
 
 	claims := map[string]any{
 		"sub":   "user123",
@@ -1154,9 +1170,10 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfoForDPoP_NotBoundToken_Rejected
 // token whose proof fails verification is rejected.
 func (s *UserInfoServiceTestSuite) TestGetUserInfoForDPoP_VerifierFails_Rejected() {
 	verifier := dpopmock.NewVerifierInterfaceMock(s.T())
+	actorProv := actorprovider.Initialize(s.mockInboundClient, s.mockEntityProvider)
 	s.userInfoService = newUserInfoService(
 		s.mockJWTService, nil, nil, s.mockTokenValidator,
-		s.mockInboundClient, s.mockAttributeCacheService, verifier)
+		actorProv, s.mockAttributeCacheService, verifier, userInfoTestConfig())
 
 	claims := map[string]any{
 		"sub":   "user123",
@@ -1222,7 +1239,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_GenerateJWTFailure() {
 		mock.Anything,
 		"user123",
 		issuer,
-		config.GetServerRuntime().Config.JWT.ValidityPeriod,
+		userInfoTestConfig().JWT.ValidityPeriod,
 		mock.Anything,
 		mock.Anything,
 		"RS256",

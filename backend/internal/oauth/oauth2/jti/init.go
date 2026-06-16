@@ -19,15 +19,15 @@
 package jti
 
 import (
-	"github.com/thunder-id/thunderid/internal/system/config"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/system/database/provider"
 )
 
 // Initialize returns a JTI replay-cache backend (Redis or relational DB, selected
 // by the runtime datasource configuration).
-func Initialize(deploymentID string) JTIStoreInterface {
-	if config.GetServerRuntime().Config.Database.Runtime.Type == provider.DataSourceTypeRedis {
-		return newRedisStore(provider.GetRedisProvider(), deploymentID)
+func Initialize(cfg oauthconfig.Config) JTIStoreInterface {
+	if cfg.RuntimeDBType == provider.DataSourceTypeRedis {
+		return newRedisStore(provider.GetRedisProvider(), cfg.DeploymentID)
 	}
-	return newDBStore(deploymentID)
+	return newDBStore(cfg.DeploymentID)
 }

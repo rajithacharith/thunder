@@ -34,6 +34,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/idp"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/system/cmodels"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
@@ -73,6 +74,14 @@ func (suite *TokenValidatorTestSuite) SetupTest() {
 
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.validator = &tokenValidator{
+		cfg: oauthconfig.Config{
+			JWT: config.JWTConfig{
+				Issuer:         "https://example.com",
+				ValidityPeriod: 3600,
+				Audience:       "application",
+				Leeway:         30,
+			},
+		},
 		jwtService: suite.mockJWTService,
 	}
 
@@ -97,20 +106,37 @@ func (suite *TokenValidatorTestSuite) createTestJWT(claims map[string]interface{
 	return fmt.Sprintf("%s.%s.signature", headerB64, claimsB64)
 }
 
-// getDefaultAudience is a helper function to get the configured default audience from runtime.
-// It skips the test if the runtime is not initialized or the audience is not configured.
+// getDefaultAudience returns the configured default audience from the validator cfg.
 func (suite *TokenValidatorTestSuite) getDefaultAudience() string {
-	runtime := config.GetServerRuntime()
-	if runtime == nil {
-		suite.T().Skip("Server runtime not initialized")
-		return ""
-	}
-	defaultAudience := runtime.Config.JWT.Audience
+	defaultAudience := suite.validator.cfg.JWT.Audience
 	if defaultAudience == "" {
-		suite.T().Skip("Default audience not configured in runtime")
+		suite.T().Skip("Default audience not configured in validator cfg")
 		return ""
 	}
 	return defaultAudience
+}
+
+const testThunderIssuer = "https://thunder.io"
+
+func (suite *TokenValidatorTestSuite) TestIsSelfIssuer_WithValidDeploymentIssuer() {
+	suite.validator.cfg.JWT.Issuer = testThunderIssuer
+	result := suite.validator.isSelfIssuer(testThunderIssuer)
+
+	assert.True(suite.T(), result)
+}
+
+func (suite *TokenValidatorTestSuite) TestIsSelfIssuer_WithInvalidIssuer() {
+	suite.validator.cfg.JWT.Issuer = testThunderIssuer
+	result := suite.validator.isSelfIssuer("https://evil.example.com")
+
+	assert.False(suite.T(), result)
+}
+
+func (suite *TokenValidatorTestSuite) TestIsSelfIssuer_WithEmptyIssuer() {
+	suite.validator.cfg.JWT.Issuer = testThunderIssuer
+	result := suite.validator.isSelfIssuer("")
+
+	assert.False(suite.T(), result)
 }
 
 // ============================================================================
@@ -575,19 +601,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Security_RejectsT
 }
 
 func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_EdgeCase_VeryLongToken() {
-	// Get the configured default audience from runtime
-	runtime := config.GetServerRuntime()
-	if runtime == nil {
-		suite.T().Skip("Server runtime not initialized")
-		return
-	}
-	defaultAudience := runtime.Config.JWT.Audience
-	if defaultAudience == "" {
-		suite.T().Skip("Default audience not configured in runtime")
-		return
-	}
-
-	// Test with token containing large claims
+	defaultAudience := suite.getDefaultAudience()
 	now := time.Now().Unix()
 	largeClaims := map[string]interface{}{
 		"sub":   "user123",
@@ -1704,16 +1718,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_Expiration
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			config.ResetServerRuntime()
-			testConfig := &config.Config{
-				JWT: config.JWTConfig{
-					Issuer:         "https://example.com",
-					ValidityPeriod: 3600,
-					Audience:       "application",
-					Leeway:         tc.leeway,
-				},
-			}
-			_ = config.InitializeServerRuntime("test", testConfig)
+			suite.validator.cfg.JWT.Leeway = tc.leeway
 
 			now := time.Now().Unix()
 			claims := map[string]interface{}{
@@ -1736,17 +1741,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_Expiration
 }
 
 func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_ExpJustInsideBoundary_ShouldPass() {
-	// Reset and test with 30 second leeway
-	config.ResetServerRuntime()
-	testConfig := &config.Config{
-		JWT: config.JWTConfig{
-			Issuer:         "https://example.com",
-			ValidityPeriod: 3600,
-			Audience:       "application",
-			Leeway:         30, // 30 seconds leeway
-		},
-	}
-	_ = config.InitializeServerRuntime("test", testConfig)
+	suite.validator.cfg.JWT.Leeway = 30
 
 	defaultAudience := suite.getDefaultAudience()
 
@@ -2052,6 +2047,14 @@ func (suite *ExternalIDPValidatorTestSuite) SetupTest() {
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.mockIDPService = idpmock.NewIDPServiceInterfaceMock(suite.T())
 	suite.validator = &tokenValidator{
+		cfg: oauthconfig.Config{
+			JWT: config.JWTConfig{
+				Issuer:         "https://example.com",
+				ValidityPeriod: 3600,
+				Audience:       "application",
+				Leeway:         30,
+			},
+		},
 		jwtService: suite.mockJWTService,
 		idpService: suite.mockIDPService,
 	}

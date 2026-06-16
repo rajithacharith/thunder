@@ -35,6 +35,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/security"
+	"github.com/thunder-id/thunderid/tests/testhelpers"
 )
 
 // DCRHandlerTestSuite is the test suite for DCR handler
@@ -53,7 +54,9 @@ func (s *DCRHandlerTestSuite) SetupTest() {
 	_ = config.InitializeServerRuntime("test", &config.Config{
 		OAuth: config.OAuthConfig{DCR: config.DCRConfig{Insecure: true}},
 	})
-	s.handler = newDCRHandler(s.mockService)
+	cfg := testhelpers.OAuthConfig()
+	cfg.OAuth.DCR.Insecure = true
+	s.handler = newDCRHandler(s.mockService, cfg)
 }
 
 func (s *DCRHandlerTestSuite) TearDownTest() {
@@ -233,7 +236,7 @@ func (s *DCRHandlerTestSuite) TestHandleDCRRegistration_EmptyBody() {
 // TestNewDCRHandler tests the handler constructor
 func TestNewDCRHandler(t *testing.T) {
 	mockService := NewDCRServiceInterfaceMock(t)
-	handler := newDCRHandler(mockService)
+	handler := newDCRHandler(mockService, testhelpers.OAuthConfig())
 
 	assert.NotNil(t, handler)
 	assert.Equal(t, mockService, handler.dcrService)
@@ -242,7 +245,7 @@ func TestNewDCRHandler(t *testing.T) {
 // TestWriteServiceErrorResponse_DirectCall tests the writeServiceErrorResponse function directly
 func TestWriteServiceErrorResponse_DirectCall(t *testing.T) {
 	mockService := NewDCRServiceInterfaceMock(t)
-	handler := newDCRHandler(mockService)
+	handler := newDCRHandler(mockService, testhelpers.OAuthConfig())
 
 	testCases := []struct {
 		name           string
@@ -302,7 +305,7 @@ func TestHandleDCRRegistration_ClosedDCR_NoToken(t *testing.T) {
 	defer config.ResetServerRuntime()
 
 	mockService := NewDCRServiceInterfaceMock(t)
-	handler := newDCRHandler(mockService)
+	handler := newDCRHandler(mockService, testhelpers.OAuthConfig())
 
 	req := httptest.NewRequest(http.MethodPost, "/oauth2/dcr/register", bytes.NewReader([]byte(`{}`)))
 	req.Header.Set("Content-Type", "application/json")
@@ -325,7 +328,7 @@ func TestHandleDCRRegistration_ClosedDCR_InsufficientPermissions(t *testing.T) {
 	defer config.ResetServerRuntime()
 
 	mockService := NewDCRServiceInterfaceMock(t)
-	handler := newDCRHandler(mockService)
+	handler := newDCRHandler(mockService, testhelpers.OAuthConfig())
 
 	secCtx := security.NewSecurityContextForTest("user1", "ou1", "tok", []string{"openid", "profile"}, nil)
 	ctx := security.WithSecurityContextTest(context.Background(), secCtx)
@@ -354,7 +357,7 @@ func TestHandleDCRRegistration_ClosedDCR_WithSystemPermission(t *testing.T) {
 	defer security.InitSystemPermissions("")
 
 	mockService := NewDCRServiceInterfaceMock(t)
-	handler := newDCRHandler(mockService)
+	handler := newDCRHandler(mockService, testhelpers.OAuthConfig())
 
 	secCtx := security.NewSecurityContextForTest("admin", "ou1", "tok", []string{"system"}, nil)
 	ctx := security.WithSecurityContextTest(context.Background(), secCtx)

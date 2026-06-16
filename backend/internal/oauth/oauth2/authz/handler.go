@@ -25,9 +25,9 @@ import (
 	"net/http"
 	"net/url"
 
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
-	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -40,13 +40,15 @@ type AuthorizeHandlerInterface interface {
 
 // authorizeHandler implements the AuthorizeHandlerInterface for handling OAuth2 authorization requests.
 type authorizeHandler struct {
+	cfg          oauthconfig.Config
 	authZService AuthorizeServiceInterface
 	logger       *log.Logger
 }
 
 // newAuthorizeHandler creates a new instance of authorizeHandler with injected dependencies.
-func newAuthorizeHandler(authZService AuthorizeServiceInterface) AuthorizeHandlerInterface {
+func newAuthorizeHandler(authZService AuthorizeServiceInterface, cfg oauthconfig.Config) AuthorizeHandlerInterface {
 	return &authorizeHandler{
+		cfg:          cfg,
 		authZService: authZService,
 		logger:       log.GetLogger().With(log.String(log.LoggerKeyComponentName, "AuthorizeHandler")),
 	}
@@ -66,7 +68,7 @@ func (ah *authorizeHandler) HandleAuthorizeGetRequest(w http.ResponseWriter, r *
 			queryParams := map[string]string{
 				oauth2const.RequestParamError:            authErr.Code,
 				oauth2const.RequestParamErrorDescription: authErr.Message,
-				oauth2const.RequestParamIss:              config.GetServerRuntime().Config.JWT.Issuer,
+				oauth2const.RequestParamIss:              ah.cfg.JWT.Issuer,
 			}
 			if authErr.State != "" {
 				queryParams[oauth2const.RequestParamState] = authErr.State
@@ -209,12 +211,11 @@ func (ah *authorizeHandler) getOAuthMessageForPostRequest(r *http.Request) (*OAu
 }
 
 // getLoginPageRedirectURI constructs the login page URL with the provided query parameters.
-func getLoginPageRedirectURI(queryParams map[string]string) (string, error) {
-	gateClientConfig := config.GetServerRuntime().Config.GateClient
+func getLoginPageRedirectURI(gateClientConfig oauthconfig.Config, queryParams map[string]string) (string, error) {
 	loginPageURL := (&url.URL{
-		Scheme: gateClientConfig.Scheme,
-		Host:   fmt.Sprintf("%s:%d", gateClientConfig.Hostname, gateClientConfig.Port),
-		Path:   gateClientConfig.LoginPath,
+		Scheme: gateClientConfig.GateClient.Scheme,
+		Host:   fmt.Sprintf("%s:%d", gateClientConfig.GateClient.Hostname, gateClientConfig.GateClient.Port),
+		Path:   gateClientConfig.GateClient.LoginPath,
 	}).String()
 
 	return oauth2utils.GetURIWithQueryParams(loginPageURL, queryParams)
@@ -233,7 +234,7 @@ func (ah *authorizeHandler) redirectToLoginPage(w http.ResponseWriter, r *http.R
 	}
 	ctx := r.Context()
 
-	redirectURI, err := getLoginPageRedirectURI(queryParams)
+	redirectURI, err := getLoginPageRedirectURI(ah.cfg, queryParams)
 	if err != nil {
 		logger.Error(ctx, "Failed to construct login page URL", log.Error(err))
 		ah.redirectToErrorPage(w, r, oauth2const.ErrorServerError, "Failed to process authorization request")
@@ -245,12 +246,11 @@ func (ah *authorizeHandler) redirectToLoginPage(w http.ResponseWriter, r *http.R
 }
 
 // getErrorPageRedirectURL constructs the error page URL with the provided error code and message.
-func getErrorPageRedirectURL(code, msg string) (string, error) {
-	gateClientConfig := config.GetServerRuntime().Config.GateClient
+func getErrorPageRedirectURL(cfg oauthconfig.Config, code, msg string) (string, error) {
 	errorPageURL := (&url.URL{
-		Scheme: gateClientConfig.Scheme,
-		Host:   fmt.Sprintf("%s:%d", gateClientConfig.Hostname, gateClientConfig.Port),
-		Path:   gateClientConfig.ErrorPath,
+		Scheme: cfg.GateClient.Scheme,
+		Host:   fmt.Sprintf("%s:%d", cfg.GateClient.Hostname, cfg.GateClient.Port),
+		Path:   cfg.GateClient.ErrorPath,
 	}).String()
 
 	queryParams := map[string]string{
@@ -273,7 +273,7 @@ func (ah *authorizeHandler) redirectToErrorPage(w http.ResponseWriter, r *http.R
 	}
 	ctx := r.Context()
 
-	redirectURL, err := getErrorPageRedirectURL(code, msg)
+	redirectURL, err := getErrorPageRedirectURL(ah.cfg, code, msg)
 	if err != nil {
 		logger.Error(ctx, "Failed to construct error page URL", log.Error(err))
 		http.Error(w, "Failed to redirect to error page", http.StatusInternalServerError)
@@ -300,7 +300,7 @@ func (
 	code,
 	msg,
 	state string) {
-	redirectURI, err := getErrorPageRedirectURL(code, msg)
+	redirectURI, err := getErrorPageRedirectURL(ah.cfg, code, msg)
 	if err != nil {
 		http.Error(w, "Failed to redirect to error page", http.StatusInternalServerError)
 		return
@@ -327,7 +327,7 @@ func (ah *authorizeHandler) writeAuthZResponseToClientRedirect(
 	queryParams := map[string]string{
 		oauth2const.RequestParamError:            authErr.Code,
 		oauth2const.RequestParamErrorDescription: authErr.Message,
-		oauth2const.RequestParamIss:              config.GetServerRuntime().Config.JWT.Issuer,
+		oauth2const.RequestParamIss:              ah.cfg.JWT.Issuer,
 	}
 	if authErr.State != "" {
 		queryParams[oauth2const.RequestParamState] = authErr.State

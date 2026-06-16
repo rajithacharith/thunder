@@ -25,15 +25,16 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/tests/mocks/actorprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/attributecachemock"
 	rbacauthzmock "github.com/thunder-id/thunderid/tests/mocks/authzmock"
-	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
 	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/authzmock"
 	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/cibamock"
 	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/tokenservicemock"
 	"github.com/thunder-id/thunderid/tests/mocks/oumock"
 	"github.com/thunder-id/thunderid/tests/mocks/resourcemock"
+	"github.com/thunder-id/thunderid/tests/testhelpers"
 )
 
 type GrantHandlerProviderTestSuite struct {
@@ -46,7 +47,7 @@ type GrantHandlerProviderTestSuite struct {
 	mockAttrCacheService *attributecachemock.AttributeCacheServiceInterfaceMock
 	mockOUService        *oumock.OrganizationUnitServiceInterfaceMock
 	mockRBACAuthzService *rbacauthzmock.AuthorizationServiceInterfaceMock
-	mockEntityProvider   *entityprovidermock.EntityProviderInterfaceMock
+	mockEntityProvider   *actorprovidermock.ActorProviderInterfaceMock
 	mockResourceService  *resourcemock.ResourceServiceInterfaceMock
 	mockCIBAService      *cibamock.CIBAServiceInterfaceMock
 }
@@ -63,7 +64,7 @@ func (suite *GrantHandlerProviderTestSuite) SetupTest() {
 	suite.mockAttrCacheService = attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	suite.mockRBACAuthzService = rbacauthzmock.NewAuthorizationServiceInterfaceMock(suite.T())
-	suite.mockEntityProvider = entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
+	suite.mockEntityProvider = actorprovidermock.NewActorProviderInterfaceMock(suite.T())
 	suite.mockResourceService = resourcemock.NewResourceServiceInterfaceMock(suite.T())
 	suite.mockCIBAService = cibamock.NewCIBAServiceInterfaceMock(suite.T())
 	suite.provider = newGrantHandlerProvider(
@@ -77,6 +78,7 @@ func (suite *GrantHandlerProviderTestSuite) SetupTest() {
 		suite.mockEntityProvider,
 		suite.mockResourceService,
 		suite.mockCIBAService,
+		testhelpers.OAuthConfig(),
 	)
 }
 
@@ -92,6 +94,7 @@ func (suite *GrantHandlerProviderTestSuite) TestNewGrantHandlerProvider() {
 		suite.mockEntityProvider,
 		suite.mockResourceService,
 		suite.mockCIBAService,
+		testhelpers.OAuthConfig(),
 	)
 	assert.NotNil(suite.T(), provider)
 	assert.Implements(suite.T(), (*GrantHandlerProviderInterface)(nil), provider)

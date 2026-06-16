@@ -28,9 +28,9 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/thunder-id/thunderid/internal/actorprovider"
 	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/cert"
-	"github.com/thunder-id/thunderid/internal/inboundclient"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
@@ -47,7 +47,7 @@ import (
 func authenticate(
 	ctx context.Context,
 	r *http.Request,
-	inboundClient inboundclient.InboundClientServiceInterface,
+	actorProvider actorprovider.ActorProviderInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	jwtService jwt.JWTServiceInterface,
 	endpointURL string,
@@ -130,10 +130,10 @@ func authenticate(
 		return nil, errClientIDMismatch
 	}
 
-	oauthApp, err := inboundClient.GetOAuthClientByClientID(ctx, clientID)
-	if err != nil {
+	oauthApp, svcErr := actorProvider.GetOAuthClientByID(ctx, clientID)
+	if svcErr != nil {
 		logger.Error(ctx, "Failed to retrieve OAuth client",
-			log.Error(err), log.MaskedString("clientID", clientID))
+			log.String("error", svcErr.Error.DefaultValue), log.MaskedString("clientID", clientID))
 		return nil, errInvalidClientCredentials
 	}
 	if oauthApp == nil {

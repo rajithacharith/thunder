@@ -26,7 +26,6 @@ import (
 
 	oauth2model "github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
 	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
-	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/database/provider"
 )
 
@@ -67,10 +66,10 @@ type authorizationCodeStore struct {
 }
 
 // newAuthorizationCodeStore creates a new instance of authorizationCodeStore with injected dependencies.
-func newAuthorizationCodeStore() AuthorizationCodeStoreInterface {
+func newAuthorizationCodeStore(deploymentID string) AuthorizationCodeStoreInterface {
 	return &authorizationCodeStore{
 		dbProvider:   provider.GetDBProvider(),
-		deploymentID: config.GetServerRuntime().Config.Server.Identifier,
+		deploymentID: deploymentID,
 	}
 }
 

@@ -26,10 +26,10 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/attributecache"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
 	"github.com/thunder-id/thunderid/internal/ou"
-	"github.com/thunder-id/thunderid/internal/system/config"
 )
 
 // ParseScopes parses a space-separated scope string into a slice of scope strings.
@@ -56,12 +56,10 @@ func JoinScopes(scopes []string) string {
 }
 
 // ResolveTokenConfig resolves the token configuration from the OAuth app or falls back to global config.
-func ResolveTokenConfig(oauthApp *inboundmodel.OAuthClient, tokenType TokenType) *TokenConfig {
-	conf := config.GetServerRuntime().Config
-
+func ResolveTokenConfig(cfg oauthconfig.Config, oauthApp *inboundmodel.OAuthClient, tokenType TokenType) *TokenConfig {
 	tokenConfig := &TokenConfig{
-		Issuer:         conf.JWT.Issuer,
-		ValidityPeriod: conf.JWT.ValidityPeriod,
+		Issuer:         cfg.JWT.Issuer,
+		ValidityPeriod: cfg.JWT.ValidityPeriod,
 	}
 
 	// Override with token-type specific configuration if available
@@ -79,8 +77,8 @@ func ResolveTokenConfig(oauthApp *inboundmodel.OAuthClient, tokenType TokenType)
 			}
 		}
 	case TokenTypeRefresh:
-		if conf.OAuth.RefreshToken.ValidityPeriod > 0 {
-			tokenConfig.ValidityPeriod = conf.OAuth.RefreshToken.ValidityPeriod
+		if cfg.OAuth.RefreshToken.ValidityPeriod > 0 {
+			tokenConfig.ValidityPeriod = cfg.OAuth.RefreshToken.ValidityPeriod
 		}
 		if oauthApp != nil && oauthApp.Token != nil && oauthApp.Token.RefreshToken != nil {
 			if oauthApp.Token.RefreshToken.ValidityPeriod > 0 {
@@ -246,11 +244,6 @@ func ExtractUserAttributes(claims map[string]interface{}) map[string]interface{}
 	}
 
 	return userAttributes
-}
-
-// isSelfIssuer reports whether the given issuer is the server's own configured issuer.
-func isSelfIssuer(issuer string) bool {
-	return issuer == config.GetServerRuntime().Config.JWT.Issuer
 }
 
 // FetchUserAttributes fetches user attributes and merges default claims and groups into the return map.

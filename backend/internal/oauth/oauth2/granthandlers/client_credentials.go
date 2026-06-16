@@ -22,6 +22,7 @@ import (
 	"context"
 	"slices"
 
+	"github.com/thunder-id/thunderid/internal/actorprovider"
 	"github.com/thunder-id/thunderid/internal/authz"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
@@ -40,7 +41,7 @@ type clientCredentialsGrantHandler struct {
 	tokenBuilder    tokenservice.TokenBuilderInterface
 	ouService       ou.OrganizationUnitServiceInterface
 	authzService    authz.AuthorizationServiceInterface
-	entityProv      entityprovider.EntityProviderInterface
+	actorProvider   actorprovider.ActorProviderInterface
 	resourceService resource.ResourceServiceInterface
 }
 
@@ -49,14 +50,14 @@ func newClientCredentialsGrantHandler(
 	tokenBuilder tokenservice.TokenBuilderInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	authzService authz.AuthorizationServiceInterface,
-	entityProv entityprovider.EntityProviderInterface,
+	actorProvider actorprovider.ActorProviderInterface,
 	resourceService resource.ResourceServiceInterface,
 ) GrantHandlerInterface {
 	return &clientCredentialsGrantHandler{
 		tokenBuilder:    tokenBuilder,
 		ouService:       ouService,
 		authzService:    authzService,
-		entityProv:      entityProv,
+		actorProvider:   actorProvider,
 		resourceService: resourceService,
 	}
 }
@@ -107,8 +108,8 @@ func (h *clientCredentialsGrantHandler) HandleGrant(ctx context.Context, tokenRe
 
 	if len(scopes) > 0 {
 		var groupIDs []string
-		if h.entityProv != nil {
-			groups, groupErr := h.entityProv.GetTransitiveEntityGroups(oauthApp.ID)
+		if h.actorProvider != nil {
+			groups, groupErr := h.actorProvider.GetActorGroups(oauthApp.ID)
 			if groupErr != nil {
 				// Ignore unimplemented providers to preserve existing behavior.
 				if groupErr.Code != entityprovider.ErrorCodeNotImplemented {

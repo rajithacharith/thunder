@@ -25,6 +25,7 @@ import (
 	"net/http"
 
 	"github.com/thunder-id/thunderid/internal/application"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/database/provider"
 	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
@@ -38,6 +39,7 @@ func Initialize(
 	appService application.ApplicationServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	i18nService i18nmgt.I18nServiceInterface,
+	cfg oauthconfig.Config,
 ) error {
 	// Fetch runtime transactioner for OAuth services.
 	transactioner, err := provider.GetDBProvider().GetRuntimeDBTransactioner()
@@ -49,7 +51,7 @@ func Initialize(
 		return wrappedErr
 	}
 	dcrService := newDCRService(appService, ouService, i18nService, transactioner)
-	dcrHandler := newDCRHandler(dcrService)
+	dcrHandler := newDCRHandler(dcrService, cfg)
 	registerRoutes(mux, dcrHandler)
 	return nil
 }

@@ -27,7 +27,6 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/database/provider"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -48,11 +47,13 @@ type redisAuthorizationRequestStore struct {
 }
 
 // newRedisAuthorizationRequestStore creates a new Redis-backed authorization request store.
-func newRedisAuthorizationRequestStore(p provider.RedisProviderInterface) authorizationRequestStoreInterface {
+func newRedisAuthorizationRequestStore(
+	p provider.RedisProviderInterface, deploymentID string,
+) authorizationRequestStoreInterface {
 	return &redisAuthorizationRequestStore{
 		client:         p.GetRedisClient(),
 		keyPrefix:      p.GetKeyPrefix(),
-		deploymentID:   config.GetServerRuntime().Config.Server.Identifier,
+		deploymentID:   deploymentID,
 		validityPeriod: 10 * time.Minute,
 	}
 }
