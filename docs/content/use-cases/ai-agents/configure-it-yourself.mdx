@@ -237,7 +237,7 @@ The Wayfinder Concierge needs a separate authentication flow that drives the on-
 Navigate to **Flows** and create a flow with these steps:
 
 - A `PROMPT` step asking for username and password.
-- A `TASK_EXECUTION` step running the `BasicAuthExecutor`.
+- A `TASK_EXECUTION` step running the `CredentialsAuthExecutor`.
 - A `TASK_EXECUTION` step running the `AuthorizationExecutor`.
 - A `TASK_EXECUTION` step running the `ConsentExecutor`, with a `PROMPT` step for the consent screen on its `onIncomplete` branch.
 - A `TASK_EXECUTION` step running the `AuthAssertExecutor` on success.

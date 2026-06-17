@@ -166,7 +166,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success(
 		AuthUser:    newTestAuthenticatedAuthUser(),
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{
 			"node1": {
-				ExecutorName: ExecutorNameBasicAuth,
+				ExecutorName: ExecutorNameCredentialsAuth,
 				ExecutorType: common.ExecutorTypeAuthentication,
 				Status:       common.FlowStatusComplete,
 				Step:         1,
@@ -333,7 +333,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AssertionGenerationFails_S
 		AuthUser:    newTestAuthenticatedAuthUser(),
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{
 			"node1": {
-				ExecutorName: ExecutorNameBasicAuth,
+				ExecutorName: ExecutorNameCredentialsAuth,
 				ExecutorType: common.ExecutorTypeAuthentication,
 				Status:       common.FlowStatusComplete,
 				Step:         1,
@@ -357,7 +357,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AssertionGenerationFails_S
 func (suite *AuthAssertExecutorTestSuite) TestExtractAuthenticatorReferences() {
 	history := map[string]*common.NodeExecutionRecord{
 		"node1": {
-			ExecutorName: ExecutorNameBasicAuth,
+			ExecutorName: ExecutorNameCredentialsAuth,
 			ExecutorType: common.ExecutorTypeAuthentication,
 			Status:       common.FlowStatusComplete,
 			Step:         3,

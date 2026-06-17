@@ -118,7 +118,7 @@ The registration flow drives [Self Sign-Up](../self-sign-up). It:
 
 - Resolves the user type (prompts the new user to pick one if the application allows multiple).
 - Prompts for username and password.
-- Runs basic-auth and provisioning, with `properties.assignRole` set to attach the `Traveler` role automatically.
+- Runs credentials-auth and provisioning, with `properties.assignRole` set to attach the `Traveler` role automatically.
 - Prompts for any remaining required schema attributes (rendered dynamically from the user type).
 - Returns an auth assertion so the new user lands signed in.
 
@@ -194,14 +194,14 @@ The registration flow drives [Self Sign-Up](../self-sign-up). It:
                { "ref": "input_username", "identifier": "username", "type": "TEXT_INPUT", "required": true },
                { "ref": "input_password", "identifier": "password", "type": "PASSWORD_INPUT", "required": true }
              ],
-             "action": { "ref": "action_credentials", "nextNode": "basic_auth" }
+             "action": { "ref": "action_credentials", "nextNode": "credentials_auth" }
            }
          ]
        },
        {
-         "id": "basic_auth",
+         "id": "credentials_auth",
          "type": "TASK_EXECUTION",
-         "executor": { "name": "BasicAuthExecutor" },
+         "executor": { "name": "CredentialsAuthExecutor" },
          "onSuccess": "provisioning"
        },
        {

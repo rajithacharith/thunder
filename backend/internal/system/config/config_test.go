@@ -1184,13 +1184,13 @@ func (suite *ConfigTestSuite) TestFlowConfig_ExecutorsYAMLField() {
 flow:
   max_version_history: 3
   executors:
-    - BasicAuthExecutor
+    - CredentialsAuthExecutor
     - InviteExecutor
 `
 	var cfg Config
 	err := yaml.Unmarshal([]byte(yamlFragment), &cfg)
 	suite.Require().NoError(err)
-	suite.Equal([]string{"BasicAuthExecutor", "InviteExecutor"}, cfg.Flow.Executors)
+	suite.Equal([]string{"CredentialsAuthExecutor", "InviteExecutor"}, cfg.Flow.Executors)
 	suite.Equal(3, cfg.Flow.MaxVersionHistory)
 }
 

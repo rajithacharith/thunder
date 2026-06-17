@@ -153,8 +153,8 @@ type builtInExecutorRegistrar func(ExecutorRegistryInterface, ExecutorDependenci
 // newBuiltInExecutorRegistrars creates a new map of built-in executor registrars.
 func newBuiltInExecutorRegistrars() map[string]builtInExecutorRegistrar {
 	return map[string]builtInExecutorRegistrar{
-		ExecutorNameBasicAuth: func(reg ExecutorRegistryInterface, deps ExecutorDependencies) {
-			reg.RegisterExecutor(ExecutorNameBasicAuth, newBasicAuthExecutor(
+		ExecutorNameCredentialsAuth: func(reg ExecutorRegistryInterface, deps ExecutorDependencies) {
+			reg.RegisterExecutor(ExecutorNameCredentialsAuth, newCredentialsAuthExecutor(
 				deps.FlowFactory, deps.EntityProvider, deps.AuthnProvider))
 		},
 		ExecutorNameSMSAuth: func(reg ExecutorRegistryInterface, deps ExecutorDependencies) {

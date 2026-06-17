@@ -34,7 +34,7 @@ samples/apps/           # react-sdk-sample · react-api-based-sample · react-va
 
 ## Flow engine
 
-Authentication/registration are JSON node graphs (`START → PROMPT → TASK → DECISION → COMPLETE`). The engine steps through nodes, persisting state in `runtimedb` across requests. Each `TASK` node names an executor (e.g. `"BasicAuthExecutor"`). To add one: implement `core.ExecutorInterface`, add name to `executor/constants.go`, register in `executor/init.go`.
+Authentication/registration are JSON node graphs (`START → PROMPT → TASK → DECISION → COMPLETE`). The engine steps through nodes, persisting state in `runtimedb` across requests. Each `TASK` node names an executor (e.g. `"CredentialsAuthExecutor"`). To add one: implement `core.ExecutorInterface`, add name to `executor/constants.go`, register in `executor/init.go`.
 
 ## ThunderID React SDK
 

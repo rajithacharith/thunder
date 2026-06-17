@@ -404,7 +404,6 @@ Some Executors run entirely in the background and do not need a preceding View t
 | **User Type Resolver** | After Identify User | — |
 | **OU Creation** | After Provisioning in registration flows | OU name and handle inputs must be present in the flow context. Accepts an optional `parentOuId` property (see below). |
 
-
 ### Executor Details and Configuration
 
 Expand each executor below for a full reference — including when to use it, prerequisites, inputs, failure conditions, and node property configuration.
@@ -434,10 +433,10 @@ Verifies a provided identifier and a password against stored values. This is the
 
 ```json
 {
-  "id": "basic_auth",
+  "id": "credentials_auth",
   "type": "TASK_EXECUTION",
   "executor": {
-    "name": "BasicAuthExecutor",
+    "name": "CredentialsAuthExecutor",
     "inputs": [
       {
         "identifier": "username",
@@ -1227,7 +1226,7 @@ Looks up an existing user in the store by a submitted identifier (email, usernam
       }
     ]
   },
-  "onSuccess": "basic_auth",
+  "onSuccess": "credentials_auth",
   "onFailure": "end",
   "onIncomplete": "prompt_identifier"
 }
