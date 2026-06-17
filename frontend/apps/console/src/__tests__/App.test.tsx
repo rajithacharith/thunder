@@ -73,6 +73,26 @@ vi.mock('../features/applications/pages/ApplicationCreatePage', () => ({
   default: () => <div data-testid="application-create-page">Application Create Page</div>,
 }));
 
+vi.mock('../features/applications/pages/ApplicationEditPage', () => ({
+  default: () => <div data-testid="application-edit-page">Application Edit Page</div>,
+}));
+
+vi.mock('../features/design/pages/LayoutBuilderPage', () => ({
+  default: () => <div data-testid="layout-builder-page">Layout Builder Page</div>,
+}));
+
+vi.mock('../features/design/contexts/LayoutBuilder/LayoutBuilderProvider', () => ({
+  default: ({children}: {children: React.ReactNode}) => children as React.ReactElement,
+}));
+
+vi.mock('../features/import-export/pages/ExportPage', () => ({
+  default: () => <div data-testid="export-page">Export Page</div>,
+}));
+
+vi.mock('../features/import-export/pages/ImportConfigurationSummaryPage', () => ({
+  default: () => <div data-testid="import-configuration-summary-page">Import Configuration Summary Page</div>,
+}));
+
 vi.mock('@thunderid/configure-resource-servers', () => ({
   ResourceServersListPage: () => <div data-testid="resource-servers-list-page">Resource Servers List Page</div>,
   ResourceServerEditPage: () => <div data-testid="resource-server-edit-page">Resource Server Edit Page</div>,
@@ -108,6 +128,38 @@ describe('App', () => {
     render(<App />);
     await waitFor(() => {
       expect(screen.getByTestId('translations-edit-page')).toBeInTheDocument();
+    });
+  });
+
+  it('loads ApplicationEditPage lazily via the monaco-setup chain', async () => {
+    window.history.pushState({}, '', '/applications/app-123');
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByTestId('application-edit-page')).toBeInTheDocument();
+    });
+  });
+
+  it('loads LayoutBuilderPage lazily via the monaco-setup chain', async () => {
+    window.history.pushState({}, '', '/design/layouts/layout-123');
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByTestId('layout-builder-page')).toBeInTheDocument();
+    });
+  });
+
+  it('loads ExportPage lazily via the monaco-setup chain', async () => {
+    window.history.pushState({}, '', '/export');
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByTestId('export-page')).toBeInTheDocument();
+    });
+  });
+
+  it('loads ImportConfigurationSummaryPage lazily via the monaco-setup chain', async () => {
+    window.history.pushState({}, '', '/import-configuration/summary');
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByTestId('import-configuration-summary-page')).toBeInTheDocument();
     });
   });
 

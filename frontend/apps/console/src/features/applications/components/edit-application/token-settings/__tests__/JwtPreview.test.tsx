@@ -20,7 +20,7 @@ import {render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import JwtPreview from '../JwtPreview';
 
-vi.mock('@/lib/MonacoEditor', () => ({
+vi.mock('@monaco-editor/react', () => ({
   default: ({value}: {value: string}) => <pre data-testid="monaco-editor">{value}</pre>,
 }));
 
