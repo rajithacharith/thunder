@@ -23,7 +23,6 @@ package executor
 import (
 	"errors"
 
-	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
 	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
@@ -203,7 +202,7 @@ func (b *credentialsAuthExecutor) authenticateUser(ctx *core.NodeContext,
 	}
 
 	// For authentication flows, call Authenticate directly.
-	metadata := b.buildAuthnMetadata(ctx)
+	metadata := buildAuthnMetadata(ctx)
 	authUser, authenticatedClaims, svcErr := b.authnProvider.AuthenticateUser(ctx.Context, userIdentifiers,
 		userCredentials, nil, metadata, execResp.AuthUser)
 	execResp.AuthUser = authUser
@@ -235,33 +234,4 @@ func (b *credentialsAuthExecutor) authenticateUser(ctx *core.NodeContext,
 	}
 
 	return nil
-}
-
-// buildAuthnMetadata constructs the metadata for authentication.
-func (b *credentialsAuthExecutor) buildAuthnMetadata(ctx *core.NodeContext) *authnprovidercm.AuthnMetadata {
-	metadata := &authnprovidercm.AuthnMetadata{
-		AppMetadata: make(map[string]interface{}),
-	}
-
-	// Copy application metadata if present
-	if ctx.Application.Metadata != nil {
-		for key, value := range ctx.Application.Metadata {
-			metadata.AppMetadata[key] = value
-		}
-	}
-
-	// Extract client IDs from InboundAuthConfig
-	var clientIDs []string
-	for _, inboundConfig := range ctx.Application.InboundAuthConfig {
-		if inboundConfig.OAuthConfig != nil && inboundConfig.OAuthConfig.ClientID != "" {
-			clientIDs = append(clientIDs, inboundConfig.OAuthConfig.ClientID)
-		}
-	}
-
-	// Add client IDs to metadata if present
-	if len(clientIDs) > 0 {
-		metadata.AppMetadata["client_ids"] = clientIDs
-	}
-
-	return metadata
 }

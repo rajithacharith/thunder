@@ -21,7 +21,8 @@ package common
 
 // AuthnMetadata contains metadata for authentication.
 type AuthnMetadata struct {
-	AppMetadata map[string]interface{} `json:"appMetadata,omitempty"`
+	AppMetadata     map[string]interface{} `json:"appMetadata,omitempty"`
+	RuntimeMetadata map[string]string      `json:"runtimeMetadata,omitempty"`
 }
 
 // AuthenticatedClaims holds claims produced by an authentication mechanism.
@@ -113,6 +114,7 @@ type EntityReference struct {
 
 // GetAttributesMetadata holds metadata used when retrieving entity attributes.
 type GetAttributesMetadata struct {
-	AppMetadata map[string]interface{} `json:"appMetadata,omitempty"`
-	Locale      string                 `json:"locale"`
+	AppMetadata     map[string]interface{} `json:"appMetadata,omitempty"`
+	Locale          string                 `json:"locale"`
+	RuntimeMetadata map[string]string      `json:"runtimeMetadata,omitempty"`
 }

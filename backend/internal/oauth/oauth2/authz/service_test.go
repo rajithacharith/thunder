@@ -265,8 +265,28 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Fl
 	suite.mockInboundClient.EXPECT().GetOAuthClientByClientID(mock.Anything, "test-client-id").Return(app, nil)
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, mock.Anything, app).
 		Return(false, "", "")
+	suite.mockAuthReqStore.EXPECT().AddRequest(mock.Anything, mock.Anything).Return(testAuthID, nil)
 	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything, mock.Anything).
 		Return("", &serviceerror.InternalServerError)
+
+	svc := suite.newService()
+	result, authErr := svc.HandleInitialAuthorizationRequest(context.Background(), suite.testMsg())
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), authErr)
+	assert.Equal(suite.T(), oauth2const.ErrorServerError, authErr.Code)
+	assert.True(suite.T(), authErr.SendErrorToClient)
+	assert.Equal(suite.T(), "https://client.example.com/callback", authErr.ClientRedirectURI)
+	assert.Equal(suite.T(), "test-state", authErr.State)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_StoreRequestError() {
+	app := suite.testApp()
+	suite.mockInboundClient.EXPECT().GetOAuthClientByClientID(mock.Anything, "test-client-id").Return(app, nil)
+	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, mock.Anything, app).
+		Return(false, "", "")
+	suite.mockAuthReqStore.EXPECT().AddRequest(mock.Anything, mock.Anything).
+		Return("", errors.New("store unavailable"))
 
 	svc := suite.newService()
 	result, authErr := svc.HandleInitialAuthorizationRequest(context.Background(), suite.testMsg())
@@ -398,6 +418,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Se
 			assert.Equal(suite.T(), "test-app-id", initContext.ApplicationID)
 			assert.Equal(suite.T(), string(flowcm.FlowTypeAuthentication), initContext.FlowType)
 			assert.Equal(suite.T(), "test-client-id", initContext.RuntimeData[flowcm.RuntimeKeyClientID])
+			assert.Equal(suite.T(), testAuthID, initContext.RuntimeData[flowcm.RuntimeKeyAuthorizationRequestID])
 			assert.ElementsMatch(suite.T(), []string{"email"},
 				strings.Fields(initContext.RuntimeData[flowcm.RuntimeKeyRequiredEssentialAttributes]))
 			assert.ElementsMatch(suite.T(), []string{"user_id", "phone_number"},

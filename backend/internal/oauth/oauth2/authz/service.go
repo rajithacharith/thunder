@@ -318,6 +318,23 @@ func (as *authorizeService) initiateFlowAndStoreRequest(
 	essentialAttributes, optionalAttributes := getRequiredAttributes(
 		oauthParams.StandardScopes, oauthParams.ClaimsRequest, oauthParams.ResponseType, app)
 
+	authRequestCtx := authRequestContext{
+		OAuthParameters: *oauthParams,
+	}
+
+	// Store authorization request context in the store.
+	identifier, storeErr := as.authReqStore.AddRequest(ctx, authRequestCtx)
+	if storeErr != nil {
+		as.logger.Error(ctx, "Failed to store authorization request context", log.Error(storeErr))
+		return nil, &AuthorizationError{
+			Code:              oauth2const.ErrorServerError,
+			Message:           "Failed to process authorization request",
+			SendErrorToClient: true,
+			ClientRedirectURI: oauthParams.RedirectURI,
+			State:             oauthParams.State,
+		}
+	}
+
 	// Initiate flow with OAuth context.
 	runtimeData := map[string]string{
 		flowcm.RuntimeKeyClientID:                      oauthParams.ClientID,
@@ -326,6 +343,7 @@ func (as *authorizeService) initiateFlowAndStoreRequest(
 		flowcm.RuntimeKeyRequiredOptionalAttributes:    optionalAttributes,
 		flowcm.RuntimeKeyRequiredLocales:               oauthParams.ClaimsLocales,
 		flowcm.RuntimeKeyUserAttributesCacheTTLSeconds: fmt.Sprintf("%d", as.resolveUserAttributesCacheTTL(app)),
+		flowcm.RuntimeKeyAuthorizationRequestID:        identifier,
 	}
 	if effectiveAcrValues != "" {
 		runtimeData[flowcm.RuntimeKeyRequestedAuthClasses] = effectiveAcrValues
@@ -340,23 +358,6 @@ func (as *authorizeService) initiateFlowAndStoreRequest(
 	if flowErr != nil {
 		as.logger.Error(ctx, "Failed to initiate authentication flow",
 			log.String("error_code", flowErr.Code))
-		return nil, &AuthorizationError{
-			Code:              oauth2const.ErrorServerError,
-			Message:           "Failed to process authorization request",
-			SendErrorToClient: true,
-			ClientRedirectURI: oauthParams.RedirectURI,
-			State:             oauthParams.State,
-		}
-	}
-
-	authRequestCtx := authRequestContext{
-		OAuthParameters: *oauthParams,
-	}
-
-	// Store authorization request context in the store.
-	identifier, storeErr := as.authReqStore.AddRequest(ctx, authRequestCtx)
-	if storeErr != nil {
-		as.logger.Error(ctx, "Failed to store authorization request context", log.Error(storeErr))
 		return nil, &AuthorizationError{
 			Code:              oauth2const.ErrorServerError,
 			Message:           "Failed to process authorization request",

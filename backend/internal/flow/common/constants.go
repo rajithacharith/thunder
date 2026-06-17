@@ -252,6 +252,8 @@ const (
 	RuntimeKeyBindingMessage = "bindingMessage"
 	// RuntimeKeyEntityState holds the entity existence state set by the IdentifyingExecutor in check_state mode.
 	RuntimeKeyEntityState = "entityState"
+	// RuntimeKeyAuthorizationRequestID holds the identifier of the authorization request.
+	RuntimeKeyAuthorizationRequestID = "authorizationRequestId"
 )
 
 // User input key constants for well-known keys used in UserInputs across flow executors.

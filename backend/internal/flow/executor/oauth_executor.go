@@ -242,8 +242,10 @@ func (o *oAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 			Code:    code,
 		},
 	}
+
+	metadata := buildAuthnMetadata(ctx)
 	authUser, federatedAttributes, svcErr := o.authnProvider.AuthenticateUser(
-		ctx.Context, nil, credentials, nil, nil, execResp.AuthUser)
+		ctx.Context, nil, credentials, nil, metadata, execResp.AuthUser)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure

@@ -180,7 +180,7 @@ func (a *authAssertExecutor) generateAuthAssertion(
 
 	requiredAttributes := a.getRequiredUserAttributes(ctx)
 
-	metadata := a.buildGetAttributesMetadata(ctx)
+	metadata := buildGetAttributesMetadata(ctx)
 
 	// Convert requested attributes from []string to *RequestedAttributes
 	reqAttrs := &authnprovidercm.RequestedAttributes{
@@ -556,40 +556,6 @@ func (a *authAssertExecutor) appendRolesToClaims(
 	}
 
 	return nil
-}
-
-// buildGetAttributesMetadata constructs the metadata for fetching user attributes.
-func (a *authAssertExecutor) buildGetAttributesMetadata(ctx *core.NodeContext) *authnprovidercm.GetAttributesMetadata {
-	metadata := &authnprovidercm.GetAttributesMetadata{
-		AppMetadata: make(map[string]interface{}),
-	}
-
-	// Copy application metadata if present
-	if ctx.Application.Metadata != nil {
-		for key, value := range ctx.Application.Metadata {
-			metadata.AppMetadata[key] = value
-		}
-	}
-
-	// Extract client IDs from InboundAuthConfig
-	var clientIDs []string
-	for _, inboundConfig := range ctx.Application.InboundAuthConfig {
-		if inboundConfig.OAuthConfig != nil && inboundConfig.OAuthConfig.ClientID != "" {
-			clientIDs = append(clientIDs, inboundConfig.OAuthConfig.ClientID)
-		}
-	}
-
-	// Add client IDs to metadata if present
-	if len(clientIDs) > 0 {
-		metadata.AppMetadata["client_ids"] = clientIDs
-	}
-
-	// Set locale from runtime data if present
-	if locale, exists := ctx.RuntimeData["required_locales"]; exists && locale != "" {
-		metadata.Locale = locale
-	}
-
-	return metadata
 }
 
 // resolvePermissionsForClaim returns the permission set to embed in the assertion. When the
