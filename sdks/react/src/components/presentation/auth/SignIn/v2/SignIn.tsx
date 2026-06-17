@@ -18,6 +18,7 @@
 
 import {
   ThunderIDRuntimeError,
+  ThunderIDAPIError,
   EmbeddedFlowComponentV2 as EmbeddedFlowComponent,
   EmbeddedFlowType,
   EmbeddedSignInFlowResponseV2,
@@ -217,8 +218,7 @@ const SignIn: FC<SignInProps> = ({
   variant,
   children,
 }: SignInProps): ReactElement => {
-  const {applicationId, afterSignInUrl, signIn, isInitialized, isLoading, meta, getStorageManager, scopes} =
-    useThunderID();
+  const {applicationId, afterSignInUrl, signIn, isInitialized, isLoading, meta, getStorageManager, scopes} = useThunderID();
   const {t} = useTranslation(preferences?.i18n);
 
   // State management for the flow
@@ -332,7 +332,9 @@ const SignIn: FC<SignInProps> = ({
   };
 
   /**
-   * Handle authId from URL and store it in sessionStorage.
+   * Handle authId from URL and persist it via the storage manager so it survives URL cleanup.
+   * ThunderIDReactClient.signIn() reads authId from storageManager.getHybridDataParameter('authId'),
+   * not from raw sessionStorage, so we must use the same storage path here.
    */
   const handleAuthId = async (authId: string | null): Promise<void> => {
     if (authId) {
@@ -410,7 +412,7 @@ const SignIn: FC<SignInProps> = ({
         await setChallengeToken(response.challengeToken ?? null);
 
         const urlParams: any = getUrlParams();
-        handleAuthId(urlParams.authId);
+        await handleAuthId(urlParams.authId);
 
         initiateOAuthRedirect(redirectURL);
         return true;
@@ -429,11 +431,19 @@ const SignIn: FC<SignInProps> = ({
     // Reset OAuth code processed ref when starting a new flow
     oauthCodeProcessedRef.current = false;
 
-    handleAuthId(urlParams.authId);
+    await handleAuthId(urlParams.authId);
 
     const effectiveApplicationId: any = applicationId || urlParams.applicationId;
 
-    if (!urlParams.executionId && !effectiveApplicationId) {
+    // On a page refresh the executionId is no longer in the URL (it is scrubbed by
+    // cleanupFlowUrlParams after the first load). Fall back to the executionId persisted in
+    // sessionStorage so the in-progress flow can be resumed instead of starting a new flow.
+    // This is required for authorization_code apps where direct new-flow initiation is blocked
+    // server-side and the flow must be initiated through the OAuth /authorize endpoint.
+    const storedExecutionId: any = !urlParams.executionId ? sessionStorage.getItem('thunderid_execution_id') : null;
+    const resumeExecutionId: any = urlParams.executionId || storedExecutionId;
+
+    if (!resumeExecutionId && !effectiveApplicationId) {
       const error: any = new ThunderIDRuntimeError(
         'Either executionId or applicationId is required for authentication',
         'SIGN_IN_ERROR',
@@ -448,11 +458,49 @@ const SignIn: FC<SignInProps> = ({
 
       let response: EmbeddedSignInFlowResponseV2;
 
-      if (urlParams.executionId) {
-        response = (await signIn({
-          executionId: urlParams.executionId,
-          ...(challengeTokenRef.current ? {challengeToken: challengeTokenRef.current} : {}),
-        })) as EmbeddedSignInFlowResponseV2;
+      if (resumeExecutionId) {
+        try {
+          response = (await signIn({
+            executionId: resumeExecutionId,
+            ...(challengeTokenRef.current ? {challengeToken: challengeTokenRef.current} : {}),
+          })) as EmbeddedSignInFlowResponseV2;
+        } catch (resumeError) {
+          // Only treat a stale/expired session (HTTP 400 from the server, meaning the stored
+          // executionId is no longer valid) as a recoverable condition. Transient failures
+          // such as 5xx server errors or network errors are rethrown so they surface correctly.
+          const isStaleSession: boolean =
+            storedExecutionId &&
+            resumeExecutionId === storedExecutionId &&
+            resumeError instanceof ThunderIDAPIError &&
+            resumeError.statusCode === 400;
+
+          if (isStaleSession) {
+            setExecutionId(null);
+            try {
+              const storageManager: any = await getStorageManager();
+              await storageManager?.removeHybridDataParameter?.('authId');
+            } catch {
+              logger.warn('Failed to clear authId from hybrid storage.');
+            }
+            if (!effectiveApplicationId) {
+              const expiredError: any = new ThunderIDRuntimeError(
+                t('errors.signin.session.expired') ||
+                  'Your session has expired. Please return to the application and sign in again.',
+                'SIGN_IN_ERROR',
+                'react',
+              );
+              setError(expiredError);
+              return;
+            }
+            response = (await signIn({
+              applicationId: effectiveApplicationId,
+              flowType: EmbeddedFlowType.Authentication,
+              ...(scopes && {scopes}),
+            })) as EmbeddedSignInFlowResponseV2;
+          } else {
+            throw resumeError;
+          }
+        }
       } else {
         response = (await signIn({
           applicationId: effectiveApplicationId,
@@ -517,12 +565,14 @@ const SignIn: FC<SignInProps> = ({
   }, []);
 
   useEffect(() => {
-    // Only initialize if we're not processing an OAuth callback or submission
+    // Only initialize if we're not processing an OAuth callback or submission.
+    // Wait for isStorageReady so the challenge token is restored from storage before
+    // we attempt to resume a persisted executionId — the server requires it.
     const currentUrlParams: any = getUrlParams();
     if (
       isInitialized &&
-      !isLoading &&
       isStorageReady &&
+      !isLoading &&
       !isFlowInitialized &&
       !initializationAttemptedRef.current &&
       !currentExecutionId &&
@@ -534,7 +584,7 @@ const SignIn: FC<SignInProps> = ({
       initializationAttemptedRef.current = true;
       initializeFlow();
     }
-  }, [isInitialized, isLoading, isStorageReady, isFlowInitialized, currentExecutionId]);
+  }, [isInitialized, isStorageReady, isLoading, isFlowInitialized, currentExecutionId]);
 
   /**
    * Handle step timeout if configured in additionalData.

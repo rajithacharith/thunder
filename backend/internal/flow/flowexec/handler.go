@@ -100,7 +100,12 @@ func handleFlowError(ctx context.Context, w http.ResponseWriter, flowErr *servic
 
 	statusCode := http.StatusInternalServerError
 	if flowErr.Type == serviceerror.ClientErrorType {
-		statusCode = http.StatusBadRequest
+		switch flowErr.Code {
+		case ErrorDirectFlowInitiationNotPermitted.Code:
+			statusCode = http.StatusForbidden
+		default:
+			statusCode = http.StatusBadRequest
+		}
 	}
 
 	sysutils.WriteErrorResponse(ctx, w, statusCode, errResp)

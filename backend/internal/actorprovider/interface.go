@@ -33,6 +33,9 @@ type ActorProviderInterface interface {
 	GetOAuthClientByID(
 		ctx context.Context, id string,
 	) (*inboundmodel.OAuthClient, *serviceerror.ServiceError)
+	GetOAuthProfileByID(
+		ctx context.Context, id string,
+	) (*inboundmodel.OAuthProfile, *serviceerror.ServiceError)
 	GetInboundClientByID(
 		ctx context.Context, id string,
 	) (*inboundmodel.InboundClient, *serviceerror.ServiceError)

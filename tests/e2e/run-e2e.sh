@@ -246,6 +246,31 @@ print(d.get('summary', {}).get('failed', 0))
     echo "  Imported $sample resources."
 done
 
+# Import E2E test infrastructure resources (e.g. admin native app for direct flow execution).
+e2e_config="$SCRIPT_DIR/thunderid-config.yaml"
+if [ -f "$e2e_config" ]; then
+    content=$(jq -Rs . < "$e2e_config")
+    http_status=$(curl -sk -o /tmp/import_response.json -w "%{http_code}" \
+        -X POST "$SERVER_URL/import" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $ADMIN_TOKEN" \
+        -d "{\"content\": $content, \"options\": {\"upsert\": true}}")
+    if [ "$http_status" != "200" ]; then
+        echo "ERROR: import returned HTTP $http_status for E2E config:"
+        cat /tmp/import_response.json; echo ""; exit 1
+    fi
+    failed_count=$(python3 -c "
+import sys, json
+d = json.load(open('/tmp/import_response.json'))
+print(d.get('summary', {}).get('failed', 0))
+" 2>/dev/null || echo "0")
+    if [ "$failed_count" != "0" ]; then
+        echo "ERROR: E2E config import had $failed_count failed resource(s):"
+        cat /tmp/import_response.json; echo ""; exit 1
+    fi
+    echo "Imported E2E test infrastructure resources."
+fi
+
 # Use the vanilla "Sample App" ID (stable UUID v7 from react-vanilla-sample/thunderid-config/basic).
 # The vanilla sample is unaffected by MFA test setup/teardown, unlike the SDK sample.
 SAMPLE_APP_ID="019e3a5c-0500-7f3e-a66e-66fc7918c3a7"
