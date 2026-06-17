@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/thunder-id/thunderid/internal/entity"
 	dbmodel "github.com/thunder-id/thunderid/internal/system/database/model"
 
 	"github.com/thunder-id/thunderid/tests/mocks/database/providermock"
@@ -1834,4 +1835,148 @@ func (suite *GroupStoreTestSuite) TestGroupStore_AddMembersToGroupReturnsError()
 
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to add member to group")
+}
+
+func (suite *GroupStoreTestSuite) TestGroupStore_GetTransitiveGroupsForEntity() {
+	testCases := []struct {
+		name          string
+		entityID      string
+		setup         func(*providermock.DBProviderInterfaceMock, *providermock.DBClientInterfaceMock)
+		expectErr     string
+		assertResults func([]entity.EntityGroup)
+	}{
+		{
+			name:     "success - single group",
+			entityID: "user-001",
+			setup: func(
+				providerMock *providermock.DBProviderInterfaceMock,
+				dbClientMock *providermock.DBClientInterfaceMock,
+			) {
+				providerMock.On("GetUserDBClient").Return(dbClientMock, nil).Once()
+				dbClientMock.On("QueryContext", mock.Anything,
+					QueryGetTransitiveGroupsForMember, "user-001", testDeploymentID).
+					Return([]map[string]interface{}{
+						{"id": "grp-001", "name": "Administrators", "ou_id": "ou-1"},
+					}, nil).Once()
+			},
+			assertResults: func(groups []entity.EntityGroup) {
+				suite.Require().Len(groups, 1)
+				suite.Require().Equal("grp-001", groups[0].ID)
+				suite.Require().Equal("Administrators", groups[0].Name)
+				suite.Require().Equal("ou-1", groups[0].OUID)
+			},
+		},
+		{
+			name:     "success - no groups",
+			entityID: "user-002",
+			setup: func(
+				providerMock *providermock.DBProviderInterfaceMock,
+				dbClientMock *providermock.DBClientInterfaceMock,
+			) {
+				providerMock.On("GetUserDBClient").Return(dbClientMock, nil).Once()
+				dbClientMock.On("QueryContext", mock.Anything,
+					QueryGetTransitiveGroupsForMember, "user-002", testDeploymentID).
+					Return([]map[string]interface{}{}, nil).Once()
+			},
+			assertResults: func(groups []entity.EntityGroup) {
+				suite.Require().Empty(groups)
+			},
+		},
+		{
+			name:     "database client error",
+			entityID: "user-001",
+			setup: func(
+				providerMock *providermock.DBProviderInterfaceMock,
+				_ *providermock.DBClientInterfaceMock,
+			) {
+				providerMock.On("GetUserDBClient").Return(nil, errors.New("client fail")).Once()
+			},
+			expectErr: "failed to get database client",
+		},
+		{
+			name:     "query error",
+			entityID: "user-001",
+			setup: func(
+				providerMock *providermock.DBProviderInterfaceMock,
+				dbClientMock *providermock.DBClientInterfaceMock,
+			) {
+				providerMock.On("GetUserDBClient").Return(dbClientMock, nil).Once()
+				dbClientMock.On("QueryContext", mock.Anything,
+					QueryGetTransitiveGroupsForMember, "user-001", testDeploymentID).
+					Return(nil, errors.New("query fail")).Once()
+			},
+			expectErr: "failed to get transitive groups for entity",
+		},
+		{
+			name:     "parse error - id not string",
+			entityID: "user-001",
+			setup: func(
+				providerMock *providermock.DBProviderInterfaceMock,
+				dbClientMock *providermock.DBClientInterfaceMock,
+			) {
+				providerMock.On("GetUserDBClient").Return(dbClientMock, nil).Once()
+				dbClientMock.On("QueryContext", mock.Anything,
+					QueryGetTransitiveGroupsForMember, "user-001", testDeploymentID).
+					Return([]map[string]interface{}{
+						{"id": 123, "name": "Admins", "ou_id": "ou-1"},
+					}, nil).Once()
+			},
+			expectErr: "failed to parse group id as string",
+		},
+		{
+			name:     "parse error - name not string",
+			entityID: "user-001",
+			setup: func(
+				providerMock *providermock.DBProviderInterfaceMock,
+				dbClientMock *providermock.DBClientInterfaceMock,
+			) {
+				providerMock.On("GetUserDBClient").Return(dbClientMock, nil).Once()
+				dbClientMock.On("QueryContext", mock.Anything,
+					QueryGetTransitiveGroupsForMember, "user-001", testDeploymentID).
+					Return([]map[string]interface{}{
+						{"id": "grp-001", "name": 42, "ou_id": "ou-1"},
+					}, nil).Once()
+			},
+			expectErr: "failed to parse group name as string",
+		},
+		{
+			name:     "parse error - ou_id not string",
+			entityID: "user-001",
+			setup: func(
+				providerMock *providermock.DBProviderInterfaceMock,
+				dbClientMock *providermock.DBClientInterfaceMock,
+			) {
+				providerMock.On("GetUserDBClient").Return(dbClientMock, nil).Once()
+				dbClientMock.On("QueryContext", mock.Anything,
+					QueryGetTransitiveGroupsForMember, "user-001", testDeploymentID).
+					Return([]map[string]interface{}{
+						{"id": "grp-001", "name": "Admins", "ou_id": true},
+					}, nil).Once()
+			},
+			expectErr: "failed to parse group ou_id as string",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		suite.Run(tc.name, func() {
+			providerMock := providermock.NewDBProviderInterfaceMock(suite.T())
+			dbClientMock := providermock.NewDBClientInterfaceMock(suite.T())
+			store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
+
+			tc.setup(providerMock, dbClientMock)
+
+			groups, err := store.GetTransitiveGroupsForEntity(context.Background(), tc.entityID)
+
+			if tc.expectErr != "" {
+				suite.Require().Error(err)
+				suite.Require().Contains(err.Error(), tc.expectErr)
+			} else {
+				suite.Require().NoError(err)
+				if tc.assertResults != nil {
+					tc.assertResults(groups)
+				}
+			}
+		})
+	}
 }
