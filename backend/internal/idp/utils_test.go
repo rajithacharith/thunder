@@ -820,6 +820,34 @@ func (s *IDPUtilsTestSuite) TestApplyAttributeMappings_DottedKeyMatchedLiterally
 	s.Equal("user@example.com", result["email"])
 }
 
+func (s *IDPUtilsTestSuite) TestApplyAttributeMappings_SubPreservedWhenMappedToMultipleTargets() {
+	attrs := map[string]interface{}{"sub": "user-123"}
+	result := ApplyAttributeMappings(attrs, []AttributeMapping{
+		{ExternalAttribute: "sub", LocalAttribute: "username"},
+		{ExternalAttribute: "sub", LocalAttribute: "email"},
+	})
+	s.Equal("user-123", result["sub"])
+	s.Equal("user-123", result["username"])
+	s.Equal("user-123", result["email"])
+}
+
+func (s *IDPUtilsTestSuite) TestApplyAttributeMappings_SubPreservedAlongsideOtherRenamedSources() {
+	attrs := map[string]interface{}{
+		"sub":        "user-123",
+		"given_name": "Jane",
+	}
+	result := ApplyAttributeMappings(attrs, []AttributeMapping{
+		{ExternalAttribute: "sub", LocalAttribute: "picture"},
+		{ExternalAttribute: "given_name", LocalAttribute: "firstName"},
+	})
+	s.Equal("user-123", result["sub"])
+	s.Equal("user-123", result["picture"])
+	s.Equal("Jane", result["firstName"])
+	// Non-sub sources are still consumed by the mapping.
+	_, present := result["given_name"]
+	s.False(present)
+}
+
 func (s *IDPUtilsTestSuite) TestGetAttributeMappings_NilIDP() {
 	s.Nil(GetAttributeMappings(nil))
 }

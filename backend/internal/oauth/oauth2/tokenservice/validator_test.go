@@ -239,6 +239,36 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithEmpty
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
+func (suite *TokenValidatorTestSuite) TestExtractSubjectTokenClaims_MapsReservedSubClaimToAttributes() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub":        "user123",
+		"iss":        "https://example.com",
+		"aud":        suite.getDefaultAudience(),
+		"exp":        float64(now + 3600),
+		"given_name": "Jane",
+	}
+	mappings := []idp.AttributeMapping{
+		{ExternalAttribute: "sub", LocalAttribute: "username"},
+		{ExternalAttribute: "sub", LocalAttribute: "email"},
+		{ExternalAttribute: "given_name", LocalAttribute: "firstName"},
+	}
+
+	result, err := suite.validator.extractSubjectTokenClaims(
+		"", "https://example.com", claims, suite.oauthApp, mappings)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), "user123", result.Sub)
+	// The sub value flows into every attribute it is mapped to.
+	assert.Equal(suite.T(), "user123", result.UserAttributes["username"])
+	assert.Equal(suite.T(), "user123", result.UserAttributes["email"])
+	assert.Equal(suite.T(), "Jane", result.UserAttributes["firstName"])
+	// Reserved claims are still filtered out of the attribute set.
+	assert.NotContains(suite.T(), result.UserAttributes, "sub")
+	assert.NotContains(suite.T(), result.UserAttributes, "given_name")
+}
+
 func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_InvalidJWTFormat() {
 	token := invalidJWTFormat
 
