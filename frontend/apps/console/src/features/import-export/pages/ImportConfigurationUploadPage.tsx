@@ -18,7 +18,7 @@
 
 import {useConfig} from '@thunderid/contexts';
 import {useLogger} from '@thunderid/logger/react';
-import {Box, Button, IconButton, LinearProgress, Stack, Typography, Alert} from '@wso2/oxygen-ui';
+import {Box, Button, IconButton, LinearProgress, Stack, Typography, Alert, AppBreadcrumbs} from '@wso2/oxygen-ui';
 import {Upload, X} from '@wso2/oxygen-ui-icons-react';
 import {useState, useCallback, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -27,7 +27,6 @@ import yaml from 'yaml';
 import {ALLOWED_RESOURCE_TYPES, type ResourceType} from '../constants/resource-types';
 import getConfigFileName from '../utils/getConfigFileName';
 import getEnvFileName from '../utils/getEnvFileName';
-import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 
 export default function ImportConfigurationUploadPage(): JSX.Element {
   const {t} = useTranslation('importExport');

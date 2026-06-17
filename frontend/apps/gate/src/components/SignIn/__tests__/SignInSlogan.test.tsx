@@ -32,18 +32,16 @@ describe('SignInSlogan', () => {
 
   it('renders all slogan items', () => {
     render(<SignInSlogan />);
-    expect(screen.getByText('Flexible Identity Platform')).toBeInTheDocument();
-    expect(screen.getByText('Zero-trust Security')).toBeInTheDocument();
-    expect(screen.getByText('Developer-first Experience')).toBeInTheDocument();
-    expect(screen.getByText('Extensible & Enterprise-ready')).toBeInTheDocument();
+    expect(screen.getByText('Native Agent Identity')).toBeInTheDocument();
+    expect(screen.getByText('Post-Quantum Ready')).toBeInTheDocument();
+    expect(screen.getByText('Lightweight, High-Performant Runtime')).toBeInTheDocument();
   });
 
   it('renders item descriptions', () => {
     render(<SignInSlogan />);
-    expect(screen.getByText(/Centralizes identity management/)).toBeInTheDocument();
-    expect(screen.getByText(/Leverage adaptive authentication/)).toBeInTheDocument();
-    expect(screen.getByText(/Configure auth flows and manage organizations/)).toBeInTheDocument();
-    expect(screen.getByText(/Built for scale/)).toBeInTheDocument();
+    expect(screen.getByText(/Engineered with native Agent ID/)).toBeInTheDocument();
+    expect(screen.getByText(/Built on a post-quantum cryptographic foundation/)).toBeInTheDocument();
+    expect(screen.getByText(/Cloud-native, API-first runtime/)).toBeInTheDocument();
   });
 
   it('renders with default logos', () => {

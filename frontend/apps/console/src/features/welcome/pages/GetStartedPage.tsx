@@ -17,14 +17,13 @@
  */
 
 import {useConfig} from '@thunderid/contexts';
-import {Box, Button, IconButton, Stack, Typography} from '@wso2/oxygen-ui';
+import {Box, Button, IconButton, Stack, Typography, AppBreadcrumbs} from '@wso2/oxygen-ui';
 import {AppWindow, Bot, MCP, SkipForward, X} from '@wso2/oxygen-ui-icons-react';
 import {motion} from 'framer-motion';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import useWelcomeClose from '../hooks/useWelcomeClose';
-import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 
 const MotionBox = motion.create(Box);
 

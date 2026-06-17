@@ -18,7 +18,17 @@
 
 import {useHasMultipleOUs} from '@thunderid/configure-organization-units';
 import {useLogger} from '@thunderid/logger/react';
-import {Box, Stack, Typography, Button, IconButton, LinearProgress, Alert, Snackbar} from '@wso2/oxygen-ui';
+import {
+  Box,
+  Stack,
+  Typography,
+  Button,
+  IconButton,
+  LinearProgress,
+  Alert,
+  Snackbar,
+  AppBreadcrumbs,
+} from '@wso2/oxygen-ui';
 import {X} from '@wso2/oxygen-ui-icons-react';
 import {useState, useCallback, useMemo} from 'react';
 import type {JSX} from 'react';
@@ -30,7 +40,6 @@ import ConfigureOrganizationUnit from '../components/create-group/ConfigureOrgan
 import useGroupCreate from '../contexts/GroupCreate/useGroupCreate';
 import {GroupCreateFlowStep} from '../models/group-create-flow';
 import type {CreateGroupRequest} from '../models/requests';
-import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 
 export default function CreateGroupPage(): JSX.Element {
   const navigate = useNavigate();

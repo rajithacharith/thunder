@@ -21,7 +21,7 @@ import {useGetChildOrganizationUnits} from '@thunderid/configure-organization-un
 import {ConfigureOrganizationUnit} from '@thunderid/configure-users';
 import {useLogger} from '@thunderid/logger/react';
 import {useThunderID} from '@thunderid/react';
-import {Alert, Box, Button, IconButton, LinearProgress, Stack, Typography} from '@wso2/oxygen-ui';
+import {Alert, Box, Button, IconButton, LinearProgress, Stack, Typography, AppBreadcrumbs} from '@wso2/oxygen-ui';
 import {X} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useState, useCallback, useEffect, useMemo} from 'react';
@@ -35,7 +35,6 @@ import ShowClientSecret from '../components/create-agent/ShowClientSecret';
 import useAgentCreate from '../contexts/AgentCreate/useAgentCreate';
 import {DEFAULT_AGENT_TYPE_NAME, type Agent, type AgentInboundAuthConfig} from '../models/agent';
 import {AgentCreateFlowStep} from '../models/agent-create-flow';
-import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 
 export default function AgentCreatePage(): JSX.Element {
   const {t} = useTranslation();

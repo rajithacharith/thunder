@@ -18,7 +18,7 @@
 
 import {useHasMultipleOUs} from '@thunderid/configure-organization-units';
 import {useLogger} from '@thunderid/logger/react';
-import {Box, Stack, Button, IconButton, LinearProgress, Alert, CircularProgress} from '@wso2/oxygen-ui';
+import {Box, Stack, Button, IconButton, LinearProgress, Alert, CircularProgress, AppBreadcrumbs} from '@wso2/oxygen-ui';
 import {X} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useState, useCallback, useMemo} from 'react';
@@ -52,7 +52,6 @@ import type {OAuth2Config} from '../models/oauth';
 import type {CreateApplicationRequest} from '../models/requests';
 import getConfigurationTypeFromTemplate from '../utils/getConfigurationTypeFromTemplate';
 import resolveCreationFlow from '../utils/resolveCreationFlow';
-import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 import GatePreview from '@/components/GatePreview/GatePreview';
 import buildPreviewMock from '@/components/GatePreview/mocks/buildPreviewMock';
 
