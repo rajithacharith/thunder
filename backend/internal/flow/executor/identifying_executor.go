@@ -140,13 +140,13 @@ func (i *identifyingExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRe
 		RuntimeData:    make(map[string]string),
 	}
 
-	loginHint := ctx.UserInputs[common.UserInputKeyLoginHint]
+	loginHint := ctx.UserInputs[userInputLoginHint]
 	loginHintAttr, _ := ctx.NodeProperties[propertyKeyLoginHintAttribute].(string)
 
 	if loginHintAttr != "" {
 		if loginHint == "" {
 			execResp.Inputs = append(execResp.Inputs,
-				common.Input{Identifier: common.UserInputKeyLoginHint, Required: true})
+				common.Input{Identifier: userInputLoginHint, Required: true})
 			execResp.Status = common.ExecUserInputRequired
 			return execResp, nil
 		}
@@ -187,11 +187,11 @@ func (i *identifyingExecutor) executeIdentify(ctx *core.NodeContext,
 	// errors (i.e. user not found). Other failures reported by IdentifyUser — such
 	// as ambiguous matches or system errors — are not recoverable in identify mode
 	// and must be returned as-is so the caller can handle them appropriately.
-	// When loginHintAttribute is set the identifier was supplied externally (e.g. CIBA
-	// login_hint) — there is no interactive user to re-enter it, so keep ExecFailure.
-	_, loginHintAttrSet := ctx.NodeProperties[propertyKeyLoginHintAttribute]
+	// When loginHintAttribute is set the identifier was supplied externally — there is no
+	// interactive user to re-enter it, so keep ExecFailure.
+	loginHintAttr, _ := ctx.NodeProperties[propertyKeyLoginHintAttribute].(string)
 	if execResp.Status == common.ExecFailure &&
-		execResp.Error != nil && execResp.Error.Code == ErrUserNotFound.Code && !loginHintAttrSet {
+		execResp.Error != nil && execResp.Error.Code == ErrUserNotFound.Code && loginHintAttr == "" {
 		logger.Debug(ctx.Context, "User not found — promoting to user input required",
 			log.Int("searchAttributeCount", len(userSearchAttributes)))
 		execResp.Status = common.ExecUserInputRequired
@@ -204,7 +204,7 @@ func (i *identifyingExecutor) executeIdentify(ctx *core.NodeContext,
 
 	if userID == nil || *userID == "" {
 		logger.Debug(ctx.Context, "User not found for the provided attributes")
-		if !loginHintAttrSet {
+		if loginHintAttr == "" {
 			execResp.Status = common.ExecUserInputRequired
 			execResp.Inputs = i.GetRequiredInputs(ctx)
 		} else {
@@ -310,13 +310,12 @@ func (i *identifyingExecutor) executeCheckState(ctx *core.NodeContext,
 // buildSearchAttributes collects search attributes from user inputs and runtime data.
 // When the loginHintAttribute node property is set, the login_hint value from UserInputs is
 // mapped to the configured attribute so the flow admin controls which user attribute resolves
-// the CIBA hint without hardcoding a specific attribute in the CIBA service.
+// the identifier without hardcoding a specific attribute.
 func (i *identifyingExecutor) buildSearchAttributes(ctx *core.NodeContext) map[string]interface{} {
 	if hintAttr, ok := ctx.NodeProperties[propertyKeyLoginHintAttribute].(string); ok && hintAttr != "" {
-		if hint, exists := ctx.UserInputs[common.UserInputKeyLoginHint]; exists && hint != "" {
+		if hint, exists := ctx.UserInputs[userInputLoginHint]; exists && hint != "" {
 			return map[string]interface{}{hintAttr: hint}
 		}
-		// login_hint absent — fall through to the normal input/runtime-data path below
 	}
 
 	attrs := map[string]interface{}{}

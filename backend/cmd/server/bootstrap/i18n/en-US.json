@@ -131,7 +131,19 @@
       "forms.magic_link.fields.email.placeholder": "Enter your email address",
       "forms.magic_link.actions.submit.label": "Send Magic Link",
       "forms.magic_link.email_sent.title": "Check Your Email",
-      "forms.magic_link.email_sent.description": "We sent you a verification link. Please check your inbox and click the link to continue."
+      "forms.magic_link.email_sent.description": "We sent you a verification link. Please check your inbox and click the link to continue.",
+      "forms.ciba.notification_sent.heading": "Authentication Request Sent",
+      "forms.ciba.notification_sent.message": "A notification has been sent. Follow the link in the notification to continue.",
+      "forms.ciba.notification_error.heading": "Notification Failed",
+      "forms.ciba.notification_error.message": "The authentication notification could not be delivered. Please try again or contact support.",
+      "forms.ciba.credentials.heading": "Confirm Your Identity",
+      "forms.ciba.credentials.message": "Enter your credentials to approve the authentication request.",
+      "forms.ciba.credentials.actions.approve.label": "Approve",
+      "forms.ciba.consent.heading": "Authorize Request",
+      "forms.ciba.consent.message": "By clicking Approve, you confirm that you initiated this request and consent to the action being performed.",
+      "forms.ciba.consent.actions.approve.label": "Approve",
+      "forms.ciba.success.heading": "Authentication Successful",
+      "forms.ciba.success.message": "You have successfully authenticated. You may close this window."
     },
     "signup": {
       "images.app_logo.alt": "Application logo",

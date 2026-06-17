@@ -148,7 +148,7 @@ func (s *cibaService) InitiateBackchannelAuth(
 	}
 
 	runtimeData := map[string]string{
-		flowcm.RuntimeKeyCIBAAuthReqID:               authReqID,
+		flowcm.RuntimeKeyAuthReqID:                   authReqID,
 		flowcm.RuntimeKeyClientID:                    oauthApp.ClientID,
 		flowcm.RuntimeKeyRequestedPermissions:        utils.StringifyStringArray(permissionScopes, " "),
 		flowcm.RuntimeKeyRequiredEssentialAttributes: "",
@@ -176,7 +176,7 @@ func (s *cibaService) InitiateBackchannelAuth(
 		RuntimeData:   runtimeData,
 		ExpirySeconds: expiresIn,
 		InitialInputs: map[string]string{
-			flowcm.UserInputKeyLoginHint: loginHint,
+			oauth2const.RequestParamLoginHint: loginHint,
 		},
 	})
 	if flowErr != nil {

@@ -86,7 +86,7 @@ func (e *smsExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, 
 
 	phoneAttr := resolveInputIdentifierByType(ctx, common.InputTypePhone, common.AttributeMobileNumber)
 
-	recipient := resolveRecipientMobile(ctx, phoneAttr, e.entityProvider)
+	recipient := e.resolveRecipientMobile(ctx, phoneAttr)
 	if recipient == "" {
 		logger.Debug(ctx.Context, "SMS recipient not found in user inputs or runtime data")
 		execResp.Status = common.ExecFailure
@@ -156,15 +156,15 @@ func (e *smsExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, 
 
 // resolveRecipientMobile retrieves the recipient mobile number from user inputs, runtime data,
 // or the entity provider (via RuntimeData["userID"]), in that order.
-func resolveRecipientMobile(ctx *core.NodeContext, phoneAttr string, ep entityprovider.EntityProviderInterface) string {
+func (e *smsExecutor) resolveRecipientMobile(ctx *core.NodeContext, phoneAttr string) string {
 	if mobile, ok := ctx.UserInputs[phoneAttr]; ok && mobile != "" {
 		return mobile
 	}
 	if mobile, ok := ctx.RuntimeData[phoneAttr]; ok && mobile != "" {
 		return mobile
 	}
-	if userID, ok := ctx.RuntimeData[userAttributeUserID]; ok && userID != "" && ep != nil {
-		user, err := ep.GetEntity(userID)
+	if userID, ok := ctx.RuntimeData[userAttributeUserID]; ok && userID != "" && e.entityProvider != nil {
+		user, err := e.entityProvider.GetEntity(userID)
 		if err == nil {
 			if mobile, attrErr := GetUserAttribute(user, phoneAttr); attrErr == nil {
 				return mobile

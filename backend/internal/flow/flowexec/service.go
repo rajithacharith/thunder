@@ -610,8 +610,9 @@ func (s *flowExecService) InitiateFlow(ctx context.Context,
 }
 
 // InitiateAndExecute initializes a new flow with the provided context, sets runtime data and
-// initial user inputs, executes the flow, stores the context if the flow pauses, and returns
-// the FlowStep. The caller uses FlowStep.ExecutionID to associate the flow with their session.
+// initial user inputs, then executes the flow until a user input is required, an error occurs,
+// or the flow completes. Stores the flow context if the flow pauses and returns the FlowStep.
+// The caller uses FlowStep.ExecutionID to associate the flow with their session.
 //
 // InitialInputs are placed directly into UserInputs before execution so executor nodes that
 // read from ctx.UserInputs (e.g. the identifying executor) can resolve data without requiring
@@ -647,9 +648,6 @@ func (s *flowExecService) InitiateAndExecute(ctx context.Context,
 
 	flowStep, flowErr := s.flowEngine.Execute(engineCtx)
 	if flowErr != nil {
-		logger.Error(ctx, "Failed to execute flow",
-			log.String(log.LoggerKeyExecutionID, engineCtx.ExecutionID),
-			log.String("error", flowErr.Error.DefaultValue))
 		return nil, flowErr
 	}
 

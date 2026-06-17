@@ -79,6 +79,7 @@ const (
 	userInputOTP              = "otp"
 	userInputMagicLinkToken   = "token"
 	userInputConsentDecisions = "consent_decisions"
+	userInputLoginHint        = "login_hint"
 
 	ouIDKey        = "ouId"
 	defaultOUIDKey = "defaultOUID"

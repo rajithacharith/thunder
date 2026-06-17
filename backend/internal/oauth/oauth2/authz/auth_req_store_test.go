@@ -31,6 +31,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
 	"github.com/thunder-id/thunderid/internal/system/config"
+	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 
 	"github.com/thunder-id/thunderid/tests/mocks/database/providermock"
 )
@@ -526,7 +527,7 @@ func (suite *AuthorizationRequestStoreTestSuite) TestParseTimeFieldForAuthReques
 	testTime := "2023-12-01 10:30:45.123456789"
 	expectedTime, _ := time.Parse("2006-01-02 15:04:05.999999999", testTime)
 
-	result, err := parseTimeField(testTime, "test_field")
+	result, err := sysutils.ParseDBTimeField(testTime, "test_field")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), expectedTime, result)
 }
@@ -535,7 +536,7 @@ func (suite *AuthorizationRequestStoreTestSuite) TestParseTimeFieldForAuthReques
 	testTime := "2023-12-01 10:30:45.123456789 extra content"
 	expectedTime, _ := time.Parse("2006-01-02 15:04:05.999999999", "2023-12-01 10:30:45.123456789")
 
-	result, err := parseTimeField(testTime, "test_field")
+	result, err := sysutils.ParseDBTimeField(testTime, "test_field")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), expectedTime, result)
 }
@@ -543,40 +544,25 @@ func (suite *AuthorizationRequestStoreTestSuite) TestParseTimeFieldForAuthReques
 func (suite *AuthorizationRequestStoreTestSuite) TestParseTimeFieldForAuthRequest_TimeInput() {
 	testTime := time.Now()
 
-	result, err := parseTimeField(testTime, "test_field")
+	result, err := sysutils.ParseDBTimeField(testTime, "test_field")
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), testTime, result)
+	assert.True(suite.T(), testTime.Equal(result))
 }
 
 func (suite *AuthorizationRequestStoreTestSuite) TestParseTimeFieldForAuthRequest_InvalidStringFormat() {
 	testTime := "invalid-time-format"
 
-	result, err := parseTimeField(testTime, "test_field")
+	result, err := sysutils.ParseDBTimeField(testTime, "test_field")
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "error parsing test_field")
 	assert.True(suite.T(), result.IsZero())
 }
 
 func (suite *AuthorizationRequestStoreTestSuite) TestParseTimeFieldForAuthRequest_InvalidType() {
-	result, err := parseTimeField(12345, "test_field")
+	result, err := sysutils.ParseDBTimeField(12345, "test_field")
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "unexpected type for test_field")
 	assert.True(suite.T(), result.IsZero())
-}
-
-func (suite *AuthorizationRequestStoreTestSuite) TestTrimTimeStringForAuthRequest() {
-	input := "2023-12-01 10:30:45.123456789 extra content here"
-	expected := "2023-12-01 10:30:45.123456789"
-
-	result := trimTimeString(input)
-	assert.Equal(suite.T(), expected, result)
-}
-
-func (suite *AuthorizationRequestStoreTestSuite) TestTrimTimeStringForAuthRequest_ShortInput() {
-	input := "2023-12-01"
-
-	result := trimTimeString(input)
-	assert.Equal(suite.T(), input, result)
 }
 
 func (suite *AuthorizationRequestStoreTestSuite) TestConvertToStringArray() {
@@ -650,19 +636,19 @@ func (suite *AuthorizationRequestStoreTestSuite) TestParseTimeFieldForAuthReques
 	testTime := "2023-12-01T10:30:45Z"
 	expectedTime, _ := time.Parse("2006-01-02T15:04:05Z07:00", testTime)
 
-	result, err := parseTimeField(testTime, "test_field")
+	result, err := sysutils.ParseDBTimeField(testTime, "test_field")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), expectedTime, result)
 }
 
 func (suite *AuthorizationRequestStoreTestSuite) TestParseTimeFieldForAuthRequest_AlternativeFormatWithTimezone() {
-	// Test ISO 8601 format with timezone
+	// Test ISO 8601 format with timezone — result is normalised to UTC.
 	testTime := "2023-12-01T10:30:45+05:30"
 	expectedTime, _ := time.Parse("2006-01-02T15:04:05Z07:00", testTime)
 
-	result, err := parseTimeField(testTime, "test_field")
+	result, err := sysutils.ParseDBTimeField(testTime, "test_field")
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), expectedTime, result)
+	assert.True(suite.T(), expectedTime.Equal(result))
 }
 
 func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_AllOptionalFieldsMissing() {

@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
+	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 	"github.com/thunder-id/thunderid/tests/mocks/database/providermock"
 )
 
@@ -330,26 +331,6 @@ func (suite *CIBARequestStoreTestSuite) TestUpdateState_DBClientError() {
 	suite.mockDBProvider.AssertExpectations(suite.T())
 }
 
-func (suite *CIBARequestStoreTestSuite) TestIsNumericOffset_ValidPositive() {
-	assert.True(suite.T(), isNumericOffset("+0530"))
-}
-
-func (suite *CIBARequestStoreTestSuite) TestIsNumericOffset_ValidNegative() {
-	assert.True(suite.T(), isNumericOffset("-0700"))
-}
-
-func (suite *CIBARequestStoreTestSuite) TestIsNumericOffset_TooShort() {
-	assert.False(suite.T(), isNumericOffset("+053"))
-}
-
-func (suite *CIBARequestStoreTestSuite) TestIsNumericOffset_WrongSign() {
-	assert.False(suite.T(), isNumericOffset("x0530"))
-}
-
-func (suite *CIBARequestStoreTestSuite) TestIsNumericOffset_NonDigitSuffix() {
-	assert.False(suite.T(), isNumericOffset("+05AB"))
-}
-
 func (suite *CIBARequestStoreTestSuite) TestBuildCIBAAuthRequestFromRow_MissingExpiry() {
 	_, err := buildCIBAAuthRequestFromRow(map[string]interface{}{
 		dbColumnAuthReqID: "auth-req-1",
@@ -371,56 +352,54 @@ func (suite *CIBARequestStoreTestSuite) TestParseOptionalTimeField() {
 	now := time.Now()
 	parsed, ok := parseOptionalTimeField(now)
 	assert.True(suite.T(), ok)
-	assert.Equal(suite.T(), now, parsed)
+	assert.True(suite.T(), now.Equal(parsed))
 
 	_, ok = parseOptionalTimeField(12345)
 	assert.False(suite.T(), ok)
 }
 
-// TestParseTimeField_PreservesOffset asserts that a time string rendered with a non-UTC offset
-// (as Go's time.Time.String() produces for a local-zone value) parses back to the same instant
-// rather than being reinterpreted as UTC and shifted by the offset.
-func (suite *CIBARequestStoreTestSuite) TestParseTimeField_PreservesOffset() {
+// TestParseTimeField_UTCNormalization asserts that a time string with a non-UTC offset is parsed by
+// treating the wall-clock portion as UTC, matching the UTC-normalized write side.
+func (suite *CIBARequestStoreTestSuite) TestParseTimeField_UTCNormalization() {
 	loc := time.FixedZone("IST", 5*3600+30*60)
 	original := time.Date(2026, 6, 2, 21, 57, 49, 157215000, loc)
+	expected := time.Date(2026, 6, 2, 21, 57, 49, 157215000, time.UTC)
 
-	parsed, err := parseTimeField(original.String(), "expiry_time")
+	parsed, err := sysutils.ParseDBTimeField(original.String(), "expiry_time")
 	assert.NoError(suite.T(), err)
-	assert.True(suite.T(), original.Equal(parsed),
-		"expected %s to equal %s (same instant)", original, parsed)
+	assert.True(suite.T(), expected.Equal(parsed),
+		"expected wall-clock treated as UTC: %s, got %s", expected, parsed)
 }
 
 // TestParseTimeField_ZonelessTreatedAsUTC asserts that a zoneless time string is interpreted as
 // UTC, matching the UTC-normalized write side.
 func (suite *CIBARequestStoreTestSuite) TestParseTimeField_ISO8601Format() {
 	original := time.Date(2026, 6, 2, 21, 57, 49, 0, time.UTC)
-	parsed, err := parseTimeField(original.Format("2006-01-02T15:04:05Z07:00"), "expiry_time")
+	parsed, err := sysutils.ParseDBTimeField(original.Format("2006-01-02T15:04:05Z07:00"), "expiry_time")
 	assert.NoError(suite.T(), err)
 	assert.True(suite.T(), original.Equal(parsed))
 }
 
 func (suite *CIBARequestStoreTestSuite) TestParseTimeField_UnexpectedType() {
-	_, err := parseTimeField(12345, "expiry_time")
+	_, err := sysutils.ParseDBTimeField(12345, "expiry_time")
 	assert.Error(suite.T(), err)
 }
 
 func (suite *CIBARequestStoreTestSuite) TestParseTimeField_ZonelessTreatedAsUTC() {
 	original := time.Date(2026, 6, 2, 21, 57, 49, 157215000, time.UTC)
 
-	parsed, err := parseTimeField(original.Format("2006-01-02 15:04:05.999999999"), "expiry_time")
+	parsed, err := sysutils.ParseDBTimeField(original.Format("2006-01-02 15:04:05.999999999"), "expiry_time")
 	assert.NoError(suite.T(), err)
 	assert.True(suite.T(), original.Equal(parsed),
 		"expected %s to equal %s (same instant)", original, parsed)
 }
 
-// TestGetByID_NonUTCStoredTimestampReadsSameInstant exercises the full read path with timestamps
-// rendered in a non-UTC zone, asserting the request is not treated as expired when it is still
-// valid. This reproduces the timezone round-trip defect at the store boundary.
-func (suite *CIBARequestStoreTestSuite) TestGetByID_NonUTCStoredTimestampReadsSameInstant() {
-	loc := time.FixedZone("IST", 5*3600+30*60)
-	expiry := time.Now().In(loc).Add(2 * time.Minute)
-	lastPolled := time.Now().In(loc).Add(-30 * time.Second)
-	authTime := time.Now().In(loc).Add(-1 * time.Minute)
+// TestGetByID_UTCStoredTimestampRoundTrip exercises the full read path with UTC-normalised timestamps
+// (matching what the write side stores), asserting the request is not treated as expired.
+func (suite *CIBARequestStoreTestSuite) TestGetByID_UTCStoredTimestampRoundTrip() {
+	expiry := time.Now().UTC().Add(2 * time.Minute)
+	lastPolled := time.Now().UTC().Add(-30 * time.Second)
+	authTime := time.Now().UTC().Add(-1 * time.Minute)
 
 	suite.mockDBProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("QueryContext", mock.Anything, queryGetCIBAAuthRequest,
@@ -431,9 +410,9 @@ func (suite *CIBARequestStoreTestSuite) TestGetByID_NonUTCStoredTimestampReadsSa
 			dbColumnUserID:         "user-1",
 			dbColumnStandardScopes: "openid",
 			dbColumnState:          string(CIBAStatePending),
-			dbColumnAuthTime:       authTime.String(),
-			dbColumnLastPolledAt:   lastPolled.String(),
-			dbColumnExpiryTime:     expiry.String(),
+			dbColumnAuthTime:       authTime.Format("2006-01-02 15:04:05.999999999"),
+			dbColumnLastPolledAt:   lastPolled.Format("2006-01-02 15:04:05.999999999"),
+			dbColumnExpiryTime:     expiry.Format("2006-01-02 15:04:05.999999999"),
 		},
 	}, nil)
 

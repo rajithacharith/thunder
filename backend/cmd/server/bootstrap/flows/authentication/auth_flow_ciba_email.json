@@ -53,7 +53,7 @@
                 ]
             },
             "onSuccess": "notification_sent_status",
-            "onFailure": "notification_sent_status"
+            "onFailure": "notification_error_status"
         },
         {
             "id": "notification_sent_status",
@@ -71,20 +71,51 @@
                         "align": "center",
                         "type": "TEXT",
                         "id": "notification_heading",
-                        "label": "Authentication Request Sent",
+                        "label": "{{ t(signin:forms.ciba.notification_sent.heading) }}",
                         "variant": "HEADING_1"
                     },
                     {
                         "align": "center",
                         "type": "TEXT",
                         "id": "notification_message",
-                        "label": "A notification has been sent. Follow the link in the notification to continue.",
+                        "label": "{{ t(signin:forms.ciba.notification_sent.message) }}",
                         "variant": "HEADING_6"
                     }
                 ]
             },
             "message": "Authentication notification sent",
             "next": "verify_invite"
+        },
+        {
+            "id": "notification_error_status",
+            "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "error_icon",
+                        "label": "❌",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "error_heading",
+                        "label": "{{ t(signin:forms.ciba.notification_error.heading) }}",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "error_message",
+                        "label": "{{ t(signin:forms.ciba.notification_error.message) }}",
+                        "variant": "HEADING_6"
+                    }
+                ]
+            },
+            "message": "Authentication notification failed",
+            "next": "end"
         },
         {
             "id": "verify_invite",
@@ -111,14 +142,14 @@
                         "align": "center",
                         "type": "TEXT",
                         "id": "credentials_heading",
-                        "label": "Confirm Your Identity",
+                        "label": "{{ t(signin:forms.ciba.credentials.heading) }}",
                         "variant": "HEADING_1"
                     },
                     {
                         "align": "center",
                         "type": "TEXT",
                         "id": "credentials_message",
-                        "label": "Enter your credentials to approve the authentication request.",
+                        "label": "{{ t(signin:forms.ciba.credentials.message) }}",
                         "variant": "HEADING_6"
                     },
                     {
@@ -129,14 +160,14 @@
                                 "id": "input_password",
                                 "ref": "password",
                                 "type": "PASSWORD_INPUT",
-                                "label": "Password",
+                                "label": "{{ t(signin:forms.credentials.fields.password.label) }}",
                                 "required": true,
-                                "placeholder": "Enter your password"
+                                "placeholder": "{{ t(signin:forms.credentials.fields.password.placeholder) }}"
                             },
                             {
                                 "type": "ACTION",
                                 "id": "action_approve",
-                                "label": "Approve",
+                                "label": "{{ t(signin:forms.ciba.credentials.actions.approve.label) }}",
                                 "variant": "PRIMARY",
                                 "eventType": "SUBMIT"
                             }
@@ -205,14 +236,14 @@
                         "align": "center",
                         "type": "TEXT",
                         "id": "success_heading",
-                        "label": "Authentication Successful",
+                        "label": "{{ t(signin:forms.ciba.success.heading) }}",
                         "variant": "HEADING_1"
                     },
                     {
                         "align": "center",
                         "type": "TEXT",
                         "id": "success_message",
-                        "label": "You have successfully authenticated. The call center agent can now update your profile. You may close this window.",
+                        "label": "{{ t(signin:forms.ciba.success.message) }}",
                         "variant": "HEADING_6"
                     }
                 ]

@@ -27,6 +27,7 @@ import (
 	oauth2model "github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
 	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
 	"github.com/thunder-id/thunderid/internal/system/database/provider"
+	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
 
 const (
@@ -201,11 +202,11 @@ func buildAuthorizationCodeFromResultRow(row map[string]interface{}) (*Authoriza
 		return nil, errors.New("state is empty")
 	}
 
-	timeCreated, err := parseTimeField(row[columnNameTimeCreated], columnNameTimeCreated)
+	timeCreated, err := sysutils.ParseDBTimeField(row[columnNameTimeCreated], columnNameTimeCreated)
 	if err != nil {
 		return nil, err
 	}
-	expiryTime, err := parseTimeField(row[columnNameExpiryTime], columnNameExpiryTime)
+	expiryTime, err := sysutils.ParseDBTimeField(row[columnNameExpiryTime], columnNameExpiryTime)
 	if err != nil {
 		return nil, err
 	}

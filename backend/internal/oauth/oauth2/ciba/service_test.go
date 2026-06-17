@@ -168,7 +168,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_AuthReqIDInjectedIntoRuntimeData
 	var capturedAuthReqID string
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.MatchedBy(
 		func(initCtx *flowexec.FlowInitContext) bool {
-			capturedAuthReqID = initCtx.RuntimeData[flowcm.RuntimeKeyCIBAAuthReqID]
+			capturedAuthReqID = initCtx.RuntimeData[flowcm.RuntimeKeyAuthReqID]
 			return capturedAuthReqID != ""
 		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: flowcm.FlowStatusIncomplete}, nil)
 	suite.mockStore.EXPECT().Add(mock.Anything, mock.MatchedBy(func(r *CIBAAuthRequest) bool {
@@ -187,7 +187,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_AuthReqIDInjectedIntoRuntimeData
 func (suite *CIBAServiceTestSuite) TestInitiate_LoginHintInInitialInputs() {
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.MatchedBy(
 		func(initCtx *flowexec.FlowInitContext) bool {
-			return initCtx.InitialInputs[flowcm.UserInputKeyLoginHint] == "alice"
+			return initCtx.InitialInputs[oauth2const.RequestParamLoginHint] == "alice"
 		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: flowcm.FlowStatusIncomplete}, nil)
 	suite.expectStoreAddSuccess()
 
@@ -812,7 +812,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_WithIDTokenHint_Success() {
 	suite.mockJWTService.EXPECT().VerifyJWTSignature(mock.Anything, hint).Return(nil)
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.MatchedBy(
 		func(initCtx *flowexec.FlowInitContext) bool {
-			return initCtx.InitialInputs[flowcm.UserInputKeyLoginHint] == testEntityID
+			return initCtx.InitialInputs[oauth2const.RequestParamLoginHint] == testEntityID
 		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: flowcm.FlowStatusIncomplete}, nil)
 	suite.expectStoreAddSuccess()
 

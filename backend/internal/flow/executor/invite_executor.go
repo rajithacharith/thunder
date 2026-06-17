@@ -179,7 +179,7 @@ func (e *inviteExecutor) generateInviteLink(ctx *core.NodeContext, inviteToken s
 	if ctx.EntityID != "" {
 		queryParams.Set(oauth2const.AppID, ctx.EntityID)
 	}
-	if authReqID, ok := ctx.RuntimeData[common.RuntimeKeyCIBAAuthReqID]; ok && authReqID != "" {
+	if authReqID, ok := ctx.RuntimeData[common.RuntimeKeyAuthReqID]; ok && authReqID != "" {
 		queryParams.Set(oauth2const.RequestParamAuthReqID, authReqID)
 	}
 
