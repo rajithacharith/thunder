@@ -631,6 +631,11 @@ const sidebars: SidebarsConfig = {
                       label: 'Token Exchange',
                       key: 'oauth-token-exchange',
                     },
+                    {
+                      type: 'doc',
+                      id: 'guides/guides/protocols/oauth-oidc/backchannel-authentication',
+                      label: 'Backchannel Authentication (CIBA)',
+                    },
                   ],
                 },
                 {
