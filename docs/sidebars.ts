@@ -21,6 +21,7 @@
 import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 import browserSdkSidebar from './content/sdks/browser/sidebar';
 import expressSdkSidebar from './content/sdks/express/sidebar';
+import iosSdkSidebar from './content/sdks/ios/sidebar';
 import javascriptSdkSidebar from './content/sdks/javascript/sidebar';
 import nextjsSdkSidebar from './content/sdks/nextjs/sidebar';
 import nodeSdkSidebar from './content/sdks/node/sidebar';
@@ -131,6 +132,11 @@ const sidebars: SidebarsConfig = {
               type: 'doc',
               id: 'guides/getting-started/connect-your-application/browser',
               label: 'Vanilla JavaScript',
+            },
+            {
+              type: 'doc',
+              id: 'guides/getting-started/connect-your-application/ios',
+              label: 'iOS',
             },
           ],
         },
@@ -852,6 +858,7 @@ const sidebars: SidebarsConfig = {
   browserSdkSidebar,
   nextjsSdkSidebar,
   javascriptSdkSidebar,
+  iosSdkSidebar,
   communitySidebar: [
     // Community Section
     {

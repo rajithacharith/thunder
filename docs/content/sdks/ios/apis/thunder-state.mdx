@@ -1,0 +1,141 @@
+---
+title: ThunderState
+description: Reactive authentication state for SwiftUI applications
+---
+
+# `ThunderState`
+
+`ThunderState` is the reactive authentication state object provided by the `ThunderSwiftUI` package. It is an `ObservableObject` that holds the current user, loading state, and initialization status, and exposes the underlying `ThunderClient` for direct API calls.
+
+`ThunderState` is injected into the SwiftUI environment by the `.thunderIDProvider(config:)` modifier. Any view in the hierarchy can read it using `@EnvironmentObject`.
+
+## Setup
+
+Apply `.thunderIDProvider(config:)` to your root view in your `App` struct:
+
+```swift
+import SwiftUI
+import ThunderSwiftUI
+
+@main
+struct MyApp: App {
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+                .thunderIDProvider(config: ThunderIDConfig(
+                    baseUrl: "https://localhost:8090",
+                    clientId: "<your-client-id>",
+                    afterSignInUrl: "io.thunder.b2c://callback",
+                    afterSignOutUrl: "io.thunder.b2c://logout"
+                ))
+        }
+    }
+}
+```
+
+Access `ThunderState` in any child view:
+
+```swift
+struct ProfileView: View {
+    @EnvironmentObject var state: ThunderState
+
+    var body: some View {
+        Text(state.user?.displayName ?? "Not signed in")
+    }
+}
+```
+
+## Properties
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `user` | `User?` | The currently authenticated user. `nil` when not signed in. |
+| `isSignedIn` | `Bool` | `true` when `user` is not `nil`. |
+| `isLoading` | `Bool` | `true` while the SDK is initializing or a sign-in/sign-out operation is in progress. |
+| `isInitialized` | `Bool` | `true` after the SDK has completed initialization (whether or not sign-in succeeded). |
+| `error` | `String?` | A human-readable error message if initialization or the last auth operation failed. `nil` on success. |
+| `client` | `ThunderClient` | The underlying `ThunderClient` instance for direct API calls. |
+| `i18n` | `ThunderI18n` | The localization instance. Use `setLocale(_:)` to change the active language. |
+
+## Methods
+
+### `refresh()`
+
+Re-fetches the current sign-in state from the token store and updates `user`. Call this after a sign-in or sign-out operation that you perform manually via `state.client`.
+
+```swift
+func refresh() async
+```
+
+```swift
+Task {
+    _ = try? await state.client.signOut()
+    await state.refresh()
+}
+```
+
+:::note
+`SignOutButton` and `SignIn` call `refresh()` automatically. You only need to call it directly when driving auth operations through `state.client` yourself.
+:::
+
+---
+
+### `setLocale(_:)`
+
+Changes the active locale for all `ThunderSwiftUI` components. The selected locale is persisted to `UserDefaults`.
+
+```swift
+func setLocale(_ locale: String)
+```
+
+```swift
+Button("Switch to French") {
+    state.setLocale("fr-FR")
+}
+```
+
+## Example: Conditional Rendering
+
+Use `state.isInitialized`, `state.isLoading`, and `state.isSignedIn` to drive your root navigation:
+
+```swift
+struct RootView: View {
+    @EnvironmentObject var state: ThunderState
+
+    var body: some View {
+        Group {
+            if !state.isInitialized || state.isLoading {
+                ProgressView("Loading...")
+            } else if let error = state.error {
+                Text("Configuration error: \(error)")
+                    .foregroundStyle(.red)
+            } else if state.isSignedIn {
+                HomeView()
+            } else {
+                AuthView()
+            }
+        }
+    }
+}
+```
+
+## Example: Accessing the Client Directly
+
+Use `state.client` to call any `ThunderClient` method:
+
+```swift
+struct TokenDebugView: View {
+    @EnvironmentObject var state: ThunderState
+    @State private var tokenClaims: String = ""
+
+    var body: some View {
+        Text(tokenClaims)
+            .task {
+                if let token = try? await state.client.getAccessToken() {
+                    let claims: [String: AnyCodable]? = try? state.client.decodeJwtToken(token)
+                    tokenClaims = "\(claims ?? [:])"
+                }
+            }
+    }
+}
+```
