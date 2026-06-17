@@ -5,9 +5,6 @@ sidebar_position: 1
 sidebar_label: Set up sample application
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
 # Set Up Sample Application
 
 This page walks you through the quick path: download the sample, import a pre-built bundle into <ProductName />, and run the app. Everything the walkthroughs need is created in one step.
@@ -55,24 +52,17 @@ Apply the bundle through the <ProductName /> Console. It creates everything the 
 
 ### Run the Sample
 
-Start all Wayfinder services from the extracted sample directory:
-
-<Tabs groupId="os">
-<TabItem value="unix" label="Linux / macOS">
+From the extracted sample directory, install dependencies:
 
 ```bash
-./start.sh
+npm install
 ```
 
-</TabItem>
-<TabItem value="windows" label="Windows">
+Then start all services:
 
-```powershell
-.\start.ps1
+```bash
+npm run dev
 ```
-
-</TabItem>
-</Tabs>
 
 The sample opens at <WayFinderSampleUrl />.
 

@@ -194,3 +194,8 @@ EUDI
 [Kk]rakenD
 [Gg]oroutines?
 jsDelivr
+[Uu]nstyled
+URLSession
+Alamofire
+[Rr]einitializes?
+Xcode
