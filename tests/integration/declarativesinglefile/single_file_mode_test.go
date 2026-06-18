@@ -70,13 +70,13 @@ type: GITHUB
 properties:
   - name: client_id
     value: {{.SF_TEST_GITHUB_CLIENT_ID}}
-    is_secret: false
+    isSecret: false
   - name: client_secret
     value: sf-test-github-secret
-    is_secret: true
+    isSecret: true
   - name: redirect_uri
     value: https://localhost:8095/callback
-    is_secret: false
+    isSecret: false
 ---
 # resource_type: identity_provider
 id: sf-decl-idp-2
@@ -86,13 +86,13 @@ type: GOOGLE
 properties:
   - name: client_id
     value: sf-test-google-client
-    is_secret: false
+    isSecret: false
   - name: client_secret
     value: sf-test-google-secret
-    is_secret: true
+    isSecret: true
   - name: redirect_uri
     value: https://localhost:8095/callback
-    is_secret: false
+    isSecret: false
 `
 
 // envVars are set in the test process before the server starts so they are inherited

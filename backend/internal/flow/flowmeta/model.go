@@ -18,27 +18,20 @@
 
 package flowmeta
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/thunder-id/thunderid/internal/actorprovider"
+)
 
 // FlowMetadataResponse represents the aggregated metadata for a flow.
 type FlowMetadataResponse struct {
-	IsRegistrationFlowEnabled bool                 `json:"isRegistrationFlowEnabled"`
-	IsRecoveryFlowEnabled     bool                 `json:"isRecoveryFlowEnabled"`
-	Application               *ApplicationMetadata `json:"application,omitempty"`
-	OU                        *OUMetadata          `json:"ou,omitempty"`
-	Design                    DesignMetadata       `json:"design"`
-	I18n                      I18nMetadata         `json:"i18n"`
-}
-
-// ApplicationMetadata represents application-specific metadata.
-type ApplicationMetadata struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	LogoURL     string `json:"logoUrl,omitempty"`
-	URL         string `json:"url,omitempty"`
-	TosURI      string `json:"tosUri,omitempty"`
-	PolicyURI   string `json:"policyUri,omitempty"`
+	IsRegistrationFlowEnabled bool                               `json:"isRegistrationFlowEnabled"`
+	IsRecoveryFlowEnabled     bool                               `json:"isRecoveryFlowEnabled"`
+	Application               *actorprovider.ApplicationMetadata `json:"application,omitempty"`
+	OU                        *OUMetadata                        `json:"ou,omitempty"`
+	Design                    DesignMetadata                     `json:"design"`
+	I18n                      I18nMetadata                       `json:"i18n"`
 }
 
 // OUMetadata represents organization unit metadata.

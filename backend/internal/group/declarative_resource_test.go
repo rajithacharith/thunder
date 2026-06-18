@@ -343,7 +343,7 @@ func (suite *GroupExporterTestSuite) TestParseToGroup_ValidYAML() {
 id: group1
 name: Admins
 description: Admin group
-ou_id: ou1
+ouId: ou1
 members:
   - id: user1
     type: user
@@ -383,7 +383,7 @@ func (suite *GroupExporterTestSuite) TestParseToGroup_OptionalFieldsOmitted() {
 	yamlData := []byte(`
 id: group1
 name: Admins
-ou_id: ou1
+ouId: ou1
 `)
 
 	grp, err := parseToGroup(yamlData)
@@ -400,7 +400,7 @@ func (suite *GroupExporterTestSuite) TestParseToGroup_WithOUHandle() {
 	yamlData := []byte(`
 id: group1
 name: Admins
-ou_handle: /root/engineering
+ouHandle: /root/engineering
 `)
 
 	grp, err := parseToGroup(yamlData)
@@ -416,7 +416,7 @@ func (suite *GroupExporterTestSuite) TestParseToGroup_EntityTypesTranslated() {
 	yamlData := []byte(`
 id: group1
 name: Mixed
-ou_id: ou1
+ouId: ou1
 members:
   - id: u1
     type: user
@@ -443,7 +443,7 @@ func (suite *GroupExporterTestSuite) TestParseToGroupWrapper() {
 	yamlData := []byte(`
 id: group1
 name: Admins
-ou_id: ou1
+ouId: ou1
 `)
 
 	result, err := parseToGroupWrapper(yamlData)
@@ -529,7 +529,7 @@ func (suite *GroupExporterTestSuite) TestValidateGroupWrapper_MissingOUID() {
 	err := validateGroupWrapper(grp, nil, nil, nil)
 
 	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "ou_id or ou_handle is required")
+	assert.Contains(suite.T(), err.Error(), "ouId or ouHandle is required")
 }
 
 // Test validateGroupWrapper - duplicate ID in DB store
@@ -587,7 +587,7 @@ func (suite *GroupDeclarativeResourceLoaderTestSuite) initRuntime() {
 
 func (suite *GroupDeclarativeResourceLoaderTestSuite) createGroupsDir() string {
 	runtime := config.GetServerRuntime()
-	dir := filepath.Join(runtime.ServerHome, "repository", "resources", "groups")
+	dir := filepath.Join(runtime.ServerHome, "config", "resources", "groups")
 	suite.Require().NoError(os.MkdirAll(dir, 0o750))
 	return dir
 }
@@ -611,7 +611,7 @@ func (suite *GroupDeclarativeResourceLoaderTestSuite) TestLoadDeclarativeResourc
 id: group1
 name: Admins
 description: Admin group
-ou_id: ou1
+ouId: ou1
 `)
 	suite.Require().NoError(os.WriteFile(filepath.Join(resourceDir, "group1.yaml"), yamlData, 0o600))
 
@@ -635,7 +635,7 @@ func (suite *GroupDeclarativeResourceLoaderTestSuite) TestLoadDeclarativeResourc
 	yamlData := []byte(`
 id: group1
 name: Admins
-ou_id: ou1
+ouId: ou1
 members:
   - id: user1
     type: user
@@ -661,7 +661,7 @@ func (suite *GroupDeclarativeResourceLoaderTestSuite) TestLoadDeclarativeResourc
 	resourceDir := suite.createGroupsDir()
 
 	for _, g := range []struct{ id, name string }{{"group1", "Admins"}, {"group2", "Engineers"}} {
-		yaml := []byte("id: " + g.id + "\nname: " + g.name + "\nou_id: ou1\n")
+		yaml := []byte("id: " + g.id + "\nname: " + g.name + "\nouId: ou1\n")
 		suite.Require().NoError(os.WriteFile(filepath.Join(resourceDir, g.id+".yaml"), yaml, 0o600))
 	}
 
@@ -698,7 +698,7 @@ func (suite *GroupDeclarativeResourceLoaderTestSuite) TestLoadDeclarativeResourc
 	resourceDir := suite.createGroupsDir()
 
 	suite.Require().NoError(
-		os.WriteFile(filepath.Join(resourceDir, "noID.yaml"), []byte("name: Admins\nou_id: ou1\n"), 0o600),
+		os.WriteFile(filepath.Join(resourceDir, "noID.yaml"), []byte("name: Admins\nouId: ou1\n"), 0o600),
 	)
 
 	fileStore := suite.newFileStore()
@@ -729,8 +729,8 @@ func (suite *GroupDeclarativeResourceLoaderTestSuite) TestLoadDeclarativeResourc
 	suite.initRuntime()
 	resourceDir := suite.createGroupsDir()
 
-	yaml1 := []byte("id: group1\nname: Admins\nou_id: ou1\n")
-	yaml2 := []byte("id: group1\nname: AdminsDuplicate\nou_id: ou2\n")
+	yaml1 := []byte("id: group1\nname: Admins\nouId: ou1\n")
+	yaml2 := []byte("id: group1\nname: AdminsDuplicate\nouId: ou2\n")
 	suite.Require().NoError(os.WriteFile(filepath.Join(resourceDir, "group1a.yaml"), yaml1, 0o600))
 	suite.Require().NoError(os.WriteFile(filepath.Join(resourceDir, "group1b.yaml"), yaml2, 0o600))
 
@@ -749,7 +749,7 @@ func (suite *GroupDeclarativeResourceLoaderTestSuite) TestLoadDeclarativeResourc
 	suite.Require().NoError(
 		os.WriteFile(
 			filepath.Join(resourceDir, "group1.yaml"),
-			[]byte("id: group1\nname: Admins\nou_id: ou1\n"),
+			[]byte("id: group1\nname: Admins\nouId: ou1\n"),
 			0o600,
 		),
 	)

@@ -28,8 +28,10 @@ allowBuilds:
 
 catalog:
   '@axe-core/playwright': 4.3.0
+  '@codecov/vite-plugin': 2.0.1
   '@hookform/resolvers': 5.2.2
   '@monaco-editor/react': 4.7.0
+  '@rolldown/plugin-babel': '0.2.3'
   '@tanstack/react-query': 5.90.5
   '@tanstack/react-query-devtools': 5.90.2
   '@testing-library/jest-dom': 6.9.1
@@ -40,39 +42,39 @@ catalog:
   '@types/react': 19.2.14
   '@types/react-dom': 19.2.3
   '@playwright/test': 1.60.0
-  '@vitejs/plugin-basic-ssl': 2.1.0
-  '@vitejs/plugin-react': 5.0.4
-  '@vitest/browser-playwright': 4.1.6
-  '@vitest/coverage-istanbul': 4.1.6
-  '@wso2/oxygen-ui': 0.10.1
-  '@wso2/oxygen-ui-icons-react': 0.10.1
+  '@vitejs/plugin-basic-ssl': 2.3.0
+  '@vitejs/plugin-react': 6.0.2
+  '@vitest/browser-playwright': 4.1.8
+  '@vitest/coverage-istanbul': 4.1.8
+  '@wso2/oxygen-ui': 0.11.0
+  '@wso2/oxygen-ui-icons-react': 0.11.0
   babel-plugin-react-compiler: 19.1.0-rc.3
   clsx: 2.1.1
   dayjs: 1.11.18
-  dompurify: 3.4.0
+  dompurify: 3.4.9
   eslint: 9.39.4
   globals: 16.4.0
   i18next: 25.6.0
   jsdom: 27.0.1
   lodash-es: 4.18.1
   lucide-react: 0.545.0
-  nx: 22.7.3
+  nx: 22.7.5
   playwright: 1.60.0
   prettier: 3.6.2
   react: 19.2.3
   react-dom: 19.2.3
   react-hook-form: 7.65.0
   react-i18next: 16.0.1
-  react-router: 7.15.0
+  react-router: 7.15.1
   rimraf: 6.1.3
   rolldown: 1.0.0-beta.45
   rollup-plugin-visualizer: 6.0.5
   tslib: 2.8.1
   typescript: 5.9.3
   typescript-eslint: 8.57.2
-  vite: npm:rolldown-vite@7.1.14
+  vite: 8.0.16
   vite-plugin-svgr: 5.2.0
-  vitest: 4.1.6
+  vitest: 4.1.8
   zod: 4.3.6
 
   # SDKS
@@ -96,7 +98,7 @@ overrides:
   # JUSTIFICATION: Fixes GHSA-w7jw-789q-3m8p by overriding to fix docusaurus version in docs workspace only.
   "@thunderid/docs>shell-quote": 1.8.4
   # JUSTIFICATION: The `ws` package is a transitive dependency of `docusaurus/core -> webpack-bundle-analyzer` and it requires a major version bump.
-  ws: '>=8.20.1'
+  ws: '>=8.21.0'
   # JUSTIFICATION: Packed through next@15.5.18. Could be resolved once next is updated to 16 versions.
   postcss: 8.5.10
   openapi-to-postmanv2>ajv: 8.18.0
@@ -104,10 +106,12 @@ overrides:
   ajv-formats>ajv: 8.18.0
   flatted: 3.4.2
   vite: 'catalog:'
+  # JUSTIFICATION: Fixes GHSA-fx2h-pf6j-xcff — vite `server.fs.deny` bypass on Windows alternate paths.
+  vite@>=8.0.0 <=8.0.15: '>=8.0.16'
   vue: 3.5.34
   defu: 6.1.5
   axios: 1.16.0
-  dompurify: 3.4.0
+  dompurify: 3.4.9
   follow-redirects: 1.16.0
   unhead: 2.1.13
   minimatch@>=5.0.0 <5.1.8: '>=5.1.8'
@@ -123,25 +127,45 @@ overrides:
   brace-expansion@>=4.0.0 <5.0.5: 5.0.5
   lodash: 4.18.1
   protobufjs: 7.6.0
-  js-yaml@>=4.0.0 <4.1.1: 4.1.1
+  js-yaml@>=4.0.0 <=4.1.1: 4.2.0
   # TODO: Remove once `nuxt` bumps `devalue` to 5.8.1 or later.
   devalue: 5.8.1
-  # JUSTIFICATION: Fixes CVE-2026-44705 (GHSA-ph9p-34f9-6g65) — Path Traversal via unsanitized prefix/postfix in tmp.
-  tmp: 0.2.6
+  # JUSTIFICATION: Fixes CVE-2026-44705 (GHSA-ph9p-34f9-6g65) — Path Traversal via unsanitized prefix/postfix in tmp,
+  # and GHSA-7c78-jf6q-g5cm — type-confusion bypass of _assertPath (vulnerable in <0.2.7).
+  tmp: '>=0.2.7'
   # JUSTIFICATION: Transitive dep via js-beautify. Fixes CVE-2026-46625 (GHSA-qjx8-664m-686j) — prototype hijack in assign() allows cookie-attribute injection.
   js-cookie: 3.0.7
   # JUSTIFICATION: @langchain/langgraph requires uuid@^10.0.0 (not yet bumped upstream to v11). Fixes predictable RNG vulnerability in uuid < 11.1.1.
   uuid: 11.1.1
+  # JUSTIFICATION: Fixes GHSA-r7qp-cfhv-p84w — node-tar applies PAX size override to intermediary GNU long-name/link headers causing tar parser interpretation differential (file smuggling).
+  tar: '>=7.5.16'
+  # JUSTIFICATION: Fixes GHSA-9cwx-2883-4wfx — launch-editor NTLMv2 hash disclosure via UNC path handling on Windows (transitive via vite and other tooling).
+  launch-editor: '>=2.14.1'
+  # JUSTIFICATION: Fixes GHSA-86vr-4h7v-f9x9 — @babel/core arbitrary file read via sourceMappingURL comment.
+  '@babel/core': '>=7.29.6'
   # JUSTIFICATION: Transitive dep via docusaurus. Fixes CVE-2026-48038 (GHSA-q7cg-457f-vx79) — uncaught RangeError DoS in joi on deeply nested input through recursive link() schemas.
   joi: '>=18.2.1'
+  # JUSTIFICATION: Fixes GHSA-gv7w-rqvm-qjhr — esbuild Deno module downloads native binaries without integrity verification, enabling RCE via NPM_CONFIG_REGISTRY.
+  esbuild: '>=0.28.1'
+  # JUSTIFICATION: Transitive dep via axios/nx. Fixes GHSA-hmw2-7cc7-3qxx — CRLF injection in form-data via unescaped field names (vulnerable <4.0.6).
+  form-data: '>=4.0.6'
 
 packageExtensions:
   '@hookform/resolvers':
     peerDependencies:
       zod: '*'
 
+peerDependencyRules:
+  allowedVersions:
+    # JUSTIFICATION: @codecov/vite-plugin@2.0.1 declares a vite peer range of
+    # 4.x || 5.x || 6.x, but this workspace pins vite to 8.0.16. Bundle analysis
+    # was verified to run correctly against this build (the plugin collects stats
+    # during the build and uploads via OIDC in CI), so Vite 8 is explicitly
+    # allowed for this plugin's vite peer.
+    '@codecov/vite-plugin>vite': '8'
+
 auditConfig:
   ignoreCves: []
 
 minimumReleaseAgeExclude:
-  - tmp@0.2.6
+  - tmp@0.2.7

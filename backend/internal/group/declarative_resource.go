@@ -171,8 +171,8 @@ type groupDeclarativeResource struct {
 	ID          string   `yaml:"id"`
 	Name        string   `yaml:"name"`
 	Description string   `yaml:"description,omitempty"`
-	OUID        string   `yaml:"ou_id,omitempty"`
-	OUHandle    string   `yaml:"ou_handle,omitempty"`
+	OUID        string   `yaml:"ouId,omitempty"`
+	OUHandle    string   `yaml:"ouHandle,omitempty"`
 	Members     []Member `yaml:"members,omitempty"`
 }
 
@@ -261,7 +261,7 @@ func validateGroupWrapper(
 	}
 
 	if grp.OUID == "" {
-		return fmt.Errorf("ou_id or ou_handle is required for group '%s'", grp.Name)
+		return fmt.Errorf("ouId or ouHandle is required for group '%s'", grp.Name)
 	}
 
 	if fileStore != nil {

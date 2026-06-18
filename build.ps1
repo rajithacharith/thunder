@@ -177,11 +177,10 @@ $BUILD_DIR = Join-Path $OUTPUT_DIR ".build"
 $LOCAL_CERT_DIR = Join-Path $OUTPUT_DIR ".cert"
 $BACKEND_BASE_DIR = "backend"
 $BACKEND_DIR = Join-Path $BACKEND_BASE_DIR "cmd/server"
-$REPOSITORY_DIR = Join-Path $BACKEND_BASE_DIR "cmd/server/repository"
-$REPOSITORY_DB_DIR = Join-Path $REPOSITORY_DIR "database"
+$REPOSITORY_DB_DIR = Join-Path $BACKEND_DIR "database"
 $SERVER_SCRIPTS_DIR = Join-Path $BACKEND_BASE_DIR "scripts"
 $SERVER_DB_SCRIPTS_DIR = Join-Path $BACKEND_BASE_DIR "dbscripts"
-$SECURITY_DIR = "repository/resources/security"
+$SECURITY_DIR = "config/certs"
 $FRONTEND_BASE_DIR = "frontend"
 $GATE_APP_DIST_DIR = "apps/gate"
 $CONSOLE_APP_DIST_DIR = "apps/console"
@@ -211,7 +210,7 @@ $DOCS_DEFAULT_PORT = 3000
 # Read Configuration from deployment.yaml
 # ============================================================================
 
-$CONFIG_FILE = "./backend/cmd/server/repository/conf/deployment.yaml"
+$CONFIG_FILE = "./backend/cmd/server/deployment.yaml"
 
 # Function to read config with fallback
 function Read-Config {
@@ -531,6 +530,105 @@ function Lint-SDKs {
     Write-Host "================================================================"
 }
 
+function Build-CLI {
+    Write-Host "Building CLI tool..."
+    & bash "$PSScriptRoot/tools/cli/scripts/build.sh"
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+
+function Test-CLI {
+    Write-Host "Running CLI tool tests..."
+    Push-Location "$PSScriptRoot/tools/cli"
+    try {
+        & go test -v -race -count=1 ./...
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    } finally {
+        Pop-Location
+    }
+}
+
+function Build-I18n-Extractor {
+    $toolBin = Join-Path $PSScriptRoot "backend/bin/tools"
+    New-Item -ItemType Directory -Force -Path $toolBin | Out-Null
+    Write-Host "Building i18n-extractor..."
+    Push-Location "$PSScriptRoot/tools/i18n-extractor"
+    try {
+        & go build -o "$toolBin/i18n-extractor.exe" .
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    } finally {
+        Pop-Location
+    }
+}
+
+function Test-I18n-Extractor {
+    Write-Host "Running i18n-extractor tests..."
+    Push-Location "$PSScriptRoot/tools/i18n-extractor"
+    try {
+        & go test -v .
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    } finally {
+        Pop-Location
+    }
+}
+
+function Lint-CLI {
+    $golangciLint = Join-Path $PSScriptRoot "backend/bin/tools/golangci-lint.exe"
+    Write-Host "Linting CLI tool..."
+    Push-Location "$PSScriptRoot/tools/cli"
+    try {
+        & $golangciLint run ./...
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    } finally {
+        Pop-Location
+    }
+}
+
+function Lint-I18n-Extractor {
+    $golangciLint = Join-Path $PSScriptRoot "backend/bin/tools/golangci-lint.exe"
+    Write-Host "Linting i18n-extractor..."
+    Push-Location "$PSScriptRoot/tools/i18n-extractor"
+    try {
+        & $golangciLint run ./...
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    } finally {
+        Pop-Location
+    }
+}
+
+function Lint-Tools {
+    Write-Host "================================================================"
+    Write-Host "Linting tools..."
+    Lint-CLI
+    Lint-I18n-Extractor
+    Write-Host "================================================================"
+}
+
+function Build-Npm-Tools {
+    Ensure-Pnpm
+    Write-Host "Installing tools dependencies..."
+    & pnpm install --frozen-lockfile
+    Write-Host "Building npm-based tools..."
+    & pnpm --filter './tools/**' build
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+
+function Build-Tools {
+    Write-Host "================================================================"
+    Write-Host "Building tools..."
+    Build-CLI
+    Build-I18n-Extractor
+    Build-Npm-Tools
+    Write-Host "================================================================"
+}
+
+function Test-Tools {
+    Write-Host "================================================================"
+    Write-Host "Running tool tests..."
+    Test-CLI
+    Test-I18n-Extractor
+    Write-Host "================================================================"
+}
+
 function Initialize-Databases {
     param(
         [bool]$override = $false
@@ -611,7 +709,11 @@ function Prepare-Backend-For-Packaging {
 
     $package_folder = Join-Path $DIST_DIR $PRODUCT_FOLDER
     Copy-Item -Path (Join-Path $BUILD_DIR $binary_name) -Destination $package_folder -Force
-    Copy-Item -Path $REPOSITORY_DIR -Destination $package_folder -Recurse -Force
+    Copy-Item -Path (Join-Path $BACKEND_DIR "deployment.yaml") -Destination $package_folder -Force
+    Copy-Item -Path (Join-Path $BACKEND_DIR "config") -Destination $package_folder -Recurse -Force
+    if (Test-Path $REPOSITORY_DB_DIR) {
+        Copy-Item -Path $REPOSITORY_DB_DIR -Destination $package_folder -Recurse -Force
+    }
     Copy-Item -Path $VERSION_FILE -Destination $package_folder -Force
     Copy-Item -Path $SERVER_SCRIPTS_DIR -Destination $package_folder -Recurse -Force
     Copy-Item -Path $SERVER_DB_SCRIPTS_DIR -Destination $package_folder -Recurse -Force
@@ -629,7 +731,7 @@ function Prepare-Backend-For-Packaging {
     Write-Host "================================================================"
 
     Write-Host "=== Ensuring crypto file exists in the distribution ==="
-    Ensure-Crypto-File -conf_dir (Join-Path $package_folder "repository/conf")
+    Ensure-Crypto-File -key_dir (Join-Path $package_folder "config/certs")
     Write-Host "================================================================"
 }
 
@@ -713,7 +815,7 @@ function Package {
         }
     } else {
         Write-Host "Skipping consent server packaging (--without-consent)..."
-        $targetYaml = Join-Path $package_folder "repository/conf/deployment.yaml"
+        $targetYaml = Join-Path $package_folder "deployment.yaml"
         $yqPatched = $false
         if (Get-Command yq -ErrorAction SilentlyContinue) {
             & yq eval '.consent.enabled = false' -i $targetYaml
@@ -1017,12 +1119,15 @@ function Test-Integration {
     Push-Location $SCRIPT_DIR
     try {
         # Set up coverage directory for integration tests
-        $coverage_dir = Join-Path (Get-Location) "$OUTPUT_DIR\.test\integration"
+        $coverage_dir = [System.IO.Path]::GetFullPath((Join-Path $SCRIPT_DIR "target\out\.test\integration"))
+        if (Test-Path $coverage_dir) {
+            Remove-Item -Path $coverage_dir -Recurse -Force -ErrorAction SilentlyContinue
+        }
         New-Item -Path $coverage_dir -ItemType Directory -Force | Out-Null
-        
+
         # Export coverage directory for the server binary to use
         $env:GOCOVERDIR = $coverage_dir
-        
+
         Write-Host "Coverage data will be collected in: $coverage_dir"
         if ($extra_args.Count -gt 0) {
             & go run -C ./tests/integration ./main.go @extra_args
@@ -1030,27 +1135,31 @@ function Test-Integration {
             & go run -C ./tests/integration ./main.go
         }
         $test_exit_code = $LASTEXITCODE
-        
+
         # Process coverage data if tests passed or failed
         if ((Test-Path $coverage_dir) -and ((Get-ChildItem $coverage_dir -ErrorAction SilentlyContinue).Count -gt 0)) {
             Write-Host "================================================================"
             Write-Host "Processing integration test coverage..."
-            
-            # Convert binary coverage data to text format
+
+            # Formulate robust absolute target paths to keep Windows volume prefixes intact
+            $output_file = [System.IO.Path]::GetFullPath((Join-Path $SCRIPT_DIR "target\coverage_integration.out"))
+            $output_html = [System.IO.Path]::GetFullPath((Join-Path $SCRIPT_DIR "target\coverage_integration.html"))
+
+            # Convert binary coverage data to text format cleanly
             Push-Location $BACKEND_BASE_DIR
             try {
-                & go tool covdata textfmt -i="$coverage_dir" -o="../$TARGET_DIR/coverage_integration.out"
-                Write-Host "Integration test coverage report generated in: $TARGET_DIR/coverage_integration.out"
-                
+                & go tool covdata textfmt -i="$coverage_dir" -o="$output_file"
+                Write-Host "Integration test coverage report generated in: $output_file"
+
                 # Generate HTML coverage report
-                & go tool cover -html="../$TARGET_DIR/coverage_integration.out" -o="../$TARGET_DIR/coverage_integration.html"
-                Write-Host "Integration test coverage HTML report generated in: $TARGET_DIR/coverage_integration.html"
-                
+                & go tool cover -html="$output_file" -o="$output_html"
+                Write-Host "Integration test coverage HTML report generated in: $output_html"
+
                 # Display coverage summary
                 Write-Host ""
                 Write-Host "================================================================"
                 Write-Host "Coverage Summary:"
-                & go tool cover -func="../$TARGET_DIR/coverage_integration.out" | Select-Object -Last 1
+                & go tool cover -func="$output_file" | Select-Object -Last 1
                 Write-Host "================================================================"
                 Write-Host ""
             }
@@ -1350,12 +1459,10 @@ function Ensure-Certificates {
 
 function Ensure-Crypto-File {
     param(
-        [string]$conf_dir
+        [string]$key_dir
     )
 
-    # Resolve the .. path segment to get a clean key directory path
-    $KEY_DIR_Temp = Join-Path $conf_dir ".." "resources/security"
-    $KEY_DIR = (Resolve-Path -Path $KEY_DIR_Temp).Path
+    $KEY_DIR = $key_dir
     $KEY_FILE = Join-Path $KEY_DIR "crypto.key"
 
     Write-Host "================================================================"
@@ -1583,7 +1690,7 @@ function Run-Backend {
     Ensure-Certificates -cert_dir $VANILLA_SAMPLE_APP_DIR -cert_name_prefix "server"
 
     Write-Host "=== Ensuring crypto file exists for run ==="
-    Ensure-Crypto-File -conf_dir (Join-Path $BACKEND_DIR "repository/conf")
+    Ensure-Crypto-File -key_dir (Join-Path $BACKEND_DIR "config/certs")
 
     Write-Host "Initializing databases..."
     Initialize-Databases
@@ -1785,6 +1892,15 @@ switch ($Command) {
     'lint_sdks' {
         Lint-SDKs
     }
+    'build_tools' {
+        Build-Tools
+    }
+    'test_tools' {
+        Test-Tools
+    }
+    'lint_tools' {
+        Lint-Tools
+    }
     'package_samples' {
         Package-Sample-App
     }
@@ -1814,7 +1930,7 @@ switch ($Command) {
         Test-Integration
     }
     default {
-        Write-Host "Usage: $($MyInvocation.MyCommand.Name) {clean|build|build_backend|build_frontend|build_docs|package_samples|test_unit|test_integration|merge_coverage|run|run_backend|run_frontend|run_docs|test}"
+        Write-Host "Usage: $($MyInvocation.MyCommand.Name) {clean|build|build_backend|build_frontend|build_docs|build_sdks|test_sdks|lint_sdks|build_tools|test_tools|lint_tools|package_samples|test_unit|test_integration|merge_coverage|run|run_backend|run_frontend|run_docs|test}"
         exit 1
     }
 }

@@ -19,8 +19,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
 import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
+import androidSdkSidebar from './content/sdks/android/sidebar';
 import browserSdkSidebar from './content/sdks/browser/sidebar';
 import expressSdkSidebar from './content/sdks/express/sidebar';
+import iosSdkSidebar from './content/sdks/ios/sidebar';
 import javascriptSdkSidebar from './content/sdks/javascript/sidebar';
 import nextjsSdkSidebar from './content/sdks/nextjs/sidebar';
 import nodeSdkSidebar from './content/sdks/node/sidebar';
@@ -132,6 +134,16 @@ const sidebars: SidebarsConfig = {
               id: 'guides/getting-started/connect-your-application/browser',
               label: 'Vanilla JavaScript',
             },
+            {
+              type: 'doc',
+              id: 'guides/getting-started/connect-your-application/ios',
+              label: 'iOS',
+            },
+            {
+              type: 'doc',
+              id: 'guides/getting-started/connect-your-application/android',
+              label: 'Android',
+            },
           ],
         },
       ],
@@ -169,7 +181,215 @@ const sidebars: SidebarsConfig = {
       ],
     },
 
-    // Guides Section
+    // Use Cases Section
+    {
+      type: 'html',
+      value:
+        '<div class="sidebar-section-label"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg><span>Use Cases</span></div>',
+      className: 'sidebar-html-section-header',
+    },
+    {
+      type: 'category',
+      label: 'Use Cases',
+      collapsed: false,
+      collapsible: false,
+      className: 'sidebar-section',
+      items: [
+        {type: 'doc', id: 'use-cases/overview', label: 'Choose your usecase'},
+        {
+          type: 'category',
+          label: 'Consumer Applications (B2C)',
+          link: {type: 'doc', id: 'use-cases/b2c/index'},
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'category',
+              label: 'Architecture Decisions',
+              link: {type: 'doc', id: 'use-cases/b2c/architecture-decisions'},
+              collapsible: true,
+              collapsed: true,
+              items: [
+                {type: 'doc', id: 'use-cases/b2c/integration-patterns', label: 'Integration Patterns'},
+                {type: 'doc', id: 'use-cases/b2c/identity-sources', label: 'Identity Sources'},
+                {type: 'doc', id: 'use-cases/b2c/tokens-and-apis', label: 'Tokens & APIs'},
+                {type: 'doc', id: 'use-cases/b2c/operations', label: 'Run & Observe'},
+              ],
+            },
+            {
+              type: 'category',
+              label: 'Try It Out',
+              collapsible: true,
+              collapsed: true,
+              link: {type: 'doc', id: 'use-cases/b2c/try-it-out/index'},
+              items: [
+                {type: 'doc', id: 'use-cases/b2c/try-it-out/setup', label: 'Set up sample application'},
+                {type: 'doc', id: 'use-cases/b2c/try-it-out/configure-it-yourself', label: 'Configure It Yourself'},
+                {
+                  type: 'category',
+                  label: 'Walkthroughs',
+                  collapsible: true,
+                  collapsed: true,
+                  items: [
+                    {type: 'doc', id: 'use-cases/b2c/try-it-out/add-login', label: 'Login'},
+                    {type: 'doc', id: 'use-cases/b2c/try-it-out/self-sign-up', label: 'Self Sign-Up'},
+                    {type: 'doc', id: 'use-cases/b2c/try-it-out/profile-section', label: 'View Profile'},
+                    {type: 'doc', id: 'use-cases/b2c/try-it-out/account-recovery', label: 'Account Recovery'},
+                    {
+                      type: 'doc',
+                      id: 'use-cases/b2c/try-it-out/onboard-internal-users',
+                      label: 'Onboard Internal Users',
+                    },
+                  ],
+                },
+                {
+                  type: 'category',
+                  label: 'Learn More',
+                  collapsible: true,
+                  collapsed: true,
+                  items: [{type: 'doc', id: 'use-cases/b2c/identity-concepts', label: 'Identity Concepts'}],
+                },
+              ],
+            },
+            {
+              type: 'category',
+              label: 'Try In Your Own App',
+              collapsible: true,
+              collapsed: true,
+              link: {type: 'doc', id: 'use-cases/b2c/try-in-your-own-app'},
+              items: [
+                {type: 'doc', id: 'use-cases/b2c/try-in-your-own-app/add-login', label: 'Login', key: 'own-app-login'},
+                {
+                  type: 'doc',
+                  id: 'use-cases/b2c/try-in-your-own-app/self-sign-up',
+                  label: 'Self Sign-Up',
+                  key: 'own-app-self-sign-up',
+                },
+                {
+                  type: 'doc',
+                  id: 'use-cases/b2c/try-in-your-own-app/profile-section',
+                  label: 'View Profile',
+                  key: 'own-app-profile-section',
+                },
+                {
+                  type: 'doc',
+                  id: 'use-cases/b2c/try-in-your-own-app/account-recovery',
+                  label: 'Account Recovery',
+                  key: 'own-app-account-recovery',
+                },
+                {
+                  type: 'doc',
+                  id: 'use-cases/b2c/try-in-your-own-app/onboard-internal-users',
+                  label: 'Onboard Internal Users',
+                  key: 'own-app-onboard-internal-users',
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: 'SaaS Applications (B2B)',
+          collapsible: true,
+          collapsed: true,
+          items: [{type: 'doc', id: 'use-cases/b2b/multi-tenant-saas', label: 'Multi-Tenant SaaS'}],
+        },
+        {
+          type: 'category',
+          label: 'AI Agents',
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'category',
+              label: 'Identity for AI Agents',
+              collapsible: true,
+              collapsed: true,
+              items: [
+                {type: 'doc', id: 'use-cases/ai-agents/overview', label: 'Agent Identity'},
+                {
+                  type: 'doc',
+                  id: 'use-cases/ai-agents/solution-patterns',
+                  label: 'Solution Patterns',
+                  key: 'ai-agents-solution-patterns',
+                },
+                {
+                  type: 'category',
+                  label: 'Try It Out',
+                  collapsible: true,
+                  collapsed: true,
+                  key: 'ai-agents-try-it-out',
+                  link: {type: 'doc', id: 'use-cases/ai-agents/try-it-out'},
+                  items: [
+                    {type: 'doc', id: 'use-cases/ai-agents/try-it-out/protect-the-agent', label: 'Protect the Agent'},
+                    {type: 'doc', id: 'use-cases/ai-agents/try-it-out/act-on-its-own', label: 'Acting on Its Own'},
+                    {
+                      type: 'doc',
+                      id: 'use-cases/ai-agents/try-it-out/act-on-behalf-of-user',
+                      label: 'Acting on Behalf of a User',
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              type: 'category',
+              label: 'Securing MCP',
+              collapsible: true,
+              collapsed: true,
+              items: [
+                {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/overview', label: 'Overview', key: 'mcp-authorization-overview'},
+                {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/solution-patterns', label: 'Solution Patterns', key: 'mcp-authorization-solution-patterns'},
+                {
+                  type: 'category',
+                  label: 'Try It Out',
+                  collapsible: true,
+                  collapsed: true,
+                  key: 'mcp-authorization-try-it-out',
+                  link: {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/try-it-out'},
+                  items: [
+                    {
+                      type: 'category',
+                      label: 'Walkthroughs',
+                      collapsible: true,
+                      collapsed: true,
+                      key: 'mcp-authorization-walkthroughs',
+                      items: [
+                        {
+                          type: 'doc',
+                          id: 'use-cases/ai-agents/mcp-authorization/try-it-out/connect-via-inspector',
+                          label: 'MCP Authorization',
+                        },
+                      ],
+                    },
+                    {
+                      type: 'category',
+                      label: 'Learn More',
+                      collapsible: true,
+                      collapsed: true,
+                      key: 'mcp-authorization-learn-more',
+                      items: [
+                        {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/identity-concepts', label: 'Identity Concepts', key: 'mcp-authorization-identity-concepts'},
+                        {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/configure-it-yourself', label: 'Configure It Yourself', key: 'mcp-authorization-configure-it-yourself'},
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Secure Token Service (STS)',
+          collapsible: true,
+          collapsed: true,
+          items: [{type: 'doc', id: 'use-cases/sts/krakend', label: 'Protect APIs on KrakenD'}],
+        },
+      ],
+    },
+
+    // Guides Section (moved below Use Cases)
     {
       type: 'html',
       value:
@@ -216,11 +436,6 @@ const sidebars: SidebarsConfig = {
               type: 'doc',
               id: 'guides/guides/users/manage-groups',
               label: 'Manage Groups',
-            },
-            {
-              type: 'doc',
-              id: 'guides/guides/users/manage-roles',
-              label: 'Manage Roles',
             },
             {
               type: 'doc',
@@ -294,6 +509,12 @@ const sidebars: SidebarsConfig = {
                   id: 'guides/guides/identity-providers/connect-idp-to-application',
                   label: 'Connect IdP to Application',
                 },
+                {
+                  type: 'doc',
+                  id: 'guides/guides/identity-providers/token-exchange-idp',
+                  label: 'Token Exchange',
+                  key: 'idp-token-exchange',
+                },
               ],
             },
             {
@@ -304,15 +525,15 @@ const sidebars: SidebarsConfig = {
               items: [
                 {
                   type: 'doc',
+                  id: 'guides/guides/smtp-server/smtp-server-configuration',
+                  label: 'SMTP Server',
+                },
+                {
+                  type: 'doc',
                   id: 'guides/guides/notifications/sms-providers',
                   label: 'SMS Providers',
                 },
               ],
-            },
-            {
-              type: 'doc',
-              id: 'guides/guides/smtp-server/smtp-server-configuration',
-              label: 'Configure SMTP Server',
             },
           ],
         },
@@ -357,7 +578,7 @@ const sidebars: SidebarsConfig = {
         {
           type: 'doc',
           id: 'guides/guides/trusted-issuer',
-          label: 'Trusted Issuer',
+          label: 'Secure Using a Third-Party IdP',
         },
         {
           type: 'doc',
@@ -441,10 +662,25 @@ const sidebars: SidebarsConfig = {
                   collapsed: true,
                   collapsible: true,
                   items: [
-                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/authorization-code', label: 'Authorization Code'},
-                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/client-credentials', label: 'Client Credentials'},
+                    {
+                      type: 'doc',
+                      id: 'guides/guides/protocols/oauth-oidc/authorization-code',
+                      label: 'Authorization Code',
+                    },
+                    {
+                      type: 'doc',
+                      id: 'guides/guides/protocols/oauth-oidc/client-credentials',
+                      label: 'Client Credentials',
+                    },
                     {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/refresh-token', label: 'Refresh Token'},
-                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/token-exchange', label: 'Token Exchange'},
+                    // Unique `key` avoids a translation-key collision with the "Token Exchange"
+                    // item under Identity Providers (i18n key is derived from the label).
+                    {
+                      type: 'doc',
+                      id: 'guides/guides/protocols/oauth-oidc/token-exchange',
+                      label: 'Token Exchange',
+                      key: 'oauth-token-exchange',
+                    },
                   ],
                 },
                 {
@@ -468,9 +704,21 @@ const sidebars: SidebarsConfig = {
                   items: [
                     {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/pkce', label: 'PKCE'},
                     {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/par', label: 'Pushed Authorization Requests'},
-                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/dpop', label: 'DPoP — Sender-Constrained Tokens'},
-                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/issuer-identification', label: 'Issuer Identification'},
-                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/resource-indicators', label: 'Resource Indicators'},
+                    {
+                      type: 'doc',
+                      id: 'guides/guides/protocols/oauth-oidc/dpop',
+                      label: 'DPoP — Sender-Constrained Tokens',
+                    },
+                    {
+                      type: 'doc',
+                      id: 'guides/guides/protocols/oauth-oidc/issuer-identification',
+                      label: 'Issuer Identification',
+                    },
+                    {
+                      type: 'doc',
+                      id: 'guides/guides/protocols/oauth-oidc/resource-indicators',
+                      label: 'Resource Indicators',
+                    },
                   ],
                 },
                 {
@@ -479,7 +727,11 @@ const sidebars: SidebarsConfig = {
                   collapsed: true,
                   collapsible: true,
                   items: [
-                    {type: 'doc', id: 'guides/guides/protocols/oauth-oidc/token-introspection', label: 'Token Introspection'},
+                    {
+                      type: 'doc',
+                      id: 'guides/guides/protocols/oauth-oidc/token-introspection',
+                      label: 'Token Introspection',
+                    },
                   ],
                 },
                 {
@@ -528,207 +780,6 @@ const sidebars: SidebarsConfig = {
                 },
               ],
             },
-          ],
-        },
-      ],
-    },
-
-    // Use Cases Section
-    {
-      type: 'html',
-      value:
-        '<div class="sidebar-section-label"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg><span>Use Cases</span></div>',
-      className: 'sidebar-html-section-header',
-    },
-    {
-      type: 'category',
-      label: 'Use Cases',
-      collapsed: false,
-      collapsible: false,
-      className: 'sidebar-section',
-      items: [
-        {type: 'doc', id: 'use-cases/overview', label: 'Choose your usecase'},
-        {
-          type: 'category',
-          label: 'Consumer Applications (B2C)',
-          collapsible: true,
-          collapsed: true,
-          items: [
-            {type: 'doc', id: 'use-cases/b2c/customer-identity', label: 'Customer Identity'},
-            {type: 'doc', id: 'use-cases/b2c/solution-patterns', label: 'Solution Patterns'},
-            {
-              type: 'category',
-              label: 'Try It Out',
-              collapsible: true,
-              collapsed: true,
-              link: {type: 'doc', id: 'use-cases/b2c/try-it-out'},
-              items: [
-                {
-                  type: 'category',
-                  label: 'Walkthroughs',
-                  collapsible: true,
-                  collapsed: true,
-                  key: 'b2c-walkthroughs',
-                  items: [
-                    {type: 'doc', id: 'use-cases/b2c/try-it-out/add-login', label: 'Login'},
-                    {type: 'doc', id: 'use-cases/b2c/try-it-out/self-sign-up', label: 'Self Sign-Up'},
-                    {type: 'doc', id: 'use-cases/b2c/try-it-out/profile-section', label: 'View Profile'},
-                    {type: 'doc', id: 'use-cases/b2c/try-it-out/account-recovery', label: 'Account Recovery'},
-                    {
-                      type: 'doc',
-                      id: 'use-cases/b2c/try-it-out/onboard-internal-users',
-                      label: 'Onboard Internal Users',
-                    },
-                  ],
-                },
-                {
-                  type: 'category',
-                  label: 'Learn More',
-                  collapsible: true,
-                  collapsed: true,
-                  key: 'b2c-learn-more',
-                  items: [
-                    {type: 'doc', id: 'use-cases/b2c/identity-concepts', label: 'Identity Concepts', key: 'b2c-identity-concepts'},
-                    {type: 'doc', id: 'use-cases/b2c/configure-it-yourself', label: 'Configure It Yourself', key: 'b2c-configure-it-yourself'},
-                  ],
-                },
-              ],
-            },
-            {
-              type: 'category',
-              label: 'Try In Your Own App',
-              collapsible: true,
-              collapsed: true,
-              link: {type: 'doc', id: 'use-cases/b2c/try-in-your-own-app'},
-              items: [
-                {type: 'doc', id: 'use-cases/b2c/try-in-your-own-app/add-login', label: 'Login', key: 'own-app-login'},
-                {type: 'doc', id: 'use-cases/b2c/try-in-your-own-app/self-sign-up', label: 'Self Sign-Up', key: 'own-app-self-sign-up'},
-                {type: 'doc', id: 'use-cases/b2c/try-in-your-own-app/profile-section', label: 'View Profile', key: 'own-app-profile-section'},
-                {type: 'doc', id: 'use-cases/b2c/try-in-your-own-app/account-recovery', label: 'Account Recovery', key: 'own-app-account-recovery'},
-                {
-                  type: 'doc',
-                  id: 'use-cases/b2c/try-in-your-own-app/onboard-internal-users',
-                  label: 'Onboard Internal Users',
-                  key: 'own-app-onboard-internal-users',
-                },
-              ],
-            },
-          ],
-        },
-        {
-          type: 'category',
-          label: 'SaaS Applications (B2B)',
-          collapsible: true,
-          collapsed: true,
-          items: [{type: 'doc', id: 'use-cases/b2b/multi-tenant-saas', label: 'Multi-Tenant SaaS'}],
-        },
-        {
-          type: 'category',
-          label: 'Agent Identity',
-          collapsible: true,
-          collapsed: true,
-          items: [
-            {
-              type: 'category',
-              label: 'Securing AI Agents',
-              collapsible: true,
-              collapsed: true,
-              items: [
-                {type: 'doc', id: 'use-cases/ai-agents/overview', label: 'Overview', key: 'ai-agents-overview'},
-                {type: 'doc', id: 'use-cases/ai-agents/solution-patterns', label: 'Solution Patterns', key: 'ai-agents-solution-patterns'},
-                {
-                  type: 'category',
-                  label: 'Try It Out',
-                  collapsible: true,
-                  collapsed: true,
-                  key: 'ai-agents-try-it-out',
-                  link: {type: 'doc', id: 'use-cases/ai-agents/try-it-out'},
-                  items: [
-                    {
-                      type: 'category',
-                      label: 'Walkthroughs',
-                      collapsible: true,
-                      collapsed: true,
-                      key: 'ai-agents-walkthroughs',
-                      items: [
-                        {type: 'doc', id: 'use-cases/ai-agents/try-it-out/protect-the-agent', label: 'Protect the Agent'},
-                        {type: 'doc', id: 'use-cases/ai-agents/try-it-out/act-on-its-own', label: 'Acting on Its Own'},
-                        {
-                          type: 'doc',
-                          id: 'use-cases/ai-agents/try-it-out/act-on-behalf-of-user',
-                          label: 'Acting on Behalf of a User',
-                        },
-                      ],
-                    },
-                    {
-                      type: 'category',
-                      label: 'Learn More',
-                      collapsible: true,
-                      collapsed: true,
-                      key: 'ai-agents-learn-more',
-                      items: [
-                        {type: 'doc', id: 'use-cases/ai-agents/identity-concepts', label: 'Identity Concepts', key: 'ai-agents-identity-concepts'},
-                        {type: 'doc', id: 'use-cases/ai-agents/configure-it-yourself', label: 'Configure It Yourself', key: 'ai-agents-configure-it-yourself'},
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-            {
-              type: 'category',
-              label: 'Securing MCP',
-              collapsible: true,
-              collapsed: true,
-              items: [
-                {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/overview', label: 'Overview', key: 'mcp-authorization-overview'},
-                {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/solution-patterns', label: 'Solution Patterns', key: 'mcp-authorization-solution-patterns'},
-                {
-                  type: 'category',
-                  label: 'Try It Out',
-                  collapsible: true,
-                  collapsed: true,
-                  key: 'mcp-authorization-try-it-out',
-                  link: {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/try-it-out'},
-                  items: [
-                    {
-                      type: 'category',
-                      label: 'Walkthroughs',
-                      collapsible: true,
-                      collapsed: true,
-                      key: 'mcp-authorization-walkthroughs',
-                      items: [
-                        {
-                          type: 'doc',
-                          id: 'use-cases/ai-agents/mcp-authorization/try-it-out/connect-via-inspector',
-                          label: 'MCP Authorization',
-                        },
-                      ],
-                    },
-                    {
-                      type: 'category',
-                      label: 'Learn More',
-                      collapsible: true,
-                      collapsed: true,
-                      key: 'mcp-authorization-learn-more',
-                      items: [
-                        {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/identity-concepts', label: 'Identity Concepts', key: 'mcp-authorization-identity-concepts'},
-                        {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/configure-it-yourself', label: 'Configure It Yourself', key: 'mcp-authorization-configure-it-yourself'},
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-        {
-          type: 'category',
-          label: 'Secure Token Service (STS)',
-          collapsible: true,
-          collapsed: true,
-          items: [
-            {type: 'doc', id: 'use-cases/sts/krakend', label: 'Protect APIs on KrakenD'},
           ],
         },
       ],
@@ -818,21 +869,9 @@ const sidebars: SidebarsConfig = {
           collapsed: true,
           items: [
             {
-              type: 'category',
+              type: 'doc',
+              id: 'guides/deployment-patterns/docker',
               label: 'Docker',
-              collapsible: true,
-              collapsed: false,
-              link: {
-                type: 'doc',
-                id: 'guides/deployment-patterns/docker',
-              },
-              items: [
-                {
-                  type: 'doc',
-                  id: 'guides/deployment-patterns/docker-production',
-                  label: 'Production Recommendations',
-                },
-              ],
             },
             {
               type: 'doc',
@@ -856,11 +895,6 @@ const sidebars: SidebarsConfig = {
           id: 'guides/deployment-patterns/production-guidelines',
           label: 'Production Guidelines',
         },
-        {
-          type: 'doc',
-          id: 'guides/deployment-patterns/observability',
-          label: 'Observability',
-        },
       ],
     },
   ],
@@ -874,6 +908,8 @@ const sidebars: SidebarsConfig = {
   browserSdkSidebar,
   nextjsSdkSidebar,
   javascriptSdkSidebar,
+  iosSdkSidebar,
+  androidSdkSidebar,
   communitySidebar: [
     // Community Section
     {
@@ -905,7 +941,7 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       collapsible: false,
       items: [
-        {type: 'doc', id: 'community/contributing/overview', label: `Contribute to ${productConfig.project.name}`},
+        {type: 'doc', id: 'community/contributing/overview', label: 'Contribute to ThunderID'},
         {type: 'doc', id: 'community/contributing/sharing-ideas', label: 'Share Ideas'},
         {type: 'doc', id: 'community/contributing/proposing-features', label: 'Propose Features'},
         {type: 'doc', id: 'community/contributing/contributing-code/prerequisites', label: 'Prerequisites'},

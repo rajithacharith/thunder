@@ -28,6 +28,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/attributecache"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/config"
@@ -55,28 +56,6 @@ func (suite *UtilsTestSuite) SetupTest() {
 		},
 	}
 	_ = config.InitializeServerRuntime("test", testConfig)
-}
-
-// ============================================================================
-// isSelfIssuer Tests
-// ============================================================================
-
-func (suite *UtilsTestSuite) TestisSelfIssuer_WithValidDeploymentIssuer() {
-	result := isSelfIssuer("https://thunder.io")
-
-	assert.True(suite.T(), result)
-}
-
-func (suite *UtilsTestSuite) TestisSelfIssuer_WithInvalidIssuer() {
-	result := isSelfIssuer("https://evil.example.com")
-
-	assert.False(suite.T(), result)
-}
-
-func (suite *UtilsTestSuite) TestisSelfIssuer_WithEmptyIssuer() {
-	result := isSelfIssuer("")
-
-	assert.False(suite.T(), result)
 }
 
 func (suite *UtilsTestSuite) TestJoinScopes_WithMultipleScopes() {
@@ -543,88 +522,10 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_CacheWithoutOUID() {
 }
 
 func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithServerLevelConfig() {
-	// Reset and initialize config with refresh token validity period
-	config.ResetServerRuntime()
-	testConfig := &config.Config{
-		JWT: config.JWTConfig{
-			Issuer:         "https://thunder.io",
-			ValidityPeriod: 3600,
-		},
-		OAuth: config.OAuthConfig{
-			RefreshToken: config.RefreshTokenConfig{
-				ValidityPeriod: 86400, // 24 hours
-			},
-		},
-	}
-	_ = config.InitializeServerRuntime("test", testConfig)
-
 	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 	}
-
-	result := ResolveTokenConfig(oauthApp, TokenTypeRefresh)
-
-	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), int64(86400), result.ValidityPeriod)
-	assert.Equal(suite.T(), "https://thunder.io", result.Issuer)
-}
-
-func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithoutServerLevelConfig() {
-	// Reset and initialize config without refresh token validity period (zero value)
-	config.ResetServerRuntime()
-	testConfig := &config.Config{
-		JWT: config.JWTConfig{
-			Issuer:         "https://thunder.io",
-			ValidityPeriod: 3600,
-		},
-		OAuth: config.OAuthConfig{
-			RefreshToken: config.RefreshTokenConfig{
-				ValidityPeriod: 0, // Not set
-			},
-		},
-	}
-	_ = config.InitializeServerRuntime("test", testConfig)
-
-	oauthApp := &inboundmodel.OAuthClient{
-		ClientID: "test-client",
-	}
-
-	result := ResolveTokenConfig(oauthApp, TokenTypeRefresh)
-
-	assert.NotNil(suite.T(), result)
-	// Should fallback to default JWT validity period
-	assert.Equal(suite.T(), int64(3600), result.ValidityPeriod)
-}
-
-func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithNilOAuthApp() {
-	// Reset and initialize config with refresh token validity period
-	config.ResetServerRuntime()
-	testConfig := &config.Config{
-		JWT: config.JWTConfig{
-			Issuer:         "https://thunder.io",
-			ValidityPeriod: 3600,
-		},
-		OAuth: config.OAuthConfig{
-			RefreshToken: config.RefreshTokenConfig{
-				ValidityPeriod: 604800, // 7 days
-			},
-		},
-	}
-	_ = config.InitializeServerRuntime("test", testConfig)
-
-	// oauthApp is nil
-	result := ResolveTokenConfig(nil, TokenTypeRefresh)
-
-	assert.NotNil(suite.T(), result)
-	// Should still use server-level refresh token config
-	assert.Equal(suite.T(), int64(604800), result.ValidityPeriod)
-	assert.Equal(suite.T(), "https://thunder.io", result.Issuer)
-}
-
-func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithTokenConfig() {
-	// Refresh token always uses server-level issuer from config
-	config.ResetServerRuntime()
-	testConfig := &config.Config{
+	cfg := oauthconfig.Config{
 		JWT: config.JWTConfig{
 			Issuer:         "https://thunder.io",
 			ValidityPeriod: 3600,
@@ -635,14 +536,70 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithTokenConfig
 			},
 		},
 	}
-	_ = config.InitializeServerRuntime("test", testConfig)
+
+	result := ResolveTokenConfig(cfg, oauthApp, TokenTypeRefresh)
+
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), int64(86400), result.ValidityPeriod)
+	assert.Equal(suite.T(), "https://thunder.io", result.Issuer)
+}
+
+func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithoutServerLevelConfig() {
+	oauthApp := &inboundmodel.OAuthClient{
+		ClientID: "test-client",
+	}
+	cfg := oauthconfig.Config{
+		JWT: config.JWTConfig{
+			Issuer:         "https://thunder.io",
+			ValidityPeriod: 3600,
+		},
+	}
+
+	result := ResolveTokenConfig(cfg, oauthApp, TokenTypeRefresh)
+
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), int64(3600), result.ValidityPeriod)
+}
+
+func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithNilOAuthApp() {
+	cfg := oauthconfig.Config{
+		JWT: config.JWTConfig{
+			Issuer:         "https://thunder.io",
+			ValidityPeriod: 3600,
+		},
+		OAuth: config.OAuthConfig{
+			RefreshToken: config.RefreshTokenConfig{
+				ValidityPeriod: 604800,
+			},
+		},
+	}
+
+	result := ResolveTokenConfig(cfg, nil, TokenTypeRefresh)
+
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), int64(604800), result.ValidityPeriod)
+	assert.Equal(suite.T(), "https://thunder.io", result.Issuer)
+}
+
+func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithTokenConfig() {
+	cfg := oauthconfig.Config{
+		JWT: config.JWTConfig{
+			Issuer:         "https://thunder.io",
+			ValidityPeriod: 3600,
+		},
+		OAuth: config.OAuthConfig{
+			RefreshToken: config.RefreshTokenConfig{
+				ValidityPeriod: 86400,
+			},
+		},
+	}
 
 	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 		Token:    &inboundmodel.OAuthTokenConfig{},
 	}
 
-	result := ResolveTokenConfig(oauthApp, TokenTypeRefresh)
+	result := ResolveTokenConfig(cfg, oauthApp, TokenTypeRefresh)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), int64(86400), result.ValidityPeriod)
@@ -650,17 +607,14 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithTokenConfig
 }
 
 func (suite *UtilsTestSuite) TestResolveTokenConfig_AccessToken_WithNilOAuthApp() {
-	config.ResetServerRuntime()
-	testConfig := &config.Config{
+	cfg := oauthconfig.Config{
 		JWT: config.JWTConfig{
 			Issuer:         "https://thunder.io",
 			ValidityPeriod: 3600,
 		},
 	}
-	_ = config.InitializeServerRuntime("test", testConfig)
 
-	// oauthApp is nil - should use default config
-	result := ResolveTokenConfig(nil, TokenTypeAccess)
+	result := ResolveTokenConfig(cfg, nil, TokenTypeAccess)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), int64(3600), result.ValidityPeriod)
@@ -668,22 +622,19 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_AccessToken_WithNilOAuthApp(
 }
 
 func (suite *UtilsTestSuite) TestResolveTokenConfig_AccessToken_WithNilToken() {
-	config.ResetServerRuntime()
-	testConfig := &config.Config{
+	cfg := oauthconfig.Config{
 		JWT: config.JWTConfig{
 			Issuer:         "https://thunder.io",
 			ValidityPeriod: 3600,
 		},
 	}
-	_ = config.InitializeServerRuntime("test", testConfig)
 
-	// oauthApp.Token is nil - should use default config
 	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 		Token:    nil,
 	}
 
-	result := ResolveTokenConfig(oauthApp, TokenTypeAccess)
+	result := ResolveTokenConfig(cfg, oauthApp, TokenTypeAccess)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), int64(3600), result.ValidityPeriod)
@@ -691,14 +642,12 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_AccessToken_WithNilToken() {
 }
 
 func (suite *UtilsTestSuite) TestResolveTokenConfig_AccessToken_WithAppLevelConfig() {
-	config.ResetServerRuntime()
-	testConfig := &config.Config{
+	cfg := oauthconfig.Config{
 		JWT: config.JWTConfig{
 			Issuer:         "https://thunder.io",
 			ValidityPeriod: 3600,
 		},
 	}
-	_ = config.InitializeServerRuntime("test", testConfig)
 
 	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
@@ -709,24 +658,21 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_AccessToken_WithAppLevelConf
 		},
 	}
 
-	result := ResolveTokenConfig(oauthApp, TokenTypeAccess)
+	result := ResolveTokenConfig(cfg, oauthApp, TokenTypeAccess)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), int64(7200), result.ValidityPeriod)
 }
 
 func (suite *UtilsTestSuite) TestResolveTokenConfig_IDToken_WithNilOAuthApp() {
-	config.ResetServerRuntime()
-	testConfig := &config.Config{
+	cfg := oauthconfig.Config{
 		JWT: config.JWTConfig{
 			Issuer:         "https://thunder.io",
 			ValidityPeriod: 3600,
 		},
 	}
-	_ = config.InitializeServerRuntime("test", testConfig)
 
-	// oauthApp is nil - should use default config
-	result := ResolveTokenConfig(nil, TokenTypeID)
+	result := ResolveTokenConfig(cfg, nil, TokenTypeID)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), int64(3600), result.ValidityPeriod)
@@ -734,22 +680,19 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_IDToken_WithNilOAuthApp() {
 }
 
 func (suite *UtilsTestSuite) TestResolveTokenConfig_IDToken_WithNilToken() {
-	config.ResetServerRuntime()
-	testConfig := &config.Config{
+	cfg := oauthconfig.Config{
 		JWT: config.JWTConfig{
 			Issuer:         "https://thunder.io",
 			ValidityPeriod: 3600,
 		},
 	}
-	_ = config.InitializeServerRuntime("test", testConfig)
 
-	// oauthApp.Token is nil - should use default config
 	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 		Token:    nil,
 	}
 
-	result := ResolveTokenConfig(oauthApp, TokenTypeID)
+	result := ResolveTokenConfig(cfg, oauthApp, TokenTypeID)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), int64(3600), result.ValidityPeriod)
@@ -757,14 +700,12 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_IDToken_WithNilToken() {
 }
 
 func (suite *UtilsTestSuite) TestResolveTokenConfig_IDToken_WithAppLevelConfig() {
-	config.ResetServerRuntime()
-	testConfig := &config.Config{
+	cfg := oauthconfig.Config{
 		JWT: config.JWTConfig{
 			Issuer:         "https://thunder.io",
 			ValidityPeriod: 3600,
 		},
 	}
-	_ = config.InitializeServerRuntime("test", testConfig)
 
 	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
@@ -775,46 +716,40 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_IDToken_WithAppLevelConfig()
 		},
 	}
 
-	result := ResolveTokenConfig(oauthApp, TokenTypeID)
+	result := ResolveTokenConfig(cfg, oauthApp, TokenTypeID)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), int64(1800), result.ValidityPeriod)
 }
 
 func (suite *UtilsTestSuite) TestResolveTokenConfig_WithCustomIssuer_NilOAuthApp() {
-	config.ResetServerRuntime()
-	testConfig := &config.Config{
+	cfg := oauthconfig.Config{
 		JWT: config.JWTConfig{
 			Issuer:         "https://thunder.io",
 			ValidityPeriod: 3600,
 		},
 	}
-	_ = config.InitializeServerRuntime("test", testConfig)
 
-	// With nil oauthApp, should use default issuer
-	result := ResolveTokenConfig(nil, TokenTypeAccess)
+	result := ResolveTokenConfig(cfg, nil, TokenTypeAccess)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "https://thunder.io", result.Issuer)
 }
 
 func (suite *UtilsTestSuite) TestResolveTokenConfig_WithTokenConfig_UsesServerIssuer() {
-	config.ResetServerRuntime()
-	testConfig := &config.Config{
+	cfg := oauthconfig.Config{
 		JWT: config.JWTConfig{
 			Issuer:         "https://thunder.io",
 			ValidityPeriod: 3600,
 		},
 	}
-	_ = config.InitializeServerRuntime("test", testConfig)
 
-	// OAuthApp with token config always uses server-level issuer from config
 	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 		Token:    &inboundmodel.OAuthTokenConfig{},
 	}
 
-	result := ResolveTokenConfig(oauthApp, TokenTypeAccess)
+	result := ResolveTokenConfig(cfg, oauthApp, TokenTypeAccess)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "https://thunder.io", result.Issuer)
@@ -970,7 +905,15 @@ func (suite *UtilsTestSuite) TestExtractAudiences_SliceWithEmptyString_ReturnsEr
 }
 
 func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithAppLevelConfig() {
-	config.GetServerRuntime().Config.OAuth.RefreshToken.ValidityPeriod = 86400
+	cfg := oauthconfig.Config{
+		JWT: config.JWTConfig{
+			Issuer:         "https://thunder.io",
+			ValidityPeriod: 3600,
+		},
+		OAuth: config.OAuthConfig{
+			RefreshToken: config.RefreshTokenConfig{ValidityPeriod: 86400},
+		},
+	}
 
 	oauthApp := &inboundmodel.OAuthClient{
 		Token: &inboundmodel.OAuthTokenConfig{
@@ -980,19 +923,27 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithAppLevelCon
 		},
 	}
 
-	result := ResolveTokenConfig(oauthApp, TokenTypeRefresh)
+	result := ResolveTokenConfig(cfg, oauthApp, TokenTypeRefresh)
 
 	suite.Equal(int64(7200), result.ValidityPeriod)
 }
 
 func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_FallsBackToServerConfig() {
-	config.GetServerRuntime().Config.OAuth.RefreshToken.ValidityPeriod = 86400
+	cfg := oauthconfig.Config{
+		JWT: config.JWTConfig{
+			Issuer:         "https://thunder.io",
+			ValidityPeriod: 3600,
+		},
+		OAuth: config.OAuthConfig{
+			RefreshToken: config.RefreshTokenConfig{ValidityPeriod: 86400},
+		},
+	}
 
 	oauthApp := &inboundmodel.OAuthClient{
 		Token: &inboundmodel.OAuthTokenConfig{},
 	}
 
-	result := ResolveTokenConfig(oauthApp, TokenTypeRefresh)
+	result := ResolveTokenConfig(cfg, oauthApp, TokenTypeRefresh)
 
 	suite.Equal(int64(86400), result.ValidityPeriod)
 }

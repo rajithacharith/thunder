@@ -22,9 +22,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	authncm "github.com/thunder-id/thunderid/internal/authn/common"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
+	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
@@ -35,12 +36,12 @@ import (
 // Returns empty string if executor doesn't map to an authn service.
 func getAuthnServiceName(executorName string) string {
 	executorToAuthnServiceMap := map[string]string{
-		ExecutorNameBasicAuth:  authncm.AuthenticatorCredentials,
-		ExecutorNameSMSAuth:    authncm.AuthenticatorSMSOTP,
-		ExecutorNameOAuth:      authncm.AuthenticatorOAuth,
-		ExecutorNameOIDCAuth:   authncm.AuthenticatorOIDC,
-		ExecutorNameGitHubAuth: authncm.AuthenticatorGithub,
-		ExecutorNameGoogleAuth: authncm.AuthenticatorGoogle,
+		ExecutorNameCredentialsAuth: authncm.AuthenticatorCredentials,
+		ExecutorNameSMSAuth:         authncm.AuthenticatorSMSOTP,
+		ExecutorNameOAuth:           authncm.AuthenticatorOAuth,
+		ExecutorNameOIDCAuth:        authncm.AuthenticatorOIDC,
+		ExecutorNameGitHubAuth:      authncm.AuthenticatorGithub,
+		ExecutorNameGoogleAuth:      authncm.AuthenticatorGoogle,
 	}
 	return executorToAuthnServiceMap[executorName]
 }
@@ -127,26 +128,30 @@ func isCrossOUProvisioningAllowed(ctx *core.NodeContext) bool {
 	return false
 }
 
+// isAllowAuthenticationWithoutLocalUserRuntimeFlagSet checks if the runtime flag for allowing authentication without
+// a local user is set in the context.
+func isAllowRegistrationWithExistingUserRuntimeFlagSet(ctx *core.NodeContext) bool {
+	val, ok := ctx.RuntimeData[common.RuntimeKeyAllowRegistrationWithExistingUser]
+	return ok && val == dataValueTrue
+}
+
 // validateFederatedIdentifierConsistency checks if the federated identifiers from the authentication result
 // are consistent with any existing identifiers in the context (runtime data, user inputs, authenticated
 // user attributes).
 func validateFederatedIdentifierConsistency(ctx *core.NodeContext,
-	basicResult *authnprovidermgr.AuthnBasicResult) bool {
-	if basicResult == nil {
+	federatedIdentifiers, existingIdentifiers map[string]interface{}) bool {
+	if len(federatedIdentifiers) == 0 {
 		return true
-	}
-
-	federatedIdentifiers := map[string]string{
-		userAttributeSub: basicResult.ExternalSub,
-	}
-	if email, ok := basicResult.ExternalClaims[userAttributeEmail]; ok {
-		federatedIdentifiers[userAttributeEmail] = systemutils.ConvertInterfaceValueToString(email)
 	}
 
 	// TODO: Refine this well-known-key comparison when IDP-to-local attribute mapping is supported
 	fedIdfConsistencyKeys := []string{userAttributeEmail, userAttributeSub}
 	for _, key := range fedIdfConsistencyKeys {
-		federatedValue := federatedIdentifiers[key]
+		federatedValue := ""
+		if value, ok := federatedIdentifiers[key]; ok {
+			federatedValue = systemutils.ConvertInterfaceValueToString(value)
+		}
+
 		if federatedValue == "" {
 			continue
 		}
@@ -157,7 +162,9 @@ func validateFederatedIdentifierConsistency(ctx *core.NodeContext,
 		if value, ok := ctx.UserInputs[key]; ok && value != "" && value != federatedValue {
 			return false
 		}
-		if value := getAuthenticatedIdentifierValue(ctx, key); value != "" && value != federatedValue {
+		if value := existingIdentifiers[key]; value != nil &&
+			systemutils.ConvertInterfaceValueToString(value) != "" &&
+			systemutils.ConvertInterfaceValueToString(value) != federatedValue {
 			return false
 		}
 	}
@@ -165,16 +172,67 @@ func validateFederatedIdentifierConsistency(ctx *core.NodeContext,
 	return true
 }
 
-// getAuthenticatedIdentifierValue retrieves the value of a specific identifier key from the
-// authenticated user's attributes in the context.
-func getAuthenticatedIdentifierValue(ctx *core.NodeContext, key string) string {
-	if ctx.AuthenticatedUser.Attributes == nil {
-		return ""
-	}
-	value, ok := ctx.AuthenticatedUser.Attributes[key]
-	if !ok {
-		return ""
+// buildAppMetadataFromContext constructs application metadata from the node context,
+// including application metadata and OAuth client IDs.
+func buildAppMetadataFromContext(ctx *core.NodeContext) map[string]interface{} {
+	appMetadata := make(map[string]interface{})
+
+	if ctx.Application.Metadata != nil {
+		for key, value := range ctx.Application.Metadata {
+			appMetadata[key] = value
+		}
 	}
 
-	return systemutils.ConvertInterfaceValueToString(value)
+	var clientIDs []string
+	for _, inboundConfig := range ctx.Application.InboundAuthConfig {
+		if inboundConfig.OAuthConfig != nil && inboundConfig.OAuthConfig.ClientID != "" {
+			clientIDs = append(clientIDs, inboundConfig.OAuthConfig.ClientID)
+		}
+	}
+
+	if len(clientIDs) > 0 {
+		appMetadata["client_ids"] = clientIDs
+	}
+
+	return appMetadata
+}
+
+// buildRuntimeMetadata constructs the runtime metadata for authentication.
+func buildRuntimeMetadata(ctx *core.NodeContext) map[string]string {
+	runtimeMetadata := map[string]string{
+		"authorization_request_id": ctx.RuntimeData[common.RuntimeKeyAuthorizationRequestID],
+		"current_client_id":        ctx.RuntimeData[common.RuntimeKeyClientID],
+	}
+
+	if ctx.RuntimeData != nil {
+		for key, value := range ctx.RuntimeData {
+			// Only the ext_* runtime data keys are passed to the authn provider.
+			if strings.HasPrefix(key, "ext_") {
+				runtimeMetadata[key] = value
+			}
+		}
+	}
+	return runtimeMetadata
+}
+
+// buildAuthnMetadata constructs the metadata for authentication.
+func buildAuthnMetadata(ctx *core.NodeContext) *authnprovidercm.AuthnMetadata {
+	return &authnprovidercm.AuthnMetadata{
+		AppMetadata:     buildAppMetadataFromContext(ctx),
+		RuntimeMetadata: buildRuntimeMetadata(ctx),
+	}
+}
+
+// buildGetAttributesMetadata constructs the metadata for fetching user attributes.
+func buildGetAttributesMetadata(ctx *core.NodeContext) *authnprovidercm.GetAttributesMetadata {
+	metadata := &authnprovidercm.GetAttributesMetadata{
+		AppMetadata:     buildAppMetadataFromContext(ctx),
+		RuntimeMetadata: buildRuntimeMetadata(ctx),
+	}
+
+	if locale, exists := ctx.RuntimeData["required_locales"]; exists && locale != "" {
+		metadata.Locale = locale
+	}
+
+	return metadata
 }

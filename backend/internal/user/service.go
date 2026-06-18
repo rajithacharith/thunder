@@ -1057,7 +1057,7 @@ func (us *userService) ResolveUserOUHandle(
 ) *serviceerror.ServiceError {
 	if user.OUID != "" && user.OUHandle != "" {
 		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-		logger.Warn(ctx, "Both ou_id and ou_handle provided for user; ou_handle ignored",
+		logger.Warn(ctx, "Both ouId and ouHandle provided for user; ouHandle ignored",
 			log.MaskedString(log.LoggerKeyUserID, user.ID))
 		return nil
 	}

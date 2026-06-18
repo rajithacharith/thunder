@@ -19,6 +19,7 @@
 import {PageLoader} from '@thunderid/components';
 import {OrganizationUnitProvider} from '@thunderid/configure-organization-units';
 import {TranslationCreateProvider} from '@thunderid/configure-translations';
+import {UserTypeCreateProvider} from '@thunderid/configure-user-types';
 import {UserCreateProvider} from '@thunderid/configure-users';
 import {ToastProvider} from '@thunderid/contexts';
 import {ProtectedRoute} from '@thunderid/react-router';
@@ -30,7 +31,6 @@ import LayoutBuilderProvider from './features/design/contexts/LayoutBuilder/Layo
 import ThemeBuilderProvider from './features/design/contexts/ThemeBuilder/ThemeBuilderProvider';
 import GroupCreateProvider from './features/groups/contexts/GroupCreate/GroupCreateProvider';
 import RoleCreateProvider from './features/roles/contexts/RoleCreate/RoleCreateProvider';
-import UserTypeCreateProvider from './features/user-types/contexts/UserTypeCreate/UserTypeCreateProvider';
 import WelcomeRedirect from './features/welcome/components/WelcomeRedirect';
 import GetStartedPage from './features/welcome/pages/GetStartedPage';
 import TryoutSecuringAIAgentsPage from './features/welcome/pages/TryoutSecuringAIAgentsPage';
@@ -80,10 +80,14 @@ const AgentCreatePage = lazy(() => import('./features/agents/pages/AgentCreatePa
 const AgentEditPage = lazy(() => import('./features/agents/pages/AgentEditPage'));
 const AgentsListPage = lazy(() => import('./features/agents/pages/AgentsListPage'));
 const ApplicationCreatePage = lazy(() => import('./features/applications/pages/ApplicationCreatePage'));
-const ApplicationEditPage = lazy(() => import('./features/applications/pages/ApplicationEditPage'));
+const ApplicationEditPage = lazy(() =>
+  import('./lib/monaco-setup').then(() => import('./features/applications/pages/ApplicationEditPage')),
+);
 const ApplicationsListPage = lazy(() => import('./features/applications/pages/ApplicationsListPage'));
 const DesignPage = lazy(() => import('./features/design/pages/DesignPage'));
-const LayoutBuilderPage = lazy(() => import('./features/design/pages/LayoutBuilderPage'));
+const LayoutBuilderPage = lazy(() =>
+  import('./lib/monaco-setup').then(() => import('./features/design/pages/LayoutBuilderPage')),
+);
 const ThemeBuilderPage = lazy(() => import('./features/design/pages/ThemeBuilderPage'));
 const ThemeCreatePage = lazy(() => import('./features/design/pages/ThemeCreatePage'));
 const FlowCreatePage = lazy(() => import('./features/flows/pages/FlowCreatePage'));
@@ -92,9 +96,11 @@ const CreateGroupPage = lazy(() => import('./features/groups/pages/CreateGroupPa
 const GroupEditPage = lazy(() => import('./features/groups/pages/GroupEditPage'));
 const GroupsListPage = lazy(() => import('./features/groups/pages/GroupsListPage'));
 const HomePage = lazy(() => import('./features/home/pages/HomePage'));
-const ExportPage = lazy(() => import('./features/import-export/pages/ExportPage'));
-const ImportConfigurationSummaryPage = lazy(
-  () => import('./features/import-export/pages/ImportConfigurationSummaryPage'),
+const ExportPage = lazy(() =>
+  import('./lib/monaco-setup').then(() => import('./features/import-export/pages/ExportPage')),
+);
+const ImportConfigurationSummaryPage = lazy(() =>
+  import('./lib/monaco-setup').then(() => import('./features/import-export/pages/ImportConfigurationSummaryPage')),
 );
 const ImportConfigurationUploadPage = lazy(
   () => import('./features/import-export/pages/ImportConfigurationUploadPage'),
@@ -107,9 +113,15 @@ const LoginFlowBuilderPage = lazy(() => import('./features/login-flow/pages/Logi
 const CreateRolePage = lazy(() => import('./features/roles/pages/CreateRolePage'));
 const RoleEditPage = lazy(() => import('./features/roles/pages/RoleEditPage'));
 const RolesListPage = lazy(() => import('./features/roles/pages/RolesListPage'));
-const CreateUserTypePage = lazy(() => import('./features/user-types/pages/CreateUserTypePage'));
-const UserTypesListPage = lazy(() => import('./features/user-types/pages/UserTypesListPage'));
-const ViewUserTypePage = lazy(() => import('./features/user-types/pages/ViewUserTypePage'));
+const CreateUserTypePage = lazy(() =>
+  import('@thunderid/configure-user-types').then((m) => ({default: m.CreateUserTypePage})),
+);
+const UserTypesListPage = lazy(() =>
+  import('@thunderid/configure-user-types').then((m) => ({default: m.UserTypesListPage})),
+);
+const ViewUserTypePage = lazy(() =>
+  import('@thunderid/configure-user-types').then((m) => ({default: m.ViewUserTypePage})),
+);
 const CreateProjectPage = lazy(() => import('./features/welcome/pages/CreateProjectPage'));
 const WelcomePage = lazy(() => import('./features/welcome/pages/WelcomePage'));
 

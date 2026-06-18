@@ -96,14 +96,14 @@ To automatically assign a default role to every self-registered user, create the
             { "ref": "input_username", "identifier": "username", "type": "TEXT_INPUT", "required": true },
             { "ref": "input_password", "identifier": "password", "type": "PASSWORD_INPUT", "required": true }
           ],
-          "action": { "ref": "action_credentials", "nextNode": "basic_auth" }
+          "action": { "ref": "action_credentials", "nextNode": "credentials_auth" }
         }
       ]
     },
     {
-      "id": "basic_auth",
+      "id": "credentials_auth",
       "type": "TASK_EXECUTION",
-      "executor": { "name": "BasicAuthExecutor" },
+      "executor": { "name": "CredentialsAuthExecutor" },
       "onSuccess": "provisioning"
     },
     {

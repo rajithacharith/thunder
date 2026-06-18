@@ -159,19 +159,18 @@ func parseToNotificationSenderDTO(data []byte) (*common.NotificationSenderDTO, e
 		return nil, err
 	}
 
+	provider, err := parseProviderType(senderRequest.Provider)
+	if err != nil {
+		return nil, err
+	}
+
 	senderDTO := &common.NotificationSenderDTO{
 		ID:          senderRequest.ID,
 		Name:        senderRequest.Name,
 		Description: senderRequest.Description,
 		Type:        common.NotificationSenderTypeMessage,
+		Provider:    provider,
 	}
-
-	// Parse provider type
-	provider, err := parseProviderType(senderRequest.Provider)
-	if err != nil {
-		return nil, err
-	}
-	senderDTO.Provider = provider
 
 	// Convert PropertyDTO to Property
 	if len(senderRequest.Properties) > 0 {
@@ -215,7 +214,11 @@ func validateNotificationSenderWrapper(dto interface{}) error {
 	if !ok {
 		return fmt.Errorf("invalid type: expected *common.NotificationSenderDTO")
 	}
-	return validateNotificationSenderForDeclarativeResource(senderDTO)
+	err := validateNotificationSenderForDeclarativeResource(senderDTO)
+	if err == nil {
+		applyDefaultSenderProperties(senderDTO)
+	}
+	return err
 }
 
 func validateNotificationSenderForDeclarativeResource(senderDTO *common.NotificationSenderDTO) error {
@@ -225,10 +228,6 @@ func validateNotificationSenderForDeclarativeResource(senderDTO *common.Notifica
 
 	if strings.TrimSpace(senderDTO.ID) == "" {
 		return fmt.Errorf("notification sender ID is required")
-	}
-
-	if senderDTO.Type == "" {
-		return fmt.Errorf("notification sender type is required for '%s'", senderDTO.Name)
 	}
 
 	return nil

@@ -683,6 +683,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) getValidTwilioSender() commo
 			createTestProperty("account_sid", "AC00112233445566778899aabbccddeeff", true),
 			createTestProperty("auth_token", "test-auth-token", true),
 			createTestProperty("sender_id", "+15551234567", false),
+			createTestProperty(common.SenderPropertySupportedChannels, "sms", false),
 		},
 	}
 }
@@ -697,6 +698,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) getValidVonageSender() commo
 			createTestProperty("api_key", "test-api-key", true),
 			createTestProperty("api_secret", "test-api-secret", true),
 			createTestProperty("sender_id", "TestSender", false),
+			createTestProperty(common.SenderPropertySupportedChannels, "sms", false),
 		},
 	}
 }

@@ -49,16 +49,11 @@ vi.mock('../features/users/pages/UserEditPage', () => ({
   default: () => <div data-testid="user-edit-page">User Edit Page</div>,
 }));
 
-vi.mock('../features/user-types/pages/UserTypesListPage', () => ({
-  default: () => <div data-testid="user-types-list-page">User Types List Page</div>,
-}));
-
-vi.mock('../features/user-types/pages/CreateUserTypePage', () => ({
-  default: () => <div data-testid="create-user-type-page">Create User Type Page</div>,
-}));
-
-vi.mock('../features/user-types/pages/ViewUserTypePage', () => ({
-  default: () => <div data-testid="view-user-type-page">View User Type Page</div>,
+vi.mock('@thunderid/configure-user-types', () => ({
+  UserTypeCreateProvider: ({children}: {children: React.ReactNode}) => children as React.ReactElement,
+  UserTypesListPage: () => <div data-testid="user-types-list-page">User Types List Page</div>,
+  CreateUserTypePage: () => <div data-testid="create-user-type-page">Create User Type Page</div>,
+  ViewUserTypePage: () => <div data-testid="view-user-type-page">View User Type Page</div>,
 }));
 
 vi.mock('../features/integrations/pages/IntegrationsPage', () => ({
@@ -71,6 +66,26 @@ vi.mock('../features/applications/pages/ApplicationsListPage', () => ({
 
 vi.mock('../features/applications/pages/ApplicationCreatePage', () => ({
   default: () => <div data-testid="application-create-page">Application Create Page</div>,
+}));
+
+vi.mock('../features/applications/pages/ApplicationEditPage', () => ({
+  default: () => <div data-testid="application-edit-page">Application Edit Page</div>,
+}));
+
+vi.mock('../features/design/pages/LayoutBuilderPage', () => ({
+  default: () => <div data-testid="layout-builder-page">Layout Builder Page</div>,
+}));
+
+vi.mock('../features/design/contexts/LayoutBuilder/LayoutBuilderProvider', () => ({
+  default: ({children}: {children: React.ReactNode}) => children as React.ReactElement,
+}));
+
+vi.mock('../features/import-export/pages/ExportPage', () => ({
+  default: () => <div data-testid="export-page">Export Page</div>,
+}));
+
+vi.mock('../features/import-export/pages/ImportConfigurationSummaryPage', () => ({
+  default: () => <div data-testid="import-configuration-summary-page">Import Configuration Summary Page</div>,
 }));
 
 vi.mock('@thunderid/configure-resource-servers', () => ({
@@ -111,6 +126,38 @@ describe('App', () => {
     });
   });
 
+  it('loads ApplicationEditPage lazily via the monaco-setup chain', async () => {
+    window.history.pushState({}, '', '/applications/app-123');
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByTestId('application-edit-page')).toBeInTheDocument();
+    });
+  });
+
+  it('loads LayoutBuilderPage lazily via the monaco-setup chain', async () => {
+    window.history.pushState({}, '', '/design/layouts/layout-123');
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByTestId('layout-builder-page')).toBeInTheDocument();
+    });
+  });
+
+  it('loads ExportPage lazily via the monaco-setup chain', async () => {
+    window.history.pushState({}, '', '/export');
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByTestId('export-page')).toBeInTheDocument();
+    });
+  });
+
+  it('loads ImportConfigurationSummaryPage lazily via the monaco-setup chain', async () => {
+    window.history.pushState({}, '', '/import-configuration/summary');
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByTestId('import-configuration-summary-page')).toBeInTheDocument();
+    });
+  });
+
   it('loads ResourceServersListPage lazily at /resource-servers', async () => {
     window.history.pushState({}, '', '/resource-servers');
     render(<App />);
@@ -132,6 +179,30 @@ describe('App', () => {
     render(<App />);
     await waitFor(() => {
       expect(screen.getByTestId('create-resource-server-page')).toBeInTheDocument();
+    });
+  });
+
+  it('loads UserTypesListPage lazily at /user-types', async () => {
+    window.history.pushState({}, '', '/user-types');
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByTestId('user-types-list-page')).toBeInTheDocument();
+    });
+  });
+
+  it('loads ViewUserTypePage lazily at /user-types/:id', async () => {
+    window.history.pushState({}, '', '/user-types/ut-123');
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByTestId('view-user-type-page')).toBeInTheDocument();
+    });
+  });
+
+  it('loads CreateUserTypePage lazily at /user-types/create', async () => {
+    window.history.pushState({}, '', '/user-types/create');
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByTestId('create-user-type-page')).toBeInTheDocument();
     });
   });
 });

@@ -75,6 +75,8 @@ func (s *notificationSenderMgtService) CreateSender(
 		return nil, err
 	}
 
+	applyDefaultSenderProperties(&sender)
+
 	if sender.ID == "" {
 		id, err := s.uuidGenerator()
 		if err != nil {
@@ -202,6 +204,8 @@ func (s *notificationSenderMgtService) UpdateSender(ctx context.Context, id stri
 	if err := validateNotificationSender(sender); err != nil {
 		return nil, err
 	}
+
+	applyDefaultSenderProperties(&sender)
 
 	var svcErr *serviceerror.ServiceError
 	transactErr := s.transactioner.Transact(ctx, func(txCtx context.Context) error {

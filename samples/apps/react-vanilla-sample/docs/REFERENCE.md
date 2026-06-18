@@ -49,7 +49,7 @@ Required environment values:
 
 | Method | Description |
 |--------|-------------|
-| Basic authentication | Username and password via `BasicAuthExecutor` |
+| Basic authentication | Username and password via `CredentialsAuthExecutor` |
 | Google | Social login via `GoogleOIDCAuthExecutor` |
 | GitHub | Social login via `GithubOAuthExecutor` |
 | SMS OTP | One-time password via `SMSOTPAuthExecutor` (send + verify modes) |

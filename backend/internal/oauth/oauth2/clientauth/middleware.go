@@ -21,8 +21,8 @@ package clientauth
 import (
 	"net/http"
 
+	"github.com/thunder-id/thunderid/internal/actorprovider"
 	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
-	"github.com/thunder-id/thunderid/internal/inboundclient"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/utils"
@@ -31,7 +31,7 @@ import (
 // ClientAuthMiddleware authenticates OAuth2 clients and attaches client info to request context.
 // The endpointURL is the full URL of the endpoint being protected, used as the expected audience
 // when validating client assertion JWTs (private_key_jwt authentication).
-func ClientAuthMiddleware(inboundClient inboundclient.InboundClientServiceInterface,
+func ClientAuthMiddleware(actorProvider actorprovider.ActorProviderInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	jwtService jwt.JWTServiceInterface,
 	endpointURL string) func(http.Handler) http.Handler {
@@ -39,7 +39,7 @@ func ClientAuthMiddleware(inboundClient inboundclient.InboundClientServiceInterf
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			// Authenticate client
-			clientInfo, authErr := authenticate(ctx, r, inboundClient, authnProvider, jwtService, endpointURL)
+			clientInfo, authErr := authenticate(ctx, r, actorProvider, authnProvider, jwtService, endpointURL)
 			if authErr != nil {
 				// If the client attempted to authenticate via the Authorization
 				// header, include WWW-Authenticate in 401 responses.

@@ -1,0 +1,85 @@
+---
+title: Run & Observe
+description: Operational patterns for deploying, managing, monitoring, and integrating the identity system in B2C applications.
+sidebar_position: 10
+---
+
+
+# Run & Observe
+
+Beyond the user-facing decisions, the identity product is a system you operate alongside the rest of your stack. These patterns cover how it is configured, deployed, watched, and connected to the wider business.
+
+## Identity-as-Code
+
+Identity configuration spans many resources, such as user types, applications, roles, flows, federated providers, and branding, and it grows over time as the product evolves. Managing it by hand works for a single environment but breaks down as soon as you have separate dev, staging, and production tenants, or as soon as more than one person changes things. Identity-as-Code treats that configuration as versioned source files the team reviews, tests, and promotes.
+
+The pattern centers on declarative configuration files that describe every identity resource the product needs, with environment-specific values supplied separately. The files are kept in version control, go through normal review, and are applied to each tenant by a deployment job. Changes flow from dev to staging to production along the same path other changes do, with the same approvals.
+
+**Capabilities:**
+
+- Declarative configuration files for identity resources
+- Environment-specific values supplied separately from the configuration
+- Version control, review, and rollback through the application's existing workflow
+- Promotion of changes across dev, staging, and production tenants
+- Drift detection between the configuration files and the live tenant
+
+## Resilience and Multi-Region Deployment
+
+The identity product is on the critical path for every sign-in. If it is down, no one gets in. So the deployment shape needs to match the availability you have promised your users. The right pattern depends on your reliability target, latency budget, and where your users are.
+
+Four patterns cover the common cases:
+
+- **Single-region:** the simplest. Works well for products with regional audiences and modest availability targets.
+- **Active-passive:** replicates user data to a second region that takes over on failure. Trades a recovery time window for cost.
+- **Active-active:** runs every region live, routing each user to the nearest healthy region. Gives the lowest sign-in latency and the smallest blast radius for an outage, at the cost of replication complexity and the need to keep data consistent across regions.
+- **Regional sharding:** pins specific users to specific regions, often to satisfy a data-residency rule, and routes them home wherever they sign in from.
+
+These choices ripple through the rest of the architecture. Active-active typically demands a stateless or eventually-consistent session model so a user can complete sign-in even if their nearest region just changed. Regional sharding pairs naturally with a data-residency requirement and a federation strategy that knows which region each user belongs to. Plan replication, failover testing, and on-call coverage as part of picking the pattern.
+
+**Capabilities:**
+
+- Single-region deployment
+- Active-passive deployment with failover
+- Active-active deployment with regional routing
+- Regional sharding pinned to data residency
+- User-data replication across regions
+- Health-checked routing and failover
+- Independent regional configuration and secrets
+
+## Activity Monitoring and Audit
+
+Identity events are some of the highest-signal data in your stack. Every sign-up, sign-in, recovery, and consent change is a row worth keeping. Three audiences consume this data, and a good pattern serves them all without forcing them into the same tool. Product teams want funnel and adoption metrics. Security teams want anomalies and incident detection. Compliance teams want a durable audit log they can hand to a regulator.
+
+The pattern has three layers. First, the identity product records every event to a structured audit log with consistent fields: who, what, when, where, and outcome. Second, dashboards surface the metrics product and security teams care about, either built into the identity product or exposed by streaming events into the analytics tool the business already uses. Third, security-relevant events trigger real-time alerts or feed an anomaly detection layer that catches brute-force, credential stuffing, impossible travel, and other patterns no single event reveals.
+
+Storage and retention are part of the decision. Audit data for compliance is typically kept far longer than operational metrics, and may require write-once, tamper-evident storage. Decide retention windows per data class, since operational analytics, security signals, and compliance audit are not the same thing.
+
+**Capabilities:**
+
+- Structured audit log of every identity event with a consistent schema
+- Built-in dashboards for sign-up funnels, sign-in success rates, and method adoption
+- Per-user activity timelines for support investigation
+- Stream events to external analytics, data warehouse, or SIEM platforms
+- Anomaly detection: failed sign-in spikes, brute force, impossible travel
+- Real-time alerts for security-relevant events
+- Export audit logs for compliance reporting
+
+## Connect to Other Systems
+
+Identity is not an isolated system; it belongs to the business. New sign-ups should land in your CRM; password resets should trigger security event logs; failed sign-ins should surface in your monitoring. The identity product is the natural place to emit these signals because it sees every identity event.
+
+Integration typically goes in two directions. Outbound: the identity product emits events to subscribers via webhooks, message queues, or a built-in event bus. Events include sign-up, password change, MFA enrollment, and federated link, so other systems can react. Inbound: identity flows can call out to your systems mid-journey for validation, data enrichment, or business checks. For example, an inbound check against a fraud service can decide whether to let a sign-up complete.
+
+**Capabilities:**
+
+- Emit identity events (sign-up, password change, and so on) to subscribers
+- Push new-user data to a CRM or marketing tool on sign-up
+- Send SMS and email notifications through providers you choose
+- Call out to your own systems mid-journey for validation or data lookup
+- Run checks before or after key identity actions
+
+## Continue Designing Your Architecture
+
+Review the other architecture decisions that shape your B2C application.
+
+<B2CArchitectureDecisions currentDecision="operations" />

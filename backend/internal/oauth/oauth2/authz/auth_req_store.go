@@ -27,7 +27,6 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
-	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/database/provider"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -52,11 +51,11 @@ type authorizationRequestStore struct {
 }
 
 // newAuthorizationRequestStore creates a new instance of authorizationRequestStore with injected dependencies.
-func newAuthorizationRequestStore() authorizationRequestStoreInterface {
+func newAuthorizationRequestStore(deploymentID string) authorizationRequestStoreInterface {
 	return &authorizationRequestStore{
 		dbProvider:     provider.GetDBProvider(),
 		validityPeriod: 10 * time.Minute,
-		deploymentID:   config.GetServerRuntime().Config.Server.Identifier,
+		deploymentID:   deploymentID,
 	}
 }
 

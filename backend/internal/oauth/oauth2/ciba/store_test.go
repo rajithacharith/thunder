@@ -79,7 +79,7 @@ func (suite *CIBARequestStoreTestSuite) sampleRequest() *CIBAAuthRequest {
 }
 
 func (suite *CIBARequestStoreTestSuite) TestNewCIBARequestStore() {
-	store := newCIBARequestStore()
+	store := newCIBARequestStore("test-deployment")
 	assert.NotNil(suite.T(), store)
 	assert.Implements(suite.T(), (*CIBARequestStoreInterface)(nil), store)
 }

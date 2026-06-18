@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/database/provider"
 )
 
@@ -44,10 +43,10 @@ type flowStore struct {
 }
 
 // newFlowStore creates a new instance of FlowStore.
-func newFlowStore(dbProvider provider.DBProviderInterface) flowStoreInterface {
+func newFlowStore(dbProvider provider.DBProviderInterface, deploymentID string) flowStoreInterface {
 	return &flowStore{
 		dbProvider:   dbProvider,
-		deploymentID: config.GetServerRuntime().Config.Server.Identifier,
+		deploymentID: deploymentID,
 	}
 }
 

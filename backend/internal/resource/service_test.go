@@ -5529,7 +5529,7 @@ func TestResourceServerYAML_OUHandleParsed(t *testing.T) {
 id: rs1
 name: Server
 handle: server
-ou_handle: default
+ouHandle: default
 `)
 	rs, err := parseToResourceServer(yamlData)
 

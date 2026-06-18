@@ -37,43 +37,12 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: 🔍 Run pnpm audit (Frontend)
-        working-directory: frontend
+      - name: 🔍 Run pnpm audit
         run: |
-          echo "🔍 Running pnpm audit for frontend dependencies..."
+          echo "🔍 Running pnpm audit for all workspace dependencies..."
           # CVE ignores are managed via auditConfig.ignoreCves in pnpm-workspace.yaml
           # Remove `--ignore-registry-errors` once pnpm 11 is generally available. Tracker: https://github.com/pnpm/pnpm/issues/11265
           pnpm audit --ignore-registry-errors --audit-level=high
-
-      - name: 🔍 Run npm audit (Sample Apps)
-        run: |
-          echo "🔍 Running npm audit for sample app dependencies..."
-          IGNORED_GHSAS=$(jq '[(.common + ."sample-apps")[].id]' "$GITHUB_WORKSPACE/.audit-ignore.json")
-          for app in samples/apps/*/; do
-            if [ -f "${app}package-lock.json" ]; then
-              echo "Auditing $app..."
-              cd "$app"
-              AUDIT_RESULT=$(npm audit --json --audit-level=high 2>&1) || true
-              REMAINING=$(echo "$AUDIT_RESULT" | jq --argjson ignored "$IGNORED_GHSAS" '
-                [.vulnerabilities[].via[] | select(type == "object")
-                 | select(.severity == "high" or .severity == "critical")
-                 | select(.url | test($ignored | join("|")) | not)
-                ] | length
-              ')
-              if [ "$REMAINING" -gt 0 ]; then
-                echo "❌ Found $REMAINING unignored high/critical advisories in $app:"
-                echo "$AUDIT_RESULT" | jq --argjson ignored "$IGNORED_GHSAS" '
-                  [.vulnerabilities[].via[] | select(type == "object")
-                   | select(.severity == "high" or .severity == "critical")
-                   | select(.url | test($ignored | join("|")) | not)
-                  ] | unique_by(.url) | .[] | "\(.severity): \(.name) - \(.url)"
-                '
-                exit 1
-              fi
-              echo "✅ $app - All high/critical advisories are in the ignored list."
-              cd - > /dev/null
-            fi
-          done
 
   dependency-review:
     name: 🔎 Dependency Review
@@ -231,6 +200,10 @@ jobs:
           make clean
 
       - name: 🔨 Build Frontend
+        env:
+          # Activates the Codecov bundle-analysis plugin in the gate/console Vite
+          # builds, which uploads bundle stats to Codecov via GitHub OIDC.
+          CODECOV_BUNDLE_UPLOAD: "true"
         run: |
           make build_frontend
 

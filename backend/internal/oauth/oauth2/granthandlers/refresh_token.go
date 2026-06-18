@@ -26,6 +26,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/attributecache"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
@@ -33,7 +34,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
 	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
 	"github.com/thunder-id/thunderid/internal/resource"
-	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -41,6 +41,7 @@ import (
 
 // refreshTokenGrantHandler handles the refresh token grant type.
 type refreshTokenGrantHandler struct {
+	cfg              oauthconfig.Config
 	jwtService       jwt.JWTServiceInterface
 	tokenBuilder     tokenservice.TokenBuilderInterface
 	tokenValidator   tokenservice.TokenValidatorInterface
@@ -55,8 +56,10 @@ func newRefreshTokenGrantHandler(
 	tokenValidator tokenservice.TokenValidatorInterface,
 	attrCacheService attributecache.AttributeCacheServiceInterface,
 	resourceService resource.ResourceServiceInterface,
+	cfg oauthconfig.Config,
 ) RefreshTokenGrantHandlerInterface {
 	return &refreshTokenGrantHandler{
+		cfg:              cfg,
 		jwtService:       jwtService,
 		tokenBuilder:     tokenBuilder,
 		tokenValidator:   tokenValidator,
@@ -238,9 +241,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 		tokenResponse.IDToken = *idToken
 	}
 
-	// Check configuration for refresh token renewal
-	conf := config.GetServerRuntime().Config
-	renewRefreshToken := conf.OAuth.RefreshToken.RenewOnGrant
+	renewRefreshToken := h.cfg.OAuth.RefreshToken.RenewOnGrant
 
 	// Issue a new refresh token if renew_on_grant is enabled; otherwise reuse the existing one.
 	// RFC 8707 §5: the refresh token preserves the full original audience, not the narrowed one.
@@ -344,7 +345,7 @@ func (h *refreshTokenGrantHandler) extendCacheTTL(
 		return nil
 	}
 	now := time.Now().Unix()
-	refreshValidity := tokenservice.ResolveTokenConfig(oauthApp, tokenservice.TokenTypeRefresh).ValidityPeriod
+	refreshValidity := tokenservice.ResolveTokenConfig(h.cfg, oauthApp, tokenservice.TokenTypeRefresh).ValidityPeriod
 	if renewRefreshToken {
 		refreshIat = now // newly issued token starts from now
 	}

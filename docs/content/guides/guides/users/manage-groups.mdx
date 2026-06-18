@@ -54,6 +54,12 @@ Members have a `type` field that identifies their kind. The following member typ
 | `agent` | An agent principal. |
 | `group` | A nested group. |
 
+When a group is nested inside another group, role assignments resolve transitively — members of the inner group inherit the roles assigned to the outer group.
+
+:::note
+A group nesting chain must stay within a single source. Mixing declarative (YAML-defined) groups and runtime (UI/API-managed) groups in the same chain — for example a declarative group whose member is a runtime group, or vice versa — is not supported. Such a chain is only partially resolved, so inherited roles may not be granted as expected. Keep nested groups within the same source.
+:::
+
 ### Remove Members
 
 1. Open the group from the **Groups** list.

@@ -102,7 +102,7 @@ vi.mock('./ResourceSummaryTable', () => ({
   ),
 }));
 
-vi.mock('@/lib/MonacoEditor', () => ({
+vi.mock('@monaco-editor/react', () => ({
   default: () => null,
 }));
 

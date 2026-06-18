@@ -1,0 +1,72 @@
+---
+title: Try It Out
+description: Run B2C identity use cases against Wayfinder, a fictional consumer travel-booking app, to see ThunderID authentication in action.
+sidebar_position: 0
+---
+
+
+# Try It Out
+
+The walkthroughs in this section use Wayfinder, a fictional consumer travel-booking app, as the sample. You will sign users in, register new accounts, view and update profiles, recover lost passwords, and onboard staff — all against a locally running application connected to <ProductName />.
+
+## Cast
+
+These sample users appear throughout the walkthroughs, each mapped to a specific flow: sign-up, sign-in, recovery, profile management, and staff onboarding.
+
+<WayfinderCast />
+
+## Architecture
+
+The Wayfinder sample application has three main parts: a consumer web app, a booking API, and ThunderID as the identity provider.
+The following diagram shows how these pieces connect and where the identity flows run in the system.
+
+<WayfinderArchitecture />
+
+## Set Up the Sample
+
+Before running any walkthrough, set up the Wayfinder sample application. Two paths lead to the same end state:
+
+<NextSteps>
+  <NextStepsCard
+    title="Quick Start"
+    description="Download the sample and import a pre-built configuration bundle into ThunderID. Everything the walkthroughs need is created in one step."
+    href="./setup"
+  />
+  <NextStepsCard
+    title="Configure It Yourself"
+    description="Create the same resources step by step through the console and API. Use this path to understand how each piece is set up."
+    href="./configure-it-yourself"
+  />
+</NextSteps>
+
+## Walkthroughs
+
+Once the sample is running, pick a walkthrough:
+
+<NextSteps>
+  <NextStepsCard
+    title="Login"
+    description="John Doe signs in to Wayfinder and arrives at the dashboard."
+    href="./add-login"
+  />
+  <NextStepsCard
+    title="Self Sign-Up"
+    description="Emma Wilson signs up with email and password."
+    href="./self-sign-up"
+  />
+  <NextStepsCard
+    title="View Profile"
+    description="John views and updates his profile."
+    href="./profile-section"
+  />
+  <NextStepsCard
+    title="Account Recovery"
+    description="John resets a forgotten password through an email link."
+    href="./account-recovery"
+  />
+  <NextStepsCard
+    title="Onboard Internal Users"
+    description="Alex invites staff members from the console."
+    href="./onboard-internal-users"
+  />
+</NextSteps>

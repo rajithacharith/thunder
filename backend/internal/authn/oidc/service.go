@@ -25,7 +25,7 @@ import (
 
 	authncm "github.com/thunder-id/thunderid/internal/authn/common"
 	authnoauth "github.com/thunder-id/thunderid/internal/authn/oauth"
-	"github.com/thunder-id/thunderid/internal/entityprovider"
+	"github.com/thunder-id/thunderid/internal/idp"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -53,15 +53,17 @@ type OIDCAuthnServiceInterface interface {
 type oidcAuthnService struct {
 	internal   authnoauth.OAuthAuthnServiceInterface
 	jwtService jwt.JWTServiceInterface
+	idpService idp.IDPServiceInterface
 	logger     *log.Logger
 }
 
 // newOIDCAuthnService creates a new instance of OIDC authenticator service.
 func newOIDCAuthnService(internal authnoauth.OAuthAuthnServiceInterface,
-	jwtSvc jwt.JWTServiceInterface) OIDCAuthnServiceInterface {
+	jwtSvc jwt.JWTServiceInterface, idpSvc idp.IDPServiceInterface) OIDCAuthnServiceInterface {
 	return &oidcAuthnService{
 		internal:   internal,
 		jwtService: jwtSvc,
+		idpService: idpSvc,
 		logger:     log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
 	}
 }
@@ -191,17 +193,11 @@ func (s *oidcAuthnService) FetchUserInfo(ctx context.Context, idpID, accessToken
 	return s.internal.FetchUserInfo(ctx, idpID, accessToken)
 }
 
-// GetInternalUser retrieves the internal user based on the external subject identifier.
-func (s *oidcAuthnService) GetInternalUser(
-	ctx context.Context, sub string) (*entityprovider.Entity, *serviceerror.ServiceError) {
-	return s.internal.GetInternalUser(ctx, sub)
-}
-
 // Authenticate performs the full OIDC authentication flow: exchanges the code for a token,
 // extracts ID token claims, and resolves the internal user.
 // A missing internal user is NOT an error — the caller decides how to handle it.
 func (s *oidcAuthnService) Authenticate(ctx context.Context, idpID, code string) (
-	*authncm.FederatedAuthResult, *serviceerror.ServiceError) {
+	*authncm.AuthnResult, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("idpId", idpID))
 	logger.Debug(ctx, "Performing federated OIDC authentication")
 
@@ -244,21 +240,34 @@ func (s *oidcAuthnService) Authenticate(ctx context.Context, idpID, code string)
 		}
 	}
 
-	result := &authncm.FederatedAuthResult{
-		Sub:    sub,
-		Claims: claims,
-	}
-	user, svcErr := s.GetInternalUser(ctx, sub)
+	mappedClaims, svcErr := s.resolveAttributeMappings(ctx, idpID, claims)
 	if svcErr != nil {
-		if svcErr.Code == authncm.ErrorUserNotFound.Code {
-			return result, nil
-		}
-		if svcErr.Code == authncm.ErrorAmbiguousUser.Code {
-			result.IsAmbiguousUser = true
-			return result, nil
-		}
 		return nil, svcErr
 	}
-	result.InternalEntity = user
-	return result, nil
+
+	return &authncm.AuthnResult{
+		Token: map[string]interface{}{
+			"sub": sub,
+		},
+		AuthenticatedClaims: mappedClaims,
+	}, nil
+}
+
+// resolveAttributeMappings loads the identity provider and applies its configured attribute mappings to
+// claims. IDP-retrieval errors are wrapped in the authn domain so the IDP error code is not leaked.
+func (s *oidcAuthnService) resolveAttributeMappings(ctx context.Context, idpID string,
+	claims map[string]interface{}) (map[string]interface{}, *serviceerror.ServiceError) {
+	idpDTO, svcErr := s.idpService.GetIdentityProvider(ctx, idpID)
+	if svcErr != nil {
+		if svcErr.Type == serviceerror.ClientErrorType {
+			return nil, &authncm.ErrorClientErrorWhileRetrievingIDP
+		}
+		s.logger.Error(ctx, "Error while retrieving identity provider", log.String("errorCode", svcErr.Code),
+			log.String("description", svcErr.ErrorDescription.DefaultValue))
+		return nil, &serviceerror.InternalServerError
+	}
+	if idpDTO == nil {
+		return nil, &serviceerror.InternalServerError
+	}
+	return idp.ApplyAttributeMappings(claims, idp.GetAttributeMappings(idpDTO)), nil
 }

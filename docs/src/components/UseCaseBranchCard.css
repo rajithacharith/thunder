@@ -1,0 +1,121 @@
+.uc-card-1 {
+  animation: uc-enter-up 700ms cubic-bezier(0.16, 1, 0.3, 1) 300ms both;
+}
+
+.uc-card-2 {
+  animation: uc-enter-up 700ms cubic-bezier(0.16, 1, 0.3, 1) 420ms both;
+}
+
+.uc-card-3 {
+  animation: uc-enter-up 700ms cubic-bezier(0.16, 1, 0.3, 1) 540ms both;
+}
+
+.uc-card {
+  will-change: transform, box-shadow;
+}
+
+.uc-card:hover {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12) !important;
+  transform: translateY(-6px) scale(1.01);
+}
+
+.uc-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0 1.2rem;
+}
+
+.uc-branch-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 900px;
+}
+
+.uc-branch-card {
+  text-decoration: none;
+  color: inherit;
+  flex: 1 1 240px;
+  max-width: 290px;
+  min-width: 200px;
+  background: var(--ifm-background-surface);
+  border-radius: 14px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+  padding: 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.uc-branch-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: var(--uc-branch-icon-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  color: var(--uc-branch-accent);
+  flex-shrink: 0;
+}
+
+.uc-branch-category {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--uc-branch-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  margin-bottom: 0.35rem;
+}
+
+.uc-branch-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--ifm-font-color-base);
+  line-height: 1.3;
+}
+
+.uc-branch-description {
+  font-size: 0.875rem;
+  color: var(--ifm-color-emphasis-700);
+  margin-bottom: 0.875rem;
+  line-height: 1.6;
+}
+
+.uc-branch-when {
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  padding-top: 0.75rem;
+  margin-bottom: 1.25rem;
+  flex-grow: 1;
+}
+
+.uc-branch-when-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--ifm-color-emphasis-500);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
+}
+
+.uc-branch-when-list {
+  margin: 0;
+  padding: 0 0 0 1rem;
+  list-style: disc;
+  font-size: 0.8rem;
+  color: var(--ifm-color-emphasis-700);
+  line-height: 1.6;
+}
+
+.uc-branch-link {
+  color: var(--uc-branch-accent);
+  font-weight: 600;
+  font-size: 0.85rem;
+}

@@ -17,7 +17,7 @@
  */
 
 import {useConfig} from '@thunderid/contexts';
-import {Box, Button, Stack, Tab, Tabs, Typography, IconButton, LinearProgress} from '@wso2/oxygen-ui';
+import {Box, Button, Stack, Tab, Tabs, Typography, IconButton, LinearProgress, AppBreadcrumbs} from '@wso2/oxygen-ui';
 import {
   BookOpen,
   Bot,
@@ -39,7 +39,6 @@ import {useNavigate} from 'react-router';
 import AIAgentApiKeySetup from '../components/AIAgentApiKeySetup';
 import WayfinderSampleSetup from '../components/WayfinderSampleSetup';
 import useWelcomeClose from '../hooks/useWelcomeClose';
-import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 
 const MotionBox = motion.create(Box);
 

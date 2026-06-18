@@ -23,6 +23,7 @@ Clone the SDK repository only if you are developing or debugging the SDK itself,
 - Write tests for new features and bug fixes (target 80%+ coverage).
 - Ensure proper error handling and logging at appropriate layers — not everywhere, just where failures are expected and actionable.
 - Ensure all identity-related code aligns with relevant RFC specifications.
+- Declarative resource attributes use camelCase, matching the REST API. The `yaml` struct tag must use the same camelCase name as the field's `json` tag (for example `yaml:"ouId"`, not `yaml:"ou_id"`). This does not apply to non-declarative YAML such as `deployment.yaml` server config, or to `json` tags for protocol payloads (OAuth, DCR) that follow their own RFC conventions.
 - Use `make lint` and `make test` to verify code quality and correctness before committing.
 
 ## Git and PR Conventions

@@ -64,6 +64,7 @@
     "@thunderid/hooks": "workspace:^",
     "@thunderid/configure-agent-types": "workspace:^",
     "@thunderid/configure-users": "workspace:^",
+    "@thunderid/configure-user-types": "workspace:^",
     "@thunderid/configure-organization-units": "workspace:^",
     "@thunderid/configure-translations": "workspace:^",
     "@thunderid/configure-resource-servers": "workspace:^",
@@ -92,6 +93,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@codecov/vite-plugin": "catalog:",
+    "@rolldown/plugin-babel": "catalog:",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@testing-library/user-event": "catalog:",

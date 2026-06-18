@@ -45,9 +45,8 @@ type OAuthAuthnCoreServiceInterface interface {
 		*TokenResponse, *serviceerror.ServiceError)
 	FetchUserInfo(ctx context.Context, idpID, accessToken string) (
 		map[string]interface{}, *serviceerror.ServiceError)
-	GetInternalUser(ctx context.Context, sub string) (*entityprovider.Entity, *serviceerror.ServiceError)
 	GetOAuthClientConfig(ctx context.Context, idpID string) (*OAuthClientConfig, *serviceerror.ServiceError)
-	Authenticate(ctx context.Context, idpID, code string) (*common.FederatedAuthResult, *serviceerror.ServiceError)
+	Authenticate(ctx context.Context, idpID, code string) (*common.AuthnResult, *serviceerror.ServiceError)
 }
 
 // OAuthAuthnServiceInterface defines the contract for OAuth based authenticator services.
@@ -303,7 +302,7 @@ func (s *oAuthAuthnService) GetInternalUser(
 // fetches user info, extracts the subject claim, and resolves the internal user.
 // A missing internal user is NOT an error — the caller decides how to handle it.
 func (s *oAuthAuthnService) Authenticate(ctx context.Context, idpID, code string) (
-	*common.FederatedAuthResult, *serviceerror.ServiceError) {
+	*common.AuthnResult, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("idpId", idpID))
 	logger.Debug(ctx, "Performing federated OAuth authentication")
 
@@ -328,21 +327,37 @@ func (s *oAuthAuthnService) Authenticate(ctx context.Context, idpID, code string
 		return nil, &common.ErrorSubClaimNotFound
 	}
 
-	result := &common.FederatedAuthResult{
-		Sub:    sub,
-		Claims: userInfo,
-	}
-	user, svcErr := s.GetInternalUser(ctx, sub)
+	mappedClaims, svcErr := s.resolveAttributeMappings(ctx, idpID, userInfo)
 	if svcErr != nil {
-		if svcErr.Code == common.ErrorUserNotFound.Code {
-			return result, nil
-		}
-		if svcErr.Code == common.ErrorAmbiguousUser.Code {
-			result.IsAmbiguousUser = true
-			return result, nil
-		}
 		return nil, svcErr
 	}
-	result.InternalEntity = user
-	return result, nil
+
+	return &common.AuthnResult{
+		Token: map[string]interface{}{
+			"sub": sub,
+		},
+		AuthenticatedClaims: mappedClaims,
+	}, nil
+}
+
+// resolveAttributeMappings loads the identity provider and applies its configured attribute mappings to
+// claims. IDP-retrieval errors are wrapped in the authn domain so the IDP error code is not leaked.
+func (s *oAuthAuthnService) resolveAttributeMappings(ctx context.Context, idpID string,
+	claims map[string]interface{}) (map[string]interface{}, *serviceerror.ServiceError) {
+	idpDTO, svcErr := s.idpService.GetIdentityProvider(ctx, idpID)
+	if svcErr != nil {
+		if svcErr.Type == serviceerror.ClientErrorType {
+			return nil, serviceerror.CustomServiceError(ErrorClientErrorWhileRetrievingIDP, core.I18nMessage{
+				Key:          "error.oauthauthnservice.error_retrieving_idp_description",
+				DefaultValue: "Error while retrieving identity provider: " + svcErr.ErrorDescription.DefaultValue,
+			})
+		}
+		s.logger.Error(ctx, "Error while retrieving identity provider", log.String("errorCode", svcErr.Code),
+			log.String("description", svcErr.ErrorDescription.DefaultValue))
+		return nil, &serviceerror.InternalServerError
+	}
+	if idpDTO == nil {
+		return nil, &ErrorInvalidIDP
+	}
+	return idp.ApplyAttributeMappings(claims, idp.GetAttributeMappings(idpDTO)), nil
 }

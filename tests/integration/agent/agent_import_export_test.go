@@ -160,7 +160,7 @@ func (s *AgentImportExportSuite) TestExportImportRoundTrip_EntityOnlyAgent() {
 
 	s.Assert().Contains(yamlContent, "# resource_type: agent")
 	s.Assert().Contains(yamlContent, "id: "+createdID)
-	s.Assert().Contains(yamlContent, "ou_id: "+s.ouID)
+	s.Assert().Contains(yamlContent, "ouId: "+s.ouID)
 	s.Assert().Contains(yamlContent, "name: "+agentName)
 	s.Assert().Contains(yamlContent, "description: Round-trip entity-only agent")
 
@@ -235,8 +235,8 @@ func (s *AgentImportExportSuite) TestExportImportRoundTrip_AgentWithConfidential
 	}
 
 	vars := s.extractTemplateVariables(yamlContent, map[string]interface{}{
-		"client_id":     clientID,
-		"client_secret": clientSecret,
+		"clientId":     clientID,
+		"clientSecret": clientSecret,
 	})
 
 	s.Require().NoError(s.deleteAgent(createdID))
@@ -339,25 +339,25 @@ func (s *AgentImportExportSuite) TestExportImportRoundTrip_AgentWithAllFields() 
 	// Assert every significant field appears in the exported YAML.
 	s.Assert().Contains(yamlContent, "# resource_type: agent")
 	s.Assert().Contains(yamlContent, "id: "+createdID)
-	s.Assert().Contains(yamlContent, "ou_id: "+s.ouID)
+	s.Assert().Contains(yamlContent, "ouId: "+s.ouID)
 	s.Assert().Contains(yamlContent, "name: "+agentName)
 	s.Assert().Contains(yamlContent, "description: Round-trip all-fields agent")
-	s.Assert().Contains(yamlContent, "auth_flow_id: "+s.authFlowID)
-	s.Assert().Contains(yamlContent, "registration_flow_id: "+s.registrationFlowID)
-	s.Assert().Contains(yamlContent, "is_registration_flow_enabled: true")
+	s.Assert().Contains(yamlContent, "authFlowId: "+s.authFlowID)
+	s.Assert().Contains(yamlContent, "registrationFlowId: "+s.registrationFlowID)
+	s.Assert().Contains(yamlContent, "isRegistrationFlowEnabled: true")
 	s.Assert().Contains(yamlContent, "attributes:")
 	s.Assert().Contains(yamlContent, "eng-team")
-	s.Assert().Contains(yamlContent, "inbound_auth_config:")
+	s.Assert().Contains(yamlContent, "inboundAuthConfig:")
 	s.Assert().Contains(yamlContent, "client_credentials")
-	s.Assert().Contains(yamlContent, "token_endpoint_auth_method: client_secret_basic")
+	s.Assert().Contains(yamlContent, "tokenEndpointAuthMethod: client_secret_basic")
 	s.Assert().NotContains(yamlContent, clientSecret, "client secret must not appear in exported YAML")
 	s.Assert().Contains(yamlContent, "{{", "client_id should be parameterized")
 
 	s.Require().NoError(s.deleteAgent(createdID))
 
 	vars := s.extractTemplateVariables(yamlContent, map[string]interface{}{
-		"client_id":     clientID,
-		"client_secret": clientSecret,
+		"clientId":     clientID,
+		"clientSecret": clientSecret,
 	})
 
 	importResp, err := s.importAgents(agentImportRequest{

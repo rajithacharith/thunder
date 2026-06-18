@@ -759,7 +759,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithInvalidTokenEndpoi
 
 	appID, err := createApplication(appWithEmptyAuthMethod)
 	if err != nil {
-		ts.T().Fatalf("Failed to create application with empty token_endpoint_auth_method: %v", err)
+		ts.T().Fatalf("Failed to create application with empty tokenEndpointAuthMethod: %v", err)
 	}
 
 	req, err := http.NewRequest("GET", testServerURL+"/applications/"+appID, nil)

@@ -42,7 +42,7 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({t: mockT}),
 }));
 
-vi.mock('@/lib/MonacoEditor', () => ({
+vi.mock('@monaco-editor/react', () => ({
   default: ({
     value,
     onChange,

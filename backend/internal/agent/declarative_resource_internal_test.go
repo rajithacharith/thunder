@@ -48,16 +48,16 @@ func TestParseToAgentRequestTestSuite(t *testing.T) {
 func (s *ParseToAgentRequestTestSuite) TestParseToAgentRequest_AllFieldsParsed() {
 	yamlData := `
 id: test-agent-001
-ou_id: ou-123
+ouId: ou-123
 type: service-agent
 name: Test Agent
 description: A test agent
 owner: owner-id-123
-auth_flow_id: flow-abc
-registration_flow_id: flow-reg-xyz
-theme_id: theme-blue
-layout_id: layout-standard
-allowed_user_types:
+authFlowId: flow-abc
+registrationFlowId: flow-reg-xyz
+themeId: theme-blue
+layoutId: layout-standard
+allowedUserTypes:
   - person
   - external
 attributes:
@@ -84,7 +84,7 @@ attributes:
 func (s *ParseToAgentRequestTestSuite) TestParseToAgentRequest_MinimalFields() {
 	yamlData := `
 id: min-agent
-ou_id: ou-1
+ouId: ou-1
 type: bot
 name: Minimal Agent
 `
@@ -105,17 +105,17 @@ name: Minimal Agent
 func (s *ParseToAgentRequestTestSuite) TestParseToAgentRequest_WithOAuthConfig() {
 	yamlData := `
 id: oauth-agent
-ou_id: ou-1
+ouId: ou-1
 type: service-agent
 name: OAuth Agent
-inbound_auth_config:
+inboundAuthConfig:
   - type: oauth2
     config:
-      client_id: client-abc
-      grant_types:
+      clientId: client-abc
+      grantTypes:
         - client_credentials
-      token_endpoint_auth_method: client_secret_basic
-      public_client: false
+      tokenEndpointAuthMethod: client_secret_basic
+      publicClient: false
 `
 	var req model.AgentRequestWithID
 	err := yaml.Unmarshal([]byte(yamlData), &req)
@@ -153,7 +153,7 @@ func TestMakeAgentEntityParserTestSuite(t *testing.T) {
 func (s *MakeAgentEntityParserTestSuite) TestMakeAgentEntityParser_NoOAuthConfig() {
 	yamlData := []byte(`
 id: no-oauth-agent
-ou_id: ou-1
+ouId: ou-1
 type: service-agent
 name: No OAuth Agent
 `)
@@ -177,16 +177,16 @@ name: No OAuth Agent
 func (s *MakeAgentEntityParserTestSuite) TestMakeAgentEntityParser_WithOAuthPublicClient() {
 	yamlData := []byte(`
 id: public-agent
-ou_id: ou-1
+ouId: ou-1
 type: service-agent
 name: Public Agent
-inbound_auth_config:
+inboundAuthConfig:
   - type: oauth2
     config:
-      client_id: public-client-id
-      public_client: true
-      token_endpoint_auth_method: "none"
-      grant_types:
+      clientId: public-client-id
+      publicClient: true
+      tokenEndpointAuthMethod: "none"
+      grantTypes:
         - client_credentials
 `)
 	mockSvc := agentmock.NewAgentServiceInterfaceMock(s.T())
@@ -208,16 +208,16 @@ inbound_auth_config:
 func (s *MakeAgentEntityParserTestSuite) TestMakeAgentEntityParser_WithOAuthConfidentialClient() {
 	yamlData := []byte(`
 id: conf-agent
-ou_id: ou-1
+ouId: ou-1
 type: service-agent
 name: Confidential Agent
-inbound_auth_config:
+inboundAuthConfig:
   - type: oauth2
     config:
-      client_id: conf-client-id
-      client_secret: conf-client-secret
-      public_client: false
-      grant_types:
+      clientId: conf-client-id
+      clientSecret: conf-client-secret
+      publicClient: false
+      grantTypes:
         - client_credentials
 `)
 	mockSvc := agentmock.NewAgentServiceInterfaceMock(s.T())
@@ -242,7 +242,7 @@ inbound_auth_config:
 
 func (s *MakeAgentEntityParserTestSuite) TestMakeAgentEntityParser_NilService() {
 	parser := makeAgentEntityParser(nil)
-	_, _, _, err := parser([]byte("id: x\nou_id: ou-1\ntype: t\nname: n\n"))
+	_, _, _, err := parser([]byte("id: x\nouId: ou-1\ntype: t\nname: n\n"))
 	assert.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "agent service is required for declarative entity parsing")
 }
@@ -256,7 +256,7 @@ func (s *MakeAgentEntityParserTestSuite) TestMakeAgentEntityParser_InvalidYAML()
 }
 
 func (s *MakeAgentEntityParserTestSuite) TestMakeAgentEntityParser_ValidateAgentError() {
-	yamlData := []byte("id: err-agent\nou_id: ou-1\ntype: t\nname: Err Agent\n")
+	yamlData := []byte("id: err-agent\nouId: ou-1\ntype: t\nname: Err Agent\n")
 	mockSvc := agentmock.NewAgentServiceInterfaceMock(s.T())
 	mockSvc.EXPECT().ValidateAgent(mock.Anything, mock.Anything, "err-agent").
 		Return("", "", inboundmodel.InboundClient{}, &serviceerror.ServiceError{
@@ -290,7 +290,7 @@ func (s *MakeAgentInboundParserTestSuite) TestMakeAgentInboundParser_InvalidYAML
 }
 
 func (s *MakeAgentInboundParserTestSuite) TestMakeAgentInboundParser_ValidateAgentError() {
-	yamlData := []byte("id: inbound-err-agent\nou_id: ou-1\ntype: t\nname: Inbound Err Agent\n")
+	yamlData := []byte("id: inbound-err-agent\nouId: ou-1\ntype: t\nname: Inbound Err Agent\n")
 	mockSvc := agentmock.NewAgentServiceInterfaceMock(s.T())
 	mockSvc.EXPECT().ValidateAgent(mock.Anything, mock.Anything, "inbound-err-agent").
 		Return("", "", inboundmodel.InboundClient{}, &serviceerror.ServiceError{

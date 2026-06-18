@@ -28,10 +28,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/thunder-id/thunderid/internal/actorprovider"
 	flowcm "github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/flowexec"
-	"github.com/thunder-id/thunderid/internal/inboundclient"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/authz/requestvalidator"
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	oauth2model "github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
@@ -40,7 +41,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
 	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
 	"github.com/thunder-id/thunderid/internal/resource"
-	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
@@ -58,7 +58,8 @@ type AuthorizeServiceInterface interface {
 
 // authorizeService implements the AuthorizeService for managing OAuth2 authorization flows.
 type authorizeService struct {
-	inboundClient   inboundclient.InboundClientServiceInterface
+	cfg             oauthconfig.Config
+	inboundClient   actorprovider.ActorProviderInterface
 	resourceService resource.ResourceServiceInterface
 	authZValidator  AuthorizationValidatorInterface
 	authCodeStore   AuthorizationCodeStoreInterface
@@ -72,7 +73,7 @@ type authorizeService struct {
 
 // newAuthorizeService creates a new instance of authorizeService with injected dependencies.
 func newAuthorizeService(
-	inboundClient inboundclient.InboundClientServiceInterface,
+	actorProvider actorprovider.ActorProviderInterface,
 	resourceService resource.ResourceServiceInterface,
 	jwtService jwt.JWTServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
@@ -80,9 +81,11 @@ func newAuthorizeService(
 	authReqStore authorizationRequestStoreInterface,
 	parService par.PARServiceInterface,
 	transactioner transaction.Transactioner,
+	cfg oauthconfig.Config,
 ) AuthorizeServiceInterface {
 	return &authorizeService{
-		inboundClient:   inboundClient,
+		cfg:             cfg,
+		inboundClient:   actorProvider,
 		resourceService: resourceService,
 		authZValidator:  newAuthorizationValidator(),
 		authCodeStore:   authCodeStore,
@@ -144,9 +147,10 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 	}
 
 	// Retrieve the OAuth client based on the client ID.
-	app, lookupErr := as.inboundClient.GetOAuthClientByClientID(ctx, clientID)
+	app, lookupErr := as.inboundClient.GetOAuthClientByID(ctx, clientID)
 	if lookupErr != nil {
-		as.logger.Error(ctx, "Failed to retrieve OAuth client", log.Error(lookupErr))
+		as.logger.Error(ctx, "Failed to retrieve OAuth client",
+			log.String("error", lookupErr.Error.DefaultValue))
 		return nil, &AuthorizationError{
 			Code:    oauth2const.ErrorServerError,
 			Message: "Failed to process authorization request",
@@ -314,6 +318,23 @@ func (as *authorizeService) initiateFlowAndStoreRequest(
 	essentialAttributes, optionalAttributes := getRequiredAttributes(
 		oauthParams.StandardScopes, oauthParams.ClaimsRequest, oauthParams.ResponseType, app)
 
+	authRequestCtx := authRequestContext{
+		OAuthParameters: *oauthParams,
+	}
+
+	// Store authorization request context in the store.
+	identifier, storeErr := as.authReqStore.AddRequest(ctx, authRequestCtx)
+	if storeErr != nil {
+		as.logger.Error(ctx, "Failed to store authorization request context", log.Error(storeErr))
+		return nil, &AuthorizationError{
+			Code:              oauth2const.ErrorServerError,
+			Message:           "Failed to process authorization request",
+			SendErrorToClient: true,
+			ClientRedirectURI: oauthParams.RedirectURI,
+			State:             oauthParams.State,
+		}
+	}
+
 	// Initiate flow with OAuth context.
 	runtimeData := map[string]string{
 		flowcm.RuntimeKeyClientID:                      oauthParams.ClientID,
@@ -321,7 +342,8 @@ func (as *authorizeService) initiateFlowAndStoreRequest(
 		flowcm.RuntimeKeyRequiredEssentialAttributes:   essentialAttributes,
 		flowcm.RuntimeKeyRequiredOptionalAttributes:    optionalAttributes,
 		flowcm.RuntimeKeyRequiredLocales:               oauthParams.ClaimsLocales,
-		flowcm.RuntimeKeyUserAttributesCacheTTLSeconds: fmt.Sprintf("%d", resolveUserAttributesCacheTTL(app)),
+		flowcm.RuntimeKeyUserAttributesCacheTTLSeconds: fmt.Sprintf("%d", as.resolveUserAttributesCacheTTL(app)),
+		flowcm.RuntimeKeyAuthorizationRequestID:        identifier,
 	}
 	if effectiveAcrValues != "" {
 		runtimeData[flowcm.RuntimeKeyRequestedAuthClasses] = effectiveAcrValues
@@ -336,23 +358,6 @@ func (as *authorizeService) initiateFlowAndStoreRequest(
 	if flowErr != nil {
 		as.logger.Error(ctx, "Failed to initiate authentication flow",
 			log.String("error_code", flowErr.Code))
-		return nil, &AuthorizationError{
-			Code:              oauth2const.ErrorServerError,
-			Message:           "Failed to process authorization request",
-			SendErrorToClient: true,
-			ClientRedirectURI: oauthParams.RedirectURI,
-			State:             oauthParams.State,
-		}
-	}
-
-	authRequestCtx := authRequestContext{
-		OAuthParameters: *oauthParams,
-	}
-
-	// Store authorization request context in the store.
-	identifier, storeErr := as.authReqStore.AddRequest(ctx, authRequestCtx)
-	if storeErr != nil {
-		as.logger.Error(ctx, "Failed to store authorization request context", log.Error(storeErr))
 		return nil, &AuthorizationError{
 			Code:              oauth2const.ErrorServerError,
 			Message:           "Failed to process authorization request",
@@ -492,7 +497,7 @@ func (as *authorizeService) HandleAuthorizationCallback(ctx context.Context, aut
 		}
 
 		// Generate the authorization code.
-		authzCode, err := createAuthorizationCode(authRequestCtx, &claims, authTime)
+		authzCode, err := createAuthorizationCode(as.cfg, authRequestCtx, &claims, authTime)
 		if err != nil {
 			authErr = &AuthorizationError{
 				Code:              oauth2const.ErrorServerError,
@@ -519,7 +524,7 @@ func (as *authorizeService) HandleAuthorizationCallback(ctx context.Context, aut
 		// Construct the redirect URI with the authorization code.
 		queryParams := map[string]string{
 			"code":                      authzCode.Code,
-			oauth2const.RequestParamIss: config.GetServerRuntime().Config.JWT.Issuer,
+			oauth2const.RequestParamIss: as.cfg.JWT.Issuer,
 		}
 		if authRequestCtx.OAuthParameters.State != "" {
 			queryParams[oauth2const.RequestParamState] = authRequestCtx.OAuthParameters.State
@@ -609,6 +614,7 @@ func decodeAttributesFromAssertion(assertion string) (assertionClaims, time.Time
 // createAuthorizationCode generates an authorization code based on the provided
 // authorization request context and authenticated user.
 func createAuthorizationCode(
+	cfg oauthconfig.Config,
 	authRequestCtx *authRequestContext,
 	claims *assertionClaims,
 	authTime time.Time,
@@ -634,8 +640,7 @@ func createAuthorizationCode(
 	allScopes := append(append([]string{}, standardScopes...), permissionScopes...)
 	resources := authRequestCtx.OAuthParameters.Resources
 
-	oauthConfig := config.GetServerRuntime().Config.OAuth
-	validityPeriod := oauthConfig.AuthorizationCode.ValidityPeriod
+	validityPeriod := cfg.OAuth.AuthorizationCode.ValidityPeriod
 	expiryTime := authTime.Add(time.Duration(validityPeriod) * time.Second)
 
 	codeID, err := utils.GenerateUUIDv7()
@@ -873,14 +878,14 @@ func validateSubClaimConstraint(claimsRequest *oauth2model.ClaimsRequest, actual
 // the window between code issuance and token exchange.
 // A fixed buffer of attributeCacheTTLBufferSeconds is added to cover the window between
 // authentication completion and token issuance.
-func resolveUserAttributesCacheTTL(app *inboundmodel.OAuthClient) int64 {
-	maxTTL := tokenservice.ResolveTokenConfig(app, tokenservice.TokenTypeAccess).ValidityPeriod
+func (as *authorizeService) resolveUserAttributesCacheTTL(app *inboundmodel.OAuthClient) int64 {
+	maxTTL := tokenservice.ResolveTokenConfig(as.cfg, app, tokenservice.TokenTypeAccess).ValidityPeriod
 	if app.IsAllowedGrantType(oauth2const.GrantTypeRefreshToken) {
-		refreshTTL := tokenservice.ResolveTokenConfig(app, tokenservice.TokenTypeRefresh).ValidityPeriod
+		refreshTTL := tokenservice.ResolveTokenConfig(as.cfg, app, tokenservice.TokenTypeRefresh).ValidityPeriod
 		if refreshTTL > maxTTL {
 			maxTTL = refreshTTL
 		}
 	}
-	authCodeTTL := config.GetServerRuntime().Config.OAuth.AuthorizationCode.ValidityPeriod
+	authCodeTTL := as.cfg.OAuth.AuthorizationCode.ValidityPeriod
 	return maxTTL + authCodeTTL + oauth2const.AttributeCacheTTLBufferSeconds
 }

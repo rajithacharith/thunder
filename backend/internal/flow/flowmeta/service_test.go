@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/thunder-id/thunderid/internal/actorprovider"
 	"github.com/thunder-id/thunderid/internal/design/common"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/inboundclient"
@@ -70,8 +71,7 @@ func (suite *FlowMetaServiceTestSuite) SetupTest() {
 	suite.mockDesignResolve = resolvemock.NewDesignResolveServiceInterfaceMock(suite.T())
 	suite.mockI18nService = mgtmock.NewI18nServiceInterfaceMock(suite.T())
 	suite.service = newFlowMetaService(
-		suite.mockInboundClient,
-		suite.mockEntityProvider,
+		actorprovider.Initialize(suite.mockInboundClient, suite.mockEntityProvider),
 		suite.mockOUService,
 		suite.mockDesignResolve,
 		suite.mockI18nService,

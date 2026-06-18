@@ -17,7 +17,7 @@
  */
 
 import {useLogger} from '@thunderid/logger/react';
-import {Alert, Box, Button, CircularProgress, IconButton, LinearProgress, Stack} from '@wso2/oxygen-ui';
+import {Alert, Box, Button, CircularProgress, IconButton, LinearProgress, Stack, AppBreadcrumbs} from '@wso2/oxygen-ui';
 import {X} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useMemo, useState} from 'react';
@@ -30,7 +30,6 @@ import SelectFlowTemplate from '../components/create-flow/SelectFlowTemplate';
 import SelectFlowType from '../components/create-flow/SelectFlowType';
 import type {FlowType} from '../models/flows';
 import type {FlowTemplate} from '../models/templates';
-import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 
 const FlowCreateStep = {
   TYPE: 'TYPE',

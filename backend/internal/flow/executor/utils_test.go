@@ -21,14 +21,16 @@ package executor
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	appmodel "github.com/thunder-id/thunderid/internal/application/model"
 	authncm "github.com/thunder-id/thunderid/internal/authn/common"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 )
 
@@ -46,7 +48,7 @@ func (s *UtilsTestSuite) TestGetAuthnServiceName() {
 		executorName string
 		expectedName string
 	}{
-		{"BasicAuth executor", ExecutorNameBasicAuth, authncm.AuthenticatorCredentials},
+		{"CredentialsAuth executor", ExecutorNameCredentialsAuth, authncm.AuthenticatorCredentials},
 		{"SMS Auth executor", ExecutorNameSMSAuth, authncm.AuthenticatorSMSOTP},
 		{"OAuth executor", ExecutorNameOAuth, authncm.AuthenticatorOAuth},
 		{"OIDC Auth executor", ExecutorNameOIDCAuth, authncm.AuthenticatorOIDC},
@@ -390,213 +392,179 @@ func (s *UtilsTestSuite) TestIsCrossOUProvisioningAllowed() {
 
 func (s *UtilsTestSuite) TestValidateFederatedIdentifierConsistency() {
 	tests := []struct {
-		name          string
-		basicResult   *authnprovidermgr.AuthnBasicResult
-		ctx           *core.NodeContext
-		expectedValid bool
-		expectError   bool
+		name                 string
+		federatedIdentifiers map[string]interface{}
+		existingIdentifiers  map[string]interface{}
+		ctx                  *core.NodeContext
+		expectedValid        bool
 	}{
 		{
-			name:          "Nil basicResult returns true",
-			basicResult:   nil,
-			ctx:           &core.NodeContext{},
-			expectedValid: true,
-			expectError:   false,
+			name:                 "Nil federated identifiers returns true",
+			federatedIdentifiers: nil,
+			existingIdentifiers:  nil,
+			ctx:                  &core.NodeContext{},
+			expectedValid:        true,
 		},
 		{
-			name: "No federated identifiers returns true",
-			basicResult: &authnprovidermgr.AuthnBasicResult{
-				ExternalSub:    "",
-				ExternalClaims: map[string]interface{}{},
-			},
-			ctx:           &core.NodeContext{},
-			expectedValid: true,
-			expectError:   false,
+			name:                 "Empty federated identifiers returns true",
+			federatedIdentifiers: map[string]interface{}{},
+			existingIdentifiers:  map[string]interface{}{},
+			ctx:                  &core.NodeContext{},
+			expectedValid:        true,
 		},
 		{
 			name: "Email matches UserInputs returns true",
-			basicResult: &authnprovidermgr.AuthnBasicResult{
-				ExternalSub: "sub123",
-				ExternalClaims: map[string]interface{}{
-					"email": "user@example.com",
-				},
+			federatedIdentifiers: map[string]interface{}{
+				"email": "user@example.com",
+				"sub":   "sub123",
 			},
+			existingIdentifiers: map[string]interface{}{},
 			ctx: &core.NodeContext{
 				UserInputs: map[string]string{
 					"email": "user@example.com",
 				},
 			},
 			expectedValid: true,
-			expectError:   false,
 		},
 		{
 			name: "Email mismatch with UserInputs returns false",
-			basicResult: &authnprovidermgr.AuthnBasicResult{
-				ExternalSub: "sub123",
-				ExternalClaims: map[string]interface{}{
-					"email": "user1@example.com",
-				},
+			federatedIdentifiers: map[string]interface{}{
+				"email": "user1@example.com",
+				"sub":   "sub123",
 			},
+			existingIdentifiers: map[string]interface{}{},
 			ctx: &core.NodeContext{
 				UserInputs: map[string]string{
 					"email": "user2@example.com",
 				},
 			},
 			expectedValid: false,
-			expectError:   false,
 		},
 		{
 			name: "Email matches RuntimeData returns true",
-			basicResult: &authnprovidermgr.AuthnBasicResult{
-				ExternalSub: "sub123",
-				ExternalClaims: map[string]interface{}{
-					"email": "user@example.com",
-				},
+			federatedIdentifiers: map[string]interface{}{
+				"email": "user@example.com",
+				"sub":   "sub123",
 			},
+			existingIdentifiers: map[string]interface{}{},
 			ctx: &core.NodeContext{
 				RuntimeData: map[string]string{
 					"email": "user@example.com",
 				},
 			},
 			expectedValid: true,
-			expectError:   false,
 		},
 		{
 			name: "Email mismatch with RuntimeData returns false",
-			basicResult: &authnprovidermgr.AuthnBasicResult{
-				ExternalSub: "sub123",
-				ExternalClaims: map[string]interface{}{
-					"email": "user1@example.com",
-				},
+			federatedIdentifiers: map[string]interface{}{
+				"email": "user1@example.com",
+				"sub":   "sub123",
 			},
+			existingIdentifiers: map[string]interface{}{},
 			ctx: &core.NodeContext{
 				RuntimeData: map[string]string{
 					"email": "user2@example.com",
 				},
 			},
 			expectedValid: false,
-			expectError:   false,
 		},
 		{
-			name: "Email matches AuthenticatedUser.Attributes returns true",
-			basicResult: &authnprovidermgr.AuthnBasicResult{
-				ExternalSub: "sub123",
-				ExternalClaims: map[string]interface{}{
-					"email": "user@example.com",
-				},
+			name: "Email matches existing identifiers returns true",
+			federatedIdentifiers: map[string]interface{}{
+				"email": "user@example.com",
+				"sub":   "sub123",
 			},
-			ctx: &core.NodeContext{
-				AuthenticatedUser: authncm.AuthenticatedUser{
-					Attributes: map[string]interface{}{
-						"email": "user@example.com",
-					},
-				},
+			existingIdentifiers: map[string]interface{}{
+				"email": "user@example.com",
 			},
+			ctx:           &core.NodeContext{},
 			expectedValid: true,
-			expectError:   false,
 		},
 		{
-			name: "Email mismatch with AuthenticatedUser.Attributes returns false",
-			basicResult: &authnprovidermgr.AuthnBasicResult{
-				ExternalSub: "sub123",
-				ExternalClaims: map[string]interface{}{
-					"email": "user1@example.com",
-				},
+			name: "Email mismatch with existing identifiers returns false",
+			federatedIdentifiers: map[string]interface{}{
+				"email": "user1@example.com",
+				"sub":   "sub123",
 			},
-			ctx: &core.NodeContext{
-				AuthenticatedUser: authncm.AuthenticatedUser{
-					Attributes: map[string]interface{}{
-						"email": "user2@example.com",
-					},
-				},
+			existingIdentifiers: map[string]interface{}{
+				"email": "user2@example.com",
 			},
+			ctx:           &core.NodeContext{},
 			expectedValid: false,
-			expectError:   false,
 		},
 		{
 			name: "Sub matches RuntimeData returns true",
-			basicResult: &authnprovidermgr.AuthnBasicResult{
-				ExternalSub: "sub123",
-				ExternalClaims: map[string]interface{}{
-					"email": "user@example.com",
-				},
+			federatedIdentifiers: map[string]interface{}{
+				"email": "user@example.com",
+				"sub":   "sub123",
 			},
+			existingIdentifiers: map[string]interface{}{},
 			ctx: &core.NodeContext{
 				RuntimeData: map[string]string{
 					"sub": "sub123",
 				},
 			},
 			expectedValid: true,
-			expectError:   false,
 		},
 		{
 			name: "Sub mismatch with RuntimeData returns false",
-			basicResult: &authnprovidermgr.AuthnBasicResult{
-				ExternalSub: "sub123",
-				ExternalClaims: map[string]interface{}{
-					"email": "user@example.com",
-				},
+			federatedIdentifiers: map[string]interface{}{
+				"email": "user@example.com",
+				"sub":   "sub123",
 			},
+			existingIdentifiers: map[string]interface{}{},
 			ctx: &core.NodeContext{
 				RuntimeData: map[string]string{
 					"sub": "sub456",
 				},
 			},
 			expectedValid: false,
-			expectError:   false,
 		},
 		{
 			name: "Empty UserInputs email is skipped",
-			basicResult: &authnprovidermgr.AuthnBasicResult{
-				ExternalSub: "sub123",
-				ExternalClaims: map[string]interface{}{
-					"email": "user@example.com",
-				},
+			federatedIdentifiers: map[string]interface{}{
+				"email": "user@example.com",
+				"sub":   "sub123",
 			},
+			existingIdentifiers: map[string]interface{}{},
 			ctx: &core.NodeContext{
 				UserInputs: map[string]string{
 					"email": "",
 				},
 			},
 			expectedValid: true,
-			expectError:   false,
 		},
 		{
 			name: "Empty RuntimeData email is skipped",
-			basicResult: &authnprovidermgr.AuthnBasicResult{
-				ExternalSub: "sub123",
-				ExternalClaims: map[string]interface{}{
-					"email": "user@example.com",
-				},
+			federatedIdentifiers: map[string]interface{}{
+				"email": "user@example.com",
+				"sub":   "sub123",
 			},
+			existingIdentifiers: map[string]interface{}{},
 			ctx: &core.NodeContext{
 				RuntimeData: map[string]string{
 					"email": "",
 				},
 			},
 			expectedValid: true,
-			expectError:   false,
 		},
 		{
 			name: "Missing email from UserInputs and RuntimeData is allowed",
-			basicResult: &authnprovidermgr.AuthnBasicResult{
-				ExternalSub: "sub123",
-				ExternalClaims: map[string]interface{}{
-					"email": "user@example.com",
-				},
+			federatedIdentifiers: map[string]interface{}{
+				"email": "user@example.com",
+				"sub":   "sub123",
 			},
-			ctx:           &core.NodeContext{},
-			expectedValid: true,
-			expectError:   false,
+			existingIdentifiers: map[string]interface{}{},
+			ctx:                 &core.NodeContext{},
+			expectedValid:       true,
 		},
 		{
 			name: "Multiple attributes with one mismatch returns false",
-			basicResult: &authnprovidermgr.AuthnBasicResult{
-				ExternalSub: "sub123",
-				ExternalClaims: map[string]interface{}{
-					"email": "user1@example.com",
-				},
+			federatedIdentifiers: map[string]interface{}{
+				"email": "user1@example.com",
+				"sub":   "sub123",
 			},
+			existingIdentifiers: map[string]interface{}{},
 			ctx: &core.NodeContext{
 				UserInputs: map[string]string{
 					"email": "user1@example.com",
@@ -607,111 +575,272 @@ func (s *UtilsTestSuite) TestValidateFederatedIdentifierConsistency() {
 				},
 			},
 			expectedValid: false,
-			expectError:   false,
 		},
 	}
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			valid := validateFederatedIdentifierConsistency(tt.ctx, tt.basicResult)
+			valid := validateFederatedIdentifierConsistency(tt.ctx, tt.federatedIdentifiers, tt.existingIdentifiers)
 			s.Equal(tt.expectedValid, valid)
 		})
 	}
 }
 
-func (s *UtilsTestSuite) TestGetAuthenticatedIdentifierValue() {
-	tests := []struct {
-		name          string
-		ctx           *core.NodeContext
-		key           string
-		expectedValue string
-	}{
-		{
-			name: "Nil Attributes map returns empty string",
-			ctx: &core.NodeContext{
-				AuthenticatedUser: authncm.AuthenticatedUser{
-					Attributes: nil,
-				},
+func (s *UtilsTestSuite) TestBuildAuthnMetadata_WithAllFields() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			Metadata: map[string]interface{}{
+				"tenant_id": "tenant-123",
+				"region":    "us-west",
 			},
-			key:           "email",
-			expectedValue: "",
-		},
-		{
-			name: "Empty Attributes map returns empty string",
-			ctx: &core.NodeContext{
-				AuthenticatedUser: authncm.AuthenticatedUser{
-					Attributes: map[string]interface{}{},
+			InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+				{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+						ClientID: "oauth-client-1",
+					},
 				},
-			},
-			key:           "email",
-			expectedValue: "",
-		},
-		{
-			name: "Key not found returns empty string",
-			ctx: &core.NodeContext{
-				AuthenticatedUser: authncm.AuthenticatedUser{
-					Attributes: map[string]interface{}{
-						"other": "value",
+				{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+						ClientID: "oauth-client-2",
 					},
 				},
 			},
-			key:           "email",
-			expectedValue: "",
-		},
-		{
-			name: "String value is returned",
-			ctx: &core.NodeContext{
-				AuthenticatedUser: authncm.AuthenticatedUser{
-					Attributes: map[string]interface{}{
-						"email": "user@example.com",
-					},
-				},
-			},
-			key:           "email",
-			expectedValue: "user@example.com",
-		},
-		{
-			name: "Sub string value is returned",
-			ctx: &core.NodeContext{
-				AuthenticatedUser: authncm.AuthenticatedUser{
-					Attributes: map[string]interface{}{
-						"sub": "sub123",
-					},
-				},
-			},
-			key:           "sub",
-			expectedValue: "sub123",
-		},
-		{
-			name: "Non-string value is converted to string",
-			ctx: &core.NodeContext{
-				AuthenticatedUser: authncm.AuthenticatedUser{
-					Attributes: map[string]interface{}{
-						"id": 123,
-					},
-				},
-			},
-			key:           "id",
-			expectedValue: "123",
-		},
-		{
-			name: "Boolean value is converted to string",
-			ctx: &core.NodeContext{
-				AuthenticatedUser: authncm.AuthenticatedUser{
-					Attributes: map[string]interface{}{
-						"active": true,
-					},
-				},
-			},
-			key:           "active",
-			expectedValue: "true",
 		},
 	}
 
-	for _, tt := range tests {
-		s.Run(tt.name, func() {
-			value := getAuthenticatedIdentifierValue(tt.ctx, tt.key)
-			s.Equal(tt.expectedValue, value)
-		})
+	metadata := buildAuthnMetadata(ctx)
+
+	assert.NotNil(s.T(), metadata)
+	assert.NotNil(s.T(), metadata.AppMetadata)
+	assert.Equal(s.T(), "tenant-123", metadata.AppMetadata["tenant_id"])
+	assert.Equal(s.T(), "us-west", metadata.AppMetadata["region"])
+
+	clientIDs, ok := metadata.AppMetadata["client_ids"].([]string)
+	assert.True(s.T(), ok)
+	assert.Len(s.T(), clientIDs, 2)
+	assert.Contains(s.T(), clientIDs, "oauth-client-1")
+	assert.Contains(s.T(), clientIDs, "oauth-client-2")
+}
+
+func (s *UtilsTestSuite) TestBuildAuthnMetadata_WithNoMetadata() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{},
 	}
+
+	metadata := buildAuthnMetadata(ctx)
+
+	assert.NotNil(s.T(), metadata)
+	assert.NotNil(s.T(), metadata.AppMetadata)
+	assert.Len(s.T(), metadata.AppMetadata, 0)
+	assert.NotNil(s.T(), metadata.RuntimeMetadata)
+	assert.Equal(s.T(), "", metadata.RuntimeMetadata["authorization_request_id"])
+	assert.Equal(s.T(), "", metadata.RuntimeMetadata["current_client_id"])
+}
+
+func (s *UtilsTestSuite) TestBuildAuthnMetadata_WithOnlyAppMetadata() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			Metadata: map[string]interface{}{
+				"environment": "production",
+				"version":     "1.0.0",
+			},
+		},
+	}
+
+	metadata := buildAuthnMetadata(ctx)
+
+	assert.NotNil(s.T(), metadata)
+	assert.Equal(s.T(), "production", metadata.AppMetadata["environment"])
+	assert.Equal(s.T(), "1.0.0", metadata.AppMetadata["version"])
+	_, hasClientIDs := metadata.AppMetadata["client_ids"]
+	assert.False(s.T(), hasClientIDs)
+}
+
+func (s *UtilsTestSuite) TestBuildAuthnMetadata_WithOnlyClientIDs() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+				{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+						ClientID: "single-oauth-client",
+					},
+				},
+			},
+		},
+	}
+
+	metadata := buildAuthnMetadata(ctx)
+
+	assert.NotNil(s.T(), metadata)
+	clientIDs, ok := metadata.AppMetadata["client_ids"].([]string)
+	assert.True(s.T(), ok)
+	assert.Len(s.T(), clientIDs, 1)
+	assert.Equal(s.T(), "single-oauth-client", clientIDs[0])
+}
+
+func (s *UtilsTestSuite) TestBuildAuthnMetadata_WithNilOAuthConfig() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+				{
+					Type:        inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: nil,
+				},
+			},
+		},
+	}
+
+	metadata := buildAuthnMetadata(ctx)
+
+	assert.NotNil(s.T(), metadata)
+	_, hasClientIDs := metadata.AppMetadata["client_ids"]
+	assert.False(s.T(), hasClientIDs)
+}
+
+func (s *UtilsTestSuite) TestBuildAuthnMetadata_WithEmptyClientID() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+				{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+						ClientID: "",
+					},
+				},
+			},
+		},
+	}
+
+	metadata := buildAuthnMetadata(ctx)
+
+	assert.NotNil(s.T(), metadata)
+	_, hasClientIDs := metadata.AppMetadata["client_ids"]
+	assert.False(s.T(), hasClientIDs)
+}
+
+func (s *UtilsTestSuite) TestBuildAuthnMetadata_WithMixedInboundConfigs() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+				{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+						ClientID: "valid-client",
+					},
+				},
+				{
+					Type:        inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: nil,
+				},
+				{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+						ClientID: "",
+					},
+				},
+				{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+						ClientID: "another-valid-client",
+					},
+				},
+			},
+		},
+	}
+
+	metadata := buildAuthnMetadata(ctx)
+
+	assert.NotNil(s.T(), metadata)
+	clientIDs, ok := metadata.AppMetadata["client_ids"].([]string)
+	assert.True(s.T(), ok)
+	assert.Len(s.T(), clientIDs, 2)
+	assert.Contains(s.T(), clientIDs, "valid-client")
+	assert.Contains(s.T(), clientIDs, "another-valid-client")
+}
+
+func (s *UtilsTestSuite) TestBuildGetAttributesMetadata_WithLocale() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			Metadata: map[string]interface{}{
+				"tenant_id": "tenant-123",
+			},
+		},
+		RuntimeData: map[string]string{
+			"required_locales": "en-US",
+		},
+	}
+
+	metadata := buildGetAttributesMetadata(ctx)
+
+	assert.NotNil(s.T(), metadata)
+	assert.Equal(s.T(), "en-US", metadata.Locale)
+	assert.Equal(s.T(), "tenant-123", metadata.AppMetadata["tenant_id"])
+}
+
+func (s *UtilsTestSuite) TestBuildGetAttributesMetadata_WithoutLocale() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{},
+		RuntimeData: map[string]string{},
+	}
+
+	metadata := buildGetAttributesMetadata(ctx)
+
+	assert.NotNil(s.T(), metadata)
+	assert.Empty(s.T(), metadata.Locale)
+	assert.NotNil(s.T(), metadata.AppMetadata)
+	assert.Len(s.T(), metadata.AppMetadata, 0)
+	assert.NotNil(s.T(), metadata.RuntimeMetadata)
+	assert.Equal(s.T(), "", metadata.RuntimeMetadata["authorization_request_id"])
+	assert.Equal(s.T(), "", metadata.RuntimeMetadata["current_client_id"])
+}
+
+func (s *UtilsTestSuite) TestBuildAuthnMetadata_WithRuntimeMetadata() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyAuthorizationRequestID: "auth-req-123",
+			common.RuntimeKeyClientID:               "oauth-client-abc",
+			"ext_customKey":                         "custom-value",
+			"non_ext_key":                           "should-be-excluded",
+		},
+	}
+
+	metadata := buildAuthnMetadata(ctx)
+
+	assert.NotContains(s.T(), metadata.AppMetadata, "current_client_id")
+	assert.Equal(s.T(), "oauth-client-abc", metadata.RuntimeMetadata["current_client_id"])
+	assert.Equal(s.T(), "auth-req-123", metadata.RuntimeMetadata["authorization_request_id"])
+	assert.Equal(s.T(), "custom-value", metadata.RuntimeMetadata["ext_customKey"])
+	assert.NotContains(s.T(), metadata.RuntimeMetadata, "non_ext_key")
+}
+
+func (s *UtilsTestSuite) TestBuildGetAttributesMetadata_WithRuntimeMetadata() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			Metadata: map[string]interface{}{
+				"tenant_id": "tenant-123",
+			},
+		},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyAuthorizationRequestID: "auth-req-456",
+			common.RuntimeKeyClientID:               "oauth-client-xyz",
+			"ext_tenantHint":                        "hint-value",
+			"required_locales":                      "en-GB",
+			"internal_key":                          "ignored",
+		},
+	}
+
+	metadata := buildGetAttributesMetadata(ctx)
+
+	assert.Equal(s.T(), "en-GB", metadata.Locale)
+	assert.Equal(s.T(), "tenant-123", metadata.AppMetadata["tenant_id"])
+	assert.NotContains(s.T(), metadata.AppMetadata, "current_client_id")
+	assert.Equal(s.T(), "oauth-client-xyz", metadata.RuntimeMetadata["current_client_id"])
+	assert.Equal(s.T(), "auth-req-456", metadata.RuntimeMetadata["authorization_request_id"])
+	assert.Equal(s.T(), "hint-value", metadata.RuntimeMetadata["ext_tenantHint"])
+	assert.NotContains(s.T(), metadata.RuntimeMetadata, "internal_key")
+	assert.NotContains(s.T(), metadata.RuntimeMetadata, "required_locales")
 }

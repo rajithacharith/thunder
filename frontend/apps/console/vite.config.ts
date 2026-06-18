@@ -19,9 +19,11 @@
 import {readFileSync, copyFileSync, existsSync, writeFileSync} from 'fs';
 import {resolve, dirname} from 'path';
 import {fileURLToPath} from 'url';
+import {codecovVitePlugin} from '@codecov/vite-plugin';
+import babel from '@rolldown/plugin-babel';
 import {prismjsInjectCore} from '@thunderid/build-plugins/vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';
-import react from '@vitejs/plugin-react';
+import react, {reactCompilerPreset} from '@vitejs/plugin-react';
 import {visualizer} from 'rollup-plugin-visualizer';
 import svgr from 'vite-plugin-svgr';
 import {defineConfig} from 'vitest/config';
@@ -45,6 +47,7 @@ if (existsSync(rootVersionFile)) {
 
 const VERSION = readFileSync(publicVersionFile, 'utf-8').trim();
 const ANALYZER_ENABLED = process.env.ANALYZE === 'true' || false;
+const BUNDLE_ANALYSIS_ENABLED = process.env.CODECOV_BUNDLE_UPLOAD === 'true';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -87,13 +90,10 @@ export default defineConfig({
     prismjsInjectCore(),
     basicSsl(),
     svgr(),
-    react({
-      babel: {
-        plugins: [['babel-plugin-react-compiler']],
-      },
+    react(),
+    babel({
+      presets: [reactCompilerPreset()],
     }),
-    // Add visualizer plugin for bundle analysis (only when ANALYZE=true)
-
     ...(ANALYZER_ENABLED
       ? [
           visualizer({
@@ -104,6 +104,13 @@ export default defineConfig({
           }),
         ]
       : []),
+    // Upload bundle stats to Codecov (no-op unless CODECOV_BUNDLE_UPLOAD=true in CI).
+    // Must be the last plugin so it analyzes the final bundle.
+    codecovVitePlugin({
+      enableBundleAnalysis: BUNDLE_ANALYSIS_ENABLED,
+      bundleName: 'console',
+      oidc: {useGitHubOIDC: true},
+    }),
   ],
   optimizeDeps: {
     include: ['lodash-es'],

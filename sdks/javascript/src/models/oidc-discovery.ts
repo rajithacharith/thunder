@@ -400,6 +400,11 @@ export interface OIDCDiscoveryEndpointsApiResponse {
   revocation_endpoint?: string;
 
   /**
+   * CIBA backchannel authentication endpoint URL (CIBA Core 1.0 §4).
+   */
+  backchannel_authentication_endpoint?: string;
+
+  /**
    * OAuth 2.0 Token Endpoint URL.
    * Used to obtain tokens using various grant types.
    *

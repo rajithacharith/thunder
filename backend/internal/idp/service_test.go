@@ -26,12 +26,15 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/thunder-id/thunderid/internal/entitytype"
 	"github.com/thunder-id/thunderid/internal/system/cmodels"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/utils"
+	"github.com/thunder-id/thunderid/tests/mocks/entitytypemock"
 )
 
 type mockTransactioner struct{}
@@ -43,6 +46,7 @@ func (m *mockTransactioner) Transact(ctx context.Context, operation func(txCtx c
 type IDPServiceTestSuite struct {
 	suite.Suite
 	mockStore  *idpStoreInterfaceMock
+	mockET     *entitytypemock.EntityTypeServiceInterfaceMock
 	idpService *idpService
 }
 
@@ -65,11 +69,13 @@ func (s *IDPServiceTestSuite) SetupTest() {
 	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
 
 	s.mockStore = newIdpStoreInterfaceMock(s.T())
+	s.mockET = entitytypemock.NewEntityTypeServiceInterfaceMock(s.T())
 	s.idpService = &idpService{
-		idpStore:      s.mockStore,
-		transactioner: &mockTransactioner{},
-		logger:        log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService")),
-		uuidGenerator: utils.GenerateUUIDv7,
+		idpStore:          s.mockStore,
+		transactioner:     &mockTransactioner{},
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService")),
+		uuidGenerator:     utils.GenerateUUIDv7,
+		entityTypeService: s.mockET,
 	}
 }
 
@@ -881,7 +887,7 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_FailsForDeclarativeIDP(
 	fileStore.On("GetIdentityProviderByName", context.Background(), "Updated Name").
 		Return((*IDPDTO)(nil), ErrIDPNotFound)
 
-	service := newIDPService(compositeStore, &mockTransactioner{})
+	service := newIDPService(compositeStore, nil, &mockTransactioner{})
 
 	updatedIDP := &IDPDTO{
 		Name:        "Updated Name",
@@ -932,7 +938,7 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_SucceedsForMutableIDP()
 		return dto.ID == idpID && dto.Name == "Updated Name"
 	})).Return(nil)
 
-	service := newIDPService(compositeStore, &mockTransactioner{})
+	service := newIDPService(compositeStore, nil, &mockTransactioner{})
 
 	updatedIDP := &IDPDTO{
 		Name:        "Updated Name",
@@ -974,7 +980,7 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_FailsForDeclarativeIDP(
 	dbStore.On("GetIdentityProvider", context.Background(), idpID).Return((*IDPDTO)(nil), ErrIDPNotFound)
 	fileStore.On("GetIdentityProvider", context.Background(), idpID).Return(existingIDP, nil)
 
-	service := newIDPService(compositeStore, &mockTransactioner{})
+	service := newIDPService(compositeStore, nil, &mockTransactioner{})
 
 	err := service.DeleteIdentityProvider(context.Background(), idpID)
 
@@ -1011,7 +1017,7 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_SucceedsForMutableIDP()
 	dbStore.On("GetIdentityProvider", context.Background(), idpID).Return(existingIDP, nil)
 	dbStore.On("DeleteIdentityProvider", context.Background(), idpID).Return(nil)
 
-	service := newIDPService(compositeStore, &mockTransactioner{})
+	service := newIDPService(compositeStore, nil, &mockTransactioner{})
 
 	err := service.DeleteIdentityProvider(context.Background(), idpID)
 
@@ -1019,4 +1025,135 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_SucceedsForMutableIDP()
 	dbStore.AssertCalled(s.T(), "DeleteIdentityProvider", context.Background(), idpID)
 
 	config.ResetServerRuntime()
+}
+
+// singleProfileMapping builds an attribute configuration that resolves to userType with a single
+// user-type-attributes entry carrying the given claim mappings.
+func singleProfileMapping(userType string, mappings []AttributeMapping) *AttributeConfiguration {
+	return &AttributeConfiguration{
+		UserTypeResolution:        &UserTypeResolution{Default: userType},
+		UserTypeAttributeMappings: []UserTypeAttributeMapping{{UserType: userType, Attributes: mappings}},
+	}
+}
+
+func (s *IDPServiceTestSuite) TestValidateAttributeConfiguration_NilMapping_OK() {
+	svcErr := s.idpService.validateAttributeConfiguration(context.Background(), &IDPDTO{})
+	s.Nil(svcErr)
+}
+
+func (s *IDPServiceTestSuite) TestValidateAttributeConfiguration_Valid() {
+	s.mockET.On("GetAttributes", mock.Anything, entitytype.TypeCategoryUser, "person", false, true, false).
+		Return([]entitytype.AttributeInfo{{Attribute: "firstName"}, {Attribute: "email"}},
+			(*serviceerror.ServiceError)(nil))
+
+	idp := &IDPDTO{AttributeConfiguration: singleProfileMapping("person", []AttributeMapping{
+		{ExternalAttribute: "given_name", LocalAttribute: "firstName"},
+		{ExternalAttribute: "address.email", LocalAttribute: "email"},
+	})}
+
+	s.Nil(s.idpService.validateAttributeConfiguration(context.Background(), idp))
+}
+
+func (s *IDPServiceTestSuite) TestValidateAttributeConfiguration_EmptyEntityType() {
+	idp := &IDPDTO{AttributeConfiguration: &AttributeConfiguration{
+		UserTypeAttributeMappings: []UserTypeAttributeMapping{{
+			Attributes: []AttributeMapping{{ExternalAttribute: "given_name", LocalAttribute: "firstName"}},
+		}},
+	}}
+	svcErr := s.idpService.validateAttributeConfiguration(context.Background(), idp)
+	s.NotNil(svcErr)
+	s.Equal(ErrorInvalidAttributeConfiguration.Code, svcErr.Code)
+}
+
+func (s *IDPServiceTestSuite) TestValidateAttributeConfiguration_EmptyMappings() {
+	s.mockET.On("GetAttributes", mock.Anything, entitytype.TypeCategoryUser, "person", false, true, false).
+		Return([]entitytype.AttributeInfo{{Attribute: "firstName"}}, (*serviceerror.ServiceError)(nil))
+	idp := &IDPDTO{AttributeConfiguration: singleProfileMapping("person", nil)}
+	svcErr := s.idpService.validateAttributeConfiguration(context.Background(), idp)
+	s.Nil(svcErr)
+}
+
+func (s *IDPServiceTestSuite) TestValidateAttributeConfiguration_OneSourceToMultipleTargets() {
+	s.mockET.On("GetAttributes", mock.Anything, entitytype.TypeCategoryUser, "person", false, true, false).
+		Return([]entitytype.AttributeInfo{{Attribute: "email"}, {Attribute: "contactEmail"}},
+			(*serviceerror.ServiceError)(nil))
+
+	idp := &IDPDTO{AttributeConfiguration: singleProfileMapping("person", []AttributeMapping{
+		{ExternalAttribute: "email", LocalAttribute: "email"},
+		{ExternalAttribute: "email", LocalAttribute: "contactEmail"},
+	})}
+
+	s.Nil(s.idpService.validateAttributeConfiguration(context.Background(), idp))
+}
+
+func (s *IDPServiceTestSuite) TestValidateAttributeConfiguration_DuplicateTarget() {
+	idp := &IDPDTO{AttributeConfiguration: singleProfileMapping("person", []AttributeMapping{
+		{ExternalAttribute: "given_name", LocalAttribute: "firstName"},
+		{ExternalAttribute: "first_name", LocalAttribute: "firstName"},
+	})}
+	svcErr := s.idpService.validateAttributeConfiguration(context.Background(), idp)
+	s.NotNil(svcErr)
+	s.Equal(ErrorInvalidAttributeConfiguration.Code, svcErr.Code)
+	s.Contains(svcErr.ErrorDescription.DefaultValue, "more than once")
+}
+
+func (s *IDPServiceTestSuite) TestValidateAttributeConfiguration_DuplicateTargetWhitespaceVariant() {
+	idp := &IDPDTO{AttributeConfiguration: singleProfileMapping("person", []AttributeMapping{
+		{ExternalAttribute: "given_name", LocalAttribute: "firstName"},
+		{ExternalAttribute: "first_name", LocalAttribute: "  firstName  "},
+	})}
+	svcErr := s.idpService.validateAttributeConfiguration(context.Background(), idp)
+	s.NotNil(svcErr)
+	s.Equal(ErrorInvalidAttributeConfiguration.Code, svcErr.Code)
+	s.Contains(svcErr.ErrorDescription.DefaultValue, "more than once")
+}
+
+func (s *IDPServiceTestSuite) TestValidateAttributeConfiguration_DuplicateEntityType() {
+	s.mockET.On("GetAttributes", mock.Anything, entitytype.TypeCategoryUser, "person", false, true, false).
+		Return([]entitytype.AttributeInfo{{Attribute: "firstName"}}, (*serviceerror.ServiceError)(nil))
+	idp := &IDPDTO{AttributeConfiguration: &AttributeConfiguration{
+		UserTypeResolution: &UserTypeResolution{Default: "person"},
+		UserTypeAttributeMappings: []UserTypeAttributeMapping{
+			{
+				UserType:   "person",
+				Attributes: []AttributeMapping{{ExternalAttribute: "given_name", LocalAttribute: "firstName"}},
+			},
+			{
+				UserType:   "person",
+				Attributes: []AttributeMapping{{ExternalAttribute: "family_name", LocalAttribute: "lastName"}},
+			},
+		},
+	}}
+	svcErr := s.idpService.validateAttributeConfiguration(context.Background(), idp)
+	s.NotNil(svcErr)
+	s.Equal(ErrorInvalidAttributeConfiguration.Code, svcErr.Code)
+	s.Contains(svcErr.ErrorDescription.DefaultValue, "configured more than once")
+}
+
+func (s *IDPServiceTestSuite) TestValidateAttributeConfiguration_TargetNotInSchema() {
+	s.mockET.On("GetAttributes", mock.Anything, entitytype.TypeCategoryUser, "person", false, true, false).
+		Return([]entitytype.AttributeInfo{{Attribute: "email"}}, (*serviceerror.ServiceError)(nil))
+
+	idp := &IDPDTO{AttributeConfiguration: singleProfileMapping("person", []AttributeMapping{
+		{ExternalAttribute: "given_name", LocalAttribute: "firstName"},
+	})}
+	svcErr := s.idpService.validateAttributeConfiguration(context.Background(), idp)
+	s.NotNil(svcErr)
+	s.Equal(ErrorInvalidAttributeConfiguration.Code, svcErr.Code)
+	s.Contains(svcErr.ErrorDescription.DefaultValue, "not an attribute")
+}
+
+func (s *IDPServiceTestSuite) TestValidateAttributeConfiguration_UnknownEntityType() {
+	s.mockET.On("GetAttributes", mock.Anything, entitytype.TypeCategoryUser, "ghost", false, true, false).
+		Return([]entitytype.AttributeInfo(nil), &serviceerror.ServiceError{
+			Type: serviceerror.ClientErrorType, Code: "ETS-1004",
+			ErrorDescription: core.I18nMessage{DefaultValue: "user type not found"},
+		})
+
+	idp := &IDPDTO{AttributeConfiguration: singleProfileMapping("ghost", []AttributeMapping{
+		{ExternalAttribute: "given_name", LocalAttribute: "firstName"},
+	})}
+	svcErr := s.idpService.validateAttributeConfiguration(context.Background(), idp)
+	s.NotNil(svcErr)
+	s.Equal(ErrorInvalidAttributeConfiguration.Code, svcErr.Code)
 }

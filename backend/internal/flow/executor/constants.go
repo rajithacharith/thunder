@@ -20,9 +20,9 @@ package executor
 
 // Executor name constants
 const (
-	ExecutorNameBasicAuth = "BasicAuthExecutor"
-	ExecutorNameSMSAuth   = "SMSOTPAuthExecutor"
-	ExecutorNameMagicLink = "MagicLinkExecutor"
+	ExecutorNameCredentialsAuth = "CredentialsAuthExecutor"
+	ExecutorNameSMSAuth         = "SMSOTPAuthExecutor"
+	ExecutorNameMagicLink       = "MagicLinkExecutor"
 	// nolint:gosec // G101: This is an executor name, not a credential
 	ExecutorNamePasskeyAuth                  = "PasskeyAuthExecutor"
 	ExecutorNameOAuth                        = "OAuthExecutor"
@@ -51,11 +51,12 @@ const (
 
 // Executor mode constants
 const (
-	ExecutorModeSend     = "send"
-	ExecutorModeGenerate = "generate"
-	ExecutorModeVerify   = "verify"
-	ExecutorModeIdentify = "identify"
-	ExecutorModeResolve  = "resolve"
+	ExecutorModeSend       = "send"
+	ExecutorModeGenerate   = "generate"
+	ExecutorModeVerify     = "verify"
+	ExecutorModeIdentify   = "identify"
+	ExecutorModeResolve    = "resolve"
+	ExecutorModeCheckState = "check_state"
 )
 
 // User attribute and input constants
@@ -85,6 +86,10 @@ const (
 
 	dataValueTrue  = "true"
 	dataValueFalse = "false"
+
+	entityStateNotExists = "not_exists"
+	entityStateExists    = "exists"
+	entityStateAmbiguous = "ambiguous"
 )
 
 // Executor property keys

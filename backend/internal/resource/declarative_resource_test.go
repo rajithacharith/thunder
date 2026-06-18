@@ -244,7 +244,7 @@ id: "rs1"
 name: "Test Server"
 description: "Test description"
 identifier: "test-server"
-ou_id: "ou1"
+ouId: "ou1"
 delimiter: ":"
 resources:
   - name: "Users"
@@ -272,7 +272,7 @@ resources:
 func TestParseToResourceServer_MissingID(t *testing.T) {
 	yamlData := []byte(`
 name: "Test Server"
-ou_id: "ou1"
+ouId: "ou1"
 `)
 
 	dto, err := parseToResourceServer(yamlData)
@@ -285,7 +285,7 @@ ou_id: "ou1"
 func TestParseToResourceServer_MissingName(t *testing.T) {
 	yamlData := []byte(`
 id: "rs1"
-ou_id: "ou1"
+ouId: "ou1"
 `)
 
 	dto, err := parseToResourceServer(yamlData)
@@ -300,7 +300,7 @@ func TestParseToResourceServer_TypeMCP(t *testing.T) {
 id: "rs1"
 name: "Test Server"
 type: "MCP"
-ou_id: "ou1"
+ouId: "ou1"
 `)
 
 	dto, err := parseToResourceServer(yamlData)
@@ -314,7 +314,7 @@ func TestParseToResourceServer_TypeDefaultsToCustom(t *testing.T) {
 	yamlData := []byte(`
 id: "rs1"
 name: "Test Server"
-ou_id: "ou1"
+ouId: "ou1"
 `)
 
 	dto, err := parseToResourceServer(yamlData)
@@ -329,7 +329,7 @@ func TestParseToResourceServer_InvalidType(t *testing.T) {
 id: "rs1"
 name: "Test Server"
 type: "BOGUS"
-ou_id: "ou1"
+ouId: "ou1"
 `)
 
 	dto, err := parseToResourceServer(yamlData)
@@ -345,7 +345,7 @@ id: "rs1"
 name: "Test Server"
 handle: "test-api"
 type: "MCP"
-ou_id: "ou1"
+ouId: "ou1"
 `)
 
 	parser := parseAndValidateResourceServerWrapper(nil)
@@ -363,7 +363,7 @@ id: "rs1"
 name: "Test Server"
 handle: "test-api"
 type: "BOGUS"
-ou_id: "ou1"
+ouId: "ou1"
 `)
 
 	parser := parseAndValidateResourceServerWrapper(nil)
@@ -554,7 +554,7 @@ id: "rs1"
 name: "Test Server"
 handle: "test-api"
 identifier: "api"
-ou_id: "ou1"
+ouId: "ou1"
 resources:
   - name: "Users"
     handle: "users"

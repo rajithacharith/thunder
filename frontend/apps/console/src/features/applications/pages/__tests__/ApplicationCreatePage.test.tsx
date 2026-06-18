@@ -71,8 +71,8 @@ vi.mock('../../api/useCreateApplication', () => ({
 }));
 
 // Mock user types API
-vi.mock('../../../user-types/api/useGetUserTypes', () => ({
-  default: () => ({
+vi.mock('@thunderid/configure-user-types', () => ({
+  useGetUserTypes: () => ({
     data: {
       types: [
         {name: 'customer', displayName: 'Customer'},
@@ -221,7 +221,11 @@ vi.mock('../../components/create-application/configure-signin-options/ConfigureS
 
         return (
           <div data-testid="application-configure-sign-in">
-            <button type="button" data-testid="toggle-integration" onClick={() => onIntegrationToggle('basic_auth')}>
+            <button
+              type="button"
+              data-testid="toggle-integration"
+              onClick={() => onIntegrationToggle('credentials_auth')}
+            >
               Toggle Integration
             </button>
           </div>
@@ -345,23 +349,27 @@ vi.mock('../../components/create-application/ShowClientSecret', () => ({
   ),
 }));
 
-vi.mock('@/components/AppBreadcrumbs', () => ({
-  default: ({items}: {items: {key: string; label: string; onClick?: () => void}[]}) => (
-    <nav>
-      {items.map((item) => (
-        <span
-          key={item.key}
-          onClick={item.onClick}
-          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && item.onClick?.()}
-          role={item.onClick ? 'button' : undefined}
-          tabIndex={item.onClick ? 0 : undefined}
-        >
-          {item.label}
-        </span>
-      ))}
-    </nav>
-  ),
-}));
+vi.mock('@wso2/oxygen-ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@wso2/oxygen-ui')>();
+  return {
+    ...actual,
+    AppBreadcrumbs: ({items}: {items: {key: string; label: string; onClick?: () => void}[]}) => (
+      <nav>
+        {items.map((item) => (
+          <span
+            key={item.key}
+            onClick={item.onClick}
+            onKeyDown={(e: React.KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && item.onClick?.()}
+            role={item.onClick ? 'button' : undefined}
+            tabIndex={item.onClick ? 0 : undefined}
+          >
+            {item.label}
+          </span>
+        ))}
+      </nav>
+    ),
+  };
+});
 
 describe('ApplicationCreatePage', () => {
   let user: ReturnType<typeof userEvent.setup>;

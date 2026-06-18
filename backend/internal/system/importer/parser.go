@@ -181,7 +181,7 @@ func classifyResourceType(node *yaml.Node) string {
 		matches = append(matches, resourceTypeTranslation)
 	}
 
-	if hasAllKeys(node, "schema") && hasAnyKey(node, "organization_unit_id", "ou_handle") {
+	if hasAllKeys(node, "schema") && hasAnyKey(node, "ouId", "ouHandle") {
 		matches = append(matches, resourceTypeEntityType)
 	}
 
@@ -201,7 +201,7 @@ func classifyResourceType(node *yaml.Node) string {
 		matches = append(matches, resourceTypeLayout)
 	}
 
-	if hasAllKeys(node, "type", "attributes") && hasAnyKey(node, "ou_id", "ou_handle") {
+	if hasAllKeys(node, "type", "attributes") && hasAnyKey(node, "ouId", "ouHandle") {
 		matches = append(matches, resourceTypeUser)
 	}
 
@@ -215,27 +215,27 @@ func classifyResourceType(node *yaml.Node) string {
 
 	if hasAnyKey(node, "owner") ||
 		(hasAnyKey(node, "type") &&
-			hasAnyKey(node, "auth_flow_id", "registration_flow_id", "inbound_auth_config", "allowed_user_types") &&
+			hasAnyKey(node, "authFlowId", "registrationFlowId", "inboundAuthConfig", "allowedUserTypes") &&
 			!hasAnyKey(node, "properties")) {
 		matches = append(matches, resourceTypeAgent)
 	}
 
 	if !hasAnyKey(node, "owner") &&
 		!(hasAnyKey(node, "type") &&
-			hasAnyKey(node, "auth_flow_id", "registration_flow_id", "inbound_auth_config", "allowed_user_types") &&
+			hasAnyKey(node, "authFlowId", "registrationFlowId", "inboundAuthConfig", "allowedUserTypes") &&
 			!hasAnyKey(node, "properties")) &&
-		hasAnyKey(node, "auth_flow_id", "registration_flow_id", "inbound_auth_config", "allowed_user_types") {
+		hasAnyKey(node, "authFlowId", "registrationFlowId", "inboundAuthConfig", "allowedUserTypes") {
 		matches = append(matches, resourceTypeApplication)
 	}
 
-	if hasAllKeys(node, "name") && hasAnyKey(node, "ou_id", "ou_handle") &&
+	if hasAllKeys(node, "name") && hasAnyKey(node, "ouId", "ouHandle") &&
 		!hasAnyKey(node, "handle", "permissions", "identifier", "type", "flowType",
 			"displayName", "properties", "schema") {
 		matches = append(matches, resourceTypeGroup)
 	}
 
 	if hasAllKeys(node, "handle", "name") &&
-		!hasAnyKey(node, "flowType", "nodes", "auth_flow_id", "registration_flow_id", "inbound_auth_config") {
+		!hasAnyKey(node, "flowType", "nodes", "authFlowId", "registrationFlowId", "inboundAuthConfig") {
 		matches = append(matches, resourceTypeOrganizationUnit)
 	}
 

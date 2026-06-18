@@ -86,7 +86,7 @@ func (s *IDPInitTestSuite) TestInitialize() {
 	_ = config.InitializeServerRuntime("", testConfig)
 	mux := http.NewServeMux()
 
-	service, _, err := Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"), mux)
+	service, _, err := Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"), mux, nil)
 	s.NoError(err)
 	s.NotNil(service)
 	s.Implements((*IDPServiceInterface)(nil), service)
@@ -133,7 +133,7 @@ func (s *IDPInitTestSuite) TestNewIDPHandler() {
 
 func (s *IDPInitTestSuite) TestNewIDPService() {
 	store := &idpStore{}
-	service := newIDPService(store, &mockTransactioner{})
+	service := newIDPService(store, nil, &mockTransactioner{})
 
 	s.NotNil(service)
 	s.Implements((*IDPServiceInterface)(nil), service)
@@ -153,10 +153,10 @@ type: "GOOGLE"
 properties:
   - name: "client_id"
     value: "test_client_id"
-    is_secret: false
+    isSecret: false
   - name: "client_secret"
     value: "test_secret"
-    is_secret: false
+    isSecret: false
 `
 
 	idp, err := parseToIDPDTO([]byte(yamlData))
@@ -317,7 +317,7 @@ func (suite *IDPInitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled()
 	mux := http.NewServeMux()
 
 	// Execute
-	service, _, err := Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"), mux)
+	service, _, err := Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"), mux, nil)
 
 	// Assert
 	suite.NoError(err)
@@ -351,7 +351,7 @@ func TestInitialize_WithDeclarativeResourcesEnabled_EmptyDirectory(t *testing.T)
 
 	// Create a temporary directory structure for file-based runtime
 	tmpDir := t.TempDir()
-	confDir := tmpDir + "/repository/resources"
+	confDir := tmpDir + "/config/resources"
 	idpDir := confDir + "/identity_providers"
 
 	// Create the directory structure
@@ -368,7 +368,7 @@ func TestInitialize_WithDeclarativeResourcesEnabled_EmptyDirectory(t *testing.T)
 	mux := http.NewServeMux()
 
 	// Execute
-	service, _, err := Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"), mux)
+	service, _, err := Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"), mux, nil)
 
 	// Assert
 	assert.NoError(t, err)
@@ -386,7 +386,7 @@ func TestInitialize_WithDeclarativeResourcesEnabled_EmptyDirectory(t *testing.T)
 func TestInitialize_WithDeclarativeResourcesEnabled_ValidConfigs(t *testing.T) {
 	// Create a temporary directory structure for file-based runtime
 	tmpDir := t.TempDir()
-	confDir := tmpDir + "/repository/resources"
+	confDir := tmpDir + "/config/resources"
 	idpDir := confDir + "/identity_providers"
 
 	// Create the directory structure
@@ -427,13 +427,13 @@ type: GOOGLE
 properties:
   - name: client_id
     value: google-client-id
-    is_secret: false
+    isSecret: false
   - name: client_secret
     value: google-client-secret
-    is_secret: true
+    isSecret: true
   - name: redirect_uri
     value: http://localhost:3000/callback
-    is_secret: false
+    isSecret: false
 `
 	err = os.WriteFile(idpDir+"/google_idp.yaml", []byte(googleIDPYAML), 0600)
 	assert.NoError(t, err)
@@ -446,13 +446,13 @@ type: GITHUB
 properties:
   - name: client_id
     value: github-client-id
-    is_secret: false
+    isSecret: false
   - name: client_secret
     value: github-client-secret
-    is_secret: true
+    isSecret: true
   - name: redirect_uri
     value: http://localhost:3000/callback
-    is_secret: false
+    isSecret: false
 `
 	err = os.WriteFile(idpDir+"/github_idp.yaml", []byte(githubIDPYAML), 0600)
 	assert.NoError(t, err)
@@ -467,7 +467,7 @@ properties:
 	mux := http.NewServeMux()
 
 	// Execute
-	service, _, err := Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"), mux)
+	service, _, err := Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"), mux, nil)
 
 	// Assert
 	assert.NoError(t, err)
@@ -511,7 +511,7 @@ properties:
 //nolint:dupl // Similar test setup required for different error scenarios
 func TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML(t *testing.T) {
 	tmpDir := t.TempDir()
-	confDir := tmpDir + "/repository/resources"
+	confDir := tmpDir + "/config/resources"
 	idpDir := confDir + "/identity_providers"
 
 	err := os.MkdirAll(idpDir, 0750)
@@ -557,7 +557,7 @@ func TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML(t *testing.T) {
 	mux := http.NewServeMux()
 
 	// Initialize should return an error due to invalid YAML
-	_, _, err = Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"), mux)
+	_, _, err = Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"), mux, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load identity provider resources")
 }
@@ -567,7 +567,7 @@ func TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML(t *testing.T) {
 //nolint:dupl // Similar test setup required for different error scenarios
 func TestInitialize_WithDeclarativeResourcesEnabled_ValidationFailure(t *testing.T) {
 	tmpDir := t.TempDir()
-	confDir := tmpDir + "/repository/resources"
+	confDir := tmpDir + "/config/resources"
 	idpDir := confDir + "/identity_providers"
 
 	err := os.MkdirAll(idpDir, 0750)
@@ -580,7 +580,7 @@ type: GOOGLE
 properties:
   - name: "client_id"
     value: "test"
-    is_secret: false
+    isSecret: false
 `
 	err = os.WriteFile(idpDir+"/invalid-idp.yaml", []byte(invalidIDPYAML), 0600)
 	assert.NoError(t, err)
@@ -618,7 +618,7 @@ properties:
 	mux := http.NewServeMux()
 
 	// Initialize should return an error due to validation failure
-	_, _, err = Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"), mux)
+	_, _, err = Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"), mux, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load identity provider resources")
 }
@@ -628,7 +628,7 @@ properties:
 //nolint:dupl // Similar test setup required for different error scenarios
 func TestInitialize_WithDeclarativeResourcesEnabled_InvalidIDPType(t *testing.T) {
 	tmpDir := t.TempDir()
-	confDir := tmpDir + "/repository/resources"
+	confDir := tmpDir + "/config/resources"
 	idpDir := confDir + "/identity_providers"
 
 	err := os.MkdirAll(idpDir, 0750)
@@ -641,7 +641,7 @@ type: "UNSUPPORTED_TYPE"
 properties:
   - name: "client_id"
     value: "test"
-    is_secret: false
+    isSecret: false
 `
 	err = os.WriteFile(idpDir+"/invalid-type.yaml", []byte(invalidTypeYAML), 0600)
 	assert.NoError(t, err)
@@ -679,7 +679,7 @@ properties:
 	mux := http.NewServeMux()
 
 	// Initialize should return an error due to invalid IDP type
-	_, _, err = Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"), mux)
+	_, _, err = Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"), mux, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load identity provider resources")
 }
@@ -818,7 +818,7 @@ func (s *IDPInitTestSuite) TestInitialize_DBClientError() {
 	}()
 
 	mux := http.NewServeMux()
-	_, _, err := Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"), mux)
+	_, _, err := Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"), mux, nil)
 
 	s.Error(err)
 	s.Equal("mock db client error", err.Error())
@@ -842,7 +842,7 @@ func (s *IDPInitTestSuite) TestInitialize_TransactionerError() {
 	}()
 
 	mux := http.NewServeMux()
-	_, _, err := Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"), mux)
+	_, _, err := Initialize(cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"), mux, nil)
 
 	s.Error(err)
 	s.Equal("mock transactioner error", err.Error())

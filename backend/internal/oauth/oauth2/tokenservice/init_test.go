@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
+	"github.com/thunder-id/thunderid/tests/testhelpers"
 )
 
 type InitTestSuite struct {
@@ -41,7 +42,7 @@ func (suite *InitTestSuite) SetupTest() {
 }
 
 func (suite *InitTestSuite) TestInitialize() {
-	tokenBuilder, tokenValidator := Initialize(suite.mockJWTService, nil, nil, nil)
+	tokenBuilder, tokenValidator := Initialize(testhelpers.OAuthConfig(), suite.mockJWTService, nil, nil, nil)
 
 	assert.NotNil(suite.T(), tokenBuilder)
 	assert.Implements(suite.T(), (*TokenBuilderInterface)(nil), tokenBuilder)

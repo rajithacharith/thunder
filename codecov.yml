@@ -116,6 +116,14 @@ coverage:
         threshold: 1%
         informational: false
 
+bundle_analysis:
+  # Comment-only: post an informational status and PR comment showing bundle-size
+  # changes for the gate and console apps, but never fail/block a PR.
+  # To start blocking later, set `status: true` and add a `bundle_change_threshold`.
+  status: informational
+  # Flag the comment with a warning when a bundle grows by more than 5%.
+  warning_threshold: "5%"
+
 ignore:
   - "backend/tests/**"
   - "**/*_test.go"

@@ -27,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/thunder-id/thunderid/internal/notification/common"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
@@ -99,7 +100,7 @@ func (suite *InitTestSuite) TestInitialize() {
 func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesEnabled_FileLoading() {
 	// Create a temporary directory for declarative resources
 	tmpDir := suite.T().TempDir()
-	confDir := tmpDir + "/repository/resources"
+	confDir := tmpDir + "/config/resources"
 	senderDir := confDir + "/notification_senders"
 
 	// Create the directory structure
@@ -112,15 +113,18 @@ name: "Test Twilio Sender"
 description: "Test Twilio notification sender"
 provider: "twilio"
 properties:
+  - name: "supported_channels"
+    value: "sms"
+    isSecret: false
   - name: "account_sid"
     value: "AC00112233445566778899aabbccddeeff"
-    is_secret: true
+    isSecret: true
   - name: "auth_token"
     value: "test-auth-token"
-    is_secret: true
+    isSecret: true
   - name: "sender_id"
     value: "+15551234567"
-    is_secret: false
+    isSecret: false
 `
 	err = os.WriteFile(filepath.Join(senderDir, "twilio-sender.yaml"), []byte(twilioYAML), 0600)
 	suite.NoError(err)
@@ -130,15 +134,18 @@ name: "Test Vonage Sender"
 description: "Test Vonage notification sender"
 provider: "vonage"
 properties:
+  - name: "supported_channels"
+    value: "sms"
+    isSecret: false
   - name: "api_key"
     value: "test-api-key"
-    is_secret: true
+    isSecret: true
   - name: "api_secret"
     value: "test-api-secret"
-    is_secret: true
+    isSecret: true
   - name: "sender_id"
     value: "VonageTest"
-    is_secret: false
+    isSecret: false
 `
 	err = os.WriteFile(filepath.Join(senderDir, "vonage-sender.yaml"), []byte(vonageYAML), 0600)
 	suite.NoError(err)
@@ -330,15 +337,18 @@ name: "Twilio SMS Sender"
 description: "Production Twilio SMS sender"
 provider: "twilio"
 properties:
+  - name: "supported_channels"
+    value: "sms"
+    isSecret: false
   - name: "account_sid"
     value: "{{.TWILIO_ACCOUNT_SID}}"
-    is_secret: false
+    isSecret: false
   - name: "auth_token"
     value: "{{.TWILIO_AUTH_TOKEN}}"
-    is_secret: true
+    isSecret: true
   - name: "sender_id"
     value: "{{.TWILIO_FROM_NUMBER}}"
-    is_secret: false
+    isSecret: false
 `
 
 	sender, err := parseToNotificationSenderDTO([]byte(yamlData))
@@ -349,7 +359,7 @@ properties:
 	suite.Equal("Twilio SMS Sender", sender.Name)
 	suite.Equal("Production Twilio SMS sender", sender.Description)
 	suite.Equal("twilio", string(sender.Provider))
-	suite.Len(sender.Properties, 3)
+	suite.Len(sender.Properties, 4)
 }
 
 // TestParseToNotificationSenderDTO_InvalidYAML tests parsing invalid YAML.
@@ -372,6 +382,9 @@ id: "minimal-sender"
 name: "Minimal Sender"
 provider: "custom"
 properties:
+  - name: "supported_channels"
+    value: "sms"
+    isSecret: false
   - name: "url"
     value: "https://custom.example.com/sms"
 `
@@ -384,7 +397,40 @@ properties:
 	suite.Equal("Minimal Sender", sender.Name)
 	suite.Equal("", sender.Description)
 	suite.Equal("custom", string(sender.Provider))
-	suite.Len(sender.Properties, 1)
+	suite.Len(sender.Properties, 2)
+}
+
+// TestParseToNotificationSenderDTO_WithSupportedChannelsInProperties tests YAML where
+// supported_channels is provided in properties.
+func (suite *InitTestSuite) TestParseToNotificationSenderDTO_WithSupportedChannelsInProperties() {
+	yamlData := `
+id: "minimal-sender"
+name: "Minimal Sender"
+provider: "custom"
+properties:
+  - name: "url"
+    value: "https://custom.example.com/sms"
+  - name: "supported_channels"
+    value: "email"
+`
+
+	sender, err := parseToNotificationSenderDTO([]byte(yamlData))
+
+	suite.NoError(err)
+	suite.NotNil(sender)
+	suite.Equal("minimal-sender", sender.ID)
+	suite.Equal("custom", string(sender.Provider))
+	suite.Len(sender.Properties, 2)
+
+	// verify the supported_channels property is retained as "email"
+	hasEmail := false
+	for _, p := range sender.Properties {
+		v, _ := p.GetValue()
+		if p.GetName() == common.SenderPropertySupportedChannels && v == "email" {
+			hasEmail = true
+		}
+	}
+	suite.True(hasEmail, "Expected supported_channels property to be 'email'")
 }
 
 // TestParseProviderType_ValidProviders tests parsing valid provider types.
@@ -426,15 +472,18 @@ name: "Vonage SMS Sender"
 description: "Production Vonage SMS sender"
 provider: "vonage"
 properties:
+  - name: "supported_channels"
+    value: "sms"
+    isSecret: false
   - name: "api_key"
     value: "{{.VONAGE_API_KEY}}"
-    is_secret: false
+    isSecret: false
   - name: "api_secret"
     value: "{{.VONAGE_API_SECRET}}"
-    is_secret: true
+    isSecret: true
   - name: "sender_id"
     value: "{{.VONAGE_FROM_NUMBER}}"
-    is_secret: false
+    isSecret: false
 `
 
 	sender, err := parseToNotificationSenderDTO([]byte(yamlData))
@@ -445,7 +494,7 @@ properties:
 	suite.Equal("Vonage SMS Sender", sender.Name)
 	suite.Equal("Production Vonage SMS sender", sender.Description)
 	suite.Equal("vonage", string(sender.Provider))
-	suite.Len(sender.Properties, 3)
+	suite.Len(sender.Properties, 4)
 }
 
 // TestParseProviderType_CaseSensitivity tests parsing provider type with different cases.
@@ -475,7 +524,7 @@ func (suite *InitTestSuite) TestParseProviderType_CaseSensitivity() {
 //nolint:dupl // Similar test setup required for different error scenarios
 func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML() {
 	tmpDir := suite.T().TempDir()
-	confDir := tmpDir + "/repository/resources"
+	confDir := tmpDir + "/config/resources"
 	senderDir := confDir + "/notification_senders"
 
 	err := os.MkdirAll(senderDir, 0750)
@@ -548,7 +597,7 @@ func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesEnabled_Inval
 //nolint:dupl // Similar test setup required for different error scenarios
 func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesEnabled_ValidationFailure() {
 	tmpDir := suite.T().TempDir()
-	confDir := tmpDir + "/repository/resources"
+	confDir := tmpDir + "/config/resources"
 	senderDir := confDir + "/notification_senders"
 
 	err := os.MkdirAll(senderDir, 0750)
@@ -559,9 +608,12 @@ func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesEnabled_Valid
 name: ""
 provider: "twilio"
 properties:
+  - name: "supported_channels"
+    value: "sms"
+    isSecret: false
   - name: "account_sid"
     value: "test"
-    is_secret: false
+    isSecret: false
 `
 	err = os.WriteFile(filepath.Join(senderDir, "invalid-sender.yaml"), []byte(invalidSenderYAML), 0600)
 	suite.NoError(err)

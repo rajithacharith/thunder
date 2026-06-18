@@ -328,9 +328,9 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesPars
 id: parser-test-role
 name: Parser Test Role
 description: Testing YAML parser
-ou_id: ou-default
+ouId: ou-default
 permissions:
-  - resource_server_id: api-server
+  - resourceServerId: api-server
     permissions:
       - read
       - write
@@ -386,7 +386,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 	}
 	err = validateRoleWrapper(roleNoOU, fileStore, nil, nil)
 	suite.Error(err)
-	suite.Contains(err.Error(), "ou_id or ou_handle is required for role 'Test Role'")
+	suite.Contains(err.Error(), "ouId or ouHandle is required for role 'Test Role'")
 }
 
 // TestLoadDeclarativeResourcesValidateAssignmentTypes tests validation of assignment types.
@@ -727,7 +727,7 @@ func (suite *InitTestSuite) TestInitialize_StoreInitError() {
 	testDir := suite.T().TempDir()
 
 	// Create invalid roles yaml
-	rolesDir := filepath.Join(testDir, "repository", "resources", "roles")
+	rolesDir := filepath.Join(testDir, "config", "resources", "roles")
 	err := os.MkdirAll(rolesDir, 0750)
 	suite.NoError(err)
 	err = os.WriteFile(filepath.Join(rolesDir, "invalid.yaml"), []byte("invalid yaml content: ["), 0600)

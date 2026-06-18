@@ -19,7 +19,9 @@
 import Link from '@docusaurus/Link';
 import {Box, Container, Typography} from '@wso2/oxygen-ui';
 import {JSX, useState} from 'react';
+import AndroidLogo from '../icons/AndroidLogo';
 import ExpressLogo from '../icons/ExpressLogo';
+import IOSLogo from '../icons/IOSLogo';
 import JavaScriptLogo from '../icons/JavaScriptLogo';
 import NextLogo from '../icons/NextLogo';
 import NodeLogo from '../icons/NodeLogo';
@@ -70,6 +72,18 @@ const SDKS = [
     packageName: '@thunderid/browser',
     icon: JavaScriptLogo,
     href: '/docs/next/guides/getting-started/connect-your-application/browser',
+  },
+  {
+    name: 'iOS',
+    packageName: 'ThunderID',
+    icon: IOSLogo,
+    href: '/docs/next/guides/getting-started/connect-your-application/ios',
+  },
+  {
+    name: 'Android',
+    packageName: 'dev.thunderid:compose',
+    icon: AndroidLogo,
+    href: '/docs/next/guides/getting-started/connect-your-application/android',
   },
 ];
 
@@ -181,7 +195,7 @@ export default function SDKShowcaseSection(): JSX.Element {
             <Box
               sx={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(7, 1fr)',
+                gridTemplateColumns: 'repeat(9, 1fr)',
                 gap: {xs: 1.5, md: 2},
                 justifyItems: 'center',
               }}

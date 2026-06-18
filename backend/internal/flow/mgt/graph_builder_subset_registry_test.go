@@ -76,7 +76,7 @@ func (s *GraphBuilderSubsetRegistryTestSuite) subsetExecutorRegistry() executor.
 
 func (s *GraphBuilderSubsetRegistryTestSuite) TestBuildGraph_SubsetRegistryRejectsUnregisteredExecutor() {
 	execRegistry := s.subsetExecutorRegistry()
-	require.False(s.T(), execRegistry.IsRegistered(executor.ExecutorNameBasicAuth))
+	require.False(s.T(), execRegistry.IsRegistered(executor.ExecutorNameCredentialsAuth))
 
 	mockFlowFactory := coremock.NewFlowFactoryInterfaceMock(s.T())
 	builder := &graphBuilder{
@@ -94,7 +94,7 @@ func (s *GraphBuilderSubsetRegistryTestSuite) TestBuildGraph_SubsetRegistryRejec
 			{
 				ID:       "task",
 				Type:     "TASK_EXECUTION",
-				Executor: &ExecutorDefinition{Name: executor.ExecutorNameBasicAuth},
+				Executor: &ExecutorDefinition{Name: executor.ExecutorNameCredentialsAuth},
 			},
 		},
 	}
@@ -111,5 +111,5 @@ func (s *GraphBuilderSubsetRegistryTestSuite) TestBuildGraph_SubsetRegistryRejec
 
 	s.Nil(graph)
 	s.Require().Error(err)
-	s.Contains(err.Error(), "executor with name "+executor.ExecutorNameBasicAuth+" not registered")
+	s.Contains(err.Error(), "executor with name "+executor.ExecutorNameCredentialsAuth+" not registered")
 }

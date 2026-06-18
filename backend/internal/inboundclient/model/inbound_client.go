@@ -44,31 +44,31 @@ type InboundClient struct {
 
 // InboundAuthProfile is the wire field block embedded in entity DTOs (requests and responses).
 type InboundAuthProfile struct {
-	AuthFlowID                string              `json:"authFlowId,omitempty"           yaml:"auth_flow_id,omitempty"           jsonschema:"Authentication flow ID. Optional. Specifies which login flow to use (e.g., MFA, passwordless). If omitted, the default authentication flow is used."`
-	AuthFlowHandle            string              `json:"authFlowHandle,omitempty"       yaml:"auth_flow_handle,omitempty"       jsonschema:"Authentication flow handle. Optional. Alternative to authFlowId — resolved to an ID at import time."`
-	RegistrationFlowID        string              `json:"registrationFlowId,omitempty"   yaml:"registration_flow_id,omitempty"   jsonschema:"Registration flow ID. Optional. Specifies the user registration/signup flow."`
-	RegistrationFlowHandle    string              `json:"registrationFlowHandle,omitempty" yaml:"registration_flow_handle,omitempty" jsonschema:"Registration flow handle. Optional. Alternative to registrationFlowId — resolved to an ID at import time."`
-	IsRegistrationFlowEnabled bool                `json:"isRegistrationFlowEnabled"      yaml:"is_registration_flow_enabled"     jsonschema:"Enable self-service registration. Set to true to allow users to sign up themselves. Requires registrationFlowId or registrationFlowHandle to be set."`
-	RecoveryFlowID            string              `json:"recoveryFlowId,omitempty"        yaml:"recovery_flow_id,omitempty"        jsonschema:"Recovery flow ID. Optional. Specifies the user recovery flow."`
-	RecoveryFlowHandle        string              `json:"recoveryFlowHandle,omitempty"   yaml:"recovery_flow_handle,omitempty"   jsonschema:"Recovery flow handle. Optional. Alternative to recoveryFlowId — resolved to an ID at import time."`
-	IsRecoveryFlowEnabled     bool                `json:"isRecoveryFlowEnabled"          yaml:"is_recovery_flow_enabled"       jsonschema:"Enable self-service recovery. Set to true to allow users to recover their accounts (e.g., password reset). Requires recoveryFlowId or recoveryFlowHandle to be set."`
-	ThemeID                   string              `json:"themeId,omitempty"              yaml:"theme_id,omitempty"               jsonschema:"Theme configuration ID. Optional. Customizes the visual styling of login pages."`
-	LayoutID                  string              `json:"layoutId,omitempty"             yaml:"layout_id,omitempty"              jsonschema:"Layout configuration ID. Optional. Customizes the screen structure and component positioning of login pages."`
+	AuthFlowID                string              `json:"authFlowId,omitempty"           yaml:"authFlowId,omitempty"           jsonschema:"Authentication flow ID. Optional. Specifies which login flow to use (e.g., MFA, passwordless). If omitted, the default authentication flow is used."`
+	AuthFlowHandle            string              `json:"authFlowHandle,omitempty"       yaml:"authFlowHandle,omitempty"       jsonschema:"Authentication flow handle. Optional. Alternative to authFlowId — resolved to an ID at import time."`
+	RegistrationFlowID        string              `json:"registrationFlowId,omitempty"   yaml:"registrationFlowId,omitempty"   jsonschema:"Registration flow ID. Optional. Specifies the user registration/signup flow."`
+	RegistrationFlowHandle    string              `json:"registrationFlowHandle,omitempty" yaml:"registrationFlowHandle,omitempty" jsonschema:"Registration flow handle. Optional. Alternative to registrationFlowId — resolved to an ID at import time."`
+	IsRegistrationFlowEnabled bool                `json:"isRegistrationFlowEnabled"      yaml:"isRegistrationFlowEnabled"     jsonschema:"Enable self-service registration. Set to true to allow users to sign up themselves. Requires registrationFlowId or registrationFlowHandle to be set."`
+	RecoveryFlowID            string              `json:"recoveryFlowId,omitempty"        yaml:"recoveryFlowId,omitempty"        jsonschema:"Recovery flow ID. Optional. Specifies the user recovery flow."`
+	RecoveryFlowHandle        string              `json:"recoveryFlowHandle,omitempty"   yaml:"recoveryFlowHandle,omitempty"   jsonschema:"Recovery flow handle. Optional. Alternative to recoveryFlowId — resolved to an ID at import time."`
+	IsRecoveryFlowEnabled     bool                `json:"isRecoveryFlowEnabled"          yaml:"isRecoveryFlowEnabled"       jsonschema:"Enable self-service recovery. Set to true to allow users to recover their accounts (e.g., password reset). Requires recoveryFlowId or recoveryFlowHandle to be set."`
+	ThemeID                   string              `json:"themeId,omitempty"              yaml:"themeId,omitempty"               jsonschema:"Theme configuration ID. Optional. Customizes the visual styling of login pages."`
+	LayoutID                  string              `json:"layoutId,omitempty"             yaml:"layoutId,omitempty"              jsonschema:"Layout configuration ID. Optional. Customizes the screen structure and component positioning of login pages."`
 	Assertion                 *AssertionConfig    `json:"assertion,omitempty"            yaml:"assertion,omitempty"              jsonschema:"Assertion configuration. Optional. Customize assertion validity periods and included user attributes."`
-	LoginConsent              *LoginConsentConfig `json:"loginConsent,omitempty"         yaml:"login_consent,omitempty"          jsonschema:"Login consent configuration settings."`
-	AllowedUserTypes          []string            `json:"allowedUserTypes,omitempty"     yaml:"allowed_user_types,omitempty"     jsonschema:"Allowed user types. Optional. Restricts which user types can authenticate to and register against this resource."`
+	LoginConsent              *LoginConsentConfig `json:"loginConsent,omitempty"         yaml:"loginConsent,omitempty"          jsonschema:"Login consent configuration settings."`
+	AllowedUserTypes          []string            `json:"allowedUserTypes,omitempty"     yaml:"allowedUserTypes,omitempty"     jsonschema:"Allowed user types. Optional. Restricts which user types can authenticate to and register against this resource."`
 	Certificate               *Certificate        `json:"certificate,omitempty"          yaml:"certificate,omitempty"            jsonschema:"Resource-level certificate. Optional. For certificate-based authentication or JWT validation."`
 }
 
 // AssertionConfig is the entity-level assertion config; token configs fall back to it.
 type AssertionConfig struct {
-	ValidityPeriod int64    `json:"validityPeriod,omitempty" yaml:"validity_period,omitempty" jsonschema:"Assertion validity period in seconds."`
-	UserAttributes []string `json:"userAttributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in the assertion."`
+	ValidityPeriod int64    `json:"validityPeriod,omitempty" yaml:"validityPeriod,omitempty" jsonschema:"Assertion validity period in seconds."`
+	UserAttributes []string `json:"userAttributes,omitempty" yaml:"userAttributes,omitempty" jsonschema:"User attributes to include in the assertion."`
 }
 
 // LoginConsentConfig is the login consent configuration.
 type LoginConsentConfig struct {
-	ValidityPeriod int64 `json:"validityPeriod" yaml:"validity_period" jsonschema:"Consent validity period in seconds. 0 means never expire."`
+	ValidityPeriod int64 `json:"validityPeriod" yaml:"validityPeriod" jsonschema:"Consent validity period in seconds. 0 means never expire."`
 }
 
 // Certificate is a user-supplied certificate input.

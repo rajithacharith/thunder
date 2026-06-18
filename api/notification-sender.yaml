@@ -58,6 +58,67 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/MessageNotificationSender'
+            examples:
+              twilio:
+                summary: Twilio Sender
+                value:
+                  name: "Twilio SMS Sender"
+                  description: "Sender for sending SMS messages using Twilio"
+                  provider: "twilio"
+                  properties:
+                    - name: "account_sid"
+                      value: "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                      isSecret: false
+                    - name: "auth_token"
+                      value: "your_auth_token_here"
+                      isSecret: true
+                    - name: "sender_id"
+                      value: "your_sender_id"
+                      isSecret: false
+                    - name: "supported_channels"
+                      value: "sms"
+                      isSecret: false
+              vonage:
+                summary: Vonage Sender
+                value:
+                  name: "Vonage SMS Sender"
+                  description: "Sender for sending SMS messages using Vonage"
+                  provider: "vonage"
+                  properties:
+                    - name: "api_key"
+                      value: "your_api_key"
+                      isSecret: false
+                    - name: "api_secret"
+                      value: "your_api_secret"
+                      isSecret: true
+                    - name: "sender_id"
+                      value: "VonageTest"
+                      isSecret: false
+                    - name: "supported_channels"
+                      value: "sms"
+                      isSecret: false
+              custom:
+                summary: Custom Webhook Sender
+                value:
+                  name: "Custom API Sender"
+                  description: "Custom webhook-based SMS sender"
+                  provider: "custom"
+                  properties:
+                    - name: "url"
+                      value: "https://api.example.com/send"
+                      isSecret: false
+                    - name: "http_method"
+                      value: "POST"
+                      isSecret: false
+                    - name: "content_type"
+                      value: "JSON"
+                      isSecret: false
+                    - name: "http_headers"
+                      value: "X-API-Key: your_api_key_here"
+                      isSecret: true
+                    - name: "supported_channels"
+                      value: "sms"
+                      isSecret: false
       responses:
         "201":
           description: Created
@@ -65,6 +126,70 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageNotificationSenderResponse'
+              examples:
+                twilio:
+                  summary: Twilio Sender Response
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Twilio SMS Sender"
+                    description: "Sender for sending SMS messages using Twilio"
+                    provider: "twilio"
+                    properties:
+                      - name: "account_sid"
+                        value: "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                        isSecret: false
+                      - name: "auth_token"
+                        value: "******"
+                        isSecret: true
+                      - name: "sender_id"
+                        value: "your_sender_id"
+                        isSecret: false
+                      - name: "supported_channels"
+                        value: "sms"
+                        isSecret: false
+                vonage:
+                  summary: Vonage Sender Response
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Vonage SMS Sender"
+                    description: "Sender for sending SMS messages using Vonage"
+                    provider: "vonage"
+                    properties:
+                      - name: "api_key"
+                        value: "your_api_key"
+                        isSecret: false
+                      - name: "api_secret"
+                        value: "******"
+                        isSecret: true
+                      - name: "sender_id"
+                        value: "VonageTest"
+                        isSecret: false
+                      - name: "supported_channels"
+                        value: "sms"
+                        isSecret: false
+                custom:
+                  summary: Custom Webhook Sender Response
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Custom API Sender"
+                    description: "Custom webhook-based SMS sender"
+                    provider: "custom"
+                    properties:
+                      - name: "url"
+                        value: "https://api.example.com/send"
+                        isSecret: false
+                      - name: "http_method"
+                        value: "POST"
+                        isSecret: false
+                      - name: "content_type"
+                        value: "JSON"
+                        isSecret: false
+                      - name: "http_headers"
+                        value: "******"
+                        isSecret: true
+                      - name: "supported_channels"
+                        value: "sms"
+                        isSecret: false
         "400":
           description: 'Bad Request: The request body is malformed or contains invalid data'
           content:
@@ -120,6 +245,70 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageNotificationSenderResponse'
+              examples:
+                twilio:
+                  summary: Twilio Sender Response
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Twilio SMS Sender"
+                    description: "Sender for sending SMS messages using Twilio"
+                    provider: "twilio"
+                    properties:
+                      - name: "account_sid"
+                        value: "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                        isSecret: false
+                      - name: "auth_token"
+                        value: "******"
+                        isSecret: true
+                      - name: "sender_id"
+                        value: "your_sender_id"
+                        isSecret: false
+                      - name: "supported_channels"
+                        value: "sms"
+                        isSecret: false
+                vonage:
+                  summary: Vonage Sender Response
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Vonage SMS Sender"
+                    description: "Sender for sending SMS messages using Vonage"
+                    provider: "vonage"
+                    properties:
+                      - name: "api_key"
+                        value: "your_api_key"
+                        isSecret: false
+                      - name: "api_secret"
+                        value: "******"
+                        isSecret: true
+                      - name: "sender_id"
+                        value: "VonageTest"
+                        isSecret: false
+                      - name: "supported_channels"
+                        value: "sms"
+                        isSecret: false
+                custom:
+                  summary: Custom Webhook Sender Response
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Custom API Sender"
+                    description: "Custom webhook-based SMS sender"
+                    provider: "custom"
+                    properties:
+                      - name: "url"
+                        value: "https://api.example.com/send"
+                        isSecret: false
+                      - name: "http_method"
+                        value: "POST"
+                        isSecret: false
+                      - name: "content_type"
+                        value: "JSON"
+                        isSecret: false
+                      - name: "http_headers"
+                        value: "******"
+                        isSecret: true
+                      - name: "supported_channels"
+                        value: "sms"
+                        isSecret: false
         "400":
           description: 'Bad Request: Invalid sender ID provided'
           content:
@@ -174,6 +363,67 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/MessageNotificationSender'
+            examples:
+              twilio:
+                summary: Twilio Sender
+                value:
+                  name: "Twilio SMS Sender"
+                  description: "Sender for sending SMS messages using Twilio"
+                  provider: "twilio"
+                  properties:
+                    - name: "account_sid"
+                      value: "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                      isSecret: false
+                    - name: "auth_token"
+                      value: "your_auth_token_here"
+                      isSecret: true
+                    - name: "sender_id"
+                      value: "your_sender_id"
+                      isSecret: false
+                    - name: "supported_channels"
+                      value: "sms"
+                      isSecret: false
+              vonage:
+                summary: Vonage Sender
+                value:
+                  name: "Vonage SMS Sender"
+                  description: "Sender for sending SMS messages using Vonage"
+                  provider: "vonage"
+                  properties:
+                    - name: "api_key"
+                      value: "your_api_key"
+                      isSecret: false
+                    - name: "api_secret"
+                      value: "your_api_secret"
+                      isSecret: true
+                    - name: "sender_id"
+                      value: "VonageTest"
+                      isSecret: false
+                    - name: "supported_channels"
+                      value: "sms"
+                      isSecret: false
+              custom:
+                summary: Custom Webhook Sender
+                value:
+                  name: "Custom API Sender"
+                  description: "Custom webhook-based SMS sender"
+                  provider: "custom"
+                  properties:
+                    - name: "url"
+                      value: "https://api.example.com/send"
+                      isSecret: false
+                    - name: "http_method"
+                      value: "POST"
+                      isSecret: false
+                    - name: "content_type"
+                      value: "JSON"
+                      isSecret: false
+                    - name: "http_headers"
+                      value: "X-API-Key: your_api_key_here"
+                      isSecret: true
+                    - name: "supported_channels"
+                      value: "sms"
+                      isSecret: false
       responses:
         "200":
           description: Updated successfully
@@ -181,6 +431,70 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageNotificationSenderResponse'
+              examples:
+                twilio:
+                  summary: Twilio Sender Response
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Twilio SMS Sender"
+                    description: "Sender for sending SMS messages using Twilio"
+                    provider: "twilio"
+                    properties:
+                      - name: "account_sid"
+                        value: "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                        isSecret: false
+                      - name: "auth_token"
+                        value: "******"
+                        isSecret: true
+                      - name: "sender_id"
+                        value: "your_sender_id"
+                        isSecret: false
+                      - name: "supported_channels"
+                        value: "sms"
+                        isSecret: false
+                vonage:
+                  summary: Vonage Sender Response
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Vonage SMS Sender"
+                    description: "Sender for sending SMS messages using Vonage"
+                    provider: "vonage"
+                    properties:
+                      - name: "api_key"
+                        value: "your_api_key"
+                        isSecret: false
+                      - name: "api_secret"
+                        value: "******"
+                        isSecret: true
+                      - name: "sender_id"
+                        value: "VonageTest"
+                        isSecret: false
+                      - name: "supported_channels"
+                        value: "sms"
+                        isSecret: false
+                custom:
+                  summary: Custom Webhook Sender Response
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Custom API Sender"
+                    description: "Custom webhook-based SMS sender"
+                    provider: "custom"
+                    properties:
+                      - name: "url"
+                        value: "https://api.example.com/send"
+                        isSecret: false
+                      - name: "http_method"
+                        value: "POST"
+                        isSecret: false
+                      - name: "content_type"
+                        value: "JSON"
+                        isSecret: false
+                      - name: "http_headers"
+                        value: "******"
+                        isSecret: true
+                      - name: "supported_channels"
+                        value: "sms"
+                        isSecret: false
         "400":
           description: 'Bad Request: Invalid sender ID or request body'
           content:
@@ -363,6 +677,129 @@ components:
           scopes:
             system: Access to system management APIs
 
+  examples:
+    TwilioRequest:
+      summary: Twilio Sender
+      value:
+        name: "Twilio SMS Sender"
+        description: "Sender for sending SMS messages using Twilio"
+        provider: "twilio"
+        properties:
+          - name: "account_sid"
+            value: "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+            isSecret: false
+          - name: "auth_token"
+            value: "your_auth_token_here"
+            isSecret: true
+          - name: "sender_id"
+            value: "your_sender_id"
+            isSecret: false
+          - name: "supported_channels"
+            value: "sms"
+    VonageRequest:
+      summary: Vonage Sender
+      value:
+        name: "Vonage SMS Sender"
+        description: "Sender for sending SMS messages using Vonage"
+        provider: "vonage"
+        properties:
+          - name: "api_key"
+            value: "your_api_key"
+            isSecret: false
+          - name: "api_secret"
+            value: "your_api_secret"
+            isSecret: true
+          - name: "sender_id"
+            value: "VonageTest"
+            isSecret: false
+          - name: "supported_channels"
+            value: "sms"
+    CustomRequest:
+      summary: Custom Webhook Sender
+      value:
+        name: "Custom API Sender"
+        description: "Custom webhook-based SMS sender"
+        provider: "custom"
+        properties:
+          - name: "url"
+            value: "https://api.example.com/send"
+            isSecret: false
+          - name: "http_method"
+            value: "POST"
+            isSecret: false
+          - name: "content_type"
+            value: "JSON"
+            isSecret: false
+          - name: "http_headers"
+            value: "X-API-Key: your_api_key_here"
+            isSecret: true
+          - name: "supported_channels"
+            value: "sms"
+            isSecret: false
+    TwilioResponse:
+      summary: Twilio Sender Response
+      value:
+        id: "550e8400-e29b-41d4-a716-446655440000"
+        name: "Twilio SMS Sender"
+        description: "Sender for sending SMS messages using Twilio"
+        provider: "twilio"
+        properties:
+          - name: "account_sid"
+            value: "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+            isSecret: false
+          - name: "auth_token"
+            value: "******"
+            isSecret: true
+          - name: "sender_id"
+            value: "your_sender_id"
+            isSecret: false
+          - name: "supported_channels"
+            value: "sms"
+            isSecret: false
+    VonageResponse:
+      summary: Vonage Sender Response
+      value:
+        id: "550e8400-e29b-41d4-a716-446655440000"
+        name: "Vonage SMS Sender"
+        description: "Sender for sending SMS messages using Vonage"
+        provider: "vonage"
+        properties:
+          - name: "api_key"
+            value: "your_api_key"
+            isSecret: false
+          - name: "api_secret"
+            value: "******"
+            isSecret: true
+          - name: "sender_id"
+            value: "VonageTest"
+            isSecret: false
+          - name: "supported_channels"
+            value: "sms"
+            isSecret: false
+    CustomResponse:
+      summary: Custom Webhook Sender Response
+      value:
+        id: "550e8400-e29b-41d4-a716-446655440000"
+        name: "Custom API Sender"
+        description: "Custom webhook-based SMS sender"
+        provider: "custom"
+        properties:
+          - name: "url"
+            value: "https://api.example.com/send"
+            isSecret: false
+          - name: "http_method"
+            value: "POST"
+            isSecret: false
+          - name: "content_type"
+            value: "JSON"
+            isSecret: false
+          - name: "http_headers"
+            value: "******"
+            isSecret: true
+          - name: "supported_channels"
+            value: "sms"
+            isSecret: false
+
   schemas:
     MessageNotificationSenderList:
       type: array
@@ -395,7 +832,7 @@ components:
           example: "twilio"
         properties:
           type: array
-          description: Properties of the message notification sender
+          description: Properties of the message notification sender.
           items:
             $ref: '#/components/schemas/Property'
 

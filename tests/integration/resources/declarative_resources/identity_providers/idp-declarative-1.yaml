@@ -5,10 +5,10 @@ type: GOOGLE
 properties:
   - name: client_id
     value: test-client-id
-    is_secret: false
+    isSecret: false
   - name: client_secret
     value: test-client-secret
-    is_secret: true
+    isSecret: true
   - name: redirect_uri
     value: https://localhost:8095/callback
-    is_secret: false
+    isSecret: false

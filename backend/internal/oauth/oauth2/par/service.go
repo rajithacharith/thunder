@@ -23,13 +23,13 @@ import (
 	"strings"
 
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/authz/requestvalidator"
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	oauth2model "github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/resourceindicators"
 	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
 	"github.com/thunder-id/thunderid/internal/resource"
-	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
@@ -51,16 +51,18 @@ type PARServiceInterface interface {
 type parService struct {
 	store           parStoreInterface
 	resourceService resource.ResourceServiceInterface
+	cfg             oauthconfig.Config
 	logger          *log.Logger
 }
 
 // newPARService creates a new PAR service instance.
 func newPARService(
-	store parStoreInterface, resourceService resource.ResourceServiceInterface,
+	store parStoreInterface, resourceService resource.ResourceServiceInterface, cfg oauthconfig.Config,
 ) PARServiceInterface {
 	return &parService{
 		store:           store,
 		resourceService: resourceService,
+		cfg:             cfg,
 		logger:          log.GetLogger().With(log.String(log.LoggerKeyComponentName, "PARService")),
 	}
 }
@@ -145,7 +147,7 @@ func (s *parService) HandlePushedAuthorizationRequest(
 		OAuthParameters: oauthParams,
 	}
 
-	expiresIn := config.GetServerRuntime().Config.OAuth.PAR.ExpiresIn
+	expiresIn := s.cfg.OAuth.PAR.ExpiresIn
 
 	randomKey, err := s.store.Store(ctx, parRequest, expiresIn)
 	if err != nil {

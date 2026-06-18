@@ -1,6 +1,6 @@
 {
   "name": "@thunderid/react-router",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "React Router integration for ThunderID",
   "keywords": [
     "thunderid",
@@ -46,12 +46,12 @@
     "typecheck": "tsc -p tsconfig.lib.json"
   },
   "devDependencies": {
+    "@playwright/test": "catalog:",
     "@thunderid/eslint-plugin": "workspace:^",
     "@thunderid/prettier-config": "workspace:^",
     "@thunderid/react": "workspace:^",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
-    "@playwright/test": "catalog:",
     "@vitest/browser-playwright": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",

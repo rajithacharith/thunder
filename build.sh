@@ -114,11 +114,10 @@ BUILD_DIR=$OUTPUT_DIR/.build
 LOCAL_CERT_DIR=$OUTPUT_DIR/.cert
 BACKEND_BASE_DIR=backend
 BACKEND_DIR=$BACKEND_BASE_DIR/cmd/server
-REPOSITORY_DIR=$BACKEND_BASE_DIR/cmd/server/repository
-REPOSITORY_DB_DIR=$REPOSITORY_DIR/database
+REPOSITORY_DB_DIR=$BACKEND_DIR/database
 SERVER_SCRIPTS_DIR=$BACKEND_BASE_DIR/scripts
 SERVER_DB_SCRIPTS_DIR=$BACKEND_BASE_DIR/dbscripts
-SECURITY_DIR=repository/resources/security
+SECURITY_DIR=config/certs
 FRONTEND_BASE_DIR=frontend
 GATE_APP_DIST_DIR=apps/gate
 CONSOLE_APP_DIST_DIR=apps/console
@@ -157,7 +156,7 @@ PNPM_VERSION="11.0.9"
 # Read Configuration from deployment.yaml
 # ============================================================================
 
-CONFIG_FILE="./backend/cmd/server/repository/conf/deployment.yaml"
+CONFIG_FILE="./backend/cmd/server/deployment.yaml"
 
 # Function to read config with fallback
 read_config() {
@@ -438,6 +437,79 @@ function lint_sdks() {
     echo "================================================================"
 }
 
+function build_cli() {
+    echo "Building CLI tool..."
+    bash "$SCRIPT_DIR/tools/cli/scripts/build.sh"
+}
+
+function test_cli() {
+    echo "Running CLI tool tests..."
+    cd "$SCRIPT_DIR/tools/cli" && go test -v -race -count=1 ./...
+    cd "$SCRIPT_DIR" || exit 1
+}
+
+function build_i18n_extractor() {
+    local tool_bin="$SCRIPT_DIR/backend/bin/tools"
+    mkdir -p "$tool_bin"
+    echo "Building i18n-extractor..."
+    cd "$SCRIPT_DIR/tools/i18n-extractor" && go build -o "$tool_bin/i18n-extractor" .
+    cd "$SCRIPT_DIR" || exit 1
+}
+
+function test_i18n_extractor() {
+    echo "Running i18n-extractor tests..."
+    cd "$SCRIPT_DIR/tools/i18n-extractor" && go test -v .
+    cd "$SCRIPT_DIR" || exit 1
+}
+
+function lint_cli() {
+    local golangci_lint="$SCRIPT_DIR/backend/bin/tools/golangci-lint"
+    echo "Linting CLI tool..."
+    cd "$SCRIPT_DIR/tools/cli" && "$golangci_lint" run ./...
+    cd "$SCRIPT_DIR" || exit 1
+}
+
+function lint_i18n_extractor() {
+    local golangci_lint="$SCRIPT_DIR/backend/bin/tools/golangci-lint"
+    echo "Linting i18n-extractor..."
+    cd "$SCRIPT_DIR/tools/i18n-extractor" && "$golangci_lint" run ./...
+    cd "$SCRIPT_DIR" || exit 1
+}
+
+function lint_tools() {
+    echo "================================================================"
+    echo "Linting tools..."
+    lint_cli
+    lint_i18n_extractor
+    echo "================================================================"
+}
+
+function build_npm_tools() {
+    ensure_pnpm
+    echo "Installing tools dependencies..."
+    pnpm install --frozen-lockfile
+    echo "Building npm-based tools..."
+    pnpm --filter './tools/**' build
+    cd "$SCRIPT_DIR" || exit 1
+}
+
+function build_tools() {
+    echo "================================================================"
+    echo "Building tools..."
+    build_cli
+    build_i18n_extractor
+    build_npm_tools
+    echo "================================================================"
+}
+
+function test_tools() {
+    echo "================================================================"
+    echo "Running tool tests..."
+    test_cli
+    test_i18n_extractor
+    echo "================================================================"
+}
+
 function build_docs() {
     echo "================================================================"
     echo "Building documentation..."
@@ -465,7 +537,11 @@ function prepare_backend_for_packaging() {
     fi
 
     cp "$BUILD_DIR/$binary_name" "$DIST_DIR/$PRODUCT_FOLDER/"
-    cp -r "$REPOSITORY_DIR" "$DIST_DIR/$PRODUCT_FOLDER/"
+    cp "$BACKEND_DIR/deployment.yaml" "$DIST_DIR/$PRODUCT_FOLDER/"
+    cp -r "$BACKEND_DIR/config" "$DIST_DIR/$PRODUCT_FOLDER/"
+    if [ -d "$REPOSITORY_DB_DIR" ]; then
+        cp -r "$REPOSITORY_DB_DIR" "$DIST_DIR/$PRODUCT_FOLDER/"
+    fi
     cp "$VERSION_FILE" "$DIST_DIR/$PRODUCT_FOLDER/"
     cp -r "$SERVER_SCRIPTS_DIR" "$DIST_DIR/$PRODUCT_FOLDER/"
     cp -r "$SERVER_DB_SCRIPTS_DIR" "$DIST_DIR/$PRODUCT_FOLDER/"
@@ -566,7 +642,7 @@ function package() {
                 "$GO_OS" "$GO_ARCH" "$(cd "$DIST_DIR/$PRODUCT_FOLDER" && pwd)"
     else
         echo "Skipping consent server packaging (--without-consent)..."
-        local target_yaml="$DIST_DIR/$PRODUCT_FOLDER/repository/conf/deployment.yaml"
+        local target_yaml="$DIST_DIR/$PRODUCT_FOLDER/deployment.yaml"
         if command -v yq >/dev/null 2>&1; then
             yq eval '.consent.enabled = false' -i "$target_yaml" 2>/dev/null || sed -i.bak '/^consent:/ { n; s/enabled: true/enabled: false/; }' "$target_yaml" || true
         else
@@ -576,6 +652,7 @@ function package() {
     fi
 
     echo "Creating zip file..."
+    rm -f "$DIST_DIR/$PRODUCT_FOLDER.zip"
     (cd "$DIST_DIR" && find "$PRODUCT_FOLDER" | sort | zip "$PRODUCT_FOLDER.zip" -@)
     rm -rf "${DIST_DIR:?}/$PRODUCT_FOLDER" "$BUILD_DIR"
     echo "================================================================"
@@ -1238,6 +1315,15 @@ case "$1" in
     lint_sdks)
         lint_sdks
         ;;
+    build_tools)
+        build_tools
+        ;;
+    test_tools)
+        test_tools
+        ;;
+    lint_tools)
+        lint_tools
+        ;;
     package_samples)
         package_sample_app
         ;;
@@ -1287,6 +1373,9 @@ case "$1" in
         echo "  build_sdks               - Build all SDK packages"
         echo "  test_sdks                - Run tests for all SDK packages"
         echo "  lint_sdks                - Run linting for all SDK packages"
+        echo "  build_tools              - Build all tool binaries (CLI + i18n-extractor + npm tools)"
+        echo "  test_tools               - Run tests for all tools (CLI + i18n-extractor)"
+        echo "  lint_tools               - Run linting for all tools (CLI + i18n-extractor)"
         echo "  package_samples          - Package the sample applications (samples are distributed as source)"
         echo "  test_unit                - Run unit tests with coverage"
         echo "  test_integration         - Run integration tests. Use -run and -package for filtering"

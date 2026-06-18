@@ -269,6 +269,14 @@ packages:
           pkgname: passkeymock
           filename: "WebAuthnAuthnServiceInterface_mock.go"
 
+  github.com/thunder-id/thunderid/internal/authn/common:
+    config:
+      all: true
+      dir: tests/mocks/authn/commonmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: commonmock
+      filename: "{{.InterfaceName}}_mock.go"
+
   github.com/thunder-id/thunderid/internal/authn/consent:
     interfaces:
       ConsentEnforcerServiceInterface:
@@ -503,6 +511,14 @@ packages:
       dir: tests/mocks/entityprovidermock
       structname: '{{.InterfaceName}}Mock'
       pkgname: entityprovidermock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/thunder-id/thunderid/internal/actorprovider:
+    config:
+      all: true
+      dir: tests/mocks/actorprovidermock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: actorprovidermock
       filename: "{{.InterfaceName}}_mock.go"
 
   github.com/thunder-id/thunderid/internal/authnprovider/provider:

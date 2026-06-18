@@ -18,6 +18,7 @@
 
 import Link from '@docusaurus/Link';
 import React from 'react';
+import './UseCaseBranchCard.css';
 
 interface UseCaseBranchCardProps {
   href: string;

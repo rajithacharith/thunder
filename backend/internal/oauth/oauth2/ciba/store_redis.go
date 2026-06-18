@@ -27,7 +27,6 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/database/provider"
 )
 
@@ -77,11 +76,13 @@ type redisCIBARequestStore struct {
 }
 
 // newRedisCIBARequestStore creates a new Redis-backed CIBA request store.
-func newRedisCIBARequestStore(p provider.RedisProviderInterface) CIBARequestStoreInterface {
+func newRedisCIBARequestStore(
+	p provider.RedisProviderInterface, deploymentID string,
+) CIBARequestStoreInterface {
 	return &redisCIBARequestStore{
 		client:       p.GetRedisClient(),
 		keyPrefix:    p.GetKeyPrefix(),
-		deploymentID: config.GetServerRuntime().Config.Server.Identifier,
+		deploymentID: deploymentID,
 	}
 }
 

@@ -24,16 +24,16 @@ import (
 	"encoding/json"
 	"slices"
 
+	"github.com/thunder-id/thunderid/internal/actorprovider"
 	"github.com/thunder-id/thunderid/internal/attributecache"
-	"github.com/thunder-id/thunderid/internal/inboundclient"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/jwksresolver"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
 	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
-	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
@@ -51,11 +51,12 @@ type userInfoServiceInterface interface {
 
 // userInfoService implements the userInfoServiceInterface.
 type userInfoService struct {
+	cfg               oauthconfig.Config
 	jwtService        jwt.JWTServiceInterface
 	jweService        jwe.JWEServiceInterface
 	jwksResolver      *jwksresolver.Resolver
 	tokenValidator    tokenservice.TokenValidatorInterface
-	inboundClient     inboundclient.InboundClientServiceInterface
+	inboundClient     actorprovider.ActorProviderInterface
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface
 	dpopVerifier      dpop.VerifierInterface
 	logger            *log.Logger
@@ -67,17 +68,19 @@ func newUserInfoService(
 	jweService jwe.JWEServiceInterface,
 	resolver *jwksresolver.Resolver,
 	tokenValidator tokenservice.TokenValidatorInterface,
-	inboundClient inboundclient.InboundClientServiceInterface,
+	actorProvider actorprovider.ActorProviderInterface,
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	dpopVerifier dpop.VerifierInterface,
+	cfg oauthconfig.Config,
 ) userInfoServiceInterface {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, serviceLoggerComponentName))
 	return &userInfoService{
+		cfg:               cfg,
 		jwtService:        jwtService,
 		jweService:        jweService,
 		jwksResolver:      resolver,
 		tokenValidator:    tokenValidator,
-		inboundClient:     inboundClient,
+		inboundClient:     actorProvider,
 		attributeCacheSvc: attributeCacheSvc,
 		dpopVerifier:      dpopVerifier,
 		logger:            logger,
@@ -298,10 +301,8 @@ func (s *userInfoService) generateJWSUserInfo(
 		clientID = cid
 	}
 
-	runtime := config.GetServerRuntime()
-
-	issuer := runtime.Config.JWT.Issuer
-	validity := runtime.Config.JWT.ValidityPeriod
+	issuer := s.cfg.JWT.Issuer
+	validity := s.cfg.JWT.ValidityPeriod
 
 	response["aud"] = clientID
 	signingAlg := ""
@@ -392,8 +393,8 @@ func (s *userInfoService) getOAuthApp(
 		return nil
 	}
 
-	app, err := s.inboundClient.GetOAuthClientByClientID(ctx, clientID)
-	if err != nil || app == nil {
+	app, svcErr := s.inboundClient.GetOAuthClientByID(ctx, clientID)
+	if svcErr != nil || app == nil {
 		return nil
 	}
 

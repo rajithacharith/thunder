@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/thunder-id/thunderid/internal/actorprovider"
 	"github.com/thunder-id/thunderid/internal/agent"
 	"github.com/thunder-id/thunderid/internal/application"
 	"github.com/thunder-id/thunderid/internal/attributecache"
@@ -50,6 +51,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/entity"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/entitytype"
+	flowconfig "github.com/thunder-id/thunderid/internal/flow/config"
 	flowcore "github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/flow/executor"
 	"github.com/thunder-id/thunderid/internal/flow/flowexec"
@@ -60,6 +62,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/inboundclient"
 	"github.com/thunder-id/thunderid/internal/notification"
 	"github.com/thunder-id/thunderid/internal/oauth"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dcr"
 	"github.com/thunder-id/thunderid/internal/openid4vp"
 	"github.com/thunder-id/thunderid/internal/ou"
@@ -211,7 +214,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	authZService := authz.Initialize(roleService)
 	authzen.Initialize(mux, authZService, entityProvider, resourceService)
 
-	idpService, idpExporter, err := idp.Initialize(cacheManager, mux)
+	idpService, idpExporter, err := idp.Initialize(cacheManager, mux, entityTypeService)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize IDPService", log.Error(err))
 	}
@@ -240,7 +243,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 
 	// Initialize federated authentication services.
 	oauthAuthnService := authnOAuth.Initialize(idpService, entityProvider)
-	oidcAuthnService := authnOIDC.Initialize(oauthAuthnService, jwtService)
+	oidcAuthnService := authnOIDC.Initialize(oauthAuthnService, jwtService, idpService)
 	googleAuthnService := google.Initialize(oidcAuthnService, jwtService)
 	githubAuthnService := github.Initialize(oauthAuthnService)
 
@@ -251,9 +254,17 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		idp.IDPTypeGitHub: githubAuthnService,
 	}
 
+	// Initialize the OpenID4VP verifier engine and register its wallet-facing
+	// endpoints. Presentation definitions are registered from configuration by
+	// the engine itself.
+	openid4vpVerifierSvc, err := openid4vp.Initialize(mux, runtimeCryptoSvc, cacheManager, jwtService)
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize OpenID4VP verifier service", log.Error(err))
+	}
+
 	// Initialize authn provider
 	authnProvider := authnprovidermgr.InitializeAuthnProviderManager(entityService, passkeyService, otpCoreService,
-		magicLinkService, federatedAuths)
+		magicLinkService, openid4vpVerifierSvc, federatedAuths)
 
 	// Initialize authentication services.
 	authAssertGen := authnAssert.Initialize()
@@ -263,12 +274,6 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		otpCoreService, magicLinkService, oauthAuthnService, oidcAuthnService, googleAuthnService, githubAuthnService)
 
 	attributeCacheService := attributecache.Initialize()
-
-	// Initialize OpenID4VP verifier service
-	openid4vpVerifierSvc, err := openid4vp.Initialize(mux, runtimeCryptoSvc, cacheManager, jwtService)
-	if err != nil {
-		logger.Fatal(ctx, "Failed to initialize OpenID4VP verifier service", log.Error(err))
-	}
 
 	var emailClient email.EmailClientInterface
 	emailClient, err = email.Initialize()
@@ -355,8 +360,10 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	// Initialize design resolve service for theme and layout resolution
 	designResolveService := resolve.Initialize(mux, themeMgtService, layoutMgtService, applicationService)
 
+	actorProvider := actorprovider.Initialize(inboundClientService, entityProvider)
+
 	// Initialize flow metadata service
-	_ = flowmeta.Initialize(mux, inboundClientService, entityProvider, ouService, designResolveService, i18nService)
+	_ = flowmeta.Initialize(mux, actorProvider, ouService, designResolveService, i18nService)
 
 	// Initialize export service with collected exporters
 	_ = export.Initialize(mux, exporters)
@@ -380,22 +387,23 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		agentService,
 	)
 
-	flowExecService, err := flowexec.Initialize(mux, flowMgtService, inboundClientService, entityProvider,
-		execRegistry, observabilitySvc, runtimeCryptoSvc)
+	flowExecService, err := flowexec.Initialize(mux, flowMgtService, actorProvider,
+		execRegistry, observabilitySvc, runtimeCryptoSvc, flowconfig.FromServerRuntime())
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize flow execution service", log.Error(err))
 	}
 
 	// Initialize OAuth services.
-	err = oauth.Initialize(mux, applicationService, inboundClientService, authnProvider, jwtService, jweService,
+	oauthCfg := oauthconfig.FromServerRuntime()
+	err = oauth.Initialize(mux, actorProvider, authnProvider, jwtService, jweService,
 		flowExecService, observabilitySvc, runtimeCryptoSvc, ouService, attributeCacheService, authZService,
-		entityProvider, resourceService, i18nService, idpService)
+		resourceService, i18nService, idpService, oauthCfg)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize OAuth services", log.Error(err))
 	}
 
 	// Register OAuth2 DCR service.
-	err = dcr.Initialize(mux, applicationService, ouService, i18nService)
+	err = dcr.Initialize(mux, applicationService, ouService, i18nService, oauthCfg)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize OAuth2 DCR service", log.Error(err))
 	}

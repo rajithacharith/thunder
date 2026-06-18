@@ -113,7 +113,7 @@ func (ts *ExportAPITestSuite) TestApplicationExportYAML() {
 	// Verify the exported YAML content
 	ts.Assert().Contains(yamlContent, "name: Export Test App")
 	ts.Assert().Contains(yamlContent, "description: Test application for export functionality")
-	ts.Assert().Contains(yamlContent, "client_id: {{.EXPORT_TEST_APP_CLIENT_ID}}")
+	ts.Assert().Contains(yamlContent, "clientId: {{.EXPORT_TEST_APP_CLIENT_ID}}")
 	ts.Assert().NotContains(yamlContent, "export_test_secret") // Client secret should not be exported
 	ts.Assert().Contains(yamlContent, "# File: Export_Test_App.yaml")
 
@@ -214,7 +214,7 @@ func (ts *ExportAPITestSuite) TestIdentityProviderExportYAML() {
 	ts.Assert().Contains(yamlContent, "value: {{.EXPORT_TEST_IDP_CLIENT_ID}}")
 	ts.Assert().Contains(yamlContent, "name: client_secret")
 	ts.Assert().Contains(yamlContent, "value: {{.EXPORT_TEST_IDP_CLIENT_SECRET}}")
-	ts.Assert().Contains(yamlContent, "is_secret: true")
+	ts.Assert().Contains(yamlContent, "isSecret: true")
 	ts.Assert().Contains(yamlContent, "# File: Export_Test_IDP.yaml")
 }
 
@@ -530,7 +530,7 @@ func (ts *ExportAPITestSuite) TestIdentityProviderExportWithProperties() {
 	ts.Assert().Contains(yamlContent, "name: scopes")
 	ts.Assert().Contains(yamlContent, "value: {{.PROPERTIES_TEST_IDP_SCOPES}}")
 	// Verify is_secret flag is preserved
-	ts.Assert().Contains(yamlContent, "is_secret: true")
+	ts.Assert().Contains(yamlContent, "isSecret: true")
 }
 
 // TestExportWithInvalidIdentityProviderID tests export with invalid IDP ID.

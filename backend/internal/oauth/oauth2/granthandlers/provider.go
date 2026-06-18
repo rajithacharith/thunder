@@ -19,9 +19,10 @@
 package granthandlers
 
 import (
+	"github.com/thunder-id/thunderid/internal/actorprovider"
 	"github.com/thunder-id/thunderid/internal/attributecache"
 	rbacauthz "github.com/thunder-id/thunderid/internal/authz"
-	"github.com/thunder-id/thunderid/internal/entityprovider"
+	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/authz"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/ciba"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
@@ -54,17 +55,18 @@ func newGrantHandlerProvider(
 	attrCacheService attributecache.AttributeCacheServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	rbacAuthzService rbacauthz.AuthorizationServiceInterface,
-	entityProv entityprovider.EntityProviderInterface,
+	actorProvider actorprovider.ActorProviderInterface,
 	resourceService resource.ResourceServiceInterface,
 	cibaService ciba.CIBAServiceInterface,
+	cfg oauthconfig.Config,
 ) GrantHandlerProviderInterface {
 	return &GrantHandlerProvider{
 		clientCredentialsGrantHandler: newClientCredentialsGrantHandler(
-			tokenBuilder, ouService, rbacAuthzService, entityProv, resourceService),
+			tokenBuilder, ouService, rbacAuthzService, actorProvider, resourceService),
 		authorizationCodeGrantHandler: newAuthorizationCodeGrantHandler(
 			authzService, tokenBuilder, attrCacheService, resourceService),
 		refreshTokenGrantHandler: newRefreshTokenGrantHandler(
-			jwtService, tokenBuilder, tokenValidator, attrCacheService, resourceService),
+			jwtService, tokenBuilder, tokenValidator, attrCacheService, resourceService, cfg),
 		tokenExchangeGrantHandler: newTokenExchangeGrantHandler(
 			tokenBuilder, tokenValidator, resourceService),
 		cibaGrantHandler: newCIBAGrantHandler(cibaService, tokenBuilder, attrCacheService),

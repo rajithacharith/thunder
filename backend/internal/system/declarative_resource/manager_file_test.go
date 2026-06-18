@@ -177,7 +177,7 @@ func (s *ResourcesFileTestSuite) TestGetConfigsFromFile_SubstitutesEnvVars() {
 
 	content := `# resource_type: identity_provider
 name: oauth-idp
-client_id: {{.TEST_IDP_CLIENT_ID}}
+clientId: {{.TEST_IDP_CLIENT_ID}}
 `
 	filePath := s.writeResourcesFile(content)
 
@@ -230,7 +230,7 @@ func (s *ResourcesFileTestSuite) TestGetConfigsFromFile_EnvVarAndNonGoTemplateIn
 
 	content := `# resource_type: application
 name: My App
-client_id: {{.TEST_CLIENT_ID}}
+clientId: {{.TEST_CLIENT_ID}}
 ---
 # resource_type: flow
 handle: signin
@@ -252,7 +252,7 @@ meta: '{"label":"{{ t(signin:title) }}"}'
 func (s *ResourcesFileTestSuite) TestGetConfigsFromFile_MissingEnvVar_ReturnsError() {
 	content := `# resource_type: identity_provider
 name: oauth-idp
-client_id: {{.MISSING_ENV_VAR_XYZ}}
+clientId: {{.MISSING_ENV_VAR_XYZ}}
 `
 	filePath := s.writeResourcesFile(content)
 

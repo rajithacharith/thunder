@@ -17,14 +17,13 @@
  */
 
 import {useLogger} from '@thunderid/logger/react';
-import {Box, Button, IconButton, LinearProgress, Stack, Typography, Alert, Chip} from '@wso2/oxygen-ui';
+import {Box, Button, IconButton, LinearProgress, Stack, Typography, Alert, Chip, AppBreadcrumbs} from '@wso2/oxygen-ui';
 import {CheckCircle, X, AlertCircle} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useLocation, useNavigate} from 'react-router';
 import type {ValidationStep, ParseError} from '../models/import-configuration';
-import AppBreadcrumbs from '@/components/AppBreadcrumbs';
 
 export default function ImportConfigurationValidatePage(): JSX.Element {
   const {t} = useTranslation('importExport');
