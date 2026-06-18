@@ -2081,9 +2081,9 @@ const translations = {
     'edit.token.token_preview.title': 'Decoded Payload',
     'edit.token.validity.hint': 'Token validity period in seconds (e.g., 3600 for 1 hour)',
     'edit.token.validity.error': 'Validity period must be at least 1 second',
-    'edit.token.user_attributes_card.title': 'User Attributes',
-    'edit.token.user_attributes_card.description':
-      'Configure the user attributes to include in your tokens & user info response',
+    'edit.token.token_profile_card.title': 'Token Attributes & Response',
+    'edit.token.token_profile_card.description':
+      'Configure the response types and user attributes included in your tokens and user info responses',
     'edit.token.tabs.access_token': 'Access Token',
     'edit.token.tabs.id_token': 'ID Token',
     'edit.token.tabs.refresh_token': 'Refresh Token',
@@ -2114,6 +2114,13 @@ const translations = {
     'edit.token.scope_mapper.no_mapped': 'No attributes mapped yet — click an attribute below to add it',
     'edit.token.scope_mapper.all_mapped': 'All available attributes are already mapped to this scope',
     'edit.token.scope_mapper.loading': 'Loading available attributes...',
+    'edit.token.id_token.response_type_placeholder': 'Select response type',
+    'edit.token.id_token.encryption_alg_placeholder': 'Select encryption algorithm',
+    'edit.token.id_token.encryption_enc_placeholder': 'Select content encryption',
+    'edit.token.user_info.response_type_placeholder': 'Select response type',
+    'edit.token.user_info.signing_alg_placeholder': 'Select signing algorithm',
+    'edit.token.user_info.encryption_alg_placeholder': 'Select encryption algorithm',
+    'edit.token.user_info.encryption_enc_placeholder': 'Select content encryption',
 
     // Advanced section
     'edit.advanced.labels.oauth2Config': 'OAuth2 Configuration',
@@ -2122,6 +2129,8 @@ const translations = {
     'edit.advanced.labels.responseTypes': 'Response Types',
     'edit.advanced.labels.publicClient': 'Public Client',
     'edit.advanced.labels.pkceRequired': 'PKCE Required',
+    'edit.advanced.labels.requirePAR': 'Require Pushed Authorization Requests',
+    'edit.advanced.par.hint': 'Require the client to use the PAR endpoint before authorization.',
     'edit.advanced.labels.tokenEndpointAuthMethod': 'Token Endpoint Auth Method',
     'edit.advanced.labels.certificate': 'Certificate',
     'edit.advanced.labels.certificateType': 'Certificate Type',
@@ -2136,6 +2145,11 @@ const translations = {
     'edit.advanced.certificate.placeholder.jwks': 'Enter JWKS JSON',
     'edit.advanced.certificate.hint.jwksUri': 'URL to the JWKS endpoint',
     'edit.advanced.certificate.hint.jwks': 'JSON Web Key Set',
+    'edit.advanced.labels.acrValues': 'ACR Values',
+    'edit.advanced.acrValues.intro': 'Authentication context classes permitted for this application.',
+    'edit.advanced.acrValues.placeholder': 'Select ACR values',
+    'edit.advanced.acrValues.hint':
+      'When acr_values is included in the authorization request, only values configured here are accepted.',
     'create.success': 'Application created successfully.',
     'create.error': 'Failed to create application. Please try again.',
     'update.success': 'Application updated successfully.',
