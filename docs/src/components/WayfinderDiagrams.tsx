@@ -16,6 +16,8 @@
  * under the License.
  */
 
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
 import './WayfinderDiagrams.css';
 
 // Reusable person-silhouette icon. PersonIcon viewBox is 56x56; the
@@ -642,6 +644,237 @@ export function WayfinderAgentArchitecture() {
 
           {/* Wayfinder Server → ThunderID (JWKS for JWT validation) */}
           <line x1="640" y1="450" x2="700" y2="465" markerEnd="url(#uc-agent-arch-arrow)" />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+function McpClientIcon({className = ''}: {className?: string}) {
+  return (
+    <g className={className}>
+      <circle cx="28" cy="28" r="26" />
+      <g transform="translate(28,28)" className="uc-agent-wayfinder-agent-glyph">
+        <rect x="-12" y="-10" width="24" height="20" rx="3" />
+        <line x1="-12" y1="-3" x2="-18" y2="-3" />
+        <line x1="-12" y1="3" x2="-18" y2="3" />
+        <line x1="12" y1="-3" x2="18" y2="-3" />
+        <line x1="12" y1="3" x2="18" y2="3" />
+        <circle cx="0" cy="0" r="3" />
+      </g>
+    </g>
+  );
+}
+
+export function WayfinderMcpOrganization() {
+  return (
+    <div className="uc-agent-wayfinder-org">
+      <svg
+        className="uc-agent-wayfinder-org__svg"
+        viewBox="0 0 960 540"
+        xmlns="http://www.w3.org/2000/svg"
+        role="img"
+        aria-label="In-product and external MCP clients reaching the Wayfinder MCP server"
+      >
+        {/* Header */}
+        <g className="uc-agent-wayfinder-org__header">
+          <rect x="240" y="20" width="480" height="80" rx="12" />
+          <text x="480" y="52" textAnchor="middle" className="uc-agent-wayfinder-org__header-title">
+            Wayfinder
+          </text>
+          <text x="480" y="78" textAnchor="middle" className="uc-agent-wayfinder-org__header-sub">
+            Travel-Booking with an embedded MCP server
+          </text>
+        </g>
+
+        {/* Trunk connectors */}
+        <g className="uc-agent-wayfinder-org__edges">
+          <line x1="480" y1="100" x2="480" y2="122" />
+          <line x1="260" y1="122" x2="700" y2="122" />
+          <line x1="260" y1="122" x2="260" y2="148" />
+          <line x1="700" y1="122" x2="700" y2="148" />
+        </g>
+
+        {/* AI Agent column — Wayfinder Concierge */}
+        <g className="uc-agent-wayfinder-org__col uc-agent-wayfinder-org__col--agent" transform="translate(80,148)">
+          <rect width="360" height="372" rx="10" />
+          <text x="180" y="38" textAnchor="middle" className="uc-agent-wayfinder-org__col-title">
+            AI Agent
+          </text>
+          <text x="180" y="60" textAnchor="middle" className="uc-agent-wayfinder-org__col-sub">
+            Built into the Wayfinder app
+          </text>
+          <line x1="40" y1="78" x2="320" y2="78" className="uc-agent-wayfinder-org__divider" />
+
+          <g transform="translate(156,150)">
+            <g transform="scale(0.86)">
+              <AgentIcon className="uc-agent-wayfinder-org__icon uc-agent-wayfinder-org__icon--agent" />
+            </g>
+          </g>
+          <text x="180" y="226" textAnchor="middle" className="uc-agent-wayfinder-org__cast-name">
+            Wayfinder Concierge
+          </text>
+          <text x="180" y="246" textAnchor="middle" className="uc-agent-wayfinder-org__cast-role">
+            Calls MCP tools through chat
+          </text>
+        </g>
+
+        {/* External MCP Client column — MCP Inspector */}
+        <g className="uc-agent-wayfinder-org__col uc-agent-wayfinder-org__col--agent" transform="translate(520,148)">
+          <rect width="360" height="372" rx="10" />
+          <text x="180" y="38" textAnchor="middle" className="uc-agent-wayfinder-org__col-title">
+            External MCP Client
+          </text>
+          <text x="180" y="60" textAnchor="middle" className="uc-agent-wayfinder-org__col-sub">
+            Connects from outside the app
+          </text>
+          <line x1="40" y1="78" x2="320" y2="78" className="uc-agent-wayfinder-org__divider" />
+
+          <g transform="translate(156,150)">
+            <g transform="scale(0.86)">
+              <McpClientIcon className="uc-agent-wayfinder-org__icon uc-agent-wayfinder-org__icon--agent" />
+            </g>
+          </g>
+          <text x="180" y="226" textAnchor="middle" className="uc-agent-wayfinder-org__cast-name">
+            MCP Inspector
+          </text>
+          <text x="180" y="246" textAnchor="middle" className="uc-agent-wayfinder-org__cast-role">
+            Calls MCP tools directly
+          </text>
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+/**
+ * Architecture diagram for the MCP Authorization tryout. The left column
+ * stacks User → External MCP Client → Wayfinder Server in a symmetric
+ * column centered at x=290; ThunderID is the identity authority on the
+ * right. Labels stay abstract — no endpoints, no implementation notes.
+ */
+export function WayfinderMcpArchitecture() {
+  const {siteConfig} = useDocusaurusContext();
+  const productName =
+    (siteConfig.customFields?.product as DocusaurusProductConfig | undefined)?.project.name ?? siteConfig.title;
+  return (
+    <div className="uc-agent-wayfinder-arch">
+      <svg
+        className="uc-agent-wayfinder-arch__svg"
+        viewBox="0 0 960 620"
+        xmlns="http://www.w3.org/2000/svg"
+        role="img"
+        aria-label={`External MCP client, Wayfinder Server, and ${productName}`}
+      >
+        <defs>
+          <marker
+            id="uc-mcp-arch-arrow"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="6"
+            markerHeight="6"
+            orient="auto-start-reverse"
+          >
+            <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
+          </marker>
+        </defs>
+
+        {/* User — top of the left column */}
+        <g className="uc-agent-wayfinder-arch__consumers">
+          <text x="290" y="32" textAnchor="middle" className="uc-agent-wayfinder-arch__group-label">
+            User
+          </text>
+
+          <g transform="translate(268,46)">
+            <g transform="scale(0.78)">
+              <PersonIcon className="uc-agent-wayfinder-arch__icon" />
+            </g>
+          </g>
+          <text x="290" y="116" textAnchor="middle" className="uc-agent-wayfinder-arch__cast-name">
+            John Doe
+          </text>
+        </g>
+
+        {/* User → External MCP Client */}
+        <g className="uc-agent-wayfinder-arch__edges">
+          <line x1="290" y1="130" x2="290" y2="170" markerEnd="url(#uc-mcp-arch-arrow)" />
+          <text x="304" y="156" className="uc-agent-wayfinder-arch__edge-label">
+            Use
+          </text>
+        </g>
+
+        {/* External MCP Client — middle of the left column */}
+        <g className="uc-agent-wayfinder-arch__app" transform="translate(80,170)">
+          <rect width="420" height="130" rx="12" />
+          <text x="210" y="40" textAnchor="middle" className="uc-agent-wayfinder-arch__app-title">
+            External MCP Client
+          </text>
+          <text x="210" y="64" textAnchor="middle" className="uc-agent-wayfinder-arch__sub">
+            MCP Inspector
+          </text>
+          <line x1="40" y1="80" x2="380" y2="80" className="uc-agent-wayfinder-arch__divider" />
+          <text x="210" y="104" textAnchor="middle" className="uc-agent-wayfinder-arch__detail">
+            Discovers, signs in, calls MCP tools
+          </text>
+        </g>
+
+        {/* ThunderID — right column, full height of the middle stack */}
+        <g className="uc-agent-wayfinder-arch__idp" transform="translate(700,170)">
+          <rect width="220" height="370" rx="12" />
+          <text x="110" y="46" textAnchor="middle" className="uc-agent-wayfinder-arch__idp-title">
+            {productName}
+          </text>
+          <text x="110" y="72" textAnchor="middle" className="uc-agent-wayfinder-arch__sub">
+            Identity Authority
+          </text>
+          <line x1="30" y1="92" x2="190" y2="92" className="uc-agent-wayfinder-arch__divider" />
+          <text x="110" y="124" textAnchor="middle" className="uc-agent-wayfinder-arch__detail">
+            Manages identities
+          </text>
+          <text x="110" y="148" textAnchor="middle" className="uc-agent-wayfinder-arch__detail">
+            and issues tokens
+          </text>
+        </g>
+
+        {/* Wayfinder Server — bottom of the left column, mirrors External MCP Client */}
+        <g className="uc-agent-wayfinder-arch__svc" transform="translate(80,400)">
+          <rect width="420" height="140" rx="12" />
+          <text x="210" y="40" textAnchor="middle" className="uc-agent-wayfinder-arch__app-title">
+            Wayfinder Server
+          </text>
+          <text x="210" y="64" textAnchor="middle" className="uc-agent-wayfinder-arch__sub">
+            Booking API + MCP tools
+          </text>
+          <line x1="40" y1="80" x2="380" y2="80" className="uc-agent-wayfinder-arch__divider" />
+          <text x="210" y="110" textAnchor="middle" className="uc-agent-wayfinder-arch__detail">
+            Holds flights, hotels, bookings
+          </text>
+        </g>
+
+        {/* Edges */}
+        <g className="uc-agent-wayfinder-arch__edges">
+          {/* External MCP Client ↔ ThunderID */}
+          <line x1="500" y1="220" x2="700" y2="220" markerEnd="url(#uc-mcp-arch-arrow)" />
+          <line x1="700" y1="250" x2="500" y2="250" markerEnd="url(#uc-mcp-arch-arrow)" />
+          <text x="600" y="212" textAnchor="middle" className="uc-agent-wayfinder-arch__edge-label">
+            Sign in
+          </text>
+          <text x="600" y="272" textAnchor="middle" className="uc-agent-wayfinder-arch__edge-label">
+            Issue tokens
+          </text>
+
+          {/* External MCP Client → Wayfinder Server */}
+          <line x1="290" y1="300" x2="290" y2="400" markerEnd="url(#uc-mcp-arch-arrow)" />
+          <text x="304" y="354" className="uc-agent-wayfinder-arch__edge-label">
+            Call MCP tools
+          </text>
+
+          {/* Wayfinder Server → ThunderID */}
+          <line x1="500" y1="470" x2="700" y2="470" markerEnd="url(#uc-mcp-arch-arrow)" />
+          <text x="600" y="462" textAnchor="middle" className="uc-agent-wayfinder-arch__edge-label">
+            Validate tokens
+          </text>
         </g>
       </svg>
     </div>
