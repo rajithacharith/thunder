@@ -19,22 +19,19 @@
 import {waitFor, act, renderHook} from '@thunderid/test-utils';
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import UserTypeQueryKeys from '../../constants/userTypeQueryKeys';
-import type {ApiUserType, UpdateUserTypeRequest} from '../../types/user-types';
-import useUpdateUserType from '../useUpdateUserType';
-import type {UpdateUserTypeVariables} from '../useUpdateUserType';
+import type {ApiUserType, CreateUserTypeRequest} from '../../types/user-types';
+import useCreateUserType from '../useCreateUserType';
 
-vi.mock('@thunderid/react', () => ({useThunderID: vi.fn()}));
+const mockHttpRequest = vi.fn();
+vi.mock('@thunderid/react', () => ({useThunderID: () => ({http: {request: mockHttpRequest}})}));
 vi.mock('@thunderid/contexts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@thunderid/contexts')>();
   return {...actual, useConfig: vi.fn()};
 });
 
-const {useThunderID} = await import('@thunderid/react');
 const {useConfig} = await import('@thunderid/contexts');
 
-describe('useUpdateUserType', () => {
-  const mockUserTypeId = '123';
-
+describe('useCreateUserType', () => {
   const mockUserType: ApiUserType = {
     id: '123',
     name: 'Person',
@@ -48,7 +45,7 @@ describe('useUpdateUserType', () => {
     },
   };
 
-  const mockUpdateRequest: UpdateUserTypeRequest = {
+  const mockRequest: CreateUserTypeRequest = {
     name: 'Person',
     ouId: 'ou-1',
     allowSelfRegistration: true,
@@ -60,21 +57,8 @@ describe('useUpdateUserType', () => {
     },
   };
 
-  const mockVariables: UpdateUserTypeVariables = {
-    userTypeId: mockUserTypeId,
-    data: mockUpdateRequest,
-  };
-
-  let mockHttpRequest: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
-    mockHttpRequest = vi.fn();
-
-    vi.mocked(useThunderID).mockReturnValue({
-      http: {
-        request: mockHttpRequest,
-      },
-    } as unknown as ReturnType<typeof useThunderID>);
+    mockHttpRequest.mockReset();
 
     vi.mocked(useConfig).mockReturnValue({
       getServerUrl: () => 'https://api.test.com',
@@ -86,7 +70,7 @@ describe('useUpdateUserType', () => {
   });
 
   it('should initialize with idle state', () => {
-    const {result} = renderHook(() => useUpdateUserType());
+    const {result} = renderHook(() => useCreateUserType());
 
     expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
@@ -98,14 +82,14 @@ describe('useUpdateUserType', () => {
     expect(typeof result.current.mutateAsync).toBe('function');
   });
 
-  it('should successfully update a user type', async () => {
+  it('should successfully create a user type', async () => {
     mockHttpRequest.mockResolvedValueOnce({
       data: mockUserType,
     });
 
-    const {result} = renderHook(() => useUpdateUserType());
+    const {result} = renderHook(() => useCreateUserType());
 
-    result.current.mutate(mockVariables);
+    result.current.mutate(mockRequest);
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -117,58 +101,51 @@ describe('useUpdateUserType', () => {
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: `https://api.test.com/user-types/${mockUserTypeId}`,
-        method: 'PUT',
+        url: 'https://api.test.com/user-types',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        data: mockUpdateRequest,
+        data: mockRequest,
       }),
     );
   });
 
-  it('should set pending state during update', async () => {
-    /* eslint-disable @typescript-eslint/no-misused-promises */
-    mockHttpRequest.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          setTimeout(() => {
-            resolve({
-              data: mockUserType,
-            });
-          }, 100);
-        }),
+  it('should set pending state during creation', async () => {
+    let resolveMutation!: (value: {data: ApiUserType}) => void;
+    mockHttpRequest.mockReturnValue(
+      new Promise<{data: ApiUserType}>((resolve) => {
+        resolveMutation = resolve;
+      }),
     );
-    /* eslint-enable @typescript-eslint/no-misused-promises */
 
-    const {result} = renderHook(() => useUpdateUserType());
+    const {result} = renderHook(() => useCreateUserType());
 
-    act(() => {
-      result.current.mutate(mockVariables);
-    });
+    result.current.mutate(mockRequest);
 
     await waitFor(() => {
       expect(result.current.isPending).toBe(true);
     });
 
-    await waitFor(
-      () => {
-        expect(result.current.isSuccess).toBe(true);
-      },
-      {timeout: 200},
-    );
+    act(() => {
+      resolveMutation({data: mockUserType});
+    });
 
-    expect(result.current.isPending).toBe(false);
+    await waitFor(() => {
+      expect(result.current.isPending).toBe(false);
+    });
+
+    expect(result.current.isSuccess).toBe(true);
   });
 
   it('should handle API error', async () => {
-    const apiError = new Error('Failed to update user type');
+    const apiError = new Error('Failed to create user type');
 
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useUpdateUserType());
+    const {result} = renderHook(() => useCreateUserType());
 
-    result.current.mutate(mockVariables);
+    result.current.mutate(mockRequest);
 
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
@@ -179,23 +156,20 @@ describe('useUpdateUserType', () => {
     expect(result.current.isPending).toBe(false);
   });
 
-  it('should invalidate correct queries on success', async () => {
+  it('should invalidate user types query on success', async () => {
     mockHttpRequest.mockResolvedValueOnce({
       data: mockUserType,
     });
 
-    const {result, queryClient} = renderHook(() => useUpdateUserType());
+    const {result, queryClient} = renderHook(() => useCreateUserType());
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
-    result.current.mutate(mockVariables);
+    result.current.mutate(mockRequest);
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: [UserTypeQueryKeys.USER_TYPE, mockUserTypeId],
-    });
     expect(invalidateQueriesSpy).toHaveBeenCalledWith({
       queryKey: [UserTypeQueryKeys.USER_TYPES],
     });
@@ -206,10 +180,10 @@ describe('useUpdateUserType', () => {
       data: mockUserType,
     });
 
-    const {result, queryClient} = renderHook(() => useUpdateUserType());
-    vi.spyOn(queryClient, 'invalidateQueries').mockRejectedValue(new Error('Invalidation failed'));
+    const {result, queryClient} = renderHook(() => useCreateUserType());
+    vi.spyOn(queryClient, 'invalidateQueries').mockRejectedValueOnce(new Error('Invalidation failed'));
 
-    result.current.mutate(mockVariables);
+    result.current.mutate(mockRequest);
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -223,9 +197,9 @@ describe('useUpdateUserType', () => {
       data: mockUserType,
     });
 
-    const {result} = renderHook(() => useUpdateUserType());
+    const {result} = renderHook(() => useCreateUserType());
 
-    const promise = result.current.mutateAsync(mockVariables);
+    const promise = result.current.mutateAsync(mockRequest);
 
     await expect(promise).resolves.toEqual(mockUserType);
 
@@ -240,9 +214,9 @@ describe('useUpdateUserType', () => {
       data: mockUserType,
     });
 
-    const {result} = renderHook(() => useUpdateUserType());
+    const {result} = renderHook(() => useCreateUserType());
 
-    result.current.mutate(mockVariables);
+    result.current.mutate(mockRequest);
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);

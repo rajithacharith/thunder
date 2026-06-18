@@ -71,8 +71,8 @@ vi.mock('../../api/useCreateApplication', () => ({
 }));
 
 // Mock user types API
-vi.mock('../../../user-types/api/useGetUserTypes', () => ({
-  default: () => ({
+vi.mock('@thunderid/configure-user-types', () => ({
+  useGetUserTypes: () => ({
     data: {
       types: [
         {name: 'customer', displayName: 'Customer'},

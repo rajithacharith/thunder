@@ -18,14 +18,14 @@
 
 import {render, screen, waitFor, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {useGetUserTypes} from '@thunderid/configure-user-types';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import useGetUserTypes from '../../../../../user-types/api/useGetUserTypes';
 import type {Application} from '../../../../models/application';
 import type {OAuth2Config} from '../../../../models/oauth';
 import AccessSection from '../AccessSection';
 
 // Mock the useGetUserTypes hook
-vi.mock('../../../../../user-types/api/useGetUserTypes');
+vi.mock('@thunderid/configure-user-types');
 
 type MockedUseGetUserTypes = ReturnType<typeof useGetUserTypes>;
 

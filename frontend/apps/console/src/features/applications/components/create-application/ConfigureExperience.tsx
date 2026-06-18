@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import type {UserTypeListItem} from '@thunderid/configure-user-types';
 import {useConfig} from '@thunderid/contexts';
 import {
   Box,
@@ -37,7 +38,6 @@ import type {JSX, ChangeEvent} from 'react';
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import {ApplicationCreateFlowSignInApproach} from '../../models/application-create-flow';
-import type {UserTypeListItem} from '@/features/user-types/types/user-types';
 
 /**
  * Props for the {@link ConfigureExperience} component.

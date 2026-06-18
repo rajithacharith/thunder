@@ -26,8 +26,8 @@ const {mockUseGetUserTypes} = vi.hoisted(() => ({
   mockUseGetUserTypes: vi.fn(),
 }));
 
-vi.mock('../../../../../user-types/api/useGetUserTypes', () => ({
-  default: (): unknown => mockUseGetUserTypes() as unknown,
+vi.mock('@thunderid/configure-user-types', () => ({
+  useGetUserTypes: (): unknown => mockUseGetUserTypes() as unknown,
 }));
 
 vi.mock('react-i18next', () => ({

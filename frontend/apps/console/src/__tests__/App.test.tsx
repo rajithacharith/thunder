@@ -49,16 +49,11 @@ vi.mock('../features/users/pages/UserEditPage', () => ({
   default: () => <div data-testid="user-edit-page">User Edit Page</div>,
 }));
 
-vi.mock('../features/user-types/pages/UserTypesListPage', () => ({
-  default: () => <div data-testid="user-types-list-page">User Types List Page</div>,
-}));
-
-vi.mock('../features/user-types/pages/CreateUserTypePage', () => ({
-  default: () => <div data-testid="create-user-type-page">Create User Type Page</div>,
-}));
-
-vi.mock('../features/user-types/pages/ViewUserTypePage', () => ({
-  default: () => <div data-testid="view-user-type-page">View User Type Page</div>,
+vi.mock('@thunderid/configure-user-types', () => ({
+  UserTypeCreateProvider: ({children}: {children: React.ReactNode}) => children as React.ReactElement,
+  UserTypesListPage: () => <div data-testid="user-types-list-page">User Types List Page</div>,
+  CreateUserTypePage: () => <div data-testid="create-user-type-page">Create User Type Page</div>,
+  ViewUserTypePage: () => <div data-testid="view-user-type-page">View User Type Page</div>,
 }));
 
 vi.mock('../features/integrations/pages/IntegrationsPage', () => ({
@@ -184,6 +179,30 @@ describe('App', () => {
     render(<App />);
     await waitFor(() => {
       expect(screen.getByTestId('create-resource-server-page')).toBeInTheDocument();
+    });
+  });
+
+  it('loads UserTypesListPage lazily at /user-types', async () => {
+    window.history.pushState({}, '', '/user-types');
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByTestId('user-types-list-page')).toBeInTheDocument();
+    });
+  });
+
+  it('loads ViewUserTypePage lazily at /user-types/:id', async () => {
+    window.history.pushState({}, '', '/user-types/ut-123');
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByTestId('view-user-type-page')).toBeInTheDocument();
+    });
+  });
+
+  it('loads CreateUserTypePage lazily at /user-types/create', async () => {
+    window.history.pushState({}, '', '/user-types/create');
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByTestId('create-user-type-page')).toBeInTheDocument();
     });
   });
 });
