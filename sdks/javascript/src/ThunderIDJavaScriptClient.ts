@@ -24,9 +24,11 @@ import PKCEConstants from './constants/PKCEConstants';
 import {DefaultCacheStore} from './DefaultCacheStore';
 import {DefaultCrypto} from './DefaultCrypto';
 import {ThunderIDAuthException} from './errors/exception';
+import ThunderIDAPIError from './errors/ThunderIDAPIError';
 import {IsomorphicCrypto} from './IsomorphicCrypto';
 import {AgentConfig} from './models/agent';
 import {AuthCodeResponse} from './models/auth-code-response';
+import type {CIBAInitiateOptions, CIBAInitiateResponse, CIBAPollOptions} from './models/ciba';
 import {ThunderIDClient} from './models/client';
 import {AuthClientConfig, Config, SignInOptions, SignOutOptions, SignUpOptions} from './models/config';
 import {Crypto} from './models/crypto';
@@ -784,6 +786,247 @@ class ThunderIDJavaScriptClient<T = Config> implements ThunderIDClient<T> {
     this.authHelper.clearSession(userId);
 
     return response;
+  }
+
+  public async initiateCIBA(options: CIBAInitiateOptions): Promise<CIBAInitiateResponse> {
+    if (
+      !(await this.storageManager.getTemporaryDataParameter(
+        OIDCDiscoveryConstants.Storage.StorageKeys.OPENID_PROVIDER_CONFIG_INITIATED,
+      ))
+    ) {
+      await this.loadOpenIDProviderConfiguration(false);
+    }
+
+    const backchannelEndpoint: string | undefined =
+      (await this.oidcProviderMetaDataProvider()).backchannel_authentication_endpoint;
+
+    if (!backchannelEndpoint || backchannelEndpoint.trim().length === 0) {
+      throw new ThunderIDAPIError(
+        'No backchannel_authentication_endpoint was found in the OIDC provider metadata.',
+        'JS-AUTH_CORE-CIBA1-NF01',
+        'javascript',
+      );
+    }
+
+    const hintCount = [options.loginHint, options.loginHintToken, options.idTokenHint].filter(Boolean).length;
+
+    if (hintCount === 0) {
+      throw new ThunderIDAPIError(
+        'Provide one of loginHint, loginHintToken, or idTokenHint.',
+        'JS-AUTH_CORE-CIBA1-IV01',
+        'javascript',
+        undefined,
+        undefined,
+        'CIBA initiation requires exactly one hint',
+      );
+    }
+
+    if (hintCount > 1) {
+      throw new ThunderIDAPIError(
+        'Only one of loginHint, loginHintToken, or idTokenHint may be set.',
+        'JS-AUTH_CORE-CIBA1-IV02',
+        'javascript',
+        undefined,
+        undefined,
+        'CIBA initiation received multiple hints',
+      );
+    }
+
+    const configData = await this.configProvider();
+    const hasSecret = Boolean(configData.clientSecret && configData.clientSecret.trim().length > 0);
+    const tokenEndpointAuthMethod = configData.tokenRequest?.authMethod ?? 'client_secret_basic';
+
+    const body = new URLSearchParams();
+
+    body.set('client_id', configData.clientId ?? '');
+
+    if (hasSecret && tokenEndpointAuthMethod === 'client_secret_post') {
+      body.set('client_secret', configData.clientSecret!);
+    }
+
+    const scopeStr = processOpenIDScopes(configData.scopes);
+    if (scopeStr) body.set('scope', scopeStr);
+    if (options.loginHint) body.set('login_hint', options.loginHint);
+    if (options.loginHintToken) body.set('login_hint_token', options.loginHintToken);
+    if (options.idTokenHint) body.set('id_token_hint', options.idTokenHint);
+    if (options.bindingMessage) body.set('binding_message', options.bindingMessage);
+    if (options.acrValues) body.set('acr_values', options.acrValues);
+    if (options.requestedExpiry !== undefined) body.set('requested_expiry', String(options.requestedExpiry));
+
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
+    };
+
+    if (hasSecret && tokenEndpointAuthMethod === 'client_secret_basic') {
+      const credential = `${encodeURIComponent(configData.clientId!)}:${encodeURIComponent(configData.clientSecret!)}`;
+      headers['Authorization'] = `Basic ${base64Encode(credential)}`;
+    }
+
+    let response: Response;
+
+    try {
+      response = await fetch(backchannelEndpoint, {
+        body,
+        credentials: configData.sendCookiesInRequests ? 'include' : 'same-origin',
+        headers,
+        method: 'POST',
+      });
+    } catch (error: any) {
+      throw new ThunderIDAPIError(
+        error ?? 'The request to the backchannel authentication endpoint failed.',
+        'JS-AUTH_CORE-CIBA1-NE02',
+        'javascript',
+        undefined,
+        undefined,
+        'CIBA backchannel authentication request failed',
+      );
+    }
+
+    const rawBody = await response.text().catch(() => '');
+    let parsedBody: unknown;
+    try {
+      parsedBody = JSON.parse(rawBody);
+    } catch {
+      parsedBody = rawBody;
+    }
+
+    if (!response.ok) {
+      throw new ThunderIDAPIError(
+        parsedBody as string,
+        'JS-AUTH_CORE-CIBA1-HE03',
+        'javascript',
+        response.status,
+        response.statusText,
+        'CIBA backchannel authentication request failed',
+      );
+    }
+
+    const payload = parsedBody as {auth_req_id?: string; expires_in?: number; interval?: number};
+
+    if (!payload.auth_req_id) {
+      throw new ThunderIDAPIError(
+        'The server response did not include an auth_req_id.',
+        'JS-AUTH_CORE-CIBA1-PR04',
+        'javascript',
+      );
+    }
+
+    return {
+      authReqId: payload.auth_req_id,
+      expiresIn: payload.expires_in ?? 120,
+      interval: payload.interval ?? 5,
+    };
+  }
+
+  public async pollCIBA(authReqId: string, interval: number, options?: CIBAPollOptions): Promise<TokenResponse> {
+    const tokenEndpoint: string | undefined = (await this.oidcProviderMetaDataProvider()).token_endpoint;
+    const configData = await this.configProvider();
+
+    if (!tokenEndpoint || tokenEndpoint.trim().length === 0) {
+      throw new ThunderIDAPIError(
+        'No token endpoint was found in the OIDC provider metadata.',
+        'JS-AUTH_CORE-CIBA2-NF01',
+        'javascript',
+      );
+    }
+
+    const hasSecret = Boolean(configData.clientSecret && configData.clientSecret.trim().length > 0);
+    const tokenEndpointAuthMethod = configData.tokenRequest?.authMethod ?? 'client_secret_basic';
+
+    const buildBody = (): URLSearchParams => {
+      const body = new URLSearchParams();
+      body.set('grant_type', 'urn:openid:params:grant-type:ciba');
+      body.set('auth_req_id', authReqId);
+      body.set('client_id', configData.clientId ?? '');
+      if (hasSecret && tokenEndpointAuthMethod === 'client_secret_post') {
+        body.set('client_secret', configData.clientSecret!);
+      }
+      return body;
+    };
+
+    const buildHeaders = (): Record<string, string> => {
+      const headers: Record<string, string> = {
+        Accept: 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      };
+      if (hasSecret && tokenEndpointAuthMethod === 'client_secret_basic') {
+        const credential = `${encodeURIComponent(configData.clientId!)}:${encodeURIComponent(configData.clientSecret!)}`;
+        headers['Authorization'] = `Basic ${base64Encode(credential)}`;
+      }
+      return headers;
+    };
+
+    let currentInterval = interval;
+
+    while (true) {
+      if (options?.signal?.aborted) {
+        throw new ThunderIDAPIError('CIBA polling was cancelled.', 'JS-AUTH_CORE-CIBA2-AB05', 'javascript');
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(resolve, currentInterval * 1000);
+        options?.signal?.addEventListener('abort', () => {
+          clearTimeout(timer);
+          reject(new ThunderIDAPIError('CIBA polling was cancelled.', 'JS-AUTH_CORE-CIBA2-AB05', 'javascript'));
+        }, {once: true});
+      });
+
+      let pollResponse: Response;
+
+      try {
+        pollResponse = await fetch(tokenEndpoint, {
+          body: buildBody(),
+          credentials: configData.sendCookiesInRequests ? 'include' : 'same-origin',
+          headers: buildHeaders(),
+          method: 'POST',
+          signal: options?.signal,
+        });
+      } catch (error: any) {
+        if (error?.name === 'AbortError') {
+          throw new ThunderIDAPIError('CIBA polling was cancelled.', 'JS-AUTH_CORE-CIBA2-AB05', 'javascript');
+        }
+        throw new ThunderIDAPIError(
+          error ?? 'The polling request to the token endpoint failed.',
+          'JS-AUTH_CORE-CIBA2-NE02',
+          'javascript',
+          undefined,
+          undefined,
+          'CIBA token polling request failed',
+        );
+      }
+
+      if (pollResponse.ok) {
+        return this.authHelper.handleTokenResponse(pollResponse) as Promise<TokenResponse>;
+      }
+
+      const rawPollBody = await pollResponse.text().catch(() => '');
+      let errorPayload: {error?: string; error_description?: string};
+      try {
+        errorPayload = JSON.parse(rawPollBody);
+      } catch {
+        errorPayload = {};
+      }
+      const errorCode = errorPayload.error;
+
+      if (errorCode === 'authorization_pending') {
+        continue;
+      }
+
+      if (errorCode === 'slow_down') {
+        currentInterval += 5;
+        continue;
+      }
+
+      throw new ThunderIDAPIError(
+        JSON.stringify(errorPayload),
+        'JS-AUTH_CORE-CIBA2-HE03',
+        'javascript',
+        pollResponse.status,
+        pollResponse.statusText,
+        `CIBA polling terminated: ${errorCode}`,
+      );
+    }
   }
 
   protected async getPKCECode(state: string, userId?: string): Promise<string> {
