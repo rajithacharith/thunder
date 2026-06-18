@@ -146,11 +146,14 @@ func (suite *OTPServiceTestSuite) TestSendOTP_EmptyChannel() {
 		Channel:   "",
 	}
 
+	// Empty channel is defaulted to SMS.
+	suite.mockSenderService.On("GetSender", mock.Anything, "sender-123").Return(nil, nil).Once()
+
 	result, err := suite.service.SendOTP(context.Background(), request)
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorInvalidChannel.Code, err.Code)
+	suite.Equal(ErrorSenderNotFound.Code, err.Code)
 }
 
 func (suite *OTPServiceTestSuite) TestSendOTP_UnsupportedChannel() {

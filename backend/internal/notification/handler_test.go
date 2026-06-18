@@ -129,7 +129,8 @@ func (suite *MessageHandlerTestSuite) TestHandleSenderCreateRequest_Duplicate() 
 	m := NewNotificationSenderMgtSvcInterfaceMock(suite.T())
 	handler := newMessageNotificationSenderHandler(m, nil)
 
-	reqBody := common.NotificationSenderRequest{Name: "New Sender", Provider: "twilio"}
+	reqBody := common.NotificationSenderRequest{
+		Name: "New Sender", Provider: "twilio"}
 	bodyBytes, _ := json.Marshal(reqBody)
 
 	m.On("CreateSender", mock.Anything, mock.Anything).Return(nil, &ErrorDuplicateSenderName).Once()
