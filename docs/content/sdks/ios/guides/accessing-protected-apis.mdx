@@ -5,7 +5,7 @@ description: Make authenticated API requests using the iOS SDK
 
 # Accessing Protected APIs
 
-When your app needs to call a backend API that requires authentication, use `ThunderClient.getAccessToken()` to retrieve a valid access token and attach it as a Bearer token to your requests. The SDK automatically refreshes the token if it has expired.
+When your app needs to call a backend API that requires authentication, use `ThunderIDClient.getAccessToken()` to retrieve a valid access token and attach it as a Bearer token to your requests. The SDK automatically refreshes the token if it has expired.
 
 ## Using URLSession
 
@@ -13,9 +13,9 @@ The following example calls a protected API endpoint using the standard `URLSess
 
 ```swift title="APIClient.swift" showLineNumbers
 import Foundation
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
-func fetchProtectedResource(state: ThunderState) async throws -> Data {
+func fetchProtectedResource(state: ThunderIDState) async throws -> Data {
     let token = try await state.client.getAccessToken()
 
     var request = URLRequest(url: URL(string: "https://localhost:8090/api/resource")!)
@@ -37,10 +37,10 @@ Call it from a SwiftUI view:
 
 ```swift title="ResourceView.swift" showLineNumbers
 import SwiftUI
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
 struct ResourceView: View {
-    @EnvironmentObject var state: ThunderState
+    @EnvironmentObject var state: ThunderIDState
     @State private var result: String = ""
 
     var body: some View {
@@ -81,12 +81,12 @@ If your project uses [Alamofire](https://github.com/Alamofire/Alamofire), create
 
 ```swift title="ThunderIDRequestInterceptor.swift" showLineNumbers
 import Alamofire
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
 final class ThunderIDRequestInterceptor: RequestInterceptor {
-    let state: ThunderState
+    let state: ThunderIDState
 
-    init(state: ThunderState) {
+    init(state: ThunderIDState) {
         self.state = state
     }
 

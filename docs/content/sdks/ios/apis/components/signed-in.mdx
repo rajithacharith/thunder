@@ -5,7 +5,7 @@ description: Conditionally render content for authenticated users
 
 # `SignedIn`
 
-The `SignedIn` component conditionally renders its content only when the user is authenticated. It reads the current sign-in state from `ThunderState` and displays protected UI for signed-in users, while rendering optional fallback content (or nothing) when the user is not authenticated.
+The `SignedIn` component conditionally renders its content only when the user is authenticated. It reads the current sign-in state from `ThunderIDState` and displays protected UI for signed-in users, while rendering optional fallback content (or nothing) when the user is not authenticated.
 
 `SignedIn` requires `.thunderIDProvider(config:)` in its ancestor view hierarchy.
 
@@ -13,7 +13,7 @@ The `SignedIn` component conditionally renders its content only when the user is
 
 ```swift
 import SwiftUI
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
 struct ContentView: View {
     var body: some View {
@@ -51,7 +51,7 @@ Use `SignedIn` and `SignedOut` together to implement your app's root routing log
 
 ```swift
 struct RootView: View {
-    @EnvironmentObject var state: ThunderState
+    @EnvironmentObject var state: ThunderIDState
 
     var body: some View {
         if !state.isInitialized {

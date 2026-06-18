@@ -199,3 +199,6 @@ URLSession
 Alamofire
 [Rr]einitializes?
 Xcode
+Jetpack
+Gradle
+Keystore

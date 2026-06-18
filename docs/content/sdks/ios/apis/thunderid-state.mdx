@@ -1,13 +1,13 @@
 ---
-title: ThunderState
+title: ThunderIDState
 description: Reactive authentication state for SwiftUI applications
 ---
 
-# `ThunderState`
+# `ThunderIDState`
 
-`ThunderState` is the reactive authentication state object provided by the `ThunderSwiftUI` package. It is an `ObservableObject` that holds the current user, loading state, and initialization status, and exposes the underlying `ThunderClient` for direct API calls.
+`ThunderIDState` is the reactive authentication state object provided by the `ThunderIDSwiftUI` package. It is an `ObservableObject` that holds the current user, loading state, and initialization status, and exposes the underlying `ThunderIDClient` for direct API calls.
 
-`ThunderState` is injected into the SwiftUI environment by the `.thunderIDProvider(config:)` modifier. Any view in the hierarchy can read it using `@EnvironmentObject`.
+`ThunderIDState` is injected into the SwiftUI environment by the `.thunderIDProvider(config:)` modifier. Any view in the hierarchy can read it using `@EnvironmentObject`.
 
 ## Setup
 
@@ -15,7 +15,7 @@ Apply `.thunderIDProvider(config:)` to your root view in your `App` struct:
 
 ```swift
 import SwiftUI
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
 @main
 struct MyApp: App {
@@ -25,19 +25,19 @@ struct MyApp: App {
                 .thunderIDProvider(config: ThunderIDConfig(
                     baseUrl: "https://localhost:8090",
                     clientId: "<your-client-id>",
-                    afterSignInUrl: "io.thunder.b2c://callback",
-                    afterSignOutUrl: "io.thunder.b2c://logout"
+                    afterSignInUrl: "io.thunderid.b2c://callback",
+                    afterSignOutUrl: "io.thunderid.b2c://logout"
                 ))
         }
     }
 }
 ```
 
-Access `ThunderState` in any child view:
+Access `ThunderIDState` in any child view:
 
 ```swift
 struct ProfileView: View {
-    @EnvironmentObject var state: ThunderState
+    @EnvironmentObject var state: ThunderIDState
 
     var body: some View {
         Text(state.user?.displayName ?? "Not signed in")
@@ -54,8 +54,8 @@ struct ProfileView: View {
 | `isLoading` | `Bool` | `true` while the SDK is initializing or a sign-in/sign-out operation is in progress. |
 | `isInitialized` | `Bool` | `true` after the SDK has completed initialization (whether or not sign-in succeeded). |
 | `error` | `String?` | A human-readable error message if initialization or the last auth operation failed. `nil` on success. |
-| `client` | `ThunderClient` | The underlying `ThunderClient` instance for direct API calls. |
-| `i18n` | `ThunderI18n` | The localization instance. Use `setLocale(_:)` to change the active language. |
+| `client` | `ThunderIDClient` | The underlying `ThunderIDClient` instance for direct API calls. |
+| `i18n` | `ThunderIDI18n` | The localization instance. Use `setLocale(_:)` to change the active language. |
 
 ## Methods
 
@@ -82,7 +82,7 @@ Task {
 
 ### `setLocale(_:)`
 
-Changes the active locale for all `ThunderSwiftUI` components. The selected locale is persisted to `UserDefaults`.
+Changes the active locale for all `ThunderIDSwiftUI` components. The selected locale is persisted to `UserDefaults`.
 
 ```swift
 func setLocale(_ locale: String)
@@ -100,7 +100,7 @@ Use `state.isInitialized`, `state.isLoading`, and `state.isSignedIn` to drive yo
 
 ```swift
 struct RootView: View {
-    @EnvironmentObject var state: ThunderState
+    @EnvironmentObject var state: ThunderIDState
 
     var body: some View {
         Group {
@@ -121,11 +121,11 @@ struct RootView: View {
 
 ## Example: Accessing the Client Directly
 
-Use `state.client` to call any `ThunderClient` method:
+Use `state.client` to call any `ThunderIDClient` method:
 
 ```swift
 struct TokenDebugView: View {
-    @EnvironmentObject var state: ThunderState
+    @EnvironmentObject var state: ThunderIDState
     @State private var tokenClaims: String = ""
 
     var body: some View {

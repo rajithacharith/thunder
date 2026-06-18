@@ -5,7 +5,7 @@ description: Editable user profile form
 
 # `UserProfile`
 
-The `UserProfile` component renders an editable profile form. It loads the user's current profile from `/scim2/Me` when it appears, presents editable fields for `displayName` and `phoneNumbers`, and saves changes via `ThunderClient.updateUserProfile`.
+The `UserProfile` component renders an editable profile form. It loads the user's current profile from `/scim2/Me` when it appears, presents editable fields for `displayName` and `phoneNumbers`, and saves changes via `ThunderIDClient.updateUserProfile`.
 
 `UserProfile` requires `.thunderIDProvider(config:)` in its ancestor view hierarchy.
 
@@ -13,7 +13,7 @@ The `UserProfile` component renders an editable profile form. It loads the user'
 
 ```swift
 import SwiftUI
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
 struct ProfileSheet: View {
     @Environment(\.dismiss) var dismiss
@@ -65,7 +65,7 @@ struct HomeView: View {
 ```swift
 import SwiftUI
 import ThunderID
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
 struct CustomProfileView: View {
     var body: some View {

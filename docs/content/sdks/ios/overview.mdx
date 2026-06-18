@@ -11,7 +11,7 @@ description: Native iOS SDK for {{ProductName}} authentication in Swift applicat
 The <ProductName /> iOS SDK provides two Swift packages for integrating authentication into your iOS and macOS applications:
 
 - **`ThunderID`** — Core authentication client with the full IAM API surface
-- **`ThunderSwiftUI`** — Drop-in SwiftUI components built on top of `ThunderID`
+- **`ThunderIDSwiftUI`** — Drop-in SwiftUI components built on top of `ThunderID`
 
 Both packages target iOS 16+ and macOS 13+.
 
@@ -23,11 +23,11 @@ Both packages target iOS 16+ and macOS 13+.
 
     https://github.com/thunderid/thunderid-ios-sdk
 
-    Select the ThunderSwiftUI product (includes ThunderID automatically).
+    Select the ThunderIDSwiftUI product (includes ThunderID automatically).
   </CodeBlock>
 
   <CodeBlock lang="ruby" label="CocoaPods">
-    pod 'ThunderSwiftUI'
+    pod 'ThunderIDSwiftUI'
   </CodeBlock>
 </CodeGroup>
 
@@ -39,7 +39,7 @@ To get started quickly, follow the [iOS Quickstart Guide](/docs/next/guides/gett
 
 ```swift
 import SwiftUI
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
 @main
 struct MyApp: App {
@@ -50,8 +50,8 @@ struct MyApp: App {
                     baseUrl: "https://localhost:8090",
                     clientId: "<your-client-id>",
                     scopes: ["openid", "profile", "email"],
-                    afterSignInUrl: "io.thunder.b2c://callback",
-                    afterSignOutUrl: "io.thunder.b2c://logout",
+                    afterSignInUrl: "io.thunderid.b2c://callback",
+                    afterSignOutUrl: "io.thunderid.b2c://logout",
                     applicationId: "<your-application-id>"
                 ))
         }
@@ -59,7 +59,7 @@ struct MyApp: App {
 }
 
 struct ContentView: View {
-    @EnvironmentObject var state: ThunderState
+    @EnvironmentObject var state: ThunderIDState
 
     var body: some View {
         SignedIn {
@@ -93,7 +93,7 @@ struct ContentView: View {
 | `exchangeToken(config:sessionId:)` | Perform an OAuth 2.0 token exchange (STS) |
 | `decodeJwtToken(_:)` | Decode a JWT string into a `Decodable` type |
 
-### ThunderSwiftUI — Components
+### ThunderIDSwiftUI — Components
 
 #### Actions
 
@@ -127,7 +127,7 @@ struct ContentView: View {
 
 | Type | Description |
 |------|-------------|
-| `ThunderState` | Reactive `ObservableObject` injected by `.thunderIDProvider(config:)` |
+| `ThunderIDState` | Reactive `ObservableObject` injected by `.thunderIDProvider(config:)` |
 
 ## Customization
 
@@ -136,4 +136,4 @@ The <ProductName /> iOS SDK gives you full control over your application's authe
 - Use `SignIn` and `SignUp` for pre-built forms, or `BaseSignIn` and `BaseSignUp` to render your own UI with the same Flow Execution loop
 - Swap in `BaseSignInButton` and `BaseSignOutButton` to match your design system without touching any auth logic
 - Provide a custom `StorageAdapter` to control where tokens are persisted (default: Keychain)
-- Override localized strings using `ThunderI18n` with your own translation bundles
+- Override localized strings using `ThunderIDI18n` with your own translation bundles

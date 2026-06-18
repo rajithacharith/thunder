@@ -25,7 +25,7 @@ JWT authentication is the foundation of API security with KrakenD and <ProductNa
 
 #### Create an Application
 
-1. Sign in to the <ProductName /> Console at `https://<THUNDER_HOST>:<THUNDER_PORT>/console`.
+1. Sign in to the <ProductName /> Console at `https://<THUNDERID_HOST>:<THUNDERID_PORT>/console`.
 2. Navigate to **Applications** → **New Application**.
 3. Enter an **Application Name**.
 4. Select **Backend Service** as the application type.
@@ -37,7 +37,7 @@ JWT authentication is the foundation of API security with KrakenD and <ProductNa
 Use the client credentials grant to request an access token:
 
 ```bash
-curl --location 'https://<THUNDER_HOST>:8090/oauth2/token' \
+curl --location 'https://<THUNDERID_HOST>:8090/oauth2/token' \
   --header 'Content-Type: application/x-www-form-urlencoded' \
   --data-urlencode 'grant_type=client_credentials' \
   --data-urlencode 'client_id=<CLIENT_ID>' \
@@ -118,7 +118,7 @@ Add the `auth/validator` block inside the endpoint:
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "https://<THUNDER_HOST>:8090/oauth2/jwks",
+          "jwk_url": "https://<THUNDERID_HOST>:8090/oauth2/jwks",
           "disable_jwk_security": true,
           "cache": true
         }
@@ -143,7 +143,7 @@ Add the `auth/validator` block inside the endpoint:
 | Field | Value | Description |
 |---|---|---|
 | `alg` | `RS256` | Signing algorithm used by <ProductName /> |
-| `jwk_url` | `https://<THUNDER_HOST>:<THUNDER_PORT>/oauth2/jwks` | <ProductName /> JWKS endpoint for fetching public keys |
+| `jwk_url` | `https://<THUNDERID_HOST>:<THUNDERID_PORT>/oauth2/jwks` | <ProductName /> JWKS endpoint for fetching public keys |
 | `disable_jwk_security` | `true` | Skips TLS certificate verification. Use only in local development — remove in production. |
 | `cache` | `true` | Caches JWKS keys to avoid fetching them on every request |
 
@@ -200,7 +200,7 @@ The steps below build on the JWT authentication configuration from the previous 
 <ProductName /> exposes management REST APIs to create resources, roles, and assignments. Request an admin token to call them:
 
 ```bash
-curl --location 'https://<THUNDER_HOST>:8090/oauth2/token' \
+curl --location 'https://<THUNDERID_HOST>:8090/oauth2/token' \
   --header 'Content-Type: application/x-www-form-urlencoded' \
   --data-urlencode 'grant_type=client_credentials' \
   --data-urlencode 'client_id=<ADMIN_CLIENT_ID>' \
@@ -219,7 +219,7 @@ MGMT_TOKEN=<RETURNED_ACCESS_TOKEN>
 A Resource Server represents your API in <ProductName />. The Resource Server groups all resources and actions under a single identifier and acts as the audience for tokens issued to clients of that API.
 
 ```bash
-curl --location 'https://<THUNDER_HOST>:8090/api/server/v1/resource-servers' \
+curl --location 'https://<THUNDERID_HOST>:8090/api/server/v1/resource-servers' \
   --header 'Authorization: Bearer '"$MGMT_TOKEN"'' \
   --header 'Content-Type: application/json' \
   --data '{
@@ -239,7 +239,7 @@ Note the `id` from the response — you will need it in the following steps.
 A Resource represents a specific entity within the API, such as `/api/items`. Resources let you model your API surface so that permissions can be granted at a granular level.
 
 ```bash
-curl --location 'https://<THUNDER_HOST>:8090/api/server/v1/resource-servers/<RESOURCE_SERVER_ID>/resources' \
+curl --location 'https://<THUNDERID_HOST>:8090/api/server/v1/resource-servers/<RESOURCE_SERVER_ID>/resources' \
   --header 'Authorization: Bearer '"$MGMT_TOKEN"'' \
   --header 'Content-Type: application/json' \
   --data '{
@@ -255,7 +255,7 @@ Note the `id` of the created resource.
 Actions define the operations allowed on a resource. Each action produces a scope in the format `<resource-server-handle>:<resource-handle>:<action-handle>`. <ProductName /> includes these scopes in tokens issued to applications that hold the corresponding role.
 
 ```bash
-curl --location 'https://<THUNDER_HOST>:8090/api/server/v1/resource-servers/<RESOURCE_SERVER_ID>/resources/<RESOURCE_ID>/actions' \
+curl --location 'https://<THUNDERID_HOST>:8090/api/server/v1/resource-servers/<RESOURCE_SERVER_ID>/resources/<RESOURCE_ID>/actions' \
   --header 'Authorization: Bearer '"$MGMT_TOKEN"'' \
   --header 'Content-Type: application/json' \
   --data '{
@@ -282,7 +282,7 @@ The response includes the generated permission:
 Roles bundle one or more permissions together. Assign roles to applications to control which scopes appear in their tokens.
 
 ```bash
-curl --location 'https://<THUNDER_HOST>:8090/api/server/v1/roles' \
+curl --location 'https://<THUNDERID_HOST>:8090/api/server/v1/roles' \
   --header 'Authorization: Bearer '"$MGMT_TOKEN"'' \
   --header 'Content-Type: application/json' \
   --data '{
@@ -305,7 +305,7 @@ Note the `id` of the created role.
 Assign the role to the application you created in the previous section. <ProductName /> includes the role's scopes in every token issued for that application.
 
 ```bash
-curl --location 'https://<THUNDER_HOST>:8090/api/server/v1/applications/<APP_ID>/roles' \
+curl --location 'https://<THUNDERID_HOST>:8090/api/server/v1/applications/<APP_ID>/roles' \
   --header 'Authorization: Bearer '"$MGMT_TOKEN"'' \
   --header 'Content-Type: application/json' \
   --data '{
@@ -333,7 +333,7 @@ Add `scopes`, `scopes_key`, and `scopes_matcher` to the `auth/validator` block y
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "https://<THUNDER_HOST>:<THUNDER_PORT>/oauth2/jwks",
+          "jwk_url": "https://<THUNDERID_HOST>:<THUNDERID_PORT>/oauth2/jwks",
           "disable_jwk_security": true,
           "cache": true,
           "scopes_key": "scope",
@@ -378,7 +378,7 @@ krakend run -c krakend.json
 Request a token for the application that has the role assigned:
 
 ```bash
-curl --location 'https://<THUNDER_HOST>:8090/oauth2/token' \
+curl --location 'https://<THUNDERID_HOST>:8090/oauth2/token' \
   --header 'Content-Type: application/x-www-form-urlencoded' \
   --data-urlencode 'grant_type=client_credentials' \
   --data-urlencode 'scope=booking-api:item:read' \
