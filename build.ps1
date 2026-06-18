@@ -1020,12 +1020,15 @@ function Test-Integration {
     Push-Location $SCRIPT_DIR
     try {
         # Set up coverage directory for integration tests
-        $coverage_dir = Join-Path (Get-Location) "$OUTPUT_DIR\.test\integration"
+        $coverage_dir = [System.IO.Path]::GetFullPath((Join-Path $SCRIPT_DIR "target\out\.test\integration"))
+        if (Test-Path $coverage_dir) {
+            Remove-Item -Path $coverage_dir -Recurse -Force -ErrorAction SilentlyContinue
+        }
         New-Item -Path $coverage_dir -ItemType Directory -Force | Out-Null
-        
+
         # Export coverage directory for the server binary to use
         $env:GOCOVERDIR = $coverage_dir
-        
+
         Write-Host "Coverage data will be collected in: $coverage_dir"
         if ($extra_args.Count -gt 0) {
             & go run -C ./tests/integration ./main.go @extra_args
@@ -1033,27 +1036,31 @@ function Test-Integration {
             & go run -C ./tests/integration ./main.go
         }
         $test_exit_code = $LASTEXITCODE
-        
+
         # Process coverage data if tests passed or failed
         if ((Test-Path $coverage_dir) -and ((Get-ChildItem $coverage_dir -ErrorAction SilentlyContinue).Count -gt 0)) {
             Write-Host "================================================================"
             Write-Host "Processing integration test coverage..."
-            
-            # Convert binary coverage data to text format
+
+            # Formulate robust absolute target paths to keep Windows volume prefixes intact
+            $output_file = [System.IO.Path]::GetFullPath((Join-Path $SCRIPT_DIR "target\coverage_integration.out"))
+            $output_html = [System.IO.Path]::GetFullPath((Join-Path $SCRIPT_DIR "target\coverage_integration.html"))
+
+            # Convert binary coverage data to text format cleanly
             Push-Location $BACKEND_BASE_DIR
             try {
-                & go tool covdata textfmt -i="$coverage_dir" -o="../$TARGET_DIR/coverage_integration.out"
-                Write-Host "Integration test coverage report generated in: $TARGET_DIR/coverage_integration.out"
-                
+                & go tool covdata textfmt -i="$coverage_dir" -o="$output_file"
+                Write-Host "Integration test coverage report generated in: $output_file"
+
                 # Generate HTML coverage report
-                & go tool cover -html="../$TARGET_DIR/coverage_integration.out" -o="../$TARGET_DIR/coverage_integration.html"
-                Write-Host "Integration test coverage HTML report generated in: $TARGET_DIR/coverage_integration.html"
-                
+                & go tool cover -html="$output_file" -o="$output_html"
+                Write-Host "Integration test coverage HTML report generated in: $output_html"
+
                 # Display coverage summary
                 Write-Host ""
                 Write-Host "================================================================"
                 Write-Host "Coverage Summary:"
-                & go tool cover -func="../$TARGET_DIR/coverage_integration.out" | Select-Object -Last 1
+                & go tool cover -func="$output_file" | Select-Object -Last 1
                 Write-Host "================================================================"
                 Write-Host ""
             }
