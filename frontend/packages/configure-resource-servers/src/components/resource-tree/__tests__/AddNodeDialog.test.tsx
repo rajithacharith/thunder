@@ -143,4 +143,22 @@ describe('AddNodeDialog', () => {
 
     expect(screen.queryByText('Add Resource')).not.toBeInTheDocument();
   });
+
+  it('shows an error and disables the Add button when the handle contains the delimiter character', async () => {
+    renderWithProviders(<AddNodeDialog {...defaultProps} delimiter="/" />);
+
+    const textboxes = screen.getAllByRole('textbox');
+    const handleInput = textboxes[1];
+
+    fireEvent.change(handleInput, {target: {value: 'foo/bar'}});
+
+    await waitFor(() => {
+      expect(handleInput).toHaveValue('foo/bar');
+    });
+
+    expect(screen.getByText('Handle cannot contain the delimiter character "/".')).toBeInTheDocument();
+
+    const addButton = screen.getByRole('button', {name: /^add$/i});
+    expect(addButton).toBeDisabled();
+  });
 });

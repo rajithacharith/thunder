@@ -135,6 +135,7 @@ export default function AddNodeDialog({
   };
 
   const isPending = createResource.isPending || createAction.isPending;
+  const handleContainsDelimiter = handle.includes(delimiter);
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
@@ -165,14 +166,22 @@ export default function AddNodeDialog({
               onChange={(e) => {
                 setHandleEdited(true);
                 const sanitized = e.target.value.toLowerCase().replace(/[^a-z0-9._\-:/]/g, '');
-                setHandle(sanitized.replace(new RegExp(`\\${delimiter}`, 'g'), ''));
+                setHandle(sanitized);
               }}
               fullWidth
               size="small"
-              helperText={t(
-                'resourceServers:tree.fields.handleHint',
-                'Lowercase, alphanumeric and . _ - : / — cannot be changed after creation.',
-              )}
+              error={handleContainsDelimiter}
+              helperText={
+                handleContainsDelimiter
+                  ? t(
+                      'resourceServers:tree.fields.handleDelimiterError',
+                      `Handle cannot contain the delimiter character "${delimiter}".`,
+                    )
+                  : t(
+                      'resourceServers:tree.fields.handleHint',
+                      'Lowercase, alphanumeric and . _ - : / — cannot be changed after creation.',
+                    )
+              }
             />
           </FormControl>
           <FormControl fullWidth>
@@ -208,7 +217,11 @@ export default function AddNodeDialog({
         <Button variant="outlined" onClick={handleClose} disabled={isPending}>
           {t('common:cancel', 'Cancel')}
         </Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={isPending || !name.trim() || !handle.trim()}>
+        <Button
+          variant="contained"
+          onClick={handleSubmit}
+          disabled={isPending || !name.trim() || !handle.trim() || handleContainsDelimiter}
+        >
           {isPending ? t('common:adding', 'Adding…') : t('common:add', 'Add')}
         </Button>
       </DialogActions>
