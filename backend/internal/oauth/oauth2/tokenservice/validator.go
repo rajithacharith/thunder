@@ -317,8 +317,9 @@ func (tv *tokenValidator) extractSubjectTokenClaims(
 	// Extract scopes
 	scopes := extractScopesFromClaims(claims, isAuthAssertion)
 
-	// Extract user attributes, applying any configured external-to-local claim mappings.
-	userAttributes := idp.ApplyAttributeMappings(ExtractUserAttributes(claims), attributeMappings)
+	// Apply attribute mappings against the full claim set first so reserved claims (e.g. sub) remain
+	// available as mapping sources, then drop the reserved claims that were not mapped to attributes.
+	userAttributes := ExtractUserAttributes(idp.ApplyAttributeMappings(claims, attributeMappings))
 
 	// Extract nested act claim if present
 	var nestedAct map[string]interface{}

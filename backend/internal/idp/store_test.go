@@ -777,10 +777,10 @@ func (s *IDPStoreTestSuite) TestSerializeAttributeConfiguration_Nil() {
 
 func (s *IDPStoreTestSuite) TestSerializeAttributeConfiguration_WithMapping() {
 	am := &AttributeConfiguration{
-		UserTypeResolution: &UserTypeResolution{Default: "person"},
+		UserTypeResolution: &UserTypeResolution{Default: "Person"},
 		UserTypeAttributeMappings: []UserTypeAttributeMapping{
 			{
-				UserType:   "person",
+				UserType:   "Person",
 				Attributes: []AttributeMapping{{ExternalAttribute: "given_name", LocalAttribute: "firstName"}},
 			},
 		},
@@ -788,8 +788,8 @@ func (s *IDPStoreTestSuite) TestSerializeAttributeConfiguration_WithMapping() {
 	result, err := serializeAttributeConfiguration(am)
 	s.NoError(err)
 	s.NotNil(result)
-	s.Contains(result.(string), `"userTypeResolution":{"default":"person"}`)
-	s.Contains(result.(string), `"userType":"person"`)
+	s.Contains(result.(string), `"userTypeResolution":{"default":"Person"}`)
+	s.Contains(result.(string), `"userType":"Person"`)
 	s.Contains(result.(string), `"externalAttribute":"given_name"`)
 	s.Contains(result.(string), `"localAttribute":"firstName"`)
 }
@@ -802,17 +802,17 @@ func (s *IDPStoreTestSuite) TestParseAttributeConfigurationFromRow_Missing() {
 
 func (s *IDPStoreTestSuite) TestParseAttributeConfigurationFromRow_StringValue() {
 	row := map[string]interface{}{
-		"attribute_configuration": `{"userTypeResolution":{"default":"person"},` +
-			`"userTypeAttributeMappings":[{"userType":"person","attributes":` +
+		"attribute_configuration": `{"userTypeResolution":{"default":"Person"},` +
+			`"userTypeAttributeMappings":[{"userType":"Person","attributes":` +
 			`[{"externalAttribute":"given_name","localAttribute":"firstName"}]}]}`,
 	}
 	result, err := parseAttributeConfigurationFromRow(row)
 	s.NoError(err)
 	s.Require().NotNil(result)
 	s.Require().NotNil(result.UserTypeResolution)
-	s.Equal("person", result.UserTypeResolution.Default)
+	s.Equal("Person", result.UserTypeResolution.Default)
 	s.Require().Len(result.UserTypeAttributeMappings, 1)
-	s.Equal("person", result.UserTypeAttributeMappings[0].UserType)
+	s.Equal("Person", result.UserTypeAttributeMappings[0].UserType)
 	s.Require().Len(result.UserTypeAttributeMappings[0].Attributes, 1)
 	s.Equal("given_name", result.UserTypeAttributeMappings[0].Attributes[0].ExternalAttribute)
 	s.Equal("firstName", result.UserTypeAttributeMappings[0].Attributes[0].LocalAttribute)

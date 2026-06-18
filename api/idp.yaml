@@ -90,9 +90,9 @@ paths:
                   isSecret: false
               attributeConfiguration:
                 userTypeResolution:
-                  default: "person"
+                  default: "Person"
                 userTypeAttributeMappings:
-                  - userType: "person"
+                  - userType: "Person"
                     attributes:
                       - externalAttribute: "given_name"
                         localAttribute: "firstName"
@@ -122,9 +122,9 @@ paths:
                     isSecret: false
                 attributeConfiguration:
                   userTypeResolution:
-                    default: "person"
+                    default: "Person"
                   userTypeAttributeMappings:
-                    - userType: "person"
+                    - userType: "Person"
                       attributes:
                         - externalAttribute: "given_name"
                           localAttribute: "firstName"
@@ -231,9 +231,9 @@ paths:
                     isSecret: false
                 attributeConfiguration:
                   userTypeResolution:
-                    default: "person"
+                    default: "Person"
                   userTypeAttributeMappings:
-                    - userType: "person"
+                    - userType: "Person"
                       attributes:
                         - externalAttribute: "given_name"
                           localAttribute: "firstName"
@@ -301,9 +301,9 @@ paths:
                   isSecret: true
               attributeConfiguration:
                 userTypeResolution:
-                  default: "person"
+                  default: "Person"
                 userTypeAttributeMappings:
-                  - userType: "person"
+                  - userType: "Person"
                     attributes:
                       - externalAttribute: "given_name"
                         localAttribute: "firstName"
@@ -330,9 +330,9 @@ paths:
                     isSecret: true
                 attributeConfiguration:
                   userTypeResolution:
-                    default: "person"
+                    default: "Person"
                   userTypeAttributeMappings:
-                    - userType: "person"
+                    - userType: "Person"
                       attributes:
                         - externalAttribute: "given_name"
                           localAttribute: "firstName"
@@ -598,7 +598,7 @@ components:
         default:
           type: string
           description: Default local user type for federated just-in-time provisioning.
-          example: "person"
+          example: "Person"
 
     UserTypeAttributeMapping:
       type: object
@@ -609,7 +609,7 @@ components:
         userType:
           type: string
           description: Local user type this profile applies to.
-          example: "person"
+          example: "Person"
         attributes:
           type: array
           description: External-to-local attribute mappings for this user type.
