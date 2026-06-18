@@ -37,6 +37,7 @@ import {useNavigate} from 'react-router';
 import useCreateRole from '../api/useCreateRole';
 import ConfigureBasicInfo from '../components/create-role/ConfigureBasicInfo';
 import ConfigureOrganizationUnit from '../components/create-role/ConfigureOrganizationUnit';
+import ConfigurePermissions from '../components/create-role/ConfigurePermissions';
 import useRoleCreate from '../contexts/RoleCreate/useRoleCreate';
 import type {CreateRoleRequest} from '../models/requests';
 import {RoleCreateFlowStep} from '../models/role-create-flow';
@@ -47,7 +48,8 @@ export default function CreateRolePage(): JSX.Element {
   const logger = useLogger('CreateRolePage');
   const createRole = useCreateRole();
 
-  const {currentStep, setCurrentStep, name, setName, ouId, setOuId, error, setError} = useRoleCreate();
+  const {currentStep, setCurrentStep, name, setName, ouId, setOuId, error, setError, permissions, setPermissions} =
+    useRoleCreate();
 
   const {hasMultipleOUs, isLoading: isOuLoading, ouList} = useHasMultipleOUs();
 
@@ -57,6 +59,7 @@ export default function CreateRolePage(): JSX.Element {
   const [stepReady, setStepReady] = useState<Record<RoleCreateFlowStep, boolean>>({
     BASIC_INFO: false,
     ORGANIZATION_UNIT: false,
+    PERMISSIONS: true,
   });
 
   const activeSteps = useMemo((): RoleCreateFlowStep[] => {
@@ -64,6 +67,7 @@ export default function CreateRolePage(): JSX.Element {
     if (hasMultipleOUs) {
       base.push(RoleCreateFlowStep.ORGANIZATION_UNIT);
     }
+    base.push(RoleCreateFlowStep.PERMISSIONS);
     return base;
   }, [hasMultipleOUs]);
 
@@ -74,6 +78,7 @@ export default function CreateRolePage(): JSX.Element {
     if (hasMultipleOUs) {
       map.ORGANIZATION_UNIT = {label: t('roles:createWizard.steps.organizationUnit')};
     }
+    map.PERMISSIONS = {label: t('roles:createWizard.steps.permissions')};
     return map;
   }, [t, hasMultipleOUs]);
 
@@ -122,6 +127,7 @@ export default function CreateRolePage(): JSX.Element {
     const requestData: CreateRoleRequest = {
       name: name.trim(),
       ouId: selectedOuId,
+      ...(permissions.length > 0 ? {permissions} : {}),
     };
 
     try {
@@ -136,15 +142,12 @@ export default function CreateRolePage(): JSX.Element {
     switch (currentStep) {
       case RoleCreateFlowStep.BASIC_INFO:
         if (isOuLoading) return;
-        if (hasMultipleOUs) {
-          setCurrentStep(RoleCreateFlowStep.ORGANIZATION_UNIT);
-        } else {
-          handleSubmit().catch(() => {
-            /* noop */
-          });
-        }
+        setCurrentStep(hasMultipleOUs ? RoleCreateFlowStep.ORGANIZATION_UNIT : RoleCreateFlowStep.PERMISSIONS);
         break;
       case RoleCreateFlowStep.ORGANIZATION_UNIT:
+        setCurrentStep(RoleCreateFlowStep.PERMISSIONS);
+        break;
+      case RoleCreateFlowStep.PERMISSIONS:
         handleSubmit().catch(() => {
           /* noop */
         });
@@ -155,7 +158,9 @@ export default function CreateRolePage(): JSX.Element {
   };
 
   const handlePrevStep = (): void => {
-    if (currentStep === RoleCreateFlowStep.ORGANIZATION_UNIT) {
+    if (currentStep === RoleCreateFlowStep.PERMISSIONS) {
+      setCurrentStep(hasMultipleOUs ? RoleCreateFlowStep.ORGANIZATION_UNIT : RoleCreateFlowStep.BASIC_INFO);
+    } else if (currentStep === RoleCreateFlowStep.ORGANIZATION_UNIT) {
       setCurrentStep(RoleCreateFlowStep.BASIC_INFO);
     }
   };
@@ -172,6 +177,8 @@ export default function CreateRolePage(): JSX.Element {
             onReadyChange={handleOuStepReadyChange}
           />
         );
+      case RoleCreateFlowStep.PERMISSIONS:
+        return <ConfigurePermissions permissions={permissions} onPermissionsChange={setPermissions} />;
       default:
         return null;
     }
