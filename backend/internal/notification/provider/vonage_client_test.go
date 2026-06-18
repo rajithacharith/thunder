@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package message
+package provider
 
 import (
 	"context"

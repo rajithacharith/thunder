@@ -24,6 +24,8 @@ type NotificationSenderType string
 const (
 	// NotificationSenderTypeMessage represents a message notification sender.
 	NotificationSenderTypeMessage NotificationSenderType = "MESSAGE"
+	// NotificationSenderTypeEmail represents an email notification sender.
+	NotificationSenderTypeEmail NotificationSenderType = "EMAIL"
 )
 
 // MessageProviderType defines the type of messaging provider.
@@ -83,4 +85,9 @@ const (
 	CustomPropKeyHTTPHeaders = "http_headers"
 	// CustomPropKeyContentType is the property key for the content type.
 	CustomPropKeyContentType = "content_type"
+)
+
+const (
+	// SenderPropertySupportedChannels is the property key for the supported channels.
+	SenderPropertySupportedChannels = "supported_channels"
 )

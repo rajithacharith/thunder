@@ -191,6 +191,50 @@ func (ts *OTPAPITestSuite) TestOTPSendSuccess() {
 	ts.T().Logf("OTP sent successfully with session token: %s, OTP: %s", otpResp.SessionToken, otpCode)
 }
 
+// TestOTPSendMissingChannelSuccess tests successful OTP sending when the channel is omitted (defaults to sms)
+func (ts *OTPAPITestSuite) TestOTPSendMissingChannelSuccess() {
+	if ts.testSenderID == "" {
+		ts.T().Fatal("Test sender ID is required for OTP send test")
+	}
+
+	otpReq := OTPRequest{
+		Recipient: testMobileNumber,
+		SenderID:  ts.testSenderID,
+		// Channel omitted intentionally
+	}
+
+	reqBody, err := json.Marshal(otpReq)
+	ts.Require().NoError(err, "Failed to marshal OTP request")
+
+	req, err := http.NewRequest("POST", testServerURL+"/notification-senders/otp/send", bytes.NewReader(reqBody))
+	ts.Require().NoError(err, "Failed to create OTP send request")
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := ts.client.Do(req)
+	ts.Require().NoError(err, "Failed to send OTP request")
+	defer resp.Body.Close()
+
+	ts.Assert().Equal(http.StatusOK, resp.StatusCode, "Expected successful OTP send when channel is missing")
+
+	var otpResp OTPSendResponse
+	err = json.NewDecoder(resp.Body).Decode(&otpResp)
+	ts.Require().NoError(err, "Failed to decode OTP send response")
+
+	ts.Assert().Equal("SUCCESS", otpResp.Status, "Expected SUCCESS status")
+	ts.Assert().NotEmpty(otpResp.SessionToken, "Session token should not be empty")
+
+	// Wait a bit to ensure the message was processed by mock server
+	time.Sleep(100 * time.Millisecond)
+
+	// Extract OTP from mock server
+	otpCode := ts.extractOTPFromMockServer()
+	ts.Assert().NotEmpty(otpCode, "OTP should be extractable from mock server")
+
+	ts.T().Logf("OTP sent successfully with default channel, session token: %s, OTP: %s", otpResp.SessionToken, otpCode)
+}
+
 // TestOTPSendInvalidSender tests OTP sending with invalid sender ID
 func (ts *OTPAPITestSuite) TestOTPSendInvalidSender() {
 	otpReq := OTPRequest{
@@ -245,14 +289,7 @@ func (ts *OTPAPITestSuite) TestOTPSendMissingFields() {
 			},
 			description: "Should fail when sender ID is missing",
 		},
-		{
-			name: "Missing Channel",
-			request: OTPRequest{
-				Recipient: testMobileNumber,
-				SenderID:  ts.testSenderID,
-			},
-			description: "Should fail when channel is missing",
-		},
+
 		{
 			name: "Invalid Channel",
 			request: OTPRequest{

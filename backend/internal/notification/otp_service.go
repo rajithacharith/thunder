@@ -69,6 +69,10 @@ func (s *otpService) SendOTP(
 	logger.Debug(ctx, "Sending OTP", log.MaskedString("recipient", otpDTO.Recipient),
 		log.String("channel", otpDTO.Channel), log.String("senderId", otpDTO.SenderID))
 
+	if otpDTO.Channel == "" {
+		otpDTO.Channel = string(common.ChannelTypeSMS)
+	}
+
 	if err := s.validateOTPSendRequest(otpDTO); err != nil {
 		return nil, err
 	}
@@ -173,9 +177,6 @@ func (s *otpService) validateOTPSendRequest(request common.SendOTPDTO) *servicee
 	}
 	if request.SenderID == "" {
 		return &ErrorInvalidSenderID
-	}
-	if request.Channel == "" {
-		return &ErrorInvalidChannel
 	}
 	if request.Channel != string(common.ChannelTypeSMS) {
 		return &ErrorUnsupportedChannel

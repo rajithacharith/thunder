@@ -9,7 +9,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 	"github.com/thunder-id/thunderid/internal/notification/common"
-	"github.com/thunder-id/thunderid/internal/notification/message"
+	"github.com/thunder-id/thunderid/internal/notification/provider"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 )
 
@@ -41,23 +41,23 @@ func (_m *notificationClientProviderInterfaceMock) EXPECT() *notificationClientP
 }
 
 // GetClient provides a mock function for the type notificationClientProviderInterfaceMock
-func (_mock *notificationClientProviderInterfaceMock) GetClient(ctx context.Context, sender common.NotificationSenderDTO) (message.NotificationClientInterface, *serviceerror.ServiceError) {
+func (_mock *notificationClientProviderInterfaceMock) GetClient(ctx context.Context, sender common.NotificationSenderDTO) (provider.NotificationClientInterface, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, sender)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetClient")
 	}
 
-	var r0 message.NotificationClientInterface
+	var r0 provider.NotificationClientInterface
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, common.NotificationSenderDTO) (message.NotificationClientInterface, *serviceerror.ServiceError)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, common.NotificationSenderDTO) (provider.NotificationClientInterface, *serviceerror.ServiceError)); ok {
 		return returnFunc(ctx, sender)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, common.NotificationSenderDTO) message.NotificationClientInterface); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, common.NotificationSenderDTO) provider.NotificationClientInterface); ok {
 		r0 = returnFunc(ctx, sender)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(message.NotificationClientInterface)
+			r0 = ret.Get(0).(provider.NotificationClientInterface)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, common.NotificationSenderDTO) *serviceerror.ServiceError); ok {
@@ -100,12 +100,12 @@ func (_c *notificationClientProviderInterfaceMock_GetClient_Call) Run(run func(c
 	return _c
 }
 
-func (_c *notificationClientProviderInterfaceMock_GetClient_Call) Return(notificationClientInterface message.NotificationClientInterface, serviceError *serviceerror.ServiceError) *notificationClientProviderInterfaceMock_GetClient_Call {
+func (_c *notificationClientProviderInterfaceMock_GetClient_Call) Return(notificationClientInterface provider.NotificationClientInterface, serviceError *serviceerror.ServiceError) *notificationClientProviderInterfaceMock_GetClient_Call {
 	_c.Call.Return(notificationClientInterface, serviceError)
 	return _c
 }
 
-func (_c *notificationClientProviderInterfaceMock_GetClient_Call) RunAndReturn(run func(ctx context.Context, sender common.NotificationSenderDTO) (message.NotificationClientInterface, *serviceerror.ServiceError)) *notificationClientProviderInterfaceMock_GetClient_Call {
+func (_c *notificationClientProviderInterfaceMock_GetClient_Call) RunAndReturn(run func(ctx context.Context, sender common.NotificationSenderDTO) (provider.NotificationClientInterface, *serviceerror.ServiceError)) *notificationClientProviderInterfaceMock_GetClient_Call {
 	_c.Call.Return(run)
 	return _c
 }

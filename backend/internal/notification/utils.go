@@ -77,6 +77,20 @@ func validateMessageNotificationSenderProperties(sender common.NotificationSende
 		return errors.New("message notification sender properties cannot be empty")
 	}
 
+	for _, prop := range sender.Properties {
+		if prop.GetName() == common.SenderPropertySupportedChannels {
+			val, err := prop.GetValue()
+			if err != nil {
+				return errors.New("failed to read supported channels property")
+			}
+			// A message sender currently only supports the "sms" channel.
+			if val != string(common.ChannelTypeSMS) {
+				return fmt.Errorf("invalid supported channel: %s", val)
+			}
+			break
+		}
+	}
+
 	switch sender.Provider {
 	case common.MessageProviderTypeTwilio:
 		return validateTwilioProperties(sender.Properties)
@@ -190,4 +204,19 @@ func validateSenderProperties(properties []cmodels.Property, requiredProperties 
 		}
 	}
 	return nil
+}
+
+// applyDefaultSenderProperties applies default properties to the notification sender.
+func applyDefaultSenderProperties(sender *common.NotificationSenderDTO) {
+	hasSupportedChannels := false
+	for _, prop := range sender.Properties {
+		if prop.GetName() == common.SenderPropertySupportedChannels {
+			hasSupportedChannels = true
+			break
+		}
+	}
+	if !hasSupportedChannels {
+		prop, _ := cmodels.NewProperty(common.SenderPropertySupportedChannels, string(common.ChannelTypeSMS), false)
+		sender.Properties = append(sender.Properties, *prop)
+	}
 }

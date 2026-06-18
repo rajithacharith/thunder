@@ -27,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/thunder-id/thunderid/internal/notification/common"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
@@ -112,6 +113,9 @@ name: "Test Twilio Sender"
 description: "Test Twilio notification sender"
 provider: "twilio"
 properties:
+  - name: "supported_channels"
+    value: "sms"
+    isSecret: false
   - name: "account_sid"
     value: "AC00112233445566778899aabbccddeeff"
     isSecret: true
@@ -130,6 +134,9 @@ name: "Test Vonage Sender"
 description: "Test Vonage notification sender"
 provider: "vonage"
 properties:
+  - name: "supported_channels"
+    value: "sms"
+    isSecret: false
   - name: "api_key"
     value: "test-api-key"
     isSecret: true
@@ -330,6 +337,9 @@ name: "Twilio SMS Sender"
 description: "Production Twilio SMS sender"
 provider: "twilio"
 properties:
+  - name: "supported_channels"
+    value: "sms"
+    isSecret: false
   - name: "account_sid"
     value: "{{.TWILIO_ACCOUNT_SID}}"
     isSecret: false
@@ -349,7 +359,7 @@ properties:
 	suite.Equal("Twilio SMS Sender", sender.Name)
 	suite.Equal("Production Twilio SMS sender", sender.Description)
 	suite.Equal("twilio", string(sender.Provider))
-	suite.Len(sender.Properties, 3)
+	suite.Len(sender.Properties, 4)
 }
 
 // TestParseToNotificationSenderDTO_InvalidYAML tests parsing invalid YAML.
@@ -372,6 +382,9 @@ id: "minimal-sender"
 name: "Minimal Sender"
 provider: "custom"
 properties:
+  - name: "supported_channels"
+    value: "sms"
+    isSecret: false
   - name: "url"
     value: "https://custom.example.com/sms"
 `
@@ -384,7 +397,40 @@ properties:
 	suite.Equal("Minimal Sender", sender.Name)
 	suite.Equal("", sender.Description)
 	suite.Equal("custom", string(sender.Provider))
-	suite.Len(sender.Properties, 1)
+	suite.Len(sender.Properties, 2)
+}
+
+// TestParseToNotificationSenderDTO_WithSupportedChannelsInProperties tests YAML where
+// supported_channels is provided in properties.
+func (suite *InitTestSuite) TestParseToNotificationSenderDTO_WithSupportedChannelsInProperties() {
+	yamlData := `
+id: "minimal-sender"
+name: "Minimal Sender"
+provider: "custom"
+properties:
+  - name: "url"
+    value: "https://custom.example.com/sms"
+  - name: "supported_channels"
+    value: "email"
+`
+
+	sender, err := parseToNotificationSenderDTO([]byte(yamlData))
+
+	suite.NoError(err)
+	suite.NotNil(sender)
+	suite.Equal("minimal-sender", sender.ID)
+	suite.Equal("custom", string(sender.Provider))
+	suite.Len(sender.Properties, 2)
+
+	// verify the supported_channels property is retained as "email"
+	hasEmail := false
+	for _, p := range sender.Properties {
+		v, _ := p.GetValue()
+		if p.GetName() == common.SenderPropertySupportedChannels && v == "email" {
+			hasEmail = true
+		}
+	}
+	suite.True(hasEmail, "Expected supported_channels property to be 'email'")
 }
 
 // TestParseProviderType_ValidProviders tests parsing valid provider types.
@@ -426,6 +472,9 @@ name: "Vonage SMS Sender"
 description: "Production Vonage SMS sender"
 provider: "vonage"
 properties:
+  - name: "supported_channels"
+    value: "sms"
+    isSecret: false
   - name: "api_key"
     value: "{{.VONAGE_API_KEY}}"
     isSecret: false
@@ -445,7 +494,7 @@ properties:
 	suite.Equal("Vonage SMS Sender", sender.Name)
 	suite.Equal("Production Vonage SMS sender", sender.Description)
 	suite.Equal("vonage", string(sender.Provider))
-	suite.Len(sender.Properties, 3)
+	suite.Len(sender.Properties, 4)
 }
 
 // TestParseProviderType_CaseSensitivity tests parsing provider type with different cases.
@@ -559,6 +608,9 @@ func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesEnabled_Valid
 name: ""
 provider: "twilio"
 properties:
+  - name: "supported_channels"
+    value: "sms"
+    isSecret: false
   - name: "account_sid"
     value: "test"
     isSecret: false

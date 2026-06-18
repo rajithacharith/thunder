@@ -16,8 +16,8 @@
  * under the License.
  */
 
-// Package message defines the service and interfaces for sending messages.
-package message
+// Package provider defines the service and interfaces for sending messages.
+package provider
 
 import (
 	"context"
