@@ -74,6 +74,8 @@ import {
   WayfinderArchitecture,
   WayfinderAgentOrganization,
   WayfinderAgentArchitecture,
+  WayfinderMcpOrganization,
+  WayfinderMcpArchitecture,
 } from '@site/src/components/WayfinderDiagrams';
 
 export default {
@@ -124,6 +126,8 @@ export default {
   WayfinderArchitecture,
   WayfinderAgentOrganization,
   WayfinderAgentArchitecture,
+  WayfinderMcpOrganization,
+  WayfinderMcpArchitecture,
   NextSteps,
   NextStepsCard,
   B2CIdentityJourneyExplorer,

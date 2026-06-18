@@ -326,7 +326,51 @@ const sidebars: SidebarsConfig = {
                 },
               ],
             },
-            {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization', label: 'MCP Authorization'},
+            {
+              type: 'category',
+              label: 'Securing MCP',
+              collapsible: true,
+              collapsed: true,
+              items: [
+                {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/overview', label: 'Overview', key: 'mcp-authorization-overview'},
+                {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/solution-patterns', label: 'Solution Patterns', key: 'mcp-authorization-solution-patterns'},
+                {
+                  type: 'category',
+                  label: 'Try It Out',
+                  collapsible: true,
+                  collapsed: true,
+                  key: 'mcp-authorization-try-it-out',
+                  link: {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/try-it-out'},
+                  items: [
+                    {
+                      type: 'category',
+                      label: 'Walkthroughs',
+                      collapsible: true,
+                      collapsed: true,
+                      key: 'mcp-authorization-walkthroughs',
+                      items: [
+                        {
+                          type: 'doc',
+                          id: 'use-cases/ai-agents/mcp-authorization/try-it-out/connect-via-inspector',
+                          label: 'MCP Authorization',
+                        },
+                      ],
+                    },
+                    {
+                      type: 'category',
+                      label: 'Learn More',
+                      collapsible: true,
+                      collapsed: true,
+                      key: 'mcp-authorization-learn-more',
+                      items: [
+                        {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/identity-concepts', label: 'Identity Concepts', key: 'mcp-authorization-identity-concepts'},
+                        {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization/configure-it-yourself', label: 'Configure It Yourself', key: 'mcp-authorization-configure-it-yourself'},
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
           ],
         },
         {
