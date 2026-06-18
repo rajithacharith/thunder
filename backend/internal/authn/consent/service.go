@@ -45,13 +45,15 @@ type ConsentEnforcerServiceInterface interface {
 	// elements still need user consent.
 	ResolveConsent(ctx context.Context, ouID, appID, appName, userID string,
 		essentialAttributes, optionalAttributes, authorizedPermissions []string,
-		availableAttributes *authnprovidercm.AttributesResponse) (
+		availableAttributes *authnprovidercm.AttributesResponse,
+		runtimeMetadata map[string]string) (
 		*ConsentPromptData, *serviceerror.ServiceError)
 
 	// RecordConsent records the user's consent decisions and returns the persisted consent record.
 	// If the user denied any essential attribute, ErrorEssentialConsentDenied is returned.
 	RecordConsent(ctx context.Context, ouID, appID, userID string,
-		decisions *ConsentDecisions, sessionToken string, validityPeriod int64) (
+		decisions *ConsentDecisions, sessionToken string, validityPeriod int64,
+		runtimeMetadata map[string]string) (
 		*consent.Consent, *serviceerror.ServiceError)
 }
 
@@ -75,7 +77,7 @@ func newConsentEnforcerService(consentSvc consent.ConsentServiceInterface,
 // ResolveConsent implements ConsentEnforcerServiceInterface.ResolveConsent.
 func (s *consentEnforcerService) ResolveConsent(ctx context.Context, ouID, appID, appName, userID string,
 	essentialAttributes, optionalAttributes, authorizedPermissions []string,
-	availableAttributes *authnprovidercm.AttributesResponse) (
+	availableAttributes *authnprovidercm.AttributesResponse, runtimeMetadata map[string]string) (
 	*ConsentPromptData, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("appID", appID), log.MaskedString(log.LoggerKeyUserID, userID))
 	logger.Debug(ctx, "Resolving consent for user")
@@ -155,7 +157,7 @@ func (s *consentEnforcerService) ResolveConsent(ctx context.Context, ouID, appID
 // attribute denials, and then persists the consent record.
 func (s *consentEnforcerService) RecordConsent(ctx context.Context, ouID, appID, userID string,
 	decisions *ConsentDecisions, sessionToken string,
-	validityPeriod int64) (*consent.Consent, *serviceerror.ServiceError) {
+	validityPeriod int64, runtimeMetadata map[string]string) (*consent.Consent, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("appID", appID), log.MaskedString(log.LoggerKeyUserID, userID))
 	logger.Debug(ctx, "Recording consent for user")
 

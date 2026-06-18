@@ -156,7 +156,7 @@ func (e *consentExecutor) checkConsent(ctx *core.NodeContext, execResp *common.E
 	promptData, svcErr := e.consentEnforcer.ResolveConsent(
 		ctx.Context, ouID, appID, appName, entityRef.EntityID,
 		essentialAttributes, optionalAttributes, authorizedPermissions,
-		availableAttributes)
+		availableAttributes, buildRuntimeMetadata(ctx))
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug(ctx.Context, "Client error while resolving user consent", log.Any("error", svcErr))
@@ -260,7 +260,7 @@ func (e *consentExecutor) handleConsentDecisions(ctx *core.NodeContext, execResp
 	// Always record consent decisions (including denials) for audit/compliance purposes.
 	// The session token is used to verify completeness and enforce essential attribute rules
 	consentRecord, svcErr := e.consentEnforcer.RecordConsent(ctx.Context, ouID, appID, userID,
-		&decisions, sessionToken, validityPeriod)
+		&decisions, sessionToken, validityPeriod, buildRuntimeMetadata(ctx))
 	if svcErr != nil {
 		// Essential consent denied: the consent record was persisted but the user denied
 		// a required attribute, so the flow cannot proceed

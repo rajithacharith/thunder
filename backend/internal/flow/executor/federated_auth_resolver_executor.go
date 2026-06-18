@@ -167,8 +167,9 @@ func (f *federatedAuthResolverExecutor) Execute(ctx *core.NodeContext) (*common.
 	credentials := map[string]interface{}{
 		userAttributeSub: sub,
 	}
+	metadata := buildAuthnMetadata(ctx)
 	authUser, _, err := f.authnProvider.AuthenticateUser(
-		ctx.Context, identifiers, credentials, nil, nil, execResp.AuthUser)
+		ctx.Context, identifiers, credentials, nil, metadata, execResp.AuthUser)
 	execResp.AuthUser = authUser
 	if err != nil {
 		logger.Debug(ctx.Context, "Failed to authenticate resolved user")

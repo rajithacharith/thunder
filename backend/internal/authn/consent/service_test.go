@@ -80,7 +80,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_ConsentDisabled() {
 	s.mockConsentSvc.On("IsEnabled").Return(false)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, nil, nil, nil)
+		[]string{"email"}, nil, nil, nil, nil)
 
 	s.Nil(result)
 	s.Nil(svcErr)
@@ -97,7 +97,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_ListPurposesClientE
 		Return(nil, clientErr)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, nil, nil, nil)
+		[]string{"email"}, nil, nil, nil, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
@@ -115,7 +115,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_ListPurposesServerE
 		Return(nil, serverErr)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, nil, nil, nil)
+		[]string{"email"}, nil, nil, nil, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
@@ -128,7 +128,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_NoPurposesConfigure
 		Return([]consent.ConsentPurpose{}, nil)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, nil, nil, nil)
+		[]string{"email"}, nil, nil, nil, nil)
 
 	s.Nil(result)
 	s.Nil(svcErr)
@@ -157,7 +157,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_SearchConsentsClien
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return(nil, clientErr)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, nil, nil, nil)
+		[]string{"email"}, nil, nil, nil, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
@@ -187,7 +187,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_SearchConsentsServe
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return(nil, serverErr)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, nil, nil, nil)
+		[]string{"email"}, nil, nil, nil, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
@@ -227,7 +227,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_AllConsentsActive()
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return(existingConsents, nil)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, nil, nil, nil)
+		[]string{"email"}, nil, nil, nil, nil)
 
 	s.Nil(result)
 	s.Nil(svcErr)
@@ -256,7 +256,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_PromptNeeded() {
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("test-session-token", int64(0), nil)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, []string{"phone"}, nil, nil)
+		[]string{"email"}, []string{"phone"}, nil, nil, nil)
 
 	s.Nil(svcErr)
 	s.NotNil(result)
@@ -291,7 +291,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_RequiredAttributesF
 
 	// Only request "email" — "phone" and "address" should be filtered out
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, nil, nil, nil)
+		[]string{"email"}, nil, nil, nil, nil)
 
 	s.Nil(svcErr)
 	s.NotNil(result)
@@ -327,7 +327,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_UserProfileFilter()
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("test-session-token", int64(0), nil)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		nil, nil, nil, availableAttributes)
+		nil, nil, nil, availableAttributes, nil)
 
 	s.Nil(svcErr)
 	s.NotNil(result)
@@ -371,7 +371,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_PartialConsentsExis
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("test-session-token", int64(0), nil)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, []string{"phone"}, nil, nil)
+		[]string{"email"}, []string{"phone"}, nil, nil, nil)
 
 	s.Nil(svcErr)
 	s.NotNil(result)
@@ -433,7 +433,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_CreateConsentSessio
 		})
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, nil, nil, nil)
+		[]string{"email"}, nil, nil, nil, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
@@ -510,7 +510,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_SessionTokenInvalid(
 		})
 
 	result, svcErr := s.service.RecordConsent(context.Background(), "ou1", "app1", "user1",
-		decisions, "bad-token", 0)
+		decisions, "bad-token", 0, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
@@ -562,7 +562,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_MissingPurpose_Treat
 		})).Return(createdConsent, nil)
 
 	result, svcErr := s.service.RecordConsent(context.Background(), "ou1", "app1", "user1",
-		decisions, sessionToken, 0)
+		decisions, sessionToken, 0, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
@@ -592,7 +592,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_SearchFails_ClientEr
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return(nil, clientErr)
 
 	result, svcErr := s.service.RecordConsent(context.Background(), "ou1", "app1", "user1",
-		decisions, sessionToken, 0)
+		decisions, sessionToken, 0, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
@@ -621,7 +621,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_SearchFails_ServerEr
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return(nil, serverErr)
 
 	result, svcErr := s.service.RecordConsent(context.Background(), "ou1", "app1", "user1",
-		decisions, sessionToken, 0)
+		decisions, sessionToken, 0, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
@@ -664,7 +664,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateSuc
 		mock.AnythingOfType("*consent.ConsentRequest")).Return(createdConsent, nil)
 
 	result, svcErr := s.service.RecordConsent(context.Background(), "ou1", "app1", "user1",
-		decisions, sessionToken, 0)
+		decisions, sessionToken, 0, nil)
 
 	s.Nil(svcErr)
 	s.NotNil(result)
@@ -695,7 +695,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateFai
 		mock.AnythingOfType("*consent.ConsentRequest")).Return(nil, clientErr)
 
 	result, svcErr := s.service.RecordConsent(context.Background(), "ou1", "app1", "user1",
-		decisions, sessionToken, 0)
+		decisions, sessionToken, 0, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
@@ -726,7 +726,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateFai
 		mock.AnythingOfType("*consent.ConsentRequest")).Return(nil, serverErr)
 
 	result, svcErr := s.service.RecordConsent(context.Background(), "ou1", "app1", "user1",
-		decisions, sessionToken, 0)
+		decisions, sessionToken, 0, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
@@ -783,7 +783,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_Upda
 		mock.AnythingOfType("*consent.ConsentRequest")).Return(updatedConsent, nil)
 
 	result, svcErr := s.service.RecordConsent(context.Background(), "ou1", "app1", "user1",
-		decisions, sessionToken, 0)
+		decisions, sessionToken, 0, nil)
 
 	s.Nil(svcErr)
 	s.NotNil(result)
@@ -816,7 +816,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_Upda
 		mock.AnythingOfType("*consent.ConsentRequest")).Return(nil, clientErr)
 
 	result, svcErr := s.service.RecordConsent(context.Background(), "ou1", "app1", "user1",
-		decisions, sessionToken, 0)
+		decisions, sessionToken, 0, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
@@ -848,7 +848,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_Upda
 		mock.AnythingOfType("*consent.ConsentRequest")).Return(nil, serverErr)
 
 	result, svcErr := s.service.RecordConsent(context.Background(), "ou1", "app1", "user1",
-		decisions, sessionToken, 0)
+		decisions, sessionToken, 0, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
@@ -878,7 +878,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_WithValidityPeriod()
 		})).Return(createdConsent, nil)
 
 	result, svcErr := s.service.RecordConsent(context.Background(), "ou1", "app1", "user1",
-		decisions, sessionToken, 3600)
+		decisions, sessionToken, 3600, nil)
 
 	s.Nil(svcErr)
 	s.NotNil(result)
@@ -908,7 +908,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ZeroValidityPeriod()
 		})).Return(createdConsent, nil)
 
 	result, svcErr := s.service.RecordConsent(context.Background(), "ou1", "app1", "user1",
-		decisions, sessionToken, 0)
+		decisions, sessionToken, 0, nil)
 
 	s.Nil(svcErr)
 	s.NotNil(result)
@@ -963,7 +963,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_EssentialDenied_Retu
 		})).Return(createdConsent, nil)
 
 	result, svcErr := s.service.RecordConsent(context.Background(), "ou1", "app1", "user1",
-		decisions, sessionToken, 0)
+		decisions, sessionToken, 0, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
