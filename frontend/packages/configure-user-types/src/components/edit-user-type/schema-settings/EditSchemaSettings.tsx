@@ -42,8 +42,8 @@ import {
 import {Trash2, Plus, Info} from '@wso2/oxygen-ui-icons-react';
 import {useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import {invalidateI18nCache} from '../../../../../i18n/invalidate-i18n-cache';
 import type {SchemaPropertyInput, PropertyType} from '../../../types/user-types';
+import {invalidateI18nCache} from '../../../utils/invalidateI18nCache';
 
 export interface EditSchemaSettingsProps {
   properties: SchemaPropertyInput[];

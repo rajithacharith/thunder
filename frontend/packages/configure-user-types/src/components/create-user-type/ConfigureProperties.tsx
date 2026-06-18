@@ -40,8 +40,8 @@ import {Plus, Trash2, Info} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useCallback, useEffect, useMemo, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
-import {invalidateI18nCache} from '../../../../i18n/invalidate-i18n-cache';
 import type {SchemaPropertyInput, UIPropertyType} from '../../types/user-types';
+import {invalidateI18nCache} from '../../utils/invalidateI18nCache';
 
 /**
  * Props for the {@link ConfigureProperties} component.

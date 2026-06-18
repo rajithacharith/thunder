@@ -17,6 +17,7 @@
  */
 
 import {useHasMultipleOUs} from '@thunderid/configure-organization-units';
+import {useGetUserTypes} from '@thunderid/configure-user-types';
 import {useLogger} from '@thunderid/logger/react';
 import {Box, Stack, Button, IconButton, LinearProgress, Alert, CircularProgress, AppBreadcrumbs} from '@wso2/oxygen-ui';
 import {X} from '@wso2/oxygen-ui-icons-react';
@@ -30,7 +31,6 @@ import generateFlowGraph from '../../flows/utils/generateFlowGraph';
 import useIdentityProviders from '../../integrations/api/useIdentityProviders';
 import {AuthenticatorTypes} from '../../integrations/models/authenticators';
 import {IdentityProviderTypes} from '../../integrations/models/identity-provider';
-import useGetUserTypes from '../../user-types/api/useGetUserTypes';
 import useCreateApplication from '../api/useCreateApplication';
 import ConfigureSignInOptions from '../components/create-application/configure-signin-options/ConfigureSignInOptions';
 import ConfigureDesign from '../components/create-application/ConfigureDesign';

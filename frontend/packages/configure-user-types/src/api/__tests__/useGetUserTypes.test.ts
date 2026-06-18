@@ -22,9 +22,10 @@ import UserTypeQueryKeys from '../../constants/userTypeQueryKeys';
 import type {UserTypeListResponse} from '../../types/user-types';
 import useGetUserTypes from '../useGetUserTypes';
 
+const mockHttpRequest = vi.fn();
 // Mock the dependencies
 vi.mock('@thunderid/react', () => ({
-  useThunderID: vi.fn(),
+  useThunderID: () => ({http: {request: mockHttpRequest}}),
 }));
 
 vi.mock('@thunderid/contexts', async (importOriginal) => {
@@ -35,11 +36,9 @@ vi.mock('@thunderid/contexts', async (importOriginal) => {
   };
 });
 
-const {useThunderID} = await import('@thunderid/react');
 const {useConfig} = await import('@thunderid/contexts');
 
 describe('useGetUserTypes', () => {
-  let mockHttpRequest: ReturnType<typeof vi.fn>;
   let mockGetServerUrl: ReturnType<typeof vi.fn>;
 
   const mockUserTypeListResponse: UserTypeListResponse = {
@@ -54,14 +53,8 @@ describe('useGetUserTypes', () => {
   };
 
   beforeEach(() => {
-    mockHttpRequest = vi.fn();
+    mockHttpRequest.mockReset();
     mockGetServerUrl = vi.fn().mockReturnValue('https://api.test.com');
-
-    vi.mocked(useThunderID).mockReturnValue({
-      http: {
-        request: mockHttpRequest,
-      },
-    } as unknown as ReturnType<typeof useThunderID>);
 
     vi.mocked(useConfig).mockReturnValue({
       getServerUrl: mockGetServerUrl,

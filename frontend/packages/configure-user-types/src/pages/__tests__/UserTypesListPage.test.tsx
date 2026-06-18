@@ -21,7 +21,6 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import UserTypesListPage from '../UserTypesListPage';
 
 const mockNavigate = vi.fn();
-const mockReload = vi.fn();
 const mockLoggerError = vi.fn();
 
 // Mock react-router
@@ -56,10 +55,6 @@ describe('UserTypesListPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockLoggerError.mockReset();
-    Object.defineProperty(window, 'location', {
-      value: {reload: mockReload},
-      writable: true,
-    });
   });
 
   it('renders page title', () => {

@@ -16,10 +16,10 @@
  * under the License.
  */
 
+import {PageLoader} from '@thunderid/components';
 import {CallbackRoute} from '@thunderid/react-router';
 import {lazy, Suspense, type JSX} from 'react';
 import {BrowserRouter, Navigate, Route, Routes} from 'react-router';
-import {PageLoader} from '@thunderid/components';
 import ROUTES from './constants/routes';
 import DefaultLayout from './layouts/DefaultLayout';
 

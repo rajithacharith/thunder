@@ -17,10 +17,10 @@
  */
 
 import {SettingsCard} from '@thunderid/components';
+import {useGetUserTypes} from '@thunderid/configure-user-types';
 import {Autocomplete, FormControl, FormLabel, TextField} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import useGetUserTypes from '../../../../user-types/api/useGetUserTypes';
 import type {Agent} from '../../../models/agent';
 
 interface AllowedUserTypesSectionProps {

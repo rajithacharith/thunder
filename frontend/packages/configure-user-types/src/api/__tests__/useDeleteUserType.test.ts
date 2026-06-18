@@ -21,28 +21,20 @@ import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import UserTypeQueryKeys from '../../constants/userTypeQueryKeys';
 import useDeleteUserType from '../useDeleteUserType';
 
-vi.mock('@thunderid/react', () => ({useThunderID: vi.fn()}));
+const mockHttpRequest = vi.fn();
+vi.mock('@thunderid/react', () => ({useThunderID: () => ({http: {request: mockHttpRequest}})}));
 vi.mock('@thunderid/contexts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@thunderid/contexts')>();
   return {...actual, useConfig: vi.fn()};
 });
 
-const {useThunderID} = await import('@thunderid/react');
 const {useConfig} = await import('@thunderid/contexts');
 
 describe('useDeleteUserType', () => {
   const mockUserTypeId = '123';
 
-  let mockHttpRequest: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
-    mockHttpRequest = vi.fn();
-
-    vi.mocked(useThunderID).mockReturnValue({
-      http: {
-        request: mockHttpRequest,
-      },
-    } as unknown as ReturnType<typeof useThunderID>);
+    mockHttpRequest.mockReset();
 
     vi.mocked(useConfig).mockReturnValue({
       getServerUrl: () => 'https://api.test.com',
