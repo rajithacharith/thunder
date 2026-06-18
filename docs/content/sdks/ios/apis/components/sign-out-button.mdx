@@ -5,7 +5,7 @@ description: Button that signs the user out and refreshes authentication state
 
 # `SignOutButton`
 
-The `SignOutButton` component renders a pre-styled button that calls `ThunderClient.signOut()`, then calls `ThunderState.refresh()` to update the reactive auth state. It disables itself automatically while the sign-out operation is in progress.
+The `SignOutButton` component renders a pre-styled button that calls `ThunderIDClient.signOut()`, then calls `ThunderIDState.refresh()` to update the reactive auth state. It disables itself automatically while the sign-out operation is in progress.
 
 `SignOutButton` requires `.thunderIDProvider(config:)` in its ancestor view hierarchy.
 
@@ -13,7 +13,7 @@ The `SignOutButton` component renders a pre-styled button that calls `ThunderCli
 
 ```swift
 import SwiftUI
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
 struct HomeView: View {
     var body: some View {
@@ -29,7 +29,7 @@ struct HomeView: View {
 
 | Parameter | Type | Required | Description |
 | :--- | :--- | :---: | :--- |
-| `onSignOutComplete` | `(() -> Void)?` | ❌ | Called after sign-out completes and `ThunderState` has been refreshed. |
+| `onSignOutComplete` | `(() -> Void)?` | ❌ | Called after sign-out completes and `ThunderIDState` has been refreshed. |
 
 ## Example: Handle Sign-Out Completion
 
@@ -46,10 +46,10 @@ SignOutButton {
 
 ```swift
 import SwiftUI
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
 struct CustomSignOutButton: View {
-    @EnvironmentObject var state: ThunderState
+    @EnvironmentObject var state: ThunderIDState
 
     var body: some View {
         BaseSignOutButton(

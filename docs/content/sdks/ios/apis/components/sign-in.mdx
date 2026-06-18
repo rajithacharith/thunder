@@ -13,7 +13,7 @@ The `SignIn` component renders a full app-native sign-in form. It drives the Flo
 
 ```swift
 import SwiftUI
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
 struct AuthView: View {
     var body: some View {
@@ -33,11 +33,11 @@ struct AuthView: View {
 
 ## Handling Completion
 
-Use `onComplete` to navigate away from the sign-in screen after a successful sign-in. `ThunderState.user` is updated automatically before this callback fires.
+Use `onComplete` to navigate away from the sign-in screen after a successful sign-in. `ThunderIDState.user` is updated automatically before this callback fires.
 
 ```swift
 struct AuthView: View {
-    @EnvironmentObject var state: ThunderState
+    @EnvironmentObject var state: ThunderIDState
 
     var body: some View {
         SignIn(
@@ -59,7 +59,7 @@ struct AuthView: View {
 
 ```swift
 import SwiftUI
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
 struct CustomSignInView: View {
     var body: some View {

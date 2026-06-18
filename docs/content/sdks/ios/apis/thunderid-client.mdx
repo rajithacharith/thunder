@@ -1,32 +1,32 @@
 ---
-title: ThunderClient
+title: ThunderIDClient
 description: Core authentication client for the ThunderID iOS SDK
 ---
 
-# `ThunderClient`
+# `ThunderIDClient`
 
-`ThunderClient` is the core authentication client in the `ThunderID` package. It manages the full authentication lifecycle: initialization, sign-in (both app-native and redirect-based), session, token management, and user profile operations.
+`ThunderIDClient` is the core authentication client in the `ThunderID` package. It manages the full authentication lifecycle: initialization, sign-in (both app-native and redirect-based), session, token management, and user profile operations.
 
-When you use the `ThunderSwiftUI` package, a `ThunderClient` instance is created and managed automatically. You can access it via `ThunderState.client` from any view.
+When you use the `ThunderIDSwiftUI` package, a `ThunderIDClient` instance is created and managed automatically. You can access it via `ThunderIDState.client` from any view.
 
 ## Usage
 
 ```swift
 import ThunderID
 
-let client = ThunderClient()
+let client = ThunderIDClient()
 
 try await client.initialize(config: ThunderIDConfig(
     baseUrl: "https://localhost:8090",
     clientId: "<your-client-id>",
     scopes: ["openid", "profile", "email"],
-    afterSignInUrl: "io.thunder.b2c://callback",
-    afterSignOutUrl: "io.thunder.b2c://logout"
+    afterSignInUrl: "io.thunderid.b2c://callback",
+    afterSignOutUrl: "io.thunderid.b2c://logout"
 ))
 ```
 
 :::note
-When using `ThunderSwiftUI`, you do not need to create a `ThunderClient` directly. Apply `.thunderIDProvider(config:)` to your root view and access the client through `@EnvironmentObject var state: ThunderState`.
+When using `ThunderIDSwiftUI`, you do not need to create a `ThunderIDClient` directly. Apply `.thunderIDProvider(config:)` to your root view and access the client through `@EnvironmentObject var state: ThunderIDState`.
 :::
 
 ---

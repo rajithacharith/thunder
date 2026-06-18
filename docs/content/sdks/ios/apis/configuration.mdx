@@ -5,7 +5,7 @@ description: ThunderIDConfig options for the iOS SDK
 
 # Configuration
 
-`ThunderIDConfig` is the configuration struct passed to `ThunderClient.initialize(config:storage:)` and to the `.thunderIDProvider(config:)` view modifier.
+`ThunderIDConfig` is the configuration struct passed to `ThunderIDClient.initialize(config:storage:)` and to the `.thunderIDProvider(config:)` view modifier.
 
 ## Example
 
@@ -16,8 +16,8 @@ let config = ThunderIDConfig(
     baseUrl: "https://localhost:8090",
     clientId: "<your-client-id>",
     scopes: ["openid", "profile", "email"],
-    afterSignInUrl: "io.thunder.b2c://callback",
-    afterSignOutUrl: "io.thunder.b2c://logout",
+    afterSignInUrl: "io.thunderid.b2c://callback",
+    afterSignOutUrl: "io.thunderid.b2c://logout",
     applicationId: "<your-application-id>"
 )
 ```
@@ -84,4 +84,4 @@ public protocol StorageAdapter {
 }
 ```
 
-Pass your implementation to `ThunderIDConfig(storage:)` or to `ThunderClient.initialize(config:storage:)`.
+Pass your implementation to `ThunderIDConfig(storage:)` or to `ThunderIDClient.initialize(config:storage:)`.

@@ -19,6 +19,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
 import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
+import androidSdkSidebar from './content/sdks/android/sidebar';
 import browserSdkSidebar from './content/sdks/browser/sidebar';
 import expressSdkSidebar from './content/sdks/express/sidebar';
 import iosSdkSidebar from './content/sdks/ios/sidebar';
@@ -137,6 +138,11 @@ const sidebars: SidebarsConfig = {
               type: 'doc',
               id: 'guides/getting-started/connect-your-application/ios',
               label: 'iOS',
+            },
+            {
+              type: 'doc',
+              id: 'guides/getting-started/connect-your-application/android',
+              label: 'Android',
             },
           ],
         },
@@ -859,6 +865,7 @@ const sidebars: SidebarsConfig = {
   nextjsSdkSidebar,
   javascriptSdkSidebar,
   iosSdkSidebar,
+  androidSdkSidebar,
   communitySidebar: [
     // Community Section
     {

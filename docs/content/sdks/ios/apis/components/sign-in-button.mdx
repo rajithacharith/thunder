@@ -5,7 +5,7 @@ description: Button that triggers the sign-in flow
 
 # `SignInButton`
 
-The `SignInButton` component renders a pre-styled button that you can use to trigger your sign-in flow. It reads loading state from `ThunderState` and disables itself automatically while an operation is in progress.
+The `SignInButton` component renders a pre-styled button that you can use to trigger your sign-in flow. It reads loading state from `ThunderIDState` and disables itself automatically while an operation is in progress.
 
 `SignInButton` requires `.thunderIDProvider(config:)` in its ancestor view hierarchy.
 
@@ -13,7 +13,7 @@ The `SignInButton` component renders a pre-styled button that you can use to tri
 
 ```swift
 import SwiftUI
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
 struct LandingView: View {
     var body: some View {
@@ -54,7 +54,7 @@ struct LandingView: View {
 
 ```swift
 import SwiftUI
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
 struct CustomSignInButton: View {
     @State private var showSignIn = false

@@ -25,14 +25,14 @@ This is **step 4** of the getting started sequence. By the end you will have a w
 ## What You Will Learn
 
 <TutorialHeroItem icon={<Boxes />}>Create a new Xcode project</TutorialHeroItem>
-<TutorialHeroItem icon={<Package />}>Install the <code>ThunderSwiftUI</code> Swift package</TutorialHeroItem>
+<TutorialHeroItem icon={<Package />}>Install the <code>ThunderIDSwiftUI</code> Swift package</TutorialHeroItem>
 <TutorialHeroItem icon={<LogIn />}>Add working sign-in and sign-out using SwiftUI components</TutorialHeroItem>
 <TutorialHeroItem icon={<BookOpen />}>Display the signed-in user's name</TutorialHeroItem>
 
 ## Prerequisites
 
 <TutorialHeroItem icon={<Clock />}>About 15 minutes</TutorialHeroItem>
-<TutorialHeroItem icon={<Server />}>Steps 1–3 complete: <ProductName /> running, an application registered, and a sign-in flow built. Start at <a href="../get-thunderid">Get <ProductName /></a> if you haven't already.</TutorialHeroItem>
+<TutorialHeroItem icon={<Server />}>Steps 1–3 complete: <ProductName /> running, an application registered, and a sign-in flow built. Start at <a href="../../get-thunderid">Get <ProductName /></a> if you haven't already.</TutorialHeroItem>
 <TutorialHeroItem icon={<Hexagon />}>Xcode 15 or later</TutorialHeroItem>
 <TutorialHeroItem icon={<FileCode />}>iOS 16+ deployment target</TutorialHeroItem>
 
@@ -52,7 +52,7 @@ In Xcode, create a new project using the **iOS > App** template. Choose **SwiftU
 If you already have an existing iOS project, skip this step.
 :::
 
-## Install ThunderSwiftUI
+## Install ThunderIDSwiftUI
 
 In Xcode, go to **File > Add Package Dependencies** and enter the package URL:
 
@@ -60,13 +60,13 @@ In Xcode, go to **File > Add Package Dependencies** and enter the package URL:
 https://github.com/thunderid/thunderid-ios-sdk
 ```
 
-When prompted to choose package products, select **ThunderSwiftUI**. This includes the core `ThunderID` client as a dependency.
+When prompted to choose package products, select **ThunderIDSwiftUI**. This includes the core `ThunderID` client as a dependency.
 
 :::note
 If you manage dependencies with CocoaPods, add the following to your `Podfile` instead:
 
 ```ruby
-pod 'ThunderSwiftUI'
+pod 'ThunderIDSwiftUI'
 ```
 :::
 
@@ -84,7 +84,7 @@ Open your app's `Info.plist` and add a URL scheme under **URL Types**. For examp
   <dict>
     <key>CFBundleURLSchemes</key>
     <array>
-      <string>io.thunder.b2c</string>
+      <string>io.thunderid.b2c</string>
     </array>
   </dict>
 </array>
@@ -95,22 +95,22 @@ Open your app's `Info.plist` and add a URL scheme under **URL Types**. For examp
 In the console, open the application you registered in step 2 and add the following as an **Allowed Redirect URI**:
 
 ```
-io.thunder.b2c://callback
+io.thunderid.b2c://callback
 ```
 
 Add the same value as an **Allowed Post-Logout Redirect URI**:
 
 ```
-io.thunder.b2c://logout
+io.thunderid.b2c://logout
 ```
 
 ## Initialize the SDK
 
-Open your app's entry point (the file that conforms to `App`) and apply the `.thunderIDProvider(config:)` modifier to your root view. This injects a `ThunderState` environment object into all child views.
+Open your app's entry point (the file that conforms to `App`) and apply the `.thunderIDProvider(config:)` modifier to your root view. This injects a `ThunderIDState` environment object into all child views.
 
 ```swift title="MyApp.swift" showLineNumbers
 import SwiftUI
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
 @main
 struct MyApp: App {
@@ -121,8 +121,8 @@ struct MyApp: App {
                     baseUrl: "https://localhost:8090",
                     clientId: "<your-client-id>",
                     scopes: ["openid", "profile", "email"],
-                    afterSignInUrl: "io.thunder.b2c://callback",
-                    afterSignOutUrl: "io.thunder.b2c://logout",
+                    afterSignInUrl: "io.thunderid.b2c://callback",
+                    afterSignOutUrl: "io.thunderid.b2c://logout",
                     applicationId: "<your-application-id>"
                 ))
         }
@@ -153,10 +153,10 @@ Replace the contents of `ContentView.swift` with:
 
 ```swift title="ContentView.swift" showLineNumbers
 import SwiftUI
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
 struct ContentView: View {
-    @EnvironmentObject var state: ThunderState
+    @EnvironmentObject var state: ThunderIDState
 
     var body: some View {
         Group {
@@ -178,7 +178,7 @@ Create `AuthView.swift` to display the sign-in form:
 
 ```swift title="AuthView.swift" showLineNumbers
 import SwiftUI
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
 struct AuthView: View {
     var body: some View {
@@ -201,10 +201,10 @@ Create `HomeView.swift` to show the authenticated user's name and a sign-out but
 
 ```swift title="HomeView.swift" showLineNumbers
 import SwiftUI
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
 struct HomeView: View {
-    @EnvironmentObject var state: ThunderState
+    @EnvironmentObject var state: ThunderIDState
 
     var body: some View {
         NavigationStack {
@@ -259,7 +259,7 @@ You have completed the full getting started sequence:
     </div>
   </a>
 
-  <a href="../../../sdks/ios/overview" style={{textDecoration: 'none', color: 'inherit'}}>
+  <a href="../../../../sdks/ios/overview" style={{textDecoration: 'none', color: 'inherit'}}>
     <div style={{border: '1px solid var(--ifm-color-emphasis-300)', borderRadius: '10px', padding: '1.25rem', cursor: 'pointer'}}>
       <div style={{fontSize: '1rem', fontWeight: '700', marginBottom: '0.4rem'}}>iOS SDK Reference</div>
       <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-emphasis-700)', marginBottom: '0.75rem'}}>Explore the full API reference for the <ProductName /> iOS SDK.</div>

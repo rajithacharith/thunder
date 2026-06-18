@@ -13,7 +13,7 @@ The `SignUp` component renders a full app-native registration form. It drives th
 
 ```swift
 import SwiftUI
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
 struct AuthView: View {
     @State private var showSignUp = false
@@ -40,7 +40,7 @@ struct AuthView: View {
 
 ## Handling Completion
 
-Use `onComplete` to navigate away from the registration screen after a successful sign-up. `ThunderState.user` is updated automatically before this callback fires.
+Use `onComplete` to navigate away from the registration screen after a successful sign-up. `ThunderIDState.user` is updated automatically before this callback fires.
 
 ```swift
 SignUp(
@@ -60,7 +60,7 @@ SignUp(
 
 ```swift
 import SwiftUI
-import ThunderSwiftUI
+import ThunderIDSwiftUI
 
 struct CustomSignUpView: View {
     var body: some View {

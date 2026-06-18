@@ -19,10 +19,10 @@
 import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 
 const sidebar: SidebarsConfig = {
-  iosSdkSidebar: [
+  androidSdkSidebar: [
     {
       type: 'doc',
-      id: 'sdks/ios/overview',
+      id: 'sdks/android/overview',
     },
     {
       type: 'category',
@@ -32,17 +32,17 @@ const sidebar: SidebarsConfig = {
       items: [
         {
           type: 'doc',
-          id: 'sdks/ios/apis/thunderid-client',
+          id: 'sdks/android/apis/thunderid-client',
           label: 'ThunderIDClient',
         },
         {
           type: 'doc',
-          id: 'sdks/ios/apis/configuration',
+          id: 'sdks/android/apis/configuration',
           label: 'Configuration',
         },
         {
           type: 'doc',
-          id: 'sdks/ios/apis/thunderid-state',
+          id: 'sdks/android/apis/thunderid-state',
           label: 'ThunderIDState',
         },
         {
@@ -52,37 +52,37 @@ const sidebar: SidebarsConfig = {
           items: [
             {
               type: 'doc',
-              id: 'sdks/ios/apis/components/sign-in',
+              id: 'sdks/android/apis/components/sign-in',
               label: 'SignIn',
             },
             {
               type: 'doc',
-              id: 'sdks/ios/apis/components/sign-up',
+              id: 'sdks/android/apis/components/sign-up',
               label: 'SignUp',
             },
             {
               type: 'doc',
-              id: 'sdks/ios/apis/components/sign-in-button',
+              id: 'sdks/android/apis/components/sign-in-button',
               label: 'SignInButton',
             },
             {
               type: 'doc',
-              id: 'sdks/ios/apis/components/sign-out-button',
+              id: 'sdks/android/apis/components/sign-out-button',
               label: 'SignOutButton',
             },
             {
               type: 'doc',
-              id: 'sdks/ios/apis/components/signed-in',
+              id: 'sdks/android/apis/components/signed-in',
               label: 'SignedIn',
             },
             {
               type: 'doc',
-              id: 'sdks/ios/apis/components/signed-out',
+              id: 'sdks/android/apis/components/signed-out',
               label: 'SignedOut',
             },
             {
               type: 'doc',
-              id: 'sdks/ios/apis/components/user-profile',
+              id: 'sdks/android/apis/components/user-profile',
               label: 'UserProfile',
             },
           ],
@@ -97,7 +97,7 @@ const sidebar: SidebarsConfig = {
       items: [
         {
           type: 'doc',
-          id: 'sdks/ios/guides/accessing-protected-apis',
+          id: 'sdks/android/guides/accessing-protected-apis',
           label: 'Accessing Protected APIs',
         },
       ],
@@ -105,4 +105,4 @@ const sidebar: SidebarsConfig = {
   ],
 };
 
-export default sidebar.iosSdkSidebar;
+export default sidebar.androidSdkSidebar;
