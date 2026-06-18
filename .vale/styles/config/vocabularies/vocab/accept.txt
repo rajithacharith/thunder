@@ -207,3 +207,4 @@ Keystore
 thunderid_flutter
 Kong
 [Kk]onnect
+subcommand

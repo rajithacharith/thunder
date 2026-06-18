@@ -38,11 +38,12 @@ pnpm build
 If you have not already created the `Console` application and the default admin user, you can do so by running the following command:
 
 ```bash
-SKIP_SECURITY=true \
-API_BASE="https://localhost:8090" \
-  backend/cmd/server/bootstrap/01-default-resources.sh \
+PUBLIC_URL="https://localhost:8090" \
+  go run -C backend/cmd/server . bootstrap \
   --console-redirect-uris "https://localhost:5191/console"
 ```
+
+This runs the in-process `bootstrap` subcommand, which creates the default resources (including the `Console` application and the default admin user) directly through the service layer. No temporary server or security bypass is involved, and it is idempotent if re-run.
 
 ### Setting up the <ProductName /> Gate Application
 
