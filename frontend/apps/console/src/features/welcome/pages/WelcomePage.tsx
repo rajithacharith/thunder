@@ -98,9 +98,10 @@ export default function WelcomePage(): JSX.Element {
       icon: <MCP size={18} />,
       label: t('common:welcome.tryoutProduct.mcp'),
       description: t('common:welcome.tryoutProduct.mcpDesc'),
-      action: () =>
-        window.open(`${docsBaseUrl}/use-cases/ai-agents/mcp-authorization/try-it-out`, '_blank', 'noopener,noreferrer'),
-      endIcon: <ExternalLink size={14} />,
+      action: () => {
+        sessionStorage.setItem(getWelcomeDismissedStorageKey(productName), 'true');
+        void navigate('/welcome/tryout/mcp');
+      },
     },
   ];
 
@@ -417,7 +418,7 @@ export default function WelcomePage(): JSX.Element {
                         transition: 'opacity 0.2s',
                       }}
                     >
-                      {item.endIcon ?? <ChevronRight size={14} />}
+                      <ChevronRight size={14} />
                     </Box>
                   </Box>
                 ))}

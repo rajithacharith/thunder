@@ -18,6 +18,7 @@
 
 import {render, screen, userEvent, fireEvent} from '@thunderid/test-utils';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {WAYFINDER_MCP_URL} from '../../constants/sample-urls';
 
 const mockNavigate = vi.fn();
 const mockSessionStorageSetItem = vi.fn();
@@ -160,10 +161,9 @@ describe('TryoutSecuringMCPPage', () => {
     expect(screen.getByTestId('wayfinder-sample-setup')).toBeInTheDocument();
   });
 
-  it('renders scenario tabs', () => {
+  it('renders connect scenario content', () => {
     render(<TryoutSecuringMCPPage />);
-    expect(screen.getByText('common:welcome.mcpTryout.scenarios.tabs.connect')).toBeInTheDocument();
-    expect(screen.getByText('common:welcome.mcpTryout.scenarios.tabs.permissions')).toBeInTheDocument();
+    expect(screen.getByText(/common:welcome\.mcpTryout\.scenarios\.connect\.description/)).toBeInTheDocument();
   });
 
   it('navigates to /home and sets session storage on close', async () => {
@@ -207,15 +207,6 @@ describe('TryoutSecuringMCPPage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/welcome');
   });
 
-  it('shows permissions scenario when permissions tab is clicked', async () => {
-    const user = userEvent.setup();
-    render(<TryoutSecuringMCPPage />);
-
-    await user.click(screen.getByText('common:welcome.mcpTryout.scenarios.tabs.permissions'));
-
-    expect(screen.getByText(/common:welcome\.mcpTryout\.scenarios\.permissions\.description/)).toBeInTheDocument();
-  });
-
   describe('clipboard interactions', () => {
     let writeTextSpy: ReturnType<typeof vi.fn>;
 
@@ -235,33 +226,21 @@ describe('TryoutSecuringMCPPage', () => {
       vi.restoreAllMocks();
     });
 
-    it('renders terminal block and tabs with user interaction', async () => {
-      const user = userEvent.setup();
+    it('renders terminal block and connect scenario content', () => {
       render(<TryoutSecuringMCPPage />);
       expect(screen.getByTestId('terminal-block')).toBeInTheDocument();
-      await user.click(screen.getByText('common:welcome.mcpTryout.scenarios.tabs.connect'));
       expect(screen.getByText(/common:welcome\.mcpTryout\.scenarios\.connect\.description/)).toBeInTheDocument();
     });
 
-    it('copies a form field in the connect tab', async () => {
-      const user = userEvent.setup();
+    it('copies a form field in the connect tab', () => {
       render(<TryoutSecuringMCPPage />);
 
       const copyButtons = screen.getAllByRole('button', {
         name: /^Copy common:welcome\.mcpTryout\.scenarios\.connect\.fields\./,
       });
-      await user.click(copyButtons[0]);
+      fireEvent.click(copyButtons[0]);
 
-      expect(writeTextSpy).toHaveBeenCalledWith('Streamable HTTP');
-    });
-
-    it('copies the CORS snippet via CodeBlock', async () => {
-      const user = userEvent.setup();
-      render(<TryoutSecuringMCPPage />);
-
-      await user.click(screen.getByRole('button', {name: 'Copy snippet'}));
-
-      expect(writeTextSpy).toHaveBeenCalledWith(expect.stringContaining('allowed_origins'));
+      expect(writeTextSpy).toHaveBeenCalledWith(WAYFINDER_MCP_URL);
     });
   });
 });

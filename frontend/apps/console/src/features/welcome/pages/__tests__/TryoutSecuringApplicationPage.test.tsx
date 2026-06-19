@@ -18,6 +18,7 @@
 
 import {render, screen, userEvent, fireEvent} from '@thunderid/test-utils';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {WAYFINDER_APP_URL, WAYFINDER_MAIL_URL} from '../../constants/sample-urls';
 
 const mockNavigate = vi.fn();
 const mockSessionStorageSetItem = vi.fn();
@@ -251,8 +252,8 @@ describe('TryoutSecuringApplicationPage', () => {
 
     expect(screen.getByText('common:welcome.applicationTryout.scenarios.recovery.description')).toBeInTheDocument();
     const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'));
-    expect(hrefs).toContain('http://localhost:5173');
-    expect(hrefs).toContain('http://localhost:8788');
+    expect(hrefs).toContain(WAYFINDER_APP_URL);
+    expect(hrefs).toContain(WAYFINDER_MAIL_URL);
   });
 
   it('shows onboard scenario with a mail-inbox link when onboard tab is clicked', async () => {
@@ -265,7 +266,7 @@ describe('TryoutSecuringApplicationPage', () => {
       screen.getByText('common:welcome.applicationTryout.scenarios.onboard.description:ThunderID'),
     ).toBeInTheDocument();
     const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'));
-    expect(hrefs).toContain('http://localhost:8788');
+    expect(hrefs).toContain(WAYFINDER_MAIL_URL);
   });
 
   describe('credential interactions', () => {
