@@ -80,7 +80,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_ConsentDisabled() {
 	s.mockConsentSvc.On("IsEnabled").Return(false)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, nil, nil, nil, nil)
+		[]string{"email"}, nil, nil, nil, false, nil)
 
 	s.Nil(result)
 	s.Nil(svcErr)
@@ -97,7 +97,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_ListPurposesClientE
 		Return(nil, clientErr)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, nil, nil, nil, nil)
+		[]string{"email"}, nil, nil, nil, false, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
@@ -115,7 +115,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_ListPurposesServerE
 		Return(nil, serverErr)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, nil, nil, nil, nil)
+		[]string{"email"}, nil, nil, nil, false, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
@@ -128,7 +128,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_NoPurposesConfigure
 		Return([]consent.ConsentPurpose{}, nil)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, nil, nil, nil, nil)
+		[]string{"email"}, nil, nil, nil, false, nil)
 
 	s.Nil(result)
 	s.Nil(svcErr)
@@ -157,7 +157,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_SearchConsentsClien
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return(nil, clientErr)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, nil, nil, nil, nil)
+		[]string{"email"}, nil, nil, nil, false, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
@@ -187,7 +187,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_SearchConsentsServe
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return(nil, serverErr)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, nil, nil, nil, nil)
+		[]string{"email"}, nil, nil, nil, false, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
@@ -227,10 +227,42 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_AllConsentsActive()
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return(existingConsents, nil)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, nil, nil, nil, nil)
+		[]string{"email"}, nil, nil, nil, false, nil)
 
 	s.Nil(result)
 	s.Nil(svcErr)
+}
+
+func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_ForceRepromptIgnoresExistingConsent() {
+	purposes := []consent.ConsentPurpose{
+		{
+			ID:        "purpose-1",
+			Namespace: consent.NamespaceAttribute,
+			Name:      "app:app1:attrs",
+			Elements: []consent.PurposeElement{
+				{Name: "email", IsMandatory: true},
+			},
+		},
+	}
+
+	s.mockConsentSvc.On("IsEnabled").Return(true)
+	s.mockConsentSvc.On("ListConsentPurposes", mock.Anything, "ou1", "app1").
+		Return(purposes, nil)
+	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("test-session-token", int64(0), nil)
+
+	// forceReprompt is honored: existing active consent is ignored, the element is prompted again,
+	// and SearchConsents is never called.
+	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
+		[]string{"email"}, nil, nil, nil, true, nil)
+
+	s.Nil(svcErr)
+	s.NotNil(result)
+	s.Len(result.Purposes, 1)
+	s.Equal("app:app1:attrs", result.Purposes[0].PurposeName)
+	s.Equal([]PromptElement{{Name: "email"}}, result.Purposes[0].Essential)
+	s.NotEmpty(result.SessionToken)
+	s.mockConsentSvc.AssertNotCalled(s.T(), "SearchConsents", mock.Anything, mock.Anything, mock.Anything)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_PromptNeeded() {
@@ -256,7 +288,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_PromptNeeded() {
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("test-session-token", int64(0), nil)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, []string{"phone"}, nil, nil, nil)
+		[]string{"email"}, []string{"phone"}, nil, nil, false, nil)
 
 	s.Nil(svcErr)
 	s.NotNil(result)
@@ -291,7 +323,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_RequiredAttributesF
 
 	// Only request "email" — "phone" and "address" should be filtered out
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, nil, nil, nil, nil)
+		[]string{"email"}, nil, nil, nil, false, nil)
 
 	s.Nil(svcErr)
 	s.NotNil(result)
@@ -327,7 +359,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_UserProfileFilter()
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("test-session-token", int64(0), nil)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		nil, nil, nil, availableAttributes, nil)
+		nil, nil, nil, availableAttributes, false, nil)
 
 	s.Nil(svcErr)
 	s.NotNil(result)
@@ -371,7 +403,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_PartialConsentsExis
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("test-session-token", int64(0), nil)
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, []string{"phone"}, nil, nil, nil)
+		[]string{"email"}, []string{"phone"}, nil, nil, false, nil)
 
 	s.Nil(svcErr)
 	s.NotNil(result)
@@ -433,7 +465,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_CreateConsentSessio
 		})
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
-		[]string{"email"}, nil, nil, nil, nil)
+		[]string{"email"}, nil, nil, nil, false, nil)
 
 	s.Nil(result)
 	s.NotNil(svcErr)
