@@ -172,9 +172,8 @@ func (a *authAssertExecutor) generateAuthAssertion(
 	}
 
 	// Bind the assertion to the originating CIBA request when present, so the CIBA callback can
-	// verify that this assertion authorizes the specific auth_req_id it accompanies. This key is
-	// only set for CIBA-initiated flows, leaving the interactive authorization_code assertion unchanged.
-	if cibaAuthReqID, exists := ctx.RuntimeData[common.RuntimeKeyCIBAAuthReqID]; exists && cibaAuthReqID != "" {
+	// verify that this assertion authorizes the specific auth_req_id it accompanies.
+	if cibaAuthReqID, exists := ctx.RuntimeData[common.RuntimeKeyAuthReqID]; exists && cibaAuthReqID != "" {
 		jwtClaims[oauth2const.ClaimCIBAAuthReqID] = cibaAuthReqID
 	}
 

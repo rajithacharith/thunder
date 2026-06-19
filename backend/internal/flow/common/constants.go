@@ -245,8 +245,8 @@ const (
 	RuntimeKeyAllowedLoginOptions = "allowed_login_options"
 	// RuntimeKeyAllowRegistrationWithExistingUser indicates whether registration is allowed with an existing user
 	RuntimeKeyAllowRegistrationWithExistingUser = "allowRegistrationWithExistingUser"
-	// RuntimeKeyCIBAAuthReqID holds the CIBA auth_req_id bound to the current flow execution, if applicable.
-	RuntimeKeyCIBAAuthReqID = "cibaAuthReqId"
+	// RuntimeKeyAuthReqID holds the auth request ID bound to the current flow execution, if applicable.
+	RuntimeKeyAuthReqID = "authReqId"
 	// RuntimeKeyBindingMessage holds the human-readable binding message displayed to the user
 	// on both the consumption device and the authentication device to correlate the CIBA request.
 	RuntimeKeyBindingMessage = "bindingMessage"
@@ -254,12 +254,6 @@ const (
 	RuntimeKeyEntityState = "entityState"
 	// RuntimeKeyAuthorizationRequestID holds the identifier of the authorization request.
 	RuntimeKeyAuthorizationRequestID = "authorizationRequestId"
-)
-
-// User input key constants for well-known keys used in UserInputs across flow executors.
-const (
-	// UserInputKeyLoginHint is the UserInputs key for the CIBA login_hint value.
-	UserInputKeyLoginHint = "login_hint"
 )
 
 // TODO: Define a go type for InputType when formalizing input types

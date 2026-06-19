@@ -25,6 +25,7 @@ import (
 
 	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/system/database/provider"
+	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
 
 // newCIBAStore returns a Redis-backed store when the runtime database is configured for Redis,
@@ -191,7 +192,7 @@ func buildCIBAAuthRequestFromRow(row map[string]interface{}) (*CIBAAuthRequest, 
 		CompletedACR:     stringFromRow(row[dbColumnCompletedACR]),
 	}
 
-	expiryTime, err := parseTimeField(row[dbColumnExpiryTime], dbColumnExpiryTime)
+	expiryTime, err := sysutils.ParseDBTimeField(row[dbColumnExpiryTime], dbColumnExpiryTime)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +225,7 @@ func parseOptionalTimeField(value interface{}) (time.Time, bool) {
 	if value == nil {
 		return time.Time{}, false
 	}
-	parsed, err := parseTimeField(value, "time")
+	parsed, err := sysutils.ParseDBTimeField(value, "time")
 	if err != nil {
 		return time.Time{}, false
 	}
