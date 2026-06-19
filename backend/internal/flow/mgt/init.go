@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -26,6 +26,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/flow/executor"
+	"github.com/thunder-id/thunderid/internal/flow/interceptor"
 
 	"github.com/thunder-id/thunderid/internal/system/cache"
 	"github.com/thunder-id/thunderid/internal/system/config"
@@ -42,6 +43,7 @@ func Initialize(
 	cacheManager cache.CacheManagerInterface,
 	flowFactory core.FlowFactoryInterface,
 	executorRegistry executor.ExecutorRegistryInterface,
+	interceptorRegistry interceptor.InterceptorRegistryInterface,
 	graphCache core.GraphCacheInterface,
 ) (FlowMgtServiceInterface, declarativeresource.ResourceExporter, error) {
 	store, compositeStore, transactioner, err := initializeStore(cacheManager)
@@ -50,8 +52,11 @@ func Initialize(
 	}
 
 	inferenceService := newFlowInferenceService()
-	graphBuilder := newGraphBuilder(flowFactory, executorRegistry, graphCache)
-	service := newFlowMgtService(store, inferenceService, graphBuilder, executorRegistry, compositeStore, transactioner)
+	graphBuilder := newGraphBuilder(flowFactory, executorRegistry, interceptorRegistry, graphCache)
+	service := newFlowMgtService(
+		store, inferenceService, graphBuilder, executorRegistry,
+		interceptorRegistry, compositeStore, transactioner,
+	)
 
 	handler := newFlowMgtHandler(service)
 	registerRoutes(mux, handler)

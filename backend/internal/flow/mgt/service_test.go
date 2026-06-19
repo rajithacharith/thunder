@@ -27,21 +27,24 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/flow/common"
+	"github.com/thunder-id/thunderid/internal/flow/interceptor"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/executormock"
+	"github.com/thunder-id/thunderid/tests/mocks/flow/interceptormock"
 )
 
 const testFlowIDService = "test-flow-id"
 
 type FlowMgtServiceTestSuite struct {
 	suite.Suite
-	service              FlowMgtServiceInterface
-	mockStore            *flowStoreInterfaceMock
-	mockInference        *flowInferenceServiceInterfaceMock
-	mockGraphBuilder     *graphBuilderInterfaceMock
-	mockExecutorRegistry *executormock.ExecutorRegistryInterfaceMock
+	service                 FlowMgtServiceInterface
+	mockStore               *flowStoreInterfaceMock
+	mockInference           *flowInferenceServiceInterfaceMock
+	mockGraphBuilder        *graphBuilderInterfaceMock
+	mockExecutorRegistry    *executormock.ExecutorRegistryInterfaceMock
+	mockInterceptorRegistry *interceptormock.InterceptorRegistryInterfaceMock
 }
 
 func TestFlowMgtServiceTestSuite(t *testing.T) {
@@ -60,8 +63,9 @@ func (s *FlowMgtServiceTestSuite) SetupTest() {
 	s.mockInference = newFlowInferenceServiceInterfaceMock(s.T())
 	s.mockGraphBuilder = newGraphBuilderInterfaceMock(s.T())
 	s.mockExecutorRegistry = executormock.NewExecutorRegistryInterfaceMock(s.T())
+	s.mockInterceptorRegistry = interceptormock.NewInterceptorRegistryInterfaceMock(s.T())
 	s.service = newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder,
-		s.mockExecutorRegistry, nil, &stubTransactioner{})
+		s.mockExecutorRegistry, s.mockInterceptorRegistry, nil, &stubTransactioner{})
 
 	testConfig := &config.Config{
 		Flow: config.FlowConfig{
@@ -430,6 +434,269 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_StoreError() {
 
 	s.Nil(result)
 	s.Equal(&serviceerror.InternalServerError, err)
+}
+
+// Interceptor validation tests (CreateFlow)
+
+func (s *FlowMgtServiceTestSuite) TestCreateFlow_WithInterceptors_Success() {
+	flowDef := &FlowDefinition{
+		Handle:   "test-handle",
+		Name:     "Test",
+		FlowType: common.FlowTypeAuthentication,
+		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Interceptors: []InterceptorDefinition{
+			{
+				Name:  "CaptchaInterceptor",
+				Mode:  common.InterceptorModePreRequest,
+				Scope: common.InterceptorScopeAll,
+			},
+		},
+	}
+	expectedFlow := &CompleteFlowDefinition{
+		Handle:        "test-handle",
+		Name:          "Test",
+		FlowType:      common.FlowTypeAuthentication,
+		ActiveVersion: 1,
+		Interceptors:  flowDef.Interceptors,
+	}
+	s.mockInterceptorRegistry.EXPECT().IsRegistered("CaptchaInterceptor").Return(true)
+	s.mockStore.EXPECT().IsFlowExistsByHandle(mock.Anything, "test-handle",
+		common.FlowTypeAuthentication).Return(false, nil)
+	s.mockStore.EXPECT().CreateFlow(mock.Anything, mock.Anything, flowDef).Return(expectedFlow, nil)
+
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
+
+	s.Nil(err)
+	s.NotNil(result)
+	s.Len(result.Interceptors, 1)
+	s.Equal("CaptchaInterceptor", result.Interceptors[0].Name)
+}
+
+func (s *FlowMgtServiceTestSuite) TestCreateFlow_InterceptorMissingName() {
+	flowDef := &FlowDefinition{
+		Handle:   "test-handle",
+		Name:     "Test",
+		FlowType: common.FlowTypeAuthentication,
+		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Interceptors: []InterceptorDefinition{
+			{Name: "", Mode: common.InterceptorModePreRequest},
+		},
+	}
+
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
+
+	s.Nil(result)
+	s.Equal(ErrorInvalidFlowData.Code, err.Code)
+}
+
+func (s *FlowMgtServiceTestSuite) TestCreateFlow_InterceptorInvalidMode() {
+	flowDef := &FlowDefinition{
+		Handle:   "test-handle",
+		Name:     "Test",
+		FlowType: common.FlowTypeAuthentication,
+		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Interceptors: []InterceptorDefinition{
+			{Name: "MyInterceptor", Mode: "INVALID_MODE"},
+		},
+	}
+
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
+
+	s.Nil(result)
+	s.Equal(ErrorInvalidFlowData.Code, err.Code)
+}
+
+func (s *FlowMgtServiceTestSuite) TestCreateFlow_InterceptorEmptyMode() {
+	flowDef := &FlowDefinition{
+		Handle:   "test-handle",
+		Name:     "Test",
+		FlowType: common.FlowTypeAuthentication,
+		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Interceptors: []InterceptorDefinition{
+			{Name: "MyInterceptor", Mode: ""},
+		},
+	}
+
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
+
+	s.Nil(result)
+	s.Equal(ErrorInvalidFlowData.Code, err.Code)
+}
+
+func (s *FlowMgtServiceTestSuite) TestCreateFlow_InterceptorInvalidScope() {
+	flowDef := &FlowDefinition{
+		Handle:   "test-handle",
+		Name:     "Test",
+		FlowType: common.FlowTypeAuthentication,
+		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Interceptors: []InterceptorDefinition{
+			{Name: "MyInterceptor", Mode: common.InterceptorModePreNode, Scope: "INVALID_SCOPE"},
+		},
+	}
+
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
+
+	s.Nil(result)
+	s.Equal(ErrorInvalidFlowData.Code, err.Code)
+}
+
+func (s *FlowMgtServiceTestSuite) TestCreateFlow_InterceptorSelectedScopeEmptyApplyTo() {
+	flowDef := &FlowDefinition{
+		Handle:   "test-handle",
+		Name:     "Test",
+		FlowType: common.FlowTypeAuthentication,
+		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Interceptors: []InterceptorDefinition{
+			{
+				Name:    "MyInterceptor",
+				Mode:    common.InterceptorModePreNode,
+				Scope:   common.InterceptorScopeSelected,
+				ApplyTo: []string{},
+			},
+		},
+	}
+
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
+
+	s.Nil(result)
+	s.Equal(ErrorInvalidFlowData.Code, err.Code)
+}
+
+func (s *FlowMgtServiceTestSuite) TestCreateFlow_InterceptorDefaultNotConfigurable() {
+	original := interceptor.DefaultInterceptors
+	originalNames := interceptor.DefaultInterceptorNames
+	interceptor.DefaultInterceptors = nil
+	interceptor.DefaultInterceptorNames = map[string]struct{}{"DefaultIC": {}}
+	defer func() {
+		interceptor.DefaultInterceptors = original
+		interceptor.DefaultInterceptorNames = originalNames
+	}()
+
+	flowDef := &FlowDefinition{
+		Handle:   "test-handle",
+		Name:     "Test",
+		FlowType: common.FlowTypeAuthentication,
+		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Interceptors: []InterceptorDefinition{
+			{Name: "DefaultIC", Mode: common.InterceptorModePreRequest},
+		},
+	}
+
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
+
+	s.Nil(result)
+	s.Equal(ErrorInvalidFlowData.Code, err.Code)
+}
+
+func (s *FlowMgtServiceTestSuite) TestCreateFlow_InterceptorNotRegistered() {
+	s.mockInterceptorRegistry.EXPECT().IsRegistered("UnknownInterceptor").Return(false)
+	flowDef := &FlowDefinition{
+		Handle:   "test-handle",
+		Name:     "Test",
+		FlowType: common.FlowTypeAuthentication,
+		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Interceptors: []InterceptorDefinition{
+			{Name: "UnknownInterceptor", Mode: common.InterceptorModePreRequest},
+		},
+	}
+
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
+
+	s.Nil(result)
+	s.Equal(ErrorInvalidFlowData.Code, err.Code)
+}
+
+// Interceptor update tests (UpdateFlow)
+
+func (s *FlowMgtServiceTestSuite) TestUpdateFlow_WithInterceptors_Success() {
+	s.mockInterceptorRegistry.EXPECT().IsRegistered("RateLimitInterceptor").Return(true)
+	existingFlow := &CompleteFlowDefinition{
+		ID:            testFlowIDService,
+		Handle:        "test-handle",
+		FlowType:      common.FlowTypeAuthentication,
+		ActiveVersion: 1,
+	}
+	flowDef := &FlowDefinition{
+		Handle:   "test-handle",
+		Name:     "Updated Flow",
+		FlowType: common.FlowTypeAuthentication,
+		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Interceptors: []InterceptorDefinition{
+			{
+				Name:    "RateLimitInterceptor",
+				Mode:    common.InterceptorModePreNode,
+				Scope:   common.InterceptorScopeSelected,
+				ApplyTo: []string{"action"},
+			},
+		},
+	}
+	expectedFlow := &CompleteFlowDefinition{
+		Handle:        "test-handle",
+		Name:          "Updated Flow",
+		FlowType:      common.FlowTypeAuthentication,
+		ActiveVersion: 2,
+		Interceptors:  flowDef.Interceptors,
+	}
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(existingFlow, nil)
+	s.mockStore.EXPECT().UpdateFlow(mock.Anything, testFlowIDService, flowDef).Return(expectedFlow, nil)
+	s.mockGraphBuilder.EXPECT().InvalidateCache(mock.Anything, testFlowIDService)
+
+	result, err := s.service.UpdateFlow(context.Background(), testFlowIDService, flowDef)
+
+	s.Nil(err)
+	s.NotNil(result)
+	s.Len(result.Interceptors, 1)
+	s.Equal("RateLimitInterceptor", result.Interceptors[0].Name)
+}
+
+func (s *FlowMgtServiceTestSuite) TestUpdateFlow_RemoveInterceptors() {
+	existingFlow := &CompleteFlowDefinition{
+		ID:       testFlowIDService,
+		Handle:   "test-handle",
+		FlowType: common.FlowTypeAuthentication,
+		Interceptors: []InterceptorDefinition{
+			{Name: "OldInterceptor", Mode: common.InterceptorModePreRequest},
+		},
+	}
+	flowDef := &FlowDefinition{
+		Handle:       "test-handle",
+		Name:         "Updated Flow",
+		FlowType:     common.FlowTypeAuthentication,
+		Nodes:        []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Interceptors: nil,
+	}
+	expectedFlow := &CompleteFlowDefinition{
+		Handle:        "test-handle",
+		Name:          "Updated Flow",
+		FlowType:      common.FlowTypeAuthentication,
+		ActiveVersion: 2,
+	}
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(existingFlow, nil)
+	s.mockStore.EXPECT().UpdateFlow(mock.Anything, testFlowIDService, flowDef).Return(expectedFlow, nil)
+	s.mockGraphBuilder.EXPECT().InvalidateCache(mock.Anything, testFlowIDService)
+
+	result, err := s.service.UpdateFlow(context.Background(), testFlowIDService, flowDef)
+
+	s.Nil(err)
+	s.NotNil(result)
+	s.Empty(result.Interceptors)
+}
+
+func (s *FlowMgtServiceTestSuite) TestUpdateFlow_InvalidInterceptorMode() {
+	flowDef := &FlowDefinition{
+		Handle:   "test-handle",
+		Name:     "Test",
+		FlowType: common.FlowTypeAuthentication,
+		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
+		Interceptors: []InterceptorDefinition{
+			{Name: "MyInterceptor", Mode: "BAD_MODE"},
+		},
+	}
+
+	result, err := s.service.UpdateFlow(context.Background(), testFlowIDService, flowDef)
+
+	s.Nil(result)
+	s.Equal(ErrorInvalidFlowData.Code, err.Code)
 }
 
 func (s *FlowMgtServiceTestSuite) TestCreateFlow_WithAutoInference() {
@@ -1090,8 +1357,9 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_Success() {
 	_ = config.InitializeServerRuntime("test", testConfig)
 
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
+	mockInterceptorRegistry := interceptormock.NewInterceptorRegistryInterfaceMock(s.T())
 	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder,
-		mockExecutorRegistry, nil, &stubTransactioner{})
+		mockExecutorRegistry, mockInterceptorRegistry, nil, &stubTransactioner{})
 
 	authFlowDef := &FlowDefinition{
 		Handle:   "auth-flow",
@@ -1150,8 +1418,9 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_SkipsNonAuthFlow(
 	_ = config.InitializeServerRuntime("test", testConfig)
 
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
+	mockInterceptorRegistry := interceptormock.NewInterceptorRegistryInterfaceMock(s.T())
 	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder,
-		mockExecutorRegistry, nil, &stubTransactioner{})
+		mockExecutorRegistry, mockInterceptorRegistry, nil, &stubTransactioner{})
 
 	regFlowDef := &FlowDefinition{
 		Handle:   "reg-flow",
@@ -1178,8 +1447,9 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_HandlesInferenceE
 	_ = config.InitializeServerRuntime("test", testConfig)
 
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
+	mockInterceptorRegistry := interceptormock.NewInterceptorRegistryInterfaceMock(s.T())
 	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder,
-		mockExecutorRegistry, nil, &stubTransactioner{})
+		mockExecutorRegistry, mockInterceptorRegistry, nil, &stubTransactioner{})
 
 	authFlowDef := &FlowDefinition{
 		Handle:   "auth-flow",
@@ -1208,8 +1478,9 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_HandlesStoreError
 	_ = config.InitializeServerRuntime("test", testConfig)
 
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
+	mockInterceptorRegistry := interceptormock.NewInterceptorRegistryInterfaceMock(s.T())
 	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder,
-		mockExecutorRegistry, nil, &stubTransactioner{})
+		mockExecutorRegistry, mockInterceptorRegistry, nil, &stubTransactioner{})
 
 	authFlowDef := &FlowDefinition{
 		Handle:   "auth-flow",
@@ -1248,8 +1519,9 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_HandlesStoreError
 func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_DisabledAutoInference() {
 	// Auto-inference is disabled in SetupTest, so just verify early return
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
+	mockInterceptorRegistry := interceptormock.NewInterceptorRegistryInterfaceMock(s.T())
 	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder,
-		mockExecutorRegistry, nil, &stubTransactioner{})
+		mockExecutorRegistry, mockInterceptorRegistry, nil, &stubTransactioner{})
 
 	authFlowDef := &FlowDefinition{
 		Handle:   "auth-flow",
@@ -1276,8 +1548,9 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_SkipsPasskeyRegis
 	_ = config.InitializeServerRuntime("test", testConfig)
 
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
+	mockInterceptorRegistry := interceptormock.NewInterceptorRegistryInterfaceMock(s.T())
 	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder,
-		mockExecutorRegistry, nil, &stubTransactioner{})
+		mockExecutorRegistry, mockInterceptorRegistry, nil, &stubTransactioner{})
 
 	// Auth flow with PasskeyAuthExecutor in register_start and register_finish modes
 	authFlowDef := &FlowDefinition{

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -22,10 +22,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/flow/executor"
+	"github.com/thunder-id/thunderid/internal/flow/interceptor"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -39,23 +41,26 @@ type graphBuilderInterface interface {
 
 // graphBuilder is the implementation of graphBuilderInterface.
 type graphBuilder struct {
-	flowFactory      core.FlowFactoryInterface
-	executorRegistry executor.ExecutorRegistryInterface
-	graphCache       core.GraphCacheInterface
-	logger           *log.Logger
+	flowFactory         core.FlowFactoryInterface
+	executorRegistry    executor.ExecutorRegistryInterface
+	interceptorRegistry interceptor.InterceptorRegistryInterface
+	graphCache          core.GraphCacheInterface
+	logger              *log.Logger
 }
 
 // newGraphBuilder creates a new instance of graphBuilder.
 func newGraphBuilder(
 	flowFactory core.FlowFactoryInterface,
 	executorRegistry executor.ExecutorRegistryInterface,
+	interceptorRegistry interceptor.InterceptorRegistryInterface,
 	graphCache core.GraphCacheInterface,
 ) graphBuilderInterface {
 	return &graphBuilder{
-		flowFactory:      flowFactory,
-		executorRegistry: executorRegistry,
-		graphCache:       graphCache,
-		logger:           log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowGraphBuilder")),
+		flowFactory:         flowFactory,
+		executorRegistry:    executorRegistry,
+		interceptorRegistry: interceptorRegistry,
+		graphCache:          graphCache,
+		logger:              log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowGraphBuilder")),
 	}
 }
 
@@ -134,6 +139,9 @@ func (b *graphBuilder) buildGraph(ctx context.Context, flow *CompleteFlowDefinit
 	}
 
 	b.computeSegments(graph, boundaries)
+	if err := b.attachInterceptors(flow, graph); err != nil {
+		return nil, err
+	}
 
 	return graph, nil
 }
@@ -509,6 +517,66 @@ func (b *graphBuilder) validateExecutorName(executorName string) error {
 	}
 	if !b.executorRegistry.IsRegistered(executorName) {
 		return fmt.Errorf("executor with name %s not registered", executorName)
+	}
+
+	return nil
+}
+
+// attachInterceptors creates interceptor execution units from the flow definition, merges them with
+// defaults, groups by mode, sorts by priority, and attaches the resolved map to the graph.
+func (b *graphBuilder) attachInterceptors(flow *CompleteFlowDefinition, graph core.GraphInterface) error {
+	resolved := make(map[common.InterceptorMode][]core.InterceptorUnitInterface)
+
+	// Process configured interceptors.
+	for _, def := range flow.Interceptors {
+		if _, isDefault := interceptor.DefaultInterceptorNames[def.Name]; isDefault {
+			continue
+		}
+		if err := b.validateInterceptorName(def.Name); err != nil {
+			return fmt.Errorf("error while validating interceptor %s: %w", def.Name, err)
+		}
+
+		unit := b.flowFactory.CreateInterceptorUnit(def.Name, def.Mode, def.Scope, def.ApplyTo, def.Properties)
+		resolved[def.Mode] = append(resolved[def.Mode], unit)
+	}
+
+	// Merge default interceptors (pre-grouped by mode).
+	for mode, defaults := range interceptor.DefaultInterceptorsByMode {
+		for _, d := range defaults {
+			resolved[mode] = append(resolved[mode], d.Clone())
+		}
+	}
+
+	// Sort each mode group by priority (resolved from registry).
+	for mode := range resolved {
+		sort.Slice(resolved[mode], func(i, j int) bool {
+			pi := b.getInterceptorPriority(resolved[mode][i].GetName())
+			pj := b.getInterceptorPriority(resolved[mode][j].GetName())
+			return pi < pj
+		})
+	}
+
+	graph.SetInterceptors(resolved)
+
+	return nil
+}
+
+// getInterceptorPriority looks up the priority of an interceptor by name from the registry.
+func (b *graphBuilder) getInterceptorPriority(name string) int {
+	ic, err := b.interceptorRegistry.GetInterceptor(name)
+	if err != nil {
+		return 0
+	}
+	return ic.GetPriority()
+}
+
+// validateInterceptorName validates that an interceptor with the given name is registered.
+func (b *graphBuilder) validateInterceptorName(interceptorName string) error {
+	if interceptorName == "" {
+		return fmt.Errorf("interceptor name cannot be empty")
+	}
+	if !b.interceptorRegistry.IsRegistered(interceptorName) {
+		return fmt.Errorf("interceptor with name %s not registered", interceptorName)
 	}
 
 	return nil

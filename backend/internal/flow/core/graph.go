@@ -46,16 +46,19 @@ type GraphInterface interface {
 	SetSegments(segments []Segment)
 	GetSegmentByID(segmentID string) *Segment
 	GetSegmentByStartNode(nodeID string) *Segment
+	GetInterceptors(mode common.InterceptorMode) []InterceptorUnitInterface
+	SetInterceptors(resolved map[common.InterceptorMode][]InterceptorUnitInterface)
 }
 
 // graph implements the GraphInterface for the flow execution
 type graph struct {
-	id          string
-	_type       common.FlowType
-	nodes       map[string]NodeInterface
-	edges       map[string][]string
-	startNodeID string
-	segments    []Segment
+	id           string
+	_type        common.FlowType
+	nodes        map[string]NodeInterface
+	edges        map[string][]string
+	startNodeID  string
+	segments     []Segment
+	interceptors map[common.InterceptorMode][]InterceptorUnitInterface
 }
 
 // GetID returns the unique ID of the graph
@@ -229,6 +232,19 @@ func (g *graph) GetSegmentByStartNode(nodeID string) *Segment {
 		}
 	}
 	return nil
+}
+
+// GetInterceptors returns the pre-resolved interceptor units for the given mode.
+func (g *graph) GetInterceptors(mode common.InterceptorMode) []InterceptorUnitInterface {
+	if g.interceptors == nil {
+		return nil
+	}
+	return g.interceptors[mode]
+}
+
+// SetInterceptors stores pre-resolved interceptor units grouped by mode.
+func (g *graph) SetInterceptors(resolved map[common.InterceptorMode][]InterceptorUnitInterface) {
+	g.interceptors = resolved
 }
 
 // ToJSON converts the graph to a JSON string representation
