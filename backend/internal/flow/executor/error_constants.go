@@ -1145,6 +1145,20 @@ var (
 			DefaultValue: "The OpenID4VP presentation verification failed",
 		},
 	}
+
+	// ErrProvisioningAttributeConflict is returned when user provisioning fails due to an attribute conflict.
+	ErrProvisioningAttributeConflict = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "FET-1081",
+		Error: core.I18nMessage{
+			Key:          "flows.executor.errors.provisioning_attribute_conflict",
+			DefaultValue: "A user with the provided attributes already exists",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "flows.executor.errors.provisioning_attribute_conflict_desc",
+			DefaultValue: "User provisioning failed because one or more unique attribute values are already taken",
+		},
+	}
 )
 
 // errAttributeNotUniqueFor returns a ServiceError for a specific attribute that is not unique.

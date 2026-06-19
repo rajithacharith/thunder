@@ -298,6 +298,37 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CreateUserFails() {
 	suite.mockEntityProvider.AssertExpectations(suite.T())
 }
 
+func (suite *ProvisioningExecutorTestSuite) TestExecute_CreateUserFails_AttributeConflict() {
+	suite.expectSchemaForProvisioning()
+	ctx := &core.NodeContext{
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
+		UserInputs: map[string]string{
+			"username": "existinguser",
+		},
+		RuntimeData: map[string]string{
+			ouIDKey:     testOUID,
+			userTypeKey: testUserType,
+		},
+		NodeInputs: []common.Input{{Identifier: "username", Type: "string", Required: true}},
+	}
+
+	suite.mockEntityProvider.On("IdentifyEntity", mock.Anything).Return(nil,
+		entityprovider.NewEntityProviderError(entityprovider.ErrorCodeEntityNotFound, "", ""))
+	suite.mockEntityProvider.On("CreateEntity", mock.Anything, mock.Anything).
+		Return(nil, entityprovider.NewEntityProviderError(
+			entityprovider.ErrorCodeAttributeConflict, "Attribute conflict", ""))
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), ErrProvisioningAttributeConflict.Code, resp.Error.Code)
+	assert.Equal(suite.T(), ErrProvisioningAttributeConflict.Error.DefaultValue, resp.Error.Error.DefaultValue)
+	suite.mockEntityProvider.AssertExpectations(suite.T())
+}
+
 func (suite *ProvisioningExecutorTestSuite) TestHasRequiredInputs_AttributesFromAuthUser() {
 	suite.mockEntityTypeService.On("GetAttributes", mock.Anything, mock.Anything, testUserType, true, true, false).
 		Return([]model.AttributeInfo{}, nil).Once()
