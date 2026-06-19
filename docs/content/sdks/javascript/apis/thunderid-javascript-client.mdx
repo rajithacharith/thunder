@@ -301,6 +301,98 @@ if (ThunderIDJavaScriptClient.didSignOutFail(window.location.href)) {
 
 ---
 
+### Backchannel Authentication (CIBA)
+
+These methods implement the OpenID Connect Client-Initiated Backchannel Authentication (CIBA) poll-mode flow. Use them to trigger user authentication on a separate device without a browser redirect. Push mode is **not** supported. For protocol details, see the [Backchannel Authentication guide](/docs/next/guides/guides/protocols/oauth-oidc/backchannel-authentication).
+
+#### `initiateCIBA(options)`
+
+Send a backchannel authentication request to `POST /oauth2/bc-authorize` and return the `auth_req_id` needed to begin polling.
+
+The endpoint URL is discovered automatically from the OIDC discovery document. Scopes are sourced from the `scopes` field you supplied to `initialize()`.
+
+```ts
+const { authReqId, interval, expiresIn } = await client.initiateCIBA({
+  loginHint: 'user@example.com',
+  bindingMessage: 'Approve login from call center',
+})
+```
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `options.loginHint` | `string` | One of two | A hint identifying the end-user — typically an email address, phone number, or username. |
+| `options.idTokenHint` | `string` | One of two | A previously issued ID token that identifies the end-user. |
+| `options.loginHintToken` | `string` | — | Defined in the CIBA specification but **not supported** by <ProductName />. The server returns `invalid_request` when this parameter is provided. |
+| `options.bindingMessage` | `string` | No | A short, human-readable string displayed on both the consumption and authentication devices to bind the two interactions. Maximum 256 printable characters. |
+| `options.requestedExpiry` | `number` | No | Requested lifetime in seconds for the `auth_req_id`. The server clamps values above its maximum. |
+| `options.acrValues` | `string` | No | Space-separated Authentication Context Class Reference values. |
+
+Exactly one of `loginHint` or `idTokenHint` must be provided.
+
+**Returns:** `Promise<CIBAInitiateResponse>`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `authReqId` | `string` | Unique identifier for this authentication request. Pass to `pollCIBA()`. |
+| `interval` | `number` | Minimum seconds between polling attempts. Increase by 5 on `slow_down`. |
+| `expiresIn` | `number` | Lifetime in seconds of the `auth_req_id`. |
+
+**Throws:** `ThunderIDAPIError` with code `JS-AUTH_CORE-CIBA1-HE03` when the server rejects the request.
+
+#### `pollCIBA(authReqId, interval, options?)`
+
+Poll `POST /oauth2/token` with `grant_type=urn:openid:params:grant-type:ciba` until the user authenticates, the request expires, or polling is cancelled. On success, the received tokens are stored in the SDK session.
+
+```ts
+const controller = new AbortController()
+
+// Cancel polling after 2 minutes if the user has not yet responded.
+setTimeout(() => controller.abort(), 120_000)
+
+try {
+  const tokens = await client.pollCIBA(authReqId, interval, {
+    signal: controller.signal,
+  })
+} catch (err) {
+  if (err.code === 'JS-AUTH_CORE-CIBA2-AB05') {
+    console.log('Polling cancelled — user did not respond in time.')
+  }
+}
+```
+
+`signal` accepts a standard [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal). Call `controller.abort()` at any time to stop polling immediately, even when the method is sleeping between attempts.
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `authReqId` | `string` | Yes | The `authReqId` returned by `initiateCIBA()`. |
+| `interval` | `number` | Yes | Initial polling interval in seconds, as returned by `initiateCIBA()`. |
+| `options.signal` | `AbortSignal` | No | Cancels polling immediately, interrupting any in-progress sleep. |
+
+**Polling behavior:**
+
+| Server response | Action |
+|---|---|
+| `authorization_pending` | Wait for the current interval, then retry. |
+| `slow_down` | Permanently increase the interval by 5 seconds, wait, then retry. |
+| `expired_token` | Reject immediately. |
+| `access_denied` | Reject immediately. |
+| Successful token response | Store tokens in the SDK session and resolve. |
+
+**Returns:** `Promise<TokenResponse>`
+
+**Throws:**
+
+| Code | Cause |
+|------|-------|
+| `JS-AUTH_CORE-CIBA2-HE03` | The server returned a terminal error (`expired_token`, `access_denied`, or another non-retryable error). |
+| `JS-AUTH_CORE-CIBA2-AB05` | Polling was cancelled via `AbortSignal`. |
+
+---
+
 ### Protected Methods (for subclass use)
 
 These methods are available to subclasses building platform adapters:

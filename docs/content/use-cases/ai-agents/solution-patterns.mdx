@@ -53,9 +53,7 @@ When delegated access is needed but the user is not present — a background wor
 
 This pattern fits long-running agents, asynchronous workflows, and any case where the user authorizes once on their phone while the agent continues on a server. The trade-off is latency — the agent must wait for the user to act — and the user must have a registered device that can receive the prompt.
 
-:::note[Coming soon]
-<ProductName /> will support backchannel authorization (CIBA) for background agents that need user approval without an active browser session.
-:::
+This flow is built using the OpenID Connect CIBA grant. See [Backchannel Authentication (CIBA)](/docs/next/guides/guides/protocols/oauth-oidc/backchannel-authentication).
 
 ### Token Exchange
 
