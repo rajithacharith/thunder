@@ -109,7 +109,7 @@ export default defineConfig({
     codecovVitePlugin({
       enableBundleAnalysis: BUNDLE_ANALYSIS_ENABLED,
       bundleName: 'console',
-      oidc: {useGitHubOIDC: true},
+      gitService: 'github',
     }),
   ],
   optimizeDeps: {

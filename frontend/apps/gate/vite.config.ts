@@ -100,7 +100,7 @@ export default defineConfig({
     codecovVitePlugin({
       enableBundleAnalysis: BUNDLE_ANALYSIS_ENABLED,
       bundleName: 'gate',
-      oidc: {useGitHubOIDC: true},
+      gitService: 'github',
     }),
   ],
   test: {
