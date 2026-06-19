@@ -302,12 +302,12 @@ packages:
       pkgname: notificationmock
       filename: "{{.InterfaceName}}_mock.go"
   
-  github.com/thunder-id/thunderid/internal/notification/message:
+  github.com/thunder-id/thunderid/internal/notification/client:
     config:
       all: true
-      dir: tests/mocks/notification/messagemock
+      dir: tests/mocks/notification/clientmock
       structname: '{{.InterfaceName}}Mock'
-      pkgname: messagemock
+      pkgname: clientmock
       filename: "{{.InterfaceName}}_mock.go"
 
   github.com/thunder-id/thunderid/internal/system/http:

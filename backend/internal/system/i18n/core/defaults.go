@@ -745,6 +745,8 @@ var defaultMessages = map[string]string{
 	"error.magiclinkservice.resolving_user_description": "An error occurred while resolving the user for the recipient",
 	"error.magiclinkservice.token_generation_failed": "Token generation failed",
 	"error.magiclinkservice.token_generation_failed_description": "Failed to generate magic link token",
+	"error.notificationclient.unsupported_notification_provider": "Unsupported notification provider",
+	"error.notificationclient.unsupported_notification_provider.description": "The requested notification provider is not supported.",
 	"error.notificationservice.duplicate_sender_name": "Duplicate sender name",
 	"error.notificationservice.duplicate_sender_name_description": "A sender with the same name already exists",
 	"error.notificationservice.error_while_retrieving_message_client": "Error while retrieving message client",

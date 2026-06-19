@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package provider
+package client
 
 import (
 	"context"
@@ -47,8 +47,8 @@ type TwilioClient struct {
 	httpClient syshttp.HTTPClientInterface
 }
 
-// NewTwilioClient creates a new instance of TwilioClient.
-func NewTwilioClient(ctx context.Context, sender common.NotificationSenderDTO) (NotificationClientInterface, error) {
+// newTwilioClient creates a new instance of TwilioClient.
+func newTwilioClient(ctx context.Context, sender common.NotificationSenderDTO) (NotificationClientInterface, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, twilioLoggerComponentName))
 
 	client := &TwilioClient{}
