@@ -147,7 +147,7 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 	}
 
 	// Retrieve the OAuth client based on the client ID.
-	app, lookupErr := as.inboundClient.GetOAuthClientByID(ctx, clientID)
+	app, lookupErr := as.inboundClient.GetOAuthClientByClientID(ctx, clientID)
 	if lookupErr != nil {
 		as.logger.Error(ctx, "Failed to retrieve OAuth client",
 			log.String("error", lookupErr.Error.DefaultValue))

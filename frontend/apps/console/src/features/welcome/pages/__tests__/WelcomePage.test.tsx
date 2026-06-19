@@ -208,19 +208,14 @@ describe('WelcomePage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/welcome/tryout/ai-agents');
   });
 
-  it('opens MCP docs URL on mcp item click', async () => {
-    const mockOpen = vi.fn();
-    vi.stubGlobal('open', mockOpen);
+  it('navigates to MCP tryout page on mcp item click', async () => {
     const user = userEvent.setup();
     render(<WelcomePage />);
 
     await user.click(screen.getByText('common:welcome.tryoutProduct.mcp'));
 
-    expect(mockOpen).toHaveBeenCalledWith(
-      'https://docs.example.com/use-cases/ai-agents/mcp-authorization/try-it-out',
-      '_blank',
-      'noopener,noreferrer',
-    );
+    expect(mockSessionStorageSetItem).toHaveBeenCalledWith('thunderid:welcome:dismissed', 'true');
+    expect(mockNavigate).toHaveBeenCalledWith('/welcome/tryout/mcp');
   });
 
   it('triggers new project action on start card Enter keypress', () => {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -24,6 +24,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/actorprovider"
 	flowconfig "github.com/thunder-id/thunderid/internal/flow/config"
 	"github.com/thunder-id/thunderid/internal/flow/executor"
+	"github.com/thunder-id/thunderid/internal/flow/interceptor"
 	dbprovider "github.com/thunder-id/thunderid/internal/system/database/provider"
 	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
@@ -38,6 +39,7 @@ func Initialize(
 	flowProvider FlowProviderInterface,
 	actorProvider actorprovider.ActorProviderInterface,
 	executorRegistry executor.ExecutorRegistryInterface,
+	interceptorRegistry interceptor.InterceptorRegistryInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
 	cryptoSvc kmprovider.RuntimeCryptoProvider,
 	cfg flowconfig.Config,
@@ -57,7 +59,8 @@ func Initialize(
 		}
 		flowStore = newFlowStore(dbProvider, cfg.DeploymentID)
 	}
-	flowEngine := newFlowEngine(executorRegistry, observabilitySvc)
+	interceptorRunner := newInterceptorRunner(interceptorRegistry)
+	flowEngine := newFlowEngine(executorRegistry, interceptorRunner, observabilitySvc)
 	flowExecService := newFlowExecService(flowProvider, flowStore, flowEngine,
 		actorProvider, observabilitySvc, transactioner, cryptoSvc, cfg)
 

@@ -19,7 +19,9 @@
 package flowexec
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -28,12 +30,12 @@ import (
 	managerpkg "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
+	"github.com/thunder-id/thunderid/tests/mocks/flow/executormock"
 	"github.com/thunder-id/thunderid/tests/mocks/observability/observabilitymock"
 )
 
@@ -1108,169 +1110,7 @@ func (s *EngineTestSuite) TestHandleDisplayOnlyPromptResponse_MergesAdditionalDa
 	s.Equal(common.FlowStatusComplete, flowStep.Status)
 }
 
-func (s *EngineTestSuite) TestValidateChallengeToken_EmptyTokenHashSkipsValidation() {
-	t := s.T()
-	mockNode := coremock.NewNodeInterfaceMock(t)
-
-	fe := &flowEngine{
-		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
-	}
-	ctx := &EngineContext{
-		ExecutionID:        "test-exec-id",
-		ChallengeTokenIn:   "some-token",
-		ChallengeTokenHash: "",
-	}
-
-	svcErr := fe.validateChallengeToken(ctx, mockNode)
-	s.Nil(svcErr)
-}
-
-func (s *EngineTestSuite) TestValidateChallengeToken_SkipValidationWhenPolicyAllows() {
-	t := s.T()
-	mockNode := coremock.NewNodeInterfaceMock(t)
-	mockNode.On("GetExecutionPolicy").Return(&core.ExecutionPolicy{
-		SkipChallengeValidation: true,
-	})
-
-	fe := &flowEngine{
-		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
-	}
-
-	// Generate a token and hash it
-	tokenStr, err := cryptolib.GenerateSecureToken()
-	s.NoError(err)
-	tokenHash := cryptolib.HashToken(tokenStr)
-
-	ctx := &EngineContext{
-		ExecutionID:        "test-exec-id",
-		ChallengeTokenIn:   "wrong-token",
-		ChallengeTokenHash: tokenHash,
-	}
-
-	svcErr := fe.validateChallengeToken(ctx, mockNode)
-	s.Nil(svcErr)
-}
-
-func (s *EngineTestSuite) TestValidateChallengeToken_ReturnsErrorWhenTokenEmpty() {
-	t := s.T()
-	mockNode := coremock.NewNodeInterfaceMock(t)
-	mockNode.On("GetExecutionPolicy").Return(nil)
-
-	fe := &flowEngine{
-		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
-	}
-
-	// Generate a token and hash it
-	tokenStr, err := cryptolib.GenerateSecureToken()
-	s.NoError(err)
-	tokenHash := cryptolib.HashToken(tokenStr)
-
-	ctx := &EngineContext{
-		ExecutionID:        "test-exec-id",
-		ChallengeTokenIn:   "", // Empty token
-		ChallengeTokenHash: tokenHash,
-	}
-
-	svcErr := fe.validateChallengeToken(ctx, mockNode)
-	s.NotNil(svcErr)
-	s.Equal("FES-1009", svcErr.Code)
-}
-
-func (s *EngineTestSuite) TestValidateChallengeToken_ReturnsErrorWhenTokenInvalid() {
-	t := s.T()
-	mockNode := coremock.NewNodeInterfaceMock(t)
-	mockNode.On("GetExecutionPolicy").Return(nil)
-
-	fe := &flowEngine{
-		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
-	}
-
-	// Generate a token and hash it
-	tokenStr, err := cryptolib.GenerateSecureToken()
-	s.NoError(err)
-	tokenHash := cryptolib.HashToken(tokenStr)
-
-	ctx := &EngineContext{
-		ExecutionID:        "test-exec-id",
-		ChallengeTokenIn:   "invalid-token",
-		ChallengeTokenHash: tokenHash,
-	}
-
-	svcErr := fe.validateChallengeToken(ctx, mockNode)
-	s.NotNil(svcErr)
-	s.Equal("FES-1009", svcErr.Code)
-}
-
-func (s *EngineTestSuite) TestValidateChallengeToken_SucceedsWhenTokenValid() {
-	t := s.T()
-	mockNode := coremock.NewNodeInterfaceMock(t)
-	mockNode.On("GetExecutionPolicy").Return(nil)
-
-	fe := &flowEngine{
-		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
-	}
-
-	// Generate a token and hash it
-	tokenStr, err := cryptolib.GenerateSecureToken()
-	s.NoError(err)
-	tokenHash := cryptolib.HashToken(tokenStr)
-
-	ctx := &EngineContext{
-		ExecutionID:        "test-exec-id",
-		ChallengeTokenIn:   tokenStr,
-		ChallengeTokenHash: tokenHash,
-	}
-
-	svcErr := fe.validateChallengeToken(ctx, mockNode)
-	s.Nil(svcErr)
-}
-
-func (s *EngineTestSuite) TestValidateChallengeToken_SkipValidationWhenNodeNil() {
-	fe := &flowEngine{
-		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
-	}
-
-	// Generate a token and hash it
-	tokenStr, err := cryptolib.GenerateSecureToken()
-	s.NoError(err)
-	tokenHash := cryptolib.HashToken(tokenStr)
-
-	ctx := &EngineContext{
-		ExecutionID:        "test-exec-id",
-		ChallengeTokenIn:   "wrong-token",
-		ChallengeTokenHash: tokenHash,
-	}
-
-	svcErr := fe.validateChallengeToken(ctx, nil)
-	s.NotNil(svcErr)
-	s.Equal("FES-1009", svcErr.Code)
-}
-
-func (s *EngineTestSuite) TestValidateChallengeToken_SkipValidationWhenPolicyNil() {
-	t := s.T()
-	mockNode := coremock.NewNodeInterfaceMock(t)
-	mockNode.On("GetExecutionPolicy").Return(nil)
-
-	fe := &flowEngine{
-		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
-	}
-
-	// Generate a token and hash it
-	tokenStr, err := cryptolib.GenerateSecureToken()
-	s.NoError(err)
-	tokenHash := cryptolib.HashToken(tokenStr)
-
-	ctx := &EngineContext{
-		ExecutionID:        "test-exec-id",
-		ChallengeTokenIn:   tokenStr,
-		ChallengeTokenHash: tokenHash,
-	}
-
-	svcErr := fe.validateChallengeToken(ctx, mockNode)
-	s.Nil(svcErr)
-}
-
-func (s *EngineTestSuite) TestValidateSegmentResumePolicy_NoSegments() {
+func (s *EngineTestSuite) TestIsSegmentRestartAllowed_NoSegments() {
 	t := s.T()
 	mockGraph := coremock.NewGraphInterfaceMock(t)
 	mockGraph.On("HasSegments").Return(false)
@@ -1280,10 +1120,10 @@ func (s *EngineTestSuite) TestValidateSegmentResumePolicy_NoSegments() {
 	}
 	ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: "seg-1"}
 
-	s.False(fe.validateSegmentResumePolicy(ctx, fe.logger))
+	s.False(fe.isSegmentRestartAllowed(ctx, fe.logger))
 }
 
-func (s *EngineTestSuite) TestValidateSegmentResumePolicy_EmptySegmentID() {
+func (s *EngineTestSuite) TestIsSegmentRestartAllowed_EmptySegmentID() {
 	t := s.T()
 	mockGraph := coremock.NewGraphInterfaceMock(t)
 	mockGraph.On("HasSegments").Return(true)
@@ -1293,10 +1133,10 @@ func (s *EngineTestSuite) TestValidateSegmentResumePolicy_EmptySegmentID() {
 	}
 	ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: ""}
 
-	s.False(fe.validateSegmentResumePolicy(ctx, fe.logger))
+	s.False(fe.isSegmentRestartAllowed(ctx, fe.logger))
 }
 
-func (s *EngineTestSuite) TestValidateSegmentResumePolicy_SegmentNotFound() {
+func (s *EngineTestSuite) TestIsSegmentRestartAllowed_SegmentNotFound() {
 	t := s.T()
 	mockGraph := coremock.NewGraphInterfaceMock(t)
 	mockGraph.On("HasSegments").Return(true)
@@ -1307,10 +1147,10 @@ func (s *EngineTestSuite) TestValidateSegmentResumePolicy_SegmentNotFound() {
 	}
 	ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: "seg-1"}
 
-	s.False(fe.validateSegmentResumePolicy(ctx, fe.logger))
+	s.False(fe.isSegmentRestartAllowed(ctx, fe.logger))
 }
 
-func (s *EngineTestSuite) TestValidateSegmentResumePolicy_StartNodeNotFound() {
+func (s *EngineTestSuite) TestIsSegmentRestartAllowed_StartNodeNotFound() {
 	t := s.T()
 	seg := &core.Segment{ID: "seg-1", StartNodeID: "task-node"}
 
@@ -1324,33 +1164,10 @@ func (s *EngineTestSuite) TestValidateSegmentResumePolicy_StartNodeNotFound() {
 	}
 	ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: "seg-1"}
 
-	s.False(fe.validateSegmentResumePolicy(ctx, fe.logger))
+	s.False(fe.isSegmentRestartAllowed(ctx, fe.logger))
 }
 
-func (s *EngineTestSuite) TestValidateSegmentResumePolicy_SetNodeExecutorFails() {
-	// Node reports TaskExecution type but NodeInterfaceMock doesn't implement
-	// ExecutorBackedNodeInterface, so the type assertion in setNodeExecutor fails.
-	t := s.T()
-	seg := &core.Segment{ID: "seg-1", StartNodeID: "task-node"}
-
-	mockNode := coremock.NewNodeInterfaceMock(t)
-	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
-	mockNode.On("GetID").Return("task-node")
-
-	mockGraph := coremock.NewGraphInterfaceMock(t)
-	mockGraph.On("HasSegments").Return(true)
-	mockGraph.On("GetSegmentByID", "seg-1").Return(seg)
-	mockGraph.On("GetNode", "task-node").Return(mockNode, true)
-
-	fe := &flowEngine{
-		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
-	}
-	ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: "seg-1"}
-
-	s.False(fe.validateSegmentResumePolicy(ctx, fe.logger))
-}
-
-func (s *EngineTestSuite) TestValidateSegmentResumePolicy_NilPolicy() {
+func (s *EngineTestSuite) TestIsSegmentRestartAllowed_NilPolicy() {
 	t := s.T()
 	seg := &core.Segment{ID: "seg-1", StartNodeID: "prompt-node"}
 
@@ -1368,10 +1185,10 @@ func (s *EngineTestSuite) TestValidateSegmentResumePolicy_NilPolicy() {
 	}
 	ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: "seg-1"}
 
-	s.False(fe.validateSegmentResumePolicy(ctx, fe.logger))
+	s.False(fe.isSegmentRestartAllowed(ctx, fe.logger))
 }
 
-func (s *EngineTestSuite) TestValidateSegmentResumePolicy_PolicyAllowsRestartFlag() {
+func (s *EngineTestSuite) TestIsSegmentRestartAllowed_PolicyAllowsRestartFlag() {
 	tests := []struct {
 		name          string
 		allowRestart  bool
@@ -1401,7 +1218,7 @@ func (s *EngineTestSuite) TestValidateSegmentResumePolicy_PolicyAllowsRestartFla
 			}
 			ctx := &EngineContext{Graph: mockGraph, CurrentSegmentID: "seg-1"}
 
-			s.Equal(tt.expectAllowed, fe.validateSegmentResumePolicy(ctx, fe.logger))
+			s.Equal(tt.expectAllowed, fe.isSegmentRestartAllowed(ctx, fe.logger))
 		})
 	}
 }
@@ -1715,4 +1532,1877 @@ func (s *EngineTestSuite) TestProcessServiceErrorForEventPublish_ReturnsErrorDet
 func (s *EngineTestSuite) TestProcessServiceErrorForEventPublish_NilError() {
 	result := processServiceErrorForEventPublish(nil)
 	s.Nil(result)
+}
+
+// --- newFlowEngine ---
+
+func (s *EngineTestSuite) TestNewFlowEngine() {
+	t := s.T()
+	mockRegistry := executormock.NewExecutorRegistryInterfaceMock(t)
+	mockInterceptorRunner := NewInterceptorRunnerInterfaceMock(t)
+	mockObs := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+
+	engine := newFlowEngine(mockRegistry, mockInterceptorRunner, mockObs)
+	s.NotNil(engine)
+}
+
+// --- setCurrentExecutionNode ---
+
+func (s *EngineTestSuite) TestSetCurrentExecutionNode_NilGraph() {
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{Context: context.Background()}
+	err := fe.setCurrentExecutionNode(ctx, log.GetLogger())
+	s.NotNil(err)
+}
+
+func (s *EngineTestSuite) TestSetCurrentExecutionNode_GetStartNodeError() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetStartNode").Return(nil, errors.New("no start node"))
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{
+		Context: context.Background(),
+		Graph:   mockGraph,
+	}
+	err := fe.setCurrentExecutionNode(ctx, log.GetLogger())
+	s.NotNil(err)
+}
+
+func (s *EngineTestSuite) TestSetCurrentExecutionNode_ExistingNode() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockNode := coremock.NewNodeInterfaceMock(t)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{
+		Context:          context.Background(),
+		Graph:            mockGraph,
+		CurrentNode:      mockNode,
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+	}
+	err := fe.setCurrentExecutionNode(ctx, log.GetLogger())
+	s.Nil(err)
+}
+
+// --- getExecutorByName ---
+
+func (s *EngineTestSuite) TestGetExecutorByName_Success() {
+	t := s.T()
+	mockRegistry := executormock.NewExecutorRegistryInterfaceMock(t)
+	mockExec := coremock.NewExecutorInterfaceMock(t)
+	mockRegistry.EXPECT().GetExecutor("myExecutor").Return(mockExec, nil)
+
+	fe := &flowEngine{executorRegistry: mockRegistry, logger: log.GetLogger()}
+	exec, err := fe.getExecutorByName("myExecutor")
+	s.Nil(err)
+	s.Equal(mockExec, exec)
+}
+
+func (s *EngineTestSuite) TestGetExecutorByName_Error() {
+	t := s.T()
+	mockRegistry := executormock.NewExecutorRegistryInterfaceMock(t)
+	mockRegistry.EXPECT().GetExecutor("unknown").Return(nil, errors.New("not found"))
+
+	fe := &flowEngine{executorRegistry: mockRegistry, logger: log.GetLogger()}
+	exec, err := fe.getExecutorByName("unknown")
+	s.Nil(exec)
+	s.NotNil(err)
+}
+
+// --- resolveToNextNode ---
+
+func (s *EngineTestSuite) TestResolveToNextNode_NilResponse() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{Context: context.Background(), Graph: mockGraph}
+
+	next, err := fe.resolveToNextNode(ctx, nil)
+	s.Nil(err)
+	s.Nil(next)
+}
+
+func (s *EngineTestSuite) TestResolveToNextNode_EmptyNextNodeID() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{Context: context.Background(), Graph: mockGraph}
+
+	next, err := fe.resolveToNextNode(ctx, &common.NodeResponse{NextNodeID: ""})
+	s.Nil(err)
+	s.Nil(next)
+}
+
+func (s *EngineTestSuite) TestResolveToNextNode_NodeNotFound() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetNode", "missing-node").Return(nil, false)
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{Context: context.Background(), Graph: mockGraph}
+
+	next, err := fe.resolveToNextNode(ctx, &common.NodeResponse{NextNodeID: "missing-node"})
+	s.Nil(next)
+	s.NotNil(err)
+}
+
+func (s *EngineTestSuite) TestResolveToNextNode_Success() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("next-node")
+	mockGraph.On("GetNode", "next-node").Return(mockNode, true)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{Context: context.Background(), Graph: mockGraph}
+
+	next, err := fe.resolveToNextNode(ctx, &common.NodeResponse{NextNodeID: "next-node"})
+	s.Nil(err)
+	s.Equal(mockNode, next)
+}
+
+// --- handleCompletedResponse ---
+
+func (s *EngineTestSuite) TestHandleCompletedResponse_NoNextNode() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetNode", mock.Anything).Return(nil, false)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{
+		Context: context.Background(),
+		Graph:   mockGraph,
+	}
+	nodeResp := &common.NodeResponse{
+		Status:     common.NodeStatusComplete,
+		NextNodeID: "end-node",
+	}
+	next, err := fe.handleCompletedResponse(ctx, nodeResp, log.GetLogger())
+	s.Nil(next)
+	s.NotNil(err)
+}
+
+func (s *EngineTestSuite) TestHandleCompletedResponse_WithNextNode() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("next-node")
+	mockGraph.On("GetNode", "next-node").Return(mockNode, true)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{
+		Context: context.Background(),
+		Graph:   mockGraph,
+	}
+	nodeResp := &common.NodeResponse{
+		Status:     common.NodeStatusComplete,
+		NextNodeID: "next-node",
+	}
+	next, err := fe.handleCompletedResponse(ctx, nodeResp, log.GetLogger())
+	s.Nil(err)
+	s.Equal(mockNode, next)
+}
+
+// --- handleIncompleteResponse ---
+
+func (s *EngineTestSuite) TestHandleIncompleteResponse_RedirectionType() {
+	fe := &flowEngine{logger: log.GetLogger()}
+	flowStep := &FlowStep{}
+	ctx := &EngineContext{Context: context.Background()}
+	nodeResp := &common.NodeResponse{
+		Status:      common.NodeStatusIncomplete,
+		Type:        common.NodeResponseTypeRedirection,
+		RedirectURL: "https://example.com/redirect",
+	}
+	err := fe.handleIncompleteResponse(ctx, nodeResp, flowStep, log.GetLogger())
+	s.Nil(err)
+	s.Equal(common.FlowStatusIncomplete, flowStep.Status)
+	s.Equal(common.StepTypeRedirection, flowStep.Type)
+}
+
+func (s *EngineTestSuite) TestHandleIncompleteResponse_UnsupportedType() {
+	fe := &flowEngine{logger: log.GetLogger()}
+	flowStep := &FlowStep{}
+	ctx := &EngineContext{Context: context.Background()}
+	nodeResp := &common.NodeResponse{
+		Status: common.NodeStatusIncomplete,
+		Type:   "UNSUPPORTED_TYPE",
+	}
+	err := fe.handleIncompleteResponse(ctx, nodeResp, flowStep, log.GetLogger())
+	s.NotNil(err)
+}
+
+// --- handleForwardResponse ---
+
+func (s *EngineTestSuite) TestHandleForwardResponse_Success() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("forward-node")
+	mockGraph.On("GetNode", "forward-node").Return(mockNode, true)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{
+		Context: context.Background(),
+		Graph:   mockGraph,
+	}
+	nodeResp := &common.NodeResponse{
+		Status:     common.NodeStatusForward,
+		NextNodeID: "forward-node",
+	}
+	next, err := fe.handleForwardResponse(ctx, nodeResp, log.GetLogger())
+	s.Nil(err)
+	s.Equal(mockNode, next)
+}
+
+func (s *EngineTestSuite) TestHandleForwardResponse_NodeNotFound() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetNode", "missing").Return(nil, false)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{
+		Context: context.Background(),
+		Graph:   mockGraph,
+	}
+	nodeResp := &common.NodeResponse{
+		Status:     common.NodeStatusForward,
+		NextNodeID: "missing",
+	}
+	next, err := fe.handleForwardResponse(ctx, nodeResp, log.GetLogger())
+	s.Nil(next)
+	s.NotNil(err)
+}
+
+// --- skipToNextNode ---
+
+func (s *EngineTestSuite) TestSkipToNextNode_NoCondition() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetCondition").Return((*core.NodeCondition)(nil))
+	mockNode.On("GetID").Return("node-1")
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{Context: context.Background()}
+
+	next, err := fe.skipToNextNode(ctx, mockNode, log.GetLogger())
+	s.Nil(next)
+	s.NotNil(err)
+}
+
+func (s *EngineTestSuite) TestSkipToNextNode_EmptyOnSkip() {
+	t := s.T()
+	cond := &core.NodeCondition{OnSkip: ""}
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetCondition").Return(cond)
+	mockNode.On("GetID").Return("node-1")
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{Context: context.Background()}
+
+	next, err := fe.skipToNextNode(ctx, mockNode, log.GetLogger())
+	s.Nil(next)
+	s.NotNil(err)
+}
+
+func (s *EngineTestSuite) TestSkipToNextNode_NodeNotFound() {
+	t := s.T()
+	cond := &core.NodeCondition{OnSkip: "skip-target"}
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetCondition").Return(cond)
+	mockNode.On("GetID").Return("node-1")
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetNode", "skip-target").Return(nil, false)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{Context: context.Background(), Graph: mockGraph}
+
+	next, err := fe.skipToNextNode(ctx, mockNode, log.GetLogger())
+	s.Nil(next)
+	s.NotNil(err)
+}
+
+// --- processNodeResponse ---
+
+func (s *EngineTestSuite) TestProcessNodeResponse_EmptyStatus() {
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{Context: context.Background()}
+	nodeResp := &common.NodeResponse{Status: ""}
+	flowStep := &FlowStep{}
+	_, _, err := fe.processNodeResponse(ctx, nodeResp, flowStep, log.GetLogger())
+	s.NotNil(err)
+}
+
+func (s *EngineTestSuite) TestProcessNodeResponse_FailureStatus() {
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{Context: context.Background()}
+	svcErr := &serviceerror.ServiceError{Code: "err-1"}
+	nodeResp := &common.NodeResponse{
+		Status: common.NodeStatusFailure,
+		Error:  svcErr,
+	}
+	flowStep := &FlowStep{}
+	next, continueExec, err := fe.processNodeResponse(ctx, nodeResp, flowStep, log.GetLogger())
+	s.Nil(err)
+	s.False(continueExec)
+	s.Nil(next)
+	s.Equal(common.FlowStatusError, flowStep.Status)
+}
+
+func (s *EngineTestSuite) TestProcessNodeResponse_CompleteStatus() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockNextNode := coremock.NewNodeInterfaceMock(t)
+	mockNextNode.On("GetID").Return("next-node")
+	mockGraph.On("GetNode", "next-node").Return(mockNextNode, true)
+
+	// Use a NodeInterface mock — type assertion to PromptNodeInterface will fail (it's not one),
+	// so isDisplayOnlyPromptNode returns false without calling GetType.
+	mockCurrentNode := coremock.NewNodeInterfaceMock(t)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{
+		Context:     context.Background(),
+		Graph:       mockGraph,
+		CurrentNode: mockCurrentNode,
+	}
+	nodeResp := &common.NodeResponse{
+		Status:     common.NodeStatusComplete,
+		NextNodeID: "next-node",
+	}
+	flowStep := &FlowStep{}
+	next, continueExec, err := fe.processNodeResponse(ctx, nodeResp, flowStep, log.GetLogger())
+	s.Nil(err)
+	s.True(continueExec)
+	s.Equal(mockNextNode, next)
+}
+
+func (s *EngineTestSuite) TestProcessNodeResponse_IncompleteViewStatus() {
+	t := s.T()
+	mockCurrentNode := coremock.NewNodeInterfaceMock(t)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{
+		Context:     context.Background(),
+		CurrentNode: mockCurrentNode,
+	}
+	nodeResp := &common.NodeResponse{
+		Status:      common.NodeStatusIncomplete,
+		Type:        common.NodeResponseTypeRedirection,
+		RedirectURL: "https://example.com",
+	}
+	flowStep := &FlowStep{}
+	next, continueExec, err := fe.processNodeResponse(ctx, nodeResp, flowStep, log.GetLogger())
+	s.Nil(err)
+	s.False(continueExec)
+	s.Nil(next)
+}
+
+func (s *EngineTestSuite) TestProcessNodeResponse_UnsupportedStatus() {
+	t := s.T()
+	mockCurrentNode := coremock.NewNodeInterfaceMock(t)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{
+		Context:     context.Background(),
+		CurrentNode: mockCurrentNode,
+	}
+	nodeResp := &common.NodeResponse{
+		Status: "UNKNOWN_STATUS",
+	}
+	flowStep := &FlowStep{}
+	_, _, err := fe.processNodeResponse(ctx, nodeResp, flowStep, log.GetLogger())
+	s.NotNil(err)
+}
+
+// --- recordNodeExecution ---
+
+func (s *EngineTestSuite) TestRecordNodeExecution_NewRecord() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1")
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
+
+	ctx := &EngineContext{
+		Context:          context.Background(),
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+	}
+	nodeResp := &common.NodeResponse{Status: common.NodeStatusComplete}
+	recordNodeExecution(ctx, mockNode, nodeResp, nil, 100, 200)
+
+	record, exists := ctx.ExecutionHistory["node-1"]
+	s.True(exists)
+	s.NotNil(record)
+	s.Equal(1, len(record.Executions))
+}
+
+func (s *EngineTestSuite) TestRecordNodeExecution_ExistingRecord() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1")
+
+	existing := &common.NodeExecutionRecord{
+		NodeID:     "node-1",
+		Executions: make([]common.ExecutionAttempt, 0),
+	}
+	ctx := &EngineContext{
+		Context: context.Background(),
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{
+			"node-1": existing,
+		},
+	}
+	nodeResp := &common.NodeResponse{Status: common.NodeStatusIncomplete}
+	recordNodeExecution(ctx, mockNode, nodeResp, nil, 100, 200)
+
+	s.Equal(1, len(existing.Executions))
+}
+
+// --- createExecutionRecord ---
+
+func (s *EngineTestSuite) TestCreateExecutionRecord_BasicNode() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1")
+	// Return a non-task-execution type so we skip executor-related code
+	mockNode.On("GetType").Return(common.NodeTypePrompt)
+
+	record := createExecutionRecord(mockNode, 1)
+	s.Equal("node-1", record.NodeID)
+	s.Equal(1, record.Step)
+}
+
+// --- createExecutionAttempt ---
+
+func (s *EngineTestSuite) TestCreateExecutionAttempt_WithError() {
+	nodeRecord := &common.NodeExecutionRecord{Executions: make([]common.ExecutionAttempt, 0)}
+	svcErr := &serviceerror.ServiceError{Code: "err-1"}
+
+	attempt := createExecutionAttempt(nodeRecord, nil, svcErr, 100, 200)
+	s.Equal(common.FlowStatusError, attempt.Status)
+	s.Equal(1, attempt.Attempt)
+}
+
+func (s *EngineTestSuite) TestCreateExecutionAttempt_CompleteResponse() {
+	nodeRecord := &common.NodeExecutionRecord{Executions: make([]common.ExecutionAttempt, 0)}
+	nodeResp := &common.NodeResponse{Status: common.NodeStatusComplete}
+
+	attempt := createExecutionAttempt(nodeRecord, nodeResp, nil, 100, 200)
+	s.Equal(common.FlowStatusComplete, attempt.Status)
+}
+
+func (s *EngineTestSuite) TestCreateExecutionAttempt_IncompleteResponse() {
+	nodeRecord := &common.NodeExecutionRecord{Executions: make([]common.ExecutionAttempt, 0)}
+	nodeResp := &common.NodeResponse{Status: common.NodeStatusIncomplete}
+
+	attempt := createExecutionAttempt(nodeRecord, nodeResp, nil, 100, 200)
+	s.Equal(common.FlowStatusIncomplete, attempt.Status)
+}
+
+func (s *EngineTestSuite) TestCreateExecutionAttempt_FailureResponse() {
+	nodeRecord := &common.NodeExecutionRecord{Executions: make([]common.ExecutionAttempt, 0)}
+	nodeResp := &common.NodeResponse{Status: common.NodeStatusFailure}
+
+	attempt := createExecutionAttempt(nodeRecord, nodeResp, nil, 100, 200)
+	s.Equal(common.FlowStatusError, attempt.Status)
+}
+
+// --- setNodeExecutor ---
+
+func (s *EngineTestSuite) TestSetNodeExecutor_NonTaskNode() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetType").Return(common.NodeTypePrompt)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	err := fe.setNodeExecutor(context.Background(), mockNode, log.GetLogger())
+	s.Nil(err)
+}
+
+func (s *EngineTestSuite) TestSetNodeExecutor_NotExecutorBacked() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
+	mockNode.On("GetID").Return("node-1")
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	err := fe.setNodeExecutor(context.Background(), mockNode, log.GetLogger())
+	s.NotNil(err)
+}
+
+func (s *EngineTestSuite) TestSetNodeExecutor_ExecutorAlreadySet() {
+	t := s.T()
+	mockExec := coremock.NewExecutorInterfaceMock(t)
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
+	mockNode.On("GetExecutor").Return(mockExec)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	err := fe.setNodeExecutor(context.Background(), mockNode, log.GetLogger())
+	s.Nil(err)
+}
+
+func (s *EngineTestSuite) TestSetNodeExecutor_ExecutorNameEmpty() {
+	t := s.T()
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
+	mockNode.On("GetExecutor").Return(nil)
+	mockNode.On("GetExecutorName").Return("")
+	mockNode.On("GetID").Return("node-1")
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	err := fe.setNodeExecutor(context.Background(), mockNode, log.GetLogger())
+	s.NotNil(err)
+}
+
+func (s *EngineTestSuite) TestSetNodeExecutor_RegistryError() {
+	t := s.T()
+	mockRegistry := executormock.NewExecutorRegistryInterfaceMock(t)
+	mockRegistry.EXPECT().GetExecutor("myExec").Return(nil, errors.New("not found"))
+
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
+	mockNode.On("GetExecutor").Return(nil)
+	mockNode.On("GetExecutorName").Return("myExec")
+	mockNode.On("GetID").Return("node-1")
+
+	fe := &flowEngine{executorRegistry: mockRegistry, logger: log.GetLogger()}
+	err := fe.setNodeExecutor(context.Background(), mockNode, log.GetLogger())
+	s.NotNil(err)
+}
+
+// --- handleIncompleteResponse (view type) ---
+
+func (s *EngineTestSuite) TestHandleIncompleteResponse_ViewType() {
+	t := s.T()
+	mockCurrentNode := coremock.NewNodeInterfaceMock(t)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{
+		Context:     context.Background(),
+		CurrentNode: mockCurrentNode,
+	}
+	flowStep := &FlowStep{}
+	nodeResp := &common.NodeResponse{
+		Status: common.NodeStatusIncomplete,
+		Type:   common.NodeResponseTypeView,
+		Inputs: []common.Input{{Identifier: "username", Required: true}},
+	}
+	err := fe.handleIncompleteResponse(ctx, nodeResp, flowStep, log.GetLogger())
+	s.Nil(err)
+	s.Equal(common.FlowStatusIncomplete, flowStep.Status)
+}
+
+func (s *EngineTestSuite) TestHandleIncompleteResponse_RedirectionError() {
+	fe := &flowEngine{logger: log.GetLogger()}
+	flowStep := &FlowStep{}
+	ctx := &EngineContext{Context: context.Background()}
+	// Empty RedirectURL will cause resolveStepForRedirection to return an error.
+	nodeResp := &common.NodeResponse{
+		Status:      common.NodeStatusIncomplete,
+		Type:        common.NodeResponseTypeRedirection,
+		RedirectURL: "",
+	}
+	err := fe.handleIncompleteResponse(ctx, nodeResp, flowStep, log.GetLogger())
+	s.NotNil(err)
+}
+
+func (s *EngineTestSuite) TestHandleIncompleteResponse_ViewTypeError() {
+	t := s.T()
+	mockCurrentNode := coremock.NewNodeInterfaceMock(t)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{
+		Context:     context.Background(),
+		CurrentNode: mockCurrentNode,
+	}
+	flowStep := &FlowStep{}
+	// Empty Inputs and Actions will cause resolveStepDetailsForPrompt to return an error.
+	nodeResp := &common.NodeResponse{
+		Status:  common.NodeStatusIncomplete,
+		Type:    common.NodeResponseTypeView,
+		Inputs:  nil,
+		Actions: nil,
+	}
+	err := fe.handleIncompleteResponse(ctx, nodeResp, flowStep, log.GetLogger())
+	s.NotNil(err)
+}
+
+// --- createExecutionRecord with executor ---
+
+func (s *EngineTestSuite) TestCreateExecutionRecord_TaskNodeWithExecutor() {
+	t := s.T()
+	mockExec := coremock.NewExecutorInterfaceMock(t)
+	mockExec.On("GetName").Return("PasswordExecutor")
+	mockExec.On("GetType").Return(common.ExecutorType("AUTHENTICATOR"))
+
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-exec")
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
+	mockNode.On("GetExecutor").Return(mockExec)
+	mockNode.On("GetMode").Return("").Maybe()
+
+	record := createExecutionRecord(mockNode, 2)
+	s.Equal("node-exec", record.NodeID)
+	s.Equal(2, record.Step)
+	s.Equal("PasswordExecutor", record.ExecutorName)
+}
+
+// --- processNodeResponse (Forward status) ---
+
+func (s *EngineTestSuite) TestProcessNodeResponse_ForwardStatus() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockNextNode := coremock.NewNodeInterfaceMock(t)
+	mockNextNode.On("GetID").Return("forward-node")
+	mockGraph.On("GetNode", "forward-node").Return(mockNextNode, true)
+
+	mockCurrentNode := coremock.NewNodeInterfaceMock(t)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{
+		Context:     context.Background(),
+		Graph:       mockGraph,
+		CurrentNode: mockCurrentNode,
+	}
+	nodeResp := &common.NodeResponse{
+		Status:     common.NodeStatusForward,
+		NextNodeID: "forward-node",
+	}
+	flowStep := &FlowStep{}
+	next, continueExec, err := fe.processNodeResponse(ctx, nodeResp, flowStep, log.GetLogger())
+	s.Nil(err)
+	s.True(continueExec)
+	s.Equal(mockNextNode, next)
+}
+
+// --- setCurrentExecutionNode (with nil history) ---
+
+func (s *EngineTestSuite) TestSetCurrentExecutionNode_InitializesHistory() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockGraph.On("GetStartNode").Return(mockNode, nil)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{
+		Context:          context.Background(),
+		Graph:            mockGraph,
+		ExecutionHistory: nil,
+	}
+	err := fe.setCurrentExecutionNode(ctx, log.GetLogger())
+	s.Nil(err)
+	s.NotNil(ctx.ExecutionHistory)
+	s.Equal(mockNode, ctx.CurrentNode)
+}
+
+// --- handleForwardResponse with error in nodeResp ---
+
+func (s *EngineTestSuite) TestHandleForwardResponse_WithErrorMsg() {
+	t := s.T()
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockNextNode := coremock.NewNodeInterfaceMock(t)
+	mockNextNode.On("GetID").Return("next")
+	mockGraph.On("GetNode", "next").Return(mockNextNode, true)
+
+	svcErr := &serviceerror.ServiceError{Code: "err-1"}
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{
+		Context: context.Background(),
+		Graph:   mockGraph,
+	}
+	nodeResp := &common.NodeResponse{
+		Status:     common.NodeStatusForward,
+		NextNodeID: "next",
+		Error:      svcErr,
+	}
+	next, err := fe.handleForwardResponse(ctx, nodeResp, log.GetLogger())
+	s.Nil(err)
+	s.Equal(mockNextNode, next)
+}
+
+// --- publishNodeExecutionCompletedEvent ---
+
+func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NilRecord() {
+	t := s.T()
+	mockObs := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObs.EXPECT().IsEnabled().Return(true)
+	// No PublishEvent call expected because record is nil.
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-no-record")
+
+	ctx := &EngineContext{
+		Context:          context.Background(),
+		ExecutionID:      "exec-1",
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+	}
+	// Calling with nil nodeResp and nil nodeErr, but no history entry for the node.
+	publishNodeExecutionCompletedEvent(ctx, mockNode, nil, nil, 1000, 1100, mockObs)
+}
+
+func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_DefaultStatus() {
+	t := s.T()
+	mockObs := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObs.EXPECT().IsEnabled().Return(true)
+	mockObs.EXPECT().PublishEvent(mock.Anything, mock.Anything).Maybe()
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-default")
+	mockNode.On("GetType").Return(common.NodeTypePrompt)
+
+	ctx := &EngineContext{
+		Context:     context.Background(),
+		ExecutionID: "exec-1",
+		FlowType:    common.FlowTypeAuthentication,
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{
+			"node-default": {NodeID: "node-default", Step: 1, Executions: []common.ExecutionAttempt{{Attempt: 1}}},
+		},
+	}
+	// Use an unrecognized NodeStatus to hit the default branch.
+	nodeResp := &common.NodeResponse{Status: common.NodeStatus("UNKNOWN_STATUS")}
+	publishNodeExecutionCompletedEvent(ctx, mockNode, nodeResp, nil, 1000, 1100, mockObs)
+}
+
+// --- Execute (flowEngine) ---
+
+func (s *EngineTestSuite) TestFlowEngineExecute_NilGraph() {
+	t := s.T()
+	mockObs := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObs.EXPECT().IsEnabled().Return(false).Maybe()
+
+	fe := &flowEngine{
+		logger:           log.GetLogger(),
+		observabilitySvc: mockObs,
+	}
+	ctx := &EngineContext{
+		Context:          context.Background(),
+		ExecutionID:      "exec-1",
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+	}
+
+	_, err := fe.Execute(ctx)
+	s.NotNil(err)
+}
+
+// Tests for runInterceptors
+
+func (s *EngineTestSuite) TestRunInterceptors_NilGraph() {
+	fe := &flowEngine{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	ctx := &EngineContext{
+		Graph: nil,
+	}
+
+	continueExec, err := fe.runInterceptors(common.InterceptorModePreRequest, ctx, nil, &FlowStep{})
+
+	s.True(continueExec)
+	s.Nil(err)
+}
+
+func (s *EngineTestSuite) TestRunInterceptors_PreRequest_Success() {
+	t := s.T()
+	mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false)
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1").Maybe()
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+
+	fe := &flowEngine{
+		interceptorRunner: mockInterceptorSvc,
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+	})
+
+	ctx := &EngineContext{
+		ExecutionID:           "exec-001",
+		AppID:                 "app-001",
+		FlowType:              common.FlowTypeAuthentication,
+		CurrentNode:           mockNode,
+		Graph:                 mockGraph,
+		RuntimeData:           map[string]string{"existingKey": "existingValue"},
+		InterceptorSharedData: map[string]string{"shared": "data"},
+	}
+
+	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePreRequest,
+		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+		Return(&common.InterceptorResponse{
+			Status:        common.InterceptorStatusComplete,
+			EngineOutputs: map[string]string{"outputKey": "outputValue"},
+		}, nil)
+
+	continueExec, err := fe.runInterceptors(common.InterceptorModePreRequest, ctx, nil, &FlowStep{})
+
+	s.True(continueExec)
+	s.Nil(err)
+	s.Equal("existingValue", ctx.RuntimeData["existingKey"])
+	s.Equal("outputValue", ctx.RuntimeData["outputKey"])
+}
+
+func (s *EngineTestSuite) TestRunInterceptors_ReturnsError() {
+	tests := []struct {
+		name        string
+		mode        common.InterceptorMode
+		executionID string
+		errCode     string
+		errKey      string
+		errDefault  string
+	}{
+		{
+			name:        "PreRequest",
+			mode:        common.InterceptorModePreRequest,
+			executionID: "exec-002",
+			errCode:     "INT-001",
+			errKey:      "error.interceptor.failed",
+			errDefault:  "Interceptor failed",
+		},
+		{
+			name:        "PostRequest",
+			mode:        common.InterceptorModePostRequest,
+			executionID: "exec-006",
+			errCode:     "INT-002",
+			errKey:      "error.interceptor.post_request_failed",
+			errDefault:  "Post-request interceptor failed",
+		},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			t := s.T()
+			mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+			mockGraph := coremock.NewGraphInterfaceMock(t)
+			mockGraph.On("HasSegments").Return(false)
+
+			mockNode := coremock.NewNodeInterfaceMock(t)
+			mockNode.On("GetID").Return("node-1").Maybe()
+			mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+			mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+			mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+
+			fe := &flowEngine{
+				interceptorRunner: mockInterceptorSvc,
+				logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+			}
+
+			svcErr := &serviceerror.ServiceError{
+				Code: tc.errCode,
+				Error: i18ncore.I18nMessage{
+					Key:          tc.errKey,
+					DefaultValue: tc.errDefault,
+				},
+			}
+
+			mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+				newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+			})
+
+			ctx := &EngineContext{
+				ExecutionID: tc.executionID,
+				CurrentNode: mockNode,
+				Graph:       mockGraph,
+			}
+
+			mockInterceptorSvc.On("runInterceptors", tc.mode,
+				mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+				Return((*common.InterceptorResponse)(nil), svcErr)
+
+			continueExec, err := fe.runInterceptors(tc.mode, ctx, nil, &FlowStep{})
+
+			s.False(continueExec)
+			s.NotNil(err)
+			s.Equal(tc.errCode, err.Code)
+		})
+	}
+}
+
+func (s *EngineTestSuite) TestRunInterceptors_PreNode_UsesProvidedNode() {
+	t := s.T()
+	mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false)
+
+	mockCurrentNode := coremock.NewNodeInterfaceMock(t)
+	mockCurrentNode.On("GetID").Return("node-1").Maybe()
+	mockCurrentNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+	mockCurrentNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	mockCurrentNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+	mockTargetNode := coremock.NewNodeInterfaceMock(t)
+	mockTargetNode.On("GetID").Return("target-node-id")
+	mockTargetNode.On("GetType").Return(common.NodeTypeTaskExecution)
+	mockTargetNode.On("GetProperties").Return(map[string]interface{}(nil))
+	mockTargetNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil))
+
+	fe := &flowEngine{
+		interceptorRunner: mockInterceptorSvc,
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+	})
+
+	ctx := &EngineContext{
+		ExecutionID: "exec-003",
+		CurrentNode: mockCurrentNode,
+		Graph:       mockGraph,
+	}
+
+	// Capture the invocation context to verify the target node's fields are used, not CurrentNode's.
+	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePreNode,
+		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+		Run(func(args mock.Arguments) {
+			execCtx := args.Get(1).(*InterceptorRunnerContext)
+			s.Equal("target-node-id", execCtx.CurrentNodeID, "Should use the provided node, not CurrentNode")
+			s.Equal(common.NodeTypeTaskExecution, execCtx.NodeType)
+		}).
+		Return(&common.InterceptorResponse{Status: common.InterceptorStatusComplete}, nil)
+
+	continueExec, err := fe.runInterceptors(common.InterceptorModePreNode, ctx, mockTargetNode, &FlowStep{})
+
+	s.True(continueExec)
+	s.Nil(err)
+}
+
+func (s *EngineTestSuite) TestRunInterceptors_PostNode_UsesProvidedNode() {
+	t := s.T()
+	mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false)
+
+	mockCurrentNode := coremock.NewNodeInterfaceMock(t)
+	mockCurrentNode.On("GetID").Return("node-1").Maybe()
+	mockCurrentNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+	mockCurrentNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	mockCurrentNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+	mockTargetNode := coremock.NewNodeInterfaceMock(t)
+	mockTargetNode.On("GetID").Return("target-node-id")
+	mockTargetNode.On("GetType").Return(common.NodeTypeTaskExecution)
+	mockTargetNode.On("GetProperties").Return(map[string]interface{}(nil))
+	mockTargetNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil))
+
+	fe := &flowEngine{
+		interceptorRunner: mockInterceptorSvc,
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+	})
+
+	ctx := &EngineContext{
+		ExecutionID: "exec-004",
+		CurrentNode: mockCurrentNode,
+		Graph:       mockGraph,
+	}
+
+	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostNode,
+		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+		Run(func(args mock.Arguments) {
+			execCtx := args.Get(1).(*InterceptorRunnerContext)
+			s.Equal("target-node-id", execCtx.CurrentNodeID)
+			s.Equal(common.NodeTypeTaskExecution, execCtx.NodeType)
+		}).
+		Return(&common.InterceptorResponse{Status: common.InterceptorStatusComplete}, nil)
+
+	continueExec, err := fe.runInterceptors(common.InterceptorModePostNode, ctx, mockTargetNode, &FlowStep{})
+
+	s.True(continueExec)
+	s.Nil(err)
+}
+
+func (s *EngineTestSuite) TestRunInterceptors_PostRequest_Success() {
+	t := s.T()
+	mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false)
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1").Maybe()
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+
+	fe := &flowEngine{
+		interceptorRunner: mockInterceptorSvc,
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+	})
+
+	ctx := &EngineContext{
+		ExecutionID:           "exec-005",
+		CurrentNode:           mockNode,
+		Graph:                 mockGraph,
+		RuntimeData:           map[string]string{},
+		InterceptorSharedData: map[string]string{},
+	}
+
+	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+		Return(&common.InterceptorResponse{
+			Status:        common.InterceptorStatusComplete,
+			EngineOutputs: map[string]string{"challengeToken": "rotated-token"},
+		}, nil)
+
+	continueExec, err := fe.runInterceptors(common.InterceptorModePostRequest, ctx, nil, &FlowStep{})
+
+	s.True(continueExec)
+	s.Nil(err)
+	s.Equal("rotated-token", ctx.RuntimeData["challengeToken"])
+}
+
+func (s *EngineTestSuite) TestRunInterceptors_NoOutputs_RuntimeDataUnchanged() {
+	t := s.T()
+	mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false)
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1").Maybe()
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+
+	fe := &flowEngine{
+		interceptorRunner: mockInterceptorSvc,
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+	})
+
+	ctx := &EngineContext{
+		ExecutionID: "exec-007",
+		CurrentNode: mockNode,
+		Graph:       mockGraph,
+		RuntimeData: map[string]string{"existing": "value"},
+	}
+
+	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePreRequest,
+		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+		Return(&common.InterceptorResponse{Status: common.InterceptorStatusComplete}, nil)
+
+	continueExec, err := fe.runInterceptors(common.InterceptorModePreRequest, ctx, nil, &FlowStep{})
+
+	s.True(continueExec)
+	s.Nil(err)
+	s.Len(ctx.RuntimeData, 1)
+	s.Equal("value", ctx.RuntimeData["existing"])
+}
+
+func (s *EngineTestSuite) TestRunInterceptors_NilSharedData_InitializesEmptyMap() {
+	t := s.T()
+	mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false)
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1").Maybe()
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+
+	fe := &flowEngine{
+		interceptorRunner: mockInterceptorSvc,
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+	})
+
+	ctx := &EngineContext{
+		ExecutionID:           "exec-008",
+		CurrentNode:           mockNode,
+		Graph:                 mockGraph,
+		InterceptorSharedData: nil, // Nil shared data
+	}
+
+	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePreNode,
+		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+		Run(func(args mock.Arguments) {
+			execCtx := args.Get(1).(*InterceptorRunnerContext)
+			s.NotNil(execCtx.SharedData, "SharedData should be initialized to empty map when nil")
+		}).
+		Return(&common.InterceptorResponse{Status: common.InterceptorStatusComplete}, nil)
+
+	continueExec, err := fe.runInterceptors(common.InterceptorModePreNode, ctx, mockNode, &FlowStep{})
+
+	s.True(continueExec)
+	s.Nil(err)
+}
+
+func (s *EngineTestSuite) TestRunInterceptors_ClonesContextFields() {
+	t := s.T()
+	mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false)
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1").Maybe()
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+
+	fe := &flowEngine{
+		interceptorRunner: mockInterceptorSvc,
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+	})
+
+	ctx := &EngineContext{
+		ExecutionID:           "exec-009",
+		AppID:                 "app-009",
+		FlowType:              common.FlowTypeAuthentication,
+		CurrentNode:           mockNode,
+		Graph:                 mockGraph,
+		UserInputs:            map[string]string{"username": "testuser"},
+		AdditionalData:        map[string]string{"key": "val"},
+		InterceptorSharedData: map[string]string{"shared": "data"},
+	}
+
+	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePreRequest,
+		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+		Run(func(args mock.Arguments) {
+			execCtx := args.Get(1).(*InterceptorRunnerContext)
+			s.Equal("exec-009", execCtx.ExecutionID)
+			s.Equal("app-009", execCtx.AppID)
+			s.Equal(common.FlowTypeAuthentication, execCtx.FlowType)
+			s.Equal("testuser", execCtx.UserInputs["username"])
+			s.Equal("val", execCtx.AdditionalData["key"])
+			s.Equal("data", execCtx.SharedData["shared"])
+
+			// Verify cloned maps are independent of original.
+			execCtx.UserInputs["mutated"] = "yes"
+			execCtx.AdditionalData["mutated"] = "yes"
+		}).
+		Return(&common.InterceptorResponse{Status: common.InterceptorStatusComplete}, nil)
+
+	continueExec, err := fe.runInterceptors(common.InterceptorModePreRequest, ctx, nil, &FlowStep{})
+
+	s.True(continueExec)
+	s.Nil(err)
+	_, exists := ctx.UserInputs["mutated"]
+	s.False(exists, "Original UserInputs should not be mutated")
+	_, exists = ctx.AdditionalData["mutated"]
+	s.False(exists, "Original AdditionalData should not be mutated")
+}
+
+func (s *EngineTestSuite) TestRunInterceptors_NodeFailure_ReturnsError() {
+	tests := []struct {
+		name           string
+		mode           common.InterceptorMode
+		errCode        string
+		errKey         string
+		errDefault     string
+		executionID    string
+		runtimeDataKey string
+		runtimeDataVal string
+	}{
+		{
+			name:           "PreNode",
+			mode:           common.InterceptorModePreNode,
+			errCode:        "INT-PRE-NODE",
+			errKey:         "error.interceptor.pre_node_failed",
+			errDefault:     "Pre-node interceptor blocked execution",
+			executionID:    "exec-prenode-fail",
+			runtimeDataKey: "before",
+			runtimeDataVal: "value",
+		},
+		{
+			name:           "PostNode",
+			mode:           common.InterceptorModePostNode,
+			errCode:        "INT-POST-NODE",
+			errKey:         "error.interceptor.post_node_failed",
+			errDefault:     "Post-node interceptor rejected response",
+			executionID:    "exec-postnode-fail",
+			runtimeDataKey: "existing",
+			runtimeDataVal: "data",
+		},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			t := s.T()
+			mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+			mockGraph := coremock.NewGraphInterfaceMock(t)
+			mockGraph.On("HasSegments").Return(false)
+
+			mockNode := coremock.NewNodeInterfaceMock(t)
+			mockNode.On("GetID").Return("node-1").Maybe()
+			mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+			mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+			mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+
+			fe := &flowEngine{
+				interceptorRunner: mockInterceptorSvc,
+				logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+			}
+
+			svcErr := &serviceerror.ServiceError{
+				Code: tc.errCode,
+				Error: i18ncore.I18nMessage{
+					Key:          tc.errKey,
+					DefaultValue: tc.errDefault,
+				},
+			}
+
+			mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+				newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+			})
+
+			ctx := &EngineContext{
+				ExecutionID: tc.executionID,
+				CurrentNode: mockNode,
+				Graph:       mockGraph,
+				RuntimeData: map[string]string{tc.runtimeDataKey: tc.runtimeDataVal},
+			}
+
+			mockInterceptorSvc.On("runInterceptors", tc.mode,
+				mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+				Return((*common.InterceptorResponse)(nil), svcErr)
+
+			continueExec, err := fe.runInterceptors(tc.mode, ctx, mockNode, &FlowStep{})
+
+			s.False(continueExec)
+			s.NotNil(err)
+			s.Equal(tc.errCode, err.Code)
+			// RuntimeData should not be modified on failure.
+			s.Len(ctx.RuntimeData, 1)
+			s.Equal(tc.runtimeDataVal, ctx.RuntimeData[tc.runtimeDataKey])
+		})
+	}
+}
+
+func (s *EngineTestSuite) TestRunInterceptors_Failure_NilRuntimeData_NoMergeAttempt() {
+	t := s.T()
+	mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false)
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1").Maybe()
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+
+	fe := &flowEngine{
+		interceptorRunner: mockInterceptorSvc,
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	svcErr := &serviceerror.ServiceError{
+		Code: "INT-NIL-RT",
+		Error: i18ncore.I18nMessage{
+			Key:          "error.interceptor.nil_runtime",
+			DefaultValue: "Failed with nil runtime data",
+		},
+	}
+
+	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+	})
+
+	ctx := &EngineContext{
+		ExecutionID: "exec-nil-rt",
+		CurrentNode: mockNode,
+		Graph:       mockGraph,
+		RuntimeData: nil, // nil RuntimeData
+	}
+
+	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+		Return((*common.InterceptorResponse)(nil), svcErr)
+
+	continueExec, err := fe.runInterceptors(common.InterceptorModePostRequest, ctx, nil, &FlowStep{})
+
+	s.False(continueExec)
+	s.NotNil(err)
+	s.Equal("INT-NIL-RT", err.Code)
+	s.Nil(ctx.RuntimeData, "RuntimeData should remain nil on failure")
+}
+
+func (s *EngineTestSuite) TestRunInterceptors_Failure_PreservesFullErrorDetails() {
+	t := s.T()
+	mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false)
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1").Maybe()
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+
+	fe := &flowEngine{
+		interceptorRunner: mockInterceptorSvc,
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	svcErr := &serviceerror.ServiceError{
+		Code: "INT-CAPTCHA-001",
+		Error: i18ncore.I18nMessage{
+			Key:          "error.interceptor.captcha_failed",
+			DefaultValue: "CAPTCHA verification failed",
+		},
+		ErrorDescription: i18ncore.I18nMessage{
+			Key:          "error.interceptor.captcha_failed_desc",
+			DefaultValue: "The CAPTCHA response was invalid or expired",
+		},
+	}
+
+	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+	})
+
+	ctx := &EngineContext{
+		ExecutionID: "exec-full-err",
+		CurrentNode: mockNode,
+		Graph:       mockGraph,
+	}
+
+	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePreNode,
+		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+		Return((*common.InterceptorResponse)(nil), svcErr)
+
+	continueExec, err := fe.runInterceptors(common.InterceptorModePreNode, ctx, mockNode, &FlowStep{})
+
+	s.False(continueExec)
+	s.NotNil(err)
+	s.Equal("INT-CAPTCHA-001", err.Code)
+	s.Equal("error.interceptor.captcha_failed", err.Error.Key)
+	s.Equal("CAPTCHA verification failed", err.Error.DefaultValue)
+	s.Equal("error.interceptor.captcha_failed_desc", err.ErrorDescription.Key)
+	s.Equal("The CAPTCHA response was invalid or expired", err.ErrorDescription.DefaultValue)
+}
+
+func (s *EngineTestSuite) TestRunInterceptors_Failure_AllModes() {
+	modes := []common.InterceptorMode{
+		common.InterceptorModePreRequest,
+		common.InterceptorModePreNode,
+		common.InterceptorModePostNode,
+		common.InterceptorModePostRequest,
+	}
+
+	for _, mode := range modes {
+		s.Run(string(mode), func() {
+			t := s.T()
+			mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+			mockGraph := coremock.NewGraphInterfaceMock(t)
+			mockGraph.On("HasSegments").Return(false)
+
+			mockNode := coremock.NewNodeInterfaceMock(t)
+			mockNode.On("GetID").Return("node-1").Maybe()
+			mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+			mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+			mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+
+			fe := &flowEngine{
+				interceptorRunner: mockInterceptorSvc,
+				logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+			}
+
+			svcErr := &serviceerror.ServiceError{
+				Code: "INT-" + string(mode),
+				Error: i18ncore.I18nMessage{
+					Key:          "error.interceptor." + string(mode),
+					DefaultValue: "Interceptor failed for " + string(mode),
+				},
+			}
+
+			mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+				newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+			})
+
+			ctx := &EngineContext{
+				ExecutionID: "exec-" + string(mode),
+				CurrentNode: mockNode,
+				Graph:       mockGraph,
+			}
+
+			mockInterceptorSvc.On("runInterceptors", mode,
+				mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+				Return((*common.InterceptorResponse)(nil), svcErr)
+
+			continueExec, err := fe.runInterceptors(mode, ctx, mockNode, &FlowStep{})
+
+			s.False(continueExec)
+			s.NotNil(err)
+			s.Equal("INT-"+string(mode), err.Code)
+		})
+	}
+}
+
+// Tests for runPostRequestInterceptorsOnExit
+
+func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Success_ContinuesExecution() {
+	t := s.T()
+	mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false)
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1").Maybe()
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(false).Maybe()
+
+	fe := &flowEngine{
+		interceptorRunner: mockInterceptorSvc,
+		observabilitySvc:  mockObservability,
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+	})
+
+	ctx := &EngineContext{
+		ExecutionID: "exec-post-exit-ok",
+		CurrentNode: mockNode,
+		Graph:       mockGraph,
+		RuntimeData: map[string]string{"key": "value"},
+	}
+
+	flowStep := &FlowStep{Status: common.FlowStatusComplete}
+
+	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+		Return(&common.InterceptorResponse{
+			Status:        common.InterceptorStatusComplete,
+			EngineOutputs: map[string]string{"token": "rotated"},
+		}, nil)
+
+	continueExec, svcErr := fe.runPostRequestInterceptorsOnExit(ctx, flowStep, 1000)
+
+	s.True(continueExec)
+	s.Nil(svcErr)
+	s.Equal("rotated", ctx.RuntimeData["token"])
+}
+
+func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_InterceptorError_PublishesFailure() {
+	t := s.T()
+	mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false)
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1").Maybe()
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(true)
+	mockObservability.On("PublishEvent", mock.Anything, mock.AnythingOfType("*event.Event")).Return()
+
+	fe := &flowEngine{
+		interceptorRunner: mockInterceptorSvc,
+		observabilitySvc:  mockObservability,
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	svcErr := &serviceerror.ServiceError{
+		Code: "INT-POST-ERR",
+		Error: i18ncore.I18nMessage{
+			Key:          "error.interceptor.post_request",
+			DefaultValue: "Post-request interceptor error",
+		},
+	}
+
+	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+	})
+
+	ctx := &EngineContext{
+		ExecutionID: "exec-post-exit-err",
+		CurrentNode: mockNode,
+		Graph:       mockGraph,
+		FlowType:    common.FlowTypeAuthentication,
+		AppID:       "app-001",
+	}
+
+	flowStep := &FlowStep{Status: common.FlowStatusIncomplete}
+
+	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+		Return((*common.InterceptorResponse)(nil), svcErr)
+
+	continueExec, err := fe.runPostRequestInterceptorsOnExit(ctx, flowStep, 1000)
+
+	s.False(continueExec)
+	s.NotNil(err)
+	s.Equal("INT-POST-ERR", err.Code)
+	mockObservability.AssertCalled(t, "PublishEvent", mock.Anything, mock.AnythingOfType("*event.Event"))
+}
+
+func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Incomplete_StopsExecution() {
+	t := s.T()
+	mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false)
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1").Maybe()
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(false).Maybe()
+
+	fe := &flowEngine{
+		interceptorRunner: mockInterceptorSvc,
+		observabilitySvc:  mockObservability,
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+	})
+
+	ctx := &EngineContext{
+		ExecutionID: "exec-post-exit-incomplete",
+		CurrentNode: mockNode,
+		Graph:       mockGraph,
+	}
+
+	flowStep := &FlowStep{Status: common.FlowStatusComplete}
+
+	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+		Return(&common.InterceptorResponse{
+			Status: common.InterceptorStatusIncomplete,
+		}, nil)
+
+	continueExec, svcErr := fe.runPostRequestInterceptorsOnExit(ctx, flowStep, 1000)
+
+	s.False(continueExec)
+	s.Nil(svcErr)
+	s.Equal(common.FlowStatusIncomplete, flowStep.Status)
+}
+
+func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Fail_PublishesFlowFailure() {
+	t := s.T()
+	mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false)
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1").Maybe()
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+
+	var capturedEvent *event.Event
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(true)
+	mockObservability.On("PublishEvent", mock.Anything, mock.AnythingOfType("*event.Event")).
+		Run(func(args mock.Arguments) {
+			capturedEvent = args.Get(1).(*event.Event)
+		}).Return()
+
+	fe := &flowEngine{
+		interceptorRunner: mockInterceptorSvc,
+		observabilitySvc:  mockObservability,
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	interceptorErr := &serviceerror.ServiceError{
+		Code: "INT-FAIL-001",
+		Error: i18ncore.I18nMessage{
+			Key:          "error.interceptor.blocked",
+			DefaultValue: "Interceptor blocked the flow",
+		},
+	}
+
+	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+	})
+
+	ctx := &EngineContext{
+		ExecutionID: "exec-post-exit-fail",
+		CurrentNode: mockNode,
+		Graph:       mockGraph,
+		FlowType:    common.FlowTypeAuthentication,
+		AppID:       "app-002",
+	}
+
+	flowStep := &FlowStep{}
+
+	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+		Return(&common.InterceptorResponse{
+			Status: common.InterceptorStatusFailure,
+			Error:  interceptorErr,
+		}, nil)
+
+	continueExec, svcErr := fe.runPostRequestInterceptorsOnExit(ctx, flowStep, 1000)
+
+	s.False(continueExec)
+	s.Nil(svcErr)
+	s.Equal(common.FlowStatusError, flowStep.Status)
+	s.NotNil(flowStep.Error)
+	s.Equal("INT-FAIL-001", flowStep.Error.Code)
+	// Flow error status should trigger event publication
+	s.NotNil(capturedEvent)
+	s.Equal(string(event.EventTypeFlowFailed), capturedEvent.Type)
+}
+
+func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Incomplete_NoEventWhenNotError() {
+	t := s.T()
+	mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false)
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1").Maybe()
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(false).Maybe()
+
+	fe := &flowEngine{
+		interceptorRunner: mockInterceptorSvc,
+		observabilitySvc:  mockObservability,
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+	})
+
+	ctx := &EngineContext{
+		ExecutionID: "exec-post-exit-no-event",
+		CurrentNode: mockNode,
+		Graph:       mockGraph,
+	}
+
+	flowStep := &FlowStep{Status: common.FlowStatusIncomplete}
+
+	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+		Return(&common.InterceptorResponse{
+			Status: common.InterceptorStatusIncomplete,
+		}, nil)
+
+	continueExec, svcErr := fe.runPostRequestInterceptorsOnExit(ctx, flowStep, 1000)
+
+	s.False(continueExec)
+	s.Nil(svcErr)
+	// No PublishEvent call should be made since status is INCOMPLETE, not ERROR
+	mockObservability.AssertNotCalled(t, "PublishEvent", mock.Anything, mock.Anything)
+}
+
+func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_UpdatesFlowStepFields() {
+	t := s.T()
+	mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false)
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1").Maybe()
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(false).Maybe()
+
+	fe := &flowEngine{
+		interceptorRunner: mockInterceptorSvc,
+		observabilitySvc:  mockObservability,
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+	})
+
+	ctx := &EngineContext{
+		ExecutionID: "exec-post-exit-fields",
+		CurrentNode: mockNode,
+		Graph:       mockGraph,
+	}
+
+	flowStep := &FlowStep{Status: common.FlowStatusComplete}
+
+	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+		Return(&common.InterceptorResponse{
+			Status:         common.InterceptorStatusComplete,
+			ChallengeToken: "new-challenge-token",
+			FieldErrors: []common.FieldError{
+				{Identifier: "email", Message: "invalid format"},
+			},
+		}, nil)
+
+	continueExec, svcErr := fe.runPostRequestInterceptorsOnExit(ctx, flowStep, 1000)
+
+	s.True(continueExec)
+	s.Nil(svcErr)
+	s.Equal("new-challenge-token", flowStep.ChallengeToken)
+	s.Len(flowStep.Data.FieldErrors, 1)
+	s.Equal("email", flowStep.Data.FieldErrors[0].Identifier)
+}
+
+func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_NilGraph_SkipsInterceptors() {
+	t := s.T()
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(false).Maybe()
+
+	fe := &flowEngine{
+		observabilitySvc: mockObservability,
+		logger:           log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	ctx := &EngineContext{
+		ExecutionID: "exec-post-exit-nil-graph",
+		Graph:       nil,
+	}
+
+	flowStep := &FlowStep{Status: common.FlowStatusComplete}
+
+	continueExec, svcErr := fe.runPostRequestInterceptorsOnExit(ctx, flowStep, 1000)
+
+	s.True(continueExec)
+	s.Nil(svcErr)
+}
+
+func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_MergesEngineOutputsToRuntimeData() {
+	t := s.T()
+	mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false)
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1").Maybe()
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(false).Maybe()
+
+	fe := &flowEngine{
+		interceptorRunner: mockInterceptorSvc,
+		observabilitySvc:  mockObservability,
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+	})
+
+	ctx := &EngineContext{
+		ExecutionID: "exec-post-exit-merge",
+		CurrentNode: mockNode,
+		Graph:       mockGraph,
+		RuntimeData: map[string]string{"existing": "data"},
+	}
+
+	flowStep := &FlowStep{Status: common.FlowStatusComplete}
+
+	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+		Return(&common.InterceptorResponse{
+			Status:        common.InterceptorStatusComplete,
+			EngineOutputs: map[string]string{"newKey": "newValue", "anotherKey": "anotherValue"},
+		}, nil)
+
+	continueExec, svcErr := fe.runPostRequestInterceptorsOnExit(ctx, flowStep, 1000)
+
+	s.True(continueExec)
+	s.Nil(svcErr)
+	s.Equal("data", ctx.RuntimeData["existing"])
+	s.Equal("newValue", ctx.RuntimeData["newKey"])
+	s.Equal("anotherValue", ctx.RuntimeData["anotherKey"])
+}
+
+func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_PassesFlowStatusToInterceptorContext() {
+	t := s.T()
+	mockInterceptorSvc := NewInterceptorRunnerInterfaceMock(t)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("HasSegments").Return(false)
+
+	mockNode := coremock.NewNodeInterfaceMock(t)
+	mockNode.On("GetID").Return("node-1").Maybe()
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
+	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(false).Maybe()
+
+	fe := &flowEngine{
+		interceptorRunner: mockInterceptorSvc,
+		observabilitySvc:  mockObservability,
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
+	}
+
+	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
+		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+	})
+
+	ctx := &EngineContext{
+		ExecutionID: "exec-post-exit-status",
+		CurrentNode: mockNode,
+		Graph:       mockGraph,
+	}
+
+	flowStep := &FlowStep{Status: common.FlowStatusComplete}
+
+	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
+		Run(func(args mock.Arguments) {
+			execCtx := args.Get(1).(*InterceptorRunnerContext)
+			s.Equal(common.FlowStatusComplete, execCtx.FlowStatus,
+				"Interceptor context should receive current flow status")
+		}).
+		Return(&common.InterceptorResponse{Status: common.InterceptorStatusComplete}, nil)
+
+	continueExec, svcErr := fe.runPostRequestInterceptorsOnExit(ctx, flowStep, 1000)
+
+	s.True(continueExec)
+	s.Nil(svcErr)
 }

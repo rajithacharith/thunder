@@ -393,7 +393,7 @@ func (s *userInfoService) getOAuthApp(
 		return nil
 	}
 
-	app, svcErr := s.inboundClient.GetOAuthClientByID(ctx, clientID)
+	app, svcErr := s.inboundClient.GetOAuthClientByClientID(ctx, clientID)
 	if svcErr != nil || app == nil {
 		return nil
 	}

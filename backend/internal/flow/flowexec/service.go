@@ -23,10 +23,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/thunder-id/thunderid/internal/actorprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	flowconfig "github.com/thunder-id/thunderid/internal/flow/config"
+	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	sysContext "github.com/thunder-id/thunderid/internal/system/context"
 	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
@@ -120,8 +122,7 @@ func (s *flowExecService) Execute(ctx context.Context,
 				log.String("error", loadErr.Error.DefaultValue))
 			return nil, loadErr
 		}
-		// Set the incoming challenge token on the context so the engine can validate it
-		engineCtx.ChallengeTokenIn = challengeToken
+		setChallengeTokenInCtx(engineCtx, challengeToken)
 	}
 
 	// Set trace ID to engine context (request context is already set during context loading)
@@ -130,7 +131,7 @@ func (s *flowExecService) Execute(ctx context.Context,
 	flowStep, flowErr := s.flowEngine.Execute(engineCtx)
 
 	if flowErr != nil {
-		if !isNewFlow(executionID) && flowErr.Code != ErrorInvalidChallengeToken.Code {
+		if !isNewFlow(executionID) {
 			if removeErr := s.removeContext(ctx, engineCtx.ExecutionID, logger); removeErr != nil {
 				logger.Error(ctx, "Failed to remove flow context after engine failure",
 					log.String(log.LoggerKeyExecutionID, engineCtx.ExecutionID), log.Error(removeErr))
@@ -176,6 +177,10 @@ func (s *flowExecService) loadNewContext(ctx context.Context, appID, flowTypeStr
 		return nil, err
 	}
 
+	if svcErr := s.checkDirectFlowInitiationAllowed(ctx, appID, flowType, logger); svcErr != nil {
+		return nil, svcErr
+	}
+
 	engineCtx, err := s.initContext(ctx, appID, flowType, verbose, logger)
 	if err != nil {
 		return nil, err
@@ -183,6 +188,39 @@ func (s *flowExecService) loadNewContext(ctx context.Context, appID, flowTypeStr
 
 	prepareContext(engineCtx, action, inputs)
 	return engineCtx, nil
+}
+
+// checkDirectFlowInitiationAllowed returns an error if the application's grant type does not
+// permit direct HTTP initiation of an authentication flow. Applications configured with the
+// authorization_code grant type must have their authentication flows initiated by the OAuth
+// component, not via a direct HTTP call. Other flow types (registration, recovery, user
+// onboarding) are not subject to this restriction.
+func (s *flowExecService) checkDirectFlowInitiationAllowed(ctx context.Context, appID string,
+	flowType common.FlowType, logger *log.Logger) *serviceerror.ServiceError {
+	if flowType != common.FlowTypeAuthentication {
+		return nil
+	}
+	if appID == "" {
+		return nil
+	}
+
+	oauthProfile, svcErr := s.actorProvider.GetOAuthProfileByID(ctx, appID)
+	if svcErr != nil {
+		if svcErr.Code == actorprovider.ErrorActorNotFound.Code {
+			return nil
+		}
+		logger.Error(ctx, "Failed to retrieve OAuth profile for flow initiation guard",
+			log.String("appID", appID))
+		return &serviceerror.InternalServerError
+	}
+	if oauthProfile == nil {
+		return nil
+	}
+
+	if slices.Contains(oauthProfile.GrantTypes, string(oauth2const.GrantTypeAuthorizationCode)) {
+		return &ErrorDirectFlowInitiationNotPermitted
+	}
+	return nil
 }
 
 // initContext initializes a new flow context with the given details.
@@ -520,10 +558,24 @@ func prepareContext(ctx *EngineContext, action string, inputs map[string]string)
 	if ctx.RuntimeData == nil {
 		ctx.RuntimeData = make(map[string]string)
 	}
+	if ctx.InterceptorSharedData == nil {
+		ctx.InterceptorSharedData = make(map[string]string)
+	}
 
 	// Set the action if provided
 	if action != "" {
 		ctx.CurrentAction = action
+	}
+}
+
+// setChallengeTokenInCtx copies incoming request data from the engine context into the
+// interceptor shared data so that interceptors can access it during execution.
+func setChallengeTokenInCtx(ctx *EngineContext, challengeTokenIn string) {
+	if challengeTokenIn != "" {
+		if ctx.InterceptorSharedData == nil {
+			ctx.InterceptorSharedData = make(map[string]string)
+		}
+		ctx.InterceptorSharedData[common.InterceptorDataKeyChallengeTokenIn] = challengeTokenIn
 	}
 }
 
@@ -576,8 +628,9 @@ func (s *flowExecService) InitiateFlow(ctx context.Context,
 }
 
 // InitiateAndExecute initializes a new flow with the provided context, sets runtime data and
-// initial user inputs, executes the flow, stores the context if the flow pauses, and returns
-// the FlowStep. The caller uses FlowStep.ExecutionID to associate the flow with their session.
+// initial user inputs, then executes the flow until a user input is required, an error occurs,
+// or the flow completes. Stores the flow context if the flow pauses and returns the FlowStep.
+// The caller uses FlowStep.ExecutionID to associate the flow with their session.
 //
 // InitialInputs are placed directly into UserInputs before execution so executor nodes that
 // read from ctx.UserInputs (e.g. the identifying executor) can resolve data without requiring
@@ -613,9 +666,6 @@ func (s *flowExecService) InitiateAndExecute(ctx context.Context,
 
 	flowStep, flowErr := s.flowEngine.Execute(engineCtx)
 	if flowErr != nil {
-		logger.Error(ctx, "Failed to execute flow",
-			log.String(log.LoggerKeyExecutionID, engineCtx.ExecutionID),
-			log.String("error", flowErr.Error.DefaultValue))
 		return nil, flowErr
 	}
 

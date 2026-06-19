@@ -48,6 +48,10 @@ For more details, see [Redirect-Based Integration](../../integration-models#redi
 
 If you are building a custom authentication UI, you can implement Magic Links using the App-Native model by orchestrating the Flow Execution API.
 
+:::note
+Applications configured with the `authorization_code` grant type cannot start flows directly through `POST /flow/execute`. They must initiate authentication through the Authorization endpoint (`GET /oauth2/authorize`). See [Integration Models](../../integration-models#app-native).
+:::
+
 ### Starting the Flow
 
 1) **Start the flow** – send an initial flow request.

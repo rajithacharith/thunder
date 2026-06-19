@@ -50,6 +50,10 @@ The core principle is **shared responsibility**: <ProductName /> enforces authen
 ###  When to Use
 Choose this approach when your application must render its own authentication screens (no redirects to hosted pages) while <ProductName /> enforces authentication logic, MFA, and policies server-side. This model suits mobile apps, single-page applications, or any context where a redirect-based flow would disrupt the user experience.
 
+:::note[Grant Type Requirement]
+The Flow Execution API only accepts new flow initiation requests from applications that do **not** have the `authorization_code` grant type configured. Applications registered with `authorization_code` must initiate authentication through the [Authorization endpoint](/docs/next/apis/#tag/authorization) (`GET /oauth2/authorize`), which then drives the flow internally. Continuation requests that carry a valid `executionId` are always accepted regardless of grant type.
+:::
+
 ### Key Features
 
 - **Server-side flow execution:** Authentication logic, step ordering, and branching live in <ProductName />. Changes take effect immediately without redeploying your application.

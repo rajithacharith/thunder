@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -56,6 +56,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/executor"
 	"github.com/thunder-id/thunderid/internal/flow/flowexec"
 	"github.com/thunder-id/thunderid/internal/flow/flowmeta"
+	"github.com/thunder-id/thunderid/internal/flow/interceptor"
 	flowmgt "github.com/thunder-id/thunderid/internal/flow/mgt"
 	"github.com/thunder-id/thunderid/internal/group"
 	"github.com/thunder-id/thunderid/internal/idp"
@@ -275,15 +276,8 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 
 	attributeCacheService := attributecache.Initialize()
 
-	var emailClient email.EmailClientInterface
-	emailClient, err = email.Initialize()
-	if err != nil {
-		// Service registration runs at startup, outside any request.
-		logger.Debug(context.Background(), "Email client not configured. "+
-			"EmailExecutor will be registered but will not send emails.", log.Error(err))
-		emailClient = nil
-	}
-	flowFactory, graphCache, execRegistry := initializeFlowCoreAndExecutor(ctx, logger,
+	emailClient := initEmailClient(ctx, logger)
+	flowFactory, graphCache, execRegistry, interceptorRegistry := initializeFlowCoreAndExecutor(ctx, logger,
 		cacheManager, executor.ExecutorDependencies{
 			OUService:             ouService,
 			IDPService:            idpService,
@@ -310,10 +304,11 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 			GoogleSvc:             googleAuthnService,
 			OpenID4VPVerifierSvc:  openid4vpVerifierSvc,
 		},
+		interceptor.InterceptorDependencies{},
 	)
 
 	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(
-		mux, mcpServer, cacheManager, flowFactory, execRegistry, graphCache)
+		mux, mcpServer, cacheManager, flowFactory, execRegistry, interceptorRegistry, graphCache)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize FlowMgtService", log.Error(err))
 	}
@@ -388,7 +383,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	)
 
 	flowExecService, err := flowexec.Initialize(mux, flowMgtService, actorProvider,
-		execRegistry, observabilitySvc, runtimeCryptoSvc, flowconfig.FromServerRuntime())
+		execRegistry, interceptorRegistry, observabilitySvc, runtimeCryptoSvc, flowconfig.FromServerRuntime())
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize flow execution service", log.Error(err))
 	}
@@ -420,23 +415,41 @@ func unregisterServices() {
 	observabilitySvc.Shutdown()
 }
 
+// initEmailClient initializes the email client, returning nil if not configured.
+func initEmailClient(ctx context.Context, logger *log.Logger) email.EmailClientInterface {
+	client, err := email.Initialize()
+	if err != nil {
+		logger.Debug(ctx, "Email client not configured. "+
+			"EmailExecutor will be registered but will not send emails.", log.Error(err))
+		return nil
+	}
+	return client
+}
+
 // initializeFlowCoreAndExecutor initializes the flow core and executor services.
 func initializeFlowCoreAndExecutor(
 	ctx context.Context,
 	logger *log.Logger,
 	cacheManager cache.CacheManagerInterface,
-	deps executor.ExecutorDependencies,
-) (flowcore.FlowFactoryInterface, flowcore.GraphCacheInterface, executor.ExecutorRegistryInterface) {
+	execDeps executor.ExecutorDependencies,
+	interceptorDeps interceptor.InterceptorDependencies,
+) (flowcore.FlowFactoryInterface, flowcore.GraphCacheInterface, executor.ExecutorRegistryInterface,
+	interceptor.InterceptorRegistryInterface) {
 	// Initialize flow core services.
 	flowFactory, graphCache := flowcore.Initialize(cacheManager)
-	deps.FlowFactory = flowFactory
+	execDeps.FlowFactory = flowFactory
+	interceptorDeps.FlowFactory = flowFactory
 
 	// Initialize flow executor registry
-	execRegistry, err := executor.Initialize(deps, config.GetServerRuntime().Config.Flow)
+	execRegistry, err := executor.Initialize(execDeps, config.GetServerRuntime().Config.Flow)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to register flow executors", log.Error(err))
 	}
-	return flowFactory, graphCache, execRegistry
+	interceptorRegistry, err := interceptor.Initialize(interceptorDeps, config.GetServerRuntime().Config.Flow)
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize Interceptor registry", log.Error(err))
+	}
+	return flowFactory, graphCache, execRegistry, interceptorRegistry
 }
 
 // buildHashConfig constructs a cryptolib.HashConfig from the server configuration.

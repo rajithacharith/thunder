@@ -25,6 +25,7 @@ import (
 
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
+	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
 
 // FlowAssertionClaims holds the common claims extracted from a flow assertion JWT.
@@ -50,16 +51,11 @@ func DecodeFlowAssertionClaims(assertion string) (FlowAssertionClaims, map[strin
 	}
 
 	if iatValue, ok := jwtPayload["iat"]; ok {
-		switch v := iatValue.(type) {
-		case float64:
-			claims.AuthTime = time.Unix(int64(v), 0)
-		case int64:
-			claims.AuthTime = time.Unix(v, 0)
-		case int:
-			claims.AuthTime = time.Unix(int64(v), 0)
-		default:
+		iat, ok := sysutils.ToInt64(iatValue)
+		if !ok {
 			return claims, nil, errors.New("JWT 'iat' claim has unexpected type")
 		}
+		claims.AuthTime = time.Unix(iat, 0)
 	}
 
 	if subValue, ok := jwtPayload[oauth2const.ClaimSub]; ok {

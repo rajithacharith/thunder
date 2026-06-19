@@ -171,6 +171,10 @@ On success, the API returns an authentication response compatible with other <Pr
 
 Passkeys also work through the flow engine (`POST /flow/execute`), which returns dynamic prompts and additional data.
 
+:::note
+Applications configured with the `authorization_code` grant type cannot start flows directly through `POST /flow/execute`. They must initiate authentication through the Authorization endpoint (`GET /oauth2/authorize`). See [Integration Models](../../integration-models#app-native).
+:::
+
 ### Authentication with Flow/Execute
 
 1) **Start the flow** – send an initial flow request.

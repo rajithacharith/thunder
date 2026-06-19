@@ -113,7 +113,7 @@ This section applies to OAuth 2.0 / OIDC applications only.
 The **Advanced Settings** tab shows the OAuth 2.0 settings configured at creation.
 | Setting | Description |
 |---------|-------------|
-| **Grant Types** | The OAuth 2.0 flows this application can use. Supported values: `authorization_code`, `refresh_token`, `client_credentials`, `urn:ietf:params:oauth:grant-type:token-exchange`. |
+| **Grant Types** | The OAuth 2.0 flows this application can use. Supported values: `authorization_code`, `refresh_token`, `client_credentials`, `urn:ietf:params:oauth:grant-type:token-exchange`. Applications configured with `authorization_code` cannot initiate new flows directly via `POST /flow/execute`. They must begin authentication through the Authorization endpoint (`GET /oauth2/authorize`), which initiates the flow internally. |
 | **Response Types** | The response types the application can request (for example, `code`). |
 | **Token Endpoint Auth Method** | How the application authenticates at the token endpoint: `client_secret_basic` (default), `client_secret_post`, `private_key_jwt`, or `none` (public clients). |
 | **Public Client** | Whether this is a public client that cannot securely store a client secret. |

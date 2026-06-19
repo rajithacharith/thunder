@@ -384,7 +384,10 @@ const sidebars: SidebarsConfig = {
           label: 'Secure Token Service (STS)',
           collapsible: true,
           collapsed: true,
-          items: [{type: 'doc', id: 'use-cases/sts/krakend', label: 'Protect APIs on KrakenD'}],
+          items: [
+            {type: 'doc', id: 'use-cases/sts/krakend', label: 'Protect APIs on KrakenD'},
+            {type: 'doc', id: 'use-cases/sts/envoy', label: 'Protect APIs on Envoy'},
+          ],
         },
       ],
     },
@@ -680,6 +683,11 @@ const sidebars: SidebarsConfig = {
                       id: 'guides/guides/protocols/oauth-oidc/token-exchange',
                       label: 'Token Exchange',
                       key: 'oauth-token-exchange',
+                    },
+                    {
+                      type: 'doc',
+                      id: 'guides/guides/protocols/oauth-oidc/backchannel-authentication',
+                      label: 'Backchannel Authentication (CIBA)',
                     },
                   ],
                 },

@@ -30,6 +30,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
+	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 
 	"github.com/thunder-id/thunderid/tests/mocks/database/providermock"
 )
@@ -310,7 +311,7 @@ func (suite *AuthorizationCodeStoreTestSuite) TestParseTimeField_StringInput() {
 	testTime := testTimeString + " extra content"
 	expectedTime, _ := time.Parse("2006-01-02 15:04:05.999999999", testTimeString)
 
-	result, err := parseTimeField(testTime, "test_field")
+	result, err := sysutils.ParseDBTimeField(testTime, "test_field")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), expectedTime, result)
 }
@@ -318,24 +319,9 @@ func (suite *AuthorizationCodeStoreTestSuite) TestParseTimeField_StringInput() {
 func (suite *AuthorizationCodeStoreTestSuite) TestParseTimeField_TimeInput() {
 	testTime := time.Now()
 
-	result, err := parseTimeField(testTime, "test_field")
+	result, err := sysutils.ParseDBTimeField(testTime, "test_field")
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), testTime, result)
-}
-
-func (suite *AuthorizationCodeStoreTestSuite) TestTrimTimeString() {
-	input := testTimeString + " extra content here"
-	expected := testTimeString
-
-	result := trimTimeString(input)
-	assert.Equal(suite.T(), expected, result)
-}
-
-func (suite *AuthorizationCodeStoreTestSuite) TestTrimTimeString_ShortInput() {
-	input := "2023-12-01"
-
-	result := trimTimeString(input)
-	assert.Equal(suite.T(), input, result)
+	assert.True(suite.T(), testTime.Equal(result))
 }
 
 func (suite *AuthorizationCodeStoreTestSuite) TestGetAuthorizationCode_InvalidCodeIDType() {
@@ -693,7 +679,7 @@ func (suite *AuthorizationCodeStoreTestSuite) TestGetAuthorizationCode_AuthzData
 func (suite *AuthorizationCodeStoreTestSuite) TestParseTimeField_InvalidStringFormat() {
 	testTime := "invalid-time-format"
 
-	result, err := parseTimeField(testTime, "test_field")
+	result, err := sysutils.ParseDBTimeField(testTime, "test_field")
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "error parsing test_field")
 	assert.True(suite.T(), result.IsZero())

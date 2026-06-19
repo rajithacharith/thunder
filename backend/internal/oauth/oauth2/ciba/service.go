@@ -148,7 +148,7 @@ func (s *cibaService) InitiateBackchannelAuth(
 	}
 
 	runtimeData := map[string]string{
-		flowcm.RuntimeKeyCIBAAuthReqID:               authReqID,
+		flowcm.RuntimeKeyAuthReqID:                   authReqID,
 		flowcm.RuntimeKeyClientID:                    oauthApp.ClientID,
 		flowcm.RuntimeKeyRequestedPermissions:        utils.StringifyStringArray(permissionScopes, " "),
 		flowcm.RuntimeKeyRequiredEssentialAttributes: "",
@@ -176,7 +176,7 @@ func (s *cibaService) InitiateBackchannelAuth(
 		RuntimeData:   runtimeData,
 		ExpirySeconds: expiresIn,
 		InitialInputs: map[string]string{
-			flowcm.UserInputKeyLoginHint: loginHint,
+			oauth2const.RequestParamLoginHint: loginHint,
 		},
 	})
 	if flowErr != nil {
@@ -328,7 +328,7 @@ func (s *cibaService) HandleCallback(ctx context.Context, authReqID, assertion s
 // as the assertion `aud`. It returns an empty string (skipping the audience check) on lookup
 // failure; the ciba_auth_req_id binding remains the primary protection in that case.
 func (s *cibaService) resolveExpectedAudience(ctx context.Context, clientID string) string {
-	app, svcErr := s.inboundClient.GetOAuthClientByID(ctx, clientID)
+	app, svcErr := s.inboundClient.GetOAuthClientByClientID(ctx, clientID)
 	if svcErr != nil {
 		s.logger.Warn(ctx, "Failed to resolve client for audience validation; skipping audience check",
 			log.String("error", svcErr.Error.DefaultValue))

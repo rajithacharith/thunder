@@ -18,12 +18,14 @@
 
 import {
   ThunderIDRuntimeError,
+  ThunderIDAPIError,
   EmbeddedFlowComponentV2 as EmbeddedFlowComponent,
   EmbeddedFlowType,
   EmbeddedSignInFlowResponseV2,
   EmbeddedSignInFlowRequestV2,
   EmbeddedSignInFlowStatusV2,
   EmbeddedSignInFlowTypeV2,
+  FieldErrorV2 as FieldError,
   FlowMetadataResponse,
   Preferences,
   logger,
@@ -57,6 +59,14 @@ export interface SignInRenderProps {
    * Current error if any
    */
   error: Error | null;
+
+  /**
+   * Server-side field-level validation errors from the most recent flow response,
+   * collapsed to one message per field (first error wins). Empty when no validation
+   * failures are active. Render-prop consumers should display these alongside their
+   * own client-side validation errors.
+   */
+  fieldErrors: Record<string, string>;
 
   /**
    * Function to manually initialize the flow
@@ -217,13 +227,15 @@ const SignIn: FC<SignInProps> = ({
   variant,
   children,
 }: SignInProps): ReactElement => {
-  const {applicationId, afterSignInUrl, signIn, isInitialized, isLoading, meta, getStorageManager, scopes} =
-    useThunderID();
+  const {applicationId, afterSignInUrl, signIn, isInitialized, isLoading, meta, getStorageManager, scopes} = useThunderID();
   const {t} = useTranslation(preferences?.i18n);
 
   // State management for the flow
   const [components, setComponents] = useState<EmbeddedFlowComponent[]>([]);
   const [additionalData, setAdditionalData] = useState<Record<string, any>>({});
+  // Server-side validation errors from the most recent flow response. Updated on every
+  // submission; cleared when the next submission begins so stale errors don't linger.
+  const [serverFieldErrors, setServerFieldErrors] = useState<FieldError[] | null>(null);
   const [currentExecutionId, setCurrentExecutionId] = useState<string | null>(null);
   const challengeTokenRef: any = useRef<string | null>(null);
   const [isStorageReady, setIsStorageReady] = useState(false);
@@ -332,7 +344,9 @@ const SignIn: FC<SignInProps> = ({
   };
 
   /**
-   * Handle authId from URL and store it in sessionStorage.
+   * Handle authId from URL and persist it via the storage manager so it survives URL cleanup.
+   * ThunderIDReactClient.signIn() reads authId from storageManager.getHybridDataParameter('authId'),
+   * not from raw sessionStorage, so we must use the same storage path here.
    */
   const handleAuthId = async (authId: string | null): Promise<void> => {
     if (authId) {
@@ -410,7 +424,7 @@ const SignIn: FC<SignInProps> = ({
         await setChallengeToken(response.challengeToken ?? null);
 
         const urlParams: any = getUrlParams();
-        handleAuthId(urlParams.authId);
+        await handleAuthId(urlParams.authId);
 
         initiateOAuthRedirect(redirectURL);
         return true;
@@ -428,12 +442,22 @@ const SignIn: FC<SignInProps> = ({
 
     // Reset OAuth code processed ref when starting a new flow
     oauthCodeProcessedRef.current = false;
+    // Clear stale serverFieldErrors so the new flow doesn't inherit them via render-prop.
+    setServerFieldErrors(null);
 
-    handleAuthId(urlParams.authId);
+    await handleAuthId(urlParams.authId);
 
     const effectiveApplicationId: any = applicationId || urlParams.applicationId;
 
-    if (!urlParams.executionId && !effectiveApplicationId) {
+    // On a page refresh the executionId is no longer in the URL (it is scrubbed by
+    // cleanupFlowUrlParams after the first load). Fall back to the executionId persisted in
+    // sessionStorage so the in-progress flow can be resumed instead of starting a new flow.
+    // This is required for authorization_code apps where direct new-flow initiation is blocked
+    // server-side and the flow must be initiated through the OAuth /authorize endpoint.
+    const storedExecutionId: any = !urlParams.executionId ? sessionStorage.getItem('thunderid_execution_id') : null;
+    const resumeExecutionId: any = urlParams.executionId || storedExecutionId;
+
+    if (!resumeExecutionId && !effectiveApplicationId) {
       const error: any = new ThunderIDRuntimeError(
         'Either executionId or applicationId is required for authentication',
         'SIGN_IN_ERROR',
@@ -448,11 +472,49 @@ const SignIn: FC<SignInProps> = ({
 
       let response: EmbeddedSignInFlowResponseV2;
 
-      if (urlParams.executionId) {
-        response = (await signIn({
-          executionId: urlParams.executionId,
-          ...(challengeTokenRef.current ? {challengeToken: challengeTokenRef.current} : {}),
-        })) as EmbeddedSignInFlowResponseV2;
+      if (resumeExecutionId) {
+        try {
+          response = (await signIn({
+            executionId: resumeExecutionId,
+            ...(challengeTokenRef.current ? {challengeToken: challengeTokenRef.current} : {}),
+          })) as EmbeddedSignInFlowResponseV2;
+        } catch (resumeError) {
+          // Only treat a stale/expired session (HTTP 400 from the server, meaning the stored
+          // executionId is no longer valid) as a recoverable condition. Transient failures
+          // such as 5xx server errors or network errors are rethrown so they surface correctly.
+          const isStaleSession: boolean =
+            storedExecutionId &&
+            resumeExecutionId === storedExecutionId &&
+            resumeError instanceof ThunderIDAPIError &&
+            resumeError.statusCode === 400;
+
+          if (isStaleSession) {
+            setExecutionId(null);
+            try {
+              const storageManager: any = await getStorageManager();
+              await storageManager?.removeHybridDataParameter?.('authId');
+            } catch {
+              logger.warn('Failed to clear authId from hybrid storage.');
+            }
+            if (!effectiveApplicationId) {
+              const expiredError: any = new ThunderIDRuntimeError(
+                t('errors.signin.session.expired') ||
+                  'Your session has expired. Please return to the application and sign in again.',
+                'SIGN_IN_ERROR',
+                'react',
+              );
+              setError(expiredError);
+              return;
+            }
+            response = (await signIn({
+              applicationId: effectiveApplicationId,
+              flowType: EmbeddedFlowType.Authentication,
+              ...(scopes && {scopes}),
+            })) as EmbeddedSignInFlowResponseV2;
+          } else {
+            throw resumeError;
+          }
+        }
       } else {
         response = (await signIn({
           applicationId: effectiveApplicationId,
@@ -517,12 +579,14 @@ const SignIn: FC<SignInProps> = ({
   }, []);
 
   useEffect(() => {
-    // Only initialize if we're not processing an OAuth callback or submission
+    // Only initialize if we're not processing an OAuth callback or submission.
+    // Wait for isStorageReady so the challenge token is restored from storage before
+    // we attempt to resume a persisted executionId — the server requires it.
     const currentUrlParams: any = getUrlParams();
     if (
       isInitialized &&
-      !isLoading &&
       isStorageReady &&
+      !isLoading &&
       !isFlowInitialized &&
       !initializationAttemptedRef.current &&
       !currentExecutionId &&
@@ -534,7 +598,7 @@ const SignIn: FC<SignInProps> = ({
       initializationAttemptedRef.current = true;
       initializeFlow();
     }
-  }, [isInitialized, isLoading, isStorageReady, isFlowInitialized, currentExecutionId]);
+  }, [isInitialized, isStorageReady, isLoading, isFlowInitialized, currentExecutionId]);
 
   /**
    * Handle step timeout if configured in additionalData.
@@ -647,6 +711,8 @@ const SignIn: FC<SignInProps> = ({
     try {
       setIsSubmitting(true);
       setFlowError(null);
+      // Clear any field errors from the previous response before the new round-trip.
+      setServerFieldErrors(null);
 
       const response: EmbeddedSignInFlowResponseV2 = (await signIn({
         executionId: effectiveExecutionId,
@@ -758,6 +824,13 @@ const SignIn: FC<SignInProps> = ({
         // Clean up executionId from URL after setting it in state
         cleanupFlowUrlParams();
 
+        // Surface server-side validation failures so BaseSignIn can inject them into
+        // the form-level fieldErrors state used by the render-prop / default UI.
+        const responseFieldErrors: FieldError[] | undefined = (response.data as any)?.fieldErrors;
+        if (responseFieldErrors && responseFieldErrors.length > 0) {
+          setServerFieldErrors(responseFieldErrors);
+        }
+
         // Display error from INCOMPLETE response
         if ((response as any)?.error) {
           setFlowError(new Error(extractErrorMessage(response, t)));
@@ -865,10 +938,25 @@ const SignIn: FC<SignInProps> = ({
   }, [passkeyState.isActive, passkeyState.challenge, passkeyState.creationOptions, passkeyState.executionId]);
 
   if (children) {
+    // Collapse the server FieldError[] array to a single message per field map for
+    // render-prop consumers. First error per field wins. Multi-error cases per
+    // field are rare in practice (server typically returns one rule failure per
+    // field in current flows) and consumers needing the full array can still read
+    // it from the raw flow response.
+    const renderPropFieldErrors: Record<string, string> = {};
+    if (serverFieldErrors) {
+      for (const fe of serverFieldErrors) {
+        if (!(fe.identifier in renderPropFieldErrors)) {
+          renderPropFieldErrors[fe.identifier] = fe.message;
+        }
+      }
+    }
+
     const renderProps: SignInRenderProps = {
       additionalData,
       components,
       error: flowError,
+      fieldErrors: renderPropFieldErrors,
       initialize: initializeFlow,
       isInitialized: isFlowInitialized,
       isLoading: isLoading || isSubmitting || !isInitialized,
@@ -893,6 +981,7 @@ const SignIn: FC<SignInProps> = ({
       size={size}
       variant={variant}
       preferences={preferences}
+      serverFieldErrors={serverFieldErrors}
     />
   );
 };

@@ -27,9 +27,6 @@ CREATE TABLE "AUTHORIZATION_REQUEST" (
 CREATE INDEX idx_authorization_request_expiry_time ON "AUTHORIZATION_REQUEST" (EXPIRY_TIME);
 
 -- Table to store OAuth2 CIBA (Client-Initiated Backchannel Authentication) requests.
--- USER_ID is NULL at creation and populated at callback once the user authenticates.
--- EXECUTION_ID is intentionally omitted: it is transient, lives only in the notification
--- link URL and the FLOW_CONTEXT table, and is never needed for polling or token issuance.
 CREATE TABLE "CIBA_AUTH_REQUEST" (
     AUTH_REQ_ID        VARCHAR(36)  NOT NULL,
     DEPLOYMENT_ID      VARCHAR(255) NOT NULL,

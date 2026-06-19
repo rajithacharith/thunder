@@ -38,6 +38,7 @@ type cibaGrantHandler struct {
 	cibaService    ciba.CIBAServiceInterface
 	tokenBuilder   tokenservice.TokenBuilderInterface
 	attributeCache attributecache.AttributeCacheServiceInterface
+	logger         *log.Logger
 }
 
 // newCIBAGrantHandler creates a new instance of cibaGrantHandler.
@@ -50,6 +51,7 @@ func newCIBAGrantHandler(
 		cibaService:    cibaService,
 		tokenBuilder:   tokenBuilder,
 		attributeCache: attributeCache,
+		logger:         log.GetLogger().With(log.String(log.LoggerKeyComponentName, "CIBAGrantHandler")),
 	}
 }
 
@@ -95,8 +97,6 @@ func (h *cibaGrantHandler) ValidateGrant(ctx context.Context, tokenRequest *mode
 // HandleGrant processes the CIBA grant request following the poll-mode state machine.
 func (h *cibaGrantHandler) HandleGrant(ctx context.Context, tokenRequest *model.TokenRequest,
 	oauthApp *inboundmodel.OAuthClient) (*model.TokenResponseDTO, *model.ErrorResponse) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "CIBAGrantHandler"))
-
 	record, err := h.cibaService.GetByAuthReqID(ctx, tokenRequest.AuthReqID)
 	if err != nil {
 		if errors.Is(err, ciba.ErrCIBARequestNotFound) {
@@ -117,7 +117,7 @@ func (h *cibaGrantHandler) HandleGrant(ctx context.Context, tokenRequest *model.
 	if now.After(record.ExpiryTime) {
 		if record.State != ciba.CIBAStateExpired && record.State != ciba.CIBAStateConsumed {
 			if updateErr := h.cibaService.UpdateState(ctx, record.AuthReqID, ciba.CIBAStateExpired); updateErr != nil {
-				logger.Error(ctx, "Failed to mark CIBA request as expired", log.Error(updateErr))
+				h.logger.Error(ctx, "Failed to mark CIBA request as expired", log.Error(updateErr))
 			}
 		}
 		return nil, &model.ErrorResponse{
@@ -128,7 +128,7 @@ func (h *cibaGrantHandler) HandleGrant(ctx context.Context, tokenRequest *model.
 
 	switch record.State {
 	case ciba.CIBAStatePending:
-		return nil, h.handlePending(ctx, record, now, logger)
+		return nil, h.handlePending(ctx, record, now)
 	case ciba.CIBAStateDenied:
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorAccessDenied,
@@ -140,7 +140,7 @@ func (h *cibaGrantHandler) HandleGrant(ctx context.Context, tokenRequest *model.
 			ErrorDescription: "The authentication request has already been used",
 		}
 	case ciba.CIBAStateAuthenticated:
-		return h.issueTokens(ctx, record, oauthApp, logger)
+		return h.issueTokens(ctx, record, oauthApp)
 	default:
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorInvalidGrant,
@@ -151,12 +151,12 @@ func (h *cibaGrantHandler) HandleGrant(ctx context.Context, tokenRequest *model.
 
 // handlePending enforces the polling interval and returns slow_down or authorization_pending.
 func (h *cibaGrantHandler) handlePending(ctx context.Context, record *ciba.CIBAAuthRequest,
-	now time.Time, logger *log.Logger) *model.ErrorResponse {
+	now time.Time) *model.ErrorResponse {
 	tooFast := !record.LastPolledAt.IsZero() &&
 		now.Sub(record.LastPolledAt) < time.Duration(constants.CIBADefaultIntervalSeconds)*time.Second
 
 	if updateErr := h.cibaService.UpdateLastPolled(ctx, record.AuthReqID, now); updateErr != nil {
-		logger.Error(ctx, "Failed to update CIBA last polled time", log.Error(updateErr))
+		h.logger.Error(ctx, "Failed to update CIBA last polled time", log.Error(updateErr))
 	}
 
 	if tooFast {
@@ -173,7 +173,7 @@ func (h *cibaGrantHandler) handlePending(ctx context.Context, record *ciba.CIBAA
 
 // issueTokens builds the access, refresh, and (when openid) ID tokens, then marks the request consumed.
 func (h *cibaGrantHandler) issueTokens(ctx context.Context, record *ciba.CIBAAuthRequest,
-	oauthApp *inboundmodel.OAuthClient, logger *log.Logger) (*model.TokenResponseDTO, *model.ErrorResponse) {
+	oauthApp *inboundmodel.OAuthClient) (*model.TokenResponseDTO, *model.ErrorResponse) {
 	// Use AuthorizedScopes (StandardScopes + authorized permissions from assertion) when available.
 	// Falls back to StandardScopes (OIDC only) if callback hasn't been processed yet.
 	scopeStr := record.AuthorizedScopes
@@ -186,7 +186,7 @@ func (h *cibaGrantHandler) issueTokens(ctx context.Context, record *ciba.CIBAAut
 	if record.AttributeCacheID != "" {
 		cacheEntry, cacheErr := h.attributeCache.GetAttributeCache(ctx, record.AttributeCacheID)
 		if cacheErr != nil {
-			logger.Error(ctx, "Failed to get user attributes from attribute cache",
+			h.logger.Error(ctx, "Failed to get user attributes from attribute cache",
 				log.String("error", cacheErr.ErrorDescription.DefaultValue))
 			return nil, &model.ErrorResponse{
 				Error:            constants.ErrorServerError,
@@ -207,7 +207,7 @@ func (h *cibaGrantHandler) issueTokens(ctx context.Context, record *ciba.CIBAAut
 		OAuthApp:         oauthApp,
 	})
 	if err != nil {
-		logger.Error(ctx, "Failed to generate access token", log.Error(err))
+		h.logger.Error(ctx, "Failed to generate access token", log.Error(err))
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorServerError,
 			ErrorDescription: "Failed to generate token",
@@ -229,7 +229,7 @@ func (h *cibaGrantHandler) issueTokens(ctx context.Context, record *ciba.CIBAAut
 			CompletedACR:   record.CompletedACR,
 		})
 		if idErr != nil {
-			logger.Error(ctx, "Failed to generate ID token", log.Error(idErr))
+			h.logger.Error(ctx, "Failed to generate ID token", log.Error(idErr))
 			return nil, &model.ErrorResponse{
 				Error:            constants.ErrorServerError,
 				ErrorDescription: "Failed to generate token",
@@ -242,7 +242,7 @@ func (h *cibaGrantHandler) issueTokens(ctx context.Context, record *ciba.CIBAAut
 	// consumed it, reject this one with invalid_grant.
 	consumed, consumeErr := h.cibaService.MarkConsumed(ctx, record.AuthReqID)
 	if consumeErr != nil {
-		logger.Error(ctx, "Failed to consume CIBA authentication request", log.Error(consumeErr))
+		h.logger.Error(ctx, "Failed to consume CIBA authentication request", log.Error(consumeErr))
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorServerError,
 			ErrorDescription: "Failed to process token request",

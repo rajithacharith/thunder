@@ -30,9 +30,12 @@ import (
 
 // ActorProviderInterface resolves inbound actors and exposes their OAuth and membership data.
 type ActorProviderInterface interface {
-	GetOAuthClientByID(
-		ctx context.Context, id string,
+	GetOAuthClientByClientID(
+		ctx context.Context, clientID string,
 	) (*inboundmodel.OAuthClient, *serviceerror.ServiceError)
+	GetOAuthProfileByID(
+		ctx context.Context, id string,
+	) (*inboundmodel.OAuthProfile, *serviceerror.ServiceError)
 	GetInboundClientByID(
 		ctx context.Context, id string,
 	) (*inboundmodel.InboundClient, *serviceerror.ServiceError)
