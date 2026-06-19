@@ -384,7 +384,10 @@ const sidebars: SidebarsConfig = {
           label: 'Secure Token Service (STS)',
           collapsible: true,
           collapsed: true,
-          items: [{type: 'doc', id: 'use-cases/sts/krakend', label: 'Protect APIs on KrakenD'}],
+          items: [
+            {type: 'doc', id: 'use-cases/sts/krakend', label: 'Protect APIs on KrakenD'},
+            {type: 'doc', id: 'use-cases/sts/envoy', label: 'Protect APIs on Envoy'},
+          ],
         },
       ],
     },
