@@ -2290,7 +2290,16 @@ func (s *ServiceTestSuite) TestCheckDirectFlowInitiationAllowed_ClientNotFound()
 		cfg:           testFlowExecCfg,
 	}
 
-	svcErr := service.checkDirectFlowInitiationAllowed(context.Background(), "app-notfound", log.GetLogger())
+	svcErr := service.checkDirectFlowInitiationAllowed(context.Background(), "app-notfound",
+		common.FlowTypeAuthentication, log.GetLogger())
+	s.Nil(svcErr)
+}
+
+func (s *ServiceTestSuite) TestCheckDirectFlowInitiationAllowed_NonAuthFlowAllowed() {
+	service := &flowExecService{cfg: testFlowExecCfg}
+
+	svcErr := service.checkDirectFlowInitiationAllowed(context.Background(), "test-app",
+		common.FlowTypeRegistration, log.GetLogger())
 	s.Nil(svcErr)
 }
 
