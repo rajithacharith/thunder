@@ -48,16 +48,16 @@ func newActorProvider(
 	}
 }
 
-// GetOAuthClientByID returns the OAuth client registered for the given ID.
-func (p *actorProvider) GetOAuthClientByID(
-	ctx context.Context, id string,
+// GetOAuthClientByClientID returns the OAuth client registered for the given ID.
+func (p *actorProvider) GetOAuthClientByClientID(
+	ctx context.Context, clientID string,
 ) (*inboundmodel.OAuthClient, *serviceerror.ServiceError) {
-	client, err := p.inboundClient.GetOAuthClientByClientID(ctx, id)
+	client, err := p.inboundClient.GetOAuthClientByClientID(ctx, clientID)
 	if err != nil {
 		if errors.Is(err, inboundclient.ErrInboundClientNotFound) {
 			return nil, &ErrorActorNotFound
 		}
-		p.logger.Error(ctx, "Failed to fetch OAuth client", log.String("id", id), log.Error(err))
+		p.logger.Error(ctx, "Failed to fetch OAuth client", log.String("clientID", clientID), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 	return client, nil
