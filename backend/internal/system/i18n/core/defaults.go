@@ -223,6 +223,8 @@ var defaultMessages = map[string]string{
 	"error.applicationservice.layout_not_found_description": "The specified layout configuration does not exist",
 	"error.applicationservice.multiple_oauth_configs": "Multiple OAuth inbound auth configs are not allowed",
 	"error.applicationservice.multiple_oauth_configs_description": "An application may have at most one inbound auth config per protocol",
+	"error.applicationservice.native_flow_not_allowed_for_spa": "Native flow execution is not allowed for single-page applications",
+	"error.applicationservice.native_flow_not_allowed_for_spa_description": "Single-page applications (public clients) must use the authorization_code grant type with PKCE for redirect-based flows. Direct (native) flow execution is not supported for browser-based single-page applications.",
 	"error.applicationservice.none_auth_method_cannot_have_cert_or_secret_description": "'none' authentication method cannot have a certificate or client secret",
 	"error.applicationservice.none_auth_method_requires_public_client_description": "'none' authentication method requires the client to be a public client",
 	"error.applicationservice.pkce_requires_authorization_code_description": "PKCE can only be enabled when the authorization_code grant type is selected",

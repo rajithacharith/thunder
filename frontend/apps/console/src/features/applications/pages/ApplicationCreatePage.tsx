@@ -48,6 +48,7 @@ import {
   ApplicationCreateFlowSignInApproach,
   ApplicationCreateFlowStep,
 } from '../models/application-create-flow';
+import {PlatformApplicationTemplate} from '../models/application-templates';
 import type {OAuth2Config} from '../models/oauth';
 import type {CreateApplicationRequest} from '../models/requests';
 import getConfigurationTypeFromTemplate from '../utils/getConfigurationTypeFromTemplate';
@@ -137,6 +138,19 @@ export default function ApplicationCreatePage(): JSX.Element {
   );
 
   const creationFlow = useMemo(() => resolveCreationFlow(selectedTemplateConfig), [selectedTemplateConfig]);
+
+  // Browser-based SPAs are public clients that must use the redirect-based flow, so the
+  // embedded (native) sign-in approach is not offered for them. Native mobile apps are also
+  // public clients but legitimately use app-native flows, so they are excluded from this rule.
+  const isBrowserSpaTemplate = useMemo((): boolean => {
+    if (selectedPlatform === PlatformApplicationTemplate.MOBILE) {
+      return false;
+    }
+    const oauthConfig = selectedTemplateConfig?.defaults?.inboundAuthConfig?.find(
+      (config) => config.type === 'oauth2',
+    )?.config;
+    return oauthConfig?.publicClient === true;
+  }, [selectedTemplateConfig, selectedPlatform]);
 
   const needsConfigure = useMemo((): boolean => {
     const isPasskeyEnabled = !selectedAuthFlow && (integrations[AuthenticatorTypes.PASSKEY] ?? false);
@@ -437,6 +451,7 @@ export default function ApplicationCreatePage(): JSX.Element {
           <ConfigureExperience
             selectedApproach={signInApproach}
             onApproachChange={setSignInApproach}
+            allowEmbeddedApproach={!isBrowserSpaTemplate}
             onReadyChange={handleApproachStepReadyChange}
             userTypes={userTypesData?.types ?? []}
             selectedUserTypes={selectedUserTypes}
