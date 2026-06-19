@@ -387,6 +387,7 @@ const sidebars: SidebarsConfig = {
           items: [
             {type: 'doc', id: 'use-cases/sts/krakend', label: 'Protect APIs on KrakenD'},
             {type: 'doc', id: 'use-cases/sts/envoy', label: 'Protect APIs on Envoy'},
+            {type: 'doc', id: 'use-cases/sts/azure-apim', label: 'Protect APIs on Azure API Management'},
           ],
         },
       ],
