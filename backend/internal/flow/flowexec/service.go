@@ -177,7 +177,7 @@ func (s *flowExecService) loadNewContext(ctx context.Context, appID, flowTypeStr
 		return nil, err
 	}
 
-	if svcErr := s.checkDirectFlowInitiationAllowed(ctx, appID, logger); svcErr != nil {
+	if svcErr := s.checkDirectFlowInitiationAllowed(ctx, appID, flowType, logger); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -191,10 +191,15 @@ func (s *flowExecService) loadNewContext(ctx context.Context, appID, flowTypeStr
 }
 
 // checkDirectFlowInitiationAllowed returns an error if the application's grant type does not
-// permit direct HTTP flow initiation. Applications configured with the authorization_code grant
-// type must have their flows initiated by the OAuth component, not via a direct HTTP call.
+// permit direct HTTP initiation of an authentication flow. Applications configured with the
+// authorization_code grant type must have their authentication flows initiated by the OAuth
+// component, not via a direct HTTP call. Other flow types (registration, recovery, user
+// onboarding) are not subject to this restriction.
 func (s *flowExecService) checkDirectFlowInitiationAllowed(ctx context.Context, appID string,
-	logger *log.Logger) *serviceerror.ServiceError {
+	flowType common.FlowType, logger *log.Logger) *serviceerror.ServiceError {
+	if flowType != common.FlowTypeAuthentication {
+		return nil
+	}
 	if appID == "" {
 		return nil
 	}
