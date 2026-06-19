@@ -735,6 +735,23 @@ jobs:
           fi
           echo "✅ React SDK Sample resources imported successfully"
 
+          echo "Importing E2E test infrastructure resources..."
+          YAML_CONTENT=$(cat tests/e2e/thunderid-config.yaml)
+          HTTP_STATUS=$(curl -k -s -o /tmp/import_response.json -w "%{http_code}" \
+            -X POST https://localhost:8090/import \
+            -H 'Content-Type: application/json' \
+            -d "{
+              \"content\": $(echo "$YAML_CONTENT" | jq -Rs .),
+              \"options\": {\"upsert\": true}
+            }")
+          echo "Import HTTP status: $HTTP_STATUS"
+          cat /tmp/import_response.json | jq . || cat /tmp/import_response.json
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "❌ Failed to import E2E test infrastructure resources (HTTP $HTTP_STATUS)"
+            exit 1
+          fi
+          echo "✅ E2E test infrastructure resources imported successfully"
+
       - name: 🔍 Extract Sample App ID
         id: extract-app-id
         run: |

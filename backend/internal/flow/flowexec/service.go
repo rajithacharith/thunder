@@ -23,10 +23,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/thunder-id/thunderid/internal/actorprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	flowconfig "github.com/thunder-id/thunderid/internal/flow/config"
+	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	sysContext "github.com/thunder-id/thunderid/internal/system/context"
 	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
@@ -176,6 +178,10 @@ func (s *flowExecService) loadNewContext(ctx context.Context, appID, flowTypeStr
 		return nil, err
 	}
 
+	if svcErr := s.checkDirectFlowInitiationAllowed(ctx, appID, logger); svcErr != nil {
+		return nil, svcErr
+	}
+
 	engineCtx, err := s.initContext(ctx, appID, flowType, verbose, logger)
 	if err != nil {
 		return nil, err
@@ -183,6 +189,34 @@ func (s *flowExecService) loadNewContext(ctx context.Context, appID, flowTypeStr
 
 	prepareContext(engineCtx, action, inputs)
 	return engineCtx, nil
+}
+
+// checkDirectFlowInitiationAllowed returns an error if the application's grant type does not
+// permit direct HTTP flow initiation. Applications configured with the authorization_code grant
+// type must have their flows initiated by the OAuth component, not via a direct HTTP call.
+func (s *flowExecService) checkDirectFlowInitiationAllowed(ctx context.Context, appID string,
+	logger *log.Logger) *serviceerror.ServiceError {
+	if appID == "" {
+		return nil
+	}
+
+	oauthProfile, svcErr := s.actorProvider.GetOAuthProfileByID(ctx, appID)
+	if svcErr != nil {
+		if svcErr.Code == actorprovider.ErrorActorNotFound.Code {
+			return nil
+		}
+		logger.Error(ctx, "Failed to retrieve OAuth profile for flow initiation guard",
+			log.String("appID", appID))
+		return &serviceerror.InternalServerError
+	}
+	if oauthProfile == nil {
+		return nil
+	}
+
+	if slices.Contains(oauthProfile.GrantTypes, string(oauth2const.GrantTypeAuthorizationCode)) {
+		return &ErrorDirectFlowInitiationNotPermitted
+	}
+	return nil
 }
 
 // initContext initializes a new flow context with the given details.

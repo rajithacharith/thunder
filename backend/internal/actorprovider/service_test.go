@@ -51,31 +51,31 @@ func (s *ActorProviderTestSuite) SetupTest() {
 	s.provider = Initialize(s.mockInbound, s.mockEntity)
 }
 
-func (s *ActorProviderTestSuite) TestGetOAuthClientByID_Delegates() {
+func (s *ActorProviderTestSuite) TestGetOAuthClientByClientID_Delegates() {
 	expected := &inboundmodel.OAuthClient{ID: "app-1", ClientID: "client-1"}
 	s.mockInbound.On("GetOAuthClientByClientID", mock.Anything, "client-1").Return(expected, nil)
 
-	client, svcErr := s.provider.GetOAuthClientByID(context.Background(), "client-1")
+	client, svcErr := s.provider.GetOAuthClientByClientID(context.Background(), "client-1")
 
 	s.Nil(svcErr)
 	s.Equal(expected, client)
 }
 
-func (s *ActorProviderTestSuite) TestGetOAuthClientByID_NotFound() {
+func (s *ActorProviderTestSuite) TestGetOAuthClientByClientID_NotFound() {
 	s.mockInbound.On("GetOAuthClientByClientID", mock.Anything, "missing").
 		Return((*inboundmodel.OAuthClient)(nil), inboundclient.ErrInboundClientNotFound)
 
-	client, svcErr := s.provider.GetOAuthClientByID(context.Background(), "missing")
+	client, svcErr := s.provider.GetOAuthClientByClientID(context.Background(), "missing")
 
 	s.Nil(client)
 	s.Equal(ErrorActorNotFound.Code, svcErr.Code)
 }
 
-func (s *ActorProviderTestSuite) TestGetOAuthClientByID_FetchFailed() {
+func (s *ActorProviderTestSuite) TestGetOAuthClientByClientID_FetchFailed() {
 	s.mockInbound.On("GetOAuthClientByClientID", mock.Anything, "client-1").
 		Return((*inboundmodel.OAuthClient)(nil), errors.New("db error"))
 
-	client, svcErr := s.provider.GetOAuthClientByID(context.Background(), "client-1")
+	client, svcErr := s.provider.GetOAuthClientByClientID(context.Background(), "client-1")
 
 	s.Nil(client)
 	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)

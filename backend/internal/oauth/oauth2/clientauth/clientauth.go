@@ -130,7 +130,7 @@ func authenticate(
 		return nil, errClientIDMismatch
 	}
 
-	oauthApp, svcErr := actorProvider.GetOAuthClientByID(ctx, clientID)
+	oauthApp, svcErr := actorProvider.GetOAuthClientByClientID(ctx, clientID)
 	if svcErr != nil {
 		logger.Error(ctx, "Failed to retrieve OAuth client",
 			log.String("error", svcErr.Error.DefaultValue), log.MaskedString("clientID", clientID))
