@@ -1100,6 +1100,8 @@ var defaultMessages = map[string]string{
 	"flows.executor.errors.prerequisites_failed_desc": "The prerequisites for this operation have not been met",
 	"flows.executor.errors.provisioning_assignment_failed": "Failed to assign groups and roles",
 	"flows.executor.errors.provisioning_assignment_failed_desc": "An error occurred while assigning groups and roles to the provisioned user",
+	"flows.executor.errors.provisioning_attribute_conflict": "A user with the provided attributes already exists",
+	"flows.executor.errors.provisioning_attribute_conflict_desc": "User provisioning failed because one or more unique attribute values are already taken",
 	"flows.executor.errors.provisioning_failed": "User provisioning failed",
 	"flows.executor.errors.provisioning_failed_desc": "An error occurred while provisioning the user",
 	"flows.executor.errors.provisioning_user_attrs_missing": "No user attributes provided for provisioning",
