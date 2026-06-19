@@ -204,3 +204,5 @@ Jetpack
 Gradle
 Keystore
 thunderid_flutter
+Kong
+[Kk]onnect
