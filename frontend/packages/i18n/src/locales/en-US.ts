@@ -303,7 +303,7 @@ const translations = {
       'Walk through the password recovery flow - John forgets his password and resets it via email.',
     'welcome.applicationTryout.scenarios.recovery.step1': 'Open <a>http://localhost:5173</a> and click Sign in.',
     'welcome.applicationTryout.scenarios.recovery.step2': 'On the {{productName}} sign-in page, click Forgot password?',
-    'welcome.applicationTryout.scenarios.recovery.step3': 'Enter john.doe as the username and submit.',
+    'welcome.applicationTryout.scenarios.recovery.step3': 'Enter <code>john.doe</code> as the username and submit.',
     'welcome.applicationTryout.scenarios.recovery.step4':
       "{{productName}} sends a recovery email to John's registered address. Open it from the inbox at <mail>http://localhost:8788</mail>.",
     'welcome.applicationTryout.scenarios.recovery.step5': 'Click the reset link in the email and set a new password.',
@@ -408,14 +408,14 @@ const translations = {
     'welcome.mcpTryout.steps.verifyApp.description':
       'In the {{productName}} Console, open Applications and confirm EXTERNAL-MCP-CLIENT is listed.',
     'welcome.mcpTryout.steps.verifyApp.action': 'Open Applications',
-    'welcome.mcpTryout.steps.installInspector.title': 'Install MCP Inspector',
+    'welcome.mcpTryout.steps.installInspector.title': 'Launch MCP Inspector',
     'welcome.mcpTryout.steps.installInspector.description':
-      'Launch MCP Inspector locally — a browser-based reference UI for MCP servers with built-in OAuth support.',
+      'Launch MCP Inspector locally — a browser-based reference UI for MCP servers with built-in OAuth support. Open a new terminal in the sample app directory and run:',
     'welcome.mcpTryout.steps.allowCors.title': 'Allow Inspector in CORS',
     'welcome.mcpTryout.steps.allowCors.description':
       "Add Inspector's origin to {{productName}}'s CORS allow-list in repository/conf/deployment.yaml, then restart {{productName}}.",
 
-    'welcome.mcpTryout.scenarios.title': 'Try the following user journeys',
+    'welcome.mcpTryout.scenarios.title': 'Try out the following test scenarios',
     'welcome.mcpTryout.scenarios.tabs.connect': 'Connect & Sign In',
     'welcome.mcpTryout.scenarios.tabs.permissions': 'Test Permissions',
 
@@ -423,22 +423,24 @@ const translations = {
       'Point MCP Inspector at the Wayfinder MCP server, authenticate through {{productName}}, and grant booking permissions at the consent screen.',
     'welcome.mcpTryout.scenarios.connect.step1':
       'Open <a>http://localhost:6274</a> in your browser (Inspector should already be running from the setup step above).',
-    'welcome.mcpTryout.scenarios.connect.step2':
-      'Set Transport to Streamable HTTP and Server URL to http://localhost:8787/mcp.',
-    'welcome.mcpTryout.scenarios.connect.step3':
-      'Enable OAuth. Set Client ID to EXTERNAL-MCP-CLIENT and leave Client Secret blank (public client).',
+    'welcome.mcpTryout.scenarios.connect.step2': 'Fill in the form with the details below.',
+    'welcome.mcpTryout.scenarios.connect.step3': 'Expand "Authentication" and fill in the details below.',
     'welcome.mcpTryout.scenarios.connect.step4':
-      'Click Connect. You are redirected to {{productName}} — sign in as john.doe / john.doe.',
+      'Click Connect. You are redirected to {{productName}} Sign in page — Sign in as John.',
     'welcome.mcpTryout.scenarios.connect.step5':
       'At the consent screen select the booking permissions to grant (<code>booking:read</code>, <code>booking:create</code>, <code>booking:cancel</code>) and confirm.',
     'welcome.mcpTryout.scenarios.connect.connectionLabel': 'Connection details',
-    'welcome.mcpTryout.scenarios.connect.fields.transport': 'Transport',
-    'welcome.mcpTryout.scenarios.connect.fields.serverUrl': 'Server URL',
+    'welcome.mcpTryout.scenarios.connect.fields.transport': 'Transport Type',
+    'welcome.mcpTryout.scenarios.connect.fields.serverUrl': 'URL',
+    'welcome.mcpTryout.scenarios.connect.fields.connectionType': 'Connection Type',
     'welcome.mcpTryout.scenarios.connect.fields.clientId': 'Client ID',
     'welcome.mcpTryout.scenarios.connect.fields.clientSecret': 'Client Secret',
+    'welcome.mcpTryout.scenarios.connect.fields.redirectUrl': 'Redirect URL',
 
     'welcome.mcpTryout.scenarios.permissions.description':
       'Call MCP tools and observe how {{productName}} enforces the scopes you granted at consent. Reconnect with different permissions to see the difference.',
+    'welcome.mcpTryout.scenarios.permissions.step0':
+      'At the consent screen select the booking permissions to grant (<code>booking:read</code>, <code>booking:create</code>, <code>booking:cancel</code>) and confirm.',
     'welcome.mcpTryout.scenarios.permissions.step1':
       'In the Tools tab, call create_booking. Set type=flight, itemId=flight-cmb-sin-01, travelers=1. The call succeeds if you granted <code>booking:create</code>.',
     'welcome.mcpTryout.scenarios.permissions.step2':

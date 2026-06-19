@@ -18,171 +18,23 @@
 
 import {useConfig} from '@thunderid/contexts';
 import {Box, Button, Stack, Tab, Tabs, Typography, IconButton, LinearProgress, AppBreadcrumbs} from '@wso2/oxygen-ui';
-import {
-  BookOpen,
-  Bot,
-  CalendarCheck,
-  Check,
-  Copy,
-  ExternalLink,
-  Eye,
-  EyeOff,
-  Search,
-  Shield,
-  X,
-} from '@wso2/oxygen-ui-icons-react';
+import {BookOpen, Bot, CalendarCheck, Check, Copy, Search, Shield, X} from '@wso2/oxygen-ui-icons-react';
 import {motion} from 'framer-motion';
-import type {JSX, ReactNode} from 'react';
-import {useState} from 'react';
+import {type JSX, useState} from 'react';
 import {Trans, useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import AIAgentApiKeySetup from '../components/AIAgentApiKeySetup';
+import CodeInline from '../components/CodeInline';
+import CredentialsBlock from '../components/CredentialsBlock';
+import ExternalLink from '../components/ExternalLink';
+import StepList from '../components/StepList';
 import WayfinderSampleSetup from '../components/WayfinderSampleSetup';
+import {WAYFINDER_APP_URL} from '../constants/sample-urls';
 import useWelcomeClose from '../hooks/useWelcomeClose';
 
 const MotionBox = motion.create(Box);
 
 type ScenarioTab = 'protect' | 'browse' | 'book';
-
-interface CredentialRowProps {
-  field: 'username' | 'password';
-  value: string;
-  showPassword: boolean;
-  isCopied: boolean;
-  onToggleShow: () => void;
-  onCopy: () => void;
-}
-
-function CredentialRow({field, value, showPassword, isCopied, onToggleShow, onCopy}: CredentialRowProps): JSX.Element {
-  const isPassword = field === 'password';
-  return (
-    <Box
-      sx={{
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 1.5,
-        px: 2,
-        py: 1,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1,
-      }}
-    >
-      <Box sx={{flex: 1, minWidth: 0}}>
-        <Typography variant="caption" color="text.secondary" sx={{display: 'block', textTransform: 'capitalize'}}>
-          {field}
-        </Typography>
-        <Typography variant="body2" fontFamily="monospace">
-          {isPassword && !showPassword ? '••••••••' : value}
-        </Typography>
-      </Box>
-      {isPassword && (
-        <IconButton
-          size="small"
-          aria-label={showPassword ? 'Hide password' : 'Show password'}
-          onClick={onToggleShow}
-          sx={{color: 'text.secondary'}}
-        >
-          {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-        </IconButton>
-      )}
-      <IconButton
-        size="small"
-        aria-label={`Copy ${field}`}
-        onClick={onCopy}
-        sx={{color: isCopied ? 'success.main' : 'text.secondary'}}
-      >
-        {isCopied ? <Check size={14} /> : <Copy size={14} />}
-      </IconButton>
-    </Box>
-  );
-}
-
-function CredentialsBlock({username, password}: {username: string; password: string}): JSX.Element {
-  const [showPassword, setShowPassword] = useState(false);
-  const [copiedField, setCopiedField] = useState<'username' | 'password' | null>(null);
-
-  const handleCopy = (field: 'username' | 'password', value: string): void => {
-    void navigator.clipboard.writeText(value).then(() => {
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
-    });
-  };
-
-  return (
-    <Stack spacing={1}>
-      <CredentialRow
-        field="username"
-        value={username}
-        showPassword={showPassword}
-        isCopied={copiedField === 'username'}
-        onToggleShow={() => setShowPassword((v) => !v)}
-        onCopy={() => handleCopy('username', username)}
-      />
-      <CredentialRow
-        field="password"
-        value={password}
-        showPassword={showPassword}
-        isCopied={copiedField === 'password'}
-        onToggleShow={() => setShowPassword((v) => !v)}
-        onCopy={() => handleCopy('password', password)}
-      />
-    </Stack>
-  );
-}
-
-function StepList({steps, startFrom = 1}: {steps: ReactNode[]; startFrom?: number}): JSX.Element {
-  return (
-    <Stack spacing={1} component="ol" sx={{pl: 0, m: 0, listStyle: 'none'}}>
-      {steps.map((step, i) => (
-        <Stack
-          // eslint-disable-next-line react/no-array-index-key
-          key={i}
-          component="li"
-          direction="row"
-          spacing={1.5}
-          alignItems="flex-start"
-        >
-          <Box
-            sx={{
-              width: 20,
-              height: 20,
-              borderRadius: '50%',
-              bgcolor: 'action.selected',
-              color: 'text.secondary',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              flexShrink: 0,
-              mt: 0.15,
-            }}
-          >
-            {startFrom + i}
-          </Box>
-          <Typography variant="body2" color="text.secondary" sx={{flex: 1}}>
-            {step}
-          </Typography>
-        </Stack>
-      ))}
-    </Stack>
-  );
-}
-
-function AppLink({children = null}: {children?: ReactNode}): JSX.Element {
-  return (
-    <a
-      href="http://localhost:5173"
-      target="_blank"
-      rel="noopener noreferrer"
-      style={{color: 'inherit', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 2}}
-    >
-      {children}
-      <ExternalLink size={12} style={{flexShrink: 0, opacity: 0.7}} />
-    </a>
-  );
-}
 
 function ChatPromptBlock({text}: {text: string}): JSX.Element {
   const [copied, setCopied] = useState(false);
@@ -220,35 +72,6 @@ function ChatPromptBlock({text}: {text: string}): JSX.Element {
         {copied ? <Check size={14} /> : <Copy size={14} />}
       </IconButton>
     </Box>
-  );
-}
-
-function tLink(i18nKey: string): JSX.Element {
-  return <Trans ns="common" i18nKey={i18nKey} components={{a: <AppLink />}} />;
-}
-
-function tCode(i18nKey: string): JSX.Element {
-  return (
-    <Trans
-      ns="common"
-      i18nKey={i18nKey}
-      components={{
-        code: (
-          <Box
-            component="code"
-            sx={{
-              px: 0.5,
-              py: 0.4,
-              borderRadius: 0.5,
-              bgcolor: 'action.selected',
-              fontFamily: 'monospace',
-              fontSize: '0.8em',
-              color: 'text.main',
-            }}
-          />
-        ),
-      }}
-    />
   );
 }
 
@@ -390,7 +213,16 @@ export default function TryoutSecuringAIAgentsPage(): JSX.Element {
                       <Typography variant="body2" color="text.secondary">
                         {t('common:welcome.aiAgentsTryout.scenarios.protect.description')}
                       </Typography>
-                      <StepList steps={[tLink('welcome.aiAgentsTryout.scenarios.protect.step1')]} />
+                      <StepList
+                        steps={[
+                          <Trans
+                            key="step1"
+                            ns="common"
+                            i18nKey="welcome.aiAgentsTryout.scenarios.protect.step1"
+                            components={{a: <ExternalLink href={WAYFINDER_APP_URL} />}}
+                          />,
+                        ]}
+                      />
                       <Stack spacing={1}>
                         <Typography
                           variant="caption"
@@ -398,14 +230,23 @@ export default function TryoutSecuringAIAgentsPage(): JSX.Element {
                           sx={{display: 'inline-flex', alignItems: 'center', gap: 0.5}}
                         >
                           <Check size={12} />
-                          {tCode('welcome.aiAgentsTryout.scenarios.protect.johnLabel')}
+                          <Trans
+                            ns="common"
+                            i18nKey="welcome.aiAgentsTryout.scenarios.protect.johnLabel"
+                            components={{code: <CodeInline />}}
+                          />
                         </Typography>
                         <CredentialsBlock username="john.doe" password="john.doe" />
                       </Stack>
                       <StepList
                         startFrom={2}
                         steps={[
-                          tCode('welcome.aiAgentsTryout.scenarios.protect.step2'),
+                          <Trans
+                            key="step2"
+                            ns="common"
+                            i18nKey="welcome.aiAgentsTryout.scenarios.protect.step2"
+                            components={{code: <CodeInline />}}
+                          />,
                           t('common:welcome.aiAgentsTryout.scenarios.protect.step3'),
                         ]}
                       />
@@ -416,7 +257,11 @@ export default function TryoutSecuringAIAgentsPage(): JSX.Element {
                           sx={{display: 'inline-flex', alignItems: 'center', gap: 0.5}}
                         >
                           <X size={12} />
-                          {tCode('welcome.aiAgentsTryout.scenarios.protect.janeLabel')}
+                          <Trans
+                            ns="common"
+                            i18nKey="welcome.aiAgentsTryout.scenarios.protect.janeLabel"
+                            components={{code: <CodeInline />}}
+                          />
                         </Typography>
                         <CredentialsBlock username="jane.smith" password="jane.smith" />
                       </Stack>
@@ -429,7 +274,16 @@ export default function TryoutSecuringAIAgentsPage(): JSX.Element {
                       <Typography variant="body2" color="text.secondary">
                         {t('common:welcome.aiAgentsTryout.scenarios.browse.description')}
                       </Typography>
-                      <StepList steps={[tLink('welcome.aiAgentsTryout.scenarios.browse.step1')]} />
+                      <StepList
+                        steps={[
+                          <Trans
+                            key="step1"
+                            ns="common"
+                            i18nKey="welcome.aiAgentsTryout.scenarios.browse.step1"
+                            components={{a: <ExternalLink href={WAYFINDER_APP_URL} />}}
+                          />,
+                        ]}
+                      />
                       <CredentialsBlock username="john.doe" password="john.doe" />
                       <StepList steps={[t('common:welcome.aiAgentsTryout.scenarios.browse.step2')]} startFrom={2} />
                       <ChatPromptBlock text="What flights are there from Colombo to Singapore?" />
@@ -437,7 +291,12 @@ export default function TryoutSecuringAIAgentsPage(): JSX.Element {
                         startFrom={3}
                         steps={[
                           t('common:welcome.aiAgentsTryout.scenarios.browse.step3'),
-                          tCode('welcome.aiAgentsTryout.scenarios.browse.step4'),
+                          <Trans
+                            key="step4"
+                            ns="common"
+                            i18nKey="welcome.aiAgentsTryout.scenarios.browse.step4"
+                            components={{code: <CodeInline />}}
+                          />,
                         ]}
                       />
                       <ChatPromptBlock text={t('common:welcome.aiAgentsTryout.scenarios.browse.step4Prompt')} />
@@ -449,14 +308,28 @@ export default function TryoutSecuringAIAgentsPage(): JSX.Element {
                       <Typography variant="body2" color="text.secondary">
                         {t('common:welcome.aiAgentsTryout.scenarios.book.description')}
                       </Typography>
-                      <StepList steps={[tLink('welcome.aiAgentsTryout.scenarios.book.step1')]} />
+                      <StepList
+                        steps={[
+                          <Trans
+                            key="step1"
+                            ns="common"
+                            i18nKey="welcome.aiAgentsTryout.scenarios.book.step1"
+                            components={{a: <ExternalLink href={WAYFINDER_APP_URL} />}}
+                          />,
+                        ]}
+                      />
                       <CredentialsBlock username="john.doe" password="john.doe" />
                       <StepList startFrom={2} steps={[t('common:welcome.aiAgentsTryout.scenarios.book.step2')]} />
                       <ChatPromptBlock text={t('common:welcome.aiAgentsTryout.scenarios.book.step2Prompt')} />
                       <StepList
                         startFrom={3}
                         steps={[
-                          tCode('common:welcome.aiAgentsTryout.scenarios.book.step3'),
+                          <Trans
+                            key="step3"
+                            ns="common"
+                            i18nKey="welcome.aiAgentsTryout.scenarios.book.step3"
+                            components={{code: <CodeInline />}}
+                          />,
                           t('common:welcome.aiAgentsTryout.scenarios.book.step4'),
                         ]}
                       />

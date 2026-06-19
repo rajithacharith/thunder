@@ -33,13 +33,8 @@ import {
 } from '@wso2/oxygen-ui';
 import {
   AppWindow,
-  Check,
-  Copy,
-  ExternalLink,
   X,
   BookOpen,
-  Eye,
-  EyeOff,
   KeyRound,
   LogIn,
   Share2,
@@ -48,266 +43,21 @@ import {
   UserPlus,
 } from '@wso2/oxygen-ui-icons-react';
 import {motion} from 'framer-motion';
-import type {JSX, ReactNode} from 'react';
-import {useState} from 'react';
+import {useState, type JSX} from 'react';
 import {Trans, useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
+import CodeInline from '../components/CodeInline';
+import CredentialsBlock from '../components/CredentialsBlock';
+import ExternalLink from '../components/ExternalLink';
+import FormFieldsBlock from '../components/FormFieldsBlock';
+import StepList from '../components/StepList';
 import WayfinderSampleSetup from '../components/WayfinderSampleSetup';
+import {WAYFINDER_APP_URL, WAYFINDER_MAIL_URL} from '../constants/sample-urls';
 import useWelcomeClose from '../hooks/useWelcomeClose';
 
 const MotionBox = motion.create(Box);
 
-const WAYFINDER_SAMPLE_URL = 'http://localhost:5173';
-const WAYFINDER_MAIL_URL = 'http://localhost:8788';
-
 type ScenarioTab = 'login' | 'signup' | 'recovery' | 'onboard' | 'mfa' | 'social';
-
-interface CredentialRowProps {
-  field: 'username' | 'password';
-  value: string;
-  showPassword: boolean;
-  isCopied: boolean;
-  onToggleShow: () => void;
-  onCopy: () => void;
-}
-
-function CredentialRow({field, value, showPassword, isCopied, onToggleShow, onCopy}: CredentialRowProps): JSX.Element {
-  const isPassword = field === 'password';
-  return (
-    <Box
-      sx={{
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 1.5,
-        px: 2,
-        py: 1,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1,
-      }}
-    >
-      <Box sx={{flex: 1, minWidth: 0}}>
-        <Typography variant="caption" color="text.secondary" sx={{display: 'block', textTransform: 'capitalize'}}>
-          {field}
-        </Typography>
-        <Typography variant="body2" fontFamily="monospace">
-          {isPassword && !showPassword ? '••••••••' : value}
-        </Typography>
-      </Box>
-      {isPassword && (
-        <IconButton
-          size="small"
-          aria-label={showPassword ? 'Hide password' : 'Show password'}
-          onClick={onToggleShow}
-          sx={{color: 'text.secondary'}}
-        >
-          {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-        </IconButton>
-      )}
-      <IconButton
-        size="small"
-        aria-label={`Copy ${field}`}
-        onClick={onCopy}
-        sx={{color: isCopied ? 'success.main' : 'text.secondary'}}
-      >
-        {isCopied ? <Check size={14} /> : <Copy size={14} />}
-      </IconButton>
-    </Box>
-  );
-}
-
-interface CredentialsBlockProps {
-  username: string;
-  password: string;
-}
-
-function CredentialsBlock({username, password}: CredentialsBlockProps): JSX.Element {
-  const [showPassword, setShowPassword] = useState(false);
-  const [copiedField, setCopiedField] = useState<'username' | 'password' | null>(null);
-
-  const handleCopy = (field: 'username' | 'password', value: string): void => {
-    void navigator.clipboard.writeText(value).then(() => {
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
-    });
-  };
-
-  return (
-    <Stack spacing={1}>
-      <CredentialRow
-        field="username"
-        value={username}
-        showPassword={showPassword}
-        isCopied={copiedField === 'username'}
-        onToggleShow={() => setShowPassword((v) => !v)}
-        onCopy={() => handleCopy('username', username)}
-      />
-      <CredentialRow
-        field="password"
-        value={password}
-        showPassword={showPassword}
-        isCopied={copiedField === 'password'}
-        onToggleShow={() => setShowPassword((v) => !v)}
-        onCopy={() => handleCopy('password', password)}
-      />
-    </Stack>
-  );
-}
-
-interface StepListProps {
-  steps: ReactNode[];
-  startFrom?: number;
-}
-
-function StepList({steps, startFrom = 1}: StepListProps): JSX.Element {
-  return (
-    <Stack spacing={1} component="ol" sx={{pl: 0, m: 0, listStyle: 'none'}}>
-      {steps.map((step, i) => (
-        <Stack
-          // eslint-disable-next-line react/no-array-index-key
-          key={i}
-          component="li"
-          direction="row"
-          spacing={1.5}
-          alignItems="flex-start"
-        >
-          <Box
-            sx={{
-              width: 20,
-              height: 20,
-              borderRadius: '50%',
-              bgcolor: 'action.selected',
-              color: 'text.secondary',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              flexShrink: 0,
-              mt: 0.15,
-            }}
-          >
-            {startFrom + i}
-          </Box>
-          <Typography variant="body2" color="text.secondary" sx={{flex: 1}}>
-            {step}
-          </Typography>
-        </Stack>
-      ))}
-    </Stack>
-  );
-}
-
-function AppLink({children = null}: {children?: ReactNode}): JSX.Element {
-  return (
-    <a
-      href={WAYFINDER_SAMPLE_URL}
-      target="_blank"
-      rel="noopener noreferrer"
-      style={{color: 'inherit', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 2}}
-    >
-      {children}
-      <ExternalLink size={12} style={{flexShrink: 0, opacity: 0.7}} />
-    </a>
-  );
-}
-
-function MailLink({children = null}: {children?: ReactNode}): JSX.Element {
-  return (
-    <a
-      href={WAYFINDER_MAIL_URL}
-      target="_blank"
-      rel="noopener noreferrer"
-      style={{color: 'inherit', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 2}}
-    >
-      {children}
-      <ExternalLink size={12} style={{flexShrink: 0, opacity: 0.7}} />
-    </a>
-  );
-}
-
-function tLink(i18nKey: string, values?: Record<string, unknown>): JSX.Element {
-  return <Trans ns="common" i18nKey={i18nKey} values={values} components={{a: <AppLink />, mail: <MailLink />}} />;
-}
-
-interface FormField {
-  label: string;
-  value: string;
-  isPassword?: boolean;
-}
-
-function FormFieldsBlock({fields}: {fields: FormField[]}): JSX.Element {
-  const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
-  const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
-
-  const handleCopy = (label: string, value: string): void => {
-    void navigator.clipboard.writeText(value).then(() => {
-      setCopiedLabel(label);
-      setTimeout(() => setCopiedLabel(null), 2000);
-    });
-  };
-
-  const togglePasswordVisibility = (label: string): void => {
-    setVisiblePasswords((prev) => {
-      const next = new Set(prev);
-      if (next.has(label)) {
-        next.delete(label);
-      } else {
-        next.add(label);
-      }
-      return next;
-    });
-  };
-
-  return (
-    <Box sx={{border: '1px solid', borderColor: 'divider', borderRadius: 1.5, overflow: 'hidden'}}>
-      {fields.map((f, i) => {
-        const isVisible = !f.isPassword || visiblePasswords.has(f.label);
-        return (
-          <Box
-            key={f.label}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
-              px: 2,
-              py: 0.75,
-              borderTop: i === 0 ? 'none' : '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            <Typography variant="caption" color="text.secondary" sx={{minWidth: 96, flexShrink: 0}}>
-              {f.label}
-            </Typography>
-            <Typography variant="body2" fontFamily="monospace" sx={{flex: 1}}>
-              {isVisible ? f.value : '••••••••'}
-            </Typography>
-            <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0}}>
-              {f.isPassword && (
-                <IconButton
-                  size="small"
-                  aria-label={isVisible ? 'Hide password' : 'Show password'}
-                  onClick={() => togglePasswordVisibility(f.label)}
-                  sx={{color: 'text.secondary'}}
-                >
-                  {isVisible ? <EyeOff size={13} /> : <Eye size={13} />}
-                </IconButton>
-              )}
-              <IconButton
-                size="small"
-                aria-label={`Copy ${f.label}`}
-                onClick={() => handleCopy(f.label, f.value)}
-                sx={{color: copiedLabel === f.label ? 'success.main' : 'text.secondary'}}
-              >
-                {copiedLabel === f.label ? <Check size={13} /> : <Copy size={13} />}
-              </IconButton>
-            </Box>
-          </Box>
-        );
-      })}
-    </Box>
-  );
-}
 
 export default function TryoutSecuringConsumerApp(): JSX.Element {
   const {t} = useTranslation(['common']);
@@ -488,7 +238,15 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                     </Typography>
                     <StepList
                       steps={[
-                        tLink('welcome.applicationTryout.scenarios.login.step1'),
+                        <Trans
+                          key="step1"
+                          ns="common"
+                          i18nKey="welcome.applicationTryout.scenarios.login.step1"
+                          components={{
+                            a: <ExternalLink href={WAYFINDER_APP_URL} />,
+                            mail: <ExternalLink href={WAYFINDER_MAIL_URL} />,
+                          }}
+                        />,
                         t('common:welcome.applicationTryout.scenarios.login.step2'),
                       ]}
                     />
@@ -519,7 +277,15 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                     </Typography>
                     <StepList
                       steps={[
-                        tLink('welcome.applicationTryout.scenarios.signup.step1'),
+                        <Trans
+                          key="step1"
+                          ns="common"
+                          i18nKey="welcome.applicationTryout.scenarios.signup.step1"
+                          components={{
+                            a: <ExternalLink href={WAYFINDER_APP_URL} />,
+                            mail: <ExternalLink href={WAYFINDER_MAIL_URL} />,
+                          }}
+                        />,
                         t('common:welcome.applicationTryout.scenarios.signup.step2', {productName}),
                         t('common:welcome.applicationTryout.scenarios.signup.step3'),
                       ]}
@@ -572,10 +338,32 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                     </Typography>
                     <StepList
                       steps={[
-                        tLink('welcome.applicationTryout.scenarios.recovery.step1'),
+                        <Trans
+                          key="step1"
+                          ns="common"
+                          i18nKey="welcome.applicationTryout.scenarios.recovery.step1"
+                          components={{
+                            a: <ExternalLink href={WAYFINDER_APP_URL} />,
+                            mail: <ExternalLink href={WAYFINDER_MAIL_URL} />,
+                          }}
+                        />,
                         t('common:welcome.applicationTryout.scenarios.recovery.step2', {productName}),
-                        t('common:welcome.applicationTryout.scenarios.recovery.step3'),
-                        tLink('welcome.applicationTryout.scenarios.recovery.step4', {productName}),
+                        <Trans
+                          key="step3"
+                          ns="common"
+                          i18nKey="welcome.applicationTryout.scenarios.recovery.step3"
+                          components={{code: <CodeInline />}}
+                        />,
+                        <Trans
+                          key="step4"
+                          ns="common"
+                          i18nKey="welcome.applicationTryout.scenarios.recovery.step4"
+                          values={{productName}}
+                          components={{
+                            a: <ExternalLink href={WAYFINDER_APP_URL} />,
+                            mail: <ExternalLink href={WAYFINDER_MAIL_URL} />,
+                          }}
+                        />,
                         t('common:welcome.applicationTryout.scenarios.recovery.step5'),
                         t('common:welcome.applicationTryout.scenarios.recovery.step6'),
                       ]}
@@ -597,7 +385,15 @@ export default function TryoutSecuringConsumerApp(): JSX.Element {
                         t('common:welcome.applicationTryout.scenarios.onboard.step2'),
                         t('common:welcome.applicationTryout.scenarios.onboard.step3'),
                         t('common:welcome.applicationTryout.scenarios.onboard.step4'),
-                        tLink('welcome.applicationTryout.scenarios.onboard.step5'),
+                        <Trans
+                          key="step5"
+                          ns="common"
+                          i18nKey="welcome.applicationTryout.scenarios.onboard.step5"
+                          components={{
+                            a: <ExternalLink href={WAYFINDER_APP_URL} />,
+                            mail: <ExternalLink href={WAYFINDER_MAIL_URL} />,
+                          }}
+                        />,
                         t('common:welcome.applicationTryout.scenarios.onboard.step6'),
                         t('common:welcome.applicationTryout.scenarios.onboard.step7'),
                       ]}
