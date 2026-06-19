@@ -226,6 +226,7 @@ func (as *authorizeService) handleStandardAuthorizationRequest(
 	nonce := msg.RequestQueryParams[oauth2const.RequestParamNonce]
 	acrValues := msg.RequestQueryParams[oauth2const.RequestParamAcrValues]
 	dpopJkt := msg.RequestQueryParams[oauth2const.RequestParamDPoPJkt]
+	prompt := msg.RequestQueryParams[oauth2const.RequestParamPrompt]
 
 	// Parse the claims parameter if present.
 	var claimsRequest *oauth2model.ClaimsRequest
@@ -290,6 +291,7 @@ func (as *authorizeService) handleStandardAuthorizationRequest(
 		Nonce:               nonce,
 		AcrValues:           acrValues,
 		DPoPJkt:             dpopJkt,
+		Prompt:              prompt,
 	}
 
 	// Set the redirect URI if not provided in the request. Invalid cases are already handled at this point.
@@ -347,6 +349,9 @@ func (as *authorizeService) initiateFlowAndStoreRequest(
 	}
 	if effectiveAcrValues != "" {
 		runtimeData[flowcm.RuntimeKeyRequestedAuthClasses] = effectiveAcrValues
+	}
+	if slices.Contains(strings.Fields(oauthParams.Prompt), oauth2const.PromptConsent) {
+		runtimeData[flowcm.RuntimeKeyForceConsentReprompt] = "true"
 	}
 	flowInitCtx := &flowexec.FlowInitContext{
 		ApplicationID: app.ID,

@@ -151,12 +151,13 @@ func (e *consentExecutor) checkConsent(ctx *core.NodeContext, execResp *common.E
 	authorizedPermissions := strings.Fields(ctx.RuntimeData["authorized_permissions"])
 	availableAttributes := e.buildAugmentedAvailableAttributes(availableAttrResp, entityRef)
 	appName := ctx.Application.Name
+	forceReprompt := ctx.RuntimeData[common.RuntimeKeyForceConsentReprompt] == "true"
 
 	// Resolve consent to determine if any required consents are missing and need to be prompted
 	promptData, svcErr := e.consentEnforcer.ResolveConsent(
 		ctx.Context, ouID, appID, appName, entityRef.EntityID,
 		essentialAttributes, optionalAttributes, authorizedPermissions,
-		availableAttributes, buildRuntimeMetadata(ctx))
+		availableAttributes, forceReprompt, buildRuntimeMetadata(ctx))
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug(ctx.Context, "Client error while resolving user consent", log.Any("error", svcErr))

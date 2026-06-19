@@ -215,13 +215,24 @@ func (suite *AuthzValidationTestSuite) TestValidateParams_PromptNoneCombined() {
 	assert.Contains(suite.T(), errMsg, "must not be combined")
 }
 
-func (suite *AuthzValidationTestSuite) TestValidateParams_PromptConsent() {
+func (suite *AuthzValidationTestSuite) TestValidateParams_PromptConsent_Success() {
 	params := suite.validParams()
 	params[constants.RequestParamPrompt] = "consent"
 
-	errCode, _ := ValidateAuthorizationRequestParams(params, suite.oauthApp, "")
+	errCode, errMsg := ValidateAuthorizationRequestParams(params, suite.oauthApp, "")
 
-	assert.Equal(suite.T(), constants.ErrorConsentRequired, errCode)
+	assert.Empty(suite.T(), errCode)
+	assert.Empty(suite.T(), errMsg)
+}
+
+func (suite *AuthzValidationTestSuite) TestValidateParams_PromptLoginConsent_Success() {
+	params := suite.validParams()
+	params[constants.RequestParamPrompt] = "login consent"
+
+	errCode, errMsg := ValidateAuthorizationRequestParams(params, suite.oauthApp, "")
+
+	assert.Empty(suite.T(), errCode)
+	assert.Empty(suite.T(), errMsg)
 }
 
 func (suite *AuthzValidationTestSuite) TestValidateParams_PromptSelectAccount() {
@@ -316,7 +327,7 @@ func (suite *AuthzValidationTestSuite) TestValidatePromptParameter_None_LoginReq
 
 func (suite *AuthzValidationTestSuite) TestValidatePromptParameter_Consent() {
 	errCode, _ := ValidatePromptParameter("consent")
-	assert.Equal(suite.T(), constants.ErrorConsentRequired, errCode)
+	assert.Empty(suite.T(), errCode)
 }
 
 func (suite *AuthzValidationTestSuite) TestValidatePromptParameter_SelectAccount() {
@@ -342,7 +353,7 @@ func (suite *AuthzValidationTestSuite) TestValidatePromptParameter_NoneWithOther
 
 func (suite *AuthzValidationTestSuite) TestValidatePromptParameter_LoginConsent() {
 	errCode, _ := ValidatePromptParameter("login consent")
-	assert.Equal(suite.T(), constants.ErrorConsentRequired, errCode)
+	assert.Empty(suite.T(), errCode)
 }
 
 type ACRValuesTestSuite struct {
