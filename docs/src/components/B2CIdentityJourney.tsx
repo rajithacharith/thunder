@@ -1564,7 +1564,7 @@ export function B2CSolutionPatternsExplorer() {
         })
       );
     }
-  }, [selectedPatternId]);
+  }, [selectedPatternId, selectedPattern.label]);
 
   return (
     <section className="uc-solution-chooser" aria-label="B2C solution pattern chooser">
