@@ -22,6 +22,7 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 import androidSdkSidebar from './content/sdks/android/sidebar';
 import browserSdkSidebar from './content/sdks/browser/sidebar';
 import expressSdkSidebar from './content/sdks/express/sidebar';
+import flutterSdkSidebar from './content/sdks/flutter/sidebar';
 import iosSdkSidebar from './content/sdks/ios/sidebar';
 import javascriptSdkSidebar from './content/sdks/javascript/sidebar';
 import nextjsSdkSidebar from './content/sdks/nextjs/sidebar';
@@ -143,6 +144,11 @@ const sidebars: SidebarsConfig = {
               type: 'doc',
               id: 'guides/getting-started/connect-your-application/android',
               label: 'Android',
+            },
+            {
+              type: 'doc',
+              id: 'guides/getting-started/connect-your-application/flutter',
+              label: 'Flutter',
             },
           ],
         },
@@ -918,6 +924,7 @@ const sidebars: SidebarsConfig = {
   javascriptSdkSidebar,
   iosSdkSidebar,
   androidSdkSidebar,
+  flutterSdkSidebar,
   communitySidebar: [
     // Community Section
     {

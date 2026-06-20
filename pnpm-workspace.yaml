@@ -51,7 +51,7 @@ catalog:
   babel-plugin-react-compiler: 19.1.0-rc.3
   clsx: 2.1.1
   dayjs: 1.11.18
-  dompurify: 3.4.9
+  dompurify: 3.4.11
   eslint: 9.39.4
   globals: 16.4.0
   i18next: 25.6.0
@@ -111,7 +111,7 @@ overrides:
   vue: 3.5.34
   defu: 6.1.5
   axios: 1.16.0
-  dompurify: 3.4.9
+  dompurify: '>=3.4.11'
   follow-redirects: 1.16.0
   unhead: 2.1.13
   minimatch@>=5.0.0 <5.1.8: '>=5.1.8'
@@ -149,6 +149,9 @@ overrides:
   esbuild: '>=0.28.1'
   # JUSTIFICATION: Transitive dep via axios/nx. Fixes GHSA-hmw2-7cc7-3qxx — CRLF injection in form-data via unescaped field names (vulnerable <4.0.6).
   form-data: '>=4.0.6'
+  # JUSTIFICATION: Fixes GHSA-vxpw-j846-p89q (high DoS), GHSA-p88m-4jfj-68fv (HTTP header injection),
+  # GHSA-35p6-xmwp-9g52 and GHSA-g8m3-5g58-fq7m — transitive via @codecov/vite-plugin chain.
+  undici: '>=6.27.0'
 
 packageExtensions:
   '@hookform/resolvers':
