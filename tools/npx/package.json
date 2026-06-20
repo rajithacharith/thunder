@@ -1,6 +1,6 @@
 {
   "name": "thunderid",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "ThunderID: Auth for the Modern Dev — instantly via npx",
   "keywords": [
     "thunderid",
