@@ -33,6 +33,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
+	sysContext "github.com/thunder-id/thunderid/internal/system/context"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 	"github.com/thunder-id/thunderid/tests/mocks/oumock"
@@ -394,6 +395,57 @@ func (suite *HTTPRequestExecutorTestSuite) TestExecute_SuccessfulPOSTRequest() {
 	// Verify headers
 	assert.Equal(suite.T(), "Bearer token123", receivedHeaders.Get("Authorization"))
 	assert.Equal(suite.T(), "custom123", receivedHeaders.Get("X-Custom-Header"))
+}
+
+func (suite *HTTPRequestExecutorTestSuite) TestExecute_PropagatesCorrelationID() {
+	var receivedHeaders http.Header
+	suite.mockServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedHeaders = r.Header
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
+	}))
+
+	ctx := &providers.NodeContext{
+		Context:     sysContext.WithTraceID(context.Background(), "trace-xyz"),
+		ExecutionID: "test-flow",
+		NodeProperties: map[string]interface{}{
+			"url":    suite.mockServer.URL + "/api",
+			"method": "GET",
+		},
+		UserInputs:  make(map[string]string),
+		RuntimeData: make(map[string]string),
+	}
+
+	_, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "trace-xyz", receivedHeaders.Get("X-Correlation-ID"))
+}
+
+func (suite *HTTPRequestExecutorTestSuite) TestExecute_DoesNotOverrideConfiguredCorrelationID() {
+	var receivedHeaders http.Header
+	suite.mockServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedHeaders = r.Header
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
+	}))
+
+	ctx := &providers.NodeContext{
+		Context:     sysContext.WithTraceID(context.Background(), "trace-xyz"),
+		ExecutionID: "test-flow",
+		NodeProperties: map[string]interface{}{
+			"url":     suite.mockServer.URL + "/api",
+			"method":  "GET",
+			"headers": `{"X-Correlation-ID": "explicit-id"}`,
+		},
+		UserInputs:  make(map[string]string),
+		RuntimeData: make(map[string]string),
+	}
+
+	_, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "explicit-id", receivedHeaders.Get("X-Correlation-ID"))
 }
 
 func (suite *HTTPRequestExecutorTestSuite) TestExecute_ResponseMapping() {
