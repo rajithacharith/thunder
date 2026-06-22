@@ -4,14 +4,19 @@ description: Configure KrakenD API Gateway to validate JWTs issued by {{ProductN
 sidebar_position: 1
 ---
 
+import {STSIntegrationDiagram, KrakenDLogo} from '../../../src/components/GatewayIntegrationDiagram';
+
 # Protect APIs on KrakenD with <ProductName />
 
 This guide explains how to secure your APIs at the [KrakenD](https://www.krakend.io/) gateway layer using tokens issued by <ProductName />. By retrieving public signing keys from the <ProductName /> [JWKS endpoint](https://www.rfc-editor.org/rfc/rfc7517), KrakenD cryptographically verifies every incoming token at the edge before forwarding authorized requests to your backend services.
+
+<STSIntegrationDiagram gatewayName="KrakenD" gatewayLogo={<KrakenDLogo color="#fff" />} gatewayBgColor="#041c36" />
 
 The guide covers two core integration approaches available in KrakenD:
 
 - **[Token Validation](#configure-jwt-token-validation-in-krakend):** Configure [KrakenD](https://www.krakend.io/) to validate incoming JWTs issued by <ProductName /> using the [`auth/validator`](https://www.krakend.io/docs/authorization/jwt-validation/) component, ensuring only authenticated requests access your APIs.
 - **[Fine-Grained Authorization](#configure-fine-grained-authorization-in-krakend):** Leverage <ProductName />'s [RBAC](/docs/next/guides/key-concepts/authorization/) capabilities to enforce strict, KrakenD-driven access control policies on upstream APIs.
+
 
 ## Prerequisites
 
@@ -182,12 +187,6 @@ curl --location 'http://localhost:8082/api/items' \
 curl --location 'http://localhost:8082/api/items' \
   --header 'Authorization: Bearer <ACCESS_TOKEN>' \
   --header 'Content-Type: application/json'
-```
-
-Expected response:
-
-```json
-{"id": 10, "name": "Widget", "description": "A test item"}
 ```
 
 ## Configure Fine-Grained Authorization in KrakenD
@@ -365,12 +364,6 @@ The response confirms the scope is present:
 curl --location 'http://localhost:8082/api/items' \
   --header 'Authorization: Bearer <ACCESS_TOKEN>' \
   --header 'Content-Type: application/json'
-```
-
-Expected response:
-
-```json
-{"id": 10, "name": "Widget", "description": "A test item"}
 ```
 
 **With a token missing the required scope — expect `403 Forbidden`:**

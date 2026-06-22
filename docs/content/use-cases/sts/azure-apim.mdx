@@ -6,10 +6,13 @@ sidebar_position: 2
 
 import {NextSteps, NextStepsCard} from '../../../src/components/NextSteps';
 import validateJwt from '../assets/sts/azure-apim/validate-jwt.png';
+import {STSIntegrationDiagram, AzureAPIMlogo} from '../../../src/components/GatewayIntegrationDiagram';
 
 # Protect APIs on Azure API Management with <ProductName />
 
 This guide explains how to secure your APIs at the [Azure API Management](https://learn.microsoft.com/en-us/azure/api-management/api-management-key-concepts) gateway layer using tokens issued by <ProductName />. By retrieving public signing keys from the <ProductName /> [JWKS endpoint](https://www.rfc-editor.org/rfc/rfc7517), Azure APIM cryptographically verifies every incoming token at the edge before forwarding authorized requests to your backend services.
+
+<STSIntegrationDiagram gatewayName="Azure API Management" gatewayLogo={<AzureAPIMlogo color="#fff" />} gatewayBgColor="#002050" />
 
 The guide covers two core integration approaches available in Azure APIM:
 
@@ -379,23 +382,3 @@ curl --location 'https://<AZURE_APIM_GATEWAY_URL>/<API_PATH>' \
   --header 'Ocp-Apim-Subscription-Key: <SUBSCRIPTION_KEY>' \
   --header 'Content-Type: application/json'
 ```
-
-## References
-
-<NextSteps>
-  <NextStepsCard
-    title="validate-jwt Policy"
-    description="Full reference for the Azure APIM validate-jwt inbound policy, including all attributes and claim validation options."
-    href="https://learn.microsoft.com/en-us/azure/api-management/validate-jwt-policy"
-  />
-  <NextStepsCard
-    title="Azure APIM Policies Overview"
-    description="Learn how Azure APIM policies work and how to apply them at the product, API, and operation level."
-    href="https://learn.microsoft.com/en-us/azure/api-management/api-management-howto-policies"
-  />
-  <NextStepsCard
-    title="Create an Azure APIM Service Instance"
-    description="Step-by-step guide to provisioning a new Azure API Management service instance in the Azure portal."
-    href="https://learn.microsoft.com/en-us/azure/api-management/get-started-create-service-instance"
-  />
-</NextSteps>

@@ -4,14 +4,19 @@ description: Configure Envoy to validate JWTs issued by {{ProductName}} before f
 sidebar_position: 2
 ---
 
+import {STSIntegrationDiagram, EnvoyLogo} from '../../../src/components/GatewayIntegrationDiagram';
+
 # Protect APIs on Envoy with <ProductName />
 
 This guide explains how to secure your APIs at the [Envoy](https://www.envoyproxy.io/) gateway layer using tokens issued by <ProductName />. By retrieving public signing keys from the <ProductName /> [JWKS endpoint](https://www.rfc-editor.org/rfc/rfc7517), Envoy cryptographically verifies every incoming token at the edge before forwarding authorized requests to your backend services.
+
+<STSIntegrationDiagram gatewayName="Envoy" gatewayLogo={<EnvoyLogo color="#fff" />} gatewayBgColor="#1a0a2e" />
 
 The guide covers two core integration approaches available in Envoy:
 
 - **[Token Validation](#configure-jwt-token-validation-in-envoy):** Configure Envoy to validate incoming JWTs issued by <ProductName /> using the [`envoy.filters.http.jwt_authn`](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter) HTTP filter, ensuring only authenticated requests access your APIs.
 - **[Fine-Grained Authorization](#configure-fine-grained-authorization-in-envoy):** Leverage <ProductName />'s [RBAC](/docs/next/guides/key-concepts/authorization/) capabilities to enforce strict, Envoy-driven access control policies on upstream APIs.
+
 
 ## Prerequisites
 
