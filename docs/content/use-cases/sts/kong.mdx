@@ -4,9 +4,13 @@ description: Configure Kong Konnect to validate JWT access tokens issued by {{Pr
 sidebar_position: 2
 ---
 
+import {STSIntegrationDiagram, KongLogo} from '../../../src/components/GatewayIntegrationDiagram';
+
 # Protect APIs on Kong Konnect with <ProductName />
 
 This guide explains how to secure your APIs at the [Kong Konnect](https://konghq.com/products/kong-konnect) gateway layer using tokens issued by <ProductName />. By retrieving public signing keys from the <ProductName /> [JWKS endpoint](https://www.rfc-editor.org/rfc/rfc7517), Kong cryptographically verifies every incoming token at the edge before forwarding authorized requests to your backend services.
+
+<STSIntegrationDiagram gatewayName="Kong Konnect" gatewayLogo={<KongLogo color="#fff" />} gatewayBgColor="#043558" />
 
 The guide covers two core integration approaches available in Kong Konnect:
 
@@ -271,7 +275,3 @@ Kong inspects the token, finds the `bookingsapi:bookings:read` scope absent, and
 | `scopes_claim` | `scope` | The token claim the plugin reads scopes from. <ProductName /> emits resource scopes in the `scope` claim. |
 | `audience_required` | `<CLIENT_ID>` | Optional. Audiences the token must carry. <ProductName /> sets `aud` to the issuing application's Client ID. |
 | `audience_claim` | `aud` | The token claim the plugin reads the audience from. |
-
-## Next Steps
-
-- [Applications](/docs/next/guides/guides/applications) — Configure grant types and token settings for your application.
