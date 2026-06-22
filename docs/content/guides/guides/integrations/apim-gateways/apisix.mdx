@@ -4,9 +4,13 @@ description: Configure Apache APISIX to validate JWT access tokens issued by {{P
 sidebar_position: 1
 ---
 
+import {STSIntegrationDiagram, APISIXLogo} from '../../../../../src/components/GatewayIntegrationDiagram';
+
 # Protect APIs on Apache APISIX with <ProductName />
 
 This guide explains how to secure your APIs at the [Apache APISIX](https://apisix.apache.org/) gateway layer using tokens issued by <ProductName />. By retrieving public signing keys from the <ProductName /> [JWKS endpoint](https://www.rfc-editor.org/rfc/rfc7517), APISIX cryptographically verifies every incoming token at the edge before forwarding authorized requests to your backend services.
+
+<STSIntegrationDiagram gatewayName="Apache APISIX" gatewayLogo={<APISIXLogo color="#fff" />} gatewayBgColor="#1a0a14" />
 
 The guide covers two core integration approaches available in Apache APISIX:
 

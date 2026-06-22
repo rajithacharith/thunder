@@ -385,19 +385,6 @@ const sidebars: SidebarsConfig = {
             },
           ],
         },
-        {
-          type: 'category',
-          label: 'Secure Token Service (STS)',
-          collapsible: true,
-          collapsed: true,
-          items: [
-            {type: 'doc', id: 'use-cases/sts/security-token-service', label: 'Security Token Service'},
-            {type: 'doc', id: 'use-cases/sts/azure-apim', label: 'Protect APIs on Azure API Management'},
-            {type: 'doc', id: 'use-cases/sts/envoy', label: 'Protect APIs on Envoy'},
-            {type: 'doc', id: 'use-cases/sts/kong', label: 'Protect APIs on Kong Konnect'},
-            {type: 'doc', id: 'use-cases/sts/krakend', label: 'Protect APIs on KrakenD'},
-          ],
-        },
       ],
     },
 
@@ -553,11 +540,12 @@ const sidebars: SidebarsConfig = {
               collapsed: true,
               collapsible: true,
               items: [
-                {
-                  type: 'doc',
-                  id: 'guides/guides/integrations/apim-gateways/apisix',
-                  label: 'Apache APISIX',
-                },
+                {type: 'doc', id: 'guides/guides/integrations/apim-gateways/overview', label: 'Overview'},
+                {type: 'doc', id: 'guides/guides/integrations/apim-gateways/apisix', label: 'Apache APISIX'},
+                {type: 'doc', id: 'guides/guides/integrations/apim-gateways/azure-apim', label: 'Azure API Management'},
+                {type: 'doc', id: 'guides/guides/integrations/apim-gateways/envoy', label: 'Envoy'},
+                {type: 'doc', id: 'guides/guides/integrations/apim-gateways/kong', label: 'Kong Konnect'},
+                {type: 'doc', id: 'guides/guides/integrations/apim-gateways/krakend', label: 'KrakenD'},
               ],
             },
           ],
