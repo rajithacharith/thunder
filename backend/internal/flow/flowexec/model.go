@@ -92,6 +92,7 @@ type InterceptorRunnerContext struct {
 	UserInputs           map[string]string
 	ForwardedData        map[string]interface{}
 	AdditionalData       map[string]string
+	CurrentNodeInputs    []common.Input
 	ResolvedInterceptors []core.InterceptorUnitInterface
 	SharedData           map[string]string
 }
