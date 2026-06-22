@@ -6,7 +6,12 @@ sidebar_position: 1
 
 # Protect APIs on KrakenD with <ProductName />
 
-This guide walks you through configuring [KrakenD API Gateway](https://www.krakend.io/) to protect upstream APIs using JSON Web Tokens (JWTs) issued by <ProductName />. KrakenD fetches public keys from the <ProductName /> JWKS endpoint and validates tokens on every request before forwarding traffic to the upstream service.
+This guide explains how to secure your APIs at the [KrakenD](https://www.krakend.io/) gateway layer using tokens issued by <ProductName />. By retrieving public signing keys from the <ProductName /> [JWKS endpoint](https://www.rfc-editor.org/rfc/rfc7517), KrakenD cryptographically verifies every incoming token at the edge before forwarding authorized requests to your backend services.
+
+The guide covers two core integration approaches available in KrakenD:
+
+- **[Token Validation](#configure-jwt-token-validation-in-krakend):** Configure [KrakenD](https://www.krakend.io/) to validate incoming JWTs issued by <ProductName /> using the [`auth/validator`](https://www.krakend.io/docs/authorization/jwt-validation/) component, ensuring only authenticated requests access your APIs.
+- **[Fine-Grained Authorization](#configure-fine-grained-authorization-in-krakend):** Leverage <ProductName />'s [RBAC](/docs/next/guides/key-concepts/authorization/) capabilities to enforce strict, KrakenD-driven access control policies on upstream APIs.
 
 ## Prerequisites
 
@@ -17,9 +22,9 @@ Before you begin, ensure you have the following:
 - A backend REST API service running and accessible (for example, `http://localhost:8081`).
 - `curl` available in your terminal.
 
-## JWT Authentication
+## Configure JWT Token Validation in KrakenD
 
-JWT authentication is the foundation of API security with KrakenD and <ProductName />. In this section, you register an application in <ProductName /> to obtain credentials, configure KrakenD to validate tokens using the <ProductName /> JWKS endpoint, and verify that unauthenticated requests are rejected.
+JWT Token Validation is the foundation of API security with KrakenD and <ProductName />. In this section, you register an application in <ProductName /> to obtain credentials, configure KrakenD to validate tokens using the <ProductName /> JWKS endpoint, and verify that unauthenticated requests are rejected.
 
 ### Configure <ProductName />
 
@@ -96,7 +101,7 @@ curl --location 'http://localhost:8082/api/items' \
   --data '{"name":"Widget","description":"A test item"}'
 ```
 
-#### Add JWT Authentication
+#### Add JWT Validation
 
 KrakenD validates JWTs using the [`auth/validator`](https://www.krakend.io/docs/authorization/jwt-validation/) component. KrakenD fetches public keys from the <ProductName /> JWKS endpoint and uses the keys to verify the signature on incoming tokens.
 
@@ -185,133 +190,88 @@ Expected response:
 {"id": 10, "name": "Widget", "description": "A test item"}
 ```
 
-## Scope-Based Authorization
+## Configure Fine-Grained Authorization in KrakenD
 
-JWT authentication confirms that a token is valid and was issued by <ProductName />. It does not control what the token holder is allowed to do. With the configuration from the previous section, KrakenD accepts any valid <ProductName /> token regardless of the application or its assigned permissions.
+JWT token validation confirms that a token is valid and was issued by <ProductName />. It does not control what the token holder is allowed to do. With the configuration from the previous section, KrakenD accepts any valid <ProductName /> token regardless of the application or its assigned permissions.
 
-Scope-based authorization adds a second layer of control. <ProductName /> embeds scopes in tokens based on the roles assigned to an application. KrakenD then checks those scopes on every request and rejects tokens that do not carry the required permissions. This lets you enforce fine-grained access control — for example, restricting a read endpoint to tokens with `booking-api:item:read` and a write endpoint to tokens with `booking-api:item:write` — without changing the upstream service.
+Fine-Grained Authorization adds a second layer of control. <ProductName /> embeds scopes in tokens based on the roles assigned to an application. KrakenD then checks those scopes on every request and rejects tokens that do not carry the required permissions. This lets you enforce fine-grained access control — for example, restricting a read endpoint to tokens with `booking-api:item:read` and a write endpoint to tokens with `booking-api:item:write` — without changing the upstream service.
 
-The steps below build on the JWT authentication configuration from the previous section. You will define a Resource Server, a Resource, and actions in <ProductName /> to model your API permissions. Then bundle them into a role, assign the role to your application, and update the KrakenD configuration to enforce scope validation.
+The steps below build on the JWT Token Validation from the previous section. You will define a Resource Server, a Resource, and actions in <ProductName /> to model your API permissions. Then bundle them into a role, assign the role to your application, and update the KrakenD configuration to enforce scope validation.
 
 ### Configure <ProductName />
 
-#### Get a Management Access Token
-
-<ProductName /> exposes management REST APIs to create resources, roles, and assignments. Request an admin token to call them:
-
-```bash
-curl --location 'https://<THUNDERID_HOST>:8090/oauth2/token' \
-  --header 'Content-Type: application/x-www-form-urlencoded' \
-  --data-urlencode 'grant_type=client_credentials' \
-  --data-urlencode 'client_id=<ADMIN_CLIENT_ID>' \
-  --data-urlencode 'client_secret=<ADMIN_CLIENT_SECRET>' \
-  --data-urlencode 'scope=system'
-```
-
-Save the returned `access_token` as `MGMT_TOKEN`:
-
-```bash
-MGMT_TOKEN=<RETURNED_ACCESS_TOKEN>
-```
-
 #### Create a Resource Server
 
-A Resource Server represents your API in <ProductName />. The Resource Server groups all resources and actions under a single identifier and acts as the audience for tokens issued to clients of that API.
+A Resource Server represents your API in <ProductName />. 
+The Resource Server groups all resources and actions under a single identifier and acts as the audience for tokens issued to clients of that API. 
+For a full reference, see [Resource Servers](/docs/next/guides/guides/resource-servers).
 
-```bash
-curl --location 'https://<THUNDERID_HOST>:8090/api/server/v1/resource-servers' \
-  --header 'Authorization: Bearer '"$MGMT_TOKEN"'' \
-  --header 'Content-Type: application/json' \
-  --data '{
-    "name": "Items API",
-    "description": "Handles reservation operations",
-    "handle": "booking-api",
-    "identifier": "https://api.example.com/booking",
-    "ouId": "<OU_ID>",
-    "delimiter": ":"
-  }'
-```
+**Using the Console:**
 
-Note the `id` from the response — you will need it in the following steps.
+1. Sign in to the <ProductName /> Console at `https://<THUNDER_PUBLIC_URL>/console`.
+2. Navigate to **Resource Servers** → **New Resource Server**.
+3. Fill in the following fields:
+   - **Name**: `Booking API`
+   - **Handle**: `booking-api`
+   - **Identifier**: `https://api.example.com/bookings`
+   - **Description**: `Handles item operations`
+   - **Delimiter**: `:` (colon)
+4. Click **Create**.
+5. Note the Resource Server **ID** from the details page.
+
 
 #### Create a Resource
 
 A Resource represents a specific entity within the API, such as `/api/items`. Resources let you model your API surface so that permissions can be granted at a granular level.
 
-```bash
-curl --location 'https://<THUNDERID_HOST>:8090/api/server/v1/resource-servers/<RESOURCE_SERVER_ID>/resources' \
-  --header 'Authorization: Bearer '"$MGMT_TOKEN"'' \
-  --header 'Content-Type: application/json' \
-  --data '{
-    "name": "Items",
-    "handle": "item"
-  }'
-```
+**Using the Console:**
 
-Note the `id` of the created resource.
+1. Open the **Booking API** Resource Server.
+2. Go to the **Resources** tab and click **New Resource**.
+3. Fill in the following fields:
+   - **Name**: `Items`
+   - **Handle**: `item`
+4. Click **Create**.
 
 #### Create Resource Actions
 
-Actions define the operations allowed on a resource. Each action produces a scope in the format `<resource-server-handle>:<resource-handle>:<action-handle>`. <ProductName /> includes these scopes in tokens issued to applications that hold the corresponding role.
+Actions define the operations allowed on a resource. 
+Each action produces a scope in the format `<resource-server-handle>:<resource-handle>:<action-handle>`. 
+<ProductName /> includes these scopes in tokens issued to applications that hold the corresponding role.
 
-```bash
-curl --location 'https://<THUNDERID_HOST>:8090/api/server/v1/resource-servers/<RESOURCE_SERVER_ID>/resources/<RESOURCE_ID>/actions' \
-  --header 'Authorization: Bearer '"$MGMT_TOKEN"'' \
-  --header 'Content-Type: application/json' \
-  --data '{
-    "name": "Read Item",
-    "description": "Permission to read an item",
-    "handle": "read"
-  }'
-```
+**Using the Console:**
 
-The response includes the generated permission:
+1. Under the **Booking API** Resource Server, open the **Items** resource.
+2. Go to the **Actions** tab and click **New Action**.
+3. Fill in the following fields:
+   - **Name**: `Read Item`
+   - **Handle**: `read`
+   - **Description**: `Permission to read an item`
+4. Click **Create**.
+5. Note the generated permission shown in the action details: `booking-api:item:read`.
 
-```json
-{
-  "id": "<ACTION_ID>",
-  "name": "Read Item",
-  "handle": "read",
-  "description": "Permission to read an item",
-  "permission": "booking-api:item:read"
-}
-```
 
-#### Create a Role
+#### Create a Role and assign permission
 
 Roles bundle one or more permissions together. Assign roles to applications to control which scopes appear in their tokens.
 
-```bash
-curl --location 'https://<THUNDERID_HOST>:8090/api/server/v1/roles' \
-  --header 'Authorization: Bearer '"$MGMT_TOKEN"'' \
-  --header 'Content-Type: application/json' \
-  --data '{
-    "name": "Booking API Reader",
-    "description": "Access to read booking items in the booking API",
-    "ouId": "<OU_ID>",
-    "permissions": [
-      {
-        "resourceServerId": "<RESOURCE_SERVER_ID>",
-        "permissions": ["booking-api:item:read"]
-      }
-    ]
-  }'
-```
-
-Note the `id` of the created role.
+1. Navigate to **Roles** → **New Role**.
+2. Fill in the following fields:
+   - **Name**: `Booking Reader`
+3. Click **Continue**.
+4. Under **Assign permissions**, choose `booking-api:item:read`.
+5. Click **Continue**.
 
 #### Assign a Role to the Application
 
 Assign the role to the application you created in the previous section. <ProductName /> includes the role's scopes in every token issued for that application.
 
-```bash
-curl --location 'https://<THUNDERID_HOST>:8090/api/server/v1/applications/<APP_ID>/roles' \
-  --header 'Authorization: Bearer '"$MGMT_TOKEN"'' \
-  --header 'Content-Type: application/json' \
-  --data '{
-    "roles": ["<ROLE_ID>"]
-  }'
-```
+**Using the Console:**
+
+1. Navigate to **Applications** and open your Backend Service application.
+2. Go to the **Roles** tab.
+3. Click **Assign Role**, select **Booking reader** from the list, and confirm.
+
 
 ### Configure KrakenD
 

@@ -391,10 +391,10 @@ const sidebars: SidebarsConfig = {
           collapsible: true,
           collapsed: true,
           items: [
-            {type: 'doc', id: 'use-cases/sts/krakend', label: 'Protect APIs on KrakenD'},
-            {type: 'doc', id: 'use-cases/sts/envoy', label: 'Protect APIs on Envoy'},
             {type: 'doc', id: 'use-cases/sts/azure-apim', label: 'Protect APIs on Azure API Management'},
+            {type: 'doc', id: 'use-cases/sts/envoy', label: 'Protect APIs on Envoy'},
             {type: 'doc', id: 'use-cases/sts/kong', label: 'Protect APIs on Kong Konnect'},
+            {type: 'doc', id: 'use-cases/sts/krakend', label: 'Protect APIs on KrakenD'},
           ],
         },
       ],
