@@ -192,6 +192,7 @@ rp_id
 EUDI
 [Vv]erifiable
 [Kk]rakenD
+[Nn]grok
 [Gg]oroutines?
 jsDelivr
 [Uu]nstyled
