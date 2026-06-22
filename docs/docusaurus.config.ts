@@ -82,6 +82,9 @@ const config: Config = {
   onBrokenLinks: 'throw',
 
   markdown: {
+    hooks: {
+      onBrokenMarkdownLinks: 'throw',
+    },
     // Replace {{ProductName}} placeholders in frontmatter values at build time.
     // This applies globally to all content (docs, pages, etc.).
     // See: https://docusaurus.io/docs/api/docusaurus-config#markdown
