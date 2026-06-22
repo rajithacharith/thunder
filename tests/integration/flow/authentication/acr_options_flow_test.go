@@ -248,32 +248,15 @@ var acrOptionsTestApp = testutils.Application{
 	},
 }
 
-// acrOptionsNativeTestApp is a native (non-redirect) application used for ACR options
-// tests that call /flow/execute directly. It must not have the authorization_code grant
-// type so that the redirect-app guard allows direct flow initiation.
+// acrOptionsNativeTestApp is an embedded (no OAuth profile) application used for ACR options
+// tests that call /flow/execute directly. As a flow-native app it is issued a Flow Secret and is
+// permitted to initiate flows directly.
 var acrOptionsNativeTestApp = testutils.Application{
 	Name:                      "ACR Options Native Test Application",
 	Description:               "Native application for direct flow execution in ACR options tests",
 	IsRegistrationFlowEnabled: false,
-	ClientID:                  "acr_options_native_test_client",
-	ClientSecret:              "acr_options_native_test_secret",
+	Embedded:                  true,
 	AllowedUserTypes:          []string{"acr_options_test_person"},
-	InboundAuthConfig: []map[string]interface{}{
-		{
-			"type": "oauth2",
-			"config": map[string]interface{}{
-				"clientId":                "acr_options_native_test_client",
-				"clientSecret":            "acr_options_native_test_secret",
-				"grantTypes":              []string{"client_credentials"},
-				"tokenEndpointAuthMethod": "client_secret_basic",
-				"acrValues": []string{
-					"urn:thunder:acr:password",
-					"urn:thunder:acr:generated-code",
-					"urn:thunder:acr:biometrics",
-				},
-			},
-		},
-	},
 }
 
 var acrOptionsTestOU = testutils.OrganizationUnit{

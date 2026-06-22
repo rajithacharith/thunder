@@ -150,6 +150,24 @@ You can select multiple user types. If no user types are configured, all user ty
 
 To rotate the client secret, open the application's **OAuth** tab and click **Regenerate Secret**.
 
+### Flow Secret
+
+The **Flow Secret** is a credential separate from the Client Secret. <ProductName /> issues a Flow Secret only to applications that can initiate a sign-in flow directly. These are server-side apps using embedded sign-in (no OAuth profile), and confidential non-redirect apps that can redeem the resulting flow assertion for a token via the `token-exchange` grant.
+
+It is **not** issued to public clients or redirect-based apps (Browser Apps, Mobile Apps, redirect-based Full-stack Apps). It is also not issued to machine-to-machine Backend Services that use only `client_credentials`. Those apps obtain tokens through the OAuth component and do not initiate flows.
+
+The Flow Secret is distinct from the Client Secret and serves a different purpose. The Client Secret authenticates your application at the OAuth 2.0 **token endpoint**. The Flow Secret authenticates your application when it **initiates a sign-in flow directly** via the Flow Execution API — the embedded sign-in path used by server-side applications.
+
+Copy the Flow Secret from the application details page immediately after creation — like the Client Secret, it is shown only once. To rotate it later, open the application's settings and click **Regenerate Flow Secret**.
+
+To initiate a new flow, pass the Flow Secret in the `flowSecret` field of the Flow Execution request. See the [Flow Execution API Reference](/docs/next/apis/#tag/flow-execution) for the full request payload.
+
+Applications that cannot initiate flows directly — redirect-based apps and `client_credentials`-only Backend Services — are rejected with `403 Forbidden`. Flow-native apps must present a valid Flow Secret (`401` if missing or invalid). Flow **continuation** requests (those carrying an `executionId`) do not require the Flow Secret.
+
+:::note
+Eligible apps created through the Console or REST API receive an auto-generated Flow Secret, surfaced once in the response. An app managed declaratively (in a YAML resource file) should set an explicit `flowSecret` field. Any auto-generated value is not surfaced back to the definition, so without an explicit value you have no secret to present at `POST /flow/execute`. Declaring it keeps the definition deterministic and reproducible.
+:::
+
 ### Redirect URIs
 
 Redirect URIs are the URLs <ProductName /> sends the authorization code (or token) to after a successful sign-in. You must register every URI your application uses.

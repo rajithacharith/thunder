@@ -27,8 +27,24 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 )
+
+// FlowSecretRegistry maps application IDs to their plaintext Flow Secrets as returned at creation
+// time. Populated by CreateApplication; consumed by flow initiation helpers that need to present
+// the Flow Secret on behalf of non-redirect test applications.
+var (
+	flowSecretRegistryMu sync.RWMutex
+	flowSecretRegistry   = map[string]string{}
+)
+
+// GetFlowSecret returns the Flow Secret stored for an application ID, or "" if none.
+func GetFlowSecret(appID string) string {
+	flowSecretRegistryMu.RLock()
+	defer flowSecretRegistryMu.RUnlock()
+	return flowSecretRegistry[appID]
+}
 
 const (
 	TestServerURL = "https://localhost:8095"
@@ -362,7 +378,9 @@ func CreateApplication(app Application) (string, error) {
 	}
 
 	inboundAuthConfig := app.InboundAuthConfig
-	if len(inboundAuthConfig) == 0 {
+	if len(inboundAuthConfig) == 0 && !app.Embedded {
+		// Include token-exchange so the default test app is flow-native capable (eligible for a Flow
+		// Secret and permitted to initiate flows), not a plain client_credentials-only M2M app.
 		inboundAuthConfig = []map[string]interface{}{
 			{
 				"type": "oauth2",
@@ -370,7 +388,7 @@ func CreateApplication(app Application) (string, error) {
 					"clientId":     app.ClientID,
 					"clientSecret": app.ClientSecret,
 					"redirectUris": redirectURIs,
-					"grantTypes":   []string{"client_credentials"},
+					"grantTypes":   []string{"client_credentials", "urn:ietf:params:oauth:grant-type:token-exchange"},
 				},
 			},
 		}
@@ -385,7 +403,11 @@ func CreateApplication(app Application) (string, error) {
 		"authFlowId":                app.AuthFlowID,
 		"registrationFlowId":        app.RegistrationFlowID,
 		"recoveryFlowId":            app.RecoveryFlowID,
-		"inboundAuthConfig":         inboundAuthConfig,
+	}
+
+	// Omit inboundAuthConfig entirely for embedded apps so they have no OAuth profile.
+	if len(inboundAuthConfig) > 0 {
+		appData["inboundAuthConfig"] = inboundAuthConfig
 	}
 
 	// Add allowed_user_types if provided
@@ -435,6 +457,13 @@ func CreateApplication(app Application) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("response does not contain id or id is not a string. Response: %s", string(bodyBytes))
 	}
+
+	if flowSecret, ok := createdApp["flowSecret"].(string); ok && flowSecret != "" {
+		flowSecretRegistryMu.Lock()
+		flowSecretRegistry[appID] = flowSecret
+		flowSecretRegistryMu.Unlock()
+	}
+
 	return appID, nil
 }
 

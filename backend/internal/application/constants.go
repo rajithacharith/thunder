@@ -24,6 +24,7 @@ const (
 	fieldDescription  = "description"
 	fieldClientID     = "clientId"
 	fieldClientSecret = "clientSecret"
+	fieldFlowSecret   = "flowSecret"
 )
 
 // Field keys for application config properties.

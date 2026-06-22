@@ -58,9 +58,10 @@ func (h *flowExecutionHandler) HandleFlowExecutionRequest(w http.ResponseWriter,
 	action := sysutils.SanitizeString(flowR.Action)
 	inputs := sysutils.SanitizeStringMap(flowR.Inputs)
 	challengeToken := sysutils.SanitizeString(flowR.ChallengeToken)
+	flowSecret := sysutils.SanitizeString(flowR.FlowSecret)
 
 	flowStep, flowErr := h.flowExecService.Execute(
-		r.Context(), appID, executionID, flowTypeStr, verbose, action, inputs, challengeToken)
+		r.Context(), appID, executionID, flowTypeStr, verbose, action, inputs, challengeToken, flowSecret)
 
 	if flowErr != nil {
 		handleFlowError(r.Context(), w, flowErr)
@@ -104,6 +105,8 @@ func handleFlowError(ctx context.Context, w http.ResponseWriter, flowErr *tidcom
 		switch flowErr.Code {
 		case ErrorDirectFlowInitiationNotPermitted.Code:
 			statusCode = http.StatusForbidden
+		case ErrorFlowSecretRequired.Code, ErrorFlowSecretInvalid.Code:
+			statusCode = http.StatusUnauthorized
 		default:
 			statusCode = http.StatusBadRequest
 		}
