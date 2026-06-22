@@ -56,32 +56,32 @@ type OrganizationUnit struct {
 
 // OrganizationUnitRequest represents the request body for creating an organization unit.
 type OrganizationUnitRequest struct {
-	Handle          string  `json:"handle"`
-	Name            string  `json:"name"`
+	Handle          string  `json:"handle" native:"required,min=3,max=50"`
+	Name            string  `json:"name" native:"required,min=2,max=100"`
 	Description     string  `json:"description,omitempty"`
-	Parent          *string `json:"parent"`
+	Parent          *string `json:"parent" native:"omitempty,max=255"`
 	ThemeID         string  `json:"themeId,omitempty"`
 	LayoutID        string  `json:"layoutId,omitempty"`
-	LogoURL         string  `json:"logoUrl,omitempty"`
-	TosURI          string  `json:"tosUri,omitempty"`
-	PolicyURI       string  `json:"policyUri,omitempty"`
-	CookiePolicyURI string  `json:"cookiePolicyUri,omitempty"`
+	LogoURL         string  `json:"logoUrl,omitempty" native:"omitempty,url,max=2048"`
+	TosURI          string  `json:"tosUri,omitempty" native:"omitempty,url,max=2048"`
+	PolicyURI       string  `json:"policyUri,omitempty" native:"omitempty,url,max=2048"`
+	CookiePolicyURI string  `json:"cookiePolicyUri,omitempty" native:"omitempty,url,max=2048"`
 }
 
 // OrganizationUnitRequestWithID represents the request body for creating an organization unit
 // in import/declarative paths where preserving IDs is required.
 type OrganizationUnitRequestWithID struct {
-	ID              string  `json:"id" yaml:"id"`
-	Handle          string  `json:"handle" yaml:"handle"`
-	Name            string  `json:"name" yaml:"name"`
+	ID              string  `json:"id" yaml:"id" native:"required"`
+	Handle          string  `json:"handle" yaml:"handle" native:"required,min=3,max=50"`
+	Name            string  `json:"name" yaml:"name" native:"required,min=2,max=100"`
 	Description     string  `json:"description,omitempty" yaml:"description,omitempty"`
 	Parent          *string `json:"parent" yaml:"parent"`
 	ThemeID         string  `json:"themeId,omitempty" yaml:"themeId,omitempty"`
 	LayoutID        string  `json:"layoutId,omitempty" yaml:"layoutId,omitempty"`
-	LogoURL         string  `json:"logoUrl,omitempty" yaml:"logoUrl,omitempty"`
-	TosURI          string  `json:"tosUri,omitempty" yaml:"tosUri,omitempty"`
-	PolicyURI       string  `json:"policyUri,omitempty" yaml:"policyUri,omitempty"`
-	CookiePolicyURI string  `json:"cookiePolicyUri,omitempty" yaml:"cookiePolicyUri,omitempty"`
+	LogoURL         string  `json:"logoUrl,omitempty" yaml:"logoUrl,omitempty" native:"omitempty,url,max=2048"`
+	TosURI          string  `json:"tosUri,omitempty" yaml:"tosUri,omitempty" native:"omitempty,url,max=2048"`
+	PolicyURI       string  `json:"policyUri,omitempty" yaml:"policyUri,omitempty" native:"omitempty,url,max=2048"`
+	CookiePolicyURI string  `json:"cookiePolicyUri,omitempty" yaml:"cookiePolicyUri,omitempty" native:"url,max=2048"`
 }
 
 // OrganizationUnitListResponse represents the response for listing organization units with pagination.

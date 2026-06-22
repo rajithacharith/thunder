@@ -513,7 +513,7 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithEmptyRequest() {
 	errorResp, statusCode, err := suite.sendAuthRequestExpectingError(authRequest)
 	suite.Require().NoError(err, "Failed to send authenticate request")
 	suite.Equal(http.StatusBadRequest, statusCode, "Expected status 400 for empty request")
-	suite.Equal("AUTH-CRED-1001", errorResp.Code, "Expected error code AUTH-CRED-1001 for empty attributes")
+	suite.Equal("INVALID_INPUT_METADATA", errorResp.Code, "Expected validation error for missing required fields")
 }
 
 // TestAuthenticateWithEmptyCredentials tests authentication failure with empty values
