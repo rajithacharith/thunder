@@ -21,6 +21,7 @@ package notification
 import (
 	"context"
 
+	"github.com/thunder-id/thunderid/internal/notification/client"
 	"github.com/thunder-id/thunderid/internal/notification/common"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -35,16 +36,17 @@ type NotificationSenderServiceInterface interface {
 // notificationSenderService implements NotificationSenderServiceInterface.
 type notificationSenderService struct {
 	senderMgtService NotificationSenderMgtSvcInterface
-	clientProvider   notificationClientProviderInterface
+	clientFactory    client.ClientFactoryInterface
 	logger           *log.Logger
 }
 
 // newNotificationSenderService returns a new instance of NotificationSenderServiceInterface.
 func newNotificationSenderService(
-	senderMgtService NotificationSenderMgtSvcInterface) NotificationSenderServiceInterface {
+	senderMgtService NotificationSenderMgtSvcInterface,
+	clientFactory client.ClientFactoryInterface) NotificationSenderServiceInterface {
 	return &notificationSenderService{
 		senderMgtService: senderMgtService,
-		clientProvider:   newNotificationClientProvider(),
+		clientFactory:    clientFactory,
 		logger:           log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationSenderService")),
 	}
 }
@@ -61,7 +63,7 @@ func (s *notificationSenderService) Send(ctx context.Context, channel common.Cha
 		return &ErrorRequestedSenderIsNotOfExpectedType
 	}
 
-	_client, svcErr := s.clientProvider.GetClient(ctx, *sender)
+	_client, svcErr := s.clientFactory.GetClient(ctx, *sender)
 	if svcErr != nil {
 		return svcErr
 	}

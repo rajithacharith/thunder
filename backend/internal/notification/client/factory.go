@@ -16,42 +16,41 @@
  * under the License.
  */
 
-package notification
+package client
 
 import (
 	"context"
 
 	"github.com/thunder-id/thunderid/internal/notification/common"
-	"github.com/thunder-id/thunderid/internal/notification/provider"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 )
 
-// notificationClientProviderInterface defines the interface for obtaining notification clients.
-type notificationClientProviderInterface interface {
+// ClientFactoryInterface defines the interface for obtaining notification clients.
+type ClientFactoryInterface interface {
 	GetClient(ctx context.Context,
-		sender common.NotificationSenderDTO) (provider.NotificationClientInterface, *serviceerror.ServiceError)
+		sender common.NotificationSenderDTO) (NotificationClientInterface, *serviceerror.ServiceError)
 }
 
-// notificationClientProvider is the implementation of notificationClientProviderInterface.
-type notificationClientProvider struct{}
+// clientFactory is the implementation of ClientFactoryInterface.
+type clientFactory struct{}
 
-// newNotificationClientProvider returns a new instance of notificationClientProviderInterface.
-func newNotificationClientProvider() notificationClientProviderInterface {
-	return &notificationClientProvider{}
+// newClientFactory returns a new instance of ClientFactoryInterface.
+func newClientFactory() ClientFactoryInterface {
+	return &clientFactory{}
 }
 
 // GetClient returns the notification client for the given sender.
-func (p *notificationClientProvider) GetClient(ctx context.Context, sender common.NotificationSenderDTO) (
-	provider.NotificationClientInterface, *serviceerror.ServiceError) {
-	var _client provider.NotificationClientInterface
+func (p *clientFactory) GetClient(ctx context.Context, sender common.NotificationSenderDTO) (
+	NotificationClientInterface, *serviceerror.ServiceError) {
+	var _client NotificationClientInterface
 	var err error
 	switch sender.Provider {
 	case common.MessageProviderTypeVonage:
-		_client, err = provider.NewVonageClient(ctx, sender)
+		_client, err = newVonageClient(ctx, sender)
 	case common.MessageProviderTypeTwilio:
-		_client, err = provider.NewTwilioClient(ctx, sender)
+		_client, err = newTwilioClient(ctx, sender)
 	case common.MessageProviderTypeCustom:
-		_client, err = provider.NewCustomClient(ctx, sender)
+		_client, err = newCustomClient(ctx, sender)
 	default:
 		return nil, &ErrorInvalidProvider
 	}

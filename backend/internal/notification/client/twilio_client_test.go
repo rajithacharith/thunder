@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package provider
+package client
 
 import (
 	"context"
@@ -68,7 +68,7 @@ func (suite *TwilioClientTestSuite) getValidTwilioSender() common.NotificationSe
 func (suite *TwilioClientTestSuite) TestNewTwilioClient_Success() {
 	sender := suite.getValidTwilioSender()
 
-	client, err := NewTwilioClient(context.Background(), sender)
+	client, err := newTwilioClient(context.Background(), sender)
 
 	suite.NoError(err)
 	suite.NotNil(client)
@@ -77,7 +77,7 @@ func (suite *TwilioClientTestSuite) TestNewTwilioClient_Success() {
 
 func (suite *TwilioClientTestSuite) TestGetName() {
 	sender := suite.getValidTwilioSender()
-	client, _ := NewTwilioClient(context.Background(), sender)
+	client, _ := newTwilioClient(context.Background(), sender)
 
 	name := client.GetName()
 
@@ -112,7 +112,7 @@ func (suite *TwilioClientTestSuite) TestSendSMS_Success() {
 		createProperty("sender_id", "+15551234567", false),
 	}
 
-	client, _ := NewTwilioClient(context.Background(), sender)
+	client, _ := newTwilioClient(context.Background(), sender)
 
 	// Replace the Twilio URL with test server URL
 	twilioClient := client.(*TwilioClient)
@@ -130,7 +130,7 @@ func (suite *TwilioClientTestSuite) TestSendSMS_Success() {
 
 func (suite *TwilioClientTestSuite) TestSendSMS_Error() {
 	sender := suite.getValidTwilioSender()
-	client, _ := NewTwilioClient(context.Background(), sender)
+	client, _ := newTwilioClient(context.Background(), sender)
 
 	// Create a test server that returns an error
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -158,7 +158,7 @@ func (suite *TwilioClientTestSuite) TestSendSMS_Error() {
 
 func (suite *TwilioClientTestSuite) TestSendSMS_NetworkError() {
 	sender := suite.getValidTwilioSender()
-	client, _ := NewTwilioClient(context.Background(), sender)
+	client, _ := newTwilioClient(context.Background(), sender)
 
 	// Use an invalid URL to force a network error
 	twilioClient := client.(*TwilioClient)
@@ -178,7 +178,7 @@ func (suite *TwilioClientTestSuite) TestNewTwilioClient_WithUnknownProperty() {
 	sender := suite.getValidTwilioSender()
 	sender.Properties = append(sender.Properties, createProperty("unknown_prop", "value", false))
 
-	client, err := NewTwilioClient(context.Background(), sender)
+	client, err := newTwilioClient(context.Background(), sender)
 
 	// Should succeed and just log a warning for unknown property
 	suite.NoError(err)

@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/thunder-id/thunderid/internal/notification/client"
 	"github.com/thunder-id/thunderid/internal/notification/common"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/cryptolib"
@@ -47,17 +48,18 @@ type OTPServiceInterface interface {
 type otpService struct {
 	jwtService       jwt.JWTServiceInterface
 	senderMgtService NotificationSenderMgtSvcInterface
-	clientProvider   notificationClientProviderInterface
+	clientFactory    client.ClientFactoryInterface
 	templateService  template.TemplateServiceInterface
 }
 
 // newOTPService returns a new instance of OTPServiceInterface.
 func newOTPService(notifSenderSvc NotificationSenderMgtSvcInterface,
-	jwtSvc jwt.JWTServiceInterface, templateSvc template.TemplateServiceInterface) OTPServiceInterface {
+	jwtSvc jwt.JWTServiceInterface, templateSvc template.TemplateServiceInterface,
+	clientFactory client.ClientFactoryInterface) OTPServiceInterface {
 	return &otpService{
 		jwtService:       jwtSvc,
 		senderMgtService: notifSenderSvc,
-		clientProvider:   newNotificationClientProvider(),
+		clientFactory:    clientFactory,
 		templateService:  templateSvc,
 	}
 }
@@ -263,7 +265,7 @@ func (s *otpService) sendSMSOTP(ctx context.Context, recipient, otp string,
 		return &serviceerror.InternalServerError
 	}
 
-	_client, clientSvcErr := s.clientProvider.GetClient(ctx, sender)
+	_client, clientSvcErr := s.clientFactory.GetClient(ctx, sender)
 	if clientSvcErr != nil {
 		return clientSvcErr
 	}

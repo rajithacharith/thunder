@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package notification
+package client
 
 import (
 	"context"
@@ -30,16 +30,16 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 )
 
-type ClientProviderTestSuite struct {
+type ClientFactoryTestSuite struct {
 	suite.Suite
-	provider notificationClientProviderInterface
+	factory ClientFactoryInterface
 }
 
-func TestClientProviderTestSuite(t *testing.T) {
-	suite.Run(t, new(ClientProviderTestSuite))
+func TestClientFactoryTestSuite(t *testing.T) {
+	suite.Run(t, new(ClientFactoryTestSuite))
 }
 
-func (suite *ClientProviderTestSuite) SetupSuite() {
+func (suite *ClientFactoryTestSuite) SetupSuite() {
 	testConfig := &config.Config{
 		Crypto: config.CryptoConfig{
 			Encryption: config.EncryptionConfig{
@@ -53,18 +53,18 @@ func (suite *ClientProviderTestSuite) SetupSuite() {
 	}
 }
 
-func (suite *ClientProviderTestSuite) SetupTest() {
-	suite.provider = newNotificationClientProvider()
+func (suite *ClientFactoryTestSuite) SetupTest() {
+	suite.factory = newClientFactory()
 }
 
-func (suite *ClientProviderTestSuite) TestNewNotificationClientProvider() {
-	provider := newNotificationClientProvider()
+func (suite *ClientFactoryTestSuite) TestNewNotificationClientFactory() {
+	provider := newClientFactory()
 
 	suite.NotNil(provider)
-	suite.Implements((*notificationClientProviderInterface)(nil), provider)
+	suite.Implements((*ClientFactoryInterface)(nil), provider)
 }
 
-func (suite *ClientProviderTestSuite) TestGetClient() {
+func (suite *ClientFactoryTestSuite) TestGetClient() {
 	cases := []struct {
 		name     string
 		sender   common.NotificationSenderDTO
@@ -113,7 +113,7 @@ func (suite *ClientProviderTestSuite) TestGetClient() {
 
 	for _, tc := range cases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			client, err := suite.provider.GetClient(context.Background(), tc.sender)
+			client, err := suite.factory.GetClient(context.Background(), tc.sender)
 			suite.Nil(err)
 			suite.NotNil(client)
 			suite.Equal(tc.expected, client.GetName())
@@ -121,7 +121,7 @@ func (suite *ClientProviderTestSuite) TestGetClient() {
 	}
 }
 
-func (suite *ClientProviderTestSuite) TestGetClientWithError() {
+func (suite *ClientFactoryTestSuite) TestGetClientWithError() {
 	makeInvalidSecretProps := func(propName string) []cmodels.Property {
 		jsonStr := `[{"name":"` + propName + `","value":"not-encrypted-value","isSecret":true}` + `]`
 		props, err := cmodels.DeserializePropertiesFromJSON(jsonStr)
@@ -167,7 +167,7 @@ func (suite *ClientProviderTestSuite) TestGetClientWithError() {
 
 	for _, tc := range cases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			client, err := suite.provider.GetClient(context.Background(), tc.sender)
+			client, err := suite.factory.GetClient(context.Background(), tc.sender)
 			suite.NotNil(err)
 			if err != nil {
 				suite.Equal(serviceerror.InternalServerError.Code, err.Code)
@@ -177,15 +177,20 @@ func (suite *ClientProviderTestSuite) TestGetClientWithError() {
 	}
 }
 
-func (suite *ClientProviderTestSuite) TestGetClient_InvalidProvider() {
+func (suite *ClientFactoryTestSuite) TestGetClient_InvalidProvider() {
 	sender := common.NotificationSenderDTO{
 		Name:     "Test Sender",
 		Provider: "invalid-provider",
 	}
 
-	client, err := suite.provider.GetClient(context.Background(), sender)
+	client, err := suite.factory.GetClient(context.Background(), sender)
 
 	suite.Nil(client)
 	suite.NotNil(err)
 	suite.Equal(ErrorInvalidProvider.Code, err.Code)
+}
+
+func createTestProperty(name, value string, isSecret bool) cmodels.Property {
+	prop, _ := cmodels.NewProperty(name, value, isSecret)
+	return *prop
 }

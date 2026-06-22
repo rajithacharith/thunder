@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package provider
+package client
 
 import (
 	"bytes"
@@ -47,8 +47,8 @@ type CustomClient struct {
 	httpClient  syshttp.HTTPClientInterface
 }
 
-// NewCustomClient creates a new instance of CustomClient.
-func NewCustomClient(ctx context.Context, sender common.NotificationSenderDTO) (NotificationClientInterface, error) {
+// newCustomClient creates a new instance of CustomClient.
+func newCustomClient(ctx context.Context, sender common.NotificationSenderDTO) (NotificationClientInterface, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, customClientLoggerComponentName))
 
 	client := &CustomClient{}

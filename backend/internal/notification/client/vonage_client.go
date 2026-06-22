@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package provider
+package client
 
 import (
 	"bytes"
@@ -46,8 +46,8 @@ type VonageClient struct {
 	httpClient syshttp.HTTPClientInterface
 }
 
-// NewVonageClient creates a new instance of VonageClient.
-func NewVonageClient(ctx context.Context, sender common.NotificationSenderDTO) (NotificationClientInterface, error) {
+// newVonageClient creates a new instance of VonageClient.
+func newVonageClient(ctx context.Context, sender common.NotificationSenderDTO) (NotificationClientInterface, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, vonageLoggerComponentName))
 
 	client := &VonageClient{}
