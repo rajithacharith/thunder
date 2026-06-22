@@ -9,7 +9,12 @@ import validateJwt from '../assets/sts/azure-apim/validate-jwt.png';
 
 # Protect APIs on Azure API Management with <ProductName />
 
-This guide walks you through configuring [Azure API Management](https://learn.microsoft.com/en-us/azure/api-management/api-management-key-concepts) to protect APIs using JSON Web Tokens (JWTs) issued by <ProductName />. Azure APIM uses an inbound policy to fetch public keys from the <ProductName /> JWKS endpoint and validate tokens on every request before forwarding traffic to the backend.
+This guide explains how to secure your APIs at the [Azure API Management](https://learn.microsoft.com/en-us/azure/api-management/api-management-key-concepts) gateway layer using tokens issued by <ProductName />. By retrieving public signing keys from the <ProductName /> [JWKS endpoint](https://www.rfc-editor.org/rfc/rfc7517), Azure APIM cryptographically verifies every incoming token at the edge before forwarding authorized requests to your backend services.
+
+The guide covers two core integration approaches available in Azure APIM:
+
+- **[Token Validation](#configure-jwt-token-validation-in-azure-api-management):** Configure Azure APIM to validate incoming JWTs issued by <ProductName /> using the [`validate-jwt`](https://learn.microsoft.com/en-us/azure/api-management/validate-jwt-policy) policy, ensuring only authenticated requests access your APIs.
+- **[Fine-Grained Authorization](#configure-fine-grained-authorization-in-azure-api-management):** Leverage <ProductName />'s [RBAC](/docs/next/guides/key-concepts/authorization/) capabilities to enforce strict, Azure APIM-driven access control policies on upstream APIs.
 
 ## Prerequisites
 
@@ -58,7 +63,7 @@ server:
 
 Restart <ProductName /> after saving the change. Also update the Console callback URL to `https://<THUNDER_PUBLIC_URL>/console`.
 
-## JWT Authentication
+## Configure JWT Token Validation in Azure API Management
 
 JWT authentication is the foundation of API security with Azure APIM and <ProductName />. In this section, you register an application in <ProductName /> to obtain credentials, configure Azure APIM to validate tokens using the <ProductName /> JWKS endpoint, and verify that unauthenticated requests are rejected.
 
@@ -212,41 +217,23 @@ Azure APIM enforces a subscription key requirement on APIs by default. You have 
 - ** See the [Azure APIM troubleshooting guide](https://learn.microsoft.com/en-us/troubleshoot/azure/api-mgmt/availability/unauthorized-errors-invoke-apis) for additional help.
 :::
 
-## Scope-Based Authorization
+## Configure Fine-Grained Authorization in Azure API Management
 
-JWT authentication confirms that a token is valid and was issued by <ProductName />. It does not control what the token holder is allowed to do. With the configuration from the previous section, Azure APIM accepts any valid <ProductName /> token regardless of the application or its assigned permissions.
+JWT validation confirms that a token is valid and was issued by <ProductName />. It does not control what the token holder is allowed to do. With the configuration from the previous section, Azure APIM accepts any valid <ProductName /> token regardless of the application or its assigned permissions.
 
 Scope-based authorization adds a second layer of control. <ProductName /> embeds scopes in tokens based on the roles assigned to an application. The `validate-jwt` policy checks those scopes on every request and rejects tokens that do not carry the required permissions. This lets you enforce fine-grained access control — for example, 
 restricting a write endpoint to tokens with `booking-api:item:write` and a read endpoint to tokens with `booking-api:item:read` — without changing the backend service.
 
-The steps below build on the JWT authentication configuration from the previous section. You will define a Resource Server, a Resource, and Actions in <ProductName /> to model your API permissions. Then bundle those permissions into a Role, assign the Role to your application, and update the Azure APIM policy to enforce scope validation.
+The steps below build on the JWT validation configuration from the previous section. You will define a Resource Server, a Resource, and Actions in <ProductName /> to model your API permissions. Then bundle those permissions into a Role, assign the Role to your application, and update the Azure APIM policy to enforce scope validation.
 
 ### Configure <ProductName />
 
 To get a token with scopes that protect your APIs, define a Resource Server with its Resources and Actions to model your API permissions. Bundle those permissions into a Role and assign that Role to your application. <ProductName /> then includes the corresponding scopes in every token issued for that application.
 
-#### Get a Management Access Token
-
-<ProductName /> exposes management REST APIs to create resources, roles, and assignments. Request an admin token to call them:
-
-```bash
-curl --location 'https://<THUNDER_PUBLIC_URL>/oauth2/token' \
-  --header 'Content-Type: application/x-www-form-urlencoded' \
-  --data-urlencode 'grant_type=client_credentials' \
-  --data-urlencode 'client_id=<ADMIN_CLIENT_ID>' \
-  --data-urlencode 'client_secret=<ADMIN_CLIENT_SECRET>' \
-  --data-urlencode 'scope=system'
-```
-
-Save the returned `access_token` as `MGMT_TOKEN`:
-
-```bash
-MGMT_TOKEN=<RETURNED_ACCESS_TOKEN>
-```
 
 #### Create a Resource Server
 
-A Resource Server represents your API in <ProductName />. The Resource Server groups all resources and actions under a single identifier and acts as the audience for tokens issued to clients of that API.
+A Resource Server represents your API in <ProductName />. The Resource Server groups all resources and actions under a single identifier and acts as the audience for tokens issued to clients of that API. For a full reference, see [Resource Servers](/docs/next/guides/guides/resource-servers).
 
 **Using the Console:**
 
@@ -273,7 +260,6 @@ A Resource represents a specific entity within the API, such as `/api/items`. Re
    - **Name**: `Items`
    - **Handle**: `item`
 4. Click **Create**.
-5. Note the Resource **ID** from the details page.
 
 #### Create Resource Actions
 
@@ -290,7 +276,7 @@ Actions define the operations allowed on a resource. Each action produces a scop
 4. Click **Create**.
 5. Note the generated permission shown in the action details: `booking-api:item:write`.
 
-#### Create a Role
+#### Create a Role and Assign Permission
 
 Roles bundle one or more permissions together. Assign roles to applications to control which scopes appear in their tokens.
 
@@ -299,10 +285,9 @@ Roles bundle one or more permissions together. Assign roles to applications to c
 1. Navigate to **Roles** → **New Role**.
 2. Fill in the following fields:
    - **Name**: `Booking editor`
-   - **Description**: `Access to write items in the Booking API`
-3. Under **Permissions**, click **Add Permission**, select the **Booking API** resource server, and choose `booking-api:item:write`.
-4. Click **Create**.
-5. Note the role **ID** from the details page.
+3. Click **Continue**.
+4. Under **Assign permissions**, choose `booking-api:item:write`.
+5. Click **Continue**.
 
 #### Assign a Role to the Application
 

@@ -6,9 +6,12 @@ sidebar_position: 2
 
 # Protect APIs on Kong Konnect with <ProductName />
 
-This guide shows you how to use <ProductName /> as the Security Token Service (STS) for [Kong Konnect](https://konghq.com/products/kong-konnect). By the end, Kong will accept only valid <ProductName />-issued JWTs and, optionally, enforce scope-based authorization on your upstream APIs.
+This guide explains how to secure your APIs at the [Kong Konnect](https://konghq.com/products/kong-konnect) gateway layer using tokens issued by <ProductName />. By retrieving public signing keys from the <ProductName /> [JWKS endpoint](https://www.rfc-editor.org/rfc/rfc7517), Kong cryptographically verifies every incoming token at the edge before forwarding authorized requests to your backend services.
 
-Kong Konnect's [OpenID Connect plugin](https://developer.konghq.com/plugins/openid-connect/) validates bearer access tokens natively. It discovers <ProductName />'s JWKS endpoint, verifies each token's signature, issuer, and expiry, and asserts required scopes and audiences — no custom code and no introspection round-trip. Because <ProductName /> issues self-contained JWT access tokens (`typ: at+jwt`, `alg: RS256`), Kong verifies them locally against the keys it fetches from <ProductName />.
+The guide covers two core integration approaches available in Kong Konnect:
+
+- **[Token Validation](#configure-jwt-token-validation-in-kong-konnect):** Configure Kong to validate incoming JWTs issued by <ProductName /> using the [OpenID Connect plugin](https://developer.konghq.com/plugins/openid-connect/), ensuring only authenticated requests access your APIs.
+- **[Fine-Grained Authorization](#configure-fine-grained-authorization-in-kong-konnect):** Leverage <ProductName />'s [RBAC](/docs/next/guides/key-concepts/authorization/) capabilities to enforce strict, Kong-driven access control policies on upstream APIs.
 
 ## Prerequisites
 
@@ -17,7 +20,7 @@ Kong Konnect's [OpenID Connect plugin](https://developer.konghq.com/plugins/open
 - Docker is installed on your machine (required to run the Konnect data plane).
 - `curl` and `jq` are available in your terminal.
 
-## JWT Authentication
+## Configure JWT Token Validation in Kong Konnect
 
 JWT authentication is the foundation of API security with Kong Konnect and <ProductName />. In this section, you register an application in <ProductName /> to obtain credentials, configure Kong to validate tokens using <ProductName />'s discovery endpoint and JWKS, and verify that unauthenticated requests are rejected.
 
@@ -100,7 +103,7 @@ The token is a JWT signed with RS256. Its `iss` claim is `https://<THUNDER_HOST>
 2. Enter a name (for example, `bookings`) and set the **URL** to your upstream bookings API (for example, `https://<BOOKINGS_API>`).
 3. Open the new service, go to **Routes** → **Add Route**, and add a route with the path `/bookings`.
 
-#### Add JWT Authentication
+#### Add JWT validation
 
 Attach the plugin to the route so it validates every incoming token.
 
@@ -139,13 +142,13 @@ curl -k -i "https://127.0.0.1:8443/bookings" \
 
 A successful request returns an HTTP `200` response forwarded from the upstream. If the token is missing, invalid, or expired, Kong returns `401 Unauthorized`.
 
-## Scope-Based Authorization
+## Configure Fine-Grained Authorization in Kong Konnect
 
-JWT authentication confirms that a token is valid and was issued by <ProductName />. It does not control what the token holder is allowed to do. With the configuration from the previous section, Kong accepts any valid <ProductName /> token regardless of the application or its assigned permissions.
+JWT validation confirms that a token is valid and was issued by <ProductName />. It does not control what the token holder is allowed to do. With the configuration from the previous section, Kong accepts any valid <ProductName /> token regardless of the application or its assigned permissions.
 
 Scope-based authorization adds a second layer of control. <ProductName /> embeds scopes in tokens based on the roles assigned to an application. Kong then checks those scopes on every request and rejects tokens that do not carry the required permissions. To enforce that tokens carry specific permission scopes, configure the OpenID Connect plugin's `scopes_required` parameter.
 
-The steps below build on the JWT authentication configuration from the previous section. You will define a Resource Server, a Resource, and actions in <ProductName /> to model your API permissions. Then bundle them into a role, assign the role to your application, and update the Kong plugin configuration to enforce scope validation.
+The steps below build on the JWT validation configuration from the previous section. You will define a Resource Server, a Resource, and actions in <ProductName /> to model your API permissions. Then bundle them into a role, assign the role to your application, and update the Kong plugin configuration to enforce scope validation.
 
 ### Configure <ProductName />
 
@@ -170,48 +173,16 @@ A Resource represents an entity within the API (such as the `/bookings` route), 
 
 This produces the permissions `bookingsapi:bookings:read` and `bookingsapi:bookings:write`, which <ProductName /> includes in tokens issued to applications that hold a role granting them.
 
-#### Create a Role
+#### Create a Role and assign permission
 
 Roles bundle one or more permissions together. Assigning a role to an application controls which scopes appear in its tokens.
 
 1. Navigate to **Roles** → **Add Role**.
 2. Enter a **Role Name** (for example, `Bookings manager`).
-3. Select the **Organization Unit** the role belongs to, then create it.
-4. Open the new role and note its **ID** (`<ROLE_ID>`) from the role details.
+3. Click **Continue**.
+4. Under **Assign permissions**, choose `bookingsapi:bookings:read`.
+5. Click **Continue**.
 
-#### Add Permissions to the Role
-
-Adding permissions to a role is done through the API. First obtain an admin access token with the `client_credentials` grant and the `system` scope, using your administrator client credentials:
-
-```bash
-curl -k -X POST "https://<THUNDER_HOST>:8090/oauth2/token" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=client_credentials&client_id=<ADMIN_CLIENT_ID>&client_secret=<ADMIN_CLIENT_SECRET>&scope=system"
-```
-
-Then send a `PUT` to `/roles/{id}` with the full permission set. Use the resource server **ID** (`<RESOURCE_SERVER_ID>`) from the resource server details in the Console and the role's organization unit **ID** (`<OU_ID>`):
-
-```bash
-curl -k -X PUT "https://<THUNDER_HOST>:8090/roles/<ROLE_ID>" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <ADMIN_TOKEN>" \
-  -d '{
-    "name": "Bookings manager",
-    "ouId": "<OU_ID>",
-    "permissions": [
-      {
-        "resourceServerId": "<RESOURCE_SERVER_ID>",
-        "permissions": ["bookingsapi:bookings:read", "bookingsapi:bookings:write"]
-      }
-    ]
-  }'
-```
-
-:::warning
-`PUT /roles/{id}` replaces the role's entire permission set — it does not append. Always send the complete list of permissions the role should have, including any it already has. Any permission omitted from the request is removed from the role.
-:::
-
-`name`, `ouId`, and `permissions` are required on update, so include them even when only the permissions change.
 
 #### Assign the Role to the Application
 

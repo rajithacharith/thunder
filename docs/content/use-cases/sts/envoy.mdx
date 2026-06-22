@@ -6,7 +6,12 @@ sidebar_position: 2
 
 # Protect APIs on Envoy with <ProductName />
 
-This guide walks you through configuring [Envoy](https://www.envoyproxy.io/) to protect upstream APIs using JSON Web Tokens (JWTs) issued by <ProductName />. Envoy fetches public keys from the <ProductName /> JWKS endpoint and validates tokens on incoming requests before forwarding traffic to the upstream service.
+This guide explains how to secure your APIs at the [Envoy](https://www.envoyproxy.io/) gateway layer using tokens issued by <ProductName />. By retrieving public signing keys from the <ProductName /> [JWKS endpoint](https://www.rfc-editor.org/rfc/rfc7517), Envoy cryptographically verifies every incoming token at the edge before forwarding authorized requests to your backend services.
+
+The guide covers two core integration approaches available in Envoy:
+
+- **[Token Validation](#configure-jwt-token-validation-in-envoy):** Configure Envoy to validate incoming JWTs issued by <ProductName /> using the [`envoy.filters.http.jwt_authn`](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter) HTTP filter, ensuring only authenticated requests access your APIs.
+- **[Fine-Grained Authorization](#configure-fine-grained-authorization-in-envoy):** Leverage <ProductName />'s [RBAC](/docs/next/guides/key-concepts/authorization/) capabilities to enforce strict, Envoy-driven access control policies on upstream APIs.
 
 ## Prerequisites
 
@@ -23,9 +28,9 @@ Verify your Envoy version:
 envoy --version
 ```
 
-## JWT Authentication
+## Configure JWT Token Validation in Envoy
 
-JWT authentication is the foundation of API security with Envoy and <ProductName />. In this section, you register an application in <ProductName /> to obtain credentials, configure Envoy to validate tokens using the <ProductName /> JWKS endpoint, and verify that unauthenticated requests are rejected.
+JWT Token Validation is the foundation of API security with Envoy and <ProductName />. In this section, you register an application in <ProductName /> to obtain credentials, configure Envoy to validate tokens using the <ProductName /> JWKS endpoint, and verify that unauthenticated requests are rejected.
 
 ### Configure <ProductName />
 
