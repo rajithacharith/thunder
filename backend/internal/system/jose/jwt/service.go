@@ -65,7 +65,6 @@ type jwksCacheEntry struct {
 type jwtService struct {
 	cryptoProvider kmprovider.RuntimeCryptoProvider
 	keyRef         kmprovider.KeyRef
-	signAlg        cryptolib.SignAlgorithm
 	jwsAlg         jws.Algorithm
 	kid            string
 	logger         *log.Logger
@@ -90,15 +89,13 @@ func newJWTService(
 	}
 	key := keys[0]
 
-	signAlg, err := jws.MapAlgorithmToSignAlg(jws.Algorithm(key.Algorithm))
-	if err != nil {
+	if _, err := jws.MapAlgorithmToSignAlg(jws.Algorithm(key.Algorithm)); err != nil {
 		return nil, errors.New("unsupported algorithm for key id: " + preferredKid)
 	}
 
 	return &jwtService{
 		cryptoProvider: cryptoProvider,
 		keyRef:         keyRef,
-		signAlg:        signAlg,
 		jwsAlg:         jws.Algorithm(key.Algorithm),
 		kid:            key.Thumbprint,
 		logger:         logger,
@@ -118,8 +115,7 @@ func (js *jwtService) GenerateJWT(
 ) (string, int64, *serviceerror.ServiceError) {
 	jwsAlg := js.jwsAlg
 	if alg != "" {
-		mapped, err := jws.MapAlgorithmToSignAlg(jws.Algorithm(alg))
-		if err != nil || mapped != js.signAlg {
+		if alg != string(js.jwsAlg) {
 			return "", 0, &ErrorUnsupportedJWSAlgorithm
 		}
 		jwsAlg = jws.Algorithm(alg)
@@ -208,7 +204,7 @@ func (js *jwtService) GenerateJWT(
 
 	// Create the signing input and sign it with the crypto provider.
 	signingInput := headerBase64 + "." + payloadBase64
-	signature, err := js.cryptoProvider.Sign(ctx, js.keyRef, js.signAlg, []byte(signingInput))
+	signature, err := js.cryptoProvider.Sign(ctx, js.keyRef, string(jwsAlg), []byte(signingInput))
 	if err != nil {
 		js.logger.Error(ctx, "Failed to sign JWT: "+err.Error())
 		return "", 0, &serviceerror.InternalServerError
@@ -295,15 +291,14 @@ func (js *jwtService) VerifyJWTSignature(ctx context.Context, jwtToken string) *
 	}
 	kid, _ := header["kid"].(string)
 	algStr, _ := header["alg"].(string)
-	signAlg, err := jws.MapAlgorithmToSignAlg(jws.Algorithm(algStr))
-	if err != nil {
-		return &ErrorUnsupportedJWSAlgorithm
-	}
 
-	// Verify the signature through the provider (resolves kid to key internally).
-	if err = js.cryptoProvider.Verify(ctx, kid, signAlg, []byte(signingInput), signature); err != nil {
+	// Verify the signature through the provider (resolves kid to key and validates alg internally).
+	if err = js.cryptoProvider.Verify(ctx, kid, algStr, []byte(signingInput), signature); err != nil {
 		if errors.Is(err, kmprovider.ErrKeyNotFound) {
 			return &ErrorNoMatchingJWKFound
+		}
+		if errors.Is(err, kmprovider.ErrUnsupportedAlgorithm) {
+			return &ErrorUnsupportedJWSAlgorithm
 		}
 		return &ErrorInvalidTokenSignature
 	}

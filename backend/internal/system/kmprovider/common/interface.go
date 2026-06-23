@@ -41,8 +41,8 @@ type RuntimeCryptoProvider interface {
 		ctx context.Context, keyRef *KeyRef, params cryptolib.AlgorithmParams, content []byte,
 	) ([]byte, *cryptolib.CryptoDetails, error)
 	Decrypt(ctx context.Context, keyRef *KeyRef, params cryptolib.AlgorithmParams, content []byte) ([]byte, error)
-	Sign(ctx context.Context, keyRef KeyRef, algorithm cryptolib.SignAlgorithm, content []byte) ([]byte, error)
-	Verify(ctx context.Context, kid string, algorithm cryptolib.SignAlgorithm, content, signature []byte) error
+	Sign(ctx context.Context, keyRef KeyRef, alg string, content []byte) ([]byte, error)
+	Verify(ctx context.Context, kid string, alg string, content, signature []byte) error
 	GetPublicKeys(ctx context.Context, filter PublicKeyFilter) ([]PublicKeyInfo, error)
 	GetTLSMaterial(ctx context.Context) (*TLSMaterial, error)
 }

@@ -101,7 +101,7 @@ func (s *issuerSigner) header(typ string) map[string]interface{} {
 // sign signs the JWS signing input and returns the signature in JWS wire form
 // (P1363 r||s for ECDSA), suitable for sdjwt.Issue.
 func (s *issuerSigner) sign(ctx context.Context, signingInput string) ([]byte, error) {
-	derSig, err := s.cryptoProvider.Sign(ctx, s.keyRef, s.signAlg, []byte(signingInput))
+	derSig, err := s.cryptoProvider.Sign(ctx, s.keyRef, s.jwsAlg, []byte(signingInput))
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign credential: %w", err)
 	}
