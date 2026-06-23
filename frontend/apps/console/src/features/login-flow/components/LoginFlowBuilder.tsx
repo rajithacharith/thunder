@@ -45,7 +45,7 @@ import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
 import {ExecutionTypes, StepTypes, type StepData} from '@/features/flows/models/steps';
 import useNotificationSenders from '@/features/notification-senders/api/useNotificationSenders';
 
-const SMS_EXECUTORS = new Set<string>([ExecutionTypes.SMSOTPAuth, ExecutionTypes.SMSExecutor]);
+const SMS_EXECUTORS = new Set<string>([ExecutionTypes.SMSExecutor]);
 
 function LoginFlowBuilder() {
   const {flowId} = useParams<{flowId: string}>();
