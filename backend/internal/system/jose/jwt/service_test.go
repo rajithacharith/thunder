@@ -149,6 +149,16 @@ func (suite *JWTServiceTestSuite) SetupTest() {
 				Thumbprint: "test-kid",
 			},
 		}, nil).Maybe()
+	cryptoMock.EXPECT().
+		Verify(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		RunAndReturn(func(
+			_ context.Context, kid string, alg cryptolib.SignAlgorithm, content []byte, sig []byte,
+		) error {
+			if kid == "test-kid" {
+				return cryptolib.Verify(content, sig, alg, &suite.testPrivateKey.PublicKey)
+			}
+			return fmt.Errorf("%w: kid=%s", kmprovider.ErrKeyNotFound, kid)
+		}).Maybe()
 
 	suite.jwtService = &jwtService{
 		cryptoProvider: cryptoMock,
@@ -1418,8 +1428,8 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 			setupSvc: func() *jwtService {
 				cryptoMock := cryptomock.NewRuntimeCryptoProviderMock(suite.T())
 				cryptoMock.EXPECT().
-					GetPublicKeys(mock.Anything, kmprovider.PublicKeyFilter{}).
-					Return([]kmprovider.PublicKeyInfo{}, nil)
+					Verify(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					Return(fmt.Errorf("%w: kid=unknown", kmprovider.ErrKeyNotFound))
 				return &jwtService{
 					cryptoProvider: cryptoMock,
 					signAlg:        cryptolib.RSASHA256,
@@ -2002,13 +2012,12 @@ func (suite *JWTServiceTestSuite) TestInitWithECDSAKeys() {
 					return cryptolib.Generate(content, sa, ecKey)
 				}).Maybe()
 			cryptoMock.EXPECT().
-				GetPublicKeys(mock.Anything, kmprovider.PublicKeyFilter{}).
-				Return([]kmprovider.PublicKeyInfo{{
-					KeyID:      "test-kid",
-					Algorithm:  alg,
-					PublicKey:  &ecKey.PublicKey,
-					Thumbprint: "test-kid",
-				}}, nil).Maybe()
+				Verify(mock.Anything, "test-kid", tc.expectedSignAlg, mock.Anything, mock.Anything).
+				RunAndReturn(func(
+					_ context.Context, _ string, sa cryptolib.SignAlgorithm, content []byte, sig []byte,
+				) error {
+					return cryptolib.Verify(content, sig, sa, &ecKey.PublicKey)
+				}).Maybe()
 
 			service, err := Initialize(cryptoMock)
 
@@ -2056,13 +2065,12 @@ func (suite *JWTServiceTestSuite) TestInitWithEd25519Key() {
 			return cryptolib.Generate(content, sa, priv)
 		}).Maybe()
 	cryptoMock.EXPECT().
-		GetPublicKeys(mock.Anything, kmprovider.PublicKeyFilter{}).
-		Return([]kmprovider.PublicKeyInfo{{
-			KeyID:      "test-kid",
-			Algorithm:  cryptolib.AlgorithmEdDSA,
-			PublicKey:  priv.Public(),
-			Thumbprint: "test-kid",
-		}}, nil).Maybe()
+		Verify(mock.Anything, "test-kid", cryptolib.ED25519, mock.Anything, mock.Anything).
+		RunAndReturn(func(
+			_ context.Context, _ string, sa cryptolib.SignAlgorithm, content []byte, sig []byte,
+		) error {
+			return cryptolib.Verify(content, sig, sa, priv.Public())
+		}).Maybe()
 
 	service, err := Initialize(cryptoMock)
 	assert.NoError(suite.T(), err)

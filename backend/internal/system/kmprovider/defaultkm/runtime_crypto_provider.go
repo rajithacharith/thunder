@@ -192,6 +192,24 @@ func (s *runtimeCryptoService) GetPublicKeys(
 	return keys, nil
 }
 
+func (s *runtimeCryptoService) Verify(
+	ctx context.Context, kid string, algorithm cryptolib.SignAlgorithm, content []byte, signature []byte,
+) error {
+	if s.pkiService == nil {
+		return errors.New("PKI service not initialized")
+	}
+	keys, err := s.GetPublicKeys(ctx, kmprovider.PublicKeyFilter{})
+	if err != nil {
+		return fmt.Errorf("failed to retrieve public keys: %w", err)
+	}
+	for _, key := range keys {
+		if key.Thumbprint == kid {
+			return cryptolib.Verify(content, signature, algorithm, key.PublicKey)
+		}
+	}
+	return fmt.Errorf("%w: kid=%s", kmprovider.ErrKeyNotFound, kid)
+}
+
 func (s *runtimeCryptoService) GetTLSMaterial(
 	ctx context.Context,
 ) (*kmprovider.TLSMaterial, error) {

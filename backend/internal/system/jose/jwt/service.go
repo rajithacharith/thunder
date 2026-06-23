@@ -300,25 +300,11 @@ func (js *jwtService) VerifyJWTSignature(ctx context.Context, jwtToken string) *
 		return &ErrorUnsupportedJWSAlgorithm
 	}
 
-	// Retrieve all public keys from the provider and match by thumbprint
-	keys, providerErr := js.cryptoProvider.GetPublicKeys(ctx, kmprovider.PublicKeyFilter{})
-	if providerErr != nil {
-		js.logger.Error(ctx, "Failed to retrieve public keys for JWT verification: "+providerErr.Error())
-		return &serviceerror.InternalServerError
-	}
-	var matchedKey *kmprovider.PublicKeyInfo
-	for i := range keys {
-		if keys[i].Thumbprint == kid {
-			matchedKey = &keys[i]
-			break
+	// Verify the signature through the provider (resolves kid to key internally).
+	if err = js.cryptoProvider.Verify(ctx, kid, signAlg, []byte(signingInput), signature); err != nil {
+		if errors.Is(err, kmprovider.ErrKeyNotFound) {
+			return &ErrorNoMatchingJWKFound
 		}
-	}
-	if matchedKey == nil {
-		return &ErrorNoMatchingJWKFound
-	}
-
-	// Verify the signature using the matched public key
-	if err = cryptolib.Verify([]byte(signingInput), signature, signAlg, matchedKey.PublicKey); err != nil {
 		return &ErrorInvalidTokenSignature
 	}
 	return nil
