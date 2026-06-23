@@ -258,6 +258,9 @@ importers:
       '@wso2/oxygen-ui':
         specifier: 'catalog:'
         version: 0.11.0(@mui/system@7.3.11(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.3))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(@wso2/oxygen-ui-icons-react@0.11.0(react@19.2.3))(dayjs@1.11.18)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@docsearch/docusaurus-adapter':
+        specifier: 'catalog:'
+        version: 4.6.3(@algolia/client-search@5.52.1)(@mdx-js/react@3.0.0(@types/react@19.2.14)(react@19.2.3))(@swc/core@1.15.33(@swc/helpers@0.5.21))(@types/react@19.2.14)(postcss@8.5.10)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(search-insights@2.17.3)(typescript@5.9.3)
       '@wso2/oxygen-ui-icons-react':
         specifier: 'catalog:'
         version: 0.11.0(react@19.2.3)
@@ -3696,6 +3699,13 @@ packages:
 
   '@dnd-kit/state@0.4.0':
     resolution: {integrity: sha512-vVdwOY9VsYdMNa7Z0xQhTXlzHqCcCugGuoM1kzvZhnZ0tYVPRdmIhWfeO6Y2ZoN92JwYAyJRRNl4ICkEe2mneg==}
+
+  '@docsearch/docusaurus-adapter@4.6.3':
+    resolution: {integrity: sha512-moP2ITPazFjPbtJtTYHDu4AY22U+uWkCgzDRHRIEJdQLWLjyPwVt4UygVIz8wgP1l1ydLY9XjeBdqwEcWoEdfg==}
+    engines: {node: '>=20.0'}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
 
   '@docsearch/core@4.6.3':
     resolution: {integrity: sha512-rUOujwIpxJRgD7+kicVsI3D5sqBvdiRTquzWBpTEXZs8ZXfGbfzpus5HqumaNYTppN2HvH8E2yNuRwYdHJeOlA==}
@@ -14518,6 +14528,51 @@ snapshots:
     dependencies:
       '@preact/signals-core': 1.14.2
       tslib: 2.8.1
+
+  '@docsearch/docusaurus-adapter@4.6.3(@algolia/client-search@5.52.1)(@mdx-js/react@3.0.0(@types/react@19.2.14)(react@19.2.3))(@swc/core@1.15.33(@swc/helpers@0.5.21))(@types/react@19.2.14)(postcss@8.5.10)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(search-insights@2.17.3)(typescript@5.9.3)':
+    dependencies:
+      '@docsearch/react': 4.6.3(@algolia/client-search@5.52.1)(@types/react@19.2.14)(algoliasearch@5.52.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(search-insights@2.17.3)
+      '@docusaurus/core': 3.9.2(@mdx-js/react@3.0.0(@types/react@19.2.14)(react@19.2.3))(@swc/core@1.15.33(@swc/helpers@0.5.21))(postcss@8.5.10)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
+      '@docusaurus/plugin-content-docs': 3.9.2(@mdx-js/react@3.0.0(@types/react@19.2.14)(react@19.2.3))(@swc/core@1.15.33(@swc/helpers@0.5.21))(postcss@8.5.10)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
+      '@docusaurus/theme-common': 3.10.1(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.0.0(@types/react@19.2.14)(react@19.2.3))(@swc/core@1.15.33(@swc/helpers@0.5.21))(postcss@8.5.10)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(@swc/core@1.15.33(@swc/helpers@0.5.21))(postcss@8.5.10)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@docusaurus/theme-translations': 3.9.2
+      algoliasearch: 5.52.1
+      algoliasearch-helper: 3.29.1(algoliasearch@5.52.1)
+      clsx: 2.1.1
+      eta: 2.2.0
+      fs-extra: 11.3.5
+      joi: 18.2.1
+      lodash: 4.18.1
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+      tslib: 2.8.1
+      utility-types: 3.11.0
+    transitivePeerDependencies:
+      - '@algolia/client-search'
+      - '@docusaurus/faster'
+      - '@mdx-js/react'
+      - '@minify-html/node'
+      - '@parcel/css'
+      - '@rspack/core'
+      - '@swc/core'
+      - '@swc/css'
+      - '@swc/html'
+      - '@types/react'
+      - bufferutil
+      - clean-css
+      - cssnano
+      - csso
+      - debug
+      - esbuild
+      - html-minifier-terser
+      - lightningcss
+      - postcss
+      - search-insights
+      - supports-color
+      - typescript
+      - uglify-js
+      - utf-8-validate
+      - webpack-cli
 
   '@docsearch/core@4.6.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     optionalDependencies:

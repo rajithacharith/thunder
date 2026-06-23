@@ -27,6 +27,7 @@ allowBuilds:
 
 catalog:
   '@axe-core/playwright': 4.3.0
+  '@docsearch/docusaurus-adapter': ^4.6.3
   '@codecov/vite-plugin': 2.0.1
   '@hookform/resolvers': 5.2.2
   '@monaco-editor/react': 4.7.0
