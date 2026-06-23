@@ -54,7 +54,7 @@ func (s *GraphCacheTestSuite) SetupTest() {
 func (s *GraphCacheTestSuite) TestGetSuccess() {
 	flowID := testFlowID
 	ctx := context.Background()
-	g := s.factory.CreateGraph(flowID, common.FlowTypeAuthentication)
+	g := s.factory.CreateGraph(flowID, common.FlowTypeAuthentication, 1)
 	concreteGraph := g.(*graph)
 
 	s.mockCache.EXPECT().Get(ctx, cache.CacheKey{Key: flowID}).Return(concreteGraph, true)
@@ -100,7 +100,7 @@ func (s *GraphCacheTestSuite) TestGetNilGraph() {
 func (s *GraphCacheTestSuite) TestSetSuccess() {
 	flowID := testFlowID
 	ctx := context.Background()
-	g := s.factory.CreateGraph(flowID, common.FlowTypeAuthentication)
+	g := s.factory.CreateGraph(flowID, common.FlowTypeAuthentication, 1)
 
 	s.mockCache.EXPECT().Set(ctx, cache.CacheKey{Key: flowID}, g.(*graph)).Return(nil)
 
@@ -112,7 +112,7 @@ func (s *GraphCacheTestSuite) TestSetSuccess() {
 func (s *GraphCacheTestSuite) TestSetCacheError() {
 	flowID := testFlowID
 	ctx := context.Background()
-	g := s.factory.CreateGraph(flowID, common.FlowTypeAuthentication)
+	g := s.factory.CreateGraph(flowID, common.FlowTypeAuthentication, 1)
 	cacheErr := errors.New("cache error")
 
 	s.mockCache.EXPECT().Set(ctx, cache.CacheKey{Key: flowID}, g.(*graph)).Return(cacheErr)
@@ -124,7 +124,7 @@ func (s *GraphCacheTestSuite) TestSetCacheError() {
 }
 
 func (s *GraphCacheTestSuite) TestSetEmptyFlowID() {
-	g := s.factory.CreateGraph(testFlowID, common.FlowTypeAuthentication)
+	g := s.factory.CreateGraph(testFlowID, common.FlowTypeAuthentication, 1)
 
 	err := s.cache.Set(context.Background(), "", g)
 

@@ -233,16 +233,16 @@ func (_c *FlowFactoryInterfaceMock_CreateExecutor_Call) RunAndReturn(run func(na
 }
 
 // CreateGraph provides a mock function for the type FlowFactoryInterfaceMock
-func (_mock *FlowFactoryInterfaceMock) CreateGraph(id string, _type common.FlowType) core.GraphInterface {
-	ret := _mock.Called(id, _type)
+func (_mock *FlowFactoryInterfaceMock) CreateGraph(id string, _type common.FlowType, version int) core.GraphInterface {
+	ret := _mock.Called(id, _type, version)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateGraph")
 	}
 
 	var r0 core.GraphInterface
-	if returnFunc, ok := ret.Get(0).(func(string, common.FlowType) core.GraphInterface); ok {
-		r0 = returnFunc(id, _type)
+	if returnFunc, ok := ret.Get(0).(func(string, common.FlowType, int) core.GraphInterface); ok {
+		r0 = returnFunc(id, _type, version)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(core.GraphInterface)
@@ -259,11 +259,12 @@ type FlowFactoryInterfaceMock_CreateGraph_Call struct {
 // CreateGraph is a helper method to define mock.On call
 //   - id string
 //   - _type common.FlowType
-func (_e *FlowFactoryInterfaceMock_Expecter) CreateGraph(id interface{}, _type interface{}) *FlowFactoryInterfaceMock_CreateGraph_Call {
-	return &FlowFactoryInterfaceMock_CreateGraph_Call{Call: _e.mock.On("CreateGraph", id, _type)}
+//   - version int
+func (_e *FlowFactoryInterfaceMock_Expecter) CreateGraph(id interface{}, _type interface{}, version interface{}) *FlowFactoryInterfaceMock_CreateGraph_Call {
+	return &FlowFactoryInterfaceMock_CreateGraph_Call{Call: _e.mock.On("CreateGraph", id, _type, version)}
 }
 
-func (_c *FlowFactoryInterfaceMock_CreateGraph_Call) Run(run func(id string, _type common.FlowType)) *FlowFactoryInterfaceMock_CreateGraph_Call {
+func (_c *FlowFactoryInterfaceMock_CreateGraph_Call) Run(run func(id string, _type common.FlowType, version int)) *FlowFactoryInterfaceMock_CreateGraph_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
@@ -273,9 +274,14 @@ func (_c *FlowFactoryInterfaceMock_CreateGraph_Call) Run(run func(id string, _ty
 		if args[1] != nil {
 			arg1 = args[1].(common.FlowType)
 		}
+		var arg2 int
+		if args[2] != nil {
+			arg2 = args[2].(int)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -286,7 +292,7 @@ func (_c *FlowFactoryInterfaceMock_CreateGraph_Call) Return(graphInterface core.
 	return _c
 }
 
-func (_c *FlowFactoryInterfaceMock_CreateGraph_Call) RunAndReturn(run func(id string, _type common.FlowType) core.GraphInterface) *FlowFactoryInterfaceMock_CreateGraph_Call {
+func (_c *FlowFactoryInterfaceMock_CreateGraph_Call) RunAndReturn(run func(id string, _type common.FlowType, version int) core.GraphInterface) *FlowFactoryInterfaceMock_CreateGraph_Call {
 	_c.Call.Return(run)
 	return _c
 }

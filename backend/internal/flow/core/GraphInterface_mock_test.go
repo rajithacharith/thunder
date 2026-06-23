@@ -690,6 +690,50 @@ func (_c *GraphInterfaceMock_GetType_Call) RunAndReturn(run func() common.FlowTy
 	return _c
 }
 
+// GetVersion provides a mock function for the type GraphInterfaceMock
+func (_mock *GraphInterfaceMock) GetVersion() int {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetVersion")
+	}
+
+	var r0 int
+	if returnFunc, ok := ret.Get(0).(func() int); ok {
+		r0 = returnFunc()
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+	return r0
+}
+
+// GraphInterfaceMock_GetVersion_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetVersion'
+type GraphInterfaceMock_GetVersion_Call struct {
+	*mock.Call
+}
+
+// GetVersion is a helper method to define mock.On call
+func (_e *GraphInterfaceMock_Expecter) GetVersion() *GraphInterfaceMock_GetVersion_Call {
+	return &GraphInterfaceMock_GetVersion_Call{Call: _e.mock.On("GetVersion")}
+}
+
+func (_c *GraphInterfaceMock_GetVersion_Call) Run(run func()) *GraphInterfaceMock_GetVersion_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *GraphInterfaceMock_GetVersion_Call) Return(n int) *GraphInterfaceMock_GetVersion_Call {
+	_c.Call.Return(n)
+	return _c
+}
+
+func (_c *GraphInterfaceMock_GetVersion_Call) RunAndReturn(run func() int) *GraphInterfaceMock_GetVersion_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // HasSegments provides a mock function for the type GraphInterfaceMock
 func (_mock *GraphInterfaceMock) HasSegments() bool {
 	ret := _mock.Called()
@@ -999,6 +1043,46 @@ func (_c *GraphInterfaceMock_SetStartNode_Call) Return(err error) *GraphInterfac
 
 func (_c *GraphInterfaceMock_SetStartNode_Call) RunAndReturn(run func(startNodeID string) error) *GraphInterfaceMock_SetStartNode_Call {
 	_c.Call.Return(run)
+	return _c
+}
+
+// SetVersion provides a mock function for the type GraphInterfaceMock
+func (_mock *GraphInterfaceMock) SetVersion(version int) {
+	_mock.Called(version)
+	return
+}
+
+// GraphInterfaceMock_SetVersion_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetVersion'
+type GraphInterfaceMock_SetVersion_Call struct {
+	*mock.Call
+}
+
+// SetVersion is a helper method to define mock.On call
+//   - version int
+func (_e *GraphInterfaceMock_Expecter) SetVersion(version interface{}) *GraphInterfaceMock_SetVersion_Call {
+	return &GraphInterfaceMock_SetVersion_Call{Call: _e.mock.On("SetVersion", version)}
+}
+
+func (_c *GraphInterfaceMock_SetVersion_Call) Run(run func(version int)) *GraphInterfaceMock_SetVersion_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 int
+		if args[0] != nil {
+			arg0 = args[0].(int)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *GraphInterfaceMock_SetVersion_Call) Return() *GraphInterfaceMock_SetVersion_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *GraphInterfaceMock_SetVersion_Call) RunAndReturn(run func(version int)) *GraphInterfaceMock_SetVersion_Call {
+	_c.Run(run)
 	return _c
 }
 

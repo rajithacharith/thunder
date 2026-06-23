@@ -156,7 +156,7 @@ func (s *FlowFactoryTestSuite) TestCreateGraph() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			graph := s.factory.CreateGraph(tt.graphID, tt.flowType)
+			graph := s.factory.CreateGraph(tt.graphID, tt.flowType, 1)
 
 			s.NotNil(graph)
 			if tt.expectUUID {
