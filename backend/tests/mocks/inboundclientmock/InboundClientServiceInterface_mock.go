@@ -42,16 +42,16 @@ func (_m *InboundClientServiceInterfaceMock) EXPECT() *InboundClientServiceInter
 }
 
 // CreateInboundClient provides a mock function for the type InboundClientServiceInterfaceMock
-func (_mock *InboundClientServiceInterfaceMock) CreateInboundClient(ctx context.Context, client *model.InboundClient, appCert *model.Certificate, oauthProfile *providers.OAuthProfile, hasClientSecret bool, entityName string) error {
-	ret := _mock.Called(ctx, client, appCert, oauthProfile, hasClientSecret, entityName)
+func (_mock *InboundClientServiceInterfaceMock) CreateInboundClient(ctx context.Context, client *model.InboundClient, oauthProfile *providers.OAuthProfile, hasClientSecret bool, entityName string) error {
+	ret := _mock.Called(ctx, client, oauthProfile, hasClientSecret, entityName)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateInboundClient")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *model.InboundClient, *model.Certificate, *providers.OAuthProfile, bool, string) error); ok {
-		r0 = returnFunc(ctx, client, appCert, oauthProfile, hasClientSecret, entityName)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *model.InboundClient, *providers.OAuthProfile, bool, string) error); ok {
+		r0 = returnFunc(ctx, client, oauthProfile, hasClientSecret, entityName)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -66,15 +66,14 @@ type InboundClientServiceInterfaceMock_CreateInboundClient_Call struct {
 // CreateInboundClient is a helper method to define mock.On call
 //   - ctx context.Context
 //   - client *model.InboundClient
-//   - appCert *model.Certificate
 //   - oauthProfile *providers.OAuthProfile
 //   - hasClientSecret bool
 //   - entityName string
-func (_e *InboundClientServiceInterfaceMock_Expecter) CreateInboundClient(ctx interface{}, client interface{}, appCert interface{}, oauthProfile interface{}, hasClientSecret interface{}, entityName interface{}) *InboundClientServiceInterfaceMock_CreateInboundClient_Call {
-	return &InboundClientServiceInterfaceMock_CreateInboundClient_Call{Call: _e.mock.On("CreateInboundClient", ctx, client, appCert, oauthProfile, hasClientSecret, entityName)}
+func (_e *InboundClientServiceInterfaceMock_Expecter) CreateInboundClient(ctx interface{}, client interface{}, oauthProfile interface{}, hasClientSecret interface{}, entityName interface{}) *InboundClientServiceInterfaceMock_CreateInboundClient_Call {
+	return &InboundClientServiceInterfaceMock_CreateInboundClient_Call{Call: _e.mock.On("CreateInboundClient", ctx, client, oauthProfile, hasClientSecret, entityName)}
 }
 
-func (_c *InboundClientServiceInterfaceMock_CreateInboundClient_Call) Run(run func(ctx context.Context, client *model.InboundClient, appCert *model.Certificate, oauthProfile *providers.OAuthProfile, hasClientSecret bool, entityName string)) *InboundClientServiceInterfaceMock_CreateInboundClient_Call {
+func (_c *InboundClientServiceInterfaceMock_CreateInboundClient_Call) Run(run func(ctx context.Context, client *model.InboundClient, oauthProfile *providers.OAuthProfile, hasClientSecret bool, entityName string)) *InboundClientServiceInterfaceMock_CreateInboundClient_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -84,21 +83,17 @@ func (_c *InboundClientServiceInterfaceMock_CreateInboundClient_Call) Run(run fu
 		if args[1] != nil {
 			arg1 = args[1].(*model.InboundClient)
 		}
-		var arg2 *model.Certificate
+		var arg2 *providers.OAuthProfile
 		if args[2] != nil {
-			arg2 = args[2].(*model.Certificate)
+			arg2 = args[2].(*providers.OAuthProfile)
 		}
-		var arg3 *providers.OAuthProfile
+		var arg3 bool
 		if args[3] != nil {
-			arg3 = args[3].(*providers.OAuthProfile)
+			arg3 = args[3].(bool)
 		}
-		var arg4 bool
+		var arg4 string
 		if args[4] != nil {
-			arg4 = args[4].(bool)
-		}
-		var arg5 string
-		if args[5] != nil {
-			arg5 = args[5].(string)
+			arg4 = args[4].(string)
 		}
 		run(
 			arg0,
@@ -106,7 +101,6 @@ func (_c *InboundClientServiceInterfaceMock_CreateInboundClient_Call) Run(run fu
 			arg2,
 			arg3,
 			arg4,
-			arg5,
 		)
 	})
 	return _c
@@ -117,7 +111,7 @@ func (_c *InboundClientServiceInterfaceMock_CreateInboundClient_Call) Return(err
 	return _c
 }
 
-func (_c *InboundClientServiceInterfaceMock_CreateInboundClient_Call) RunAndReturn(run func(ctx context.Context, client *model.InboundClient, appCert *model.Certificate, oauthProfile *providers.OAuthProfile, hasClientSecret bool, entityName string) error) *InboundClientServiceInterfaceMock_CreateInboundClient_Call {
+func (_c *InboundClientServiceInterfaceMock_CreateInboundClient_Call) RunAndReturn(run func(ctx context.Context, client *model.InboundClient, oauthProfile *providers.OAuthProfile, hasClientSecret bool, entityName string) error) *InboundClientServiceInterfaceMock_CreateInboundClient_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -693,16 +687,16 @@ func (_c *InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Cal
 }
 
 // UpdateInboundClient provides a mock function for the type InboundClientServiceInterfaceMock
-func (_mock *InboundClientServiceInterfaceMock) UpdateInboundClient(ctx context.Context, client *model.InboundClient, appCert *model.Certificate, oauthProfile *providers.OAuthProfile, hasClientSecret bool, oauthClientID string, entityName string) error {
-	ret := _mock.Called(ctx, client, appCert, oauthProfile, hasClientSecret, oauthClientID, entityName)
+func (_mock *InboundClientServiceInterfaceMock) UpdateInboundClient(ctx context.Context, client *model.InboundClient, oauthProfile *providers.OAuthProfile, hasClientSecret bool, oauthClientID string, entityName string) error {
+	ret := _mock.Called(ctx, client, oauthProfile, hasClientSecret, oauthClientID, entityName)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateInboundClient")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *model.InboundClient, *model.Certificate, *providers.OAuthProfile, bool, string, string) error); ok {
-		r0 = returnFunc(ctx, client, appCert, oauthProfile, hasClientSecret, oauthClientID, entityName)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *model.InboundClient, *providers.OAuthProfile, bool, string, string) error); ok {
+		r0 = returnFunc(ctx, client, oauthProfile, hasClientSecret, oauthClientID, entityName)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -717,16 +711,15 @@ type InboundClientServiceInterfaceMock_UpdateInboundClient_Call struct {
 // UpdateInboundClient is a helper method to define mock.On call
 //   - ctx context.Context
 //   - client *model.InboundClient
-//   - appCert *model.Certificate
 //   - oauthProfile *providers.OAuthProfile
 //   - hasClientSecret bool
 //   - oauthClientID string
 //   - entityName string
-func (_e *InboundClientServiceInterfaceMock_Expecter) UpdateInboundClient(ctx interface{}, client interface{}, appCert interface{}, oauthProfile interface{}, hasClientSecret interface{}, oauthClientID interface{}, entityName interface{}) *InboundClientServiceInterfaceMock_UpdateInboundClient_Call {
-	return &InboundClientServiceInterfaceMock_UpdateInboundClient_Call{Call: _e.mock.On("UpdateInboundClient", ctx, client, appCert, oauthProfile, hasClientSecret, oauthClientID, entityName)}
+func (_e *InboundClientServiceInterfaceMock_Expecter) UpdateInboundClient(ctx interface{}, client interface{}, oauthProfile interface{}, hasClientSecret interface{}, oauthClientID interface{}, entityName interface{}) *InboundClientServiceInterfaceMock_UpdateInboundClient_Call {
+	return &InboundClientServiceInterfaceMock_UpdateInboundClient_Call{Call: _e.mock.On("UpdateInboundClient", ctx, client, oauthProfile, hasClientSecret, oauthClientID, entityName)}
 }
 
-func (_c *InboundClientServiceInterfaceMock_UpdateInboundClient_Call) Run(run func(ctx context.Context, client *model.InboundClient, appCert *model.Certificate, oauthProfile *providers.OAuthProfile, hasClientSecret bool, oauthClientID string, entityName string)) *InboundClientServiceInterfaceMock_UpdateInboundClient_Call {
+func (_c *InboundClientServiceInterfaceMock_UpdateInboundClient_Call) Run(run func(ctx context.Context, client *model.InboundClient, oauthProfile *providers.OAuthProfile, hasClientSecret bool, oauthClientID string, entityName string)) *InboundClientServiceInterfaceMock_UpdateInboundClient_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -736,25 +729,21 @@ func (_c *InboundClientServiceInterfaceMock_UpdateInboundClient_Call) Run(run fu
 		if args[1] != nil {
 			arg1 = args[1].(*model.InboundClient)
 		}
-		var arg2 *model.Certificate
+		var arg2 *providers.OAuthProfile
 		if args[2] != nil {
-			arg2 = args[2].(*model.Certificate)
+			arg2 = args[2].(*providers.OAuthProfile)
 		}
-		var arg3 *providers.OAuthProfile
+		var arg3 bool
 		if args[3] != nil {
-			arg3 = args[3].(*providers.OAuthProfile)
+			arg3 = args[3].(bool)
 		}
-		var arg4 bool
+		var arg4 string
 		if args[4] != nil {
-			arg4 = args[4].(bool)
+			arg4 = args[4].(string)
 		}
 		var arg5 string
 		if args[5] != nil {
 			arg5 = args[5].(string)
-		}
-		var arg6 string
-		if args[6] != nil {
-			arg6 = args[6].(string)
 		}
 		run(
 			arg0,
@@ -763,7 +752,6 @@ func (_c *InboundClientServiceInterfaceMock_UpdateInboundClient_Call) Run(run fu
 			arg3,
 			arg4,
 			arg5,
-			arg6,
 		)
 	})
 	return _c
@@ -774,7 +762,7 @@ func (_c *InboundClientServiceInterfaceMock_UpdateInboundClient_Call) Return(err
 	return _c
 }
 
-func (_c *InboundClientServiceInterfaceMock_UpdateInboundClient_Call) RunAndReturn(run func(ctx context.Context, client *model.InboundClient, appCert *model.Certificate, oauthProfile *providers.OAuthProfile, hasClientSecret bool, oauthClientID string, entityName string) error) *InboundClientServiceInterfaceMock_UpdateInboundClient_Call {
+func (_c *InboundClientServiceInterfaceMock_UpdateInboundClient_Call) RunAndReturn(run func(ctx context.Context, client *model.InboundClient, oauthProfile *providers.OAuthProfile, hasClientSecret bool, oauthClientID string, entityName string) error) *InboundClientServiceInterfaceMock_UpdateInboundClient_Call {
 	_c.Call.Return(run)
 	return _c
 }

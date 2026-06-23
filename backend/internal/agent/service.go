@@ -150,7 +150,7 @@ func (s *agentService) CreateAgent(ctx context.Context, agent *model.Agent) (
 		agent.Type, agent.Name, agent.Description, createdEntity.Attributes,
 		authFlowID, regFlowID, agent.IsRegistrationFlowEnabled,
 		agent.ThemeID, agent.LayoutID, assertion, loginConsent,
-		agent.AllowedUserTypes, agent.Certificate, inboundConfigs)
+		agent.AllowedUserTypes, inboundConfigs)
 	resp.OUID = agent.OUID
 	s.populateOUHandleForComplete(ctx, resp)
 	return resp, nil
@@ -339,7 +339,7 @@ func (s *agentService) UpdateAgent(ctx context.Context, agentID string,
 		req.Type, req.Name, req.Description, req.Attributes,
 		authFlowID, regFlowID, resolvedClient.IsRegistrationFlowEnabled,
 		req.ThemeID, req.LayoutID, assertion, loginConsent,
-		req.AllowedUserTypes, req.Certificate, inboundConfigs)
+		req.AllowedUserTypes, inboundConfigs)
 	resp.OUID = ouID
 	s.populateOUHandleForComplete(ctx, resp)
 	return resp, nil
@@ -730,8 +730,9 @@ func (s *agentService) createInboundForAgent(ctx context.Context, agentID string
 	oauthProfile := buildOAuthProfile(agent.InboundAuthConfig)
 
 	hasSecret := clientSecret != ""
-	if err := s.inboundClientService.CreateInboundClient(ctx, &client, agent.Certificate,
-		oauthProfile, hasSecret, agent.Name); err != nil {
+	if err := s.inboundClientService.CreateInboundClient(
+		ctx, &client, oauthProfile, hasSecret, agent.Name,
+	); err != nil {
 		if svcErr := s.translateInboundClientError(ctx, err); svcErr != nil {
 			return inboundmodel.InboundClient{}, nil, svcErr
 		}
@@ -777,7 +778,7 @@ func (s *agentService) reconcileInboundForUpdate(ctx context.Context, agentID st
 		if entityName == "" {
 			entityName = oldName
 		}
-		if err := s.inboundClientService.UpdateInboundClient(ctx, &client, req.Certificate,
+		if err := s.inboundClientService.UpdateInboundClient(ctx, &client,
 			oauthProfile, hasSecret, clientID, entityName); err != nil {
 			if svcErr := s.translateInboundClientError(ctx, err); svcErr != nil {
 				return inboundmodel.InboundClient{}, nil, svcErr
@@ -789,8 +790,7 @@ func (s *agentService) reconcileInboundForUpdate(ctx context.Context, agentID st
 		return client, oauthProfile, nil
 	}
 
-	if err := s.inboundClientService.CreateInboundClient(ctx, &client, req.Certificate,
-		oauthProfile, hasSecret, newName); err != nil {
+	if err := s.inboundClientService.CreateInboundClient(ctx, &client, oauthProfile, hasSecret, newName); err != nil {
 		if svcErr := s.translateInboundClientError(ctx, err); svcErr != nil {
 			return inboundmodel.InboundClient{}, nil, svcErr
 		}
@@ -851,12 +851,6 @@ func (s *agentService) composeGetResponse(ctx context.Context, e *providers.Enti
 			},
 		}
 	}
-
-	entityCert, certOpErr := s.inboundClientService.GetCertificate(ctx, cert.CertificateReferenceTypeApplication, e.ID)
-	if certOpErr != nil {
-		return nil, s.translateCertOperationError(ctx, certOpErr)
-	}
-	resp.Certificate = entityCert
 
 	if clientID != "" {
 		oauthCert, oauthCertOpErr := s.inboundClientService.GetCertificate(
@@ -979,7 +973,6 @@ func needsInboundClient(agent *model.Agent) bool {
 		agent.Assertion != nil ||
 		agent.LoginConsent != nil ||
 		len(agent.AllowedUserTypes) > 0 ||
-		agent.Certificate != nil ||
 		len(agent.InboundAuthConfig) > 0
 }
 
@@ -996,7 +989,6 @@ func updateNeedsInboundClient(req *model.UpdateAgentRequest) bool {
 		req.Assertion != nil ||
 		req.LoginConsent != nil ||
 		len(req.AllowedUserTypes) > 0 ||
-		req.Certificate != nil ||
 		len(req.InboundAuthConfig) > 0
 }
 
@@ -1250,7 +1242,7 @@ func buildCompleteResponse(agentID, owner, clientID, clientSecret, agentType, na
 	attributes json.RawMessage, authFlowID, regFlowID string, isRegEnabled bool,
 	themeID, layoutID string, assertion *inboundmodel.AssertionConfig,
 	loginConsent *inboundmodel.LoginConsentConfig, allowedUserTypes []string,
-	certificate *inboundmodel.Certificate, inboundAuthConfig []inboundmodel.InboundAuthConfigWithSecret,
+	inboundAuthConfig []inboundmodel.InboundAuthConfigWithSecret,
 ) *model.AgentCompleteResponse {
 	resp := &model.AgentCompleteResponse{
 		ID:          agentID,
@@ -1268,7 +1260,6 @@ func buildCompleteResponse(agentID, owner, clientID, clientSecret, agentType, na
 			Assertion:                 assertion,
 			LoginConsent:              loginConsent,
 			AllowedUserTypes:          allowedUserTypes,
-			Certificate:               certificate,
 		},
 	}
 	if len(inboundAuthConfig) > 0 {
@@ -1404,6 +1395,11 @@ func translateOAuthValidationError(err error) *tidcommon.ServiceError {
 		return tidcommon.CustomServiceError(ErrorInvalidOAuthConfiguration, tidcommon.I18nMessage{
 			Key:          "error.agentservice.private_key_jwt_requires_certificate_description",
 			DefaultValue: "private_key_jwt authentication method requires a certificate",
+		})
+	case errors.Is(err, inboundclient.ErrOAuthCertificateRequiresClientID):
+		return tidcommon.CustomServiceError(ErrorInvalidOAuthConfiguration, tidcommon.I18nMessage{
+			Key:          "error.agentservice.certificate_requires_client_id_description",
+			DefaultValue: "certificate configuration requires an OAuth client ID",
 		})
 	case errors.Is(err, inboundclient.ErrOAuthPrivateKeyJWTCannotHaveClientSecret):
 		return tidcommon.CustomServiceError(ErrorInvalidOAuthConfiguration, tidcommon.I18nMessage{

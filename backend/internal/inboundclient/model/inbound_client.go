@@ -49,7 +49,6 @@ type InboundAuthProfile struct {
 	Assertion                 *AssertionConfig    `json:"assertion,omitempty"              yaml:"assertion,omitempty"              jsonschema:"Assertion configuration. Optional. Customize assertion validity periods and included user attributes."`
 	LoginConsent              *LoginConsentConfig `json:"loginConsent,omitempty"           yaml:"loginConsent,omitempty"           jsonschema:"Login consent configuration settings."`
 	AllowedUserTypes          []string            `json:"allowedUserTypes,omitempty"       yaml:"allowedUserTypes,omitempty"       jsonschema:"Allowed user types. Optional. Restricts which user types can authenticate to and register against this resource."`
-	Certificate               *Certificate        `json:"certificate,omitempty"            yaml:"certificate,omitempty"            jsonschema:"Resource-level certificate. Optional. For certificate-based authentication or JWT validation."`
 }
 
 // DeclarativeLoaderConfig describes how to load inbound clients from a YAML resource directory.

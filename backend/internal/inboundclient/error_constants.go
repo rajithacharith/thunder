@@ -92,6 +92,8 @@ var (
 	ErrOAuthInvalidTokenEndpointAuthMethod = errors.New("invalid token endpoint auth method")
 	// ErrOAuthPrivateKeyJWTRequiresCertificate is returned when private_key_jwt is used without a certificate.
 	ErrOAuthPrivateKeyJWTRequiresCertificate = errors.New("private_key_jwt requires a certificate")
+	// ErrOAuthCertificateRequiresClientID is returned when a certificate is provided without an OAuth client ID.
+	ErrOAuthCertificateRequiresClientID = errors.New("certificate requires an OAuth client ID")
 	// ErrOAuthPrivateKeyJWTCannotHaveClientSecret is returned when private_key_jwt is used with a client secret.
 	ErrOAuthPrivateKeyJWTCannotHaveClientSecret = errors.New("private_key_jwt cannot have a client secret")
 	// ErrOAuthClientSecretCannotHaveCertificate is returned when client-secret auth is used with a certificate.
