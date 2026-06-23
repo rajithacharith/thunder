@@ -307,6 +307,7 @@ func (fe *flowEngine) runInterceptors(
 		UserInputs:           maps.Clone(ctx.UserInputs),
 		ForwardedData:        maps.Clone(ctx.ForwardedData),
 		AdditionalData:       maps.Clone(ctx.AdditionalData),
+		CurrentNodeInputs:    getNodeInputs(currentNode),
 		ResolvedInterceptors: ctx.Graph.GetInterceptors(mode),
 		SharedData:           ctx.InterceptorSharedData,
 	}

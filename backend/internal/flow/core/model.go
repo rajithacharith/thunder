@@ -91,6 +91,7 @@ type InterceptorContext struct {
 	NodeType            common.NodeType
 	ExecutionPolicy     *ExecutionPolicy
 	AllowSegmentRestart bool
+	CurrentNodeInputs   []common.Input
 	ForwardedData       map[string]interface{}
 	AdditionalData      map[string]string
 

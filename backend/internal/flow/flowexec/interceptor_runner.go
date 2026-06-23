@@ -185,6 +185,7 @@ func (s *interceptorRunner) executeInterceptor(
 		NodeType:            execCtx.NodeType,
 		ExecutionPolicy:     execCtx.ExecutionPolicy,
 		AllowSegmentRestart: execCtx.AllowSegmentRestart,
+		CurrentNodeInputs:   execCtx.CurrentNodeInputs,
 		ForwardedData:       execCtx.ForwardedData,
 		AdditionalData:      execCtx.AdditionalData,
 		SharedData:          execCtx.SharedData,
