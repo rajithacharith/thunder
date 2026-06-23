@@ -26,8 +26,10 @@ import {useState, useCallback, useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useLocation, useNavigate} from 'react-router';
 import useCreateFlow from '../../flows/api/useCreateFlow';
+import useGetFlowById from '../../flows/api/useGetFlowById';
 import type {BasicFlowDefinition} from '../../flows/models/responses';
 import generateFlowGraph from '../../flows/utils/generateFlowGraph';
+import getFlowEntryComponents from '../../flows/utils/getFlowEntryComponents';
 import useIdentityProviders from '../../integrations/api/useIdentityProviders';
 import {AuthenticatorTypes} from '../../integrations/models/authenticators';
 import {IdentityProviderTypes} from '../../integrations/models/identity-provider';
@@ -117,6 +119,24 @@ export default function ApplicationCreatePage(): JSX.Element {
   const createFlow = useCreateFlow();
   const {data: idpData} = useIdentityProviders();
 
+  const hasEnabledIntegrations = useMemo((): boolean => Object.values(integrations).some(Boolean), [integrations]);
+
+  const previewFlowId: string | undefined =
+    !hasEnabledIntegrations && selectedAuthFlow ? selectedAuthFlow.id : undefined;
+  const {data: previewFlow, isLoading: isPreviewFlowLoading} = useGetFlowById(previewFlowId, Boolean(previewFlowId));
+
+  const previewMock = useMemo(() => {
+    if (hasEnabledIntegrations || !selectedAuthFlow) {
+      return buildPreviewMock(integrations, idpData ?? [], {
+        application: {
+          logoUrl: appLogo!,
+        },
+      });
+    }
+
+    return getFlowEntryComponents(previewFlow) ?? [];
+  }, [hasEnabledIntegrations, selectedAuthFlow, integrations, idpData, appLogo, previewFlow]);
+
   const [stepReady, setStepReady] = useState<Record<ApplicationCreateFlowStep, boolean>>({
     STACK: true,
     NAME: false,
@@ -171,7 +191,6 @@ export default function ApplicationCreatePage(): JSX.Element {
 
   const handleIntegrationToggle = (integrationId: string): void => {
     toggleIntegration(integrationId);
-    setSelectedAuthFlow(null);
   };
 
   const handleCreateApplication = (skipOAuthConfig = false, overrideFlowId?: string): void => {
@@ -651,15 +670,13 @@ export default function ApplicationCreatePage(): JSX.Element {
           currentStep !== ApplicationCreateFlowStep.ORGANIZATION_UNIT &&
           currentStep !== ApplicationCreateFlowStep.COMPLETE && (
             <Box sx={{flex: '0 0 50%', display: 'flex', flexDirection: 'column', p: 5}}>
-              <GatePreview
-                theme={selectedTheme}
-                mock={buildPreviewMock(integrations, idpData ?? [], {
-                  application: {
-                    logoUrl: appLogo!,
-                  },
-                })}
-                displayName={appName ?? undefined}
-              />
+              {isPreviewFlowLoading ? (
+                <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1}}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <GatePreview theme={selectedTheme} mock={previewMock} displayName={appName ?? undefined} />
+              )}
             </Box>
           )}
       </Box>
