@@ -197,6 +197,20 @@ export function EnvoyLogo({color = undefined}: {color?: string}) {
   );
 }
 
+export function APISIXLogo({color = undefined}: {color?: string}) {
+  const textStyle = color ? {fill: color} : undefined;
+  return (
+    <>
+      {/* Hexagon mark with APISIX "A", 36×42px positioned in the 240×64 gateway box */}
+      <g transform="translate(48,11)">
+        <polygon points="18,0 36,9 36,33 18,42 0,33 0,9" fill="#E0314B" />
+        <text x="18" y="30" textAnchor="middle" fill="#fff" fontSize="18" fontWeight="bold" fontFamily="sans-serif">A</text>
+      </g>
+      <text x="98" y="38" className="sts-diagram__box-title" style={textStyle}>Apache APISIX</text>
+    </>
+  );
+}
+
 export function AzureAPIMlogo({color = undefined}: {color?: string}) {
   const textStyle = color ? {fill: color} : undefined;
   return (

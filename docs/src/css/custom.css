@@ -3122,6 +3122,59 @@ a.connect-card {
   line-height: 1.45;
 }
 
+/* APIM Gateway tiles */
+.gw-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.gw-tile {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none !important;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.gw-tile:hover {
+  border-color: color-mix(in srgb, var(--ifm-color-primary) 60%, transparent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
+  transform: translateY(-2px);
+  text-decoration: none !important;
+}
+
+.gw-tile__logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 1.25rem;
+}
+
+.gw-tile__logo svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.gw-tile__name {
+  padding: 0.55rem 1rem;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ifm-font-color-base);
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  background: color-mix(in srgb, var(--ifm-color-emphasis-100) 30%, transparent);
+}
+
+@media (max-width: 768px) {
+  .gw-tile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 
 /* Styles for Connect Your Application page */
 .sdk-cards {
