@@ -36,6 +36,7 @@ import {
   Bell,
   Bot,
   Building,
+  IdCard,
   Key,
   Languages,
   LayoutGrid,
@@ -43,6 +44,7 @@ import {
   Layers,
   Palette,
   Server,
+  ShieldCheck,
   Upload,
   UserRoundCog,
   Users,
@@ -157,6 +159,9 @@ interface ResourceItem {
   locale?: string;
   namespace?: string;
   allow_self_registration?: boolean;
+  displayName?: string;
+  vct?: string;
+  display?: {name?: string};
   attributes?: {username?: string; email?: string; name?: string};
   inbound_auth_config?: {type?: string; config?: {client_id?: string}}[];
 }
@@ -214,6 +219,28 @@ const RESOURCE_VIEWS: ResourceView[] = [
         </>
       );
     },
+  },
+  {
+    type: 'credential_configuration',
+    id: 'credential-configurations',
+    icon: IdCard,
+    getLabel: (t) => t('summary.labels.credentialConfigurations'),
+    getKey: (item, idx) => item.handle ?? item.id ?? `credential-config-${idx}`,
+    getName: (item, t) =>
+      item.display?.name ?? item.handle ?? t('configureExport.fallback.unnamedCredentialConfiguration'),
+    renderChip: (item) => (item.vct ? smallChip(item.vct) : null),
+    renderDetails: (item) => (item.handle && item.display?.name !== item.handle ? detailLine(item.handle, true) : null),
+  },
+  {
+    type: 'presentation_definition',
+    id: 'presentation-definitions',
+    icon: ShieldCheck,
+    getLabel: (t) => t('summary.labels.presentationDefinitions'),
+    getKey: (item, idx) => item.handle ?? item.id ?? `presentation-definition-${idx}`,
+    getName: (item, t) =>
+      item.displayName ?? item.handle ?? t('configureExport.fallback.unnamedPresentationDefinition'),
+    renderChip: (item) => (item.vct ? smallChip(item.vct) : null),
+    renderDetails: (item) => (item.handle && item.displayName !== item.handle ? detailLine(item.handle, true) : null),
   },
   {
     type: 'flow',

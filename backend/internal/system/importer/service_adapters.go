@@ -30,6 +30,8 @@ import (
 	"github.com/thunder-id/thunderid/internal/group"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/openid4vci/credential"
+	"github.com/thunder-id/thunderid/internal/openid4vp/definition"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
@@ -1120,4 +1122,114 @@ func importDesignResource(
 	}
 
 	return successOutcome(resourceType, createdID, createdName, operationCreate)
+}
+
+//nolint:dupl // parallel to importCredentialConfiguration; kept separate per resource type.
+func (s *importService) importPresentationDefinition(
+	ctx context.Context, doc parsedDocument, options *ImportOptions, dryRun bool,
+) ImportItemOutcome {
+	if s.presentationDefinitionService == nil {
+		return ImportItemOutcome{
+			ResourceType: resourceTypePresentationDefinition,
+			Status:       statusFailed,
+			Code:         ErrorAdapterNotConfigured.Code,
+			Message:      "presentation definition adapter is not configured",
+		}
+	}
+
+	var dto definition.PresentationDefinitionDTO
+	if err := doc.Node.Decode(&dto); err != nil {
+		return ImportItemOutcome{
+			ResourceType: resourceTypePresentationDefinition,
+			Status:       statusFailed,
+			Code:         ErrorInvalidYAMLContent.Code,
+			Message:      fmt.Sprintf("failed to decode presentation definition document: %v", err),
+		}
+	}
+
+	if dryRun {
+		if options.IsUpsertEnabled() && dto.ID != "" {
+			_, svcErr := s.presentationDefinitionService.GetPresentationDefinition(ctx, dto.ID)
+			if svcErr == nil {
+				return successOutcome(resourceTypePresentationDefinition, dto.ID, dto.Handle, operationUpdate)
+			}
+			if !isNotFoundServiceError(svcErr) {
+				return serviceErrorOutcome(
+					resourceTypePresentationDefinition, dto.ID, dto.Handle, operationUpdate, svcErr)
+			}
+		}
+		return successOutcome(resourceTypePresentationDefinition, dto.ID, dto.Handle, operationCreate)
+	}
+
+	if options.IsUpsertEnabled() && dto.ID != "" {
+		updated, svcErr := s.presentationDefinitionService.UpdatePresentationDefinition(ctx, dto.ID, &dto)
+		if svcErr == nil {
+			return successOutcome(resourceTypePresentationDefinition, updated.ID, updated.Handle, operationUpdate)
+		}
+		if !isNotFoundServiceError(svcErr) {
+			return serviceErrorOutcome(
+				resourceTypePresentationDefinition, dto.ID, dto.Handle, operationUpdate, svcErr)
+		}
+	}
+
+	created, svcErr := s.presentationDefinitionService.CreatePresentationDefinition(ctx, &dto)
+	if svcErr != nil {
+		return serviceErrorOutcome(resourceTypePresentationDefinition, dto.ID, dto.Handle, operationCreate, svcErr)
+	}
+	return successOutcome(resourceTypePresentationDefinition, created.ID, created.Handle, operationCreate)
+}
+
+//nolint:dupl // parallel to importPresentationDefinition; kept separate per resource type.
+func (s *importService) importCredentialConfiguration(
+	ctx context.Context, doc parsedDocument, options *ImportOptions, dryRun bool,
+) ImportItemOutcome {
+	if s.credentialConfigurationService == nil {
+		return ImportItemOutcome{
+			ResourceType: resourceTypeCredentialConfiguration,
+			Status:       statusFailed,
+			Code:         ErrorAdapterNotConfigured.Code,
+			Message:      "credential configuration adapter is not configured",
+		}
+	}
+
+	var dto credential.CredentialConfigurationDTO
+	if err := doc.Node.Decode(&dto); err != nil {
+		return ImportItemOutcome{
+			ResourceType: resourceTypeCredentialConfiguration,
+			Status:       statusFailed,
+			Code:         ErrorInvalidYAMLContent.Code,
+			Message:      fmt.Sprintf("failed to decode credential configuration document: %v", err),
+		}
+	}
+
+	if dryRun {
+		if options.IsUpsertEnabled() && dto.ID != "" {
+			_, svcErr := s.credentialConfigurationService.GetCredentialConfiguration(ctx, dto.ID)
+			if svcErr == nil {
+				return successOutcome(resourceTypeCredentialConfiguration, dto.ID, dto.Handle, operationUpdate)
+			}
+			if !isNotFoundServiceError(svcErr) {
+				return serviceErrorOutcome(
+					resourceTypeCredentialConfiguration, dto.ID, dto.Handle, operationUpdate, svcErr)
+			}
+		}
+		return successOutcome(resourceTypeCredentialConfiguration, dto.ID, dto.Handle, operationCreate)
+	}
+
+	if options.IsUpsertEnabled() && dto.ID != "" {
+		updated, svcErr := s.credentialConfigurationService.UpdateCredentialConfiguration(ctx, dto.ID, &dto)
+		if svcErr == nil {
+			return successOutcome(resourceTypeCredentialConfiguration, updated.ID, updated.Handle, operationUpdate)
+		}
+		if !isNotFoundServiceError(svcErr) {
+			return serviceErrorOutcome(
+				resourceTypeCredentialConfiguration, dto.ID, dto.Handle, operationUpdate, svcErr)
+		}
+	}
+
+	created, svcErr := s.credentialConfigurationService.CreateCredentialConfiguration(ctx, &dto)
+	if svcErr != nil {
+		return serviceErrorOutcome(resourceTypeCredentialConfiguration, dto.ID, dto.Handle, operationCreate, svcErr)
+	}
+	return successOutcome(resourceTypeCredentialConfiguration, created.ID, created.Handle, operationCreate)
 }

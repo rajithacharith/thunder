@@ -33,13 +33,11 @@ import (
 	systemutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
 
-const defaultPresentationDefinitionID = "eudi-pid"
-
 // openid4vpVerifierService is the subset of the OpenID4VP verifier service the
 // executor depends on. openid4vp.OpenID4VPServiceInterface satisfies it.
 type openid4vpVerifierService interface {
-	Initiate(ctx context.Context, definitionID string) (*openid4vp.Initiation, error)
-	Result(ctx context.Context, state string) (*openid4vp.RequestState, error)
+	Initiate(ctx context.Context, definitionID string) (*openid4vp.Initiation, *serviceerror.ServiceError)
+	GetResult(ctx context.Context, state string) (*openid4vp.RequestState, *serviceerror.ServiceError)
 }
 
 // openid4vpVerifier drives an OpenID4VP presentation as a flow step: it
@@ -101,10 +99,16 @@ func (e *openid4vpVerifier) initiate(
 	ctx *core.NodeContext, execResp *common.ExecutorResponse, logger *log.Logger,
 ) (*common.ExecutorResponse, error) {
 	definitionID := presentationDefinitionID(ctx)
-	init, err := e.service.Initiate(ctx.Context, definitionID)
-	if err != nil {
+	if definitionID == "" {
+		logger.Error(ctx.Context, "OpenID4VP node is missing the presentation_definition_id property")
+		execResp.Status = common.ExecFailure
+		execResp.Error = &ErrOpenID4VPDefinitionNotConfigured
+		return execResp, nil
+	}
+	init, svcErr := e.service.Initiate(ctx.Context, definitionID)
+	if svcErr != nil {
 		logger.Error(ctx.Context, "Failed to initiate OpenID4VP request",
-			log.String("definitionID", definitionID), log.Error(err))
+			log.String("definitionID", definitionID), log.String("errorCode", svcErr.Code))
 		execResp.Status = common.ExecFailure
 		execResp.Error = &ErrOpenID4VPInitiateFailed
 		return execResp, nil
@@ -117,14 +121,14 @@ func (e *openid4vpVerifier) initiate(
 }
 
 // presentationDefinitionID reads the presentation_definition_id from node
-// properties, falling back to the engine's EUDI PID id for back-compat.
+// properties, returning "" when the node has not configured one.
 func presentationDefinitionID(ctx *core.NodeContext) string {
 	if ctx.NodeProperties != nil {
-		if v, ok := ctx.NodeProperties[propertyKeyPresentationDefinitionID].(string); ok && v != "" {
+		if v, ok := ctx.NodeProperties[propertyKeyPresentationDefinitionID].(string); ok {
 			return v
 		}
 	}
-	return defaultPresentationDefinitionID
+	return ""
 }
 
 // setQRData populates the QR / deep-link payload for the client.
@@ -138,9 +142,10 @@ func setQRData(execResp *common.ExecutorResponse, clientID, requestURI string) {
 func (e *openid4vpVerifier) poll(
 	ctx *core.NodeContext, state string, execResp *common.ExecutorResponse, logger *log.Logger,
 ) (*common.ExecutorResponse, error) {
-	rs, err := e.service.Result(ctx.Context, state)
-	if err != nil {
-		logger.Debug(ctx.Context, "OpenID4VP request state not found or expired", log.Error(err))
+	rs, svcErr := e.service.GetResult(ctx.Context, state)
+	if svcErr != nil {
+		logger.Debug(ctx.Context, "OpenID4VP request state not found or expired",
+			log.String("errorCode", svcErr.Code))
 		execResp.Status = common.ExecFailure
 		execResp.Error = &ErrOpenID4VPExpired
 		return execResp, nil
@@ -231,7 +236,9 @@ func (e *openid4vpVerifier) authenticate(
 		execResp.RuntimeData[key] = systemutils.ConvertInterfaceValueToString(value)
 	}
 
-	if !authUser.IsAuthenticated() {
+	// Flag the holder for JIT provisioning when the app allows login without a
+	// local user, mirroring the federated executors.
+	if isAuthenticationWithoutLocalUserAllowed(ctx) {
 		execResp.RuntimeData[common.RuntimeKeyUserEligibleForProvisioning] = dataValueTrue
 	}
 }

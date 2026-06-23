@@ -791,7 +791,10 @@ func validateRedirectURIs(p *inboundmodel.OAuthProfile) error {
 		if err != nil {
 			return ErrOAuthInvalidRedirectURI
 		}
-		if parsedURI.Scheme == "" || parsedURI.Host == "" {
+		// Custom URI schemes (RFC 8252 §7.1) don't require a host; path-only like "myapp:/callback" is valid.
+		isWebScheme := parsedURI.Scheme == "http" || parsedURI.Scheme == "https"
+		if parsedURI.Scheme == "" || (isWebScheme && parsedURI.Host == "") ||
+			(!isWebScheme && parsedURI.Host == "" && parsedURI.Path == "") {
 			return ErrOAuthInvalidRedirectURI
 		}
 		if parsedURI.Fragment != "" {

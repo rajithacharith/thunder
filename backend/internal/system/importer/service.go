@@ -37,6 +37,8 @@ import (
 	"github.com/thunder-id/thunderid/internal/group"
 	"github.com/thunder-id/thunderid/internal/idp"
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/openid4vci/credential"
+	"github.com/thunder-id/thunderid/internal/openid4vp/definition"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
@@ -182,6 +184,24 @@ type agentAdapter interface {
 		*agentmodel.AgentCompleteResponse, *serviceerror.ServiceError)
 }
 
+type presentationDefinitionAdapter interface {
+	CreatePresentationDefinition(ctx context.Context, dto *definition.PresentationDefinitionDTO) (
+		*definition.PresentationDefinitionDTO, *serviceerror.ServiceError)
+	GetPresentationDefinition(ctx context.Context, id string) (
+		*definition.PresentationDefinitionDTO, *serviceerror.ServiceError)
+	UpdatePresentationDefinition(ctx context.Context, id string, dto *definition.PresentationDefinitionDTO) (
+		*definition.PresentationDefinitionDTO, *serviceerror.ServiceError)
+}
+
+type credentialConfigurationAdapter interface {
+	CreateCredentialConfiguration(ctx context.Context, dto *credential.CredentialConfigurationDTO) (
+		*credential.CredentialConfigurationDTO, *serviceerror.ServiceError)
+	GetCredentialConfiguration(ctx context.Context, id string) (
+		*credential.CredentialConfigurationDTO, *serviceerror.ServiceError)
+	UpdateCredentialConfiguration(ctx context.Context, id string, dto *credential.CredentialConfigurationDTO) (
+		*credential.CredentialConfigurationDTO, *serviceerror.ServiceError)
+}
+
 // ImportServiceInterface defines runtime resource import and declarative resource deletion operations.
 type ImportServiceInterface interface {
 	ImportResources(ctx context.Context, request *ImportRequest) (*ImportResponse, *serviceerror.ServiceError)
@@ -198,20 +218,22 @@ const (
 )
 
 type importService struct {
-	applicationService    applicationAdapter
-	idpService            idpAdapter
-	flowService           flowAdapter
-	ouService             ouAdapter
-	entityTypeService     entityTypeAdapter
-	roleService           roleAdapter
-	roleAssignmentService roleAssignmentAdapter
-	groupService          groupAdapter
-	resourceService       resourceServerAdapter
-	themeService          themeAdapter
-	layoutService         layoutAdapter
-	userService           userAdapter
-	translationService    translationAdapter
-	agentService          agentAdapter
+	applicationService             applicationAdapter
+	idpService                     idpAdapter
+	flowService                    flowAdapter
+	ouService                      ouAdapter
+	entityTypeService              entityTypeAdapter
+	roleService                    roleAdapter
+	roleAssignmentService          roleAssignmentAdapter
+	groupService                   groupAdapter
+	resourceService                resourceServerAdapter
+	themeService                   themeAdapter
+	layoutService                  layoutAdapter
+	userService                    userAdapter
+	translationService             translationAdapter
+	agentService                   agentAdapter
+	presentationDefinitionService  presentationDefinitionAdapter
+	credentialConfigurationService credentialConfigurationAdapter
 }
 
 func newImportService(
@@ -229,22 +251,26 @@ func newImportService(
 	userService userAdapter,
 	translationService translationAdapter,
 	agentService agentAdapter,
+	presentationDefinitionService presentationDefinitionAdapter,
+	credentialConfigurationService credentialConfigurationAdapter,
 ) ImportServiceInterface {
 	return &importService{
-		applicationService:    applicationService,
-		idpService:            idpService,
-		flowService:           flowService,
-		ouService:             ouService,
-		entityTypeService:     entityTypeService,
-		roleService:           roleService,
-		roleAssignmentService: roleAssignmentService,
-		groupService:          groupService,
-		resourceService:       resourceService,
-		themeService:          themeService,
-		layoutService:         layoutService,
-		userService:           userService,
-		translationService:    translationService,
-		agentService:          agentService,
+		applicationService:             applicationService,
+		idpService:                     idpService,
+		flowService:                    flowService,
+		ouService:                      ouService,
+		entityTypeService:              entityTypeService,
+		roleService:                    roleService,
+		roleAssignmentService:          roleAssignmentService,
+		groupService:                   groupService,
+		resourceService:                resourceService,
+		themeService:                   themeService,
+		layoutService:                  layoutService,
+		userService:                    userService,
+		translationService:             translationService,
+		agentService:                   agentService,
+		presentationDefinitionService:  presentationDefinitionService,
+		credentialConfigurationService: credentialConfigurationService,
 	}
 }
 
@@ -398,6 +424,10 @@ func (s *importService) importDocument(
 		return s.importTranslation(ctx, doc, dryRun)
 	case resourceTypeAgent:
 		return s.importAgent(ctx, doc, options, dryRun, flowIDAliases)
+	case resourceTypePresentationDefinition:
+		return s.importPresentationDefinition(ctx, doc, options, dryRun)
+	case resourceTypeCredentialConfiguration:
+		return s.importCredentialConfiguration(ctx, doc, options, dryRun)
 	default:
 		return ImportItemOutcome{
 			ResourceType: doc.ResourceType,
@@ -648,6 +678,8 @@ var resourceDependencyOrder = []string{
 	resourceTypeGroup,
 	resourceTypeRole,
 	resourceTypeTranslation,
+	resourceTypePresentationDefinition,
+	resourceTypeCredentialConfiguration,
 }
 
 func orderDocumentsByDependencies(docs []parsedDocument) []parsedDocument {

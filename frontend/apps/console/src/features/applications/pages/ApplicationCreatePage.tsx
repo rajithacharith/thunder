@@ -129,12 +129,18 @@ export default function ApplicationCreatePage(): JSX.Element {
   });
 
   const [oauthConfig, setOAuthConfig] = useState<OAuth2Config | null>(null);
+  const [walletClientId, setWalletClientId] = useState<string>('');
 
-  const effectiveOauthConfig = useMemo(
-    () =>
-      oauthConfig && callbackUrlFromConfig ? {...oauthConfig, redirectUris: [callbackUrlFromConfig]} : oauthConfig,
-    [oauthConfig, callbackUrlFromConfig],
-  );
+  const effectiveOauthConfig = useMemo(() => {
+    if (!oauthConfig) return oauthConfig;
+    let config: OAuth2Config = callbackUrlFromConfig
+      ? {...oauthConfig, redirectUris: [callbackUrlFromConfig]}
+      : oauthConfig;
+    if (walletClientId.trim()) {
+      config = {...config, clientId: walletClientId.trim()};
+    }
+    return config;
+  }, [oauthConfig, callbackUrlFromConfig, walletClientId]);
 
   const creationFlow = useMemo(() => resolveCreationFlow(selectedTemplateConfig), [selectedTemplateConfig]);
 
@@ -460,6 +466,7 @@ export default function ApplicationCreatePage(): JSX.Element {
             platform={selectedPlatform}
             onHostingUrlChange={setHostingUrl}
             onCallbackUrlChange={setCallbackUrlFromConfig}
+            onClientIdChange={setWalletClientId}
             onReadyChange={handleConfigureStepReadyChange}
           />
         );

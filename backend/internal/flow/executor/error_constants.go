@@ -1104,6 +1104,20 @@ var (
 		},
 	}
 
+	// ErrOpenID4VPDefinitionNotConfigured is returned when the OpenID4VP node has no presentation_definition_id.
+	ErrOpenID4VPDefinitionNotConfigured = serviceerror.ServiceError{
+		Type: serviceerror.ServerErrorType,
+		Code: "FET-1082",
+		Error: core.I18nMessage{
+			Key:          "flows.executor.errors.openid4vp_definition_not_configured",
+			DefaultValue: "OpenID4VP presentation definition is not configured",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "flows.executor.errors.openid4vp_definition_not_configured_desc",
+			DefaultValue: "The OpenID4VP node is missing the presentation_definition_id property",
+		},
+	}
+
 	// ErrOpenID4VPInitiateFailed is returned when initiating the OpenID4VP request fails.
 	ErrOpenID4VPInitiateFailed = serviceerror.ServiceError{
 		Type: serviceerror.ServerErrorType,
