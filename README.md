@@ -45,8 +45,14 @@ Visit [Get ThunderID](https://thunderid.dev/docs/next/guides/getting-started/get
 
 * **Standards**
     * OAuth 2.1 and OpenID Connect, with PAR and PKCE
+    * Verifiable Credentials — OpenID4VCI (issuance) and OpenID4VP (verification)
     * WebAuthn / passkeys
     * IdP federation — Google, Microsoft, GitHub, and any OIDC or SAML provider
+
+* **Decentralized Identity**
+    * Issue Verifiable Credentials to user wallets from configurable credential templates
+    * Verify presented credentials against presentation definitions and trust anchors
+    * Use them on their own, or as part of an identity journey
 
 * **User Journeys**
     * Login, registration, and recovery defined as journeys
