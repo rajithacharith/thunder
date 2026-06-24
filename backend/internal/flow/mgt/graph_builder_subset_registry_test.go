@@ -86,10 +86,11 @@ func (s *GraphBuilderSubsetRegistryTestSuite) TestBuildGraph_SubsetRegistryRejec
 	}
 
 	flow := &CompleteFlowDefinition{
-		ID:       "flow-1",
-		Handle:   "test-handle",
-		Name:     "Test Flow",
-		FlowType: common.FlowTypeAuthentication,
+		ID:            "flow-1",
+		Handle:        "test-handle",
+		Name:          "Test Flow",
+		FlowType:      common.FlowTypeAuthentication,
+		ActiveVersion: 1,
 		Nodes: []NodeDefinition{
 			{
 				ID:       "task",
@@ -102,7 +103,7 @@ func (s *GraphBuilderSubsetRegistryTestSuite) TestBuildGraph_SubsetRegistryRejec
 	mockGraph := coremock.NewGraphInterfaceMock(s.T())
 	mockTaskNode := coremock.NewExecutorBackedNodeInterfaceMock(s.T())
 
-	mockFlowFactory.EXPECT().CreateGraph("flow-1", common.FlowTypeAuthentication).Return(mockGraph)
+	mockFlowFactory.EXPECT().CreateGraph("flow-1", common.FlowTypeAuthentication, 1).Return(mockGraph)
 	mockFlowFactory.EXPECT().CreateNode(
 		"task", "TASK_EXECUTION", map[string]interface{}(nil), false, true).Return(mockTaskNode, nil)
 	mockTaskNode.EXPECT().SetInputs([]common.Input{})

@@ -75,10 +75,20 @@ func (b *graphBuilder) GetGraph(ctx context.Context, flow *CompleteFlowDefinitio
 	}
 
 	logger := b.logger.With(log.String("flowID", flow.ID))
-	// Check cache first
+	// Check cache first, with version-based staleness detection.
+	// The flow definition (with ActiveVersion) comes from the Redis-backed store,
+	// so all nodes see the latest version even though the graph cache is local.
 	if cachedGraph, ok := b.graphCache.Get(ctx, flow.ID); ok {
-		logger.Debug(ctx, "Graph retrieved from cache")
-		return cachedGraph, nil
+		if cachedGraph.GetVersion() == flow.ActiveVersion {
+			logger.Debug(ctx, "Graph retrieved from cache")
+			return cachedGraph, nil
+		}
+		logger.Debug(ctx, "Cached graph version mismatch, rebuilding",
+			log.Int("cachedVersion", cachedGraph.GetVersion()),
+			log.Int("activeVersion", flow.ActiveVersion))
+		if err := b.graphCache.Invalidate(ctx, flow.ID); err != nil {
+			logger.Error(ctx, "Failed to invalidate stale graph from cache", log.Error(err))
+		}
 	}
 
 	graph, err := b.buildGraph(ctx, flow)
@@ -119,7 +129,7 @@ func (b *graphBuilder) buildGraph(ctx context.Context, flow *CompleteFlowDefinit
 	}
 
 	// Create a graph
-	graph := b.flowFactory.CreateGraph(flow.ID, flow.FlowType)
+	graph := b.flowFactory.CreateGraph(flow.ID, flow.FlowType, flow.ActiveVersion)
 
 	// Process all nodes and build the graph structure
 	edges := make(map[string][]string)

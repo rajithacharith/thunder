@@ -30,7 +30,7 @@ import (
 type FlowFactoryInterface interface {
 	CreateNode(id, _type string, properties map[string]interface{}, isStartNode, isFinalNode bool) (
 		NodeInterface, error)
-	CreateGraph(id string, _type common.FlowType) GraphInterface
+	CreateGraph(id string, _type common.FlowType, version int) GraphInterface
 	CreateExecutor(name string, executorType common.ExecutorType,
 		defaultInputs, prerequisites []common.Input) ExecutorInterface
 	CreateInterceptor(name string, isDefault bool, priority int) InterceptorInterface
@@ -74,19 +74,23 @@ func (f *flowFactory) CreateNode(id, _type string, properties map[string]interfa
 }
 
 // CreateGraph creates a new graph with the given ID and type
-func (f *flowFactory) CreateGraph(id string, _type common.FlowType) GraphInterface {
+func (f *flowFactory) CreateGraph(id string, _type common.FlowType, version int) GraphInterface {
 	if id == "" {
 		id = sysutils.GenerateUUID()
 	}
 	if _type == "" {
 		_type = common.FlowTypeAuthentication
 	}
+	if version <= 0 {
+		version = 1
+	}
 
 	return &graph{
-		id:    id,
-		_type: _type,
-		nodes: make(map[string]NodeInterface),
-		edges: make(map[string][]string),
+		id:      id,
+		_type:   _type,
+		version: version,
+		nodes:   make(map[string]NodeInterface),
+		edges:   make(map[string][]string),
 	}
 }
 
