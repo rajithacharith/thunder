@@ -12,6 +12,9 @@ catalogs:
     '@codecov/vite-plugin':
       specifier: 2.0.1
       version: 2.0.1
+    '@docsearch/docusaurus-adapter':
+      specifier: ^4.6.3
+      version: 4.6.3
     '@hookform/resolvers':
       specifier: 5.2.2
       version: 5.2.2
@@ -40,11 +43,11 @@ catalogs:
       specifier: 14.6.1
       version: 14.6.1
     '@thunderid/react':
-      specifier: 0.3.0
-      version: 0.3.0
+      specifier: 0.3.3
+      version: 0.3.3
     '@thunderid/react-router':
-      specifier: 0.2.0
-      version: 0.2.0
+      specifier: 0.2.1
+      version: 0.2.1
     '@types/lodash-es':
       specifier: 4.17.12
       version: 4.17.12
@@ -225,6 +228,9 @@ importers:
 
   docs:
     dependencies:
+      '@docsearch/docusaurus-adapter':
+        specifier: 'catalog:'
+        version: 4.6.3(@algolia/client-search@5.52.1)(@mdx-js/react@3.0.0(@types/react@19.2.14)(react@19.2.3))(@swc/core@1.15.33(@swc/helpers@0.5.21))(@types/react@19.2.14)(postcss@8.5.10)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(search-insights@2.17.3)(typescript@5.9.3)
       '@docusaurus/core':
         specifier: 3.9.2
         version: 3.9.2(@mdx-js/react@3.0.0(@types/react@19.2.14)(react@19.2.3))(@swc/core@1.15.33(@swc/helpers@0.5.21))(postcss@8.5.10)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
@@ -258,9 +264,6 @@ importers:
       '@wso2/oxygen-ui':
         specifier: 'catalog:'
         version: 0.11.0(@mui/system@7.3.11(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.3))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(@wso2/oxygen-ui-icons-react@0.11.0(react@19.2.3))(dayjs@1.11.18)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@docsearch/docusaurus-adapter':
-        specifier: 'catalog:'
-        version: 4.6.3(@algolia/client-search@5.52.1)(@mdx-js/react@3.0.0(@types/react@19.2.14)(react@19.2.3))(@swc/core@1.15.33(@swc/helpers@0.5.21))(@types/react@19.2.14)(postcss@8.5.10)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(search-insights@2.17.3)(typescript@5.9.3)
       '@wso2/oxygen-ui-icons-react':
         specifier: 'catalog:'
         version: 0.11.0(react@19.2.3)
@@ -432,10 +435,10 @@ importers:
         version: link:../../packages/logger
       '@thunderid/react':
         specifier: 'catalog:'
-        version: 0.3.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 0.3.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@thunderid/react-router':
         specifier: 'catalog:'
-        version: 0.2.0(@thunderid/react@0.3.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-router@7.15.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
+        version: 0.2.1(@thunderid/react@0.3.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-router@7.15.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
       '@thunderid/utils':
         specifier: workspace:^
         version: link:../../packages/utils
@@ -622,10 +625,10 @@ importers:
         version: link:../../packages/logger
       '@thunderid/react':
         specifier: 'catalog:'
-        version: 0.3.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 0.3.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@thunderid/react-router':
         specifier: 'catalog:'
-        version: 0.2.0(@thunderid/react@0.3.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-router@7.15.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
+        version: 0.2.1(@thunderid/react@0.3.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-router@7.15.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
       '@thunderid/utils':
         specifier: workspace:^
         version: link:../../packages/utils
@@ -779,7 +782,7 @@ importers:
         version: link:../logger
       '@thunderid/react':
         specifier: 'catalog:'
-        version: 0.3.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 0.3.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@thunderid/utils':
         specifier: workspace:^
         version: link:../utils
@@ -870,7 +873,7 @@ importers:
         version: link:../logger
       '@thunderid/react':
         specifier: 'catalog:'
-        version: 0.3.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 0.3.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@wso2/oxygen-ui':
         specifier: 'catalog:'
         version: 0.11.0(@mui/system@7.3.11(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.3))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(@wso2/oxygen-ui-icons-react@0.11.0(react@19.2.3))(dayjs@1.11.18)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -973,7 +976,7 @@ importers:
         version: link:../logger
       '@thunderid/react':
         specifier: 'catalog:'
-        version: 0.3.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 0.3.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@thunderid/utils':
         specifier: workspace:^
         version: link:../utils
@@ -1088,7 +1091,7 @@ importers:
         version: link:../logger
       '@thunderid/react':
         specifier: 'catalog:'
-        version: 0.3.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 0.3.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@thunderid/utils':
         specifier: workspace:^
         version: link:../utils
@@ -1194,7 +1197,7 @@ importers:
         version: link:../logger
       '@thunderid/react':
         specifier: 'catalog:'
-        version: 0.3.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 0.3.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@wso2/oxygen-ui':
         specifier: 'catalog:'
         version: 0.11.0(@mui/system@7.3.11(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.3))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(@wso2/oxygen-ui-icons-react@0.11.0(react@19.2.3))(dayjs@1.11.18)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -1297,7 +1300,7 @@ importers:
         version: link:../logger
       '@thunderid/react':
         specifier: 'catalog:'
-        version: 0.3.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 0.3.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@thunderid/utils':
         specifier: workspace:^
         version: link:../utils
@@ -1409,7 +1412,7 @@ importers:
         version: link:../logger
       '@thunderid/react':
         specifier: 'catalog:'
-        version: 0.3.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 0.3.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@wso2/oxygen-ui':
         specifier: 'catalog:'
         version: 0.11.0(@mui/system@7.3.11(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.3))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(@wso2/oxygen-ui-icons-react@0.11.0(react@19.2.3))(dayjs@1.11.18)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -1619,7 +1622,7 @@ importers:
         version: link:../logger
       '@thunderid/react':
         specifier: 'catalog:'
-        version: 0.3.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 0.3.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@thunderid/utils':
         specifier: workspace:^
         version: link:../utils
@@ -1874,7 +1877,7 @@ importers:
         version: link:../contexts
       '@thunderid/react':
         specifier: 'catalog:'
-        version: 0.3.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 0.3.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       i18next:
         specifier: 'catalog:'
         version: 25.6.0(typescript@5.9.3)
@@ -2201,7 +2204,7 @@ importers:
     dependencies:
       '@thunderid/react':
         specifier: 'catalog:'
-        version: 0.3.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 0.3.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@wso2/oxygen-ui':
         specifier: 'catalog:'
         version: 0.11.0(@mui/system@7.3.11(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.3))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(@wso2/oxygen-ui-icons-react@0.11.0(react@19.2.3))(dayjs@1.11.18)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -3700,13 +3703,6 @@ packages:
   '@dnd-kit/state@0.4.0':
     resolution: {integrity: sha512-vVdwOY9VsYdMNa7Z0xQhTXlzHqCcCugGuoM1kzvZhnZ0tYVPRdmIhWfeO6Y2ZoN92JwYAyJRRNl4ICkEe2mneg==}
 
-  '@docsearch/docusaurus-adapter@4.6.3':
-    resolution: {integrity: sha512-moP2ITPazFjPbtJtTYHDu4AY22U+uWkCgzDRHRIEJdQLWLjyPwVt4UygVIz8wgP1l1ydLY9XjeBdqwEcWoEdfg==}
-    engines: {node: '>=20.0'}
-    peerDependencies:
-      react: ^18.0.0 || ^19.0.0
-      react-dom: ^18.0.0 || ^19.0.0
-
   '@docsearch/core@4.6.3':
     resolution: {integrity: sha512-rUOujwIpxJRgD7+kicVsI3D5sqBvdiRTquzWBpTEXZs8ZXfGbfzpus5HqumaNYTppN2HvH8E2yNuRwYdHJeOlA==}
     peerDependencies:
@@ -3723,6 +3719,13 @@ packages:
 
   '@docsearch/css@4.6.3':
     resolution: {integrity: sha512-nlOwcXcsNAptQl4vlL4MA78qNJKO0Qlds5GuBjCoePgkebTXLSf8Qt1oyZ3YBshYupKXG9VRGEsk1zr23d+bzQ==}
+
+  '@docsearch/docusaurus-adapter@4.6.3':
+    resolution: {integrity: sha512-moP2ITPazFjPbtJtTYHDu4AY22U+uWkCgzDRHRIEJdQLWLjyPwVt4UygVIz8wgP1l1ydLY9XjeBdqwEcWoEdfg==}
+    engines: {node: '>=20.0'}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
 
   '@docsearch/react@4.6.3':
     resolution: {integrity: sha512-Bg2wdDsoQVlNCcEKuEJAU04tvHCqgx8rIu+uIoM4pRtcx3TBKJuXutJik3LTA8LRc9YEyHkrYUrmcC0D7BYf+g==}
@@ -5992,17 +5995,17 @@ packages:
   '@thunderid/browser@0.0.5':
     resolution: {integrity: sha512-9SaH+s0F2LjjFZhSdcJd/KowxDJJwjwzTbsQ4A5KFD1tp2GSTDmQUBB+dEMwrUuOeGFXZ9LemzBgci6lHJNTNg==}
 
-  '@thunderid/browser@0.3.0':
-    resolution: {integrity: sha512-8+kJehZ5Mn0E3jZYY3SThoyoW+2n2QzQwnkwc2eRlKAj7EQf+akqfwo0uVzbl/O6+rQZjGR8GC6BCKxEkTnnhw==}
+  '@thunderid/browser@0.3.1':
+    resolution: {integrity: sha512-PbpYo/NCIPfjNN8z5jIYDvzRJXt7DnsroNYSl6SV5tjJTSIwwLPz1JQOvMT3VGnvBGsTWx83Ty/fgYtkaYzt3A==}
 
   '@thunderid/javascript@0.0.5':
     resolution: {integrity: sha512-lMjbHCsNgYWclUiPlN3CA6vjKSyjIBIxVGSnuJwiC9eVakVsWmRuxkO8KX6AWlA4SRHgpGLMnD4ZE5lpM+gi9g==}
 
-  '@thunderid/javascript@0.3.0':
-    resolution: {integrity: sha512-RTR2hYeVBd2U0R5F7JLTra/pER+jtQt7xLcPx6fib1TTiN1E0/DpE5CUetgiugQwjd+lpskdeAS0hGv2dKmRPw==}
+  '@thunderid/javascript@0.3.6':
+    resolution: {integrity: sha512-A/1d6uifWZ14LxF4yMFCdwT1H9COey4sg7T6JV+p95sLcjpOO5f+QoEGdMwe29Sa5+MJ7c0qjzlw7bnnoEWMhg==}
 
-  '@thunderid/react-router@0.2.0':
-    resolution: {integrity: sha512-/N2Tw3NKLy5OT5GPq+D9ZEJX56aHTitdZIr0sON4/FapI3bKV4unDjtz6XkrSAtGC2U+M6ZxwHyBg8fhO4A8rw==}
+  '@thunderid/react-router@0.2.1':
+    resolution: {integrity: sha512-5gHEGrKsTfZ3qJDznJm4pmspER0c9pF0CbXOGAO95hb1lFEIZ5R+7v5QAkrEvYQpTUtau+g0ox0cgHxGs1w1Mg==}
     peerDependencies:
       '@thunderid/react': '>=0.15.0'
       react: '>=16.8.0'
@@ -6015,8 +6018,8 @@ packages:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
 
-  '@thunderid/react@0.3.0':
-    resolution: {integrity: sha512-SYPuwsGk7/AqJFhePzxGMzJU/QGWvzCrBxe05X5RgIDYrLmhMl9tco6BwFvyNuWssiIaCOJGBzXLdRV1PmJtKQ==}
+  '@thunderid/react@0.3.3':
+    resolution: {integrity: sha512-Mx5keYO4kxTo4ALMPuMOoQTaUSNpzP1JqUV2CZM0ouFwdrsGylGN+I3B2Zb9AHqSWOu8lsc89cZGM6c333OLjQ==}
     peerDependencies:
       '@types/react': '>=16.8.0'
       react: '>=16.8.0'
@@ -14529,6 +14532,14 @@ snapshots:
       '@preact/signals-core': 1.14.2
       tslib: 2.8.1
 
+  '@docsearch/core@4.6.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    optionalDependencies:
+      '@types/react': 19.2.14
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+
+  '@docsearch/css@4.6.3': {}
+
   '@docsearch/docusaurus-adapter@4.6.3(@algolia/client-search@5.52.1)(@mdx-js/react@3.0.0(@types/react@19.2.14)(react@19.2.3))(@swc/core@1.15.33(@swc/helpers@0.5.21))(@types/react@19.2.14)(postcss@8.5.10)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(search-insights@2.17.3)(typescript@5.9.3)':
     dependencies:
       '@docsearch/react': 4.6.3(@algolia/client-search@5.52.1)(@types/react@19.2.14)(algoliasearch@5.52.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(search-insights@2.17.3)
@@ -14573,14 +14584,6 @@ snapshots:
       - uglify-js
       - utf-8-validate
       - webpack-cli
-
-  '@docsearch/core@4.6.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    optionalDependencies:
-      '@types/react': 19.2.14
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-
-  '@docsearch/css@4.6.3': {}
 
   '@docsearch/react@4.6.3(@algolia/client-search@5.52.1)(@types/react@19.2.14)(algoliasearch@5.52.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(search-insights@2.17.3)':
     dependencies:
@@ -18078,9 +18081,9 @@ snapshots:
       stream-browserify: 3.0.0
       tslib: 2.8.1
 
-  '@thunderid/browser@0.3.0':
+  '@thunderid/browser@0.3.1':
     dependencies:
-      '@thunderid/javascript': 0.3.0
+      '@thunderid/javascript': 0.3.6
       base64url: 3.0.1
       buffer: 6.0.3
       core-js: 3.42.0
@@ -18096,14 +18099,14 @@ snapshots:
       jose: 5.2.0
       tslib: 2.8.1
 
-  '@thunderid/javascript@0.3.0':
+  '@thunderid/javascript@0.3.6':
     dependencies:
       jose: 5.2.0
       tslib: 2.8.1
 
-  '@thunderid/react-router@0.2.0(@thunderid/react@0.3.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-router@7.15.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)':
+  '@thunderid/react-router@0.2.1(@thunderid/react@0.3.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-router@7.15.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)':
     dependencies:
-      '@thunderid/react': 0.3.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@thunderid/react': 0.3.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react: 19.2.3
       react-router: 7.15.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       tslib: 2.8.1
@@ -18116,11 +18119,11 @@ snapshots:
       react-dom: 19.2.3(react@19.2.3)
       tslib: 2.8.1
 
-  '@thunderid/react@0.3.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+  '@thunderid/react@0.3.3(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
       '@emotion/css': 11.13.5
       '@floating-ui/react': 0.27.12(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@thunderid/browser': 0.3.0
+      '@thunderid/browser': 0.3.1
       '@types/react': 19.2.14
       dompurify: 3.4.11
       react: 19.2.3
