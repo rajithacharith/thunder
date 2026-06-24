@@ -943,7 +943,11 @@ const sidebars: SidebarsConfig = {
       className: 'sidebar-section',
       collapsed: false,
       collapsible: false,
-      items: [{type: 'doc', id: 'community/overview', label: 'Join the Community', key: 'community-overview'}],
+      items: [
+        {type: 'doc', id: 'community/overview', label: 'Join the Community', key: 'community-overview'},
+        {type: 'doc', id: 'community/contributors', label: 'Contributors'},
+        {type: 'doc', id: 'community/code-of-conduct', label: 'Code of Conduct'},
+      ],
     },
 
     // Contribute Section
@@ -960,95 +964,150 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       collapsible: false,
       items: [
-        {type: 'doc', id: 'community/contributing/overview', label: 'Contribute to ThunderID'},
-        {type: 'doc', id: 'community/contributing/sharing-ideas', label: 'Share Ideas'},
-        {type: 'doc', id: 'community/contributing/proposing-features', label: 'Propose Features'},
-        {type: 'doc', id: 'community/contributing/contributing-code/prerequisites', label: 'Prerequisites'},
-        {type: 'doc', id: 'community/contributing/contributing-code/configure-and-run', label: 'Configure and Run'},
+        {type: 'doc', id: 'community/contributing/report-a-bug', label: 'Report a Bug'},
+        {type: 'doc', id: 'community/contributing/contribute-ideas', label: 'Contribute Ideas'},
+        {
+          type: 'category',
+          label: 'Contribute Code',
+          collapsed: false,
+          collapsible: true,
+          items: [
+            {type: 'doc', id: 'community/contributing/contributing-code/prerequisites', label: 'Prerequisites'},
+            {type: 'doc', id: 'community/contributing/contributing-code/configure-and-run', label: 'Configure and Run'},
+            {
+              type: 'category',
+              label: 'Optional Setup',
+              key: 'code-optional-setup',
+              collapsed: true,
+              collapsible: true,
+              items: [
+                {type: 'doc', id: 'community/contributing/contributing-code/optional-setup/build-the-project', label: 'Build the Project'},
+                {type: 'doc', id: 'community/contributing/contributing-code/optional-setup/useful-commands', label: 'Useful Commands'},
+                {type: 'doc', id: 'community/contributing/contributing-code/optional-setup/setup-and-data-seeding', label: 'Setup and Data Seeding'},
+                {type: 'doc', id: 'community/contributing/contributing-code/optional-setup/advanced-setup', label: 'Advanced Setup (Manual Mode)'},
+              ],
+            },
+            {type: 'doc', id: 'community/contributing/contributing-code/debugging', label: 'Debugging'},
+            {
+              type: 'category',
+              label: 'Backend Development',
+              collapsed: true,
+              collapsible: true,
+              items: [
+                {
+                  type: 'doc',
+                  id: 'community/contributing/contributing-code/backend-development/overview',
+                  label: 'Overview',
+                  key: 'backend-overview',
+                },
+                {
+                  type: 'doc',
+                  id: 'community/contributing/contributing-code/backend-development/observability',
+                  label: 'Observability',
+                },
+              ],
+            },
+            {
+              type: 'category',
+              label: 'Frontend Development',
+              collapsed: true,
+              collapsible: true,
+              items: [
+                {
+                  type: 'doc',
+                  id: 'community/contributing/contributing-code/frontend-development/overview',
+                  label: 'Overview',
+                  key: 'frontend-overview',
+                },
+                {
+                  type: 'doc',
+                  id: 'community/contributing/contributing-code/frontend-development/conventions',
+                  label: 'Conventions',
+                  key: 'frontend-conventions',
+                },
+                {
+                  type: 'doc',
+                  id: 'community/contributing/contributing-code/frontend-development/best-practices',
+                  label: 'Best Practices',
+                  key: 'frontend-best-practices',
+                },
+              ],
+            },
+            {
+              type: 'category',
+              label: 'SDK Development',
+              collapsed: true,
+              collapsible: true,
+              items: [
+                {
+                  type: 'doc',
+                  id: 'community/contributing/contributing-code/sdk-development/overview',
+                  label: 'Overview',
+                  key: 'sdk-overview',
+                },
+              ],
+            },
+            {
+              type: 'category',
+              label: 'Documentation Development',
+              collapsed: true,
+              collapsible: true,
+              items: [
+                {type: 'doc', id: 'community/contributing/documentation-guide/overview', label: 'Overview'},
+                {
+                  type: 'doc',
+                  id: 'community/contributing/documentation-guide/configure-and-run',
+                  label: 'Configure & Run',
+                },
+                {
+                  type: 'category',
+                  label: 'Optional Setup',
+                  key: 'docs-optional-setup',
+                  collapsed: true,
+                  collapsible: true,
+                  items: [
+                    {
+                      type: 'doc',
+                      id: 'community/contributing/documentation-guide/build-the-documentation',
+                      label: 'Build the Documentation',
+                    },
+                    {
+                      type: 'doc',
+                      id: 'community/contributing/documentation-guide/useful-commands',
+                      label: 'Useful Commands',
+                      key: 'docs-useful-commands',
+                    },
+                  ],
+                },
+                {
+                  type: 'doc',
+                  id: 'community/contributing/documentation-guide/style-guide',
+                  label: 'Style Guide',
+                },
+                {
+                  type: 'doc',
+                  id: 'community/contributing/documentation-guide/writing-guide',
+                  label: 'Writing Guide',
+                },
+                {
+                  type: 'doc',
+                  id: 'community/contributing/documentation-guide/advanced-topics',
+                  label: 'Advanced Topics',
+                },
+              ],
+            },
+            {
+              type: 'doc',
+              id: 'community/contributing/contributing-code/pull-request-workflow',
+              label: 'Pull Request Workflow',
+              key: 'code-development-pipeline',
+            },
+          ],
+        },
         {
           type: 'doc',
-          id: 'community/contributing/contributing-code/development-pipeline',
-          label: 'Development Pipeline',
-          key: 'code-development-pipeline',
-        },
-        {type: 'doc', id: 'community/contributing/contributing-code/debugging', label: 'Debugging'},
-        {
-          type: 'category',
-          label: 'Backend Development',
-          collapsed: true,
-          collapsible: true,
-          items: [
-            {
-              type: 'doc',
-              id: 'community/contributing/contributing-code/backend-development/overview',
-              label: 'Backend Overview',
-              key: 'backend-overview',
-            },
-            {
-              type: 'doc',
-              id: 'community/contributing/contributing-code/backend-development/observability',
-              label: 'Observability',
-            },
-          ],
-        },
-        {
-          type: 'category',
-          label: 'Frontend Development',
-          collapsed: true,
-          collapsible: true,
-          items: [
-            {
-              type: 'doc',
-              id: 'community/contributing/contributing-code/frontend-development/overview',
-              label: 'Frontend Overview',
-              key: 'frontend-overview',
-            },
-            {
-              type: 'doc',
-              id: 'community/contributing/contributing-code/frontend-development/scaffolding-tool',
-              label: 'Scaffolding Tool',
-            },
-          ],
-        },
-        {
-          type: 'category',
-          label: 'Documentation Development',
-          collapsed: true,
-          collapsible: true,
-          items: [
-            {
-              type: 'doc',
-              id: 'community/contributing/contributing-code/documentation-development/overview',
-              label: 'Documentation Overview',
-              key: 'docs-overview',
-            },
-            {
-              type: 'doc',
-              id: 'community/contributing/contributing-code/documentation-development/development-pipeline',
-              label: 'Documentation Development Pipeline',
-              key: 'docs-development-pipeline',
-            },
-            {
-              type: 'doc',
-              id: 'community/contributing/contributing-code/documentation-development/writing-documentation',
-              label: 'Writing Documentation',
-            },
-            {
-              type: 'doc',
-              id: 'community/contributing/contributing-code/documentation-development/documentation-style-guide',
-              label: 'Style Guide',
-            },
-            {
-              type: 'doc',
-              id: 'community/contributing/contributing-code/documentation-development/advanced-topics',
-              label: 'Advanced Topics',
-            },
-            {
-              type: 'doc',
-              id: 'community/contributing/contributing-code/documentation-development/glossary',
-              label: 'Glossary',
-            },
-          ],
+          id: 'community/contributing/documentation-guide/glossary',
+          label: 'Glossary',
         },
       ],
     },

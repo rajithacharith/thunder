@@ -30,6 +30,7 @@
     "docusaurus": "docusaurus",
     "generate:api-specs": "node ./scripts/merge-openapi-specs.mjs",
     "generate:changelog": "node ./scripts/generate-changelog.mjs",
+    "generate:contributors": "node ./scripts/generate-contributors.mjs",
     "generate:postman-collections": "node ./scripts/generate-postman-collections.mjs",
     "setup": "node ./scripts/prebuild.mjs",
     "lint": "eslint .",
