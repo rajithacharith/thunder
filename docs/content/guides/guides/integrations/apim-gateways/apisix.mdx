@@ -15,7 +15,7 @@ This guide explains how to secure your APIs at the [Apache APISIX](https://apisi
 The guide covers two core integration approaches available in Apache APISIX:
 
 - **[Token Validation](#configure-jwt-token-validation-in-apache-apisix):** Configure APISIX to validate incoming JWTs issued by <ProductName /> using the [OpenID Connect plugin](https://apisix.apache.org/docs/apisix/plugins/openid-connect/), ensuring only authenticated requests access your APIs.
-- **[Fine-Grained Authorization](#configure-fine-grained-authorization-in-apache-apisix):** Leverage <ProductName />'s [RBAC](/docs/next/guides/key-concepts/authorization/) capabilities to enforce strict, APISIX-driven access control policies on upstream APIs.
+- **[Scope-Based Authorization](#configure-scope-based-authorization-in-apache-apisix):** Leverage <ProductName />'s [RBAC](/docs/next/guides/key-concepts/authorization/) capabilities to enforce strict, APISIX-driven access control policies on upstream APIs.
 
 ## Prerequisites
 
@@ -139,7 +139,7 @@ curl -i 'http://127.0.0.1:9080/anything/test' \
 
 A successful request returns an HTTP `200` response forwarded from the upstream. If the token is missing, invalid, or expired, APISIX returns `401 Unauthorized`.
 
-## Configure Fine-Grained Authorization in Apache APISIX
+## Configure Scope-Based Authorization in Apache APISIX
 
 JWT validation confirms that a token is valid and was issued by <ProductName />. It does not control what the token holder is allowed to do. With the configuration from the previous section, APISIX accepts any valid <ProductName /> token regardless of the application or its assigned permissions.
 

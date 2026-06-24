@@ -16,7 +16,7 @@ This guide explains how to secure your APIs at the [Azure API Management](https:
 The guide covers two core integration approaches available in Azure APIM:
 
 - **[Token Validation](#configure-jwt-token-validation-in-azure-api-management):** Configure Azure APIM to validate incoming JWTs issued by <ProductName /> using the [`validate-jwt`](https://learn.microsoft.com/en-us/azure/api-management/validate-jwt-policy) policy, ensuring only authenticated requests access your APIs.
-- **[Fine-Grained Authorization](#configure-fine-grained-authorization-in-azure-api-management):** Leverage <ProductName />'s [RBAC](/docs/next/guides/key-concepts/authorization/) capabilities to enforce strict, Azure APIM-driven access control policies on upstream APIs.
+- **[Scope-Based Authorization](#configure-scope-based-authorization-in-azure-api-management):** Leverage <ProductName />'s [RBAC](/docs/next/guides/key-concepts/authorization/) capabilities to enforce strict, Azure APIM-driven access control policies on upstream APIs.
 
 ## Prerequisites
 
@@ -219,11 +219,11 @@ Azure APIM enforces a subscription key requirement on APIs by default. You have 
 - ** See the [Azure APIM troubleshooting guide](https://learn.microsoft.com/en-us/troubleshoot/azure/api-mgmt/availability/unauthorized-errors-invoke-apis) for additional help.
 :::
 
-## Configure Fine-Grained Authorization in Azure API Management
+## Configure Scope-Based Authorization in Azure API Management
 
 JWT validation confirms that a token is valid and was issued by <ProductName />. It does not control what the token holder is allowed to do. With the configuration from the previous section, Azure APIM accepts any valid <ProductName /> token regardless of the application or its assigned permissions.
 
-Scope-based authorization adds a second layer of control. <ProductName /> embeds scopes in tokens based on the roles assigned to an application. The `validate-jwt` policy checks those scopes on every request and rejects tokens that do not carry the required permissions. This lets you enforce fine-grained access control — for example, 
+Scope-based authorization adds a second layer of control. <ProductName /> embeds scopes in tokens based on the roles assigned to an application. The `validate-jwt` policy checks those scopes on every request and rejects tokens that do not carry the required permissions. This lets you enforce scope-based access control — for example, 
 restricting a write endpoint to tokens with `booking-api:item:write` and a read endpoint to tokens with `booking-api:item:read` — without changing the backend service.
 
 The steps below build on the JWT validation configuration from the previous section. You will define a Resource Server, a Resource, and Actions in <ProductName /> to model your API permissions. Then bundle those permissions into a Role, assign the Role to your application, and update the Azure APIM policy to enforce scope validation.

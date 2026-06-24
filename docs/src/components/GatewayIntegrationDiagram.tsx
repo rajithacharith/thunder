@@ -107,7 +107,7 @@ export function STSIntegrationDiagram({gatewayName, gatewayLogo = undefined, gat
           {/* ① Application → ThunderID: client credentials grant */}
           <line x1="280" y1="100" x2="679" y2="100" markerEnd="url(#sts-arrow)" />
           <text x="480" y="90" textAnchor="middle" className="sts-diagram__edge-label">
-            <tspan className="sts-diagram__edge-num">①</tspan> Request Access token (Client Credentials Grant)
+            <tspan className="sts-diagram__edge-num">①</tspan> Request Access token
           </text>
 
           {/* ② ThunderID → Application: access token — 40px below ① */}
