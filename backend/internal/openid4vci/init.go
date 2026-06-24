@@ -49,9 +49,17 @@ func Initialize(
 ) {
 	runtime := config.GetServerRuntime()
 	cfg := runtime.Config.OpenID4VCI
+
+	// The credential-configuration management API is always available; only the
+	// wallet-facing issuer engine is gated on the signing key.
+	credSvc, credExporter, err := credential.Initialize(mux, ouService)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
 	if cfg.SigningKeyID == "" {
 		log.GetLogger().Debug(context.Background(), "OpenID4VCI issuer not configured; credential issuance disabled")
-		return nil, nil, nil, nil
+		return nil, credSvc, credExporter, nil
 	}
 
 	// Engine URLs default to the server's public URL; explicit config overrides.
@@ -71,11 +79,6 @@ func Initialize(
 	}
 
 	signer, err := newIssuerSigner(context.Background(), cryptoProvider, cfg.SigningKeyID)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	credSvc, credExporter, err := credential.Initialize(mux, ouService)
 	if err != nil {
 		return nil, nil, nil, err
 	}

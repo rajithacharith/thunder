@@ -52,10 +52,17 @@ func Initialize(
 	cfg := runtime.Config.OpenID4VP
 	serverHome := runtime.ServerHome
 
+	// The presentation-definition management API is always available; only the
+	// wallet/RP-facing verifier engine is gated on the signing key.
+	defSvc, defExporter, err := definition.Initialize(mux, ouService)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
 	if cfg.SigningKeyID == "" {
 		log.GetLogger().Debug(context.Background(),
 			"OpenID4VP verifier not configured; presentation verification disabled")
-		return nil, nil, nil, nil
+		return nil, defSvc, defExporter, nil
 	}
 	if cfg.ClientID == "" {
 		return nil, nil, nil, fmt.Errorf("%w: client_id is required", ErrPolicy)
@@ -71,11 +78,6 @@ func Initialize(
 	}
 
 	trust, err := buildSharedTrustStore(cfg.TrustedAnchors, serverHome)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	defSvc, defExporter, err := definition.Initialize(mux, ouService)
 	if err != nil {
 		return nil, nil, nil, err
 	}
