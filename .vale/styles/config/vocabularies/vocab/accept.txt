@@ -210,3 +210,16 @@ Kong
 subcommand
 androidx
 BROWSABLE
+jwt_authn
+ext_authz
+http
+json
+access_token
+token_type
+expires_in
+client_secret
+base_url
+token_url
+static_token
+tls_verify
+refresh_skew
