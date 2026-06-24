@@ -15,7 +15,7 @@ This guide explains how to secure your APIs at the [Envoy](https://www.envoyprox
 The guide covers two core integration approaches available in Envoy:
 
 - **[Token Validation](#configure-jwt-token-validation-in-envoy):** Configure Envoy to validate incoming JWTs issued by <ProductName /> using the [`envoy.filters.http.jwt_authn`](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/jwt_authn_filter) HTTP filter, ensuring only authenticated requests access your APIs.
-- **[Fine-Grained Authorization](#configure-fine-grained-authorization-in-envoy):** Leverage <ProductName />'s [RBAC](/docs/next/guides/key-concepts/authorization/) capabilities to enforce strict, Envoy-driven access control policies on upstream APIs.
+- **[Scope-Based Authorization](#configure-scope-based-authorization-in-envoy):** Leverage <ProductName />'s [RBAC](/docs/next/guides/key-concepts/authorization/) capabilities to enforce strict, Envoy-driven access control policies on upstream APIs.
 
 
 ## Prerequisites
@@ -269,11 +269,11 @@ Expected response:
 }
 ```
 
-## Configure Fine-Grained Authorization in Envoy
+## Configure Scope-Based Authorization in Envoy
 
 JWT authentication confirms that a token is valid and was issued by <ProductName />. It does not control what the token holder is allowed to do. With the configuration from the previous section, Envoy accepts any valid <ProductName /> token for the protected route.
 
-Scope-based authorization adds a second layer of control. <ProductName /> embeds scopes in tokens based on the roles assigned to an application. Envoy then checks those scopes on every request and rejects tokens that do not carry the required permissions. This lets you enforce fine-grained access control — for example, restricting a read endpoint to tokens with `resources-api:resource:read` — without changing the upstream service.
+Scope-based authorization adds a second layer of control. <ProductName /> embeds scopes in tokens based on the roles assigned to an application. Envoy then checks those scopes on every request and rejects tokens that do not carry the required permissions. This lets you enforce scope-based access control — for example, restricting a read endpoint to tokens with `resources-api:resource:read` — without changing the upstream service.
 
 The steps below build on the JWT authentication configuration from the previous section. You will define a Resource Server, a Resource, and actions in <ProductName /> to model your API permissions. Then bundle them into a role, assign the role to your application, and update the Envoy configuration to enforce scope validation.
 

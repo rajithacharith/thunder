@@ -15,7 +15,7 @@ This guide explains how to secure your APIs at the [Kong Konnect](https://konghq
 The guide covers two core integration approaches available in Kong Konnect:
 
 - **[Token Validation](#configure-jwt-token-validation-in-kong-konnect):** Configure Kong to validate incoming JWTs issued by <ProductName /> using the [OpenID Connect plugin](https://developer.konghq.com/plugins/openid-connect/), ensuring only authenticated requests access your APIs.
-- **[Fine-Grained Authorization](#configure-fine-grained-authorization-in-kong-konnect):** Leverage <ProductName />'s [RBAC](/docs/next/guides/key-concepts/authorization/) capabilities to enforce strict, Kong-driven access control policies on upstream APIs.
+- **[Scope-Based Authorization](#configure-scope-based-authorization-in-kong-konnect):** Leverage <ProductName />'s [RBAC](/docs/next/guides/key-concepts/authorization/) capabilities to enforce strict, Kong-driven access control policies on upstream APIs.
 
 ## Prerequisites
 
@@ -146,7 +146,7 @@ curl -k -i "https://127.0.0.1:8443/bookings" \
 
 A successful request returns an HTTP `200` response forwarded from the upstream. If the token is missing, invalid, or expired, Kong returns `401 Unauthorized`.
 
-## Configure Fine-Grained Authorization in Kong Konnect
+## Configure Scope-Based Authorization in Kong Konnect
 
 JWT validation confirms that a token is valid and was issued by <ProductName />. It does not control what the token holder is allowed to do. With the configuration from the previous section, Kong accepts any valid <ProductName /> token regardless of the application or its assigned permissions.
 
