@@ -166,10 +166,14 @@ export default function ApplicationCreatePage(): JSX.Element {
   const creationFlow = useMemo(() => resolveCreationFlow(selectedTemplateConfig), [selectedTemplateConfig]);
 
   // Browser-based SPAs are public clients that must use the redirect-based flow, so the
-  // embedded (native) sign-in approach is not offered for them. Native mobile apps are also
-  // public clients but legitimately use app-native flows, so they are excluded from this rule.
+  // embedded (native) sign-in approach is not offered for them. Native mobile apps and digital
+  // wallets are also public clients but legitimately use app-native flows, so they are excluded
+  // from this rule.
   const isBrowserSpaTemplate = useMemo((): boolean => {
-    if (selectedPlatform === PlatformApplicationTemplate.MOBILE) {
+    if (
+      selectedPlatform === PlatformApplicationTemplate.MOBILE ||
+      selectedPlatform === PlatformApplicationTemplate.WALLET
+    ) {
       return false;
     }
     const oauthConfig = selectedTemplateConfig?.defaults?.inboundAuthConfig?.find(

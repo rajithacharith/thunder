@@ -3605,7 +3605,8 @@ const translations = {
       'Scan the QR code with your wallet or tap the button to open on this device, then approve the request to share your credential.',
     'verify.openInWallet': 'Open in wallet',
     'verify.copy': 'Copy request link',
-    'verify.error': 'Failed to start verification',
+    'verify.notConfigured':
+      'Presentation verification is not enabled. Configure a verifier signing key to start verification requests.',
     'verify.waiting': 'Waiting for the wallet to respond…',
     'verify.completed': 'Verification complete',
     'verify.failed': 'Verification failed',
@@ -3669,11 +3670,9 @@ const translations = {
     'create.subtitle': 'Configure the credential type and the claims to request from the wallet.',
     'create.steps.details': 'Details',
     'create.steps.claims': 'Claims',
-    'create.steps.review': 'Review',
     'create.claims.help': 'Add each claim once and set whether it is mandatory and restrict its allowed values.',
     'create.success': 'Presentation definition created',
     'create.error': 'Failed to create presentation definition',
-    'review.claims': 'Claims',
 
     // Edit page
     'edit.subtitle': 'Edit the credential type and requested claims.',
@@ -3709,7 +3708,6 @@ const translations = {
     'create.subtitle': 'Define the credential type, claims and display shown in wallets.',
     'create.steps.details': 'Details',
     'create.steps.claims': 'Claims',
-    'create.steps.review': 'Review',
     'create.claims.help':
       'Add each claim once and set the attribute name as it appears in the user profile and how it should be displayed in the wallet.',
     'create.success': 'Credential configuration created',
@@ -3748,14 +3746,12 @@ const translations = {
     'claims.displayName': 'Display Name',
     'claims.nameHint': 'Must match a user profile attribute name; the value is sourced from the user.',
 
-    // Review step
-    'review.claims': 'Claims',
-
     // Offer dialog
     'offer.title': 'Credential Offer',
     'offer.openInWallet': 'Open in wallet',
     'offer.copy': 'Copy offer link',
-    'offer.error': 'Failed to generate credential offer',
+    'offer.notConfigured':
+      'Credential issuance is not enabled. Configure an issuer signing key to generate credential offers.',
 
     // Edit page
     'edit.subtitle': 'Edit the credential type, claims and display.',

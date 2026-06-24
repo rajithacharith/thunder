@@ -97,8 +97,8 @@ export default function CredentialOfferDialog({open, handle, onClose}: Credentia
           </Box>
         )}
         {error && (
-          <Alert severity="error" sx={{mb: 2}}>
-            {error.message ?? t('offer.error')}
+          <Alert severity="warning" sx={{mb: 2}}>
+            {t('offer.notConfigured')}
           </Alert>
         )}
         {!isPending && deepLink && (

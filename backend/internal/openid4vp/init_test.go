@@ -238,7 +238,8 @@ func (suite *OpenID4VPInitTestSuite) TestLoadVerifierInfoEmptyFile() {
 	suite.ErrorIs(err, ErrPolicy)
 }
 
-// Initialize returns all-nil (verification disabled) when no signing key is configured.
+// Initialize disables the verifier engine (nil service) when no signing key is
+// configured, but the presentation-definition management API stays available.
 func (suite *OpenID4VPInitTestSuite) TestInitializeDisabledWithoutSigningKey() {
 	config.ResetServerRuntime()
 	suite.Require().NoError(config.InitializeServerRuntime("", &config.Config{}))
@@ -246,6 +247,21 @@ func (suite *OpenID4VPInitTestSuite) TestInitializeDisabledWithoutSigningKey() {
 
 	svc, defSvc, exporter, err := Initialize(http.NewServeMux(), nil, nil, nil, nil)
 	suite.Require().NoError(err)
+	suite.Nil(svc)
+	suite.NotNil(defSvc)
+	suite.NotNil(exporter)
+}
+
+// Initialize fails when the presentation-definition store mode is invalid.
+func (suite *OpenID4VPInitTestSuite) TestInitializeInvalidStoreMode() {
+	config.ResetServerRuntime()
+	cfg := &config.Config{}
+	cfg.OpenID4VP.Store = "bogus"
+	suite.Require().NoError(config.InitializeServerRuntime("", cfg))
+	defer config.ResetServerRuntime()
+
+	svc, defSvc, exporter, err := Initialize(http.NewServeMux(), nil, nil, nil, nil)
+	suite.Require().Error(err)
 	suite.Nil(svc)
 	suite.Nil(defSvc)
 	suite.Nil(exporter)

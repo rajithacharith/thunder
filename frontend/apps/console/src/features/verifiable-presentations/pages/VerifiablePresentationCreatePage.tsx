@@ -23,7 +23,6 @@ import {
   Box,
   Breadcrumbs,
   Button,
-  Chip,
   FormControl,
   FormLabel,
   IconButton,
@@ -42,8 +41,8 @@ import useCreateVerifiablePresentation from '../api/useCreateVerifiablePresentat
 import ClaimsEditor from '../components/ClaimsEditor';
 import {claimRowsToRequest, emptyClaimRow, type ClaimRow} from '../models/claims';
 
-type Step = 'DETAILS' | 'CLAIMS' | 'REVIEW';
-const STEP_ORDER: Step[] = ['DETAILS', 'CLAIMS', 'REVIEW'];
+type Step = 'DETAILS' | 'CLAIMS';
+const STEP_ORDER: Step[] = ['DETAILS', 'CLAIMS'];
 
 export default function VerifiablePresentationCreatePage(): JSX.Element {
   const navigate = useNavigate();
@@ -66,17 +65,15 @@ export default function VerifiablePresentationCreatePage(): JSX.Element {
   const stepLabels: Record<Step, string> = {
     DETAILS: t('create.steps.details'),
     CLAIMS: t('create.steps.claims'),
-    REVIEW: t('create.steps.review'),
   };
 
   const stepReady: Record<Step, boolean> = {
     DETAILS: handle.trim() !== '' && vct.trim() !== '' && effectiveOuId !== '',
     CLAIMS: claims.some((c) => c.name.trim() !== ''),
-    REVIEW: true,
   };
 
   const stepIndex = STEP_ORDER.indexOf(step);
-  const isLastStep = step === 'REVIEW';
+  const isLastStep = step === 'CLAIMS';
   const progress = ((stepIndex + 1) / STEP_ORDER.length) * 100;
 
   const close = (): void => {
@@ -161,17 +158,14 @@ export default function VerifiablePresentationCreatePage(): JSX.Element {
         </Stack>
       );
     }
-    if (step === 'CLAIMS') {
-      return (
-        <Stack spacing={2}>
-          <Typography variant="body2" color="text.secondary">
-            {t('create.claims.help')}
-          </Typography>
-          <ClaimsEditor claims={claims} onChange={setClaims} />
-        </Stack>
-      );
-    }
-    return <ReviewStep handle={handle} displayName={displayName} vct={vct} format={format} claims={claims} />;
+    return (
+      <Stack spacing={2}>
+        <Typography variant="body2" color="text.secondary">
+          {t('create.claims.help')}
+        </Typography>
+        <ClaimsEditor claims={claims} onChange={setClaims} />
+      </Stack>
+    );
   };
 
   return (
@@ -257,54 +251,5 @@ export default function VerifiablePresentationCreatePage(): JSX.Element {
         </Box>
       </Box>
     </Box>
-  );
-}
-
-interface ReviewStepProps {
-  handle: string;
-  displayName: string;
-  vct: string;
-  format: string;
-  claims: ClaimRow[];
-}
-
-function ReviewStep({handle, displayName, vct, format, claims}: ReviewStepProps): JSX.Element {
-  const {t} = useTranslation('verifiable-presentations');
-  const named = claims.filter((c) => c.name.trim() !== '');
-
-  const row = (label: string, value: string): JSX.Element => (
-    <Stack direction="row" spacing={2}>
-      <Typography variant="body2" color="text.secondary" sx={{minWidth: 140}}>
-        {label}
-      </Typography>
-      <Typography variant="body2">{value || '—'}</Typography>
-    </Stack>
-  );
-
-  return (
-    <Stack spacing={2}>
-      {row(t('form.handle.label'), handle)}
-      {row(t('form.displayName.label'), displayName)}
-      {row(t('form.vct.label'), vct)}
-      {row(t('form.format.label'), format)}
-      <Box>
-        <Typography variant="body2" color="text.secondary" sx={{mb: 1}}>
-          {t('review.claims')}
-        </Typography>
-        <Stack spacing={1}>
-          {named.map((c) => (
-            <Stack key={c.name} direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-              <Typography variant="body2" sx={{minWidth: 160}}>
-                {c.name}
-              </Typography>
-              <Chip size="small" label={c.requirement === 'mandatory' ? t('claims.mandatory') : t('claims.optional')} />
-              {c.values.filter(Boolean).length > 0 && (
-                <Chip size="small" color="warning" label={`= ${c.values.filter(Boolean).join(', ')}`} />
-              )}
-            </Stack>
-          ))}
-        </Stack>
-      </Box>
-    </Stack>
   );
 }
