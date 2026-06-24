@@ -51,6 +51,7 @@ const (
 	KeyTypeGroup                   KeyType = "group"
 	KeyTypePresentationDefinition  KeyType = "presentation-definition"
 	KeyTypeCredentialConfiguration KeyType = "credential-configuration" //nolint:gosec
+	KeyTypeServerConfig            KeyType = "server-config"
 )
 
 // String returns the string representation of KeyType
@@ -65,6 +66,7 @@ func (kt KeyType) IsValid() bool {
 		KeyTypeEntityType, KeyTypeOU, KeyTypeFlow, KeyTypeTranslation, KeyTypeTheme, KeyTypeLayout,
 		KeyTypeResourceServer, KeyTypeResource, KeyTypeAction, KeyTypeRole, KeyTypeUser, KeyTypeTemplate,
 		KeyTypeInboundAuth, KeyTypeGroup, KeyTypePresentationDefinition, KeyTypeCredentialConfiguration,
+		KeyTypeServerConfig,
 		KeyTypeEntity:
 		return true
 	default:

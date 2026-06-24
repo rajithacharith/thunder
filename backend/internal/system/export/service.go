@@ -56,6 +56,7 @@ const (
 	resourceTypeLayout             = "layout"
 	resourceTypeTheme              = "theme"
 	resourceTypeAgent              = "agent"
+	resourceTypeServerConfig       = "server_config"
 )
 
 // parameterizerInterface defines the interface for template parameterization.
@@ -135,6 +136,7 @@ func (es *exportService) ExportResources(
 		resourceTypeLayout:             request.Layouts,
 		resourceTypeTheme:              request.Themes,
 		resourceTypeAgent:              request.Agents,
+		resourceTypeServerConfig:       request.ServerConfigs,
 	}
 
 	// Export resources using the registry

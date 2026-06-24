@@ -1,0 +1,3 @@
+name: cors
+value:
+  - "https://declarative.example.com"

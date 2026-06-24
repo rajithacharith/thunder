@@ -74,8 +74,10 @@ import (
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
+	"github.com/thunder-id/thunderid/internal/serverconfig"
 	"github.com/thunder-id/thunderid/internal/system/cache"
 	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/cors"
 	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	dbprovider "github.com/thunder-id/thunderid/internal/system/database/provider"
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
@@ -139,6 +141,16 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	}
 	// Add to exporters list (must be done after initializing list)
 	exporters = append(exporters, i18nExporter)
+
+	// Initialize the server-wide configuration service with the CORS section handler.
+	serverConfigHandlers := map[serverconfig.ConfigName]serverconfig.ServerConfigHandlerInterface{
+		serverconfig.ConfigNameCORS: cors.OriginHandler{},
+	}
+	serverConfigService, serverConfigExporter, err := serverconfig.Initialize(mux, cacheManager, serverConfigHandlers)
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize server config service", log.Error(err))
+	}
+	exporters = append(exporters, serverConfigExporter)
 
 	ouAuthzService, err := sysauthz.Initialize()
 	if err != nil {
@@ -390,6 +402,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		agentService,
 		openid4vpDefSvc,
 		openid4vciCredSvc,
+		serverConfigService,
 	)
 
 	flowExecService, err := flowexec.Initialize(mux, flowMgtService, actorProvider,
