@@ -501,4 +501,20 @@ var (
 			DefaultValue: "The provided recovery flow ID is invalid",
 		},
 	}
+	// ErrorNativeFlowNotAllowedForSPA is returned when a public client (SPA) is configured for
+	// native (embedded) flow execution instead of a redirect-based authorization_code flow.
+	ErrorNativeFlowNotAllowedForSPA = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "APP-1037",
+		Error: core.I18nMessage{
+			Key:          "error.applicationservice.native_flow_not_allowed_for_spa",
+			DefaultValue: "Native flow execution is not allowed for single-page applications",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key: "error.applicationservice.native_flow_not_allowed_for_spa_description",
+			DefaultValue: "Single-page applications (public clients) must use the authorization_code grant type " +
+				"with PKCE for redirect-based flows. Direct (native) flow execution is not supported for " +
+				"browser-based single-page applications.",
+		},
+	}
 )

@@ -1275,6 +1275,29 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_PublicC
 	assert.True(suite.T(), result.OAuthConfig.PublicClient)
 }
 
+func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_PublicClientNativeFlowRejected() {
+	app := &model.ApplicationDTO{
+		Name: "Test App",
+		OUID: testOUID,
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+			{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeClientCredentials},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodNone,
+					PublicClient:            true,
+				},
+			},
+		},
+	}
+
+	result, svcErr := validateOAuthParamsForCreateAndUpdate(app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorNativeFlowNotAllowedForSPA.Code, svcErr.Code)
+}
+
 func (suite *ServiceTestSuite) TestValidateApplication_StoreErrorNonNotFound() {
 	service, _ := suite.setupTestService()
 

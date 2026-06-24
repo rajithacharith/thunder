@@ -1006,6 +1006,13 @@ func validateOAuthParamsForCreateAndUpdate(app *model.ApplicationDTO) (*inboundm
 	if len(oauthAppConfig.GrantTypes) == 0 {
 		oauthAppConfig.GrantTypes = []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode}
 	}
+	// Browser-based SPAs (public clients) must use the redirect-based authorization_code flow.
+	// A public client without the authorization_code grant is configured for direct (native)
+	// flow execution, which is not permitted for single-page applications.
+	if oauthAppConfig.PublicClient &&
+		!slices.Contains(oauthAppConfig.GrantTypes, oauth2const.GrantTypeAuthorizationCode) {
+		return nil, &ErrorNativeFlowNotAllowedForSPA
+	}
 	if len(oauthAppConfig.ResponseTypes) == 0 {
 		if slices.Contains(oauthAppConfig.GrantTypes, oauth2const.GrantTypeAuthorizationCode) {
 			oauthAppConfig.ResponseTypes = []oauth2const.ResponseType{oauth2const.ResponseTypeCode}
