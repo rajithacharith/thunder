@@ -25,6 +25,8 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/thunder-id/thunderid/internal/system/config"
 )
 
 type InitTestSuite struct {
@@ -58,4 +60,33 @@ func (s *InitTestSuite) TestRegisterRoutes() {
 		mux.ServeHTTP(rr, httptest.NewRequest(c.method, c.path, nil))
 		s.Equal(c.status, rr.Code, "%s %s", c.method, c.path)
 	}
+}
+
+// Initialize disables the issuer engine (nil service) when no signing key is
+// configured, but the credential-configuration management API stays available.
+func (s *InitTestSuite) TestInitializeDisabledWithoutSigningKey() {
+	config.ResetServerRuntime()
+	s.Require().NoError(config.InitializeServerRuntime("", &config.Config{}))
+	defer config.ResetServerRuntime()
+
+	svc, credSvc, exporter, err := Initialize(http.NewServeMux(), nil, nil, nil, nil, nil)
+	s.Require().NoError(err)
+	s.Nil(svc)
+	s.NotNil(credSvc)
+	s.NotNil(exporter)
+}
+
+// Initialize fails when the credential-configuration store mode is invalid.
+func (s *InitTestSuite) TestInitializeInvalidStoreMode() {
+	config.ResetServerRuntime()
+	cfg := &config.Config{}
+	cfg.OpenID4VCI.Store = "bogus"
+	s.Require().NoError(config.InitializeServerRuntime("", cfg))
+	defer config.ResetServerRuntime()
+
+	svc, credSvc, exporter, err := Initialize(http.NewServeMux(), nil, nil, nil, nil, nil)
+	s.Require().Error(err)
+	s.Nil(svc)
+	s.Nil(credSvc)
+	s.Nil(exporter)
 }

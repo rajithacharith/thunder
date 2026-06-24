@@ -139,8 +139,8 @@ export default function VerificationDialog({open, handle, onClose}: Verification
           </Box>
         )}
         {error && (
-          <Alert severity="error" sx={{mb: 2}}>
-            {error.message ?? t('verify.error')}
+          <Alert severity="warning" sx={{mb: 2}}>
+            {t('verify.notConfigured')}
           </Alert>
         )}
         {!isPending && walletUrl && (

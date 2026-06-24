@@ -41,8 +41,8 @@ import useCreateVerifiableCredential from '../api/useCreateVerifiableCredential'
 import ClaimsEditor from '../components/ClaimsEditor';
 import {claimRowsToRequest, credentialToClaimRows, type ClaimRow} from '../models/claims';
 
-type Step = 'DETAILS' | 'CLAIMS' | 'REVIEW';
-const STEP_ORDER: Step[] = ['DETAILS', 'CLAIMS', 'REVIEW'];
+type Step = 'DETAILS' | 'CLAIMS';
+const STEP_ORDER: Step[] = ['DETAILS', 'CLAIMS'];
 
 const LIST_URL = '/verifiable-credentials';
 
@@ -69,17 +69,15 @@ export default function VerifiableCredentialCreatePage(): JSX.Element {
   const stepLabels: Record<Step, string> = {
     DETAILS: t('create.steps.details'),
     CLAIMS: t('create.steps.claims'),
-    REVIEW: t('create.steps.review'),
   };
 
   const stepReady: Record<Step, boolean> = {
     DETAILS: handle.trim() !== '' && vct.trim() !== '' && effectiveOuId !== '',
     CLAIMS: claims.some((c) => c.name.trim() !== ''),
-    REVIEW: true,
   };
 
   const stepIndex = STEP_ORDER.indexOf(step);
-  const isLastStep = step === 'REVIEW';
+  const isLastStep = step === 'CLAIMS';
   const progress = ((stepIndex + 1) / STEP_ORDER.length) * 100;
 
   const close = (): void => {
@@ -175,26 +173,13 @@ export default function VerifiableCredentialCreatePage(): JSX.Element {
         </Stack>
       );
     }
-    if (step === 'CLAIMS') {
-      return (
-        <Stack spacing={2}>
-          <Typography variant="body2" color="text.secondary">
-            {t('create.claims.help')}
-          </Typography>
-          <ClaimsEditor claims={claims} onChange={setClaims} />
-        </Stack>
-      );
-    }
     return (
-      <ReviewStep
-        handle={handle}
-        vct={vct}
-        format={format}
-        displayName={displayName}
-        locale={locale}
-        logoUri={logoUri}
-        claims={claims}
-      />
+      <Stack spacing={2}>
+        <Typography variant="body2" color="text.secondary">
+          {t('create.claims.help')}
+        </Typography>
+        <ClaimsEditor claims={claims} onChange={setClaims} />
+      </Stack>
     );
   };
 
@@ -281,61 +266,5 @@ export default function VerifiableCredentialCreatePage(): JSX.Element {
         </Box>
       </Box>
     </Box>
-  );
-}
-
-interface ReviewStepProps {
-  handle: string;
-  vct: string;
-  format: string;
-  displayName: string;
-  locale: string;
-  logoUri: string;
-  claims: ClaimRow[];
-}
-
-function ReviewStep({handle, vct, format, displayName, locale, logoUri, claims}: ReviewStepProps): JSX.Element {
-  const {t} = useTranslation('verifiable-credentials');
-  const named = claims.filter((c) => c.name.trim() !== '');
-
-  const row = (label: string, value: string): JSX.Element => (
-    <Stack direction="row" spacing={2}>
-      <Typography variant="body2" color="text.secondary" sx={{minWidth: 140}}>
-        {label}
-      </Typography>
-      <Typography variant="body2">{value || '—'}</Typography>
-    </Stack>
-  );
-
-  return (
-    <Stack spacing={2}>
-      {row(t('form.handle.label'), handle)}
-      {row(t('form.vct.label'), vct)}
-      {row(t('form.format.label'), format)}
-      {row(t('form.display.name'), displayName)}
-      {row(t('form.display.locale'), locale)}
-      {row(t('form.display.logo'), logoUri)}
-      {named.length > 0 && (
-        <Box>
-          <Typography variant="body2" color="text.secondary" sx={{mb: 1}}>
-            {t('review.claims')}
-          </Typography>
-          <Stack spacing={1}>
-            {named.map((c) => (
-              <Stack key={c.name} direction="row" spacing={1} alignItems="center">
-                <Typography variant="body2" sx={{minWidth: 160}}>
-                  {c.name}
-                </Typography>
-                {c.displayName.trim() && (
-                  <Typography variant="body2" color="text.secondary">
-                    {c.displayName}
-                  </Typography>
-                )}
-              </Stack>
-            ))}
-          </Stack>
-        </Box>
-      )}
-    </Stack>
   );
 }
