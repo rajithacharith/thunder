@@ -579,51 +579,59 @@ type PasskeyConfig struct {
 }
 
 // OpenID4VPConfig holds the OpenID4VP verifier engine configuration. Engine
-// defaults (client_id, signing key, base URLs, response advertisement) live at
-// the top level; credential-specific configuration (vct, requested claims,
-// trusted issuers, ...) lives under PresentationDefinitions.
+// defaults (client_id, signing key, base URLs, response advertisement, trust
+// anchors) live at the top level; presentation definitions are managed at runtime
+// via the management API and stored in configdb, not in static configuration.
 type OpenID4VPConfig struct {
-	ClientID                   string             `yaml:"client_id" json:"client_id"`
-	ClientIDScheme             string             `yaml:"client_id_scheme" json:"client_id_scheme"`
-	SigningKeyID               string             `yaml:"signing_key_id" json:"signing_key_id"`
-	BaseURL                    string             `yaml:"base_url" json:"base_url"`
-	ResultRedirectURI          string             `yaml:"result_redirect_uri" json:"result_redirect_uri"`
-	RequestAudience            string             `yaml:"request_audience" json:"request_audience"`
-	EphemeralKeyID             string             `yaml:"ephemeral_key_id" json:"ephemeral_key_id"`
-	ResponseEncValues          []string           `yaml:"response_enc_values" json:"response_enc_values"`
-	RequestValiditySeconds     int                `yaml:"request_validity_seconds" json:"request_validity_seconds"`
-	StateTTLSeconds            int                `yaml:"state_ttl_seconds" json:"state_ttl_seconds"`
-	LeewaySeconds              int                `yaml:"leeway_seconds" json:"leeway_seconds"`
-	KeyBindingMaxAgeSeconds    int                `yaml:"key_binding_max_age_seconds" json:"key_binding_max_age_seconds"`     //nolint:lll
-	ResultTokenValiditySeconds int                `yaml:"result_token_validity_seconds" json:"result_token_validity_seconds"` //nolint:lll
-	RegistrationCertFile       string             `yaml:"registration_cert_file" json:"registration_cert_file"`
-	PresentationDefinitions    []DefinitionConfig `yaml:"presentation_definitions" json:"presentation_definitions"`
-	EnforceTrustedIssuer       bool               `yaml:"enforce_trusted_issuer" json:"enforce_trusted_issuer"`
-	EnforceKeyBinding          bool               `yaml:"enforce_key_binding" json:"enforce_key_binding"`
+	// Store defines the storage mode for presentation definitions.
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
+	Store                      string               `yaml:"store" json:"store"`
+	ClientID                   string               `yaml:"client_id" json:"client_id"`
+	SigningKeyID               string               `yaml:"signing_key_id" json:"signing_key_id"`
+	ResultRedirectURI          string               `yaml:"result_redirect_uri" json:"result_redirect_uri"`
+	RequestAudience            string               `yaml:"request_audience" json:"request_audience"`
+	EphemeralKeyID             string               `yaml:"ephemeral_key_id" json:"ephemeral_key_id"`
+	ResponseEncValues          []string             `yaml:"response_enc_values" json:"response_enc_values"`
+	RequestValiditySeconds     int                  `yaml:"request_validity_seconds" json:"request_validity_seconds"`
+	StateTTLSeconds            int                  `yaml:"state_ttl_seconds" json:"state_ttl_seconds"`
+	LeewaySeconds              int                  `yaml:"leeway_seconds" json:"leeway_seconds"`
+	KeyBindingMaxAgeSeconds    int                  `yaml:"key_binding_max_age_seconds" json:"key_binding_max_age_seconds"`     //nolint:lll
+	ResultTokenValiditySeconds int                  `yaml:"result_token_validity_seconds" json:"result_token_validity_seconds"` //nolint:lll
+	RegistrationCertFile       string               `yaml:"registration_cert_file" json:"registration_cert_file"`
+	TrustedAnchors             []TrustedAnchorEntry `yaml:"trusted_anchors" json:"trusted_anchors"` //nolint:lll
+	EnforceKeyBinding          bool                 `yaml:"enforce_key_binding" json:"enforce_key_binding"`
 }
 
-// DefinitionConfig describes a single OpenID4VP presentation definition the
-// verifier should register at start-up. The format value selects the
-// CredentialFormat plug-in; the rest configures the DCQL query, the policy
-// applied to verified presentations, the subject derivation claim set and the
-// trusted issuers for that definition.
-type DefinitionConfig struct {
-	ID              string               `yaml:"id" json:"id"`
-	DisplayName     string               `yaml:"display_name" json:"display_name"`
-	CredentialID    string               `yaml:"credential_id" json:"credential_id"`
-	VCT             string               `yaml:"vct" json:"vct"`
-	RequestedClaims []string             `yaml:"requested_claims" json:"requested_claims"`
-	MandatoryClaims []string             `yaml:"mandatory_claims" json:"mandatory_claims"`
-	OptionalClaims  []string             `yaml:"optional_claims" json:"optional_claims"`
-	SubjectClaims   []string             `yaml:"subject_claims" json:"subject_claims"`
-	TrustedIssuers  []TrustedIssuerEntry `yaml:"trusted_issuers" json:"trusted_issuers"`
-}
-
-// TrustedIssuerEntry pins a trusted credential issuer's signing certificate
-// for a presentation definition.
-type TrustedIssuerEntry struct {
-	Issuer   string `yaml:"issuer" json:"issuer"`
+// TrustedAnchorEntry is a trust anchor (root CA) whose PEM certificate roots the
+// X.509 chains presented by credential issuers (via the x5c header). Trust
+// anchors are configured once at the OpenID4VP engine level and shared by every
+// presentation definition.
+type TrustedAnchorEntry struct {
+	Name     string `yaml:"name" json:"name"`
 	CertFile string `yaml:"cert_file" json:"cert_file"`
+}
+
+// OpenID4VCIConfig holds the OpenID4VCI credential issuer engine configuration.
+// Engine defaults (issuer identifier, signing key, base URL, authorization
+// servers) live here; credential configurations are managed via the management
+// API and stored in configdb.
+type OpenID4VCIConfig struct {
+	CredentialIssuer          string   `yaml:"credential_issuer" json:"credential_issuer"`
+	BaseURL                   string   `yaml:"base_url" json:"base_url"`
+	SigningKeyID              string   `yaml:"signing_key_id" json:"signing_key_id"`
+	AuthorizationServers      []string `yaml:"authorization_servers" json:"authorization_servers"`
+	NonceTTLSeconds           int      `yaml:"nonce_ttl_seconds" json:"nonce_ttl_seconds"`
+	ProofMaxAgeSeconds        int      `yaml:"proof_max_age_seconds" json:"proof_max_age_seconds"`
+	CredentialValiditySeconds int      `yaml:"credential_validity_seconds" json:"credential_validity_seconds"` //nolint:lll
+	BatchSize                 int      `yaml:"batch_size" json:"batch_size"`
+	EnforceScope              bool     `yaml:"enforce_scope" json:"enforce_scope"`
+	// Store defines the storage mode for credential configurations.
+	// One of: "mutable", "declarative", "composite". Empty inherits the global
+	// declarative_resources setting.
+	Store string `yaml:"store" json:"store"`
 }
 
 // AuthnProviderConfig holds the authentication provider configuration details.
@@ -809,6 +817,7 @@ type Config struct {
 	Observability        ObservabilityConfig    `yaml:"observability" json:"observability"`
 	Passkey              PasskeyConfig          `yaml:"passkey" json:"passkey"`
 	OpenID4VP            OpenID4VPConfig        `yaml:"openid4vp" json:"openid4vp"`
+	OpenID4VCI           OpenID4VCIConfig       `yaml:"openid4vci" json:"openid4vci"`
 	AuthnProvider        AuthnProviderConfig    `yaml:"authn_provider" json:"authn_provider"`
 	UserProvider         UserProviderConfig     `yaml:"user_provider" json:"user_provider"`
 	EntityProvider       EntityProviderConfig   `yaml:"entity_provider" json:"entity_provider"`

@@ -40,7 +40,6 @@ type cryptoProviderSigner struct {
 	keyRef         kmprovider.KeyRef
 	signAlg        cryptolib.SignAlgorithm
 	jwsAlg         string
-	kid            string
 	x5c            []string
 }
 
@@ -81,19 +80,19 @@ func newRequestSigner(
 		keyRef:         kmprovider.KeyRef{KeyID: keyID},
 		signAlg:        signAlg,
 		jwsAlg:         string(key.Algorithm),
-		kid:            key.Thumbprint,
 		x5c:            x5c,
 	}, nil
 }
 
+// signRequestObject signs the request object claims into a compact JWS using the crypto provider.
 func (s *cryptoProviderSigner) signRequestObject(ctx context.Context, claims map[string]interface{}) (string, error) {
+	// No kid header: for the x509_san_dns client scheme the wallet authenticates
+	// the request via the x5c certificate. A stray kid (a JWK thumbprint) alongside
+	// x5c trips strict wallets that try to resolve it first, so it is omitted.
 	header := map[string]interface{}{
 		"alg": s.jwsAlg,
 		"typ": requestObjectType,
 		"x5c": s.x5c,
-	}
-	if s.kid != "" {
-		header["kid"] = s.kid
 	}
 
 	headerJSON, err := json.Marshal(header)

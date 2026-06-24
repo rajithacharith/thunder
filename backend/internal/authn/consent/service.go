@@ -42,10 +42,11 @@ type ConsentEnforcerServiceInterface interface {
 	// ResolveConsent checks whether the user has provided required consents for the given
 	// application, attribute set, and authorized permission set. Returns nil if all required
 	// consents are active; otherwise returns ConsentPromptData describing which purposes /
-	// elements still need user consent.
+	// elements still need user consent. When forceReprompt is true, consent is re-prompted for
+	// all required claims regardless of existing active consent.
 	ResolveConsent(ctx context.Context, ouID, appID, appName, userID string,
 		essentialAttributes, optionalAttributes, authorizedPermissions []string,
-		availableAttributes *authnprovidercm.AttributesResponse,
+		availableAttributes *authnprovidercm.AttributesResponse, forceReprompt bool,
 		runtimeMetadata map[string]string) (
 		*ConsentPromptData, *serviceerror.ServiceError)
 
@@ -77,7 +78,8 @@ func newConsentEnforcerService(consentSvc consent.ConsentServiceInterface,
 // ResolveConsent implements ConsentEnforcerServiceInterface.ResolveConsent.
 func (s *consentEnforcerService) ResolveConsent(ctx context.Context, ouID, appID, appName, userID string,
 	essentialAttributes, optionalAttributes, authorizedPermissions []string,
-	availableAttributes *authnprovidercm.AttributesResponse, runtimeMetadata map[string]string) (
+	availableAttributes *authnprovidercm.AttributesResponse, forceReprompt bool,
+	runtimeMetadata map[string]string) (
 	*ConsentPromptData, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("appID", appID), log.MaskedString(log.LoggerKeyUserID, userID))
 	logger.Debug(ctx, "Resolving consent for user")
@@ -107,25 +109,28 @@ func (s *consentEnforcerService) ResolveConsent(ctx context.Context, ouID, appID
 		return nil, nil
 	}
 
-	// Search for existing consent records for this user and application
-	filter := &consent.ConsentSearchFilter{
-		GroupIDs:        []string{appID},
-		UserIDs:         []string{userID},
-		ConsentStatuses: []consent.ConsentStatus{consent.ConsentStatusActive},
-	}
-	existingConsents, svcErr := s.consentService.SearchConsents(ctx, ouID, filter)
-	if svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
-			logger.Debug(ctx, "Client error from consent service when searching consents",
-				log.Any("error", svcErr))
-			return nil, &ErrorConsentSearchFailed
+	// Build the set of elements that already have active consent. When forceReprompt is set, existing
+	// consent is ignored so every required claim is prompted again; the lookup is skipped entirely.
+	var consentedElements map[string]bool
+	if !forceReprompt {
+		// Search for existing consent records for this user and application
+		filter := &consent.ConsentSearchFilter{
+			GroupIDs:        []string{appID},
+			UserIDs:         []string{userID},
+			ConsentStatuses: []consent.ConsentStatus{consent.ConsentStatusActive},
 		}
-		logger.Error(ctx, "Failed to search existing consents", log.Any("error", svcErr))
-		return nil, &serviceerror.InternalServerError
+		existingConsents, searchErr := s.consentService.SearchConsents(ctx, ouID, filter)
+		if searchErr != nil {
+			if searchErr.Type == serviceerror.ClientErrorType {
+				logger.Debug(ctx, "Client error from consent service when searching consents",
+					log.Any("error", searchErr))
+				return nil, &ErrorConsentSearchFailed
+			}
+			logger.Error(ctx, "Failed to search existing consents", log.Any("error", searchErr))
+			return nil, &serviceerror.InternalServerError
+		}
+		consentedElements = buildConsentedElementSet(existingConsents)
 	}
-
-	// Build a set of elements that already have active consent
-	consentedElements := buildConsentedElementSet(existingConsents)
 
 	// Build a set of attributes present in the user's profile for profile filtering
 	userAttributeSet := buildUserAttributeSet(availableAttributes)

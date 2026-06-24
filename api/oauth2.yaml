@@ -124,6 +124,15 @@ paths:
           schema:
             type: string
           description: JSON-encoded claims request (OIDC Core §5.5).
+        - name: prompt
+          in: query
+          required: false
+          schema:
+            type: string
+          description: >
+            Space-separated list of prompts (OIDC Core §3.1.2.1). Supported values:
+            `login` forces re-authentication; `consent` forces re-consent for all required
+            attributes regardless of existing consent records.
       responses:
         "302":
           description: Redirect to the login page or the client redirect_uri on error.
@@ -614,6 +623,12 @@ components:
           type: string
         claims:
           type: string
+        prompt:
+          type: string
+          description: >
+            Space-separated list of prompts (OIDC Core §3.1.2.1). Supported values:
+            `login` forces re-authentication; `consent` forces re-consent for all required
+            attributes regardless of existing consent records.
 
     PARResponse:
       type: object

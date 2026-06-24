@@ -69,6 +69,20 @@ var (
 		},
 	}
 
+	// ErrorExpiredState is distinct from ErrorUnknownState: state exists but is past its TTL.
+	ErrorExpiredState = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "EUDI-1005",
+		Error: core.I18nMessage{
+			Key:          "error.eudi.expired_state",
+			DefaultValue: "Expired request",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.eudi.expired_state_description",
+			DefaultValue: "The request associated with the supplied state value has expired",
+		},
+	}
+
 	// ErrorUnknownDefinition indicates the requested presentation_definition_id is not registered.
 	ErrorUnknownDefinition = serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
@@ -84,18 +98,41 @@ var (
 	}
 )
 
+// Sentinel errors returned by the verifier. HTTP-facing service errors live in error_constants.go.
+var (
+	ErrUntrustedIssuer       = errors.New("openid4vp: untrusted credential issuer")
+	ErrUnexpectedVCT         = errors.New("openid4vp: unexpected credential type (vct)")
+	ErrUnrequestedClaim      = errors.New("openid4vp: disclosed claim was not requested")
+	ErrMissingMandatoryClaim = errors.New("openid4vp: mandatory claim missing")
+	ErrClaimValueNotAllowed  = errors.New("openid4vp: disclosed claim value not in the allowed set")
+	ErrInvalidPresentation   = errors.New("openid4vp: invalid presentation")
+	ErrInvalidResponse       = errors.New("openid4vp: invalid authorization response")
+	ErrPolicy                = errors.New("openid4vp: invalid verification policy")
+	ErrUnknownDefinition     = errors.New("openid4vp: unknown presentation definition")
+	ErrUnknownState          = errors.New("openid4vp: unknown or expired request state")
+	ErrExpiredState          = errors.New("openid4vp: request state expired")
+	ErrStateMismatch         = errors.New("openid4vp: response state mismatch")
+)
+
 // toServiceError maps an internal verifier error to a client-facing service error.
 func toServiceError(err error) *serviceerror.ServiceError {
 	switch {
 	case errors.Is(err, ErrUnknownState):
 		return &ErrorUnknownState
+	case errors.Is(err, ErrExpiredState):
+		return &ErrorExpiredState
+	case errors.Is(err, ErrUnknownDefinition):
+		return &ErrorUnknownDefinition
+	case errors.Is(err, ErrPolicy):
+		return &serviceerror.InternalServerError
 	case errors.Is(err, ErrInvalidResponse),
 		errors.Is(err, ErrInvalidPresentation),
 		errors.Is(err, ErrStateMismatch),
 		errors.Is(err, ErrUntrustedIssuer),
 		errors.Is(err, ErrUnexpectedVCT),
 		errors.Is(err, ErrUnrequestedClaim),
-		errors.Is(err, ErrMissingMandatoryClaim):
+		errors.Is(err, ErrMissingMandatoryClaim),
+		errors.Is(err, ErrClaimValueNotAllowed):
 		return &ErrorVerificationFailed
 	default:
 		return &serviceerror.InternalServerError

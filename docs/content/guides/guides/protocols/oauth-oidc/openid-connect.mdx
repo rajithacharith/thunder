@@ -54,7 +54,7 @@ These parameters on the authorization request control *how* the user authenticat
 | Parameter | Purpose | Notes |
 |---|---|---|
 | `nonce` | Replay protection for the ID Token | Max 64 characters. Required for clients that accept the ID Token. |
-| `prompt` | Control re-authentication | Only `login` is currently honored — see below |
+| `prompt` | Control re-authentication | Only `login` and `consent` is currently honored — see below |
 | `acr_values` | Request a specific authentication context | <ProductName /> selects an authentication flow that satisfies the requested ACR |
 | `claims` | Request specific claims claim-by-claim | See [Claims & Scopes](../claims-and-scopes) |
 
@@ -64,7 +64,7 @@ These parameters on the authorization request control *how* the user authenticat
 |---|---|
 | `login` | Forces the user to authenticate. **Supported.** |
 | `none` | Returns `login_required`. <ProductName /> does not yet maintain server-side sessions, so silent re-authentication is not available. |
-| `consent` | Returns `consent_required` — prompt-driven consent is not currently supported. |
+| `consent` | Forces the user to re-grant consent for all required attributes, even if consent was previously granted. |
 | `select_account` | Returns `account_selection_required` — account selection is not currently supported. |
 
 ## Try It in <ProductName />

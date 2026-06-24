@@ -175,9 +175,8 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 	}
 	createdEntity, err := p.createUserInStore(ctx, userAttributes)
 	if err != nil {
-		logger.Error(ctx.Context, "Failed to create user in the store", log.Error(err))
 		execResp.Status = common.ExecFailure
-		execResp.Error = &ErrProvisioningFailed
+		execResp.Error = p.handleCreateUserError(ctx, err, logger)
 		return execResp, nil
 	}
 	if createdEntity == nil || createdEntity.ID == "" {
@@ -637,7 +636,6 @@ func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
 		Type:     userType,
 	}
 
-	// Convert the user attributes to JSON.
 	attributesJSON, err := json.Marshal(userAttributes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal user attributes: %w", err)
@@ -646,7 +644,7 @@ func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
 
 	retEntity, svcErr := p.entityProvider.CreateEntity(&newEntity, nil)
 	if svcErr != nil {
-		return nil, fmt.Errorf("failed to create user in the store: %s", svcErr.Message)
+		return nil, svcErr
 	}
 	if retEntity != nil && retEntity.ID != "" {
 		logger.Debug(nodeCtx.Context, "User account created successfully",
@@ -654,6 +652,25 @@ func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
 	}
 
 	return retEntity, nil
+}
+
+// handleCreateUserError maps an entity provider error during user creation to the appropriate ServiceError.
+func (p *provisioningExecutor) handleCreateUserError(
+	ctx *core.NodeContext,
+	err error,
+	logger *log.Logger,
+) *serviceerror.ServiceError {
+	var epErr *entityprovider.EntityProviderError
+	if errors.As(err, &epErr) {
+		if epErr.Code == entityprovider.ErrorCodeAttributeConflict {
+			return &ErrProvisioningAttributeConflict
+		}
+		logger.Error(ctx.Context, "Failed to create user in the store",
+			log.String("errorCode", string(epErr.Code)), log.String("message", epErr.Message))
+		return &ErrProvisioningFailed
+	}
+	logger.Error(ctx.Context, "Failed to create user in the store", log.Error(err))
+	return &ErrProvisioningFailed
 }
 
 // getTargetEntityRef retrieves the target entity reference (user type and OU ID) for provisioning.

@@ -48,6 +48,8 @@ type GraphInterface interface {
 	GetSegmentByStartNode(nodeID string) *Segment
 	GetInterceptors(mode common.InterceptorMode) []InterceptorUnitInterface
 	SetInterceptors(resolved map[common.InterceptorMode][]InterceptorUnitInterface)
+	GetVersion() int
+	SetVersion(version int)
 }
 
 // graph implements the GraphInterface for the flow execution
@@ -59,6 +61,7 @@ type graph struct {
 	startNodeID  string
 	segments     []Segment
 	interceptors map[common.InterceptorMode][]InterceptorUnitInterface
+	version      int
 }
 
 // GetID returns the unique ID of the graph
@@ -245,6 +248,16 @@ func (g *graph) GetInterceptors(mode common.InterceptorMode) []InterceptorUnitIn
 // SetInterceptors stores pre-resolved interceptor units grouped by mode.
 func (g *graph) SetInterceptors(resolved map[common.InterceptorMode][]InterceptorUnitInterface) {
 	g.interceptors = resolved
+}
+
+// GetVersion returns the flow definition version this graph was built from.
+func (g *graph) GetVersion() int {
+	return g.version
+}
+
+// SetVersion sets the flow definition version this graph was built from.
+func (g *graph) SetVersion(version int) {
+	g.version = version
 }
 
 // ToJSON converts the graph to a JSON string representation

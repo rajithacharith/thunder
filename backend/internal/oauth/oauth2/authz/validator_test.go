@@ -597,7 +597,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 	assert.Empty(suite.T(), errorMessage)
 }
 
-func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptConsent_ConsentRequired() {
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptConsent_Success() {
 	msg := &OAuthMessage{
 		RequestQueryParams: map[string]string{
 			constants.RequestParamClientID:     "test-client-id",
@@ -610,9 +610,9 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_Pr
 	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(context.Background(),
 		msg, suite.oauthApp)
 
-	assert.True(suite.T(), sendErrorToApp)
-	assert.Equal(suite.T(), constants.ErrorConsentRequired, errorCode)
-	assert.Equal(suite.T(), "Consent is not supported", errorMessage)
+	assert.False(suite.T(), sendErrorToApp)
+	assert.Empty(suite.T(), errorCode)
+	assert.Empty(suite.T(), errorMessage)
 }
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptNoneCombined_InvalidRequest() {
@@ -669,7 +669,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_Pr
 	assert.Equal(suite.T(), "Account selection is not supported", errorMessage)
 }
 
-func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptLoginConsent_ConsentRequired() {
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptLoginConsent_Success() {
 	msg := &OAuthMessage{
 		RequestQueryParams: map[string]string{
 			constants.RequestParamClientID:     "test-client-id",
@@ -682,9 +682,9 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_Pr
 	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(context.Background(),
 		msg, suite.oauthApp)
 
-	assert.True(suite.T(), sendErrorToApp)
-	assert.Equal(suite.T(), constants.ErrorConsentRequired, errorCode)
-	assert.Equal(suite.T(), "Consent is not supported", errorMessage)
+	assert.False(suite.T(), sendErrorToApp)
+	assert.Empty(suite.T(), errorCode)
+	assert.Empty(suite.T(), errorMessage)
 }
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptEmpty_InvalidRequest() {

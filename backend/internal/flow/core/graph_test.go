@@ -38,7 +38,7 @@ func TestGraphTestSuite(t *testing.T) {
 
 func (s *GraphTestSuite) SetupTest() {
 	s.factory = newFlowFactory()
-	s.graph = s.factory.CreateGraph("test-graph", common.FlowTypeAuthentication)
+	s.graph = s.factory.CreateGraph("test-graph", common.FlowTypeAuthentication, 1)
 }
 
 func (s *GraphTestSuite) TestGetID() {
@@ -46,8 +46,17 @@ func (s *GraphTestSuite) TestGetID() {
 }
 
 func (s *GraphTestSuite) TestGetType() {
-	graph := s.factory.CreateGraph("test-graph", common.FlowTypeRegistration)
+	graph := s.factory.CreateGraph("test-graph", common.FlowTypeRegistration, 1)
 	s.Equal(common.FlowTypeRegistration, graph.GetType())
+}
+
+func (s *GraphTestSuite) TestGetVersion() {
+	s.Equal(1, s.graph.GetVersion())
+}
+
+func (s *GraphTestSuite) TestSetAndGetVersion() {
+	s.graph.SetVersion(5)
+	s.Equal(5, s.graph.GetVersion())
 }
 
 func (s *GraphTestSuite) TestAddNodeSuccess() {

@@ -107,13 +107,13 @@ type ApplicationCertificate = inboundmodel.Certificate
 // ApplicationRequest represents the request structure for creating or updating an application.
 type ApplicationRequest struct {
 	OUID        string   `json:"ouId,omitempty" yaml:"ouId,omitempty"`
-	Name        string   `json:"name" yaml:"name"`
+	Name        string   `json:"name" yaml:"name" native:"required,min=3,max=100"`
 	Description string   `json:"description" yaml:"description"`
 	Template    string   `json:"template,omitempty" yaml:"template,omitempty"`
-	URL         string   `json:"url,omitempty" yaml:"url,omitempty"`
-	LogoURL     string   `json:"logoUrl,omitempty" yaml:"logoUrl,omitempty"`
-	TosURI      string   `json:"tosUri,omitempty" yaml:"tosUri,omitempty"`
-	PolicyURI   string   `json:"policyUri,omitempty" yaml:"policyUri,omitempty"`
+	URL         string   `json:"url,omitempty" yaml:"url,omitempty" native:"omitempty,url,max=2048"`
+	LogoURL     string   `json:"logoUrl,omitempty" yaml:"logoUrl,omitempty" native:"omitempty,url,max=2048"`
+	TosURI      string   `json:"tosUri,omitempty" yaml:"tosUri,omitempty" native:"omitempty,url,max=2048"`
+	PolicyURI   string   `json:"policyUri,omitempty" yaml:"policyUri,omitempty" native:"omitempty,url,max=2048"`
 	Contacts    []string `json:"contacts,omitempty" yaml:"contacts,omitempty"`
 
 	inboundmodel.InboundAuthProfile `yaml:",inline"`

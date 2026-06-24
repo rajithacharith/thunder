@@ -29,6 +29,8 @@ import (
 	flowmgt "github.com/thunder-id/thunderid/internal/flow/mgt"
 	"github.com/thunder-id/thunderid/internal/group"
 	"github.com/thunder-id/thunderid/internal/idp"
+	"github.com/thunder-id/thunderid/internal/openid4vci/credential"
+	"github.com/thunder-id/thunderid/internal/openid4vp/definition"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
@@ -54,6 +56,8 @@ func Initialize(
 	userService user.UserServiceInterface,
 	translationService i18nmgt.I18nServiceInterface,
 	agentService agent.AgentServiceInterface,
+	presentationDefinitionService definition.PresentationDefinitionServiceInterface,
+	credentialConfigurationService credential.CredentialConfigurationServiceInterface,
 ) ImportServiceInterface {
 	importService := newImportService(
 		applicationService,
@@ -70,6 +74,8 @@ func Initialize(
 		userService,
 		translationService,
 		agentService,
+		presentationDefinitionService,
+		credentialConfigurationService,
 	)
 	importHandler := newImportHandler(importService)
 

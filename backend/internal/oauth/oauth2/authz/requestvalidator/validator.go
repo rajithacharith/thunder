@@ -135,12 +135,7 @@ func ValidatePromptParameter(prompt string) (string, string) {
 			"User authentication is required"
 	}
 
-	// The server does not support consent or account selection prompts as of now.
-	if slices.Contains(values, constants.PromptConsent) {
-		return constants.ErrorConsentRequired,
-			"Consent is not supported"
-	}
-
+	// The server does not support account selection prompts as of now.
 	if slices.Contains(values, constants.PromptSelectAccount) {
 		return constants.ErrorAccountSelectionRequired,
 			"Account selection is not supported"

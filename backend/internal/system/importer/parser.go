@@ -29,21 +29,23 @@ import (
 )
 
 const (
-	resourceTypeOrganizationUnit   = "organization_unit"
-	resourceTypeEntityType         = "user_type"
-	resourceTypeResourceServer     = "resource_server"
-	resourceTypeRole               = "role"
-	resourceTypeGroup              = "group"
-	resourceTypeIdentityProvider   = "identity_provider"
-	resourceTypeNotificationSender = "notification_sender"
-	resourceTypeFlow               = "flow"
-	resourceTypeTheme              = "theme"
-	resourceTypeLayout             = "layout"
-	resourceTypeApplication        = "application"
-	resourceTypeUser               = "user"
-	resourceTypeTranslation        = "translation"
-	resourceTypeAgent              = "agent"
-	resourceTypeUnknown            = "unknown"
+	resourceTypeOrganizationUnit        = "organization_unit"
+	resourceTypeEntityType              = "user_type"
+	resourceTypeResourceServer          = "resource_server"
+	resourceTypeRole                    = "role"
+	resourceTypeGroup                   = "group"
+	resourceTypeIdentityProvider        = "identity_provider"
+	resourceTypeNotificationSender      = "notification_sender"
+	resourceTypeFlow                    = "flow"
+	resourceTypeTheme                   = "theme"
+	resourceTypeLayout                  = "layout"
+	resourceTypeApplication             = "application"
+	resourceTypeUser                    = "user"
+	resourceTypeTranslation             = "translation"
+	resourceTypeAgent                   = "agent"
+	resourceTypePresentationDefinition  = "presentation_definition"
+	resourceTypeCredentialConfiguration = "credential_configuration" //nolint:gosec
+	resourceTypeUnknown                 = "unknown"
 )
 
 type parsedDocument struct {
@@ -154,20 +156,22 @@ func parseResourceTypeFromComment(comment string) string {
 
 func isKnownResourceType(resourceType string) bool {
 	knownTypes := map[string]struct{}{
-		resourceTypeOrganizationUnit:   {},
-		resourceTypeEntityType:         {},
-		resourceTypeResourceServer:     {},
-		resourceTypeRole:               {},
-		resourceTypeIdentityProvider:   {},
-		resourceTypeNotificationSender: {},
-		resourceTypeFlow:               {},
-		resourceTypeTheme:              {},
-		resourceTypeLayout:             {},
-		resourceTypeApplication:        {},
-		resourceTypeUser:               {},
-		resourceTypeGroup:              {},
-		resourceTypeTranslation:        {},
-		resourceTypeAgent:              {},
+		resourceTypeOrganizationUnit:        {},
+		resourceTypeEntityType:              {},
+		resourceTypeResourceServer:          {},
+		resourceTypeRole:                    {},
+		resourceTypeIdentityProvider:        {},
+		resourceTypeNotificationSender:      {},
+		resourceTypeFlow:                    {},
+		resourceTypeTheme:                   {},
+		resourceTypeLayout:                  {},
+		resourceTypeApplication:             {},
+		resourceTypeUser:                    {},
+		resourceTypeGroup:                   {},
+		resourceTypeTranslation:             {},
+		resourceTypeAgent:                   {},
+		resourceTypePresentationDefinition:  {},
+		resourceTypeCredentialConfiguration: {},
 	}
 
 	_, exists := knownTypes[resourceType]

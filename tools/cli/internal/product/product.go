@@ -26,7 +26,7 @@ const (
 
 // Distribution URLs.
 const (
-	ReleasesURL = "https://brionmario.github.io/thunderid/data/releases.json"
+	ReleasesURL = "https://thunderid.dev/data/releases.json"
 	GitHubAPI   = "https://api.github.com/repos/thunder-id/thunderid/releases/latest"
 )
 

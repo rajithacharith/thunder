@@ -1104,6 +1104,20 @@ var (
 		},
 	}
 
+	// ErrOpenID4VPDefinitionNotConfigured is returned when the OpenID4VP node has no presentation_definition_id.
+	ErrOpenID4VPDefinitionNotConfigured = serviceerror.ServiceError{
+		Type: serviceerror.ServerErrorType,
+		Code: "FET-1082",
+		Error: core.I18nMessage{
+			Key:          "flows.executor.errors.openid4vp_definition_not_configured",
+			DefaultValue: "OpenID4VP presentation definition is not configured",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "flows.executor.errors.openid4vp_definition_not_configured_desc",
+			DefaultValue: "The OpenID4VP node is missing the presentation_definition_id property",
+		},
+	}
+
 	// ErrOpenID4VPInitiateFailed is returned when initiating the OpenID4VP request fails.
 	ErrOpenID4VPInitiateFailed = serviceerror.ServiceError{
 		Type: serviceerror.ServerErrorType,
@@ -1143,6 +1157,20 @@ var (
 		ErrorDescription: core.I18nMessage{
 			Key:          "flows.executor.errors.openid4vp_verification_failed_desc",
 			DefaultValue: "The OpenID4VP presentation verification failed",
+		},
+	}
+
+	// ErrProvisioningAttributeConflict is returned when user provisioning fails due to an attribute conflict.
+	ErrProvisioningAttributeConflict = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "FET-1081",
+		Error: core.I18nMessage{
+			Key:          "flows.executor.errors.provisioning_attribute_conflict",
+			DefaultValue: "A user with the provided attributes already exists",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "flows.executor.errors.provisioning_attribute_conflict_desc",
+			DefaultValue: "User provisioning failed because one or more unique attribute values are already taken",
 		},
 	}
 )

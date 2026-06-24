@@ -140,6 +140,7 @@ func (s *parService) HandlePushedAuthorizationRequest(
 		Nonce:               params[oauth2const.RequestParamNonce],
 		AcrValues:           params[oauth2const.RequestParamAcrValues],
 		DPoPJkt:             resolveDPoPJkt(params[oauth2const.RequestParamDPoPJkt], dpopHeaderJkt),
+		Prompt:              params[oauth2const.RequestParamPrompt],
 	}
 
 	parRequest := pushedAuthorizationRequest{

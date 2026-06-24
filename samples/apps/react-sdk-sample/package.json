@@ -11,7 +11,7 @@
     "start": "npm run dev"
   },
   "dependencies": {
-    "@thunderid/react": "workspace:^",
+    "@thunderid/react": "catalog:",
     "@wso2/oxygen-ui": "catalog:",
     "jwt-decode": "4.0.0",
     "react": "catalog:",

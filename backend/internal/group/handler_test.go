@@ -774,7 +774,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostByPathReques
 			name:          "invalid path",
 			method:        http.MethodPost,
 			url:           "/ous//groups",
-			body:          `{"name":"n"}`,
+			body:          `{"name":"group-name"}`,
 			setJSONHeader: true,
 			assert: func(rr *httptest.ResponseRecorder) {
 				require.Equal(suite.T(), http.StatusBadRequest, rr.Code)
@@ -789,11 +789,11 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostByPathReques
 			url:            "/ous/root/groups",
 			pathParamKey:   "path",
 			pathParamValue: "root",
-			body:           `{"name":"n"}`,
+			body:           `{"name":"group-name"}`,
 			setJSONHeader:  true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("CreateGroupByPath", mock.Anything, "root", CreateGroupByPathRequest{Name: "n"}).
+					On("CreateGroupByPath", mock.Anything, "root", CreateGroupByPathRequest{Name: "group-name"}).
 					Return((*Group)(nil), &ErrorGroupNotFound).
 					Once()
 			},
@@ -844,11 +844,11 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostByPathReques
 			url:            "/ous/root/groups",
 			pathParamKey:   "path",
 			pathParamValue: "root",
-			body:           `{"name":"n"}`,
+			body:           `{"name":"group-name"}`,
 			setJSONHeader:  true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("CreateGroupByPath", mock.Anything, "root", CreateGroupByPathRequest{Name: "n"}).
+					On("CreateGroupByPath", mock.Anything, "root", CreateGroupByPathRequest{Name: "group-name"}).
 					Return((*Group)(nil), &serviceerror.InternalServerError).
 					Once()
 			},
@@ -1708,4 +1708,21 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleErrorClientError() {
 	var body apierror.ErrorResponse
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &body))
 	require.Equal(t, ErrorGroupNameConflict.Code, body.Code)
+}
+
+func (suite *GroupHandlerTestSuite) TestGroupHandler_ValidationError_NameTooShort() {
+	serviceMock := NewGroupServiceInterfaceMock(suite.T())
+	handler := newGroupHandler(serviceMock)
+
+	// Fails validation because the name string has a length of 2 (violates min=3)
+	body := `{"name":"ab", "ouId":"ou-001"}`
+	req := httptest.NewRequest(http.MethodPost, "/groups", strings.NewReader(body))
+	w := httptest.NewRecorder()
+
+	handler.HandleGroupPostRequest(w, req)
+
+	require.Equal(suite.T(), http.StatusBadRequest, w.Code)
+
+	// Confirms validation intercepted the flow and short-circuited the mock service call
+	serviceMock.AssertNotCalled(suite.T(), "CreateGroup", mock.Anything, mock.Anything)
 }

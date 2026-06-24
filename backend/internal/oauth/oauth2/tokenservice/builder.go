@@ -157,11 +157,10 @@ func (tb *tokenBuilder) buildAccessTokenClaims(
 		claims["act"] = actClaim
 	}
 
-	// Include only userinfo claims request for UserInfo endpoint support
-	if ctx.ClaimsRequest != nil && ctx.ClaimsRequest.UserInfo != nil {
-		userinfoClaims := &oauth2model.ClaimsRequest{
-			UserInfo: ctx.ClaimsRequest.UserInfo,
-		}
+	// Include only normal userinfo claims for UserInfo endpoint support.
+	// verified_claims is never resolved or returned, so it is excluded from the access token.
+	if ctx.ClaimsRequest != nil && len(ctx.ClaimsRequest.UserInfo) > 0 {
+		userinfoClaims := &oauth2model.ClaimsRequest{UserInfo: ctx.ClaimsRequest.UserInfo}
 		serialized, err := oauth2utils.SerializeClaimsRequest(userinfoClaims)
 		if err != nil {
 			return nil, fmt.Errorf("failed to serialize userinfo claims request: %w", err)

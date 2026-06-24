@@ -226,6 +226,7 @@ func (as *authorizeService) handleStandardAuthorizationRequest(
 	nonce := msg.RequestQueryParams[oauth2const.RequestParamNonce]
 	acrValues := msg.RequestQueryParams[oauth2const.RequestParamAcrValues]
 	dpopJkt := msg.RequestQueryParams[oauth2const.RequestParamDPoPJkt]
+	prompt := msg.RequestQueryParams[oauth2const.RequestParamPrompt]
 
 	// Parse the claims parameter if present.
 	var claimsRequest *oauth2model.ClaimsRequest
@@ -290,6 +291,7 @@ func (as *authorizeService) handleStandardAuthorizationRequest(
 		Nonce:               nonce,
 		AcrValues:           acrValues,
 		DPoPJkt:             dpopJkt,
+		Prompt:              prompt,
 	}
 
 	// Set the redirect URI if not provided in the request. Invalid cases are already handled at this point.
@@ -347,6 +349,9 @@ func (as *authorizeService) initiateFlowAndStoreRequest(
 	}
 	if effectiveAcrValues != "" {
 		runtimeData[flowcm.RuntimeKeyRequestedAuthClasses] = effectiveAcrValues
+	}
+	if slices.Contains(strings.Fields(oauthParams.Prompt), oauth2const.PromptConsent) {
+		runtimeData[flowcm.RuntimeKeyForceConsentReprompt] = "true"
 	}
 	flowInitCtx := &flowexec.FlowInitContext{
 		ApplicationID: app.ID,
@@ -783,8 +788,8 @@ func appendAttributesFromClaimsParameter(claimsRequest *oauth2model.ClaimsReques
 		}
 	}
 
-	// Append user info attributes
-	if claimsRequest.UserInfo != nil && userInfoAllowedSet != nil {
+	// Append user info attributes (verified_claims is held separately in VerifiedUserInfo)
+	if userInfoAllowedSet != nil {
 		for name, value := range claimsRequest.UserInfo {
 			if userInfoAllowedSet[name] {
 				if value != nil && value.Essential {
@@ -860,12 +865,10 @@ func validateSubClaimConstraint(claimsRequest *oauth2model.ClaimsRequest, actual
 		}
 	}
 
-	// Check userinfo sub claim constraint.
-	if claimsRequest.UserInfo != nil {
-		if subReq, exists := claimsRequest.UserInfo["sub"]; exists && subReq != nil {
-			if !subReq.MatchesValue(actualSubject) {
-				return errors.New("sub claim in userinfo does not match requested value")
-			}
+	// Check userinfo sub claim constraint (verified_claims is held separately in VerifiedUserInfo).
+	if subReq, exists := claimsRequest.UserInfo["sub"]; exists && subReq != nil {
+		if !subReq.MatchesValue(actualSubject) {
+			return errors.New("sub claim in userinfo does not match requested value")
 		}
 	}
 

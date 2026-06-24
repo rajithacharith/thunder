@@ -371,6 +371,69 @@ func (s *InterceptorRunnerTestSuite) TestRunInterceptors_DefaultInterceptorCanno
 	assert.True(s.T(), executed, "default interceptor must not be bypassed by node skipInterceptors")
 }
 
+func (s *InterceptorRunnerTestSuite) TestRunInterceptors_CurrentNodeInputsPassedToInterceptor() {
+	expectedInputs := []common.Input{
+		{Identifier: "email", Type: "string", Required: true},
+		{Identifier: "password", Type: common.InputTypePassword, Required: true},
+	}
+
+	var receivedInputs []common.Input
+	icMock := newTestInterceptorMock(s.T(), "InputIC", false, 100)
+	icMock.On("Execute", mock.Anything).
+		Run(func(args mock.Arguments) {
+			ctx := args.Get(0).(*core.InterceptorContext)
+			receivedInputs = ctx.CurrentNodeInputs
+		}).
+		Return(&common.InterceptorResponse{Status: common.InterceptorStatusComplete}, nil)
+
+	s.registry.On("GetInterceptor", "InputIC").Return(icMock, nil)
+
+	execCtx := &InterceptorRunnerContext{
+		Ctx: context.Background(),
+		ResolvedInterceptors: []core.InterceptorUnitInterface{
+			newTestInterceptorUnitMock(s.T(), "InputIC", common.InterceptorModePreNode,
+				common.InterceptorScopeAll, nil),
+		},
+		CurrentNodeInputs: expectedInputs,
+		SharedData:        map[string]string{},
+	}
+
+	_, svcErr := s.service.runInterceptors(common.InterceptorModePreRequest, execCtx)
+
+	assert.Nil(s.T(), svcErr)
+	assert.Equal(s.T(), expectedInputs, receivedInputs)
+}
+
+func (s *InterceptorRunnerTestSuite) TestRunInterceptors_NilCurrentNodeInputsPassedAsNil() {
+	var receivedInputs []common.Input
+	called := false
+	icMock := newTestInterceptorMock(s.T(), "NilInputIC", false, 100)
+	icMock.On("Execute", mock.Anything).
+		Run(func(args mock.Arguments) {
+			called = true
+			ctx := args.Get(0).(*core.InterceptorContext)
+			receivedInputs = ctx.CurrentNodeInputs
+		}).
+		Return(&common.InterceptorResponse{Status: common.InterceptorStatusComplete}, nil)
+
+	s.registry.On("GetInterceptor", "NilInputIC").Return(icMock, nil)
+
+	execCtx := &InterceptorRunnerContext{
+		Ctx: context.Background(),
+		ResolvedInterceptors: []core.InterceptorUnitInterface{
+			newTestInterceptorUnitMock(s.T(), "NilInputIC", common.InterceptorModePreRequest,
+				common.InterceptorScope(""), nil),
+		},
+		SharedData: map[string]string{},
+	}
+
+	_, svcErr := s.service.runInterceptors(common.InterceptorModePreRequest, execCtx)
+
+	assert.Nil(s.T(), svcErr)
+	assert.True(s.T(), called)
+	assert.Nil(s.T(), receivedInputs)
+}
+
 // --- Test helpers ---
 
 func newTestInterceptorMock(t interface {
