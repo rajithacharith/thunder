@@ -421,12 +421,12 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_IdentifyEntity_Serv
 		},
 	}
 
-	otpToken := map[string]interface{}{"mobileNumber": "+1234567890"}
+	otpToken := map[string]interface{}{"mobile_number": "+1234567890"}
 
 	mockOTP.On("Authenticate", mock.Anything, "tok", "123456").
 		Return(&authncommon.AuthnResult{
 			Token:               otpToken,
-			AuthenticatedClaims: map[string]interface{}{"mobileNumber": "+1234567890"},
+			AuthenticatedClaims: map[string]interface{}{"mobile_number": "+1234567890"},
 		}, nil).Once()
 	suite.mockService.On("IdentifyEntity", mock.Anything, otpToken).
 		Return(nil, errors.New("db error")).Once()
@@ -449,7 +449,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_IdentifyEntity_Succ
 		},
 	}
 
-	otpToken := map[string]interface{}{"mobileNumber": "+1234567890"}
+	otpToken := map[string]interface{}{"mobile_number": "+1234567890"}
 
 	entityObj := &entity.Entity{
 		ID:         "resolved-id",
@@ -463,7 +463,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_IdentifyEntity_Succ
 	mockOTP.On("Authenticate", mock.Anything, "tok", "123456").
 		Return(&authncommon.AuthnResult{
 			Token:               otpToken,
-			AuthenticatedClaims: map[string]interface{}{"mobileNumber": "+1234567890"},
+			AuthenticatedClaims: map[string]interface{}{"mobile_number": "+1234567890"},
 		}, nil).Once()
 	suite.mockService.On("IdentifyEntity", mock.Anything, otpToken).
 		Return(new("resolved-id"), nil).Once()
@@ -488,12 +488,12 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_IdentifyEntity_GetE
 		},
 	}
 
-	otpToken := map[string]interface{}{"mobileNumber": "+1234567890"}
+	otpToken := map[string]interface{}{"mobile_number": "+1234567890"}
 
 	mockOTP.On("Authenticate", mock.Anything, "tok", "123456").
 		Return(&authncommon.AuthnResult{
 			Token:               otpToken,
-			AuthenticatedClaims: map[string]interface{}{"mobileNumber": "+1234567890"},
+			AuthenticatedClaims: map[string]interface{}{"mobile_number": "+1234567890"},
 		}, nil).Once()
 	suite.mockService.On("IdentifyEntity", mock.Anything, otpToken).
 		Return(new("resolved-id"), nil).Once()
@@ -982,11 +982,11 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_MagicLink_MissingTo
 func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_TokenizedAuth_EntityFound() {
 	setupOTP := func() (AuthnProviderInterface, map[string]interface{}, map[string]interface{}) {
 		mockOTP := otpmock.NewOTPAuthnServiceInterfaceMock(suite.T())
-		token := map[string]interface{}{"mobileNumber": "+1234567890"}
+		token := map[string]interface{}{"mobile_number": "+1234567890"}
 		mockOTP.On("Authenticate", mock.Anything, "tok", "123456").
 			Return(&authncommon.AuthnResult{
 				Token:               token,
-				AuthenticatedClaims: map[string]interface{}{"mobileNumber": "+1234567890"},
+				AuthenticatedClaims: map[string]interface{}{"mobile_number": "+1234567890"},
 			}, nil).Once()
 		creds := map[string]interface{}{
 			"otp": map[string]interface{}{
@@ -1051,11 +1051,11 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_TokenizedAuth_Entit
 func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_TokenizedAuth_IdentifyEntityErrorReturnsTokens() {
 	setupOTP := func() (AuthnProviderInterface, map[string]interface{}, map[string]interface{}) {
 		mockOTP := otpmock.NewOTPAuthnServiceInterfaceMock(suite.T())
-		token := map[string]interface{}{"mobileNumber": "+1234567890"}
+		token := map[string]interface{}{"mobile_number": "+1234567890"}
 		mockOTP.On("Authenticate", mock.Anything, "tok", "123456").
 			Return(&authncommon.AuthnResult{
 				Token:               token,
-				AuthenticatedClaims: map[string]interface{}{"mobileNumber": "+1234567890"},
+				AuthenticatedClaims: map[string]interface{}{"mobile_number": "+1234567890"},
 			}, nil).Once()
 		creds := map[string]interface{}{
 			"otp": map[string]interface{}{

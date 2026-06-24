@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -303,7 +303,7 @@ const (
 // Attribute name constants for well-known user attributes used across flow executors.
 const (
 	// AttributeMobileNumber is the default attribute name for a user's mobile phone number.
-	AttributeMobileNumber = "mobileNumber"
+	AttributeMobileNumber = "mobile_number"
 )
 
 // sensitiveInputTypes contains the list of input types that are considered sensitive.

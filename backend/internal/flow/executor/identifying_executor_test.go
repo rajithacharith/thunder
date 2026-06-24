@@ -187,8 +187,8 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_WithEmail() {
 	suite.mockEntityProvider.AssertExpectations(suite.T())
 }
 
-func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_WithMobileNumber() {
-	filters := map[string]interface{}{"mobileNumber": "+1234567890"}
+func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_Withmobile_number() {
+	filters := map[string]interface{}{"mobile_number": "+1234567890"}
 	execResp := &common.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
@@ -337,7 +337,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_Success_WithVariousAttrib
 		expectedID string
 	}{
 		{"email", "email", "test@example.com", "user-email-456"},
-		{"mobileNumber", "mobileNumber", "+1234567890", "user-mobile-789"},
+		{"mobile_number", "mobile_number", "+1234567890", "user-mobile-789"},
 	}
 
 	for _, tc := range testCases {
@@ -408,7 +408,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_Failure_UserNotFoundByAtt
 		value     string
 	}{
 		{"email", "email", "nonexistent@example.com"},
-		{"mobileNumber", "mobileNumber", "+0000000000"},
+		{"mobile_number", "mobile_number", "+0000000000"},
 	}
 
 	for _, tc := range testCases {
@@ -449,7 +449,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_Success_FromRuntimeData()
 		expectedID string
 	}{
 		{"email", "email", "runtime@example.com", "user-runtime-email-456"},
-		{"mobileNumber", "mobileNumber", "+9876543210", "user-runtime-mobile-789"},
+		{"mobile_number", "mobile_number", "+9876543210", "user-runtime-mobile-789"},
 	}
 
 	for _, tc := range testCases {

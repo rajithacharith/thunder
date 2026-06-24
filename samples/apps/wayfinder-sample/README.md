@@ -119,7 +119,7 @@ The import creates:
 
 | Resource | Type | What it creates |
 |----------|------|-----------------|
-| `Customer` | User type | Consumer schema (`username`, `email`, `password`, `given_name`, `family_name`, `mobileNumber`, `sub`) with self-registration enabled |
+| `Customer` | User type | Consumer schema (`username`, `email`, `password`, `given_name`, `family_name`, `mobile_number`, `sub`) with self-registration enabled |
 | `Staff` | User type | Internal team schema (`username`, `email`, `password`, `displayName`) |
 | `wayfinder-agent` | Resource server | `agent:access` permission |
 | `wayfinder-booking` | Resource server | `booking:read`, `booking:create`, `booking:cancel`, `booking:recommend`, `booking:upgrade`, `upgrade:read`, `upgrade:search`, `upgrade:process` permissions. Protects both `/api/*` (REST) and `/mcp` (MCP tools) on the Wayfinder server. |
@@ -207,7 +207,7 @@ ThunderID can deliver notifications — including CIBA upgrade approvals — via
 
 2. In the ThunderID Console, go to **Applications → WAYFINDER-UPGRADE-AGENT** and change the Authentication Flow to `wayfinder-ciba-sms-flow`. Save.
 
-3. Update `john.doe`'s `mobileNumber` field in the Console (E.164 format, for example `+15550101`).
+3. Update `john.doe`'s `mobile_number` field in the Console (E.164 format, for example `+15550101`).
 
 Notifications now arrive as SMS. If you already approved the consent during the email flow, the consent screen is skipped on future approvals.
 

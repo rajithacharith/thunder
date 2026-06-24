@@ -2574,7 +2574,7 @@ func (s *PromptOnlyNodeTestSuite) TestSyntheticMeta_InsertedInsideBlockBeforeAct
 		Verbose:     true,
 		ForwardedData: map[string]interface{}{
 			common.ForwardedDataKeyInputs: []common.Input{
-				{Identifier: "mobileNumber", Type: "TEXT_INPUT", Required: true, DisplayName: "Mobile Number"},
+				{Identifier: "mobile_number", Type: "TEXT_INPUT", Required: true, DisplayName: "Mobile Number"},
 			},
 		},
 	}
@@ -2604,9 +2604,9 @@ func (s *PromptOnlyNodeTestSuite) TestSyntheticMeta_InsertedInsideBlockBeforeAct
 
 	inputComp, ok := blockChildren[0].(map[string]interface{})
 	s.Require().True(ok)
-	s.Equal("mobileNumber", inputComp["id"], "synthetic input must be first — before the ACTION")
+	s.Equal("mobile_number", inputComp["id"], "synthetic input must be first — before the ACTION")
 	s.Equal("TEXT_INPUT", inputComp["type"])
-	s.Equal("mobileNumber", inputComp["ref"])
+	s.Equal("mobile_number", inputComp["ref"])
 	s.Equal("Mobile Number", inputComp["label"])
 	s.Equal(true, inputComp["required"])
 

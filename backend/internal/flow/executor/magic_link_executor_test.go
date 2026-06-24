@@ -257,7 +257,7 @@ func (suite *MagicLinkExecutorTestSuite) TestExecute_GenerateMode_Success_Regist
 	suite.mockMagicLinkService.AssertExpectations(suite.T())
 }
 
-func (suite *MagicLinkExecutorTestSuite) TestExecute_GenerateMode_Success_RegistrationFlow_MobileNumber() {
+func (suite *MagicLinkExecutorTestSuite) TestExecute_GenerateMode_Success_RegistrationFlow_mobile_number() {
 	ctx := &core.NodeContext{
 		Context:      context.Background(),
 		ExecutionID:  magicLinkTestExecutionID,
@@ -265,16 +265,16 @@ func (suite *MagicLinkExecutorTestSuite) TestExecute_GenerateMode_Success_Regist
 		ExecutorMode: ExecutorModeGenerate,
 		Application:  appmodel.Application{ID: magicLinkTestAppID},
 		NodeInputs: []common.Input{
-			{Identifier: "mobileNumber"},
+			{Identifier: "mobile_number"},
 		},
 		UserInputs: map[string]string{
-			"mobileNumber": "+1234567890",
+			"mobile_number": "+1234567890",
 		},
 		RuntimeData: make(map[string]string),
 	}
 
 	suite.mockEntityProvider.On("IdentifyEntity", map[string]interface{}{
-		"mobileNumber": "+1234567890",
+		"mobile_number": "+1234567890",
 	}).Return(nil, entityprovider.NewEntityProviderError(entityprovider.ErrorCodeEntityNotFound, "", ""))
 
 	suite.mockMagicLinkService.On("GenerateMagicLink", ctx.Context, "+1234567890",
@@ -297,8 +297,8 @@ func (suite *MagicLinkExecutorTestSuite) TestExecute_GenerateMode_Success_Regist
 	assert.True(suite.T(), ok)
 	assert.Equal(suite.T(), "https://example.com/verify?id=flow-123&token=jwt-token-123", templateData["magicLink"])
 
-	assert.Equal(suite.T(), "+1234567890", resp.RuntimeData["mobileNumber"])
-	assert.Equal(suite.T(), "mobileNumber", resp.RuntimeData[common.RuntimeKeyMagicLinkDestinationAttribute])
+	assert.Equal(suite.T(), "+1234567890", resp.RuntimeData["mobile_number"])
+	assert.Equal(suite.T(), "mobile_number", resp.RuntimeData[common.RuntimeKeyMagicLinkDestinationAttribute])
 	suite.mockEntityProvider.AssertExpectations(suite.T())
 	suite.mockMagicLinkService.AssertExpectations(suite.T())
 }
@@ -631,7 +631,7 @@ func (suite *MagicLinkExecutorTestSuite) TestExecute_VerifyMode_Success_Registra
 			userInputMagicLinkToken: testToken,
 		},
 		RuntimeData: map[string]string{
-			common.RuntimeKeyMagicLinkDestinationAttribute: "mobileNumber",
+			common.RuntimeKeyMagicLinkDestinationAttribute: "mobile_number",
 		},
 	}
 
