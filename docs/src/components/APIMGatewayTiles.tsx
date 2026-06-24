@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import React from 'react';
-import {useCurrentSidebarCategory} from '@docusaurus/plugin-content-docs/client';
 import type {PropSidebarItemLink} from '@docusaurus/plugin-content-docs';
+import {useCurrentSidebarCategory} from '@docusaurus/plugin-content-docs/client';
+import React from 'react';
 import {APISIXLogo, AzureAPIMlogo, EnvoyLogo, KongLogo, KrakenDLogo} from './GatewayIntegrationDiagram';
 
 interface GatewayConfig {
