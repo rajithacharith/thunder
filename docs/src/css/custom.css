@@ -4370,3 +4370,12 @@ a.connect-card {
   fill: var(--ifm-color-emphasis-500);
 }
 
+
+/* Fix DocSearch sidepanel not appearing in production build.
+   The default transform is overridden by a conflicting style — !important ensures
+   the panel becomes visible when opened. */
+.DocSearch-Sidepanel-Container.floating.is-open,
+.DocSearch-Sidepanel-Container.inline.is-open {
+  opacity: 1;
+  transform: none !important;
+}
