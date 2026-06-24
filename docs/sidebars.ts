@@ -385,6 +385,16 @@ const sidebars: SidebarsConfig = {
             },
           ],
         },
+        {
+          type: 'category',
+          label: 'Decentralised Identity',
+          collapsible: true,
+          collapsed: true,
+          key: 'use-cases-did',
+          items: [
+            {type: 'doc', id: 'use-cases/did/overview', label: 'Overview', key: 'did-overview'},
+          ],
+        },
       ],
     },
 
