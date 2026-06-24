@@ -28,6 +28,8 @@ import (
 	flowmgt "github.com/thunder-id/thunderid/internal/flow/mgt"
 	"github.com/thunder-id/thunderid/internal/group"
 	"github.com/thunder-id/thunderid/internal/idp"
+	"github.com/thunder-id/thunderid/internal/openid4vci/credential"
+	"github.com/thunder-id/thunderid/internal/openid4vp/definition"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
@@ -40,18 +42,20 @@ import (
 // across all domain packages used by the importer. Used to distinguish upsert fallback (create after
 // update-not-found) from other update errors.
 var notFoundErrorCodes = map[string]struct{}{
-	application.ErrorApplicationNotFound.Code: {},
-	idp.ErrorIDPNotFound.Code:                 {},
-	flowmgt.ErrorFlowNotFound.Code:            {},
-	ou.ErrorOrganizationUnitNotFound.Code:     {},
-	entitytype.ErrorEntityTypeNotFound.Code:   {},
-	role.ErrorRoleNotFound.Code:               {},
-	group.ErrorGroupNotFound.Code:             {},
-	resource.ErrorResourceServerNotFound.Code: {},
-	thememgt.ErrorThemeNotFound.Code:          {},
-	layoutmgt.ErrorLayoutNotFound.Code:        {},
-	user.ErrorUserNotFound.Code:               {},
-	agent.ErrorAgentNotFound.Code:             {},
+	application.ErrorApplicationNotFound.Code:  {},
+	idp.ErrorIDPNotFound.Code:                  {},
+	flowmgt.ErrorFlowNotFound.Code:             {},
+	ou.ErrorOrganizationUnitNotFound.Code:      {},
+	entitytype.ErrorEntityTypeNotFound.Code:    {},
+	role.ErrorRoleNotFound.Code:                {},
+	group.ErrorGroupNotFound.Code:              {},
+	resource.ErrorResourceServerNotFound.Code:  {},
+	thememgt.ErrorThemeNotFound.Code:           {},
+	layoutmgt.ErrorLayoutNotFound.Code:         {},
+	user.ErrorUserNotFound.Code:                {},
+	agent.ErrorAgentNotFound.Code:              {},
+	definition.ErrorDefinitionNotFound.Code:    {},
+	credential.ErrorConfigurationNotFound.Code: {},
 }
 
 var (

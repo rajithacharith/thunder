@@ -65,7 +65,12 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth"
 	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dcr"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/jti"
+	"github.com/thunder-id/thunderid/internal/openid4vci"
+	openid4vcicred "github.com/thunder-id/thunderid/internal/openid4vci/credential"
 	"github.com/thunder-id/thunderid/internal/openid4vp"
+	openid4vpdef "github.com/thunder-id/thunderid/internal/openid4vp/definition"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
@@ -109,7 +114,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		logger.Fatal(ctx, "Failed to initialize certificate service", log.Error(err))
 	}
 
-	runtimeCryptoSvc, _, err := kmprovider.Initialize(pkiService)
+	runtimeCryptoSvc, configCryptoSvc, err := kmprovider.Initialize(pkiService)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize key manager provider", log.Error(err))
 	}
@@ -255,13 +260,16 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		idp.IDPTypeGitHub: githubAuthnService,
 	}
 
-	// Initialize the OpenID4VP verifier engine and register its wallet-facing
-	// endpoints. Presentation definitions are registered from configuration by
-	// the engine itself.
-	openid4vpVerifierSvc, err := openid4vp.Initialize(mux, runtimeCryptoSvc, cacheManager, jwtService)
-	if err != nil {
-		logger.Fatal(ctx, "Failed to initialize OpenID4VP verifier service", log.Error(err))
-	}
+	// Shared DPoP verifier (and its JTI replay cache) so OAuth and OpenID4VCI
+	// share JTI replay protection.
+	oauthCfg := oauthconfig.FromServerRuntime()
+	dpopVerifier := dpop.Initialize(oauthCfg, jti.Initialize(oauthCfg))
+
+	// Initialize the verifiable-credential services (OpenID4VP verifier + OpenID4VCI issuer).
+	openid4vpVerifierSvc, openid4vpDefSvc, _, openid4vciCredSvc, exporters :=
+		initializeVCServices(
+			ctx, logger, mux, runtimeCryptoSvc, configCryptoSvc, jwtService, userService, ouService,
+			dpopVerifier, exporters)
 
 	// Initialize authn provider
 	authnProvider := authnprovidermgr.InitializeAuthnProviderManager(entityService, passkeyService, otpCoreService,
@@ -380,6 +388,8 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		userService,
 		i18nService,
 		agentService,
+		openid4vpDefSvc,
+		openid4vciCredSvc,
 	)
 
 	flowExecService, err := flowexec.Initialize(mux, flowMgtService, actorProvider,
@@ -389,10 +399,9 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	}
 
 	// Initialize OAuth services.
-	oauthCfg := oauthconfig.FromServerRuntime()
 	err = oauth.Initialize(mux, actorProvider, authnProvider, jwtService, jweService,
 		flowExecService, observabilitySvc, runtimeCryptoSvc, ouService, attributeCacheService, authZService,
-		resourceService, i18nService, idpService, oauthCfg)
+		resourceService, i18nService, idpService, dpopVerifier, oauthCfg)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize OAuth services", log.Error(err))
 	}
@@ -450,6 +459,38 @@ func initializeFlowCoreAndExecutor(
 		logger.Fatal(ctx, "Failed to initialize Interceptor registry", log.Error(err))
 	}
 	return flowFactory, graphCache, execRegistry, interceptorRegistry
+}
+
+// initializeVCServices initializes the OpenID4VP verifier and OpenID4VCI issuer
+// services, appending their declarative-resource exporters to exporters.
+func initializeVCServices(
+	ctx context.Context, logger *log.Logger, mux *http.ServeMux,
+	runtimeCrypto kmprovider.RuntimeCryptoProvider, configCrypto kmprovider.ConfigCryptoProvider,
+	jwtService jwt.JWTServiceInterface, userService user.UserServiceInterface,
+	ouService ou.OrganizationUnitServiceInterface,
+	dpopVer dpop.VerifierInterface,
+	exporters []declarativeresource.ResourceExporter,
+) (openid4vp.OpenID4VPServiceInterface, openid4vpdef.PresentationDefinitionServiceInterface,
+	openid4vci.OpenID4VCIServiceInterface,
+	openid4vcicred.CredentialConfigurationServiceInterface, []declarativeresource.ResourceExporter) {
+	vpVerifier, vpDefSvc, vpDefExp, err := openid4vp.Initialize(mux, runtimeCrypto, configCrypto, jwtService, ouService)
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize OpenID4VP verifier service", log.Error(err))
+	}
+	if vpDefExp != nil {
+		exporters = append(exporters, vpDefExp)
+	}
+
+	vciSvc, vciCredSvc, vciExp, err := openid4vci.Initialize(
+		mux, runtimeCrypto, jwtService, userService, dpopVer, ouService)
+	if err != nil {
+		logger.Fatal(ctx, "Failed to initialize OpenID4VCI issuer service", log.Error(err))
+	}
+	if vciExp != nil {
+		exporters = append(exporters, vciExp)
+	}
+
+	return vpVerifier, vpDefSvc, vciSvc, vciCredSvc, exporters
 }
 
 // buildHashConfig constructs a cryptolib.HashConfig from the server configuration.
