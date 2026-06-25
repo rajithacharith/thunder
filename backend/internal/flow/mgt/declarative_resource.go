@@ -110,7 +110,7 @@ func (e *flowGraphExporter) GetResourceRules() *declarativeresource.ResourceRule
 }
 
 // loadDeclarativeResources loads immutable flow graph resources from files.
-func loadDeclarativeResources(flowStore flowStoreInterface) error {
+func loadDeclarativeResources(flowStore flowStoreInterface, flowValidator FlowValidatorInterface) error {
 	// Type assert to access Storer interface for resource loading
 	fileBasedStore, ok := flowStore.(*fileBasedStore)
 	if !ok {
@@ -121,7 +121,7 @@ func loadDeclarativeResources(flowStore flowStoreInterface) error {
 		ResourceType:  "Flow",
 		DirectoryName: "flows",
 		Parser:        parseToCompleteFlowDefinition,
-		Validator:     validateFlowGraphWrapper,
+		Validator:     validateFlowGraphWrapper(flowValidator),
 		IDExtractor: func(data interface{}) string {
 			flow, ok := data.(*providers.CompleteFlowDefinition)
 			if !ok || flow == nil {
@@ -149,26 +149,28 @@ func parseToCompleteFlowDefinition(data []byte) (interface{}, error) {
 	return &flowDef, nil
 }
 
-// validateFlowGraphWrapper wraps flow validation to match ResourceConfig.Validator signature.
-func validateFlowGraphWrapper(dto interface{}) error {
-	flowDef, ok := dto.(*providers.CompleteFlowDefinition)
-	if !ok {
-		return fmt.Errorf("invalid type: expected *providers.CompleteFlowDefinition")
-	}
+// validateFlowGraphWrapper returns a validator closure that uses the flowValidator
+// to validate flow definitions, matching the ResourceConfig.Validator signature.
+func validateFlowGraphWrapper(v FlowValidatorInterface) func(interface{}) error {
+	return func(dto interface{}) error {
+		flowDef, ok := dto.(*providers.CompleteFlowDefinition)
+		if !ok {
+			return fmt.Errorf("invalid type: expected *providers.CompleteFlowDefinition")
+		}
 
-	// Convert to FlowDefinition for validation
-	flowDefForValidation := &FlowDefinition{
-		Handle:   flowDef.Handle,
-		Name:     flowDef.Name,
-		FlowType: flowDef.FlowType,
-		Nodes:    flowDef.Nodes,
-	}
+		flowDefForValidation := &FlowDefinition{
+			Handle:       flowDef.Handle,
+			Name:         flowDef.Name,
+			FlowType:     flowDef.FlowType,
+			Nodes:        flowDef.Nodes,
+			Interceptors: flowDef.Interceptors,
+		}
 
-	// Use the service-level validation function
-	svcErr := validateFlowDefinition(flowDefForValidation)
-	if svcErr != nil {
-		return fmt.Errorf("validation failed: %s - %s", svcErr.Code, svcErr.Error)
-	}
+		svcErr := v.ValidateFlowDefinition(context.Background(), flowDefForValidation)
+		if svcErr != nil {
+			return fmt.Errorf("validation failed: %s - %s", svcErr.Code, svcErr.Error)
+		}
 
-	return nil
+		return nil
+	}
 }

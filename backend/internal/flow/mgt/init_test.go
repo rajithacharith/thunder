@@ -758,8 +758,10 @@ func (s *InitTestSuite) TestInitializeStore_MutableMode() {
 	cleanup := setupMockDBProvider()
 	defer cleanup()
 
+	mockValidator := NewFlowValidatorInterfaceMock(s.T())
 	store, compositeStore, _, err := initializeStore(
 		cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"),
+		mockValidator,
 	)
 
 	s.NoError(err)
@@ -797,8 +799,10 @@ func (s *InitTestSuite) TestInitializeStore_DeclarativeMode() {
 	_ = config.InitializeServerRuntime("test", testConfig)
 	defer config.ResetServerRuntime()
 
+	mockValidator := NewFlowValidatorInterfaceMock(s.T())
 	store, compositeStore, _, err := initializeStore(
 		cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"),
+		mockValidator,
 	)
 
 	// Note: err might occur if declarative resources path doesn't exist, but that's expected
@@ -841,8 +845,10 @@ func (s *InitTestSuite) TestInitializeStore_CompositeMode() {
 	cleanup := setupMockDBProvider()
 	defer cleanup()
 
+	mockValidator := NewFlowValidatorInterfaceMock(s.T())
 	store, compositeStore, _, err := initializeStore(
 		cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"),
+		mockValidator,
 	)
 
 	// Note: err might occur if declarative resources path doesn't exist, but that's expected
@@ -884,8 +890,10 @@ func (s *InitTestSuite) TestInitializeStore_DeclarativeMode_ResourceLoadingError
 	_ = config.InitializeServerRuntime("test", testConfig)
 	defer config.ResetServerRuntime()
 
+	mockValidator := NewFlowValidatorInterfaceMock(s.T())
 	store, compositeStore, _, err := initializeStore(
 		cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"),
+		mockValidator,
 	)
 
 	// When declarative resources path doesn't exist or has issues, error is returned
@@ -930,8 +938,10 @@ func (s *InitTestSuite) TestInitializeStore_CompositeMode_ResourceLoadingError()
 	cleanup := setupMockDBProvider()
 	defer cleanup()
 
+	mockValidator := NewFlowValidatorInterfaceMock(s.T())
 	store, compositeStore, _, err := initializeStore(
 		cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"),
+		mockValidator,
 	)
 
 	// When declarative resources path doesn't exist or has issues, error is returned
@@ -976,8 +986,10 @@ func (s *InitTestSuite) TestInitializeStore_DefaultMode() {
 	cleanup := setupMockDBProvider()
 	defer cleanup()
 
+	mockValidator := NewFlowValidatorInterfaceMock(s.T())
 	store, compositeStore, _, err := initializeStore(
 		cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"),
+		mockValidator,
 	)
 
 	s.NoError(err)
@@ -1018,8 +1030,10 @@ func (s *InitTestSuite) TestInitializeStore_ModeNormalization() {
 	cleanup := setupMockDBProvider()
 	defer cleanup()
 
+	mockValidator := NewFlowValidatorInterfaceMock(s.T())
 	store, compositeStore, _, err := initializeStore(
 		cache.Initialize(config.GetServerRuntime().Config.Cache, "test-deployment"),
+		mockValidator,
 	)
 
 	// Note: err might occur if declarative resources path doesn't exist, but that's expected

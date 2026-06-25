@@ -16,20 +16,31 @@
  * under the License.
  */
 
-// Package graphbuilder builds executable flow graphs from flow definitions.
-package graphbuilder
+package flowmgt
 
 import (
-	"context"
+	"regexp"
 
-	"github.com/thunder-id/thunderid/internal/flow/core"
-	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
-// GraphBuilderInterface builds and caches executable flow graphs from flow definitions.
-type GraphBuilderInterface interface {
-	GetGraph(ctx context.Context, flow *providers.CompleteFlowDefinition) (core.GraphInterface, *tidcommon.ServiceError)
-	ValidateGraph(ctx context.Context, flow *providers.CompleteFlowDefinition) *tidcommon.ServiceError
-	InvalidateCache(ctx context.Context, flowID string)
+// handleFormatRegex matches valid handle format:
+// - starts with lowercase letter or digit
+// - contains only lowercase letters, digits, underscores, or dashes
+// - ends with lowercase letter or digit
+var handleFormatRegex = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]*[a-z0-9]$|^[a-z0-9]$`)
+
+// isValidHandleFormat validates that the handle follows the required format.
+func isValidHandleFormat(handle string) bool {
+	return handleFormatRegex.MatchString(handle)
+}
+
+// isValidFlowType checks if the provided flow type is valid.
+func isValidFlowType(flowType providers.FlowType) bool {
+	for _, valid := range providers.ValidFlowTypes {
+		if flowType == valid {
+			return true
+		}
+	}
+	return false
 }

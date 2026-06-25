@@ -49,7 +49,8 @@ func Initialize(
 	interceptorRegistry interceptor.InterceptorRegistryInterface,
 	graphBuilder graphbuilder.GraphBuilderInterface,
 ) (FlowMgtServiceInterface, declarativeresource.ResourceExporter, error) {
-	store, compositeStore, transactioner, err := initializeStore(cacheManager)
+	flowValidator := newFlowValidator(executorRegistry, interceptorRegistry, graphBuilder)
+	store, compositeStore, transactioner, err := initializeStore(cacheManager, flowValidator)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -57,7 +58,7 @@ func Initialize(
 	inferenceService := newFlowInferenceService()
 	service := newFlowMgtService(
 		store, inferenceService, graphBuilder, executorRegistry,
-		interceptorRegistry, compositeStore, transactioner,
+		interceptorRegistry, flowValidator, compositeStore, transactioner,
 	)
 
 	handler := newFlowMgtHandler(service)
@@ -92,8 +93,9 @@ func Initialize(
 //   - Reads check both stores (merged results)
 //   - Writes only go to database store
 //   - Declarative flows cannot be updated or deleted
-func initializeStore(cacheManager cache.CacheManagerInterface) (
-	flowStoreInterface, *compositeFlowStore, transaction.Transactioner, error) {
+func initializeStore(
+	cacheManager cache.CacheManagerInterface,
+	flowValidator FlowValidatorInterface) (flowStoreInterface, *compositeFlowStore, transaction.Transactioner, error) {
 	var compositeStore *compositeFlowStore
 
 	storeMode := getFlowStoreMode()
@@ -109,14 +111,14 @@ func initializeStore(cacheManager cache.CacheManagerInterface) (
 			return nil, nil, nil, err
 		}
 		compositeStore = newCompositeFlowStore(fileStore, dbStore)
-		if err := loadDeclarativeResources(fileStore); err != nil {
+		if err := loadDeclarativeResources(fileStore, flowValidator); err != nil {
 			return nil, nil, nil, err
 		}
 		return compositeStore, compositeStore, transactioner, nil
 
 	case serverconst.StoreModeDeclarative:
 		fileStore, transactioner := newFileBasedStore()
-		if err := loadDeclarativeResources(fileStore); err != nil {
+		if err := loadDeclarativeResources(fileStore, flowValidator); err != nil {
 			return nil, nil, nil, err
 		}
 		return fileStore, nil, transactioner, nil
