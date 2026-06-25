@@ -25,8 +25,8 @@ import (
 	"net/http"
 
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 // maxServerConfigBodyBytes caps the PUT request body to bound memory use; config sections are small.
@@ -91,9 +91,9 @@ func (h *serverConfigHandler) HandleUpdateServerConfig(w http.ResponseWriter, r 
 }
 
 // handleError maps a service error to an HTTP error response.
-func handleError(ctx context.Context, w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
+func handleError(ctx context.Context, w http.ResponseWriter, svcErr *common.ServiceError) {
 	statusCode := http.StatusInternalServerError
-	if svcErr.Type == serviceerror.ClientErrorType {
+	if svcErr.Type == common.ClientErrorType {
 		statusCode = http.StatusBadRequest
 		if svcErr.Code == ErrorConfigNotFound.Code {
 			statusCode = http.StatusNotFound

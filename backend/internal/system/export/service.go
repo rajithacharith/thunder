@@ -25,9 +25,9 @@ import (
 	"strings"
 	"time"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
@@ -68,7 +68,7 @@ type parameterizerInterface interface {
 
 // ExportServiceInterface defines the interface for the export service.
 type ExportServiceInterface interface {
-	ExportResources(ctx context.Context, request *ExportRequest) (*ExportResponse, *serviceerror.ServiceError)
+	ExportResources(ctx context.Context, request *ExportRequest) (*ExportResponse, *tidcommon.ServiceError)
 }
 
 // exportService implements the ExportServiceInterface.
@@ -96,9 +96,9 @@ func newExportService(
 // ExportResources exports the specified resources as YAML files.
 func (es *exportService) ExportResources(
 	ctx context.Context, request *ExportRequest,
-) (*ExportResponse, *serviceerror.ServiceError) {
+) (*ExportResponse, *tidcommon.ServiceError) {
 	if request == nil {
-		return nil, serviceerror.CustomServiceError(ErrorInvalidRequest, core.I18nMessage{
+		return nil, tidcommon.CustomServiceError(ErrorInvalidRequest, tidcommon.I18nMessage{
 			Key:          "error.exportservice.nil_request_description",
 			DefaultValue: "Export request cannot be nil",
 		})
@@ -169,7 +169,7 @@ func (es *exportService) ExportResources(
 	}
 
 	if len(exportFiles) == 0 {
-		return nil, serviceerror.CustomServiceError(ErrorNoResourcesFound, core.I18nMessage{
+		return nil, tidcommon.CustomServiceError(ErrorNoResourcesFound, tidcommon.I18nMessage{
 			Key:          "error.exportservice.no_valid_resources_for_export_description",
 			DefaultValue: "No valid resources found for export",
 		})

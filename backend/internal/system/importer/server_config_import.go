@@ -26,13 +26,13 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/thunder-id/thunderid/internal/serverconfig"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 // serverConfigAdapter is the subset of the server-config service used to import a section's value into
 // the writable (db) layer.
 type serverConfigAdapter interface {
-	SetConfig(ctx context.Context, name serverconfig.ConfigName, value json.RawMessage) *serviceerror.ServiceError
+	SetConfig(ctx context.Context, name serverconfig.ConfigName, value json.RawMessage) *common.ServiceError
 }
 
 // serverConfigDeclarativeYAML is a server-config section document as produced by export: a section name

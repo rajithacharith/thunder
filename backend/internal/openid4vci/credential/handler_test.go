@@ -25,10 +25,10 @@ import (
 	"strings"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 )
 
 type ConfigurationHandlerTestSuite struct {
@@ -91,7 +91,7 @@ func (s *ConfigurationHandlerTestSuite) TestHandleList_Success() {
 
 func (s *ConfigurationHandlerTestSuite) TestHandleList_ServiceError() {
 	s.service.EXPECT().ListCredentialConfigurationSummaries(mock.Anything).
-		Return(nil, &serviceerror.InternalServerError)
+		Return(nil, &tidcommon.InternalServerError)
 
 	req := httptest.NewRequest(http.MethodGet, configurationsPath, nil)
 	rec := httptest.NewRecorder()
@@ -196,7 +196,7 @@ func (s *ConfigurationHandlerTestSuite) TestHandleDelete_MissingID() {
 
 func (s *ConfigurationHandlerTestSuite) TestHandleDelete_ServiceError() {
 	s.service.EXPECT().DeleteCredentialConfiguration(mock.Anything, "cfg-1").
-		Return(&serviceerror.InternalServerError)
+		Return(&tidcommon.InternalServerError)
 
 	req := httptest.NewRequest(http.MethodDelete, configurationsPath+"/cfg-1", nil)
 	req.SetPathValue("id", "cfg-1")
@@ -251,6 +251,6 @@ func (s *ConfigurationHandlerTestSuite) TestSanitizeDisplayAllEmpty() {
 
 func (s *ConfigurationHandlerTestSuite) TestWriteConfigurationErrorServerError() {
 	rec := httptest.NewRecorder()
-	writeConfigurationError(context.Background(), rec, &serviceerror.InternalServerError)
+	writeConfigurationError(context.Background(), rec, &tidcommon.InternalServerError)
 	s.Equal(http.StatusInternalServerError, rec.Code)
 }

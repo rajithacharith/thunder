@@ -24,13 +24,14 @@ import (
 	"errors"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/consent"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/tests/mocks/consentmock"
 	"github.com/thunder-id/thunderid/tests/mocks/oumock"
@@ -113,28 +114,28 @@ func (s *EntityTypeServiceConsentTestSuite) TestWrapConsentServiceError_Nil() {
 }
 
 func (s *EntityTypeServiceConsentTestSuite) TestWrapConsentServiceError_ClientError() {
-	clientErr := &serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	clientErr := &tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "CSE-1007",
 	}
 
 	result := wrapConsentServiceError(context.Background(), clientErr, log.GetLogger())
 
 	s.NotNil(result)
-	s.Equal(serviceerror.ClientErrorType, result.Type)
+	s.Equal(tidcommon.ClientErrorType, result.Type)
 	s.Equal(ErrorConsentSyncFailed.Code, result.Code)
 }
 
 func (s *EntityTypeServiceConsentTestSuite) TestWrapConsentServiceError_ServerError() {
-	serverErr := &serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
+	serverErr := &tidcommon.ServiceError{
+		Type: tidcommon.ServerErrorType,
 		Code: "CSE-500",
 	}
 
 	result := wrapConsentServiceError(context.Background(), serverErr, log.GetLogger())
 
 	s.NotNil(result)
-	s.Equal(serviceerror.ServerErrorType, result.Type)
+	s.Equal(tidcommon.ServerErrorType, result.Type)
 }
 
 // ----- createMissingConsentElements -----
@@ -186,12 +187,12 @@ func (s *EntityTypeServiceConsentTestSuite) TestCreateMissingConsentElements_Val
 
 	names := []string{"email"}
 	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", names).
-		Return(nil, &serviceerror.InternalServerError)
+		Return(nil, &tidcommon.InternalServerError)
 
 	result := svc.createMissingConsentElements(context.Background(), "default", names, log.GetLogger())
 
 	s.NotNil(result)
-	s.Equal(serviceerror.ServerErrorType, result.Type)
+	s.Equal(tidcommon.ServerErrorType, result.Type)
 }
 
 func (s *EntityTypeServiceConsentTestSuite) TestCreateMissingConsentElements_CreateError() {
@@ -202,7 +203,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestCreateMissingConsentElements_Cre
 	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", names).
 		Return([]string{}, nil)
 	cMock.EXPECT().CreateConsentElements(mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerError)
+		Return(nil, &tidcommon.InternalServerError)
 
 	result := svc.createMissingConsentElements(context.Background(), "default", names, log.GetLogger())
 
@@ -227,7 +228,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestDeleteConsentElements() {
 	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "email").
 		Return([]consent.ConsentElement{{ID: "e1", Name: "email"}}, nil)
 	cMock.EXPECT().DeleteConsentElement(mock.Anything, "default", "e1").
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 
 	result := svc.deleteConsentElements(context.Background(), []string{"email"}, log.GetLogger())
 
@@ -268,7 +269,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestDeleteConsentElements_OtherDelet
 	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "email").
 		Return([]consent.ConsentElement{{ID: "e1", Name: "email"}}, nil)
 	cMock.EXPECT().DeleteConsentElement(mock.Anything, "default", "e1").
-		Return(&serviceerror.InternalServerError)
+		Return(&tidcommon.InternalServerError)
 
 	result := svc.deleteConsentElements(context.Background(), []string{"email"}, log.GetLogger())
 
@@ -280,7 +281,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestDeleteConsentElements_ListError(
 	svc := newTestSchemaServiceWithConsent(cMock)
 
 	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "email").
-		Return(nil, &serviceerror.InternalServerError)
+		Return(nil, &tidcommon.InternalServerError)
 
 	result := svc.deleteConsentElements(context.Background(), []string{"email"}, log.GetLogger())
 
@@ -294,12 +295,12 @@ func (s *EntityTypeServiceConsentTestSuite) TestDeleteConsentElements_MultipleAt
 	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "email").
 		Return([]consent.ConsentElement{{ID: "e1", Name: "email"}}, nil)
 	cMock.EXPECT().DeleteConsentElement(mock.Anything, "default", "e1").
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 
 	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "phone").
 		Return([]consent.ConsentElement{{ID: "e2", Name: "phone"}}, nil)
 	cMock.EXPECT().DeleteConsentElement(mock.Anything, "default", "e2").
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 
 	result := svc.deleteConsentElements(context.Background(), []string{"email", "phone"}, log.GetLogger())
 
@@ -349,7 +350,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestSyncConsentElementsOnCreate_Crea
 
 	schema := json.RawMessage(`{"email":{}}`)
 	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerError)
+		Return(nil, &tidcommon.InternalServerError)
 
 	result := svc.syncConsentElementsOnCreate(context.Background(), TypeCategoryUser, schema, log.GetLogger())
 
@@ -405,7 +406,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestSyncConsentElementsOnUpdate_Attr
 	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "phone").
 		Return([]consent.ConsentElement{{ID: "e2", Name: "phone"}}, nil)
 	cMock.EXPECT().DeleteConsentElement(mock.Anything, "default", "e2").
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 
 	result := svc.syncConsentElementsOnUpdate(
 		context.Background(), TypeCategoryUser, oldSchema, newSchema, log.GetLogger())
@@ -445,7 +446,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestSyncConsentElementsOnUpdate_Crea
 	newSchema := json.RawMessage(`{"email":{},"phone":{}}`)
 
 	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerError)
+		Return(nil, &tidcommon.InternalServerError)
 
 	result := svc.syncConsentElementsOnUpdate(
 		context.Background(), TypeCategoryUser, oldSchema, newSchema, log.GetLogger())
@@ -463,7 +464,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestSyncConsentElementsOnUpdate_Dele
 	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", mock.Anything).
 		Return([]string{"email"}, nil)
 	cMock.EXPECT().ListConsentElements(mock.Anything, "default", consent.NamespaceAttribute, "phone").
-		Return(nil, &serviceerror.InternalServerError)
+		Return(nil, &tidcommon.InternalServerError)
 
 	result := svc.syncConsentElementsOnUpdate(
 		context.Background(), TypeCategoryUser, oldSchema, newSchema, log.GetLogger())
@@ -495,14 +496,14 @@ func (s *EntityTypeServiceConsentTestSuite) TestCreateEntityType_ConsentSyncFail
 		consentService:  cMock,
 	}
 
-	ouMock.On("IsOrganizationUnitExists", mock.Anything, testOUID1).Return(true, (*serviceerror.ServiceError)(nil))
+	ouMock.On("IsOrganizationUnitExists", mock.Anything, testOUID1).Return(true, (*tidcommon.ServiceError)(nil))
 	storeMock.On("GetEntityTypeByName", mock.Anything, mock.Anything, "test-schema").
 		Return(EntityType{}, ErrEntityTypeNotFound)
 	storeMock.On("CreateEntityType", mock.Anything, mock.Anything).Return(nil)
 	// Consent sync fails.
 	cMock.On("IsEnabled").Return(true)
 	cMock.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerError)
+		Return(nil, &tidcommon.InternalServerError)
 	// Compensation: schema must be deleted.
 	storeMock.On("DeleteEntityTypeByID", mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 
@@ -551,14 +552,14 @@ func (s *EntityTypeServiceConsentTestSuite) TestUpdateEntityType_ConsentSyncFail
 	}
 
 	storeMock.On("IsEntityTypeDeclarative", TypeCategoryUser, "schema-id").Return(false)
-	ouMock.On("IsOrganizationUnitExists", mock.Anything, testOUID1).Return(true, (*serviceerror.ServiceError)(nil))
+	ouMock.On("IsOrganizationUnitExists", mock.Anything, testOUID1).Return(true, (*tidcommon.ServiceError)(nil))
 	storeMock.On("GetEntityTypeByID", mock.Anything, mock.Anything, "schema-id").Return(existingSchema, nil)
 	// Both the actual update (in tx) and the compensation revert share the same mock.
 	storeMock.On("UpdateEntityTypeByID", mock.Anything, mock.Anything, "schema-id", mock.Anything).Return(nil)
 	// Consent sync fails: ValidateConsentElements returns an I18n error.
 	cMock.On("IsEnabled").Return(true)
 	cMock.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerError)
+		Return(nil, &tidcommon.InternalServerError)
 
 	request := UpdateEntityTypeRequest{
 		Name:   "test-schema",
@@ -609,9 +610,9 @@ func (s *EntityTypeServiceConsentTestSuite) TestDeleteEntityType_ConsentEnabled_
 	storeMock.On("DeleteEntityTypeByID", mock.Anything, mock.Anything, "schema-id").Return(nil)
 	// Consent element cleanup: ListConsentElements → found → DeleteConsentElement
 	cMock.On("ListConsentElements", mock.Anything, "default", consent.NamespaceAttribute, "email").
-		Return([]consent.ConsentElement{{ID: "elem-1", Name: "email"}}, (*serviceerror.ServiceError)(nil))
+		Return([]consent.ConsentElement{{ID: "elem-1", Name: "email"}}, (*tidcommon.ServiceError)(nil))
 	cMock.On("DeleteConsentElement", mock.Anything, "default", "elem-1").
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 
 	svcErr := svc.DeleteEntityType(context.Background(), TypeCategoryUser, "schema-id")
 
@@ -643,13 +644,13 @@ func (s *EntityTypeServiceConsentTestSuite) TestCreateEntityType_ConsentSyncFail
 		consentService:  cMock,
 	}
 
-	ouMock.On("IsOrganizationUnitExists", mock.Anything, testOUID1).Return(true, (*serviceerror.ServiceError)(nil))
+	ouMock.On("IsOrganizationUnitExists", mock.Anything, testOUID1).Return(true, (*tidcommon.ServiceError)(nil))
 	storeMock.On("GetEntityTypeByName", mock.Anything, mock.Anything, "test-schema").
 		Return(EntityType{}, ErrEntityTypeNotFound)
 	storeMock.On("CreateEntityType", mock.Anything, mock.Anything).Return(nil)
 	cMock.On("IsEnabled").Return(true)
 	cMock.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerError)
+		Return(nil, &tidcommon.InternalServerError)
 	// Compensation deletion itself fails.
 	storeMock.On("DeleteEntityTypeByID", mock.Anything, mock.Anything, mock.Anything).
 		Return(errors.New("delete failed"))
@@ -698,7 +699,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestUpdateEntityType_ConsentSyncFail
 	}
 
 	storeMock.On("IsEntityTypeDeclarative", TypeCategoryUser, "schema-id").Return(false)
-	ouMock.On("IsOrganizationUnitExists", mock.Anything, testOUID1).Return(true, (*serviceerror.ServiceError)(nil))
+	ouMock.On("IsOrganizationUnitExists", mock.Anything, testOUID1).Return(true, (*tidcommon.ServiceError)(nil))
 	storeMock.On("GetEntityTypeByID", mock.Anything, mock.Anything, "schema-id").Return(existingSchema, nil)
 	// First call (in-tx update) succeeds; second call (compensation revert) fails.
 	storeMock.On("UpdateEntityTypeByID", mock.Anything, mock.Anything, "schema-id", mock.Anything).
@@ -707,7 +708,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestUpdateEntityType_ConsentSyncFail
 		Return(errors.New("revert failed")).Once()
 	cMock.On("IsEnabled").Return(true)
 	cMock.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
-		Return(nil, &serviceerror.InternalServerError)
+		Return(nil, &tidcommon.InternalServerError)
 
 	request := UpdateEntityTypeRequest{
 		Name:   "test-schema",
@@ -755,7 +756,7 @@ func (s *EntityTypeServiceConsentTestSuite) TestDeleteEntityType_ConsentCleanupF
 	storeMock.On("DeleteEntityTypeByID", mock.Anything, mock.Anything, "schema-id").Return(nil)
 	// Consent cleanup fails when listing elements for the removed attribute.
 	cMock.On("ListConsentElements", mock.Anything, "default", consent.NamespaceAttribute, "email").
-		Return(nil, &serviceerror.InternalServerError)
+		Return(nil, &tidcommon.InternalServerError)
 
 	svcErr := svc.DeleteEntityType(context.Background(), TypeCategoryUser, "schema-id")
 

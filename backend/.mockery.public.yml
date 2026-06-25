@@ -521,13 +521,26 @@ packages:
       pkgname: entityprovidermock
       filename: "{{.InterfaceName}}_mock.go"
 
-  github.com/thunder-id/thunderid/internal/actorprovider:
-    config:
-      all: true
-      dir: tests/mocks/actorprovidermock
-      structname: '{{.InterfaceName}}Mock'
-      pkgname: actorprovidermock
-      filename: "{{.InterfaceName}}_mock.go"
+  github.com/thunder-id/thunderid/pkg/thunderidengine/providers:
+    interfaces:
+      AuthnProviderManagerInterface:
+        config:
+          dir: tests/mocks/authnprovider/managermock
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: managermock
+          filename: "{{.InterfaceName}}_mock.go"
+      ActorProviderInterface:
+        config:
+          dir: tests/mocks/actorprovidermock
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: actorprovidermock
+          filename: "{{.InterfaceName}}_mock.go"
+      FlowProviderInterface:
+        config:
+          dir: tests/mocks/flow/flowexecmock
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: flowexecmock
+          filename: "{{.InterfaceName}}_mock.go"
 
   github.com/thunder-id/thunderid/internal/authnprovider/provider:
     config:
@@ -535,14 +548,6 @@ packages:
       dir: tests/mocks/authnprovider/providermock
       structname: '{{.InterfaceName}}Mock'
       pkgname: providermock
-      filename: "{{.InterfaceName}}_mock.go"
-
-  github.com/thunder-id/thunderid/internal/authnprovider/manager:
-    config:
-      all: true
-      dir: tests/mocks/authnprovider/managermock
-      structname: '{{.InterfaceName}}Mock'
-      pkgname: managermock
       filename: "{{.InterfaceName}}_mock.go"
 
   github.com/thunder-id/thunderid/internal/system/sysauthz:

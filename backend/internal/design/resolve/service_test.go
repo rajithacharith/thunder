@@ -20,7 +20,8 @@ package resolve
 
 import (
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
-	"github.com/thunder-id/thunderid/internal/system/i18n/core"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"context"
 	"encoding/json"
@@ -35,7 +36,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/design/common"
 	layoutmgt "github.com/thunder-id/thunderid/internal/design/layout/mgt"
 	thememgt "github.com/thunder-id/thunderid/internal/design/theme/mgt"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/tests/mocks/applicationmock"
 	"github.com/thunder-id/thunderid/tests/mocks/design/layoutmock"
 	"github.com/thunder-id/thunderid/tests/mocks/design/thememock"
@@ -72,7 +72,7 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_EmptyResolveType() {
 
 // Test ResolveDesign - Empty ID
 func (suite *ResolveServiceTestSuite) TestResolveDesign_EmptyID() {
-	result, err := suite.service.ResolveDesign(context.Background(), common.DesignResolveTypeAPP, "")
+	result, err := suite.service.ResolveDesign(context.Background(), providers.DesignResolveTypeAPP, "")
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -81,7 +81,7 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_EmptyID() {
 
 // Test ResolveDesign - Unsupported resolve type
 func (suite *ResolveServiceTestSuite) TestResolveDesign_UnsupportedType() {
-	result, err := suite.service.ResolveDesign(context.Background(), common.DesignResolveTypeOU,
+	result, err := suite.service.ResolveDesign(context.Background(), providers.DesignResolveTypeOU,
 		"00000000-0000-0000-0000-000000000002")
 
 	assert.Nil(suite.T(), result)
@@ -93,12 +93,12 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_UnsupportedType() {
 func (suite *ResolveServiceTestSuite) TestResolveDesign_NilApplicationService() {
 	service := newDesignResolveService(suite.mockThemeService, suite.mockLayoutService, nil)
 
-	result, err := service.ResolveDesign(context.Background(), common.DesignResolveTypeAPP,
+	result, err := service.ResolveDesign(context.Background(), providers.DesignResolveTypeAPP,
 		"00000000-0000-0000-0000-000000000001")
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, err.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, err.Code)
 }
 
 // Test ResolveDesign - Application not found
@@ -106,7 +106,7 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_ApplicationNotFound() {
 	suite.mockAppService.On("GetApplication", mock.Anything, "00000000-0000-0000-0000-000000000099").
 		Return(nil, &application.ErrorApplicationNotFound)
 
-	result, err := suite.service.ResolveDesign(context.Background(), common.DesignResolveTypeAPP,
+	result, err := suite.service.ResolveDesign(context.Background(), providers.DesignResolveTypeAPP,
 		"00000000-0000-0000-0000-000000000099")
 
 	assert.Nil(suite.T(), result)
@@ -119,7 +119,7 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_InvalidApplicationID() {
 	suite.mockAppService.On("GetApplication", mock.Anything, "invalid").
 		Return(nil, &application.ErrorInvalidApplicationID)
 
-	result, err := suite.service.ResolveDesign(context.Background(), common.DesignResolveTypeAPP, "invalid")
+	result, err := suite.service.ResolveDesign(context.Background(), providers.DesignResolveTypeAPP, "invalid")
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -128,13 +128,13 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_InvalidApplicationID() {
 
 // Test ResolveDesign - Application service error propagation
 func (suite *ResolveServiceTestSuite) TestResolveDesign_ApplicationServiceError() {
-	svcErr := &serviceerror.ServiceError{
+	svcErr := &tidcommon.ServiceError{
 		Code:  "APP-9999",
-		Error: core.I18nMessage{Key: "error.test.unexpected_error", DefaultValue: "unexpected error"},
+		Error: tidcommon.I18nMessage{Key: "error.test.unexpected_error", DefaultValue: "unexpected error"},
 	}
 	suite.mockAppService.On("GetApplication", mock.Anything, "00000000-0000-0000-0000-000000000001").Return(nil, svcErr)
 
-	result, err := suite.service.ResolveDesign(context.Background(), common.DesignResolveTypeAPP,
+	result, err := suite.service.ResolveDesign(context.Background(), providers.DesignResolveTypeAPP,
 		"00000000-0000-0000-0000-000000000001")
 
 	assert.Nil(suite.T(), result)
@@ -154,7 +154,7 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_ApplicationHasNoDesign()
 	}
 	suite.mockAppService.On("GetApplication", mock.Anything, "00000000-0000-0000-0000-000000000001").Return(app, nil)
 
-	result, err := suite.service.ResolveDesign(context.Background(), common.DesignResolveTypeAPP,
+	result, err := suite.service.ResolveDesign(context.Background(), providers.DesignResolveTypeAPP,
 		"00000000-0000-0000-0000-000000000001")
 
 	assert.Nil(suite.T(), result)
@@ -183,7 +183,7 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_SuccessWithThemeOnly() {
 	suite.mockAppService.On("GetApplication", mock.Anything, "00000000-0000-0000-0000-000000000001").Return(app, nil)
 	suite.mockThemeService.On("GetTheme", mock.Anything, "theme-123").Return(themeConfig, nil)
 
-	result, err := suite.service.ResolveDesign(context.Background(), common.DesignResolveTypeAPP,
+	result, err := suite.service.ResolveDesign(context.Background(), providers.DesignResolveTypeAPP,
 		"00000000-0000-0000-0000-000000000001")
 
 	assert.Nil(suite.T(), err)
@@ -213,7 +213,7 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_SuccessWithLayoutOnly() 
 	suite.mockAppService.On("GetApplication", mock.Anything, "00000000-0000-0000-0000-000000000001").Return(app, nil)
 	suite.mockLayoutService.On("GetLayout", mock.Anything, "layout-123").Return(layoutConfig, nil)
 
-	result, err := suite.service.ResolveDesign(context.Background(), common.DesignResolveTypeAPP,
+	result, err := suite.service.ResolveDesign(context.Background(), providers.DesignResolveTypeAPP,
 		"00000000-0000-0000-0000-000000000001")
 
 	assert.Nil(suite.T(), err)
@@ -247,7 +247,7 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_SuccessWithBoth() {
 	suite.mockThemeService.On("GetTheme", mock.Anything, "theme-123").Return(themeConfig, nil)
 	suite.mockLayoutService.On("GetLayout", mock.Anything, "layout-123").Return(layoutConfig, nil)
 
-	result, err := suite.service.ResolveDesign(context.Background(), common.DesignResolveTypeAPP,
+	result, err := suite.service.ResolveDesign(context.Background(), providers.DesignResolveTypeAPP,
 		"00000000-0000-0000-0000-000000000001")
 
 	assert.Nil(suite.T(), err)
@@ -270,12 +270,12 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_ThemeNotFound() {
 	suite.mockThemeService.On("GetTheme", mock.Anything, "theme-missing").
 		Return(nil, &thememgt.ErrorThemeNotFound)
 
-	result, err := suite.service.ResolveDesign(context.Background(), common.DesignResolveTypeAPP,
+	result, err := suite.service.ResolveDesign(context.Background(), providers.DesignResolveTypeAPP,
 		"00000000-0000-0000-0000-000000000001")
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, err.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, err.Code)
 }
 
 // Test ResolveDesign - Theme service error propagation
@@ -288,14 +288,14 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_ThemeServiceError() {
 			LayoutID: "",
 		},
 	}
-	svcErr := &serviceerror.ServiceError{
+	svcErr := &tidcommon.ServiceError{
 		Code:  "THM-9999",
-		Error: core.I18nMessage{Key: "error.test.unexpected_error", DefaultValue: "unexpected error"},
+		Error: tidcommon.I18nMessage{Key: "error.test.unexpected_error", DefaultValue: "unexpected error"},
 	}
 	suite.mockAppService.On("GetApplication", mock.Anything, "00000000-0000-0000-0000-000000000001").Return(app, nil)
 	suite.mockThemeService.On("GetTheme", mock.Anything, "theme-123").Return(nil, svcErr)
 
-	result, err := suite.service.ResolveDesign(context.Background(), common.DesignResolveTypeAPP,
+	result, err := suite.service.ResolveDesign(context.Background(), providers.DesignResolveTypeAPP,
 		"00000000-0000-0000-0000-000000000001")
 
 	assert.Nil(suite.T(), result)
@@ -316,12 +316,12 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_NilThemeService() {
 	}
 	suite.mockAppService.On("GetApplication", mock.Anything, "00000000-0000-0000-0000-000000000001").Return(app, nil)
 
-	result, err := service.ResolveDesign(context.Background(), common.DesignResolveTypeAPP,
+	result, err := service.ResolveDesign(context.Background(), providers.DesignResolveTypeAPP,
 		"00000000-0000-0000-0000-000000000001")
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, err.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, err.Code)
 }
 
 // Test ResolveDesign - Layout not found (data integrity issue)
@@ -338,12 +338,12 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_LayoutNotFound() {
 	suite.mockLayoutService.On("GetLayout", mock.Anything, "layout-missing").
 		Return(nil, &layoutmgt.ErrorLayoutNotFound)
 
-	result, err := suite.service.ResolveDesign(context.Background(), common.DesignResolveTypeAPP,
+	result, err := suite.service.ResolveDesign(context.Background(), providers.DesignResolveTypeAPP,
 		"00000000-0000-0000-0000-000000000001")
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, err.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, err.Code)
 }
 
 // Test ResolveDesign - Layout service error propagation
@@ -356,14 +356,14 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_LayoutServiceError() {
 			LayoutID: "layout-123",
 		},
 	}
-	svcErr := &serviceerror.ServiceError{
+	svcErr := &tidcommon.ServiceError{
 		Code:  "LAY-9999",
-		Error: core.I18nMessage{Key: "error.test.unexpected_error", DefaultValue: "unexpected error"},
+		Error: tidcommon.I18nMessage{Key: "error.test.unexpected_error", DefaultValue: "unexpected error"},
 	}
 	suite.mockAppService.On("GetApplication", mock.Anything, "00000000-0000-0000-0000-000000000001").Return(app, nil)
 	suite.mockLayoutService.On("GetLayout", mock.Anything, "layout-123").Return(nil, svcErr)
 
-	result, err := suite.service.ResolveDesign(context.Background(), common.DesignResolveTypeAPP,
+	result, err := suite.service.ResolveDesign(context.Background(), providers.DesignResolveTypeAPP,
 		"00000000-0000-0000-0000-000000000001")
 
 	assert.Nil(suite.T(), result)
@@ -384,10 +384,10 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_NilLayoutService() {
 	}
 	suite.mockAppService.On("GetApplication", mock.Anything, "00000000-0000-0000-0000-000000000001").Return(app, nil)
 
-	result, err := service.ResolveDesign(context.Background(), common.DesignResolveTypeAPP,
+	result, err := service.ResolveDesign(context.Background(), providers.DesignResolveTypeAPP,
 		"00000000-0000-0000-0000-000000000001")
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, err.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, err.Code)
 }

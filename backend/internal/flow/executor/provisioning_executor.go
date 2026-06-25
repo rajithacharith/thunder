@@ -24,14 +24,15 @@ import (
 	"fmt"
 	"strings"
 
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/group"
 	"github.com/thunder-id/thunderid/internal/role"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	systemutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -50,7 +51,7 @@ type provisioningExecutor struct {
 	roleService           role.RoleServiceInterface
 	roleAssignmentService role.RoleAssignmentServiceInterface
 	entityTypeService     entitytype.EntityTypeServiceInterface
-	authnProvider         authnprovidermgr.AuthnProviderManagerInterface
+	authnProvider         providers.AuthnProviderManagerInterface
 	logger                *log.Logger
 }
 
@@ -65,7 +66,7 @@ func newProvisioningExecutor(
 	roleAssignmentService role.RoleAssignmentServiceInterface,
 	entityProvider entityprovider.EntityProviderInterface,
 	entityTypeService entitytype.EntityTypeServiceInterface,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
+	authnProvider providers.AuthnProviderManagerInterface,
 ) *provisioningExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, ExecutorNameProvisioning),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameProvisioning))
@@ -101,7 +102,7 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 	}
 
 	// If it's an authentication flow, skip execution if the user is not eligible for provisioning
-	if ctx.FlowType == common.FlowTypeAuthentication {
+	if ctx.FlowType == providers.FlowTypeAuthentication {
 		eligible, ok := ctx.RuntimeData[common.RuntimeKeyUserEligibleForProvisioning]
 		if !ok || eligible != dataValueTrue {
 			logger.Debug(ctx.Context, "User is not eligible for provisioning, skipping execution")
@@ -207,7 +208,7 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 	execResp.Status = common.ExecComplete
 
 	// Set the auto-provisioned flag if it's a user auto provisioning scenario
-	if ctx.FlowType == common.FlowTypeAuthentication {
+	if ctx.FlowType == providers.FlowTypeAuthentication {
 		execResp.RuntimeData[common.RuntimeKeyUserAutoProvisioned] = dataValueTrue
 	}
 
@@ -246,7 +247,7 @@ func (p *provisioningExecutor) handleNonProvisionableUserInAuthentication(ctx *c
 // during a registration or onboarding flow and provisioning cannot proceed.
 // It either allows the flow to skip provisioning, prompts for different input, or fails immediately.
 func (p *provisioningExecutor) handleNonProvisionableUserInRegistration(ctx *core.NodeContext,
-	execResp *common.ExecutorResponse, existsErr *serviceerror.ServiceError) {
+	execResp *common.ExecutorResponse, existsErr *tidcommon.ServiceError) {
 	if isAllowRegistrationWithExistingUserRuntimeFlagSet(ctx) {
 		execResp.Status = common.ExecComplete
 		return
@@ -274,7 +275,7 @@ func (p *provisioningExecutor) handleExistingUser(ctx *core.NodeContext, userID 
 
 	if !isCrossOUProvisioningAllowed(ctx) {
 		logger.Debug(ctx.Context, "Cross OU provisioning is not allowed")
-		if ctx.FlowType == common.FlowTypeAuthentication {
+		if ctx.FlowType == providers.FlowTypeAuthentication {
 			p.handleNonProvisionableUserInAuthentication(ctx, execResp)
 			return false, nil
 		}
@@ -291,7 +292,7 @@ func (p *provisioningExecutor) handleExistingUser(ctx *core.NodeContext, userID 
 	if targetOUID == "" {
 		logger.Debug(ctx.Context, "Target OU for cross-OU provisioning is not set")
 		// Cross-OU provisioning is not intended.
-		if ctx.FlowType == common.FlowTypeAuthentication {
+		if ctx.FlowType == providers.FlowTypeAuthentication {
 			p.handleNonProvisionableUserInAuthentication(ctx, execResp)
 			return false, nil
 		}
@@ -307,7 +308,7 @@ func (p *provisioningExecutor) handleExistingUser(ctx *core.NodeContext, userID 
 	if existingUser.OUID == targetOUID {
 		logger.Debug(ctx.Context, "Existing user is in the target OU")
 		// Cross-OU provisioning is not intended.
-		if ctx.FlowType == common.FlowTypeAuthentication {
+		if ctx.FlowType == providers.FlowTypeAuthentication {
 			p.handleNonProvisionableUserInAuthentication(ctx, execResp)
 			return false, nil
 		}
@@ -612,7 +613,7 @@ func (p *provisioningExecutor) getAttributesForProvisioning(
 
 // createUserInStore creates a new user in the user store with the provided attributes.
 func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
-	userAttributes map[string]interface{}) (*entityprovider.Entity, error) {
+	userAttributes map[string]interface{}) (*providers.Entity, error) {
 	logger := p.logger.With(log.String(log.LoggerKeyExecutionID, nodeCtx.ExecutionID))
 	logger.Debug(nodeCtx.Context, "Creating the user account")
 
@@ -629,9 +630,9 @@ func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
 		return nil, fmt.Errorf("user type not found")
 	}
 
-	newEntity := entityprovider.Entity{
-		Category: entityprovider.EntityCategoryUser,
-		State:    entityprovider.EntityStateActive,
+	newEntity := providers.Entity{
+		Category: providers.EntityCategoryUser,
+		State:    providers.EntityStateActive,
 		OUID:     ouID,
 		Type:     userType,
 	}
@@ -659,7 +660,7 @@ func (p *provisioningExecutor) handleCreateUserError(
 	ctx *core.NodeContext,
 	err error,
 	logger *log.Logger,
-) *serviceerror.ServiceError {
+) *tidcommon.ServiceError {
 	var epErr *entityprovider.EntityProviderError
 	if errors.As(err, &epErr) {
 		if epErr.Code == entityprovider.ErrorCodeAttributeConflict {

@@ -23,8 +23,9 @@ import (
 	"errors"
 	"strings"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/thunder-id/thunderid/internal/ou"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -33,19 +34,19 @@ import (
 // store, which the issuer engine reads on demand.
 type CredentialConfigurationServiceInterface interface {
 	CreateCredentialConfiguration(ctx context.Context, dto *CredentialConfigurationDTO) (
-		*CredentialConfigurationDTO, *serviceerror.ServiceError)
-	GetCredentialConfiguration(ctx context.Context, id string) (*CredentialConfigurationDTO, *serviceerror.ServiceError)
+		*CredentialConfigurationDTO, *tidcommon.ServiceError)
+	GetCredentialConfiguration(ctx context.Context, id string) (*CredentialConfigurationDTO, *tidcommon.ServiceError)
 	GetCredentialConfigurationByHandle(
 		ctx context.Context, handle string,
-	) (*CredentialConfigurationDTO, *serviceerror.ServiceError)
-	ListCredentialConfigurations(ctx context.Context) ([]CredentialConfigurationDTO, *serviceerror.ServiceError)
+	) (*CredentialConfigurationDTO, *tidcommon.ServiceError)
+	ListCredentialConfigurations(ctx context.Context) ([]CredentialConfigurationDTO, *tidcommon.ServiceError)
 	ListCredentialConfigurationSummaries(
 		ctx context.Context,
-	) ([]CredentialConfigurationList, *serviceerror.ServiceError)
+	) ([]CredentialConfigurationList, *tidcommon.ServiceError)
 	UpdateCredentialConfiguration(ctx context.Context, id string, dto *CredentialConfigurationDTO) (
-		*CredentialConfigurationDTO, *serviceerror.ServiceError)
-	DeleteCredentialConfiguration(ctx context.Context, id string) *serviceerror.ServiceError
-	IsCredentialConfigurationDeclarative(ctx context.Context, id string) (bool, *serviceerror.ServiceError)
+		*CredentialConfigurationDTO, *tidcommon.ServiceError)
+	DeleteCredentialConfiguration(ctx context.Context, id string) *tidcommon.ServiceError
+	IsCredentialConfigurationDeclarative(ctx context.Context, id string) (bool, *tidcommon.ServiceError)
 }
 
 type configurationService struct {
@@ -70,7 +71,7 @@ func newCredentialConfigurationService(
 // resolveOU resolves ouHandle to ouId when needed and verifies the OU exists.
 func (s *configurationService) resolveOU(
 	ctx context.Context, dto *CredentialConfigurationDTO,
-) *serviceerror.ServiceError {
+) *tidcommon.ServiceError {
 	if s.ouService == nil {
 		return nil
 	}
@@ -87,7 +88,7 @@ func (s *configurationService) resolveOU(
 	exists, svcErr := s.ouService.IsOrganizationUnitExists(ctx, dto.OUID)
 	if svcErr != nil {
 		s.logger.Error(ctx, "Failed to verify organization unit", log.Any("error", svcErr))
-		return &serviceerror.InternalServerError
+		return &tidcommon.InternalServerError
 	}
 	if !exists {
 		return &ErrorConfigurationInvalidOU
@@ -126,7 +127,7 @@ func (s *configurationService) populateOUHandle(ctx context.Context, dtos ...*Cr
 // CreateCredentialConfiguration validates, resolves the OU for, and persists a new credential configuration.
 func (s *configurationService) CreateCredentialConfiguration(
 	ctx context.Context, dto *CredentialConfigurationDTO,
-) (*CredentialConfigurationDTO, *serviceerror.ServiceError) {
+) (*CredentialConfigurationDTO, *tidcommon.ServiceError) {
 	if svcErr := validateConfiguration(dto); svcErr != nil {
 		return nil, svcErr
 	}
@@ -137,7 +138,7 @@ func (s *configurationService) CreateCredentialConfiguration(
 	existing, err := s.store.GetCredentialConfigurationByHandle(ctx, dto.Handle)
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		s.logger.Error(ctx, "Failed to check existing configuration", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	if existing != nil {
 		return nil, &ErrorConfigurationAlreadyExists
@@ -149,14 +150,14 @@ func (s *configurationService) CreateCredentialConfiguration(
 		id, genErr = s.uuid()
 		if genErr != nil {
 			s.logger.Error(ctx, "Failed to generate configuration ID", log.Error(genErr))
-			return nil, &serviceerror.InternalServerError
+			return nil, &tidcommon.InternalServerError
 		}
 	}
 	dto.ID = id
 
 	if err := s.store.CreateCredentialConfiguration(ctx, *dto); err != nil {
 		s.logger.Error(ctx, "Failed to create credential configuration", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	return dto, nil
 }
@@ -164,7 +165,7 @@ func (s *configurationService) CreateCredentialConfiguration(
 // GetCredentialConfiguration retrieves a credential configuration by ID and resolves its OU handle.
 func (s *configurationService) GetCredentialConfiguration(
 	ctx context.Context, id string,
-) (*CredentialConfigurationDTO, *serviceerror.ServiceError) {
+) (*CredentialConfigurationDTO, *tidcommon.ServiceError) {
 	if strings.TrimSpace(id) == "" {
 		return nil, &ErrorConfigurationInvalidRequest
 	}
@@ -174,7 +175,7 @@ func (s *configurationService) GetCredentialConfiguration(
 			return nil, &ErrorConfigurationNotFound
 		}
 		s.logger.Error(ctx, "Failed to get credential configuration", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	s.populateOUHandle(ctx, dto)
 	return dto, nil
@@ -183,14 +184,14 @@ func (s *configurationService) GetCredentialConfiguration(
 // GetCredentialConfigurationByHandle retrieves a credential configuration by its handle.
 func (s *configurationService) GetCredentialConfigurationByHandle(
 	ctx context.Context, handle string,
-) (*CredentialConfigurationDTO, *serviceerror.ServiceError) {
+) (*CredentialConfigurationDTO, *tidcommon.ServiceError) {
 	dto, err := s.store.GetCredentialConfigurationByHandle(ctx, handle)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return nil, &ErrorConfigurationNotFound
 		}
 		s.logger.Error(ctx, "Failed to get credential configuration by handle", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	return dto, nil
 }
@@ -198,14 +199,14 @@ func (s *configurationService) GetCredentialConfigurationByHandle(
 // ListCredentialConfigurations returns all credential configurations with resolved OU handles.
 func (s *configurationService) ListCredentialConfigurations(
 	ctx context.Context,
-) ([]CredentialConfigurationDTO, *serviceerror.ServiceError) {
+) ([]CredentialConfigurationDTO, *tidcommon.ServiceError) {
 	configs, err := s.store.ListCredentialConfigurations(ctx)
 	if err != nil {
 		if errors.Is(err, ErrResultLimitExceededInCompositeMode) {
 			return nil, &ErrorConfigurationResultLimitExceeded
 		}
 		s.logger.Error(ctx, "Failed to list credential configurations", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	ptrs := make([]*CredentialConfigurationDTO, len(configs))
 	for i := range configs {
@@ -218,14 +219,14 @@ func (s *configurationService) ListCredentialConfigurations(
 // ListCredentialConfigurationSummaries returns summary views of all credential configurations with resolved OU handles.
 func (s *configurationService) ListCredentialConfigurationSummaries(
 	ctx context.Context,
-) ([]CredentialConfigurationList, *serviceerror.ServiceError) {
+) ([]CredentialConfigurationList, *tidcommon.ServiceError) {
 	summaries, err := s.store.ListCredentialConfigurationSummaries(ctx)
 	if err != nil {
 		if errors.Is(err, ErrResultLimitExceededInCompositeMode) {
 			return nil, &ErrorConfigurationResultLimitExceeded
 		}
 		s.logger.Error(ctx, "Failed to list credential configuration summaries", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	s.populateSummaryOUHandles(ctx, summaries)
 	return summaries, nil
@@ -265,7 +266,7 @@ func (s *configurationService) populateSummaryOUHandles(
 // UpdateCredentialConfiguration validates and persists changes to an existing credential configuration.
 func (s *configurationService) UpdateCredentialConfiguration(
 	ctx context.Context, id string, dto *CredentialConfigurationDTO,
-) (*CredentialConfigurationDTO, *serviceerror.ServiceError) {
+) (*CredentialConfigurationDTO, *tidcommon.ServiceError) {
 	if strings.TrimSpace(id) == "" {
 		return nil, &ErrorConfigurationInvalidRequest
 	}
@@ -282,14 +283,14 @@ func (s *configurationService) UpdateCredentialConfiguration(
 			return nil, &ErrorConfigurationNotFound
 		}
 		s.logger.Error(ctx, "Failed to load credential configuration", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	if existing.Handle != dto.Handle {
 		clash, err := s.store.GetCredentialConfigurationByHandle(ctx, dto.Handle)
 		if err != nil && !errors.Is(err, ErrNotFound) {
 			s.logger.Error(ctx, "Failed to check handle uniqueness", log.Error(err))
-			return nil, &serviceerror.InternalServerError
+			return nil, &tidcommon.InternalServerError
 		}
 		if clash != nil {
 			return nil, &ErrorConfigurationAlreadyExists
@@ -302,7 +303,7 @@ func (s *configurationService) UpdateCredentialConfiguration(
 			return nil, &ErrorConfigurationImmutable
 		}
 		s.logger.Error(ctx, "Failed to update credential configuration", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	return dto, nil
 }
@@ -310,7 +311,7 @@ func (s *configurationService) UpdateCredentialConfiguration(
 // DeleteCredentialConfiguration deletes a credential configuration by ID, succeeding idempotently when absent.
 func (s *configurationService) DeleteCredentialConfiguration(
 	ctx context.Context, id string,
-) *serviceerror.ServiceError {
+) *tidcommon.ServiceError {
 	if strings.TrimSpace(id) == "" {
 		return &ErrorConfigurationInvalidRequest
 	}
@@ -319,14 +320,14 @@ func (s *configurationService) DeleteCredentialConfiguration(
 			return nil // idempotent
 		}
 		s.logger.Error(ctx, "Failed to load credential configuration", log.Error(err))
-		return &serviceerror.InternalServerError
+		return &tidcommon.InternalServerError
 	}
 	if err := s.store.DeleteCredentialConfiguration(ctx, id); err != nil {
 		if errors.Is(err, ErrConfigurationIsImmutable) {
 			return &ErrorConfigurationImmutable
 		}
 		s.logger.Error(ctx, "Failed to delete credential configuration", log.Error(err))
-		return &serviceerror.InternalServerError
+		return &tidcommon.InternalServerError
 	}
 	return nil
 }
@@ -334,17 +335,17 @@ func (s *configurationService) DeleteCredentialConfiguration(
 // IsCredentialConfigurationDeclarative reports whether the credential configuration with the given ID is declarative.
 func (s *configurationService) IsCredentialConfigurationDeclarative(
 	ctx context.Context, id string,
-) (bool, *serviceerror.ServiceError) {
+) (bool, *tidcommon.ServiceError) {
 	isDeclarative, err := s.store.IsCredentialConfigurationDeclarative(ctx, id)
 	if err != nil {
 		s.logger.Error(ctx, "Failed to check if credential configuration is declarative", log.Error(err))
-		return false, &serviceerror.InternalServerError
+		return false, &tidcommon.InternalServerError
 	}
 	return isDeclarative, nil
 }
 
 // validateConfiguration enforces the required fields of a credential configuration.
-func validateConfiguration(dto *CredentialConfigurationDTO) *serviceerror.ServiceError {
+func validateConfiguration(dto *CredentialConfigurationDTO) *tidcommon.ServiceError {
 	if dto == nil || strings.TrimSpace(dto.Handle) == "" || strings.TrimSpace(dto.VCT) == "" {
 		return &ErrorConfigurationInvalidRequest
 	}

@@ -21,14 +21,15 @@ package client
 import (
 	"context"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/thunder-id/thunderid/internal/notification/common"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 )
 
 // ClientFactoryInterface defines the interface for obtaining notification clients.
 type ClientFactoryInterface interface {
 	GetClient(ctx context.Context,
-		sender common.NotificationSenderDTO) (NotificationClientInterface, *serviceerror.ServiceError)
+		sender common.NotificationSenderDTO) (NotificationClientInterface, *tidcommon.ServiceError)
 }
 
 // clientFactory is the implementation of ClientFactoryInterface.
@@ -41,7 +42,7 @@ func newClientFactory() ClientFactoryInterface {
 
 // GetClient returns the notification client for the given sender.
 func (p *clientFactory) GetClient(ctx context.Context, sender common.NotificationSenderDTO) (
-	NotificationClientInterface, *serviceerror.ServiceError) {
+	NotificationClientInterface, *tidcommon.ServiceError) {
 	var _client NotificationClientInterface
 	var err error
 	switch sender.Provider {
@@ -56,7 +57,7 @@ func (p *clientFactory) GetClient(ctx context.Context, sender common.Notificatio
 	}
 
 	if err != nil {
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	return _client, nil

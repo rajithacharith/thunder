@@ -28,6 +28,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/system/cache"
 	"github.com/thunder-id/thunderid/internal/system/config"
+	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
 )
 
 type InitTestSuite struct {
@@ -41,7 +42,7 @@ func TestInitTestSuite(t *testing.T) {
 
 func (suite *InitTestSuite) SetupTest() {
 	config.ResetServerRuntime()
-	cfg := &config.Config{Server: config.ServerConfig{Identifier: "test-deployment"}}
+	cfg := &config.Config{Server: engineconfig.ServerConfig{Identifier: "test-deployment"}}
 	suite.Require().NoError(config.InitializeServerRuntime("", cfg))
 	suite.mux = http.NewServeMux()
 }

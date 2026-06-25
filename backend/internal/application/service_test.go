@@ -24,6 +24,10 @@ import (
 	"errors"
 	"testing"
 
+	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
+
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -34,12 +38,9 @@ import (
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/inboundclient"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
-	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
-	oupkg "github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/i18n/mgtmock"
 	"github.com/thunder-id/thunderid/tests/mocks/inboundclientmock"
@@ -71,7 +72,7 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse() {
 		"description": "Test Description",
 		"clientId":    "client-123",
 	})
-	entity := &entityprovider.Entity{SystemAttributes: sysAttrs}
+	entity := &providers.Entity{SystemAttributes: sysAttrs}
 
 	result := buildBasicApplicationResponse(cfg, entity)
 
@@ -101,7 +102,7 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse_WithTemplate() 
 		"name":     "Test App",
 		"clientId": "client-123",
 	})
-	entity := &entityprovider.Entity{SystemAttributes: sysAttrs}
+	entity := &providers.Entity{SystemAttributes: sysAttrs}
 
 	result := buildBasicApplicationResponse(cfg, entity)
 
@@ -125,7 +126,7 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse_WithEmptyTempla
 		"name":     "Test App",
 		"clientId": "client-123",
 	})
-	entity := &entityprovider.Entity{SystemAttributes: sysAttrs}
+	entity := &providers.Entity{SystemAttributes: sysAttrs}
 
 	result := buildBasicApplicationResponse(cfg, entity)
 
@@ -146,10 +147,10 @@ func (suite *ServiceTestSuite) setupTestService() (
 		entityprovider.ErrorCodeEntityNotFound, "not found", "")
 	var noEPErr *entityprovider.EntityProviderError
 	mockEntityProvider.On("IdentifyEntity", mock.Anything).Maybe().Return((*string)(nil), epNotFound)
-	mockEntityProvider.On("GetEntity", mock.Anything).Maybe().Return((*entityprovider.Entity)(nil), epNotFound)
-	mockEntityProvider.On("GetEntitiesByIDs", mock.Anything).Maybe().Return([]entityprovider.Entity{}, noEPErr)
+	mockEntityProvider.On("GetEntity", mock.Anything).Maybe().Return((*providers.Entity)(nil), epNotFound)
+	mockEntityProvider.On("GetEntitiesByIDs", mock.Anything).Maybe().Return([]providers.Entity{}, noEPErr)
 	mockEntityProvider.On("CreateEntity", mock.Anything, mock.Anything).
-		Maybe().Return(&entityprovider.Entity{}, noEPErr)
+		Maybe().Return(&providers.Entity{}, noEPErr)
 	mockEntityProvider.On("DeleteEntity", mock.Anything).Maybe().Return(noEPErr)
 	mockEntityProvider.On("UpdateSystemAttributes", mock.Anything, mock.Anything).Maybe().Return(noEPErr)
 	mockEntityProvider.On("UpdateSystemCredentials", mock.Anything, mock.Anything).Maybe().Return(noEPErr)
@@ -200,7 +201,7 @@ func mockLoadFullApplication(
 	inboundClient := toInboundClient(dto)
 	mockStore.On("GetInboundClientByEntityID", mock.Anything, dto.ID).Return(&inboundClient, nil)
 
-	var oauthProfile *inboundmodel.OAuthProfile
+	var oauthProfile *providers.OAuthProfile
 	if oauthProcessed := getOAuthInboundAuthConfigProcessedDTO(dto.InboundAuthConfig); oauthProcessed != nil {
 		oauthProfile = buildOAuthProfileFromProcessed(*oauthProcessed)
 	}
@@ -208,7 +209,7 @@ func mockLoadFullApplication(
 		mockStore.On("GetOAuthProfileByEntityID", mock.Anything, dto.ID).Return(oauthProfile, nil)
 	} else {
 		mockStore.On("GetOAuthProfileByEntityID", mock.Anything, dto.ID).
-			Return((*inboundmodel.OAuthProfile)(nil), inboundclient.ErrInboundClientNotFound)
+			Return((*providers.OAuthProfile)(nil), inboundclient.ErrInboundClientNotFound)
 	}
 
 	sysAttrs := map[string]interface{}{}
@@ -225,9 +226,9 @@ func mockLoadFullApplication(
 	sysAttrsJSON, _ := json.Marshal(sysAttrs)
 	ep := resetEntityProviderMethod(service, "GetEntity")
 	ep.On("GetEntity", dto.ID).Return(
-		&entityprovider.Entity{
+		&providers.Entity{
 			ID:               dto.ID,
-			Category:         entityprovider.EntityCategoryApp,
+			Category:         providers.EntityCategoryApp,
 			OUID:             dto.OUID,
 			SystemAttributes: sysAttrsJSON,
 		},
@@ -271,11 +272,11 @@ func (suite *ServiceTestSuite) TestGetOAuthApplication_Success() {
 	service, mockStore := suite.setupTestService()
 
 	mockStore.EXPECT().GetOAuthClientByClientID(mock.Anything, "client123").
-		Return(&inboundmodel.OAuthClient{ClientID: "client123", ID: "app123"}, nil)
+		Return(&providers.OAuthClient{ClientID: "client123", ID: "app123"}, nil)
 	resetEntityProviderMethod(service, "GetEntity")
 	service.entityProvider.(*entityprovidermock.EntityProviderInterfaceMock).
 		On("GetEntity", "app123").Return(
-		&entityprovider.Entity{ID: "app123", Category: entityprovider.EntityCategoryApp},
+		&providers.Entity{ID: "app123", Category: providers.EntityCategoryApp},
 		(*entityprovider.EntityProviderError)(nil))
 
 	result, svcErr := service.GetOAuthApplication(context.Background(), "client123")
@@ -291,11 +292,11 @@ func (suite *ServiceTestSuite) TestGetOAuthApplication_AgentEntity() {
 	service, mockStore := suite.setupTestService()
 
 	mockStore.EXPECT().GetOAuthClientByClientID(mock.Anything, "agent-client").
-		Return(&inboundmodel.OAuthClient{ClientID: "agent-client", ID: "agent-id"}, nil)
+		Return(&providers.OAuthClient{ClientID: "agent-client", ID: "agent-id"}, nil)
 	resetEntityProviderMethod(service, "GetEntity")
 	service.entityProvider.(*entityprovidermock.EntityProviderInterfaceMock).
 		On("GetEntity", "agent-id").Return(
-		&entityprovider.Entity{ID: "agent-id", Category: entityprovider.EntityCategoryAgent},
+		&providers.Entity{ID: "agent-id", Category: providers.EntityCategoryAgent},
 		(*entityprovider.EntityProviderError)(nil))
 
 	result, svcErr := service.GetOAuthApplication(context.Background(), "agent-client")
@@ -311,7 +312,7 @@ func (suite *ServiceTestSuite) TestGetOAuthApplication_EntityNotFound() {
 	service, mockStore := suite.setupTestService()
 
 	mockStore.EXPECT().GetOAuthClientByClientID(mock.Anything, "client-x").
-		Return(&inboundmodel.OAuthClient{ClientID: "client-x", ID: "missing-app"}, nil)
+		Return(&providers.OAuthClient{ClientID: "client-x", ID: "missing-app"}, nil)
 
 	result, svcErr := service.GetOAuthApplication(context.Background(), "client-x")
 
@@ -325,17 +326,17 @@ func (suite *ServiceTestSuite) TestGetOAuthApplication_EntityLoadError() {
 	service, mockStore := suite.setupTestService()
 
 	mockStore.EXPECT().GetOAuthClientByClientID(mock.Anything, "client-y").
-		Return(&inboundmodel.OAuthClient{ClientID: "client-y", ID: "app-y"}, nil)
+		Return(&providers.OAuthClient{ClientID: "client-y", ID: "app-y"}, nil)
 	ep := resetEntityProviderMethod(service, "GetEntity")
 	ep.On("GetEntity", "app-y").Return(
-		(*entityprovider.Entity)(nil),
+		(*providers.Entity)(nil),
 		entityprovider.NewEntityProviderError("INTERNAL_ERROR", "boom", ""))
 
 	result, svcErr := service.GetOAuthApplication(context.Background(), "client-y")
 
 	assert.Nil(suite.T(), result)
 	suite.Require().NotNil(svcErr)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, svcErr.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *ServiceTestSuite) TestGetApplication_EmptyAppID() {
@@ -400,7 +401,7 @@ func (suite *ServiceTestSuite) TestGetApplication_AgentEntity() {
 		Return(&inboundmodel.InboundClient{ID: testServiceAppID}, nil)
 	ep := resetEntityProviderMethod(service, "GetEntity")
 	ep.On("GetEntity", testServiceAppID).Return(
-		&entityprovider.Entity{ID: testServiceAppID, Category: entityprovider.EntityCategoryAgent},
+		&providers.Entity{ID: testServiceAppID, Category: providers.EntityCategoryAgent},
 		(*entityprovider.EntityProviderError)(nil))
 
 	result, svcErr := service.GetApplication(context.Background(), testServiceAppID)
@@ -420,12 +421,12 @@ func (suite *ServiceTestSuite) TestGetApplication_WithInboundAuthConfig_Success(
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
 				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthClient{
+				OAuthConfig: &providers.OAuthClient{
 					ClientID:                "client-id-123",
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 					PKCERequired:            true,
 					PublicClient:            false,
 					Scopes:                  []string{"openid", "profile"},
@@ -453,11 +454,11 @@ func (suite *ServiceTestSuite) TestGetApplication_WithInboundAuthConfig_Success(
 	require.NotNil(suite.T(), inboundAuth.OAuthConfig)
 	assert.Equal(suite.T(), "client-id-123", inboundAuth.OAuthConfig.ClientID)
 	assert.Equal(suite.T(), []string{"https://example.com/callback"}, inboundAuth.OAuthConfig.RedirectURIs)
-	assert.Equal(suite.T(), []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+	assert.Equal(suite.T(), []providers.GrantType{providers.GrantTypeAuthorizationCode},
 		inboundAuth.OAuthConfig.GrantTypes)
-	assert.Equal(suite.T(), []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+	assert.Equal(suite.T(), []providers.ResponseType{providers.ResponseTypeCode},
 		inboundAuth.OAuthConfig.ResponseTypes)
-	assert.Equal(suite.T(), oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+	assert.Equal(suite.T(), providers.TokenEndpointAuthMethodClientSecretBasic,
 		inboundAuth.OAuthConfig.TokenEndpointAuthMethod)
 	assert.True(suite.T(), inboundAuth.OAuthConfig.PKCERequired)
 	assert.False(suite.T(), inboundAuth.OAuthConfig.PublicClient)
@@ -470,19 +471,19 @@ func (suite *ServiceTestSuite) TestGetApplicationList_Success() {
 
 	sysAttrs1, _ := json.Marshal(map[string]interface{}{"name": "App 1"})
 	sysAttrs2, _ := json.Marshal(map[string]interface{}{"name": "App 2"})
-	entities := []entityprovider.Entity{
-		{ID: "app1", Category: entityprovider.EntityCategoryApp, SystemAttributes: sysAttrs1},
-		{ID: "app2", Category: entityprovider.EntityCategoryApp, SystemAttributes: sysAttrs2},
+	entities := []providers.Entity{
+		{ID: "app1", Category: providers.EntityCategoryApp, SystemAttributes: sysAttrs1},
+		{ID: "app2", Category: providers.EntityCategoryApp, SystemAttributes: sysAttrs2},
 	}
 	cfg1 := inboundmodel.InboundClient{ID: "app1"}
 	cfg2 := inboundmodel.InboundClient{ID: "app2"}
 
 	ep := resetEntityProviderMethod(service, "GetEntityList")
-	ep.On("GetEntityList", entityprovider.EntityCategoryApp,
+	ep.On("GetEntityList", providers.EntityCategoryApp,
 		mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.Anything).
 		Return(entities, (*entityprovider.EntityProviderError)(nil))
 	resetEntityProviderMethod(service, "GetEntityListCount").
-		On("GetEntityListCount", entityprovider.EntityCategoryApp, mock.Anything).
+		On("GetEntityListCount", providers.EntityCategoryApp, mock.Anything).
 		Return(2, (*entityprovider.EntityProviderError)(nil))
 
 	mockStore.On("GetInboundClientList", mock.Anything).
@@ -501,13 +502,13 @@ func (suite *ServiceTestSuite) TestGetApplicationList_ListError() {
 	service, _ := suite.setupTestService()
 
 	resetEntityProviderMethod(service, "GetEntityListCount").
-		On("GetEntityListCount", entityprovider.EntityCategoryApp, mock.Anything).
+		On("GetEntityListCount", providers.EntityCategoryApp, mock.Anything).
 		Return(0, (*entityprovider.EntityProviderError)(nil))
 	ep := resetEntityProviderMethod(service, "GetEntityList")
 	epErr := &entityprovider.EntityProviderError{Code: "INTERNAL_ERROR"}
-	ep.On("GetEntityList", entityprovider.EntityCategoryApp,
+	ep.On("GetEntityList", providers.EntityCategoryApp,
 		mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.Anything).
-		Return(([]entityprovider.Entity)(nil), epErr)
+		Return(([]providers.Entity)(nil), epErr)
 
 	result, svcErr := service.GetApplicationList(context.Background())
 
@@ -518,14 +519,14 @@ func (suite *ServiceTestSuite) TestGetApplicationList_ListError() {
 func (suite *ServiceTestSuite) TestGetApplicationList_InboundFetchError() {
 	service, mockStore := suite.setupTestService()
 
-	entities := []entityprovider.Entity{
-		{ID: "app1", Category: entityprovider.EntityCategoryApp},
+	entities := []providers.Entity{
+		{ID: "app1", Category: providers.EntityCategoryApp},
 	}
 	resetEntityProviderMethod(service, "GetEntityListCount").
-		On("GetEntityListCount", entityprovider.EntityCategoryApp, mock.Anything).
+		On("GetEntityListCount", providers.EntityCategoryApp, mock.Anything).
 		Return(1, (*entityprovider.EntityProviderError)(nil))
 	ep := resetEntityProviderMethod(service, "GetEntityList")
-	ep.On("GetEntityList", entityprovider.EntityCategoryApp,
+	ep.On("GetEntityList", providers.EntityCategoryApp,
 		mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.Anything).
 		Return(entities, (*entityprovider.EntityProviderError)(nil))
 
@@ -714,7 +715,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_StoreError() {
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_NameConflict() {
@@ -741,13 +742,13 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_NameConflict() {
 	mockStore.On("GetInboundClientByEntityID", mock.Anything, testServiceAppID).
 		Return(&inboundmodel.InboundClient{ID: testServiceAppID}, nil)
 	mockStore.On("GetOAuthProfileByEntityID", mock.Anything, testServiceAppID).
-		Return((*inboundmodel.OAuthProfile)(nil), nil)
+		Return((*providers.OAuthProfile)(nil), nil)
 	mockEP := resetIdentifyEntity(service)
 	mockEP.On("GetEntity", testServiceAppID).Unset()
 	mockEP.On("GetEntity", testServiceAppID).Return(
-		&entityprovider.Entity{
+		&providers.Entity{
 			ID:               testServiceAppID,
-			Category:         entityprovider.EntityCategoryApp,
+			Category:         providers.EntityCategoryApp,
 			SystemAttributes: sysAttrs,
 		}, (*entityprovider.EntityProviderError)(nil))
 	conflictingID := testConflictingAppID
@@ -801,7 +802,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_NameCheckStoreEr
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_Success() {
@@ -938,9 +939,9 @@ func (suite *ServiceTestSuite) TestDeleteApplication_CertError() {
 	certOpErr := &inboundclient.CertOperationError{
 		Operation: inboundclient.CertOpDelete,
 		RefType:   cert.CertificateReferenceTypeApplication,
-		Underlying: &serviceerror.ServiceError{
-			Type: serviceerror.ClientErrorType,
-			ErrorDescription: i18ncore.I18nMessage{
+		Underlying: &tidcommon.ServiceError{
+			Type: tidcommon.ClientErrorType,
+			ErrorDescription: tidcommon.I18nMessage{
 				DefaultValue: "underlying",
 			},
 		},
@@ -974,7 +975,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_OAuthCertError() {
 	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
 
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 // TestDeleteApplication_OAuthCertError_ClientError verifies that when the inbound-client layer
@@ -995,9 +996,9 @@ func (suite *ServiceTestSuite) TestDeleteApplication_OAuthCertError_ClientError(
 	certOpErr := &inboundclient.CertOperationError{
 		Operation: inboundclient.CertOpDelete,
 		RefType:   cert.CertificateReferenceTypeOAuthApp,
-		Underlying: &serviceerror.ServiceError{
-			Type: serviceerror.ClientErrorType,
-			ErrorDescription: i18ncore.I18nMessage{
+		Underlying: &tidcommon.ServiceError{
+			Type: tidcommon.ClientErrorType,
+			ErrorDescription: tidcommon.I18nMessage{
 				Key:          "error.test.invalid_client_id",
 				DefaultValue: "Invalid client ID",
 			},
@@ -1045,7 +1046,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_AgentEntity() {
 	service, _ := suite.setupTestService()
 	ep := resetEntityProviderMethod(service, "GetEntity")
 	ep.On("GetEntity", testServiceAppID).Return(
-		&entityprovider.Entity{ID: testServiceAppID, Category: entityprovider.EntityCategoryAgent},
+		&providers.Entity{ID: testServiceAppID, Category: providers.EntityCategoryAgent},
 		(*entityprovider.EntityProviderError)(nil))
 
 	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
@@ -1065,13 +1066,13 @@ func (suite *ServiceTestSuite) TestDeleteApplication_EntityLoadError() {
 	service, _ := suite.setupTestService()
 	ep := resetEntityProviderMethod(service, "GetEntity")
 	ep.On("GetEntity", testServiceAppID).Return(
-		(*entityprovider.Entity)(nil),
+		(*providers.Entity)(nil),
 		entityprovider.NewEntityProviderError("INTERNAL_ERROR", "boom", ""))
 
 	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
 
 	suite.Require().NotNil(svcErr)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, svcErr.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_EmptyInboundAuth() {
@@ -1130,8 +1131,8 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithDef
 				Type: inboundmodel.OAuthInboundAuthType,
 				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{},
-					ResponseTypes:           []oauth2const.ResponseType{},
+					GrantTypes:              []providers.GrantType{},
+					ResponseTypes:           []providers.ResponseType{},
 					TokenEndpointAuthMethod: "",
 				},
 			},
@@ -1143,10 +1144,10 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithDef
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
 	assert.Len(suite.T(), result.OAuthConfig.GrantTypes, 1)
-	assert.Equal(suite.T(), oauth2const.GrantTypeAuthorizationCode, result.OAuthConfig.GrantTypes[0])
+	assert.Equal(suite.T(), providers.GrantTypeAuthorizationCode, result.OAuthConfig.GrantTypes[0])
 	assert.Equal(
 		suite.T(),
-		oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+		providers.TokenEndpointAuthMethodClientSecretBasic,
 		result.OAuthConfig.TokenEndpointAuthMethod,
 	)
 }
@@ -1160,9 +1161,9 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithRes
 				Type: inboundmodel.OAuthInboundAuthType,
 				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -1173,7 +1174,7 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithRes
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
 	assert.Len(suite.T(), result.OAuthConfig.ResponseTypes, 1)
-	assert.Equal(suite.T(), oauth2const.ResponseTypeCode, result.OAuthConfig.ResponseTypes[0])
+	assert.Equal(suite.T(), providers.ResponseTypeCode, result.OAuthConfig.ResponseTypes[0])
 }
 
 func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithGrantTypeButNoResponseType() {
@@ -1185,9 +1186,9 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithGra
 				Type: inboundmodel.OAuthInboundAuthType,
 				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeClientCredentials},
-					ResponseTypes:           []oauth2const.ResponseType{},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeClientCredentials},
+					ResponseTypes:           []providers.ResponseType{},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -1208,9 +1209,9 @@ func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Error() {
 		Name: "Test App",
 	}
 
-	svcErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Invalid certificate"},
+	svcErr := &tidcommon.ServiceError{
+		Type:             tidcommon.ClientErrorType,
+		ErrorDescription: tidcommon.I18nMessage{DefaultValue: "Invalid certificate"},
 	}
 
 	mockStore.EXPECT().
@@ -1258,9 +1259,9 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_PublicC
 				Type: inboundmodel.OAuthInboundAuthType,
 				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodNone,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodNone,
 					PublicClient:            true,
 					PKCERequired:            true,
 				},
@@ -1283,8 +1284,8 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_PublicC
 			{
 				Type: inboundmodel.OAuthInboundAuthType,
 				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeClientCredentials},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodNone,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeClientCredentials},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodNone,
 					PublicClient:            true,
 				},
 			},
@@ -1319,7 +1320,7 @@ func (suite *ServiceTestSuite) TestValidateApplication_StoreErrorNonNotFound() {
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 //nolint:dupl // Testing different URL validation scenarios
@@ -1419,7 +1420,7 @@ func (suite *ServiceTestSuite) runCreateApplicationStoreErrorTest() {
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorNonNotFound() {
@@ -1449,7 +1450,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorNonNotFound() {
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingName() {
@@ -1489,7 +1490,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingName(
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingClientID() {
@@ -1510,7 +1511,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingClien
 		Name: "Test App",
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				OAuthConfig: &inboundmodel.OAuthClient{
+				OAuthConfig: &providers.OAuthClient{
 					ClientID: "old-client-id",
 				},
 			},
@@ -1526,9 +1527,9 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingClien
 				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                "new-client-id",
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -1548,7 +1549,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingClien
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWithRollback() {
@@ -1594,7 +1595,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWithRollback() {
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestCreateApplication_ValidateApplicationError() {
@@ -1657,7 +1658,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_CertificateCreationError() 
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestCreateApplication_WithOAuthCertificate_Success() {
@@ -1686,9 +1687,9 @@ func (suite *ServiceTestSuite) TestCreateApplication_WithOAuthCertificate_Succes
 				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodPrivateKeyJWT,
 					Certificate: &inboundmodel.Certificate{
 						Type:  "JWKS",
 						Value: `{"keys":[]}`,
@@ -1741,9 +1742,9 @@ func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithOAuthCertRoll
 				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodPrivateKeyJWT,
 					Certificate: &inboundmodel.Certificate{
 						Type:  "JWKS",
 						Value: `{"keys":[]}`,
@@ -1762,7 +1763,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithOAuthCertRoll
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithBothAppAndOAuthCertRollback() {
@@ -1795,9 +1796,9 @@ func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithBothAppAndOAu
 				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodPrivateKeyJWT,
 					Certificate: &inboundmodel.Certificate{
 						Type:  "JWKS",
 						Value: `{"keys":[{"oauth":"cert"}]}`,
@@ -1816,7 +1817,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithBothAppAndOAu
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestUpdateApplication_NotFound() {
@@ -1945,7 +1946,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_MetadataUpdate() {
 func (suite *ServiceTestSuite) TestUpdateApplication_AppCertificateUpdateError() {
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{Enabled: false},
-		JWT:                  config.JWTConfig{ValidityPeriod: 3600},
+		JWT:                  engineconfig.JWTConfig{ValidityPeriod: 3600},
 	}
 	config.ResetServerRuntime()
 	err := config.InitializeServerRuntime("/tmp/test", testConfig)
@@ -1978,14 +1979,14 @@ func (suite *ServiceTestSuite) TestUpdateApplication_AppCertificateUpdateError()
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 // TestResolveClientSecret_PublicClient tests that no secret is generated for public clients.
 func TestResolveClientSecret_PublicClient(t *testing.T) {
 	inboundAuthConfig := &inboundmodel.InboundAuthConfigWithSecret{
 		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
-			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodNone,
+			TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodNone,
 			ClientSecret:            "",
 			PublicClient:            true,
 		},
@@ -2002,7 +2003,7 @@ func TestResolveClientSecret_SecretAlreadyProvided(t *testing.T) {
 	providedSecret := "user-provided-secret"
 	inboundAuthConfig := &inboundmodel.InboundAuthConfigWithSecret{
 		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
-			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+			TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 			ClientSecret:            providedSecret,
 			PublicClient:            false,
 		},
@@ -2018,7 +2019,7 @@ func TestResolveClientSecret_SecretAlreadyProvided(t *testing.T) {
 func TestResolveClientSecret_GenerateForNewConfidentialClient(t *testing.T) {
 	inboundAuthConfig := &inboundmodel.InboundAuthConfigWithSecret{
 		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
-			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+			TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 			ClientSecret:            "",
 			PublicClient:            false,
 		},
@@ -2038,8 +2039,8 @@ func TestResolveClientSecret_PreserveExistingSecret(t *testing.T) {
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
 				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthClient{
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+				OAuthConfig: &providers.OAuthClient{
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 					PublicClient:            false,
 				},
 			},
@@ -2048,7 +2049,7 @@ func TestResolveClientSecret_PreserveExistingSecret(t *testing.T) {
 
 	inboundAuthConfig := &inboundmodel.InboundAuthConfigWithSecret{
 		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
-			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+			TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 			ClientSecret:            "",
 			PublicClient:            false,
 		},
@@ -2065,7 +2066,7 @@ func TestResolveClientSecret_PreserveExistingSecret(t *testing.T) {
 func TestResolveClientSecret_NoExistingApp(t *testing.T) {
 	inboundAuthConfig := &inboundmodel.InboundAuthConfigWithSecret{
 		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
-			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+			TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 			ClientSecret:            "",
 			PublicClient:            false,
 		},
@@ -2083,8 +2084,8 @@ func TestResolveClientSecret_ExistingAppWithoutSecret(t *testing.T) {
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
 				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthClient{
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodNone,
+				OAuthConfig: &providers.OAuthClient{
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodNone,
 					PublicClient:            false,
 				},
 			},
@@ -2093,7 +2094,7 @@ func TestResolveClientSecret_ExistingAppWithoutSecret(t *testing.T) {
 
 	inboundAuthConfig := &inboundmodel.InboundAuthConfigWithSecret{
 		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
-			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+			TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 			ClientSecret:            "",
 			PublicClient:            false,
 		},
@@ -2111,7 +2112,7 @@ func TestResolveClientSecret_ExistingAppWithoutSecret(t *testing.T) {
 func (suite *ServiceTestSuite) TestUpdateApplication_StoreFails_RollbackCertFails() {
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{Enabled: false},
-		JWT:                  config.JWTConfig{ValidityPeriod: 3600},
+		JWT:                  engineconfig.JWTConfig{ValidityPeriod: 3600},
 	}
 	config.ResetServerRuntime()
 	err := config.InitializeServerRuntime("/tmp/test", testConfig)
@@ -2144,7 +2145,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreFails_RollbackCertFail
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 // TestUpdateApplication_WithOAuthConfig_Success tests successful update of an application with OAuth configuration.
@@ -2153,7 +2154,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_WithOAuthConfig_Success() {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
-		JWT: config.JWTConfig{
+		JWT: engineconfig.JWTConfig{
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2174,12 +2175,12 @@ func (suite *ServiceTestSuite) TestUpdateApplication_WithOAuthConfig_Success() {
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
 				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthClient{
+				OAuthConfig: &providers.OAuthClient{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -2200,9 +2201,9 @@ func (suite *ServiceTestSuite) TestUpdateApplication_WithOAuthConfig_Success() {
 					ClientID: testClientID,
 					RedirectURIs: []string{"https://example.com/callback",
 						"https://example.com/callback2"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -2232,7 +2233,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_AddOAuthConfig_Success() {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
-		JWT: config.JWTConfig{
+		JWT: engineconfig.JWTConfig{
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2267,9 +2268,9 @@ func (suite *ServiceTestSuite) TestUpdateApplication_AddOAuthConfig_Success() {
 				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                "new-client-id",
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -2297,7 +2298,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_UpdateOAuthClientID_Success
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
-		JWT: config.JWTConfig{
+		JWT: engineconfig.JWTConfig{
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2318,12 +2319,12 @@ func (suite *ServiceTestSuite) TestUpdateApplication_UpdateOAuthClientID_Success
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
 				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthClient{
+				OAuthConfig: &providers.OAuthClient{
 					ClientID:                "old-client-id",
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -2343,9 +2344,9 @@ func (suite *ServiceTestSuite) TestUpdateApplication_UpdateOAuthClientID_Success
 				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                "new-client-id",
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -2372,7 +2373,7 @@ func (suite *ServiceTestSuite) runUpdateApplicationWithJWKSCert(jwksValue string
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
-		JWT: config.JWTConfig{
+		JWT: engineconfig.JWTConfig{
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2393,12 +2394,12 @@ func (suite *ServiceTestSuite) runUpdateApplicationWithJWKSCert(jwksValue string
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
 				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthClient{
+				OAuthConfig: &providers.OAuthClient{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodPrivateKeyJWT,
 				},
 			},
 		},
@@ -2418,9 +2419,9 @@ func (suite *ServiceTestSuite) runUpdateApplicationWithJWKSCert(jwksValue string
 				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodPrivateKeyJWT,
 					Certificate: &inboundmodel.Certificate{
 						Type:  cert.CertificateTypeJWKS,
 						Value: jwksValue,
@@ -2481,12 +2482,12 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthClientIDConflict() {
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
 				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthClient{
+				OAuthConfig: &providers.OAuthClient{
 					ClientID:                "old-client-id",
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -2506,9 +2507,9 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthClientIDConflict() {
 				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                "existing-client-id",
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -2541,7 +2542,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthStoreErrorWithRollback
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
-		JWT: config.JWTConfig{
+		JWT: engineconfig.JWTConfig{
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2562,12 +2563,12 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthStoreErrorWithRollback
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
 				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthClient{
+				OAuthConfig: &providers.OAuthClient{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodPrivateKeyJWT,
 				},
 			},
 		},
@@ -2587,9 +2588,9 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthStoreErrorWithRollback
 				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodPrivateKeyJWT,
 					Certificate: &inboundmodel.Certificate{
 						Type:  cert.CertificateTypeJWKS,
 						Value: `{"keys":[{"kty":"RSA"}]}`,
@@ -2612,7 +2613,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthStoreErrorWithRollback
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 // TestUpdateApplication_OAuthTokenConfigUpdate tests updating OAuth token configuration.
@@ -2621,7 +2622,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthTokenConfigUpdate() {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
-		JWT: config.JWTConfig{
+		JWT: engineconfig.JWTConfig{
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2642,12 +2643,12 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthTokenConfigUpdate() {
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
 				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthClient{
+				OAuthConfig: &providers.OAuthClient{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -2667,15 +2668,15 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthTokenConfigUpdate() {
 				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
-					Token: &inboundmodel.OAuthTokenConfig{
-						AccessToken: &inboundmodel.AccessTokenConfig{
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
+					Token: &providers.OAuthTokenConfig{
+						AccessToken: &providers.AccessTokenConfig{
 							ValidityPeriod: 7200,
 							UserAttributes: []string{"email", "name"},
 						},
-						IDToken: &inboundmodel.IDTokenConfig{
+						IDToken: &providers.IDTokenConfig{
 							ValidityPeriod: 3600,
 							UserAttributes: []string{"sub", "email"},
 						},
@@ -2829,7 +2830,7 @@ func (suite *ServiceTestSuite) TestTranslateIDTokenValidationError_JWKSURINotSSR
 	)
 }
 
-var validAcrMapping = config.AuthClassConfig{
+var validAcrMapping = engineconfig.AuthClassConfig{
 	Amrs: []string{"PWD", "OTP"},
 	AcrAMR: map[string][]string{
 		"urn:thunder:acr:password":       {"PWD"},
@@ -2845,10 +2846,10 @@ func TestAcrValidationTestSuite(t *testing.T) {
 	suite.Run(t, new(AcrValidationTestSuite))
 }
 
-func (s *AcrValidationTestSuite) initRegistry(mapping config.AuthClassConfig) {
+func (s *AcrValidationTestSuite) initRegistry(mapping engineconfig.AuthClassConfig) {
 	config.ResetServerRuntime()
 	s.Require().NoError(config.InitializeServerRuntime("", &config.Config{
-		OAuth: config.OAuthConfig{
+		OAuth: engineconfig.OAuthConfig{
 			AuthClass: mapping,
 		},
 	}))
@@ -2936,7 +2937,7 @@ func (s *AcrValidationTestSuite) TestIsValidACR_AllMappedACRs() {
 }
 
 func (s *AcrValidationTestSuite) TestIsValidACR_EmptyMapping() {
-	s.initRegistry(config.AuthClassConfig{})
+	s.initRegistry(engineconfig.AuthClassConfig{})
 
 	s.False(isValidACR("urn:thunder:acr:password"))
 }
@@ -3232,7 +3233,7 @@ func (suite *ServiceTestSuite) TestTranslateInboundClientFKError() {
 		{
 			name:     "FlowServerError",
 			err:      inboundclient.ErrFKFlowServerError,
-			wantCode: serviceerror.InternalServerError.Code,
+			wantCode: tidcommon.InternalServerError.Code,
 		},
 		{
 			name:     "ThemeNotFound",
@@ -3252,7 +3253,7 @@ func (suite *ServiceTestSuite) TestTranslateInboundClientFKError() {
 		{
 			name:     "UserSchemaLookupFailed",
 			err:      inboundclient.ErrUserSchemaLookupFailed,
-			wantCode: serviceerror.InternalServerError.Code,
+			wantCode: tidcommon.InternalServerError.Code,
 		},
 		{
 			name:     "InvalidUserAttribute",
@@ -3304,7 +3305,7 @@ func (suite *ServiceTestSuite) TestTranslateCertValidationError() {
 
 func (suite *ServiceTestSuite) TestTranslateConsentSyncError() {
 	clientErr := &inboundclient.ConsentSyncError{
-		Underlying: &serviceerror.ServiceError{Type: serviceerror.ClientErrorType, Code: "CONSENT-1234"},
+		Underlying: &tidcommon.ServiceError{Type: tidcommon.ClientErrorType, Code: "CONSENT-1234"},
 	}
 	svcErr := translateConsentSyncError(clientErr)
 	suite.Require().NotNil(svcErr)
@@ -3313,9 +3314,9 @@ func (suite *ServiceTestSuite) TestTranslateConsentSyncError() {
 	suite.Contains(svcErr.ErrorDescription.DefaultValue, "CONSENT-1234")
 
 	serverErr := &inboundclient.ConsentSyncError{
-		Underlying: &serviceerror.ServiceError{Type: serviceerror.ServerErrorType, Code: "CONSENT-9000"},
+		Underlying: &tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "CONSENT-9000"},
 	}
-	suite.Equal(serviceerror.InternalServerError.Code, translateConsentSyncError(serverErr).Code)
+	suite.Equal(tidcommon.InternalServerError.Code, translateConsentSyncError(serverErr).Code)
 }
 
 // ----- validateApplicationFields handle resolution -----
@@ -3332,7 +3333,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationFields_OUHandleResolved() 
 
 	ouMock := service.ouService.(*oumock.OrganizationUnitServiceInterfaceMock)
 	ouMock.On("GetOrganizationUnitByPath", mock.Anything, "default").
-		Return(oupkg.OrganizationUnit{ID: testOUID}, nil).Once()
+		Return(providers.OrganizationUnit{ID: testOUID}, nil).Once()
 
 	app := &model.ApplicationDTO{
 		Name:     "test-app",
@@ -3359,7 +3360,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationFields_OUHandleNotFound() 
 
 	ouMock := service.ouService.(*oumock.OrganizationUnitServiceInterfaceMock)
 	ouMock.On("GetOrganizationUnitByPath", mock.Anything, "bad-handle").
-		Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{Code: "OUS-4004"}).Once()
+		Return(providers.OrganizationUnit{}, &tidcommon.ServiceError{Code: "OUS-4004"}).Once()
 
 	app := &model.ApplicationDTO{
 		Name:     "test-app",
@@ -3466,7 +3467,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_CreateInboundClientFailsAnd
 	result, svcErr := service.CreateApplication(context.Background(), app)
 
 	assert.Nil(suite.T(), result)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestValidateApplication_InboundClientValidateError() {
@@ -3490,34 +3491,34 @@ func (suite *ServiceTestSuite) TestValidateApplication_InboundClientValidateErro
 
 	assert.Nil(suite.T(), processed)
 	assert.Nil(suite.T(), inboundAuthConfig)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestGetApplicationList_CountError() {
 	service, _ := suite.setupTestService()
 
 	resetEntityProviderMethod(service, "GetEntityListCount").
-		On("GetEntityListCount", entityprovider.EntityCategoryApp, mock.Anything).
+		On("GetEntityListCount", providers.EntityCategoryApp, mock.Anything).
 		Return(0, entityprovider.NewEntityProviderError(
 			entityprovider.ErrorCodeSystemError, "count failed", ""))
 
 	result, svcErr := service.GetApplicationList(context.Background())
 
 	assert.Nil(suite.T(), result)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestGetApplicationList_EntityWithoutInboundClient() {
 	service, mockStore := suite.setupTestService()
 
-	entities := []entityprovider.Entity{
-		{ID: "app1", Category: entityprovider.EntityCategoryApp},
+	entities := []providers.Entity{
+		{ID: "app1", Category: providers.EntityCategoryApp},
 	}
 	resetEntityProviderMethod(service, "GetEntityListCount").
-		On("GetEntityListCount", entityprovider.EntityCategoryApp, mock.Anything).
+		On("GetEntityListCount", providers.EntityCategoryApp, mock.Anything).
 		Return(1, (*entityprovider.EntityProviderError)(nil))
 	ep := resetEntityProviderMethod(service, "GetEntityList")
-	ep.On("GetEntityList", entityprovider.EntityCategoryApp,
+	ep.On("GetEntityList", providers.EntityCategoryApp,
 		mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.Anything).
 		Return(entities, (*entityprovider.EntityProviderError)(nil))
 
@@ -3543,7 +3544,7 @@ func (suite *ServiceTestSuite) TestUpdateEntityDataForApplicationUpdate_UpdateSy
 
 	svcErr := service.updateEntityDataForApplicationUpdate(context.Background(), testServiceAppID, app, nil)
 
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestUpdateEntityDataForApplicationUpdate_ClearCredentialsError() {
@@ -3558,7 +3559,7 @@ func (suite *ServiceTestSuite) TestUpdateEntityDataForApplicationUpdate_ClearCre
 
 	svcErr := service.updateEntityDataForApplicationUpdate(context.Background(), testServiceAppID, app, nil)
 
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestUpdateEntityDataForApplicationUpdate_UpdateCredentialsError() {
@@ -3569,7 +3570,7 @@ func (suite *ServiceTestSuite) TestUpdateEntityDataForApplicationUpdate_UpdateCr
 		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 			ClientID:                testClientID,
 			ClientSecret:            "secret-value",
-			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+			TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 		},
 	}
 
@@ -3581,7 +3582,7 @@ func (suite *ServiceTestSuite) TestUpdateEntityDataForApplicationUpdate_UpdateCr
 	svcErr := service.updateEntityDataForApplicationUpdate(
 		context.Background(), testServiceAppID, app, inboundAuthConfig)
 
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestDeleteApplication_DeleteEntityError() {
@@ -3605,7 +3606,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_DeleteEntityError() {
 
 	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
 
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestGetApplication_GetEntityError() {
@@ -3616,13 +3617,13 @@ func (suite *ServiceTestSuite) TestGetApplication_GetEntityError() {
 
 	ep := resetEntityProviderMethod(service, "GetEntity")
 	ep.On("GetEntity", testServiceAppID).
-		Return((*entityprovider.Entity)(nil), entityprovider.NewEntityProviderError(
+		Return((*providers.Entity)(nil), entityprovider.NewEntityProviderError(
 			entityprovider.ErrorCodeSystemError, "get failed", ""))
 
 	result, svcErr := service.getApplication(context.Background(), testServiceAppID)
 
 	assert.Nil(suite.T(), result)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestGetApplication_GetOAuthProfileError() {
@@ -3631,17 +3632,17 @@ func (suite *ServiceTestSuite) TestGetApplication_GetOAuthProfileError() {
 	inboundClient := &inboundmodel.InboundClient{ID: testServiceAppID}
 	mockStore.On("GetInboundClientByEntityID", mock.Anything, testServiceAppID).Return(inboundClient, nil)
 	mockStore.On("GetOAuthProfileByEntityID", mock.Anything, testServiceAppID).
-		Return((*inboundmodel.OAuthProfile)(nil), errors.New("oauth profile load failed"))
+		Return((*providers.OAuthProfile)(nil), errors.New("oauth profile load failed"))
 
 	ep := resetEntityProviderMethod(service, "GetEntity")
 	ep.On("GetEntity", testServiceAppID).
-		Return(&entityprovider.Entity{ID: testServiceAppID, Category: entityprovider.EntityCategoryApp},
+		Return(&providers.Entity{ID: testServiceAppID, Category: providers.EntityCategoryApp},
 			(*entityprovider.EntityProviderError)(nil))
 
 	result, svcErr := service.getApplication(context.Background(), testServiceAppID)
 
 	assert.Nil(suite.T(), result)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestDeleteLocalizedVariants_DeleteError() {
@@ -3649,12 +3650,12 @@ func (suite *ServiceTestSuite) TestDeleteLocalizedVariants_DeleteError() {
 
 	i18nMock := mgtmock.NewI18nServiceInterfaceMock(suite.T())
 	i18nMock.On("DeleteTranslationsByKey", mock.Anything, mock.Anything, mock.Anything).
-		Return(&serviceerror.InternalServerError)
+		Return(&tidcommon.InternalServerError)
 	service.i18nService = i18nMock
 
 	svcErr := service.deleteLocalizedVariants(context.Background(), testServiceAppID)
 
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestCleanupStaleI18nKeys_DeleteError() {
@@ -3662,7 +3663,7 @@ func (suite *ServiceTestSuite) TestCleanupStaleI18nKeys_DeleteError() {
 
 	i18nMock := mgtmock.NewI18nServiceInterfaceMock(suite.T())
 	i18nMock.On("DeleteTranslationsByKey", mock.Anything, mock.Anything, mock.Anything).
-		Return(&serviceerror.InternalServerError)
+		Return(&tidcommon.InternalServerError)
 	service.i18nService = i18nMock
 
 	existing := &model.ApplicationProcessedDTO{
@@ -3675,5 +3676,5 @@ func (suite *ServiceTestSuite) TestCleanupStaleI18nKeys_DeleteError() {
 
 	svcErr := service.cleanupStaleI18nKeys(context.Background(), testServiceAppID, existing, updated)
 
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }

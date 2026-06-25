@@ -23,11 +23,13 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/flow/common"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 )
 
 const testEmailAttr = "email"
@@ -593,7 +595,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason() {
 	})
 
 	// Context with failure reason in runtime data
-	svcErr := serviceerror.ServiceError{Error: i18ncore.I18nMessage{DefaultValue: "Authentication failed"}}
+	svcErr := tidcommon.ServiceError{Error: tidcommon.I18nMessage{DefaultValue: "Authentication failed"}}
 	svcErrJSON, _ := json.Marshal(svcErr)
 	ctx := &NodeContext{
 		ExecutionID: "test-flow",
@@ -626,8 +628,8 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason_ClearsUserInputs(
 	})
 
 	// User submitted inputs, but downstream task failed - routed back with failureReasonJSON
-	svcErr := serviceerror.ServiceError{
-		Error: i18ncore.I18nMessage{DefaultValue: "A user with this username already exists"},
+	svcErr := tidcommon.ServiceError{
+		Error: tidcommon.I18nMessage{DefaultValue: "A user with this username already exists"},
 	}
 	svcErrJSON, _ := json.Marshal(svcErr)
 	ctx := &NodeContext{
@@ -663,8 +665,8 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason_ClearsCurrentActi
 		},
 	})
 
-	svcErr := serviceerror.ServiceError{
-		Error: i18ncore.I18nMessage{DefaultValue: "A user with this email already exists"},
+	svcErr := tidcommon.ServiceError{
+		Error: tidcommon.I18nMessage{DefaultValue: "A user with this email already exists"},
 	}
 	svcErrJSON, _ := json.Marshal(svcErr)
 	ctx := &NodeContext{
@@ -1036,7 +1038,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureAndRecovery() {
 	})
 
 	// First execution with failure
-	svcErr := serviceerror.ServiceError{Error: i18ncore.I18nMessage{DefaultValue: "Invalid credentials"}}
+	svcErr := tidcommon.ServiceError{Error: tidcommon.I18nMessage{DefaultValue: "Invalid credentials"}}
 	svcErrJSON, _ := json.Marshal(svcErr)
 	ctx := &NodeContext{
 		ExecutionID: "test-flow",
@@ -2934,15 +2936,15 @@ func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_GetSetVariant() {
 	node := newPromptNode("login-chooser", map[string]interface{}{}, false, false)
 	pn := node.(PromptNodeInterface)
 
-	s.Equal(common.NodeVariant(""), pn.GetVariant())
-	pn.SetVariant(common.NodeVariantLoginOptions)
-	s.Equal(common.NodeVariantLoginOptions, pn.GetVariant())
+	s.Equal(providers.NodeVariant(""), pn.GetVariant())
+	pn.SetVariant(providers.NodeVariantLoginOptions)
+	s.Equal(providers.NodeVariantLoginOptions, pn.GetVariant())
 }
 
 func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_NoACRFilter_AllActionsReturned() {
 	node := newPromptNode("login-chooser", loginOptionsProps(), false, false)
 	pn := node.(PromptNodeInterface)
-	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetVariant(providers.NodeVariantLoginOptions)
 	pn.SetPrompts([]common.Prompt{
 		{Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
 		{Action: &common.Action{Ref: "otp", NextNode: "otp-node"}},
@@ -2969,7 +2971,7 @@ func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_NoACRFilter_AllActions
 func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_SingleACRFilter() {
 	node := newPromptNode("login-chooser", loginOptionsProps(), false, false)
 	pn := node.(PromptNodeInterface)
-	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetVariant(providers.NodeVariantLoginOptions)
 	pn.SetPrompts([]common.Prompt{
 		{Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
 		{Action: &common.Action{Ref: "otp", NextNode: "otp-node"}},
@@ -2998,7 +3000,7 @@ func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_SingleACRFilter() {
 func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_PreferenceOrder() {
 	node := newPromptNode("login-chooser", loginOptionsProps(), false, false)
 	pn := node.(PromptNodeInterface)
-	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetVariant(providers.NodeVariantLoginOptions)
 	// Graph order: password first, then OTP
 	pn.SetPrompts([]common.Prompt{
 		{Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
@@ -3029,7 +3031,7 @@ func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_UntaggedPromptsAlwaysI
 		},
 	}, false, false)
 	pn := node.(PromptNodeInterface)
-	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetVariant(providers.NodeVariantLoginOptions)
 	pn.SetPrompts([]common.Prompt{
 		{Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
 		// Action ref not in authMethodMapping — non-ACR-gated, should always be included
@@ -3056,7 +3058,7 @@ func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_UntaggedPromptsAlwaysI
 func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_GracefulFallback_NoMatchingACR() {
 	node := newPromptNode("login-chooser", loginOptionsProps(), false, false)
 	pn := node.(PromptNodeInterface)
-	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetVariant(providers.NodeVariantLoginOptions)
 	pn.SetPrompts([]common.Prompt{
 		{Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
 		{Action: &common.Action{Ref: "otp", NextNode: "otp-node"}},
@@ -3079,7 +3081,7 @@ func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_GracefulFallback_NoMat
 func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_CompletedACRWritten() {
 	node := newPromptNode("login-chooser", loginOptionsProps(), false, false)
 	pn := node.(PromptNodeInterface)
-	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetVariant(providers.NodeVariantLoginOptions)
 	pn.SetPrompts([]common.Prompt{
 		{Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
 		{Action: &common.Action{Ref: "otp", NextNode: "otp-node"}},
@@ -3102,7 +3104,7 @@ func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_CompletedACRWritten() 
 func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_CompletedACRWritten_WithACRFilter() {
 	node := newPromptNode("login-chooser", loginOptionsProps(), false, false)
 	pn := node.(PromptNodeInterface)
-	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetVariant(providers.NodeVariantLoginOptions)
 	pn.SetPrompts([]common.Prompt{
 		{Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
 		{Action: &common.Action{Ref: "otp", NextNode: "otp-node"}},
@@ -3129,7 +3131,7 @@ func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_CompletedACRWritten_Wi
 func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_DisallowedActionRejected() {
 	node := newPromptNode("login-chooser", loginOptionsProps(), false, false)
 	pn := node.(PromptNodeInterface)
-	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetVariant(providers.NodeVariantLoginOptions)
 	pn.SetPrompts([]common.Prompt{
 		{Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
 		{Action: &common.Action{Ref: "otp", NextNode: "otp-node"}},
@@ -3155,7 +3157,7 @@ func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_DisallowedActionReject
 func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_AllowedLoginOptionsCaptured() {
 	node := newPromptNode("login-chooser", loginOptionsProps(), false, false)
 	pn := node.(PromptNodeInterface)
-	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetVariant(providers.NodeVariantLoginOptions)
 	pn.SetPrompts([]common.Prompt{
 		{Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
 		{Action: &common.Action{Ref: "otp", NextNode: "otp-node"}},
@@ -3206,7 +3208,7 @@ func (s *PromptOnlyNodeTestSuite) TestNonLoginOptionsVariant_UnaffectedByACRValu
 func (s *PromptOnlyNodeTestSuite) TestFilteredMeta_ActionComponentsReorderedByACR() {
 	node := newPromptNode("login-chooser", loginOptionsProps(), false, false)
 	pn := node.(*promptNode)
-	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetVariant(providers.NodeVariantLoginOptions)
 	// Graph order: password, otp, wallet
 	pn.SetPrompts([]common.Prompt{
 		{Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
@@ -3253,7 +3255,7 @@ func (s *PromptOnlyNodeTestSuite) TestFilteredMeta_ActionComponentsReorderedByAC
 func (s *PromptOnlyNodeTestSuite) TestFilteredMeta_NonActionComponentsRetainPosition() {
 	node := newPromptNode("login-chooser", loginOptionsProps(), false, false)
 	pn := node.(*promptNode)
-	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetVariant(providers.NodeVariantLoginOptions)
 	pn.SetPrompts([]common.Prompt{
 		{Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
 		{Action: &common.Action{Ref: "otp", NextNode: "otp-node"}},
@@ -3297,7 +3299,7 @@ func (s *PromptOnlyNodeTestSuite) TestFilteredMeta_NonActionComponentsRetainPosi
 func (s *PromptOnlyNodeTestSuite) TestFilteredMeta_FilteredOutActionsDropped() {
 	node := newPromptNode("login-chooser", loginOptionsProps(), false, false)
 	pn := node.(*promptNode)
-	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetVariant(providers.NodeVariantLoginOptions)
 	pn.SetPrompts([]common.Prompt{
 		{Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
 		{Action: &common.Action{Ref: "otp", NextNode: "otp-node"}},

@@ -23,13 +23,16 @@ import (
 	"errors"
 	"testing"
 
+	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
+
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/notification/common"
 	"github.com/thunder-id/thunderid/internal/system/cmodels"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/tests/mocks/notification/clientmock"
 )
@@ -48,7 +51,7 @@ func TestNotificationSenderServiceTestSuite(t *testing.T) {
 func (suite *NotificationSenderServiceTestSuite) SetupSuite() {
 	testConfig := &config.Config{
 		Crypto: config.CryptoConfig{
-			Encryption: config.EncryptionConfig{
+			Encryption: engineconfig.EncryptionConfig{
 				Key: "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e",
 			},
 		},
@@ -123,12 +126,12 @@ func (suite *NotificationSenderServiceTestSuite) TestSendSMS_GetClientError() {
 	sender := suite.getValidSender()
 	suite.mockSenderMgtSvc.On("GetSender", mock.Anything, "sender-001").Return(sender, nil).Once()
 	suite.mockClientFactory.EXPECT().GetClient(mock.Anything, mock.Anything).
-		Return(nil, &serviceerror.InternalServerError).Once()
+		Return(nil, &tidcommon.InternalServerError).Once()
 
 	err := suite.service.Send(context.Background(), common.ChannelTypeSMS, "sender-001",
 		common.NotificationData{Recipient: "+94714627887", Body: "Test message"})
 	suite.NotNil(err)
-	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
+	suite.Equal(tidcommon.InternalServerError.Code, err.Code)
 }
 
 func (suite *NotificationSenderServiceTestSuite) TestSendSMS_UnsupportedChannel() {
@@ -157,5 +160,5 @@ func (suite *NotificationSenderServiceTestSuite) TestSendSMS_ClientSendError() {
 	err := suite.service.Send(context.Background(), common.ChannelTypeSMS, "sender-001",
 		common.NotificationData{Recipient: "+94714627887", Body: "Test message"})
 	suite.NotNil(err)
-	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
+	suite.Equal(tidcommon.InternalServerError.Code, err.Code)
 }

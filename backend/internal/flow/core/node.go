@@ -20,12 +20,12 @@ package core
 
 import (
 	"github.com/thunder-id/thunderid/internal/flow/common"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 // NodeInterface defines the interface for nodes in the graph
 type NodeInterface interface {
-	Execute(ctx *NodeContext) (*common.NodeResponse, *serviceerror.ServiceError)
+	Execute(ctx *NodeContext) (*common.NodeResponse, *tidcommon.ServiceError)
 	ShouldExecute(ctx *NodeContext) bool
 	GetID() string
 	GetType() common.NodeType
@@ -62,7 +62,7 @@ type node struct {
 var _ NodeInterface = (*node)(nil)
 
 // Execute is a default implementation that should be overridden by specific node types
-func (n *node) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceerror.ServiceError) {
+func (n *node) Execute(ctx *NodeContext) (*common.NodeResponse, *tidcommon.ServiceError) {
 	return nil, nil
 }
 

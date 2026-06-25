@@ -25,12 +25,13 @@ import (
 	"fmt"
 	"strings"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/thunder-id/thunderid/internal/consent"
 	oupkg "github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/security"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
@@ -60,68 +61,71 @@ func IsPermissionDelimiter(r rune) bool {
 // ResourceServiceInterface defines the interface for the resource service.
 type ResourceServiceInterface interface {
 	// Resource Server operations
-	CreateResourceServer(ctx context.Context, rs ResourceServer) (*ResourceServer, *serviceerror.ServiceError)
-	GetResourceServer(ctx context.Context, id string) (*ResourceServer, *serviceerror.ServiceError)
-	GetResourceServerList(ctx context.Context, limit, offset int) (*ResourceServerList, *serviceerror.ServiceError)
+	CreateResourceServer(
+		ctx context.Context,
+		rs providers.ResourceServer,
+	) (*providers.ResourceServer, *tidcommon.ServiceError)
+	GetResourceServer(ctx context.Context, id string) (*providers.ResourceServer, *tidcommon.ServiceError)
+	GetResourceServerList(ctx context.Context, limit, offset int) (*ResourceServerList, *tidcommon.ServiceError)
 	UpdateResourceServer(
-		ctx context.Context, id string, rs ResourceServer,
-	) (*ResourceServer, *serviceerror.ServiceError)
-	DeleteResourceServer(ctx context.Context, id string) *serviceerror.ServiceError
+		ctx context.Context, id string, rs providers.ResourceServer,
+	) (*providers.ResourceServer, *tidcommon.ServiceError)
+	DeleteResourceServer(ctx context.Context, id string) *tidcommon.ServiceError
 	GetResourceServerByHandle(
 		ctx context.Context, handle string,
-	) (*ResourceServer, *serviceerror.ServiceError)
+	) (*providers.ResourceServer, *tidcommon.ServiceError)
 	GetResourceServerByIdentifier(
 		ctx context.Context, identifier string,
-	) (*ResourceServer, *serviceerror.ServiceError)
+	) (*providers.ResourceServer, *tidcommon.ServiceError)
 	IsResourceServerDeclarative(id string) bool
 
 	// Resource operations
-	CreateResource(ctx context.Context, resourceServerID string, res Resource) (
-		*Resource, *serviceerror.ServiceError)
-	GetResource(ctx context.Context, resourceServerID, id string) (*Resource, *serviceerror.ServiceError)
+	CreateResource(ctx context.Context, resourceServerID string, res providers.Resource) (
+		*providers.Resource, *tidcommon.ServiceError)
+	GetResource(ctx context.Context, resourceServerID, id string) (*providers.Resource, *tidcommon.ServiceError)
 	GetResourceList(
 		ctx context.Context, resourceServerID string, parentID *string, limit, offset int,
-	) (*ResourceList, *serviceerror.ServiceError)
+	) (*ResourceList, *tidcommon.ServiceError)
 	GetAllResourceList(
 		ctx context.Context, resourceServerID string,
-	) ([]Resource, *serviceerror.ServiceError)
+	) ([]providers.Resource, *tidcommon.ServiceError)
 	UpdateResource(
-		ctx context.Context, resourceServerID, id string, res Resource,
-	) (*Resource, *serviceerror.ServiceError)
-	DeleteResource(ctx context.Context, resourceServerID, id string) *serviceerror.ServiceError
+		ctx context.Context, resourceServerID, id string, res providers.Resource,
+	) (*providers.Resource, *tidcommon.ServiceError)
+	DeleteResource(ctx context.Context, resourceServerID, id string) *tidcommon.ServiceError
 
 	// Action operations
 	CreateAction(
-		ctx context.Context, resourceServerID string, resourceID *string, action Action,
-	) (*Action, *serviceerror.ServiceError)
+		ctx context.Context, resourceServerID string, resourceID *string, action providers.Action,
+	) (*providers.Action, *tidcommon.ServiceError)
 	GetAction(
 		ctx context.Context, resourceServerID string, resourceID *string, id string,
-	) (*Action, *serviceerror.ServiceError)
+	) (*providers.Action, *tidcommon.ServiceError)
 	GetActionList(
 		ctx context.Context, resourceServerID string, resourceID *string, limit, offset int,
-	) (*ActionList, *serviceerror.ServiceError)
+	) (*ActionList, *tidcommon.ServiceError)
 	UpdateAction(
-		ctx context.Context, resourceServerID string, resourceID *string, id string, action Action,
-	) (*Action, *serviceerror.ServiceError)
+		ctx context.Context, resourceServerID string, resourceID *string, id string, action providers.Action,
+	) (*providers.Action, *tidcommon.ServiceError)
 	DeleteAction(ctx context.Context, resourceServerID string, resourceID *string,
-		id string) *serviceerror.ServiceError
+		id string) *tidcommon.ServiceError
 	ValidatePermissions(
 		ctx context.Context, resourceServerID string, permissions []string,
-	) ([]string, *serviceerror.ServiceError)
+	) ([]string, *tidcommon.ServiceError)
 
 	// FindResourceServersByPermissions returns registered resource servers that define at least
 	// one permission in the supplied set. Used by the OAuth2 token layer to populate aud when no
 	// explicit resource parameter was supplied.
 	FindResourceServersByPermissions(
 		ctx context.Context, permissions []string,
-	) ([]ResourceServer, *serviceerror.ServiceError)
+	) ([]providers.ResourceServer, *tidcommon.ServiceError)
 
 	// ResolveResourceServerOUHandle resolves ou_handle to an OU ID on the given resource server
 	// in-place. Called by the declarative loader validator so that file-based resource servers
 	// support ou_handle.
 	ResolveResourceServerOUHandle(
-		ctx context.Context, rs *ResourceServer,
-	) *serviceerror.ServiceError
+		ctx context.Context, rs *providers.ResourceServer,
+	) *tidcommon.ServiceError
 }
 
 // resourceService is the default implementation of ResourceServiceInterface.
@@ -162,8 +166,8 @@ func newResourceService(
 // CreateResourceServer creates a new resource server.
 func (rs *resourceService) CreateResourceServer(
 	ctx context.Context,
-	resourceServer ResourceServer,
-) (*ResourceServer, *serviceerror.ServiceError) {
+	resourceServer providers.ResourceServer,
+) (*providers.ResourceServer, *tidcommon.ServiceError) {
 	rs.logger.Debug(ctx, "Creating resource server", log.String("name", resourceServer.Name))
 
 	if err := rs.validateResourceServerCreate(resourceServer); err != nil {
@@ -179,14 +183,14 @@ func (rs *resourceService) CreateResourceServer(
 		}
 		rs.logger.Error(ctx, "Failed to validate organization unit",
 			log.String("error", svcErr.Error.DefaultValue))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	// Check name uniqueness
 	nameExists, err := rs.resourceStore.CheckResourceServerNameExists(ctx, resourceServer.Name)
 	if err != nil {
 		rs.logger.Error(ctx, "Failed to check resource server name", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	if nameExists {
 		rs.logger.Debug(ctx, "Resource server name already exists", log.String("name", resourceServer.Name))
@@ -198,7 +202,7 @@ func (rs *resourceService) CreateResourceServer(
 		handleExists, err := rs.resourceStore.CheckResourceServerHandleExists(ctx, resourceServer.Handle)
 		if err != nil {
 			rs.logger.Error(ctx, "Failed to check resource server handle", log.Error(err))
-			return nil, &serviceerror.InternalServerError
+			return nil, &tidcommon.InternalServerError
 		}
 		if handleExists {
 			rs.logger.Debug(ctx, "Resource server handle already exists",
@@ -212,7 +216,7 @@ func (rs *resourceService) CreateResourceServer(
 		identifierExists, err := rs.resourceStore.CheckResourceServerIdentifierExists(ctx, resourceServer.Identifier)
 		if err != nil {
 			rs.logger.Error(ctx, "Failed to check resource server identifier", log.Error(err))
-			return nil, &serviceerror.InternalServerError
+			return nil, &tidcommon.InternalServerError
 		}
 		if identifierExists {
 			rs.logger.Debug(ctx, "Resource server identifier already exists",
@@ -223,7 +227,7 @@ func (rs *resourceService) CreateResourceServer(
 
 	// Set default type if not provided
 	if resourceServer.Type == "" {
-		resourceServer.Type = ResourceServerTypeCustom
+		resourceServer.Type = providers.ResourceServerTypeCustom
 	}
 
 	// Set default delimiter if not provided
@@ -247,7 +251,7 @@ func (rs *resourceService) CreateResourceServer(
 		id, err = utils.GenerateUUIDv7()
 		if err != nil {
 			rs.logger.Error(ctx, "Failed to generate UUID", log.Error(err))
-			return nil, &serviceerror.InternalServerError
+			return nil, &tidcommon.InternalServerError
 		}
 	} else {
 		_, svcErr := rs.GetResourceServer(ctx, id)
@@ -261,14 +265,14 @@ func (rs *resourceService) CreateResourceServer(
 	}
 
 	// Use transaction for write operation
-	var createdRS *ResourceServer
+	var createdRS *providers.ResourceServer
 	if err := rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if err := rs.resourceStore.CreateResourceServer(txCtx, id, resourceServer); err != nil {
 			rs.logger.Error(ctx, "Failed to create resource server", log.Error(err))
 			return err
 		}
 
-		createdRS = &ResourceServer{
+		createdRS = &providers.ResourceServer{
 			ID:          id,
 			Name:        resourceServer.Name,
 			Description: resourceServer.Description,
@@ -280,7 +284,7 @@ func (rs *resourceService) CreateResourceServer(
 		}
 		return nil
 	}); err != nil {
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	rs.logger.Debug(ctx, "Successfully created resource server", log.String("id", id))
@@ -290,7 +294,7 @@ func (rs *resourceService) CreateResourceServer(
 // GetResourceServer retrieves a resource server by ID.
 func (rs *resourceService) GetResourceServer(
 	ctx context.Context, id string,
-) (*ResourceServer, *serviceerror.ServiceError) {
+) (*providers.ResourceServer, *tidcommon.ServiceError) {
 	if id == "" {
 		return nil, &ErrorMissingID
 	}
@@ -302,7 +306,7 @@ func (rs *resourceService) GetResourceServer(
 			return nil, &ErrorResourceServerNotFound
 		}
 		rs.logger.Error(ctx, "Failed to get resource server", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	return &resourceServer, nil
@@ -311,7 +315,7 @@ func (rs *resourceService) GetResourceServer(
 // GetResourceServerByHandle retrieves a resource server by its handle.
 func (rs *resourceService) GetResourceServerByHandle(
 	ctx context.Context, handle string,
-) (*ResourceServer, *serviceerror.ServiceError) {
+) (*providers.ResourceServer, *tidcommon.ServiceError) {
 	if handle == "" {
 		return nil, &ErrorResourceServerNotFound
 	}
@@ -324,7 +328,7 @@ func (rs *resourceService) GetResourceServerByHandle(
 			return nil, &ErrorResourceServerNotFound
 		}
 		rs.logger.Error(ctx, "Failed to get resource server by handle", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	return &resourceServer, nil
@@ -333,7 +337,7 @@ func (rs *resourceService) GetResourceServerByHandle(
 // GetResourceServerByIdentifier retrieves a resource server by its identifier.
 func (rs *resourceService) GetResourceServerByIdentifier(
 	ctx context.Context, identifier string,
-) (*ResourceServer, *serviceerror.ServiceError) {
+) (*providers.ResourceServer, *tidcommon.ServiceError) {
 	if identifier == "" {
 		return nil, &ErrorResourceServerNotFound
 	}
@@ -346,7 +350,7 @@ func (rs *resourceService) GetResourceServerByIdentifier(
 			return nil, &ErrorResourceServerNotFound
 		}
 		rs.logger.Error(ctx, "Failed to get resource server by identifier", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	return &resourceServer, nil
@@ -355,7 +359,7 @@ func (rs *resourceService) GetResourceServerByIdentifier(
 // GetResourceServerList retrieves a paginated list of resource servers.
 func (rs *resourceService) GetResourceServerList(
 	ctx context.Context, limit, offset int,
-) (*ResourceServerList, *serviceerror.ServiceError) {
+) (*ResourceServerList, *tidcommon.ServiceError) {
 	if err := validatePaginationParams(limit, offset); err != nil {
 		return nil, err
 	}
@@ -366,7 +370,7 @@ func (rs *resourceService) GetResourceServerList(
 			return nil, &ErrResultLimitExceededInCompositeMode
 		}
 		rs.logger.Error(ctx, "Failed to get resource server count", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	resourceServers, err := rs.resourceStore.GetResourceServerList(ctx, limit, offset)
@@ -375,7 +379,7 @@ func (rs *resourceService) GetResourceServerList(
 			return nil, &ErrResultLimitExceededInCompositeMode
 		}
 		rs.logger.Error(ctx, "Failed to list resource servers", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	response := &ResourceServerList{
@@ -392,8 +396,8 @@ func (rs *resourceService) GetResourceServerList(
 // UpdateResourceServer updates a resource server.
 func (rs *resourceService) UpdateResourceServer(
 	ctx context.Context,
-	id string, resourceServer ResourceServer,
-) (*ResourceServer, *serviceerror.ServiceError) {
+	id string, resourceServer providers.ResourceServer,
+) (*providers.ResourceServer, *tidcommon.ServiceError) {
 	if id == "" {
 		return nil, &ErrorMissingID
 	}
@@ -409,13 +413,13 @@ func (rs *resourceService) UpdateResourceServer(
 			return nil, &ErrorResourceServerNotFound
 		}
 		rs.logger.Error(ctx, "Failed to check resource server existence", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	// Check if resource server is declarative (immutable)
 	if rs.IsResourceServerDeclarative(id) {
 		rs.logger.Debug(ctx, "Cannot modify declarative resource server", log.String("id", id))
-		return nil, serviceerror.CustomServiceError(ErrorImmutableResourceServer, core.I18nMessage{
+		return nil, tidcommon.CustomServiceError(ErrorImmutableResourceServer, tidcommon.I18nMessage{
 			Key:          ErrorImmutableResourceServer.ErrorDescription.Key,
 			DefaultValue: fmt.Sprintf(ErrorImmutableResourceServer.ErrorDescription.DefaultValue, id),
 		})
@@ -441,7 +445,7 @@ func (rs *resourceService) UpdateResourceServer(
 		identifierExists, err := rs.resourceStore.CheckResourceServerIdentifierExists(ctx, resourceServer.Identifier)
 		if err != nil {
 			rs.logger.Error(ctx, "Failed to check resource server identifier", log.Error(err))
-			return nil, &serviceerror.InternalServerError
+			return nil, &tidcommon.InternalServerError
 		}
 		if identifierExists {
 			rs.logger.Debug(ctx, "Resource server identifier already exists",
@@ -456,7 +460,7 @@ func (rs *resourceService) UpdateResourceServer(
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
 			return nil, &ErrorOrganizationUnitNotFound
 		}
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	// Check name uniqueness, if changed
@@ -464,21 +468,21 @@ func (rs *resourceService) UpdateResourceServer(
 		nameExists, err := rs.resourceStore.CheckResourceServerNameExists(ctx, resourceServer.Name)
 		if err != nil {
 			rs.logger.Error(ctx, "Failed to check resource server name", log.Error(err))
-			return nil, &serviceerror.InternalServerError
+			return nil, &tidcommon.InternalServerError
 		}
 		if nameExists {
 			return nil, &ErrorNameConflict
 		}
 	}
 
-	var updatedRS *ResourceServer
+	var updatedRS *providers.ResourceServer
 	if err := rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if err := rs.resourceStore.UpdateResourceServer(txCtx, id, resourceServer); err != nil {
 			rs.logger.Error(ctx, "Failed to update resource server", log.Error(err))
 			return err
 		}
 
-		updatedRS = &ResourceServer{
+		updatedRS = &providers.ResourceServer{
 			ID:          id,
 			Name:        resourceServer.Name,
 			Description: resourceServer.Description,
@@ -490,14 +494,14 @@ func (rs *resourceService) UpdateResourceServer(
 		}
 		return nil
 	}); err != nil {
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	return updatedRS, nil
 }
 
 // DeleteResourceServer deletes a resource server.
-func (rs *resourceService) DeleteResourceServer(ctx context.Context, id string) *serviceerror.ServiceError {
+func (rs *resourceService) DeleteResourceServer(ctx context.Context, id string) *tidcommon.ServiceError {
 	if id == "" {
 		return &ErrorMissingID
 	}
@@ -505,7 +509,7 @@ func (rs *resourceService) DeleteResourceServer(ctx context.Context, id string) 
 	// Check if resource server is declarative (immutable)
 	if rs.IsResourceServerDeclarative(id) {
 		rs.logger.Debug(ctx, "Cannot delete declarative resource server", log.String("id", id))
-		return serviceerror.CustomServiceError(ErrorImmutableResourceServer, core.I18nMessage{
+		return tidcommon.CustomServiceError(ErrorImmutableResourceServer, tidcommon.I18nMessage{
 			Key:          ErrorImmutableResourceServer.ErrorDescription.Key,
 			DefaultValue: fmt.Sprintf(ErrorImmutableResourceServer.ErrorDescription.DefaultValue, id),
 		})
@@ -517,14 +521,14 @@ func (rs *resourceService) DeleteResourceServer(ctx context.Context, id string) 
 			return nil // Idempotent delete
 		}
 		rs.logger.Error(ctx, "Failed to check resource server existence", log.Error(err))
-		return &serviceerror.InternalServerError
+		return &tidcommon.InternalServerError
 	}
 
 	// Check for dependencies
 	hasDeps, err := rs.resourceStore.CheckResourceServerHasDependencies(ctx, id)
 	if err != nil {
 		rs.logger.Error(ctx, "Failed to check dependencies", log.Error(err))
-		return &serviceerror.InternalServerError
+		return &tidcommon.InternalServerError
 	}
 	if hasDeps {
 		return &ErrorCannotDelete
@@ -538,7 +542,7 @@ func (rs *resourceService) DeleteResourceServer(ctx context.Context, id string) 
 		}
 		return nil
 	}); err != nil {
-		return &serviceerror.InternalServerError
+		return &tidcommon.InternalServerError
 	}
 
 	return nil
@@ -554,8 +558,8 @@ func (rs *resourceService) IsResourceServerDeclarative(id string) bool {
 // CreateResource creates a new resource under a resource server.
 func (rs *resourceService) CreateResource(
 	ctx context.Context,
-	resourceServerID string, resource Resource,
-) (*Resource, *serviceerror.ServiceError) {
+	resourceServerID string, resource providers.Resource,
+) (*providers.Resource, *tidcommon.ServiceError) {
 	// Validate resource server exists
 	resourceServer, svcErr := rs.validateAndGetResourceServer(ctx, resourceServerID)
 	if svcErr != nil {
@@ -567,7 +571,7 @@ func (rs *resourceService) CreateResource(
 	}
 
 	// Validate parent if specified
-	var parentResource *Resource
+	var parentResource *providers.Resource
 	if resource.Parent != nil {
 		res, err := rs.resourceStore.GetResource(ctx, *resource.Parent, resourceServerID)
 		if err != nil {
@@ -575,7 +579,7 @@ func (rs *resourceService) CreateResource(
 				return nil, &ErrorParentResourceNotFound
 			}
 			rs.logger.Error(ctx, "Failed to check parent resource", log.Error(err))
-			return nil, &serviceerror.InternalServerError
+			return nil, &tidcommon.InternalServerError
 		}
 		parentResource = &res
 	}
@@ -586,7 +590,7 @@ func (rs *resourceService) CreateResource(
 	)
 	if err != nil {
 		rs.logger.Error(ctx, "Failed to check resource handle", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	if handleExists {
 		return nil, &ErrorHandleConflict
@@ -598,11 +602,11 @@ func (rs *resourceService) CreateResource(
 	id, err := utils.GenerateUUIDv7()
 	if err != nil {
 		rs.logger.Error(ctx, "Failed to generate UUID", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	// Use transaction for write operation
-	var createdResource *Resource
+	var createdResource *providers.Resource
 	if err := rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if err := rs.resourceStore.CreateResource(
 			txCtx, id, resourceServerID, resource.Parent, resource,
@@ -618,7 +622,7 @@ func (rs *resourceService) CreateResource(
 			return err
 		}
 
-		createdResource = &Resource{
+		createdResource = &providers.Resource{
 			ID:          id,
 			Name:        resource.Name,
 			Handle:      resource.Handle,
@@ -637,7 +641,7 @@ func (rs *resourceService) CreateResource(
 // GetResource retrieves a resource by ID.
 func (rs *resourceService) GetResource(
 	ctx context.Context, resourceServerID, id string,
-) (*Resource, *serviceerror.ServiceError) {
+) (*providers.Resource, *tidcommon.ServiceError) {
 	if id == "" || resourceServerID == "" {
 		return nil, &ErrorMissingID
 	}
@@ -654,7 +658,7 @@ func (rs *resourceService) GetResource(
 			return nil, &ErrorResourceNotFound
 		}
 		rs.logger.Error(ctx, "Failed to get resource", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	return &resource, nil
@@ -664,7 +668,7 @@ func (rs *resourceService) GetResource(
 func (rs *resourceService) GetResourceList(
 	ctx context.Context,
 	resourceServerID string, parentID *string, limit, offset int,
-) (*ResourceList, *serviceerror.ServiceError) {
+) (*ResourceList, *tidcommon.ServiceError) {
 	if err := validatePaginationParams(limit, offset); err != nil {
 		return nil, err
 	}
@@ -678,7 +682,7 @@ func (rs *resourceService) GetResourceList(
 	}
 
 	var totalCount int
-	var resources []Resource
+	var resources []providers.Resource
 
 	// Resolve parent if specified
 	if parentID != nil {
@@ -695,7 +699,7 @@ func (rs *resourceService) GetResourceList(
 			return nil, &ErrResultLimitExceededInCompositeMode
 		}
 		rs.logger.Error(ctx, "Failed to get top-level resource count", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	resources, err = rs.resourceStore.GetResourceListByParent(ctx, resourceServerID, parentID, limit, offset)
@@ -704,7 +708,7 @@ func (rs *resourceService) GetResourceList(
 			return nil, &ErrResultLimitExceededInCompositeMode
 		}
 		rs.logger.Error(ctx, "Failed to list resources", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	baseURL := fmt.Sprintf("/resource-servers/%s/resources", resourceServerID)
@@ -722,7 +726,7 @@ func (rs *resourceService) GetResourceList(
 // GetAllResourceList retrieves all resources for a resource server without pagination.
 func (rs *resourceService) GetAllResourceList(
 	ctx context.Context, resourceServerID string,
-) ([]Resource, *serviceerror.ServiceError) {
+) ([]providers.Resource, *tidcommon.ServiceError) {
 	if resourceServerID == "" {
 		return nil, &ErrorMissingID
 	}
@@ -733,10 +737,10 @@ func (rs *resourceService) GetAllResourceList(
 	totalCount, err := rs.resourceStore.GetResourceListCount(ctx, resourceServerID)
 	if err != nil {
 		rs.logger.Error(ctx, "Failed to get resource count", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	if totalCount == 0 {
-		return []Resource{}, nil
+		return []providers.Resource{}, nil
 	}
 
 	resources, err := rs.resourceStore.GetResourceList(ctx, resourceServerID, totalCount, 0)
@@ -745,7 +749,7 @@ func (rs *resourceService) GetAllResourceList(
 			return nil, &ErrResultLimitExceededInCompositeMode
 		}
 		rs.logger.Error(ctx, "Failed to list all resources", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	return resources, nil
 }
@@ -753,8 +757,8 @@ func (rs *resourceService) GetAllResourceList(
 // UpdateResource updates a resource.
 func (rs *resourceService) UpdateResource(
 	ctx context.Context,
-	resourceServerID, id string, resource Resource,
-) (*Resource, *serviceerror.ServiceError) {
+	resourceServerID, id string, resource providers.Resource,
+) (*providers.Resource, *tidcommon.ServiceError) {
 	if id == "" || resourceServerID == "" {
 		return nil, &ErrorMissingID
 	}
@@ -765,7 +769,7 @@ func (rs *resourceService) UpdateResource(
 			"Cannot modify resource in declarative resource server",
 			log.String("resource_server_id", resourceServerID),
 		)
-		return nil, serviceerror.CustomServiceError(ErrorImmutableResource, core.I18nMessage{
+		return nil, tidcommon.CustomServiceError(ErrorImmutableResource, tidcommon.I18nMessage{
 			Key:          ErrorImmutableResource.ErrorDescription.Key,
 			DefaultValue: fmt.Sprintf(ErrorImmutableResource.ErrorDescription.DefaultValue, id),
 		})
@@ -784,12 +788,12 @@ func (rs *resourceService) UpdateResource(
 			return nil, &ErrorResourceNotFound
 		}
 		rs.logger.Error(ctx, "Failed to check resource existence", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	// Update only mutable fields (name and description)
 	// Note: handle and parent are immutable and preserved from current resource
-	updateResource := Resource{
+	updateResource := providers.Resource{
 		Name:        resource.Name,          // Mutable
 		Handle:      currentResource.Handle, // Immutable - preserve
 		Description: resource.Description,
@@ -797,7 +801,7 @@ func (rs *resourceService) UpdateResource(
 	}
 
 	// Use transaction for write operation
-	var updatedResource *Resource
+	var updatedResource *providers.Resource
 	if err := rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if err := rs.resourceStore.UpdateResource(txCtx, id, resourceServerID, updateResource); err != nil {
 			rs.logger.Error(ctx, "Failed to update resource", log.Error(err))
@@ -811,7 +815,7 @@ func (rs *resourceService) UpdateResource(
 			return err
 		}
 
-		updatedResource = &Resource{
+		updatedResource = &providers.Resource{
 			ID:          id,
 			Name:        updateResource.Name,
 			Handle:      updateResource.Handle,
@@ -828,7 +832,7 @@ func (rs *resourceService) UpdateResource(
 
 // DeleteResource deletes a resource.
 func (rs *resourceService) DeleteResource(
-	ctx context.Context, resourceServerID, id string) *serviceerror.ServiceError {
+	ctx context.Context, resourceServerID, id string) *tidcommon.ServiceError {
 	if id == "" || resourceServerID == "" {
 		return &ErrorMissingID
 	}
@@ -839,7 +843,7 @@ func (rs *resourceService) DeleteResource(
 			"Cannot delete resource in declarative resource server",
 			log.String("resource_server_id", resourceServerID),
 		)
-		return serviceerror.CustomServiceError(ErrorImmutableResource, core.I18nMessage{
+		return tidcommon.CustomServiceError(ErrorImmutableResource, tidcommon.I18nMessage{
 			Key:          ErrorImmutableResource.ErrorDescription.Key,
 			DefaultValue: fmt.Sprintf(ErrorImmutableResource.ErrorDescription.DefaultValue, id),
 		})
@@ -852,7 +856,7 @@ func (rs *resourceService) DeleteResource(
 			return nil // Idempotent delete
 		}
 		rs.logger.Error(ctx, "Failed to check resource server", log.Error(err))
-		return &serviceerror.InternalServerError
+		return &tidcommon.InternalServerError
 	}
 
 	// Check resource exists
@@ -862,14 +866,14 @@ func (rs *resourceService) DeleteResource(
 			return nil // Idempotent delete
 		}
 		rs.logger.Error(ctx, "Failed to check resource existence", log.Error(err))
-		return &serviceerror.InternalServerError
+		return &tidcommon.InternalServerError
 	}
 
 	// Check for dependencies
 	hasDeps, err := rs.resourceStore.CheckResourceHasDependencies(ctx, id)
 	if err != nil {
 		rs.logger.Error(ctx, "Failed to check dependencies", log.Error(err))
-		return &serviceerror.InternalServerError
+		return &tidcommon.InternalServerError
 	}
 	if hasDeps {
 		return &ErrorCannotDelete
@@ -895,15 +899,15 @@ func (rs *resourceService) DeleteResource(
 	return nil
 }
 
-// Action Methods
+// providers.Action Methods
 
 // CreateAction creates an action.
 // If resourceID is nil, creates action at resource server level.
 // If resourceID is provided, creates action at resource level.
 func (rs *resourceService) CreateAction(
 	ctx context.Context,
-	resourceServerID string, resourceID *string, action Action,
-) (*Action, *serviceerror.ServiceError) {
+	resourceServerID string, resourceID *string, action providers.Action,
+) (*providers.Action, *tidcommon.ServiceError) {
 	// Validate resource server exists
 	resourceServer, svcErr := rs.validateAndGetResourceServer(ctx, resourceServerID)
 	if svcErr != nil {
@@ -911,7 +915,7 @@ func (rs *resourceService) CreateAction(
 	}
 
 	// Validate resource if provided
-	var resource *Resource
+	var resource *providers.Resource
 	if resourceID != nil {
 		res, svcErr := rs.validateAndGetResourceByID(ctx, *resourceID, resourceServerID)
 		if svcErr != nil {
@@ -930,7 +934,7 @@ func (rs *resourceService) CreateAction(
 	)
 	if err != nil {
 		rs.logger.Error(ctx, "Failed to check action handle", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	if handleExists {
 		return nil, &ErrorHandleConflict
@@ -942,11 +946,11 @@ func (rs *resourceService) CreateAction(
 	id, err := utils.GenerateUUIDv7()
 	if err != nil {
 		rs.logger.Error(ctx, "Failed to generate UUID", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	// Use transaction for write operation
-	var createdAction *Action
+	var createdAction *providers.Action
 	if err := rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if err := rs.resourceStore.CreateAction(txCtx, id, resourceServerID, resourceID, action); err != nil {
 			rs.logger.Error(ctx, "Failed to create action", log.Error(err))
@@ -960,7 +964,7 @@ func (rs *resourceService) CreateAction(
 			return err
 		}
 
-		createdAction = &Action{
+		createdAction = &providers.Action{
 			ID:          id,
 			Name:        action.Name,
 			Handle:      action.Handle,
@@ -981,7 +985,7 @@ func (rs *resourceService) CreateAction(
 func (rs *resourceService) GetAction(
 	ctx context.Context,
 	resourceServerID string, resourceID *string, id string,
-) (*Action, *serviceerror.ServiceError) {
+) (*providers.Action, *tidcommon.ServiceError) {
 	if id == "" || resourceServerID == "" {
 		return nil, &ErrorMissingID
 	}
@@ -1012,7 +1016,7 @@ func (rs *resourceService) GetAction(
 			return nil, &ErrorActionNotFound
 		}
 		rs.logger.Error(ctx, "Failed to get action", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	return &action, nil
 }
@@ -1023,7 +1027,7 @@ func (rs *resourceService) GetAction(
 func (rs *resourceService) GetActionList(
 	ctx context.Context,
 	resourceServerID string, resourceID *string, limit, offset int,
-) (*ActionList, *serviceerror.ServiceError) {
+) (*ActionList, *tidcommon.ServiceError) {
 	if err := validatePaginationParams(limit, offset); err != nil {
 		return nil, err
 	}
@@ -1058,7 +1062,7 @@ func (rs *resourceService) GetActionList(
 			return nil, &ErrResultLimitExceededInCompositeMode
 		}
 		rs.logger.Error(ctx, "Failed to get action count", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	actions, err := rs.resourceStore.GetActionList(ctx, resourceServerID, resID, limit, offset)
@@ -1067,7 +1071,7 @@ func (rs *resourceService) GetActionList(
 			return nil, &ErrResultLimitExceededInCompositeMode
 		}
 		rs.logger.Error(ctx, "Failed to list actions", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	// Build base URL based on whether resource ID is provided
@@ -1094,8 +1098,8 @@ func (rs *resourceService) GetActionList(
 // If resourceID is provided, updates action at resource level.
 func (rs *resourceService) UpdateAction(
 	ctx context.Context,
-	resourceServerID string, resourceID *string, id string, action Action,
-) (*Action, *serviceerror.ServiceError) {
+	resourceServerID string, resourceID *string, id string, action providers.Action,
+) (*providers.Action, *tidcommon.ServiceError) {
 	if id == "" || resourceServerID == "" {
 		return nil, &ErrorMissingID
 	}
@@ -1131,18 +1135,18 @@ func (rs *resourceService) UpdateAction(
 			return nil, &ErrorActionNotFound
 		}
 		rs.logger.Error(ctx, "Failed to get action", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	// Update only name and description (handle is immutable)
-	updateAction := Action{
+	updateAction := providers.Action{
 		Name:        action.Name,
 		Handle:      currentAction.Handle, // Immutable - preserve
 		Description: action.Description,
 	}
 
 	// Use transaction for write operation
-	var updatedAction *Action
+	var updatedAction *providers.Action
 	if err := rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if err := rs.resourceStore.UpdateAction(
 			txCtx, id, resourceServerID, resID, updateAction,
@@ -1158,7 +1162,7 @@ func (rs *resourceService) UpdateAction(
 			return err
 		}
 
-		updatedAction = &Action{
+		updatedAction = &providers.Action{
 			ID:          id,
 			Name:        updateAction.Name,
 			Handle:      updateAction.Handle,
@@ -1178,7 +1182,7 @@ func (rs *resourceService) UpdateAction(
 func (rs *resourceService) DeleteAction(
 	ctx context.Context,
 	resourceServerID string, resourceID *string, id string,
-) *serviceerror.ServiceError {
+) *tidcommon.ServiceError {
 	if id == "" || resourceServerID == "" {
 		return &ErrorMissingID
 	}
@@ -1193,7 +1197,7 @@ func (rs *resourceService) DeleteAction(
 			"Cannot delete action in declarative resource server",
 			log.String("resource_server_id", resourceServerID),
 		)
-		return serviceerror.CustomServiceError(ErrorImmutableAction, core.I18nMessage{
+		return tidcommon.CustomServiceError(ErrorImmutableAction, tidcommon.I18nMessage{
 			Key:          ErrorImmutableAction.ErrorDescription.Key,
 			DefaultValue: fmt.Sprintf(ErrorImmutableAction.ErrorDescription.DefaultValue, id),
 		})
@@ -1225,7 +1229,7 @@ func (rs *resourceService) DeleteAction(
 	exists, err := rs.resourceStore.IsActionExist(ctx, id, resourceServerID, resID)
 	if err != nil {
 		rs.logger.Error(ctx, "Failed to check action existence", log.Error(err))
-		return &serviceerror.InternalServerError
+		return &tidcommon.InternalServerError
 	}
 	if !exists {
 		return nil // Idempotent delete
@@ -1245,7 +1249,7 @@ func (rs *resourceService) DeleteAction(
 			// Any other failure must abort: deleting without syncing would leave the consent
 			// element orphaned.
 			rs.logger.Error(ctx, "Failed to load action for consent sync", log.Error(getErr))
-			return &serviceerror.InternalServerError
+			return &tidcommon.InternalServerError
 		}
 	}
 
@@ -1275,7 +1279,7 @@ func (rs *resourceService) ValidatePermissions(
 	ctx context.Context,
 	resourceServerID string,
 	permissions []string,
-) ([]string, *serviceerror.ServiceError) {
+) ([]string, *tidcommon.ServiceError) {
 	rs.logger.Debug(ctx, "Validating permissions",
 		log.String("resourceServerId", resourceServerID),
 		log.Int("permissionCount", len(permissions)))
@@ -1291,7 +1295,7 @@ func (rs *resourceService) ValidatePermissions(
 			rs.logger.Error(ctx, "Failed to validate resource server existence",
 				log.String("resourceServerId", resourceServerID),
 				log.Error(err))
-			return nil, &serviceerror.InternalServerError
+			return nil, &tidcommon.InternalServerError
 		}
 		rs.logger.Debug(ctx, "Resource server not found",
 			log.String("resourceServerId", resourceServerID))
@@ -1305,7 +1309,7 @@ func (rs *resourceService) ValidatePermissions(
 		rs.logger.Error(ctx, "Failed to validate permissions in store",
 			log.String("resourceServerId", resourceServerID),
 			log.Error(storeErr))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	return invalidPermissions, nil
@@ -1316,15 +1320,15 @@ func (rs *resourceService) ValidatePermissions(
 func (rs *resourceService) FindResourceServersByPermissions(
 	ctx context.Context,
 	permissions []string,
-) ([]ResourceServer, *serviceerror.ServiceError) {
+) ([]providers.ResourceServer, *tidcommon.ServiceError) {
 	if len(permissions) == 0 {
-		return []ResourceServer{}, nil
+		return []providers.ResourceServer{}, nil
 	}
 
 	resourceServers, err := rs.resourceStore.FindResourceServersByPermissions(ctx, permissions)
 	if err != nil {
 		rs.logger.Error(ctx, "Failed to find resource servers by permissions", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	return resourceServers, nil
 }
@@ -1333,8 +1337,8 @@ func (rs *resourceService) FindResourceServersByPermissions(
 // in-place. Called by the declarative loader validator so that file-based resource servers
 // support ou_handle. If both ou_id and ou_handle are provided, ou_id wins and a warning is logged.
 func (rs *resourceService) ResolveResourceServerOUHandle(
-	ctx context.Context, server *ResourceServer,
-) *serviceerror.ServiceError {
+	ctx context.Context, server *providers.ResourceServer,
+) *tidcommon.ServiceError {
 	if server.OUID != "" && server.OUHandle != "" {
 		rs.logger.Warn(ctx, "Both ou_id and ou_handle provided for resource server; ou_handle ignored",
 			log.String("resourceServerID", server.ID), log.String("name", server.Name))
@@ -1342,7 +1346,7 @@ func (rs *resourceService) ResolveResourceServerOUHandle(
 	}
 	if server.OUID == "" && server.OUHandle != "" {
 		if rs.ouService == nil {
-			return &serviceerror.InternalServerError
+			return &tidcommon.InternalServerError
 		}
 		ou, svcErr := rs.ouService.GetOrganizationUnitByPath(
 			security.WithRuntimeContext(ctx), server.OUHandle)
@@ -1360,14 +1364,14 @@ func (rs *resourceService) ResolveResourceServerOUHandle(
 func (rs *resourceService) validateAndGetResourceServer(
 	ctx context.Context,
 	resourceServerID string,
-) (ResourceServer, *serviceerror.ServiceError) {
+) (providers.ResourceServer, *tidcommon.ServiceError) {
 	resourceServer, err := rs.resourceStore.GetResourceServer(ctx, resourceServerID)
 	if err != nil {
 		if errors.Is(err, errResourceServerNotFound) {
-			return ResourceServer{}, &ErrorResourceServerNotFound
+			return providers.ResourceServer{}, &ErrorResourceServerNotFound
 		}
 		rs.logger.Error(ctx, "Failed to check resource server", log.Error(err))
-		return ResourceServer{}, &serviceerror.InternalServerError
+		return providers.ResourceServer{}, &tidcommon.InternalServerError
 	}
 	return resourceServer, nil
 }
@@ -1377,20 +1381,22 @@ func (rs *resourceService) validateAndGetResourceByID(
 	ctx context.Context,
 	resourceID string,
 	resourceServerID string,
-) (Resource, *serviceerror.ServiceError) {
+) (providers.Resource, *tidcommon.ServiceError) {
 	resource, err := rs.resourceStore.GetResource(ctx, resourceID, resourceServerID)
 	if err != nil {
 		if errors.Is(err, errResourceNotFound) {
-			return Resource{}, &ErrorResourceNotFound
+			return providers.Resource{}, &ErrorResourceNotFound
 		}
 		rs.logger.Error(ctx, "Failed to check resource", log.Error(err))
-		return Resource{}, &serviceerror.InternalServerError
+		return providers.Resource{}, &tidcommon.InternalServerError
 	}
 	return resource, nil
 }
 
 // validateResourceServerCreate validates the input for creating a resource server.
-func (rs *resourceService) validateResourceServerCreate(resourceServer ResourceServer) *serviceerror.ServiceError {
+func (rs *resourceService) validateResourceServerCreate(
+	resourceServer providers.ResourceServer,
+) *tidcommon.ServiceError {
 	if resourceServer.Name == "" {
 		return &ErrorInvalidRequestFormat
 	}
@@ -1409,7 +1415,9 @@ func (rs *resourceService) validateResourceServerCreate(resourceServer ResourceS
 }
 
 // validateResourceServerUpdate validates the input for updating a resource server.
-func (rs *resourceService) validateResourceServerUpdate(resourceServer ResourceServer) *serviceerror.ServiceError {
+func (rs *resourceService) validateResourceServerUpdate(
+	resourceServer providers.ResourceServer,
+) *tidcommon.ServiceError {
 	if resourceServer.Name == "" {
 		return &ErrorInvalidRequestFormat
 	}
@@ -1420,7 +1428,10 @@ func (rs *resourceService) validateResourceServerUpdate(resourceServer ResourceS
 }
 
 // validateResourceCreate validates the input for creating a resource.
-func (rs *resourceService) validateResourceCreate(resource Resource, delimiter string) *serviceerror.ServiceError {
+func (rs *resourceService) validateResourceCreate(
+	resource providers.Resource,
+	delimiter string,
+) *tidcommon.ServiceError {
 	if resource.Name == "" {
 		return &ErrorInvalidRequestFormat
 	}
@@ -1435,7 +1446,7 @@ func (rs *resourceService) validateResourceCreate(resource Resource, delimiter s
 }
 
 // validateActionCreate validates the input for creating an action.
-func (rs *resourceService) validateActionCreate(action Action, delimiter string) *serviceerror.ServiceError {
+func (rs *resourceService) validateActionCreate(action providers.Action, delimiter string) *tidcommon.ServiceError {
 	if action.Name == "" {
 		return &ErrorInvalidRequestFormat
 	}
@@ -1450,7 +1461,7 @@ func (rs *resourceService) validateActionCreate(action Action, delimiter string)
 }
 
 // validatePaginationParams validates pagination parameters.
-func validatePaginationParams(limit, offset int) *serviceerror.ServiceError {
+func validatePaginationParams(limit, offset int) *tidcommon.ServiceError {
 	if limit < 1 || limit > serverconst.MaxPageSize {
 		return &ErrorInvalidLimit
 	}
@@ -1507,7 +1518,7 @@ func isValidPermissionCharacter(c rune) bool {
 }
 
 // validateDelimiter validates delimiter is a single valid delimiter character.
-func validateDelimiter(delimiter string) *serviceerror.ServiceError {
+func validateDelimiter(delimiter string) *tidcommon.ServiceError {
 	if len(delimiter) != 1 {
 		return &ErrorInvalidDelimiter
 	}
@@ -1518,7 +1529,7 @@ func validateDelimiter(delimiter string) *serviceerror.ServiceError {
 }
 
 // validateHandle validates a handle string.
-func validateHandle(handle string, delimiter string) *serviceerror.ServiceError {
+func validateHandle(handle string, delimiter string) *tidcommon.ServiceError {
 	if len(handle) > 100 {
 		return &ErrorInvalidHandle
 	}
@@ -1544,8 +1555,8 @@ func getDefaultDelimiter() string {
 
 // derivePermission builds permission string for a resource based on parent hierarchy.
 func derivePermission(
-	resourceServer ResourceServer,
-	parentResource *Resource,
+	resourceServer providers.ResourceServer,
+	parentResource *providers.Resource,
 	handle string,
 ) string {
 	if parentResource != nil {
@@ -1661,11 +1672,11 @@ func (rs *resourceService) syncConsentOnPermissionUpdate(
 // distinguish consent-service failures from other store or service errors during resource CRUD.
 // Server-class failures are logged here so operators get a record even when the transaction
 // closure collapses the error to InternalServerError on the way out.
-func (rs *resourceService) wrapConsentServiceError(ctx context.Context, err *serviceerror.ServiceError) error {
+func (rs *resourceService) wrapConsentServiceError(ctx context.Context, err *tidcommon.ServiceError) error {
 	if err == nil {
 		return nil
 	}
-	if err.Type == serviceerror.ServerErrorType {
+	if err.Type == tidcommon.ServerErrorType {
 		rs.logger.Error(ctx, "Consent service returned a server-class error during resource sync",
 			log.String("code", err.Code),
 			log.String("description", err.ErrorDescription.DefaultValue))
@@ -1674,15 +1685,15 @@ func (rs *resourceService) wrapConsentServiceError(ctx context.Context, err *ser
 }
 
 // translateTxError converts a transaction-closure error into the resource service's
-// *serviceerror.ServiceError API surface. A typed *consentSyncError is mapped to
+// *tidcommon.ServiceError API surface. A typed *consentSyncError is mapped to
 // ErrorConsentSyncFailed for client-class consent failures (preserving the underlying code in the
 // description) and to InternalServerError otherwise. All other transaction errors collapse to
 // InternalServerError. This mirrors the inboundclient + agent/application translation pattern.
-func translateTxError(err error) *serviceerror.ServiceError {
+func translateTxError(err error) *tidcommon.ServiceError {
 	var consentErr *consentSyncError
 	if errors.As(err, &consentErr) {
 		if consentErr.IsClientError() {
-			return serviceerror.CustomServiceError(ErrorConsentSyncFailed, core.I18nMessage{
+			return tidcommon.CustomServiceError(ErrorConsentSyncFailed, tidcommon.I18nMessage{
 				Key: "error.resourceservice.consent_sync_failed_description",
 				DefaultValue: fmt.Sprintf(
 					ErrorConsentSyncFailed.ErrorDescription.DefaultValue+" : code - %s",
@@ -1690,7 +1701,7 @@ func translateTxError(err error) *serviceerror.ServiceError {
 				),
 			})
 		}
-		return &serviceerror.InternalServerError
+		return &tidcommon.InternalServerError
 	}
-	return &serviceerror.InternalServerError
+	return &tidcommon.InternalServerError
 }

@@ -23,11 +23,12 @@ import (
 	"errors"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/thunder-id/thunderid/internal/ou"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 	"github.com/thunder-id/thunderid/tests/mocks/oumock"
 )
 
@@ -115,19 +116,19 @@ func newOUServiceMock(
 	t.Helper()
 	m := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 	m.EXPECT().IsOrganizationUnitExists(mock.Anything, mock.Anything).RunAndReturn(
-		func(_ context.Context, id string) (bool, *serviceerror.ServiceError) {
+		func(_ context.Context, id string) (bool, *tidcommon.ServiceError) {
 			return exists[id], nil
 		}).Maybe()
 	m.EXPECT().GetOrganizationUnitByPath(mock.Anything, mock.Anything).RunAndReturn(
-		func(_ context.Context, handlePath string) (ou.OrganizationUnit, *serviceerror.ServiceError) {
+		func(_ context.Context, handlePath string) (providers.OrganizationUnit, *tidcommon.ServiceError) {
 			id, ok := byPath[handlePath]
 			if !ok {
-				return ou.OrganizationUnit{}, &serviceerror.InternalServerError
+				return providers.OrganizationUnit{}, &tidcommon.InternalServerError
 			}
-			return ou.OrganizationUnit{ID: id}, nil
+			return providers.OrganizationUnit{ID: id}, nil
 		}).Maybe()
 	m.EXPECT().GetOrganizationUnitHandlesByIDs(mock.Anything, mock.Anything).RunAndReturn(
-		func(_ context.Context, ids []string) (map[string]string, *serviceerror.ServiceError) {
+		func(_ context.Context, ids []string) (map[string]string, *tidcommon.ServiceError) {
 			out := make(map[string]string, len(ids))
 			for _, id := range ids {
 				if h, ok := handles[id]; ok {
@@ -161,11 +162,11 @@ func newFailingOUServiceMock(t *testing.T) *oumock.OrganizationUnitServiceInterf
 	t.Helper()
 	m := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 	m.EXPECT().IsOrganizationUnitExists(mock.Anything, mock.Anything).
-		Return(false, &serviceerror.InternalServerError).Maybe()
+		Return(false, &tidcommon.InternalServerError).Maybe()
 	m.EXPECT().GetOrganizationUnitByPath(mock.Anything, mock.Anything).
-		Return(ou.OrganizationUnit{}, &serviceerror.InternalServerError).Maybe()
+		Return(providers.OrganizationUnit{}, &tidcommon.InternalServerError).Maybe()
 	m.EXPECT().GetOrganizationUnitHandlesByIDs(mock.Anything, mock.Anything).
-		Return(nil, &serviceerror.InternalServerError).Maybe()
+		Return(nil, &tidcommon.InternalServerError).Maybe()
 	return m
 }
 
@@ -367,7 +368,7 @@ func (suite *DefinitionServiceTestSuite) TestDefinitionServiceResolveOUExistsChe
 		Handle: "h", VCT: "v", OUID: "ou-x",
 	})
 	suite.Require().NotNil(svcErr)
-	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	suite.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *DefinitionServiceTestSuite) TestDefinitionServiceResolveOUNotExists() {
@@ -390,7 +391,7 @@ func (suite *DefinitionServiceTestSuite) TestDefinitionServiceCreateHandleLookup
 
 	_, svcErr := svc.CreatePresentationDefinition(ctx, &PresentationDefinitionDTO{Handle: "h", VCT: "v"})
 	suite.Require().NotNil(svcErr)
-	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	suite.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *DefinitionServiceTestSuite) TestDefinitionServiceCreatePersistError() {
@@ -402,7 +403,7 @@ func (suite *DefinitionServiceTestSuite) TestDefinitionServiceCreatePersistError
 
 	_, svcErr := svc.CreatePresentationDefinition(ctx, &PresentationDefinitionDTO{Handle: "h", VCT: "v"})
 	suite.Require().NotNil(svcErr)
-	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	suite.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *DefinitionServiceTestSuite) TestDefinitionServiceCreateUUIDError() {
@@ -414,7 +415,7 @@ func (suite *DefinitionServiceTestSuite) TestDefinitionServiceCreateUUIDError() 
 
 	_, svcErr := svc.CreatePresentationDefinition(ctx, &PresentationDefinitionDTO{Handle: "h", VCT: "v"})
 	suite.Require().NotNil(svcErr)
-	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	suite.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *DefinitionServiceTestSuite) TestDefinitionServiceGetInvalidRequest() {
@@ -429,7 +430,7 @@ func (suite *DefinitionServiceTestSuite) TestDefinitionServiceGetStoreError() {
 		newErroringDefinitionStore(suite.T(), errors.New("db boom")), nil)
 	_, svcErr := svc.GetPresentationDefinition(context.Background(), "id-1")
 	suite.Require().NotNil(svcErr)
-	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	suite.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *DefinitionServiceTestSuite) TestDefinitionServiceGetByHandleStoreError() {
@@ -437,7 +438,7 @@ func (suite *DefinitionServiceTestSuite) TestDefinitionServiceGetByHandleStoreEr
 		newErroringDefinitionStore(suite.T(), errors.New("db boom")), nil)
 	_, svcErr := svc.GetPresentationDefinitionByHandle(context.Background(), "h")
 	suite.Require().NotNil(svcErr)
-	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	suite.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *DefinitionServiceTestSuite) TestDefinitionServiceListStoreError() {
@@ -445,7 +446,7 @@ func (suite *DefinitionServiceTestSuite) TestDefinitionServiceListStoreError() {
 		newErroringDefinitionStore(suite.T(), errors.New("db boom")), nil)
 	_, svcErr := svc.ListPresentationDefinitions(context.Background())
 	suite.Require().NotNil(svcErr)
-	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	suite.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *DefinitionServiceTestSuite) TestDefinitionServiceListResultLimitExceeded() {
@@ -461,7 +462,7 @@ func (suite *DefinitionServiceTestSuite) TestDefinitionServiceListSummariesStore
 		newErroringDefinitionStore(suite.T(), errors.New("db boom")), nil)
 	_, svcErr := svc.ListPresentationDefinitionSummaries(context.Background())
 	suite.Require().NotNil(svcErr)
-	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	suite.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *DefinitionServiceTestSuite) TestDefinitionServiceListSummariesResultLimitExceeded() {
@@ -544,7 +545,7 @@ func (suite *DefinitionServiceTestSuite) TestDefinitionServiceUpdateLoadStoreErr
 	_, svcErr := svc.UpdatePresentationDefinition(context.Background(), "id-1",
 		&PresentationDefinitionDTO{Handle: "h", VCT: "v"})
 	suite.Require().NotNil(svcErr)
-	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	suite.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *DefinitionServiceTestSuite) TestDefinitionServiceUpdateHandleClashLookupError() {
@@ -558,7 +559,7 @@ func (suite *DefinitionServiceTestSuite) TestDefinitionServiceUpdateHandleClashL
 	_, svcErr := svc.UpdatePresentationDefinition(context.Background(), "id-1",
 		&PresentationDefinitionDTO{Handle: "new", VCT: "v"})
 	suite.Require().NotNil(svcErr)
-	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	suite.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *DefinitionServiceTestSuite) TestDefinitionServiceUpdateHandleClashConflict() {
@@ -598,7 +599,7 @@ func (suite *DefinitionServiceTestSuite) TestDefinitionServiceUpdatePersistError
 	_, svcErr := svc.UpdatePresentationDefinition(context.Background(), "id-1",
 		&PresentationDefinitionDTO{Handle: "h", VCT: "v"})
 	suite.Require().NotNil(svcErr)
-	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	suite.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *DefinitionServiceTestSuite) TestDefinitionServiceDeleteInvalidRequest() {
@@ -613,7 +614,7 @@ func (suite *DefinitionServiceTestSuite) TestDefinitionServiceDeleteLoadStoreErr
 		newErroringDefinitionStore(suite.T(), errors.New("db boom")), nil)
 	svcErr := svc.DeletePresentationDefinition(context.Background(), "id-1")
 	suite.Require().NotNil(svcErr)
-	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	suite.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *DefinitionServiceTestSuite) TestDefinitionServiceDeleteImmutable() {
@@ -637,7 +638,7 @@ func (suite *DefinitionServiceTestSuite) TestDefinitionServiceDeletePersistError
 
 	svcErr := svc.DeletePresentationDefinition(context.Background(), "id-1")
 	suite.Require().NotNil(svcErr)
-	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	suite.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *DefinitionServiceTestSuite) TestDefinitionServiceIsDeclarativeStoreError() {
@@ -645,7 +646,7 @@ func (suite *DefinitionServiceTestSuite) TestDefinitionServiceIsDeclarativeStore
 		newErroringDefinitionStore(suite.T(), errors.New("db boom")), nil)
 	_, svcErr := svc.IsPresentationDefinitionDeclarative(context.Background(), "id-1")
 	suite.Require().NotNil(svcErr)
-	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	suite.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *DefinitionServiceTestSuite) TestDefinitionServiceIsDeclarativeSuccess() {

@@ -25,11 +25,10 @@ import (
 	"strings"
 
 	authncm "github.com/thunder-id/thunderid/internal/authn/common"
-	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
-	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	systemutils "github.com/thunder-id/thunderid/internal/system/utils"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // getAuthnServiceName returns the authn service name for an executor.
@@ -47,7 +46,7 @@ func getAuthnServiceName(executorName string) string {
 }
 
 // GetUserAttribute extracts a specific attribute value from a user entity's JSON attributes.
-func GetUserAttribute(user *entityprovider.Entity, attributeKey string) (string, error) {
+func GetUserAttribute(user *providers.Entity, attributeKey string) (string, error) {
 	if user == nil || len(user.Attributes) == 0 {
 		return "", errors.New("user entity or attributes are empty")
 	}
@@ -216,16 +215,16 @@ func buildRuntimeMetadata(ctx *core.NodeContext) map[string]string {
 }
 
 // buildAuthnMetadata constructs the metadata for authentication.
-func buildAuthnMetadata(ctx *core.NodeContext) *authnprovidercm.AuthnMetadata {
-	return &authnprovidercm.AuthnMetadata{
+func buildAuthnMetadata(ctx *core.NodeContext) *providers.AuthnMetadata {
+	return &providers.AuthnMetadata{
 		AppMetadata:     buildAppMetadataFromContext(ctx),
 		RuntimeMetadata: buildRuntimeMetadata(ctx),
 	}
 }
 
 // buildGetAttributesMetadata constructs the metadata for fetching user attributes.
-func buildGetAttributesMetadata(ctx *core.NodeContext) *authnprovidercm.GetAttributesMetadata {
-	metadata := &authnprovidercm.GetAttributesMetadata{
+func buildGetAttributesMetadata(ctx *core.NodeContext) *providers.GetAttributesMetadata {
+	metadata := &providers.GetAttributesMetadata{
 		AppMetadata:     buildAppMetadataFromContext(ctx),
 		RuntimeMetadata: buildRuntimeMetadata(ctx),
 	}

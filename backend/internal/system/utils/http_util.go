@@ -33,9 +33,10 @@ import (
 	"strings"
 	"unicode"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/thunder-id/thunderid/internal/system/constants"
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
@@ -536,9 +537,9 @@ func WriteSuccessResponse(ctx context.Context, w http.ResponseWriter, statusCode
 	if err := json.NewEncoder(&buf).Encode(data); err != nil {
 		logger.Error(ctx, "Failed to encode response", log.Error(err))
 		errResp := apierror.ErrorResponse{
-			Code:        serviceerror.ErrorEncodingError.Code,
-			Message:     serviceerror.ErrorEncodingError.Error,
-			Description: serviceerror.ErrorEncodingError.ErrorDescription,
+			Code:        tidcommon.ErrorEncodingError.Code,
+			Message:     tidcommon.ErrorEncodingError.Error,
+			Description: tidcommon.ErrorEncodingError.ErrorDescription,
 		}
 		b, _ := json.Marshal(errResp)
 		w.Header().Set(constants.ContentTypeHeaderName, constants.ContentTypeJSON)
@@ -562,9 +563,9 @@ func WriteErrorResponse(ctx context.Context, w http.ResponseWriter, statusCode i
 	if err := json.NewEncoder(w).Encode(errorResp); err != nil {
 		logger.Error(ctx, "Failed to encode i18n error response", log.Error(err))
 		errResp := apierror.ErrorResponse{
-			Code:        serviceerror.ErrorEncodingError.Code,
-			Message:     serviceerror.ErrorEncodingError.Error,
-			Description: serviceerror.ErrorEncodingError.ErrorDescription,
+			Code:        tidcommon.ErrorEncodingError.Code,
+			Message:     tidcommon.ErrorEncodingError.Error,
+			Description: tidcommon.ErrorEncodingError.ErrorDescription,
 		}
 		b, _ := json.Marshal(errResp)
 		w.Header().Set(constants.ContentTypeHeaderName, constants.ContentTypeJSON)

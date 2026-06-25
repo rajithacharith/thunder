@@ -28,8 +28,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 func TestServerConfigExporter_Type(t *testing.T) {
@@ -49,10 +49,10 @@ func TestServerConfigExporter_GetAllResourceIDs(t *testing.T) {
 
 func TestServerConfigExporter_GetAllResourceIDs_Error(t *testing.T) {
 	service := NewServerConfigServiceMock(t)
-	service.EXPECT().ListConfigNames(mock.Anything).Return(nil, &serviceerror.InternalServerError)
+	service.EXPECT().ListConfigNames(mock.Anything).Return(nil, &common.InternalServerError)
 
 	_, svcErr := newServerConfigExporter(service).GetAllResourceIDs(context.Background())
-	assert.Same(t, &serviceerror.InternalServerError, svcErr)
+	assert.Same(t, &common.InternalServerError, svcErr)
 }
 
 func TestServerConfigExporter_GetResourceByID_ExportsEffectiveValue(t *testing.T) {
@@ -74,10 +74,10 @@ func TestServerConfigExporter_GetResourceByID_ExportsEffectiveValue(t *testing.T
 func TestServerConfigExporter_GetResourceByID_Error(t *testing.T) {
 	service := NewServerConfigServiceMock(t)
 	service.EXPECT().GetConfig(mock.Anything, ConfigNameCORS).
-		Return(ServerConfigLayers{}, &serviceerror.InternalServerError)
+		Return(ServerConfigLayers{}, &common.InternalServerError)
 
 	_, _, svcErr := newServerConfigExporter(service).GetResourceByID(context.Background(), "cors")
-	assert.Same(t, &serviceerror.InternalServerError, svcErr)
+	assert.Same(t, &common.InternalServerError, svcErr)
 }
 
 func TestServerConfigExporter_ValidateResource(t *testing.T) {

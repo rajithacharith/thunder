@@ -22,13 +22,14 @@ import (
 	"errors"
 	"fmt"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/ou"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
@@ -40,7 +41,7 @@ const (
 type ouExecutor struct {
 	core.ExecutorInterface
 	ouService         ou.OrganizationUnitServiceInterface
-	authnProvider     authnprovidermgr.AuthnProviderManagerInterface
+	authnProvider     providers.AuthnProviderManagerInterface
 	entityTypeService entitytype.EntityTypeServiceInterface
 	logger            *log.Logger
 }
@@ -51,7 +52,7 @@ var _ core.ExecutorInterface = (*ouExecutor)(nil)
 func newOUExecutor(
 	flowFactory core.FlowFactoryInterface,
 	ouService ou.OrganizationUnitServiceInterface,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
+	authnProvider providers.AuthnProviderManagerInterface,
 	entityTypeService entitytype.EntityTypeServiceInterface,
 ) *ouExecutor {
 	defaultInputs := []common.Input{
@@ -136,7 +137,7 @@ func (o *ouExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, e
 	}
 	createdOU, svcErr := o.ouService.CreateOrganizationUnit(ctx.Context, ouRequest)
 	if svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
+		if svcErr.Type == tidcommon.ClientErrorType {
 			execResp.Status = common.ExecUserInputRequired
 			execResp.Inputs = o.GetRequiredInputs(ctx)
 
@@ -146,7 +147,7 @@ func (o *ouExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, e
 			case ou.ErrorOrganizationUnitHandleConflict.Code:
 				execResp.Error = &ErrOUHandleConflict
 			default:
-				execResp.Error = serviceerror.CustomServiceError(ErrOUCreationFailed, i18ncore.I18nMessage{
+				execResp.Error = tidcommon.CustomServiceError(ErrOUCreationFailed, tidcommon.I18nMessage{
 					Key:          ErrOUCreationFailed.ErrorDescription.Key,
 					DefaultValue: "Failed to create organization unit:" + svcErr.ErrorDescription.DefaultValue,
 				})
@@ -175,8 +176,10 @@ func (o *ouExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, e
 }
 
 // getOrganizationUnitRequest constructs an OrganizationUnitRequest from the NodeContext.
-func (o *ouExecutor) getOrganizationUnitRequest(ctx *core.NodeContext) (ou.OrganizationUnitRequestWithID, error) {
-	ouRequest := ou.OrganizationUnitRequestWithID{
+func (o *ouExecutor) getOrganizationUnitRequest(
+	ctx *core.NodeContext,
+) (providers.OrganizationUnitRequestWithID, error) {
+	ouRequest := providers.OrganizationUnitRequestWithID{
 		Name:        ctx.UserInputs[userInputOuName],
 		Handle:      ctx.UserInputs[userInputOuHandle],
 		Description: ctx.UserInputs[userInputOuDesc],

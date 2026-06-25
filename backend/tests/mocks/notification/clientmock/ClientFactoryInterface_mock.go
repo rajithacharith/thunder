@@ -10,7 +10,7 @@ import (
 	mock "github.com/stretchr/testify/mock"
 	"github.com/thunder-id/thunderid/internal/notification/client"
 	"github.com/thunder-id/thunderid/internal/notification/common"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	common0 "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 // NewClientFactoryInterfaceMock creates a new instance of ClientFactoryInterfaceMock. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -41,7 +41,7 @@ func (_m *ClientFactoryInterfaceMock) EXPECT() *ClientFactoryInterfaceMock_Expec
 }
 
 // GetClient provides a mock function for the type ClientFactoryInterfaceMock
-func (_mock *ClientFactoryInterfaceMock) GetClient(ctx context.Context, sender common.NotificationSenderDTO) (client.NotificationClientInterface, *serviceerror.ServiceError) {
+func (_mock *ClientFactoryInterfaceMock) GetClient(ctx context.Context, sender common.NotificationSenderDTO) (client.NotificationClientInterface, *common0.ServiceError) {
 	ret := _mock.Called(ctx, sender)
 
 	if len(ret) == 0 {
@@ -49,8 +49,8 @@ func (_mock *ClientFactoryInterfaceMock) GetClient(ctx context.Context, sender c
 	}
 
 	var r0 client.NotificationClientInterface
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, common.NotificationSenderDTO) (client.NotificationClientInterface, *serviceerror.ServiceError)); ok {
+	var r1 *common0.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, common.NotificationSenderDTO) (client.NotificationClientInterface, *common0.ServiceError)); ok {
 		return returnFunc(ctx, sender)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, common.NotificationSenderDTO) client.NotificationClientInterface); ok {
@@ -60,11 +60,11 @@ func (_mock *ClientFactoryInterfaceMock) GetClient(ctx context.Context, sender c
 			r0 = ret.Get(0).(client.NotificationClientInterface)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, common.NotificationSenderDTO) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, common.NotificationSenderDTO) *common0.ServiceError); ok {
 		r1 = returnFunc(ctx, sender)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common0.ServiceError)
 		}
 	}
 	return r0, r1
@@ -100,12 +100,12 @@ func (_c *ClientFactoryInterfaceMock_GetClient_Call) Run(run func(ctx context.Co
 	return _c
 }
 
-func (_c *ClientFactoryInterfaceMock_GetClient_Call) Return(notificationClientInterface client.NotificationClientInterface, serviceError *serviceerror.ServiceError) *ClientFactoryInterfaceMock_GetClient_Call {
+func (_c *ClientFactoryInterfaceMock_GetClient_Call) Return(notificationClientInterface client.NotificationClientInterface, serviceError *common0.ServiceError) *ClientFactoryInterfaceMock_GetClient_Call {
 	_c.Call.Return(notificationClientInterface, serviceError)
 	return _c
 }
 
-func (_c *ClientFactoryInterfaceMock_GetClient_Call) RunAndReturn(run func(ctx context.Context, sender common.NotificationSenderDTO) (client.NotificationClientInterface, *serviceerror.ServiceError)) *ClientFactoryInterfaceMock_GetClient_Call {
+func (_c *ClientFactoryInterfaceMock_GetClient_Call) RunAndReturn(run func(ctx context.Context, sender common.NotificationSenderDTO) (client.NotificationClientInterface, *common0.ServiceError)) *ClientFactoryInterfaceMock_GetClient_Call {
 	_c.Call.Return(run)
 	return _c
 }

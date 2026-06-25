@@ -31,9 +31,10 @@ import (
 	"sync"
 	"time"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/cryptolib"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	httpservice "github.com/thunder-id/thunderid/internal/system/http"
 	"github.com/thunder-id/thunderid/internal/system/jose/jws"
 	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
@@ -44,15 +45,15 @@ import (
 // JWTServiceInterface defines the interface for JWT operations.
 type JWTServiceInterface interface {
 	GenerateJWT(ctx context.Context, sub, iss string, validityPeriod int64,
-		claims map[string]interface{}, typ, alg string) (string, int64, *serviceerror.ServiceError)
-	VerifyJWT(ctx context.Context, jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError
+		claims map[string]interface{}, typ, alg string) (string, int64, *tidcommon.ServiceError)
+	VerifyJWT(ctx context.Context, jwtToken string, expectedAud, expectedIss string) *tidcommon.ServiceError
 	VerifyJWTWithPublicKey(ctx context.Context, jwtToken string, jwtPublicKey crypto.PublicKey, expectedAud,
-		expectedIss string) *serviceerror.ServiceError
+		expectedIss string) *tidcommon.ServiceError
 	VerifyJWTWithJWKS(ctx context.Context,
-		jwtToken, jwksURL, expectedAud, expectedIss string) *serviceerror.ServiceError
-	VerifyJWTSignature(ctx context.Context, jwtToken string) *serviceerror.ServiceError
-	VerifyJWTSignatureWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey) *serviceerror.ServiceError
-	VerifyJWTSignatureWithJWKS(ctx context.Context, jwtToken string, jwksURL string) *serviceerror.ServiceError
+		jwtToken, jwksURL, expectedAud, expectedIss string) *tidcommon.ServiceError
+	VerifyJWTSignature(ctx context.Context, jwtToken string) *tidcommon.ServiceError
+	VerifyJWTSignatureWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey) *tidcommon.ServiceError
+	VerifyJWTSignatureWithJWKS(ctx context.Context, jwtToken string, jwksURL string) *tidcommon.ServiceError
 }
 
 // jwksCacheEntry holds a cached JWKS response with its expiry time.
@@ -112,7 +113,7 @@ func newJWTService(
 // or providing another type is a programmer error and returns InternalServerError.
 func (js *jwtService) GenerateJWT(
 	ctx context.Context, sub, iss string, validityPeriod int64, claims map[string]interface{}, typ, alg string,
-) (string, int64, *serviceerror.ServiceError) {
+) (string, int64, *tidcommon.ServiceError) {
 	jwsAlg := js.jwsAlg
 	if alg != "" {
 		if alg != string(js.jwsAlg) {
@@ -122,21 +123,21 @@ func (js *jwtService) GenerateJWT(
 	}
 	if js.cryptoProvider == nil {
 		js.logger.Error(ctx, "Crypto provider not initialized for JWT generation")
-		return "", 0, &serviceerror.InternalServerError
+		return "", 0, &tidcommon.InternalServerError
 	}
 
 	// Validate that claims["aud"] is present and of an accepted type.
 	audValue, hasAud := claims["aud"]
 	if !hasAud {
 		js.logger.Error(ctx, "GenerateJWT called without aud in claims")
-		return "", 0, &serviceerror.InternalServerError
+		return "", 0, &tidcommon.InternalServerError
 	}
 	switch audValue.(type) {
 	case string, []string:
 		// valid
 	default:
 		js.logger.Error(ctx, "GenerateJWT called with unsupported aud type in claims")
-		return "", 0, &serviceerror.InternalServerError
+		return "", 0, &tidcommon.InternalServerError
 	}
 
 	serverRuntime := config.GetServerRuntime()
@@ -154,7 +155,7 @@ func (js *jwtService) GenerateJWT(
 	headerJSON, err := json.Marshal(header)
 	if err != nil {
 		js.logger.Error(ctx, "Failed to marshal JWT header: "+err.Error())
-		return "", 0, &serviceerror.InternalServerError
+		return "", 0, &tidcommon.InternalServerError
 	}
 
 	tokenIssuer := iss
@@ -172,7 +173,7 @@ func (js *jwtService) GenerateJWT(
 	jti, err := utils.GenerateUUIDv7()
 	if err != nil {
 		js.logger.Error(ctx, "Failed to generate UUID", log.Error(err))
-		return "", 0, &serviceerror.InternalServerError
+		return "", 0, &tidcommon.InternalServerError
 	}
 
 	// Create the JWT payload.
@@ -195,7 +196,7 @@ func (js *jwtService) GenerateJWT(
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
 		js.logger.Error(ctx, "Failed to marshal JWT payload: "+err.Error())
-		return "", 0, &serviceerror.InternalServerError
+		return "", 0, &tidcommon.InternalServerError
 	}
 
 	// Encode the header and payload in base64 URL format.
@@ -207,7 +208,7 @@ func (js *jwtService) GenerateJWT(
 	signature, err := js.cryptoProvider.Sign(ctx, js.keyRef, string(jwsAlg), []byte(signingInput))
 	if err != nil {
 		js.logger.Error(ctx, "Failed to sign JWT: "+err.Error())
-		return "", 0, &serviceerror.InternalServerError
+		return "", 0, &tidcommon.InternalServerError
 	}
 
 	// Encode the signature in base64 URL format.
@@ -219,10 +220,10 @@ func (js *jwtService) GenerateJWT(
 // VerifyJWT verifies the JWT token using the server's public key.
 func (js *jwtService) VerifyJWT(
 	ctx context.Context, jwtToken string, expectedAud, expectedIss string,
-) *serviceerror.ServiceError {
+) *tidcommon.ServiceError {
 	if js.cryptoProvider == nil {
 		js.logger.Error(ctx, "Crypto provider not initialized for JWT verification")
-		return &serviceerror.InternalServerError
+		return &tidcommon.InternalServerError
 	}
 
 	// First verify signature using the configured server key and algorithm
@@ -236,7 +237,7 @@ func (js *jwtService) VerifyJWT(
 
 // VerifyJWTWithPublicKey verifies the JWT token using the provided public key.
 func (js *jwtService) VerifyJWTWithPublicKey(ctx context.Context, jwtToken string, jwtPublicKey crypto.PublicKey,
-	expectedAud, expectedIss string) *serviceerror.ServiceError {
+	expectedAud, expectedIss string) *tidcommon.ServiceError {
 	parts := strings.Split(jwtToken, ".")
 	if len(parts) != 3 {
 		return &ErrorInvalidJWTFormat
@@ -251,7 +252,7 @@ func (js *jwtService) VerifyJWTWithPublicKey(ctx context.Context, jwtToken strin
 
 // VerifyJWTWithJWKS verifies the JWT token using a JWK Set (JWKS) endpoint.
 func (js *jwtService) VerifyJWTWithJWKS(ctx context.Context,
-	jwtToken, jwksURL, expectedAud, expectedIss string) *serviceerror.ServiceError {
+	jwtToken, jwksURL, expectedAud, expectedIss string) *tidcommon.ServiceError {
 	parts := strings.Split(jwtToken, ".")
 	if len(parts) != 3 {
 		return &ErrorInvalidJWTFormat
@@ -265,10 +266,10 @@ func (js *jwtService) VerifyJWTWithJWKS(ctx context.Context,
 }
 
 // VerifyJWTSignature verifies the signature of a JWT token using the server's public key.
-func (js *jwtService) VerifyJWTSignature(ctx context.Context, jwtToken string) *serviceerror.ServiceError {
+func (js *jwtService) VerifyJWTSignature(ctx context.Context, jwtToken string) *tidcommon.ServiceError {
 	if js.cryptoProvider == nil {
 		js.logger.Error(ctx, "Crypto provider not initialized for JWT verification")
-		return &serviceerror.InternalServerError
+		return &tidcommon.InternalServerError
 	}
 	parts := strings.Split(jwtToken, ".")
 	if len(parts) != 3 {
@@ -307,7 +308,7 @@ func (js *jwtService) VerifyJWTSignature(ctx context.Context, jwtToken string) *
 
 // VerifyJWTSignatureWithPublicKey verifies the signature of a JWT token using the provided public key.
 func (js *jwtService) VerifyJWTSignatureWithPublicKey(jwtToken string,
-	jwtPublicKey crypto.PublicKey) *serviceerror.ServiceError {
+	jwtPublicKey crypto.PublicKey) *tidcommon.ServiceError {
 	parts := strings.Split(jwtToken, ".")
 	if len(parts) != 3 {
 		return &ErrorInvalidJWTFormat
@@ -343,7 +344,7 @@ func (js *jwtService) VerifyJWTSignatureWithPublicKey(jwtToken string,
 
 // VerifyJWTSignatureWithJWKS verifies the signature of a JWT token using a JWK Set (JWKS) endpoint.
 func (js *jwtService) VerifyJWTSignatureWithJWKS(
-	ctx context.Context, jwtToken string, jwksURL string) *serviceerror.ServiceError {
+	ctx context.Context, jwtToken string, jwksURL string) *tidcommon.ServiceError {
 	// Get the key ID from the JWT header
 	header, err := DecodeJWTHeader(jwtToken)
 	if err != nil {
@@ -390,7 +391,7 @@ func (js *jwtService) VerifyJWTSignatureWithJWKS(
 
 // getJWKSKeys returns JWKS keys for the given URL, using a TTL-based cache.
 func (js *jwtService) getJWKSKeys(
-	ctx context.Context, jwksURL string) ([]map[string]interface{}, *serviceerror.ServiceError) {
+	ctx context.Context, jwksURL string) ([]map[string]interface{}, *tidcommon.ServiceError) {
 	if cached, ok := js.jwksCache.Load(jwksURL); ok {
 		entry := cached.(*jwksCacheEntry)
 		if time.Now().Before(entry.expiresAt) {
@@ -439,7 +440,7 @@ func (js *jwtService) getJWKSKeys(
 
 // verifyJWTClaims verifies the standard claims of a JWT token.
 func (js *jwtService) verifyJWTClaims(
-	ctx context.Context, jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError {
+	ctx context.Context, jwtToken string, expectedAud, expectedIss string) *tidcommon.ServiceError {
 	// Decode the JWT payload
 	payload, err := DecodeJWTPayload(jwtToken)
 	if err != nil {

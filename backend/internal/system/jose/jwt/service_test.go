@@ -41,6 +41,10 @@ import (
 	"testing"
 	"time"
 
+	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
+
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -48,7 +52,6 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/cryptolib"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	httpservice "github.com/thunder-id/thunderid/internal/system/http"
 	"github.com/thunder-id/thunderid/internal/system/jose/jws"
 	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
@@ -176,17 +179,17 @@ func (suite *JWTServiceTestSuite) SetupTest() {
 		TLS: config.TLSConfig{
 			KeyFile: suite.testKeyPath,
 		},
-		JWT: config.JWTConfig{
+		JWT: engineconfig.JWTConfig{
 			Issuer:         "https://auth.example.com",
 			ValidityPeriod: 3600, // Default validity period
 			PreferredKeyID: "test-kid",
 			Leeway:         30, // 30 seconds leeway for clock skew
 		},
 		Crypto: config.CryptoConfig{
-			Encryption: config.EncryptionConfig{
+			Encryption: engineconfig.EncryptionConfig{
 				Key: generateTestEncryptionKey(suite.T()),
 			},
-			Keys: []config.KeyConfig{
+			Keys: []engineconfig.KeyConfig{
 				{
 					ID:       "test-kid",
 					CertFile: suite.testKeyPath,
@@ -659,7 +662,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 		name          string
 		setupFunc     func() (string, string, string)
 		expectError   bool
-		expectedError serviceerror.ServiceError
+		expectedError tidcommon.ServiceError
 	}{
 		{
 			name: "ValidJWT",
@@ -771,7 +774,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 				return token, testAudience, testIssuer
 			},
 			expectError:   true,
-			expectedError: serviceerror.InternalServerError,
+			expectedError: tidcommon.InternalServerError,
 		},
 		{
 			name: "BothAudienceAndIssuerEmpty",
@@ -851,7 +854,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
 		name          string
 		setupFunc     func() (string, crypto.PublicKey, string, string)
 		expectError   bool
-		expectedError serviceerror.ServiceError
+		expectedError tidcommon.ServiceError
 	}{
 		{
 			name: "ValidJWT",
@@ -983,7 +986,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithJWKS() {
 		name          string
 		setupFunc     func() (string, string, string, string)
 		expectError   bool
-		expectedError serviceerror.ServiceError
+		expectedError tidcommon.ServiceError
 	}{
 		{
 			name: "ValidJWTWithJWKS",
@@ -1163,7 +1166,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 		expectedAud   string
 		expectedIss   string
 		expectError   bool
-		expectedError serviceerror.ServiceError
+		expectedError tidcommon.ServiceError
 	}{
 		{
 			name: "MissingExpClaim",
@@ -1586,13 +1589,13 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSUsesCache() {
 	config.ResetServerRuntime()
 	defer config.ResetServerRuntime()
 	testConfig := &config.Config{
-		JWT: config.JWTConfig{
+		JWT: engineconfig.JWTConfig{
 			Issuer:         testIssuer,
 			ValidityPeriod: 3600,
 			Leeway:         30,
 		},
-		Server: config.ServerConfig{
-			SecurityConfig: config.SecurityConfig{
+		Server: engineconfig.ServerConfig{
+			SecurityConfig: engineconfig.SecurityConfig{
 				JWKSCacheTTL: 300,
 			},
 		},
@@ -1707,7 +1710,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 		name          string
 		setupServer   func() *httptest.Server
 		setupToken    func() string
-		expectedError serviceerror.ServiceError
+		expectedError tidcommon.ServiceError
 	}{
 		{
 			name: "HTTPError404",
@@ -2390,7 +2393,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithLeeway() {
 		setupFunc     func() (string, string, string)
 		setupConfig   func()
 		expectError   bool
-		expectedError serviceerror.ServiceError
+		expectedError tidcommon.ServiceError
 	}{
 		{
 			name: "TokenExpiredWithinLeeway_ShouldPass",
@@ -2496,14 +2499,14 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithZeroLeeway() {
 		TLS: config.TLSConfig{
 			KeyFile: suite.testKeyPath,
 		},
-		JWT: config.JWTConfig{
+		JWT: engineconfig.JWTConfig{
 			Issuer:         "https://auth.example.com",
 			ValidityPeriod: 3600,
 			PreferredKeyID: "test-kid",
 			Leeway:         0, // No leeway
 		},
 		Crypto: config.CryptoConfig{
-			Keys: []config.KeyConfig{
+			Keys: []engineconfig.KeyConfig{
 				{
 					ID:       "test-kid",
 					CertFile: suite.testKeyPath,

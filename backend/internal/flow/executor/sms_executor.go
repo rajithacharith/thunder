@@ -23,12 +23,15 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/notification"
 	notifcm "github.com/thunder-id/thunderid/internal/notification/common"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/template"
 )
@@ -139,7 +142,7 @@ func (e *smsExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, 
 	notifSvcErr := e.notifSenderSvc.Send(ctx.Context, notifcm.ChannelTypeSMS, senderID,
 		notifcm.NotificationData{Recipient: recipient, Body: rendered.Body})
 	if notifSvcErr != nil {
-		if ctx.FlowType == common.FlowTypeUserOnboarding && notifSvcErr.Type == serviceerror.ClientErrorType {
+		if ctx.FlowType == providers.FlowTypeUserOnboarding && notifSvcErr.Type == tidcommon.ClientErrorType {
 			execResp.Status = common.ExecFailure
 			execResp.Error = &ErrSMSProviderNotConfigured
 			return execResp, nil

@@ -19,7 +19,8 @@
 package executor
 
 import (
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"testing"
 
@@ -29,7 +30,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	notifcm "github.com/thunder-id/thunderid/internal/notification/common"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/template"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 	"github.com/thunder-id/thunderid/tests/mocks/notification/notificationmock"
@@ -353,7 +353,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_NilSMSSenderService_Retu
 func (suite *SMSExecutorTestSuite) TestExecute_SendMode_UserOnboarding_ClientError_ReturnsExecFailure() {
 	ctx := &core.NodeContext{
 		ExecutionID:  "test-flow-id",
-		FlowType:     common.FlowTypeUserOnboarding,
+		FlowType:     providers.FlowTypeUserOnboarding,
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			common.AttributeMobileNumber: "+94714627887",
@@ -371,11 +371,11 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_UserOnboarding_ClientErr
 	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
 		template.TemplateTypeSMS, mock.Anything).
 		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
-	clientErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	clientErr := &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  "MNS-1001",
-		Error: i18ncore.I18nMessage{Key: "error.test.sender_not_found", DefaultValue: "Sender not found"},
-		ErrorDescription: i18ncore.I18nMessage{
+		Error: tidcommon.I18nMessage{Key: "error.test.sender_not_found", DefaultValue: "Sender not found"},
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.test.the_requested_notification_sender_could_not_be_fou",
 			DefaultValue: "The requested notification sender could not be found",
 		},
@@ -393,7 +393,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_UserOnboarding_ClientErr
 func (suite *SMSExecutorTestSuite) TestExecute_SendMode_UserOnboarding_ServerError_ReturnsError() {
 	ctx := &core.NodeContext{
 		ExecutionID:  "test-flow-id",
-		FlowType:     common.FlowTypeUserOnboarding,
+		FlowType:     providers.FlowTypeUserOnboarding,
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			common.AttributeMobileNumber: "+94714627887",
@@ -411,10 +411,10 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_UserOnboarding_ServerErr
 	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
 		template.TemplateTypeSMS, mock.Anything).
 		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
-	serverErr := &serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
+	serverErr := &tidcommon.ServiceError{
+		Type: tidcommon.ServerErrorType,
 		Code: "MNS-5000",
-		ErrorDescription: i18ncore.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key: "error.test.internal_server_error", DefaultValue: "internal server error",
 		},
 	}
@@ -431,7 +431,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_UserOnboarding_ServerErr
 func (suite *SMSExecutorTestSuite) TestExecute_SendMode_OtherFlow_NotificationError_ReturnsError() {
 	ctx := &core.NodeContext{
 		ExecutionID:  "test-flow-id",
-		FlowType:     common.FlowTypeRegistration,
+		FlowType:     providers.FlowTypeRegistration,
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			common.AttributeMobileNumber: "+94714627887",
@@ -449,11 +449,11 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_OtherFlow_NotificationEr
 	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
 		template.TemplateTypeSMS, mock.Anything).
 		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
-	clientErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	clientErr := &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  "MNS-1001",
-		Error: i18ncore.I18nMessage{Key: "error.test.sender_not_found", DefaultValue: "Sender not found"},
-		ErrorDescription: i18ncore.I18nMessage{
+		Error: tidcommon.I18nMessage{Key: "error.test.sender_not_found", DefaultValue: "Sender not found"},
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.test.the_requested_notification_sender_could_not_be_fou",
 			DefaultValue: "The requested notification sender could not be found",
 		},
@@ -573,7 +573,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_TemplateRenderFailure_Re
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
 		{Identifier: common.AttributeMobileNumber, Type: common.InputTypePhone, Required: true},
 	}).Maybe()
-	renderErr := &serviceerror.ServiceError{Code: "TPL-5000"}
+	renderErr := &tidcommon.ServiceError{Code: "TPL-5000"}
 	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
 		template.TemplateTypeSMS, mock.Anything).
 		Return(nil, renderErr)

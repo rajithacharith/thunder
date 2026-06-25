@@ -24,6 +24,8 @@ import (
 	"strings"
 	"testing"
 
+	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
+
 	"github.com/thunder-id/thunderid/internal/application"
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	"github.com/thunder-id/thunderid/internal/idp"
@@ -68,7 +70,7 @@ func (suite *InitTestSuite) SetupTest() {
 - https://localhost:3000
 `), &allowedOrigins))
 	testConfig := &config.Config{
-		CORS: config.CORSConfig{AllowedOrigins: allowedOrigins},
+		CORS: engineconfig.CORSConfig{AllowedOrigins: allowedOrigins},
 	}
 	if err := cors.InitializeMatcher(testConfig.CORS.AllowedOrigins); err != nil {
 		suite.T().Fatalf("Failed to initialize CORS matcher: %v", err)
@@ -363,7 +365,7 @@ func TestInitialize_Standalone(t *testing.T) {
 - https://localhost:3000
 `), &allowedOrigins))
 	testConfig := &config.Config{
-		CORS: config.CORSConfig{AllowedOrigins: allowedOrigins},
+		CORS: engineconfig.CORSConfig{AllowedOrigins: allowedOrigins},
 	}
 	assert.NoError(t, cors.InitializeMatcher(testConfig.CORS.AllowedOrigins))
 	err := config.InitializeServerRuntime("/tmp/test", testConfig)
@@ -395,7 +397,7 @@ func TestRegisterRoutes_Standalone(t *testing.T) {
 - https://localhost:3000
 `), &allowedOrigins))
 	testConfig := &config.Config{
-		CORS: config.CORSConfig{AllowedOrigins: allowedOrigins},
+		CORS: engineconfig.CORSConfig{AllowedOrigins: allowedOrigins},
 	}
 	assert.NoError(t, cors.InitializeMatcher(testConfig.CORS.AllowedOrigins))
 	err := config.InitializeServerRuntime("/tmp/test", testConfig)
@@ -427,7 +429,7 @@ func TestRouteHandling_Standalone(t *testing.T) {
 - https://localhost:3000
 `), &allowedOrigins))
 	testConfig := &config.Config{
-		CORS: config.CORSConfig{AllowedOrigins: allowedOrigins},
+		CORS: engineconfig.CORSConfig{AllowedOrigins: allowedOrigins},
 	}
 	assert.NoError(t, cors.InitializeMatcher(testConfig.CORS.AllowedOrigins))
 	err := config.InitializeServerRuntime("/tmp/test", testConfig)
@@ -487,7 +489,7 @@ func TestCORSConfiguration_Standalone(t *testing.T) {
 - https://localhost:3000
 `), &allowedOrigins))
 	testConfig := &config.Config{
-		CORS: config.CORSConfig{AllowedOrigins: allowedOrigins},
+		CORS: engineconfig.CORSConfig{AllowedOrigins: allowedOrigins},
 	}
 	assert.NoError(t, cors.InitializeMatcher(testConfig.CORS.AllowedOrigins))
 	err := config.InitializeServerRuntime("/tmp/test", testConfig)

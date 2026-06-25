@@ -19,12 +19,11 @@
 package core
 
 import (
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/flow/common"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	systemutils "github.com/thunder-id/thunderid/internal/system/utils"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 const (
@@ -40,9 +39,9 @@ type ExecutorInterface interface {
 	GetPrerequisites() []common.Input
 	HasRequiredInputs(ctx *NodeContext, execResp *common.ExecutorResponse) bool
 	ValidatePrerequisites(ctx *NodeContext, execResp *common.ExecutorResponse,
-		authnProvider authnprovidermgr.AuthnProviderManagerInterface) bool
+		authnProvider providers.AuthnProviderManagerInterface) bool
 	GetUserIDFromContext(ctx *NodeContext, execResp *common.ExecutorResponse,
-		authnProvider authnprovidermgr.AuthnProviderManagerInterface) string
+		authnProvider providers.AuthnProviderManagerInterface) string
 	GetRequiredInputs(ctx *NodeContext) []common.Input
 	GetExecutionPolicy(mode string) *ExecutionPolicy
 }
@@ -119,7 +118,7 @@ func (e *executor) HasRequiredInputs(ctx *NodeContext, execResp *common.Executor
 // ValidatePrerequisites validates whether the prerequisites for the executor are met.
 // Returns true if all prerequisites are met, otherwise returns false and updates the executor response.
 func (e *executor) ValidatePrerequisites(ctx *NodeContext, execResp *common.ExecutorResponse,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface) bool {
+	authnProvider providers.AuthnProviderManagerInterface) bool {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "Executor"),
 		log.String(log.LoggerKeyExecutorName, e.GetName()),
 		log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
@@ -182,8 +181,8 @@ func (e *executor) ValidatePrerequisites(ctx *NodeContext, execResp *common.Exec
 		logger.Debug(ctx.Context, "Prerequisite not met for the executor",
 			log.String("identifier", prerequisite.Identifier))
 		execResp.Status = common.ExecFailure
-		execResp.Error = serviceerror.CustomServiceError(ErrExecutorPrerequisiteNotMet,
-			i18ncore.I18nMessage{
+		execResp.Error = tidcommon.CustomServiceError(ErrExecutorPrerequisiteNotMet,
+			tidcommon.I18nMessage{
 				Key:          ErrExecutorPrerequisiteNotMet.ErrorDescription.Key,
 				DefaultValue: "Prerequisite not met: " + prerequisite.Identifier,
 			})
@@ -194,7 +193,7 @@ func (e *executor) ValidatePrerequisites(ctx *NodeContext, execResp *common.Exec
 
 // GetUserIDFromContext retrieves the user ID from the context.
 func (e *executor) GetUserIDFromContext(ctx *NodeContext, execResp *common.ExecutorResponse,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface) string {
+	authnProvider providers.AuthnProviderManagerInterface) string {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "Executor"),
 		log.String(log.LoggerKeyExecutorName, e.GetName()),
 		log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))

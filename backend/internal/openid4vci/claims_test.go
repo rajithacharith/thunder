@@ -23,9 +23,10 @@ import (
 	"encoding/json"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/suite"
 
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/user"
 	"github.com/thunder-id/thunderid/tests/mocks/usermock"
 )
@@ -62,7 +63,7 @@ func (s *ClaimsTestSuite) TestResolveClaimsUserNotFound() {
 	ctx := context.Background()
 	userSvc := usermock.NewUserServiceInterfaceMock(s.T())
 	userSvc.EXPECT().GetUser(ctx, "u1", false).
-		Return(nil, &serviceerror.ServiceError{Code: "not-found"})
+		Return(nil, &tidcommon.ServiceError{Code: "not-found"})
 	svc := &service{userService: userSvc}
 
 	_, err := svc.resolveClaims(ctx, "u1", []string{"given_name"})

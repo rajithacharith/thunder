@@ -8,28 +8,28 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/stretchr/testify/assert"
 )
 
 // InlineStubEntityTypeService satisfies the service interface contract cleanly.
 type InlineStubEntityTypeService struct {
 	OnCreateEntityType func(
 		ctx context.Context, cat TypeCategory, req CreateEntityTypeRequestWithID,
-	) (*EntityType, *serviceerror.ServiceError)
+	) (*EntityType, *tidcommon.ServiceError)
 	OnUpdateEntityType func(
 		ctx context.Context, cat TypeCategory, id string, req UpdateEntityTypeRequest,
-	) (*EntityType, *serviceerror.ServiceError)
+	) (*EntityType, *tidcommon.ServiceError)
 	OnGetEntityType func(
 		ctx context.Context, cat TypeCategory, id string, inc bool,
-	) (*EntityType, *serviceerror.ServiceError)
-	OnDeleteEntityType func(ctx context.Context, cat TypeCategory, id string) *serviceerror.ServiceError
+	) (*EntityType, *tidcommon.ServiceError)
+	OnDeleteEntityType func(ctx context.Context, cat TypeCategory, id string) *tidcommon.ServiceError
 }
 
 func (s *InlineStubEntityTypeService) CreateEntityType(
 	ctx context.Context, cat TypeCategory, req CreateEntityTypeRequestWithID,
-) (*EntityType, *serviceerror.ServiceError) {
+) (*EntityType, *tidcommon.ServiceError) {
 	if s.OnCreateEntityType != nil {
 		return s.OnCreateEntityType(ctx, cat, req)
 	}
@@ -38,7 +38,7 @@ func (s *InlineStubEntityTypeService) CreateEntityType(
 
 func (s *InlineStubEntityTypeService) UpdateEntityType(
 	ctx context.Context, cat TypeCategory, id string, req UpdateEntityTypeRequest,
-) (*EntityType, *serviceerror.ServiceError) {
+) (*EntityType, *tidcommon.ServiceError) {
 	if s.OnUpdateEntityType != nil {
 		return s.OnUpdateEntityType(ctx, cat, id, req)
 	}
@@ -47,7 +47,7 @@ func (s *InlineStubEntityTypeService) UpdateEntityType(
 
 func (s *InlineStubEntityTypeService) GetEntityType(
 	ctx context.Context, cat TypeCategory, id string, inc bool,
-) (*EntityType, *serviceerror.ServiceError) {
+) (*EntityType, *tidcommon.ServiceError) {
 	if s.OnGetEntityType != nil {
 		return s.OnGetEntityType(ctx, cat, id, inc)
 	}
@@ -56,7 +56,7 @@ func (s *InlineStubEntityTypeService) GetEntityType(
 
 func (s *InlineStubEntityTypeService) DeleteEntityType(
 	ctx context.Context, cat TypeCategory, id string,
-) *serviceerror.ServiceError {
+) *tidcommon.ServiceError {
 	if s.OnDeleteEntityType != nil {
 		return s.OnDeleteEntityType(ctx, cat, id)
 	}
@@ -65,50 +65,50 @@ func (s *InlineStubEntityTypeService) DeleteEntityType(
 
 func (s *InlineStubEntityTypeService) GetEntityTypeList(
 	ctx context.Context, cat TypeCategory, limit, offset int, inc bool,
-) (*EntityTypeListResponse, *serviceerror.ServiceError) {
+) (*EntityTypeListResponse, *tidcommon.ServiceError) {
 	return &EntityTypeListResponse{Types: []EntityTypeListItem{}}, nil
 }
 
 func (s *InlineStubEntityTypeService) GetAttributes(
 	ctx context.Context, cat TypeCategory, id string, f1, f2, f3 bool,
-) ([]AttributeInfo, *serviceerror.ServiceError) {
+) ([]AttributeInfo, *tidcommon.ServiceError) {
 	return []AttributeInfo{}, nil
 }
 
 func (s *InlineStubEntityTypeService) GetDisplayAttributesByNames(
 	ctx context.Context, cat TypeCategory, names []string,
-) (map[string]string, *serviceerror.ServiceError) {
+) (map[string]string, *tidcommon.ServiceError) {
 	return map[string]string{}, nil
 }
 
 func (s *InlineStubEntityTypeService) GetEntityTypeByName(
 	ctx context.Context, cat TypeCategory, name string,
-) (*EntityType, *serviceerror.ServiceError) {
+) (*EntityType, *tidcommon.ServiceError) {
 	return &EntityType{Name: name}, nil
 }
 
 func (s *InlineStubEntityTypeService) GetUniqueAttributes(
 	ctx context.Context, cat TypeCategory, name string,
-) ([]string, *serviceerror.ServiceError) {
+) ([]string, *tidcommon.ServiceError) {
 	return []string{}, nil
 }
 
 func (s *InlineStubEntityTypeService) ResolveEntityTypeHandles(
 	ctx context.Context, entityType *EntityType,
-) *serviceerror.ServiceError {
+) *tidcommon.ServiceError {
 	return nil
 }
 
 func (s *InlineStubEntityTypeService) ValidateEntity(
 	ctx context.Context, cat TypeCategory, name string, schema json.RawMessage, flag bool,
-) (bool, *serviceerror.ServiceError) {
+) (bool, *tidcommon.ServiceError) {
 	return true, nil
 }
 
 func (s *InlineStubEntityTypeService) ValidateEntityUniqueness(
 	ctx context.Context, cat TypeCategory, name string, schema json.RawMessage,
 	eval func(map[string]interface{}) (bool, error),
-) (bool, *serviceerror.ServiceError) {
+) (bool, *tidcommon.ServiceError) {
 	return true, nil
 }
 
@@ -150,9 +150,9 @@ func TestHandleEntityTypePostRequest_ConflictError(t *testing.T) {
 	stub := &InlineStubEntityTypeService{
 		OnCreateEntityType: func(
 			ctx context.Context, cat TypeCategory, req CreateEntityTypeRequestWithID,
-		) (*EntityType, *serviceerror.ServiceError) {
-			return nil, &serviceerror.ServiceError{
-				Type: serviceerror.ClientErrorType,
+		) (*EntityType, *tidcommon.ServiceError) {
+			return nil, &tidcommon.ServiceError{
+				Type: tidcommon.ClientErrorType,
 				Code: "ALREADY_EXISTS",
 			}
 		},
@@ -170,8 +170,8 @@ func TestHandleEntityTypePostRequest_ServiceError(t *testing.T) {
 	stub := &InlineStubEntityTypeService{
 		OnCreateEntityType: func(
 			ctx context.Context, cat TypeCategory, req CreateEntityTypeRequestWithID,
-		) (*EntityType, *serviceerror.ServiceError) {
-			return nil, &serviceerror.ServiceError{Type: serviceerror.ServerErrorType}
+		) (*EntityType, *tidcommon.ServiceError) {
+			return nil, &tidcommon.ServiceError{Type: tidcommon.ServerErrorType}
 		},
 	}
 	handler := newEntityTypeHandler(stub, TypeCategoryUser)
@@ -212,9 +212,9 @@ func TestHandleEntityTypePutRequest_NotFound(t *testing.T) {
 	stub := &InlineStubEntityTypeService{
 		OnUpdateEntityType: func(
 			ctx context.Context, cat TypeCategory, id string, req UpdateEntityTypeRequest,
-		) (*EntityType, *serviceerror.ServiceError) {
-			return nil, &serviceerror.ServiceError{
-				Type: serviceerror.ClientErrorType,
+		) (*EntityType, *tidcommon.ServiceError) {
+			return nil, &tidcommon.ServiceError{
+				Type: tidcommon.ClientErrorType,
 				Code: "NOT_FOUND",
 			}
 		},
@@ -233,8 +233,8 @@ func TestHandleEntityTypePutRequest_ServiceError(t *testing.T) {
 	stub := &InlineStubEntityTypeService{
 		OnUpdateEntityType: func(
 			ctx context.Context, cat TypeCategory, id string, req UpdateEntityTypeRequest,
-		) (*EntityType, *serviceerror.ServiceError) {
-			return nil, &serviceerror.ServiceError{Type: serviceerror.ServerErrorType}
+		) (*EntityType, *tidcommon.ServiceError) {
+			return nil, &tidcommon.ServiceError{Type: tidcommon.ServerErrorType}
 		},
 	}
 	handler := newEntityTypeHandler(stub, TypeCategoryUser)
@@ -275,9 +275,9 @@ func TestHandleEntityTypeGetRequest_NotFound(t *testing.T) {
 	stub := &InlineStubEntityTypeService{
 		OnGetEntityType: func(
 			ctx context.Context, cat TypeCategory, id string, inc bool,
-		) (*EntityType, *serviceerror.ServiceError) {
-			return nil, &serviceerror.ServiceError{
-				Type: serviceerror.ClientErrorType,
+		) (*EntityType, *tidcommon.ServiceError) {
+			return nil, &tidcommon.ServiceError{
+				Type: tidcommon.ClientErrorType,
 				Code: "NOT_FOUND",
 			}
 		},
@@ -295,8 +295,8 @@ func TestHandleEntityTypeGetRequest_ServiceError(t *testing.T) {
 	stub := &InlineStubEntityTypeService{
 		OnGetEntityType: func(
 			ctx context.Context, cat TypeCategory, id string, inc bool,
-		) (*EntityType, *serviceerror.ServiceError) {
-			return nil, &serviceerror.ServiceError{Type: serviceerror.ServerErrorType}
+		) (*EntityType, *tidcommon.ServiceError) {
+			return nil, &tidcommon.ServiceError{Type: tidcommon.ServerErrorType}
 		},
 	}
 	handler := newEntityTypeHandler(stub, TypeCategoryUser)
@@ -334,9 +334,9 @@ func TestHandleEntityTypeDeleteRequest_MissingID(t *testing.T) {
 
 func TestHandleEntityTypeDeleteRequest_NotFound(t *testing.T) {
 	stub := &InlineStubEntityTypeService{
-		OnDeleteEntityType: func(ctx context.Context, cat TypeCategory, id string) *serviceerror.ServiceError {
-			return &serviceerror.ServiceError{
-				Type: serviceerror.ClientErrorType,
+		OnDeleteEntityType: func(ctx context.Context, cat TypeCategory, id string) *tidcommon.ServiceError {
+			return &tidcommon.ServiceError{
+				Type: tidcommon.ClientErrorType,
 				Code: "NOT_FOUND",
 			}
 		},
@@ -352,8 +352,8 @@ func TestHandleEntityTypeDeleteRequest_NotFound(t *testing.T) {
 
 func TestHandleEntityTypeDeleteRequest_ServiceError(t *testing.T) {
 	stub := &InlineStubEntityTypeService{
-		OnDeleteEntityType: func(ctx context.Context, cat TypeCategory, id string) *serviceerror.ServiceError {
-			return &serviceerror.ServiceError{Type: serviceerror.ServerErrorType}
+		OnDeleteEntityType: func(ctx context.Context, cat TypeCategory, id string) *tidcommon.ServiceError {
+			return &tidcommon.ServiceError{Type: tidcommon.ServerErrorType}
 		},
 	}
 	handler := newEntityTypeHandler(stub, TypeCategoryUser)

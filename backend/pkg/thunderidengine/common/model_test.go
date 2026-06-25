@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package core
+package common
 
 import (
 	"testing"
@@ -47,7 +47,6 @@ func TestI18nMessage_IsEmpty(t *testing.T) {
 	})
 
 	t.Run("Message with value only (invalid state technically but testing IsEmpty logic)", func(t *testing.T) {
-		// IsEmpty checks Key == ""
 		msg := I18nMessage{DefaultValue: "val"}
 		assert.True(t, msg.IsEmpty())
 	})

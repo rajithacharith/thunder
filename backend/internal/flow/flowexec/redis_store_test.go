@@ -26,6 +26,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -73,7 +75,7 @@ func (suite *RedisFlowStoreTestSuite) buildEngineContext() EngineContext {
 	return EngineContext{
 		ExecutionID: redisTestFlowID,
 		AppID:       "test-app-id",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: false,
 			Attributes:      map[string]interface{}{},

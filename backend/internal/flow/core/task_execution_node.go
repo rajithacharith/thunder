@@ -21,8 +21,9 @@ package core
 import (
 	"encoding/json"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/thunder-id/thunderid/internal/flow/common"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
@@ -84,13 +85,13 @@ func newTaskExecutionNode(id string, properties map[string]interface{}, isStartN
 }
 
 // Execute executes the node's executor.
-func (n *taskExecutionNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceerror.ServiceError) {
+func (n *taskExecutionNode) Execute(ctx *NodeContext) (*common.NodeResponse, *tidcommon.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug(ctx.Context, "Executing task execution node")
 
 	if n.executor == nil {
 		logger.Error(ctx.Context, "No executor configured for the node")
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	// Set node properties in context
@@ -159,7 +160,7 @@ func (n *taskExecutionNode) Execute(ctx *NodeContext) (*common.NodeResponse, *se
 		// Executor returned INCOMPLETE+VIEW with no inputs — broken executor implementation.
 		// There is nothing for the client to act on; surface as a server error.
 		logger.Error(ctx.Context, "Executor returned INCOMPLETE with VIEW type but no inputs")
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	return nodeResp, nil
@@ -187,15 +188,15 @@ func (n *taskExecutionNode) enrichRuntimeData(ctx *NodeContext) {
 
 // triggerExecutor triggers the executor configured for the node.
 func (n *taskExecutionNode) triggerExecutor(ctx *NodeContext, logger *log.Logger) (
-	*common.ExecutorResponse, *serviceerror.ServiceError) {
+	*common.ExecutorResponse, *tidcommon.ServiceError) {
 	execResp, err := n.executor.Execute(ctx)
 	if err != nil {
 		logger.Error(ctx.Context, "Error executing node executor", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	if execResp == nil {
 		logger.Error(ctx.Context, "Executor returned a nil response")
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	return execResp, nil

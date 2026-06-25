@@ -22,17 +22,17 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 const loggerComponentName = "ServerConfigService"
 
 // ServerConfigService defines the interface for the server config service.
 type ServerConfigService interface {
-	ListConfigNames(ctx context.Context) ([]ConfigName, *serviceerror.ServiceError)
-	GetConfig(ctx context.Context, name ConfigName) (ServerConfigLayers, *serviceerror.ServiceError)
-	SetConfig(ctx context.Context, name ConfigName, value json.RawMessage) *serviceerror.ServiceError
+	ListConfigNames(ctx context.Context) ([]ConfigName, *common.ServiceError)
+	GetConfig(ctx context.Context, name ConfigName) (ServerConfigLayers, *common.ServiceError)
+	SetConfig(ctx context.Context, name ConfigName, value json.RawMessage) *common.ServiceError
 }
 
 // serverConfigService is the default implementation of ServerConfigService.
@@ -55,7 +55,7 @@ func newServerConfigService(store serverConfigStoreInterface,
 }
 
 // ListConfigNames returns the supported configuration section names.
-func (s *serverConfigService) ListConfigNames(_ context.Context) ([]ConfigName, *serviceerror.ServiceError) {
+func (s *serverConfigService) ListConfigNames(_ context.Context) ([]ConfigName, *common.ServiceError) {
 	names := make([]ConfigName, len(supportedConfigNames))
 	copy(names, supportedConfigNames)
 	return names, nil
@@ -64,7 +64,7 @@ func (s *serverConfigService) ListConfigNames(_ context.Context) ([]ConfigName, 
 // GetConfig resolves the readOnly (declarative), writable (db), and merged (effective) layers of a
 // section. The stored layers are decoded once and merged into the effective value.
 func (s *serverConfigService) GetConfig(ctx context.Context,
-	name ConfigName) (ServerConfigLayers, *serviceerror.ServiceError) {
+	name ConfigName) (ServerConfigLayers, *common.ServiceError) {
 	handler, svcErr := s.handlerFor(ctx, name)
 	if svcErr != nil {
 		return ServerConfigLayers{}, svcErr
@@ -73,7 +73,7 @@ func (s *serverConfigService) GetConfig(ctx context.Context,
 	rawLayers, err := s.store.GetServerConfig(ctx, name)
 	if err != nil {
 		s.logger.Error(ctx, "Failed to get server config from store", log.Error(err))
-		return ServerConfigLayers{}, &serviceerror.InternalServerError
+		return ServerConfigLayers{}, &common.InternalServerError
 	}
 
 	readOnly, writable, svcErr := s.decodeLayers(ctx, name, handler, rawLayers)
@@ -90,7 +90,7 @@ func (s *serverConfigService) GetConfig(ctx context.Context,
 // SetConfig decodes and validates an incoming value against the current layers and persists the raw
 // bytes to the writable layer. A bad incoming value is a client error; the stored bytes are kept as-is.
 func (s *serverConfigService) SetConfig(ctx context.Context,
-	name ConfigName, value json.RawMessage) *serviceerror.ServiceError {
+	name ConfigName, value json.RawMessage) *common.ServiceError {
 	handler, svcErr := s.handlerFor(ctx, name)
 	if svcErr != nil {
 		return svcErr
@@ -105,7 +105,7 @@ func (s *serverConfigService) SetConfig(ctx context.Context,
 	rawLayers, err := s.store.GetServerConfig(ctx, name)
 	if err != nil {
 		s.logger.Error(ctx, "Failed to get current server config", log.Error(err))
-		return &serviceerror.InternalServerError
+		return &common.InternalServerError
 	}
 	readOnly, writable, svcErr := s.decodeLayers(ctx, name, handler, rawLayers)
 	if svcErr != nil {
@@ -119,7 +119,7 @@ func (s *serverConfigService) SetConfig(ctx context.Context,
 
 	if err := s.store.UpsertServerConfig(ctx, ServerConfig{Name: name, Value: value}); err != nil {
 		s.logger.Error(ctx, "Failed to upsert server config", log.Error(err))
-		return &serviceerror.InternalServerError
+		return &common.InternalServerError
 	}
 	return nil
 }
@@ -127,18 +127,18 @@ func (s *serverConfigService) SetConfig(ctx context.Context,
 // decodeLayers decodes the stored readOnly and writable layers into typed values. A failure here is an
 // internal invariant violation — stored values were validated at write or load time — not a client error.
 func (s *serverConfigService) decodeLayers(ctx context.Context, name ConfigName,
-	handler ServerConfigHandlerInterface, rawLayers storeLayers) (any, any, *serviceerror.ServiceError) {
+	handler ServerConfigHandlerInterface, rawLayers storeLayers) (any, any, *common.ServiceError) {
 	readOnly, err := handler.Decode(rawLayers.ReadOnly)
 	if err != nil {
 		s.logger.Error(ctx, "Failed to decode read-only server config layer",
 			log.String("name", string(name)), log.Error(err))
-		return nil, nil, &serviceerror.InternalServerError
+		return nil, nil, &common.InternalServerError
 	}
 	writable, err := handler.Decode(rawLayers.Writable)
 	if err != nil {
 		s.logger.Error(ctx, "Failed to decode writable server config layer",
 			log.String("name", string(name)), log.Error(err))
-		return nil, nil, &serviceerror.InternalServerError
+		return nil, nil, &common.InternalServerError
 	}
 	return readOnly, writable, nil
 }
@@ -146,14 +146,14 @@ func (s *serverConfigService) decodeLayers(ctx context.Context, name ConfigName,
 // handlerFor returns the registered handler for a section. An unsupported name is a client error; a
 // supported name with no registered handler is a wiring error.
 func (s *serverConfigService) handlerFor(ctx context.Context,
-	name ConfigName) (ServerConfigHandlerInterface, *serviceerror.ServiceError) {
+	name ConfigName) (ServerConfigHandlerInterface, *common.ServiceError) {
 	if !name.IsValid() {
 		return nil, &ErrorUnsupportedConfigName
 	}
 	handler, ok := s.handlers[name]
 	if !ok || handler == nil {
 		s.logger.Error(ctx, "No handler registered for supported config name", log.String("name", string(name)))
-		return nil, &serviceerror.InternalServerError
+		return nil, &common.InternalServerError
 	}
 	return handler, nil
 }

@@ -23,6 +23,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	yaml "gopkg.in/yaml.v3"
@@ -51,7 +53,7 @@ func (suite *CORSMiddlewareTestSuite) initRuntime(allowedOriginsYAML string) {
 	if allowedOriginsYAML != "" {
 		suite.Require().NoError(yaml.Unmarshal([]byte(allowedOriginsYAML), &entries))
 	}
-	cfg := &config.Config{CORS: config.CORSConfig{AllowedOrigins: entries}}
+	cfg := &config.Config{CORS: engineconfig.CORSConfig{AllowedOrigins: entries}}
 	suite.Require().NoError(cors.InitializeMatcher(cfg.CORS.AllowedOrigins))
 	suite.Require().NoError(config.InitializeServerRuntime("/tmp", cfg))
 }

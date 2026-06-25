@@ -30,12 +30,13 @@ import (
 	"testing"
 	"time"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/openid4vci/credential"
 	"github.com/thunder-id/thunderid/internal/system/cryptolib"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
 	"github.com/thunder-id/thunderid/internal/user"
 	"github.com/thunder-id/thunderid/tests/mocks/crypto/cryptomock"
@@ -93,7 +94,7 @@ func (s *CredentialTestSuite) TestAuthorizedCredentialByConfigID() {
 	s.Run("Unknown", func() {
 		creds := newCredentialReaderMock(s.T())
 		creds.EXPECT().GetCredentialConfigurationByHandle(ctx, "missing").
-			Return(nil, &serviceerror.ServiceError{Code: "x"})
+			Return(nil, &tidcommon.ServiceError{Code: "x"})
 		svc := &service{cfg: serviceConfig{}, creds: creds}
 		_, err := svc.authorizedCredential(ctx, "missing", nil)
 		s.ErrorIs(err, ErrUnsupportedCredential)
@@ -146,7 +147,7 @@ func (s *CredentialTestSuite) TestAuthorizedCredentialByScope() {
 
 	s.Run("ListError", func() {
 		creds := newCredentialReaderMock(s.T())
-		creds.EXPECT().ListCredentialConfigurations(ctx).Return(nil, &serviceerror.ServiceError{Code: "x"})
+		creds.EXPECT().ListCredentialConfigurations(ctx).Return(nil, &tidcommon.ServiceError{Code: "x"})
 		svc := &service{cfg: serviceConfig{}, creds: creds}
 		_, err := svc.authorizedCredential(ctx, "", []string{"a"})
 		s.ErrorIs(err, ErrIssuance)
@@ -164,7 +165,7 @@ func (s *CredentialTestSuite) TestIssueCredentialErrors() {
 
 	s.Run("VerifyFails", func() {
 		jwtSvc := jwtmock.NewJWTServiceInterfaceMock(s.T())
-		jwtSvc.EXPECT().VerifyJWT(ctx, "tok", "", "").Return(&serviceerror.ServiceError{Code: "x"})
+		jwtSvc.EXPECT().VerifyJWT(ctx, "tok", "", "").Return(&tidcommon.ServiceError{Code: "x"})
 		svc := &service{cfg: serviceConfig{BatchSize: 5}, jwtService: jwtSvc}
 		_, err := svc.IssueCredential(ctx, "tok", nil)
 		s.ErrorIs(err, ErrInvalidToken)
@@ -235,7 +236,7 @@ func (s *CredentialTestSuite) TestIssueCredentialUnauthorizedCredential() {
 	jwtSvc.EXPECT().VerifyJWT(ctx, token, "", "").Return(nil)
 	creds := newCredentialReaderMock(s.T())
 	creds.EXPECT().GetCredentialConfigurationByHandle(ctx, "missing").
-		Return(nil, &serviceerror.ServiceError{Code: "x"})
+		Return(nil, &tidcommon.ServiceError{Code: "x"})
 	svc := &service{cfg: serviceConfig{BatchSize: 5}, jwtService: jwtSvc, creds: creds}
 	body, _ := json.Marshal(CredentialRequest{CredentialConfigurationID: "missing"})
 	_, err := svc.IssueCredential(ctx, token, body)
@@ -280,7 +281,7 @@ func (s *CredentialTestSuite) TestIssueCredentialResolveClaimsError() {
 	creds.EXPECT().GetCredentialConfigurationByHandle(ctx, "eudi-pid").
 		Return(&credential.CredentialConfigurationDTO{Handle: "eudi-pid", VCT: "v"}, nil)
 	userSvc := usermock.NewUserServiceInterfaceMock(s.T())
-	userSvc.EXPECT().GetUser(ctx, "u1", false).Return(nil, &serviceerror.ServiceError{Code: "x"})
+	userSvc.EXPECT().GetUser(ctx, "u1", false).Return(nil, &tidcommon.ServiceError{Code: "x"})
 	svc := &service{
 		cfg:         serviceConfig{CredentialIssuer: testIssuer, ProofMaxAge: time.Minute, BatchSize: 5},
 		store:       store,

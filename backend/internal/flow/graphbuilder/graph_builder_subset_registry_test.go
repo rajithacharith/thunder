@@ -16,11 +16,14 @@
  * under the License.
  */
 
-package flowmgt
+package graphbuilder
 
 import (
 	"context"
 	"testing"
+
+	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -48,7 +51,7 @@ func TestGraphBuilderSubsetRegistrySuite(t *testing.T) {
 
 func (s *GraphBuilderSubsetRegistryTestSuite) SetupSuite() {
 	_ = config.InitializeServerRuntime("test", &config.Config{
-		Server: config.ServerConfig{Identifier: "test-deployment"},
+		Server: engineconfig.ServerConfig{Identifier: "test-deployment"},
 	})
 }
 
@@ -67,7 +70,7 @@ func (s *GraphBuilderSubsetRegistryTestSuite) subsetExecutorRegistry() executor.
 		OIDCSvc:        oidcmock.NewOIDCAuthnServiceInterfaceMock(s.T()),
 		GithubSvc:      githubmock.NewGithubOAuthAuthnServiceInterfaceMock(s.T()),
 		GoogleSvc:      googlemock.NewGoogleOIDCAuthnServiceInterfaceMock(s.T()),
-	}, config.FlowConfig{
+	}, engineconfig.FlowConfig{
 		Executors: []string{executor.ExecutorNameInviteExecutor},
 	})
 	require.NoError(s.T(), err)
@@ -85,17 +88,16 @@ func (s *GraphBuilderSubsetRegistryTestSuite) TestBuildGraph_SubsetRegistryRejec
 		logger:           log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowGraphBuilder")),
 	}
 
-	flow := &CompleteFlowDefinition{
-		ID:            "flow-1",
-		Handle:        "test-handle",
-		Name:          "Test Flow",
-		FlowType:      common.FlowTypeAuthentication,
-		ActiveVersion: 1,
-		Nodes: []NodeDefinition{
+	flow := &providers.CompleteFlowDefinition{
+		ID:       "flow-1",
+		Handle:   "test-handle",
+		Name:     "Test Flow",
+		FlowType: providers.FlowTypeAuthentication,
+		Nodes: []providers.NodeDefinition{
 			{
 				ID:       "task",
 				Type:     "TASK_EXECUTION",
-				Executor: &ExecutorDefinition{Name: executor.ExecutorNameCredentialsAuth},
+				Executor: &providers.ExecutorDefinition{Name: executor.ExecutorNameCredentialsAuth},
 			},
 		},
 	}
@@ -103,7 +105,7 @@ func (s *GraphBuilderSubsetRegistryTestSuite) TestBuildGraph_SubsetRegistryRejec
 	mockGraph := coremock.NewGraphInterfaceMock(s.T())
 	mockTaskNode := coremock.NewExecutorBackedNodeInterfaceMock(s.T())
 
-	mockFlowFactory.EXPECT().CreateGraph("flow-1", common.FlowTypeAuthentication, 1).Return(mockGraph)
+	mockFlowFactory.EXPECT().CreateGraph("flow-1", providers.FlowTypeAuthentication, 0).Return(mockGraph)
 	mockFlowFactory.EXPECT().CreateNode(
 		"task", "TASK_EXECUTION", map[string]interface{}(nil), false, true).Return(mockTaskNode, nil)
 	mockTaskNode.EXPECT().SetInputs([]common.Input{})

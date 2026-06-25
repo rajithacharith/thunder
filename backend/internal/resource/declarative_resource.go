@@ -25,9 +25,11 @@ import (
 	"strings"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 
 	"gopkg.in/yaml.v3"
@@ -68,7 +70,7 @@ func (e *resourceServerExporter) GetParameterizerType() string {
 
 // GetAllResourceIDs retrieves all resource server IDs.
 // In composite mode, this excludes declarative (YAML-based) resource servers.
-func (e *resourceServerExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
+func (e *resourceServerExporter) GetAllResourceIDs(ctx context.Context) ([]string, *tidcommon.ServiceError) {
 	ids := make([]string, 0)
 	offset := 0
 	for {
@@ -94,7 +96,7 @@ func (e *resourceServerExporter) GetAllResourceIDs(ctx context.Context) ([]strin
 
 // GetResourceByID retrieves a resource server with all its nested resources and actions by its ID.
 func (e *resourceServerExporter) GetResourceByID(ctx context.Context, id string) (
-	interface{}, string, *serviceerror.ServiceError,
+	interface{}, string, *tidcommon.ServiceError,
 ) {
 	// Get the resource server
 	server, err := e.service.GetResourceServer(ctx, id)
@@ -102,15 +104,15 @@ func (e *resourceServerExporter) GetResourceByID(ctx context.Context, id string)
 		return nil, "", err
 	}
 
-	// Build ResourceServer with nested structure
-	rs := &ResourceServer{
+	// Build providers.ResourceServer with nested structure
+	rs := &providers.ResourceServer{
 		ID:          server.ID,
 		Name:        server.Name,
 		Description: server.Description,
 		Identifier:  server.Identifier,
 		OUID:        server.OUID,
 		Delimiter:   server.Delimiter,
-		Resources:   []Resource{},
+		Resources:   []providers.Resource{},
 	}
 
 	allResources, err := e.service.GetAllResourceList(ctx, id)
@@ -126,11 +128,11 @@ func (e *resourceServerExporter) GetResourceByID(ctx context.Context, id string)
 
 	// Second pass: build declarative resources with resolved parent handles and actions
 	for _, res := range allResources {
-		resource := Resource{
+		resource := providers.Resource{
 			Name:        res.Name,
 			Handle:      res.Handle,
 			Description: res.Description,
-			Actions:     []Action{},
+			Actions:     []providers.Action{},
 		}
 
 		if res.Parent != nil && *res.Parent != "" {
@@ -150,7 +152,7 @@ func (e *resourceServerExporter) GetResourceByID(ctx context.Context, id string)
 				break
 			}
 			for _, action := range actions.Actions {
-				resource.Actions = append(resource.Actions, Action{
+				resource.Actions = append(resource.Actions, providers.Action{
 					Name:        action.Name,
 					Handle:      action.Handle,
 					Description: action.Description,
@@ -172,7 +174,7 @@ func (e *resourceServerExporter) GetResourceByID(ctx context.Context, id string)
 func (e *resourceServerExporter) ValidateResource(ctx context.Context,
 	resource interface{}, id string, logger *log.Logger,
 ) (string, *declarativeresource.ExportError) {
-	server, ok := resource.(*ResourceServer)
+	server, ok := resource.(*providers.ResourceServer)
 	if !ok {
 		return "", declarativeresource.CreateTypeError(resourceTypeResourceServer, id)
 	}
@@ -230,7 +232,7 @@ func loadDeclarativeResources(resourceStore resourceStoreInterface, resourceServ
 			return validateResourceServerWrapper(data, fileStore, dbStore, resourceService)
 		},
 		IDExtractor: func(data interface{}) string {
-			return data.(*ResourceServer).ID
+			return data.(*providers.ResourceServer).ID
 		},
 	}
 
@@ -245,7 +247,7 @@ func loadDeclarativeResources(resourceStore resourceStoreInterface, resourceServ
 // parseAndValidateResourceServerWrapper combines parsing, processing, and validation for resource servers.
 func parseAndValidateResourceServerWrapper(resourceService ResourceServiceInterface) func([]byte) (interface{}, error) {
 	return func(data []byte) (interface{}, error) {
-		// Parse YAML into ResourceServer struct
+		// Parse YAML into providers.ResourceServer struct
 		rs, err := parseToResourceServer(data)
 		if err != nil {
 			return nil, err
@@ -260,8 +262,8 @@ func parseAndValidateResourceServerWrapper(resourceService ResourceServiceInterf
 	}
 }
 
-func parseToResourceServer(data []byte) (*ResourceServer, error) {
-	var rs ResourceServer
+func parseToResourceServer(data []byte) (*providers.ResourceServer, error) {
+	var rs providers.ResourceServer
 	err := yaml.Unmarshal(data, &rs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse resource server YAML: %w", err)
@@ -277,14 +279,14 @@ func parseToResourceServer(data []byte) (*ResourceServer, error) {
 		return nil, fmt.Errorf("invalid type %q for resource server '%s'", rs.Type, rs.Name)
 	}
 	if rs.Type == "" {
-		rs.Type = ResourceServerTypeCustom
+		rs.Type = providers.ResourceServerTypeCustom
 	}
 
 	return &rs, nil
 }
 
 // ProcessResourceServer processes the resource server and computes permissions in-place.
-func ProcessResourceServer(rs *ResourceServer) error {
+func ProcessResourceServer(rs *providers.ResourceServer) error {
 	delimiter := rs.Delimiter
 	if delimiter == "" {
 		delimiter = ":" // Default delimiter
@@ -292,7 +294,7 @@ func ProcessResourceServer(rs *ResourceServer) error {
 	rs.Delimiter = delimiter
 
 	// Build a map of handle to resource for parent resolution and detect duplicates
-	resourceHandleMap := make(map[string]*Resource)
+	resourceHandleMap := make(map[string]*providers.Resource)
 	for i := range rs.Resources {
 		handle := rs.Resources[i].Handle
 		if existing, ok := resourceHandleMap[handle]; ok {
@@ -320,8 +322,8 @@ func ProcessResourceServer(rs *ResourceServer) error {
 
 // processResource processes a resource and its actions, computing permissions in-place.
 func processResource(
-	res *Resource,
-	resourceHandleMap map[string]*Resource,
+	res *providers.Resource,
+	resourceHandleMap map[string]*providers.Resource,
 	rsHandle string,
 	delimiter string,
 ) error {
@@ -341,8 +343,8 @@ func processResource(
 
 // buildPermissionString constructs the permission string by traversing parent chain.
 func buildPermissionString(
-	res *Resource,
-	resourceHandleMap map[string]*Resource,
+	res *providers.Resource,
+	resourceHandleMap map[string]*providers.Resource,
 	rsHandle string,
 	delimiter string,
 ) (string, error) {
@@ -397,7 +399,7 @@ func validateResourceServerWrapper(
 	dbStore resourceStoreInterface,
 	service ResourceServiceInterface,
 ) error {
-	rs, ok := data.(*ResourceServer)
+	rs, ok := data.(*providers.ResourceServer)
 	if !ok {
 		return fmt.Errorf("invalid type: expected *ResourceServer")
 	}

@@ -19,19 +19,18 @@
 package client
 
 import (
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	"github.com/thunder-id/thunderid/internal/system/i18n/core"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 // ErrorInvalidProvider is the error returned when an invalid provider is specified.
-var ErrorInvalidProvider = serviceerror.ServiceError{
-	Type: serviceerror.ClientErrorType,
+var ErrorInvalidProvider = tidcommon.ServiceError{
+	Type: tidcommon.ClientErrorType,
 	Code: "MNC-1001",
-	Error: core.I18nMessage{
+	Error: tidcommon.I18nMessage{
 		Key:          "error.notificationclient.unsupported_notification_provider",
 		DefaultValue: "Unsupported notification provider",
 	},
-	ErrorDescription: core.I18nMessage{
+	ErrorDescription: tidcommon.I18nMessage{
 		Key:          "error.notificationclient.unsupported_notification_provider.description",
 		DefaultValue: "The requested notification provider is not supported.",
 	},

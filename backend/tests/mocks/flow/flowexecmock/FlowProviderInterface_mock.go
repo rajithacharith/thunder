@@ -8,10 +8,8 @@ import (
 	"context"
 
 	mock "github.com/stretchr/testify/mock"
-	"github.com/thunder-id/thunderid/internal/flow/common"
-	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/flow/mgt"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // NewFlowProviderInterfaceMock creates a new instance of FlowProviderInterfaceMock. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -41,31 +39,101 @@ func (_m *FlowProviderInterfaceMock) EXPECT() *FlowProviderInterfaceMock_Expecte
 	return &FlowProviderInterfaceMock_Expecter{mock: &_m.Mock}
 }
 
+// GetFlow provides a mock function for the type FlowProviderInterfaceMock
+func (_mock *FlowProviderInterfaceMock) GetFlow(ctx context.Context, flowID string) (*providers.CompleteFlowDefinition, *common.ServiceError) {
+	ret := _mock.Called(ctx, flowID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetFlow")
+	}
+
+	var r0 *providers.CompleteFlowDefinition
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*providers.CompleteFlowDefinition, *common.ServiceError)); ok {
+		return returnFunc(ctx, flowID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *providers.CompleteFlowDefinition); ok {
+		r0 = returnFunc(ctx, flowID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*providers.CompleteFlowDefinition)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *common.ServiceError); ok {
+		r1 = returnFunc(ctx, flowID)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*common.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// FlowProviderInterfaceMock_GetFlow_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetFlow'
+type FlowProviderInterfaceMock_GetFlow_Call struct {
+	*mock.Call
+}
+
+// GetFlow is a helper method to define mock.On call
+//   - ctx context.Context
+//   - flowID string
+func (_e *FlowProviderInterfaceMock_Expecter) GetFlow(ctx interface{}, flowID interface{}) *FlowProviderInterfaceMock_GetFlow_Call {
+	return &FlowProviderInterfaceMock_GetFlow_Call{Call: _e.mock.On("GetFlow", ctx, flowID)}
+}
+
+func (_c *FlowProviderInterfaceMock_GetFlow_Call) Run(run func(ctx context.Context, flowID string)) *FlowProviderInterfaceMock_GetFlow_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *FlowProviderInterfaceMock_GetFlow_Call) Return(completeFlowDefinition *providers.CompleteFlowDefinition, serviceError *common.ServiceError) *FlowProviderInterfaceMock_GetFlow_Call {
+	_c.Call.Return(completeFlowDefinition, serviceError)
+	return _c
+}
+
+func (_c *FlowProviderInterfaceMock_GetFlow_Call) RunAndReturn(run func(ctx context.Context, flowID string) (*providers.CompleteFlowDefinition, *common.ServiceError)) *FlowProviderInterfaceMock_GetFlow_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetFlowByHandle provides a mock function for the type FlowProviderInterfaceMock
-func (_mock *FlowProviderInterfaceMock) GetFlowByHandle(ctx context.Context, handle string, flowType common.FlowType) (*flowmgt.CompleteFlowDefinition, *serviceerror.ServiceError) {
+func (_mock *FlowProviderInterfaceMock) GetFlowByHandle(ctx context.Context, handle string, flowType providers.FlowType) (*providers.CompleteFlowDefinition, *common.ServiceError) {
 	ret := _mock.Called(ctx, handle, flowType)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetFlowByHandle")
 	}
 
-	var r0 *flowmgt.CompleteFlowDefinition
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, common.FlowType) (*flowmgt.CompleteFlowDefinition, *serviceerror.ServiceError)); ok {
+	var r0 *providers.CompleteFlowDefinition
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, providers.FlowType) (*providers.CompleteFlowDefinition, *common.ServiceError)); ok {
 		return returnFunc(ctx, handle, flowType)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, common.FlowType) *flowmgt.CompleteFlowDefinition); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, providers.FlowType) *providers.CompleteFlowDefinition); ok {
 		r0 = returnFunc(ctx, handle, flowType)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*flowmgt.CompleteFlowDefinition)
+			r0 = ret.Get(0).(*providers.CompleteFlowDefinition)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, common.FlowType) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, providers.FlowType) *common.ServiceError); ok {
 		r1 = returnFunc(ctx, handle, flowType)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -79,12 +147,12 @@ type FlowProviderInterfaceMock_GetFlowByHandle_Call struct {
 // GetFlowByHandle is a helper method to define mock.On call
 //   - ctx context.Context
 //   - handle string
-//   - flowType common.FlowType
+//   - flowType providers.FlowType
 func (_e *FlowProviderInterfaceMock_Expecter) GetFlowByHandle(ctx interface{}, handle interface{}, flowType interface{}) *FlowProviderInterfaceMock_GetFlowByHandle_Call {
 	return &FlowProviderInterfaceMock_GetFlowByHandle_Call{Call: _e.mock.On("GetFlowByHandle", ctx, handle, flowType)}
 }
 
-func (_c *FlowProviderInterfaceMock_GetFlowByHandle_Call) Run(run func(ctx context.Context, handle string, flowType common.FlowType)) *FlowProviderInterfaceMock_GetFlowByHandle_Call {
+func (_c *FlowProviderInterfaceMock_GetFlowByHandle_Call) Run(run func(ctx context.Context, handle string, flowType providers.FlowType)) *FlowProviderInterfaceMock_GetFlowByHandle_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -94,9 +162,9 @@ func (_c *FlowProviderInterfaceMock_GetFlowByHandle_Call) Run(run func(ctx conte
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 common.FlowType
+		var arg2 providers.FlowType
 		if args[2] != nil {
-			arg2 = args[2].(common.FlowType)
+			arg2 = args[2].(providers.FlowType)
 		}
 		run(
 			arg0,
@@ -107,82 +175,12 @@ func (_c *FlowProviderInterfaceMock_GetFlowByHandle_Call) Run(run func(ctx conte
 	return _c
 }
 
-func (_c *FlowProviderInterfaceMock_GetFlowByHandle_Call) Return(completeFlowDefinition *flowmgt.CompleteFlowDefinition, serviceError *serviceerror.ServiceError) *FlowProviderInterfaceMock_GetFlowByHandle_Call {
+func (_c *FlowProviderInterfaceMock_GetFlowByHandle_Call) Return(completeFlowDefinition *providers.CompleteFlowDefinition, serviceError *common.ServiceError) *FlowProviderInterfaceMock_GetFlowByHandle_Call {
 	_c.Call.Return(completeFlowDefinition, serviceError)
 	return _c
 }
 
-func (_c *FlowProviderInterfaceMock_GetFlowByHandle_Call) RunAndReturn(run func(ctx context.Context, handle string, flowType common.FlowType) (*flowmgt.CompleteFlowDefinition, *serviceerror.ServiceError)) *FlowProviderInterfaceMock_GetFlowByHandle_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetGraph provides a mock function for the type FlowProviderInterfaceMock
-func (_mock *FlowProviderInterfaceMock) GetGraph(ctx context.Context, flowID string) (core.GraphInterface, *serviceerror.ServiceError) {
-	ret := _mock.Called(ctx, flowID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetGraph")
-	}
-
-	var r0 core.GraphInterface
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (core.GraphInterface, *serviceerror.ServiceError)); ok {
-		return returnFunc(ctx, flowID)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) core.GraphInterface); ok {
-		r0 = returnFunc(ctx, flowID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(core.GraphInterface)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(ctx, flowID)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
-		}
-	}
-	return r0, r1
-}
-
-// FlowProviderInterfaceMock_GetGraph_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetGraph'
-type FlowProviderInterfaceMock_GetGraph_Call struct {
-	*mock.Call
-}
-
-// GetGraph is a helper method to define mock.On call
-//   - ctx context.Context
-//   - flowID string
-func (_e *FlowProviderInterfaceMock_Expecter) GetGraph(ctx interface{}, flowID interface{}) *FlowProviderInterfaceMock_GetGraph_Call {
-	return &FlowProviderInterfaceMock_GetGraph_Call{Call: _e.mock.On("GetGraph", ctx, flowID)}
-}
-
-func (_c *FlowProviderInterfaceMock_GetGraph_Call) Run(run func(ctx context.Context, flowID string)) *FlowProviderInterfaceMock_GetGraph_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *FlowProviderInterfaceMock_GetGraph_Call) Return(graphInterface core.GraphInterface, serviceError *serviceerror.ServiceError) *FlowProviderInterfaceMock_GetGraph_Call {
-	_c.Call.Return(graphInterface, serviceError)
-	return _c
-}
-
-func (_c *FlowProviderInterfaceMock_GetGraph_Call) RunAndReturn(run func(ctx context.Context, flowID string) (core.GraphInterface, *serviceerror.ServiceError)) *FlowProviderInterfaceMock_GetGraph_Call {
+func (_c *FlowProviderInterfaceMock_GetFlowByHandle_Call) RunAndReturn(run func(ctx context.Context, handle string, flowType providers.FlowType) (*providers.CompleteFlowDefinition, *common.ServiceError)) *FlowProviderInterfaceMock_GetFlowByHandle_Call {
 	_c.Call.Return(run)
 	return _c
 }

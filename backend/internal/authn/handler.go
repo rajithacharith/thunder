@@ -23,11 +23,12 @@ import (
 	"errors"
 	"net/http"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/thunder-id/thunderid/internal/authn/common"
-	"github.com/thunder-id/thunderid/internal/idp"
 	notifcommon "github.com/thunder-id/thunderid/internal/notification/common"
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
 
@@ -145,7 +146,7 @@ func (ah *authenticationHandler) HandleGoogleAuthStartRequest(w http.ResponseWri
 		return
 	}
 
-	authResponse, svcErr := ah.authService.StartIDPAuthentication(ctx, idp.IDPTypeGoogle, authRequest.IDPID)
+	authResponse, svcErr := ah.authService.StartIDPAuthentication(ctx, providers.IDPTypeGoogle, authRequest.IDPID)
 	if svcErr != nil {
 		ah.handleServiceError(ctx, w, svcErr)
 		return
@@ -169,8 +170,14 @@ func (ah *authenticationHandler) HandleGoogleAuthFinishRequest(w http.ResponseWr
 		return
 	}
 
-	authResponse, svcErr := ah.authService.FinishIDPAuthentication(ctx, idp.IDPTypeGoogle, authRequest.SessionToken,
-		authRequest.SkipAssertion, authRequest.Assertion, authRequest.Code)
+	authResponse, svcErr := ah.authService.FinishIDPAuthentication(
+		ctx,
+		providers.IDPTypeGoogle,
+		authRequest.SessionToken,
+		authRequest.SkipAssertion,
+		authRequest.Assertion,
+		authRequest.Code,
+	)
 	if svcErr != nil {
 		ah.handleServiceError(ctx, w, svcErr)
 		return
@@ -193,7 +200,7 @@ func (ah *authenticationHandler) HandleGithubAuthStartRequest(w http.ResponseWri
 		return
 	}
 
-	authResponse, svcErr := ah.authService.StartIDPAuthentication(ctx, idp.IDPTypeGitHub, authRequest.IDPID)
+	authResponse, svcErr := ah.authService.StartIDPAuthentication(ctx, providers.IDPTypeGitHub, authRequest.IDPID)
 	if svcErr != nil {
 		ah.handleServiceError(ctx, w, svcErr)
 		return
@@ -217,8 +224,14 @@ func (ah *authenticationHandler) HandleGithubAuthFinishRequest(w http.ResponseWr
 		return
 	}
 
-	authResponse, svcErr := ah.authService.FinishIDPAuthentication(ctx, idp.IDPTypeGitHub, authRequest.SessionToken,
-		authRequest.SkipAssertion, authRequest.Assertion, authRequest.Code)
+	authResponse, svcErr := ah.authService.FinishIDPAuthentication(
+		ctx,
+		providers.IDPTypeGitHub,
+		authRequest.SessionToken,
+		authRequest.SkipAssertion,
+		authRequest.Assertion,
+		authRequest.Code,
+	)
 	if svcErr != nil {
 		ah.handleServiceError(ctx, w, svcErr)
 		return
@@ -241,7 +254,7 @@ func (ah *authenticationHandler) HandleStandardOAuthStartRequest(w http.Response
 		return
 	}
 
-	authResponse, svcErr := ah.authService.StartIDPAuthentication(ctx, idp.IDPTypeOAuth, authRequest.IDPID)
+	authResponse, svcErr := ah.authService.StartIDPAuthentication(ctx, providers.IDPTypeOAuth, authRequest.IDPID)
 	if svcErr != nil {
 		ah.handleServiceError(ctx, w, svcErr)
 		return
@@ -265,8 +278,14 @@ func (ah *authenticationHandler) HandleStandardOAuthFinishRequest(w http.Respons
 		return
 	}
 
-	authResponse, svcErr := ah.authService.FinishIDPAuthentication(ctx, idp.IDPTypeOAuth, authRequest.SessionToken,
-		authRequest.SkipAssertion, authRequest.Assertion, authRequest.Code)
+	authResponse, svcErr := ah.authService.FinishIDPAuthentication(
+		ctx,
+		providers.IDPTypeOAuth,
+		authRequest.SessionToken,
+		authRequest.SkipAssertion,
+		authRequest.Assertion,
+		authRequest.Code,
+	)
 	if svcErr != nil {
 		ah.handleServiceError(ctx, w, svcErr)
 		return
@@ -395,9 +414,9 @@ func (ah *authenticationHandler) HandlePasskeyFinishRequest(w http.ResponseWrite
 func (
 	ah *authenticationHandler) handleServiceError(ctx context.Context,
 	w http.ResponseWriter,
-	svcErr *serviceerror.ServiceError) {
+	svcErr *tidcommon.ServiceError) {
 	status := http.StatusInternalServerError
-	if svcErr.Type == serviceerror.ClientErrorType {
+	if svcErr.Type == tidcommon.ClientErrorType {
 		switch svcErr.Code {
 		case ErrorInvalidCredentials.Code, ErrorOTPAuthenticationFailed.Code:
 			status = http.StatusUnauthorized

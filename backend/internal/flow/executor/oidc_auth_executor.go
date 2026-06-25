@@ -22,14 +22,15 @@ import (
 	"errors"
 	"slices"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	authncm "github.com/thunder-id/thunderid/internal/authn/common"
 	authnoauth "github.com/thunder-id/thunderid/internal/authn/oauth"
 	authnoidc "github.com/thunder-id/thunderid/internal/authn/oidc"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/idp"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	systemutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -50,8 +51,8 @@ type oidcAuthExecutorInterface interface {
 type oidcAuthExecutor struct {
 	oAuthExecutorInterface
 	authService   authnoidc.OIDCAuthnCoreServiceInterface
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface
-	idpType       idp.IDPType
+	authnProvider providers.AuthnProviderManagerInterface
+	idpType       providers.IDPType
 	logger        *log.Logger
 }
 
@@ -64,8 +65,8 @@ func newOIDCAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
 	idpService idp.IDPServiceInterface,
 	authService authnoidc.OIDCAuthnCoreServiceInterface,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
-	idpType idp.IDPType,
+	authnProvider providers.AuthnProviderManagerInterface,
+	idpType providers.IDPType,
 ) oidcAuthExecutorInterface {
 	if name == "" {
 		name = ExecutorNameOIDCAuth
@@ -131,7 +132,7 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 
 	code, ok := ctx.UserInputs[userInputCode]
 	if !ok || code == "" {
-		execResp.AuthUser = authnprovidermgr.AuthUser{}
+		execResp.AuthUser = providers.AuthUser{}
 		return nil
 	}
 
@@ -179,7 +180,7 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 	authUser, federatedAttributes, svcErr := o.authnProvider.AuthenticateUser(
 		ctx.Context, nil, credentials, nil, nil, execResp.AuthUser)
 	if svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
+		if svcErr.Type == tidcommon.ClientErrorType {
 			execResp.Status = common.ExecFailure
 			execResp.Error = svcErr
 			return nil
@@ -217,11 +218,11 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 	}
 
 	switch ctx.FlowType {
-	case common.FlowTypeAuthentication:
+	case providers.FlowTypeAuthentication:
 		if isAuthenticationWithoutLocalUserAllowed(ctx) {
 			execResp.RuntimeData[common.RuntimeKeyUserEligibleForProvisioning] = dataValueTrue
 		}
-	case common.FlowTypeRegistration:
+	case providers.FlowTypeRegistration:
 		if isRegistrationWithExistingUserAllowed(ctx) {
 			execResp.RuntimeData[common.RuntimeKeyAllowRegistrationWithExistingUser] = dataValueTrue
 		}

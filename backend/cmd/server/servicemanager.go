@@ -56,6 +56,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/executor"
 	"github.com/thunder-id/thunderid/internal/flow/flowexec"
 	"github.com/thunder-id/thunderid/internal/flow/flowmeta"
+	"github.com/thunder-id/thunderid/internal/flow/graphbuilder"
 	"github.com/thunder-id/thunderid/internal/flow/interceptor"
 	flowmgt "github.com/thunder-id/thunderid/internal/flow/mgt"
 	"github.com/thunder-id/thunderid/internal/group"
@@ -97,6 +98,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/sysauthz"
 	"github.com/thunder-id/thunderid/internal/system/template"
 	"github.com/thunder-id/thunderid/internal/user"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // observabilitySvc is the observability service instance. This is used for graceful shutdown.
@@ -126,7 +128,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		logger.Fatal(ctx, "Failed to initialize JOSE services", log.Error(err))
 	}
 
-	observabilitySvc = observability.Initialize()
+	observabilitySvc = observability.Initialize(config.GetServerRuntime().Config.Observability)
 
 	// Initialize MCP server early so packages initializing below can register tools.
 	mcpServer := mcp.Initialize(mux, jwtService)
@@ -254,10 +256,10 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	passkeyService := passkey.Initialize(entityService)
 
 	// Initialize magic link service
-	magicLinkService := magiclink.Initialize(jwtService, entityProvider)
+	magicLinkService := magiclink.Initialize(jwtService)
 
 	// Initialize otp core service
-	otpCoreService := otp.Initialize(otpService, entityProvider)
+	otpCoreService := otp.Initialize(otpService)
 
 	// Initialize federated authentication services.
 	oauthAuthnService := authnOAuth.Initialize(idpService, entityProvider)
@@ -265,11 +267,11 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	googleAuthnService := google.Initialize(oidcAuthnService, jwtService)
 	githubAuthnService := github.Initialize(oauthAuthnService)
 
-	federatedAuths := map[idp.IDPType]authncm.FederatedAuthenticator{
-		idp.IDPTypeOAuth:  oauthAuthnService,
-		idp.IDPTypeOIDC:   oidcAuthnService,
-		idp.IDPTypeGoogle: googleAuthnService,
-		idp.IDPTypeGitHub: githubAuthnService,
+	federatedAuths := map[providers.IDPType]authncm.FederatedAuthenticator{
+		providers.IDPTypeOAuth:  oauthAuthnService,
+		providers.IDPTypeOIDC:   oidcAuthnService,
+		providers.IDPTypeGoogle: googleAuthnService,
+		providers.IDPTypeGitHub: githubAuthnService,
 	}
 
 	// Shared DPoP verifier (and its JTI replay cache) so OAuth and OpenID4VCI
@@ -297,7 +299,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	attributeCacheService := attributecache.Initialize()
 
 	emailClient := initEmailClient(ctx, logger)
-	flowFactory, graphCache, execRegistry, interceptorRegistry := initializeFlowCoreAndExecutor(ctx, logger,
+	flowFactory, execRegistry, interceptorRegistry, graphBuilder := initializeFlowCoreAndExecutor(ctx, logger,
 		cacheManager, executor.ExecutorDependencies{
 			OUService:             ouService,
 			IDPService:            idpService,
@@ -328,10 +330,11 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	)
 
 	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(
-		mux, mcpServer, cacheManager, flowFactory, execRegistry, interceptorRegistry, graphCache)
+		mux, mcpServer, cacheManager, flowFactory, execRegistry, interceptorRegistry, graphBuilder)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize FlowMgtService", log.Error(err))
 	}
+
 	exporters = append(exporters, flowMgtExporter)
 	certservice, err := cert.Initialize(cacheManager, dbprovider.GetDBProvider())
 	if err != nil {
@@ -406,7 +409,8 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	)
 
 	flowExecService, err := flowexec.Initialize(mux, flowMgtService, actorProvider,
-		execRegistry, interceptorRegistry, observabilitySvc, runtimeCryptoSvc, flowconfig.FromServerRuntime())
+		execRegistry, interceptorRegistry, observabilitySvc, runtimeCryptoSvc, graphBuilder,
+		flowconfig.FromServerRuntime())
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize flow execution service", log.Error(err))
 	}
@@ -455,8 +459,8 @@ func initializeFlowCoreAndExecutor(
 	cacheManager cache.CacheManagerInterface,
 	execDeps executor.ExecutorDependencies,
 	interceptorDeps interceptor.InterceptorDependencies,
-) (flowcore.FlowFactoryInterface, flowcore.GraphCacheInterface, executor.ExecutorRegistryInterface,
-	interceptor.InterceptorRegistryInterface) {
+) (flowcore.FlowFactoryInterface, executor.ExecutorRegistryInterface,
+	interceptor.InterceptorRegistryInterface, graphbuilder.GraphBuilderInterface) {
 	// Initialize flow core services.
 	flowFactory, graphCache := flowcore.Initialize(cacheManager)
 	execDeps.FlowFactory = flowFactory
@@ -471,7 +475,10 @@ func initializeFlowCoreAndExecutor(
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize Interceptor registry", log.Error(err))
 	}
-	return flowFactory, graphCache, execRegistry, interceptorRegistry
+
+	graphBuilder := graphbuilder.Initialize(flowFactory, execRegistry, interceptorRegistry, graphCache)
+
+	return flowFactory, execRegistry, interceptorRegistry, graphBuilder
 }
 
 // initializeVCServices initializes the OpenID4VP verifier and OpenID4VCI issuer

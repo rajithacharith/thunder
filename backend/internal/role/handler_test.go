@@ -27,11 +27,12 @@ import (
 	"net/url"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 )
 
@@ -787,12 +788,12 @@ func (suite *RoleHandlerTestSuite) TestHandleError_ClientAndServerErrors() {
 	suite.T().Run("ServerError", func(t *testing.T) {
 		w := httptest.NewRecorder()
 
-		handleError(context.Background(), w, &serviceerror.InternalServerError)
+		handleError(context.Background(), w, &tidcommon.InternalServerError)
 
 		suite.Equal(http.StatusInternalServerError, w.Code)
 		var resp apierror.ErrorResponse
 		err := json.Unmarshal(w.Body.Bytes(), &resp)
 		suite.NoError(err)
-		suite.Equal(serviceerror.InternalServerError.Code, resp.Code)
+		suite.Equal(tidcommon.InternalServerError.Code, resp.Code)
 	})
 }

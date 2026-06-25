@@ -20,7 +20,8 @@ package executor
 
 import (
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"testing"
 
@@ -29,12 +30,8 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	appmodel "github.com/thunder-id/thunderid/internal/application/model"
-	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/idp"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/tests/mocks/authn/oauthmock"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
@@ -67,11 +64,11 @@ func (suite *OAuthExecutorTestSuite) SetupTest() {
 
 	suite.executor = newOAuthExecutor(ExecutorNameOAuth, defaultInputs, []common.Input{},
 		suite.mockFlowFactory, suite.mockIDPService, suite.mockOAuthService,
-		suite.mockAuthnProvider, idp.IDPTypeOAuth)
+		suite.mockAuthnProvider, providers.IDPTypeOAuth)
 }
 
-func newOAuthAuthenticatedUser() authnprovidermgr.AuthUser {
-	var authUser authnprovidermgr.AuthUser
+func newOAuthAuthenticatedUser() providers.AuthUser {
+	var authUser providers.AuthUser
 	_ = authUser.UnmarshalJSON([]byte(`{"entityReferenceToken":"tok","attributeToken":"tok"}`))
 	return authUser
 }
@@ -83,7 +80,7 @@ func (suite *OAuthExecutorTestSuite) TestNewOAuthExecutor() {
 func (suite *OAuthExecutorTestSuite) TestExecute_CodeNotProvided_BuildsAuthorizeURL() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs:  map[string]string{},
 		NodeInputs:  []common.Input{{Identifier: "code", Type: "string", Required: true}},
 		NodeProperties: map[string]interface{}{
@@ -95,7 +92,7 @@ func (suite *OAuthExecutorTestSuite) TestExecute_CodeNotProvided_BuildsAuthorize
 		Return("https://oauth.provider.com/authorize?client_id=abc", nil)
 
 	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, "idp-123").
-		Return(&idp.IDPDTO{ID: "idp-123", Name: "TestIDP"}, nil)
+		Return(&providers.IDPDTO{ID: "idp-123", Name: "TestIDP"}, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -113,7 +110,7 @@ func (suite *OAuthExecutorTestSuite) TestExecute_CodeNotProvided_BuildsAuthorize
 func (suite *OAuthExecutorTestSuite) TestExecute_CodeProvided_AuthenticatesUser() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -125,9 +122,9 @@ func (suite *OAuthExecutorTestSuite) TestExecute_CodeProvided_AuthenticatesUser(
 	authenticatedAuthUser := newOAuthAuthenticatedUser()
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authenticatedAuthUser, authnprovidercm.AuthenticatedClaims{
+		Return(authenticatedAuthUser, providers.AuthenticatedClaims{
 			"sub": "user-sub-123", "email": "test@example.com", "name": "Test User",
-		}, (*serviceerror.ServiceError)(nil))
+		}, (*tidcommon.ServiceError)(nil))
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -142,7 +139,7 @@ func (suite *OAuthExecutorTestSuite) TestExecute_CodeProvided_AuthenticatesUser(
 func (suite *OAuthExecutorTestSuite) TestBuildAuthorizeFlow_Success() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		NodeProperties: map[string]interface{}{
 			"idpId": "idp-123",
 		},
@@ -156,7 +153,7 @@ func (suite *OAuthExecutorTestSuite) TestBuildAuthorizeFlow_Success() {
 	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, "idp-123").
 		Return("https://oauth.provider.com/authorize", nil)
 	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, "idp-123").
-		Return(&idp.IDPDTO{ID: "idp-123", Name: "GoogleIDP"}, nil)
+		Return(&providers.IDPDTO{ID: "idp-123", Name: "GoogleIDP"}, nil)
 
 	err := suite.executor.BuildAuthorizeFlow(ctx, execResp)
 
@@ -173,7 +170,7 @@ func (suite *OAuthExecutorTestSuite) TestBuildAuthorizeFlow_Success() {
 func (suite *OAuthExecutorTestSuite) TestBuildAuthorizeFlow_IDPNotConfigured() {
 	ctx := &core.NodeContext{
 		ExecutionID:    "flow-123",
-		FlowType:       common.FlowTypeAuthentication,
+		FlowType:       providers.FlowTypeAuthentication,
 		NodeProperties: map[string]interface{}{},
 	}
 
@@ -191,7 +188,7 @@ func (suite *OAuthExecutorTestSuite) TestBuildAuthorizeFlow_IDPNotConfigured() {
 func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailMismatch_Fails() { //nolint:dupl
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"code":  "auth_code_123",
 			"email": "invited@example.com",
@@ -208,10 +205,10 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailMismatch_F
 
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, authnprovidercm.AuthenticatedClaims{
+		Return(providers.AuthUser{}, providers.AuthenticatedClaims{
 			"sub":   "user-sub-123",
 			"email": "authenticated@example.com",
-		}, (*serviceerror.ServiceError)(nil))
+		}, (*tidcommon.ServiceError)(nil))
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
@@ -224,7 +221,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailMismatch_F
 func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_SubMismatch_Fails() { //nolint:dupl
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -243,10 +240,10 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_SubMismatch_Fai
 
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, authnprovidercm.AuthenticatedClaims{
+		Return(providers.AuthUser{}, providers.AuthenticatedClaims{
 			"sub":   "authenticated-sub-456",
 			"email": "user@example.com",
-		}, (*serviceerror.ServiceError)(nil))
+		}, (*tidcommon.ServiceError)(nil))
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
@@ -259,7 +256,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_SubMismatch_Fai
 func (suite *OAuthExecutorTestSuite) TestBuildAuthorizeFlow_BuildURLClientError() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		NodeProperties: map[string]interface{}{
 			"idpId": "idp-123",
 		},
@@ -271,9 +268,9 @@ func (suite *OAuthExecutorTestSuite) TestBuildAuthorizeFlow_BuildURLClientError(
 	}
 
 	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, "idp-123").
-		Return("", &serviceerror.ServiceError{
-			Type: serviceerror.ClientErrorType,
-			ErrorDescription: i18ncore.I18nMessage{
+		Return("", &tidcommon.ServiceError{
+			Type: tidcommon.ClientErrorType,
+			ErrorDescription: tidcommon.I18nMessage{
 				Key: "error.test.invalid_idp_configuration", DefaultValue: "Invalid IDP configuration",
 			},
 		})
@@ -289,7 +286,7 @@ func (suite *OAuthExecutorTestSuite) TestBuildAuthorizeFlow_BuildURLClientError(
 func (suite *OAuthExecutorTestSuite) TestBuildAuthorizeFlow_BuildURLServerError() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		NodeProperties: map[string]interface{}{
 			"idpId": "idp-123",
 		},
@@ -301,10 +298,10 @@ func (suite *OAuthExecutorTestSuite) TestBuildAuthorizeFlow_BuildURLServerError(
 	}
 
 	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, "idp-123").
-		Return("", &serviceerror.ServiceError{
-			Type: serviceerror.ServerErrorType,
+		Return("", &tidcommon.ServiceError{
+			Type: tidcommon.ServerErrorType,
 			Code: "OAUTH-5000",
-			ErrorDescription: i18ncore.I18nMessage{
+			ErrorDescription: tidcommon.I18nMessage{
 				Key: "error.test.internal_server_error", DefaultValue: "Internal server error",
 			},
 		})
@@ -319,7 +316,7 @@ func (suite *OAuthExecutorTestSuite) TestBuildAuthorizeFlow_BuildURLServerError(
 func (suite *OAuthExecutorTestSuite) TestGetIdpID_Success() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		NodeProperties: map[string]interface{}{
 			"idpId": "idp-123",
 		},
@@ -334,7 +331,7 @@ func (suite *OAuthExecutorTestSuite) TestGetIdpID_Success() {
 func (suite *OAuthExecutorTestSuite) TestGetIdpID_NotConfigured() {
 	ctx := &core.NodeContext{
 		ExecutionID:    "flow-123",
-		FlowType:       common.FlowTypeAuthentication,
+		FlowType:       providers.FlowTypeAuthentication,
 		NodeProperties: map[string]interface{}{},
 	}
 
@@ -348,7 +345,7 @@ func (suite *OAuthExecutorTestSuite) TestGetIdpID_NotConfigured() {
 func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_RegistrationFlow_UserNotFound() { //nolint:dupl
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -364,9 +361,9 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_RegistrationFlo
 
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, authnprovidercm.AuthenticatedClaims{
+		Return(providers.AuthUser{}, providers.AuthenticatedClaims{
 			"sub": "new-user-sub", "email": "newuser@example.com", "name": "New User",
-		}, (*serviceerror.ServiceError)(nil))
+		}, (*tidcommon.ServiceError)(nil))
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
@@ -380,7 +377,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_RegistrationFlo
 func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AuthFlow_UserNotFound() { //nolint:dupl
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -396,7 +393,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AuthFlow_UserNo
 
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, authnprovidercm.AuthenticatedClaims{}, (*serviceerror.ServiceError)(nil))
+		Return(providers.AuthUser{}, providers.AuthenticatedClaims{}, (*tidcommon.ServiceError)(nil))
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
@@ -408,7 +405,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AuthFlow_UserNo
 func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_UserAlreadyExists_RegistrationFlow() { //nolint:dupl
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -425,9 +422,9 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_UserAlreadyExis
 	authenticatedAuthUser := newOAuthAuthenticatedUser()
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authenticatedAuthUser, authnprovidercm.AuthenticatedClaims{
+		Return(authenticatedAuthUser, providers.AuthenticatedClaims{
 			"sub": "existing-user-sub",
-		}, (*serviceerror.ServiceError)(nil))
+		}, (*tidcommon.ServiceError)(nil))
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
@@ -439,7 +436,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_UserAlreadyExis
 func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoCodeProvided() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs:  map[string]string{},
 		NodeProperties: map[string]interface{}{
 			"idpId": "idp-123",
@@ -460,7 +457,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoCodeProvided(
 func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_ProviderClientError() { //nolint:dupl
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -476,9 +473,9 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_ProviderClientE
 
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, (authnprovidercm.AuthenticatedClaims)(nil), &serviceerror.ServiceError{
-			Type:             serviceerror.ClientErrorType,
-			ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Invalid authorization code"},
+		Return(providers.AuthUser{}, (providers.AuthenticatedClaims)(nil), &tidcommon.ServiceError{
+			Type:             tidcommon.ClientErrorType,
+			ErrorDescription: tidcommon.I18nMessage{DefaultValue: "Invalid authorization code"},
 		})
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -492,7 +489,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_ProviderClientE
 func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_ProviderServerError() { //nolint:dupl
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -508,10 +505,10 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_ProviderServerE
 
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, (authnprovidercm.AuthenticatedClaims)(nil), &serviceerror.ServiceError{
-			Type:             serviceerror.ServerErrorType,
+		Return(providers.AuthUser{}, (providers.AuthenticatedClaims)(nil), &tidcommon.ServiceError{
+			Type:             tidcommon.ServerErrorType,
 			Code:             "AUTH-5000",
-			ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Internal authentication error"},
+			ErrorDescription: tidcommon.I18nMessage{DefaultValue: "Internal authentication error"},
 		})
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -524,7 +521,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_ProviderServerE
 func (suite *OAuthExecutorTestSuite) TestHasRequiredInputs_CodeProvided() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -542,7 +539,7 @@ func (suite *OAuthExecutorTestSuite) TestHasRequiredInputs_CodeProvided() {
 func (suite *OAuthExecutorTestSuite) TestHasRequiredInputs_CodeNotProvided() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs:  map[string]string{},
 		NodeInputs:  []common.Input{{Identifier: "code", Type: "string", Required: true}},
 	}
@@ -642,7 +639,7 @@ func (suite *OAuthExecutorTestSuite) TestGetContextUserAttributes_FilterSkipAttr
 func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_RegistrationFlow_WithEmail() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -658,9 +655,9 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_RegistrationFlo
 
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, authnprovidercm.AuthenticatedClaims{
+		Return(providers.AuthUser{}, providers.AuthenticatedClaims{
 			"sub": "new-user-sub", "email": "newuser@example.com", "name": "New User",
-		}, (*serviceerror.ServiceError)(nil))
+		}, (*tidcommon.ServiceError)(nil))
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
@@ -695,7 +692,7 @@ func (suite *OAuthExecutorTestSuite) TestGetContextUserAttributes_WithEmail_NilR
 func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWithoutLocalUser() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -717,9 +714,9 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWithou
 
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, authnprovidercm.AuthenticatedClaims{
+		Return(providers.AuthUser{}, providers.AuthenticatedClaims{
 			"sub": "new-user-sub", "email": "newuser@example.com", "name": "New User",
-		}, (*serviceerror.ServiceError)(nil))
+		}, (*tidcommon.ServiceError)(nil))
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
@@ -734,7 +731,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWithou
 func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventAuthWithoutLocalUser() { //nolint:dupl
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -751,7 +748,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventAuthWith
 
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, authnprovidercm.AuthenticatedClaims{}, (*serviceerror.ServiceError)(nil))
+		Return(providers.AuthUser{}, providers.AuthenticatedClaims{}, (*tidcommon.ServiceError)(nil))
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
@@ -763,7 +760,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventAuthWith
 func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowRegistrationWithExistingUser() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -781,9 +778,9 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowRegistrati
 	authenticatedAuthUser := newOAuthAuthenticatedUser()
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authenticatedAuthUser, authnprovidercm.AuthenticatedClaims{
+		Return(authenticatedAuthUser, providers.AuthenticatedClaims{
 			"sub": "existing-user-sub", "email": "existing@example.com", "name": "Existing User",
-		}, (*serviceerror.ServiceError)(nil))
+		}, (*tidcommon.ServiceError)(nil))
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 
@@ -797,7 +794,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowRegistrati
 func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventRegistrationWithExistingUser() { //nolint:dupl
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -815,9 +812,9 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventRegistra
 	authenticatedAuthUser := newOAuthAuthenticatedUser()
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authenticatedAuthUser, authnprovidercm.AuthenticatedClaims{
+		Return(authenticatedAuthUser, providers.AuthenticatedClaims{
 			"sub": "existing-user-sub",
-		}, (*serviceerror.ServiceError)(nil))
+		}, (*tidcommon.ServiceError)(nil))
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
 

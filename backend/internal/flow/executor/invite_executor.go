@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
@@ -111,7 +113,7 @@ func (e *inviteExecutor) executeGenerate(ctx *core.NodeContext) (*common.Executo
 		"appName":    ctx.Application.Name,
 	}
 
-	if ctx.FlowType == common.FlowTypeUserOnboarding {
+	if ctx.FlowType == providers.FlowTypeUserOnboarding {
 		execResp.AdditionalData[common.DataInviteLink] = inviteLink
 	}
 

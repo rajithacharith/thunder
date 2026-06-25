@@ -19,7 +19,8 @@
 package executor
 
 import (
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"testing"
 
@@ -28,12 +29,10 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	appmodel "github.com/thunder-id/thunderid/internal/application/model"
-	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
 	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
@@ -75,8 +74,8 @@ func (suite *CredentialsAuthExecutorTestSuite) SetupTest() {
 }
 
 // newCredentialsAuthAuthenticatedUser creates an AuthUser that returns true for IsAuthenticated().
-func newCredentialsAuthAuthenticatedUser() authnprovidermgr.AuthUser {
-	var authUser authnprovidermgr.AuthUser
+func newCredentialsAuthAuthenticatedUser() providers.AuthUser {
+	var authUser providers.AuthUser
 	_ = authUser.UnmarshalJSON([]byte(`{"entityReferenceToken":"tok","attributeToken":"tok"}`))
 	return authUser
 }
@@ -154,7 +153,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestNewCredentialsAuthExecutor() 
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_AuthenticationFlow() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributeUsername: "testuser",
 			userAttributePassword: "password123",
@@ -168,7 +167,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_Authenticatio
 	}, map[string]interface{}{
 		userAttributePassword: "password123",
 	}, mock.Anything, mock.Anything, mock.Anything).
-		Return(authenticatedAuthUser, authnprovidercm.AuthenticatedClaims{}, nil)
+		Return(authenticatedAuthUser, providers.AuthenticatedClaims{}, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -182,7 +181,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_Authenticatio
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_WithEmailAttribute() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"email":    "test@example.com",
 			"password": "password123",
@@ -204,7 +203,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_WithEmailAttr
 	}, map[string]interface{}{
 		"password": "password123",
 	}, mock.Anything, mock.Anything, mock.Anything).
-		Return(authenticatedAuthUser, authnprovidercm.AuthenticatedClaims{}, nil)
+		Return(authenticatedAuthUser, providers.AuthenticatedClaims{}, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -218,7 +217,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_WithEmailAttr
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_RegistrationFlow() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			userAttributeUsername: "newuser",
 			userAttributePassword: "password123",
@@ -242,7 +241,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_RegistrationF
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttributes() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"email":    "test@example.com",
 			"phone":    "+1234567890",
@@ -267,7 +266,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_WithMultipleA
 	}, map[string]interface{}{
 		"password": "password123",
 	}, mock.Anything, mock.Anything, mock.Anything).
-		Return(authenticatedAuthUser, authnprovidercm.AuthenticatedClaims{}, nil)
+		Return(authenticatedAuthUser, providers.AuthenticatedClaims{}, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -281,7 +280,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_WithMultipleA
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_UserInputRequired() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs:  map[string]string{},
 		RuntimeData: make(map[string]string),
 	}
@@ -297,7 +296,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_UserInputRequired() {
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_AuthenticationFailed() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributeUsername: "testuser",
 			userAttributePassword: "wrongpassword",
@@ -309,10 +308,10 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_AuthenticationFailed(
 		userAttributeUsername: "testuser",
 	}, map[string]interface{}{
 		userAttributePassword: "wrongpassword",
-	}, mock.Anything, mock.Anything, mock.Anything).Return(authnprovidermgr.AuthUser{},
-		(authnprovidercm.AuthenticatedClaims)(nil), &serviceerror.ServiceError{
-			Type: serviceerror.ClientErrorType,
-			ErrorDescription: i18ncore.I18nMessage{
+	}, mock.Anything, mock.Anything, mock.Anything).Return(providers.AuthUser{},
+		(providers.AuthenticatedClaims)(nil), &tidcommon.ServiceError{
+			Type: tidcommon.ClientErrorType,
+			ErrorDescription: tidcommon.I18nMessage{
 				Key: "error.test.invalid_credentials", DefaultValue: "Invalid credentials",
 			},
 		})
@@ -330,7 +329,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_AuthenticationFailed(
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_UserNotFound_AuthenticationFlow() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributeUsername: "nonexistent",
 			userAttributePassword: "password123",
@@ -343,10 +342,10 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_UserNotFound_Authenti
 		userAttributeUsername: "nonexistent",
 	}, map[string]interface{}{
 		userAttributePassword: "password123",
-	}, mock.Anything, mock.Anything, mock.Anything).Return(authnprovidermgr.AuthUser{},
-		(authnprovidercm.AuthenticatedClaims)(nil), &serviceerror.ServiceError{
-			Type:             serviceerror.ClientErrorType,
-			ErrorDescription: i18ncore.I18nMessage{Key: "error.test.user_not_found", DefaultValue: "User not found"},
+	}, mock.Anything, mock.Anything, mock.Anything).Return(providers.AuthUser{},
+		(providers.AuthenticatedClaims)(nil), &tidcommon.ServiceError{
+			Type:             tidcommon.ClientErrorType,
+			ErrorDescription: tidcommon.I18nMessage{Key: "error.test.user_not_found", DefaultValue: "User not found"},
 		})
 
 	resp, err := suite.executor.Execute(ctx)
@@ -363,7 +362,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_UserNotFound_Authenti
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_UserAlreadyExists_RegistrationFlow() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			userAttributeUsername: "existinguser",
 			userAttributePassword: "password123",
@@ -388,7 +387,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_UserAlreadyExists_Reg
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_ServiceError() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributeUsername: "testuser",
 			userAttributePassword: "password123",
@@ -401,10 +400,10 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_ServiceError() {
 		userAttributeUsername: "testuser",
 	}, map[string]interface{}{
 		userAttributePassword: "password123",
-	}, mock.Anything, mock.Anything, mock.Anything).Return(authnprovidermgr.AuthUser{},
-		(authnprovidercm.AuthenticatedClaims)(nil), &serviceerror.ServiceError{
-			Type:  serviceerror.ServerErrorType,
-			Error: i18ncore.I18nMessage{Key: "error.test.database_error", DefaultValue: "database error"},
+	}, mock.Anything, mock.Anything, mock.Anything).Return(providers.AuthUser{},
+		(providers.AuthenticatedClaims)(nil), &tidcommon.ServiceError{
+			Type:  tidcommon.ServerErrorType,
+			Error: tidcommon.I18nMessage{Key: "error.test.database_error", DefaultValue: "database error"},
 		})
 
 	resp, err := suite.executor.Execute(ctx)
@@ -418,7 +417,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_ServiceError() {
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_AuthenticationServiceError() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributeUsername: "testuser",
 			userAttributePassword: "password123",
@@ -428,9 +427,11 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_AuthenticationService
 
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, (authnprovidercm.AuthenticatedClaims)(nil), &serviceerror.ServiceError{
-			Type:  serviceerror.ServerErrorType,
-			Error: i18ncore.I18nMessage{Key: "error.test.internal_server_error", DefaultValue: "internal server error"},
+		Return(providers.AuthUser{}, (providers.AuthenticatedClaims)(nil), &tidcommon.ServiceError{
+			Type: tidcommon.ServerErrorType,
+			Error: tidcommon.I18nMessage{
+				Key: "error.test.internal_server_error", DefaultValue: "internal server error",
+			},
 		})
 
 	resp, err := suite.executor.Execute(ctx)
@@ -445,7 +446,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_AuthenticationService
 func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_SuccessfulAuthentication() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributeUsername: "testuser",
 			userAttributePassword: "password123",
@@ -462,7 +463,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_SuccessfulAu
 	}, map[string]interface{}{
 		userAttributePassword: "password123",
 	}, mock.Anything, mock.Anything, mock.Anything).
-		Return(authenticatedAuthUser, authnprovidercm.AuthenticatedClaims{}, nil)
+		Return(authenticatedAuthUser, providers.AuthenticatedClaims{}, nil)
 
 	err := suite.executor.authenticateUser(ctx, execResp)
 
@@ -474,7 +475,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_SuccessfulAu
 func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_Success_WithAuthenticatedClaims() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributeUsername: "testuser",
 			userAttributePassword: "password123",
@@ -486,7 +487,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_Success_With
 	}
 
 	authenticatedAuthUser := newCredentialsAuthAuthenticatedUser()
-	runtimeAttrs := authnprovidercm.AuthenticatedClaims{
+	runtimeAttrs := providers.AuthenticatedClaims{
 		"username": "testuser",
 		"email":    "fetched@example.com",
 	}
@@ -509,7 +510,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_Success_With
 func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_AuthenticationFlow_NoRedundantIdentifyUser() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributeUsername: "testuser",
 			userAttributePassword: "password123",
@@ -526,7 +527,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_Authenticati
 	}, map[string]interface{}{
 		userAttributePassword: "password123",
 	}, mock.Anything, mock.Anything, mock.Anything).
-		Return(authenticatedAuthUser, authnprovidercm.AuthenticatedClaims{}, nil)
+		Return(authenticatedAuthUser, providers.AuthenticatedClaims{}, nil)
 
 	err := suite.executor.authenticateUser(ctx, execResp)
 
@@ -538,7 +539,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_Authenticati
 func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_RegistrationFlow_CallsIdentifyUser() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			userAttributeUsername: "newuser",
 			userAttributePassword: "password123",
@@ -593,7 +594,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_RetryableAuthenticati
 			suite.mockAuthnProvider.ExpectedCalls = nil
 			ctx := &core.NodeContext{
 				ExecutionID: "flow-123",
-				FlowType:    common.FlowTypeAuthentication,
+				FlowType:    providers.FlowTypeAuthentication,
 				UserInputs: map[string]string{
 					userAttributeUsername: tt.username,
 					userAttributePassword: tt.password,
@@ -606,8 +607,8 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_RetryableAuthenticati
 			}, map[string]interface{}{
 				userAttributePassword: tt.password,
 			}, mock.Anything, mock.Anything, mock.Anything).Return(
-				authnprovidermgr.AuthUser{}, (authnprovidercm.AuthenticatedClaims)(nil), &serviceerror.ServiceError{
-					Type: serviceerror.ClientErrorType,
+				providers.AuthUser{}, (providers.AuthenticatedClaims)(nil), &tidcommon.ServiceError{
+					Type: tidcommon.ClientErrorType,
 					Code: tt.errorCode,
 				})
 
@@ -627,7 +628,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_RetryableAuthenticati
 func (suite *CredentialsAuthExecutorTestSuite) TestGetAuthenticatedUser_ClientError_ReturnsInputsForRetry() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributeUsername: "testuser",
 			userAttributePassword: "password123",
@@ -643,10 +644,10 @@ func (suite *CredentialsAuthExecutorTestSuite) TestGetAuthenticatedUser_ClientEr
 	}, map[string]interface{}{
 		userAttributePassword: "password123",
 	}, mock.Anything, mock.Anything, mock.Anything).Return(
-		authnprovidermgr.AuthUser{}, (authnprovidercm.AuthenticatedClaims)(nil), &serviceerror.ServiceError{
-			Type:             serviceerror.ClientErrorType,
+		providers.AuthUser{}, (providers.AuthenticatedClaims)(nil), &tidcommon.ServiceError{
+			Type:             tidcommon.ClientErrorType,
 			Code:             authnprovidermgr.ErrorAuthenticationFailed.Code,
-			ErrorDescription: i18ncore.I18nMessage{Key: "error.test.wrong_password", DefaultValue: "wrong password"},
+			ErrorDescription: tidcommon.I18nMessage{Key: "error.test.wrong_password", DefaultValue: "wrong password"},
 		})
 
 	err := suite.executor.authenticateUser(ctx, execResp)
@@ -662,7 +663,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestGetAuthenticatedUser_ClientEr
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_PreResolvedUser_RequestsPassword() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{
 			userAttributeUserID: "pre-resolved-user-123",
@@ -681,7 +682,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_PreResolvedUser_Reque
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_PreResolvedUser_WithPassword() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributePassword: "password123",
 		},
@@ -696,7 +697,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_PreResolvedUser_WithP
 		map[string]interface{}{userAttributeUserID: "pre-resolved-user-123"},
 		map[string]interface{}{userAttributePassword: "password123"},
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authenticatedAuthUser, authnprovidercm.AuthenticatedClaims{}, nil)
+		Return(authenticatedAuthUser, providers.AuthenticatedClaims{}, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 

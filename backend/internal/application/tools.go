@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -236,21 +237,21 @@ func (t *applicationTools) getApplicationTemplates(
 					Type: inboundmodel.OAuthInboundAuthType,
 					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 						RedirectURIs: []string{"<REDIRECT_URI>"},
-						GrantTypes: []oauth2const.GrantType{
-							oauth2const.GrantTypeAuthorizationCode,
-							oauth2const.GrantTypeRefreshToken,
+						GrantTypes: []providers.GrantType{
+							providers.GrantTypeAuthorizationCode,
+							providers.GrantTypeRefreshToken,
 						},
-						TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodNone,
+						TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodNone,
 						PKCERequired:            true,
 						PublicClient:            true,
 						Scopes:                  model.DefaultScopes,
-						Token: &inboundmodel.OAuthTokenConfig{
-							IDToken: &inboundmodel.IDTokenConfig{
+						Token: &providers.OAuthTokenConfig{
+							IDToken: &providers.IDTokenConfig{
 								UserAttributes: model.DefaultUserAttributes,
 							},
 						},
-						UserInfo: &inboundmodel.UserInfoConfig{
-							ResponseType:   inboundmodel.UserInfoResponseTypeJSON,
+						UserInfo: &providers.UserInfoConfig{
+							ResponseType:   providers.UserInfoResponseTypeJSON,
 							UserAttributes: model.DefaultUserAttributes,
 						},
 					},
@@ -268,21 +269,21 @@ func (t *applicationTools) getApplicationTemplates(
 					Type: inboundmodel.OAuthInboundAuthType,
 					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 						RedirectURIs: []string{"<CUSTOM_SCHEME>://callback"},
-						GrantTypes: []oauth2const.GrantType{
-							oauth2const.GrantTypeAuthorizationCode,
-							oauth2const.GrantTypeRefreshToken,
+						GrantTypes: []providers.GrantType{
+							providers.GrantTypeAuthorizationCode,
+							providers.GrantTypeRefreshToken,
 						},
-						TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodNone,
+						TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodNone,
 						PKCERequired:            true,
 						PublicClient:            true,
 						Scopes:                  model.DefaultScopes,
-						Token: &inboundmodel.OAuthTokenConfig{
-							IDToken: &inboundmodel.IDTokenConfig{
+						Token: &providers.OAuthTokenConfig{
+							IDToken: &providers.IDTokenConfig{
 								UserAttributes: model.DefaultUserAttributes,
 							},
 						},
-						UserInfo: &inboundmodel.UserInfoConfig{
-							ResponseType:   inboundmodel.UserInfoResponseTypeJSON,
+						UserInfo: &providers.UserInfoConfig{
+							ResponseType:   providers.UserInfoResponseTypeJSON,
 							UserAttributes: model.DefaultUserAttributes,
 						},
 					},
@@ -300,20 +301,20 @@ func (t *applicationTools) getApplicationTemplates(
 					Type: inboundmodel.OAuthInboundAuthType,
 					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 						RedirectURIs: []string{"<REDIRECT_URI>"},
-						GrantTypes: []oauth2const.GrantType{
-							oauth2const.GrantTypeAuthorizationCode,
-							oauth2const.GrantTypeRefreshToken,
+						GrantTypes: []providers.GrantType{
+							providers.GrantTypeAuthorizationCode,
+							providers.GrantTypeRefreshToken,
 						},
-						TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+						TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 						PKCERequired:            true,
 						Scopes:                  model.DefaultScopes,
-						Token: &inboundmodel.OAuthTokenConfig{
-							IDToken: &inboundmodel.IDTokenConfig{
+						Token: &providers.OAuthTokenConfig{
+							IDToken: &providers.IDTokenConfig{
 								UserAttributes: model.DefaultUserAttributes,
 							},
 						},
-						UserInfo: &inboundmodel.UserInfoConfig{
-							ResponseType:   inboundmodel.UserInfoResponseTypeJSON,
+						UserInfo: &providers.UserInfoConfig{
+							ResponseType:   providers.UserInfoResponseTypeJSON,
 							UserAttributes: model.DefaultUserAttributes,
 						},
 					},
@@ -327,8 +328,8 @@ func (t *applicationTools) getApplicationTemplates(
 				{
 					Type: inboundmodel.OAuthInboundAuthType,
 					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
-						GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeClientCredentials},
-						TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+						GrantTypes:              []providers.GrantType{providers.GrantTypeClientCredentials},
+						TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 					},
 				},
 			},

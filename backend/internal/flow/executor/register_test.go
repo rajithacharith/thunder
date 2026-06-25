@@ -23,6 +23,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -31,7 +33,6 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/tests/mocks/authn/githubmock"
 	"github.com/thunder-id/thunderid/tests/mocks/authn/googlemock"
 	"github.com/thunder-id/thunderid/tests/mocks/authn/oauthmock"
@@ -149,7 +150,7 @@ func (suite *BuiltInExecutorRegistrationTestSuite) TestResolveBuiltInExecutorNam
 }
 
 func (suite *BuiltInExecutorRegistrationTestSuite) TestInitialize_EmptyStringExecutorRejected() {
-	reg, err := Initialize(suite.depsForBuiltInRegistration(), config.FlowConfig{
+	reg, err := Initialize(suite.depsForBuiltInRegistration(), engineconfig.FlowConfig{
 		Executors: []string{""},
 	})
 	require.Error(suite.T(), err)
@@ -201,7 +202,7 @@ func (suite *BuiltInExecutorRegistrationTestSuite) TestRegisterBuiltInExecutors_
 }
 
 func (suite *BuiltInExecutorRegistrationTestSuite) TestInitialize_EmptyConfigRegistersAllBuiltIns() {
-	reg, err := Initialize(suite.depsForBuiltInRegistration(), config.FlowConfig{})
+	reg, err := Initialize(suite.depsForBuiltInRegistration(), engineconfig.FlowConfig{})
 	require.NoError(suite.T(), err)
 	require.NotNil(suite.T(), reg)
 
@@ -211,7 +212,7 @@ func (suite *BuiltInExecutorRegistrationTestSuite) TestInitialize_EmptyConfigReg
 }
 
 func (suite *BuiltInExecutorRegistrationTestSuite) TestInitialize_SubsetConfig() {
-	reg, err := Initialize(suite.depsForBuiltInRegistration(), config.FlowConfig{
+	reg, err := Initialize(suite.depsForBuiltInRegistration(), engineconfig.FlowConfig{
 		Executors: []string{ExecutorNameInviteExecutor},
 	})
 	require.NoError(suite.T(), err)
@@ -221,7 +222,7 @@ func (suite *BuiltInExecutorRegistrationTestSuite) TestInitialize_SubsetConfig()
 }
 
 func (suite *BuiltInExecutorRegistrationTestSuite) TestInitialize_UnknownExecutorReturnsError() {
-	reg, err := Initialize(ExecutorDependencies{}, config.FlowConfig{
+	reg, err := Initialize(ExecutorDependencies{}, engineconfig.FlowConfig{
 		Executors: []string{"NotARealExecutor"},
 	})
 	require.Error(suite.T(), err)
@@ -264,7 +265,7 @@ flow:
     - InviteExecutor
 `
 	var cfg struct {
-		Flow config.FlowConfig `yaml:"flow"`
+		Flow engineconfig.FlowConfig `yaml:"flow"`
 	}
 	err := yaml.Unmarshal([]byte(yamlFragment), &cfg)
 	require.NoError(suite.T(), err)
@@ -283,7 +284,7 @@ func (suite *BuiltInExecutorRegistrationTestSuite) TestDeploymentResource_FlowEx
 	require.NoError(suite.T(), err)
 
 	var cfg struct {
-		Flow config.FlowConfig `yaml:"flow"`
+		Flow engineconfig.FlowConfig `yaml:"flow"`
 	}
 	require.NoError(suite.T(), yaml.Unmarshal(data, &cfg))
 	assert.Empty(suite.T(), cfg.Flow.Executors)

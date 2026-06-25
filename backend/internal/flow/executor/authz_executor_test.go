@@ -19,7 +19,8 @@
 package executor
 
 import (
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"context"
 	"testing"
@@ -27,13 +28,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	authzsvc "github.com/thunder-id/thunderid/internal/authz"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/authzmock"
 	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
@@ -58,8 +56,8 @@ func createTestAuthzExecutor(t *testing.T,
 }
 
 // newAuthzAuthenticatedAuthUser creates an AuthUser that returns true for IsAuthenticated().
-func newAuthzAuthenticatedAuthUser() authnprovidermgr.AuthUser {
-	var authUser authnprovidermgr.AuthUser
+func newAuthzAuthenticatedAuthUser() providers.AuthUser {
+	var authUser providers.AuthUser
 	_ = authUser.UnmarshalJSON([]byte(`{"entityReferenceToken":"tok","attributeToken":"tok"}`))
 	return authUser
 }
@@ -96,7 +94,7 @@ func TestAuthorizationExecutor_Execute_Success(t *testing.T) {
 	authUser := newAuthzAuthenticatedAuthUser()
 	ctx := &core.NodeContext{
 		ExecutionID: "test-flow",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    authUser,
 		RuntimeData: map[string]string{
 			requestedPermissionsKey: "read:documents write:documents delete:documents",
@@ -105,7 +103,7 @@ func TestAuthorizationExecutor_Execute_Success(t *testing.T) {
 	}
 
 	mockAuthnProvider.On("GetEntityReference", mock.Anything, mock.Anything).
-		Return(authUser, &authnprovidercm.EntityReference{EntityID: "user123"}, nil)
+		Return(authUser, &providers.EntityReference{EntityID: "user123"}, nil)
 
 	mockAuthzService.On("EvaluateAccessBatch",
 		mock.Anything,
@@ -149,7 +147,7 @@ func TestAuthorizationExecutor_Execute_PartialPermissions(t *testing.T) {
 	authUser := newAuthzAuthenticatedAuthUser()
 	ctx := &core.NodeContext{
 		ExecutionID: "test-flow",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    authUser,
 		RuntimeData: map[string]string{
 			requestedPermissionsKey: "read:documents write:documents delete:documents",
@@ -157,10 +155,10 @@ func TestAuthorizationExecutor_Execute_PartialPermissions(t *testing.T) {
 	}
 
 	mockAuthnProvider.On("GetEntityReference", mock.Anything, mock.Anything).
-		Return(authUser, &authnprovidercm.EntityReference{EntityID: "user123"}, nil)
+		Return(authUser, &providers.EntityReference{EntityID: "user123"}, nil)
 
 	mockEntityProvider.On("GetTransitiveEntityGroups", "user123").Return(
-		[]entityprovider.EntityGroup{}, nil)
+		[]providers.EntityGroup{}, nil)
 
 	// User only has read permission
 	mockAuthzService.On("EvaluateAccessBatch", mock.Anything, mock.Anything).Return(
@@ -194,7 +192,7 @@ func TestAuthorizationExecutor_Execute_NoPermissions(t *testing.T) {
 	authUser := newAuthzAuthenticatedAuthUser()
 	ctx := &core.NodeContext{
 		ExecutionID: "test-flow",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    authUser,
 		RuntimeData: map[string]string{
 			requestedPermissionsKey: "read:documents write:documents",
@@ -202,10 +200,10 @@ func TestAuthorizationExecutor_Execute_NoPermissions(t *testing.T) {
 	}
 
 	mockAuthnProvider.On("GetEntityReference", mock.Anything, mock.Anything).
-		Return(authUser, &authnprovidercm.EntityReference{EntityID: "user123"}, nil)
+		Return(authUser, &providers.EntityReference{EntityID: "user123"}, nil)
 
 	mockEntityProvider.On("GetTransitiveEntityGroups", "user123").Return(
-		[]entityprovider.EntityGroup{}, nil)
+		[]providers.EntityGroup{}, nil)
 
 	mockAuthzService.On("EvaluateAccessBatch", mock.Anything, mock.Anything).Return(
 		&authzsvc.AccessEvaluationsResponse{
@@ -236,7 +234,7 @@ func TestAuthorizationExecutor_Execute_NotAuthenticated(t *testing.T) {
 
 	ctx := &core.NodeContext{
 		ExecutionID: "test-flow",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		RuntimeData: make(map[string]string),
 	}
 
@@ -262,7 +260,7 @@ func TestAuthorizationExecutor_Execute_ServiceError(t *testing.T) {
 	authUser := newAuthzAuthenticatedAuthUser()
 	ctx := &core.NodeContext{
 		ExecutionID: "test-flow",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    authUser,
 		RuntimeData: map[string]string{
 			requestedPermissionsKey: "read:documents write:documents",
@@ -270,14 +268,14 @@ func TestAuthorizationExecutor_Execute_ServiceError(t *testing.T) {
 	}
 
 	mockAuthnProvider.On("GetEntityReference", mock.Anything, mock.Anything).
-		Return(authUser, &authnprovidercm.EntityReference{EntityID: "user123"}, nil)
+		Return(authUser, &providers.EntityReference{EntityID: "user123"}, nil)
 
 	mockEntityProvider.On("GetTransitiveEntityGroups", "user123").Return(
-		[]entityprovider.EntityGroup{}, nil)
+		[]providers.EntityGroup{}, nil)
 
 	mockAuthzService.On("EvaluateAccessBatch", mock.Anything, mock.Anything).Return(
-		nil, &serviceerror.ServiceError{
-			Error: i18ncore.I18nMessage{Key: "error.test.service_error", DefaultValue: "service error"},
+		nil, &tidcommon.ServiceError{
+			Error: tidcommon.I18nMessage{Key: "error.test.service_error", DefaultValue: "service error"},
 		})
 
 	// Execute
@@ -301,7 +299,7 @@ func TestAuthorizationExecutor_Execute_GroupExtractionError(t *testing.T) {
 	authUser := newAuthzAuthenticatedAuthUser()
 	ctx := &core.NodeContext{
 		ExecutionID: "test-flow",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    authUser,
 		RuntimeData: map[string]string{
 			requestedPermissionsKey: "read:documents write:documents",
@@ -309,7 +307,7 @@ func TestAuthorizationExecutor_Execute_GroupExtractionError(t *testing.T) {
 	}
 
 	mockAuthnProvider.On("GetEntityReference", mock.Anything, mock.Anything).
-		Return(authUser, &authnprovidercm.EntityReference{EntityID: "user123"}, nil)
+		Return(authUser, &providers.EntityReference{EntityID: "user123"}, nil)
 
 	mockEntityProvider.On("GetTransitiveEntityGroups", "user123").Return(
 		nil, entityprovider.NewEntityProviderError(
@@ -340,13 +338,13 @@ func TestAuthorizationExecutor_Execute_NoRequestedPermissions(t *testing.T) {
 	authUser := newAuthzAuthenticatedAuthUser()
 	ctx := &core.NodeContext{
 		ExecutionID: "test-flow",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    authUser,
 		RuntimeData: make(map[string]string), // No requestedPermissionsKey
 	}
 
 	mockAuthnProvider.On("GetEntityReference", mock.Anything, mock.Anything).
-		Return(authUser, &authnprovidercm.EntityReference{EntityID: "user123"}, nil)
+		Return(authUser, &providers.EntityReference{EntityID: "user123"}, nil)
 
 	// Execute
 	resp, err := executor.Execute(ctx)
@@ -371,7 +369,7 @@ func TestAuthorizationExecutor_ExtractGroupIDs_NoGroupsInContext(t *testing.T) {
 	}
 
 	mockEntityProvider.On("GetTransitiveEntityGroups", "user123").Return(
-		[]entityprovider.EntityGroup{}, nil)
+		[]providers.EntityGroup{}, nil)
 
 	groupIDs, err := executor.extractGroupIDs(ctx, "user123")
 	assert.NoError(t, err)
@@ -450,7 +448,7 @@ func TestExtractRequestedPermissions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := &core.NodeContext{
-				FlowType:    common.FlowTypeAuthentication,
+				FlowType:    providers.FlowTypeAuthentication,
 				RuntimeData: tt.runtimeData,
 				UserInputs:  tt.UserInputs,
 			}
@@ -472,7 +470,7 @@ func TestAuthorizationExecutor_ExtractGroupIDs_WithNoGroups(t *testing.T) {
 	}
 
 	mockEntityProvider.On("GetTransitiveEntityGroups", "user123").Return(
-		[]entityprovider.EntityGroup{}, nil)
+		[]providers.EntityGroup{}, nil)
 
 	groupIDs, err := executor.extractGroupIDs(ctx, "user123")
 	assert.NoError(t, err)
@@ -488,7 +486,7 @@ func TestAuthorizationExecutor_Execute_WithMultipleGroups(t *testing.T) {
 	authUser := newAuthzAuthenticatedAuthUser()
 	ctx := &core.NodeContext{
 		ExecutionID: "test-flow",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    authUser,
 		RuntimeData: map[string]string{
 			requestedPermissionsKey: "read:documents write:documents delete:documents",
@@ -497,7 +495,7 @@ func TestAuthorizationExecutor_Execute_WithMultipleGroups(t *testing.T) {
 	}
 
 	mockAuthnProvider.On("GetEntityReference", mock.Anything, mock.Anything).
-		Return(authUser, &authnprovidercm.EntityReference{EntityID: "user123"}, nil)
+		Return(authUser, &providers.EntityReference{EntityID: "user123"}, nil)
 
 	mockAuthzService.On("EvaluateAccessBatch",
 		mock.Anything,
@@ -571,7 +569,7 @@ func TestAuthorizationExecutor_Execute_RegistrationFlow_UnauthenticatedWithoutPe
 
 	ctx := &core.NodeContext{
 		ExecutionID: "test-registration-flow",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		RuntimeData: make(map[string]string),
 	}
 
@@ -596,7 +594,7 @@ func TestAuthorizationExecutor_Execute_RegistrationFlow_UnauthenticatedWithPermi
 
 	ctx := &core.NodeContext{
 		ExecutionID: "test-registration-flow",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		RuntimeData: map[string]string{
 			requestedPermissionsKey: "read:documents write:documents",
 		},
@@ -624,7 +622,7 @@ func TestAuthorizationExecutor_Execute_RegistrationFlow_AuthenticatedWithPermiss
 	authUser := newAuthzAuthenticatedAuthUser()
 	ctx := &core.NodeContext{
 		ExecutionID: "test-registration-flow",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		AuthUser:    authUser,
 		RuntimeData: map[string]string{
 			requestedPermissionsKey: "read:profile write:profile",
@@ -633,7 +631,7 @@ func TestAuthorizationExecutor_Execute_RegistrationFlow_AuthenticatedWithPermiss
 	}
 
 	mockAuthnProvider.On("GetEntityReference", mock.Anything, mock.Anything).
-		Return(authUser, &authnprovidercm.EntityReference{EntityID: existingUserID}, nil)
+		Return(authUser, &providers.EntityReference{EntityID: existingUserID}, nil)
 
 	mockAuthzService.On("EvaluateAccessBatch",
 		mock.Anything,
@@ -664,15 +662,15 @@ func TestAuthorizationExecutor_Execute_NonRegistrationFlow_UnauthenticatedShould
 	// Setup - non-registration flow types should fail if unauthenticated
 	testCases := []struct {
 		name     string
-		flowType common.FlowType
+		flowType providers.FlowType
 	}{
 		{
 			name:     "Authentication flow",
-			flowType: common.FlowTypeAuthentication,
+			flowType: providers.FlowTypeAuthentication,
 		},
 		{
 			name:     "User onboarding flow",
-			flowType: common.FlowTypeUserOnboarding,
+			flowType: providers.FlowTypeUserOnboarding,
 		},
 	}
 
@@ -717,7 +715,7 @@ func TestAuthorizationExecutor_ExtractGroupIDs_FromEntityProvider(t *testing.T) 
 	}
 
 	mockEntityProvider.On("GetTransitiveEntityGroups", "test-user-123").Return(
-		[]entityprovider.EntityGroup{
+		[]providers.EntityGroup{
 			{ID: "svc-group-1"},
 			{ID: "svc-group-2"},
 		}, nil)

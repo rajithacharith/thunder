@@ -22,13 +22,13 @@ import (
 	"context"
 	"fmt"
 
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/security"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // attributeUniquenessValidator checks whether values supplied for unique schema attributes
@@ -39,7 +39,7 @@ type attributeUniquenessValidator struct {
 	core.ExecutorInterface
 	entityTypeService entitytype.EntityTypeServiceInterface
 	entityProvider    entityprovider.EntityProviderInterface
-	authnProvider     authnprovidermgr.AuthnProviderManagerInterface
+	authnProvider     providers.AuthnProviderManagerInterface
 	logger            *log.Logger
 }
 
@@ -48,7 +48,7 @@ func newAttributeUniquenessValidator(
 	flowFactory core.FlowFactoryInterface,
 	entityTypeService entitytype.EntityTypeServiceInterface,
 	entityProvider entityprovider.EntityProviderInterface,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
+	authnProvider providers.AuthnProviderManagerInterface,
 ) *attributeUniquenessValidator {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, ExecutorNameAttributeUniquenessValidator))
 	prerequisites := []common.Input{

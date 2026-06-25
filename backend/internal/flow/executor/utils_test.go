@@ -27,10 +27,10 @@ import (
 
 	appmodel "github.com/thunder-id/thunderid/internal/application/model"
 	authncm "github.com/thunder-id/thunderid/internal/authn/common"
-	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 )
 
@@ -93,14 +93,14 @@ func createMockAuthExecutor(t *testing.T, executorName string) core.ExecutorInte
 func (s *UtilsTestSuite) TestGetUserAttribute() {
 	tests := []struct {
 		name         string
-		user         *entityprovider.Entity
+		user         *providers.Entity
 		attributeKey string
 		expectedVal  string
 		expectError  bool
 	}{
 		{
 			name: "Success case",
-			user: &entityprovider.Entity{
+			user: &providers.Entity{
 				Attributes: []byte(`{"email":"user@example.com"}`),
 			},
 			attributeKey: "email",
@@ -115,7 +115,7 @@ func (s *UtilsTestSuite) TestGetUserAttribute() {
 		},
 		{
 			name: "Empty attributes",
-			user: &entityprovider.Entity{
+			user: &providers.Entity{
 				Attributes: []byte(``),
 			},
 			attributeKey: "email",
@@ -123,7 +123,7 @@ func (s *UtilsTestSuite) TestGetUserAttribute() {
 		},
 		{
 			name: "Invalid JSON attributes",
-			user: &entityprovider.Entity{
+			user: &providers.Entity{
 				Attributes: []byte(`invalid-json`),
 			},
 			attributeKey: "email",
@@ -131,7 +131,7 @@ func (s *UtilsTestSuite) TestGetUserAttribute() {
 		},
 		{
 			name: "Attribute not found",
-			user: &entityprovider.Entity{
+			user: &providers.Entity{
 				Attributes: []byte(`{"other":"data"}`),
 			},
 			attributeKey: "email",
@@ -139,7 +139,7 @@ func (s *UtilsTestSuite) TestGetUserAttribute() {
 		},
 		{
 			name: "Non-string attribute value",
-			user: &entityprovider.Entity{
+			user: &providers.Entity{
 				Attributes: []byte(`{"email":123}`),
 			},
 			attributeKey: "email",

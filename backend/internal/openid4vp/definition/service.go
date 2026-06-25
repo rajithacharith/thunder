@@ -23,8 +23,9 @@ import (
 	"errors"
 	"strings"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/thunder-id/thunderid/internal/ou"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -33,17 +34,17 @@ import (
 // definitions in the configdb store, which the verifier engine reads on demand.
 type PresentationDefinitionServiceInterface interface {
 	CreatePresentationDefinition(ctx context.Context, dto *PresentationDefinitionDTO) (
-		*PresentationDefinitionDTO, *serviceerror.ServiceError)
-	GetPresentationDefinition(ctx context.Context, id string) (*PresentationDefinitionDTO, *serviceerror.ServiceError)
+		*PresentationDefinitionDTO, *tidcommon.ServiceError)
+	GetPresentationDefinition(ctx context.Context, id string) (*PresentationDefinitionDTO, *tidcommon.ServiceError)
 	GetPresentationDefinitionByHandle(
 		ctx context.Context, handle string,
-	) (*PresentationDefinitionDTO, *serviceerror.ServiceError)
-	ListPresentationDefinitions(ctx context.Context) ([]PresentationDefinitionDTO, *serviceerror.ServiceError)
-	ListPresentationDefinitionSummaries(ctx context.Context) ([]PresentationDefinitionList, *serviceerror.ServiceError)
+	) (*PresentationDefinitionDTO, *tidcommon.ServiceError)
+	ListPresentationDefinitions(ctx context.Context) ([]PresentationDefinitionDTO, *tidcommon.ServiceError)
+	ListPresentationDefinitionSummaries(ctx context.Context) ([]PresentationDefinitionList, *tidcommon.ServiceError)
 	UpdatePresentationDefinition(ctx context.Context, id string, dto *PresentationDefinitionDTO) (
-		*PresentationDefinitionDTO, *serviceerror.ServiceError)
-	DeletePresentationDefinition(ctx context.Context, id string) *serviceerror.ServiceError
-	IsPresentationDefinitionDeclarative(ctx context.Context, id string) (bool, *serviceerror.ServiceError)
+		*PresentationDefinitionDTO, *tidcommon.ServiceError)
+	DeletePresentationDefinition(ctx context.Context, id string) *tidcommon.ServiceError
+	IsPresentationDefinitionDeclarative(ctx context.Context, id string) (bool, *tidcommon.ServiceError)
 }
 
 type definitionService struct {
@@ -68,7 +69,7 @@ func newPresentationDefinitionService(
 // resolveOU resolves ouHandle to ouId when needed and verifies the OU exists.
 func (s *definitionService) resolveOU(
 	ctx context.Context, dto *PresentationDefinitionDTO,
-) *serviceerror.ServiceError {
+) *tidcommon.ServiceError {
 	if s.ouService == nil {
 		return nil
 	}
@@ -85,7 +86,7 @@ func (s *definitionService) resolveOU(
 	exists, svcErr := s.ouService.IsOrganizationUnitExists(ctx, dto.OUID)
 	if svcErr != nil {
 		s.logger.Error(ctx, "Failed to verify organization unit", log.Any("error", svcErr))
-		return &serviceerror.InternalServerError
+		return &tidcommon.InternalServerError
 	}
 	if !exists {
 		return &ErrorDefinitionInvalidOU
@@ -124,7 +125,7 @@ func (s *definitionService) populateOUHandle(ctx context.Context, dtos ...*Prese
 // CreatePresentationDefinition validates, assigns an ID, and persists a new presentation definition.
 func (s *definitionService) CreatePresentationDefinition(
 	ctx context.Context, dto *PresentationDefinitionDTO,
-) (*PresentationDefinitionDTO, *serviceerror.ServiceError) {
+) (*PresentationDefinitionDTO, *tidcommon.ServiceError) {
 	if svcErr := validateDefinition(dto); svcErr != nil {
 		return nil, svcErr
 	}
@@ -135,7 +136,7 @@ func (s *definitionService) CreatePresentationDefinition(
 	existing, err := s.store.GetPresentationDefinitionByHandle(ctx, dto.Handle)
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		s.logger.Error(ctx, "Failed to check existing definition", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	if existing != nil {
 		return nil, &ErrorDefinitionAlreadyExists
@@ -147,14 +148,14 @@ func (s *definitionService) CreatePresentationDefinition(
 		id, genErr = s.uuid()
 		if genErr != nil {
 			s.logger.Error(ctx, "Failed to generate definition ID", log.Error(genErr))
-			return nil, &serviceerror.InternalServerError
+			return nil, &tidcommon.InternalServerError
 		}
 	}
 	dto.ID = id
 
 	if err := s.store.CreatePresentationDefinition(ctx, *dto); err != nil {
 		s.logger.Error(ctx, "Failed to create presentation definition", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	return dto, nil
 }
@@ -162,7 +163,7 @@ func (s *definitionService) CreatePresentationDefinition(
 // GetPresentationDefinition returns the presentation definition with the given ID and resolves its OU handle.
 func (s *definitionService) GetPresentationDefinition(
 	ctx context.Context, id string,
-) (*PresentationDefinitionDTO, *serviceerror.ServiceError) {
+) (*PresentationDefinitionDTO, *tidcommon.ServiceError) {
 	if strings.TrimSpace(id) == "" {
 		return nil, &ErrorDefinitionInvalidRequest
 	}
@@ -172,7 +173,7 @@ func (s *definitionService) GetPresentationDefinition(
 			return nil, &ErrorDefinitionNotFound
 		}
 		s.logger.Error(ctx, "Failed to get presentation definition", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	s.populateOUHandle(ctx, dto)
 	return dto, nil
@@ -181,14 +182,14 @@ func (s *definitionService) GetPresentationDefinition(
 // GetPresentationDefinitionByHandle returns the presentation definition matching the given handle.
 func (s *definitionService) GetPresentationDefinitionByHandle(
 	ctx context.Context, handle string,
-) (*PresentationDefinitionDTO, *serviceerror.ServiceError) {
+) (*PresentationDefinitionDTO, *tidcommon.ServiceError) {
 	dto, err := s.store.GetPresentationDefinitionByHandle(ctx, handle)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return nil, &ErrorDefinitionNotFound
 		}
 		s.logger.Error(ctx, "Failed to get presentation definition by handle", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	return dto, nil
 }
@@ -196,14 +197,14 @@ func (s *definitionService) GetPresentationDefinitionByHandle(
 // ListPresentationDefinitions returns all presentation definitions with resolved OU handles.
 func (s *definitionService) ListPresentationDefinitions(
 	ctx context.Context,
-) ([]PresentationDefinitionDTO, *serviceerror.ServiceError) {
+) ([]PresentationDefinitionDTO, *tidcommon.ServiceError) {
 	defs, err := s.store.ListPresentationDefinitions(ctx)
 	if err != nil {
 		if errors.Is(err, ErrResultLimitExceededInCompositeMode) {
 			return nil, &ErrorDefinitionResultLimitExceeded
 		}
 		s.logger.Error(ctx, "Failed to list presentation definitions", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	ptrs := make([]*PresentationDefinitionDTO, len(defs))
 	for i := range defs {
@@ -216,14 +217,14 @@ func (s *definitionService) ListPresentationDefinitions(
 // ListPresentationDefinitionSummaries returns summaries of all presentation definitions with resolved OU handles.
 func (s *definitionService) ListPresentationDefinitionSummaries(
 	ctx context.Context,
-) ([]PresentationDefinitionList, *serviceerror.ServiceError) {
+) ([]PresentationDefinitionList, *tidcommon.ServiceError) {
 	summaries, err := s.store.ListPresentationDefinitionSummaries(ctx)
 	if err != nil {
 		if errors.Is(err, ErrResultLimitExceededInCompositeMode) {
 			return nil, &ErrorDefinitionResultLimitExceeded
 		}
 		s.logger.Error(ctx, "Failed to list presentation definition summaries", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	s.populateSummaryOUHandles(ctx, summaries)
 	return summaries, nil
@@ -261,7 +262,7 @@ func (s *definitionService) populateSummaryOUHandles(ctx context.Context, summar
 // UpdatePresentationDefinition validates and persists changes to the presentation definition with the given ID.
 func (s *definitionService) UpdatePresentationDefinition(
 	ctx context.Context, id string, dto *PresentationDefinitionDTO,
-) (*PresentationDefinitionDTO, *serviceerror.ServiceError) {
+) (*PresentationDefinitionDTO, *tidcommon.ServiceError) {
 	if strings.TrimSpace(id) == "" {
 		return nil, &ErrorDefinitionInvalidRequest
 	}
@@ -278,14 +279,14 @@ func (s *definitionService) UpdatePresentationDefinition(
 			return nil, &ErrorDefinitionNotFound
 		}
 		s.logger.Error(ctx, "Failed to load presentation definition", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	if existing.Handle != dto.Handle {
 		clash, err := s.store.GetPresentationDefinitionByHandle(ctx, dto.Handle)
 		if err != nil && !errors.Is(err, ErrNotFound) {
 			s.logger.Error(ctx, "Failed to check handle uniqueness", log.Error(err))
-			return nil, &serviceerror.InternalServerError
+			return nil, &tidcommon.InternalServerError
 		}
 		if clash != nil {
 			return nil, &ErrorDefinitionAlreadyExists
@@ -298,13 +299,13 @@ func (s *definitionService) UpdatePresentationDefinition(
 			return nil, &ErrorDefinitionImmutable
 		}
 		s.logger.Error(ctx, "Failed to update presentation definition", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	return dto, nil
 }
 
 // DeletePresentationDefinition deletes the presentation definition with the given ID.
-func (s *definitionService) DeletePresentationDefinition(ctx context.Context, id string) *serviceerror.ServiceError {
+func (s *definitionService) DeletePresentationDefinition(ctx context.Context, id string) *tidcommon.ServiceError {
 	if strings.TrimSpace(id) == "" {
 		return &ErrorDefinitionInvalidRequest
 	}
@@ -313,14 +314,14 @@ func (s *definitionService) DeletePresentationDefinition(ctx context.Context, id
 			return nil // idempotent
 		}
 		s.logger.Error(ctx, "Failed to load presentation definition", log.Error(err))
-		return &serviceerror.InternalServerError
+		return &tidcommon.InternalServerError
 	}
 	if err := s.store.DeletePresentationDefinition(ctx, id); err != nil {
 		if errors.Is(err, ErrDefinitionIsImmutable) {
 			return &ErrorDefinitionImmutable
 		}
 		s.logger.Error(ctx, "Failed to delete presentation definition", log.Error(err))
-		return &serviceerror.InternalServerError
+		return &tidcommon.InternalServerError
 	}
 	return nil
 }
@@ -328,17 +329,17 @@ func (s *definitionService) DeletePresentationDefinition(ctx context.Context, id
 // IsPresentationDefinitionDeclarative reports whether the presentation definition with the given ID is file-based.
 func (s *definitionService) IsPresentationDefinitionDeclarative(
 	ctx context.Context, id string,
-) (bool, *serviceerror.ServiceError) {
+) (bool, *tidcommon.ServiceError) {
 	isDeclarative, err := s.store.IsPresentationDefinitionDeclarative(ctx, id)
 	if err != nil {
 		s.logger.Error(ctx, "Failed to check if presentation definition is declarative", log.Error(err))
-		return false, &serviceerror.InternalServerError
+		return false, &tidcommon.InternalServerError
 	}
 	return isDeclarative, nil
 }
 
 // validateDefinition enforces the required fields of a presentation definition.
-func validateDefinition(dto *PresentationDefinitionDTO) *serviceerror.ServiceError {
+func validateDefinition(dto *PresentationDefinitionDTO) *tidcommon.ServiceError {
 	if dto == nil || strings.TrimSpace(dto.Handle) == "" || strings.TrimSpace(dto.VCT) == "" {
 		return &ErrorDefinitionInvalidRequest
 	}

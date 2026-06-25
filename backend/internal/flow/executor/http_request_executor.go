@@ -32,13 +32,13 @@ import (
 	"strings"
 	"time"
 
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/ou"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	httpservice "github.com/thunder-id/thunderid/internal/system/http"
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
@@ -82,7 +82,7 @@ type errorHandlingConfig struct {
 type httpRequestExecutor struct {
 	core.ExecutorInterface
 	ouService     ou.OrganizationUnitServiceInterface
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface
+	authnProvider providers.AuthnProviderManagerInterface
 	logger        *log.Logger
 }
 
@@ -92,7 +92,7 @@ var _ core.ExecutorInterface = (*httpRequestExecutor)(nil)
 func newHTTPRequestExecutor(
 	flowFactory core.FlowFactoryInterface,
 	ouService ou.OrganizationUnitServiceInterface,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
+	authnProvider providers.AuthnProviderManagerInterface,
 ) *httpRequestExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, httpRequestLoggerComponentName),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameHTTPRequest))
@@ -555,7 +555,7 @@ func (h *httpRequestExecutor) handleRequestError(
 	if failOnError {
 		logger.Debug(ctx, "Failing execution due to HTTP request error", log.String("error", errorMessage))
 		execResp.Status = common.ExecFailure
-		execResp.Error = serviceerror.CustomServiceError(ErrHTTPRequestFailed, i18ncore.I18nMessage{
+		execResp.Error = tidcommon.CustomServiceError(ErrHTTPRequestFailed, tidcommon.I18nMessage{
 			Key:          ErrHTTPRequestFailed.ErrorDescription.Key,
 			DefaultValue: errorMessage,
 		})

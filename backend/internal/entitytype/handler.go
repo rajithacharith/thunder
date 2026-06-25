@@ -24,10 +24,10 @@ import (
 	"net/http"
 	"strconv"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -99,7 +99,7 @@ func (h *entityTypeHandler) HandleEntityTypePostRequest(w http.ResponseWriter, r
 		errResp := apierror.ErrorResponse{
 			Code:    ErrorInvalidRequestFormat.Code,
 			Message: ErrorInvalidRequestFormat.Error,
-			Description: core.I18nMessage{
+			Description: tidcommon.I18nMessage{
 				Key:          "error.entitytypeservice.create_schema_request_parse_failed_description",
 				DefaultValue: "Failed to parse request body"},
 		}
@@ -205,7 +205,7 @@ func (h *entityTypeHandler) HandleEntityTypeDeleteRequest(w http.ResponseWriter,
 }
 
 // parsePaginationParams parses limit and offset from query parameters.
-func parsePaginationParams(query map[string][]string) (int, int, *serviceerror.ServiceError) {
+func parsePaginationParams(query map[string][]string) (int, int, *tidcommon.ServiceError) {
 	var limit, offset int
 	var err error
 
@@ -229,9 +229,9 @@ func parsePaginationParams(query map[string][]string) (int, int, *serviceerror.S
 }
 
 // handleError handles service errors and converts them to appropriate HTTP responses.
-func handleError(ctx context.Context, w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
+func handleError(ctx context.Context, w http.ResponseWriter, svcErr *tidcommon.ServiceError) {
 	var statusCode int
-	if svcErr.Type == serviceerror.ClientErrorType {
+	if svcErr.Type == tidcommon.ClientErrorType {
 		statusCode = http.StatusBadRequest
 		if svcErr.Code == ErrorEntityTypeNotFound.Code {
 			statusCode = http.StatusNotFound
@@ -241,7 +241,7 @@ func handleError(ctx context.Context, w http.ResponseWriter, svcErr *serviceerro
 			statusCode = http.StatusForbidden
 		} else if svcErr.Code == ErrorResultLimitExceededInCompositeMode.Code {
 			statusCode = http.StatusBadRequest
-		} else if svcErr.Code == serviceerror.ErrorUnauthorized.Code {
+		} else if svcErr.Code == tidcommon.ErrorUnauthorized.Code {
 			statusCode = http.StatusForbidden
 		}
 	} else {
@@ -286,7 +286,7 @@ func validateUpdateEntityTypeRequest(
 		errResp := apierror.ErrorResponse{
 			Code:    ErrorInvalidRequestFormat.Code,
 			Message: ErrorInvalidRequestFormat.Error,
-			Description: core.I18nMessage{
+			Description: tidcommon.I18nMessage{
 				Key:          "error.entitytypeservice.update_schema_request_parse_failed_description",
 				DefaultValue: "Failed to parse request body"},
 		}

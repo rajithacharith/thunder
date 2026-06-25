@@ -25,9 +25,11 @@ import (
 	"net/url"
 	"strconv"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
 
@@ -79,7 +81,7 @@ func (h *resourceHandler) HandleResourceServerPostRequest(w http.ResponseWriter,
 	}
 
 	sanitized := sanitizeCreateResourceServerRequest(req)
-	serviceReq := ResourceServer{
+	serviceReq := providers.ResourceServer{
 		Name:        sanitized.Name,
 		Description: sanitized.Description,
 		Handle:      sanitized.Handle,
@@ -129,7 +131,7 @@ func (h *resourceHandler) HandleResourceServerPutRequest(w http.ResponseWriter, 
 	}
 
 	sanitized := sanitizeUpdateResourceServerRequest(req)
-	serviceReq := ResourceServer{
+	serviceReq := providers.ResourceServer{
 		Name:        sanitized.Name,
 		Description: sanitized.Description,
 		Handle:      sanitized.Handle,
@@ -206,7 +208,7 @@ func (h *resourceHandler) HandleResourcePostRequest(w http.ResponseWriter, r *ht
 	}
 
 	sanitized := sanitizeCreateResourceRequest(req)
-	serviceReq := Resource{
+	serviceReq := providers.Resource{
 		Name:        sanitized.Name,
 		Handle:      sanitized.Handle,
 		Description: sanitized.Description,
@@ -261,7 +263,7 @@ func (h *resourceHandler) HandleResourcePutRequest(w http.ResponseWriter, r *htt
 	}
 
 	sanitized := sanitizeUpdateResourceRequest(req)
-	serviceReq := Resource{
+	serviceReq := providers.Resource{
 		Name:        sanitized.Name,
 		Description: sanitized.Description,
 	}
@@ -329,7 +331,7 @@ func (h *resourceHandler) HandleActionPostAtResourceServerRequest(w http.Respons
 	}
 
 	sanitized := sanitizeCreateActionRequest(req)
-	serviceReq := Action{
+	serviceReq := providers.Action{
 		Name:        sanitized.Name,
 		Handle:      sanitized.Handle,
 		Description: sanitized.Description,
@@ -379,7 +381,7 @@ func (h *resourceHandler) HandleActionPutAtResourceServerRequest(w http.Response
 	}
 
 	sanitized := sanitizeUpdateActionRequest(req)
-	serviceReq := Action{
+	serviceReq := providers.Action{
 		Name:        sanitized.Name,
 		Description: sanitized.Description,
 	}
@@ -450,7 +452,7 @@ func (h *resourceHandler) HandleActionPostAtResourceRequest(w http.ResponseWrite
 	}
 
 	sanitized := sanitizeCreateActionRequest(req)
-	serviceReq := Action{
+	serviceReq := providers.Action{
 		Name:        sanitized.Name,
 		Handle:      sanitized.Handle,
 		Description: sanitized.Description,
@@ -497,7 +499,7 @@ func (h *resourceHandler) HandleActionPutAtResourceRequest(w http.ResponseWriter
 	}
 
 	sanitized := sanitizeUpdateActionRequest(req)
-	serviceReq := Action{
+	serviceReq := providers.Action{
 		Name:        sanitized.Name,
 		Description: sanitized.Description,
 	}
@@ -531,7 +533,7 @@ func (h *resourceHandler) HandleActionDeleteAtResourceRequest(w http.ResponseWri
 // Helper functions
 
 // parsePaginationParams parses 'limit' and 'offset' query parameters.
-func parsePaginationParams(query url.Values) (int, int, *serviceerror.ServiceError) {
+func parsePaginationParams(query url.Values) (int, int, *tidcommon.ServiceError) {
 	limit := serverconst.DefaultPageSize
 	offset := 0
 
@@ -555,9 +557,9 @@ func parsePaginationParams(query url.Values) (int, int, *serviceerror.ServiceErr
 }
 
 // handleError writes an error response based on the provided service error.
-func handleError(ctx context.Context, w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
+func handleError(ctx context.Context, w http.ResponseWriter, svcErr *tidcommon.ServiceError) {
 	statusCode := http.StatusInternalServerError
-	if svcErr.Type == serviceerror.ClientErrorType {
+	if svcErr.Type == tidcommon.ClientErrorType {
 		switch svcErr.Code {
 		case ErrorResourceServerNotFound.Code, ErrorResourceNotFound.Code, ErrorActionNotFound.Code:
 			statusCode = http.StatusNotFound
@@ -647,11 +649,11 @@ func sanitizeUpdateActionRequest(req *UpdateActionRequest) UpdateActionRequest {
 
 // Response transformation functions
 
-// toResourceServerResponse transforms a ResourceServer to ResourceServerResponse.
-func toResourceServerResponse(rs *ResourceServer) *ResourceServerResponse {
+// toResourceServerResponse transforms a providers.ResourceServer to ResourceServerResponse.
+func toResourceServerResponse(rs *providers.ResourceServer) *ResourceServerResponse {
 	resType := rs.Type
 	if resType == "" {
-		resType = ResourceServerTypeCustom
+		resType = providers.ResourceServerTypeCustom
 	}
 	return &ResourceServerResponse{
 		ID:          rs.ID,
@@ -687,8 +689,8 @@ func toResourceServerListResponse(list *ResourceServerList) *ResourceServerListR
 	}
 }
 
-// toResourceResponse transforms a Resource to ResourceResponse.
-func toResourceResponse(res *Resource) *ResourceResponse {
+// toResourceResponse transforms a providers.Resource to ResourceResponse.
+func toResourceResponse(res *providers.Resource) *ResourceResponse {
 	return &ResourceResponse{
 		ID:          res.ID,
 		Name:        res.Name,
@@ -720,8 +722,8 @@ func toResourceListResponse(list *ResourceList) *ResourceListResponse {
 	}
 }
 
-// toActionResponse transforms an Action to ActionResponse.
-func toActionResponse(action *Action) *ActionResponse {
+// toActionResponse transforms an providers.Action to ActionResponse.
+func toActionResponse(action *providers.Action) *ActionResponse {
 	return &ActionResponse{
 		ID:          action.ID,
 		Name:        action.Name,

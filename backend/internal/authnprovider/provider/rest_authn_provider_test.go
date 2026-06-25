@@ -25,11 +25,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/tests/mocks/httpmock"
 )
 
@@ -60,8 +62,8 @@ func (suite *RestAuthnProviderTestSuite) TestAuthenticate_Success() {
 		suite.Equal("user", req.Identifiers["username"])
 		suite.Equal("pass", req.Credentials["password"])
 
-		resp := authnprovidercm.AuthnResult{
-			EntityReference: &authnprovidercm.EntityReference{
+		resp := providers.AuthnResult{
+			EntityReference: &providers.EntityReference{
 				EntityID:       "user123",
 				EntityCategory: "user",
 				EntityType:     "customer",
@@ -109,7 +111,7 @@ func (suite *RestAuthnProviderTestSuite) TestGetEntityReference_Success() {
 		suite.Equal(http.MethodPost, r.Method)
 		suite.Equal("apikey123", r.Header.Get("API-KEY"))
 
-		resp := authnprovidercm.EntityReference{
+		resp := providers.EntityReference{
 			EntityID:       "user123",
 			EntityCategory: "user",
 			EntityType:     "customer",
@@ -161,8 +163,8 @@ func (suite *RestAuthnProviderTestSuite) TestGetAttributes_Success() {
 		suite.Len(req.RequestedAttributes.Attributes, 1)
 		suite.Contains(req.RequestedAttributes.Attributes, "email")
 
-		resp := authnprovidercm.AttributesResponse{
-			Attributes: map[string]*authnprovidercm.AttributeResponse{
+		resp := providers.AttributesResponse{
+			Attributes: map[string]*providers.AttributeResponse{
 				"email": {Value: "test@example.com"},
 			},
 		}
@@ -172,8 +174,8 @@ func (suite *RestAuthnProviderTestSuite) TestGetAttributes_Success() {
 	defer ts.Close()
 
 	provider := newRestAuthnProvider(ts.URL, "apikey123", suite.setupMockClient())
-	reqAttrs := &authnprovidercm.RequestedAttributes{
-		Attributes: map[string]*authnprovidercm.AttributeMetadataRequest{
+	reqAttrs := &providers.RequestedAttributes{
+		Attributes: map[string]*providers.AttributeMetadataRequest{
 			"email": nil,
 		},
 	}
@@ -214,6 +216,6 @@ func (suite *RestAuthnProviderTestSuite) TestSystemError_Decoding() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
-	suite.Equal(serviceerror.ServerErrorType, err.Type)
+	suite.Equal(tidcommon.InternalServerError.Code, err.Code)
+	suite.Equal(tidcommon.ServerErrorType, err.Type)
 }

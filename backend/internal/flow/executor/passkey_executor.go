@@ -23,13 +23,13 @@ import (
 	"errors"
 	"fmt"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/thunder-id/thunderid/internal/authn/passkey"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	systemutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -72,7 +72,7 @@ type passkeyAuthExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
 	passkeyService passkey.PasskeyServiceInterface
-	authnProvider  authnprovidermgr.AuthnProviderManagerInterface
+	authnProvider  providers.AuthnProviderManagerInterface
 	entityProvider entityprovider.EntityProviderInterface
 	logger         *log.Logger
 }
@@ -84,7 +84,7 @@ var _ identifyingExecutorInterface = (*passkeyAuthExecutor)(nil)
 func newPasskeyAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
 	passkeyService passkey.PasskeyServiceInterface,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
+	authnProvider providers.AuthnProviderManagerInterface,
 	entityProvider entityprovider.EntityProviderInterface,
 ) *passkeyAuthExecutor {
 	defaultInputs := []common.Input{
@@ -201,12 +201,12 @@ func (p *passkeyAuthExecutor) executeChallenge(ctx *core.NodeContext,
 	}
 	startData, svcErr := p.passkeyService.StartAuthentication(ctx.Context, startReq)
 	if svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
+		if svcErr.Type == tidcommon.ClientErrorType {
 			logger.Debug(ctx.Context, "Failed to start passkey authentication",
 				log.MaskedString(log.LoggerKeyUserID, userID),
 				log.String("error", svcErr.ErrorDescription.DefaultValue))
 			execResp.Status = common.ExecFailure
-			execResp.Error = serviceerror.CustomServiceError(ErrPasskeyAuthFailed, i18ncore.I18nMessage{
+			execResp.Error = tidcommon.CustomServiceError(ErrPasskeyAuthFailed, tidcommon.I18nMessage{
 				Key:          ErrPasskeyAuthFailed.ErrorDescription.Key,
 				DefaultValue: "Failed to start passkey authentication: " + svcErr.ErrorDescription.DefaultValue,
 			})
@@ -307,7 +307,7 @@ func (p *passkeyAuthExecutor) validatePasskey(ctx *core.NodeContext, execResp *c
 		ctx.Context, nil, credentials, nil, nil, execResp.AuthUser)
 	execResp.AuthUser = authUser
 	if svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
+		if svcErr.Type == tidcommon.ClientErrorType {
 			logger.Debug(ctx.Context, "Passkey verification failed",
 				log.MaskedString(log.LoggerKeyUserID, userID),
 				log.String("error", svcErr.ErrorDescription.DefaultValue))
@@ -370,12 +370,12 @@ func (p *passkeyAuthExecutor) executeRegisterStart(ctx *core.NodeContext,
 	// Start passkey registration
 	startData, svcErr := p.passkeyService.StartRegistration(ctx.Context, regReq)
 	if svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
+		if svcErr.Type == tidcommon.ClientErrorType {
 			logger.Debug(ctx.Context, "Failed to start passkey registration",
 				log.MaskedString(log.LoggerKeyUserID, userID),
 				log.String("error", svcErr.ErrorDescription.DefaultValue))
 			execResp.Status = common.ExecFailure
-			execResp.Error = serviceerror.CustomServiceError(ErrPasskeyRegistrationFailed, i18ncore.I18nMessage{
+			execResp.Error = tidcommon.CustomServiceError(ErrPasskeyRegistrationFailed, tidcommon.I18nMessage{
 				Key:          ErrPasskeyRegistrationFailed.ErrorDescription.Key,
 				DefaultValue: "Failed to start passkey registration: " + svcErr.ErrorDescription.DefaultValue,
 			})
@@ -466,13 +466,13 @@ func (p *passkeyAuthExecutor) executeRegisterFinish(ctx *core.NodeContext,
 	// Call passkey service to finish registration
 	finishData, svcErr := p.passkeyService.FinishRegistration(ctx.Context, finishReq)
 	if svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
+		if svcErr.Type == tidcommon.ClientErrorType {
 			logger.Debug(ctx.Context, "Passkey registration failed",
 				log.String("error", svcErr.ErrorDescription.DefaultValue))
 			// Return USER_INPUT_REQUIRED to allow retry on invalid registration
 			execResp.Status = common.ExecUserInputRequired
 			execResp.Inputs = allInputs
-			execResp.Error = serviceerror.CustomServiceError(ErrPasskeyRegistrationFailed, i18ncore.I18nMessage{
+			execResp.Error = tidcommon.CustomServiceError(ErrPasskeyRegistrationFailed, tidcommon.I18nMessage{
 				Key:          ErrPasskeyRegistrationFailed.ErrorDescription.Key,
 				DefaultValue: "Failed to finish passkey registration: " + svcErr.ErrorDescription.DefaultValue,
 			})
