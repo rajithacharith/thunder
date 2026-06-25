@@ -583,14 +583,14 @@ func (suite *ProvisioningExecutorTestSuite) TestGetAttributesForProvisioning_Fil
 		Return([]model.AttributeInfo{
 			{Attribute: "username", Required: true},
 			{Attribute: attributeEmail, Required: true},
-			{Attribute: "mobileNumber", Required: true},
+			{Attribute: "mobile_number", Required: true},
 		}, nil).Once()
 
 	ctx := &core.NodeContext{
 		UserInputs: map[string]string{
-			"username":     "testuser",
-			attributeEmail: "test@example.com",
-			"mobileNumber": "0771234567",
+			"username":      "testuser",
+			attributeEmail:  "test@example.com",
+			"mobile_number": "0771234567",
 		},
 		RuntimeData: map[string]string{userTypeKey: testUserType},
 		NodeInputs:  nodeInputs,
@@ -600,7 +600,7 @@ func (suite *ProvisioningExecutorTestSuite) TestGetAttributesForProvisioning_Fil
 
 	assert.Equal(suite.T(), "testuser", result["username"])
 	assert.Equal(suite.T(), "test@example.com", result[attributeEmail])
-	assert.Equal(suite.T(), "0771234567", result["mobileNumber"],
+	assert.Equal(suite.T(), "0771234567", result["mobile_number"],
 		"required schema attr from UserInputs must be included even though it is not in node inputs")
 }
 
@@ -615,16 +615,16 @@ func (suite *ProvisioningExecutorTestSuite) TestGetAttributesForProvisioning_Fil
 			{Attribute: "username", Required: true},
 			{Attribute: attributeEmail, Required: true},
 			{Attribute: "given_name", Required: true},
-			{Attribute: "mobileNumber", Required: true},
+			{Attribute: "mobile_number", Required: true},
 		}, nil).Once()
 
 	ctx := &core.NodeContext{
 		UserInputs: map[string]string{"username": "testuser"},
 		RuntimeData: map[string]string{
-			userTypeKey:    testUserType,
-			attributeEmail: "federated@example.com",
-			"given_name":   "Test",
-			"mobileNumber": "0779876543",
+			userTypeKey:     testUserType,
+			attributeEmail:  "federated@example.com",
+			"given_name":    "Test",
+			"mobile_number": "0779876543",
 		},
 		NodeInputs: nodeInputs,
 	}
@@ -634,7 +634,7 @@ func (suite *ProvisioningExecutorTestSuite) TestGetAttributesForProvisioning_Fil
 	assert.Equal(suite.T(), "testuser", result["username"])
 	assert.Equal(suite.T(), "federated@example.com", result[attributeEmail])
 	assert.Equal(suite.T(), "Test", result["given_name"])
-	assert.Equal(suite.T(), "0779876543", result["mobileNumber"])
+	assert.Equal(suite.T(), "0779876543", result["mobile_number"])
 }
 
 func (suite *ProvisioningExecutorTestSuite) TestGetAttributesForProvisioning_FilteredPath_UserInputTakesPriority() {

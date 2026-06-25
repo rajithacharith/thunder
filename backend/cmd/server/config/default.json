@@ -149,7 +149,7 @@
     "indexed_attributes": [
       "username",
       "email",
-      "mobileNumber",
+      "mobile_number",
       "sub"
     ],
     "store": "composite"

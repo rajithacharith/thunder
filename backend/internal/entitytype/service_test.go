@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -1933,7 +1933,7 @@ func (s *EntityTypeServiceTestSuite) TestGetAttributes_NonCredentialAllAttrs_Inc
 		Return(EntityType{
 			Schema: json.RawMessage(
 				`{"email":{"type":"string","required":true},` +
-					`"mobileNumber":{"type":"string"},` +
+					`"mobile_number":{"type":"string"},` +
 					`"password":{"type":"string","required":true,"credential":true}}`,
 			),
 		}, nil).
@@ -1947,14 +1947,14 @@ func (s *EntityTypeServiceTestSuite) TestGetAttributes_NonCredentialAllAttrs_Inc
 	attrs, svcErr := service.GetAttributes(context.Background(), TypeCategoryUser, "INTERNAL", false, true, false)
 
 	s.Require().Nil(svcErr)
-	s.Require().Len(attrs, 2, "email and mobileNumber should be returned; password excluded as credential")
+	s.Require().Len(attrs, 2, "email and mobile_number should be returned; password excluded as credential")
 
 	attrMap := make(map[string]AttributeInfo, len(attrs))
 	for _, a := range attrs {
 		attrMap[a.Attribute] = a
 	}
 	s.True(attrMap["email"].Required)
-	s.False(attrMap["mobileNumber"].Required, "optional attribute must be included with Required=false")
+	s.False(attrMap["mobile_number"].Required, "optional attribute must be included with Required=false")
 	_, hasPassword := attrMap["password"]
 	s.False(hasPassword, "credential must always be excluded")
 }
