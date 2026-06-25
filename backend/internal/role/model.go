@@ -59,7 +59,7 @@ type AssignmentResponse struct {
 
 // AssignmentRequest represents an assignment of a role to a user or group.
 type AssignmentRequest struct {
-	ID   string       `json:"id" native:"required"`
+	ID   string       `json:"id"   native:"required"`
 	Type AssigneeType `json:"type" native:"required,oneof=user app agent group"`
 }
 
@@ -85,9 +85,9 @@ type RoleResponse struct {
 
 // CreateRoleRequest represents the request body for creating a role.
 type CreateRoleRequest struct {
-	Name        string                `json:"name" native:"required,min=3,max=64"`
+	Name        string                `json:"name"                  native:"required,min=3,max=64"`
 	Description string                `json:"description,omitempty"`
-	OUID        string                `json:"ouId" native:"required"`
+	OUID        string                `json:"ouId"                  native:"required"`
 	Permissions []ResourcePermissions `json:"permissions"`
 	Assignments []AssignmentRequest   `json:"assignments,omitempty"`
 }
@@ -105,9 +105,9 @@ type CreateRoleResponse struct {
 
 // UpdateRoleRequest represents the request body for updating a role.
 type UpdateRoleRequest struct {
-	Name        string                `json:"name" native:"required,min=3,max=64"`
+	Name        string                `json:"name"                  native:"required,min=3,max=64"`
 	Description string                `json:"description,omitempty"`
-	OUID        string                `json:"ouId" native:"required"`
+	OUID        string                `json:"ouId"                  native:"required"`
 	Permissions []ResourcePermissions `json:"permissions"`
 }
 
@@ -139,7 +139,7 @@ type AssignmentListResponse struct {
 // ResourcePermissions represents permissions grouped by resource server.
 type ResourcePermissions struct {
 	ResourceServerID string   `json:"resourceServerId" yaml:"resourceServerId"`
-	Permissions      []string `json:"permissions" yaml:"permissions"`
+	Permissions      []string `json:"permissions"      yaml:"permissions"`
 }
 
 // RoleCreationDetail represents the parameters for creating a role.

@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 
 	mock "github.com/stretchr/testify/mock"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 // NewServerConfigServiceMock creates a new instance of ServerConfigServiceMock. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -40,7 +40,7 @@ func (_m *ServerConfigServiceMock) EXPECT() *ServerConfigServiceMock_Expecter {
 }
 
 // GetConfig provides a mock function for the type ServerConfigServiceMock
-func (_mock *ServerConfigServiceMock) GetConfig(ctx context.Context, name ConfigName) (ServerConfigLayers, *serviceerror.ServiceError) {
+func (_mock *ServerConfigServiceMock) GetConfig(ctx context.Context, name ConfigName) (ServerConfigLayers, *common.ServiceError) {
 	ret := _mock.Called(ctx, name)
 
 	if len(ret) == 0 {
@@ -48,8 +48,8 @@ func (_mock *ServerConfigServiceMock) GetConfig(ctx context.Context, name Config
 	}
 
 	var r0 ServerConfigLayers
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, ConfigName) (ServerConfigLayers, *serviceerror.ServiceError)); ok {
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, ConfigName) (ServerConfigLayers, *common.ServiceError)); ok {
 		return returnFunc(ctx, name)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, ConfigName) ServerConfigLayers); ok {
@@ -57,11 +57,11 @@ func (_mock *ServerConfigServiceMock) GetConfig(ctx context.Context, name Config
 	} else {
 		r0 = ret.Get(0).(ServerConfigLayers)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, ConfigName) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, ConfigName) *common.ServiceError); ok {
 		r1 = returnFunc(ctx, name)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -97,18 +97,18 @@ func (_c *ServerConfigServiceMock_GetConfig_Call) Run(run func(ctx context.Conte
 	return _c
 }
 
-func (_c *ServerConfigServiceMock_GetConfig_Call) Return(serverConfigLayers ServerConfigLayers, serviceError *serviceerror.ServiceError) *ServerConfigServiceMock_GetConfig_Call {
+func (_c *ServerConfigServiceMock_GetConfig_Call) Return(serverConfigLayers ServerConfigLayers, serviceError *common.ServiceError) *ServerConfigServiceMock_GetConfig_Call {
 	_c.Call.Return(serverConfigLayers, serviceError)
 	return _c
 }
 
-func (_c *ServerConfigServiceMock_GetConfig_Call) RunAndReturn(run func(ctx context.Context, name ConfigName) (ServerConfigLayers, *serviceerror.ServiceError)) *ServerConfigServiceMock_GetConfig_Call {
+func (_c *ServerConfigServiceMock_GetConfig_Call) RunAndReturn(run func(ctx context.Context, name ConfigName) (ServerConfigLayers, *common.ServiceError)) *ServerConfigServiceMock_GetConfig_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ListConfigNames provides a mock function for the type ServerConfigServiceMock
-func (_mock *ServerConfigServiceMock) ListConfigNames(ctx context.Context) ([]ConfigName, *serviceerror.ServiceError) {
+func (_mock *ServerConfigServiceMock) ListConfigNames(ctx context.Context) ([]ConfigName, *common.ServiceError) {
 	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
@@ -116,8 +116,8 @@ func (_mock *ServerConfigServiceMock) ListConfigNames(ctx context.Context) ([]Co
 	}
 
 	var r0 []ConfigName
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]ConfigName, *serviceerror.ServiceError)); ok {
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]ConfigName, *common.ServiceError)); ok {
 		return returnFunc(ctx)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context) []ConfigName); ok {
@@ -127,11 +127,11 @@ func (_mock *ServerConfigServiceMock) ListConfigNames(ctx context.Context) ([]Co
 			r0 = ret.Get(0).([]ConfigName)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context) *common.ServiceError); ok {
 		r1 = returnFunc(ctx)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -161,30 +161,30 @@ func (_c *ServerConfigServiceMock_ListConfigNames_Call) Run(run func(ctx context
 	return _c
 }
 
-func (_c *ServerConfigServiceMock_ListConfigNames_Call) Return(configNames []ConfigName, serviceError *serviceerror.ServiceError) *ServerConfigServiceMock_ListConfigNames_Call {
+func (_c *ServerConfigServiceMock_ListConfigNames_Call) Return(configNames []ConfigName, serviceError *common.ServiceError) *ServerConfigServiceMock_ListConfigNames_Call {
 	_c.Call.Return(configNames, serviceError)
 	return _c
 }
 
-func (_c *ServerConfigServiceMock_ListConfigNames_Call) RunAndReturn(run func(ctx context.Context) ([]ConfigName, *serviceerror.ServiceError)) *ServerConfigServiceMock_ListConfigNames_Call {
+func (_c *ServerConfigServiceMock_ListConfigNames_Call) RunAndReturn(run func(ctx context.Context) ([]ConfigName, *common.ServiceError)) *ServerConfigServiceMock_ListConfigNames_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // SetConfig provides a mock function for the type ServerConfigServiceMock
-func (_mock *ServerConfigServiceMock) SetConfig(ctx context.Context, name ConfigName, value json.RawMessage) *serviceerror.ServiceError {
+func (_mock *ServerConfigServiceMock) SetConfig(ctx context.Context, name ConfigName, value json.RawMessage) *common.ServiceError {
 	ret := _mock.Called(ctx, name, value)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SetConfig")
 	}
 
-	var r0 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, ConfigName, json.RawMessage) *serviceerror.ServiceError); ok {
+	var r0 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, ConfigName, json.RawMessage) *common.ServiceError); ok {
 		r0 = returnFunc(ctx, name, value)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*serviceerror.ServiceError)
+			r0 = ret.Get(0).(*common.ServiceError)
 		}
 	}
 	return r0
@@ -226,12 +226,12 @@ func (_c *ServerConfigServiceMock_SetConfig_Call) Run(run func(ctx context.Conte
 	return _c
 }
 
-func (_c *ServerConfigServiceMock_SetConfig_Call) Return(serviceError *serviceerror.ServiceError) *ServerConfigServiceMock_SetConfig_Call {
+func (_c *ServerConfigServiceMock_SetConfig_Call) Return(serviceError *common.ServiceError) *ServerConfigServiceMock_SetConfig_Call {
 	_c.Call.Return(serviceError)
 	return _c
 }
 
-func (_c *ServerConfigServiceMock_SetConfig_Call) RunAndReturn(run func(ctx context.Context, name ConfigName, value json.RawMessage) *serviceerror.ServiceError) *ServerConfigServiceMock_SetConfig_Call {
+func (_c *ServerConfigServiceMock_SetConfig_Call) RunAndReturn(run func(ctx context.Context, name ConfigName, value json.RawMessage) *common.ServiceError) *ServerConfigServiceMock_SetConfig_Call {
 	_c.Call.Return(run)
 	return _c
 }

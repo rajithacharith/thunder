@@ -118,7 +118,7 @@ var (
 	}
 )
 
-// Resource Queries
+// providers.Resource Queries
 var (
 	// queryCreateResource creates a new resource.
 	queryCreateResource = dbmodel.DBQuery{
@@ -273,7 +273,7 @@ var (
 	}
 )
 
-// Action Queries
+// providers.Action Queries
 var (
 	// queryCreateAction creates a new action.
 	queryCreateAction = dbmodel.DBQuery{

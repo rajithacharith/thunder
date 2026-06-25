@@ -25,6 +25,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/system/config"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
+	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
 )
 
 type ConfigTestSuite struct {
@@ -42,7 +43,7 @@ func (suite *ConfigTestSuite) TearDownTest() {
 // setRuntime initializes a fresh runtime with the given server-config store knob and global flag.
 func (suite *ConfigTestSuite) setRuntime(store string, declarativeEnabled bool) {
 	config.ResetServerRuntime()
-	cfg := &config.Config{Server: config.ServerConfig{Identifier: "test-deployment"}}
+	cfg := &config.Config{Server: engineconfig.ServerConfig{Identifier: "test-deployment"}}
 	cfg.ServerConfig.Store = store
 	cfg.DeclarativeResources.Enabled = declarativeEnabled
 	suite.Require().NoError(config.InitializeServerRuntime("", cfg))

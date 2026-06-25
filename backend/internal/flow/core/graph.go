@@ -22,13 +22,13 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/thunder-id/thunderid/internal/flow/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // GraphInterface defines the graph structure
 type GraphInterface interface {
 	GetID() string
-	GetType() common.FlowType
+	GetType() providers.FlowType
 	AddNode(node NodeInterface) error
 	GetNode(nodeID string) (NodeInterface, bool)
 	AddEdge(fromNodeID, toNodeID string) error
@@ -46,8 +46,8 @@ type GraphInterface interface {
 	SetSegments(segments []Segment)
 	GetSegmentByID(segmentID string) *Segment
 	GetSegmentByStartNode(nodeID string) *Segment
-	GetInterceptors(mode common.InterceptorMode) []InterceptorUnitInterface
-	SetInterceptors(resolved map[common.InterceptorMode][]InterceptorUnitInterface)
+	GetInterceptors(mode providers.InterceptorMode) []InterceptorUnitInterface
+	SetInterceptors(resolved map[providers.InterceptorMode][]InterceptorUnitInterface)
 	GetVersion() int
 	SetVersion(version int)
 }
@@ -55,12 +55,12 @@ type GraphInterface interface {
 // graph implements the GraphInterface for the flow execution
 type graph struct {
 	id           string
-	_type        common.FlowType
+	_type        providers.FlowType
 	nodes        map[string]NodeInterface
 	edges        map[string][]string
 	startNodeID  string
 	segments     []Segment
-	interceptors map[common.InterceptorMode][]InterceptorUnitInterface
+	interceptors map[providers.InterceptorMode][]InterceptorUnitInterface
 	version      int
 }
 
@@ -70,7 +70,7 @@ func (g *graph) GetID() string {
 }
 
 // GetType returns the type of the graph
-func (g *graph) GetType() common.FlowType {
+func (g *graph) GetType() providers.FlowType {
 	return g._type
 }
 
@@ -238,7 +238,7 @@ func (g *graph) GetSegmentByStartNode(nodeID string) *Segment {
 }
 
 // GetInterceptors returns the pre-resolved interceptor units for the given mode.
-func (g *graph) GetInterceptors(mode common.InterceptorMode) []InterceptorUnitInterface {
+func (g *graph) GetInterceptors(mode providers.InterceptorMode) []InterceptorUnitInterface {
 	if g.interceptors == nil {
 		return nil
 	}
@@ -246,7 +246,7 @@ func (g *graph) GetInterceptors(mode common.InterceptorMode) []InterceptorUnitIn
 }
 
 // SetInterceptors stores pre-resolved interceptor units grouped by mode.
-func (g *graph) SetInterceptors(resolved map[common.InterceptorMode][]InterceptorUnitInterface) {
+func (g *graph) SetInterceptors(resolved map[providers.InterceptorMode][]InterceptorUnitInterface) {
 	g.interceptors = resolved
 }
 

@@ -22,8 +22,8 @@ import (
 	"context"
 
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 const (
@@ -60,7 +60,7 @@ func (e *serverConfigExporter) GetParameterizerType() string {
 }
 
 // GetAllResourceIDs returns the supported section names; one file is exported per section.
-func (e *serverConfigExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
+func (e *serverConfigExporter) GetAllResourceIDs(ctx context.Context) ([]string, *common.ServiceError) {
 	names, svcErr := e.service.ListConfigNames(ctx)
 	if svcErr != nil {
 		return nil, svcErr
@@ -74,7 +74,7 @@ func (e *serverConfigExporter) GetAllResourceIDs(ctx context.Context) ([]string,
 
 // GetResourceByID returns the section's effective value as an export document.
 func (e *serverConfigExporter) GetResourceByID(ctx context.Context, id string) (
-	interface{}, string, *serviceerror.ServiceError,
+	interface{}, string, *common.ServiceError,
 ) {
 	layers, svcErr := e.service.GetConfig(ctx, ConfigName(id))
 	if svcErr != nil {

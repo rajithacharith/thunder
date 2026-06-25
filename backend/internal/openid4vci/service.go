@@ -25,8 +25,9 @@ import (
 	"fmt"
 	"time"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/thunder-id/thunderid/internal/openid4vci/credential"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/user"
@@ -56,10 +57,10 @@ var _ OpenID4VCIServiceInterface = (*service)(nil)
 type credentialReader interface {
 	GetCredentialConfigurationByHandle(
 		ctx context.Context, handle string,
-	) (*credential.CredentialConfigurationDTO, *serviceerror.ServiceError)
+	) (*credential.CredentialConfigurationDTO, *tidcommon.ServiceError)
 	ListCredentialConfigurations(
 		ctx context.Context,
-	) ([]credential.CredentialConfigurationDTO, *serviceerror.ServiceError)
+	) ([]credential.CredentialConfigurationDTO, *tidcommon.ServiceError)
 }
 
 // serviceConfig is the engine-level configuration of the OpenID4VCI issuer.

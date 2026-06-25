@@ -26,10 +26,9 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 )
 
@@ -43,8 +42,8 @@ func TestUtilsTestSuite(t *testing.T) {
 
 // newAuthenticatedAuthUser creates an AuthUser that returns true for IsAuthenticated()
 // by unmarshaling JSON with both entityReferenceToken and attributeToken set.
-func newAuthenticatedAuthUser() authnprovidermgr.AuthUser {
-	var authUser authnprovidermgr.AuthUser
+func newAuthenticatedAuthUser() providers.AuthUser {
+	var authUser providers.AuthUser
 	data := `{"entityReferenceToken":"token","attributeToken":"token"}`
 	_ = json.Unmarshal([]byte(data), &authUser)
 	return authUser
@@ -137,7 +136,7 @@ func (s *UtilsTestSuite) TestResolvePlaceholderUserIDFromAuthnProvider() {
 	logger := log.GetLogger()
 
 	mockProvider.On("GetEntityReference", mock.Anything, authUser).
-		Return(authUser, &authnprovidercm.EntityReference{
+		Return(authUser, &providers.EntityReference{
 			EntityID: "user-123",
 			OUID:     "ou-456",
 		}, nil)
@@ -192,7 +191,7 @@ func (s *UtilsTestSuite) TestResolvePlaceholderOUIDFromAuthnProvider() {
 	logger := log.GetLogger()
 
 	mockProvider.On("GetEntityReference", mock.Anything, authUser).
-		Return(authUser, &authnprovidercm.EntityReference{
+		Return(authUser, &providers.EntityReference{
 			EntityID: "user-123",
 			OUID:     "ou-123",
 		}, nil)
@@ -213,7 +212,7 @@ func (s *UtilsTestSuite) TestResolvePlaceholderOUIDFromAuthnProviderWithoutEntit
 	logger := log.GetLogger()
 
 	mockProvider.On("GetEntityReference", mock.Anything, authUser).
-		Return(authUser, &authnprovidercm.EntityReference{
+		Return(authUser, &providers.EntityReference{
 			OUID: "ou-123",
 		}, nil)
 
@@ -267,7 +266,7 @@ func (s *UtilsTestSuite) TestResolvePlaceholderUserIDAndOUIDShareSingleFetch() {
 	logger := log.GetLogger()
 
 	mockProvider.On("GetEntityReference", mock.Anything, authUser).
-		Return(authUser, &authnprovidercm.EntityReference{
+		Return(authUser, &providers.EntityReference{
 			EntityID: "user-789",
 			OUID:     "ou-789",
 		}, nil).Once()

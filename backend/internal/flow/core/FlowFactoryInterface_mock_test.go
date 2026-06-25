@@ -7,6 +7,7 @@ package core
 import (
 	mock "github.com/stretchr/testify/mock"
 	"github.com/thunder-id/thunderid/internal/flow/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // NewFlowFactoryInterfaceMock creates a new instance of FlowFactoryInterfaceMock. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -232,7 +233,7 @@ func (_c *FlowFactoryInterfaceMock_CreateExecutor_Call) RunAndReturn(run func(na
 }
 
 // CreateGraph provides a mock function for the type FlowFactoryInterfaceMock
-func (_mock *FlowFactoryInterfaceMock) CreateGraph(id string, _type common.FlowType, version int) GraphInterface {
+func (_mock *FlowFactoryInterfaceMock) CreateGraph(id string, _type providers.FlowType, version int) GraphInterface {
 	ret := _mock.Called(id, _type, version)
 
 	if len(ret) == 0 {
@@ -240,7 +241,7 @@ func (_mock *FlowFactoryInterfaceMock) CreateGraph(id string, _type common.FlowT
 	}
 
 	var r0 GraphInterface
-	if returnFunc, ok := ret.Get(0).(func(string, common.FlowType, int) GraphInterface); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, providers.FlowType, int) GraphInterface); ok {
 		r0 = returnFunc(id, _type, version)
 	} else {
 		if ret.Get(0) != nil {
@@ -257,21 +258,21 @@ type FlowFactoryInterfaceMock_CreateGraph_Call struct {
 
 // CreateGraph is a helper method to define mock.On call
 //   - id string
-//   - _type common.FlowType
+//   - _type providers.FlowType
 //   - version int
 func (_e *FlowFactoryInterfaceMock_Expecter) CreateGraph(id interface{}, _type interface{}, version interface{}) *FlowFactoryInterfaceMock_CreateGraph_Call {
 	return &FlowFactoryInterfaceMock_CreateGraph_Call{Call: _e.mock.On("CreateGraph", id, _type, version)}
 }
 
-func (_c *FlowFactoryInterfaceMock_CreateGraph_Call) Run(run func(id string, _type common.FlowType, version int)) *FlowFactoryInterfaceMock_CreateGraph_Call {
+func (_c *FlowFactoryInterfaceMock_CreateGraph_Call) Run(run func(id string, _type providers.FlowType, version int)) *FlowFactoryInterfaceMock_CreateGraph_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
 			arg0 = args[0].(string)
 		}
-		var arg1 common.FlowType
+		var arg1 providers.FlowType
 		if args[1] != nil {
-			arg1 = args[1].(common.FlowType)
+			arg1 = args[1].(providers.FlowType)
 		}
 		var arg2 int
 		if args[2] != nil {
@@ -291,7 +292,7 @@ func (_c *FlowFactoryInterfaceMock_CreateGraph_Call) Return(graphInterface Graph
 	return _c
 }
 
-func (_c *FlowFactoryInterfaceMock_CreateGraph_Call) RunAndReturn(run func(id string, _type common.FlowType, version int) GraphInterface) *FlowFactoryInterfaceMock_CreateGraph_Call {
+func (_c *FlowFactoryInterfaceMock_CreateGraph_Call) RunAndReturn(run func(id string, _type providers.FlowType, version int) GraphInterface) *FlowFactoryInterfaceMock_CreateGraph_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -362,7 +363,7 @@ func (_c *FlowFactoryInterfaceMock_CreateInterceptor_Call) RunAndReturn(run func
 }
 
 // CreateInterceptorUnit provides a mock function for the type FlowFactoryInterfaceMock
-func (_mock *FlowFactoryInterfaceMock) CreateInterceptorUnit(name string, mode common.InterceptorMode, scope common.InterceptorScope, applyTo []string, properties map[string]interface{}) InterceptorUnitInterface {
+func (_mock *FlowFactoryInterfaceMock) CreateInterceptorUnit(name string, mode providers.InterceptorMode, scope providers.InterceptorScope, applyTo []string, properties map[string]interface{}) InterceptorUnitInterface {
 	ret := _mock.Called(name, mode, scope, applyTo, properties)
 
 	if len(ret) == 0 {
@@ -370,7 +371,7 @@ func (_mock *FlowFactoryInterfaceMock) CreateInterceptorUnit(name string, mode c
 	}
 
 	var r0 InterceptorUnitInterface
-	if returnFunc, ok := ret.Get(0).(func(string, common.InterceptorMode, common.InterceptorScope, []string, map[string]interface{}) InterceptorUnitInterface); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, providers.InterceptorMode, providers.InterceptorScope, []string, map[string]interface{}) InterceptorUnitInterface); ok {
 		r0 = returnFunc(name, mode, scope, applyTo, properties)
 	} else {
 		if ret.Get(0) != nil {
@@ -387,27 +388,27 @@ type FlowFactoryInterfaceMock_CreateInterceptorUnit_Call struct {
 
 // CreateInterceptorUnit is a helper method to define mock.On call
 //   - name string
-//   - mode common.InterceptorMode
-//   - scope common.InterceptorScope
+//   - mode providers.InterceptorMode
+//   - scope providers.InterceptorScope
 //   - applyTo []string
 //   - properties map[string]interface{}
 func (_e *FlowFactoryInterfaceMock_Expecter) CreateInterceptorUnit(name interface{}, mode interface{}, scope interface{}, applyTo interface{}, properties interface{}) *FlowFactoryInterfaceMock_CreateInterceptorUnit_Call {
 	return &FlowFactoryInterfaceMock_CreateInterceptorUnit_Call{Call: _e.mock.On("CreateInterceptorUnit", name, mode, scope, applyTo, properties)}
 }
 
-func (_c *FlowFactoryInterfaceMock_CreateInterceptorUnit_Call) Run(run func(name string, mode common.InterceptorMode, scope common.InterceptorScope, applyTo []string, properties map[string]interface{})) *FlowFactoryInterfaceMock_CreateInterceptorUnit_Call {
+func (_c *FlowFactoryInterfaceMock_CreateInterceptorUnit_Call) Run(run func(name string, mode providers.InterceptorMode, scope providers.InterceptorScope, applyTo []string, properties map[string]interface{})) *FlowFactoryInterfaceMock_CreateInterceptorUnit_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
 			arg0 = args[0].(string)
 		}
-		var arg1 common.InterceptorMode
+		var arg1 providers.InterceptorMode
 		if args[1] != nil {
-			arg1 = args[1].(common.InterceptorMode)
+			arg1 = args[1].(providers.InterceptorMode)
 		}
-		var arg2 common.InterceptorScope
+		var arg2 providers.InterceptorScope
 		if args[2] != nil {
-			arg2 = args[2].(common.InterceptorScope)
+			arg2 = args[2].(providers.InterceptorScope)
 		}
 		var arg3 []string
 		if args[3] != nil {
@@ -433,7 +434,7 @@ func (_c *FlowFactoryInterfaceMock_CreateInterceptorUnit_Call) Return(intercepto
 	return _c
 }
 
-func (_c *FlowFactoryInterfaceMock_CreateInterceptorUnit_Call) RunAndReturn(run func(name string, mode common.InterceptorMode, scope common.InterceptorScope, applyTo []string, properties map[string]interface{}) InterceptorUnitInterface) *FlowFactoryInterfaceMock_CreateInterceptorUnit_Call {
+func (_c *FlowFactoryInterfaceMock_CreateInterceptorUnit_Call) RunAndReturn(run func(name string, mode providers.InterceptorMode, scope providers.InterceptorScope, applyTo []string, properties map[string]interface{}) InterceptorUnitInterface) *FlowFactoryInterfaceMock_CreateInterceptorUnit_Call {
 	_c.Call.Return(run)
 	return _c
 }

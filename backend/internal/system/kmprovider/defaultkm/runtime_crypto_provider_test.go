@@ -30,13 +30,14 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/thunder-id/thunderid/internal/system/cryptolib"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/tests/mocks/crypto/pki/pkimock"
@@ -44,10 +45,10 @@ import (
 
 const testKeyID = "test-key-id"
 
-func newTestSvcErr() *serviceerror.ServiceError {
-	return &serviceerror.ServiceError{
+func newTestSvcErr() *tidcommon.ServiceError {
+	return &tidcommon.ServiceError{
 		Code:  "TEST-001",
-		Error: core.I18nMessage{DefaultValue: "key not found"},
+		Error: tidcommon.I18nMessage{DefaultValue: "key not found"},
 	}
 }
 
@@ -167,7 +168,7 @@ func TestEncrypt_RSAOAEP256_NilKeyRef(t *testing.T) {
 
 func TestEncrypt_RSAOAEP256_PKIError(t *testing.T) {
 	pki := pkimock.NewPKIServiceInterfaceMock(t)
-	pki.EXPECT().GetX509Certificate(mock.Anything, "key1").Return(nil, &serviceerror.InternalServerError)
+	pki.EXPECT().GetX509Certificate(mock.Anything, "key1").Return(nil, &tidcommon.InternalServerError)
 
 	svc := &runtimeCryptoService{pkiService: pki}
 	keyRef := &kmprovider.KeyRef{KeyID: "key1"}
@@ -237,7 +238,7 @@ func TestEncrypt_ECDHES_NilKeyRef(t *testing.T) {
 
 func TestEncrypt_ECDHES_PKIError(t *testing.T) {
 	pki := pkimock.NewPKIServiceInterfaceMock(t)
-	pki.EXPECT().GetX509Certificate(mock.Anything, "key1").Return(nil, &serviceerror.InternalServerError)
+	pki.EXPECT().GetX509Certificate(mock.Anything, "key1").Return(nil, &tidcommon.InternalServerError)
 
 	svc := &runtimeCryptoService{pkiService: pki}
 	keyRef := &kmprovider.KeyRef{KeyID: "key1"}
@@ -315,7 +316,7 @@ func TestDecrypt_RSAOAEP256_NilKeyRef(t *testing.T) {
 
 func TestDecrypt_RSAOAEP256_PKIError(t *testing.T) {
 	pki := pkimock.NewPKIServiceInterfaceMock(t)
-	pki.EXPECT().GetPrivateKey(mock.Anything, "key1").Return(nil, &serviceerror.InternalServerError)
+	pki.EXPECT().GetPrivateKey(mock.Anything, "key1").Return(nil, &tidcommon.InternalServerError)
 
 	svc := &runtimeCryptoService{pkiService: pki}
 	keyRef := &kmprovider.KeyRef{KeyID: "key1"}
@@ -351,7 +352,7 @@ func TestDecrypt_ECDHES_NilKeyRef(t *testing.T) {
 
 func TestDecrypt_ECDHES_PKIError(t *testing.T) {
 	pki := pkimock.NewPKIServiceInterfaceMock(t)
-	pki.EXPECT().GetPrivateKey(mock.Anything, "key1").Return(nil, &serviceerror.InternalServerError)
+	pki.EXPECT().GetPrivateKey(mock.Anything, "key1").Return(nil, &tidcommon.InternalServerError)
 
 	svc := &runtimeCryptoService{pkiService: pki}
 	keyRef := &kmprovider.KeyRef{KeyID: "key1"}
@@ -501,7 +502,7 @@ func TestGetPublicKeys_NilPKIService(t *testing.T) {
 
 func TestGetPublicKeys_GetAllX509CertificatesError(t *testing.T) {
 	pki := pkimock.NewPKIServiceInterfaceMock(t)
-	pki.EXPECT().GetAllX509Certificates(mock.Anything).Return(nil, &serviceerror.InternalServerError)
+	pki.EXPECT().GetAllX509Certificates(mock.Anything).Return(nil, &tidcommon.InternalServerError)
 
 	svc := &runtimeCryptoService{pkiService: pki, logger: newTestLogger()}
 	_, err := svc.GetPublicKeys(context.Background(), kmprovider.PublicKeyFilter{})
@@ -703,7 +704,7 @@ func TestVerify_UnsupportedAlgorithm(t *testing.T) {
 
 func TestVerify_GetPublicKeysError(t *testing.T) {
 	pki := pkimock.NewPKIServiceInterfaceMock(t)
-	pki.EXPECT().GetAllX509Certificates(mock.Anything).Return(nil, &serviceerror.InternalServerError)
+	pki.EXPECT().GetAllX509Certificates(mock.Anything).Return(nil, &common.InternalServerError)
 
 	svc := &runtimeCryptoService{pkiService: pki, logger: newTestLogger()}
 	err := svc.Verify(context.Background(), "kid-1", "ES256", []byte("data"), []byte("sig"))

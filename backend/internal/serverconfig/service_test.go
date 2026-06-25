@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 type ServiceTestSuite struct {
@@ -92,7 +92,7 @@ func (suite *ServiceTestSuite) TestGetConfig_UnsupportedName() {
 func (suite *ServiceTestSuite) TestGetConfig_NoHandlerRegistered_FailClosed() {
 	layers, svcErr := suite.serviceWithoutHandlers().GetConfig(suite.ctx, ConfigNameCORS)
 	assert.Equal(suite.T(), ServerConfigLayers{}, layers)
-	assert.Same(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Same(suite.T(), &common.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestGetConfig_StoreError() {
@@ -100,7 +100,7 @@ func (suite *ServiceTestSuite) TestGetConfig_StoreError() {
 		Return(storeLayers{}, errors.New("db error"))
 	layers, svcErr := suite.service.GetConfig(suite.ctx, ConfigNameCORS)
 	assert.Equal(suite.T(), ServerConfigLayers{}, layers)
-	assert.Same(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Same(suite.T(), &common.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestGetConfig_DecodeError() {
@@ -109,7 +109,7 @@ func (suite *ServiceTestSuite) TestGetConfig_DecodeError() {
 	suite.mockHandler.EXPECT().Decode(declarative).Return(nil, errors.New("corrupt stored value"))
 	layers, svcErr := suite.service.GetConfig(suite.ctx, ConfigNameCORS)
 	assert.Equal(suite.T(), ServerConfigLayers{}, layers)
-	assert.Same(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Same(suite.T(), &common.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestGetConfig_OK() {
@@ -148,7 +148,7 @@ func (suite *ServiceTestSuite) TestSetConfig_UnsupportedName() {
 
 func (suite *ServiceTestSuite) TestSetConfig_NoHandlerRegistered_FailClosed() {
 	svcErr := suite.serviceWithoutHandlers().SetConfig(suite.ctx, ConfigNameCORS, incomingRaw)
-	assert.Same(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Same(suite.T(), &common.InternalServerError, svcErr)
 	suite.mockStore.AssertNotCalled(suite.T(), "UpsertServerConfig", mock.Anything, mock.Anything)
 }
 
@@ -165,7 +165,7 @@ func (suite *ServiceTestSuite) TestSetConfig_ReadError() {
 	suite.mockStore.EXPECT().GetServerConfig(mock.Anything, ConfigNameCORS).
 		Return(storeLayers{}, errors.New("db error"))
 	svcErr := suite.service.SetConfig(suite.ctx, ConfigNameCORS, incomingRaw)
-	assert.Same(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Same(suite.T(), &common.InternalServerError, svcErr)
 	suite.mockStore.AssertNotCalled(suite.T(), "UpsertServerConfig", mock.Anything, mock.Anything)
 }
 
@@ -201,5 +201,5 @@ func (suite *ServiceTestSuite) TestSetConfig_UpsertError() {
 	suite.mockHandler.EXPECT().Validate(incomingVal, nil, nil).Return(nil)
 	suite.mockStore.EXPECT().UpsertServerConfig(mock.Anything, mock.Anything).Return(errors.New("db error"))
 	svcErr := suite.service.SetConfig(suite.ctx, ConfigNameCORS, incomingRaw)
-	assert.Same(suite.T(), &serviceerror.InternalServerError, svcErr)
+	assert.Same(suite.T(), &common.InternalServerError, svcErr)
 }

@@ -24,14 +24,14 @@ import (
 	"errors"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	managerpkg "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
@@ -47,8 +47,8 @@ func TestEngineTestSuite(t *testing.T) {
 	suite.Run(t, new(EngineTestSuite))
 }
 
-func newAuthenticatedAuthUser() managerpkg.AuthUser {
-	var authUser managerpkg.AuthUser
+func newAuthenticatedAuthUser() providers.AuthUser {
+	var authUser providers.AuthUser
 	_ = authUser.UnmarshalJSON([]byte(`{"entityReferenceToken":"tok","attributeToken":"tok"}`))
 	return authUser
 }
@@ -555,7 +555,7 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_ReplacesAuthUserWhen
 		AuthUser: newAuthenticatedAuthUser(),
 	}
 
-	var newAuthUser managerpkg.AuthUser
+	var newAuthUser providers.AuthUser
 	err := newAuthUser.UnmarshalJSON([]byte(
 		`{"entityReference":{"entityId":"user-456"},"attributes":{}}`))
 	s.NoError(err)
@@ -660,13 +660,13 @@ func (s *EngineTestSuite) TestResolveStepDetailsForPrompt_WithError() {
 		Inputs: []common.Input{
 			{Identifier: "otp", Type: "string", Required: true},
 		},
-		Error: &serviceerror.ServiceError{
+		Error: &tidcommon.ServiceError{
 			Code: "FET-1008",
-			Error: i18ncore.I18nMessage{
+			Error: tidcommon.I18nMessage{
 				Key:          "flows.executor.errors.invalid_otp",
 				DefaultValue: "Invalid OTP provided",
 			},
-			ErrorDescription: i18ncore.I18nMessage{
+			ErrorDescription: tidcommon.I18nMessage{
 				Key:          "flows.executor.errors.invalid_otp_desc",
 				DefaultValue: "The one-time password provided is invalid or has expired",
 			},
@@ -763,7 +763,7 @@ func (s *EngineTestSuite) TestClearSensitiveInputs_AuthFlowRemovesPassword() {
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
-		FlowType: common.FlowTypeAuthentication,
+		FlowType: providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"username": "testuser",
 			"password": "secret123",
@@ -786,7 +786,7 @@ func (s *EngineTestSuite) TestClearSensitiveInputs_AuthFlowRemovesOTP() {
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
-		FlowType: common.FlowTypeAuthentication,
+		FlowType: providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"otp": "123456",
 		},
@@ -806,7 +806,7 @@ func (s *EngineTestSuite) TestClearSensitiveInputs_RegistrationFlowRetainsPasswo
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
-		FlowType: common.FlowTypeRegistration,
+		FlowType: providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"password": "secret123",
 		},
@@ -822,7 +822,7 @@ func (s *EngineTestSuite) TestClearSensitiveInputs_NoNodeInputs() {
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
-		FlowType: common.FlowTypeAuthentication,
+		FlowType: providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"password": "secret123",
 		},
@@ -843,7 +843,7 @@ func (s *EngineTestSuite) TestClearSensitiveInputs_NonSensitiveInputsRetained() 
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
-		FlowType: common.FlowTypeAuthentication,
+		FlowType: providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"username": "testuser",
 		},
@@ -868,7 +868,7 @@ func (s *EngineTestSuite) TestClearSensitiveInputs_NoNodeInputsUsesExecutorDefau
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
-		FlowType: common.FlowTypeAuthentication,
+		FlowType: providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"username": "testuser",
 			"password": "secret123",
@@ -890,7 +890,7 @@ func (s *EngineTestSuite) TestClearSensitiveInputs_UserOnboardingFlowRetainsPass
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
-		FlowType: common.FlowTypeUserOnboarding,
+		FlowType: providers.FlowTypeUserOnboarding,
 		UserInputs: map[string]string{
 			"password": "secret123",
 		},
@@ -1306,7 +1306,7 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NodeRespErrorPu
 
 	ctx := &EngineContext{
 		ExecutionID: "exec-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AppID:       "app-456",
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{
 			"test-node": {
@@ -1320,13 +1320,13 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NodeRespErrorPu
 
 	nodeResp := &common.NodeResponse{
 		Status: common.NodeStatusIncomplete,
-		Error: &serviceerror.ServiceError{
+		Error: &tidcommon.ServiceError{
 			Code: "FET-1008",
-			Error: i18ncore.I18nMessage{
+			Error: tidcommon.I18nMessage{
 				Key:          "flows.executor.errors.invalid_otp",
 				DefaultValue: "Invalid OTP provided",
 			},
-			ErrorDescription: i18ncore.I18nMessage{
+			ErrorDescription: tidcommon.I18nMessage{
 				Key:          "flows.executor.errors.invalid_otp_desc",
 				DefaultValue: "The one-time password provided is invalid or has expired",
 			},
@@ -1371,7 +1371,7 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NodeErrTakesPre
 
 	ctx := &EngineContext{
 		ExecutionID: "exec-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AppID:       "app-456",
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{
 			"test-node": {
@@ -1381,13 +1381,13 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NodeErrTakesPre
 		},
 	}
 
-	nodeErr := &serviceerror.ServiceError{
+	nodeErr := &tidcommon.ServiceError{
 		Code: "SVC-50001",
-		Error: i18ncore.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "service.errors.internal",
 			DefaultValue: "Internal server error",
 		},
-		ErrorDescription: i18ncore.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "service.errors.internal_desc",
 			DefaultValue: "An unexpected error occurred",
 		},
@@ -1395,9 +1395,9 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NodeErrTakesPre
 
 	nodeResp := &common.NodeResponse{
 		Status: common.NodeStatusFailure,
-		Error: &serviceerror.ServiceError{
+		Error: &tidcommon.ServiceError{
 			Code: "FET-1008",
-			Error: i18ncore.I18nMessage{
+			Error: tidcommon.I18nMessage{
 				Key:          "flows.executor.errors.invalid_otp",
 				DefaultValue: "Invalid OTP provided",
 			},
@@ -1432,7 +1432,7 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NoErrorPublishe
 
 	ctx := &EngineContext{
 		ExecutionID: "exec-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AppID:       "app-456",
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{
 			"test-node": {
@@ -1457,13 +1457,13 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NoErrorPublishe
 
 func (s *EngineTestSuite) TestProcessNodeResponseErrorForEventPublish_ReturnsErrorDetails() {
 	nodeResp := &common.NodeResponse{
-		Error: &serviceerror.ServiceError{
+		Error: &tidcommon.ServiceError{
 			Code: "FET-1021",
-			Error: i18ncore.I18nMessage{
+			Error: tidcommon.I18nMessage{
 				Key:          "flows.executor.errors.auth_failed",
 				DefaultValue: "Authentication failed",
 			},
-			ErrorDescription: i18ncore.I18nMessage{
+			ErrorDescription: tidcommon.I18nMessage{
 				Key:          "flows.executor.errors.auth_failed_desc",
 				DefaultValue: "The authentication attempt was unsuccessful",
 			},
@@ -1501,13 +1501,13 @@ func (s *EngineTestSuite) TestProcessNodeResponseErrorForEventPublish_NilError()
 }
 
 func (s *EngineTestSuite) TestProcessServiceErrorForEventPublish_ReturnsErrorDetails() {
-	svcErr := &serviceerror.ServiceError{
+	svcErr := &tidcommon.ServiceError{
 		Code: "SVC-50001",
-		Error: i18ncore.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "service.errors.internal",
 			DefaultValue: "Internal server error",
 		},
-		ErrorDescription: i18ncore.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "service.errors.internal_desc",
 			DefaultValue: "An unexpected error occurred",
 		},
@@ -1837,7 +1837,7 @@ func (s *EngineTestSuite) TestProcessNodeResponse_EmptyStatus() {
 func (s *EngineTestSuite) TestProcessNodeResponse_FailureStatus() {
 	fe := &flowEngine{logger: log.GetLogger()}
 	ctx := &EngineContext{Context: context.Background()}
-	svcErr := &serviceerror.ServiceError{Code: "err-1"}
+	svcErr := &tidcommon.ServiceError{Code: "err-1"}
 	nodeResp := &common.NodeResponse{
 		Status: common.NodeStatusFailure,
 		Error:  svcErr,
@@ -1976,7 +1976,7 @@ func (s *EngineTestSuite) TestCreateExecutionRecord_BasicNode() {
 
 func (s *EngineTestSuite) TestCreateExecutionAttempt_WithError() {
 	nodeRecord := &common.NodeExecutionRecord{Executions: make([]common.ExecutionAttempt, 0)}
-	svcErr := &serviceerror.ServiceError{Code: "err-1"}
+	svcErr := &tidcommon.ServiceError{Code: "err-1"}
 
 	attempt := createExecutionAttempt(nodeRecord, nil, svcErr, 100, 200)
 	s.Equal(common.FlowStatusError, attempt.Status)
@@ -2205,7 +2205,7 @@ func (s *EngineTestSuite) TestHandleForwardResponse_WithErrorMsg() {
 	mockNextNode.On("GetID").Return("next")
 	mockGraph.On("GetNode", "next").Return(mockNextNode, true)
 
-	svcErr := &serviceerror.ServiceError{Code: "err-1"}
+	svcErr := &tidcommon.ServiceError{Code: "err-1"}
 	fe := &flowEngine{logger: log.GetLogger()}
 	ctx := &EngineContext{
 		Context: context.Background(),
@@ -2254,7 +2254,7 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_DefaultStatus()
 	ctx := &EngineContext{
 		Context:     context.Background(),
 		ExecutionID: "exec-1",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{
 			"node-default": {NodeID: "node-default", Step: 1, Executions: []common.ExecutionAttempt{{Attempt: 1}}},
 		},
@@ -2296,7 +2296,7 @@ func (s *EngineTestSuite) TestRunInterceptors_NilGraph() {
 		Graph: nil,
 	}
 
-	continueExec, err := fe.runInterceptors(common.InterceptorModePreRequest, ctx, nil, &FlowStep{})
+	continueExec, err := fe.runInterceptors(providers.InterceptorModePreRequest, ctx, nil, &FlowStep{})
 
 	s.True(continueExec)
 	s.Nil(err)
@@ -2321,27 +2321,27 @@ func (s *EngineTestSuite) TestRunInterceptors_PreRequest_Success() {
 	}
 
 	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+		newTestInterceptorUnitMock(t, "stub", providers.InterceptorMode(""), providers.InterceptorScope(""), nil),
 	})
 
 	ctx := &EngineContext{
 		ExecutionID:           "exec-001",
 		AppID:                 "app-001",
-		FlowType:              common.FlowTypeAuthentication,
+		FlowType:              providers.FlowTypeAuthentication,
 		CurrentNode:           mockNode,
 		Graph:                 mockGraph,
 		RuntimeData:           map[string]string{"existingKey": "existingValue"},
 		InterceptorSharedData: map[string]string{"shared": "data"},
 	}
 
-	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePreRequest,
+	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePreRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
 		Return(&common.InterceptorResponse{
 			Status:        common.InterceptorStatusComplete,
 			EngineOutputs: map[string]string{"outputKey": "outputValue"},
 		}, nil)
 
-	continueExec, err := fe.runInterceptors(common.InterceptorModePreRequest, ctx, nil, &FlowStep{})
+	continueExec, err := fe.runInterceptors(providers.InterceptorModePreRequest, ctx, nil, &FlowStep{})
 
 	s.True(continueExec)
 	s.Nil(err)
@@ -2352,7 +2352,7 @@ func (s *EngineTestSuite) TestRunInterceptors_PreRequest_Success() {
 func (s *EngineTestSuite) TestRunInterceptors_ReturnsError() {
 	tests := []struct {
 		name        string
-		mode        common.InterceptorMode
+		mode        providers.InterceptorMode
 		executionID string
 		errCode     string
 		errKey      string
@@ -2360,7 +2360,7 @@ func (s *EngineTestSuite) TestRunInterceptors_ReturnsError() {
 	}{
 		{
 			name:        "PreRequest",
-			mode:        common.InterceptorModePreRequest,
+			mode:        providers.InterceptorModePreRequest,
 			executionID: "exec-002",
 			errCode:     "INT-001",
 			errKey:      "error.interceptor.failed",
@@ -2368,7 +2368,7 @@ func (s *EngineTestSuite) TestRunInterceptors_ReturnsError() {
 		},
 		{
 			name:        "PostRequest",
-			mode:        common.InterceptorModePostRequest,
+			mode:        providers.InterceptorModePostRequest,
 			executionID: "exec-006",
 			errCode:     "INT-002",
 			errKey:      "error.interceptor.post_request_failed",
@@ -2395,16 +2395,22 @@ func (s *EngineTestSuite) TestRunInterceptors_ReturnsError() {
 				logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
 			}
 
-			svcErr := &serviceerror.ServiceError{
+			svcErr := &tidcommon.ServiceError{
 				Code: tc.errCode,
-				Error: i18ncore.I18nMessage{
+				Error: tidcommon.I18nMessage{
 					Key:          tc.errKey,
 					DefaultValue: tc.errDefault,
 				},
 			}
 
 			mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-				newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+				newTestInterceptorUnitMock(
+					t,
+					"stub",
+					providers.InterceptorMode(""),
+					providers.InterceptorScope(""),
+					nil,
+				),
 			})
 
 			ctx := &EngineContext{
@@ -2450,7 +2456,7 @@ func (s *EngineTestSuite) TestRunInterceptors_PreNode_UsesProvidedNode() {
 	}
 
 	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+		newTestInterceptorUnitMock(t, "stub", providers.InterceptorMode(""), providers.InterceptorScope(""), nil),
 	})
 
 	ctx := &EngineContext{
@@ -2460,7 +2466,7 @@ func (s *EngineTestSuite) TestRunInterceptors_PreNode_UsesProvidedNode() {
 	}
 
 	// Capture the invocation context to verify the target node's fields are used, not CurrentNode's.
-	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePreNode,
+	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePreNode,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
 		Run(func(args mock.Arguments) {
 			execCtx := args.Get(1).(*InterceptorRunnerContext)
@@ -2469,7 +2475,7 @@ func (s *EngineTestSuite) TestRunInterceptors_PreNode_UsesProvidedNode() {
 		}).
 		Return(&common.InterceptorResponse{Status: common.InterceptorStatusComplete}, nil)
 
-	continueExec, err := fe.runInterceptors(common.InterceptorModePreNode, ctx, mockTargetNode, &FlowStep{})
+	continueExec, err := fe.runInterceptors(providers.InterceptorModePreNode, ctx, mockTargetNode, &FlowStep{})
 
 	s.True(continueExec)
 	s.Nil(err)
@@ -2499,7 +2505,7 @@ func (s *EngineTestSuite) TestRunInterceptors_PostNode_UsesProvidedNode() {
 	}
 
 	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+		newTestInterceptorUnitMock(t, "stub", providers.InterceptorMode(""), providers.InterceptorScope(""), nil),
 	})
 
 	ctx := &EngineContext{
@@ -2508,7 +2514,7 @@ func (s *EngineTestSuite) TestRunInterceptors_PostNode_UsesProvidedNode() {
 		Graph:       mockGraph,
 	}
 
-	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostNode,
+	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePostNode,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
 		Run(func(args mock.Arguments) {
 			execCtx := args.Get(1).(*InterceptorRunnerContext)
@@ -2517,7 +2523,7 @@ func (s *EngineTestSuite) TestRunInterceptors_PostNode_UsesProvidedNode() {
 		}).
 		Return(&common.InterceptorResponse{Status: common.InterceptorStatusComplete}, nil)
 
-	continueExec, err := fe.runInterceptors(common.InterceptorModePostNode, ctx, mockTargetNode, &FlowStep{})
+	continueExec, err := fe.runInterceptors(providers.InterceptorModePostNode, ctx, mockTargetNode, &FlowStep{})
 
 	s.True(continueExec)
 	s.Nil(err)
@@ -2542,7 +2548,7 @@ func (s *EngineTestSuite) TestRunInterceptors_PostRequest_Success() {
 	}
 
 	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+		newTestInterceptorUnitMock(t, "stub", providers.InterceptorMode(""), providers.InterceptorScope(""), nil),
 	})
 
 	ctx := &EngineContext{
@@ -2553,14 +2559,14 @@ func (s *EngineTestSuite) TestRunInterceptors_PostRequest_Success() {
 		InterceptorSharedData: map[string]string{},
 	}
 
-	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePostRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
 		Return(&common.InterceptorResponse{
 			Status:        common.InterceptorStatusComplete,
 			EngineOutputs: map[string]string{"challengeToken": "rotated-token"},
 		}, nil)
 
-	continueExec, err := fe.runInterceptors(common.InterceptorModePostRequest, ctx, nil, &FlowStep{})
+	continueExec, err := fe.runInterceptors(providers.InterceptorModePostRequest, ctx, nil, &FlowStep{})
 
 	s.True(continueExec)
 	s.Nil(err)
@@ -2586,7 +2592,7 @@ func (s *EngineTestSuite) TestRunInterceptors_NoOutputs_RuntimeDataUnchanged() {
 	}
 
 	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+		newTestInterceptorUnitMock(t, "stub", providers.InterceptorMode(""), providers.InterceptorScope(""), nil),
 	})
 
 	ctx := &EngineContext{
@@ -2596,11 +2602,11 @@ func (s *EngineTestSuite) TestRunInterceptors_NoOutputs_RuntimeDataUnchanged() {
 		RuntimeData: map[string]string{"existing": "value"},
 	}
 
-	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePreRequest,
+	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePreRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
 		Return(&common.InterceptorResponse{Status: common.InterceptorStatusComplete}, nil)
 
-	continueExec, err := fe.runInterceptors(common.InterceptorModePreRequest, ctx, nil, &FlowStep{})
+	continueExec, err := fe.runInterceptors(providers.InterceptorModePreRequest, ctx, nil, &FlowStep{})
 
 	s.True(continueExec)
 	s.Nil(err)
@@ -2627,7 +2633,7 @@ func (s *EngineTestSuite) TestRunInterceptors_NilSharedData_InitializesEmptyMap(
 	}
 
 	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+		newTestInterceptorUnitMock(t, "stub", providers.InterceptorMode(""), providers.InterceptorScope(""), nil),
 	})
 
 	ctx := &EngineContext{
@@ -2637,7 +2643,7 @@ func (s *EngineTestSuite) TestRunInterceptors_NilSharedData_InitializesEmptyMap(
 		InterceptorSharedData: nil, // Nil shared data
 	}
 
-	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePreNode,
+	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePreNode,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
 		Run(func(args mock.Arguments) {
 			execCtx := args.Get(1).(*InterceptorRunnerContext)
@@ -2645,7 +2651,7 @@ func (s *EngineTestSuite) TestRunInterceptors_NilSharedData_InitializesEmptyMap(
 		}).
 		Return(&common.InterceptorResponse{Status: common.InterceptorStatusComplete}, nil)
 
-	continueExec, err := fe.runInterceptors(common.InterceptorModePreNode, ctx, mockNode, &FlowStep{})
+	continueExec, err := fe.runInterceptors(providers.InterceptorModePreNode, ctx, mockNode, &FlowStep{})
 
 	s.True(continueExec)
 	s.Nil(err)
@@ -2670,13 +2676,13 @@ func (s *EngineTestSuite) TestRunInterceptors_ClonesContextFields() {
 	}
 
 	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+		newTestInterceptorUnitMock(t, "stub", providers.InterceptorMode(""), providers.InterceptorScope(""), nil),
 	})
 
 	ctx := &EngineContext{
 		ExecutionID:           "exec-009",
 		AppID:                 "app-009",
-		FlowType:              common.FlowTypeAuthentication,
+		FlowType:              providers.FlowTypeAuthentication,
 		CurrentNode:           mockNode,
 		Graph:                 mockGraph,
 		UserInputs:            map[string]string{"username": "testuser"},
@@ -2684,13 +2690,13 @@ func (s *EngineTestSuite) TestRunInterceptors_ClonesContextFields() {
 		InterceptorSharedData: map[string]string{"shared": "data"},
 	}
 
-	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePreRequest,
+	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePreRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
 		Run(func(args mock.Arguments) {
 			execCtx := args.Get(1).(*InterceptorRunnerContext)
 			s.Equal("exec-009", execCtx.ExecutionID)
 			s.Equal("app-009", execCtx.AppID)
-			s.Equal(common.FlowTypeAuthentication, execCtx.FlowType)
+			s.Equal(providers.FlowTypeAuthentication, execCtx.FlowType)
 			s.Equal("testuser", execCtx.UserInputs["username"])
 			s.Equal("val", execCtx.AdditionalData["key"])
 			s.Equal("data", execCtx.SharedData["shared"])
@@ -2701,7 +2707,7 @@ func (s *EngineTestSuite) TestRunInterceptors_ClonesContextFields() {
 		}).
 		Return(&common.InterceptorResponse{Status: common.InterceptorStatusComplete}, nil)
 
-	continueExec, err := fe.runInterceptors(common.InterceptorModePreRequest, ctx, nil, &FlowStep{})
+	continueExec, err := fe.runInterceptors(providers.InterceptorModePreRequest, ctx, nil, &FlowStep{})
 
 	s.True(continueExec)
 	s.Nil(err)
@@ -2714,7 +2720,7 @@ func (s *EngineTestSuite) TestRunInterceptors_ClonesContextFields() {
 func (s *EngineTestSuite) TestRunInterceptors_NodeFailure_ReturnsError() {
 	tests := []struct {
 		name           string
-		mode           common.InterceptorMode
+		mode           providers.InterceptorMode
 		errCode        string
 		errKey         string
 		errDefault     string
@@ -2724,7 +2730,7 @@ func (s *EngineTestSuite) TestRunInterceptors_NodeFailure_ReturnsError() {
 	}{
 		{
 			name:           "PreNode",
-			mode:           common.InterceptorModePreNode,
+			mode:           providers.InterceptorModePreNode,
 			errCode:        "INT-PRE-NODE",
 			errKey:         "error.interceptor.pre_node_failed",
 			errDefault:     "Pre-node interceptor blocked execution",
@@ -2734,7 +2740,7 @@ func (s *EngineTestSuite) TestRunInterceptors_NodeFailure_ReturnsError() {
 		},
 		{
 			name:           "PostNode",
-			mode:           common.InterceptorModePostNode,
+			mode:           providers.InterceptorModePostNode,
 			errCode:        "INT-POST-NODE",
 			errKey:         "error.interceptor.post_node_failed",
 			errDefault:     "Post-node interceptor rejected response",
@@ -2763,16 +2769,22 @@ func (s *EngineTestSuite) TestRunInterceptors_NodeFailure_ReturnsError() {
 				logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
 			}
 
-			svcErr := &serviceerror.ServiceError{
+			svcErr := &tidcommon.ServiceError{
 				Code: tc.errCode,
-				Error: i18ncore.I18nMessage{
+				Error: tidcommon.I18nMessage{
 					Key:          tc.errKey,
 					DefaultValue: tc.errDefault,
 				},
 			}
 
 			mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-				newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+				newTestInterceptorUnitMock(
+					t,
+					"stub",
+					providers.InterceptorMode(""),
+					providers.InterceptorScope(""),
+					nil,
+				),
 			})
 
 			ctx := &EngineContext{
@@ -2816,16 +2828,16 @@ func (s *EngineTestSuite) TestRunInterceptors_Failure_NilRuntimeData_NoMergeAtte
 		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
 	}
 
-	svcErr := &serviceerror.ServiceError{
+	svcErr := &tidcommon.ServiceError{
 		Code: "INT-NIL-RT",
-		Error: i18ncore.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.interceptor.nil_runtime",
 			DefaultValue: "Failed with nil runtime data",
 		},
 	}
 
 	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+		newTestInterceptorUnitMock(t, "stub", providers.InterceptorMode(""), providers.InterceptorScope(""), nil),
 	})
 
 	ctx := &EngineContext{
@@ -2835,11 +2847,11 @@ func (s *EngineTestSuite) TestRunInterceptors_Failure_NilRuntimeData_NoMergeAtte
 		RuntimeData: nil, // nil RuntimeData
 	}
 
-	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePostRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
 		Return((*common.InterceptorResponse)(nil), svcErr)
 
-	continueExec, err := fe.runInterceptors(common.InterceptorModePostRequest, ctx, nil, &FlowStep{})
+	continueExec, err := fe.runInterceptors(providers.InterceptorModePostRequest, ctx, nil, &FlowStep{})
 
 	s.False(continueExec)
 	s.NotNil(err)
@@ -2865,20 +2877,20 @@ func (s *EngineTestSuite) TestRunInterceptors_Failure_PreservesFullErrorDetails(
 		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
 	}
 
-	svcErr := &serviceerror.ServiceError{
+	svcErr := &tidcommon.ServiceError{
 		Code: "INT-CAPTCHA-001",
-		Error: i18ncore.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.interceptor.captcha_failed",
 			DefaultValue: "CAPTCHA verification failed",
 		},
-		ErrorDescription: i18ncore.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.interceptor.captcha_failed_desc",
 			DefaultValue: "The CAPTCHA response was invalid or expired",
 		},
 	}
 
 	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+		newTestInterceptorUnitMock(t, "stub", providers.InterceptorMode(""), providers.InterceptorScope(""), nil),
 	})
 
 	ctx := &EngineContext{
@@ -2887,11 +2899,11 @@ func (s *EngineTestSuite) TestRunInterceptors_Failure_PreservesFullErrorDetails(
 		Graph:       mockGraph,
 	}
 
-	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePreNode,
+	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePreNode,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
 		Return((*common.InterceptorResponse)(nil), svcErr)
 
-	continueExec, err := fe.runInterceptors(common.InterceptorModePreNode, ctx, mockNode, &FlowStep{})
+	continueExec, err := fe.runInterceptors(providers.InterceptorModePreNode, ctx, mockNode, &FlowStep{})
 
 	s.False(continueExec)
 	s.NotNil(err)
@@ -2903,11 +2915,11 @@ func (s *EngineTestSuite) TestRunInterceptors_Failure_PreservesFullErrorDetails(
 }
 
 func (s *EngineTestSuite) TestRunInterceptors_Failure_AllModes() {
-	modes := []common.InterceptorMode{
-		common.InterceptorModePreRequest,
-		common.InterceptorModePreNode,
-		common.InterceptorModePostNode,
-		common.InterceptorModePostRequest,
+	modes := []providers.InterceptorMode{
+		providers.InterceptorModePreRequest,
+		providers.InterceptorModePreNode,
+		providers.InterceptorModePostNode,
+		providers.InterceptorModePostRequest,
 	}
 
 	for _, mode := range modes {
@@ -2929,16 +2941,22 @@ func (s *EngineTestSuite) TestRunInterceptors_Failure_AllModes() {
 				logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
 			}
 
-			svcErr := &serviceerror.ServiceError{
+			svcErr := &tidcommon.ServiceError{
 				Code: "INT-" + string(mode),
-				Error: i18ncore.I18nMessage{
+				Error: tidcommon.I18nMessage{
 					Key:          "error.interceptor." + string(mode),
 					DefaultValue: "Interceptor failed for " + string(mode),
 				},
 			}
 
 			mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-				newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+				newTestInterceptorUnitMock(
+					t,
+					"stub",
+					providers.InterceptorMode(""),
+					providers.InterceptorScope(""),
+					nil,
+				),
 			})
 
 			ctx := &EngineContext{
@@ -2985,7 +3003,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Success_Continues
 	}
 
 	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+		newTestInterceptorUnitMock(t, "stub", providers.InterceptorMode(""), providers.InterceptorScope(""), nil),
 	})
 
 	ctx := &EngineContext{
@@ -2997,7 +3015,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Success_Continues
 
 	flowStep := &FlowStep{Status: common.FlowStatusComplete}
 
-	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePostRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
 		Return(&common.InterceptorResponse{
 			Status:        common.InterceptorStatusComplete,
@@ -3034,29 +3052,29 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_InterceptorError_
 		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
 	}
 
-	svcErr := &serviceerror.ServiceError{
+	svcErr := &tidcommon.ServiceError{
 		Code: "INT-POST-ERR",
-		Error: i18ncore.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.interceptor.post_request",
 			DefaultValue: "Post-request interceptor error",
 		},
 	}
 
 	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+		newTestInterceptorUnitMock(t, "stub", providers.InterceptorMode(""), providers.InterceptorScope(""), nil),
 	})
 
 	ctx := &EngineContext{
 		ExecutionID: "exec-post-exit-err",
 		CurrentNode: mockNode,
 		Graph:       mockGraph,
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AppID:       "app-001",
 	}
 
 	flowStep := &FlowStep{Status: common.FlowStatusIncomplete}
 
-	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePostRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
 		Return((*common.InterceptorResponse)(nil), svcErr)
 
@@ -3091,7 +3109,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Incomplete_StopsE
 	}
 
 	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+		newTestInterceptorUnitMock(t, "stub", providers.InterceptorMode(""), providers.InterceptorScope(""), nil),
 	})
 
 	ctx := &EngineContext{
@@ -3102,7 +3120,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Incomplete_StopsE
 
 	flowStep := &FlowStep{Status: common.FlowStatusComplete}
 
-	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePostRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
 		Return(&common.InterceptorResponse{
 			Status: common.InterceptorStatusIncomplete,
@@ -3142,29 +3160,29 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Fail_PublishesFlo
 		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine")),
 	}
 
-	interceptorErr := &serviceerror.ServiceError{
+	interceptorErr := &tidcommon.ServiceError{
 		Code: "INT-FAIL-001",
-		Error: i18ncore.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.interceptor.blocked",
 			DefaultValue: "Interceptor blocked the flow",
 		},
 	}
 
 	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+		newTestInterceptorUnitMock(t, "stub", providers.InterceptorMode(""), providers.InterceptorScope(""), nil),
 	})
 
 	ctx := &EngineContext{
 		ExecutionID: "exec-post-exit-fail",
 		CurrentNode: mockNode,
 		Graph:       mockGraph,
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AppID:       "app-002",
 	}
 
 	flowStep := &FlowStep{}
 
-	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePostRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
 		Return(&common.InterceptorResponse{
 			Status: common.InterceptorStatusFailure,
@@ -3206,7 +3224,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Incomplete_NoEven
 	}
 
 	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+		newTestInterceptorUnitMock(t, "stub", providers.InterceptorMode(""), providers.InterceptorScope(""), nil),
 	})
 
 	ctx := &EngineContext{
@@ -3217,7 +3235,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Incomplete_NoEven
 
 	flowStep := &FlowStep{Status: common.FlowStatusIncomplete}
 
-	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePostRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
 		Return(&common.InterceptorResponse{
 			Status: common.InterceptorStatusIncomplete,
@@ -3254,7 +3272,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_UpdatesFlowStepFi
 	}
 
 	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+		newTestInterceptorUnitMock(t, "stub", providers.InterceptorMode(""), providers.InterceptorScope(""), nil),
 	})
 
 	ctx := &EngineContext{
@@ -3265,7 +3283,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_UpdatesFlowStepFi
 
 	flowStep := &FlowStep{Status: common.FlowStatusComplete}
 
-	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePostRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
 		Return(&common.InterceptorResponse{
 			Status:         common.InterceptorStatusComplete,
@@ -3330,7 +3348,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_MergesEngineOutpu
 	}
 
 	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+		newTestInterceptorUnitMock(t, "stub", providers.InterceptorMode(""), providers.InterceptorScope(""), nil),
 	})
 
 	ctx := &EngineContext{
@@ -3342,7 +3360,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_MergesEngineOutpu
 
 	flowStep := &FlowStep{Status: common.FlowStatusComplete}
 
-	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePostRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
 		Return(&common.InterceptorResponse{
 			Status:        common.InterceptorStatusComplete,
@@ -3381,7 +3399,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_PassesFlowStatusT
 	}
 
 	mockGraph.On("GetInterceptors", mock.Anything).Return([]core.InterceptorUnitInterface{
-		newTestInterceptorUnitMock(t, "stub", common.InterceptorMode(""), common.InterceptorScope(""), nil),
+		newTestInterceptorUnitMock(t, "stub", providers.InterceptorMode(""), providers.InterceptorScope(""), nil),
 	})
 
 	ctx := &EngineContext{
@@ -3392,7 +3410,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_PassesFlowStatusT
 
 	flowStep := &FlowStep{Status: common.FlowStatusComplete}
 
-	mockInterceptorSvc.On("runInterceptors", common.InterceptorModePostRequest,
+	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePostRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
 		Run(func(args mock.Arguments) {
 			execCtx := args.Get(1).(*InterceptorRunnerContext)

@@ -25,10 +25,10 @@ import (
 	"net/url"
 	"strconv"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -124,7 +124,7 @@ func (gh *groupHandler) HandleGroupPostRequest(w http.ResponseWriter, r *http.Re
 		errResp := apierror.ErrorResponse{
 			Code:    ErrorInvalidRequestFormat.Code,
 			Message: ErrorInvalidRequestFormat.Error,
-			Description: core.I18nMessage{
+			Description: tidcommon.I18nMessage{
 				Key:          "error.groupservice.create_group_request_parse_failed_description",
 				DefaultValue: "Failed to parse request body: " + err.Error()},
 		}
@@ -165,7 +165,7 @@ func (gh *groupHandler) HandleGroupPostByPathRequest(w http.ResponseWriter, r *h
 		errResp := apierror.ErrorResponse{
 			Code:    ErrorInvalidRequestFormat.Code,
 			Message: ErrorInvalidRequestFormat.Error,
-			Description: core.I18nMessage{
+			Description: tidcommon.I18nMessage{
 				Key:          "error.groupservice.create_group_by_path_request_parse_failed_description",
 				DefaultValue: "Failed to parse request body: " + err.Error()},
 		}
@@ -242,7 +242,7 @@ func (gh *groupHandler) HandleGroupPutRequest(w http.ResponseWriter, r *http.Req
 		errResp := apierror.ErrorResponse{
 			Code:    ErrorInvalidRequestFormat.Code,
 			Message: ErrorInvalidRequestFormat.Error,
-			Description: core.I18nMessage{
+			Description: tidcommon.I18nMessage{
 				Key:          "error.groupservice.update_group_request_parse_failed_description",
 				DefaultValue: "Failed to parse request body: " + err.Error(),
 			},
@@ -402,9 +402,9 @@ func (gh *groupHandler) HandleGroupMembersRemoveRequest(w http.ResponseWriter, r
 }
 
 // handleError handles service errors and returns appropriate HTTP responses.
-func (gh *groupHandler) handleError(ctx context.Context, w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
+func (gh *groupHandler) handleError(ctx context.Context, w http.ResponseWriter, svcErr *tidcommon.ServiceError) {
 	var statusCode int
-	if svcErr.Type == serviceerror.ClientErrorType {
+	if svcErr.Type == tidcommon.ClientErrorType {
 		switch svcErr.Code {
 		case ErrorGroupNotFound.Code:
 			statusCode = http.StatusNotFound
@@ -416,7 +416,7 @@ func (gh *groupHandler) handleError(ctx context.Context, w http.ResponseWriter, 
 			ErrorEmptyMembers.Code, ErrorInvalidMemberType.Code,
 			ErrorInvalidMemberID.Code, ErrorInvalidGroupMemberID.Code:
 			statusCode = http.StatusBadRequest
-		case serviceerror.ErrorUnauthorized.Code:
+		case tidcommon.ErrorUnauthorized.Code:
 			statusCode = http.StatusForbidden
 		default:
 			statusCode = http.StatusBadRequest
@@ -479,7 +479,7 @@ func (gh *groupHandler) sanitizeMembersRequest(request *MembersRequest) MembersR
 }
 
 // parsePaginationParams parses limit and offset query parameters from the request.
-func parsePaginationParams(query url.Values) (int, int, *serviceerror.ServiceError) {
+func parsePaginationParams(query url.Values) (int, int, *tidcommon.ServiceError) {
 	limit := 0
 	offset := 0
 
@@ -513,7 +513,7 @@ func extractAndValidatePath(w http.ResponseWriter, r *http.Request) (string, boo
 		errResp := apierror.ErrorResponse{
 			Code:    ErrorInvalidRequestFormat.Code,
 			Message: ErrorInvalidRequestFormat.Error,
-			Description: core.I18nMessage{
+			Description: tidcommon.I18nMessage{
 				Key:          "error.groupservice.handle_path_required_description",
 				DefaultValue: "Handle path is required",
 			},

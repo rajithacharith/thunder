@@ -22,12 +22,9 @@ package oauth
 import (
 	"net/http"
 
-	"github.com/thunder-id/thunderid/internal/actorprovider"
 	"github.com/thunder-id/thunderid/internal/attributecache"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/authz"
 	"github.com/thunder-id/thunderid/internal/flow/flowexec"
-	"github.com/thunder-id/thunderid/internal/idp"
 	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/jwks"
 	oauth2authz "github.com/thunder-id/thunderid/internal/oauth/oauth2/authz"
@@ -43,32 +40,30 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/userinfo"
 	"github.com/thunder-id/thunderid/internal/oauth/scope"
-	"github.com/thunder-id/thunderid/internal/ou"
-	"github.com/thunder-id/thunderid/internal/resource"
 	syshttp "github.com/thunder-id/thunderid/internal/system/http"
-	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
 	"github.com/thunder-id/thunderid/internal/system/observability"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // Initialize initializes all OAuth-related services and registers their routes.
 func Initialize(
 	mux *http.ServeMux,
-	actorProvider actorprovider.ActorProviderInterface,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
+	actorProvider providers.ActorProviderInterface,
+	authnProvider providers.AuthnProviderManagerInterface,
 	jwtService jwt.JWTServiceInterface,
 	jweService jwe.JWEServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
 	runtimeCrypto kmprovider.RuntimeCryptoProvider,
-	ouService ou.OrganizationUnitServiceInterface,
+	ouService providers.OrganizationUnitProvider,
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	authzService authz.AuthorizationServiceInterface,
-	resourceService resource.ResourceServiceInterface,
-	i18nService i18nmgt.I18nServiceInterface,
-	idpService idp.IDPServiceInterface,
+	resourceService providers.ResourceProviderInterface,
+	i18nService providers.I18nProviderInterface,
+	idpService providers.IDPProvider,
 	dpopVerifier dpop.VerifierInterface,
 	cfg oauthconfig.Config,
 ) error {

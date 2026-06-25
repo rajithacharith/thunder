@@ -19,7 +19,8 @@
 package clientauth
 
 import (
-	"github.com/thunder-id/thunderid/internal/system/i18n/core"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"encoding/json"
 	"net/http"
@@ -33,11 +34,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/actorprovider"
-	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
 	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
-	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
-	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/inboundclientmock"
@@ -56,7 +53,7 @@ func TestClientAuthMiddlewareTestSuite(t *testing.T) {
 	suite.Run(t, new(ClientAuthMiddlewareTestSuite))
 }
 
-func (suite *ClientAuthMiddlewareTestSuite) actorProvider() actorprovider.ActorProviderInterface {
+func (suite *ClientAuthMiddlewareTestSuite) actorProvider() providers.ActorProviderInterface {
 	return actorprovider.Initialize(suite.mockInboundClient, suite.mockEntityProvider)
 }
 
@@ -70,17 +67,17 @@ func (suite *ClientAuthMiddlewareTestSuite) SetupTest() {
 	// Individual tests can override with Once() for specific behavior.
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, authnprovidercm.AuthenticatedClaims{"userId": testClientID},
-			(*serviceerror.ServiceError)(nil)).Maybe()
+		Return(providers.AuthUser{}, providers.AuthenticatedClaims{"userId": testClientID},
+			(*tidcommon.ServiceError)(nil)).Maybe()
 }
 
 func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_Success_ClientSecretPost() {
 	// Setup mock OAuth app
 	clientSecret := testClientSecret
-	mockApp := &inboundmodel.OAuthClient{
+	mockApp := &providers.OAuthClient{
 		ClientID:                testClientID,
-		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
-		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
+		TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretPost,
+		GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
 	}
 
 	suite.mockInboundClient.On("GetOAuthClientByClientID", mock.Anything, testClientID).
@@ -122,10 +119,10 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_Success_Cli
 func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_Success_ClientSecretBasic() {
 	// Setup mock OAuth app
 	clientSecret := testClientSecret
-	mockApp := &inboundmodel.OAuthClient{
+	mockApp := &providers.OAuthClient{
 		ClientID:                testClientID,
-		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretBasic,
-		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
+		TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
+		GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
 	}
 
 	suite.mockInboundClient.On("GetOAuthClientByClientID", mock.Anything, testClientID).
@@ -219,10 +216,10 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_InvalidClie
 
 func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_InvalidClientSecret() {
 	// Setup mock OAuth app
-	mockApp := &inboundmodel.OAuthClient{
+	mockApp := &providers.OAuthClient{
 		ClientID:                testClientID,
-		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
-		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
+		TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretPost,
+		GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
 	}
 
 	suite.mockInboundClient.On("GetOAuthClientByClientID", mock.Anything, testClientID).
@@ -232,12 +229,12 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_InvalidClie
 	failAuthnProvider := managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
 	failAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, (authnprovidercm.AuthenticatedClaims)(nil),
-			&serviceerror.ServiceError{
-				Type:             serviceerror.ClientErrorType,
+		Return(providers.AuthUser{}, (providers.AuthenticatedClaims)(nil),
+			&tidcommon.ServiceError{
+				Type:             tidcommon.ClientErrorType,
 				Code:             authnprovidermgr.ErrorAuthenticationFailed.Code,
-				Error:            core.I18nMessage{Key: "error.test.auth_failed", DefaultValue: "auth failed"},
-				ErrorDescription: core.I18nMessage{Key: "error.test.wrong_secret", DefaultValue: "wrong secret"},
+				Error:            tidcommon.I18nMessage{Key: "error.test.auth_failed", DefaultValue: "auth failed"},
+				ErrorDescription: tidcommon.I18nMessage{Key: "error.test.wrong_secret", DefaultValue: "wrong secret"},
 			}).Maybe()
 
 	// Create middleware with failing authn provider
@@ -305,10 +302,10 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_HandlerNotC
 func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_ContextPropagation() {
 	// Setup mock OAuth app
 	clientSecret := testClientSecret
-	mockApp := &inboundmodel.OAuthClient{
+	mockApp := &providers.OAuthClient{
 		ClientID:                testClientID,
-		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
-		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
+		TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretPost,
+		GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
 	}
 
 	suite.mockInboundClient.On("GetOAuthClientByClientID", mock.Anything, testClientID).
@@ -371,10 +368,10 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_BasicAuth_4
 }
 
 func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_BasicAuth_InvalidCreds_IncludesWWWAuth() {
-	mockApp := &inboundmodel.OAuthClient{
+	mockApp := &providers.OAuthClient{
 		ClientID:                testClientID,
-		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretBasic,
-		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
+		TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
+		GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
 	}
 
 	suite.mockInboundClient.On("GetOAuthClientByClientID", mock.Anything, testClientID).
@@ -384,12 +381,12 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_BasicAuth_I
 	failAuthnProvider := managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
 	failAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, (authnprovidercm.AuthenticatedClaims)(nil),
-			&serviceerror.ServiceError{
-				Type:             serviceerror.ClientErrorType,
+		Return(providers.AuthUser{}, (providers.AuthenticatedClaims)(nil),
+			&tidcommon.ServiceError{
+				Type:             tidcommon.ClientErrorType,
 				Code:             authnprovidermgr.ErrorAuthenticationFailed.Code,
-				Error:            core.I18nMessage{Key: "error.test.auth_failed", DefaultValue: "auth failed"},
-				ErrorDescription: core.I18nMessage{Key: "error.test.wrong_secret", DefaultValue: "wrong secret"},
+				Error:            tidcommon.I18nMessage{Key: "error.test.auth_failed", DefaultValue: "auth failed"},
+				ErrorDescription: tidcommon.I18nMessage{Key: "error.test.wrong_secret", DefaultValue: "wrong secret"},
 			}).Maybe()
 
 	middleware := ClientAuthMiddleware(

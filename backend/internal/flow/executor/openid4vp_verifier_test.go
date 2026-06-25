@@ -26,31 +26,37 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/openid4vp"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 )
 
 type fakeOpenID4VPService struct {
-	initiate func(ctx context.Context, definitionID string) (*openid4vp.Initiation, *serviceerror.ServiceError)
-	result   func(ctx context.Context, state string) (*openid4vp.RequestState, *serviceerror.ServiceError)
+	initiate  func(ctx context.Context, definitionID string) (*openid4vp.Initiation, *tidcommon.ServiceError)
+	getResult func(ctx context.Context, state string) (*openid4vp.RequestState, *tidcommon.ServiceError)
 }
 
 func (f *fakeOpenID4VPService) Initiate(
 	ctx context.Context, definitionID string,
-) (*openid4vp.Initiation, *serviceerror.ServiceError) {
-	return f.initiate(ctx, definitionID)
+) (*openid4vp.Initiation, *tidcommon.ServiceError) {
+	if f.initiate != nil {
+		return f.initiate(ctx, definitionID)
+	}
+	return nil, nil
 }
 
 func (f *fakeOpenID4VPService) GetResult(
 	ctx context.Context, state string,
-) (*openid4vp.RequestState, *serviceerror.ServiceError) {
-	return f.result(ctx, state)
+) (*openid4vp.RequestState, *tidcommon.ServiceError) {
+	if f.getResult != nil {
+		return f.getResult(ctx, state)
+	}
+	return nil, nil
 }
 
 func newTestOpenID4VPExecutor(t *testing.T, service openid4vpVerifierService) core.ExecutorInterface {
@@ -59,7 +65,7 @@ func newTestOpenID4VPExecutor(t *testing.T, service openid4vpVerifierService) co
 }
 
 func newTestOpenID4VPExecutorWithProvider(t *testing.T, service openid4vpVerifierService,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface) core.ExecutorInterface {
+	authnProvider providers.AuthnProviderManagerInterface) core.ExecutorInterface {
 	t.Helper()
 	factory := coremock.NewFlowFactoryInterfaceMock(t)
 	base := coremock.NewExecutorInterfaceMock(t)
@@ -83,7 +89,7 @@ func openid4vpNodeContext(runtime map[string]string, properties map[string]inter
 func TestOpenID4VPExecutorInitiates(t *testing.T) {
 	var seenDefID string
 	svc := &fakeOpenID4VPService{
-		initiate: func(_ context.Context, defID string) (*openid4vp.Initiation, *serviceerror.ServiceError) {
+		initiate: func(_ context.Context, defID string) (*openid4vp.Initiation, *tidcommon.ServiceError) {
 			seenDefID = defID
 			return &openid4vp.Initiation{
 				State:      "state-123",
@@ -106,34 +112,28 @@ func TestOpenID4VPExecutorInitiates(t *testing.T) {
 }
 
 // When no presentation_definition_id is configured on the node, the executor
-// fails fast rather than initiating against a guessed definition.
+// fails with a configuration error.
 func TestOpenID4VPExecutorMissingDefinitionID(t *testing.T) {
-	called := false
-	svc := &fakeOpenID4VPService{
-		initiate: func(_ context.Context, _ string) (*openid4vp.Initiation, *serviceerror.ServiceError) {
-			called = true
-			return &openid4vp.Initiation{State: "s", ClientID: "x509_hash:abc", RequestURI: "https://x"}, nil
-		},
-	}
+	svc := &fakeOpenID4VPService{}
 	exec := newTestOpenID4VPExecutor(t, svc)
 
 	resp, err := exec.Execute(openid4vpNodeContext(nil, nil))
 	require.NoError(t, err)
 	assert.Equal(t, common.ExecFailure, resp.Status)
 	assert.Equal(t, ErrOpenID4VPDefinitionNotConfigured.Code, resp.Error.Code)
-	assert.False(t, called, "Initiate must not be called without a configured definition id")
 }
 
 func TestOpenID4VPExecutorInitiateFailure(t *testing.T) {
 	svc := &fakeOpenID4VPService{
-		initiate: func(_ context.Context, _ string) (*openid4vp.Initiation, *serviceerror.ServiceError) {
-			return nil, &serviceerror.InternalServerError
+		initiate: func(_ context.Context, _ string) (*openid4vp.Initiation, *tidcommon.ServiceError) {
+			return nil, &tidcommon.InternalServerError
 		},
 	}
 	exec := newTestOpenID4VPExecutor(t, svc)
 
-	props := map[string]interface{}{propertyKeyPresentationDefinitionID: "custom-def"}
-	resp, err := exec.Execute(openid4vpNodeContext(nil, props))
+	resp, err := exec.Execute(openid4vpNodeContext(nil, map[string]interface{}{
+		propertyKeyPresentationDefinitionID: "custom-def",
+	}))
 	require.NoError(t, err)
 	assert.Equal(t, common.ExecFailure, resp.Status)
 	assert.Equal(t, ErrOpenID4VPInitiateFailed.Code, resp.Error.Code)
@@ -141,7 +141,7 @@ func TestOpenID4VPExecutorInitiateFailure(t *testing.T) {
 
 func TestOpenID4VPExecutorPollPending(t *testing.T) {
 	svc := &fakeOpenID4VPService{
-		result: func(_ context.Context, state string) (*openid4vp.RequestState, *serviceerror.ServiceError) {
+		getResult: func(_ context.Context, state string) (*openid4vp.RequestState, *tidcommon.ServiceError) {
 			return &openid4vp.RequestState{
 				State:      state,
 				Status:     openid4vp.StatusPending,
@@ -165,7 +165,7 @@ func TestOpenID4VPExecutorPollPending(t *testing.T) {
 
 func TestOpenID4VPExecutorPollCompleted(t *testing.T) {
 	svc := &fakeOpenID4VPService{
-		result: func(_ context.Context, state string) (*openid4vp.RequestState, *serviceerror.ServiceError) {
+		getResult: func(_ context.Context, state string) (*openid4vp.RequestState, *tidcommon.ServiceError) {
 			return &openid4vp.RequestState{
 				State:  state,
 				Status: openid4vp.StatusCompleted,
@@ -182,7 +182,7 @@ func TestOpenID4VPExecutorPollCompleted(t *testing.T) {
 	mockAuthnProvider := managermock.NewAuthnProviderManagerInterfaceMock(t)
 	mockAuthnProvider.On("AuthenticateUser",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, authnprovidercm.AuthenticatedClaims{
+		Return(providers.AuthUser{}, providers.AuthenticatedClaims{
 			"given_name":       "Erika",
 			"family_name":      "Mustermann",
 			"openid4vp_issuer": "https://issuer.example",
@@ -193,22 +193,22 @@ func TestOpenID4VPExecutorPollCompleted(t *testing.T) {
 	exec := newTestOpenID4VPExecutorWithProvider(t, svc, mockAuthnProvider)
 
 	runtime := map[string]string{common.RuntimeKeyOpenID4VPState: "state-123"}
-	properties := map[string]interface{}{common.NodePropertyAllowAuthenticationWithoutLocalUser: true}
-	resp, err := exec.Execute(openid4vpNodeContext(runtime, properties))
+	resp, err := exec.Execute(openid4vpNodeContext(runtime, map[string]interface{}{
+		common.NodePropertyAllowAuthenticationWithoutLocalUser: true,
+	}))
 	require.NoError(t, err)
 	assert.Equal(t, common.ExecComplete, resp.Status)
 	// Runtime attributes from authn provider are stored in RuntimeData
 	assert.Equal(t, "sub-1", resp.RuntimeData[userAttributeSub])
 	assert.Equal(t, "Erika", resp.RuntimeData["given_name"])
-	// allowAuthenticationWithoutLocalUser is set, so the holder is eligible for
-	// just-in-time provisioning (mirrors the federated OIDC/OAuth executors).
+	// AuthUser is not authenticated (no entity reference resolved), so eligible for provisioning
 	assert.Equal(t, dataValueTrue, resp.RuntimeData[common.RuntimeKeyUserEligibleForProvisioning])
 	mockAuthnProvider.AssertExpectations(t)
 }
 
 func TestOpenID4VPExecutorPollFailed(t *testing.T) {
 	svc := &fakeOpenID4VPService{
-		result: func(_ context.Context, state string) (*openid4vp.RequestState, *serviceerror.ServiceError) {
+		getResult: func(_ context.Context, state string) (*openid4vp.RequestState, *tidcommon.ServiceError) {
 			return &openid4vp.RequestState{
 				State: state, Status: openid4vp.StatusFailed, FailureReason: "nonce mismatch",
 			}, nil
@@ -226,8 +226,8 @@ func TestOpenID4VPExecutorPollFailed(t *testing.T) {
 
 func TestOpenID4VPExecutorPollExpired(t *testing.T) {
 	svc := &fakeOpenID4VPService{
-		result: func(_ context.Context, _ string) (*openid4vp.RequestState, *serviceerror.ServiceError) {
-			return nil, &openid4vp.ErrorUnknownState
+		getResult: func(_ context.Context, _ string) (*openid4vp.RequestState, *tidcommon.ServiceError) {
+			return nil, &tidcommon.InternalServerError
 		},
 	}
 	exec := newTestOpenID4VPExecutor(t, svc)

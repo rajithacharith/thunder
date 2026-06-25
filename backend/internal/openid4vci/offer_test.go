@@ -24,11 +24,12 @@ import (
 	"testing"
 	"time"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/openid4vci/credential"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 )
 
 type OfferTestSuite struct {
@@ -79,7 +80,7 @@ func (s *OfferTestSuite) TestGenerateCredentialOfferUnknownConfig() {
 	ctx := context.Background()
 	creds := newCredentialReaderMock(s.T())
 	creds.EXPECT().GetCredentialConfigurationByHandle(ctx, "missing").
-		Return(nil, &serviceerror.ServiceError{Code: "not-found"})
+		Return(nil, &tidcommon.ServiceError{Code: "not-found"})
 	svc := &service{cfg: serviceConfig{CredentialIssuer: testIssuer}, creds: creds}
 
 	_, _, err := svc.GenerateCredentialOffer(ctx, "missing")

@@ -19,7 +19,9 @@
 package executor
 
 import (
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"context"
 	"testing"
@@ -32,16 +34,12 @@ import (
 	"github.com/thunder-id/thunderid/internal/attributecache"
 	authnassert "github.com/thunder-id/thunderid/internal/authn/assert"
 	authncm "github.com/thunder-id/thunderid/internal/authn/common"
-	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
-	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/tests/mocks/attributecachemock"
 	"github.com/thunder-id/thunderid/tests/mocks/authn/assertmock"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
@@ -110,7 +108,7 @@ func createMockExecutorSimple(t *testing.T, name string,
 
 func initializeTestRuntime() error {
 	testConfig := &config.Config{
-		JWT: config.JWTConfig{
+		JWT: engineconfig.JWTConfig{
 			Issuer:         "https://auth.example.com",
 			ValidityPeriod: 3600,
 		},
@@ -118,36 +116,36 @@ func initializeTestRuntime() error {
 	return config.InitializeServerRuntime("/tmp/test", testConfig)
 }
 
-func newTestAuthenticatedAuthUser() authnprovidermgr.AuthUser {
-	var authUser authnprovidermgr.AuthUser
+func newTestAuthenticatedAuthUser() providers.AuthUser {
+	var authUser providers.AuthUser
 	_ = authUser.UnmarshalJSON([]byte(`{"entityReferenceToken":"tok","attributeToken":"tok"}`))
 	return authUser
 }
 
 func (suite *AuthAssertExecutorTestSuite) setupGetEntityReference(entityType, ouID string) {
-	entityRef := &authnprovidercm.EntityReference{
+	entityRef := &providers.EntityReference{
 		EntityID:   "user-123",
 		EntityType: entityType,
 		OUID:       ouID,
 	}
 	suite.mockAuthnProvider.On("GetEntityReference", mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, entityRef, (*serviceerror.ServiceError)(nil))
+		Return(providers.AuthUser{}, entityRef, (*tidcommon.ServiceError)(nil))
 }
 
 func (suite *AuthAssertExecutorTestSuite) setupGetUserAttributesEmpty() {
 	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{},
-			(*authnprovidercm.AttributesResponse)(nil), (*serviceerror.ServiceError)(nil))
+		Return(providers.AuthUser{},
+			(*providers.AttributesResponse)(nil), (*tidcommon.ServiceError)(nil))
 }
 
 func (suite *AuthAssertExecutorTestSuite) setupGetUserAttributesWith(
-	attrs map[string]*authnprovidercm.AttributeResponse,
+	attrs map[string]*providers.AttributeResponse,
 ) {
-	resp := &authnprovidercm.AttributesResponse{
+	resp := &providers.AttributesResponse{
 		Attributes: attrs,
 	}
 	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, resp, (*serviceerror.ServiceError)(nil))
+		Return(providers.AuthUser{}, resp, (*tidcommon.ServiceError)(nil))
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestNewAuthAssertExecutor() {
@@ -162,7 +160,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success(
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
 		EntityID:    "app-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    newTestAuthenticatedAuthUser(),
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{
 			"node1": {
@@ -199,7 +197,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success(
 		mock.Anything, mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
 
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, testAuthOUID).
-		Return(ou.OrganizationUnit{ID: testAuthOUID}, nil)
+		Return(providers.OrganizationUnit{ID: testAuthOUID}, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -214,7 +212,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success(
 func (suite *AuthAssertExecutorTestSuite) TestExecute_UserNotAuthenticated() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 	}
 
 	resp, err := suite.executor.Execute(ctx)
@@ -229,7 +227,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAuthorizedPermissions(
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
 		EntityID:    "app-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    newTestAuthenticatedAuthUser(),
 		RuntimeData: map[string]string{
 			"authorized_permissions": "read:documents write:documents",
@@ -260,7 +258,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 	ctx := &core.NodeContext{
 		ExecutionID:      "flow-123",
 		EntityID:         "app-123",
-		FlowType:         common.FlowTypeAuthentication,
+		FlowType:         providers.FlowTypeAuthentication,
 		AuthUser:         newTestAuthenticatedAuthUser(),
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
@@ -274,7 +272,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 
 	suite.setupGetEntityReference("", "")
 
-	suite.setupGetUserAttributesWith(map[string]*authnprovidercm.AttributeResponse{
+	suite.setupGetUserAttributesWith(map[string]*providers.AttributeResponse{
 		"email": {Value: testEmail},
 		"phone": {Value: "1234567890"},
 	})
@@ -297,7 +295,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_JWTGenerationFails() {
 	ctx := &core.NodeContext{
 		ExecutionID:      "flow-123",
 		EntityID:         "app-123",
-		FlowType:         common.FlowTypeAuthentication,
+		FlowType:         providers.FlowTypeAuthentication,
 		AuthUser:         newTestAuthenticatedAuthUser(),
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application:      appmodel.Application{},
@@ -307,13 +305,13 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_JWTGenerationFails() {
 	suite.setupGetUserAttributesEmpty()
 
 	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("", int64(0), &serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("", int64(0), &tidcommon.ServiceError{
+		Type: tidcommon.ServerErrorType,
 		Code: "JWT_GENERATION_FAILED",
-		Error: i18ncore.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key: "error.test.jwt_generation_failed", DefaultValue: "JWT generation failed",
 		},
-		ErrorDescription: i18ncore.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key: "error.test.failed_to_generate_jwt_token", DefaultValue: "Failed to generate JWT token",
 		},
 	})
@@ -329,7 +327,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AssertionGenerationFails_S
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
 		EntityID:    "app-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    newTestAuthenticatedAuthUser(),
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{
 			"node1": {
@@ -343,9 +341,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AssertionGenerationFails_S
 	}
 
 	suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything, mock.Anything).
-		Return(nil, &serviceerror.ServiceError{
-			Type:  serviceerror.ServerErrorType,
-			Error: i18ncore.I18nMessage{Key: "error.test.internal_error", DefaultValue: "internal error"},
+		Return(nil, &tidcommon.ServiceError{
+			Type:  tidcommon.ServerErrorType,
+			Error: tidcommon.I18nMessage{Key: "error.test.internal_error", DefaultValue: "internal error"},
 		})
 
 	_, err := suite.executor.Execute(ctx)
@@ -448,7 +446,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
 	ctx := &core.NodeContext{
 		ExecutionID:      "flow-123",
 		EntityID:         "app-123",
-		FlowType:         common.FlowTypeAuthentication,
+		FlowType:         providers.FlowTypeAuthentication,
 		AuthUser:         newTestAuthenticatedAuthUser(),
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
@@ -469,7 +467,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
 		}), mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
 
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-456").
-		Return(ou.OrganizationUnit{ID: "ou-456"}, nil)
+		Return(providers.OrganizationUnit{ID: "ou-456"}, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -484,7 +482,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithCustomTokenConfig() {
 	ctx := &core.NodeContext{
 		ExecutionID:      "flow-123",
 		EntityID:         "app-123",
-		FlowType:         common.FlowTypeAuthentication,
+		FlowType:         providers.FlowTypeAuthentication,
 		AuthUser:         newTestAuthenticatedAuthUser(),
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
@@ -514,7 +512,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 	ctx := &core.NodeContext{
 		ExecutionID:      "flow-123",
 		EntityID:         "app-123",
-		FlowType:         common.FlowTypeAuthentication,
+		FlowType:         providers.FlowTypeAuthentication,
 		AuthUser:         newTestAuthenticatedAuthUser(),
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
@@ -529,7 +527,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 	suite.setupGetEntityReference("", testAssertOUID)
 	suite.setupGetUserAttributesEmpty()
 
-	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, testAssertOUID).Return(ou.OrganizationUnit{
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, testAssertOUID).Return(providers.OrganizationUnit{
 		ID:     testAssertOUID,
 		Name:   "Engineering",
 		Handle: "eng",
@@ -556,7 +554,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 	ctx := &core.NodeContext{
 		ExecutionID:      "flow-123",
 		EntityID:         "app-123",
-		FlowType:         common.FlowTypeAuthentication,
+		FlowType:         providers.FlowTypeAuthentication,
 		AuthUser:         newTestAuthenticatedAuthUser(),
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
@@ -570,13 +568,13 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 
 	// Test case: GetEntityReference returns server error
 	suite.mockAuthnProvider.On("GetEntityReference", mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, (*authnprovidercm.EntityReference)(nil), &serviceerror.ServiceError{
-			Type: serviceerror.ServerErrorType,
+		Return(providers.AuthUser{}, (*providers.EntityReference)(nil), &tidcommon.ServiceError{
+			Type: tidcommon.ServerErrorType,
 			Code: "ENTITY_REF_FAILED",
-			Error: i18ncore.I18nMessage{
+			Error: tidcommon.I18nMessage{
 				Key: "error.test.entity_ref_failed", DefaultValue: "entity ref failed",
 			},
-			ErrorDescription: i18ncore.I18nMessage{
+			ErrorDescription: tidcommon.I18nMessage{
 				Key: "error.test.something_went_wrong", DefaultValue: "something went wrong",
 			},
 		})
@@ -592,7 +590,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFai
 	ctx := &core.NodeContext{
 		ExecutionID:      "flow-123",
 		EntityID:         "app-123",
-		FlowType:         common.FlowTypeAuthentication,
+		FlowType:         providers.FlowTypeAuthentication,
 		AuthUser:         newTestAuthenticatedAuthUser(),
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
@@ -608,9 +606,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFai
 	suite.setupGetUserAttributesEmpty()
 
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, testAuthOUID).
-		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
-			Error: i18ncore.I18nMessage{Key: "error.test.ou_not_found", DefaultValue: "ou_not_found"},
-			ErrorDescription: i18ncore.I18nMessage{
+		Return(providers.OrganizationUnit{}, &tidcommon.ServiceError{
+			Error: tidcommon.I18nMessage{Key: "error.test.ou_not_found", DefaultValue: "ou_not_found"},
+			ErrorDescription: tidcommon.I18nMessage{
 				Key: "error.test.organization_unit_not_found", DefaultValue: "organization unit not found",
 			},
 		})
@@ -626,7 +624,7 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserA
 	ctx := &core.NodeContext{
 		ExecutionID:      "flow-123",
 		EntityID:         "app-123",
-		FlowType:         common.FlowTypeAuthentication,
+		FlowType:         providers.FlowTypeAuthentication,
 		AuthUser:         newTestAuthenticatedAuthUser(),
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
@@ -641,13 +639,13 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserA
 	suite.setupGetEntityReference("", "")
 
 	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(authnprovidermgr.AuthUser{}, (*authnprovidercm.AttributesResponse)(nil), &serviceerror.ServiceError{
-			Type: serviceerror.ServerErrorType,
+		Return(providers.AuthUser{}, (*providers.AttributesResponse)(nil), &tidcommon.ServiceError{
+			Type: tidcommon.ServerErrorType,
 			Code: "ATTRIBUTES_FETCH_FAILED",
-			Error: i18ncore.I18nMessage{
+			Error: tidcommon.I18nMessage{
 				Key: "error.test.failed_to_fetch_attributes", DefaultValue: "failed to fetch attributes",
 			},
-			ErrorDescription: i18ncore.I18nMessage{
+			ErrorDescription: tidcommon.I18nMessage{
 				Key: "error.test.something_went_wrong", DefaultValue: "something went wrong",
 			},
 		})
@@ -663,7 +661,7 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganiz
 	ctx := &core.NodeContext{
 		ExecutionID:      "flow-123",
 		EntityID:         "app-123",
-		FlowType:         common.FlowTypeAuthentication,
+		FlowType:         providers.FlowTypeAuthentication,
 		AuthUser:         newTestAuthenticatedAuthUser(),
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
@@ -679,9 +677,9 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganiz
 	suite.setupGetUserAttributesEmpty()
 
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-invalid").
-		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
-			Error: i18ncore.I18nMessage{Key: "error.test.ou_not_found", DefaultValue: "ou_not_found"},
-			ErrorDescription: i18ncore.I18nMessage{
+		Return(providers.OrganizationUnit{}, &tidcommon.ServiceError{
+			Error: tidcommon.I18nMessage{Key: "error.test.ou_not_found", DefaultValue: "ou_not_found"},
+			ErrorDescription: tidcommon.I18nMessage{
 				Key: "error.test.organization_unit_does_not_exist", DefaultValue: "organization unit does not exist",
 			},
 		})
@@ -698,7 +696,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 	ctx := &core.NodeContext{
 		ExecutionID:      "flow-123",
 		EntityID:         "app-123",
-		FlowType:         common.FlowTypeAuthentication,
+		FlowType:         providers.FlowTypeAuthentication,
 		AuthUser:         newTestAuthenticatedAuthUser(),
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
@@ -713,7 +711,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 
 	suite.setupGetEntityReference("", "")
 
-	suite.setupGetUserAttributesWith(map[string]*authnprovidercm.AttributeResponse{
+	suite.setupGetUserAttributesWith(map[string]*providers.AttributeResponse{
 		"email":      {Value: testEmail},
 		"username":   {Value: "testuser"},
 		"given_name": {Value: testNameValue},
@@ -741,7 +739,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups() {
 	ctx := &core.NodeContext{
 		ExecutionID:      "flow-123",
 		EntityID:         "app-123",
-		FlowType:         common.FlowTypeAuthentication,
+		FlowType:         providers.FlowTypeAuthentication,
 		AuthUser:         newTestAuthenticatedAuthUser(),
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
@@ -756,7 +754,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups() {
 	suite.setupGetEntityReference("", "")
 	suite.setupGetUserAttributesEmpty()
 
-	userGroups := []entityprovider.EntityGroup{
+	userGroups := []providers.EntityGroup{
 		{Name: "admin"},
 		{Name: "developer"},
 		{Name: "viewer"},
@@ -787,7 +785,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_EmptyGroups() {
 	ctx := &core.NodeContext{
 		ExecutionID:      "flow-123",
 		EntityID:         "app-123",
-		FlowType:         common.FlowTypeAuthentication,
+		FlowType:         providers.FlowTypeAuthentication,
 		AuthUser:         newTestAuthenticatedAuthUser(),
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
@@ -803,7 +801,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_EmptyGroups() {
 	suite.setupGetUserAttributesEmpty()
 
 	suite.mockEntityProvider.On("GetTransitiveEntityGroups", "user-123").
-		Return([]entityprovider.EntityGroup{}, nil)
+		Return([]providers.EntityGroup{}, nil)
 	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			// Should NOT contain groups claim when groups list is empty
@@ -824,7 +822,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_GetUserGroupsFa
 	ctx := &core.NodeContext{
 		ExecutionID:      "flow-123",
 		EntityID:         "app-123",
-		FlowType:         common.FlowTypeAuthentication,
+		FlowType:         providers.FlowTypeAuthentication,
 		AuthUser:         newTestAuthenticatedAuthUser(),
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
@@ -953,7 +951,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConsentedAttributes_Fi
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
 		EntityID:    "app-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    newTestAuthenticatedAuthUser(),
 		RuntimeData: map[string]string{
 			common.RuntimeKeyConsentID:           "consent-123",
@@ -971,7 +969,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConsentedAttributes_Fi
 
 	suite.setupGetEntityReference("", "")
 
-	suite.setupGetUserAttributesWith(map[string]*authnprovidercm.AttributeResponse{
+	suite.setupGetUserAttributesWith(map[string]*providers.AttributeResponse{
 		"email": {Value: testEmail},
 		"name":  {Value: testNameValue},
 	})
@@ -998,7 +996,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithEmptyConsentedAttribut
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
 		EntityID:    "app-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    newTestAuthenticatedAuthUser(),
 		RuntimeData: map[string]string{
 			common.RuntimeKeyConsentID:           "consent-456",
@@ -1025,7 +1023,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithoutConsentedAttributes
 	ctx := &core.NodeContext{
 		ExecutionID:      "flow-123",
 		EntityID:         "app-123",
-		FlowType:         common.FlowTypeAuthentication,
+		FlowType:         providers.FlowTypeAuthentication,
 		AuthUser:         newTestAuthenticatedAuthUser(),
 		RuntimeData:      map[string]string{},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
@@ -1068,7 +1066,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_AttrsSt
 
 	suite.setupGetEntityReference("", "")
 
-	suite.setupGetUserAttributesWith(map[string]*authnprovidercm.AttributeResponse{
+	suite.setupGetUserAttributesWith(map[string]*providers.AttributeResponse{
 		"email": {Value: testEmail},
 		"phone": {Value: "1234567890"},
 	})
@@ -1121,7 +1119,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_NilUser
 
 	suite.setupGetEntityReference("", "")
 
-	suite.setupGetUserAttributesWith(map[string]*authnprovidercm.AttributeResponse{
+	suite.setupGetUserAttributesWith(map[string]*providers.AttributeResponse{
 		"email": {Value: testEmail},
 	})
 
@@ -1165,7 +1163,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_OnlyRes
 
 	suite.setupGetEntityReference("", "")
 
-	suite.setupGetUserAttributesWith(map[string]*authnprovidercm.AttributeResponse{
+	suite.setupGetUserAttributesWith(map[string]*providers.AttributeResponse{
 		"email": {Value: testEmail},
 	})
 
@@ -1214,7 +1212,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_NilAsse
 
 	suite.setupGetEntityReference("", "")
 
-	suite.setupGetUserAttributesWith(map[string]*authnprovidercm.AttributeResponse{
+	suite.setupGetUserAttributesWith(map[string]*providers.AttributeResponse{
 		"email": {Value: testEmail},
 	})
 
@@ -1244,7 +1242,7 @@ func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithGroups()
 		RuntimeData: map[string]string{},
 	}
 
-	userGroups := []entityprovider.EntityGroup{
+	userGroups := []providers.EntityGroup{
 		{Name: "admin"},
 		{Name: "developer"},
 	}
@@ -1337,7 +1335,7 @@ func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithOUDetail
 	}
 
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, testAuthOUID).
-		Return(ou.OrganizationUnit{ID: testAuthOUID, Name: "Engineering", Handle: "eng"}, nil)
+		Return(providers.OrganizationUnit{ID: testAuthOUID, Name: "Engineering", Handle: "eng"}, nil)
 
 	attrs, err := suite.executor.resolveUserAttributes(ctx,
 		[]string{oauth2const.ClaimOUID, oauth2const.ClaimOUName, oauth2const.ClaimOUHandle},
@@ -1359,9 +1357,9 @@ func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithOUDetail
 	}
 
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-invalid").
-		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
-			Error: i18ncore.I18nMessage{Key: "error.test.ou_not_found", DefaultValue: "ou_not_found"},
-			ErrorDescription: i18ncore.I18nMessage{
+		Return(providers.OrganizationUnit{}, &tidcommon.ServiceError{
+			Error: tidcommon.I18nMessage{Key: "error.test.ou_not_found", DefaultValue: "ou_not_found"},
+			ErrorDescription: tidcommon.I18nMessage{
 				Key: "error.test.organization_unit_not_found", DefaultValue: "organization unit not found",
 			},
 		})
@@ -1415,7 +1413,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_GroupsI
 	suite.setupGetEntityReference("", "")
 	suite.setupGetUserAttributesEmpty()
 
-	userGroups := []entityprovider.EntityGroup{
+	userGroups := []providers.EntityGroup{
 		{Name: "admin"},
 		{Name: "developer"},
 	}
@@ -1507,7 +1505,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_OUDetai
 	suite.setupGetUserAttributesEmpty()
 
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, testAuthOUID).
-		Return(ou.OrganizationUnit{ID: testAuthOUID, Name: "Engineering"}, nil)
+		Return(providers.OrganizationUnit{ID: testAuthOUID, Name: "Engineering"}, nil)
 	suite.mockAttributeCacheSvc.On("CreateAttributeCache", mock.Anything,
 		mock.MatchedBy(func(cache *attributecache.AttributeCache) bool {
 			return cache.Attributes[oauth2const.ClaimOUID] == testAuthOUID &&
@@ -1533,7 +1531,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithRuntimeRequiredEssenti
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
 		EntityID:    "app-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    newTestAuthenticatedAuthUser(),
 		RuntimeData: map[string]string{
 			common.RuntimeKeyRequiredEssentialAttributes: "email",
@@ -1549,7 +1547,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithRuntimeRequiredEssenti
 
 	suite.setupGetEntityReference("", "")
 
-	suite.setupGetUserAttributesWith(map[string]*authnprovidercm.AttributeResponse{
+	suite.setupGetUserAttributesWith(map[string]*providers.AttributeResponse{
 		"email": {Value: testEmail},
 		"name":  {Value: testNameValue},
 	})
@@ -1645,7 +1643,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_CallbackType_EmittedWhenSe
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-ciba",
 		EntityID:    "app-1",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    newTestAuthenticatedAuthUser(),
 		NodeProperties: map[string]interface{}{
 			propertyKeyCallbackType: "urn:openid:params:grant-type:ciba",
@@ -1673,7 +1671,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_CallbackType_AbsentWhenNot
 	ctx := &core.NodeContext{
 		ExecutionID:      "flow-authcode",
 		EntityID:         "app-1",
-		FlowType:         common.FlowTypeAuthentication,
+		FlowType:         providers.FlowTypeAuthentication,
 		AuthUser:         newTestAuthenticatedAuthUser(),
 		NodeProperties:   map[string]interface{}{},
 		RuntimeData:      map[string]string{},

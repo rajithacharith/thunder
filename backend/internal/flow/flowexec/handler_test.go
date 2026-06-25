@@ -25,12 +25,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/flow/common"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 )
 
 const testFlowExecRequestBody = `{"applicationId":"app-1","flowType":"AUTHENTICATION","action":"submit"}`
@@ -53,10 +53,10 @@ func (s *HandlerTestSuite) TestNewFlowExecutionHandler() {
 
 func (s *HandlerTestSuite) TestHandleFlowError_ClientError_Returns400() {
 	w := httptest.NewRecorder()
-	svcErr := &serviceerror.ServiceError{
+	svcErr := &tidcommon.ServiceError{
 		Code: "FES-4001",
-		Type: serviceerror.ClientErrorType,
-		Error: i18ncore.I18nMessage{
+		Type: tidcommon.ClientErrorType,
+		Error: tidcommon.I18nMessage{
 			Key:          "client.error",
 			DefaultValue: "bad request",
 		},
@@ -73,10 +73,10 @@ func (s *HandlerTestSuite) TestHandleFlowError_ForbiddenError_Returns403() {
 
 func (s *HandlerTestSuite) TestHandleFlowError_ServerError_Returns500() {
 	w := httptest.NewRecorder()
-	svcErr := &serviceerror.ServiceError{
+	svcErr := &tidcommon.ServiceError{
 		Code: "FES-5001",
-		Type: serviceerror.ServerErrorType,
-		Error: i18ncore.I18nMessage{
+		Type: tidcommon.ServerErrorType,
+		Error: tidcommon.I18nMessage{
 			Key:          "server.error",
 			DefaultValue: "internal error",
 		},
@@ -86,13 +86,13 @@ func (s *HandlerTestSuite) TestHandleFlowError_ServerError_Returns500() {
 }
 
 func (s *HandlerTestSuite) TestConvertToAPIError() {
-	svcErr := &serviceerror.ServiceError{
+	svcErr := &tidcommon.ServiceError{
 		Code: "FES-1234",
-		Error: i18ncore.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "test.error",
 			DefaultValue: "test message",
 		},
-		ErrorDescription: i18ncore.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "test.error.desc",
 			DefaultValue: "test description",
 		},
@@ -138,7 +138,7 @@ func (s *HandlerTestSuite) TestHandleFlowExecutionRequest_Success() {
 	}
 	mockSvc.EXPECT().Execute(mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(flowStep, (*serviceerror.ServiceError)(nil))
+		Return(flowStep, (*tidcommon.ServiceError)(nil))
 
 	h := newFlowExecutionHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodPost, "/flow/execute", bytes.NewBufferString(testFlowExecRequestBody))
@@ -152,9 +152,9 @@ func (s *HandlerTestSuite) TestHandleFlowExecutionRequest_Success() {
 func (s *HandlerTestSuite) TestHandleFlowExecutionRequest_StepWithError() {
 	t := s.T()
 	mockSvc := NewFlowExecServiceInterfaceMock(t)
-	stepErr := &serviceerror.ServiceError{
+	stepErr := &tidcommon.ServiceError{
 		Code: "FES-9999",
-		Error: i18ncore.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "step.error",
 			DefaultValue: "step failed",
 		},
@@ -166,7 +166,7 @@ func (s *HandlerTestSuite) TestHandleFlowExecutionRequest_StepWithError() {
 	}
 	mockSvc.EXPECT().Execute(mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(flowStep, (*serviceerror.ServiceError)(nil))
+		Return(flowStep, (*tidcommon.ServiceError)(nil))
 
 	h := newFlowExecutionHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodPost, "/flow/execute", bytes.NewBufferString(testFlowExecRequestBody))

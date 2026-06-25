@@ -364,3 +364,21 @@ packages:
       structname: '{{.InterfaceName}}Mock'
       pkgname: template
       filename: "{{.InterfaceName}}_mock_test.go"
+
+  github.com/thunder-id/thunderid/pkg/thunderidengine/providers:
+    interfaces:
+      FlowProviderInterface:
+        config:
+          dir: internal/flow/flowexec
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: flowexec
+          filename: "{{.InterfaceName}}_mock_test.go"
+
+  github.com/thunder-id/thunderid/internal/flow/graphbuilder:
+    interfaces:
+      GraphBuilderInterface:
+        config:
+          dir: internal/flow/flowexec
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: flowexec
+          filename: "{{.InterfaceName}}_mock_test.go"

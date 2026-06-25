@@ -25,20 +25,19 @@ import (
 	"testing"
 	"time"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	appmodel "github.com/thunder-id/thunderid/internal/application/model"
 	consentauthn "github.com/thunder-id/thunderid/internal/authn/consent"
-	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/consent"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/tests/mocks/authn/consentenforcermock"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
@@ -89,23 +88,23 @@ func createMockExecutorWithInputs(t *testing.T) *coremock.ExecutorInterfaceMock 
 
 // --- Helper to build a basic NodeContext ---
 
-func buildConsentAuthUser() authnprovidermgr.AuthUser {
-	var authUser authnprovidermgr.AuthUser
+func buildConsentAuthUser() providers.AuthUser {
+	var authUser providers.AuthUser
 	_ = authUser.UnmarshalJSON([]byte(`{"entityReferenceToken":"tok","attributeToken":"tok"}`))
 	return authUser
 }
 
-func buildConsentEntityRef() *authnprovidercm.EntityReference {
-	return &authnprovidercm.EntityReference{
+func buildConsentEntityRef() *providers.EntityReference {
+	return &providers.EntityReference{
 		EntityID:   testUserID,
 		EntityType: "",
 		OUID:       "",
 	}
 }
 
-func buildConsentAvailableAttrs() *authnprovidercm.AttributesResponse {
-	return &authnprovidercm.AttributesResponse{
-		Attributes: map[string]*authnprovidercm.AttributeResponse{
+func buildConsentAvailableAttrs() *providers.AttributesResponse {
+	return &providers.AttributesResponse{
+		Attributes: map[string]*providers.AttributeResponse{
 			"email": nil,
 			"phone": nil,
 			"name":  nil,
@@ -136,9 +135,9 @@ func buildConsentNodeContext() *core.NodeContext {
 // mock expectations using the default test entity reference and available attributes.
 func (suite *ConsentExecutorTestSuite) setupDefaultAuthnProviderMocks() {
 	suite.mockAuthnProvider.On("GetEntityReference", mock.Anything, mock.Anything).
-		Return(buildConsentAuthUser(), buildConsentEntityRef(), (*serviceerror.ServiceError)(nil)).Maybe()
+		Return(buildConsentAuthUser(), buildConsentEntityRef(), (*tidcommon.ServiceError)(nil)).Maybe()
 	suite.mockAuthnProvider.On("GetUserAvailableAttributes", mock.Anything, mock.Anything).
-		Return(buildConsentAvailableAttrs(), (*serviceerror.ServiceError)(nil)).Maybe()
+		Return(buildConsentAvailableAttrs(), (*tidcommon.ServiceError)(nil)).Maybe()
 }
 
 // ----- Constructor Tests -----
@@ -346,9 +345,9 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_ResolveConsent_Clien
 
 	suite.mockConsentEnforcer.On("ResolveConsent", mock.Anything, "default", "app-123", "", "user-123",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, &serviceerror.ServiceError{
-			Type: serviceerror.ClientErrorType,
-			ErrorDescription: i18ncore.I18nMessage{
+		Return(nil, &tidcommon.ServiceError{
+			Type: tidcommon.ClientErrorType,
+			ErrorDescription: tidcommon.I18nMessage{
 				DefaultValue: "consent config not found",
 			},
 		})
@@ -372,8 +371,8 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_ResolveConsent_Serve
 
 	suite.mockConsentEnforcer.On("ResolveConsent", mock.Anything, "default", "app-123", "", "user-123",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, &serviceerror.ServiceError{
-			Type: serviceerror.ServerErrorType,
+		Return(nil, &tidcommon.ServiceError{
+			Type: tidcommon.ServerErrorType,
 		})
 
 	resp, err := suite.executor.Execute(ctx)
@@ -794,9 +793,9 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_RecordConsent_Clien
 
 	suite.mockConsentEnforcer.On("RecordConsent", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, &serviceerror.ServiceError{
-			Type: serviceerror.ClientErrorType,
-			ErrorDescription: i18ncore.I18nMessage{
+		Return(nil, &tidcommon.ServiceError{
+			Type: tidcommon.ClientErrorType,
+			ErrorDescription: tidcommon.I18nMessage{
 				DefaultValue: "invalid consent data",
 			},
 		})
@@ -828,8 +827,8 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_RecordConsent_Serve
 
 	suite.mockConsentEnforcer.On("RecordConsent", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, &serviceerror.ServiceError{
-			Type: serviceerror.ServerErrorType,
+		Return(nil, &tidcommon.ServiceError{
+			Type: tidcommon.ServerErrorType,
 		})
 
 	resp, err := suite.executor.Execute(ctx)
@@ -1043,7 +1042,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_AugmentedAttributes_
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything,
 		mock.Anything,
-		mock.MatchedBy(func(aa *authnprovidercm.AttributesResponse) bool {
+		mock.MatchedBy(func(aa *providers.AttributesResponse) bool {
 			if aa == nil || len(aa.Attributes) == 0 {
 				return false
 			}
@@ -1063,9 +1062,9 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_AugmentedAttributes_
 	entityRef := buildConsentEntityRef()
 	entityRef.OUID = "ou-999"
 	suite.mockAuthnProvider.On("GetEntityReference", mock.Anything, mock.Anything).
-		Return(buildConsentAuthUser(), entityRef, (*serviceerror.ServiceError)(nil)).Maybe()
+		Return(buildConsentAuthUser(), entityRef, (*tidcommon.ServiceError)(nil)).Maybe()
 	suite.mockAuthnProvider.On("GetUserAvailableAttributes", mock.Anything, mock.Anything).
-		Return(buildConsentAvailableAttrs(), (*serviceerror.ServiceError)(nil)).Maybe()
+		Return(buildConsentAvailableAttrs(), (*tidcommon.ServiceError)(nil)).Maybe()
 
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("ValidatePrerequisites", ctx, mock.AnythingOfType("*common.ExecutorResponse"), mock.Anything).Return(true)
@@ -1076,7 +1075,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_AugmentedAttributes_
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything,
 		mock.Anything,
-		mock.MatchedBy(func(aa *authnprovidercm.AttributesResponse) bool {
+		mock.MatchedBy(func(aa *providers.AttributesResponse) bool {
 			if aa == nil {
 				return false
 			}
@@ -1098,9 +1097,9 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_AugmentedAttributes_
 	entityRef := buildConsentEntityRef()
 	entityRef.EntityType = "customer"
 	suite.mockAuthnProvider.On("GetEntityReference", mock.Anything, mock.Anything).
-		Return(buildConsentAuthUser(), entityRef, (*serviceerror.ServiceError)(nil)).Maybe()
+		Return(buildConsentAuthUser(), entityRef, (*tidcommon.ServiceError)(nil)).Maybe()
 	suite.mockAuthnProvider.On("GetUserAvailableAttributes", mock.Anything, mock.Anything).
-		Return(buildConsentAvailableAttrs(), (*serviceerror.ServiceError)(nil)).Maybe()
+		Return(buildConsentAvailableAttrs(), (*tidcommon.ServiceError)(nil)).Maybe()
 
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("ValidatePrerequisites", ctx, mock.AnythingOfType("*common.ExecutorResponse"), mock.Anything).Return(true)
@@ -1111,7 +1110,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_AugmentedAttributes_
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything,
 		mock.Anything,
-		mock.MatchedBy(func(aa *authnprovidercm.AttributesResponse) bool {
+		mock.MatchedBy(func(aa *providers.AttributesResponse) bool {
 			return aa != nil && func() bool { _, ok := aa.Attributes["userType"]; return ok }()
 		}), mock.Anything, mock.Anything).
 		Return(nil, nil)
@@ -1129,9 +1128,9 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_AugmentedAttributes_
 	entityRef := buildConsentEntityRef()
 	entityRef.EntityType = testUserTypeInternal
 	suite.mockAuthnProvider.On("GetEntityReference", mock.Anything, mock.Anything).
-		Return(buildConsentAuthUser(), entityRef, (*serviceerror.ServiceError)(nil)).Maybe()
+		Return(buildConsentAuthUser(), entityRef, (*tidcommon.ServiceError)(nil)).Maybe()
 	suite.mockAuthnProvider.On("GetUserAvailableAttributes", mock.Anything, mock.Anything).
-		Return((*authnprovidercm.AttributesResponse)(nil), (*serviceerror.ServiceError)(nil)).Maybe()
+		Return((*providers.AttributesResponse)(nil), (*tidcommon.ServiceError)(nil)).Maybe()
 
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("ValidatePrerequisites", ctx, mock.AnythingOfType("*common.ExecutorResponse"), mock.Anything).Return(true)
@@ -1142,7 +1141,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_AugmentedAttributes_
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything,
 		mock.Anything,
-		mock.MatchedBy(func(aa *authnprovidercm.AttributesResponse) bool {
+		mock.MatchedBy(func(aa *providers.AttributesResponse) bool {
 			return aa == nil
 		}), mock.Anything, mock.Anything).
 		Return(nil, nil)
@@ -1335,7 +1334,7 @@ func (suite *ConsentExecutorTestSuite) TestCollectConsentedPermissions_DedupsAcr
 // ----- buildAugmentedAvailableAttributes Tests -----
 
 func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_NilBase() {
-	entityRef := &authnprovidercm.EntityReference{
+	entityRef := &providers.EntityReference{
 		EntityType: testUserTypeInternal,
 		OUID:       "ou-123",
 	}
@@ -1348,10 +1347,10 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Nil
 }
 
 func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_EmptyAttributes() {
-	availableAttrs := &authnprovidercm.AttributesResponse{
-		Attributes: map[string]*authnprovidercm.AttributeResponse{},
+	availableAttrs := &providers.AttributesResponse{
+		Attributes: map[string]*providers.AttributeResponse{},
 	}
-	entityRef := &authnprovidercm.EntityReference{
+	entityRef := &providers.EntityReference{
 		EntityID:   testUserID,
 		EntityType: testUserTypeInternal,
 		OUID:       "ou-123",
@@ -1373,13 +1372,13 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Emp
 
 func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_NoSpecialContext() {
 	// EntityType, OUID, EntityID are all empty
-	availableAttrs := &authnprovidercm.AttributesResponse{
-		Attributes: map[string]*authnprovidercm.AttributeResponse{
+	availableAttrs := &providers.AttributesResponse{
+		Attributes: map[string]*providers.AttributeResponse{
 			"email": nil,
 			"phone": nil,
 		},
 	}
-	entityRef := &authnprovidercm.EntityReference{}
+	entityRef := &providers.EntityReference{}
 
 	result := suite.executor.buildAugmentedAvailableAttributes(availableAttrs, entityRef)
 
@@ -1420,12 +1419,12 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Wit
 
 	for _, tc := range cases {
 		suite.Run(tc.name, func() {
-			availableAttrs := &authnprovidercm.AttributesResponse{
-				Attributes: map[string]*authnprovidercm.AttributeResponse{
+			availableAttrs := &providers.AttributesResponse{
+				Attributes: map[string]*providers.AttributeResponse{
 					"email": nil,
 				},
 			}
-			entityRef := &authnprovidercm.EntityReference{
+			entityRef := &providers.EntityReference{
 				EntityType: tc.entityType,
 				OUID:       tc.ouID,
 				EntityID:   tc.entityID,
@@ -1445,12 +1444,12 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Wit
 }
 
 func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_WithGroups() {
-	availableAttrs := &authnprovidercm.AttributesResponse{
-		Attributes: map[string]*authnprovidercm.AttributeResponse{
+	availableAttrs := &providers.AttributesResponse{
+		Attributes: map[string]*providers.AttributeResponse{
 			"email": nil,
 		},
 	}
-	entityRef := &authnprovidercm.EntityReference{
+	entityRef := &providers.EntityReference{
 		EntityID: "user-abc",
 	}
 
@@ -1464,12 +1463,12 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Wit
 }
 
 func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_AllSpecialFields() {
-	availableAttrs := &authnprovidercm.AttributesResponse{
-		Attributes: map[string]*authnprovidercm.AttributeResponse{
+	availableAttrs := &providers.AttributesResponse{
+		Attributes: map[string]*providers.AttributeResponse{
 			"email": nil,
 		},
 	}
-	entityRef := &authnprovidercm.EntityReference{
+	entityRef := &providers.EntityReference{
 		EntityType: testUserTypeInternal,
 		OUID:       "ou-789",
 		EntityID:   "user-xyz",
@@ -1489,13 +1488,13 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_All
 }
 
 func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_DoesNotMutateOriginal() {
-	availableAttrs := &authnprovidercm.AttributesResponse{
-		Attributes: map[string]*authnprovidercm.AttributeResponse{
+	availableAttrs := &providers.AttributesResponse{
+		Attributes: map[string]*providers.AttributeResponse{
 			"email": nil,
 			"phone": nil,
 		},
 	}
-	entityRef := &authnprovidercm.EntityReference{
+	entityRef := &providers.EntityReference{
 		EntityType: testUserTypeInternal,
 		OUID:       "ou-789",
 		EntityID:   "user-xyz",
@@ -1512,15 +1511,15 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Doe
 }
 
 func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_PreservesVerifications() {
-	availableAttrs := &authnprovidercm.AttributesResponse{
-		Attributes: map[string]*authnprovidercm.AttributeResponse{
+	availableAttrs := &providers.AttributesResponse{
+		Attributes: map[string]*providers.AttributeResponse{
 			"email": nil,
 		},
-		Verifications: map[string]*authnprovidercm.VerificationResponse{
+		Verifications: map[string]*providers.VerificationResponse{
 			"v-1": {},
 		},
 	}
-	entityRef := &authnprovidercm.EntityReference{
+	entityRef := &providers.EntityReference{
 		EntityType: testUserTypeInternal,
 	}
 
@@ -1542,19 +1541,19 @@ func (suite *ConsentExecutorTestSuite) TestExecute_BasicAuth_NilAvailableAttribu
 		UserAttributes: []string{"given_name", "email"},
 	}
 
-	entityRef := &authnprovidercm.EntityReference{
+	entityRef := &providers.EntityReference{
 		EntityID: "user-123",
 	}
-	authUserAttrs := &authnprovidercm.AttributesResponse{
-		Attributes: map[string]*authnprovidercm.AttributeResponse{
+	authUserAttrs := &providers.AttributesResponse{
+		Attributes: map[string]*providers.AttributeResponse{
 			"given_name": {},
 			"email":      {},
 		},
 	}
 	suite.mockAuthnProvider.On("GetEntityReference", mock.Anything, mock.Anything).
-		Return(buildConsentAuthUser(), entityRef, (*serviceerror.ServiceError)(nil)).Maybe()
+		Return(buildConsentAuthUser(), entityRef, (*tidcommon.ServiceError)(nil)).Maybe()
 	suite.mockAuthnProvider.On("GetUserAvailableAttributes", mock.Anything, mock.Anything).
-		Return(authUserAttrs, (*serviceerror.ServiceError)(nil)).Maybe()
+		Return(authUserAttrs, (*tidcommon.ServiceError)(nil)).Maybe()
 
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("ValidatePrerequisites", ctx, mock.AnythingOfType("*common.ExecutorResponse"), mock.Anything).Return(true)
@@ -1575,7 +1574,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_BasicAuth_NilAvailableAttribu
 		mock.Anything, "default", "app-123", "", "user-123",
 		[]string{}, []string{"given_name", "email"},
 		mock.Anything,
-		mock.MatchedBy(func(aa *authnprovidercm.AttributesResponse) bool {
+		mock.MatchedBy(func(aa *providers.AttributesResponse) bool {
 			if aa == nil {
 				return false
 			}
@@ -1601,13 +1600,13 @@ func (suite *ConsentExecutorTestSuite) TestExecute_BasicAuth_NilAvailableAttribu
 func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_WithAvailableAttrs() {
 	// When availableAttrResp is provided, buildAugmentedAvailableAttributes should use it
 	// and return augmented attributes.
-	availableAttrs := &authnprovidercm.AttributesResponse{
-		Attributes: map[string]*authnprovidercm.AttributeResponse{
+	availableAttrs := &providers.AttributesResponse{
+		Attributes: map[string]*providers.AttributeResponse{
 			"email": {},
 			"phone": {},
 		},
 	}
-	entityRef := &authnprovidercm.EntityReference{
+	entityRef := &providers.EntityReference{
 		EntityID: testUserID,
 	}
 
@@ -1622,7 +1621,7 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Wit
 func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_NilAvailableAttrs_ReturnsNil() {
 	// When availableAttrResp is nil, should return nil so the consent enforcer
 	// skips profile-presence filtering.
-	entityRef := &authnprovidercm.EntityReference{
+	entityRef := &providers.EntityReference{
 		EntityID: testUserID,
 	}
 

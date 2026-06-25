@@ -23,11 +23,11 @@ import (
 	"errors"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 )
 
 type ServiceTestSuite struct {
@@ -127,7 +127,7 @@ func (suite *ServiceTestSuite) TestGetCertificateByID_StoreError() {
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, err.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, err.Code)
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
@@ -204,7 +204,7 @@ func (suite *ServiceTestSuite) TestGetCertificateByReference_StoreError() {
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, err.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, err.Code)
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
@@ -354,7 +354,7 @@ func (suite *ServiceTestSuite) TestCreateCertificate_CheckExistingError() {
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, err.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, err.Code)
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
@@ -375,7 +375,7 @@ func (suite *ServiceTestSuite) TestCreateCertificate_StoreError() {
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, err.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, err.Code)
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
@@ -479,7 +479,7 @@ func (suite *ServiceTestSuite) TestUpdateCertificateByID_GetExistingError() {
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, err.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, err.Code)
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
@@ -502,7 +502,7 @@ func (suite *ServiceTestSuite) TestUpdateCertificateByID_UpdateError() {
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, err.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, err.Code)
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
@@ -652,7 +652,7 @@ func (suite *ServiceTestSuite) TestUpdateCertificateByReference_GetExistingError
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, err.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, err.Code)
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
@@ -677,7 +677,7 @@ func (suite *ServiceTestSuite) TestUpdateCertificateByReference_UpdateError() {
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, err.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, err.Code)
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
@@ -733,7 +733,7 @@ func (suite *ServiceTestSuite) TestDeleteCertificateByID_StoreError() {
 	err := suite.service.DeleteCertificateByID(context.Background(), "test-id")
 
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, err.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, err.Code)
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
@@ -777,7 +777,7 @@ func (suite *ServiceTestSuite) TestDeleteCertificateByReference_StoreError() {
 		CertificateReferenceTypeIDP, "test-id")
 
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, err.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, err.Code)
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
@@ -829,7 +829,7 @@ func (suite *ServiceTestSuite) TestValidateCertificate() {
 	testCases := []struct {
 		name          string
 		cert          *Certificate
-		expectedError *serviceerror.ServiceError
+		expectedError *tidcommon.ServiceError
 	}{
 		{
 			name:          "Nil certificate",
@@ -921,7 +921,7 @@ func (suite *ServiceTestSuite) TestValidateCertificateForCreation() {
 	testCases := []struct {
 		name          string
 		cert          *Certificate
-		expectedError *serviceerror.ServiceError
+		expectedError *tidcommon.ServiceError
 	}{
 		{
 			name:          "Nil certificate",

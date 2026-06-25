@@ -23,12 +23,14 @@ import (
 	"slices"
 	"strconv"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/thunder-id/thunderid/internal/authn/magiclink"
 	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/utils"
@@ -40,7 +42,7 @@ type magicLinkExecutor struct {
 	identifyingExecutorInterface
 	entityProvider   entityprovider.EntityProviderInterface
 	magicLinkService magiclink.MagicLinkAuthnServiceInterface
-	authnProvider    authnprovidermgr.AuthnProviderManagerInterface
+	authnProvider    providers.AuthnProviderManagerInterface
 	logger           *log.Logger
 }
 
@@ -60,7 +62,7 @@ func newMagicLinkExecutorResponse() *common.ExecutorResponse {
 func newMagicLinkExecutor(
 	flowFactory core.FlowFactoryInterface,
 	magicLinkService magiclink.MagicLinkAuthnServiceInterface,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
+	authnProvider providers.AuthnProviderManagerInterface,
 	entityProvider entityprovider.EntityProviderInterface,
 ) *magicLinkExecutor {
 	defaultInputs := []common.Input{{
@@ -141,7 +143,7 @@ func (m *magicLinkExecutor) InitiateMagicLink(ctx *core.NodeContext,
 	logger *log.Logger) (*common.ExecutorResponse, error) {
 	execResp := newMagicLinkExecutorResponse()
 	execResp.AuthUser = ctx.AuthUser
-	isRegistration := ctx.FlowType == common.FlowTypeRegistration
+	isRegistration := ctx.FlowType == providers.FlowTypeRegistration
 	searchAttrs := m.buildUserSearchAttributes(ctx)
 
 	// 1. Resolve the destination attribute name
@@ -205,7 +207,7 @@ func (m *magicLinkExecutor) InitiateMagicLink(ctx *core.NodeContext,
 		ctx.Context, subject, expirySeconds, queryParams, claims, magicLinkURL)
 
 	if svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
+		if svcErr.Type == tidcommon.ClientErrorType {
 			execResp.Status = common.ExecFailure
 			execResp.Error = &ErrMagicLinkGeneration
 			return execResp, nil
@@ -313,7 +315,7 @@ func (m *magicLinkExecutor) executeVerify(ctx *core.NodeContext) (*common.Execut
 	token := ctx.UserInputs[userInputMagicLinkToken]
 
 	subjectAttribute := ""
-	if ctx.FlowType == common.FlowTypeRegistration {
+	if ctx.FlowType == providers.FlowTypeRegistration {
 		subjectAttribute = ctx.RuntimeData[common.RuntimeKeyMagicLinkDestinationAttribute]
 		if subjectAttribute == "" {
 			return execResp, errors.New("magic link destination attribute missing from runtime data")
@@ -358,7 +360,7 @@ func (m *magicLinkExecutor) executeVerify(ctx *core.NodeContext) (*common.Execut
 // validateFlowClaims checks executionId and JTI claims in the magic link JWT token.
 // These are flow-specific concerns and not part of the auth provider contract.
 func (m *magicLinkExecutor) validateFlowClaims(ctx *core.NodeContext,
-	token string, logger *log.Logger) (string, *serviceerror.ServiceError) {
+	token string, logger *log.Logger) (string, *tidcommon.ServiceError) {
 	payload, decodeErr := jwt.DecodeJWTPayload(token)
 	if decodeErr != nil {
 		logger.Debug(ctx.Context, "Failed to decode magic link token", log.Error(decodeErr))

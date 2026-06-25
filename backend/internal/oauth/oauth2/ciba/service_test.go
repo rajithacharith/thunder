@@ -28,17 +28,17 @@ import (
 	"testing"
 	"time"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/actorprovider"
 	flowcm "github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/flowexec"
-	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/flowexecmock"
 	"github.com/thunder-id/thunderid/tests/mocks/inboundclientmock"
@@ -58,7 +58,7 @@ type CIBAServiceTestSuite struct {
 	mockEntityProvider *entityprovidermock.EntityProviderInterfaceMock
 	mockResourceSvc    *resourcemock.ResourceServiceInterfaceMock
 	service            CIBAServiceInterface
-	oauthApp           *inboundmodel.OAuthClient
+	oauthApp           *providers.OAuthClient
 }
 
 func TestCIBAServiceTestSuite(t *testing.T) {
@@ -78,10 +78,10 @@ func (suite *CIBAServiceTestSuite) SetupTest() {
 	actorProv := actorprovider.Initialize(suite.mockInboundClient, suite.mockEntityProvider)
 	suite.service = newCIBAService(suite.mockStore, suite.mockFlowExec,
 		suite.mockJWTService, actorProv, suite.mockResourceSvc, testhelpers.OAuthConfig())
-	suite.oauthApp = &inboundmodel.OAuthClient{
+	suite.oauthApp = &providers.OAuthClient{
 		ID:         "app-1",
 		ClientID:   "client-1",
-		GrantTypes: []oauth2const.GrantType{oauth2const.GrantTypeCIBA},
+		GrantTypes: []providers.GrantType{providers.GrantTypeCIBA},
 	}
 }
 
@@ -257,16 +257,16 @@ func (suite *CIBAServiceTestSuite) TestInitiate_StripsStandardScopesFromRuntime(
 }
 
 func (suite *CIBAServiceTestSuite) TestInitiate_InjectsRequiredAttributes() {
-	app := &inboundmodel.OAuthClient{
+	app := &providers.OAuthClient{
 		ID:         "app-1",
 		ClientID:   "client-1",
-		GrantTypes: []oauth2const.GrantType{oauth2const.GrantTypeCIBA},
-		Token: &inboundmodel.OAuthTokenConfig{
-			AccessToken: &inboundmodel.AccessTokenConfig{
+		GrantTypes: []providers.GrantType{providers.GrantTypeCIBA},
+		Token: &providers.OAuthTokenConfig{
+			AccessToken: &providers.AccessTokenConfig{
 				UserAttributes: []string{"email", "given_name", "family_name", "name"},
 			},
 		},
-		UserInfo: &inboundmodel.UserInfoConfig{
+		UserInfo: &providers.UserInfoConfig{
 			UserAttributes: []string{"email", "given_name", "family_name", "name"},
 		},
 	}
@@ -303,10 +303,10 @@ func (suite *CIBAServiceTestSuite) TestInitiate_RequestedExpiryClamped() {
 }
 
 func (suite *CIBAServiceTestSuite) TestInitiate_UnauthorizedClient() {
-	app := &inboundmodel.OAuthClient{
+	app := &providers.OAuthClient{
 		ID:         "app-1",
 		ClientID:   "client-1",
-		GrantTypes: []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+		GrantTypes: []providers.GrantType{providers.GrantTypeAuthorizationCode},
 	}
 	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
 		LoginHint: "alice",
@@ -375,7 +375,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_BindingMessageNonPrintable() {
 
 func (suite *CIBAServiceTestSuite) TestInitiate_FlowInitiationFails() {
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.Anything).Return(nil,
-		&serviceerror.ServiceError{Code: "FLOW-1"})
+		&tidcommon.ServiceError{Code: "FLOW-1"})
 
 	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
 		LoginHint: "alice",
@@ -389,8 +389,8 @@ func (suite *CIBAServiceTestSuite) TestInitiate_FlowInitiationFails() {
 
 func (suite *CIBAServiceTestSuite) TestInitiate_FlowErrorMapsToUnknownUser() {
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.Anything).Return(
-		&flowexec.FlowStep{Status: flowcm.FlowStatusError, Error: &serviceerror.ServiceError{
-			Error: i18ncore.I18nMessage{DefaultValue: "User not found"},
+		&flowexec.FlowStep{Status: flowcm.FlowStatusError, Error: &tidcommon.ServiceError{
+			Error: tidcommon.I18nMessage{DefaultValue: "User not found"},
 		}}, nil)
 
 	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
@@ -405,8 +405,8 @@ func (suite *CIBAServiceTestSuite) TestInitiate_FlowErrorMapsToUnknownUser() {
 
 func (suite *CIBAServiceTestSuite) TestInitiate_FlowErrorAmbiguousUserMapsToUnknownUser() {
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.Anything).Return(
-		&flowexec.FlowStep{Status: flowcm.FlowStatusError, Error: &serviceerror.ServiceError{
-			Error: i18ncore.I18nMessage{DefaultValue: "User identity is ambiguous"},
+		&flowexec.FlowStep{Status: flowcm.FlowStatusError, Error: &tidcommon.ServiceError{
+			Error: tidcommon.I18nMessage{DefaultValue: "User identity is ambiguous"},
 		}}, nil)
 
 	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
@@ -421,8 +421,8 @@ func (suite *CIBAServiceTestSuite) TestInitiate_FlowErrorAmbiguousUserMapsToUnkn
 
 func (suite *CIBAServiceTestSuite) TestInitiate_FlowErrorGenericMapsToServerError() {
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.Anything).Return(
-		&flowexec.FlowStep{Status: flowcm.FlowStatusError, Error: &serviceerror.ServiceError{
-			Error: i18ncore.I18nMessage{DefaultValue: "something else"},
+		&flowexec.FlowStep{Status: flowcm.FlowStatusError, Error: &tidcommon.ServiceError{
+			Error: tidcommon.I18nMessage{DefaultValue: "something else"},
 		}}, nil)
 
 	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
@@ -486,11 +486,11 @@ func (suite *CIBAServiceTestSuite) TestResolveExpiresIn_WithWhitespace() {
 // -------------------------------------------------------------------
 
 func (suite *CIBAServiceTestSuite) TestResolveUserAttributesCacheTTL_RefreshTokenBranchTakesPrecedence() {
-	app := &inboundmodel.OAuthClient{
-		GrantTypes: []oauth2const.GrantType{oauth2const.GrantTypeCIBA, oauth2const.GrantTypeRefreshToken},
-		Token: &inboundmodel.OAuthTokenConfig{
-			AccessToken:  &inboundmodel.AccessTokenConfig{ValidityPeriod: 3600},
-			RefreshToken: &inboundmodel.RefreshTokenConfig{ValidityPeriod: 86400},
+	app := &providers.OAuthClient{
+		GrantTypes: []providers.GrantType{providers.GrantTypeCIBA, providers.GrantTypeRefreshToken},
+		Token: &providers.OAuthTokenConfig{
+			AccessToken:  &providers.AccessTokenConfig{ValidityPeriod: 3600},
+			RefreshToken: &providers.RefreshTokenConfig{ValidityPeriod: 86400},
 		},
 	}
 	ttl := (&cibaService{cfg: testhelpers.OAuthConfig()}).resolveUserAttributesCacheTTL(app)
@@ -529,9 +529,9 @@ func (suite *CIBAServiceTestSuite) TestGetRequiredOptionalAttributes_NilApp() {
 }
 
 func (suite *CIBAServiceTestSuite) TestGetRequiredOptionalAttributes_AccessTokenAttributesOnly() {
-	app := &inboundmodel.OAuthClient{
-		Token: &inboundmodel.OAuthTokenConfig{
-			AccessToken: &inboundmodel.AccessTokenConfig{
+	app := &providers.OAuthClient{
+		Token: &providers.OAuthTokenConfig{
+			AccessToken: &providers.AccessTokenConfig{
 				UserAttributes: []string{"user_id", "role"},
 			},
 		},
@@ -540,13 +540,13 @@ func (suite *CIBAServiceTestSuite) TestGetRequiredOptionalAttributes_AccessToken
 }
 
 func (suite *CIBAServiceTestSuite) TestGetRequiredOptionalAttributes_ScopeDerivedFilteredByUserInfo() {
-	app := &inboundmodel.OAuthClient{
-		Token: &inboundmodel.OAuthTokenConfig{
-			AccessToken: &inboundmodel.AccessTokenConfig{
+	app := &providers.OAuthClient{
+		Token: &providers.OAuthTokenConfig{
+			AccessToken: &providers.AccessTokenConfig{
 				UserAttributes: []string{"user_id"},
 			},
 		},
-		UserInfo: &inboundmodel.UserInfoConfig{
+		UserInfo: &providers.UserInfoConfig{
 			UserAttributes: []string{"email", "name"},
 		},
 	}
@@ -555,8 +555,8 @@ func (suite *CIBAServiceTestSuite) TestGetRequiredOptionalAttributes_ScopeDerive
 }
 
 func (suite *CIBAServiceTestSuite) TestGetRequiredOptionalAttributes_ScopeDerivedSkippedWithoutOpenID() {
-	app := &inboundmodel.OAuthClient{
-		UserInfo: &inboundmodel.UserInfoConfig{
+	app := &providers.OAuthClient{
+		UserInfo: &providers.UserInfoConfig{
 			UserAttributes: []string{"email", "name"},
 		},
 	}
@@ -564,8 +564,8 @@ func (suite *CIBAServiceTestSuite) TestGetRequiredOptionalAttributes_ScopeDerive
 }
 
 func (suite *CIBAServiceTestSuite) TestGetRequiredOptionalAttributes_UsesAppScopeClaimsMapping() {
-	app := &inboundmodel.OAuthClient{
-		UserInfo: &inboundmodel.UserInfoConfig{
+	app := &providers.OAuthClient{
+		UserInfo: &providers.UserInfoConfig{
 			UserAttributes: []string{"custom_attr"},
 		},
 		ScopeClaims: map[string][]string{
@@ -582,7 +582,7 @@ func (suite *CIBAServiceTestSuite) TestGetRequiredOptionalAttributes_UsesAppScop
 
 func (suite *CIBAServiceTestSuite) expectAudienceResolution() {
 	suite.mockInboundClient.EXPECT().GetOAuthClientByClientID(mock.Anything, "client-1").
-		Return(&inboundmodel.OAuthClient{ID: "app-1", ClientID: "client-1"}, nil)
+		Return(&providers.OAuthClient{ID: "app-1", ClientID: "client-1"}, nil)
 }
 
 func (suite *CIBAServiceTestSuite) pendingRecord() *CIBAAuthRequest {
@@ -728,7 +728,7 @@ func (suite *CIBAServiceTestSuite) TestCallback_BadSignature() {
 	}, nil)
 	suite.expectAudienceResolution()
 	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, "bad-assertion", "app-1", "").Return(
-		&serviceerror.ServiceError{Code: "JWT-1"})
+		&tidcommon.ServiceError{Code: "JWT-1"})
 
 	cibaErr := suite.service.HandleCallback(context.Background(), "auth-req-1", "bad-assertion")
 	suite.NotNil(cibaErr)
@@ -920,7 +920,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_WithIDTokenHint_SignatureFailed(
 	suite.withIssuer()
 	hint := suite.validIDTokenHint()
 	suite.mockJWTService.EXPECT().VerifyJWTSignature(mock.Anything, hint).
-		Return(&serviceerror.ServiceError{Code: "JWT-1004"})
+		Return(&tidcommon.ServiceError{Code: "JWT-1004"})
 
 	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
 		IDTokenHint: hint,
@@ -936,7 +936,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_WithIDTokenHint_KeyNotFound() {
 	suite.withIssuer()
 	hint := suite.validIDTokenHint()
 	suite.mockJWTService.EXPECT().VerifyJWTSignature(mock.Anything, hint).
-		Return(&serviceerror.ServiceError{Code: "JWT-1006"})
+		Return(&tidcommon.ServiceError{Code: "JWT-1006"})
 
 	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
 		IDTokenHint: hint,

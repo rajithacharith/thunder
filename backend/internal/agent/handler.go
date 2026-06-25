@@ -26,9 +26,10 @@ import (
 	"strconv"
 	"strings"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/thunder-id/thunderid/internal/agent/model"
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -193,7 +194,7 @@ func (h *agentHandler) HandleAgentGroupsRequest(w http.ResponseWriter, r *http.R
 }
 
 // parsePaginationParams parses limit and offset query parameters.
-func parsePaginationParams(query url.Values) (int, int, *serviceerror.ServiceError) {
+func parsePaginationParams(query url.Values) (int, int, *tidcommon.ServiceError) {
 	limit := 0
 	offset := 0
 	if v := query.Get("limit"); v != "" {
@@ -215,7 +216,7 @@ func parsePaginationParams(query url.Values) (int, int, *serviceerror.ServiceErr
 
 // parseFilterParams parses the filter query parameter using the same simple eq syntax used
 // across other resources (attribute eq "value").
-func parseFilterParams(query url.Values) (map[string]interface{}, *serviceerror.ServiceError) {
+func parseFilterParams(query url.Values) (map[string]interface{}, *tidcommon.ServiceError) {
 	if !query.Has("filter") {
 		return map[string]interface{}{}, nil
 	}
@@ -240,9 +241,9 @@ func parseFilterParams(query url.Values) (map[string]interface{}, *serviceerror.
 }
 
 // writeServiceError converts a service error into the appropriate HTTP error response.
-func writeServiceError(ctx context.Context, w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
+func writeServiceError(ctx context.Context, w http.ResponseWriter, svcErr *tidcommon.ServiceError) {
 	statusCode := http.StatusInternalServerError
-	if svcErr.Type == serviceerror.ClientErrorType {
+	if svcErr.Type == tidcommon.ClientErrorType {
 		switch svcErr.Code {
 		case ErrorAgentNotFound.Code:
 			statusCode = http.StatusNotFound

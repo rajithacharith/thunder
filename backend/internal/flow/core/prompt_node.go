@@ -24,8 +24,11 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/thunder-id/thunderid/internal/flow/common"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
@@ -41,8 +44,8 @@ type PromptNodeInterface interface {
 	GetMessage() string
 	SetMessage(message string)
 	IsDisplayOnly() bool
-	GetVariant() common.NodeVariant
-	SetVariant(variant common.NodeVariant)
+	GetVariant() providers.NodeVariant
+	SetVariant(variant providers.NodeVariant)
 }
 
 // promptNode represents a node that prompts for user input/ action in the flow execution.
@@ -52,7 +55,7 @@ type promptNode struct {
 	meta     interface{}
 	nextNode string
 	message  string
-	variant  common.NodeVariant
+	variant  providers.NodeVariant
 	logger   *log.Logger
 }
 
@@ -76,7 +79,7 @@ func newPromptNode(id string, properties map[string]interface{},
 }
 
 // Execute executes the prompt node logic based on the current context.
-func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceerror.ServiceError) {
+func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *tidcommon.ServiceError) {
 	logger := n.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug(ctx.Context, "Executing prompt node")
 
@@ -90,7 +93,7 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 	// Check if this prompt is handling a failure
 	if ctx.RuntimeData != nil {
 		if jsonStr, exists := ctx.RuntimeData["failureReasonJSON"]; exists && jsonStr != "" {
-			var errResp serviceerror.ServiceError
+			var errResp tidcommon.ServiceError
 			if err := json.Unmarshal([]byte(jsonStr), &errResp); err == nil {
 				nodeResp.Error = &errResp
 				logger.Debug(ctx.Context, "Prompt node is handling a failure",
@@ -125,7 +128,7 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 		return nodeResp, nil
 	}
 
-	if n.variant == common.NodeVariantLoginOptions {
+	if n.variant == providers.NodeVariantLoginOptions {
 		return n.executeLoginOptions(ctx, nodeResp)
 	}
 
@@ -247,7 +250,7 @@ func (n *promptNode) findActionByRef(ref string) *common.Action {
 
 // executeLoginOptions handles the LOGIN_OPTIONS variant.
 func (n *promptNode) executeLoginOptions(ctx *NodeContext,
-	nodeResp *common.NodeResponse) (*common.NodeResponse, *serviceerror.ServiceError) {
+	nodeResp *common.NodeResponse) (*common.NodeResponse, *tidcommon.ServiceError) {
 	logger := n.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	authClassToAction := n.authClassToActionMapping()
 
@@ -310,7 +313,7 @@ func (n *promptNode) executeLoginOptions(ctx *NodeContext,
 
 // finalizeLoginOptionsAction completes the chooser once an action is selected and inputs are satisfied.
 func (n *promptNode) finalizeLoginOptionsAction(ctx *NodeContext, nodeResp *common.NodeResponse,
-	authClassToAction map[string]string) (*common.NodeResponse, *serviceerror.ServiceError) {
+	authClassToAction map[string]string) (*common.NodeResponse, *tidcommon.ServiceError) {
 	logger := n.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	nextNode := n.getNextNodeForActionRef(ctx.Context, ctx.CurrentAction)
 	if nextNode == "" {
@@ -400,12 +403,12 @@ func (n *promptNode) IsDisplayOnly() bool {
 }
 
 // GetVariant returns the variant of the prompt node
-func (n *promptNode) GetVariant() common.NodeVariant {
+func (n *promptNode) GetVariant() providers.NodeVariant {
 	return n.variant
 }
 
 // SetVariant sets the variant of the prompt node
-func (n *promptNode) SetVariant(variant common.NodeVariant) {
+func (n *promptNode) SetVariant(variant providers.NodeVariant) {
 	n.variant = variant
 }
 

@@ -35,7 +35,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/authn/oidc"
 	"github.com/thunder-id/thunderid/internal/authn/otp"
 	"github.com/thunder-id/thunderid/internal/authn/passkey"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/authz"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/entitytype"
@@ -51,6 +50,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/template"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // ExecutorRegistryInterface defines registry operations for executors.
@@ -128,7 +128,7 @@ type ExecutorDependencies struct {
 	JWTService            jwt.JWTServiceInterface
 	AuthAssertGen         assert.AuthAssertGeneratorInterface
 	ConsentEnforcer       consent.ConsentEnforcerServiceInterface
-	AuthnProvider         authnprovidermgr.AuthnProviderManagerInterface
+	AuthnProvider         providers.AuthnProviderManagerInterface
 	OTPService            otp.OTPAuthnServiceInterface
 	PasskeyService        passkey.PasskeyServiceInterface
 	MagicLinkService      magiclink.MagicLinkAuthnServiceInterface
@@ -172,12 +172,12 @@ func newBuiltInExecutorRegistrars() map[string]builtInExecutorRegistrar {
 		ExecutorNameOAuth: func(reg ExecutorRegistryInterface, deps ExecutorDependencies) {
 			reg.RegisterExecutor(ExecutorNameOAuth, newOAuthExecutor(
 				"", []common.Input{}, []common.Input{}, deps.FlowFactory, deps.IDPService,
-				deps.OAuthSvc, deps.AuthnProvider, idp.IDPTypeOAuth))
+				deps.OAuthSvc, deps.AuthnProvider, providers.IDPTypeOAuth))
 		},
 		ExecutorNameOIDCAuth: func(reg ExecutorRegistryInterface, deps ExecutorDependencies) {
 			reg.RegisterExecutor(ExecutorNameOIDCAuth, newOIDCAuthExecutor(
 				"", []common.Input{}, []common.Input{}, deps.FlowFactory, deps.IDPService,
-				deps.OIDCSvc, deps.AuthnProvider, idp.IDPTypeOIDC))
+				deps.OIDCSvc, deps.AuthnProvider, providers.IDPTypeOIDC))
 		},
 		ExecutorNameGitHubAuth: func(reg ExecutorRegistryInterface, deps ExecutorDependencies) {
 			reg.RegisterExecutor(ExecutorNameGitHubAuth, newGithubOAuthExecutor(

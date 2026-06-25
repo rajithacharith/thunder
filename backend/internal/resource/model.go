@@ -18,48 +18,21 @@
 
 package resource
 
-// ResourceServerType represents the type of a resource server.
-type ResourceServerType string
-
-const (
-	// ResourceServerTypeAPI represents an API resource server.
-	ResourceServerTypeAPI ResourceServerType = "API"
-	// ResourceServerTypeMCP represents an MCP resource server.
-	ResourceServerTypeMCP ResourceServerType = "MCP"
-	// ResourceServerTypeCustom represents a custom resource server.
-	ResourceServerTypeCustom ResourceServerType = "CUSTOM"
-)
-
-// supportedResourceServerTypes lists all the supported resource server types.
-var supportedResourceServerTypes = []ResourceServerType{
-	ResourceServerTypeAPI,
-	ResourceServerTypeMCP,
-	ResourceServerTypeCustom,
-}
-
-// IsValid reports whether the resource server type is one of the supported values.
-func (t ResourceServerType) IsValid() bool {
-	for _, supported := range supportedResourceServerTypes {
-		if t == supported {
-			return true
-		}
-	}
-	return false
-}
+import "github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 // HTTP Response Models
 
 // ResourceServerResponse represents a resource server.
 type ResourceServerResponse struct {
-	ID          string             `json:"id"`
-	Name        string             `json:"name"`
-	Description string             `json:"description,omitempty"`
-	Handle      string             `json:"handle"`
-	Identifier  string             `json:"identifier,omitempty"`
-	Type        ResourceServerType `json:"type"`
-	OUID        string             `json:"ouId"`
-	Delimiter   string             `json:"delimiter"`
-	IsReadOnly  bool               `json:"isReadOnly"`
+	ID          string                       `json:"id"`
+	Name        string                       `json:"name"`
+	Description string                       `json:"description,omitempty"`
+	Handle      string                       `json:"handle"`
+	Identifier  string                       `json:"identifier,omitempty"`
+	Type        providers.ResourceServerType `json:"type"`
+	OUID        string                       `json:"ouId"`
+	Delimiter   string                       `json:"delimiter"`
+	IsReadOnly  bool                         `json:"isReadOnly"`
 }
 
 // ResourceResponse represents a resource.
@@ -116,48 +89,48 @@ type ActionListResponse struct {
 
 // CreateResourceServerRequest represents the request to create a resource server.
 type CreateResourceServerRequest struct {
-	Name        string             `json:"name" native:"required"`
-	Description string             `json:"description,omitempty"`
-	Handle      string             `json:"handle,omitempty" native:"omitempty,max=100"`
-	Identifier  string             `json:"identifier,omitempty"`
-	Type        ResourceServerType `json:"type,omitempty"`
-	OUID        string             `json:"ouId" native:"required"`
-	Delimiter   string             `json:"delimiter,omitempty"`
+	Name        string                       `json:"name"                  native:"required"`
+	Description string                       `json:"description,omitempty"`
+	Handle      string                       `json:"handle,omitempty"      native:"omitempty,max=100"`
+	Identifier  string                       `json:"identifier,omitempty"`
+	Type        providers.ResourceServerType `json:"type,omitempty"`
+	OUID        string                       `json:"ouId"                  native:"required"`
+	Delimiter   string                       `json:"delimiter,omitempty"`
 }
 
 // UpdateResourceServerRequest represents the request to update a resource server.
 type UpdateResourceServerRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
-	Handle      string `json:"handle,omitempty" native:"omitempty,max=100"`
+	Handle      string `json:"handle,omitempty"      native:"omitempty,max=100"`
 	Identifier  string `json:"identifier,omitempty"`
-	OUID        string `json:"ouId" native:"required"`
+	OUID        string `json:"ouId"                  native:"required"`
 }
 
 // CreateResourceRequest represents the request to create a resource.
 type CreateResourceRequest struct {
 	Name        string  `json:"name"`
-	Handle      string  `json:"handle" native:"required,max=100"`
+	Handle      string  `json:"handle"                native:"required,max=100"`
 	Description string  `json:"description,omitempty"`
 	Parent      *string `json:"parent"`
 }
 
 // UpdateResourceRequest represents the request to update a resource.
 type UpdateResourceRequest struct {
-	Name        string `json:"name" native:"required"`
+	Name        string `json:"name"                  native:"required"`
 	Description string `json:"description,omitempty"`
 }
 
 // CreateActionRequest represents the request to create an action.
 type CreateActionRequest struct {
-	Name        string `json:"name" native:"required"`
-	Handle      string `json:"handle" native:"required,max=50"`
+	Name        string `json:"name"                  native:"required"`
+	Handle      string `json:"handle"                native:"required,max=50"`
 	Description string `json:"description,omitempty"`
 }
 
 // UpdateActionRequest represents the request to update an action.
 type UpdateActionRequest struct {
-	Name        string `json:"name" native:"required"`
+	Name        string `json:"name"                  native:"required"`
 	Description string `json:"description,omitempty"`
 }
 
@@ -172,7 +145,7 @@ type ResourceServerList struct {
 	TotalResults    int
 	StartIndex      int
 	Count           int
-	ResourceServers []ResourceServer
+	ResourceServers []providers.ResourceServer
 	Links           []Link
 }
 
@@ -181,7 +154,7 @@ type ResourceList struct {
 	TotalResults int
 	StartIndex   int
 	Count        int
-	Resources    []Resource
+	Resources    []providers.Resource
 	Links        []Link
 }
 
@@ -190,48 +163,6 @@ type ActionList struct {
 	TotalResults int
 	StartIndex   int
 	Count        int
-	Actions      []Action
+	Actions      []providers.Action
 	Links        []Link
-}
-
-// Consolidated resource models for YAML parsing, processing, and service layer
-// These models use:
-// - yaml tags for YAML parsing (serialize/deserialize)
-// - json tags for many fields (e.g., in Action, Resource, ResourceServer) for service/API use
-// - Computed/internal fields marked with json:"-" and yaml:"-" as appropriate
-
-// Action represents an action in both declarative resources and service layer.
-type Action struct {
-	ID          string `yaml:"-" json:"-"` // Set when retrieved from database
-	Name        string `yaml:"name" json:"name"`
-	Handle      string `yaml:"handle" json:"handle"`
-	Description string `yaml:"description,omitempty" json:"description,omitempty"`
-	Permission  string `yaml:"-" json:"-"` // Computed permission string, not serialized to YAML
-}
-
-// Resource represents a resource in both declarative resources and service layer.
-type Resource struct {
-	ID           string   `yaml:"-" json:"-"` // Set when retrieved from database
-	Name         string   `yaml:"name" json:"name"`
-	Handle       string   `yaml:"handle" json:"handle"`
-	Description  string   `yaml:"description,omitempty" json:"description,omitempty"`
-	Parent       *string  `yaml:"-" json:"-"`                               // Resolved parent ID
-	ParentHandle string   `yaml:"parent,omitempty" json:"parent,omitempty"` // Parent handle during YAML parsing only
-	Permission   string   `yaml:"-" json:"-"`                               // Computed permission string
-	Actions      []Action `yaml:"actions,omitempty" json:"actions,omitempty"`
-}
-
-// ResourceServer represents a resource server in both declarative resources and service layer.
-type ResourceServer struct {
-	ID          string             `yaml:"id" json:"-"`
-	Name        string             `yaml:"name" json:"name"`
-	Description string             `yaml:"description,omitempty" json:"description,omitempty"`
-	Handle      string             `yaml:"handle" json:"handle"`
-	Identifier  string             `yaml:"identifier,omitempty" json:"identifier,omitempty"`
-	Type        ResourceServerType `yaml:"type,omitempty" json:"type,omitempty"`
-	OUID        string             `yaml:"ouId,omitempty" json:"ouId"`
-	OUHandle    string             `yaml:"ouHandle,omitempty" json:"-"`
-	Delimiter   string             `yaml:"delimiter,omitempty" json:"delimiter,omitempty" yamlfmt:"quoted"`
-	IsReadOnly  bool               `yaml:"-" json:"-"`
-	Resources   []Resource         `yaml:"resources,omitempty" json:"resources,omitempty"`
 }

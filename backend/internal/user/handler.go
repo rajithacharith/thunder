@@ -28,9 +28,10 @@ import (
 	"strconv"
 	"strings"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/security"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
@@ -455,7 +456,7 @@ func (uh *userHandler) HandleSelfUserCredentialUpdateRequest(w http.ResponseWrit
 }
 
 // parsePaginationParams parses limit and offset query parameters from the request.
-func parsePaginationParams(query url.Values) (int, int, *serviceerror.ServiceError) {
+func parsePaginationParams(query url.Values) (int, int, *tidcommon.ServiceError) {
 	limit := 0
 	offset := 0
 
@@ -483,9 +484,9 @@ func parsePaginationParams(query url.Values) (int, int, *serviceerror.ServiceErr
 }
 
 // handleError handles service errors and writes appropriate HTTP responses.
-func handleError(ctx context.Context, w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
+func handleError(ctx context.Context, w http.ResponseWriter, svcErr *tidcommon.ServiceError) {
 	var statusCode int
-	if svcErr.Type == serviceerror.ClientErrorType {
+	if svcErr.Type == tidcommon.ClientErrorType {
 		switch svcErr.Code {
 		case ErrorMissingUserID.Code,
 			ErrorUserNotFound.Code,
@@ -501,7 +502,7 @@ func handleError(ctx context.Context, w http.ResponseWriter, svcErr *serviceerro
 			statusCode = http.StatusBadRequest
 		case ErrorAuthenticationFailed.Code:
 			statusCode = http.StatusUnauthorized
-		case serviceerror.ErrorUnauthorized.Code:
+		case tidcommon.ErrorUnauthorized.Code:
 			statusCode = http.StatusForbidden
 		default:
 			statusCode = http.StatusBadRequest
@@ -535,7 +536,7 @@ func extractAndValidatePath(w http.ResponseWriter, r *http.Request) (string, boo
 }
 
 // parseFilterParams parses and sanitizes filter query parameters from the request.
-func parseFilterParams(query url.Values) (map[string]interface{}, *serviceerror.ServiceError) {
+func parseFilterParams(query url.Values) (map[string]interface{}, *tidcommon.ServiceError) {
 	if !query.Has("filter") {
 		return make(map[string]interface{}), nil
 	}

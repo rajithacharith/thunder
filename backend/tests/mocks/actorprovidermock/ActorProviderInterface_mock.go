@@ -8,9 +8,8 @@ import (
 	"context"
 
 	mock "github.com/stretchr/testify/mock"
-	"github.com/thunder-id/thunderid/internal/entityprovider"
-	"github.com/thunder-id/thunderid/internal/inboundclient/model"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // NewActorProviderInterfaceMock creates a new instance of ActorProviderInterfaceMock. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -41,30 +40,30 @@ func (_m *ActorProviderInterfaceMock) EXPECT() *ActorProviderInterfaceMock_Expec
 }
 
 // GetActor provides a mock function for the type ActorProviderInterfaceMock
-func (_mock *ActorProviderInterfaceMock) GetActor(actorID string) (*entityprovider.Entity, *entityprovider.EntityProviderError) {
+func (_mock *ActorProviderInterfaceMock) GetActor(actorID string) (*providers.Entity, *common.ServiceError) {
 	ret := _mock.Called(actorID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetActor")
 	}
 
-	var r0 *entityprovider.Entity
-	var r1 *entityprovider.EntityProviderError
-	if returnFunc, ok := ret.Get(0).(func(string) (*entityprovider.Entity, *entityprovider.EntityProviderError)); ok {
+	var r0 *providers.Entity
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(string) (*providers.Entity, *common.ServiceError)); ok {
 		return returnFunc(actorID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *entityprovider.Entity); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) *providers.Entity); ok {
 		r0 = returnFunc(actorID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*entityprovider.Entity)
+			r0 = ret.Get(0).(*providers.Entity)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) *entityprovider.EntityProviderError); ok {
+	if returnFunc, ok := ret.Get(1).(func(string) *common.ServiceError); ok {
 		r1 = returnFunc(actorID)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*entityprovider.EntityProviderError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -94,41 +93,41 @@ func (_c *ActorProviderInterfaceMock_GetActor_Call) Run(run func(actorID string)
 	return _c
 }
 
-func (_c *ActorProviderInterfaceMock_GetActor_Call) Return(entity *entityprovider.Entity, entityProviderError *entityprovider.EntityProviderError) *ActorProviderInterfaceMock_GetActor_Call {
-	_c.Call.Return(entity, entityProviderError)
+func (_c *ActorProviderInterfaceMock_GetActor_Call) Return(entity *providers.Entity, serviceError *common.ServiceError) *ActorProviderInterfaceMock_GetActor_Call {
+	_c.Call.Return(entity, serviceError)
 	return _c
 }
 
-func (_c *ActorProviderInterfaceMock_GetActor_Call) RunAndReturn(run func(actorID string) (*entityprovider.Entity, *entityprovider.EntityProviderError)) *ActorProviderInterfaceMock_GetActor_Call {
+func (_c *ActorProviderInterfaceMock_GetActor_Call) RunAndReturn(run func(actorID string) (*providers.Entity, *common.ServiceError)) *ActorProviderInterfaceMock_GetActor_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetActorGroups provides a mock function for the type ActorProviderInterfaceMock
-func (_mock *ActorProviderInterfaceMock) GetActorGroups(actorID string) ([]entityprovider.EntityGroup, *entityprovider.EntityProviderError) {
+func (_mock *ActorProviderInterfaceMock) GetActorGroups(actorID string) ([]providers.EntityGroup, *common.ServiceError) {
 	ret := _mock.Called(actorID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetActorGroups")
 	}
 
-	var r0 []entityprovider.EntityGroup
-	var r1 *entityprovider.EntityProviderError
-	if returnFunc, ok := ret.Get(0).(func(string) ([]entityprovider.EntityGroup, *entityprovider.EntityProviderError)); ok {
+	var r0 []providers.EntityGroup
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(string) ([]providers.EntityGroup, *common.ServiceError)); ok {
 		return returnFunc(actorID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) []entityprovider.EntityGroup); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) []providers.EntityGroup); ok {
 		r0 = returnFunc(actorID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entityprovider.EntityGroup)
+			r0 = ret.Get(0).([]providers.EntityGroup)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) *entityprovider.EntityProviderError); ok {
+	if returnFunc, ok := ret.Get(1).(func(string) *common.ServiceError); ok {
 		r1 = returnFunc(actorID)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*entityprovider.EntityProviderError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -158,41 +157,41 @@ func (_c *ActorProviderInterfaceMock_GetActorGroups_Call) Run(run func(actorID s
 	return _c
 }
 
-func (_c *ActorProviderInterfaceMock_GetActorGroups_Call) Return(entityGroups []entityprovider.EntityGroup, entityProviderError *entityprovider.EntityProviderError) *ActorProviderInterfaceMock_GetActorGroups_Call {
-	_c.Call.Return(entityGroups, entityProviderError)
+func (_c *ActorProviderInterfaceMock_GetActorGroups_Call) Return(entityGroups []providers.EntityGroup, serviceError *common.ServiceError) *ActorProviderInterfaceMock_GetActorGroups_Call {
+	_c.Call.Return(entityGroups, serviceError)
 	return _c
 }
 
-func (_c *ActorProviderInterfaceMock_GetActorGroups_Call) RunAndReturn(run func(actorID string) ([]entityprovider.EntityGroup, *entityprovider.EntityProviderError)) *ActorProviderInterfaceMock_GetActorGroups_Call {
+func (_c *ActorProviderInterfaceMock_GetActorGroups_Call) RunAndReturn(run func(actorID string) ([]providers.EntityGroup, *common.ServiceError)) *ActorProviderInterfaceMock_GetActorGroups_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetInboundClientByID provides a mock function for the type ActorProviderInterfaceMock
-func (_mock *ActorProviderInterfaceMock) GetInboundClientByID(ctx context.Context, id string) (*model.InboundClient, *serviceerror.ServiceError) {
+func (_mock *ActorProviderInterfaceMock) GetInboundClientByID(ctx context.Context, id string) (*providers.InboundClient, *common.ServiceError) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetInboundClientByID")
 	}
 
-	var r0 *model.InboundClient
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*model.InboundClient, *serviceerror.ServiceError)); ok {
+	var r0 *providers.InboundClient
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*providers.InboundClient, *common.ServiceError)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *model.InboundClient); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *providers.InboundClient); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.InboundClient)
+			r0 = ret.Get(0).(*providers.InboundClient)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *common.ServiceError); ok {
 		r1 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -228,41 +227,41 @@ func (_c *ActorProviderInterfaceMock_GetInboundClientByID_Call) Run(run func(ctx
 	return _c
 }
 
-func (_c *ActorProviderInterfaceMock_GetInboundClientByID_Call) Return(inboundClient *model.InboundClient, serviceError *serviceerror.ServiceError) *ActorProviderInterfaceMock_GetInboundClientByID_Call {
+func (_c *ActorProviderInterfaceMock_GetInboundClientByID_Call) Return(inboundClient *providers.InboundClient, serviceError *common.ServiceError) *ActorProviderInterfaceMock_GetInboundClientByID_Call {
 	_c.Call.Return(inboundClient, serviceError)
 	return _c
 }
 
-func (_c *ActorProviderInterfaceMock_GetInboundClientByID_Call) RunAndReturn(run func(ctx context.Context, id string) (*model.InboundClient, *serviceerror.ServiceError)) *ActorProviderInterfaceMock_GetInboundClientByID_Call {
+func (_c *ActorProviderInterfaceMock_GetInboundClientByID_Call) RunAndReturn(run func(ctx context.Context, id string) (*providers.InboundClient, *common.ServiceError)) *ActorProviderInterfaceMock_GetInboundClientByID_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetOAuthClientByClientID provides a mock function for the type ActorProviderInterfaceMock
-func (_mock *ActorProviderInterfaceMock) GetOAuthClientByClientID(ctx context.Context, clientID string) (*model.OAuthClient, *serviceerror.ServiceError) {
+func (_mock *ActorProviderInterfaceMock) GetOAuthClientByClientID(ctx context.Context, clientID string) (*providers.OAuthClient, *common.ServiceError) {
 	ret := _mock.Called(ctx, clientID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetOAuthClientByClientID")
 	}
 
-	var r0 *model.OAuthClient
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*model.OAuthClient, *serviceerror.ServiceError)); ok {
+	var r0 *providers.OAuthClient
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*providers.OAuthClient, *common.ServiceError)); ok {
 		return returnFunc(ctx, clientID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *model.OAuthClient); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *providers.OAuthClient); ok {
 		r0 = returnFunc(ctx, clientID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.OAuthClient)
+			r0 = ret.Get(0).(*providers.OAuthClient)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *common.ServiceError); ok {
 		r1 = returnFunc(ctx, clientID)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -298,41 +297,41 @@ func (_c *ActorProviderInterfaceMock_GetOAuthClientByClientID_Call) Run(run func
 	return _c
 }
 
-func (_c *ActorProviderInterfaceMock_GetOAuthClientByClientID_Call) Return(oAuthClient *model.OAuthClient, serviceError *serviceerror.ServiceError) *ActorProviderInterfaceMock_GetOAuthClientByClientID_Call {
+func (_c *ActorProviderInterfaceMock_GetOAuthClientByClientID_Call) Return(oAuthClient *providers.OAuthClient, serviceError *common.ServiceError) *ActorProviderInterfaceMock_GetOAuthClientByClientID_Call {
 	_c.Call.Return(oAuthClient, serviceError)
 	return _c
 }
 
-func (_c *ActorProviderInterfaceMock_GetOAuthClientByClientID_Call) RunAndReturn(run func(ctx context.Context, clientID string) (*model.OAuthClient, *serviceerror.ServiceError)) *ActorProviderInterfaceMock_GetOAuthClientByClientID_Call {
+func (_c *ActorProviderInterfaceMock_GetOAuthClientByClientID_Call) RunAndReturn(run func(ctx context.Context, clientID string) (*providers.OAuthClient, *common.ServiceError)) *ActorProviderInterfaceMock_GetOAuthClientByClientID_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetOAuthProfileByID provides a mock function for the type ActorProviderInterfaceMock
-func (_mock *ActorProviderInterfaceMock) GetOAuthProfileByID(ctx context.Context, id string) (*model.OAuthProfile, *serviceerror.ServiceError) {
+func (_mock *ActorProviderInterfaceMock) GetOAuthProfileByID(ctx context.Context, id string) (*providers.OAuthProfile, *common.ServiceError) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetOAuthProfileByID")
 	}
 
-	var r0 *model.OAuthProfile
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*model.OAuthProfile, *serviceerror.ServiceError)); ok {
+	var r0 *providers.OAuthProfile
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*providers.OAuthProfile, *common.ServiceError)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *model.OAuthProfile); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *providers.OAuthProfile); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.OAuthProfile)
+			r0 = ret.Get(0).(*providers.OAuthProfile)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *common.ServiceError); ok {
 		r1 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -368,12 +367,12 @@ func (_c *ActorProviderInterfaceMock_GetOAuthProfileByID_Call) Run(run func(ctx 
 	return _c
 }
 
-func (_c *ActorProviderInterfaceMock_GetOAuthProfileByID_Call) Return(oAuthProfile *model.OAuthProfile, serviceError *serviceerror.ServiceError) *ActorProviderInterfaceMock_GetOAuthProfileByID_Call {
+func (_c *ActorProviderInterfaceMock_GetOAuthProfileByID_Call) Return(oAuthProfile *providers.OAuthProfile, serviceError *common.ServiceError) *ActorProviderInterfaceMock_GetOAuthProfileByID_Call {
 	_c.Call.Return(oAuthProfile, serviceError)
 	return _c
 }
 
-func (_c *ActorProviderInterfaceMock_GetOAuthProfileByID_Call) RunAndReturn(run func(ctx context.Context, id string) (*model.OAuthProfile, *serviceerror.ServiceError)) *ActorProviderInterfaceMock_GetOAuthProfileByID_Call {
+func (_c *ActorProviderInterfaceMock_GetOAuthProfileByID_Call) RunAndReturn(run func(ctx context.Context, id string) (*providers.OAuthProfile, *common.ServiceError)) *ActorProviderInterfaceMock_GetOAuthProfileByID_Call {
 	_c.Call.Return(run)
 	return _c
 }

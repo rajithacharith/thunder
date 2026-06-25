@@ -22,7 +22,6 @@ import (
 	"context"
 	"fmt"
 
-	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
@@ -31,6 +30,7 @@ import (
 	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // TokenBuilderInterface defines the interface for building OAuth2 tokens.
@@ -189,7 +189,7 @@ func (tb *tokenBuilder) buildAccessTokenClaims(
 // buildAccessTokenUserAttributes builds user attributes for the access token based on app configuration.
 func (tb *tokenBuilder) buildAccessTokenUserAttributes(
 	attrs map[string]interface{},
-	oauthApp *inboundmodel.OAuthClient,
+	oauthApp *providers.OAuthClient,
 ) map[string]interface{} {
 	accessTokenAttributes := make(map[string]interface{})
 
@@ -367,7 +367,7 @@ func (tb *tokenBuilder) BuildIDToken(
 	if tokenCtx.OAuthApp != nil && tokenCtx.OAuthApp.Token != nil && tokenCtx.OAuthApp.Token.IDToken != nil {
 		idTokenCfg := tokenCtx.OAuthApp.Token.IDToken
 		rt := idTokenCfg.ResponseType
-		if rt == inboundmodel.IDTokenResponseTypeJWE || rt == inboundmodel.IDTokenResponseTypeNESTEDJWT {
+		if rt == providers.IDTokenResponseTypeJWE || rt == providers.IDTokenResponseTypeNESTEDJWT {
 			if tb.jweService == nil {
 				return nil, fmt.Errorf("JWE service is not configured")
 			}

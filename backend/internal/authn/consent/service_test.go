@@ -19,7 +19,9 @@
 package consent
 
 import (
-	"github.com/thunder-id/thunderid/internal/system/i18n/core"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"context"
 	"encoding/base64"
@@ -29,10 +31,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
 	"github.com/thunder-id/thunderid/internal/consent"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/tests/mocks/consentmock"
 	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
@@ -51,7 +51,7 @@ func TestConsentEnforcerServiceTestSuite(t *testing.T) {
 
 func (s *ConsentEnforcerServiceTestSuite) SetupSuite() {
 	testConfig := &config.Config{
-		JWT: config.JWTConfig{
+		JWT: engineconfig.JWTConfig{
 			Issuer:         "https://auth.example.com",
 			ValidityPeriod: 3600,
 		},
@@ -87,8 +87,8 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_ConsentDisabled() {
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_ListPurposesClientError() {
-	clientErr := &serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	clientErr := &tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "CONSENT-4001",
 	}
 
@@ -105,8 +105,8 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_ListPurposesClientE
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_ListPurposesServerError() {
-	serverErr := &serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
+	serverErr := &tidcommon.ServiceError{
+		Type: tidcommon.ServerErrorType,
 		Code: "CONSENT-5001",
 	}
 
@@ -119,7 +119,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_ListPurposesServerE
 
 	s.Nil(result)
 	s.NotNil(svcErr)
-	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	s.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_NoPurposesConfigured() {
@@ -145,8 +145,8 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_SearchConsentsClien
 			},
 		},
 	}
-	clientErr := &serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	clientErr := &tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "CONSENT-4002",
 	}
 
@@ -175,8 +175,8 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_SearchConsentsServe
 			},
 		},
 	}
-	serverErr := &serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
+	serverErr := &tidcommon.ServiceError{
+		Type: tidcommon.ServerErrorType,
 		Code: "CONSENT-5002",
 	}
 
@@ -191,7 +191,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_SearchConsentsServe
 
 	s.Nil(result)
 	s.NotNil(svcErr)
-	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	s.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_AllConsentsActive() {
@@ -344,8 +344,8 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_UserProfileFilter()
 			},
 		},
 	}
-	availableAttributes := &authnprovidercm.AttributesResponse{
-		Attributes: map[string]*authnprovidercm.AttributeResponse{
+	availableAttributes := &providers.AttributesResponse{
+		Attributes: map[string]*providers.AttributeResponse{
 			"email": {},
 		},
 	}
@@ -460,8 +460,10 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_CreateConsentSessio
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
 	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return("", int64(0), &serviceerror.ServiceError{
-			Error: core.I18nMessage{Key: "error.test.jwt_generation_failed", DefaultValue: "JWT generation failed"},
+		Return("", int64(0), &tidcommon.ServiceError{
+			Error: tidcommon.I18nMessage{
+				Key: "error.test.jwt_generation_failed", DefaultValue: "JWT generation failed",
+			},
 		})
 
 	result, svcErr := s.service.ResolveConsent(context.Background(), "ou1", "app1", "App 1", "user1",
@@ -469,7 +471,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestResolveConsent_CreateConsentSessio
 
 	s.Nil(result)
 	s.NotNil(svcErr)
-	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	s.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestCreateConsentSessionToken_GenerateJWTFails() {
@@ -479,8 +481,10 @@ func (s *ConsentEnforcerServiceTestSuite) TestCreateConsentSessionToken_Generate
 
 	s.mockJWTSvc.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return("", int64(0), &serviceerror.ServiceError{
-			Error: core.I18nMessage{Key: "error.test.jwt_generation_failed", DefaultValue: "JWT generation failed"},
+		Return("", int64(0), &tidcommon.ServiceError{
+			Error: tidcommon.I18nMessage{
+				Key: "error.test.jwt_generation_failed", DefaultValue: "JWT generation failed",
+			},
 		})
 
 	token, err := s.service.createConsentSessionToken(context.Background(), promptData)
@@ -496,7 +500,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestVerifyAndDecodeConsentSession_Deco
 	token := base64.RawURLEncoding.EncodeToString(headerJSON) + ".invalid-payload.signature"
 
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, token, consentSessionTokenAudience, mock.Anything).
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 
 	result, err := s.service.verifyAndDecodeConsentSession(context.Background(), token)
 
@@ -508,7 +512,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestVerifyAndDecodeConsentSession_Miss
 	token := buildSessionTokenWithPayload(map[string]interface{}{"sub": "user1"})
 
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, token, consentSessionTokenAudience, mock.Anything).
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 
 	result, err := s.service.verifyAndDecodeConsentSession(context.Background(), token)
 
@@ -521,7 +525,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestVerifyAndDecodeConsentSession_Inva
 	token := buildSessionTokenWithPayload(map[string]interface{}{consentSessionClaimKey: "invalid"})
 
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, token, consentSessionTokenAudience, mock.Anything).
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 
 	result, err := s.service.verifyAndDecodeConsentSession(context.Background(), token)
 
@@ -536,9 +540,9 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_SessionTokenInvalid(
 		},
 	}
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, "bad-token", consentSessionTokenAudience, mock.Anything).
-		Return(&serviceerror.ServiceError{
+		Return(&tidcommon.ServiceError{
 			Code:  "JWT-5001",
-			Error: core.I18nMessage{Key: "error.test.invalid_token", DefaultValue: "Invalid token"},
+			Error: tidcommon.I18nMessage{Key: "error.test.invalid_token", DefaultValue: "Invalid token"},
 		})
 
 	result, svcErr := s.service.RecordConsent(context.Background(), "ou1", "app1", "user1",
@@ -575,7 +579,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_MissingPurpose_Treat
 	}
 
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
 	s.mockConsentSvc.On("CreateConsent", mock.Anything, "ou1",
@@ -613,13 +617,13 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_SearchFails_ClientEr
 			}},
 		},
 	}
-	clientErr := &serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	clientErr := &tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "CONSENT-4002",
 	}
 
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return(nil, clientErr)
 
@@ -642,13 +646,13 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_SearchFails_ServerEr
 			}},
 		},
 	}
-	serverErr := &serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
+	serverErr := &tidcommon.ServiceError{
+		Type: tidcommon.ServerErrorType,
 		Code: "CONSENT-5002",
 	}
 
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return(nil, serverErr)
 
@@ -657,7 +661,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_SearchFails_ServerEr
 
 	s.Nil(result)
 	s.NotNil(svcErr)
-	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	s.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateSuccess() {
@@ -689,7 +693,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateSuc
 	}
 
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
 	s.mockConsentSvc.On("CreateConsent", mock.Anything, "ou1",
@@ -714,13 +718,13 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateFai
 			}},
 		},
 	}
-	clientErr := &serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	clientErr := &tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "CONSENT-4003",
 	}
 
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
 	s.mockConsentSvc.On("CreateConsent", mock.Anything, "ou1",
@@ -745,13 +749,13 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateFai
 			}},
 		},
 	}
-	serverErr := &serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
+	serverErr := &tidcommon.ServiceError{
+		Type: tidcommon.ServerErrorType,
 		Code: "CONSENT-5003",
 	}
 
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
 	s.mockConsentSvc.On("CreateConsent", mock.Anything, "ou1",
@@ -762,7 +766,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_NoExisting_CreateFai
 
 	s.Nil(result)
 	s.NotNil(svcErr)
-	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	s.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_UpdateSuccess() {
@@ -808,7 +812,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_Upda
 	}
 
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{existingConsent}, nil)
 	s.mockConsentSvc.On("UpdateConsent", mock.Anything, "ou1", "consent-existing",
@@ -835,13 +839,13 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_Upda
 		},
 	}
 	existingConsent := consent.Consent{ID: "consent-existing"}
-	clientErr := &serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	clientErr := &tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "CONSENT-4004",
 	}
 
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{existingConsent}, nil)
 	s.mockConsentSvc.On("UpdateConsent", mock.Anything, "ou1", "consent-existing",
@@ -867,13 +871,13 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_Upda
 		},
 	}
 	existingConsent := consent.Consent{ID: "consent-existing"}
-	serverErr := &serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
+	serverErr := &tidcommon.ServiceError{
+		Type: tidcommon.ServerErrorType,
 		Code: "CONSENT-5004",
 	}
 
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{existingConsent}, nil)
 	s.mockConsentSvc.On("UpdateConsent", mock.Anything, "ou1", "consent-existing",
@@ -884,7 +888,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ExistingConsent_Upda
 
 	s.Nil(result)
 	s.NotNil(svcErr)
-	s.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+	s.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_WithValidityPeriod() {
@@ -901,7 +905,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_WithValidityPeriod()
 	createdConsent := &consent.Consent{ID: "consent-timed"}
 
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
 	s.mockConsentSvc.On("CreateConsent", mock.Anything, "ou1",
@@ -931,7 +935,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_ZeroValidityPeriod()
 	createdConsent := &consent.Consent{ID: "consent-no-expiry"}
 
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
 	s.mockConsentSvc.On("CreateConsent", mock.Anything, "ou1",
@@ -978,7 +982,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestRecordConsent_EssentialDenied_Retu
 	}
 
 	s.mockJWTSvc.On("VerifyJWT", mock.Anything, sessionToken, consentSessionTokenAudience, mock.Anything).
-		Return((*serviceerror.ServiceError)(nil))
+		Return((*tidcommon.ServiceError)(nil))
 	s.mockConsentSvc.On("SearchConsents", mock.Anything, "ou1",
 		mock.AnythingOfType("*consent.ConsentSearchFilter")).Return([]consent.Consent{}, nil)
 	s.mockConsentSvc.On("CreateConsent", mock.Anything, "ou1",
@@ -1065,8 +1069,8 @@ func (s *ConsentEnforcerServiceTestSuite) TestBuildUserAttributeSet_Nil() {
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestBuildUserAttributeSet_Empty() {
-	available := &authnprovidercm.AttributesResponse{
-		Attributes: map[string]*authnprovidercm.AttributeResponse{},
+	available := &providers.AttributesResponse{
+		Attributes: map[string]*providers.AttributeResponse{},
 	}
 
 	result := buildUserAttributeSet(available)
@@ -1074,8 +1078,8 @@ func (s *ConsentEnforcerServiceTestSuite) TestBuildUserAttributeSet_Empty() {
 }
 
 func (s *ConsentEnforcerServiceTestSuite) TestBuildUserAttributeSet_WithAttributes() {
-	available := &authnprovidercm.AttributesResponse{
-		Attributes: map[string]*authnprovidercm.AttributeResponse{
+	available := &providers.AttributesResponse{
+		Attributes: map[string]*providers.AttributeResponse{
 			"email": {},
 			"phone": {},
 		},
@@ -1508,7 +1512,7 @@ func (s *ConsentEnforcerServiceTestSuite) TestApplyPermissionsPurpose_UpdatesPur
 func (s *ConsentEnforcerServiceTestSuite) TestApplyPermissionsPurpose_PropagatesCreatePurposeClientError() {
 	perms := []string{"booking:read"}
 	s.mockConsentSvc.On("CreateConsentPurpose", mock.Anything, "ou1", mock.Anything).
-		Return(nil, &serviceerror.ServiceError{Type: serviceerror.ClientErrorType, Code: "X"})
+		Return(nil, &tidcommon.ServiceError{Type: tidcommon.ClientErrorType, Code: "X"})
 
 	_, svcErr := s.service.applyPermissionsPurpose(
 		context.Background(), []consent.ConsentPurpose{}, "ou1", "app1", "App 1", perms,

@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/system/database/provider"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"github.com/thunder-id/thunderid/tests/mocks/database/providermock"
 )
@@ -70,7 +71,7 @@ func (suite *ResourceStoreTestSuite) TestCreateResourceServer() {
 	testCases := []struct {
 		name           string
 		resourceID     string
-		resourceServer ResourceServer
+		resourceServer providers.ResourceServer
 		setupMocks     func()
 		shouldErr      bool
 		checkError     func(error) bool
@@ -78,7 +79,7 @@ func (suite *ResourceStoreTestSuite) TestCreateResourceServer() {
 		{
 			name:       "Success",
 			resourceID: "rs1",
-			resourceServer: ResourceServer{
+			resourceServer: providers.ResourceServer{
 				OUID:        "ou1",
 				Name:        "Test Server",
 				Description: "Test Description",
@@ -98,12 +99,12 @@ func (suite *ResourceStoreTestSuite) TestCreateResourceServer() {
 		{
 			name:       "SuccessWithType",
 			resourceID: "rs1",
-			resourceServer: ResourceServer{
+			resourceServer: providers.ResourceServer{
 				OUID:        "ou1",
 				Name:        "Test Server",
 				Description: "Test Description",
 				Identifier:  "test-identifier",
-				Type:        ResourceServerTypeMCP,
+				Type:        providers.ResourceServerTypeMCP,
 				Delimiter:   ":",
 			},
 			setupMocks: func() {
@@ -119,7 +120,7 @@ func (suite *ResourceStoreTestSuite) TestCreateResourceServer() {
 		{
 			name:       "ExecuteError",
 			resourceID: "rs1",
-			resourceServer: ResourceServer{
+			resourceServer: providers.ResourceServer{
 				OUID:        "ou1",
 				Name:        "Test Server",
 				Description: "Test Description",
@@ -143,7 +144,7 @@ func (suite *ResourceStoreTestSuite) TestCreateResourceServer() {
 		{
 			name:       "DBClientError",
 			resourceID: "rs1",
-			resourceServer: ResourceServer{
+			resourceServer: providers.ResourceServer{
 				OUID:        "ou1",
 				Name:        "Test Server",
 				Description: "Test Description",
@@ -193,7 +194,7 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServer() {
 		resourceID         string
 		setupMocks         func()
 		expectedInternalID int
-		expectedRS         ResourceServer
+		expectedRS         providers.ResourceServer
 		expectedError      error
 		shouldErr          bool
 		checkError         func(error) bool
@@ -219,13 +220,13 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServer() {
 					}, nil)
 			},
 			expectedInternalID: 7,
-			expectedRS: ResourceServer{
+			expectedRS: providers.ResourceServer{
 				ID:          "rs1",
 				OUID:        "ou1",
 				Name:        "Test Server",
 				Description: "Test Description",
 				Identifier:  "test-identifier",
-				Type:        ResourceServerTypeMCP,
+				Type:        providers.ResourceServerTypeMCP,
 				Delimiter:   "/",
 			},
 			shouldErr: false,
@@ -304,7 +305,7 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServerByHandle() {
 		name          string
 		handle        string
 		setupMocks    func()
-		expectedRS    ResourceServer
+		expectedRS    providers.ResourceServer
 		expectedError error
 		shouldErr     bool
 		checkError    func(error) bool
@@ -329,14 +330,14 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServerByHandle() {
 						},
 					}, nil)
 			},
-			expectedRS: ResourceServer{
+			expectedRS: providers.ResourceServer{
 				ID:          "rs1",
 				OUID:        "ou1",
 				Name:        "Test Server",
 				Description: "Test Description",
 				Handle:      "test-handle",
 				Identifier:  "test-identifier",
-				Type:        ResourceServerTypeMCP,
+				Type:        providers.ResourceServerTypeMCP,
 				Delimiter:   "/",
 			},
 			shouldErr: false,
@@ -413,7 +414,7 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServerList() {
 		limit           int
 		offset          int
 		setupMocks      func()
-		expectedServers []ResourceServer
+		expectedServers []providers.ResourceServer
 		shouldErr       bool
 		checkError      func(error) bool
 	}{
@@ -444,7 +445,7 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServerList() {
 						},
 					}, nil)
 			},
-			expectedServers: []ResourceServer{
+			expectedServers: []providers.ResourceServer{
 				{ID: "rs1", Name: "Server 1"},
 				{ID: "rs2", Name: "Server 2"},
 			},
@@ -581,7 +582,7 @@ func (suite *ResourceStoreTestSuite) TestUpdateResourceServer() {
 	testCases := []struct {
 		name           string
 		resourceID     string
-		resourceServer ResourceServer
+		resourceServer providers.ResourceServer
 		setupMocks     func()
 		shouldErr      bool
 		checkError     func(error) bool
@@ -589,12 +590,12 @@ func (suite *ResourceStoreTestSuite) TestUpdateResourceServer() {
 		{
 			name:       "Success",
 			resourceID: "rs1",
-			resourceServer: ResourceServer{
+			resourceServer: providers.ResourceServer{
 				OUID:        "ou1",
 				Name:        "Updated Server",
 				Description: "Updated Description",
 				Identifier:  "updated-identifier",
-				Type:        ResourceServerTypeAPI,
+				Type:        providers.ResourceServerTypeAPI,
 				Delimiter:   "-",
 			},
 			setupMocks: func() {
@@ -610,12 +611,12 @@ func (suite *ResourceStoreTestSuite) TestUpdateResourceServer() {
 		{
 			name:       "ExecuteError",
 			resourceID: "rs1",
-			resourceServer: ResourceServer{
+			resourceServer: providers.ResourceServer{
 				OUID:        "ou1",
 				Name:        "Updated Server",
 				Description: "Updated Description",
 				Identifier:  "updated-identifier",
-				Type:        ResourceServerTypeAPI,
+				Type:        providers.ResourceServerTypeAPI,
 				Delimiter:   "-",
 			},
 			setupMocks: func() {
@@ -958,7 +959,7 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceServerHasDependencies() {
 	}
 }
 
-// Resource Tests
+// providers.Resource Tests
 
 func (suite *ResourceStoreTestSuite) TestCreateResource() {
 	testCases := []struct {
@@ -966,7 +967,7 @@ func (suite *ResourceStoreTestSuite) TestCreateResource() {
 		resourceID       string
 		resourceServerID string
 		parentID         *string
-		resource         Resource
+		resource         providers.Resource
 		setupMocks       func(*string)
 		shouldErr        bool
 		checkError       func(error) bool
@@ -976,7 +977,7 @@ func (suite *ResourceStoreTestSuite) TestCreateResource() {
 			resourceID:       "res1",
 			resourceServerID: "rs1",
 			parentID:         &testParentID1,
-			resource: Resource{
+			resource: providers.Resource{
 				Name:        "Test Resource",
 				Handle:      "test-handle",
 				Description: "Test Description",
@@ -996,7 +997,7 @@ func (suite *ResourceStoreTestSuite) TestCreateResource() {
 			resourceID:       "res1",
 			resourceServerID: "rs1",
 			parentID:         nil,
-			resource: Resource{
+			resource: providers.Resource{
 				Name:        "Test Resource",
 				Handle:      "test-handle",
 				Description: "Test Description",
@@ -1016,7 +1017,7 @@ func (suite *ResourceStoreTestSuite) TestCreateResource() {
 			resourceID:       "res1",
 			resourceServerID: "rs1",
 			parentID:         nil,
-			resource: Resource{
+			resource: providers.Resource{
 				Name:        "Test Resource",
 				Handle:      "test-handle",
 				Description: "Test Description",
@@ -1071,7 +1072,7 @@ func (suite *ResourceStoreTestSuite) TestGetResource() {
 		resourceServerID   string
 		setupMocks         func()
 		expectedInternalID int
-		expectedResource   Resource
+		expectedResource   providers.Resource
 		expectedError      error
 		shouldErr          bool
 	}{
@@ -1098,7 +1099,7 @@ func (suite *ResourceStoreTestSuite) TestGetResource() {
 				}, nil)
 			},
 			expectedInternalID: 11,
-			expectedResource: Resource{
+			expectedResource: providers.Resource{
 				ID:          "res1",
 				Name:        "Test Resource",
 				Handle:      "test-handle",
@@ -1170,7 +1171,7 @@ func (suite *ResourceStoreTestSuite) TestGetResourceList() {
 		limit             int
 		offset            int
 		setupMocks        func()
-		expectedResources []Resource
+		expectedResources []providers.Resource
 		shouldErr         bool
 		checkError        func(error) bool
 	}{
@@ -1204,7 +1205,7 @@ func (suite *ResourceStoreTestSuite) TestGetResourceList() {
 						},
 					}, nil)
 			},
-			expectedResources: []Resource{
+			expectedResources: []providers.Resource{
 				{ID: "res1", Name: "Resource 1"},
 				{ID: "res2", Name: "Resource 2"},
 			},
@@ -1545,7 +1546,7 @@ func (suite *ResourceStoreTestSuite) TestUpdateResource() {
 		name             string
 		resourceID       string
 		resourceServerID string
-		resource         Resource
+		resource         providers.Resource
 		setupMocks       func()
 		shouldErr        bool
 		checkError       func(error) bool
@@ -1554,7 +1555,7 @@ func (suite *ResourceStoreTestSuite) TestUpdateResource() {
 			name:             "Success",
 			resourceID:       "res1",
 			resourceServerID: "rs1",
-			resource: Resource{
+			resource: providers.Resource{
 				Name:        "Updated Resource",
 				Description: "Updated Description",
 			},
@@ -1570,7 +1571,7 @@ func (suite *ResourceStoreTestSuite) TestUpdateResource() {
 			name:             "ParentNotFound",
 			resourceID:       "nonexistent",
 			resourceServerID: "rs1",
-			resource: Resource{
+			resource: providers.Resource{
 				Name:        "Updated Name",
 				Description: "Updated Description",
 			},
@@ -1586,7 +1587,7 @@ func (suite *ResourceStoreTestSuite) TestUpdateResource() {
 			name:             "ExecuteError",
 			resourceID:       "res1",
 			resourceServerID: "rs1",
-			resource: Resource{
+			resource: providers.Resource{
 				Name:        "Updated Name",
 				Description: "Updated Description",
 			},
@@ -1952,7 +1953,7 @@ func (suite *ResourceStoreTestSuite) TestCheckCircularDependency() {
 	}
 }
 
-// Action Tests
+// providers.Action Tests
 
 func (suite *ResourceStoreTestSuite) TestCreateAction() {
 	testCases := []struct {
@@ -1960,7 +1961,7 @@ func (suite *ResourceStoreTestSuite) TestCreateAction() {
 		actionID         string
 		resourceServerID string
 		resourceID       *string
-		action           Action
+		action           providers.Action
 		setupMocks       func(*string)
 		shouldErr        bool
 		checkError       func(error) bool
@@ -1970,7 +1971,7 @@ func (suite *ResourceStoreTestSuite) TestCreateAction() {
 			actionID:         "action1",
 			resourceServerID: "rs1",
 			resourceID:       &testResourceID1,
-			action: Action{
+			action: providers.Action{
 				Name:        "Test Action",
 				Handle:      "test-handle",
 				Description: "Test Description",
@@ -1990,7 +1991,7 @@ func (suite *ResourceStoreTestSuite) TestCreateAction() {
 			actionID:         "action1",
 			resourceServerID: "rs1",
 			resourceID:       nil,
-			action: Action{
+			action: providers.Action{
 				Name:        "Test Action",
 				Handle:      "test-handle",
 				Description: "Test Description",
@@ -2010,7 +2011,7 @@ func (suite *ResourceStoreTestSuite) TestCreateAction() {
 			actionID:         "action1",
 			resourceServerID: "rs1",
 			resourceID:       nil,
-			action: Action{
+			action: providers.Action{
 				Name:        "Test Action",
 				Handle:      "test-handle",
 				Description: "Test Description",
@@ -2442,7 +2443,7 @@ func (suite *ResourceStoreTestSuite) TestUpdateAction() {
 		actionID         string
 		resourceServerID string
 		resourceID       *string
-		action           Action
+		action           providers.Action
 		setupMocks       func(*string)
 		shouldErr        bool
 		checkError       func(error) bool
@@ -2452,7 +2453,7 @@ func (suite *ResourceStoreTestSuite) TestUpdateAction() {
 			actionID:         "action1",
 			resourceServerID: "rs1",
 			resourceID:       nil,
-			action: Action{
+			action: providers.Action{
 				Name:        "Updated Action",
 				Description: "Updated Description",
 			},
@@ -2471,7 +2472,7 @@ func (suite *ResourceStoreTestSuite) TestUpdateAction() {
 			actionID:         "action1",
 			resourceServerID: "rs1",
 			resourceID:       &testResourceID1,
-			action: Action{
+			action: providers.Action{
 				Name:        "Updated Action",
 				Description: "Updated Description",
 			},
@@ -2489,7 +2490,7 @@ func (suite *ResourceStoreTestSuite) TestUpdateAction() {
 			actionID:         "action1",
 			resourceServerID: "rs1",
 			resourceID:       nil,
-			action: Action{
+			action: providers.Action{
 				Name:        "Updated Action",
 				Description: "Updated Description",
 			},
@@ -3040,7 +3041,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 	testCases := []struct {
 		name                   string
 		row                    map[string]interface{}
-		expectedResourceServer ResourceServer
+		expectedResourceServer providers.ResourceServer
 		shouldErr              bool
 		errContains            string
 	}{
@@ -3055,7 +3056,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 				"identifier":  "test-identifier",
 				"properties":  []byte(`{"delimiter":"|"}`),
 			},
-			expectedResourceServer: ResourceServer{
+			expectedResourceServer: providers.ResourceServer{
 				ID:          "rs1",
 				OUID:        "ou1",
 				Name:        "Test Server",
@@ -3073,7 +3074,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 				"ou_id":       "ou1",
 				"name":        "Test Server",
 			},
-			expectedResourceServer: ResourceServer{
+			expectedResourceServer: providers.ResourceServer{
 				ID:          "rs1",
 				OUID:        "ou1",
 				Name:        "Test Server",
@@ -3091,7 +3092,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 				"name":        "Test Server",
 				"properties":  `{"delimiter":"."}`,
 			},
-			expectedResourceServer: ResourceServer{
+			expectedResourceServer: providers.ResourceServer{
 				ID:        "rs1",
 				OUID:      "ou1",
 				Name:      "Test Server",
@@ -3189,7 +3190,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 	testCases := []struct {
 		name             string
 		row              map[string]interface{}
-		expectedResource Resource
+		expectedResource providers.Resource
 		shouldErr        bool
 		errContains      string
 	}{
@@ -3205,7 +3206,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 				"parent_resource_id": parentID,
 				"permission":         "perm:r",
 			},
-			expectedResource: Resource{
+			expectedResource: providers.Resource{
 				ID:          "res1",
 				Name:        "Test Resource",
 				Handle:      "test-handle",
@@ -3227,7 +3228,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 				"parent_resource_id": "",
 				"permission":         "perm:r",
 			},
-			expectedResource: Resource{
+			expectedResource: providers.Resource{
 				ID:          "res1",
 				Name:        "Test Resource",
 				Handle:      "test-handle",
@@ -3247,7 +3248,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 				"description": "",
 				"permission":  "perm:r",
 			},
-			expectedResource: Resource{
+			expectedResource: providers.Resource{
 				ID:          "res1",
 				Name:        "Test Resource",
 				Handle:      "test-handle",
@@ -3266,7 +3267,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 				"handle":      "test-handle",
 				"permission":  "perm:r",
 			},
-			expectedResource: Resource{
+			expectedResource: providers.Resource{
 				ID:          "res1",
 				Name:        "Test Resource",
 				Handle:      "test-handle",
@@ -3370,7 +3371,7 @@ func (suite *ResourceStoreTestSuite) TestBuildActionFromResultRow() {
 	testCases := []struct {
 		name           string
 		row            map[string]interface{}
-		expectedAction Action
+		expectedAction providers.Action
 		shouldErr      bool
 		errContains    string
 	}{
@@ -3384,7 +3385,7 @@ func (suite *ResourceStoreTestSuite) TestBuildActionFromResultRow() {
 				"handle":             "test-handle",
 				"description":        "Test Description",
 			},
-			expectedAction: Action{
+			expectedAction: providers.Action{
 				ID:          "action1",
 				Name:        "Test Action",
 				Handle:      "test-handle",
@@ -3402,7 +3403,7 @@ func (suite *ResourceStoreTestSuite) TestBuildActionFromResultRow() {
 				"handle":             "test-handle",
 				"description":        "Test Description",
 			},
-			expectedAction: Action{
+			expectedAction: providers.Action{
 				ID:          "action1",
 				Name:        "Test Action",
 				Handle:      "test-handle",
@@ -3418,7 +3419,7 @@ func (suite *ResourceStoreTestSuite) TestBuildActionFromResultRow() {
 				"handle":      "test-handle",
 				"description": "",
 			},
-			expectedAction: Action{
+			expectedAction: providers.Action{
 				ID:          "action1",
 				Name:        "Test Action",
 				Handle:      "test-handle",
@@ -3433,7 +3434,7 @@ func (suite *ResourceStoreTestSuite) TestBuildActionFromResultRow() {
 				"name":   "Test Action",
 				"handle": "test-handle",
 			},
-			expectedAction: Action{
+			expectedAction: providers.Action{
 				ID:          "action1",
 				Name:        "Test Action",
 				Handle:      "test-handle",
@@ -3806,33 +3807,33 @@ func (suite *ResourceStoreTestSuite) TestIsResourceServerDeclarative() {
 }
 
 // TestBuildPropertiesJSONFunction tests the buildPropertiesJSON function
-// This is a helper function test that constructs JSON properties from a ResourceServer
+// This is a helper function test that constructs JSON properties from a providers.ResourceServer
 func (suite *ResourceStoreTestSuite) TestBuildPropertiesJSONFunction() {
 	testCases := []struct {
 		name           string
-		resourceServer ResourceServer
+		resourceServer providers.ResourceServer
 	}{
 		{
 			name: "Success_SlashDelimiter",
-			resourceServer: ResourceServer{
+			resourceServer: providers.ResourceServer{
 				Delimiter: "/",
 			},
 		},
 		{
 			name: "Success_ColonDelimiter",
-			resourceServer: ResourceServer{
+			resourceServer: providers.ResourceServer{
 				Delimiter: ":",
 			},
 		},
 		{
 			name: "Success_DotDelimiter",
-			resourceServer: ResourceServer{
+			resourceServer: providers.ResourceServer{
 				Delimiter: ".",
 			},
 		},
 		{
 			name: "Success_EmptyDelimiter",
-			resourceServer: ResourceServer{
+			resourceServer: providers.ResourceServer{
 				Delimiter: "",
 			},
 		},

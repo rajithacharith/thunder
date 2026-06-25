@@ -21,8 +21,9 @@ package inboundclient
 import (
 	"errors"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/thunder-id/thunderid/internal/cert"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 )
 
 var (
@@ -181,7 +182,7 @@ const (
 type CertOperationError struct {
 	Operation  string
 	RefType    cert.CertificateReferenceType
-	Underlying *serviceerror.ServiceError
+	Underlying *tidcommon.ServiceError
 }
 
 // Error implements the error interface.
@@ -194,13 +195,13 @@ func (e *CertOperationError) Error() string {
 
 // IsClientError reports whether the underlying cert service error is a client error.
 func (e *CertOperationError) IsClientError() bool {
-	return e.Underlying != nil && e.Underlying.Type == serviceerror.ClientErrorType
+	return e.Underlying != nil && e.Underlying.Type == tidcommon.ClientErrorType
 }
 
 // ConsentSyncError wraps an underlying ServiceError from the consent service, allowing callers
 // to translate it into their own error vocabulary.
 type ConsentSyncError struct {
-	Underlying *serviceerror.ServiceError
+	Underlying *tidcommon.ServiceError
 }
 
 // Error implements the error interface. Falls back through (description → code → generic) so
@@ -219,5 +220,5 @@ func (e *ConsentSyncError) Error() string {
 
 // IsClientError reports whether the underlying error is a client error.
 func (e *ConsentSyncError) IsClientError() bool {
-	return e.Underlying != nil && e.Underlying.Type == serviceerror.ClientErrorType
+	return e.Underlying != nil && e.Underlying.Type == tidcommon.ClientErrorType
 }

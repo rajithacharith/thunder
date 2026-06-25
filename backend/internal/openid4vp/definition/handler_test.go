@@ -25,10 +25,10 @@ import (
 	"strings"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 )
 
 type DefinitionHandlerTestSuite struct {
@@ -55,7 +55,7 @@ func (s *DefinitionHandlerTestSuite) TestHandleCreateSuccess() {
 	body := `{"handle":"eudi-pid","vct":"urn:eudi:pid:1","ouId":"ou-1"}`
 	s.service.EXPECT().CreatePresentationDefinition(mock.Anything, mock.Anything).RunAndReturn(
 		func(_ context.Context, dto *PresentationDefinitionDTO) (
-			*PresentationDefinitionDTO, *serviceerror.ServiceError,
+			*PresentationDefinitionDTO, *tidcommon.ServiceError,
 		) {
 			dto.ID = "def-1"
 			return dto, nil
@@ -104,7 +104,7 @@ func (s *DefinitionHandlerTestSuite) TestHandleListSuccess() {
 
 func (s *DefinitionHandlerTestSuite) TestHandleListServiceError() {
 	s.service.EXPECT().ListPresentationDefinitionSummaries(mock.Anything).
-		Return(nil, &serviceerror.InternalServerError)
+		Return(nil, &tidcommon.InternalServerError)
 
 	req := httptest.NewRequest(http.MethodGet, definitionsPath, nil)
 	rec := httptest.NewRecorder()
@@ -150,7 +150,7 @@ func (s *DefinitionHandlerTestSuite) TestHandleGetNotFound() {
 func (s *DefinitionHandlerTestSuite) TestHandleUpdateSuccess() {
 	s.service.EXPECT().UpdatePresentationDefinition(mock.Anything, "def-1", mock.Anything).RunAndReturn(
 		func(_ context.Context, id string, dto *PresentationDefinitionDTO) (
-			*PresentationDefinitionDTO, *serviceerror.ServiceError) {
+			*PresentationDefinitionDTO, *tidcommon.ServiceError) {
 			dto.ID = id
 			return dto, nil
 		})
@@ -268,6 +268,6 @@ func (s *DefinitionHandlerTestSuite) TestSanitizeClaimValuesEmpty() {
 
 func (s *DefinitionHandlerTestSuite) TestWriteDefinitionErrorServerError() {
 	rec := httptest.NewRecorder()
-	writeDefinitionError(context.Background(), rec, &serviceerror.InternalServerError)
+	writeDefinitionError(context.Background(), rec, &tidcommon.InternalServerError)
 	s.Equal(http.StatusInternalServerError, rec.Code)
 }

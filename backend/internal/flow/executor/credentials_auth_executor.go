@@ -23,11 +23,13 @@ package executor
 import (
 	"errors"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
@@ -36,7 +38,7 @@ type credentialsAuthExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
 	entityProvider entityprovider.EntityProviderInterface
-	authnProvider  authnprovidermgr.AuthnProviderManagerInterface
+	authnProvider  providers.AuthnProviderManagerInterface
 	logger         *log.Logger
 }
 
@@ -47,7 +49,7 @@ var _ identifyingExecutorInterface = (*credentialsAuthExecutor)(nil)
 func newCredentialsAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
 	entityProvider entityprovider.EntityProviderInterface,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
+	authnProvider providers.AuthnProviderManagerInterface,
 ) *credentialsAuthExecutor {
 	defaultInputs := []common.Input{
 		{
@@ -125,7 +127,7 @@ func (b *credentialsAuthExecutor) Execute(ctx *core.NodeContext) (*common.Execut
 	if execResp.Status == common.ExecFailure || execResp.Status == common.ExecUserInputRequired {
 		return execResp, nil
 	}
-	if !execResp.AuthUser.IsAuthenticated() && ctx.FlowType != common.FlowTypeRegistration {
+	if !execResp.AuthUser.IsAuthenticated() && ctx.FlowType != providers.FlowTypeRegistration {
 		execResp.Status = common.ExecUserInputRequired
 		if hasPreResolvedUser {
 			execResp.Inputs = b.getCredentialInputs(ctx)
@@ -181,7 +183,7 @@ func (b *credentialsAuthExecutor) authenticateUser(ctx *core.NodeContext,
 	}
 
 	// For registration flows, only check if user exists.
-	if ctx.FlowType == common.FlowTypeRegistration {
+	if ctx.FlowType == providers.FlowTypeRegistration {
 		_, err := b.IdentifyUser(ctx.Context, userIdentifiers, execResp)
 		if err != nil {
 			return err
@@ -207,7 +209,7 @@ func (b *credentialsAuthExecutor) authenticateUser(ctx *core.NodeContext,
 		userCredentials, nil, metadata, execResp.AuthUser)
 	execResp.AuthUser = authUser
 	if svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
+		if svcErr.Type == tidcommon.ClientErrorType {
 			execResp.Status = common.ExecUserInputRequired
 			execResp.Inputs = b.GetRequiredInputs(ctx)
 

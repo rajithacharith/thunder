@@ -21,77 +21,76 @@ package openid4vp
 import (
 	"errors"
 
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	"github.com/thunder-id/thunderid/internal/system/i18n/core"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 // Client-facing API errors for the OpenID4VP verifier endpoints.
 var (
 	// ErrorInvalidRequest indicates a malformed or incomplete endpoint request.
-	ErrorInvalidRequest = serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	ErrorInvalidRequest = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "EUDI-1001",
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.eudi.invalid_request",
 			DefaultValue: "Invalid request",
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.eudi.invalid_request_description",
 			DefaultValue: "The request is missing required parameters or is malformed",
 		},
 	}
 
 	// ErrorUnknownState indicates the state value is unknown or has expired.
-	ErrorUnknownState = serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	ErrorUnknownState = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "EUDI-1002",
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.eudi.unknown_state",
 			DefaultValue: "Unknown or expired request",
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.eudi.unknown_state_description",
 			DefaultValue: "No active request was found for the supplied state value",
 		},
 	}
 
 	// ErrorVerificationFailed indicates the presentation failed verification.
-	ErrorVerificationFailed = serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	ErrorVerificationFailed = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "EUDI-1003",
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.eudi.verification_failed",
 			DefaultValue: "Presentation verification failed",
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.eudi.verification_failed_description",
 			DefaultValue: "The presented credential could not be verified",
 		},
 	}
 
 	// ErrorExpiredState is distinct from ErrorUnknownState: state exists but is past its TTL.
-	ErrorExpiredState = serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	ErrorExpiredState = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "EUDI-1005",
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.eudi.expired_state",
 			DefaultValue: "Expired request",
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.eudi.expired_state_description",
 			DefaultValue: "The request associated with the supplied state value has expired",
 		},
 	}
 
 	// ErrorUnknownDefinition indicates the requested presentation_definition_id is not registered.
-	ErrorUnknownDefinition = serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	ErrorUnknownDefinition = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "EUDI-1004",
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.eudi.unknown_definition",
 			DefaultValue: "Unknown presentation definition",
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.eudi.unknown_definition_description",
 			DefaultValue: "No presentation definition is registered for the supplied id",
 		},
@@ -115,7 +114,7 @@ var (
 )
 
 // toServiceError maps an internal verifier error to a client-facing service error.
-func toServiceError(err error) *serviceerror.ServiceError {
+func toServiceError(err error) *tidcommon.ServiceError {
 	switch {
 	case errors.Is(err, ErrUnknownState):
 		return &ErrorUnknownState
@@ -124,7 +123,7 @@ func toServiceError(err error) *serviceerror.ServiceError {
 	case errors.Is(err, ErrUnknownDefinition):
 		return &ErrorUnknownDefinition
 	case errors.Is(err, ErrPolicy):
-		return &serviceerror.InternalServerError
+		return &tidcommon.InternalServerError
 	case errors.Is(err, ErrInvalidResponse),
 		errors.Is(err, ErrInvalidPresentation),
 		errors.Is(err, ErrStateMismatch),
@@ -135,6 +134,6 @@ func toServiceError(err error) *serviceerror.ServiceError {
 		errors.Is(err, ErrClaimValueNotAllowed):
 		return &ErrorVerificationFailed
 	default:
-		return &serviceerror.InternalServerError
+		return &tidcommon.InternalServerError
 	}
 }

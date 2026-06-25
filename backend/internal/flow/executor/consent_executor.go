@@ -27,14 +27,14 @@ import (
 	"strings"
 	"time"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	consentauthn "github.com/thunder-id/thunderid/internal/authn/consent"
-	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/consent"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
@@ -44,7 +44,7 @@ import (
 type consentExecutor struct {
 	core.ExecutorInterface
 	consentEnforcer consentauthn.ConsentEnforcerServiceInterface
-	authnProvider   authnprovidermgr.AuthnProviderManagerInterface
+	authnProvider   providers.AuthnProviderManagerInterface
 	logger          *log.Logger
 }
 
@@ -54,7 +54,7 @@ var _ core.ExecutorInterface = (*consentExecutor)(nil)
 func newConsentExecutor(
 	flowFactory core.FlowFactoryInterface,
 	consentEnforcer consentauthn.ConsentEnforcerServiceInterface,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
+	authnProvider providers.AuthnProviderManagerInterface,
 ) *consentExecutor {
 	logger := log.GetLogger().With(
 		log.String(log.LoggerKeyComponentName, "ConsentExecutor"),
@@ -141,8 +141,8 @@ func (e *consentExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRespon
 // checkConsent resolves whether consent is needed and either completes or forwards to a prompt.
 func (e *consentExecutor) checkConsent(ctx *core.NodeContext, execResp *common.ExecutorResponse,
 	ouID, appID string,
-	availableAttrResp *authnprovidercm.AttributesResponse,
-	entityRef *authnprovidercm.EntityReference,
+	availableAttrResp *providers.AttributesResponse,
+	entityRef *providers.EntityReference,
 ) (*common.ExecutorResponse, error) {
 	logger := e.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug(ctx.Context, "Checking if user consent is required")
@@ -159,7 +159,7 @@ func (e *consentExecutor) checkConsent(ctx *core.NodeContext, execResp *common.E
 		essentialAttributes, optionalAttributes, authorizedPermissions,
 		availableAttributes, forceReprompt, buildRuntimeMetadata(ctx))
 	if svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
+		if svcErr.Type == tidcommon.ClientErrorType {
 			logger.Debug(ctx.Context, "Client error while resolving user consent", log.Any("error", svcErr))
 			execResp.Status = common.ExecFailure
 			execResp.Error = &ErrConsentResolutionFailed
@@ -272,7 +272,7 @@ func (e *consentExecutor) handleConsentDecisions(ctx *core.NodeContext, execResp
 			return execResp, nil
 		}
 
-		if svcErr.Type == serviceerror.ClientErrorType {
+		if svcErr.Type == tidcommon.ClientErrorType {
 			logger.Debug(ctx.Context, "Client error while recording user consent", log.Any("error", svcErr))
 			execResp.Status = common.ExecFailure
 			execResp.Error = &ErrConsentRecordFailed
@@ -335,10 +335,10 @@ func (e *consentExecutor) getRequiredAttributes(ctx *core.NodeContext) (
 // When the source is empty, nil is returned so that the downstream consent enforcer
 // skips profile-presence filtering entirely.
 func (e *consentExecutor) buildAugmentedAvailableAttributes(
-	availableAttrResp *authnprovidercm.AttributesResponse, entityRef *authnprovidercm.EntityReference,
-) *authnprovidercm.AttributesResponse {
-	augmented := make(map[string]*authnprovidercm.AttributeResponse)
-	baseVerifications := make(map[string]*authnprovidercm.VerificationResponse)
+	availableAttrResp *providers.AttributesResponse, entityRef *providers.EntityReference,
+) *providers.AttributesResponse {
+	augmented := make(map[string]*providers.AttributeResponse)
+	baseVerifications := make(map[string]*providers.VerificationResponse)
 	hasSource := false
 
 	if base := availableAttrResp; base != nil {
@@ -359,18 +359,18 @@ func (e *consentExecutor) buildAugmentedAvailableAttributes(
 	// Value is set to empty since the consent enforcer only checks for presence of the key, and the actual values
 	// can be obtained from the authenticated user context if needed
 	if entityRef.EntityType != "" {
-		augmented[oauth2const.ClaimUserType] = &authnprovidercm.AttributeResponse{}
+		augmented[oauth2const.ClaimUserType] = &providers.AttributeResponse{}
 	}
 	if entityRef.OUID != "" {
-		augmented[oauth2const.ClaimOUID] = &authnprovidercm.AttributeResponse{}
-		augmented[oauth2const.ClaimOUName] = &authnprovidercm.AttributeResponse{}
-		augmented[oauth2const.ClaimOUHandle] = &authnprovidercm.AttributeResponse{}
+		augmented[oauth2const.ClaimOUID] = &providers.AttributeResponse{}
+		augmented[oauth2const.ClaimOUName] = &providers.AttributeResponse{}
+		augmented[oauth2const.ClaimOUHandle] = &providers.AttributeResponse{}
 	}
 	if entityRef.EntityID != "" {
-		augmented[oauth2const.UserAttributeGroups] = &authnprovidercm.AttributeResponse{}
+		augmented[oauth2const.UserAttributeGroups] = &providers.AttributeResponse{}
 	}
 
-	return &authnprovidercm.AttributesResponse{
+	return &providers.AttributesResponse{
 		Attributes:    augmented,
 		Verifications: baseVerifications,
 	}

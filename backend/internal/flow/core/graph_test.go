@@ -21,6 +21,8 @@ package core
 import (
 	"testing"
 
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/flow/common"
@@ -38,7 +40,7 @@ func TestGraphTestSuite(t *testing.T) {
 
 func (s *GraphTestSuite) SetupTest() {
 	s.factory = newFlowFactory()
-	s.graph = s.factory.CreateGraph("test-graph", common.FlowTypeAuthentication, 1)
+	s.graph = s.factory.CreateGraph("test-graph", providers.FlowTypeAuthentication, 1)
 }
 
 func (s *GraphTestSuite) TestGetID() {
@@ -46,8 +48,8 @@ func (s *GraphTestSuite) TestGetID() {
 }
 
 func (s *GraphTestSuite) TestGetType() {
-	graph := s.factory.CreateGraph("test-graph", common.FlowTypeRegistration, 1)
-	s.Equal(common.FlowTypeRegistration, graph.GetType())
+	graph := s.factory.CreateGraph("test-graph", providers.FlowTypeRegistration, 1)
+	s.Equal(providers.FlowTypeRegistration, graph.GetType())
 }
 
 func (s *GraphTestSuite) TestGetVersion() {

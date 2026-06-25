@@ -26,11 +26,12 @@ import (
 	"strconv"
 	"strings"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/thunder-id/thunderid/internal/attributecache"
 	"github.com/thunder-id/thunderid/internal/authn/assert"
 	authncm "github.com/thunder-id/thunderid/internal/authn/common"
-	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
@@ -38,7 +39,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/role"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
@@ -53,7 +53,7 @@ type authAssertExecutor struct {
 	jwtService          jwt.JWTServiceInterface
 	ouService           ou.OrganizationUnitServiceInterface
 	authAssertGenerator assert.AuthAssertGeneratorInterface
-	authnProvider       authnprovidermgr.AuthnProviderManagerInterface
+	authnProvider       providers.AuthnProviderManagerInterface
 	entityProvider      entityprovider.EntityProviderInterface
 	attributeCacheSvc   attributecache.AttributeCacheServiceInterface
 	roleService         role.RoleServiceInterface
@@ -68,7 +68,7 @@ func newAuthAssertExecutor(
 	jwtService jwt.JWTServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	assertGenerator assert.AuthAssertGeneratorInterface,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
+	authnProvider providers.AuthnProviderManagerInterface,
 	entityProvider entityprovider.EntityProviderInterface,
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	roleService role.RoleServiceInterface,
@@ -151,7 +151,7 @@ func (a *authAssertExecutor) generateAuthAssertion(
 	if len(authenticatorRefs) > 0 {
 		assertionResult, svcErr := a.authAssertGenerator.GenerateAssertion(ctx.Context, authenticatorRefs)
 		if svcErr != nil {
-			if svcErr.Type == serviceerror.ServerErrorType {
+			if svcErr.Type == tidcommon.ServerErrorType {
 				logger.Error(ctx.Context, "Failed to generate auth assertion",
 					log.String("error", svcErr.Error.DefaultValue))
 				return "", errors.New("something went wrong while generating auth assertion")
@@ -182,8 +182,8 @@ func (a *authAssertExecutor) generateAuthAssertion(
 	metadata := buildGetAttributesMetadata(ctx)
 
 	// Convert requested attributes from []string to *RequestedAttributes
-	reqAttrs := &authnprovidercm.RequestedAttributes{
-		Attributes:    make(map[string]*authnprovidercm.AttributeMetadataRequest),
+	reqAttrs := &providers.RequestedAttributes{
+		Attributes:    make(map[string]*providers.AttributeMetadataRequest),
 		Verifications: nil,
 	}
 	for _, attrName := range requiredAttributes {
@@ -193,7 +193,7 @@ func (a *authAssertExecutor) generateAuthAssertion(
 	authUser, entityRef, svcErr := a.authnProvider.GetEntityReference(ctx.Context, execResp.AuthUser)
 	execResp.AuthUser = authUser
 	if svcErr != nil {
-		if svcErr.Type == serviceerror.ServerErrorType {
+		if svcErr.Type == tidcommon.ServerErrorType {
 			return "", errors.New("something went wrong while fetching entity references")
 		}
 		return "", errors.New("failed to fetch entity references: " + svcErr.ErrorDescription.DefaultValue)
@@ -202,7 +202,7 @@ func (a *authAssertExecutor) generateAuthAssertion(
 	authUser, attrResp, svcErr := a.authnProvider.GetUserAttributes(ctx.Context, reqAttrs, metadata, execResp.AuthUser)
 	execResp.AuthUser = authUser
 	if svcErr != nil {
-		if svcErr.Type == serviceerror.ServerErrorType {
+		if svcErr.Type == tidcommon.ServerErrorType {
 			return "", errors.New("something went wrong while fetching user attributes")
 		}
 		return "", errors.New("failed to fetch user attributes: " + svcErr.ErrorDescription.DefaultValue)
@@ -504,7 +504,7 @@ func (a *authAssertExecutor) appendOUDetailsToClaims(
 // fetchAllUserGroups retrieves all groups a user belongs to, including groups inherited through
 // nested group membership.
 func (a *authAssertExecutor) fetchAllUserGroups(
-	ctx context.Context, userID string) ([]entityprovider.EntityGroup, error) {
+	ctx context.Context, userID string) ([]providers.EntityGroup, error) {
 	if a.entityProvider == nil || userID == "" {
 		return nil, nil
 	}
@@ -521,7 +521,7 @@ func (a *authAssertExecutor) fetchAllUserGroups(
 
 // appendGroupsToClaims appends pre-fetched user groups to the JWT claims.
 func (a *authAssertExecutor) appendGroupsToClaims(
-	groups []entityprovider.EntityGroup, jwtClaims map[string]interface{}) {
+	groups []providers.EntityGroup, jwtClaims map[string]interface{}) {
 	userGroups := make([]string, 0, len(groups))
 	for _, group := range groups {
 		userGroups = append(userGroups, group.Name)
@@ -534,7 +534,7 @@ func (a *authAssertExecutor) appendGroupsToClaims(
 
 // appendRolesToClaims appends user roles to the JWT claims using pre-fetched groups for role resolution.
 func (a *authAssertExecutor) appendRolesToClaims(
-	ctx *core.NodeContext, groups []entityprovider.EntityGroup, jwtClaims map[string]interface{}, userID string) error {
+	ctx *core.NodeContext, groups []providers.EntityGroup, jwtClaims map[string]interface{}, userID string) error {
 	logger := a.logger.With(log.MaskedString(log.LoggerKeyUserID, userID))
 
 	groupIDs := make([]string, 0, len(groups))

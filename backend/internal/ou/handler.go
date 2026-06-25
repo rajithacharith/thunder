@@ -25,9 +25,12 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/filter"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
@@ -201,7 +204,7 @@ func (ouh *organizationUnitHandler) HandleOUChildrenListRequest(w http.ResponseW
 		return
 	}
 	ouh.handleResourceListRequest(w, r, "child organization units",
-		func(id string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
+		func(id string, limit, offset int) (interface{}, *tidcommon.ServiceError) {
 			return ouh.service.GetOrganizationUnitChildren(ctx, id, limit, offset, f)
 		})
 }
@@ -211,7 +214,7 @@ func (ouh *organizationUnitHandler) HandleOUUsersListRequest(w http.ResponseWrit
 	ctx := r.Context()
 	includeDisplay := r.URL.Query().Get(sysutils.QueryParamInclude) == sysutils.IncludeValueDisplay
 	ouh.handleResourceListRequest(w, r, "users",
-		func(id string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
+		func(id string, limit, offset int) (interface{}, *tidcommon.ServiceError) {
 			return ouh.service.GetOrganizationUnitUsers(ctx, id, limit, offset, includeDisplay)
 		})
 }
@@ -220,7 +223,7 @@ func (ouh *organizationUnitHandler) HandleOUUsersListRequest(w http.ResponseWrit
 func (ouh *organizationUnitHandler) HandleOUGroupsListRequest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	ouh.handleResourceListRequest(w, r, "groups",
-		func(id string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
+		func(id string, limit, offset int) (interface{}, *tidcommon.ServiceError) {
 			return ouh.service.GetOrganizationUnitGroups(ctx, id, limit, offset)
 		})
 }
@@ -229,10 +232,10 @@ func (ouh *organizationUnitHandler) HandleOUGroupsListRequest(w http.ResponseWri
 func (
 	ouh *organizationUnitHandler) handleError(ctx context.Context,
 	w http.ResponseWriter,
-	svcErr *serviceerror.ServiceError) {
+	svcErr *tidcommon.ServiceError) {
 	var statusCode int
 	switch svcErr.Type {
-	case serviceerror.ClientErrorType:
+	case tidcommon.ClientErrorType:
 		statusCode = http.StatusBadRequest
 		if svcErr.Code == ErrorOrganizationUnitNotFound.Code {
 			statusCode = http.StatusNotFound
@@ -244,7 +247,7 @@ func (
 			svcErr.Code == ErrorInvalidHandlePath.Code ||
 			svcErr.Code == ErrorInvalidFilter.Code {
 			statusCode = http.StatusBadRequest
-		} else if svcErr.Code == serviceerror.ErrorUnauthorized.Code {
+		} else if svcErr.Code == tidcommon.ErrorUnauthorized.Code {
 			statusCode = http.StatusForbidden
 		}
 	default:
@@ -261,8 +264,8 @@ func (
 // sanitizeOrganizationUnitRequest sanitizes the create organization unit request input.
 func (ouh *organizationUnitHandler) sanitizeOrganizationUnitRequest(
 	request OrganizationUnitRequest,
-) OrganizationUnitRequestWithID {
-	return OrganizationUnitRequestWithID{
+) providers.OrganizationUnitRequestWithID {
+	return providers.OrganizationUnitRequestWithID{
 		Handle:          sysutils.SanitizeString(request.Handle),
 		Name:            sysutils.SanitizeString(request.Name),
 		Description:     sysutils.SanitizeString(request.Description),
@@ -290,7 +293,7 @@ func extractAndValidateID(w http.ResponseWriter, r *http.Request) (string, bool)
 }
 
 // parsePaginationParams parses limit and offset query parameters from the request.
-func parsePaginationParams(query url.Values) (int, int, *serviceerror.ServiceError) {
+func parsePaginationParams(query url.Values) (int, int, *tidcommon.ServiceError) {
 	limit := 0
 	offset := 0
 
@@ -316,7 +319,7 @@ func parsePaginationParams(query url.Values) (int, int, *serviceerror.ServiceErr
 // handleResourceListRequest is a generic handler for listing resources under an organization unit.
 func (ouh *organizationUnitHandler) handleResourceListRequest(
 	w http.ResponseWriter, r *http.Request, resourceType string,
-	serviceFunc func(string, int, int) (interface{}, *serviceerror.ServiceError),
+	serviceFunc func(string, int, int) (interface{}, *tidcommon.ServiceError),
 ) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
@@ -346,7 +349,7 @@ func (ouh *organizationUnitHandler) handleResourceListRequest(
 	// Extract pagination info for logging based on response type
 	var totalResults, count int
 	switch resp := response.(type) {
-	case *OrganizationUnitListResponse:
+	case *providers.OrganizationUnitListResponse:
 		totalResults = resp.TotalResults
 		count = resp.Count
 	case *UserListResponse:
@@ -446,7 +449,7 @@ func (ouh *organizationUnitHandler) HandleOUDeleteByPathRequest(w http.ResponseW
 // handleResourceListByPathRequest is a generic handler for listing resources under an organization unit by path.
 func (ouh *organizationUnitHandler) handleResourceListByPathRequest(
 	w http.ResponseWriter, r *http.Request, resourceType string,
-	serviceFunc func(string, int, int) (interface{}, *serviceerror.ServiceError),
+	serviceFunc func(string, int, int) (interface{}, *tidcommon.ServiceError),
 ) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
@@ -476,7 +479,7 @@ func (ouh *organizationUnitHandler) handleResourceListByPathRequest(
 	if logger.IsDebugEnabled() {
 		var totalResults, count int
 		switch resp := response.(type) {
-		case *OrganizationUnitListResponse:
+		case *providers.OrganizationUnitListResponse:
 			totalResults = resp.TotalResults
 			count = resp.Count
 		case *UserListResponse:
@@ -503,7 +506,7 @@ func (ouh *organizationUnitHandler) HandleOUChildrenListByPathRequest(w http.Res
 		return
 	}
 	ouh.handleResourceListByPathRequest(w, r, "child organization units",
-		func(path string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
+		func(path string, limit, offset int) (interface{}, *tidcommon.ServiceError) {
 			return ouh.service.GetOrganizationUnitChildrenByPath(ctx, path, limit, offset, f)
 		})
 }
@@ -513,7 +516,7 @@ func (ouh *organizationUnitHandler) HandleOUUsersListByPathRequest(w http.Respon
 	ctx := r.Context()
 	includeDisplay := r.URL.Query().Get(sysutils.QueryParamInclude) == sysutils.IncludeValueDisplay
 	ouh.handleResourceListByPathRequest(w, r, "users",
-		func(path string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
+		func(path string, limit, offset int) (interface{}, *tidcommon.ServiceError) {
 			return ouh.service.GetOrganizationUnitUsersByPath(ctx, path, limit, offset, includeDisplay)
 		})
 }
@@ -522,7 +525,7 @@ func (ouh *organizationUnitHandler) HandleOUUsersListByPathRequest(w http.Respon
 func (ouh *organizationUnitHandler) HandleOUGroupsListByPathRequest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	ouh.handleResourceListByPathRequest(w, r, "groups",
-		func(path string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
+		func(path string, limit, offset int) (interface{}, *tidcommon.ServiceError) {
 			return ouh.service.GetOrganizationUnitGroupsByPath(ctx, path, limit, offset)
 		})
 }

@@ -9,7 +9,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 	"github.com/thunder-id/thunderid/internal/openid4vci/credential"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 // newCredentialReaderMock creates a new instance of credentialReaderMock. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -40,7 +40,7 @@ func (_m *credentialReaderMock) EXPECT() *credentialReaderMock_Expecter {
 }
 
 // GetCredentialConfigurationByHandle provides a mock function for the type credentialReaderMock
-func (_mock *credentialReaderMock) GetCredentialConfigurationByHandle(ctx context.Context, handle string) (*credential.CredentialConfigurationDTO, *serviceerror.ServiceError) {
+func (_mock *credentialReaderMock) GetCredentialConfigurationByHandle(ctx context.Context, handle string) (*credential.CredentialConfigurationDTO, *common.ServiceError) {
 	ret := _mock.Called(ctx, handle)
 
 	if len(ret) == 0 {
@@ -48,8 +48,8 @@ func (_mock *credentialReaderMock) GetCredentialConfigurationByHandle(ctx contex
 	}
 
 	var r0 *credential.CredentialConfigurationDTO
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*credential.CredentialConfigurationDTO, *serviceerror.ServiceError)); ok {
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*credential.CredentialConfigurationDTO, *common.ServiceError)); ok {
 		return returnFunc(ctx, handle)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *credential.CredentialConfigurationDTO); ok {
@@ -59,11 +59,11 @@ func (_mock *credentialReaderMock) GetCredentialConfigurationByHandle(ctx contex
 			r0 = ret.Get(0).(*credential.CredentialConfigurationDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *common.ServiceError); ok {
 		r1 = returnFunc(ctx, handle)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -99,18 +99,18 @@ func (_c *credentialReaderMock_GetCredentialConfigurationByHandle_Call) Run(run 
 	return _c
 }
 
-func (_c *credentialReaderMock_GetCredentialConfigurationByHandle_Call) Return(credentialConfigurationDTO *credential.CredentialConfigurationDTO, serviceError *serviceerror.ServiceError) *credentialReaderMock_GetCredentialConfigurationByHandle_Call {
+func (_c *credentialReaderMock_GetCredentialConfigurationByHandle_Call) Return(credentialConfigurationDTO *credential.CredentialConfigurationDTO, serviceError *common.ServiceError) *credentialReaderMock_GetCredentialConfigurationByHandle_Call {
 	_c.Call.Return(credentialConfigurationDTO, serviceError)
 	return _c
 }
 
-func (_c *credentialReaderMock_GetCredentialConfigurationByHandle_Call) RunAndReturn(run func(ctx context.Context, handle string) (*credential.CredentialConfigurationDTO, *serviceerror.ServiceError)) *credentialReaderMock_GetCredentialConfigurationByHandle_Call {
+func (_c *credentialReaderMock_GetCredentialConfigurationByHandle_Call) RunAndReturn(run func(ctx context.Context, handle string) (*credential.CredentialConfigurationDTO, *common.ServiceError)) *credentialReaderMock_GetCredentialConfigurationByHandle_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ListCredentialConfigurations provides a mock function for the type credentialReaderMock
-func (_mock *credentialReaderMock) ListCredentialConfigurations(ctx context.Context) ([]credential.CredentialConfigurationDTO, *serviceerror.ServiceError) {
+func (_mock *credentialReaderMock) ListCredentialConfigurations(ctx context.Context) ([]credential.CredentialConfigurationDTO, *common.ServiceError) {
 	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
@@ -118,8 +118,8 @@ func (_mock *credentialReaderMock) ListCredentialConfigurations(ctx context.Cont
 	}
 
 	var r0 []credential.CredentialConfigurationDTO
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]credential.CredentialConfigurationDTO, *serviceerror.ServiceError)); ok {
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]credential.CredentialConfigurationDTO, *common.ServiceError)); ok {
 		return returnFunc(ctx)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context) []credential.CredentialConfigurationDTO); ok {
@@ -129,11 +129,11 @@ func (_mock *credentialReaderMock) ListCredentialConfigurations(ctx context.Cont
 			r0 = ret.Get(0).([]credential.CredentialConfigurationDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context) *common.ServiceError); ok {
 		r1 = returnFunc(ctx)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -163,12 +163,12 @@ func (_c *credentialReaderMock_ListCredentialConfigurations_Call) Run(run func(c
 	return _c
 }
 
-func (_c *credentialReaderMock_ListCredentialConfigurations_Call) Return(credentialConfigurationDTOs []credential.CredentialConfigurationDTO, serviceError *serviceerror.ServiceError) *credentialReaderMock_ListCredentialConfigurations_Call {
+func (_c *credentialReaderMock_ListCredentialConfigurations_Call) Return(credentialConfigurationDTOs []credential.CredentialConfigurationDTO, serviceError *common.ServiceError) *credentialReaderMock_ListCredentialConfigurations_Call {
 	_c.Call.Return(credentialConfigurationDTOs, serviceError)
 	return _c
 }
 
-func (_c *credentialReaderMock_ListCredentialConfigurations_Call) RunAndReturn(run func(ctx context.Context) ([]credential.CredentialConfigurationDTO, *serviceerror.ServiceError)) *credentialReaderMock_ListCredentialConfigurations_Call {
+func (_c *credentialReaderMock_ListCredentialConfigurations_Call) RunAndReturn(run func(ctx context.Context) ([]credential.CredentialConfigurationDTO, *common.ServiceError)) *credentialReaderMock_ListCredentialConfigurations_Call {
 	_c.Call.Return(run)
 	return _c
 }

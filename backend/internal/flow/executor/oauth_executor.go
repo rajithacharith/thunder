@@ -24,13 +24,14 @@ import (
 	"fmt"
 	"slices"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	authncm "github.com/thunder-id/thunderid/internal/authn/common"
 	authnoauth "github.com/thunder-id/thunderid/internal/authn/oauth"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/idp"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	systemutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -64,8 +65,8 @@ type oAuthExecutorInterface interface {
 type oAuthExecutor struct {
 	core.ExecutorInterface
 	authService   authnoauth.OAuthAuthnCoreServiceInterface
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface
-	idpType       idp.IDPType
+	authnProvider providers.AuthnProviderManagerInterface
+	idpType       providers.IDPType
 	idpService    idp.IDPServiceInterface
 	logger        *log.Logger
 }
@@ -79,8 +80,8 @@ func newOAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
 	idpService idp.IDPServiceInterface,
 	authService authnoauth.OAuthAuthnCoreServiceInterface,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
-	idpType idp.IDPType,
+	authnProvider providers.AuthnProviderManagerInterface,
+	idpType providers.IDPType,
 ) oAuthExecutorInterface {
 	if name == "" {
 		name = ExecutorNameOAuth
@@ -155,7 +156,7 @@ func (o *oAuthExecutor) BuildAuthorizeFlow(ctx *core.NodeContext, execResp *comm
 
 	authorizeURL, svcErr := o.authService.BuildAuthorizeURL(ctx.Context, idpID)
 	if svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
+		if svcErr.Type == tidcommon.ClientErrorType {
 			execResp.Status = common.ExecFailure
 			execResp.Error = svcErr
 			return nil
@@ -198,7 +199,7 @@ func (o *oAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 
 	code, ok := ctx.UserInputs[userInputCode]
 	if !ok || code == "" {
-		execResp.AuthUser = authnprovidermgr.AuthUser{}
+		execResp.AuthUser = providers.AuthUser{}
 		return nil
 	}
 
@@ -247,7 +248,7 @@ func (o *oAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 	authUser, federatedAttributes, svcErr := o.authnProvider.AuthenticateUser(
 		ctx.Context, nil, credentials, nil, metadata, execResp.AuthUser)
 	if svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
+		if svcErr.Type == tidcommon.ClientErrorType {
 			execResp.Status = common.ExecFailure
 			execResp.Error = svcErr
 			return nil
@@ -275,11 +276,11 @@ func (o *oAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 	}
 
 	switch ctx.FlowType {
-	case common.FlowTypeAuthentication:
+	case providers.FlowTypeAuthentication:
 		if isAuthenticationWithoutLocalUserAllowed(ctx) {
 			execResp.RuntimeData[common.RuntimeKeyUserEligibleForProvisioning] = dataValueTrue
 		}
-	case common.FlowTypeRegistration:
+	case providers.FlowTypeRegistration:
 		if isRegistrationWithExistingUserAllowed(ctx) {
 			execResp.RuntimeData[common.RuntimeKeyAllowRegistrationWithExistingUser] = dataValueTrue
 		}
@@ -318,7 +319,7 @@ func (o *oAuthExecutor) getIDPName(ctx context.Context, idpID string) (string, e
 
 	idp, svcErr := o.idpService.GetIdentityProvider(ctx, idpID)
 	if svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
+		if svcErr.Type == tidcommon.ClientErrorType {
 			return "", fmt.Errorf("failed to get identity provider: %s", svcErr.ErrorDescription.DefaultValue)
 		}
 

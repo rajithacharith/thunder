@@ -21,11 +21,11 @@ package executor
 import (
 	"errors"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/ou"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/security"
 )
@@ -106,7 +106,7 @@ func (e *ouResolverExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRes
 	default:
 		logger.Error(ctx.Context, "Unsupported resolveFrom value", log.String("resolveFrom", resolveFrom))
 		execResp.Status = common.ExecFailure
-		execResp.Error = serviceerror.CustomServiceError(ErrOUResolutionFailed, i18ncore.I18nMessage{
+		execResp.Error = tidcommon.CustomServiceError(ErrOUResolutionFailed, tidcommon.I18nMessage{
 			Key:          ErrOUResolutionFailed.ErrorDescription.Key,
 			DefaultValue: "Unsupported OU resolution strategy: " + resolveFrom,
 		})
@@ -121,7 +121,7 @@ func (e *ouResolverExecutor) resolveFromCaller(ctx *core.NodeContext,
 	if callerOUID == "" {
 		logger.Error(ctx.Context, "Caller OU not found in security context")
 		execResp.Status = common.ExecFailure
-		execResp.Error = serviceerror.CustomServiceError(ErrOUResolutionFailed, i18ncore.I18nMessage{
+		execResp.Error = tidcommon.CustomServiceError(ErrOUResolutionFailed, tidcommon.I18nMessage{
 			Key:          ErrOUResolutionFailed.ErrorDescription.Key,
 			DefaultValue: "Unable to resolve caller organization unit from  context",
 		})
@@ -158,7 +158,7 @@ func (e *ouResolverExecutor) resolveFromPrompt(ctx *core.NodeContext,
 		// Validate that the selected OU belongs to the parent OU's subtree.
 		isDescendant, svcErr := e.ouService.IsParent(ctx.Context, parentOUID, selectedOUID)
 		if svcErr != nil {
-			if svcErr.Type == serviceerror.ClientErrorType {
+			if svcErr.Type == tidcommon.ClientErrorType {
 				execResp.Status = common.ExecUserInputRequired
 				execResp.Inputs = e.GetDefaultInputs()
 				execResp.Error = &ErrInvalidOU

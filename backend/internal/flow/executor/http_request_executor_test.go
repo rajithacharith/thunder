@@ -25,18 +25,16 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 	"github.com/thunder-id/thunderid/tests/mocks/oumock"
@@ -70,8 +68,8 @@ func (suite *HTTPRequestExecutorTestSuite) SetupTest() {
 	suite.executor = newHTTPRequestExecutor(mockFlowFactory, nil, suite.mockAuthnProvider)
 }
 
-func newHTTPRequestAuthUser() authnprovidermgr.AuthUser {
-	var authUser authnprovidermgr.AuthUser
+func newHTTPRequestAuthUser() providers.AuthUser {
+	var authUser providers.AuthUser
 	_ = authUser.UnmarshalJSON([]byte(`{"entityReferenceToken":"tok","attributeToken":"tok"}`))
 	return authUser
 }
@@ -152,7 +150,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestResolvePlaceholderUserIDSpecialHa
 
 	authUser := newHTTPRequestAuthUser()
 	suite.mockAuthnProvider.On("GetEntityReference", mock.Anything, mock.Anything).
-		Return(authUser, &authnprovidercm.EntityReference{EntityID: "auth-user-456"}, nil)
+		Return(authUser, &providers.EntityReference{EntityID: "auth-user-456"}, nil)
 
 	ctx := &core.NodeContext{
 		Context:     context.Background(),
@@ -736,7 +734,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestEnrichOURuntimeData_OUIDFromEntit
 
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-auth-123").
-		Return(ou.OrganizationUnit{
+		Return(providers.OrganizationUnit{
 			ID:          "ou-auth-123",
 			Handle:      "acme-corp",
 			Name:        "Acme Corporation",
@@ -746,7 +744,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestEnrichOURuntimeData_OUIDFromEntit
 	authUser := newHTTPRequestAuthUser()
 	mockAuthnProvider := managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
 	mockAuthnProvider.On("GetEntityReference", mock.Anything, mock.Anything).
-		Return(authUser, &authnprovidercm.EntityReference{EntityID: "ou-auth-123"}, nil)
+		Return(authUser, &providers.EntityReference{EntityID: "ou-auth-123"}, nil)
 
 	mockFlowFactory := coremock.NewFlowFactoryInterfaceMock(suite.T())
 	mockFlowFactory.On("CreateExecutor", ExecutorNameHTTPRequest, common.ExecutorTypeUtility,
@@ -793,7 +791,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestEnrichOURuntimeData_OUIDFromRunti
 
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-runtime-456").
-		Return(ou.OrganizationUnit{
+		Return(providers.OrganizationUnit{
 			ID:          "ou-runtime-456",
 			Handle:      "beta-org",
 			Name:        "Beta Organization",
@@ -851,7 +849,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestEnrichOURuntimeData_RuntimeDataPr
 
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-runtime-primary").
-		Return(ou.OrganizationUnit{
+		Return(providers.OrganizationUnit{
 			ID:     "ou-runtime-primary",
 			Handle: "runtime-handle",
 			Name:   "Runtime Org",
@@ -904,7 +902,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestEnrichOURuntimeData_OverwritesExi
 
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-overwrite-test").
-		Return(ou.OrganizationUnit{
+		Return(providers.OrganizationUnit{
 			ID:     "ou-overwrite-test",
 			Handle: "fetched-handle",
 			Name:   "Fetched Org",
@@ -913,7 +911,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestEnrichOURuntimeData_OverwritesExi
 	authUser := newHTTPRequestAuthUser()
 	mockAuthnProvider := managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
 	mockAuthnProvider.On("GetEntityReference", mock.Anything, mock.Anything).
-		Return(authUser, &authnprovidercm.EntityReference{EntityID: "ou-overwrite-test"}, nil)
+		Return(authUser, &providers.EntityReference{EntityID: "ou-overwrite-test"}, nil)
 
 	mockFlowFactory := coremock.NewFlowFactoryInterfaceMock(suite.T())
 	mockFlowFactory.On("CreateExecutor", ExecutorNameHTTPRequest, common.ExecutorTypeUtility,
@@ -958,15 +956,15 @@ func (suite *HTTPRequestExecutorTestSuite) TestEnrichOURuntimeData_OULookupFailu
 
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-not-found").
-		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
-			Error:            i18ncore.I18nMessage{DefaultValue: "ou_not_found"},
-			ErrorDescription: i18ncore.I18nMessage{DefaultValue: "organization unit not found"},
+		Return(providers.OrganizationUnit{}, &tidcommon.ServiceError{
+			Error:            tidcommon.I18nMessage{DefaultValue: "ou_not_found"},
+			ErrorDescription: tidcommon.I18nMessage{DefaultValue: "organization unit not found"},
 		})
 
 	authUser := newHTTPRequestAuthUser()
 	mockAuthnProvider := managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
 	mockAuthnProvider.On("GetEntityReference", mock.Anything, mock.Anything).
-		Return(authUser, &authnprovidercm.EntityReference{EntityID: "ou-not-found"}, nil)
+		Return(authUser, &providers.EntityReference{EntityID: "ou-not-found"}, nil)
 
 	mockFlowFactory := coremock.NewFlowFactoryInterfaceMock(suite.T())
 	mockFlowFactory.On("CreateExecutor", ExecutorNameHTTPRequest, common.ExecutorTypeUtility,

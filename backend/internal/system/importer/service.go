@@ -25,6 +25,9 @@ import (
 	"sort"
 	"time"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 
 	agentmodel "github.com/thunder-id/thunderid/internal/agent/model"
@@ -32,19 +35,13 @@ import (
 	layoutmgt "github.com/thunder-id/thunderid/internal/design/layout/mgt"
 	thememgt "github.com/thunder-id/thunderid/internal/design/theme/mgt"
 	"github.com/thunder-id/thunderid/internal/entitytype"
-	"github.com/thunder-id/thunderid/internal/flow/common"
 	flowmgt "github.com/thunder-id/thunderid/internal/flow/mgt"
 	"github.com/thunder-id/thunderid/internal/group"
 	"github.com/thunder-id/thunderid/internal/idp"
-	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/openid4vci/credential"
 	"github.com/thunder-id/thunderid/internal/openid4vp/definition"
-	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	"github.com/thunder-id/thunderid/internal/system/i18n/core"
-	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/user"
 )
@@ -52,162 +49,165 @@ import (
 type applicationAdapter interface {
 	CreateApplication(ctx context.Context, app *appmodel.ApplicationDTO) (
 		*appmodel.ApplicationDTO,
-		*serviceerror.ServiceError,
+		*tidcommon.ServiceError,
 	)
-	GetApplication(ctx context.Context, appID string) (*appmodel.Application, *serviceerror.ServiceError)
+	GetApplication(ctx context.Context, appID string) (*appmodel.Application, *tidcommon.ServiceError)
 	UpdateApplication(ctx context.Context, appID string, app *appmodel.ApplicationDTO) (
 		*appmodel.ApplicationDTO,
-		*serviceerror.ServiceError,
+		*tidcommon.ServiceError,
 	)
 }
 
 type idpAdapter interface {
-	CreateIdentityProvider(ctx context.Context, idp *idp.IDPDTO) (*idp.IDPDTO, *serviceerror.ServiceError)
-	GetIdentityProvider(ctx context.Context, idpID string) (*idp.IDPDTO, *serviceerror.ServiceError)
-	GetIdentityProviderByName(ctx context.Context, idpName string) (*idp.IDPDTO, *serviceerror.ServiceError)
-	UpdateIdentityProvider(ctx context.Context, idpID string, idpDTO *idp.IDPDTO) (
-		*idp.IDPDTO,
-		*serviceerror.ServiceError,
+	CreateIdentityProvider(ctx context.Context, idp *providers.IDPDTO) (*providers.IDPDTO, *tidcommon.ServiceError)
+	GetIdentityProvider(ctx context.Context, idpID string) (*providers.IDPDTO, *tidcommon.ServiceError)
+	GetIdentityProviderByName(ctx context.Context, idpName string) (*providers.IDPDTO, *tidcommon.ServiceError)
+	UpdateIdentityProvider(ctx context.Context, idpID string, idpDTO *providers.IDPDTO) (
+		*providers.IDPDTO,
+		*tidcommon.ServiceError,
 	)
 }
 
 type flowAdapter interface {
 	CreateFlow(ctx context.Context, flowDef *flowmgt.FlowDefinition) (
-		*flowmgt.CompleteFlowDefinition,
-		*serviceerror.ServiceError,
+		*providers.CompleteFlowDefinition,
+		*tidcommon.ServiceError,
 	)
-	GetFlow(ctx context.Context, flowID string) (*flowmgt.CompleteFlowDefinition, *serviceerror.ServiceError)
-	GetFlowByHandle(ctx context.Context, handle string, flowType common.FlowType) (*flowmgt.CompleteFlowDefinition,
-		*serviceerror.ServiceError)
-	UpdateFlow(ctx context.Context, flowID string, flowDef *flowmgt.FlowDefinition) (*flowmgt.CompleteFlowDefinition,
-		*serviceerror.ServiceError)
+	GetFlow(ctx context.Context, flowID string) (*providers.CompleteFlowDefinition, *tidcommon.ServiceError)
+	GetFlowByHandle(ctx context.Context, handle string, flowType providers.FlowType) (*providers.CompleteFlowDefinition,
+		*tidcommon.ServiceError)
+	UpdateFlow(ctx context.Context, flowID string, flowDef *flowmgt.FlowDefinition) (*providers.CompleteFlowDefinition,
+		*tidcommon.ServiceError)
 }
 
 type ouAdapter interface {
-	CreateOrganizationUnit(ctx context.Context, request ou.OrganizationUnitRequestWithID) (
-		ou.OrganizationUnit,
-		*serviceerror.ServiceError,
+	CreateOrganizationUnit(ctx context.Context, request providers.OrganizationUnitRequestWithID) (
+		providers.OrganizationUnit,
+		*tidcommon.ServiceError,
 	)
-	GetOrganizationUnit(ctx context.Context, id string) (ou.OrganizationUnit, *serviceerror.ServiceError)
-	GetOrganizationUnitByPath(ctx context.Context, handlePath string) (ou.OrganizationUnit, *serviceerror.ServiceError)
-	UpdateOrganizationUnit(ctx context.Context, id string, request ou.OrganizationUnitRequestWithID) (
-		ou.OrganizationUnit,
-		*serviceerror.ServiceError)
+	GetOrganizationUnit(ctx context.Context, id string) (providers.OrganizationUnit, *tidcommon.ServiceError)
+	GetOrganizationUnitByPath(ctx context.Context, handlePath string) (
+		providers.OrganizationUnit,
+		*tidcommon.ServiceError,
+	)
+	UpdateOrganizationUnit(ctx context.Context, id string, request providers.OrganizationUnitRequestWithID) (
+		providers.OrganizationUnit,
+		*tidcommon.ServiceError)
 }
 
 type entityTypeAdapter interface {
 	CreateEntityType(ctx context.Context, category entitytype.TypeCategory,
 		request entitytype.CreateEntityTypeRequestWithID) (*entitytype.EntityType,
-		*serviceerror.ServiceError)
+		*tidcommon.ServiceError)
 	GetEntityType(ctx context.Context, category entitytype.TypeCategory, schemaID string,
 		includeDisplay bool) (*entitytype.EntityType,
-		*serviceerror.ServiceError)
+		*tidcommon.ServiceError)
 	GetEntityTypeByName(ctx context.Context, category entitytype.TypeCategory,
-		schemaName string) (*entitytype.EntityType, *serviceerror.ServiceError)
+		schemaName string) (*entitytype.EntityType, *tidcommon.ServiceError)
 	UpdateEntityType(ctx context.Context, category entitytype.TypeCategory, schemaID string,
 		request entitytype.UpdateEntityTypeRequest) (
 		*entitytype.EntityType,
-		*serviceerror.ServiceError)
+		*tidcommon.ServiceError)
 }
 
 type roleAdapter interface {
 	CreateRole(ctx context.Context, role role.RoleCreationDetail) (*role.RoleWithPermissionsAndAssignments,
-		*serviceerror.ServiceError)
-	GetRoleWithPermissions(ctx context.Context, id string) (*role.RoleWithPermissions, *serviceerror.ServiceError)
+		*tidcommon.ServiceError)
+	GetRoleWithPermissions(ctx context.Context, id string) (*role.RoleWithPermissions, *tidcommon.ServiceError)
 	UpdateRoleWithPermissions(ctx context.Context, id string, role role.RoleUpdateDetail) (*role.RoleWithPermissions,
-		*serviceerror.ServiceError)
+		*tidcommon.ServiceError)
 }
 
 type roleAssignmentAdapter interface {
-	AddAssignments(ctx context.Context, id string, assignments []role.RoleAssignment) *serviceerror.ServiceError
+	AddAssignments(ctx context.Context, id string, assignments []role.RoleAssignment) *tidcommon.ServiceError
 }
 
 type groupAdapter interface {
-	CreateGroup(ctx context.Context, request group.CreateGroupRequest) (*group.Group, *serviceerror.ServiceError)
-	GetGroup(ctx context.Context, groupID string, includeDisplay bool) (*group.Group, *serviceerror.ServiceError)
+	CreateGroup(ctx context.Context, request group.CreateGroupRequest) (*group.Group, *tidcommon.ServiceError)
+	GetGroup(ctx context.Context, groupID string, includeDisplay bool) (*group.Group, *tidcommon.ServiceError)
 	UpdateGroup(ctx context.Context, groupID string, request group.UpdateGroupRequest) (
-		*group.Group, *serviceerror.ServiceError)
+		*group.Group, *tidcommon.ServiceError)
 	AddGroupMembers(ctx context.Context, groupID string, members []group.Member) (
-		*group.Group, *serviceerror.ServiceError)
+		*group.Group, *tidcommon.ServiceError)
 }
 
 type resourceServerAdapter interface {
-	CreateResourceServer(ctx context.Context, rs resource.ResourceServer) (*resource.ResourceServer,
-		*serviceerror.ServiceError)
-	GetResourceServer(ctx context.Context, id string) (*resource.ResourceServer, *serviceerror.ServiceError)
-	UpdateResourceServer(ctx context.Context, id string, rs resource.ResourceServer) (*resource.ResourceServer,
-		*serviceerror.ServiceError)
-	CreateResource(ctx context.Context, resourceServerID string, res resource.Resource) (
-		*resource.Resource, *serviceerror.ServiceError)
+	CreateResourceServer(ctx context.Context, rs providers.ResourceServer) (*providers.ResourceServer,
+		*tidcommon.ServiceError)
+	GetResourceServer(ctx context.Context, id string) (*providers.ResourceServer, *tidcommon.ServiceError)
+	UpdateResourceServer(ctx context.Context, id string, rs providers.ResourceServer) (*providers.ResourceServer,
+		*tidcommon.ServiceError)
+	CreateResource(ctx context.Context, resourceServerID string, res providers.Resource) (
+		*providers.Resource, *tidcommon.ServiceError)
 	GetResourceList(ctx context.Context, resourceServerID string, parentID *string, limit, offset int) (
-		*resource.ResourceList, *serviceerror.ServiceError)
-	CreateAction(ctx context.Context, resourceServerID string, resourceID *string, action resource.Action) (
-		*resource.Action, *serviceerror.ServiceError)
+		*resource.ResourceList, *tidcommon.ServiceError)
+	CreateAction(ctx context.Context, resourceServerID string, resourceID *string, action providers.Action) (
+		*providers.Action, *tidcommon.ServiceError)
 }
 
 type themeAdapter interface {
 	CreateTheme(ctx context.Context,
-		theme thememgt.CreateThemeRequestWithID) (*thememgt.Theme, *serviceerror.ServiceError)
-	GetTheme(ctx context.Context, id string) (*thememgt.Theme, *serviceerror.ServiceError)
+		theme thememgt.CreateThemeRequestWithID) (*thememgt.Theme, *tidcommon.ServiceError)
+	GetTheme(ctx context.Context, id string) (*thememgt.Theme, *tidcommon.ServiceError)
 	UpdateTheme(ctx context.Context,
-		id string, theme thememgt.UpdateThemeRequest) (*thememgt.Theme, *serviceerror.ServiceError)
+		id string, theme thememgt.UpdateThemeRequest) (*thememgt.Theme, *tidcommon.ServiceError)
 }
 
 type layoutAdapter interface {
 	CreateLayout(ctx context.Context,
-		layout layoutmgt.CreateLayoutRequest) (*layoutmgt.Layout, *serviceerror.ServiceError)
-	GetLayout(ctx context.Context, id string) (*layoutmgt.Layout, *serviceerror.ServiceError)
+		layout layoutmgt.CreateLayoutRequest) (*layoutmgt.Layout, *tidcommon.ServiceError)
+	GetLayout(ctx context.Context, id string) (*layoutmgt.Layout, *tidcommon.ServiceError)
 	UpdateLayout(ctx context.Context,
-		id string, layout layoutmgt.UpdateLayoutRequest) (*layoutmgt.Layout, *serviceerror.ServiceError)
+		id string, layout layoutmgt.UpdateLayoutRequest) (*layoutmgt.Layout, *tidcommon.ServiceError)
 }
 
 type userAdapter interface {
-	CreateUser(ctx context.Context, user *user.User) (*user.User, *serviceerror.ServiceError)
-	GetUser(ctx context.Context, userID string, includeDisplay bool) (*user.User, *serviceerror.ServiceError)
-	UpdateUser(ctx context.Context, userID string, user *user.User) (*user.User, *serviceerror.ServiceError)
-	DeleteUser(ctx context.Context, userID string) *serviceerror.ServiceError
-	UpdateUserCredentials(ctx context.Context, userID string, credentials json.RawMessage) *serviceerror.ServiceError
+	CreateUser(ctx context.Context, user *user.User) (*user.User, *tidcommon.ServiceError)
+	GetUser(ctx context.Context, userID string, includeDisplay bool) (*user.User, *tidcommon.ServiceError)
+	UpdateUser(ctx context.Context, userID string, user *user.User) (*user.User, *tidcommon.ServiceError)
+	DeleteUser(ctx context.Context, userID string) *tidcommon.ServiceError
+	UpdateUserCredentials(ctx context.Context, userID string, credentials json.RawMessage) *tidcommon.ServiceError
 }
 
 type translationAdapter interface {
 	SetTranslationOverrides(ctx context.Context, language string, translations map[string]map[string]string) (
-		*i18nmgt.LanguageTranslationsResponse,
-		*serviceerror.ServiceError)
+		*providers.LanguageTranslationsResponse,
+		*tidcommon.ServiceError)
 }
 
 type agentAdapter interface {
 	CreateAgent(ctx context.Context, agent *agentmodel.Agent) (
-		*agentmodel.AgentCompleteResponse, *serviceerror.ServiceError)
+		*agentmodel.AgentCompleteResponse, *tidcommon.ServiceError)
 	GetAgent(ctx context.Context, agentID string, includeDisplay bool) (
-		*agentmodel.AgentGetResponse, *serviceerror.ServiceError)
+		*agentmodel.AgentGetResponse, *tidcommon.ServiceError)
 	UpdateAgent(ctx context.Context, agentID string, req *agentmodel.UpdateAgentRequest) (
-		*agentmodel.AgentCompleteResponse, *serviceerror.ServiceError)
+		*agentmodel.AgentCompleteResponse, *tidcommon.ServiceError)
 }
 
 type presentationDefinitionAdapter interface {
 	CreatePresentationDefinition(ctx context.Context, dto *definition.PresentationDefinitionDTO) (
-		*definition.PresentationDefinitionDTO, *serviceerror.ServiceError)
+		*definition.PresentationDefinitionDTO, *tidcommon.ServiceError)
 	GetPresentationDefinition(ctx context.Context, id string) (
-		*definition.PresentationDefinitionDTO, *serviceerror.ServiceError)
+		*definition.PresentationDefinitionDTO, *tidcommon.ServiceError)
 	UpdatePresentationDefinition(ctx context.Context, id string, dto *definition.PresentationDefinitionDTO) (
-		*definition.PresentationDefinitionDTO, *serviceerror.ServiceError)
+		*definition.PresentationDefinitionDTO, *tidcommon.ServiceError)
 }
 
 type credentialConfigurationAdapter interface {
 	CreateCredentialConfiguration(ctx context.Context, dto *credential.CredentialConfigurationDTO) (
-		*credential.CredentialConfigurationDTO, *serviceerror.ServiceError)
+		*credential.CredentialConfigurationDTO, *tidcommon.ServiceError)
 	GetCredentialConfiguration(ctx context.Context, id string) (
-		*credential.CredentialConfigurationDTO, *serviceerror.ServiceError)
+		*credential.CredentialConfigurationDTO, *tidcommon.ServiceError)
 	UpdateCredentialConfiguration(ctx context.Context, id string, dto *credential.CredentialConfigurationDTO) (
-		*credential.CredentialConfigurationDTO, *serviceerror.ServiceError)
+		*credential.CredentialConfigurationDTO, *tidcommon.ServiceError)
 }
 
 // ImportServiceInterface defines runtime resource import and declarative resource deletion operations.
 type ImportServiceInterface interface {
-	ImportResources(ctx context.Context, request *ImportRequest) (*ImportResponse, *serviceerror.ServiceError)
+	ImportResources(ctx context.Context, request *ImportRequest) (*ImportResponse, *tidcommon.ServiceError)
 	DeleteResource(ctx context.Context, request *DeleteResourceRequest) (
 		*DeleteResourceResponse,
-		*serviceerror.ServiceError,
+		*tidcommon.ServiceError,
 	)
 }
 
@@ -279,10 +279,10 @@ func newImportService(
 
 func (s *importService) ImportResources(
 	ctx context.Context, request *ImportRequest,
-) (*ImportResponse, *serviceerror.ServiceError) {
+) (*ImportResponse, *tidcommon.ServiceError) {
 	if request == nil || request.Content == "" {
-		return nil, serviceerror.CustomServiceError(ErrorInvalidImportRequest,
-			core.I18nMessage{Key: "error.import.emptyContent", DefaultValue: "import content cannot be empty"})
+		return nil, tidcommon.CustomServiceError(ErrorInvalidImportRequest,
+			tidcommon.I18nMessage{Key: "error.import.emptyContent", DefaultValue: "import content cannot be empty"})
 	}
 
 	options := request.Options
@@ -302,9 +302,9 @@ func (s *importService) ImportResources(
 	}
 
 	if options.Target == importTargetFile {
-		return nil, serviceerror.CustomServiceError(
+		return nil, tidcommon.CustomServiceError(
 			ErrorInvalidImportRequest,
-			core.I18nMessage{
+			tidcommon.I18nMessage{
 				Key:          "error.import.fileTargetNotSupported",
 				DefaultValue: "file target is not supported; use runtime target",
 			},
@@ -314,15 +314,15 @@ func (s *importService) ImportResources(
 	resolvedContent, err := resolveTemplate(request.Content, request.Variables)
 	if err != nil {
 		log.GetLogger().Warn(ctx, "Import template resolution failed", log.String("error", err.Error()))
-		return nil, serviceerror.CustomServiceError(ErrorTemplateResolutionFailed,
-			core.I18nMessage{Key: "error.import.dynamic", DefaultValue: err.Error()})
+		return nil, tidcommon.CustomServiceError(ErrorTemplateResolutionFailed,
+			tidcommon.I18nMessage{Key: "error.import.dynamic", DefaultValue: err.Error()})
 	}
 
 	docs, err := parseDocuments(resolvedContent)
 	if err != nil {
 		log.GetLogger().Warn(ctx, "Import YAML parsing failed", log.String("error", err.Error()))
-		return nil, serviceerror.CustomServiceError(ErrorInvalidYAMLContent,
-			core.I18nMessage{Key: "error.import.dynamic", DefaultValue: err.Error()})
+		return nil, tidcommon.CustomServiceError(ErrorInvalidYAMLContent,
+			tidcommon.I18nMessage{Key: "error.import.dynamic", DefaultValue: err.Error()})
 	}
 
 	results := make([]ImportItemOutcome, 0, len(docs))
@@ -335,7 +335,7 @@ func (s *importService) ImportResources(
 	for _, doc := range orderedDocs {
 		originalFlowID := ""
 		if doc.ResourceType == resourceTypeFlow {
-			var flowReq flowmgt.CompleteFlowDefinition
+			var flowReq providers.CompleteFlowDefinition
 			if err := doc.Node.Decode(&flowReq); err == nil {
 				originalFlowID = flowReq.ID
 			}
@@ -372,13 +372,13 @@ func (s *importService) ImportResources(
 
 func (s *importService) DeleteResource(
 	ctx context.Context, request *DeleteResourceRequest,
-) (*DeleteResourceResponse, *serviceerror.ServiceError) {
+) (*DeleteResourceResponse, *tidcommon.ServiceError) {
 	_ = ctx
 
 	if request == nil || request.ResourceType == "" || request.ResourceKey == "" {
-		return nil, serviceerror.CustomServiceError(
+		return nil, tidcommon.CustomServiceError(
 			ErrorInvalidImportRequest,
-			core.I18nMessage{
+			tidcommon.I18nMessage{
 				Key:          "error.import.missingDeleteFields",
 				DefaultValue: "resourceType and resourceKey are required",
 			},
@@ -539,7 +539,7 @@ func (s *importService) importFlow(
 		}
 	}
 
-	var req flowmgt.CompleteFlowDefinition
+	var req providers.CompleteFlowDefinition
 	if err := doc.Node.Decode(&req); err != nil {
 		return ImportItemOutcome{
 			ResourceType: resourceTypeFlow,
@@ -931,7 +931,7 @@ func normalizeOAuthConfigForImport(ctx context.Context, appDTO *appmodel.Applica
 	}
 
 	if oauthConfig.PublicClient &&
-		oauthConfig.TokenEndpointAuthMethod == oauth2const.TokenEndpointAuthMethodNone &&
+		oauthConfig.TokenEndpointAuthMethod == providers.TokenEndpointAuthMethodNone &&
 		oauthConfig.ClientSecret != "" {
 		log.GetLogger().Debug(ctx,
 			"Dropping client_secret for public client import with token endpoint auth method 'none'",
@@ -942,7 +942,7 @@ func normalizeOAuthConfigForImport(ctx context.Context, appDTO *appmodel.Applica
 	}
 }
 
-func isNotFoundServiceError(svcErr *serviceerror.ServiceError) bool {
+func isNotFoundServiceError(svcErr *tidcommon.ServiceError) bool {
 	if svcErr == nil {
 		return false
 	}

@@ -24,11 +24,12 @@ import (
 	"testing"
 	"time"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/openid4vci/credential"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
 	"github.com/thunder-id/thunderid/tests/mocks/usermock"
 )
@@ -91,7 +92,7 @@ func (s *ServiceTestSuite) TestGetMetadata() {
 	s.Run("ListError", func() {
 		creds := newCredentialReaderMock(s.T())
 		creds.EXPECT().ListCredentialConfigurations(context.Background()).
-			Return(nil, &serviceerror.ServiceError{Code: "boom"})
+			Return(nil, &tidcommon.ServiceError{Code: "boom"})
 		svc := &service{cfg: serviceConfig{CredentialIssuer: testIssuer, BaseURL: "https://i"}, creds: creds}
 
 		md := svc.GetMetadata(context.Background())

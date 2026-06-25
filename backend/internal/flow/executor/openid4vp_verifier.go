@@ -21,14 +21,14 @@ package executor
 import (
 	"context"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	authncommon "github.com/thunder-id/thunderid/internal/authn/common"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/openid4vp"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	systemutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -36,8 +36,8 @@ import (
 // openid4vpVerifierService is the subset of the OpenID4VP verifier service the
 // executor depends on. openid4vp.OpenID4VPServiceInterface satisfies it.
 type openid4vpVerifierService interface {
-	Initiate(ctx context.Context, definitionID string) (*openid4vp.Initiation, *serviceerror.ServiceError)
-	GetResult(ctx context.Context, state string) (*openid4vp.RequestState, *serviceerror.ServiceError)
+	Initiate(ctx context.Context, definitionID string) (*openid4vp.Initiation, *tidcommon.ServiceError)
+	GetResult(ctx context.Context, state string) (*openid4vp.RequestState, *tidcommon.ServiceError)
 }
 
 // openid4vpVerifier drives an OpenID4VP presentation as a flow step: it
@@ -48,7 +48,7 @@ type openid4vpVerifier struct {
 	core.ExecutorInterface
 	service           openid4vpVerifierService
 	entityTypeService entitytype.EntityTypeServiceInterface
-	authnProvider     authnprovidermgr.AuthnProviderManagerInterface
+	authnProvider     providers.AuthnProviderManagerInterface
 	logger            *log.Logger
 }
 
@@ -58,7 +58,7 @@ type openid4vpVerifier struct {
 func newOpenID4VPVerifier(
 	flowFactory core.FlowFactoryInterface, service openid4vpVerifierService,
 	entityTypeService entitytype.EntityTypeServiceInterface,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
+	authnProvider providers.AuthnProviderManagerInterface,
 ) core.ExecutorInterface {
 	base := flowFactory.CreateExecutor(
 		ExecutorNameOpenID4VPVerify, common.ExecutorTypeAuthentication, []common.Input{}, []common.Input{})
@@ -166,8 +166,8 @@ func (e *openid4vpVerifier) poll(
 		logger.Debug(ctx.Context, "OpenID4VP presentation verification failed",
 			log.String("reason", rs.FailureReason))
 		execResp.Status = common.ExecFailure
-		execResp.Error = serviceerror.CustomServiceError(ErrOpenID4VPVerificationFailed,
-			i18ncore.I18nMessage{
+		execResp.Error = tidcommon.CustomServiceError(ErrOpenID4VPVerificationFailed,
+			tidcommon.I18nMessage{
 				Key:          ErrOpenID4VPVerificationFailed.ErrorDescription.Key,
 				DefaultValue: "OpenID4VP presentation verification failed: " + rs.FailureReason,
 			})
@@ -194,7 +194,7 @@ func (e *openid4vpVerifier) resolveUserType(
 	for _, name := range ctx.Application.AllowedUserTypes {
 		et, svcErr := e.entityTypeService.GetEntityTypeByName(ctx.Context, entitytype.TypeCategoryUser, name)
 		if svcErr != nil {
-			if svcErr.Type == serviceerror.ClientErrorType {
+			if svcErr.Type == tidcommon.ClientErrorType {
 				continue
 			}
 			logger.Error(ctx.Context, "Failed to retrieve user type", log.String("userType", name))

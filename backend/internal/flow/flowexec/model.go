@@ -25,14 +25,14 @@ import (
 	"strings"
 	"time"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	appmodel "github.com/thunder-id/thunderid/internal/application/model"
 	authncm "github.com/thunder-id/thunderid/internal/authn/common"
-	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
-	managerpkg "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 )
 
 // EngineContext holds the overall context used by the flow engine during execution.
@@ -40,7 +40,7 @@ type EngineContext struct {
 	Context context.Context
 
 	ExecutionID    string
-	FlowType       common.FlowType
+	FlowType       providers.FlowType
 	AppID          string
 	Verbose        bool
 	UserInputs     map[string]string
@@ -58,7 +58,7 @@ type EngineContext struct {
 	Application appmodel.Application
 
 	AuthenticatedUser authncm.AuthenticatedUser
-	AuthUser          managerpkg.AuthUser
+	AuthUser          providers.AuthUser
 	Assertion         string
 	ExecutionHistory  map[string]*common.NodeExecutionRecord
 
@@ -82,7 +82,7 @@ type InterceptorRunnerContext struct {
 	Ctx                  context.Context
 	ExecutionID          string
 	AppID                string
-	FlowType             common.FlowType
+	FlowType             providers.FlowType
 	FlowStatus           common.FlowStatus
 	CurrentNodeID        string
 	NodeType             common.NodeType
@@ -106,7 +106,7 @@ type FlowStep struct {
 	ChallengeToken string
 	Data           FlowData
 	Assertion      string
-	Error          *serviceerror.ServiceError
+	Error          *tidcommon.ServiceError
 }
 
 // FlowData holds the data returned by a flow execution step
@@ -233,9 +233,9 @@ func (f *FlowContextDB) ToEngineContext(ctx context.Context, graph core.GraphInt
 	}
 
 	// Parse available attributes
-	var availableAttributes *authnprovidercm.AttributesResponse
+	var availableAttributes *providers.AttributesResponse
 	if content.AvailableAttributes != nil && strings.TrimSpace(*content.AvailableAttributes) != "" {
-		var attrs authnprovidercm.AttributesResponse
+		var attrs providers.AttributesResponse
 		if err := json.Unmarshal([]byte(*content.AvailableAttributes), &attrs); err != nil {
 			return EngineContext{}, err
 		}
@@ -291,7 +291,7 @@ func (f *FlowContextDB) ToEngineContext(ctx context.Context, graph core.GraphInt
 	}
 
 	// Deserialize AuthUser if present
-	var authUser managerpkg.AuthUser
+	var authUser providers.AuthUser
 	if content.AuthUser != nil {
 		if err := json.Unmarshal([]byte(*content.AuthUser), &authUser); err != nil {
 			return EngineContext{}, err

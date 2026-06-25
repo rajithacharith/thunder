@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 type HandlerTestSuite struct {
@@ -77,7 +77,7 @@ func (suite *HandlerTestSuite) TestHandleListServerConfigs_OK() {
 }
 
 func (suite *HandlerTestSuite) TestHandleListServerConfigs_ServiceError() {
-	suite.mockService.EXPECT().ListConfigNames(mock.Anything).Return(nil, &serviceerror.InternalServerError)
+	suite.mockService.EXPECT().ListConfigNames(mock.Anything).Return(nil, &common.InternalServerError)
 
 	req := httptest.NewRequest(http.MethodGet, "/server-config", nil)
 	w := httptest.NewRecorder()
@@ -132,7 +132,7 @@ func (suite *HandlerTestSuite) TestHandleGetServerConfig_UnsupportedName() {
 
 func (suite *HandlerTestSuite) TestHandleGetServerConfig_ServiceError() {
 	suite.mockService.EXPECT().GetConfig(mock.Anything, ConfigNameCORS).
-		Return(ServerConfigLayers{}, &serviceerror.InternalServerError)
+		Return(ServerConfigLayers{}, &common.InternalServerError)
 
 	req := httptest.NewRequest(http.MethodGet, "/server-config/cors", nil)
 	req.SetPathValue("name", string(ConfigNameCORS))
@@ -187,7 +187,7 @@ func (suite *HandlerTestSuite) TestHandleUpdateServerConfig_InvalidValue() {
 func (suite *HandlerTestSuite) TestHandleUpdateServerConfig_GetAfterSetError() {
 	suite.mockService.EXPECT().SetConfig(mock.Anything, ConfigNameCORS, mock.Anything).Return(nil)
 	suite.mockService.EXPECT().GetConfig(mock.Anything, ConfigNameCORS).
-		Return(ServerConfigLayers{}, &serviceerror.InternalServerError)
+		Return(ServerConfigLayers{}, &common.InternalServerError)
 
 	req := httptest.NewRequest(http.MethodPut, "/server-config/cors",
 		strings.NewReader(`["https://app.example.com"]`))

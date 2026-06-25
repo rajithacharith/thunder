@@ -23,6 +23,8 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
@@ -92,11 +94,11 @@ func (u *userTypeResolver) Execute(ctx *core.NodeContext) (*common.ExecutorRespo
 	}
 
 	switch ctx.FlowType {
-	case common.FlowTypeAuthentication:
+	case providers.FlowTypeAuthentication:
 		return u.handleAuthenticationFlows(ctx, execResp)
-	case common.FlowTypeRegistration:
+	case providers.FlowTypeRegistration:
 		return u.handleRegistrationFlows(ctx, execResp)
-	case common.FlowTypeUserOnboarding:
+	case providers.FlowTypeUserOnboarding:
 		return u.handleUserOnboardingFlows(ctx, execResp)
 	default:
 		logger.Debug(ctx.Context, "User type resolver is not applicable for the flow type",

@@ -22,8 +22,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	"github.com/thunder-id/thunderid/internal/system/i18n/core"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 // Internal sentinel errors for the composite presentation-definition store.
@@ -43,56 +42,56 @@ var (
 // Client-facing API errors for the presentation-definition management endpoints.
 var (
 	// ErrorDefinitionInvalidRequest indicates a malformed create/update request.
-	ErrorDefinitionInvalidRequest = serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	ErrorDefinitionInvalidRequest = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "VP-2001",
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.vp.definition_invalid_request",
 			DefaultValue: "Invalid request",
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.vp.definition_invalid_request_description",
 			DefaultValue: "The presentation definition request is missing required fields or is malformed",
 		},
 	}
 
 	// ErrorDefinitionNotFound indicates the presentation definition does not exist.
-	ErrorDefinitionNotFound = serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	ErrorDefinitionNotFound = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "VP-2002",
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.vp.definition_not_found",
 			DefaultValue: "Presentation definition not found",
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.vp.definition_not_found_description",
 			DefaultValue: "No presentation definition exists for the supplied identifier",
 		},
 	}
 
 	// ErrorDefinitionAlreadyExists indicates the handle is already in use.
-	ErrorDefinitionAlreadyExists = serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	ErrorDefinitionAlreadyExists = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "VP-2003",
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.vp.definition_already_exists",
 			DefaultValue: "Presentation definition already exists",
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.vp.definition_already_exists_description",
 			DefaultValue: "A presentation definition with the supplied handle already exists",
 		},
 	}
 
 	// ErrorDefinitionUnsupportedFormat indicates an unsupported credential format.
-	ErrorDefinitionUnsupportedFormat = serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	ErrorDefinitionUnsupportedFormat = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "VP-2004",
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.vp.definition_unsupported_format",
 			DefaultValue: "Unsupported credential format",
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.vp.definition_unsupported_format_description",
 			DefaultValue: "Only the dc+sd-jwt credential format is supported",
 		},
@@ -100,14 +99,14 @@ var (
 
 	// ErrorDefinitionImmutable indicates the presentation definition is declarative
 	// (file-based) and cannot be modified or deleted via the management API.
-	ErrorDefinitionImmutable = serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	ErrorDefinitionImmutable = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "VP-2005",
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.vp.definition_immutable",
 			DefaultValue: "Presentation definition is immutable",
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key: "error.vp.definition_immutable_description",
 			DefaultValue: "The presentation definition is defined in declarative configuration " +
 				"and cannot be modified or deleted",
@@ -116,14 +115,14 @@ var (
 
 	// ErrorDefinitionResultLimitExceeded indicates the merged composite-store result
 	// set exceeds the supported maximum.
-	ErrorDefinitionResultLimitExceeded = serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	ErrorDefinitionResultLimitExceeded = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "VP-2006",
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.vp.definition_result_limit_exceeded",
 			DefaultValue: "Result limit exceeded",
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key: "error.vp.definition_result_limit_exceeded_description",
 			DefaultValue: "The number of presentation definitions exceeds the supported limit in " +
 				"hybrid mode. Use search for larger datasets",
@@ -131,14 +130,14 @@ var (
 	}
 
 	// ErrorDefinitionInvalidOU indicates the organization unit is missing or does not exist.
-	ErrorDefinitionInvalidOU = serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	ErrorDefinitionInvalidOU = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "VP-2007",
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.vp.definition_invalid_ou",
 			DefaultValue: "Invalid organization unit",
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.vp.definition_invalid_ou_description",
 			DefaultValue: "A valid organization unit (ouId or ouHandle) is required",
 		},

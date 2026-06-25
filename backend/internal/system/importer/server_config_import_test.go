@@ -27,18 +27,17 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/thunder-id/thunderid/internal/serverconfig"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	"github.com/thunder-id/thunderid/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 type fakeServerConfigService struct {
 	set       map[string]json.RawMessage
-	returnErr *serviceerror.ServiceError
+	returnErr *common.ServiceError
 }
 
 func (f *fakeServerConfigService) SetConfig(
 	_ context.Context, name serverconfig.ConfigName, value json.RawMessage,
-) *serviceerror.ServiceError {
+) *common.ServiceError {
 	if f.returnErr != nil {
 		return f.returnErr
 	}
@@ -88,10 +87,10 @@ func TestImportResources_ServerConfig_DryRunDoesNotWrite(t *testing.T) {
 }
 
 func TestImportResources_ServerConfig_ServiceErrorReported(t *testing.T) {
-	scSvc := &fakeServerConfigService{returnErr: &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	scSvc := &fakeServerConfigService{returnErr: &common.ServiceError{
+		Type:  common.ClientErrorType,
 		Code:  "SCF-1003",
-		Error: core.I18nMessage{DefaultValue: "Invalid server configuration value"},
+		Error: common.I18nMessage{DefaultValue: "Invalid server configuration value"},
 	}}
 	svc := newServerConfigImportService(scSvc)
 

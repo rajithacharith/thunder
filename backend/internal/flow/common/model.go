@@ -23,8 +23,8 @@ import (
 	"regexp"
 	"slices"
 
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // Input represents the inputs required for a node
@@ -93,39 +93,39 @@ type Prompt struct {
 
 // NodeResponse represents the response from a node execution
 type NodeResponse struct {
-	Status         NodeStatus                 `json:"status"`
-	Type           NodeResponseType           `json:"type"`
-	Error          *serviceerror.ServiceError `json:"error,omitempty"`
-	Inputs         []Input                    `json:"inputs,omitempty"`
-	AdditionalData map[string]string          `json:"additionalData,omitempty"`
-	RedirectURL    string                     `json:"redirectUrl,omitempty"`
-	Actions        []Action                   `json:"actions,omitempty"`
-	Meta           interface{}                `json:"meta,omitempty"`
-	NextNodeID     string                     `json:"nextNodeId,omitempty"`
-	RuntimeData    map[string]string          `json:"runtimeData,omitempty"`
-	ForwardedData  map[string]interface{}     `json:"forwardedData,omitempty"`
-	Assertion      string                     `json:"assertion,omitempty"`
-	FieldErrors    []FieldError               `json:"fieldErrors,omitempty"`
-	AuthUser       authnprovidermgr.AuthUser  `json:"-"`
+	Status         NodeStatus              `json:"status"`
+	Type           NodeResponseType        `json:"type"`
+	Error          *tidcommon.ServiceError `json:"error,omitempty"`
+	Inputs         []Input                 `json:"inputs,omitempty"`
+	AdditionalData map[string]string       `json:"additionalData,omitempty"`
+	RedirectURL    string                  `json:"redirectUrl,omitempty"`
+	Actions        []Action                `json:"actions,omitempty"`
+	Meta           interface{}             `json:"meta,omitempty"`
+	NextNodeID     string                  `json:"nextNodeId,omitempty"`
+	RuntimeData    map[string]string       `json:"runtimeData,omitempty"`
+	ForwardedData  map[string]interface{}  `json:"forwardedData,omitempty"`
+	Assertion      string                  `json:"assertion,omitempty"`
+	FieldErrors    []FieldError            `json:"fieldErrors,omitempty"`
+	AuthUser       providers.AuthUser      `json:"-"`
 }
 
 // ExecutorResponse represents the response from an executor
 type ExecutorResponse struct {
-	Status         ExecutorStatus             `json:"status"`
-	Inputs         []Input                    `json:"inputs,omitempty"`
-	AdditionalData map[string]string          `json:"additionalData,omitempty"`
-	RedirectURL    string                     `json:"redirectUrl,omitempty"`
-	RuntimeData    map[string]string          `json:"runtimeData,omitempty"`
-	ForwardedData  map[string]interface{}     `json:"forwardedData,omitempty"`
-	Assertion      string                     `json:"assertion,omitempty"`
-	Error          *serviceerror.ServiceError `json:"error,omitempty"`
-	AuthUser       authnprovidermgr.AuthUser  `json:"-"`
+	Status         ExecutorStatus          `json:"status"`
+	Inputs         []Input                 `json:"inputs,omitempty"`
+	AdditionalData map[string]string       `json:"additionalData,omitempty"`
+	RedirectURL    string                  `json:"redirectUrl,omitempty"`
+	RuntimeData    map[string]string       `json:"runtimeData,omitempty"`
+	ForwardedData  map[string]interface{}  `json:"forwardedData,omitempty"`
+	Assertion      string                  `json:"assertion,omitempty"`
+	Error          *tidcommon.ServiceError `json:"error,omitempty"`
+	AuthUser       providers.AuthUser      `json:"-"`
 }
 
 // InterceptorResponse represents the response from an interceptor execution
 type InterceptorResponse struct {
-	Status InterceptorStatus          `json:"status"`
-	Error  *serviceerror.ServiceError `json:"error,omitempty"`
+	Status InterceptorStatus       `json:"status"`
+	Error  *tidcommon.ServiceError `json:"error,omitempty"`
 
 	// EngineOutputs passes data from interceptors back to the engine.
 	EngineOutputs map[string]string `json:"engineOutputs,omitempty"`

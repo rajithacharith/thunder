@@ -8,9 +8,8 @@ import (
 	"context"
 
 	mock "github.com/stretchr/testify/mock"
-	"github.com/thunder-id/thunderid/internal/authnprovider/common"
-	"github.com/thunder-id/thunderid/internal/authnprovider/manager"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // NewAuthnProviderManagerInterfaceMock creates a new instance of AuthnProviderManagerInterfaceMock. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -41,36 +40,36 @@ func (_m *AuthnProviderManagerInterfaceMock) EXPECT() *AuthnProviderManagerInter
 }
 
 // AuthenticateUser provides a mock function for the type AuthnProviderManagerInterfaceMock
-func (_mock *AuthnProviderManagerInterfaceMock) AuthenticateUser(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{}, requestedAttributes *common.RequestedAttributes, metadata *common.AuthnMetadata, authUser manager.AuthUser) (manager.AuthUser, common.AuthenticatedClaims, *serviceerror.ServiceError) {
+func (_mock *AuthnProviderManagerInterfaceMock) AuthenticateUser(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{}, requestedAttributes *providers.RequestedAttributes, metadata *providers.AuthnMetadata, authUser providers.AuthUser) (providers.AuthUser, providers.AuthenticatedClaims, *common.ServiceError) {
 	ret := _mock.Called(ctx, identifiers, credentials, requestedAttributes, metadata, authUser)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthenticateUser")
 	}
 
-	var r0 manager.AuthUser
-	var r1 common.AuthenticatedClaims
-	var r2 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}, map[string]interface{}, *common.RequestedAttributes, *common.AuthnMetadata, manager.AuthUser) (manager.AuthUser, common.AuthenticatedClaims, *serviceerror.ServiceError)); ok {
+	var r0 providers.AuthUser
+	var r1 providers.AuthenticatedClaims
+	var r2 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}, map[string]interface{}, *providers.RequestedAttributes, *providers.AuthnMetadata, providers.AuthUser) (providers.AuthUser, providers.AuthenticatedClaims, *common.ServiceError)); ok {
 		return returnFunc(ctx, identifiers, credentials, requestedAttributes, metadata, authUser)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}, map[string]interface{}, *common.RequestedAttributes, *common.AuthnMetadata, manager.AuthUser) manager.AuthUser); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}, map[string]interface{}, *providers.RequestedAttributes, *providers.AuthnMetadata, providers.AuthUser) providers.AuthUser); ok {
 		r0 = returnFunc(ctx, identifiers, credentials, requestedAttributes, metadata, authUser)
 	} else {
-		r0 = ret.Get(0).(manager.AuthUser)
+		r0 = ret.Get(0).(providers.AuthUser)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, map[string]interface{}, map[string]interface{}, *common.RequestedAttributes, *common.AuthnMetadata, manager.AuthUser) common.AuthenticatedClaims); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, map[string]interface{}, map[string]interface{}, *providers.RequestedAttributes, *providers.AuthnMetadata, providers.AuthUser) providers.AuthenticatedClaims); ok {
 		r1 = returnFunc(ctx, identifiers, credentials, requestedAttributes, metadata, authUser)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(common.AuthenticatedClaims)
+			r1 = ret.Get(1).(providers.AuthenticatedClaims)
 		}
 	}
-	if returnFunc, ok := ret.Get(2).(func(context.Context, map[string]interface{}, map[string]interface{}, *common.RequestedAttributes, *common.AuthnMetadata, manager.AuthUser) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(2).(func(context.Context, map[string]interface{}, map[string]interface{}, *providers.RequestedAttributes, *providers.AuthnMetadata, providers.AuthUser) *common.ServiceError); ok {
 		r2 = returnFunc(ctx, identifiers, credentials, requestedAttributes, metadata, authUser)
 	} else {
 		if ret.Get(2) != nil {
-			r2 = ret.Get(2).(*serviceerror.ServiceError)
+			r2 = ret.Get(2).(*common.ServiceError)
 		}
 	}
 	return r0, r1, r2
@@ -85,14 +84,14 @@ type AuthnProviderManagerInterfaceMock_AuthenticateUser_Call struct {
 //   - ctx context.Context
 //   - identifiers map[string]interface{}
 //   - credentials map[string]interface{}
-//   - requestedAttributes *common.RequestedAttributes
-//   - metadata *common.AuthnMetadata
-//   - authUser manager.AuthUser
+//   - requestedAttributes *providers.RequestedAttributes
+//   - metadata *providers.AuthnMetadata
+//   - authUser providers.AuthUser
 func (_e *AuthnProviderManagerInterfaceMock_Expecter) AuthenticateUser(ctx interface{}, identifiers interface{}, credentials interface{}, requestedAttributes interface{}, metadata interface{}, authUser interface{}) *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call {
 	return &AuthnProviderManagerInterfaceMock_AuthenticateUser_Call{Call: _e.mock.On("AuthenticateUser", ctx, identifiers, credentials, requestedAttributes, metadata, authUser)}
 }
 
-func (_c *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call) Run(run func(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{}, requestedAttributes *common.RequestedAttributes, metadata *common.AuthnMetadata, authUser manager.AuthUser)) *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call {
+func (_c *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call) Run(run func(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{}, requestedAttributes *providers.RequestedAttributes, metadata *providers.AuthnMetadata, authUser providers.AuthUser)) *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -106,17 +105,17 @@ func (_c *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call) Run(run func(
 		if args[2] != nil {
 			arg2 = args[2].(map[string]interface{})
 		}
-		var arg3 *common.RequestedAttributes
+		var arg3 *providers.RequestedAttributes
 		if args[3] != nil {
-			arg3 = args[3].(*common.RequestedAttributes)
+			arg3 = args[3].(*providers.RequestedAttributes)
 		}
-		var arg4 *common.AuthnMetadata
+		var arg4 *providers.AuthnMetadata
 		if args[4] != nil {
-			arg4 = args[4].(*common.AuthnMetadata)
+			arg4 = args[4].(*providers.AuthnMetadata)
 		}
-		var arg5 manager.AuthUser
+		var arg5 providers.AuthUser
 		if args[5] != nil {
-			arg5 = args[5].(manager.AuthUser)
+			arg5 = args[5].(providers.AuthUser)
 		}
 		run(
 			arg0,
@@ -130,47 +129,47 @@ func (_c *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call) Run(run func(
 	return _c
 }
 
-func (_c *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call) Return(authUser1 manager.AuthUser, authenticatedClaims common.AuthenticatedClaims, serviceError *serviceerror.ServiceError) *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call {
+func (_c *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call) Return(authUser1 providers.AuthUser, authenticatedClaims providers.AuthenticatedClaims, serviceError *common.ServiceError) *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call {
 	_c.Call.Return(authUser1, authenticatedClaims, serviceError)
 	return _c
 }
 
-func (_c *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call) RunAndReturn(run func(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{}, requestedAttributes *common.RequestedAttributes, metadata *common.AuthnMetadata, authUser manager.AuthUser) (manager.AuthUser, common.AuthenticatedClaims, *serviceerror.ServiceError)) *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call {
+func (_c *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call) RunAndReturn(run func(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{}, requestedAttributes *providers.RequestedAttributes, metadata *providers.AuthnMetadata, authUser providers.AuthUser) (providers.AuthUser, providers.AuthenticatedClaims, *common.ServiceError)) *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetEntityReference provides a mock function for the type AuthnProviderManagerInterfaceMock
-func (_mock *AuthnProviderManagerInterfaceMock) GetEntityReference(ctx context.Context, authUser manager.AuthUser) (manager.AuthUser, *common.EntityReference, *serviceerror.ServiceError) {
+func (_mock *AuthnProviderManagerInterfaceMock) GetEntityReference(ctx context.Context, authUser providers.AuthUser) (providers.AuthUser, *providers.EntityReference, *common.ServiceError) {
 	ret := _mock.Called(ctx, authUser)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetEntityReference")
 	}
 
-	var r0 manager.AuthUser
-	var r1 *common.EntityReference
-	var r2 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, manager.AuthUser) (manager.AuthUser, *common.EntityReference, *serviceerror.ServiceError)); ok {
+	var r0 providers.AuthUser
+	var r1 *providers.EntityReference
+	var r2 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, providers.AuthUser) (providers.AuthUser, *providers.EntityReference, *common.ServiceError)); ok {
 		return returnFunc(ctx, authUser)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, manager.AuthUser) manager.AuthUser); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, providers.AuthUser) providers.AuthUser); ok {
 		r0 = returnFunc(ctx, authUser)
 	} else {
-		r0 = ret.Get(0).(manager.AuthUser)
+		r0 = ret.Get(0).(providers.AuthUser)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, manager.AuthUser) *common.EntityReference); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, providers.AuthUser) *providers.EntityReference); ok {
 		r1 = returnFunc(ctx, authUser)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*common.EntityReference)
+			r1 = ret.Get(1).(*providers.EntityReference)
 		}
 	}
-	if returnFunc, ok := ret.Get(2).(func(context.Context, manager.AuthUser) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(2).(func(context.Context, providers.AuthUser) *common.ServiceError); ok {
 		r2 = returnFunc(ctx, authUser)
 	} else {
 		if ret.Get(2) != nil {
-			r2 = ret.Get(2).(*serviceerror.ServiceError)
+			r2 = ret.Get(2).(*common.ServiceError)
 		}
 	}
 	return r0, r1, r2
@@ -183,20 +182,20 @@ type AuthnProviderManagerInterfaceMock_GetEntityReference_Call struct {
 
 // GetEntityReference is a helper method to define mock.On call
 //   - ctx context.Context
-//   - authUser manager.AuthUser
+//   - authUser providers.AuthUser
 func (_e *AuthnProviderManagerInterfaceMock_Expecter) GetEntityReference(ctx interface{}, authUser interface{}) *AuthnProviderManagerInterfaceMock_GetEntityReference_Call {
 	return &AuthnProviderManagerInterfaceMock_GetEntityReference_Call{Call: _e.mock.On("GetEntityReference", ctx, authUser)}
 }
 
-func (_c *AuthnProviderManagerInterfaceMock_GetEntityReference_Call) Run(run func(ctx context.Context, authUser manager.AuthUser)) *AuthnProviderManagerInterfaceMock_GetEntityReference_Call {
+func (_c *AuthnProviderManagerInterfaceMock_GetEntityReference_Call) Run(run func(ctx context.Context, authUser providers.AuthUser)) *AuthnProviderManagerInterfaceMock_GetEntityReference_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 manager.AuthUser
+		var arg1 providers.AuthUser
 		if args[1] != nil {
-			arg1 = args[1].(manager.AuthUser)
+			arg1 = args[1].(providers.AuthUser)
 		}
 		run(
 			arg0,
@@ -206,47 +205,47 @@ func (_c *AuthnProviderManagerInterfaceMock_GetEntityReference_Call) Run(run fun
 	return _c
 }
 
-func (_c *AuthnProviderManagerInterfaceMock_GetEntityReference_Call) Return(authUser1 manager.AuthUser, entityReference *common.EntityReference, serviceError *serviceerror.ServiceError) *AuthnProviderManagerInterfaceMock_GetEntityReference_Call {
+func (_c *AuthnProviderManagerInterfaceMock_GetEntityReference_Call) Return(authUser1 providers.AuthUser, entityReference *providers.EntityReference, serviceError *common.ServiceError) *AuthnProviderManagerInterfaceMock_GetEntityReference_Call {
 	_c.Call.Return(authUser1, entityReference, serviceError)
 	return _c
 }
 
-func (_c *AuthnProviderManagerInterfaceMock_GetEntityReference_Call) RunAndReturn(run func(ctx context.Context, authUser manager.AuthUser) (manager.AuthUser, *common.EntityReference, *serviceerror.ServiceError)) *AuthnProviderManagerInterfaceMock_GetEntityReference_Call {
+func (_c *AuthnProviderManagerInterfaceMock_GetEntityReference_Call) RunAndReturn(run func(ctx context.Context, authUser providers.AuthUser) (providers.AuthUser, *providers.EntityReference, *common.ServiceError)) *AuthnProviderManagerInterfaceMock_GetEntityReference_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetUserAttributes provides a mock function for the type AuthnProviderManagerInterfaceMock
-func (_mock *AuthnProviderManagerInterfaceMock) GetUserAttributes(ctx context.Context, requestedAttributes *common.RequestedAttributes, metadata *common.GetAttributesMetadata, authUser manager.AuthUser) (manager.AuthUser, *common.AttributesResponse, *serviceerror.ServiceError) {
+func (_mock *AuthnProviderManagerInterfaceMock) GetUserAttributes(ctx context.Context, requestedAttributes *providers.RequestedAttributes, metadata *providers.GetAttributesMetadata, authUser providers.AuthUser) (providers.AuthUser, *providers.AttributesResponse, *common.ServiceError) {
 	ret := _mock.Called(ctx, requestedAttributes, metadata, authUser)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserAttributes")
 	}
 
-	var r0 manager.AuthUser
-	var r1 *common.AttributesResponse
-	var r2 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *common.RequestedAttributes, *common.GetAttributesMetadata, manager.AuthUser) (manager.AuthUser, *common.AttributesResponse, *serviceerror.ServiceError)); ok {
+	var r0 providers.AuthUser
+	var r1 *providers.AttributesResponse
+	var r2 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *providers.RequestedAttributes, *providers.GetAttributesMetadata, providers.AuthUser) (providers.AuthUser, *providers.AttributesResponse, *common.ServiceError)); ok {
 		return returnFunc(ctx, requestedAttributes, metadata, authUser)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *common.RequestedAttributes, *common.GetAttributesMetadata, manager.AuthUser) manager.AuthUser); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *providers.RequestedAttributes, *providers.GetAttributesMetadata, providers.AuthUser) providers.AuthUser); ok {
 		r0 = returnFunc(ctx, requestedAttributes, metadata, authUser)
 	} else {
-		r0 = ret.Get(0).(manager.AuthUser)
+		r0 = ret.Get(0).(providers.AuthUser)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *common.RequestedAttributes, *common.GetAttributesMetadata, manager.AuthUser) *common.AttributesResponse); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *providers.RequestedAttributes, *providers.GetAttributesMetadata, providers.AuthUser) *providers.AttributesResponse); ok {
 		r1 = returnFunc(ctx, requestedAttributes, metadata, authUser)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*common.AttributesResponse)
+			r1 = ret.Get(1).(*providers.AttributesResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(2).(func(context.Context, *common.RequestedAttributes, *common.GetAttributesMetadata, manager.AuthUser) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(2).(func(context.Context, *providers.RequestedAttributes, *providers.GetAttributesMetadata, providers.AuthUser) *common.ServiceError); ok {
 		r2 = returnFunc(ctx, requestedAttributes, metadata, authUser)
 	} else {
 		if ret.Get(2) != nil {
-			r2 = ret.Get(2).(*serviceerror.ServiceError)
+			r2 = ret.Get(2).(*common.ServiceError)
 		}
 	}
 	return r0, r1, r2
@@ -259,30 +258,30 @@ type AuthnProviderManagerInterfaceMock_GetUserAttributes_Call struct {
 
 // GetUserAttributes is a helper method to define mock.On call
 //   - ctx context.Context
-//   - requestedAttributes *common.RequestedAttributes
-//   - metadata *common.GetAttributesMetadata
-//   - authUser manager.AuthUser
+//   - requestedAttributes *providers.RequestedAttributes
+//   - metadata *providers.GetAttributesMetadata
+//   - authUser providers.AuthUser
 func (_e *AuthnProviderManagerInterfaceMock_Expecter) GetUserAttributes(ctx interface{}, requestedAttributes interface{}, metadata interface{}, authUser interface{}) *AuthnProviderManagerInterfaceMock_GetUserAttributes_Call {
 	return &AuthnProviderManagerInterfaceMock_GetUserAttributes_Call{Call: _e.mock.On("GetUserAttributes", ctx, requestedAttributes, metadata, authUser)}
 }
 
-func (_c *AuthnProviderManagerInterfaceMock_GetUserAttributes_Call) Run(run func(ctx context.Context, requestedAttributes *common.RequestedAttributes, metadata *common.GetAttributesMetadata, authUser manager.AuthUser)) *AuthnProviderManagerInterfaceMock_GetUserAttributes_Call {
+func (_c *AuthnProviderManagerInterfaceMock_GetUserAttributes_Call) Run(run func(ctx context.Context, requestedAttributes *providers.RequestedAttributes, metadata *providers.GetAttributesMetadata, authUser providers.AuthUser)) *AuthnProviderManagerInterfaceMock_GetUserAttributes_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *common.RequestedAttributes
+		var arg1 *providers.RequestedAttributes
 		if args[1] != nil {
-			arg1 = args[1].(*common.RequestedAttributes)
+			arg1 = args[1].(*providers.RequestedAttributes)
 		}
-		var arg2 *common.GetAttributesMetadata
+		var arg2 *providers.GetAttributesMetadata
 		if args[2] != nil {
-			arg2 = args[2].(*common.GetAttributesMetadata)
+			arg2 = args[2].(*providers.GetAttributesMetadata)
 		}
-		var arg3 manager.AuthUser
+		var arg3 providers.AuthUser
 		if args[3] != nil {
-			arg3 = args[3].(manager.AuthUser)
+			arg3 = args[3].(providers.AuthUser)
 		}
 		run(
 			arg0,
@@ -294,41 +293,41 @@ func (_c *AuthnProviderManagerInterfaceMock_GetUserAttributes_Call) Run(run func
 	return _c
 }
 
-func (_c *AuthnProviderManagerInterfaceMock_GetUserAttributes_Call) Return(authUser1 manager.AuthUser, attributesResponse *common.AttributesResponse, serviceError *serviceerror.ServiceError) *AuthnProviderManagerInterfaceMock_GetUserAttributes_Call {
+func (_c *AuthnProviderManagerInterfaceMock_GetUserAttributes_Call) Return(authUser1 providers.AuthUser, attributesResponse *providers.AttributesResponse, serviceError *common.ServiceError) *AuthnProviderManagerInterfaceMock_GetUserAttributes_Call {
 	_c.Call.Return(authUser1, attributesResponse, serviceError)
 	return _c
 }
 
-func (_c *AuthnProviderManagerInterfaceMock_GetUserAttributes_Call) RunAndReturn(run func(ctx context.Context, requestedAttributes *common.RequestedAttributes, metadata *common.GetAttributesMetadata, authUser manager.AuthUser) (manager.AuthUser, *common.AttributesResponse, *serviceerror.ServiceError)) *AuthnProviderManagerInterfaceMock_GetUserAttributes_Call {
+func (_c *AuthnProviderManagerInterfaceMock_GetUserAttributes_Call) RunAndReturn(run func(ctx context.Context, requestedAttributes *providers.RequestedAttributes, metadata *providers.GetAttributesMetadata, authUser providers.AuthUser) (providers.AuthUser, *providers.AttributesResponse, *common.ServiceError)) *AuthnProviderManagerInterfaceMock_GetUserAttributes_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetUserAvailableAttributes provides a mock function for the type AuthnProviderManagerInterfaceMock
-func (_mock *AuthnProviderManagerInterfaceMock) GetUserAvailableAttributes(ctx context.Context, authUser manager.AuthUser) (*common.AttributesResponse, *serviceerror.ServiceError) {
+func (_mock *AuthnProviderManagerInterfaceMock) GetUserAvailableAttributes(ctx context.Context, authUser providers.AuthUser) (*providers.AttributesResponse, *common.ServiceError) {
 	ret := _mock.Called(ctx, authUser)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserAvailableAttributes")
 	}
 
-	var r0 *common.AttributesResponse
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, manager.AuthUser) (*common.AttributesResponse, *serviceerror.ServiceError)); ok {
+	var r0 *providers.AttributesResponse
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, providers.AuthUser) (*providers.AttributesResponse, *common.ServiceError)); ok {
 		return returnFunc(ctx, authUser)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, manager.AuthUser) *common.AttributesResponse); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, providers.AuthUser) *providers.AttributesResponse); ok {
 		r0 = returnFunc(ctx, authUser)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*common.AttributesResponse)
+			r0 = ret.Get(0).(*providers.AttributesResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, manager.AuthUser) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, providers.AuthUser) *common.ServiceError); ok {
 		r1 = returnFunc(ctx, authUser)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -341,20 +340,20 @@ type AuthnProviderManagerInterfaceMock_GetUserAvailableAttributes_Call struct {
 
 // GetUserAvailableAttributes is a helper method to define mock.On call
 //   - ctx context.Context
-//   - authUser manager.AuthUser
+//   - authUser providers.AuthUser
 func (_e *AuthnProviderManagerInterfaceMock_Expecter) GetUserAvailableAttributes(ctx interface{}, authUser interface{}) *AuthnProviderManagerInterfaceMock_GetUserAvailableAttributes_Call {
 	return &AuthnProviderManagerInterfaceMock_GetUserAvailableAttributes_Call{Call: _e.mock.On("GetUserAvailableAttributes", ctx, authUser)}
 }
 
-func (_c *AuthnProviderManagerInterfaceMock_GetUserAvailableAttributes_Call) Run(run func(ctx context.Context, authUser manager.AuthUser)) *AuthnProviderManagerInterfaceMock_GetUserAvailableAttributes_Call {
+func (_c *AuthnProviderManagerInterfaceMock_GetUserAvailableAttributes_Call) Run(run func(ctx context.Context, authUser providers.AuthUser)) *AuthnProviderManagerInterfaceMock_GetUserAvailableAttributes_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 manager.AuthUser
+		var arg1 providers.AuthUser
 		if args[1] != nil {
-			arg1 = args[1].(manager.AuthUser)
+			arg1 = args[1].(providers.AuthUser)
 		}
 		run(
 			arg0,
@@ -364,12 +363,12 @@ func (_c *AuthnProviderManagerInterfaceMock_GetUserAvailableAttributes_Call) Run
 	return _c
 }
 
-func (_c *AuthnProviderManagerInterfaceMock_GetUserAvailableAttributes_Call) Return(attributesResponse *common.AttributesResponse, serviceError *serviceerror.ServiceError) *AuthnProviderManagerInterfaceMock_GetUserAvailableAttributes_Call {
+func (_c *AuthnProviderManagerInterfaceMock_GetUserAvailableAttributes_Call) Return(attributesResponse *providers.AttributesResponse, serviceError *common.ServiceError) *AuthnProviderManagerInterfaceMock_GetUserAvailableAttributes_Call {
 	_c.Call.Return(attributesResponse, serviceError)
 	return _c
 }
 
-func (_c *AuthnProviderManagerInterfaceMock_GetUserAvailableAttributes_Call) RunAndReturn(run func(ctx context.Context, authUser manager.AuthUser) (*common.AttributesResponse, *serviceerror.ServiceError)) *AuthnProviderManagerInterfaceMock_GetUserAvailableAttributes_Call {
+func (_c *AuthnProviderManagerInterfaceMock_GetUserAvailableAttributes_Call) RunAndReturn(run func(ctx context.Context, authUser providers.AuthUser) (*providers.AttributesResponse, *common.ServiceError)) *AuthnProviderManagerInterfaceMock_GetUserAvailableAttributes_Call {
 	_c.Call.Return(run)
 	return _c
 }

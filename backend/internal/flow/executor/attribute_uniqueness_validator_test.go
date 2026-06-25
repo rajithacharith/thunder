@@ -19,7 +19,8 @@
 package executor
 
 import (
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"testing"
 
@@ -27,11 +28,9 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/entitytypemock"
@@ -64,12 +63,12 @@ func (suite *AttributeUniquenessValidatorTestSuite) SetupTest() {
 		Return(func(
 			ctx *core.NodeContext,
 			execResp *common.ExecutorResponse,
-			_ authnprovidermgr.AuthnProviderManagerInterface,
+			_ providers.AuthnProviderManagerInterface,
 		) bool {
 			if _, ok := ctx.RuntimeData[userTypeKey]; !ok {
 				execResp.Status = common.ExecFailure
-				execResp.Error = &serviceerror.ServiceError{
-					Error: i18ncore.I18nMessage{DefaultValue: "Prerequisite not met: " + userTypeKey},
+				execResp.Error = &tidcommon.ServiceError{
+					Error: tidcommon.I18nMessage{DefaultValue: "Prerequisite not met: " + userTypeKey},
 				}
 				return false
 			}
@@ -200,9 +199,9 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_SchemaServiceErr
 	}
 
 	suite.mockEntityTypeService.On("GetUniqueAttributes", mock.Anything, mock.Anything, testUniquenessUserType).
-		Return([]string(nil), &serviceerror.ServiceError{
+		Return([]string(nil), &tidcommon.ServiceError{
 			Code:  "schema_not_found",
-			Error: i18ncore.I18nMessage{Key: "error.test.schema_not_found", DefaultValue: "schema not found"},
+			Error: tidcommon.I18nMessage{Key: "error.test.schema_not_found", DefaultValue: "schema not found"},
 		})
 
 	resp, err := suite.executor.Execute(ctx)

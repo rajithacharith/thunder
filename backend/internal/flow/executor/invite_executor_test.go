@@ -21,6 +21,9 @@ package executor
 import (
 	"testing"
 
+	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -41,7 +44,7 @@ type InviteExecutorTestSuite struct {
 func (suite *InviteExecutorTestSuite) SetupTest() {
 	// Initialize runtime config for tests
 	err := config.InitializeServerRuntime(".", &config.Config{
-		GateClient: config.GateClientConfig{
+		GateClient: engineconfig.GateClientConfig{
 			Scheme:   "https",
 			Hostname: "localhost",
 			Port:     5190,
@@ -98,7 +101,7 @@ func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_UserOnboarding_Ex
 	ctx := &core.NodeContext{
 		ExecutionID:  "test-flow-id",
 		EntityID:     "test-app-id",
-		FlowType:     common.FlowTypeUserOnboarding,
+		FlowType:     providers.FlowTypeUserOnboarding,
 		ExecutorMode: ExecutorModeGenerate,
 		UserInputs:   make(map[string]string),
 		RuntimeData:  make(map[string]string),
@@ -234,7 +237,7 @@ func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_PopulatesTemplate
 	ctx := &core.NodeContext{
 		ExecutionID:  "test-execution-id",
 		ExecutorMode: ExecutorModeGenerate,
-		FlowType:     common.FlowTypeRegistration,
+		FlowType:     providers.FlowTypeRegistration,
 		RuntimeData:  make(map[string]string),
 		Application: appmodel.Application{
 			Name: "Test App",

@@ -25,36 +25,36 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/thunder-id/thunderid/internal/agent/model"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 )
 
 type InlineStubAgentService struct {
 	OnCreateAgent func(
 		ctx context.Context, agent *model.Agent,
-	) (*model.AgentCompleteResponse, *serviceerror.ServiceError)
+	) (*model.AgentCompleteResponse, *tidcommon.ServiceError)
 	OnUpdateAgent func(
 		ctx context.Context, id string, req *model.UpdateAgentRequest,
-	) (*model.AgentCompleteResponse, *serviceerror.ServiceError)
+	) (*model.AgentCompleteResponse, *tidcommon.ServiceError)
 	OnGetAgent func(
 		ctx context.Context, id string, inc bool,
-	) (*model.AgentGetResponse, *serviceerror.ServiceError)
-	OnDeleteAgent  func(ctx context.Context, id string) *serviceerror.ServiceError
+	) (*model.AgentGetResponse, *tidcommon.ServiceError)
+	OnDeleteAgent  func(ctx context.Context, id string) *tidcommon.ServiceError
 	OnGetAgentList func(
 		ctx context.Context, limit, offset int, filters map[string]interface{}, inc bool,
-	) (*model.AgentListResponse, *serviceerror.ServiceError)
+	) (*model.AgentListResponse, *tidcommon.ServiceError)
 	OnGetAgentGroups func(
 		ctx context.Context, id string, limit, offset int,
-	) (*model.AgentGroupListResponse, *serviceerror.ServiceError)
+	) (*model.AgentGroupListResponse, *tidcommon.ServiceError)
 }
 
 func (s *InlineStubAgentService) CreateAgent(
-	ctx context.Context, agent *model.Agent) (*model.AgentCompleteResponse, *serviceerror.ServiceError) {
+	ctx context.Context, agent *model.Agent) (*model.AgentCompleteResponse, *tidcommon.ServiceError) {
 	if s.OnCreateAgent != nil {
 		return s.OnCreateAgent(ctx, agent)
 	}
@@ -63,7 +63,7 @@ func (s *InlineStubAgentService) CreateAgent(
 
 func (s *InlineStubAgentService) UpdateAgent(
 	ctx context.Context, id string, req *model.UpdateAgentRequest,
-) (*model.AgentCompleteResponse, *serviceerror.ServiceError) {
+) (*model.AgentCompleteResponse, *tidcommon.ServiceError) {
 	if s.OnUpdateAgent != nil {
 		return s.OnUpdateAgent(ctx, id, req)
 	}
@@ -71,7 +71,7 @@ func (s *InlineStubAgentService) UpdateAgent(
 }
 
 func (s *InlineStubAgentService) GetAgent(
-	ctx context.Context, id string, inc bool) (*model.AgentGetResponse, *serviceerror.ServiceError) {
+	ctx context.Context, id string, inc bool) (*model.AgentGetResponse, *tidcommon.ServiceError) {
 	if s.OnGetAgent != nil {
 		return s.OnGetAgent(ctx, id, inc)
 	}
@@ -79,7 +79,7 @@ func (s *InlineStubAgentService) GetAgent(
 }
 
 func (s *InlineStubAgentService) DeleteAgent(
-	ctx context.Context, id string) *serviceerror.ServiceError {
+	ctx context.Context, id string) *tidcommon.ServiceError {
 	if s.OnDeleteAgent != nil {
 		return s.OnDeleteAgent(ctx, id)
 	}
@@ -88,7 +88,7 @@ func (s *InlineStubAgentService) DeleteAgent(
 
 func (s *InlineStubAgentService) GetAgentList(
 	ctx context.Context, limit, offset int, filters map[string]interface{}, inc bool,
-) (*model.AgentListResponse, *serviceerror.ServiceError) {
+) (*model.AgentListResponse, *tidcommon.ServiceError) {
 	if s.OnGetAgentList != nil {
 		return s.OnGetAgentList(ctx, limit, offset, filters, inc)
 	}
@@ -96,7 +96,7 @@ func (s *InlineStubAgentService) GetAgentList(
 }
 
 func (s *InlineStubAgentService) GetAgentGroups(
-	ctx context.Context, id string, limit, offset int) (*model.AgentGroupListResponse, *serviceerror.ServiceError) {
+	ctx context.Context, id string, limit, offset int) (*model.AgentGroupListResponse, *tidcommon.ServiceError) {
 	if s.OnGetAgentGroups != nil {
 		return s.OnGetAgentGroups(ctx, id, limit, offset)
 	}
@@ -105,7 +105,7 @@ func (s *InlineStubAgentService) GetAgentGroups(
 
 func (s *InlineStubAgentService) ValidateAgent(
 	ctx context.Context, agent *model.Agent, flowID string,
-) (string, string, inboundmodel.InboundClient, *serviceerror.ServiceError) {
+) (string, string, inboundmodel.InboundClient, *tidcommon.ServiceError) {
 	return "", "", inboundmodel.InboundClient{}, nil
 }
 
@@ -113,7 +113,7 @@ func TestHandleAgentPostRequest_Success(t *testing.T) {
 	stubService := &InlineStubAgentService{
 		OnCreateAgent: func(
 			ctx context.Context, agent *model.Agent,
-		) (*model.AgentCompleteResponse, *serviceerror.ServiceError) {
+		) (*model.AgentCompleteResponse, *tidcommon.ServiceError) {
 			return &model.AgentCompleteResponse{ID: "agent-123"}, nil
 		},
 	}
@@ -163,15 +163,15 @@ func TestHandleAgentPutRequest_ValidationError(t *testing.T) {
 	stubService := &InlineStubAgentService{
 		OnUpdateAgent: func(
 			ctx context.Context, id string, req *model.UpdateAgentRequest,
-		) (*model.AgentCompleteResponse, *serviceerror.ServiceError) {
-			return nil, &serviceerror.ServiceError{
+		) (*model.AgentCompleteResponse, *tidcommon.ServiceError) {
+			return nil, &tidcommon.ServiceError{
 				Code: "AGENT-4001",
-				Type: serviceerror.ClientErrorType,
-				Error: core.I18nMessage{
+				Type: tidcommon.ClientErrorType,
+				Error: tidcommon.I18nMessage{
 					Key:          "error.agent.validation_failed",
 					DefaultValue: "Validation Failed",
 				},
-				ErrorDescription: core.I18nMessage{
+				ErrorDescription: tidcommon.I18nMessage{
 					Key:          "error.agent.invalid_name_length",
 					DefaultValue: "Agent name must be between 3 and 100 characters",
 				},
@@ -279,8 +279,8 @@ func TestHandleAgentListRequest_ServiceError(t *testing.T) {
 	stubService := &InlineStubAgentService{
 		OnGetAgentList: func(
 			ctx context.Context, limit, offset int, filters map[string]interface{}, inc bool,
-		) (*model.AgentListResponse, *serviceerror.ServiceError) {
-			return nil, &serviceerror.InternalServerError
+		) (*model.AgentListResponse, *tidcommon.ServiceError) {
+			return nil, &tidcommon.InternalServerError
 		},
 	}
 	handler := newAgentHandler(stubService)
@@ -330,7 +330,7 @@ func TestHandleAgentGroupsRequest_ServiceError(t *testing.T) {
 	stubService := &InlineStubAgentService{
 		OnGetAgentGroups: func(
 			ctx context.Context, id string, limit, offset int,
-		) (*model.AgentGroupListResponse, *serviceerror.ServiceError) {
+		) (*model.AgentGroupListResponse, *tidcommon.ServiceError) {
 			return nil, &ErrorAgentNotFound
 		},
 	}

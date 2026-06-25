@@ -144,12 +144,12 @@ lint_frontend:
 
 generate_i18n: install-i18n-extractor
 	@echo "Extracting i18n messages from backend source code..."
-	cd backend && $(I18N_EXTRACTOR) -source ./internal -output ./internal/system/i18n/core/defaults.go
+	cd backend && $(I18N_EXTRACTOR) -source ./internal,./pkg/thunderidengine -output ./internal/system/i18n/core/defaults.go
 	@echo "i18n defaults generated successfully"
 
 check_i18n: install-i18n-extractor
 	@echo "Checking i18n messages..."
-	@cd backend && $(I18N_EXTRACTOR) -source ./internal -output ../defaults.check.go > /dev/null
+	@cd backend && $(I18N_EXTRACTOR) -source ./internal,./pkg/thunderidengine -output ../defaults.check.go > /dev/null
 	@diff -u backend/internal/system/i18n/core/defaults.go defaults.check.go > /dev/null || (echo "i18n generated file is out of sync. Please run 'make generate_i18n'" && rm defaults.check.go && exit 1)
 	@rm defaults.check.go
 	@echo "i18n messages are up to date"

@@ -29,19 +29,17 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/thunder-id/thunderid/internal/actorprovider"
 	flowcm "github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/flowexec"
-	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/resourceindicators"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
 	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
-	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/utils"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // cibaMaxBindingMessageLength is the maximum number of characters allowed in a binding_message.
@@ -54,7 +52,7 @@ const cibaIDTokenHintDefaultMaxAgeDays = 30
 // The grant handler uses this interface instead of the raw store so the store stays private.
 type CIBAServiceInterface interface {
 	InitiateBackchannelAuth(
-		ctx context.Context, request *BackchannelAuthRequest, oauthApp *inboundmodel.OAuthClient,
+		ctx context.Context, request *BackchannelAuthRequest, oauthApp *providers.OAuthClient,
 	) (*BackchannelAuthResponse, *CIBAError)
 	HandleCallback(ctx context.Context, authReqID, assertion string) *CIBAError
 
@@ -71,8 +69,8 @@ type cibaService struct {
 	store           CIBARequestStoreInterface
 	flowExecService flowexec.FlowExecServiceInterface
 	jwtService      jwt.JWTServiceInterface
-	inboundClient   actorprovider.ActorProviderInterface
-	resourceService resource.ResourceServiceInterface
+	inboundClient   providers.ActorProviderInterface
+	resourceService providers.ResourceProviderInterface
 	logger          *log.Logger
 }
 
@@ -81,8 +79,8 @@ func newCIBAService(
 	store CIBARequestStoreInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 	jwtService jwt.JWTServiceInterface,
-	actorProvider actorprovider.ActorProviderInterface,
-	resourceService resource.ResourceServiceInterface,
+	actorProvider providers.ActorProviderInterface,
+	resourceService providers.ResourceProviderInterface,
 	cfg oauthconfig.Config,
 ) CIBAServiceInterface {
 	return &cibaService{
@@ -99,9 +97,9 @@ func newCIBAService(
 // InitiateBackchannelAuth validates the request, resolves the user, initiates an authentication flow,
 // persists a CIBA request, and returns the auth_req_id with polling metadata.
 func (s *cibaService) InitiateBackchannelAuth(
-	ctx context.Context, request *BackchannelAuthRequest, oauthApp *inboundmodel.OAuthClient,
+	ctx context.Context, request *BackchannelAuthRequest, oauthApp *providers.OAuthClient,
 ) (*BackchannelAuthResponse, *CIBAError) {
-	if !oauthApp.IsAllowedGrantType(oauth2const.GrantTypeCIBA) {
+	if !oauthApp.IsAllowedGrantType(providers.GrantTypeCIBA) {
 		return nil, &CIBAError{
 			Code:    oauth2const.ErrorUnauthorizedClient,
 			Message: "The client is not authorized to use the CIBA grant type",
@@ -172,7 +170,7 @@ func (s *cibaService) InitiateBackchannelAuth(
 
 	flowStep, flowErr := s.flowExecService.InitiateAndExecute(ctx, &flowexec.FlowInitContext{
 		ApplicationID: oauthApp.ID,
-		FlowType:      string(flowcm.FlowTypeAuthentication),
+		FlowType:      string(providers.FlowTypeAuthentication),
 		RuntimeData:   runtimeData,
 		ExpirySeconds: expiresIn,
 		InitialInputs: map[string]string{
@@ -491,9 +489,9 @@ func defaultBindingMessage(authReqID string) string {
 // validity periods is the base, plus the CIBA request lifetime to cover the poll window, plus a
 // fixed buffer. Setting this in the flow runtime data is what makes the auth assertion cache the
 // resolved attributes and emit the aci claim (consumed by the CIBA callback).
-func (s *cibaService) resolveUserAttributesCacheTTL(app *inboundmodel.OAuthClient) int64 {
+func (s *cibaService) resolveUserAttributesCacheTTL(app *providers.OAuthClient) int64 {
 	maxTTL := tokenservice.ResolveTokenConfig(s.cfg, app, tokenservice.TokenTypeAccess).ValidityPeriod
-	if app.IsAllowedGrantType(oauth2const.GrantTypeRefreshToken) {
+	if app.IsAllowedGrantType(providers.GrantTypeRefreshToken) {
 		refreshTTL := tokenservice.ResolveTokenConfig(s.cfg, app, tokenservice.TokenTypeRefresh).ValidityPeriod
 		if refreshTTL > maxTTL {
 			maxTTL = refreshTTL
