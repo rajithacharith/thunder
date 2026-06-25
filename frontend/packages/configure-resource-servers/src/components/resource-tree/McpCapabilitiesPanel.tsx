@@ -18,6 +18,7 @@
 
 import {
   Box,
+  Chip,
   CircularProgress,
   IconButton,
   ListItemIcon,
@@ -25,37 +26,26 @@ import {
   Menu,
   MenuItem,
   Paper,
+  Stack,
   Typography,
 } from '@wso2/oxygen-ui';
-import {Layers, Plus, Zap} from '@wso2/oxygen-ui-icons-react';
+import {Database, Folder, Plus, Wrench} from '@wso2/oxygen-ui-icons-react';
 import {useMemo, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import AddNodeDialog, {type AddNodeMode} from './AddNodeDialog';
-import McpCapabilitiesPanel from './McpCapabilitiesPanel';
 import ResourceDetailPanel from './ResourceDetailPanel';
+import type {KindFilter, SelectedNode} from './ResourceTree';
 import {ActionNode, ResourceNode} from './ResourceTreeNode';
 import useGetResources from '../../api/useGetResources';
 import useGetServerActions from '../../api/useGetServerActions';
-import type {Action, Resource, ResourceServer} from '../../models/resource-server';
+import type {ResourceServer} from '../../models/resource-server';
 
-export type KindFilter = 'all' | 'tool' | 'resource';
-
-export type SelectedNode =
-  | {type: 'server'; id: string; data: ResourceServer}
-  | {type: 'resource'; id: string; data: Resource; breadcrumb?: string[]}
-  | {type: 'server-action'; id: string; data: Action; parentResourceId?: string; breadcrumb?: string[]}
-  | {type: 'resource-action'; id: string; data: Action; parentResourceId?: string; breadcrumb?: string[]};
-
-interface ResourceTreeProps {
+interface McpCapabilitiesPanelProps {
   resourceServer: ResourceServer;
   onRefresh: () => void;
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Generic Resource Tree (API / CUSTOM — unchanged)                           */
-/* -------------------------------------------------------------------------- */
-
-function GenericResourceTree({resourceServer, onRefresh}: ResourceTreeProps): JSX.Element {
+export default function McpCapabilitiesPanel({resourceServer, onRefresh}: McpCapabilitiesPanelProps): JSX.Element {
   const {t} = useTranslation();
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
   const [addDialog, setAddDialog] = useState<{
@@ -64,12 +54,16 @@ function GenericResourceTree({resourceServer, onRefresh}: ResourceTreeProps): JS
     parentPermission: string;
   } | null>(null);
   const [addMenuAnchor, setAddMenuAnchor] = useState<HTMLElement | null>(null);
+  const [kindFilter, setKindFilter] = useState<KindFilter>('all');
 
   const {data: topLevelResources, isLoading: loadingResources} = useGetResources(resourceServer.id);
   const {data: serverActionsData, isLoading: loadingActions} = useGetServerActions(resourceServer.id);
 
-  const resources = useMemo(() => topLevelResources?.resources ?? [], [topLevelResources]);
+  const namespaces = useMemo(() => topLevelResources?.resources ?? [], [topLevelResources]);
   const serverActions = useMemo(() => serverActionsData?.actions ?? [], [serverActionsData]);
+
+  const serverTools = useMemo(() => serverActions.filter((a) => a.kind === 'tool'), [serverActions]);
+  const serverResources = useMemo(() => serverActions.filter((a) => a.kind === 'resource'), [serverActions]);
 
   const openAdd = (mode: AddNodeMode, parentResourceId?: string, parentPermission?: string): void => {
     setAddDialog({
@@ -80,18 +74,29 @@ function GenericResourceTree({resourceServer, onRefresh}: ResourceTreeProps): JS
   };
 
   const isLoading = loadingResources || loadingActions;
-  const isEmpty = resources.length === 0 && serverActions.length === 0;
+  const isEmpty = serverActions.length === 0 && namespaces.length === 0;
 
   const effectiveSelectedNode = useMemo<SelectedNode | null>(() => {
     if (selectedNode) return selectedNode;
-    if (serverActions.length > 0) return {type: 'server-action', id: serverActions[0].id, data: serverActions[0]};
-    if (resources.length > 0) return {type: 'resource', id: resources[0].id, data: resources[0]};
+    if (serverTools.length > 0) return {type: 'server-action', id: serverTools[0].id, data: serverTools[0]};
+    if (serverResources.length > 0) return {type: 'server-action', id: serverResources[0].id, data: serverResources[0]};
+    if (namespaces.length > 0) return {type: 'resource', id: namespaces[0].id, data: namespaces[0]};
     return null;
-  }, [selectedNode, serverActions, resources]);
+  }, [selectedNode, serverTools, serverResources, namespaces]);
+
+  const filteredServerActions = useMemo(
+    () =>
+      serverActions.filter((a) => {
+        if (kindFilter === 'tool') return a.kind === 'tool';
+        if (kindFilter === 'resource') return a.kind === 'resource';
+        return true;
+      }),
+    [serverActions, kindFilter],
+  );
 
   return (
     <Box sx={{display: 'flex', gap: 2, height: '100%'}}>
-      {/* Left: Tree */}
+      {/* Left: Capabilities panel */}
       <Paper
         variant="outlined"
         sx={{
@@ -102,6 +107,7 @@ function GenericResourceTree({resourceServer, onRefresh}: ResourceTreeProps): JS
           overflow: 'hidden',
         }}
       >
+        {/* Panel header */}
         <Box
           sx={{
             px: 1.5,
@@ -119,50 +125,129 @@ function GenericResourceTree({resourceServer, onRefresh}: ResourceTreeProps): JS
             color="text.secondary"
             sx={{textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 600}}
           >
-            {t('resourceServers:tree.title', 'Resource Hierarchy')}
+            {t('resourceServers:mcp.panel.title', 'Capabilities')}
           </Typography>
           <IconButton
             size="small"
+            aria-label={t('resourceServers:mcp.add', 'Add')}
             onClick={(e) => setAddMenuAnchor(e.currentTarget)}
-            aria-label={t('resourceServers:tree.add', 'Add')}
           >
             <Plus size={16} />
           </IconButton>
           <Menu anchorEl={addMenuAnchor} open={Boolean(addMenuAnchor)} onClose={() => setAddMenuAnchor(null)}>
             <MenuItem
               onClick={() => {
-                openAdd('resource');
+                openAdd('mcp-server-tool');
                 setAddMenuAnchor(null);
               }}
             >
               <ListItemIcon>
-                <Layers size={16} />
+                <Wrench size={16} />
               </ListItemIcon>
-              <ListItemText>{t('resourceServers:tree.addResource', 'Add resource')}</ListItemText>
+              <ListItemText>{t('resourceServers:mcp.addTool', 'Add tool')}</ListItemText>
             </MenuItem>
             <MenuItem
               onClick={() => {
-                openAdd('server-action');
+                openAdd('mcp-server-resource');
                 setAddMenuAnchor(null);
               }}
             >
               <ListItemIcon>
-                <Zap size={16} />
+                <Database size={16} />
               </ListItemIcon>
-              <ListItemText>{t('resourceServers:tree.addAction', 'Add action')}</ListItemText>
+              <ListItemText>{t('resourceServers:mcp.addResource', 'Add resource')}</ListItemText>
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                openAdd('mcp-namespace');
+                setAddMenuAnchor(null);
+              }}
+            >
+              <ListItemIcon>
+                <Folder size={16} />
+              </ListItemIcon>
+              <ListItemText>{t('resourceServers:mcp.addNamespace', 'Add namespace')}</ListItemText>
             </MenuItem>
           </Menu>
         </Box>
 
-        <Box sx={{flex: 1, overflowY: 'auto', p: 0.5, height: '100%'}}>
+        {/* Toolbar: filter chips */}
+        <Box sx={{px: 1.5, py: 1, borderBottom: '1px solid', borderColor: 'divider'}}>
+          <Stack
+            direction="row"
+            flexWrap="wrap"
+            useFlexGap
+            gap={0.75}
+            role="radiogroup"
+            aria-label={t('resourceServers:mcp.filter.label', 'Filter capabilities')}
+          >
+            <Chip
+              label={t('resourceServers:mcp.filter.all', 'All')}
+              size="small"
+              color={kindFilter === 'all' ? 'primary' : 'default'}
+              variant={kindFilter === 'all' ? 'filled' : 'outlined'}
+              onClick={() => setKindFilter('all')}
+              role="radio"
+              aria-checked={kindFilter === 'all'}
+              disabled={isLoading}
+              sx={{cursor: 'pointer'}}
+            />
+            <Chip
+              label={t('resourceServers:mcp.filter.tools', 'Tools')}
+              size="small"
+              color={kindFilter === 'tool' ? 'primary' : 'default'}
+              variant={kindFilter === 'tool' ? 'filled' : 'outlined'}
+              onClick={() => setKindFilter('tool')}
+              role="radio"
+              aria-checked={kindFilter === 'tool'}
+              disabled={isLoading}
+              sx={{cursor: 'pointer'}}
+            />
+            <Chip
+              label={t('resourceServers:mcp.filter.resources', 'Resources')}
+              size="small"
+              color={kindFilter === 'resource' ? 'primary' : 'default'}
+              variant={kindFilter === 'resource' ? 'filled' : 'outlined'}
+              onClick={() => setKindFilter('resource')}
+              role="radio"
+              aria-checked={kindFilter === 'resource'}
+              disabled={isLoading}
+              sx={{cursor: 'pointer'}}
+            />
+          </Stack>
+        </Box>
+
+        {/* Scroll body */}
+        <Box role="tree" sx={{flex: 1, overflowY: 'auto', height: '100%', pt: 1}}>
           {isLoading ? (
             <Box sx={{display: 'flex', justifyContent: 'center', py: 4}}>
               <CircularProgress size={24} />
             </Box>
+          ) : isEmpty ? (
+            <Box sx={{px: 2, py: 2}}>
+              <Typography variant="body2" color="text.disabled" sx={{textAlign: 'center'}}>
+                {t('resourceServers:mcp.empty', 'No capabilities yet. Use + to add a tool, resource, or namespace.')}
+              </Typography>
+            </Box>
           ) : (
             <>
-              {/* Server-level actions */}
-              {serverActions.map((action) => (
+              {namespaces.map((ns) => (
+                <ResourceNode
+                  key={ns.id}
+                  resourceServerId={resourceServer.id}
+                  delimiter={resourceServer.delimiter}
+                  node={ns}
+                  depth={0}
+                  selectedNodeId={effectiveSelectedNode?.id ?? null}
+                  onSelect={setSelectedNode}
+                  onAddChild={(mode, parentResourceId, parentPermission) =>
+                    openAdd(mode, parentResourceId, parentPermission)
+                  }
+                  isMcp
+                  kindFilter={kindFilter}
+                />
+              ))}
+              {filteredServerActions.map((action) => (
                 <ActionNode
                   key={action.id}
                   resourceServerId={resourceServer.id}
@@ -172,39 +257,6 @@ function GenericResourceTree({resourceServer, onRefresh}: ResourceTreeProps): JS
                   onSelect={setSelectedNode}
                 />
               ))}
-
-              {/* Top-level resources */}
-              {resources.map((resource) => (
-                <ResourceNode
-                  key={resource.id}
-                  resourceServerId={resourceServer.id}
-                  delimiter={resourceServer.delimiter}
-                  node={resource}
-                  depth={0}
-                  selectedNodeId={effectiveSelectedNode?.id ?? null}
-                  onSelect={setSelectedNode}
-                  onAddChild={(mode, parentResourceId, parentPermission) =>
-                    openAdd(mode, parentResourceId, parentPermission)
-                  }
-                />
-              ))}
-
-              {isEmpty && (
-                <Box
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    px: 2,
-                    textAlign: 'center',
-                  }}
-                >
-                  <Typography variant="body2" color="text.disabled">
-                    {t('resourceServers:tree.empty', 'No resources yet — add a resource or action to get started.')}
-                  </Typography>
-                </Box>
-              )}
             </>
           )}
         </Box>
@@ -233,15 +285,4 @@ function GenericResourceTree({resourceServer, onRefresh}: ResourceTreeProps): JS
       )}
     </Box>
   );
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Root component — branches on type                                          */
-/* -------------------------------------------------------------------------- */
-
-export default function ResourceTree({resourceServer, onRefresh}: ResourceTreeProps): JSX.Element {
-  if (resourceServer.type === 'MCP') {
-    return <McpCapabilitiesPanel resourceServer={resourceServer} onRefresh={onRefresh} />;
-  }
-  return <GenericResourceTree resourceServer={resourceServer} onRefresh={onRefresh} />;
 }
