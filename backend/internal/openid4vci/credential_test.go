@@ -398,9 +398,9 @@ func newTestSigner(t *testing.T) *issuerSigner {
 		t.Fatalf("generate key: %v", err)
 	}
 	provider := cryptomock.NewRuntimeCryptoProviderMock(t)
-	provider.EXPECT().Sign(mock.Anything, mock.Anything, cryptolib.ECDSASHA256, mock.Anything).
+	provider.EXPECT().Sign(mock.Anything, mock.Anything, "ES256", mock.Anything).
 		RunAndReturn(func(
-			_ context.Context, _ kmprovider.KeyRef, _ cryptolib.SignAlgorithm, content []byte,
+			_ context.Context, _ kmprovider.KeyRef, _ string, content []byte,
 		) ([]byte, error) {
 			digest := sha256.Sum256(content)
 			return ecdsa.SignASN1(rand.Reader, key, digest[:])

@@ -648,6 +648,105 @@ func TestGetPublicKeys_FilterByAlgorithm(t *testing.T) {
 	assert.Equal(t, "ec-key", keys[0].KeyID)
 }
 
+// Sign
+
+func TestSign_NilPKIService(t *testing.T) {
+	svc := &runtimeCryptoService{pkiService: nil}
+	_, err := svc.Sign(context.Background(), kmprovider.KeyRef{KeyID: testKeyID}, "ES256", []byte("data"))
+	assert.EqualError(t, err, "PKI service not initialized")
+}
+
+func TestSign_UnsupportedAlgorithm(t *testing.T) {
+	pki := pkimock.NewPKIServiceInterfaceMock(t)
+	svc := &runtimeCryptoService{pkiService: pki, logger: newTestLogger()}
+	_, err := svc.Sign(context.Background(), kmprovider.KeyRef{KeyID: testKeyID}, "none", []byte("data"))
+	assert.ErrorIs(t, err, kmprovider.ErrUnsupportedAlgorithm)
+}
+
+func TestSign_KeyNotFound(t *testing.T) {
+	pki := pkimock.NewPKIServiceInterfaceMock(t)
+	pki.EXPECT().GetPrivateKey(mock.Anything, testKeyID).Return(nil, newTestSvcErr())
+
+	svc := &runtimeCryptoService{pkiService: pki, logger: newTestLogger()}
+	_, err := svc.Sign(context.Background(), kmprovider.KeyRef{KeyID: testKeyID}, "ES256", []byte("data"))
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), testKeyID)
+}
+
+func TestSign_Success(t *testing.T) {
+	ecKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+
+	pki := pkimock.NewPKIServiceInterfaceMock(t)
+	pki.EXPECT().GetPrivateKey(mock.Anything, testKeyID).Return(ecKey, nil)
+
+	svc := &runtimeCryptoService{pkiService: pki, logger: newTestLogger()}
+	sig, err := svc.Sign(context.Background(), kmprovider.KeyRef{KeyID: testKeyID}, "ES256", []byte("data"))
+	require.NoError(t, err)
+	assert.NotEmpty(t, sig)
+}
+
+// Verify
+
+func TestVerify_NilPKIService(t *testing.T) {
+	svc := &runtimeCryptoService{pkiService: nil}
+	err := svc.Verify(context.Background(), "kid-1", "ES256", []byte("data"), []byte("sig"))
+	assert.EqualError(t, err, "PKI service not initialized")
+}
+
+func TestVerify_UnsupportedAlgorithm(t *testing.T) {
+	pki := pkimock.NewPKIServiceInterfaceMock(t)
+	svc := &runtimeCryptoService{pkiService: pki, logger: newTestLogger()}
+	err := svc.Verify(context.Background(), "kid-1", "none", []byte("data"), []byte("sig"))
+	assert.ErrorIs(t, err, kmprovider.ErrUnsupportedAlgorithm)
+}
+
+func TestVerify_GetPublicKeysError(t *testing.T) {
+	pki := pkimock.NewPKIServiceInterfaceMock(t)
+	pki.EXPECT().GetAllX509Certificates(mock.Anything).Return(nil, &serviceerror.InternalServerError)
+
+	svc := &runtimeCryptoService{pkiService: pki, logger: newTestLogger()}
+	err := svc.Verify(context.Background(), "kid-1", "ES256", []byte("data"), []byte("sig"))
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to retrieve public keys")
+}
+
+func TestVerify_Success(t *testing.T) {
+	ecKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+
+	content := []byte("signing input")
+	sig, err := cryptolib.Generate(content, cryptolib.ECDSASHA256, ecKey)
+	require.NoError(t, err)
+
+	pki := pkimock.NewPKIServiceInterfaceMock(t)
+	pki.EXPECT().GetAllX509Certificates(mock.Anything).Return(
+		map[string]*x509.Certificate{"key1": {Raw: []byte("der"), PublicKey: &ecKey.PublicKey}}, nil,
+	)
+	pki.EXPECT().GetCertThumbprint("key1").Return("kid-1")
+	pki.EXPECT().GetCertificateChain("key1").Return(nil)
+
+	svc := &runtimeCryptoService{pkiService: pki, logger: newTestLogger()}
+	err = svc.Verify(context.Background(), "kid-1", "ES256", content, sig)
+	assert.NoError(t, err)
+}
+
+func TestVerify_KeyNotFound(t *testing.T) {
+	ecKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+
+	pki := pkimock.NewPKIServiceInterfaceMock(t)
+	pki.EXPECT().GetAllX509Certificates(mock.Anything).Return(
+		map[string]*x509.Certificate{"key1": {Raw: []byte("der"), PublicKey: &ecKey.PublicKey}}, nil,
+	)
+	pki.EXPECT().GetCertThumbprint("key1").Return("kid-1")
+	pki.EXPECT().GetCertificateChain("key1").Return(nil)
+
+	svc := &runtimeCryptoService{pkiService: pki, logger: newTestLogger()}
+	err = svc.Verify(context.Background(), "other-kid", "ES256", []byte("data"), []byte("sig"))
+	assert.ErrorIs(t, err, kmprovider.ErrKeyNotFound)
+}
+
 // GetTLSMaterial
 
 func TestGetTLSMaterial_NilPKIService(t *testing.T) {
