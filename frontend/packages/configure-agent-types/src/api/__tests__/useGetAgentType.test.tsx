@@ -44,9 +44,26 @@ describe('useGetAgentType', () => {
     name: 'default',
     ouId: '111e8400-e29b-41d4-a716-446655440000',
     schema: {
-      model: {type: 'string', required: false},
-      department: {type: 'string', required: false},
-      purpose: {type: 'string', required: false},
+      modelProvider: {
+        type: 'string',
+        required: true,
+        enum: ['openai', 'anthropic', 'gemini', 'mistral', 'custom'],
+      },
+      model: {type: 'string', required: true},
+      function: {
+        type: 'string',
+        required: false,
+        enum: [
+          'task-automation',
+          'rag-retrieval',
+          'code-gen',
+          'data-analysis',
+          'orchestrator',
+          'sub-agent',
+          'assistant',
+          'custom',
+        ],
+      },
     },
   };
 
