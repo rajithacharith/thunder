@@ -357,3 +357,13 @@ CREATE TABLE "CREDENTIAL_CONFIGURATION" (
 
 -- Each credential configuration handle is unique per deployment.
 CREATE UNIQUE INDEX idx_openid4vci_cc_handle ON "CREDENTIAL_CONFIGURATION" (DEPLOYMENT_ID, HANDLE);
+
+-- Table to store server-wide configuration
+CREATE TABLE "SERVER_CONFIG" (
+    DEPLOYMENT_ID VARCHAR(255) NOT NULL,
+    NAME          VARCHAR(255) NOT NULL,
+    VALUE         TEXT         NOT NULL,
+    CREATED_AT    TEXT         DEFAULT (datetime('now')),
+    UPDATED_AT    TEXT         DEFAULT (datetime('now')),
+    PRIMARY KEY (DEPLOYMENT_ID, NAME)
+);

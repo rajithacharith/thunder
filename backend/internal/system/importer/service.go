@@ -234,6 +234,7 @@ type importService struct {
 	agentService                   agentAdapter
 	presentationDefinitionService  presentationDefinitionAdapter
 	credentialConfigurationService credentialConfigurationAdapter
+	serverConfigService            serverConfigAdapter
 }
 
 func newImportService(
@@ -253,6 +254,7 @@ func newImportService(
 	agentService agentAdapter,
 	presentationDefinitionService presentationDefinitionAdapter,
 	credentialConfigurationService credentialConfigurationAdapter,
+	serverConfigService serverConfigAdapter,
 ) ImportServiceInterface {
 	return &importService{
 		applicationService:             applicationService,
@@ -271,6 +273,7 @@ func newImportService(
 		agentService:                   agentService,
 		presentationDefinitionService:  presentationDefinitionService,
 		credentialConfigurationService: credentialConfigurationService,
+		serverConfigService:            serverConfigService,
 	}
 }
 
@@ -428,6 +431,8 @@ func (s *importService) importDocument(
 		return s.importPresentationDefinition(ctx, doc, options, dryRun)
 	case resourceTypeCredentialConfiguration:
 		return s.importCredentialConfiguration(ctx, doc, options, dryRun)
+	case resourceTypeServerConfig:
+		return s.importServerConfig(ctx, doc, dryRun)
 	default:
 		return ImportItemOutcome{
 			ResourceType: doc.ResourceType,
