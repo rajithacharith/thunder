@@ -21,18 +21,18 @@ package executor
 import (
 	"encoding/json"
 
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // credentialSetter allows users to set their credentials for an existing user account.
 type credentialSetter struct {
 	core.ExecutorInterface
 	entityProvider entityprovider.EntityProviderInterface
-	authnProvider  authnprovidermgr.AuthnProviderManagerInterface
+	authnProvider  providers.AuthnProviderManagerInterface
 	logger         *log.Logger
 }
 
@@ -40,7 +40,7 @@ type credentialSetter struct {
 func newCredentialSetter(
 	flowFactory core.FlowFactoryInterface,
 	entityProvider entityprovider.EntityProviderInterface,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
+	authnProvider providers.AuthnProviderManagerInterface,
 ) *credentialSetter {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "CredentialSetter"))
 	base := flowFactory.CreateExecutor(

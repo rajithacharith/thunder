@@ -22,6 +22,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
@@ -29,7 +33,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/system/email"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/template"
 	"github.com/thunder-id/thunderid/tests/mocks/emailmock"
 	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
@@ -73,7 +76,7 @@ func (suite *EmailExecutorTestSuite) SetupTest() {
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UserInviteTemplate_Success() {
 	ctx := &core.NodeContext{
 		ExecutionID:  "test-execution-id",
-		FlowType:     common.FlowTypeUserOnboarding,
+		FlowType:     providers.FlowTypeUserOnboarding,
 		ExecutorMode: ExecutorModeSend,
 		NodeInputs: []common.Input{
 			{Identifier: "email", Type: common.InputTypeEmail, Required: true},
@@ -120,7 +123,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UserInviteTemplate_Suc
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_InviteLinkNotExposed() {
 	ctx := &core.NodeContext{
 		ExecutionID:  "test-execution-id",
-		FlowType:     common.FlowTypeRegistration,
+		FlowType:     providers.FlowTypeRegistration,
 		ExecutorMode: ExecutorModeSend,
 		NodeInputs: []common.Input{
 			{Identifier: "email", Type: common.InputTypeEmail, Required: true},
@@ -325,7 +328,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingInviteLink() {
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_MissingInviteLink() {
 	ctx := &core.NodeContext{
 		ExecutionID:  "test-execution-id",
-		FlowType:     common.FlowTypeRegistration,
+		FlowType:     providers.FlowTypeRegistration,
 		ExecutorMode: ExecutorModeSend,
 		NodeInputs: []common.Input{
 			{Identifier: "email", Type: common.InputTypeEmail, Required: true},
@@ -464,7 +467,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_TemplateRenderError() 
 		template.TemplateData{
 			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 		},
-	).Return(nil, &serviceerror.ServiceError{Code: "TMP-5000"})
+	).Return(nil, &tidcommon.ServiceError{Code: "TMP-5000"})
 
 	resp, err := suite.executor.Execute(ctx)
 	if suite.Error(err) {
@@ -683,7 +686,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_Returns
 
 	ctx := &core.NodeContext{
 		ExecutionID:  "test-execution-id",
-		FlowType:     common.FlowTypeUserOnboarding,
+		FlowType:     providers.FlowTypeUserOnboarding,
 		ExecutorMode: ExecutorModeSend,
 		NodeInputs: []common.Input{
 			{Identifier: "email", Type: common.InputTypeEmail, Required: true},
@@ -936,7 +939,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ResolvesEmailFromEntit
 		},
 	}
 
-	mockEntity := &entityprovider.Entity{
+	mockEntity := &providers.Entity{
 		ID:         "test-db-user-id",
 		Attributes: []byte(`{"workEmail":"database-resolved@example.com"}`),
 	}
@@ -1012,7 +1015,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EntityProviderMissingE
 		},
 	}
 
-	mockEntity := &entityprovider.Entity{
+	mockEntity := &providers.Entity{
 		ID:         "test-db-user-id",
 		Attributes: []byte(`{"other":"data"}`),
 	}
@@ -1147,7 +1150,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_InvalidNodePropertySce
 		template.ScenarioType("NON_EXISTENT_TEMPLATE"),
 		template.TemplateTypeEmail,
 		template.TemplateData{},
-	).Return(nil, &serviceerror.ServiceError{Code: "TMP-404"})
+	).Return(nil, &tidcommon.ServiceError{Code: "TMP-404"})
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -1159,7 +1162,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_InvalidNodePropertySce
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingEmailInputConfig_FallsBackToDefault() {
 	ctx := &core.NodeContext{
 		ExecutionID:  "test-execution-id",
-		FlowType:     common.FlowTypeUserOnboarding,
+		FlowType:     providers.FlowTypeUserOnboarding,
 		ExecutorMode: ExecutorModeSend,
 		NodeInputs:   []common.Input{},
 		UserInputs: map[string]string{
@@ -1195,7 +1198,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingEmailInputConfi
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ApplicationNameInTemplateData() {
 	ctx := &core.NodeContext{
 		ExecutionID:  "test-execution-id",
-		FlowType:     common.FlowTypeUserOnboarding,
+		FlowType:     providers.FlowTypeUserOnboarding,
 		ExecutorMode: ExecutorModeSend,
 		NodeInputs: []common.Input{
 			{Identifier: "email", Type: common.InputTypeEmail, Required: true},

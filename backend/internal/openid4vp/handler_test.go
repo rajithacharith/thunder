@@ -30,11 +30,11 @@ import (
 	"testing"
 	"time"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 )
 
 const (
@@ -421,7 +421,7 @@ func (suite *OpenID4VPHandlerTestSuite) TestHandleResponseParseFormError() {
 func (suite *OpenID4VPHandlerTestSuite) TestAPIInitiateServiceError() {
 	svc := NewOpenID4VPServiceInterfaceMock(suite.T())
 	svc.On("InitiateForRP", mock.Anything, testDefinitionID, "rp").
-		Return(nil, &serviceerror.InternalServerError)
+		Return(nil, &tidcommon.InternalServerError)
 	h := newOpenID4VPHandler(svc, stubResultTokenIssuer(suite.T()), apiBaseURL, 0, 0)
 
 	body, _ := json.Marshal(initiateRequest{DefinitionID: testDefinitionID, RPID: "rp"})
@@ -431,7 +431,7 @@ func (suite *OpenID4VPHandlerTestSuite) TestAPIInitiateServiceError() {
 
 func (suite *OpenID4VPHandlerTestSuite) TestAPIStatusLookupServiceError() {
 	svc := NewOpenID4VPServiceInterfaceMock(suite.T())
-	svc.On("LookupState", mock.Anything, "txn").Return(nil, &serviceerror.InternalServerError)
+	svc.On("LookupState", mock.Anything, "txn").Return(nil, &tidcommon.InternalServerError)
 	h := newOpenID4VPHandler(svc, stubResultTokenIssuer(suite.T()), apiBaseURL, 0, 0)
 
 	rec := getStatus(h.HandleStatus, "txn")

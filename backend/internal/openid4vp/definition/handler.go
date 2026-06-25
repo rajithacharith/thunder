@@ -23,8 +23,9 @@ import (
 	"net/http"
 	"strings"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
 
@@ -170,9 +171,9 @@ func sanitizeClaimValues(in map[string][]string) map[string][]string {
 }
 
 // writeDefinitionError maps a service error to an HTTP status and writes the corresponding error response.
-func writeDefinitionError(ctx context.Context, w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
+func writeDefinitionError(ctx context.Context, w http.ResponseWriter, svcErr *tidcommon.ServiceError) {
 	status := http.StatusInternalServerError
-	if svcErr.Type == serviceerror.ClientErrorType {
+	if svcErr.Type == tidcommon.ClientErrorType {
 		status = definitionClientErrorStatus(svcErr.Code)
 	}
 	sysutils.WriteErrorResponse(ctx, w, status, apierror.ErrorResponse{

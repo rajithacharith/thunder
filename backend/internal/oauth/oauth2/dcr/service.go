@@ -25,14 +25,15 @@ import (
 	"strings"
 	"time"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/thunder-id/thunderid/internal/application"
 	"github.com/thunder-id/thunderid/internal/application/model"
 	"github.com/thunder-id/thunderid/internal/cert"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
-	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	oauthutils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
 	"github.com/thunder-id/thunderid/internal/ou"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
@@ -43,7 +44,7 @@ import (
 type DCRServiceInterface interface {
 	RegisterClient(
 		ctx context.Context, request *DCRRegistrationRequest,
-	) (*DCRRegistrationResponse, *serviceerror.ServiceError)
+	) (*DCRRegistrationResponse, *tidcommon.ServiceError)
 }
 
 // dcrService is the default implementation of DCRServiceInterface.
@@ -71,7 +72,7 @@ func newDCRService(
 
 // RegisterClient registers a new OAuth client using Dynamic Client Registration.
 func (ds *dcrService) RegisterClient(ctx context.Context, request *DCRRegistrationRequest) (
-	*DCRRegistrationResponse, *serviceerror.ServiceError) {
+	*DCRRegistrationResponse, *tidcommon.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DCRService"))
 
 	if request == nil {
@@ -105,13 +106,13 @@ func (ds *dcrService) RegisterClient(ctx context.Context, request *DCRRegistrati
 	}
 
 	var response *DCRRegistrationResponse
-	var capturedErr *serviceerror.ServiceError
+	var capturedErr *tidcommon.ServiceError
 	var createdAppID string
 
 	err := ds.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		createdApp, svcErr := ds.appService.CreateApplication(txCtx, appDTO)
 		if svcErr != nil {
-			if svcErr.Type == serviceerror.ServerErrorType {
+			if svcErr.Type == tidcommon.ServerErrorType {
 				logger.Error(ctx, "Failed to create application via Application service",
 					log.String("error_code", svcErr.Code))
 				capturedErr = &ErrorServerError
@@ -125,7 +126,7 @@ func (ds *dcrService) RegisterClient(ctx context.Context, request *DCRRegistrati
 
 		createdAppID = createdApp.ID
 
-		var convErr *serviceerror.ServiceError
+		var convErr *tidcommon.ServiceError
 		response, convErr = ds.convertApplicationToDCRResponse(createdApp, request.ClientName)
 		if convErr != nil {
 			logger.Error(ctx, "Failed to convert application to DCR response",
@@ -182,8 +183,8 @@ func (ds *dcrService) RegisterClient(ctx context.Context, request *DCRRegistrati
 
 // convertDCRToApplication converts DCR registration request to Application DTO.
 func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
-	*model.ApplicationDTO, *serviceerror.ServiceError) {
-	isPublicClient := request.TokenEndpointAuthMethod == oauth2const.TokenEndpointAuthMethodNone
+	*model.ApplicationDTO, *tidcommon.ServiceError) {
+	isPublicClient := request.TokenEndpointAuthMethod == providers.TokenEndpointAuthMethodNone
 
 	// Map JWKS/JWKS_URI to application-level certificate
 	var appCertificate *inboundmodel.Certificate
@@ -277,25 +278,25 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 
 // buildUserInfoConfig maps UserInfo alg fields from a DCR request to a UserInfoConfig.
 // ResponseType is derived from the algorithm fields per OIDC DCR conventions.
-func buildUserInfoConfig(request *DCRRegistrationRequest) *inboundmodel.UserInfoConfig {
+func buildUserInfoConfig(request *DCRRegistrationRequest) *providers.UserInfoConfig {
 	if request.UserInfoSignedResponseAlg == "" && request.UserInfoEncryptedResponseAlg == "" &&
 		request.UserInfoEncryptedResponseEnc == "" {
 		return nil
 	}
 	hasSign := request.UserInfoSignedResponseAlg != ""
 	hasEnc := request.UserInfoEncryptedResponseAlg != ""
-	var responseType inboundmodel.UserInfoResponseType
+	var responseType providers.UserInfoResponseType
 	switch {
 	case hasSign && hasEnc:
-		responseType = inboundmodel.UserInfoResponseTypeNESTEDJWT
+		responseType = providers.UserInfoResponseTypeNESTEDJWT
 	case hasEnc:
-		responseType = inboundmodel.UserInfoResponseTypeJWE
+		responseType = providers.UserInfoResponseTypeJWE
 	case hasSign:
-		responseType = inboundmodel.UserInfoResponseTypeJWS
+		responseType = providers.UserInfoResponseTypeJWS
 	default:
-		responseType = inboundmodel.UserInfoResponseTypeJSON
+		responseType = providers.UserInfoResponseTypeJSON
 	}
-	return &inboundmodel.UserInfoConfig{
+	return &providers.UserInfoConfig{
 		ResponseType:  responseType,
 		SigningAlg:    request.UserInfoSignedResponseAlg,
 		EncryptionAlg: request.UserInfoEncryptedResponseAlg,
@@ -304,21 +305,21 @@ func buildUserInfoConfig(request *DCRRegistrationRequest) *inboundmodel.UserInfo
 }
 
 // buildTokenConfig builds the OAuthTokenConfig from DCR request fields.
-func buildTokenConfig(request *DCRRegistrationRequest) *inboundmodel.OAuthTokenConfig {
+func buildTokenConfig(request *DCRRegistrationRequest) *providers.OAuthTokenConfig {
 	idToken := buildIDTokenConfig(request)
 	if idToken == nil {
 		return nil
 	}
-	return &inboundmodel.OAuthTokenConfig{IDToken: idToken}
+	return &providers.OAuthTokenConfig{IDToken: idToken}
 }
 
 // buildIDTokenConfig maps ID token encryption fields from a DCR request to an IDTokenConfig.
-func buildIDTokenConfig(request *DCRRegistrationRequest) *inboundmodel.IDTokenConfig {
+func buildIDTokenConfig(request *DCRRegistrationRequest) *providers.IDTokenConfig {
 	if request.IDTokenEncryptedResponseAlg == "" && request.IDTokenEncryptedResponseEnc == "" {
 		return nil
 	}
-	return &inboundmodel.IDTokenConfig{
-		ResponseType:  inboundmodel.IDTokenResponseTypeJWE,
+	return &providers.IDTokenConfig{
+		ResponseType:  providers.IDTokenResponseTypeJWE,
 		EncryptionAlg: request.IDTokenEncryptedResponseAlg,
 		EncryptionEnc: request.IDTokenEncryptedResponseEnc,
 	}
@@ -326,7 +327,7 @@ func buildIDTokenConfig(request *DCRRegistrationRequest) *inboundmodel.IDTokenCo
 
 // convertApplicationToDCRResponse converts Application DTO to DCR registration response.
 func (ds *dcrService) convertApplicationToDCRResponse(appDTO *model.ApplicationDTO, originalClientName string) (
-	*DCRRegistrationResponse, *serviceerror.ServiceError) {
+	*DCRRegistrationResponse, *tidcommon.ServiceError) {
 	if len(appDTO.InboundAuthConfig) == 0 || appDTO.InboundAuthConfig[0].OAuthConfig == nil {
 		return nil, &ErrorServerError
 	}
@@ -400,7 +401,7 @@ func (ds *dcrService) convertApplicationToDCRResponse(appDTO *model.ApplicationD
 // The non-tagged default value for each field is also stored under SystemLanguage; an explicit
 // #SystemLanguage-tagged variant in the same request takes priority over the default.
 func (ds *dcrService) writeLocalizedVariants(
-	ctx context.Context, appID string, request *DCRRegistrationRequest) *serviceerror.ServiceError {
+	ctx context.Context, appID string, request *DCRRegistrationRequest) *tidcommon.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DCRService"))
 	if ds.i18nService == nil {
 		logger.Debug(ctx, "i18n service not configured, skipping localized variant writes")
@@ -447,7 +448,7 @@ func (ds *dcrService) writeLocalizedVariants(
 		return nil
 	}
 	if svcErr := ds.i18nService.SetTranslationOverridesForNamespace(ctx, ns, entries); svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
+		if svcErr.Type == tidcommon.ClientErrorType {
 			logger.Debug(ctx, "Invalid client metadata in localized variants",
 				log.String("appID", appID),
 				log.String("errorCode", svcErr.Code),
@@ -465,8 +466,8 @@ func (ds *dcrService) writeLocalizedVariants(
 
 // mapApplicationErrorToDCRError maps Application service errors to DCR standard errors.
 func (ds *dcrService) mapApplicationErrorToDCRError(
-	appErr *serviceerror.ServiceError) *serviceerror.ServiceError {
-	dcrErr := &serviceerror.ServiceError{
+	appErr *tidcommon.ServiceError) *tidcommon.ServiceError {
+	dcrErr := &tidcommon.ServiceError{
 		Type:             appErr.Type,
 		Error:            appErr.Error,
 		ErrorDescription: appErr.ErrorDescription,

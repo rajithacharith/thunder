@@ -24,12 +24,14 @@ import (
 	"fmt"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/thunder-id/thunderid/internal/application/model"
 	"github.com/thunder-id/thunderid/internal/entity"
 	"github.com/thunder-id/thunderid/internal/inboundclient"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/security"
 
@@ -71,10 +73,10 @@ func (e *applicationExporter) GetParameterizerType() string {
 
 // GetAllResourceIDs retrieves all application IDs.
 // In composite mode, this excludes declarative (YAML-based) applications.
-func (e *applicationExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
+func (e *applicationExporter) GetAllResourceIDs(ctx context.Context) ([]string, *tidcommon.ServiceError) {
 	apps, err := e.service.GetApplicationList(ctx)
 	if err != nil {
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 	ids := make([]string, 0, len(apps.Applications))
 	for _, app := range apps.Applications {
@@ -88,7 +90,7 @@ func (e *applicationExporter) GetAllResourceIDs(ctx context.Context) ([]string, 
 
 // GetResourceByID retrieves an application by its ID.
 func (e *applicationExporter) GetResourceByID(ctx context.Context, id string) (
-	interface{}, string, *serviceerror.ServiceError,
+	interface{}, string, *tidcommon.ServiceError,
 ) {
 	app, err := e.service.GetApplication(ctx, id)
 	if err != nil {
@@ -274,7 +276,7 @@ func (e *applicationExporter) GetResourceRulesForResource(resource interface{}) 
 func makeAppDeclarativeConfig(appService ApplicationServiceInterface) entity.DeclarativeLoaderConfig {
 	return entity.DeclarativeLoaderConfig{
 		Directory: "applications",
-		Category:  entity.EntityCategoryApp,
+		Category:  providers.EntityCategoryApp,
 		Parser:    makeAppEntityParser(appService),
 	}
 }
@@ -282,8 +284,8 @@ func makeAppDeclarativeConfig(appService ApplicationServiceInterface) entity.Dec
 // makeAppEntityParser creates a parser that converts application YAML into an entity.
 func makeAppEntityParser(
 	appService ApplicationServiceInterface,
-) func(data []byte) (*entity.Entity, json.RawMessage, json.RawMessage, error) {
-	return func(data []byte) (*entity.Entity, json.RawMessage, json.RawMessage, error) {
+) func(data []byte) (*providers.Entity, json.RawMessage, json.RawMessage, error) {
+	return func(data []byte) (*providers.Entity, json.RawMessage, json.RawMessage, error) {
 		if appService == nil {
 			return nil, nil, nil, fmt.Errorf("application service is required for declarative entity parsing")
 		}
@@ -315,11 +317,11 @@ func makeAppEntityParser(
 			return nil, nil, nil, fmt.Errorf("failed to build system credentials: %w", err)
 		}
 
-		e := &entity.Entity{
+		e := &providers.Entity{
 			ID:               appDTO.ID,
-			Category:         entity.EntityCategoryApp,
+			Category:         providers.EntityCategoryApp,
 			Type:             "application",
-			State:            entity.EntityStateActive,
+			State:            providers.EntityStateActive,
 			OUID:             appDTO.OUID,
 			SystemAttributes: sysAttrsJSON,
 		}

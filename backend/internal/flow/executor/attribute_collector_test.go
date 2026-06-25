@@ -22,16 +22,16 @@ import (
 	"encoding/json"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
@@ -68,8 +68,8 @@ func (suite *AttributeCollectorTestSuite) SetupTest() {
 }
 
 // newAuthenticatedAuthUser creates an AuthUser that returns true for IsAuthenticated().
-func newAuthenticatedAuthUser() authnprovidermgr.AuthUser {
-	var authUser authnprovidermgr.AuthUser
+func newAuthenticatedAuthUser() providers.AuthUser {
+	var authUser providers.AuthUser
 	_ = authUser.UnmarshalJSON([]byte(`{"entityReferenceToken":"tok","attributeToken":"tok"}`))
 	return authUser
 }
@@ -84,7 +84,7 @@ func createMockExecutorForAttrCollector(t *testing.T, name string,
 	mockExec.On("GetInputs", mock.Anything).Return([]common.Input{}).Maybe()
 	mockExec.On("ValidatePrerequisites", mock.Anything, mock.Anything, mock.Anything).
 		Return(func(ctx *core.NodeContext, execResp *common.ExecutorResponse,
-			_ authnprovidermgr.AuthnProviderManagerInterface) bool {
+			_ providers.AuthnProviderManagerInterface) bool {
 			return ctx.RuntimeData != nil && ctx.RuntimeData[userAttributeUserID] != ""
 		}).Maybe()
 	mockExec.On("HasRequiredInputs", mock.Anything, mock.Anything).
@@ -103,7 +103,7 @@ func createMockExecutorForAttrCollector(t *testing.T, name string,
 		}).Maybe()
 	mockExec.On("GetUserIDFromContext", mock.Anything, mock.Anything, mock.Anything).
 		Return(func(ctx *core.NodeContext, execResp *common.ExecutorResponse,
-			_ authnprovidermgr.AuthnProviderManagerInterface) string {
+			_ providers.AuthnProviderManagerInterface) string {
 			if ctx.RuntimeData != nil {
 				return ctx.RuntimeData[userAttributeUserID]
 			}
@@ -120,7 +120,7 @@ func (suite *AttributeCollectorTestSuite) TestNewAttributeCollector() {
 func (suite *AttributeCollectorTestSuite) TestExecute_RegistrationFlow() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 	}
 
 	resp, err := suite.executor.Execute(ctx)
@@ -133,7 +133,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_RegistrationFlow() {
 func (suite *AttributeCollectorTestSuite) TestExecute_UserNotAuthenticated() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 	}
 
 	resp, err := suite.executor.Execute(ctx)
@@ -147,7 +147,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UserNotAuthenticated() {
 func (suite *AttributeCollectorTestSuite) TestExecute_PrerequisitesNotMet() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    newAuthenticatedAuthUser(),
 		RuntimeData: map[string]string{},
 	}
@@ -163,7 +163,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UserInputRequired() {
 	attrs := map[string]interface{}{"phone": "1234567890"}
 	attrsJSON, _ := json.Marshal(attrs)
 
-	existingUser := &entityprovider.Entity{
+	existingUser := &providers.Entity{
 		ID:         testUserID,
 		Attributes: attrsJSON,
 	}
@@ -173,7 +173,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UserInputRequired() {
 	authUser := newAuthenticatedAuthUser()
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    authUser,
 		RuntimeData: map[string]string{userAttributeUserID: testUserID},
 		NodeInputs:  []common.Input{{Identifier: "email", Type: "string", Required: true}},
@@ -182,7 +182,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UserInputRequired() {
 
 	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything).Return(authUser,
-		(*authnprovidercm.AttributesResponse)(nil), (*serviceerror.ServiceError)(nil)).Maybe()
+		(*providers.AttributesResponse)(nil), (*tidcommon.ServiceError)(nil)).Maybe()
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -197,7 +197,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_Success() {
 	authUser := newAuthenticatedAuthUser()
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    authUser,
 		RuntimeData: map[string]string{userAttributeUserID: testUserID},
 		NodeInputs:  []common.Input{{Identifier: "email", Type: "string", Required: true}},
@@ -206,9 +206,9 @@ func (suite *AttributeCollectorTestSuite) TestExecute_Success() {
 
 	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything).Return(authUser,
-		(*authnprovidercm.AttributesResponse)(nil), (*serviceerror.ServiceError)(nil)).Maybe()
+		(*providers.AttributesResponse)(nil), (*tidcommon.ServiceError)(nil)).Maybe()
 
-	existingUser := &entityprovider.Entity{
+	existingUser := &providers.Entity{
 		ID:         testUserID,
 		OUID:       "ou-123",
 		Type:       "INTERNAL",
@@ -232,7 +232,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UpdateUserFails() {
 	authUser := newAuthenticatedAuthUser()
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    authUser,
 		RuntimeData: map[string]string{userAttributeUserID: testUserID},
 		NodeInputs:  []common.Input{{Identifier: "email", Type: "string", Required: true}},
@@ -241,9 +241,9 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UpdateUserFails() {
 
 	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything).Return(authUser,
-		(*authnprovidercm.AttributesResponse)(nil), (*serviceerror.ServiceError)(nil)).Maybe()
+		(*providers.AttributesResponse)(nil), (*tidcommon.ServiceError)(nil)).Maybe()
 
-	existingUser := &entityprovider.Entity{
+	existingUser := &providers.Entity{
 		ID:         testUserID,
 		OUID:       "ou-123",
 		Type:       "INTERNAL",
@@ -267,7 +267,7 @@ func (suite *AttributeCollectorTestSuite) TestHasRequiredInputs_AttributesInAuth
 	authUser := newAuthenticatedAuthUser()
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    authUser,
 		NodeInputs:  []common.Input{{Identifier: "email", Type: "string", Required: true}},
 		RuntimeData: map[string]string{},
@@ -279,13 +279,13 @@ func (suite *AttributeCollectorTestSuite) TestHasRequiredInputs_AttributesInAuth
 		AuthUser:    authUser,
 	}
 
-	authnUserAttrs := &authnprovidercm.AttributesResponse{
-		Attributes: map[string]*authnprovidercm.AttributeResponse{
+	authnUserAttrs := &providers.AttributesResponse{
+		Attributes: map[string]*providers.AttributeResponse{
 			"email": {Value: "test@example.com"},
 		},
 	}
 	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything).Return(authUser, authnUserAttrs, (*serviceerror.ServiceError)(nil))
+		mock.Anything).Return(authUser, authnUserAttrs, (*tidcommon.ServiceError)(nil))
 
 	result := suite.executor.HasRequiredInputs(ctx, execResp)
 
@@ -301,7 +301,7 @@ func (suite *AttributeCollectorTestSuite) TestHasRequiredInputs_AttributesInUser
 	authUser := newAuthenticatedAuthUser()
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		AuthUser:    authUser,
 		RuntimeData: map[string]string{userAttributeUserID: testUserID},
 		NodeInputs:  []common.Input{{Identifier: "email", Type: "string", Required: true}},
@@ -316,9 +316,9 @@ func (suite *AttributeCollectorTestSuite) TestHasRequiredInputs_AttributesInUser
 	// authnProvider returns no attributes, so it falls through to user profile lookup.
 	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything).Return(authUser,
-		(*authnprovidercm.AttributesResponse)(nil), (*serviceerror.ServiceError)(nil))
+		(*providers.AttributesResponse)(nil), (*tidcommon.ServiceError)(nil))
 
-	existingUser := &entityprovider.Entity{
+	existingUser := &providers.Entity{
 		ID:         testUserID,
 		Attributes: attrsJSON,
 	}
@@ -345,7 +345,7 @@ func (suite *AttributeCollectorTestSuite) TestGetUserAttributes_Success() {
 		RuntimeData: make(map[string]string),
 	}
 
-	existingUser := &entityprovider.Entity{
+	existingUser := &providers.Entity{
 		ID:         testUserID,
 		Attributes: attrsJSON,
 	}
@@ -389,7 +389,7 @@ func (suite *AttributeCollectorTestSuite) TestGetUserAttributes_InvalidJSON() {
 		RuntimeData: make(map[string]string),
 	}
 
-	existingUser := &entityprovider.Entity{
+	existingUser := &providers.Entity{
 		ID:         testUserID,
 		Attributes: json.RawMessage(`invalid json`),
 	}
@@ -409,7 +409,7 @@ func (suite *AttributeCollectorTestSuite) TestGetUpdatedUserObject_NewAttributes
 		NodeInputs: []common.Input{{Identifier: "email", Type: "string", Required: true}},
 	}
 
-	existingUser := &entityprovider.Entity{
+	existingUser := &providers.Entity{
 		ID:         testUserID,
 		OUID:       "ou-123",
 		Type:       "INTERNAL",
@@ -435,7 +435,7 @@ func (suite *AttributeCollectorTestSuite) TestGetUpdatedUserObject_NoNewAttribut
 		NodeInputs: []common.Input{{Identifier: "email", Type: "string", Required: true}},
 	}
 
-	existingUser := &entityprovider.Entity{
+	existingUser := &providers.Entity{
 		ID:         testUserID,
 		OUID:       "ou-123",
 		Type:       "INTERNAL",
@@ -458,7 +458,7 @@ func (suite *AttributeCollectorTestSuite) TestGetUpdatedUserObject_MergeAttribut
 		NodeInputs: []common.Input{{Identifier: "email", Type: "string", Required: true}},
 	}
 
-	existingUser := &entityprovider.Entity{
+	existingUser := &providers.Entity{
 		ID:         testUserID,
 		OUID:       "ou-123",
 		Type:       "INTERNAL",

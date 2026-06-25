@@ -23,13 +23,14 @@ import (
 	"errors"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/yaml.v3"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
@@ -252,7 +253,7 @@ func (s *DefinitionExporterTestSuite) TestGetAllResourceIDsListError() {
 
 	_, err := exporter.GetAllResourceIDs(context.Background())
 	s.Require().NotNil(err)
-	s.Equal(serviceerror.InternalServerError.Code, err.Code)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
 }
 
 func (s *DefinitionExporterTestSuite) TestGetAllResourceIDsIsDeclarativeError() {
@@ -266,7 +267,7 @@ func (s *DefinitionExporterTestSuite) TestGetAllResourceIDsIsDeclarativeError() 
 
 	_, err := exporter.GetAllResourceIDs(context.Background())
 	s.Require().NotNil(err)
-	s.Equal(serviceerror.InternalServerError.Code, err.Code)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
 }
 
 func (s *DefinitionExporterTestSuite) TestGetAllResourceIDsExcludesDeclarative() {

@@ -20,7 +20,8 @@ package executor
 
 import (
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"context"
 	"testing"
@@ -33,7 +34,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/tests/mocks/entitytypemock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 	"github.com/thunder-id/thunderid/tests/mocks/oumock"
@@ -130,7 +130,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_AuthenticationFlow_WithAllow
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{"employee", "customer"},
@@ -153,7 +153,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_AuthenticationFlow_NoAllowed
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeAuthentication,
+		FlowType:    providers.FlowTypeAuthentication,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{},
@@ -174,15 +174,15 @@ func (suite *UserTypeResolverTestSuite) TestExecute_AuthenticationFlow_NoAllowed
 func (suite *UserTypeResolverTestSuite) TestExecute_UnsupportedFlowType() {
 	testCases := []struct {
 		name     string
-		flowType common.FlowType
+		flowType providers.FlowType
 	}{
 		{
 			name:     "UnknownFlowType",
-			flowType: common.FlowType("UNKNOWN"),
+			flowType: providers.FlowType("UNKNOWN"),
 		},
 		{
 			name:     "EmptyFlowType",
-			flowType: common.FlowType(""),
+			flowType: providers.FlowType(""),
 		},
 	}
 
@@ -233,7 +233,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_Succ
 
 			ctx := &core.NodeContext{
 				ExecutionID: "flow-123",
-				FlowType:    common.FlowTypeRegistration,
+				FlowType:    providers.FlowTypeRegistration,
 				Application: appmodel.Application{
 					InboundAuthProfile: inboundmodel.InboundAuthProfile{
 						AllowedUserTypes: tc.allowedUserTypes,
@@ -272,7 +272,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_NoOU
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{"employee", "customer"},
@@ -306,7 +306,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_NotA
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{"employee", "customer"},
@@ -332,7 +332,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_OURe
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{"employee"},
@@ -344,13 +344,13 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_OURe
 		RuntimeData: map[string]string{},
 	}
 
-	svcErr := &serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
+	svcErr := &tidcommon.ServiceError{
+		Type: tidcommon.ServerErrorType,
 		Code: "SCHEMA-500",
-		Error: i18ncore.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key: "error.test.internal_server_error", DefaultValue: "Internal Server Error",
 		},
-		ErrorDescription: i18ncore.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key: "error.test.failed_to_retrieve_ou", DefaultValue: "Failed to retrieve OU",
 		},
 	}
@@ -370,7 +370,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_NoAllowedUserTypes() {
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{},
@@ -394,7 +394,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_Succes
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{"employee"},
@@ -429,7 +429,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_NoOU()
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{"employee"},
@@ -461,7 +461,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_OUReso
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{"employee"},
@@ -471,13 +471,13 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_OUReso
 		RuntimeData: map[string]string{},
 	}
 
-	svcErr := &serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
+	svcErr := &tidcommon.ServiceError{
+		Type: tidcommon.ServerErrorType,
 		Code: "SCHEMA-500",
-		Error: i18ncore.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key: "error.test.internal_server_error", DefaultValue: "Internal Server Error",
 		},
-		ErrorDescription: i18ncore.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key: "error.test.failed_to_retrieve_ou", DefaultValue: "Failed to retrieve OU",
 		},
 	}
@@ -497,7 +497,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Pro
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{"employee", "customer", "partner"},
@@ -542,7 +542,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_EmptyUserTypeInput() {
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{"employee", "customer"},
@@ -586,7 +586,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_Self
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{"employee"},
@@ -621,7 +621,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_SelfRe
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{"employee"},
@@ -654,7 +654,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Onl
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{"employee", "customer", "partner"},
@@ -706,7 +706,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_NoS
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{"employee", "customer"},
@@ -749,7 +749,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Sch
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{"employee", "customer"},
@@ -766,13 +766,13 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Sch
 		OUID:                  "ou-employee",
 		AllowSelfRegistration: true,
 	}
-	svcErr := &serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
+	svcErr := &tidcommon.ServiceError{
+		Type: tidcommon.ServerErrorType,
 		Code: "SCHEMA-500",
-		Error: i18ncore.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key: "error.test.internal_server_error", DefaultValue: "Internal Server Error",
 		},
-		ErrorDescription: i18ncore.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key: "error.test.failed_to_retrieve_schema", DefaultValue: "Failed to retrieve schema",
 		},
 	}
@@ -795,7 +795,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_RegistrationFlow_NodeAllowed
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{"employee", "customer", "partner"},
@@ -830,7 +830,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_RegistrationFlow_NodeAllowed
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{"employee", "customer", "partner"},
@@ -861,7 +861,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_RegistrationFlow_NodeAllowed
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{"employee", "customer"},
@@ -887,7 +887,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_RegistrationFlow_NodeAllowed
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeRegistration,
+		FlowType:    providers.FlowTypeRegistration,
 		Application: appmodel.Application{
 			InboundAuthProfile: inboundmodel.InboundAuthProfile{
 				AllowedUserTypes: []string{"employee", "customer", "partner"},
@@ -955,11 +955,11 @@ func (suite *UserTypeResolverTestSuite) TestGetEntityTypeAndOU_NoOUFound() {
 func (suite *UserTypeResolverTestSuite) TestGetEntityTypeAndOU_SchemaNotFound() {
 	suite.SetupTest()
 
-	svcErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	svcErr := &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  "SCHEMA-404",
-		Error: i18ncore.I18nMessage{Key: "error.test.not_found", DefaultValue: "Not Found"},
-		ErrorDescription: i18ncore.I18nMessage{
+		Error: tidcommon.I18nMessage{Key: "error.test.not_found", DefaultValue: "Not Found"},
+		ErrorDescription: tidcommon.I18nMessage{
 			Key: "error.test.user_type_not_found", DefaultValue: "User type not found",
 		},
 	}
@@ -980,7 +980,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_UserTypeP
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeUserOnboarding, // User Onboarding Flow
+		FlowType:    providers.FlowTypeUserOnboarding, // User Onboarding Flow
 		UserInputs: map[string]string{
 			userTypeKey: "employee",
 		},
@@ -1011,7 +1011,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_UserTypeP
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeUserOnboarding,
+		FlowType:    providers.FlowTypeUserOnboarding,
 		UserInputs: map[string]string{
 			userTypeKey: "invalid_user",
 		},
@@ -1019,11 +1019,11 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_UserTypeP
 	}
 
 	// Mock schema retrieval failing
-	svcErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	svcErr := &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  "SCHEMA-404",
-		Error: i18ncore.I18nMessage{Key: "error.test.not_found", DefaultValue: "Not Found"},
-		ErrorDescription: i18ncore.I18nMessage{
+		Error: tidcommon.I18nMessage{Key: "error.test.not_found", DefaultValue: "Not Found"},
+		ErrorDescription: tidcommon.I18nMessage{
 			Key: "error.test.user_type_not_found", DefaultValue: "User type not found",
 		},
 	}
@@ -1045,7 +1045,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeUserOnboarding,
+		FlowType:    providers.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
 	}
@@ -1070,14 +1070,14 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeUserOnboarding,
+		FlowType:    providers.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
 	}
 
-	svcErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ServerErrorType,
-		Error: i18ncore.I18nMessage{Key: "error.test.simulated_error", DefaultValue: "Simulated Error"},
+	svcErr := &tidcommon.ServiceError{
+		Type:  tidcommon.ServerErrorType,
+		Error: tidcommon.I18nMessage{Key: "error.test.simulated_error", DefaultValue: "Simulated Error"},
 	}
 	suite.mockEntityTypeService.On("GetEntityTypeList", ctx.Context, mock.Anything, 100, 0, false).
 		Return(nil, svcErr)
@@ -1095,7 +1095,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeUserOnboarding,
+		FlowType:    providers.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
 	}
@@ -1123,7 +1123,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeUserOnboarding,
+		FlowType:    providers.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
 	}
@@ -1156,7 +1156,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_AllowedUs
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeUserOnboarding,
+		FlowType:    providers.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
 		NodeProperties: map[string]interface{}{
@@ -1189,7 +1189,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_AllowedUs
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeUserOnboarding,
+		FlowType:    providers.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
 		NodeProperties: map[string]interface{}{
@@ -1224,7 +1224,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_AllowedUs
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeUserOnboarding,
+		FlowType:    providers.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
 		NodeProperties: map[string]interface{}{
@@ -1255,7 +1255,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_AllowedUs
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeUserOnboarding,
+		FlowType:    providers.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{userTypeKey: "partner"},
 		RuntimeData: map[string]string{},
 		NodeProperties: map[string]interface{}{
@@ -1276,7 +1276,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_AllowedUs
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeUserOnboarding,
+		FlowType:    providers.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{userTypeKey: "employee"},
 		RuntimeData: map[string]string{},
 		NodeProperties: map[string]interface{}{
@@ -1380,7 +1380,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_UserT
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeUserOnboarding,
+		FlowType:    providers.FlowTypeUserOnboarding,
 		UserInputs: map[string]string{
 			userTypeKey: "employee",
 		},
@@ -1397,7 +1397,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_UserT
 	suite.mockEntityTypeService.On("GetEntityTypeByName", ctx.Context, mock.Anything, "employee").
 		Return(entityType, nil)
 	suite.mockOUService.On("IsParent", mock.Anything, "parent-ou-123", "child-ou-456").
-		Return(true, (*serviceerror.ServiceError)(nil))
+		Return(true, (*tidcommon.ServiceError)(nil))
 
 	result, err := suite.executor.Execute(ctx)
 
@@ -1414,7 +1414,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_UserT
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeUserOnboarding,
+		FlowType:    providers.FlowTypeUserOnboarding,
 		UserInputs: map[string]string{
 			userTypeKey: "employee",
 		},
@@ -1431,7 +1431,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_UserT
 	suite.mockEntityTypeService.On("GetEntityTypeByName", ctx.Context, mock.Anything, "employee").
 		Return(entityType, nil)
 	suite.mockOUService.On("IsParent", mock.Anything, "parent-ou-123", "unrelated-ou-789").
-		Return(false, (*serviceerror.ServiceError)(nil))
+		Return(false, (*tidcommon.ServiceError)(nil))
 
 	result, err := suite.executor.Execute(ctx)
 
@@ -1447,7 +1447,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_IsPar
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeUserOnboarding,
+		FlowType:    providers.FlowTypeUserOnboarding,
 		UserInputs: map[string]string{
 			userTypeKey: "employee",
 		},
@@ -1463,9 +1463,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_IsPar
 	}
 	suite.mockEntityTypeService.On("GetEntityTypeByName", ctx.Context, mock.Anything, "employee").
 		Return(entityType, nil)
-	svcErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ServerErrorType,
-		Error: i18ncore.I18nMessage{Key: "error.test.internal_error", DefaultValue: "internal error"},
+	svcErr := &tidcommon.ServiceError{
+		Type:  tidcommon.ServerErrorType,
+		Error: tidcommon.I18nMessage{Key: "error.test.internal_error", DefaultValue: "internal error"},
 	}
 	suite.mockOUService.On("IsParent", mock.Anything, "parent-ou-123", "child-ou-456").
 		Return(false, svcErr)
@@ -1483,7 +1483,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_Filte
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeUserOnboarding,
+		FlowType:    providers.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{
 			ouIDKey: "child-ou-456",
@@ -1502,10 +1502,10 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_Filte
 
 	// employee's OU is ancestor of selected OU
 	suite.mockOUService.On("IsParent", mock.Anything, "parent-ou-123", "child-ou-456").
-		Return(true, (*serviceerror.ServiceError)(nil))
+		Return(true, (*tidcommon.ServiceError)(nil))
 	// customer's OU is NOT ancestor of selected OU
 	suite.mockOUService.On("IsParent", mock.Anything, "other-ou-789", "child-ou-456").
-		Return(false, (*serviceerror.ServiceError)(nil))
+		Return(false, (*tidcommon.ServiceError)(nil))
 
 	result, err := suite.executor.Execute(ctx)
 
@@ -1523,7 +1523,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_Filte
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeUserOnboarding,
+		FlowType:    providers.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{
 			ouIDKey: "child-ou-456",
@@ -1540,9 +1540,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_Filte
 		Return(schemaList, nil)
 
 	suite.mockOUService.On("IsParent", mock.Anything, "parent-ou-123", "child-ou-456").
-		Return(true, (*serviceerror.ServiceError)(nil))
+		Return(true, (*tidcommon.ServiceError)(nil))
 	suite.mockOUService.On("IsParent", mock.Anything, "other-ou-789", "child-ou-456").
-		Return(false, (*serviceerror.ServiceError)(nil))
+		Return(false, (*tidcommon.ServiceError)(nil))
 
 	result, err := suite.executor.Execute(ctx)
 
@@ -1559,7 +1559,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_AllSc
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeUserOnboarding,
+		FlowType:    providers.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{
 			ouIDKey: "unrelated-ou-999",
@@ -1576,9 +1576,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_AllSc
 		Return(schemaList, nil)
 
 	suite.mockOUService.On("IsParent", mock.Anything, "ou-123", "unrelated-ou-999").
-		Return(false, (*serviceerror.ServiceError)(nil))
+		Return(false, (*tidcommon.ServiceError)(nil))
 	suite.mockOUService.On("IsParent", mock.Anything, "ou-456", "unrelated-ou-999").
-		Return(false, (*serviceerror.ServiceError)(nil))
+		Return(false, (*tidcommon.ServiceError)(nil))
 
 	result, err := suite.executor.Execute(ctx)
 
@@ -1594,7 +1594,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_IsPar
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		FlowType:    common.FlowTypeUserOnboarding,
+		FlowType:    providers.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{
 			ouIDKey: "child-ou-456",
@@ -1611,10 +1611,10 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_IsPar
 		Return(schemaList, nil)
 
 	suite.mockOUService.On("IsParent", mock.Anything, "parent-ou-123", "child-ou-456").
-		Return(true, (*serviceerror.ServiceError)(nil))
-	svcErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ServerErrorType,
-		Error: i18ncore.I18nMessage{Key: "error.test.internal_error", DefaultValue: "internal error"},
+		Return(true, (*tidcommon.ServiceError)(nil))
+	svcErr := &tidcommon.ServiceError{
+		Type:  tidcommon.ServerErrorType,
+		Error: tidcommon.I18nMessage{Key: "error.test.internal_error", DefaultValue: "internal error"},
 	}
 	suite.mockOUService.On("IsParent", mock.Anything, "error-ou", "child-ou-456").
 		Return(false, svcErr)

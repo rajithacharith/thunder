@@ -19,7 +19,8 @@
 package executor
 
 import (
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"context"
 	"testing"
@@ -30,8 +31,6 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/ou"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/security"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 	"github.com/thunder-id/thunderid/tests/mocks/oumock"
@@ -283,7 +282,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_Vali
 	}
 
 	suite.mockOUService.On("IsParent", mock.Anything, parentOUID, selectedOUID).
-		Return(true, (*serviceerror.ServiceError)(nil))
+		Return(true, (*tidcommon.ServiceError)(nil))
 
 	result, err := suite.executor.Execute(ctx)
 
@@ -311,7 +310,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_NotI
 	}
 
 	suite.mockOUService.On("IsParent", mock.Anything, parentOUID, selectedOUID).
-		Return(false, (*serviceerror.ServiceError)(nil))
+		Return(false, (*tidcommon.ServiceError)(nil))
 
 	result, err := suite.executor.Execute(ctx)
 
@@ -339,10 +338,10 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_Serv
 		},
 	}
 
-	svcErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ServerErrorType,
+	svcErr := &tidcommon.ServiceError{
+		Type:  tidcommon.ServerErrorType,
 		Code:  "OU-50001",
-		Error: i18ncore.I18nMessage{Key: "error.test.internal_error", DefaultValue: "internal error"},
+		Error: tidcommon.I18nMessage{Key: "error.test.internal_error", DefaultValue: "internal error"},
 	}
 	suite.mockOUService.On("IsParent", mock.Anything, parentOUID, selectedOUID).
 		Return(false, svcErr)
@@ -372,10 +371,10 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_Clie
 		},
 	}
 
-	svcErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	svcErr := &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  "OU-40001",
-		Error: i18ncore.I18nMessage{Key: "error.test.not_found", DefaultValue: "not found"},
+		Error: tidcommon.I18nMessage{Key: "error.test.not_found", DefaultValue: "not found"},
 	}
 	suite.mockOUService.On("IsParent", mock.Anything, parentOUID, selectedOUID).
 		Return(false, svcErr)
@@ -403,7 +402,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_NoChildOUs_Skips() 
 	}
 
 	suite.mockOUService.On("GetOrganizationUnitChildren", mock.Anything, parentOUID, 1, 0, mock.Anything).
-		Return(&ou.OrganizationUnitListResponse{TotalResults: 0}, (*serviceerror.ServiceError)(nil))
+		Return(&providers.OrganizationUnitListResponse{TotalResults: 0}, (*tidcommon.ServiceError)(nil))
 
 	result, err := suite.executor.Execute(ctx)
 
@@ -427,7 +426,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_HasChildOUs_Request
 	}
 
 	suite.mockOUService.On("GetOrganizationUnitChildren", mock.Anything, parentOUID, 1, 0, mock.Anything).
-		Return(&ou.OrganizationUnitListResponse{TotalResults: 3}, (*serviceerror.ServiceError)(nil))
+		Return(&providers.OrganizationUnitListResponse{TotalResults: 3}, (*tidcommon.ServiceError)(nil))
 
 	result, err := suite.executor.Execute(ctx)
 
@@ -454,13 +453,13 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_GetChildrenError_Re
 		UserInputs: map[string]string{},
 	}
 
-	svcErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ServerErrorType,
+	svcErr := &tidcommon.ServiceError{
+		Type:  tidcommon.ServerErrorType,
 		Code:  "OU-50001",
-		Error: i18ncore.I18nMessage{Key: "error.test.internal_error", DefaultValue: "internal error"},
+		Error: tidcommon.I18nMessage{Key: "error.test.internal_error", DefaultValue: "internal error"},
 	}
 	suite.mockOUService.On("GetOrganizationUnitChildren", mock.Anything, parentOUID, 1, 0, mock.Anything).
-		Return((*ou.OrganizationUnitListResponse)(nil), svcErr)
+		Return((*providers.OrganizationUnitListResponse)(nil), svcErr)
 
 	result, err := suite.executor.Execute(ctx)
 
@@ -509,7 +508,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_ValidOUSelection
 	}
 
 	suite.mockOUService.On("IsOrganizationUnitExists", mock.Anything, selectedOUID).
-		Return(true, (*serviceerror.ServiceError)(nil))
+		Return(true, (*tidcommon.ServiceError)(nil))
 
 	result, err := suite.executor.Execute(ctx)
 
@@ -534,7 +533,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_NonExistentOU() 
 	}
 
 	suite.mockOUService.On("IsOrganizationUnitExists", mock.Anything, selectedOUID).
-		Return(false, (*serviceerror.ServiceError)(nil))
+		Return(false, (*tidcommon.ServiceError)(nil))
 
 	result, err := suite.executor.Execute(ctx)
 
@@ -558,10 +557,10 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_ServiceError() {
 		},
 	}
 
-	svcErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ServerErrorType,
+	svcErr := &tidcommon.ServiceError{
+		Type:  tidcommon.ServerErrorType,
 		Code:  "OU-50001",
-		Error: i18ncore.I18nMessage{Key: "error.test.internal_error", DefaultValue: "internal error"},
+		Error: tidcommon.I18nMessage{Key: "error.test.internal_error", DefaultValue: "internal error"},
 	}
 	suite.mockOUService.On("IsOrganizationUnitExists", mock.Anything, selectedOUID).
 		Return(false, svcErr)

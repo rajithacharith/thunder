@@ -23,8 +23,9 @@ import (
 	"net/http"
 	"strings"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
 
@@ -161,9 +162,9 @@ func sanitizeDisplay(in *CredentialDisplay) *CredentialDisplay {
 }
 
 // writeConfigurationError writes a service error to the response with the appropriate HTTP status code.
-func writeConfigurationError(ctx context.Context, w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
+func writeConfigurationError(ctx context.Context, w http.ResponseWriter, svcErr *tidcommon.ServiceError) {
 	status := http.StatusInternalServerError
-	if svcErr.Type == serviceerror.ClientErrorType {
+	if svcErr.Type == tidcommon.ClientErrorType {
 		status = configurationClientErrorStatus(svcErr.Code)
 	}
 	sysutils.WriteErrorResponse(ctx, w, status, apierror.ErrorResponse{

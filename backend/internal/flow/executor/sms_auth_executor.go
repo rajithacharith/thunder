@@ -23,14 +23,15 @@ import (
 	"fmt"
 	"strconv"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/thunder-id/thunderid/internal/authn/otp"
 	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	notifcommon "github.com/thunder-id/thunderid/internal/notification/common"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	systemutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -49,7 +50,7 @@ type smsOTPAuthExecutor struct {
 	identifyingExecutorInterface
 	entityProvider entityprovider.EntityProviderInterface
 	otpService     otp.OTPAuthnServiceInterface
-	authnProvider  authnprovidermgr.AuthnProviderManagerInterface
+	authnProvider  providers.AuthnProviderManagerInterface
 	logger         *log.Logger
 }
 
@@ -60,7 +61,7 @@ var _ identifyingExecutorInterface = (*smsOTPAuthExecutor)(nil)
 func newSMSOTPAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
 	otpService otp.OTPAuthnServiceInterface,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
+	authnProvider providers.AuthnProviderManagerInterface,
 	entityProvider entityprovider.EntityProviderInterface,
 ) *smsOTPAuthExecutor {
 	defaultInputs := []common.Input{
@@ -112,7 +113,7 @@ func (s *smsOTPAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRes
 		if mobileNumber == "" {
 			logger.Debug(ctx.Context,
 				"Prerequisites not met for SMS OTP authentication executor")
-			if ctx.FlowType == common.FlowTypeRegistration {
+			if ctx.FlowType == providers.FlowTypeRegistration {
 				logger.Debug(ctx.Context,
 					"Prerequisites not met for registration flow, prompting for mobile number")
 				execResp.Status = common.ExecUserInputRequired
@@ -200,7 +201,7 @@ func (s *smsOTPAuthExecutor) InitiateOTP(ctx *core.NodeContext,
 	}
 
 	// Handle registration flows.
-	if ctx.FlowType == common.FlowTypeRegistration {
+	if ctx.FlowType == providers.FlowTypeRegistration {
 		if execResp.Status == common.ExecFailure &&
 			(execResp.Error == nil || execResp.Error.Code != ErrUserNotFound.Code) {
 			if execResp.Error != nil {
@@ -215,7 +216,7 @@ func (s *smsOTPAuthExecutor) InitiateOTP(ctx *core.NodeContext,
 			// Prompt the user to provide a different mobile number.
 			execResp.Status = common.ExecUserInputRequired
 			execResp.Inputs = []common.Input{s.resolvePhoneInput(ctx, mobileNumberInput)}
-			execResp.Error = serviceerror.CustomServiceError(ErrUserAlreadyExists, i18ncore.I18nMessage{
+			execResp.Error = tidcommon.CustomServiceError(ErrUserAlreadyExists, tidcommon.I18nMessage{
 				Key:          ErrUserAlreadyExists.ErrorDescription.Key,
 				DefaultValue: "User already exists with the provided mobile number",
 			})
@@ -270,14 +271,14 @@ func (s *smsOTPAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 // ValidatePrerequisites validates whether the prerequisites for the SMSOTPAuthExecutor are met.
 func (s *smsOTPAuthExecutor) ValidatePrerequisites(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface) bool {
+	authnProvider providers.AuthnProviderManagerInterface) bool {
 	if s.isPhonePrerequisiteMet(ctx) {
 		return true
 	}
 
 	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
-	if ctx.FlowType == common.FlowTypeRegistration {
+	if ctx.FlowType == providers.FlowTypeRegistration {
 		logger.Debug(ctx.Context,
 			"Prerequisites not met for registration flow, prompting for mobile number")
 		execResp.Status = common.ExecUserInputRequired

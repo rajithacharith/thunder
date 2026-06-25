@@ -21,10 +21,13 @@ package core
 import (
 	"testing"
 
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/flow/common"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 )
 
 type FlowFactoryTestSuite struct {
@@ -140,18 +143,18 @@ func (s *FlowFactoryTestSuite) TestCreateGraph() {
 	tests := []struct {
 		name         string
 		graphID      string
-		flowType     common.FlowType
+		flowType     providers.FlowType
 		expectUUID   bool
-		expectedType common.FlowType
+		expectedType providers.FlowType
 	}{
-		{"Create graph with ID and type", "graph-1", common.FlowTypeAuthentication,
-			false, common.FlowTypeAuthentication},
-		{"Create graph with registration flow type", "graph-2", common.FlowTypeRegistration,
-			false, common.FlowTypeRegistration},
-		{"Empty graph ID generates UUID", "", common.FlowTypeAuthentication,
-			true, common.FlowTypeAuthentication},
+		{"Create graph with ID and type", "graph-1", providers.FlowTypeAuthentication,
+			false, providers.FlowTypeAuthentication},
+		{"Create graph with registration flow type", "graph-2", providers.FlowTypeRegistration,
+			false, providers.FlowTypeRegistration},
+		{"Empty graph ID generates UUID", "", providers.FlowTypeAuthentication,
+			true, providers.FlowTypeAuthentication},
 		{"Empty flow type defaults to authentication", "graph-3", "",
-			false, common.FlowTypeAuthentication},
+			false, providers.FlowTypeAuthentication},
 	}
 
 	for _, tt := range tests {
@@ -380,7 +383,7 @@ type fakeExecutorBackedNode struct {
 	id string
 }
 
-func (f *fakeExecutorBackedNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceerror.ServiceError) {
+func (f *fakeExecutorBackedNode) Execute(ctx *NodeContext) (*common.NodeResponse, *tidcommon.ServiceError) {
 	return nil, nil
 }
 

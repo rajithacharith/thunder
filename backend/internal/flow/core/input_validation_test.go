@@ -21,6 +21,8 @@ package core
 import (
 	"testing"
 
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/flow/common"
@@ -605,7 +607,7 @@ func (s *InputValidationTestSuite) TestPromptNodeAdvancesOnValidSubmission() {
 func (s *InputValidationTestSuite) TestLoginOptionsVariantReturnsFieldErrorsOnValidationFailure() {
 	node := newPromptNode("login-chooser", map[string]interface{}{}, false, false)
 	pn := node.(PromptNodeInterface)
-	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetVariant(providers.NodeVariantLoginOptions)
 	pn.SetPrompts([]common.Prompt{
 		{
 			Inputs: []common.Input{

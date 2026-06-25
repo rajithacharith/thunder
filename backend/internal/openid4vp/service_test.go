@@ -32,13 +32,14 @@ import (
 	"testing"
 	"time"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/openid4vp/definition"
 	"github.com/thunder-id/thunderid/internal/system/cryptolib"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
 )
 
@@ -81,7 +82,7 @@ func newStatefulDefinitionReader(
 	t.Helper()
 	m := newDefinitionReaderMock(t)
 	m.EXPECT().GetPresentationDefinitionByHandle(mock.Anything, mock.Anything).RunAndReturn(
-		func(_ context.Context, handle string) (*definition.PresentationDefinitionDTO, *serviceerror.ServiceError) {
+		func(_ context.Context, handle string) (*definition.PresentationDefinitionDTO, *tidcommon.ServiceError) {
 			dto, ok := byHandle[handle]
 			if !ok {
 				return nil, &definition.ErrorDefinitionNotFound
@@ -1121,7 +1122,7 @@ func (suite *OpenID4VPServiceTestSuite) TestJWTresultTokenIssuerIssuesSignedToke
 		RunAndReturn(func(
 			_ context.Context, sub, iss string, validity int64,
 			claims map[string]interface{}, typ, alg string,
-		) (string, int64, *serviceerror.ServiceError) {
+		) (string, int64, *tidcommon.ServiceError) {
 			suite.Equal("user-123", sub)
 			suite.Equal("https://verifier.example", iss)
 			suite.EqualValues(300, validity)
@@ -1175,7 +1176,7 @@ func (suite *OpenID4VPServiceTestSuite) TestJWTresultTokenIssuerSurfacesSigningE
 			mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 			mock.Anything, mock.Anything, mock.Anything,
 		).
-		Return("", 0, &serviceerror.InternalServerError).Once()
+		Return("", 0, &tidcommon.InternalServerError).Once()
 	issuer := newJWTresultTokenIssuer(jwtSvc, "iss", "cid")
 
 	_, err := issuer.issueResultToken(context.Background(), "rp", &RequestState{

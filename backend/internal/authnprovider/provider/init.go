@@ -27,11 +27,11 @@ import (
 	"github.com/thunder-id/thunderid/internal/authn/otp"
 	"github.com/thunder-id/thunderid/internal/authn/passkey"
 	"github.com/thunder-id/thunderid/internal/entity"
-	"github.com/thunder-id/thunderid/internal/idp"
 	"github.com/thunder-id/thunderid/internal/openid4vp"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	systemhttp "github.com/thunder-id/thunderid/internal/system/http"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // InitializeAuthnProvider initializes the authentication provider.
@@ -41,7 +41,7 @@ func InitializeAuthnProvider(
 	otpSvc otp.OTPAuthnServiceInterface,
 	magicLinkSvc magiclink.MagicLinkAuthnServiceInterface,
 	openid4vpSvc openid4vp.OpenID4VPServiceInterface,
-	federatedAuths map[idp.IDPType]authncommon.FederatedAuthenticator,
+	federatedAuths map[providers.IDPType]authncommon.FederatedAuthenticator,
 ) AuthnProviderInterface {
 	authnProviderConfig := config.GetServerRuntime().Config.AuthnProvider
 	switch authnProviderConfig.Type {
@@ -59,7 +59,7 @@ func initializeDefaultAuthnProvider(
 	otpSvc otp.OTPAuthnServiceInterface,
 	magicLinkSvc magiclink.MagicLinkAuthnServiceInterface,
 	openid4vpSvc openid4vp.OpenID4VPServiceInterface,
-	federatedAuths map[idp.IDPType]authncommon.FederatedAuthenticator,
+	federatedAuths map[providers.IDPType]authncommon.FederatedAuthenticator,
 ) AuthnProviderInterface {
 	return newDefaultAuthnProvider(entitySvc, passkeySvc, otpSvc, magicLinkSvc, openid4vpSvc, federatedAuths)
 }

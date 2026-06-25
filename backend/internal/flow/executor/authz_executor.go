@@ -22,13 +22,13 @@ import (
 	"encoding/json"
 	"errors"
 
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	authzsvc "github.com/thunder-id/thunderid/internal/authz"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/utils"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 const (
@@ -43,7 +43,7 @@ type authorizationExecutor struct {
 	core.ExecutorInterface
 	authzService   authzsvc.AuthorizationServiceInterface
 	entityProvider entityprovider.EntityProviderInterface
-	authnProvider  authnprovidermgr.AuthnProviderManagerInterface
+	authnProvider  providers.AuthnProviderManagerInterface
 	logger         *log.Logger
 }
 
@@ -54,7 +54,7 @@ func newAuthorizationExecutor(
 	flowFactory core.FlowFactoryInterface,
 	authZService authzsvc.AuthorizationServiceInterface,
 	entityProvider entityprovider.EntityProviderInterface,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
+	authnProvider providers.AuthnProviderManagerInterface,
 ) *authorizationExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, authzLoggerComponentName),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameAuthorization))
@@ -82,7 +82,7 @@ func (a *authorizationExecutor) Execute(ctx *core.NodeContext) (*common.Executor
 		AuthUser:    ctx.AuthUser,
 	}
 
-	if !execResp.AuthUser.IsAuthenticated() && ctx.FlowType == common.FlowTypeRegistration {
+	if !execResp.AuthUser.IsAuthenticated() && ctx.FlowType == providers.FlowTypeRegistration {
 		logger.Debug(ctx.Context,
 			"Sending executor complete response for unauthenticated user in registration flow")
 		execResp.Status = common.ExecComplete

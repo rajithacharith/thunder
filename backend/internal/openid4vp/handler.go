@@ -25,8 +25,9 @@ import (
 	"strings"
 	"time"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -157,7 +158,7 @@ func (h *openID4VPHandler) HandleInitiate(w http.ResponseWriter, r *http.Request
 	}
 	init, svcErr := h.service.InitiateForRP(r.Context(), req.DefinitionID, req.RPID)
 	if svcErr != nil {
-		if svcErr.Type != serviceerror.ClientErrorType {
+		if svcErr.Type != tidcommon.ClientErrorType {
 			h.logger.Error(r.Context(), "Failed to initiate OpenID4VP transaction",
 				log.String("errorCode", svcErr.Code))
 		}
@@ -213,7 +214,7 @@ func (h *openID4VPHandler) HandleStatus(w http.ResponseWriter, r *http.Request) 
 	case StatusCompleted:
 		if h.issuer == nil {
 			h.logger.Error(r.Context(), "Result token issuer not configured")
-			writeServiceErrorResponse(r.Context(), w, &serviceerror.InternalServerError)
+			writeServiceErrorResponse(r.Context(), w, &tidcommon.InternalServerError)
 			return
 		}
 		rpID := rs.RPID
@@ -224,7 +225,7 @@ func (h *openID4VPHandler) HandleStatus(w http.ResponseWriter, r *http.Request) 
 			r.Context(), rpID, rs, int64(h.resultTokenValidity.Seconds()))
 		if tokenErr != nil {
 			h.logger.Error(r.Context(), "Failed to issue result token", log.Error(tokenErr))
-			writeServiceErrorResponse(r.Context(), w, &serviceerror.InternalServerError)
+			writeServiceErrorResponse(r.Context(), w, &tidcommon.InternalServerError)
 			return
 		}
 		sysutils.WriteSuccessResponse(r.Context(), w, http.StatusOK, statusResponse{
@@ -232,7 +233,7 @@ func (h *openID4VPHandler) HandleStatus(w http.ResponseWriter, r *http.Request) 
 			ResultToken: token,
 		})
 	default:
-		writeServiceErrorResponse(r.Context(), w, &serviceerror.InternalServerError)
+		writeServiceErrorResponse(r.Context(), w, &tidcommon.InternalServerError)
 	}
 }
 
@@ -250,9 +251,9 @@ func extractTxnID(r *http.Request) string {
 }
 
 // writeServiceErrorResponse writes a service error to the response with the appropriate HTTP status code.
-func writeServiceErrorResponse(ctx context.Context, w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
+func writeServiceErrorResponse(ctx context.Context, w http.ResponseWriter, svcErr *tidcommon.ServiceError) {
 	statusCode := http.StatusInternalServerError
-	if svcErr.Type == serviceerror.ClientErrorType {
+	if svcErr.Type == tidcommon.ClientErrorType {
 		statusCode = clientErrorStatusCode(svcErr.Code)
 	}
 	sysutils.WriteErrorResponse(ctx, w, statusCode, apierror.ErrorResponse{

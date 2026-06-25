@@ -21,10 +21,10 @@ package executor
 import (
 	authngithub "github.com/thunder-id/thunderid/internal/authn/github"
 	authnoauth "github.com/thunder-id/thunderid/internal/authn/oauth"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/idp"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // githubOAuthExecutor implements the OAuth authentication executor for GitHub.
@@ -40,7 +40,7 @@ func newGithubOAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
 	idpService idp.IDPServiceInterface,
 	authService authngithub.GithubOAuthAuthnServiceInterface,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
+	authnProvider providers.AuthnProviderManagerInterface,
 ) oAuthExecutorInterface {
 	oauthSvcCast, ok := authService.(authnoauth.OAuthAuthnCoreServiceInterface)
 	if !ok {
@@ -48,7 +48,7 @@ func newGithubOAuthExecutor(
 	}
 
 	base := newOAuthExecutor(ExecutorNameGitHubAuth, []common.Input{}, []common.Input{},
-		flowFactory, idpService, oauthSvcCast, authnProvider, idp.IDPTypeGitHub)
+		flowFactory, idpService, oauthSvcCast, authnProvider, providers.IDPTypeGitHub)
 
 	return &githubOAuthExecutor{
 		oAuthExecutorInterface: base,

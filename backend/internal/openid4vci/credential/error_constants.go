@@ -22,8 +22,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	"github.com/thunder-id/thunderid/internal/system/i18n/core"
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 // Internal sentinel errors for the composite/file-based credential store.
@@ -46,56 +45,56 @@ var (
 // Client-facing API errors for the credential-configuration management endpoints.
 var (
 	// ErrorConfigurationInvalidRequest indicates a malformed create/update request.
-	ErrorConfigurationInvalidRequest = serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	ErrorConfigurationInvalidRequest = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "VCI-2001",
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.vci.configuration_invalid_request",
 			DefaultValue: "Invalid request",
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.vci.configuration_invalid_request_description",
 			DefaultValue: "The credential configuration request is missing required fields or is malformed",
 		},
 	}
 
 	// ErrorConfigurationNotFound indicates the credential configuration does not exist.
-	ErrorConfigurationNotFound = serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	ErrorConfigurationNotFound = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "VCI-2002",
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.vci.configuration_not_found",
 			DefaultValue: "Credential configuration not found",
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.vci.configuration_not_found_description",
 			DefaultValue: "No credential configuration exists for the supplied identifier",
 		},
 	}
 
 	// ErrorConfigurationAlreadyExists indicates the handle is already in use.
-	ErrorConfigurationAlreadyExists = serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	ErrorConfigurationAlreadyExists = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "VCI-2003",
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.vci.configuration_already_exists",
 			DefaultValue: "Credential configuration already exists",
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.vci.configuration_already_exists_description",
 			DefaultValue: "A credential configuration with the supplied handle already exists",
 		},
 	}
 
 	// ErrorConfigurationUnsupportedFormat indicates an unsupported credential format.
-	ErrorConfigurationUnsupportedFormat = serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	ErrorConfigurationUnsupportedFormat = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "VCI-2004",
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.vci.configuration_unsupported_format",
 			DefaultValue: "Unsupported credential format",
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.vci.configuration_unsupported_format_description",
 			DefaultValue: "Only the dc+sd-jwt credential format is supported",
 		},
@@ -103,14 +102,14 @@ var (
 
 	// ErrorConfigurationImmutable indicates the credential configuration is declarative
 	// (file-based) and cannot be modified or deleted via the management API.
-	ErrorConfigurationImmutable = serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	ErrorConfigurationImmutable = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "VCI-2005",
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.vci.configuration_immutable",
 			DefaultValue: "Credential configuration is immutable",
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key: "error.vci.configuration_immutable_description",
 			DefaultValue: "The credential configuration is defined in declarative configuration " +
 				"and cannot be modified or deleted",
@@ -119,14 +118,14 @@ var (
 
 	// ErrorConfigurationResultLimitExceeded indicates the merged composite-store result
 	// set exceeds the supported maximum.
-	ErrorConfigurationResultLimitExceeded = serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	ErrorConfigurationResultLimitExceeded = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "VCI-2006",
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.vci.configuration_result_limit_exceeded",
 			DefaultValue: "Result limit exceeded",
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key: "error.vci.configuration_result_limit_exceeded_description",
 			DefaultValue: "The number of credential configurations exceeds the supported limit in " +
 				"hybrid mode",
@@ -134,14 +133,14 @@ var (
 	}
 
 	// ErrorConfigurationInvalidOU indicates the organization unit is missing or does not exist.
-	ErrorConfigurationInvalidOU = serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
+	ErrorConfigurationInvalidOU = tidcommon.ServiceError{
+		Type: tidcommon.ClientErrorType,
 		Code: "VCI-2007",
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.vci.configuration_invalid_ou",
 			DefaultValue: "Invalid organization unit",
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.vci.configuration_invalid_ou_description",
 			DefaultValue: "A valid organization unit (ouId or ouHandle) is required",
 		},

@@ -23,11 +23,12 @@ import (
 	"errors"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/thunder-id/thunderid/internal/ou"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 	"github.com/thunder-id/thunderid/tests/mocks/oumock"
 )
 
@@ -113,19 +114,19 @@ func newOUServiceMock(
 	t.Helper()
 	m := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 	m.EXPECT().IsOrganizationUnitExists(mock.Anything, mock.Anything).RunAndReturn(
-		func(_ context.Context, id string) (bool, *serviceerror.ServiceError) {
+		func(_ context.Context, id string) (bool, *tidcommon.ServiceError) {
 			return exists[id], nil
 		}).Maybe()
 	m.EXPECT().GetOrganizationUnitByPath(mock.Anything, mock.Anything).RunAndReturn(
-		func(_ context.Context, handlePath string) (ou.OrganizationUnit, *serviceerror.ServiceError) {
+		func(_ context.Context, handlePath string) (providers.OrganizationUnit, *tidcommon.ServiceError) {
 			id, ok := byPath[handlePath]
 			if !ok {
-				return ou.OrganizationUnit{}, &serviceerror.InternalServerError
+				return providers.OrganizationUnit{}, &tidcommon.InternalServerError
 			}
-			return ou.OrganizationUnit{ID: id}, nil
+			return providers.OrganizationUnit{ID: id}, nil
 		}).Maybe()
 	m.EXPECT().GetOrganizationUnitHandlesByIDs(mock.Anything, mock.Anything).RunAndReturn(
-		func(_ context.Context, ids []string) (map[string]string, *serviceerror.ServiceError) {
+		func(_ context.Context, ids []string) (map[string]string, *tidcommon.ServiceError) {
 			out := make(map[string]string, len(ids))
 			for _, id := range ids {
 				if h, ok := handles[id]; ok {
@@ -347,7 +348,7 @@ func (s *ConfigurationServiceTestSuite) TestCreateHandleCheckStoreError() {
 	svc := newCredentialConfigurationService(s.newErrorStore(errors.New("boom")), nil)
 	_, err := svc.CreateCredentialConfiguration(context.Background(), s.validDTO())
 	s.Require().NotNil(err)
-	s.Equal(serviceerror.InternalServerError.Code, err.Code)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
 }
 
 func (s *ConfigurationServiceTestSuite) TestCreateStoreError() {
@@ -358,19 +359,19 @@ func (s *ConfigurationServiceTestSuite) TestCreateStoreError() {
 	svc := newCredentialConfigurationService(m, nil)
 	_, err := svc.CreateCredentialConfiguration(context.Background(), s.validDTO())
 	s.Require().NotNil(err)
-	s.Equal(serviceerror.InternalServerError.Code, err.Code)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
 }
 
 func (s *ConfigurationServiceTestSuite) TestCreateOUVerificationError() {
 	resolver := oumock.NewOrganizationUnitServiceInterfaceMock(s.T())
 	resolver.EXPECT().IsOrganizationUnitExists(mock.Anything, mock.Anything).
-		Return(false, &serviceerror.InternalServerError).Maybe()
+		Return(false, &tidcommon.InternalServerError).Maybe()
 	svc := newCredentialConfigurationService(newStatefulCredentialStore(s.T()), resolver)
 	dto := s.validDTO()
 	dto.OUID = "ou-1"
 	_, err := svc.CreateCredentialConfiguration(context.Background(), dto)
 	s.Require().NotNil(err)
-	s.Equal(serviceerror.InternalServerError.Code, err.Code)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
 }
 
 func (s *ConfigurationServiceTestSuite) TestCreateOUResolveByPathError() {
@@ -395,21 +396,21 @@ func (s *ConfigurationServiceTestSuite) TestGetStoreError() {
 	svc := newCredentialConfigurationService(s.newErrorStore(errors.New("boom")), nil)
 	_, err := svc.GetCredentialConfiguration(context.Background(), "cfg-1")
 	s.Require().NotNil(err)
-	s.Equal(serviceerror.InternalServerError.Code, err.Code)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
 }
 
 func (s *ConfigurationServiceTestSuite) TestGetByHandleStoreError() {
 	svc := newCredentialConfigurationService(s.newErrorStore(errors.New("boom")), nil)
 	_, err := svc.GetCredentialConfigurationByHandle(context.Background(), "h")
 	s.Require().NotNil(err)
-	s.Equal(serviceerror.InternalServerError.Code, err.Code)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
 }
 
 func (s *ConfigurationServiceTestSuite) TestListStoreError() {
 	svc := newCredentialConfigurationService(s.newErrorStore(errors.New("boom")), nil)
 	_, err := svc.ListCredentialConfigurations(context.Background())
 	s.Require().NotNil(err)
-	s.Equal(serviceerror.InternalServerError.Code, err.Code)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
 }
 
 func (s *ConfigurationServiceTestSuite) TestListResultLimitExceeded() {
@@ -424,7 +425,7 @@ func (s *ConfigurationServiceTestSuite) TestListSummariesStoreError() {
 	svc := newCredentialConfigurationService(s.newErrorStore(errors.New("boom")), nil)
 	_, err := svc.ListCredentialConfigurationSummaries(context.Background())
 	s.Require().NotNil(err)
-	s.Equal(serviceerror.InternalServerError.Code, err.Code)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
 }
 
 func (s *ConfigurationServiceTestSuite) TestListSummariesResultLimitExceeded() {
@@ -442,7 +443,7 @@ func (s *ConfigurationServiceTestSuite) TestUpdateLoadStoreError() {
 	svc := newCredentialConfigurationService(m, nil)
 	_, err := svc.UpdateCredentialConfiguration(context.Background(), "cfg-1", s.validDTO())
 	s.Require().NotNil(err)
-	s.Equal(serviceerror.InternalServerError.Code, err.Code)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
 }
 
 func (s *ConfigurationServiceTestSuite) TestUpdateHandleClashCheckStoreError() {
@@ -460,7 +461,7 @@ func (s *ConfigurationServiceTestSuite) TestUpdateHandleClashCheckStoreError() {
 	svc := newCredentialConfigurationService(m, nil)
 	_, err := svc.UpdateCredentialConfiguration(context.Background(), "cfg-1", s.validDTO())
 	s.Require().NotNil(err)
-	s.Equal(serviceerror.InternalServerError.Code, err.Code)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
 }
 
 func (s *ConfigurationServiceTestSuite) TestUpdateStoreError() {
@@ -478,7 +479,7 @@ func (s *ConfigurationServiceTestSuite) TestUpdateStoreError() {
 	svc := newCredentialConfigurationService(m, nil)
 	_, err := svc.UpdateCredentialConfiguration(context.Background(), "cfg-1", s.validDTO())
 	s.Require().NotNil(err)
-	s.Equal(serviceerror.InternalServerError.Code, err.Code)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
 }
 
 func (s *ConfigurationServiceTestSuite) TestUpdateInvalidConfig() {
@@ -503,7 +504,7 @@ func (s *ConfigurationServiceTestSuite) TestDeleteLoadStoreError() {
 	svc := newCredentialConfigurationService(m, nil)
 	err := svc.DeleteCredentialConfiguration(context.Background(), "cfg-1")
 	s.Require().NotNil(err)
-	s.Equal(serviceerror.InternalServerError.Code, err.Code)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
 }
 
 func (s *ConfigurationServiceTestSuite) TestDeleteStoreError() {
@@ -519,25 +520,25 @@ func (s *ConfigurationServiceTestSuite) TestDeleteStoreError() {
 	svc := newCredentialConfigurationService(m, nil)
 	err := svc.DeleteCredentialConfiguration(context.Background(), "cfg-1")
 	s.Require().NotNil(err)
-	s.Equal(serviceerror.InternalServerError.Code, err.Code)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
 }
 
 func (s *ConfigurationServiceTestSuite) TestIsDeclarativeStoreError() {
 	svc := newCredentialConfigurationService(s.newErrorStore(errors.New("boom")), nil)
 	_, err := svc.IsCredentialConfigurationDeclarative(context.Background(), "cfg-1")
 	s.Require().NotNil(err)
-	s.Equal(serviceerror.InternalServerError.Code, err.Code)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
 }
 
 func (s *ConfigurationServiceTestSuite) TestPopulateOUHandleResolveError() {
 	resolver := oumock.NewOrganizationUnitServiceInterfaceMock(s.T())
 	resolver.EXPECT().IsOrganizationUnitExists(mock.Anything, mock.Anything).Return(true, nil).Maybe()
 	resolver.EXPECT().GetOrganizationUnitByPath(mock.Anything, mock.Anything).RunAndReturn(
-		func(_ context.Context, _ string) (ou.OrganizationUnit, *serviceerror.ServiceError) {
-			return ou.OrganizationUnit{ID: "ou-1"}, nil
+		func(_ context.Context, _ string) (providers.OrganizationUnit, *tidcommon.ServiceError) {
+			return providers.OrganizationUnit{ID: "ou-1"}, nil
 		}).Maybe()
 	resolver.EXPECT().GetOrganizationUnitHandlesByIDs(mock.Anything, mock.Anything).
-		Return(nil, &serviceerror.InternalServerError).Maybe()
+		Return(nil, &tidcommon.InternalServerError).Maybe()
 	svc := newCredentialConfigurationService(newStatefulCredentialStore(s.T()), resolver)
 
 	dto := s.validDTO()

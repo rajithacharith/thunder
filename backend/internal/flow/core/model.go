@@ -22,8 +22,8 @@ import (
 	"context"
 
 	appmodel "github.com/thunder-id/thunderid/internal/application/model"
-	"github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/flow/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // NodeContext holds the context for a specific node in the flow execution.
@@ -31,7 +31,7 @@ type NodeContext struct {
 	Context context.Context
 
 	ExecutionID   string
-	FlowType      common.FlowType
+	FlowType      providers.FlowType
 	EntityID      string
 	Verbose       bool
 	CurrentAction string
@@ -45,7 +45,7 @@ type NodeContext struct {
 	ForwardedData  map[string]interface{}
 
 	Application      appmodel.Application
-	AuthUser         manager.AuthUser
+	AuthUser         providers.AuthUser
 	ExecutionHistory map[string]*common.NodeExecutionRecord
 }
 
@@ -79,10 +79,10 @@ type InterceptorContext struct {
 	// Flow identity
 	ExecutionID string
 	AppID       string
-	FlowType    common.FlowType
+	FlowType    providers.FlowType
 
 	// Mode is the lifecycle point at which this interceptor is executing.
-	Mode common.InterceptorMode
+	Mode providers.InterceptorMode
 
 	// Engine state
 	FlowStatus          common.FlowStatus

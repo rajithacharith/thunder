@@ -8,7 +8,7 @@ import (
 	"context"
 
 	mock "github.com/stretchr/testify/mock"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 // NewPresentationDefinitionServiceInterfaceMock creates a new instance of PresentationDefinitionServiceInterfaceMock. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -39,7 +39,7 @@ func (_m *PresentationDefinitionServiceInterfaceMock) EXPECT() *PresentationDefi
 }
 
 // CreatePresentationDefinition provides a mock function for the type PresentationDefinitionServiceInterfaceMock
-func (_mock *PresentationDefinitionServiceInterfaceMock) CreatePresentationDefinition(ctx context.Context, dto *PresentationDefinitionDTO) (*PresentationDefinitionDTO, *serviceerror.ServiceError) {
+func (_mock *PresentationDefinitionServiceInterfaceMock) CreatePresentationDefinition(ctx context.Context, dto *PresentationDefinitionDTO) (*PresentationDefinitionDTO, *common.ServiceError) {
 	ret := _mock.Called(ctx, dto)
 
 	if len(ret) == 0 {
@@ -47,8 +47,8 @@ func (_mock *PresentationDefinitionServiceInterfaceMock) CreatePresentationDefin
 	}
 
 	var r0 *PresentationDefinitionDTO
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *PresentationDefinitionDTO) (*PresentationDefinitionDTO, *serviceerror.ServiceError)); ok {
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *PresentationDefinitionDTO) (*PresentationDefinitionDTO, *common.ServiceError)); ok {
 		return returnFunc(ctx, dto)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, *PresentationDefinitionDTO) *PresentationDefinitionDTO); ok {
@@ -58,11 +58,11 @@ func (_mock *PresentationDefinitionServiceInterfaceMock) CreatePresentationDefin
 			r0 = ret.Get(0).(*PresentationDefinitionDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *PresentationDefinitionDTO) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *PresentationDefinitionDTO) *common.ServiceError); ok {
 		r1 = returnFunc(ctx, dto)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -98,30 +98,30 @@ func (_c *PresentationDefinitionServiceInterfaceMock_CreatePresentationDefinitio
 	return _c
 }
 
-func (_c *PresentationDefinitionServiceInterfaceMock_CreatePresentationDefinition_Call) Return(presentationDefinitionDTO *PresentationDefinitionDTO, serviceError *serviceerror.ServiceError) *PresentationDefinitionServiceInterfaceMock_CreatePresentationDefinition_Call {
+func (_c *PresentationDefinitionServiceInterfaceMock_CreatePresentationDefinition_Call) Return(presentationDefinitionDTO *PresentationDefinitionDTO, serviceError *common.ServiceError) *PresentationDefinitionServiceInterfaceMock_CreatePresentationDefinition_Call {
 	_c.Call.Return(presentationDefinitionDTO, serviceError)
 	return _c
 }
 
-func (_c *PresentationDefinitionServiceInterfaceMock_CreatePresentationDefinition_Call) RunAndReturn(run func(ctx context.Context, dto *PresentationDefinitionDTO) (*PresentationDefinitionDTO, *serviceerror.ServiceError)) *PresentationDefinitionServiceInterfaceMock_CreatePresentationDefinition_Call {
+func (_c *PresentationDefinitionServiceInterfaceMock_CreatePresentationDefinition_Call) RunAndReturn(run func(ctx context.Context, dto *PresentationDefinitionDTO) (*PresentationDefinitionDTO, *common.ServiceError)) *PresentationDefinitionServiceInterfaceMock_CreatePresentationDefinition_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // DeletePresentationDefinition provides a mock function for the type PresentationDefinitionServiceInterfaceMock
-func (_mock *PresentationDefinitionServiceInterfaceMock) DeletePresentationDefinition(ctx context.Context, id string) *serviceerror.ServiceError {
+func (_mock *PresentationDefinitionServiceInterfaceMock) DeletePresentationDefinition(ctx context.Context, id string) *common.ServiceError {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeletePresentationDefinition")
 	}
 
-	var r0 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *serviceerror.ServiceError); ok {
+	var r0 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *common.ServiceError); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*serviceerror.ServiceError)
+			r0 = ret.Get(0).(*common.ServiceError)
 		}
 	}
 	return r0
@@ -157,18 +157,18 @@ func (_c *PresentationDefinitionServiceInterfaceMock_DeletePresentationDefinitio
 	return _c
 }
 
-func (_c *PresentationDefinitionServiceInterfaceMock_DeletePresentationDefinition_Call) Return(serviceError *serviceerror.ServiceError) *PresentationDefinitionServiceInterfaceMock_DeletePresentationDefinition_Call {
+func (_c *PresentationDefinitionServiceInterfaceMock_DeletePresentationDefinition_Call) Return(serviceError *common.ServiceError) *PresentationDefinitionServiceInterfaceMock_DeletePresentationDefinition_Call {
 	_c.Call.Return(serviceError)
 	return _c
 }
 
-func (_c *PresentationDefinitionServiceInterfaceMock_DeletePresentationDefinition_Call) RunAndReturn(run func(ctx context.Context, id string) *serviceerror.ServiceError) *PresentationDefinitionServiceInterfaceMock_DeletePresentationDefinition_Call {
+func (_c *PresentationDefinitionServiceInterfaceMock_DeletePresentationDefinition_Call) RunAndReturn(run func(ctx context.Context, id string) *common.ServiceError) *PresentationDefinitionServiceInterfaceMock_DeletePresentationDefinition_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetPresentationDefinition provides a mock function for the type PresentationDefinitionServiceInterfaceMock
-func (_mock *PresentationDefinitionServiceInterfaceMock) GetPresentationDefinition(ctx context.Context, id string) (*PresentationDefinitionDTO, *serviceerror.ServiceError) {
+func (_mock *PresentationDefinitionServiceInterfaceMock) GetPresentationDefinition(ctx context.Context, id string) (*PresentationDefinitionDTO, *common.ServiceError) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
@@ -176,8 +176,8 @@ func (_mock *PresentationDefinitionServiceInterfaceMock) GetPresentationDefiniti
 	}
 
 	var r0 *PresentationDefinitionDTO
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*PresentationDefinitionDTO, *serviceerror.ServiceError)); ok {
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*PresentationDefinitionDTO, *common.ServiceError)); ok {
 		return returnFunc(ctx, id)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *PresentationDefinitionDTO); ok {
@@ -187,11 +187,11 @@ func (_mock *PresentationDefinitionServiceInterfaceMock) GetPresentationDefiniti
 			r0 = ret.Get(0).(*PresentationDefinitionDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *common.ServiceError); ok {
 		r1 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -227,18 +227,18 @@ func (_c *PresentationDefinitionServiceInterfaceMock_GetPresentationDefinition_C
 	return _c
 }
 
-func (_c *PresentationDefinitionServiceInterfaceMock_GetPresentationDefinition_Call) Return(presentationDefinitionDTO *PresentationDefinitionDTO, serviceError *serviceerror.ServiceError) *PresentationDefinitionServiceInterfaceMock_GetPresentationDefinition_Call {
+func (_c *PresentationDefinitionServiceInterfaceMock_GetPresentationDefinition_Call) Return(presentationDefinitionDTO *PresentationDefinitionDTO, serviceError *common.ServiceError) *PresentationDefinitionServiceInterfaceMock_GetPresentationDefinition_Call {
 	_c.Call.Return(presentationDefinitionDTO, serviceError)
 	return _c
 }
 
-func (_c *PresentationDefinitionServiceInterfaceMock_GetPresentationDefinition_Call) RunAndReturn(run func(ctx context.Context, id string) (*PresentationDefinitionDTO, *serviceerror.ServiceError)) *PresentationDefinitionServiceInterfaceMock_GetPresentationDefinition_Call {
+func (_c *PresentationDefinitionServiceInterfaceMock_GetPresentationDefinition_Call) RunAndReturn(run func(ctx context.Context, id string) (*PresentationDefinitionDTO, *common.ServiceError)) *PresentationDefinitionServiceInterfaceMock_GetPresentationDefinition_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetPresentationDefinitionByHandle provides a mock function for the type PresentationDefinitionServiceInterfaceMock
-func (_mock *PresentationDefinitionServiceInterfaceMock) GetPresentationDefinitionByHandle(ctx context.Context, handle string) (*PresentationDefinitionDTO, *serviceerror.ServiceError) {
+func (_mock *PresentationDefinitionServiceInterfaceMock) GetPresentationDefinitionByHandle(ctx context.Context, handle string) (*PresentationDefinitionDTO, *common.ServiceError) {
 	ret := _mock.Called(ctx, handle)
 
 	if len(ret) == 0 {
@@ -246,8 +246,8 @@ func (_mock *PresentationDefinitionServiceInterfaceMock) GetPresentationDefiniti
 	}
 
 	var r0 *PresentationDefinitionDTO
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*PresentationDefinitionDTO, *serviceerror.ServiceError)); ok {
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*PresentationDefinitionDTO, *common.ServiceError)); ok {
 		return returnFunc(ctx, handle)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *PresentationDefinitionDTO); ok {
@@ -257,11 +257,11 @@ func (_mock *PresentationDefinitionServiceInterfaceMock) GetPresentationDefiniti
 			r0 = ret.Get(0).(*PresentationDefinitionDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *common.ServiceError); ok {
 		r1 = returnFunc(ctx, handle)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -297,18 +297,18 @@ func (_c *PresentationDefinitionServiceInterfaceMock_GetPresentationDefinitionBy
 	return _c
 }
 
-func (_c *PresentationDefinitionServiceInterfaceMock_GetPresentationDefinitionByHandle_Call) Return(presentationDefinitionDTO *PresentationDefinitionDTO, serviceError *serviceerror.ServiceError) *PresentationDefinitionServiceInterfaceMock_GetPresentationDefinitionByHandle_Call {
+func (_c *PresentationDefinitionServiceInterfaceMock_GetPresentationDefinitionByHandle_Call) Return(presentationDefinitionDTO *PresentationDefinitionDTO, serviceError *common.ServiceError) *PresentationDefinitionServiceInterfaceMock_GetPresentationDefinitionByHandle_Call {
 	_c.Call.Return(presentationDefinitionDTO, serviceError)
 	return _c
 }
 
-func (_c *PresentationDefinitionServiceInterfaceMock_GetPresentationDefinitionByHandle_Call) RunAndReturn(run func(ctx context.Context, handle string) (*PresentationDefinitionDTO, *serviceerror.ServiceError)) *PresentationDefinitionServiceInterfaceMock_GetPresentationDefinitionByHandle_Call {
+func (_c *PresentationDefinitionServiceInterfaceMock_GetPresentationDefinitionByHandle_Call) RunAndReturn(run func(ctx context.Context, handle string) (*PresentationDefinitionDTO, *common.ServiceError)) *PresentationDefinitionServiceInterfaceMock_GetPresentationDefinitionByHandle_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // IsPresentationDefinitionDeclarative provides a mock function for the type PresentationDefinitionServiceInterfaceMock
-func (_mock *PresentationDefinitionServiceInterfaceMock) IsPresentationDefinitionDeclarative(ctx context.Context, id string) (bool, *serviceerror.ServiceError) {
+func (_mock *PresentationDefinitionServiceInterfaceMock) IsPresentationDefinitionDeclarative(ctx context.Context, id string) (bool, *common.ServiceError) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
@@ -316,8 +316,8 @@ func (_mock *PresentationDefinitionServiceInterfaceMock) IsPresentationDefinitio
 	}
 
 	var r0 bool
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, *serviceerror.ServiceError)); ok {
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, *common.ServiceError)); ok {
 		return returnFunc(ctx, id)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
@@ -325,11 +325,11 @@ func (_mock *PresentationDefinitionServiceInterfaceMock) IsPresentationDefinitio
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *common.ServiceError); ok {
 		r1 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -365,18 +365,18 @@ func (_c *PresentationDefinitionServiceInterfaceMock_IsPresentationDefinitionDec
 	return _c
 }
 
-func (_c *PresentationDefinitionServiceInterfaceMock_IsPresentationDefinitionDeclarative_Call) Return(b bool, serviceError *serviceerror.ServiceError) *PresentationDefinitionServiceInterfaceMock_IsPresentationDefinitionDeclarative_Call {
+func (_c *PresentationDefinitionServiceInterfaceMock_IsPresentationDefinitionDeclarative_Call) Return(b bool, serviceError *common.ServiceError) *PresentationDefinitionServiceInterfaceMock_IsPresentationDefinitionDeclarative_Call {
 	_c.Call.Return(b, serviceError)
 	return _c
 }
 
-func (_c *PresentationDefinitionServiceInterfaceMock_IsPresentationDefinitionDeclarative_Call) RunAndReturn(run func(ctx context.Context, id string) (bool, *serviceerror.ServiceError)) *PresentationDefinitionServiceInterfaceMock_IsPresentationDefinitionDeclarative_Call {
+func (_c *PresentationDefinitionServiceInterfaceMock_IsPresentationDefinitionDeclarative_Call) RunAndReturn(run func(ctx context.Context, id string) (bool, *common.ServiceError)) *PresentationDefinitionServiceInterfaceMock_IsPresentationDefinitionDeclarative_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ListPresentationDefinitionSummaries provides a mock function for the type PresentationDefinitionServiceInterfaceMock
-func (_mock *PresentationDefinitionServiceInterfaceMock) ListPresentationDefinitionSummaries(ctx context.Context) ([]PresentationDefinitionList, *serviceerror.ServiceError) {
+func (_mock *PresentationDefinitionServiceInterfaceMock) ListPresentationDefinitionSummaries(ctx context.Context) ([]PresentationDefinitionList, *common.ServiceError) {
 	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
@@ -384,8 +384,8 @@ func (_mock *PresentationDefinitionServiceInterfaceMock) ListPresentationDefinit
 	}
 
 	var r0 []PresentationDefinitionList
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]PresentationDefinitionList, *serviceerror.ServiceError)); ok {
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]PresentationDefinitionList, *common.ServiceError)); ok {
 		return returnFunc(ctx)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context) []PresentationDefinitionList); ok {
@@ -395,11 +395,11 @@ func (_mock *PresentationDefinitionServiceInterfaceMock) ListPresentationDefinit
 			r0 = ret.Get(0).([]PresentationDefinitionList)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context) *common.ServiceError); ok {
 		r1 = returnFunc(ctx)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -429,18 +429,18 @@ func (_c *PresentationDefinitionServiceInterfaceMock_ListPresentationDefinitionS
 	return _c
 }
 
-func (_c *PresentationDefinitionServiceInterfaceMock_ListPresentationDefinitionSummaries_Call) Return(presentationDefinitionLists []PresentationDefinitionList, serviceError *serviceerror.ServiceError) *PresentationDefinitionServiceInterfaceMock_ListPresentationDefinitionSummaries_Call {
+func (_c *PresentationDefinitionServiceInterfaceMock_ListPresentationDefinitionSummaries_Call) Return(presentationDefinitionLists []PresentationDefinitionList, serviceError *common.ServiceError) *PresentationDefinitionServiceInterfaceMock_ListPresentationDefinitionSummaries_Call {
 	_c.Call.Return(presentationDefinitionLists, serviceError)
 	return _c
 }
 
-func (_c *PresentationDefinitionServiceInterfaceMock_ListPresentationDefinitionSummaries_Call) RunAndReturn(run func(ctx context.Context) ([]PresentationDefinitionList, *serviceerror.ServiceError)) *PresentationDefinitionServiceInterfaceMock_ListPresentationDefinitionSummaries_Call {
+func (_c *PresentationDefinitionServiceInterfaceMock_ListPresentationDefinitionSummaries_Call) RunAndReturn(run func(ctx context.Context) ([]PresentationDefinitionList, *common.ServiceError)) *PresentationDefinitionServiceInterfaceMock_ListPresentationDefinitionSummaries_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ListPresentationDefinitions provides a mock function for the type PresentationDefinitionServiceInterfaceMock
-func (_mock *PresentationDefinitionServiceInterfaceMock) ListPresentationDefinitions(ctx context.Context) ([]PresentationDefinitionDTO, *serviceerror.ServiceError) {
+func (_mock *PresentationDefinitionServiceInterfaceMock) ListPresentationDefinitions(ctx context.Context) ([]PresentationDefinitionDTO, *common.ServiceError) {
 	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
@@ -448,8 +448,8 @@ func (_mock *PresentationDefinitionServiceInterfaceMock) ListPresentationDefinit
 	}
 
 	var r0 []PresentationDefinitionDTO
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]PresentationDefinitionDTO, *serviceerror.ServiceError)); ok {
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]PresentationDefinitionDTO, *common.ServiceError)); ok {
 		return returnFunc(ctx)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context) []PresentationDefinitionDTO); ok {
@@ -459,11 +459,11 @@ func (_mock *PresentationDefinitionServiceInterfaceMock) ListPresentationDefinit
 			r0 = ret.Get(0).([]PresentationDefinitionDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context) *common.ServiceError); ok {
 		r1 = returnFunc(ctx)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -493,18 +493,18 @@ func (_c *PresentationDefinitionServiceInterfaceMock_ListPresentationDefinitions
 	return _c
 }
 
-func (_c *PresentationDefinitionServiceInterfaceMock_ListPresentationDefinitions_Call) Return(presentationDefinitionDTOs []PresentationDefinitionDTO, serviceError *serviceerror.ServiceError) *PresentationDefinitionServiceInterfaceMock_ListPresentationDefinitions_Call {
+func (_c *PresentationDefinitionServiceInterfaceMock_ListPresentationDefinitions_Call) Return(presentationDefinitionDTOs []PresentationDefinitionDTO, serviceError *common.ServiceError) *PresentationDefinitionServiceInterfaceMock_ListPresentationDefinitions_Call {
 	_c.Call.Return(presentationDefinitionDTOs, serviceError)
 	return _c
 }
 
-func (_c *PresentationDefinitionServiceInterfaceMock_ListPresentationDefinitions_Call) RunAndReturn(run func(ctx context.Context) ([]PresentationDefinitionDTO, *serviceerror.ServiceError)) *PresentationDefinitionServiceInterfaceMock_ListPresentationDefinitions_Call {
+func (_c *PresentationDefinitionServiceInterfaceMock_ListPresentationDefinitions_Call) RunAndReturn(run func(ctx context.Context) ([]PresentationDefinitionDTO, *common.ServiceError)) *PresentationDefinitionServiceInterfaceMock_ListPresentationDefinitions_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // UpdatePresentationDefinition provides a mock function for the type PresentationDefinitionServiceInterfaceMock
-func (_mock *PresentationDefinitionServiceInterfaceMock) UpdatePresentationDefinition(ctx context.Context, id string, dto *PresentationDefinitionDTO) (*PresentationDefinitionDTO, *serviceerror.ServiceError) {
+func (_mock *PresentationDefinitionServiceInterfaceMock) UpdatePresentationDefinition(ctx context.Context, id string, dto *PresentationDefinitionDTO) (*PresentationDefinitionDTO, *common.ServiceError) {
 	ret := _mock.Called(ctx, id, dto)
 
 	if len(ret) == 0 {
@@ -512,8 +512,8 @@ func (_mock *PresentationDefinitionServiceInterfaceMock) UpdatePresentationDefin
 	}
 
 	var r0 *PresentationDefinitionDTO
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *PresentationDefinitionDTO) (*PresentationDefinitionDTO, *serviceerror.ServiceError)); ok {
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *PresentationDefinitionDTO) (*PresentationDefinitionDTO, *common.ServiceError)); ok {
 		return returnFunc(ctx, id, dto)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *PresentationDefinitionDTO) *PresentationDefinitionDTO); ok {
@@ -523,11 +523,11 @@ func (_mock *PresentationDefinitionServiceInterfaceMock) UpdatePresentationDefin
 			r0 = ret.Get(0).(*PresentationDefinitionDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, *PresentationDefinitionDTO) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, *PresentationDefinitionDTO) *common.ServiceError); ok {
 		r1 = returnFunc(ctx, id, dto)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -569,12 +569,12 @@ func (_c *PresentationDefinitionServiceInterfaceMock_UpdatePresentationDefinitio
 	return _c
 }
 
-func (_c *PresentationDefinitionServiceInterfaceMock_UpdatePresentationDefinition_Call) Return(presentationDefinitionDTO *PresentationDefinitionDTO, serviceError *serviceerror.ServiceError) *PresentationDefinitionServiceInterfaceMock_UpdatePresentationDefinition_Call {
+func (_c *PresentationDefinitionServiceInterfaceMock_UpdatePresentationDefinition_Call) Return(presentationDefinitionDTO *PresentationDefinitionDTO, serviceError *common.ServiceError) *PresentationDefinitionServiceInterfaceMock_UpdatePresentationDefinition_Call {
 	_c.Call.Return(presentationDefinitionDTO, serviceError)
 	return _c
 }
 
-func (_c *PresentationDefinitionServiceInterfaceMock_UpdatePresentationDefinition_Call) RunAndReturn(run func(ctx context.Context, id string, dto *PresentationDefinitionDTO) (*PresentationDefinitionDTO, *serviceerror.ServiceError)) *PresentationDefinitionServiceInterfaceMock_UpdatePresentationDefinition_Call {
+func (_c *PresentationDefinitionServiceInterfaceMock_UpdatePresentationDefinition_Call) RunAndReturn(run func(ctx context.Context, id string, dto *PresentationDefinitionDTO) (*PresentationDefinitionDTO, *common.ServiceError)) *PresentationDefinitionServiceInterfaceMock_UpdatePresentationDefinition_Call {
 	_c.Call.Return(run)
 	return _c
 }

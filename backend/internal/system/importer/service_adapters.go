@@ -23,21 +23,20 @@ import (
 	"encoding/json"
 	"fmt"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	agentmodel "github.com/thunder-id/thunderid/internal/agent/model"
 	layoutmgt "github.com/thunder-id/thunderid/internal/design/layout/mgt"
 	thememgt "github.com/thunder-id/thunderid/internal/design/theme/mgt"
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	"github.com/thunder-id/thunderid/internal/group"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
-	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/openid4vci/credential"
 	"github.com/thunder-id/thunderid/internal/openid4vp/definition"
-	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/user"
@@ -48,7 +47,7 @@ import (
 // Returns the (possibly resolved) ouID and any service error from the OU lookup.
 func (s *importService) resolveImportOUHandle(
 	ctx context.Context, resourceType, resourceID, resourceName, ouID, ouHandle string,
-) (string, *serviceerror.ServiceError) {
+) (string, *tidcommon.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ImportService"))
 	if ouID != "" && ouHandle != "" {
 		logger.Warn(ctx, "Both ouId and ouHandle provided; ouHandle ignored",
@@ -59,7 +58,7 @@ func (s *importService) resolveImportOUHandle(
 	}
 	if ouID == "" && ouHandle != "" {
 		if s.ouService == nil {
-			return "", &serviceerror.InternalServerError
+			return "", &tidcommon.InternalServerError
 		}
 		resolved, svcErr := s.ouService.GetOrganizationUnitByPath(ctx, ouHandle)
 		if svcErr != nil {
@@ -123,12 +122,12 @@ func (s *importService) importOrganizationUnit(
 		return unsupportedAdapterOutcome(resourceTypeOrganizationUnit, "organization unit")
 	}
 
-	var req ou.OrganizationUnit
+	var req providers.OrganizationUnit
 	if err := doc.Node.Decode(&req); err != nil {
 		return decodeErrorOutcome(resourceTypeOrganizationUnit, req.ID, req.Name, err)
 	}
 
-	createReq := ou.OrganizationUnitRequestWithID{
+	createReq := providers.OrganizationUnitRequestWithID{
 		ID:              req.ID,
 		Handle:          req.Handle,
 		Name:            req.Name,
@@ -348,8 +347,8 @@ func (s *importService) importRole(
 			if len(req.Assignments) > 0 {
 				if s.roleAssignmentService == nil {
 					return serviceErrorOutcome(resourceTypeRole, updated.ID, updated.Name, operationUpdate,
-						serviceerror.CustomServiceError(serviceerror.InternalServerError,
-							core.I18nMessage{DefaultValue: "roleAssignmentService not configured"}))
+						tidcommon.CustomServiceError(tidcommon.InternalServerError,
+							tidcommon.I18nMessage{DefaultValue: "roleAssignmentService not configured"}))
 				}
 				assignErr := s.roleAssignmentService.AddAssignments(ctx, updated.ID, req.Assignments)
 				if assignErr != nil {
@@ -463,7 +462,7 @@ func (s *importService) importResourceServer(
 		return unsupportedAdapterOutcome(resourceTypeResourceServer, "resource server")
 	}
 
-	var req resource.ResourceServer
+	var req providers.ResourceServer
 	if err := doc.Node.Decode(&req); err != nil {
 		return decodeErrorOutcome(resourceTypeResourceServer, req.ID, req.Name, err)
 	}
@@ -628,18 +627,18 @@ func (s *importService) importLayout(
 	updateReq := layoutmgt.UpdateLayoutRequest(createReq)
 
 	return importDesignResource(options.IsUpsertEnabled(), dryRun, req.ID, req.DisplayName,
-		func() *serviceerror.ServiceError {
+		func() *tidcommon.ServiceError {
 			_, svcErr := s.layoutService.GetLayout(ctx, req.ID)
 			return svcErr
 		},
-		func() (string, string, *serviceerror.ServiceError) {
+		func() (string, string, *tidcommon.ServiceError) {
 			updated, svcErr := s.layoutService.UpdateLayout(ctx, req.ID, updateReq)
 			if svcErr != nil {
 				return "", "", svcErr
 			}
 			return updated.ID, updated.DisplayName, nil
 		},
-		func() (string, string, *serviceerror.ServiceError) {
+		func() (string, string, *tidcommon.ServiceError) {
 			created, svcErr := s.layoutService.CreateLayout(ctx, createReq)
 			if svcErr != nil {
 				return "", "", svcErr
@@ -743,10 +742,10 @@ func (s *importService) importUser(
 			json.RawMessage(credentialsJSON),
 		); credErr != nil {
 			if rollbackErr := s.userService.DeleteUser(ctx, created.ID); rollbackErr != nil {
-				combinedErr := &serviceerror.ServiceError{
+				combinedErr := &tidcommon.ServiceError{
 					Code: credErr.Code,
 					Type: credErr.Type,
-					Error: core.I18nMessage{
+					Error: tidcommon.I18nMessage{
 						Key: credErr.Error.Key,
 						DefaultValue: fmt.Sprintf(
 							"user credential update failed: %s; rollback delete failed: %s",
@@ -754,7 +753,7 @@ func (s *importService) importUser(
 							rollbackErr.Error.DefaultValue,
 						),
 					},
-					ErrorDescription: core.I18nMessage{
+					ErrorDescription: tidcommon.I18nMessage{
 						Key: credErr.ErrorDescription.Key,
 						DefaultValue: fmt.Sprintf(
 							"credential update error code %s for user %s; rollback delete error code %s",
@@ -808,18 +807,18 @@ func (s *importService) importTranslation(ctx context.Context, doc parsedDocumen
 // It first computes permission strings via ProcessResourceServer, then calls the resource service
 // for each resource and action.  Existing resources/actions (on upsert paths) are silently skipped.
 func (s *importService) importResourceServerChildren(
-	ctx context.Context, serverID string, rs resource.ResourceServer,
-) *serviceerror.ServiceError {
+	ctx context.Context, serverID string, rs providers.ResourceServer,
+) *tidcommon.ServiceError {
 	if len(rs.Resources) == 0 {
 		return nil
 	}
 
 	// Compute permission strings in-place (mirrors declarative loader logic).
 	if err := resource.ProcessResourceServer(&rs); err != nil {
-		return &serviceerror.ServiceError{
+		return &tidcommon.ServiceError{
 			Code: ErrorInvalidYAMLContent.Code,
 			Type: ErrorInvalidYAMLContent.Type,
-			Error: core.I18nMessage{
+			Error: tidcommon.I18nMessage{
 				DefaultValue: fmt.Sprintf("failed to process resource server children: %v", err),
 			},
 		}
@@ -864,7 +863,7 @@ func (s *importService) importResourceServerChildren(
 			if existingID == "" {
 				continue
 			}
-			created = &resource.Resource{ID: existingID}
+			created = &providers.Resource{ID: existingID}
 		}
 
 		handleToID[res.Handle] = created.ID
@@ -1000,7 +999,7 @@ func normalizeAgentOAuthConfigForImport(ctx context.Context, req *agentmodel.Age
 	}
 
 	if oauthConfig.PublicClient &&
-		oauthConfig.TokenEndpointAuthMethod == oauth2const.TokenEndpointAuthMethodNone &&
+		oauthConfig.TokenEndpointAuthMethod == providers.TokenEndpointAuthMethodNone &&
 		oauthConfig.ClientSecret != "" {
 		log.GetLogger().Debug(ctx,
 			"Dropping client_secret for public agent import with token endpoint auth method 'none'",
@@ -1033,7 +1032,7 @@ func decodeErrorOutcome(resourceType, id, name string, err error) ImportItemOutc
 
 func serviceErrorOutcome(
 	resourceType, id, name, operation string,
-	svcErr *serviceerror.ServiceError,
+	svcErr *tidcommon.ServiceError,
 ) ImportItemOutcome {
 	return ImportItemOutcome{
 		ResourceType: resourceType,
@@ -1061,9 +1060,9 @@ func importDesignResource(
 	dryRun bool,
 	resourceID string,
 	resourceName string,
-	getFn func() *serviceerror.ServiceError,
-	updateFn func() (string, string, *serviceerror.ServiceError),
-	createFn func() (string, string, *serviceerror.ServiceError),
+	getFn func() *tidcommon.ServiceError,
+	updateFn func() (string, string, *tidcommon.ServiceError),
+	createFn func() (string, string, *tidcommon.ServiceError),
 	resourceType string,
 ) ImportItemOutcome {
 	if dryRun {

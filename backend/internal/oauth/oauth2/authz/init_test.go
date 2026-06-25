@@ -24,6 +24,8 @@ import (
 	"net/url"
 	"testing"
 
+	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	yaml "gopkg.in/yaml.v3"
@@ -69,14 +71,14 @@ func (suite *InitTestSuite) SetupTest() {
 				SQLite: config.SQLiteDataSource{Path: "test.db"},
 			},
 		},
-		GateClient: config.GateClientConfig{
+		GateClient: engineconfig.GateClientConfig{
 			Scheme:    "https",
 			Hostname:  "localhost",
 			Port:      3000,
 			LoginPath: "/login",
 			ErrorPath: "/error",
 		},
-		CORS: config.CORSConfig{AllowedOrigins: allowedOrigins},
+		CORS: engineconfig.CORSConfig{AllowedOrigins: allowedOrigins},
 	}
 	suite.Require().NoError(cors.InitializeMatcher(testConfig.CORS.AllowedOrigins))
 	_ = config.InitializeServerRuntime("", testConfig)

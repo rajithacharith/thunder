@@ -26,23 +26,23 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/thunder-id/thunderid/internal/agent"
 	agentmodel "github.com/thunder-id/thunderid/internal/agent/model"
 	"github.com/thunder-id/thunderid/internal/application"
 	"github.com/thunder-id/thunderid/internal/application/model"
 	thememgt "github.com/thunder-id/thunderid/internal/design/theme/mgt"
 	"github.com/thunder-id/thunderid/internal/entitytype"
-	"github.com/thunder-id/thunderid/internal/flow/common"
 	flowmgt "github.com/thunder-id/thunderid/internal/flow/mgt"
 	"github.com/thunder-id/thunderid/internal/group"
-	"github.com/thunder-id/thunderid/internal/idp"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/user"
 
 	"github.com/stretchr/testify/assert"
@@ -53,17 +53,17 @@ func boolPtr(v bool) *bool {
 	return &v
 }
 
-func updateOUCommon(existing map[string]ou.OrganizationUnit, updated *[]ou.OrganizationUnitRequest,
-	id string, request ou.OrganizationUnitRequest) (ou.OrganizationUnit, *serviceerror.ServiceError) {
+func updateOUCommon(existing map[string]providers.OrganizationUnit, updated *[]ou.OrganizationUnitRequest,
+	id string, request ou.OrganizationUnitRequest) (providers.OrganizationUnit, *tidcommon.ServiceError) {
 	if _, ok := existing[id]; !ok {
-		return ou.OrganizationUnit{}, &serviceerror.ServiceError{
-			Type:  serviceerror.ClientErrorType,
+		return providers.OrganizationUnit{}, &tidcommon.ServiceError{
+			Type:  tidcommon.ClientErrorType,
 			Code:  "OU-1003",
-			Error: core.I18nMessage{DefaultValue: "not found"},
+			Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 		}
 	}
 	*updated = append(*updated, request)
-	result := ou.OrganizationUnit{
+	result := providers.OrganizationUnit{
 		ID:              id,
 		Handle:          request.Handle,
 		Name:            request.Name,
@@ -88,7 +88,7 @@ type fakeApplicationService struct {
 
 func (f *fakeApplicationService) CreateApplication(
 	_ context.Context, app *model.ApplicationDTO,
-) (*model.ApplicationDTO, *serviceerror.ServiceError) {
+) (*model.ApplicationDTO, *tidcommon.ServiceError) {
 	if app.ID == "" {
 		app.ID = "generated-app-id"
 	}
@@ -102,43 +102,43 @@ func (f *fakeApplicationService) CreateApplication(
 
 func (f *fakeApplicationService) ValidateApplication(
 	_ context.Context, _ *model.ApplicationDTO,
-) (*model.ApplicationProcessedDTO, *inboundmodel.InboundAuthConfigWithSecret, *serviceerror.ServiceError) {
+) (*model.ApplicationProcessedDTO, *inboundmodel.InboundAuthConfigWithSecret, *tidcommon.ServiceError) {
 	return nil, nil, nil
 }
 
 func (f *fakeApplicationService) GetApplicationList(
 	_ context.Context,
-) (*model.ApplicationListResponse, *serviceerror.ServiceError) {
+) (*model.ApplicationListResponse, *tidcommon.ServiceError) {
 	return nil, nil
 }
 
 func (f *fakeApplicationService) GetOAuthApplication(
 	_ context.Context, _ string,
-) (*inboundmodel.OAuthClient, *serviceerror.ServiceError) {
+) (*providers.OAuthClient, *tidcommon.ServiceError) {
 	return nil, nil
 }
 
 func (f *fakeApplicationService) GetApplication(
 	_ context.Context, appID string,
-) (*model.Application, *serviceerror.ServiceError) {
+) (*model.Application, *tidcommon.ServiceError) {
 	if app, ok := f.existing[appID]; ok {
 		return app, nil
 	}
-	return nil, &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	return nil, &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  application.ErrorApplicationNotFound.Code,
-		Error: core.I18nMessage{DefaultValue: "not found"},
+		Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 	}
 }
 
 func (f *fakeApplicationService) UpdateApplication(
 	_ context.Context, appID string, app *model.ApplicationDTO,
-) (*model.ApplicationDTO, *serviceerror.ServiceError) {
+) (*model.ApplicationDTO, *tidcommon.ServiceError) {
 	if _, ok := f.existing[appID]; !ok {
-		return nil, &serviceerror.ServiceError{
-			Type:  serviceerror.ClientErrorType,
+		return nil, &tidcommon.ServiceError{
+			Type:  tidcommon.ClientErrorType,
 			Code:  application.ErrorApplicationNotFound.Code,
-			Error: core.I18nMessage{DefaultValue: "not found"},
+			Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 		}
 	}
 	app.ID = appID
@@ -147,20 +147,20 @@ func (f *fakeApplicationService) UpdateApplication(
 	return app, nil
 }
 
-func (f *fakeApplicationService) DeleteApplication(_ context.Context, _ string) *serviceerror.ServiceError {
+func (f *fakeApplicationService) DeleteApplication(_ context.Context, _ string) *tidcommon.ServiceError {
 	return nil
 }
 
 type fakeIDPService struct {
-	created []*idp.IDPDTO
-	updated []*idp.IDPDTO
-	byID    map[string]*idp.IDPDTO
-	byName  map[string]*idp.IDPDTO
+	created []*providers.IDPDTO
+	updated []*providers.IDPDTO
+	byID    map[string]*providers.IDPDTO
+	byName  map[string]*providers.IDPDTO
 }
 
 func (f *fakeIDPService) CreateIdentityProvider(
-	_ context.Context, idpDTO *idp.IDPDTO,
-) (*idp.IDPDTO, *serviceerror.ServiceError) {
+	_ context.Context, idpDTO *providers.IDPDTO,
+) (*providers.IDPDTO, *tidcommon.ServiceError) {
 	if idpDTO.ID == "" {
 		idpDTO.ID = "generated-idp-id"
 	}
@@ -172,38 +172,38 @@ func (f *fakeIDPService) CreateIdentityProvider(
 
 func (f *fakeIDPService) GetIdentityProvider(
 	_ context.Context, idpID string,
-) (*idp.IDPDTO, *serviceerror.ServiceError) {
+) (*providers.IDPDTO, *tidcommon.ServiceError) {
 	if v, ok := f.byID[idpID]; ok {
 		return v, nil
 	}
-	return nil, &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	return nil, &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  "IDP-1001",
-		Error: core.I18nMessage{DefaultValue: "not found"},
+		Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 	}
 }
 
 func (f *fakeIDPService) GetIdentityProviderByName(
 	_ context.Context, name string,
-) (*idp.IDPDTO, *serviceerror.ServiceError) {
+) (*providers.IDPDTO, *tidcommon.ServiceError) {
 	if v, ok := f.byName[name]; ok {
 		return v, nil
 	}
-	return nil, &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	return nil, &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  "IDP-1001",
-		Error: core.I18nMessage{DefaultValue: "not found"},
+		Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 	}
 }
 
 func (f *fakeIDPService) UpdateIdentityProvider(
-	_ context.Context, idpID string, idpDTO *idp.IDPDTO,
-) (*idp.IDPDTO, *serviceerror.ServiceError) {
+	_ context.Context, idpID string, idpDTO *providers.IDPDTO,
+) (*providers.IDPDTO, *tidcommon.ServiceError) {
 	if _, ok := f.byID[idpID]; !ok {
-		return nil, &serviceerror.ServiceError{
-			Type:  serviceerror.ClientErrorType,
+		return nil, &tidcommon.ServiceError{
+			Type:  tidcommon.ClientErrorType,
 			Code:  "IDP-1001",
-			Error: core.I18nMessage{DefaultValue: "not found"},
+			Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 		}
 	}
 	idpDTO.ID = idpID
@@ -216,8 +216,8 @@ func (f *fakeIDPService) UpdateIdentityProvider(
 type fakeFlowService struct {
 	created []*flowmgt.FlowDefinition
 	updated []*flowmgt.FlowDefinition
-	byID    map[string]*flowmgt.CompleteFlowDefinition
-	byKey   map[string]*flowmgt.CompleteFlowDefinition
+	byID    map[string]*providers.CompleteFlowDefinition
+	byKey   map[string]*providers.CompleteFlowDefinition
 }
 
 type fakeThemeService struct {
@@ -229,7 +229,7 @@ type fakeThemeService struct {
 
 func (f *fakeThemeService) CreateTheme(_ context.Context,
 	theme thememgt.CreateThemeRequestWithID,
-) (*thememgt.Theme, *serviceerror.ServiceError) {
+) (*thememgt.Theme, *tidcommon.ServiceError) {
 	id := theme.ID
 	if id == "" {
 		id = "generated-theme-id"
@@ -254,26 +254,26 @@ func (f *fakeThemeService) CreateTheme(_ context.Context,
 	return created, nil
 }
 
-func (f *fakeThemeService) GetTheme(_ context.Context, id string) (*thememgt.Theme, *serviceerror.ServiceError) {
+func (f *fakeThemeService) GetTheme(_ context.Context, id string) (*thememgt.Theme, *tidcommon.ServiceError) {
 	if existing, ok := f.byID[id]; ok {
 		return existing, nil
 	}
 
-	return nil, &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	return nil, &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  "THM-1003",
-		Error: core.I18nMessage{DefaultValue: "not found"},
+		Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 	}
 }
 
 func (f *fakeThemeService) UpdateTheme(_ context.Context,
 	id string, theme thememgt.UpdateThemeRequest,
-) (*thememgt.Theme, *serviceerror.ServiceError) {
+) (*thememgt.Theme, *tidcommon.ServiceError) {
 	if _, ok := f.byID[id]; !ok {
-		return nil, &serviceerror.ServiceError{
-			Type:  serviceerror.ClientErrorType,
+		return nil, &tidcommon.ServiceError{
+			Type:  tidcommon.ClientErrorType,
 			Code:  "THM-1003",
-			Error: core.I18nMessage{DefaultValue: "not found"},
+			Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 		}
 	}
 
@@ -299,7 +299,7 @@ type fakeEntityTypeService struct {
 
 func (f *fakeEntityTypeService) CreateEntityType(
 	_ context.Context, _ entitytype.TypeCategory, request entitytype.CreateEntityTypeRequestWithID,
-) (*entitytype.EntityType, *serviceerror.ServiceError) {
+) (*entitytype.EntityType, *tidcommon.ServiceError) {
 	id := request.ID
 	if id == "" {
 		id = "generated-entity-type-id"
@@ -326,40 +326,40 @@ func (f *fakeEntityTypeService) CreateEntityType(
 
 func (f *fakeEntityTypeService) GetEntityType(
 	_ context.Context, _ entitytype.TypeCategory, schemaID string, _ bool,
-) (*entitytype.EntityType, *serviceerror.ServiceError) {
+) (*entitytype.EntityType, *tidcommon.ServiceError) {
 	if existing, ok := f.byID[schemaID]; ok {
 		return existing, nil
 	}
 
-	return nil, &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	return nil, &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  "USRS-1002",
-		Error: core.I18nMessage{DefaultValue: "not found"},
+		Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 	}
 }
 
 func (f *fakeEntityTypeService) GetEntityTypeByName(
 	_ context.Context, _ entitytype.TypeCategory, schemaName string,
-) (*entitytype.EntityType, *serviceerror.ServiceError) {
+) (*entitytype.EntityType, *tidcommon.ServiceError) {
 	if existing, ok := f.byName[schemaName]; ok {
 		return existing, nil
 	}
 
-	return nil, &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	return nil, &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  "USRS-1002",
-		Error: core.I18nMessage{DefaultValue: "not found"},
+		Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 	}
 }
 
 func (f *fakeEntityTypeService) UpdateEntityType(
 	_ context.Context, _ entitytype.TypeCategory, schemaID string, request entitytype.UpdateEntityTypeRequest,
-) (*entitytype.EntityType, *serviceerror.ServiceError) {
+) (*entitytype.EntityType, *tidcommon.ServiceError) {
 	if _, ok := f.byID[schemaID]; !ok {
-		return nil, &serviceerror.ServiceError{
-			Type:  serviceerror.ClientErrorType,
+		return nil, &tidcommon.ServiceError{
+			Type:  tidcommon.ClientErrorType,
 			Code:  "USRS-1002",
-			Error: core.I18nMessage{DefaultValue: "not found"},
+			Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 		}
 	}
 
@@ -378,20 +378,20 @@ func (f *fakeEntityTypeService) UpdateEntityType(
 }
 
 type fakeOUService struct {
-	created  []ou.OrganizationUnitRequestWithID
+	created  []providers.OrganizationUnitRequestWithID
 	updated  []ou.OrganizationUnitRequest
-	existing map[string]ou.OrganizationUnit
+	existing map[string]providers.OrganizationUnit
 }
 
 func (f *fakeOUService) CreateOrganizationUnit(
-	_ context.Context, request ou.OrganizationUnitRequestWithID,
-) (ou.OrganizationUnit, *serviceerror.ServiceError) {
+	_ context.Context, request providers.OrganizationUnitRequestWithID,
+) (providers.OrganizationUnit, *tidcommon.ServiceError) {
 	id := request.ID
 	if id == "" {
 		id = "generated-ou-id"
 	}
 
-	created := ou.OrganizationUnit{
+	created := providers.OrganizationUnit{
 		ID:              id,
 		Handle:          request.Handle,
 		Name:            request.Name,
@@ -406,7 +406,7 @@ func (f *fakeOUService) CreateOrganizationUnit(
 	}
 	f.created = append(f.created, request)
 	if f.existing == nil {
-		f.existing = map[string]ou.OrganizationUnit{}
+		f.existing = map[string]providers.OrganizationUnit{}
 	}
 	f.existing[created.ID] = created
 	return created, nil
@@ -414,37 +414,37 @@ func (f *fakeOUService) CreateOrganizationUnit(
 
 func (f *fakeOUService) GetOrganizationUnit(
 	_ context.Context, id string,
-) (ou.OrganizationUnit, *serviceerror.ServiceError) {
+) (providers.OrganizationUnit, *tidcommon.ServiceError) {
 	if existing, ok := f.existing[id]; ok {
 		return existing, nil
 	}
 
-	return ou.OrganizationUnit{}, &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	return providers.OrganizationUnit{}, &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  "OU-1003",
-		Error: core.I18nMessage{DefaultValue: "not found"},
+		Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 	}
 }
 
 func (f *fakeOUService) GetOrganizationUnitByPath(
 	_ context.Context, handlePath string,
-) (ou.OrganizationUnit, *serviceerror.ServiceError) {
+) (providers.OrganizationUnit, *tidcommon.ServiceError) {
 	for _, existing := range f.existing {
 		if existing.Handle == handlePath {
 			return existing, nil
 		}
 	}
 
-	return ou.OrganizationUnit{}, &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	return providers.OrganizationUnit{}, &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  "OU-1003",
-		Error: core.I18nMessage{DefaultValue: "not found"},
+		Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 	}
 }
 
 func (f *fakeOUService) UpdateOrganizationUnit(
-	_ context.Context, id string, request ou.OrganizationUnitRequestWithID,
-) (ou.OrganizationUnit, *serviceerror.ServiceError) {
+	_ context.Context, id string, request providers.OrganizationUnitRequestWithID,
+) (providers.OrganizationUnit, *tidcommon.ServiceError) {
 	updateReq := ou.OrganizationUnitRequest{
 		Handle:          request.Handle,
 		Name:            request.Name,
@@ -467,14 +467,14 @@ type fakeRoleService struct {
 
 func (f *fakeRoleService) CreateRole(
 	_ context.Context, req role.RoleCreationDetail,
-) (*role.RoleWithPermissionsAndAssignments, *serviceerror.ServiceError) {
+) (*role.RoleWithPermissionsAndAssignments, *tidcommon.ServiceError) {
 	f.created = append(f.created, req)
 	return &role.RoleWithPermissionsAndAssignments{ID: "role-1", Name: req.Name}, nil
 }
 
 func (f *fakeRoleService) GetRoleWithPermissions(
 	_ context.Context, id string,
-) (*role.RoleWithPermissions, *serviceerror.ServiceError) {
+) (*role.RoleWithPermissions, *tidcommon.ServiceError) {
 	if id == "role-1" {
 		return &role.RoleWithPermissions{ID: id, Name: "role"}, nil
 	}
@@ -484,19 +484,19 @@ func (f *fakeRoleService) GetRoleWithPermissions(
 
 func (f *fakeRoleService) UpdateRoleWithPermissions(
 	_ context.Context, _ string, req role.RoleUpdateDetail,
-) (*role.RoleWithPermissions, *serviceerror.ServiceError) {
+) (*role.RoleWithPermissions, *tidcommon.ServiceError) {
 	f.updated = append(f.updated, req)
 	return &role.RoleWithPermissions{ID: "role-1", Name: req.Name}, nil
 }
 
 type fakeRoleAssignmentService struct {
 	assignments   []role.RoleAssignment
-	assignmentErr *serviceerror.ServiceError
+	assignmentErr *tidcommon.ServiceError
 }
 
 func (f *fakeRoleAssignmentService) AddAssignments(
 	_ context.Context, _ string, assignments []role.RoleAssignment,
-) *serviceerror.ServiceError {
+) *tidcommon.ServiceError {
 	if f.assignmentErr != nil {
 		return f.assignmentErr
 	}
@@ -507,12 +507,12 @@ func (f *fakeRoleAssignmentService) AddAssignments(
 type fakeGroupService struct {
 	created   []group.CreateGroupRequest
 	members   []group.Member
-	memberErr *serviceerror.ServiceError
+	memberErr *tidcommon.ServiceError
 }
 
 func (f *fakeGroupService) CreateGroup(
 	_ context.Context, req group.CreateGroupRequest,
-) (*group.Group, *serviceerror.ServiceError) {
+) (*group.Group, *tidcommon.ServiceError) {
 	id := req.ID
 	if id == "" {
 		id = "generated-group-id"
@@ -523,26 +523,26 @@ func (f *fakeGroupService) CreateGroup(
 
 func (f *fakeGroupService) GetGroup(
 	_ context.Context, id string, _ bool,
-) (*group.Group, *serviceerror.ServiceError) {
+) (*group.Group, *tidcommon.ServiceError) {
 	if id == "group-1" {
 		return &group.Group{ID: id, Name: "Admins"}, nil
 	}
-	return nil, &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	return nil, &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  group.ErrorGroupNotFound.Code,
-		Error: core.I18nMessage{DefaultValue: "not found"},
+		Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 	}
 }
 
 func (f *fakeGroupService) UpdateGroup(
 	_ context.Context, id string, req group.UpdateGroupRequest,
-) (*group.Group, *serviceerror.ServiceError) {
+) (*group.Group, *tidcommon.ServiceError) {
 	return &group.Group{ID: id, Name: req.Name}, nil
 }
 
 func (f *fakeGroupService) AddGroupMembers(
 	_ context.Context, _ string, members []group.Member,
-) (*group.Group, *serviceerror.ServiceError) {
+) (*group.Group, *tidcommon.ServiceError) {
 	if f.memberErr != nil {
 		return nil, f.memberErr
 	}
@@ -558,7 +558,7 @@ type fakeUserService struct {
 
 func (f *fakeUserService) CreateUser(
 	_ context.Context, u *user.User,
-) (*user.User, *serviceerror.ServiceError) {
+) (*user.User, *tidcommon.ServiceError) {
 	id := u.ID
 	if id == "" {
 		id = "generated-user-id"
@@ -571,35 +571,35 @@ func (f *fakeUserService) CreateUser(
 
 func (f *fakeUserService) GetUser(
 	_ context.Context, _ string, _ bool,
-) (*user.User, *serviceerror.ServiceError) {
-	return nil, &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+) (*user.User, *tidcommon.ServiceError) {
+	return nil, &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  "USR-1003",
-		Error: core.I18nMessage{DefaultValue: "not found"},
+		Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 	}
 }
 
 func (f *fakeUserService) UpdateUser(
 	_ context.Context, userID string, u *user.User,
-) (*user.User, *serviceerror.ServiceError) {
+) (*user.User, *tidcommon.ServiceError) {
 	updated := *u
 	updated.ID = userID
 	return &updated, nil
 }
 
-func (f *fakeUserService) DeleteUser(_ context.Context, userID string) *serviceerror.ServiceError {
+func (f *fakeUserService) DeleteUser(_ context.Context, userID string) *tidcommon.ServiceError {
 	f.deleted = append(f.deleted, userID)
 	return nil
 }
 
 func (f *fakeUserService) UpdateUserCredentials(
 	_ context.Context, _ string, _ json.RawMessage,
-) *serviceerror.ServiceError {
+) *tidcommon.ServiceError {
 	if f.updateCredentialsShouldFail {
-		return &serviceerror.ServiceError{
-			Type:  serviceerror.ClientErrorType,
+		return &tidcommon.ServiceError{
+			Type:  tidcommon.ClientErrorType,
 			Code:  "USR-2001",
-			Error: core.I18nMessage{DefaultValue: "bad credentials"},
+			Error: tidcommon.I18nMessage{DefaultValue: "bad credentials"},
 		}
 	}
 
@@ -608,12 +608,12 @@ func (f *fakeUserService) UpdateUserCredentials(
 
 func (f *fakeFlowService) CreateFlow(
 	_ context.Context, flowDef *flowmgt.FlowDefinition,
-) (*flowmgt.CompleteFlowDefinition, *serviceerror.ServiceError) {
+) (*providers.CompleteFlowDefinition, *tidcommon.ServiceError) {
 	if _, ok := f.byKey[string(flowDef.FlowType)+":"+flowDef.Handle]; ok {
-		return nil, &serviceerror.ServiceError{
-			Type:  serviceerror.ClientErrorType,
+		return nil, &tidcommon.ServiceError{
+			Type:  tidcommon.ClientErrorType,
 			Code:  "FLM-1013",
-			Error: core.I18nMessage{DefaultValue: "Duplicate flow handle"},
+			Error: tidcommon.I18nMessage{DefaultValue: "Duplicate flow handle"},
 		}
 	}
 
@@ -621,7 +621,7 @@ func (f *fakeFlowService) CreateFlow(
 	if id == "" {
 		id = "generated-flow-id"
 	}
-	created := &flowmgt.CompleteFlowDefinition{
+	created := &providers.CompleteFlowDefinition{
 		ID:       id,
 		Handle:   flowDef.Handle,
 		Name:     flowDef.Name,
@@ -636,41 +636,41 @@ func (f *fakeFlowService) CreateFlow(
 
 func (f *fakeFlowService) GetFlow(
 	_ context.Context, flowID string,
-) (*flowmgt.CompleteFlowDefinition, *serviceerror.ServiceError) {
+) (*providers.CompleteFlowDefinition, *tidcommon.ServiceError) {
 	if v, ok := f.byID[flowID]; ok {
 		return v, nil
 	}
-	return nil, &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	return nil, &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  "FLM-1003",
-		Error: core.I18nMessage{DefaultValue: "not found"},
+		Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 	}
 }
 
 func (f *fakeFlowService) GetFlowByHandle(
-	_ context.Context, handle string, flowType common.FlowType,
-) (*flowmgt.CompleteFlowDefinition, *serviceerror.ServiceError) {
+	_ context.Context, handle string, flowType providers.FlowType,
+) (*providers.CompleteFlowDefinition, *tidcommon.ServiceError) {
 	if v, ok := f.byKey[string(flowType)+":"+handle]; ok {
 		return v, nil
 	}
-	return nil, &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	return nil, &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  "FLM-1003",
-		Error: core.I18nMessage{DefaultValue: "not found"},
+		Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 	}
 }
 
 func (f *fakeFlowService) UpdateFlow(
 	_ context.Context, flowID string, flowDef *flowmgt.FlowDefinition,
-) (*flowmgt.CompleteFlowDefinition, *serviceerror.ServiceError) {
+) (*providers.CompleteFlowDefinition, *tidcommon.ServiceError) {
 	if _, ok := f.byID[flowID]; !ok {
-		return nil, &serviceerror.ServiceError{
-			Type:  serviceerror.ClientErrorType,
+		return nil, &tidcommon.ServiceError{
+			Type:  tidcommon.ClientErrorType,
 			Code:  "FLM-1003",
-			Error: core.I18nMessage{DefaultValue: "not found"},
+			Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 		}
 	}
-	updated := &flowmgt.CompleteFlowDefinition{
+	updated := &providers.CompleteFlowDefinition{
 		ID:       flowID,
 		Handle:   flowDef.Handle,
 		Name:     flowDef.Name,
@@ -690,31 +690,19 @@ func newTestImportService(appSvc *fakeApplicationService) ImportServiceInterface
 
 	return newImportService(
 		appSvc,
-		&fakeIDPService{byID: map[string]*idp.IDPDTO{}, byName: map[string]*idp.IDPDTO{}},
+		&fakeIDPService{byID: map[string]*providers.IDPDTO{}, byName: map[string]*providers.IDPDTO{}},
 		&fakeFlowService{
-			byID:  map[string]*flowmgt.CompleteFlowDefinition{},
-			byKey: map[string]*flowmgt.CompleteFlowDefinition{},
+			byID:  map[string]*providers.CompleteFlowDefinition{},
+			byKey: map[string]*providers.CompleteFlowDefinition{},
 		},
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
+		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 	)
 }
 
 func runOAuthClientSecretImport(
 	t *testing.T,
 	content string,
-) (*fakeApplicationService, *ImportResponse, *serviceerror.ServiceError) {
+) (*fakeApplicationService, *ImportResponse, *tidcommon.ServiceError) {
 	t.Helper()
 
 	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
@@ -884,7 +872,7 @@ func TestImportResources_PreservesExplicitFalseOptions(t *testing.T) {
 }
 
 func TestImportResources_ApplicationAdapterNotConfigured(t *testing.T) {
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: "id: app-1\nname: My App\nauthFlowId: flow-1\n",
@@ -902,7 +890,8 @@ func TestImportResources_RoleImportIncludesAssignments(t *testing.T) {
 	roleSvc := &fakeRoleService{}
 	roleAssignmentSvc := &fakeRoleAssignmentService{}
 	svc := newImportService(
-		nil, nil, nil, nil, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, nil, nil, roleSvc, roleAssignmentSvc,
+		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 	)
 
 	content := strings.Join([]string{
@@ -933,7 +922,7 @@ func TestImportResources_RoleImportIncludesAssignments(t *testing.T) {
 
 func TestImportResources_GroupImportIncludesMembers(t *testing.T) {
 	groupSvc := &fakeGroupService{}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: group-new",
@@ -961,7 +950,8 @@ func TestImportResources_RoleImportNoAssignments(t *testing.T) {
 	roleSvc := &fakeRoleService{}
 	roleAssignmentSvc := &fakeRoleAssignmentService{}
 	svc := newImportService(
-		nil, nil, nil, nil, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, nil, nil, roleSvc, roleAssignmentSvc,
+		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 	)
 
 	content := strings.Join([]string{
@@ -985,7 +975,8 @@ func TestImportResources_RoleUpsertUpdateIncludesAssignments(t *testing.T) {
 	roleSvc := &fakeRoleService{}
 	roleAssignmentSvc := &fakeRoleAssignmentService{}
 	svc := newImportService(
-		nil, nil, nil, nil, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, nil, nil, roleSvc, roleAssignmentSvc,
+		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 	)
 
 	content := strings.Join([]string{
@@ -1014,13 +1005,14 @@ func TestImportResources_RoleUpsertUpdateIncludesAssignments(t *testing.T) {
 
 func TestImportResources_RoleAssignmentFailureReturnsError(t *testing.T) {
 	roleSvc := &fakeRoleService{}
-	roleAssignmentSvc := &fakeRoleAssignmentService{assignmentErr: &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	roleAssignmentSvc := &fakeRoleAssignmentService{assignmentErr: &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  "ROLE-4001",
-		Error: core.I18nMessage{DefaultValue: "invalid assignee"},
+		Error: tidcommon.I18nMessage{DefaultValue: "invalid assignee"},
 	}}
 	svc := newImportService(
-		nil, nil, nil, nil, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, nil, nil, roleSvc, roleAssignmentSvc,
+		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 	)
 
 	// role-1 exists in the fake → update path → AddAssignments is called separately → fails
@@ -1044,7 +1036,7 @@ func TestImportResources_RoleAssignmentFailureReturnsError(t *testing.T) {
 
 func TestImportResources_GroupImportNoMembers(t *testing.T) {
 	groupSvc := &fakeGroupService{}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: group-new",
@@ -1064,7 +1056,7 @@ func TestImportResources_GroupImportNoMembers(t *testing.T) {
 
 func TestImportResources_GroupUpsertUpdateIncludesMembers(t *testing.T) {
 	groupSvc := &fakeGroupService{}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: group-1",
@@ -1091,12 +1083,12 @@ func TestImportResources_GroupUpsertUpdateIncludesMembers(t *testing.T) {
 }
 
 func TestImportResources_GroupMemberFailureReturnsError(t *testing.T) {
-	groupSvc := &fakeGroupService{memberErr: &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	groupSvc := &fakeGroupService{memberErr: &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  "GRP-4001",
-		Error: core.I18nMessage{DefaultValue: "invalid member"},
+		Error: tidcommon.I18nMessage{DefaultValue: "invalid member"},
 	}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: group-new",
@@ -1117,7 +1109,7 @@ func TestImportResources_GroupMemberFailureReturnsError(t *testing.T) {
 
 func TestImportResources_UserCredentialFailureRollsBackCreate(t *testing.T) {
 	userSvc := &fakeUserService{updateCredentialsShouldFail: true}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, userSvc, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, userSvc, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: user-1",
@@ -1141,8 +1133,8 @@ func TestImportResources_UserCredentialFailureRollsBackCreate(t *testing.T) {
 }
 
 func TestImportResources_OrganizationUnitUpsertCreatePreservesID(t *testing.T) {
-	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	ouSvc := &fakeOUService{existing: map[string]providers.OrganizationUnit{}}
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: ou-123",
@@ -1166,11 +1158,11 @@ func TestImportResources_OrganizationUnitUpsertCreatePreservesID(t *testing.T) {
 
 func TestImportResources_FlowUpsertCreatePreservesID(t *testing.T) {
 	flowSvc := &fakeFlowService{
-		byID:  map[string]*flowmgt.CompleteFlowDefinition{},
-		byKey: map[string]*flowmgt.CompleteFlowDefinition{},
+		byID:  map[string]*providers.CompleteFlowDefinition{},
+		byKey: map[string]*providers.CompleteFlowDefinition{},
 	}
 
-	svc := newImportService(nil, nil, flowSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, flowSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: missing-flow-id",
@@ -1196,19 +1188,19 @@ func TestImportResources_FlowUpsertCreatePreservesID(t *testing.T) {
 
 func TestImportResources_FlowUpsertDuplicateHandleFallsBackToHandleUpdate(t *testing.T) {
 	flowSvc := &fakeFlowService{
-		byID: map[string]*flowmgt.CompleteFlowDefinition{
+		byID: map[string]*providers.CompleteFlowDefinition{
 			"existing-flow-id": {
 				ID:       "existing-flow-id",
 				Handle:   "registration-flow",
 				Name:     "Existing Registration Flow",
-				FlowType: common.FlowTypeRegistration,
+				FlowType: providers.FlowTypeRegistration,
 			},
 		},
-		byKey: map[string]*flowmgt.CompleteFlowDefinition{},
+		byKey: map[string]*providers.CompleteFlowDefinition{},
 	}
-	flowSvc.byKey[string(common.FlowTypeRegistration)+":registration-flow"] = flowSvc.byID["existing-flow-id"]
+	flowSvc.byKey[string(providers.FlowTypeRegistration)+":registration-flow"] = flowSvc.byID["existing-flow-id"]
 
-	svc := newImportService(nil, nil, flowSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, flowSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: missing-flow-id",
@@ -1234,21 +1226,21 @@ func TestImportResources_FlowUpsertDuplicateHandleFallsBackToHandleUpdate(t *tes
 
 func TestImportResources_ApplicationFlowReferencesAreRemappedFromFlowAlias(t *testing.T) {
 	flowSvc := &fakeFlowService{
-		byID: map[string]*flowmgt.CompleteFlowDefinition{
+		byID: map[string]*providers.CompleteFlowDefinition{
 			"existing-registration-flow-id": {
 				ID:       "existing-registration-flow-id",
 				Handle:   "registration-flow",
 				Name:     "Existing Registration Flow",
-				FlowType: common.FlowTypeRegistration,
+				FlowType: providers.FlowTypeRegistration,
 			},
 		},
-		byKey: map[string]*flowmgt.CompleteFlowDefinition{},
+		byKey: map[string]*providers.CompleteFlowDefinition{},
 	}
-	flowSvc.byKey[string(common.FlowTypeRegistration)+":registration-flow"] =
+	flowSvc.byKey[string(providers.FlowTypeRegistration)+":registration-flow"] =
 		flowSvc.byID["existing-registration-flow-id"]
 
 	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
-	svc := newImportService(appSvc, nil, flowSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(appSvc, nil, flowSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"# resource_type: flow",
@@ -1283,7 +1275,7 @@ func TestImportResources_ApplicationFlowReferencesAreRemappedFromFlowAlias(t *te
 //nolint:dupl // Test pattern repeated across resource types to verify ID preservation behavior
 func TestImportResources_ThemeUpsertCreatePreservesID(t *testing.T) {
 	themeSvc := &fakeThemeService{byID: map[string]*thememgt.Theme{}, byHandle: map[string]*thememgt.Theme{}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, themeSvc, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, themeSvc, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: thm-123",
@@ -1313,7 +1305,9 @@ func TestImportResources_EntityTypeUpsertCreatePreservesID(t *testing.T) {
 		byID:   map[string]*entitytype.EntityType{},
 		byName: map[string]*entitytype.EntityType{},
 	}
-	svc := newImportService(nil, nil, nil, nil, entityTypeSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(
+		nil, nil, nil, nil, entityTypeSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+	)
 
 	content := strings.Join([]string{
 		"id: usrs-123",
@@ -1338,19 +1332,20 @@ func TestImportResources_EntityTypeUpsertCreatePreservesID(t *testing.T) {
 }
 
 func TestImportResources_UpsertCreatePreservesIDsAcrossResourceTypes(t *testing.T) {
-	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
+	ouSvc := &fakeOUService{existing: map[string]providers.OrganizationUnit{}}
 	themeSvc := &fakeThemeService{byID: map[string]*thememgt.Theme{}, byHandle: map[string]*thememgt.Theme{}}
 	entityTypeSvc := &fakeEntityTypeService{
 		byID:   map[string]*entitytype.EntityType{},
 		byName: map[string]*entitytype.EntityType{},
 	}
 	flowSvc := &fakeFlowService{
-		byID:  map[string]*flowmgt.CompleteFlowDefinition{},
-		byKey: map[string]*flowmgt.CompleteFlowDefinition{},
+		byID:  map[string]*providers.CompleteFlowDefinition{},
+		byKey: map[string]*providers.CompleteFlowDefinition{},
 	}
 
 	svc := newImportService(
-		nil, nil, flowSvc, ouSvc, entityTypeSvc, nil, nil, nil, nil, themeSvc, nil, nil, nil, nil, nil, nil,
+		nil, nil, flowSvc, ouSvc, entityTypeSvc,
+		nil, nil, nil, nil, themeSvc, nil, nil, nil, nil, nil, nil, nil,
 	)
 
 	content := strings.Join([]string{
@@ -1427,7 +1422,9 @@ func TestImportResources_EntityTypeOUHandlePassedToService(t *testing.T) {
 		byID:   map[string]*entitytype.EntityType{},
 		byName: map[string]*entitytype.EntityType{},
 	}
-	svc := newImportService(nil, nil, nil, nil, entityTypeSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(
+		nil, nil, nil, nil, entityTypeSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+	)
 
 	content := strings.Join([]string{
 		"id: usrs-123",
@@ -1535,7 +1532,7 @@ func TestImportResources_FileTargetReturnsError(t *testing.T) {
 		DeclarativeResources: config.DeclarativeResources{Enabled: true},
 	}))
 
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: "id: app-1\nname: My App\nauthFlowId: flow-1\n",
@@ -1557,7 +1554,7 @@ func TestDeleteResource_RemovesDeclarativeFile(t *testing.T) {
 		DeclarativeResources: config.DeclarativeResources{Enabled: true},
 	}))
 
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resourceDir := filepath.Join(tempHome, "config", "resources", "applications")
 	require.NoError(t, os.MkdirAll(resourceDir, 0o750))
@@ -1583,7 +1580,7 @@ func TestDeleteResource_RemovesDeclarativeFile(t *testing.T) {
 
 func TestImportResources_ApplicationOUHandlePassedToService(t *testing.T) {
 	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
-	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: strings.Join([]string{
@@ -1603,7 +1600,7 @@ func TestImportResources_ApplicationOUHandlePassedToService(t *testing.T) {
 
 func TestImportResources_ApplicationAuthFlowHandlePassedToService(t *testing.T) {
 	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
-	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: strings.Join([]string{
@@ -1623,7 +1620,7 @@ func TestImportResources_ApplicationAuthFlowHandlePassedToService(t *testing.T) 
 
 func TestImportResources_ApplicationRegistrationFlowHandlePassedToService(t *testing.T) {
 	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
-	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: strings.Join([]string{
@@ -1645,7 +1642,7 @@ func TestImportResources_ApplicationRegistrationFlowHandlePassedToService(t *tes
 
 func TestImportResources_ApplicationRecoveryFlowHandlePassedToService(t *testing.T) {
 	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
-	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: strings.Join([]string{
@@ -1668,7 +1665,7 @@ func TestImportResources_ApplicationRecoveryFlowHandlePassedToService(t *testing
 func TestImportResources_DryRunSkipsApplicationHandleResolution(t *testing.T) {
 	// With dry-run, handle resolution is skipped — unknown handles must not cause failure.
 	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
-	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: strings.Join([]string{
@@ -1697,7 +1694,7 @@ type fakeAgentService struct {
 
 func (f *fakeAgentService) CreateAgent(
 	_ context.Context, req *agentmodel.Agent,
-) (*agentmodel.AgentCompleteResponse, *serviceerror.ServiceError) {
+) (*agentmodel.AgentCompleteResponse, *tidcommon.ServiceError) {
 	id := req.Name + "-id"
 	f.created = append(f.created, req)
 	if f.existing == nil {
@@ -1709,25 +1706,25 @@ func (f *fakeAgentService) CreateAgent(
 
 func (f *fakeAgentService) GetAgent(
 	_ context.Context, agentID string, _ bool,
-) (*agentmodel.AgentGetResponse, *serviceerror.ServiceError) {
+) (*agentmodel.AgentGetResponse, *tidcommon.ServiceError) {
 	if a, ok := f.existing[agentID]; ok {
 		return a, nil
 	}
-	return nil, &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+	return nil, &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  agent.ErrorAgentNotFound.Code,
-		Error: core.I18nMessage{DefaultValue: "not found"},
+		Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 	}
 }
 
 func (f *fakeAgentService) UpdateAgent(
 	_ context.Context, agentID string, req *agentmodel.UpdateAgentRequest,
-) (*agentmodel.AgentCompleteResponse, *serviceerror.ServiceError) {
+) (*agentmodel.AgentCompleteResponse, *tidcommon.ServiceError) {
 	if _, ok := f.existing[agentID]; !ok {
-		return nil, &serviceerror.ServiceError{
-			Type:  serviceerror.ClientErrorType,
+		return nil, &tidcommon.ServiceError{
+			Type:  tidcommon.ClientErrorType,
 			Code:  agent.ErrorAgentNotFound.Code,
-			Error: core.I18nMessage{DefaultValue: "not found"},
+			Error: tidcommon.I18nMessage{DefaultValue: "not found"},
 		}
 	}
 	f.updated = append(f.updated, req)
@@ -1740,7 +1737,7 @@ const agentYAML = "# resource_type: agent\n" +
 
 func TestImportAgent_Create(t *testing.T) {
 	agentSvc := &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil, nil)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{Content: agentYAML})
 
@@ -1757,7 +1754,7 @@ func TestImportAgent_UpsertUpdate(t *testing.T) {
 	agentSvc := &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{
 		"agent-1": {ID: "agent-1", Name: "Test Agent"},
 	}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil, nil)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: agentYAML,
@@ -1774,7 +1771,7 @@ func TestImportAgent_UpsertUpdate(t *testing.T) {
 
 func TestImportAgent_UpsertFallbackCreate(t *testing.T) {
 	agentSvc := &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil, nil)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: agentYAML,
@@ -1791,7 +1788,7 @@ func TestImportAgent_UpsertFallbackCreate(t *testing.T) {
 
 func TestImportAgent_DryRunCreate(t *testing.T) {
 	agentSvc := &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil, nil)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: agentYAML,
@@ -1810,7 +1807,7 @@ func TestImportAgent_DryRunUpsert(t *testing.T) {
 	agentSvc := &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{
 		"agent-1": {ID: "agent-1", Name: "Test Agent"},
 	}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil, nil)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: agentYAML,
@@ -1827,7 +1824,7 @@ func TestImportAgent_DryRunUpsert(t *testing.T) {
 }
 
 func TestImportAgent_NilAdapter(t *testing.T) {
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{Content: agentYAML})
 
@@ -1841,14 +1838,14 @@ func TestImportAgent_NilAdapter(t *testing.T) {
 // errAgentService wraps fakeAgentService with injectable per-method errors.
 type errAgentService struct {
 	inner     *fakeAgentService
-	createErr *serviceerror.ServiceError
-	getErr    *serviceerror.ServiceError
-	updateErr *serviceerror.ServiceError
+	createErr *tidcommon.ServiceError
+	getErr    *tidcommon.ServiceError
+	updateErr *tidcommon.ServiceError
 }
 
 func (e *errAgentService) CreateAgent(
 	ctx context.Context, req *agentmodel.Agent,
-) (*agentmodel.AgentCompleteResponse, *serviceerror.ServiceError) {
+) (*agentmodel.AgentCompleteResponse, *tidcommon.ServiceError) {
 	if e.createErr != nil {
 		return nil, e.createErr
 	}
@@ -1857,7 +1854,7 @@ func (e *errAgentService) CreateAgent(
 
 func (e *errAgentService) GetAgent(
 	ctx context.Context, agentID string, includeDisplay bool,
-) (*agentmodel.AgentGetResponse, *serviceerror.ServiceError) {
+) (*agentmodel.AgentGetResponse, *tidcommon.ServiceError) {
 	if e.getErr != nil {
 		return nil, e.getErr
 	}
@@ -1866,7 +1863,7 @@ func (e *errAgentService) GetAgent(
 
 func (e *errAgentService) UpdateAgent(
 	ctx context.Context, agentID string, req *agentmodel.UpdateAgentRequest,
-) (*agentmodel.AgentCompleteResponse, *serviceerror.ServiceError) {
+) (*agentmodel.AgentCompleteResponse, *tidcommon.ServiceError) {
 	if e.updateErr != nil {
 		return nil, e.updateErr
 	}
@@ -1875,7 +1872,7 @@ func (e *errAgentService) UpdateAgent(
 
 func TestImportAgent_DecodeError(t *testing.T) {
 	agentSvc := &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil, nil)
 
 	// ID field is a sequence, not a string — decode into AgentRequestWithID will fail.
 	invalidYAML := "# resource_type: agent\nid:\n  - bad\nname: Test\n"
@@ -1888,12 +1885,12 @@ func TestImportAgent_DecodeError(t *testing.T) {
 }
 
 func TestImportAgent_DryRunUpsertNonNotFoundError(t *testing.T) {
-	internalErr := &serviceerror.ServiceError{Code: "AGT-9999", Error: core.I18nMessage{DefaultValue: "internal"}}
+	internalErr := &tidcommon.ServiceError{Code: "AGT-9999", Error: tidcommon.I18nMessage{DefaultValue: "internal"}}
 	agentSvc := &errAgentService{
 		inner:  &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{}},
 		getErr: internalErr,
 	}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil, nil)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: agentYAML,
@@ -1908,14 +1905,14 @@ func TestImportAgent_DryRunUpsertNonNotFoundError(t *testing.T) {
 }
 
 func TestImportAgent_UpsertUpdateError(t *testing.T) {
-	updateErr := &serviceerror.ServiceError{Code: "AGT-9998", Error: core.I18nMessage{DefaultValue: "update failed"}}
+	updateErr := &tidcommon.ServiceError{Code: "AGT-9998", Error: tidcommon.I18nMessage{DefaultValue: "update failed"}}
 	agentSvc := &errAgentService{
 		inner: &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{
 			"agent-1": {ID: "agent-1", Name: "Test Agent"},
 		}},
 		updateErr: updateErr,
 	}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil, nil)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: agentYAML,
@@ -1929,12 +1926,12 @@ func TestImportAgent_UpsertUpdateError(t *testing.T) {
 }
 
 func TestImportAgent_UpsertGetNonNotFoundError(t *testing.T) {
-	internalErr := &serviceerror.ServiceError{Code: "AGT-9997", Error: core.I18nMessage{DefaultValue: "server error"}}
+	internalErr := &tidcommon.ServiceError{Code: "AGT-9997", Error: tidcommon.I18nMessage{DefaultValue: "server error"}}
 	agentSvc := &errAgentService{
 		inner:  &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{}},
 		getErr: internalErr,
 	}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil, nil)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{
 		Content: agentYAML,
@@ -1948,12 +1945,12 @@ func TestImportAgent_UpsertGetNonNotFoundError(t *testing.T) {
 }
 
 func TestImportAgent_CreateError(t *testing.T) {
-	createErr := &serviceerror.ServiceError{Code: "AGT-9996", Error: core.I18nMessage{DefaultValue: "create failed"}}
+	createErr := &tidcommon.ServiceError{Code: "AGT-9996", Error: tidcommon.I18nMessage{DefaultValue: "create failed"}}
 	agentSvc := &errAgentService{
 		inner:     &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{}},
 		createErr: createErr,
 	}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil, nil)
 
 	resp, svcErr := svc.ImportResources(context.Background(), &ImportRequest{Content: agentYAML})
 
@@ -2002,12 +1999,14 @@ func TestImportAgent_FlowAliasRemapsFlowIDs(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			flowSvc := &fakeFlowService{
-				byID:  map[string]*flowmgt.CompleteFlowDefinition{},
-				byKey: map[string]*flowmgt.CompleteFlowDefinition{},
+				byID:  map[string]*providers.CompleteFlowDefinition{},
+				byKey: map[string]*providers.CompleteFlowDefinition{},
 			}
 			agentSvc := &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{}}
 			svc := newImportService(
-				nil, nil, flowSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil)
+				nil, nil, flowSvc, nil, nil, nil, nil, nil, nil,
+				nil, nil, nil, nil, agentSvc, nil, nil, nil,
+			)
 
 			content := strings.Join([]string{
 				"# resource_type: flow",
@@ -2039,7 +2038,7 @@ func TestImportAgent_FlowAliasRemapsFlowIDs(t *testing.T) {
 
 func TestImportAgent_StripsClientSecretForPublicAgentWithNoneAuthMethod(t *testing.T) {
 	agentSvc := &fakeAgentService{existing: map[string]*agentmodel.AgentGetResponse{}}
-	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil)
+	svc := newImportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, agentSvc, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"# resource_type: agent",
@@ -2075,62 +2074,63 @@ func TestGetAgentOAuthConfigForImport_NilRequest(t *testing.T) {
 
 // fakeResourceServerService is a test double for the resource server adapter used by importer tests.
 type fakeResourceServerService struct {
-	created []resource.ResourceServer
-	updated []resource.ResourceServer
+	created []providers.ResourceServer
+	updated []providers.ResourceServer
 }
 
 func (f *fakeResourceServerService) CreateResourceServer(
-	_ context.Context, rs resource.ResourceServer,
-) (*resource.ResourceServer, *serviceerror.ServiceError) {
+	_ context.Context, rs providers.ResourceServer,
+) (*providers.ResourceServer, *tidcommon.ServiceError) {
 	f.created = append(f.created, rs)
-	return &resource.ResourceServer{ID: rs.ID, Name: rs.Name, OUID: rs.OUID}, nil
+	return &providers.ResourceServer{ID: rs.ID, Name: rs.Name, OUID: rs.OUID}, nil
 }
 
 func (f *fakeResourceServerService) GetResourceServer(
 	_ context.Context, id string,
-) (*resource.ResourceServer, *serviceerror.ServiceError) {
-	return nil, &serviceerror.ServiceError{
-		Type:  serviceerror.ClientErrorType,
+) (*providers.ResourceServer, *tidcommon.ServiceError) {
+	return nil, &tidcommon.ServiceError{
+		Type:  tidcommon.ClientErrorType,
 		Code:  resource.ErrorResourceServerNotFound.Code,
-		Error: core.I18nMessage{DefaultValue: "not found: " + id},
+		Error: tidcommon.I18nMessage{DefaultValue: "not found: " + id},
 	}
 }
 
 func (f *fakeResourceServerService) UpdateResourceServer(
-	_ context.Context, _ string, rs resource.ResourceServer,
-) (*resource.ResourceServer, *serviceerror.ServiceError) {
+	_ context.Context, _ string, rs providers.ResourceServer,
+) (*providers.ResourceServer, *tidcommon.ServiceError) {
 	f.updated = append(f.updated, rs)
-	return &resource.ResourceServer{ID: rs.ID, Name: rs.Name, OUID: rs.OUID}, nil
+	return &providers.ResourceServer{ID: rs.ID, Name: rs.Name, OUID: rs.OUID}, nil
 }
 
 func (f *fakeResourceServerService) CreateResource(
-	_ context.Context, _ string, _ resource.Resource,
-) (*resource.Resource, *serviceerror.ServiceError) {
-	return &resource.Resource{}, nil
+	_ context.Context, _ string, _ providers.Resource,
+) (*providers.Resource, *tidcommon.ServiceError) {
+	return &providers.Resource{}, nil
 }
 
 func (f *fakeResourceServerService) GetResourceList(
 	_ context.Context, _ string, _ *string, _, _ int,
-) (*resource.ResourceList, *serviceerror.ServiceError) {
+) (*resource.ResourceList, *tidcommon.ServiceError) {
 	return &resource.ResourceList{}, nil
 }
 
 func (f *fakeResourceServerService) CreateAction(
-	_ context.Context, _ string, _ *string, _ resource.Action,
-) (*resource.Action, *serviceerror.ServiceError) {
-	return &resource.Action{}, nil
+	_ context.Context, _ string, _ *string, _ providers.Action,
+) (*providers.Action, *tidcommon.ServiceError) {
+	return &providers.Action{}, nil
 }
 
 // TestImportRole_OUHandleResolved verifies that ou_handle on a role document is resolved
 // to ou_id via the OU service before the role create request is built.
 func TestImportRole_OUHandleResolved(t *testing.T) {
-	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{
+	ouSvc := &fakeOUService{existing: map[string]providers.OrganizationUnit{
 		"ou-default": {ID: "ou-default", Handle: "default"},
 	}}
 	roleSvc := &fakeRoleService{}
 	roleAssignmentSvc := &fakeRoleAssignmentService{}
 	svc := newImportService(
-		nil, nil, nil, ouSvc, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, ouSvc, nil, roleSvc, roleAssignmentSvc,
+		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 	)
 
 	content := strings.Join([]string{
@@ -2153,11 +2153,12 @@ func TestImportRole_OUHandleResolved(t *testing.T) {
 // TestImportRole_OUHandleNotFound verifies that an unknown ou_handle on a role document
 // causes the import to fail with a clear error.
 func TestImportRole_OUHandleNotFound(t *testing.T) {
-	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
+	ouSvc := &fakeOUService{existing: map[string]providers.OrganizationUnit{}}
 	roleSvc := &fakeRoleService{}
 	roleAssignmentSvc := &fakeRoleAssignmentService{}
 	svc := newImportService(
-		nil, nil, nil, ouSvc, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, ouSvc, nil, roleSvc, roleAssignmentSvc,
+		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 	)
 
 	content := strings.Join([]string{
@@ -2179,11 +2180,12 @@ func TestImportRole_OUHandleNotFound(t *testing.T) {
 // TestImportRole_OUIDWinsOverHandle verifies that ou_id wins when both ou_id and ou_handle
 // are provided, and the OU service is never consulted.
 func TestImportRole_OUIDWinsOverHandle(t *testing.T) {
-	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
+	ouSvc := &fakeOUService{existing: map[string]providers.OrganizationUnit{}}
 	roleSvc := &fakeRoleService{}
 	roleAssignmentSvc := &fakeRoleAssignmentService{}
 	svc := newImportService(
-		nil, nil, nil, ouSvc, nil, roleSvc, roleAssignmentSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, ouSvc, nil, roleSvc, roleAssignmentSvc,
+		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 	)
 
 	content := strings.Join([]string{
@@ -2207,11 +2209,11 @@ func TestImportRole_OUIDWinsOverHandle(t *testing.T) {
 // TestImportGroup_OUHandleResolved verifies that ou_handle on a group document is resolved
 // to ou_id via the OU service before the group create request is built.
 func TestImportGroup_OUHandleResolved(t *testing.T) {
-	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{
+	ouSvc := &fakeOUService{existing: map[string]providers.OrganizationUnit{
 		"ou-default": {ID: "ou-default", Handle: "default"},
 	}}
 	groupSvc := &fakeGroupService{}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: group-new",
@@ -2232,9 +2234,9 @@ func TestImportGroup_OUHandleResolved(t *testing.T) {
 // TestImportGroup_OUHandleNotFound verifies that an unknown ou_handle on a group document
 // causes the import to fail with a clear error.
 func TestImportGroup_OUHandleNotFound(t *testing.T) {
-	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
+	ouSvc := &fakeOUService{existing: map[string]providers.OrganizationUnit{}}
 	groupSvc := &fakeGroupService{}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: group-new",
@@ -2254,9 +2256,9 @@ func TestImportGroup_OUHandleNotFound(t *testing.T) {
 // TestImportGroup_OUIDWinsOverHandle verifies that ou_id wins when both ou_id and ou_handle
 // are provided, and the OU service is never consulted.
 func TestImportGroup_OUIDWinsOverHandle(t *testing.T) {
-	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
+	ouSvc := &fakeOUService{existing: map[string]providers.OrganizationUnit{}}
 	groupSvc := &fakeGroupService{}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, groupSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: group-new",
@@ -2278,11 +2280,11 @@ func TestImportGroup_OUIDWinsOverHandle(t *testing.T) {
 // TestImportUser_OUHandleResolved verifies that ou_handle on a user document is resolved
 // to ou_id via the OU service before the user create request is built.
 func TestImportUser_OUHandleResolved(t *testing.T) {
-	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{
+	ouSvc := &fakeOUService{existing: map[string]providers.OrganizationUnit{
 		"ou-default": {ID: "ou-default", Handle: "default"},
 	}}
 	userSvc := &fakeUserService{}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, nil, nil, nil, userSvc, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, nil, nil, nil, userSvc, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: user-new",
@@ -2308,9 +2310,9 @@ func TestImportUser_OUHandleResolved(t *testing.T) {
 // TestImportUser_OUHandleNotFound verifies that an unknown ou_handle on a user document
 // causes the import to fail with a clear error.
 func TestImportUser_OUHandleNotFound(t *testing.T) {
-	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
+	ouSvc := &fakeOUService{existing: map[string]providers.OrganizationUnit{}}
 	userSvc := &fakeUserService{}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, nil, nil, nil, userSvc, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, nil, nil, nil, userSvc, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: user-new",
@@ -2332,9 +2334,9 @@ func TestImportUser_OUHandleNotFound(t *testing.T) {
 // TestImportUser_OUIDWinsOverHandle verifies that ou_id wins when both ou_id and ou_handle
 // are provided, and the OU service is never consulted.
 func TestImportUser_OUIDWinsOverHandle(t *testing.T) {
-	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
+	ouSvc := &fakeOUService{existing: map[string]providers.OrganizationUnit{}}
 	userSvc := &fakeUserService{}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, nil, nil, nil, userSvc, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, nil, nil, nil, userSvc, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: user-new",
@@ -2361,11 +2363,11 @@ func TestImportUser_OUIDWinsOverHandle(t *testing.T) {
 // TestImportResourceServer_OUHandleResolved verifies that ou_handle on a resource server
 // document is resolved to ou_id via the OU service before the create request is built.
 func TestImportResourceServer_OUHandleResolved(t *testing.T) {
-	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{
+	ouSvc := &fakeOUService{existing: map[string]providers.OrganizationUnit{
 		"ou-default": {ID: "ou-default", Handle: "default"},
 	}}
 	rsSvc := &fakeResourceServerService{}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, rsSvc, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, rsSvc, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"# resource_type: resource_server",
@@ -2393,9 +2395,9 @@ func TestImportResourceServer_OUHandleResolved(t *testing.T) {
 // TestImportResourceServer_OUHandleNotFound verifies that an unknown ou_handle on a resource
 // server document causes the import to fail with a clear error.
 func TestImportResourceServer_OUHandleNotFound(t *testing.T) {
-	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
+	ouSvc := &fakeOUService{existing: map[string]providers.OrganizationUnit{}}
 	rsSvc := &fakeResourceServerService{}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, rsSvc, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, rsSvc, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"# resource_type: resource_server",
@@ -2419,9 +2421,9 @@ func TestImportResourceServer_OUHandleNotFound(t *testing.T) {
 // TestImportResourceServer_OUIDWinsOverHandle verifies that ou_id wins when both ou_id and
 // ou_handle are provided, and the OU service is never consulted.
 func TestImportResourceServer_OUIDWinsOverHandle(t *testing.T) {
-	ouSvc := &fakeOUService{existing: map[string]ou.OrganizationUnit{}}
+	ouSvc := &fakeOUService{existing: map[string]providers.OrganizationUnit{}}
 	rsSvc := &fakeResourceServerService{}
-	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, rsSvc, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, nil, nil, ouSvc, nil, nil, nil, nil, rsSvc, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"# resource_type: resource_server",
@@ -2448,8 +2450,8 @@ func TestImportResourceServer_OUIDWinsOverHandle(t *testing.T) {
 }
 
 func TestImportResources_IDPPropertiesArePassedToService(t *testing.T) {
-	idpSvc := &fakeIDPService{byID: map[string]*idp.IDPDTO{}, byName: map[string]*idp.IDPDTO{}}
-	svc := newImportService(nil, idpSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	idpSvc := &fakeIDPService{byID: map[string]*providers.IDPDTO{}, byName: map[string]*providers.IDPDTO{}}
+	svc := newImportService(nil, idpSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	// is_secret with empty value avoids the encryption path while still verifying the flag is parsed.
 	content := strings.Join([]string{
@@ -2486,12 +2488,12 @@ func TestImportResources_IDPPropertiesArePassedToService(t *testing.T) {
 }
 
 func TestImportResources_IDPUpsertUpdatePropertiesArePassedToService(t *testing.T) {
-	existing := &idp.IDPDTO{ID: "idp-1", Name: "google-idp", Type: idp.IDPTypeGoogle}
+	existing := &providers.IDPDTO{ID: "idp-1", Name: "google-idp", Type: providers.IDPTypeGoogle}
 	idpSvc := &fakeIDPService{
-		byID:   map[string]*idp.IDPDTO{"idp-1": existing},
-		byName: map[string]*idp.IDPDTO{"google-idp": existing},
+		byID:   map[string]*providers.IDPDTO{"idp-1": existing},
+		byName: map[string]*providers.IDPDTO{"google-idp": existing},
 	}
-	svc := newImportService(nil, idpSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := newImportService(nil, idpSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
 		"id: idp-1",

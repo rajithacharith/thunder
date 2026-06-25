@@ -26,12 +26,13 @@ import (
 	"strings"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/thunder-id/thunderid/internal/entity"
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/security"
 )
 
@@ -220,7 +221,7 @@ func TestHandleSelfUserCredentialUpdateRequest_ErrorCases(t *testing.T) {
 		name             string
 		requestBody      string
 		mockJSON         json.RawMessage
-		mockError        *serviceerror.ServiceError
+		mockError        *tidcommon.ServiceError
 		expectedHTTPCode int
 		expectedErrCode  string
 	}{
@@ -515,7 +516,7 @@ func TestHandleUserGroupsGetRequest_Success(t *testing.T) {
 	userID := testUserID123
 	expectedResp := &UserGroupListResponse{
 		TotalResults: 2,
-		Groups:       []entity.EntityGroup{{ID: "group-1", Name: "Admin"}},
+		Groups:       []providers.EntityGroup{{ID: "group-1", Name: "Admin"}},
 	}
 	mockSvc.On("GetUserGroups", mock.Anything, userID, 10, 0).Return(expectedResp, nil)
 
@@ -600,7 +601,7 @@ func TestHandleUserPostRequest_ErrorCases(t *testing.T) {
 	})
 
 	t.Run("ServiceError", func(t *testing.T) {
-		mockSvc.On("CreateUser", mock.Anything, mock.Anything).Return(nil, &serviceerror.InternalServerError).Once()
+		mockSvc.On("CreateUser", mock.Anything, mock.Anything).Return(nil, &tidcommon.InternalServerError).Once()
 		req := httptest.NewRequest(http.MethodPost, "/users", strings.NewReader(`{"ouId":"ou-123","type":"customer"}`))
 		rr := httptest.NewRecorder()
 		handler.HandleUserPostRequest(rr, req)
@@ -644,7 +645,7 @@ func TestHandleUserPutRequest_ErrorCases(t *testing.T) {
 	})
 
 	t.Run("ServiceError", func(t *testing.T) {
-		svcErr := &serviceerror.InternalServerError
+		svcErr := &tidcommon.InternalServerError
 		mockSvc.On("UpdateUser", mock.Anything, userID, mock.Anything).Return(nil, svcErr).Once()
 		req := httptest.NewRequest(http.MethodPut, "/users/"+userID, strings.NewReader(`{"attributes":{}}`))
 		req.SetPathValue("id", userID)
@@ -667,7 +668,7 @@ func TestHandleUserDeleteRequest_ErrorCases(t *testing.T) {
 	})
 
 	t.Run("ServiceError", func(t *testing.T) {
-		mockSvc.On("DeleteUser", mock.Anything, userID).Return(&serviceerror.InternalServerError).Once()
+		mockSvc.On("DeleteUser", mock.Anything, userID).Return(&tidcommon.InternalServerError).Once()
 		req := httptest.NewRequest(http.MethodDelete, "/users/"+userID, nil)
 		req.SetPathValue("id", userID)
 		rr := httptest.NewRecorder()
@@ -679,7 +680,7 @@ func TestHandleUserDeleteRequest_ErrorCases(t *testing.T) {
 func TestHandleUserListRequest_ServiceError(t *testing.T) {
 	mockSvc := NewUserServiceInterfaceMock(t)
 	mockSvc.On("GetUserList", mock.Anything, 10, 0, mock.Anything, false).
-		Return(nil, &serviceerror.InternalServerError).Once()
+		Return(nil, &tidcommon.InternalServerError).Once()
 
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodGet, "/users?limit=10&offset=0", nil)
@@ -691,7 +692,7 @@ func TestHandleUserListRequest_ServiceError(t *testing.T) {
 
 	var errResp apierror.ErrorResponse
 	require.NoError(t, json.NewDecoder(rr.Body).Decode(&errResp))
-	require.Equal(t, serviceerror.InternalServerError.Code, errResp.Code)
+	require.Equal(t, tidcommon.InternalServerError.Code, errResp.Code)
 }
 
 func TestHandleUserGroupsGetRequest_ErrorCases(t *testing.T) {
@@ -858,7 +859,7 @@ func TestHandleSelfUserPutRequest_ServiceError(t *testing.T) {
 
 	mockSvc := NewUserServiceInterfaceMock(t)
 	mockSvc.On("UpdateUserAttributes", mock.Anything, userID, attributes).
-		Return(nil, &serviceerror.InternalServerError).Once()
+		Return(nil, &tidcommon.InternalServerError).Once()
 
 	handler := newUserHandler(mockSvc)
 	body := bytes.NewBufferString(`{"attributes":{"email":"alice@example.com"}}`)
@@ -872,7 +873,7 @@ func TestHandleSelfUserPutRequest_ServiceError(t *testing.T) {
 
 	var errResp apierror.ErrorResponse
 	require.NoError(t, json.NewDecoder(rr.Body).Decode(&errResp))
-	require.Equal(t, serviceerror.InternalServerError.Code, errResp.Code)
+	require.Equal(t, tidcommon.InternalServerError.Code, errResp.Code)
 }
 
 func TestHandleSelfUserCredentialUpdateRequest_Unauthorized(t *testing.T) {
@@ -914,12 +915,12 @@ func TestHandleSelfUserCredentialUpdateRequest_InvalidBody(t *testing.T) {
 func TestHandleError_ErrorUnauthorized_Returns403(t *testing.T) {
 	tests := []struct {
 		name     string
-		svcErr   *serviceerror.ServiceError
+		svcErr   *tidcommon.ServiceError
 		wantCode int
 	}{
 		{
 			name:     "UnauthorizedError_ReturnsForbidden",
-			svcErr:   &serviceerror.ErrorUnauthorized,
+			svcErr:   &tidcommon.ErrorUnauthorized,
 			wantCode: http.StatusForbidden,
 		},
 		{
@@ -929,7 +930,7 @@ func TestHandleError_ErrorUnauthorized_Returns403(t *testing.T) {
 		},
 		{
 			name:     "InternalServerError_Returns500",
-			svcErr:   &serviceerror.InternalServerError,
+			svcErr:   &tidcommon.InternalServerError,
 			wantCode: http.StatusInternalServerError,
 		},
 		{

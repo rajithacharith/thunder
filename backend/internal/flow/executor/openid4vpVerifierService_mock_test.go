@@ -9,7 +9,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 	"github.com/thunder-id/thunderid/internal/openid4vp"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 // newOpenid4vpVerifierServiceMock creates a new instance of openid4vpVerifierServiceMock. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -40,7 +40,7 @@ func (_m *openid4vpVerifierServiceMock) EXPECT() *openid4vpVerifierServiceMock_E
 }
 
 // GetResult provides a mock function for the type openid4vpVerifierServiceMock
-func (_mock *openid4vpVerifierServiceMock) GetResult(ctx context.Context, state string) (*openid4vp.RequestState, *serviceerror.ServiceError) {
+func (_mock *openid4vpVerifierServiceMock) GetResult(ctx context.Context, state string) (*openid4vp.RequestState, *common.ServiceError) {
 	ret := _mock.Called(ctx, state)
 
 	if len(ret) == 0 {
@@ -48,8 +48,8 @@ func (_mock *openid4vpVerifierServiceMock) GetResult(ctx context.Context, state 
 	}
 
 	var r0 *openid4vp.RequestState
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*openid4vp.RequestState, *serviceerror.ServiceError)); ok {
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*openid4vp.RequestState, *common.ServiceError)); ok {
 		return returnFunc(ctx, state)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *openid4vp.RequestState); ok {
@@ -59,11 +59,11 @@ func (_mock *openid4vpVerifierServiceMock) GetResult(ctx context.Context, state 
 			r0 = ret.Get(0).(*openid4vp.RequestState)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *common.ServiceError); ok {
 		r1 = returnFunc(ctx, state)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -99,18 +99,18 @@ func (_c *openid4vpVerifierServiceMock_GetResult_Call) Run(run func(ctx context.
 	return _c
 }
 
-func (_c *openid4vpVerifierServiceMock_GetResult_Call) Return(requestState *openid4vp.RequestState, serviceError *serviceerror.ServiceError) *openid4vpVerifierServiceMock_GetResult_Call {
+func (_c *openid4vpVerifierServiceMock_GetResult_Call) Return(requestState *openid4vp.RequestState, serviceError *common.ServiceError) *openid4vpVerifierServiceMock_GetResult_Call {
 	_c.Call.Return(requestState, serviceError)
 	return _c
 }
 
-func (_c *openid4vpVerifierServiceMock_GetResult_Call) RunAndReturn(run func(ctx context.Context, state string) (*openid4vp.RequestState, *serviceerror.ServiceError)) *openid4vpVerifierServiceMock_GetResult_Call {
+func (_c *openid4vpVerifierServiceMock_GetResult_Call) RunAndReturn(run func(ctx context.Context, state string) (*openid4vp.RequestState, *common.ServiceError)) *openid4vpVerifierServiceMock_GetResult_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Initiate provides a mock function for the type openid4vpVerifierServiceMock
-func (_mock *openid4vpVerifierServiceMock) Initiate(ctx context.Context, definitionID string) (*openid4vp.Initiation, *serviceerror.ServiceError) {
+func (_mock *openid4vpVerifierServiceMock) Initiate(ctx context.Context, definitionID string) (*openid4vp.Initiation, *common.ServiceError) {
 	ret := _mock.Called(ctx, definitionID)
 
 	if len(ret) == 0 {
@@ -118,8 +118,8 @@ func (_mock *openid4vpVerifierServiceMock) Initiate(ctx context.Context, definit
 	}
 
 	var r0 *openid4vp.Initiation
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*openid4vp.Initiation, *serviceerror.ServiceError)); ok {
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*openid4vp.Initiation, *common.ServiceError)); ok {
 		return returnFunc(ctx, definitionID)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *openid4vp.Initiation); ok {
@@ -129,11 +129,11 @@ func (_mock *openid4vpVerifierServiceMock) Initiate(ctx context.Context, definit
 			r0 = ret.Get(0).(*openid4vp.Initiation)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *common.ServiceError); ok {
 		r1 = returnFunc(ctx, definitionID)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -169,12 +169,12 @@ func (_c *openid4vpVerifierServiceMock_Initiate_Call) Run(run func(ctx context.C
 	return _c
 }
 
-func (_c *openid4vpVerifierServiceMock_Initiate_Call) Return(initiation *openid4vp.Initiation, serviceError *serviceerror.ServiceError) *openid4vpVerifierServiceMock_Initiate_Call {
+func (_c *openid4vpVerifierServiceMock_Initiate_Call) Return(initiation *openid4vp.Initiation, serviceError *common.ServiceError) *openid4vpVerifierServiceMock_Initiate_Call {
 	_c.Call.Return(initiation, serviceError)
 	return _c
 }
 
-func (_c *openid4vpVerifierServiceMock_Initiate_Call) RunAndReturn(run func(ctx context.Context, definitionID string) (*openid4vp.Initiation, *serviceerror.ServiceError)) *openid4vpVerifierServiceMock_Initiate_Call {
+func (_c *openid4vpVerifierServiceMock_Initiate_Call) RunAndReturn(run func(ctx context.Context, definitionID string) (*openid4vp.Initiation, *common.ServiceError)) *openid4vpVerifierServiceMock_Initiate_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -29,7 +29,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/application/model"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
-	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // ValidateApplicationWrapperTestSuite tests the validateApplicationWrapper function.
@@ -235,8 +235,8 @@ inboundAuthConfig:
 	assert.Equal(s.T(), "client-123", oauthConfig.ClientID)
 	assert.Equal(s.T(), "secret-456", oauthConfig.ClientSecret)
 	assert.Contains(s.T(), oauthConfig.RedirectURIs, "https://example.com/callback")
-	assert.Contains(s.T(), oauthConfig.GrantTypes, oauth2const.GrantType("authorization_code"))
-	assert.Contains(s.T(), oauthConfig.GrantTypes, oauth2const.GrantType("refresh_token"))
+	assert.Contains(s.T(), oauthConfig.GrantTypes, providers.GrantType("authorization_code"))
+	assert.Contains(s.T(), oauthConfig.GrantTypes, providers.GrantType("refresh_token"))
 	assert.True(s.T(), oauthConfig.PKCERequired)
 	assert.False(s.T(), oauthConfig.PublicClient)
 	assert.Contains(s.T(), oauthConfig.Scopes, "openid")

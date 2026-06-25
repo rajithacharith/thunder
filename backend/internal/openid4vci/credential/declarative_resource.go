@@ -22,8 +22,9 @@ import (
 	"context"
 	"fmt"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 
 	"gopkg.in/yaml.v3"
@@ -57,7 +58,7 @@ func (e *configurationExporter) GetParameterizerType() string {
 
 // GetAllResourceIDs returns the IDs of all mutable (database-backed) credential
 // configurations, excluding any declarative (file-based) configurations.
-func (e *configurationExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
+func (e *configurationExporter) GetAllResourceIDs(ctx context.Context) ([]string, *tidcommon.ServiceError) {
 	configs, err := e.service.ListCredentialConfigurations(ctx)
 	if err != nil {
 		return nil, err
@@ -78,7 +79,7 @@ func (e *configurationExporter) GetAllResourceIDs(ctx context.Context) ([]string
 // GetResourceByID retrieves a credential configuration by ID for export, returning
 // its handle as the stable resource name.
 func (e *configurationExporter) GetResourceByID(ctx context.Context, id string) (
-	interface{}, string, *serviceerror.ServiceError,
+	interface{}, string, *tidcommon.ServiceError,
 ) {
 	dto, err := e.service.GetCredentialConfiguration(ctx, id)
 	if err != nil {

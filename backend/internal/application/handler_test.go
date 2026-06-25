@@ -26,6 +26,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -33,9 +36,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/application/model"
 	"github.com/thunder-id/thunderid/internal/cert"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
-	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
@@ -112,9 +113,9 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_SuccessWithOAuth
 					ClientID:                "test-client-id",
 					ClientSecret:            "test-secret",
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -132,9 +133,9 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_SuccessWithOAuth
 					ClientID:                "test-client-id",
 					ClientSecret:            "test-secret",
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -246,7 +247,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_InvalidJSON() {
 func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_ServiceError() {
 	tests := []struct {
 		name           string
-		svcErr         *serviceerror.ServiceError
+		svcErr         *tidcommon.ServiceError
 		expectedStatus int
 		expectedCode   string
 	}{
@@ -258,9 +259,9 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_ServiceError() {
 		},
 		{
 			name:           "InternalServerError",
-			svcErr:         &serviceerror.InternalServerError,
+			svcErr:         &tidcommon.InternalServerError,
 			expectedStatus: http.StatusInternalServerError,
-			expectedCode:   serviceerror.InternalServerError.Code,
+			expectedCode:   tidcommon.InternalServerError.Code,
 		},
 	}
 
@@ -427,7 +428,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationListRequest_ServiceError() {
 	mockService := NewApplicationServiceInterfaceMock(suite.T())
 	handler := newApplicationHandler(mockService)
 
-	svcErr := &serviceerror.InternalServerError
+	svcErr := &tidcommon.InternalServerError
 
 	mockService.On("GetApplicationList", mock.Anything).Return(nil, svcErr)
 
@@ -442,7 +443,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationListRequest_ServiceError() {
 	var errResp apierror.ErrorResponse
 	err := json.Unmarshal(w.Body.Bytes(), &errResp)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, errResp.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, errResp.Code)
 
 	mockService.AssertExpectations(suite.T())
 }
@@ -493,9 +494,9 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_SuccessWithOAuth(
 				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                "test-client-id",
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -638,7 +639,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_ServiceError() {
 	mockService := NewApplicationServiceInterfaceMock(suite.T())
 	handler := newApplicationHandler(mockService)
 
-	svcErr := &serviceerror.InternalServerError
+	svcErr := &tidcommon.InternalServerError
 
 	mockService.On("GetApplication", mock.Anything, "test-app-id").Return(nil, svcErr)
 
@@ -654,7 +655,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_ServiceError() {
 	var errResp apierror.ErrorResponse
 	err := json.Unmarshal(w.Body.Bytes(), &errResp)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, errResp.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, errResp.Code)
 
 	mockService.AssertExpectations(suite.T())
 }
@@ -1029,7 +1030,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationDeleteRequest_ServiceError()
 	mockService := NewApplicationServiceInterfaceMock(suite.T())
 	handler := newApplicationHandler(mockService)
 
-	svcErr := &serviceerror.InternalServerError
+	svcErr := &tidcommon.InternalServerError
 
 	mockService.On("DeleteApplication", mock.Anything, "test-app-id").Return(svcErr)
 
@@ -1059,9 +1060,9 @@ func (suite *HandlerTestSuite) TestProcessInboundAuthConfig_Success() {
 					ClientID:                "test-client-id",
 					ClientSecret:            "test-secret",
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -1095,9 +1096,9 @@ func (suite *HandlerTestSuite) TestProcessInboundAuthConfig_EmptyRedirectURIs() 
 					ClientID:                "test-client-id",
 					ClientSecret:            "test-secret",
 					RedirectURIs:            nil, // Empty redirect URIs
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -1131,8 +1132,8 @@ func (suite *HandlerTestSuite) TestProcessInboundAuthConfig_EmptyGrantTypes() {
 					ClientSecret:            "test-secret",
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              nil, // Empty grant types
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -1270,7 +1271,7 @@ func (suite *HandlerTestSuite) TestHandleError_ServerError() {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/applications", nil)
 
-	svcErr := &serviceerror.InternalServerError
+	svcErr := &tidcommon.InternalServerError
 
 	handler.handleError(context.Background(), w, r, svcErr)
 
@@ -1280,7 +1281,7 @@ func (suite *HandlerTestSuite) TestHandleError_ServerError() {
 	var errResp apierror.ErrorResponse
 	err := json.Unmarshal(w.Body.Bytes(), &errResp)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, errResp.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, errResp.Code)
 }
 
 func (suite *HandlerTestSuite) TestProcessInboundAuthConfigFromRequest_Success() {
@@ -1294,9 +1295,9 @@ func (suite *HandlerTestSuite) TestProcessInboundAuthConfigFromRequest_Success()
 				ClientID:                "test-client-id",
 				ClientSecret:            "test-secret",
 				RedirectURIs:            []string{"https://example.com/callback"},
-				GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-				ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+				GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+				ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+				TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 			},
 		},
 	}
@@ -1402,12 +1403,12 @@ func (suite *HandlerTestSuite) TestProcessInboundAuthConfigFromRequest_WithToken
 			OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 				ClientID:     "test-client-id",
 				ClientSecret: "test-secret",
-				Token: &inboundmodel.OAuthTokenConfig{
-					AccessToken: &inboundmodel.AccessTokenConfig{
+				Token: &providers.OAuthTokenConfig{
+					AccessToken: &providers.AccessTokenConfig{
 						ValidityPeriod: 3600,
 						UserAttributes: []string{"email", "name"},
 					},
-					IDToken: &inboundmodel.IDTokenConfig{
+					IDToken: &providers.IDTokenConfig{
 						ValidityPeriod: 3600,
 						UserAttributes: []string{"email"},
 					},
@@ -1456,7 +1457,7 @@ func (suite *HandlerTestSuite) TestProcessInboundAuthConfigFromRequest_PublicCli
 				ClientID:                "test-client-id",
 				PublicClient:            true,
 				PKCERequired:            true,
-				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodNone,
+				TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodNone,
 			},
 		},
 	}
@@ -1528,9 +1529,9 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_WithEmptyArrays()
 				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                "test-client-id",
 					RedirectURIs:            []string{}, // Empty array
-					GrantTypes:              []oauth2const.GrantType{},
-					ResponseTypes:           []oauth2const.ResponseType{},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{},
+					ResponseTypes:           []providers.ResponseType{},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -1572,9 +1573,9 @@ func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_WithOAuth() {
 					ClientID:                "updated-client-id",
 					ClientSecret:            "updated-secret",
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -1592,9 +1593,9 @@ func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_WithOAuth() {
 					ClientID:                "updated-client-id",
 					ClientSecret:            "updated-secret",
 					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 		},
@@ -1837,9 +1838,9 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_MultipleInboundA
 					ClientID:                "client-1",
 					ClientSecret:            "secret-1",
 					RedirectURIs:            []string{"https://example1.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 			{
@@ -1848,9 +1849,9 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_MultipleInboundA
 					ClientID:                "client-2",
 					ClientSecret:            "secret-2",
 					RedirectURIs:            []string{"https://example2.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeClientCredentials},
-					ResponseTypes:           []oauth2const.ResponseType{},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretPost,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeClientCredentials},
+					ResponseTypes:           []providers.ResponseType{},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretPost,
 				},
 			},
 		},
@@ -1867,9 +1868,9 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_MultipleInboundA
 					ClientID:                "client-1",
 					ClientSecret:            "secret-1",
 					RedirectURIs:            []string{"https://example1.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
+					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
 			},
 			{
@@ -1878,9 +1879,9 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_MultipleInboundA
 					ClientID:                "client-2",
 					ClientSecret:            "secret-2",
 					RedirectURIs:            []string{"https://example2.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeClientCredentials},
-					ResponseTypes:           []oauth2const.ResponseType{},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretPost,
+					GrantTypes:              []providers.GrantType{providers.GrantTypeClientCredentials},
+					ResponseTypes:           []providers.ResponseType{},
+					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretPost,
 				},
 			},
 		},
@@ -1982,7 +1983,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_UnsupportedInbou
 	var errResp apierror.ErrorResponse
 	err := json.Unmarshal(w.Body.Bytes(), &errResp)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, errResp.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, errResp.Code)
 
 	mockService.AssertExpectations(suite.T())
 }
@@ -2028,7 +2029,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_NilOAuthConfig()
 	var errResp apierror.ErrorResponse
 	err := json.Unmarshal(w.Body.Bytes(), &errResp)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, errResp.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, errResp.Code)
 
 	mockService.AssertExpectations(suite.T())
 }
@@ -2149,7 +2150,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_UnsupportedInboun
 	var errResp apierror.ErrorResponse
 	err := json.Unmarshal(w.Body.Bytes(), &errResp)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, errResp.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, errResp.Code)
 
 	mockService.AssertExpectations(suite.T())
 }
@@ -2197,7 +2198,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_NilOAuthConfig() 
 	var errResp apierror.ErrorResponse
 	err := json.Unmarshal(w.Body.Bytes(), &errResp)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, errResp.Code)
+	assert.Equal(suite.T(), tidcommon.InternalServerError.Code, errResp.Code)
 
 	mockService.AssertExpectations(suite.T())
 }
@@ -2395,8 +2396,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_EmptyResponseType
 				Type: inboundmodel.OAuthInboundAuthType,
 				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:      "test-client-id",
-					GrantTypes:    []oauth2const.GrantType{},    // Empty grant types
-					ResponseTypes: []oauth2const.ResponseType{}, // Empty response types
+					GrantTypes:    []providers.GrantType{},    // Empty grant types
+					ResponseTypes: []providers.ResponseType{}, // Empty response types
 				},
 			},
 		},

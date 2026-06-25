@@ -34,6 +34,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
+	"github.com/thunder-id/thunderid/internal/serverconfig"
 	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
 	"github.com/thunder-id/thunderid/internal/user"
@@ -58,6 +59,7 @@ func Initialize(
 	agentService agent.AgentServiceInterface,
 	presentationDefinitionService definition.PresentationDefinitionServiceInterface,
 	credentialConfigurationService credential.CredentialConfigurationServiceInterface,
+	serverConfigService serverconfig.ServerConfigService,
 ) ImportServiceInterface {
 	importService := newImportService(
 		applicationService,
@@ -76,6 +78,7 @@ func Initialize(
 		agentService,
 		presentationDefinitionService,
 		credentialConfigurationService,
+		serverConfigService,
 	)
 	importHandler := newImportHandler(importService)
 

@@ -23,11 +23,11 @@ import (
 	"errors"
 	"fmt"
 
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 const (
@@ -41,7 +41,7 @@ const (
 type attributeCollector struct {
 	core.ExecutorInterface
 	entityProvider entityprovider.EntityProviderInterface
-	authnProvider  authnprovidermgr.AuthnProviderManagerInterface
+	authnProvider  providers.AuthnProviderManagerInterface
 	logger         *log.Logger
 }
 
@@ -51,7 +51,7 @@ var _ core.ExecutorInterface = (*attributeCollector)(nil)
 func newAttributeCollector(
 	flowFactory core.FlowFactoryInterface,
 	entityProvider entityprovider.EntityProviderInterface,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
+	authnProvider providers.AuthnProviderManagerInterface,
 ) *attributeCollector {
 	prerequisites := []common.Input{
 		{
@@ -85,7 +85,7 @@ func (a *attributeCollector) Execute(ctx *core.NodeContext) (*common.ExecutorRes
 		AuthUser:       ctx.AuthUser,
 	}
 
-	if ctx.FlowType == common.FlowTypeRegistration {
+	if ctx.FlowType == providers.FlowTypeRegistration {
 		logger.Debug(ctx.Context, "Flow type is registration, skipping attribute collection")
 		execResp.Status = common.ExecComplete
 		return execResp, nil
@@ -305,7 +305,7 @@ func (a *attributeCollector) updateUserInStore(ctx *core.NodeContext, execResp *
 // getUserFromStore retrieves the user profile from the user store.
 func (a *attributeCollector) getUserFromStore(
 	ctx *core.NodeContext, execResp *common.ExecutorResponse,
-) (*entityprovider.Entity, error) {
+) (*providers.Entity, error) {
 	userID := a.GetUserIDFromContext(ctx, execResp, a.authnProvider)
 	if userID == "" {
 		return nil, errors.New("user ID is not available in the context")
@@ -321,10 +321,10 @@ func (a *attributeCollector) getUserFromStore(
 
 // getUpdatedUserObject creates a new user object with the updated attributes.
 func (a *attributeCollector) getUpdatedUserObject(ctx *core.NodeContext,
-	userData *entityprovider.Entity) (bool, *entityprovider.Entity, error) {
+	userData *providers.Entity) (bool, *providers.Entity, error) {
 	logger := a.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
-	updatedUser := &entityprovider.Entity{
+	updatedUser := &providers.Entity{
 		ID:       userData.ID,
 		Category: userData.Category,
 		OUID:     userData.OUID,

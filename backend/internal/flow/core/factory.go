@@ -22,6 +22,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -30,12 +32,12 @@ import (
 type FlowFactoryInterface interface {
 	CreateNode(id, _type string, properties map[string]interface{}, isStartNode, isFinalNode bool) (
 		NodeInterface, error)
-	CreateGraph(id string, _type common.FlowType, version int) GraphInterface
+	CreateGraph(id string, _type providers.FlowType, version int) GraphInterface
 	CreateExecutor(name string, executorType common.ExecutorType,
 		defaultInputs, prerequisites []common.Input) ExecutorInterface
 	CreateInterceptor(name string, isDefault bool, priority int) InterceptorInterface
-	CreateInterceptorUnit(name string, mode common.InterceptorMode,
-		scope common.InterceptorScope, applyTo []string,
+	CreateInterceptorUnit(name string, mode providers.InterceptorMode,
+		scope providers.InterceptorScope, applyTo []string,
 		properties map[string]interface{}) InterceptorUnitInterface
 	CloneNode(source NodeInterface) (NodeInterface, error)
 	CloneNodes(nodes map[string]NodeInterface) (map[string]NodeInterface, error)
@@ -74,12 +76,12 @@ func (f *flowFactory) CreateNode(id, _type string, properties map[string]interfa
 }
 
 // CreateGraph creates a new graph with the given ID and type
-func (f *flowFactory) CreateGraph(id string, _type common.FlowType, version int) GraphInterface {
+func (f *flowFactory) CreateGraph(id string, _type providers.FlowType, version int) GraphInterface {
 	if id == "" {
 		id = sysutils.GenerateUUID()
 	}
 	if _type == "" {
-		_type = common.FlowTypeAuthentication
+		_type = providers.FlowTypeAuthentication
 	}
 	if version <= 0 {
 		version = 1
@@ -106,8 +108,8 @@ func (f *flowFactory) CreateInterceptor(name string, isDefault bool, priority in
 }
 
 // CreateInterceptorUnit creates a new interceptor execution unit from flow-level configuration.
-func (f *flowFactory) CreateInterceptorUnit(name string, mode common.InterceptorMode,
-	scope common.InterceptorScope, applyTo []string,
+func (f *flowFactory) CreateInterceptorUnit(name string, mode providers.InterceptorMode,
+	scope providers.InterceptorScope, applyTo []string,
 	properties map[string]interface{}) InterceptorUnitInterface {
 	return newInterceptorUnit(name, mode, scope, applyTo, properties)
 }

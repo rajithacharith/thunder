@@ -29,9 +29,10 @@ import (
 	"net/url"
 	"time"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	authncommon "github.com/thunder-id/thunderid/internal/authn/common"
 	"github.com/thunder-id/thunderid/internal/openid4vp/definition"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 )
@@ -40,7 +41,7 @@ import (
 type definitionReader interface {
 	GetPresentationDefinitionByHandle(
 		ctx context.Context, handle string,
-	) (*definition.PresentationDefinitionDTO, *serviceerror.ServiceError)
+	) (*definition.PresentationDefinitionDTO, *tidcommon.ServiceError)
 }
 
 const defaultStateTTL = 5 * time.Minute
@@ -55,15 +56,15 @@ type requestSigner interface {
 // It is implemented by *service and consumed by the HTTP handler and in-process
 // callers such as flow executors (which depend only on Initiate and GetResult).
 type OpenID4VPServiceInterface interface {
-	Initiate(ctx context.Context, definitionID string) (*Initiation, *serviceerror.ServiceError)
-	GetResult(ctx context.Context, state string) (*RequestState, *serviceerror.ServiceError)
-	GetRequestObject(ctx context.Context, state string) (string, *serviceerror.ServiceError)
-	SubmitResponse(ctx context.Context, state string, body []byte) (*VerifiedPresentation, *serviceerror.ServiceError)
-	SubmitError(ctx context.Context, state, code, description string) *serviceerror.ServiceError
+	Initiate(ctx context.Context, definitionID string) (*Initiation, *tidcommon.ServiceError)
+	GetResult(ctx context.Context, state string) (*RequestState, *tidcommon.ServiceError)
+	GetRequestObject(ctx context.Context, state string) (string, *tidcommon.ServiceError)
+	SubmitResponse(ctx context.Context, state string, body []byte) (*VerifiedPresentation, *tidcommon.ServiceError)
+	SubmitError(ctx context.Context, state, code, description string) *tidcommon.ServiceError
 	GetResultRedirectURI(state string) string
-	InitiateForRP(ctx context.Context, definitionID, rpID string) (*Initiation, *serviceerror.ServiceError)
-	LookupState(ctx context.Context, state string) (*RequestState, *serviceerror.ServiceError)
-	Authenticate(ctx context.Context, state string) (*authncommon.AuthnResult, *serviceerror.ServiceError)
+	InitiateForRP(ctx context.Context, definitionID, rpID string) (*Initiation, *tidcommon.ServiceError)
+	LookupState(ctx context.Context, state string) (*RequestState, *tidcommon.ServiceError)
+	Authenticate(ctx context.Context, state string) (*authncommon.AuthnResult, *tidcommon.ServiceError)
 	GetTrustAnchors() []TrustAnchorInfo
 }
 
@@ -107,7 +108,7 @@ func newOpenID4VPService(
 // InitiateForRP is the RP-facing variant of Initiate; stores rpID so the result token audience matches.
 func (s *service) InitiateForRP(
 	ctx context.Context, definitionID, rpID string,
-) (*Initiation, *serviceerror.ServiceError) {
+) (*Initiation, *tidcommon.ServiceError) {
 	init, err := s.initiateForRP(ctx, definitionID, rpID)
 	if err != nil {
 		return nil, toServiceError(err)
@@ -137,7 +138,7 @@ func (s *service) initiateForRP(ctx context.Context, definitionID, rpID string) 
 
 // Initiate creates a fresh request for definitionID: a random state and nonce
 // and an ephemeral encryption keypair, stored pending under a short TTL.
-func (s *service) Initiate(ctx context.Context, definitionID string) (*Initiation, *serviceerror.ServiceError) {
+func (s *service) Initiate(ctx context.Context, definitionID string) (*Initiation, *tidcommon.ServiceError) {
 	init, err := s.initiate(ctx, definitionID)
 	if err != nil {
 		return nil, toServiceError(err)
@@ -189,7 +190,7 @@ func (s *service) initiate(ctx context.Context, definitionID string) (*Initiatio
 // GetRequestObject builds and signs the request object (JAR) for state. The
 // definition recorded on the state drives DCQL, encryption advertisement and
 // signing.
-func (s *service) GetRequestObject(ctx context.Context, state string) (string, *serviceerror.ServiceError) {
+func (s *service) GetRequestObject(ctx context.Context, state string) (string, *tidcommon.ServiceError) {
 	jar, err := s.requestObject(ctx, state)
 	if err != nil {
 		return "", toServiceError(err)
@@ -242,7 +243,7 @@ func (s *service) requestObject(ctx context.Context, state string) (string, erro
 // the outcome. It returns the verified presentation on success.
 func (s *service) SubmitResponse(
 	ctx context.Context, state string, body []byte,
-) (*VerifiedPresentation, *serviceerror.ServiceError) {
+) (*VerifiedPresentation, *tidcommon.ServiceError) {
 	vp, err := s.submitResponse(ctx, state, body)
 	if err != nil {
 		return nil, toServiceError(err)
@@ -328,7 +329,7 @@ func (s *service) submitResponse(ctx context.Context, state string, body []byte)
 }
 
 // SubmitError records a wallet-reported error (e.g. access_denied) and marks the transaction failed.
-func (s *service) SubmitError(ctx context.Context, state, code, description string) *serviceerror.ServiceError {
+func (s *service) SubmitError(ctx context.Context, state, code, description string) *tidcommon.ServiceError {
 	rs, err := s.load(ctx, state)
 	if err != nil {
 		return toServiceError(err)
@@ -342,7 +343,7 @@ func (s *service) SubmitError(ctx context.Context, state, code, description stri
 }
 
 // GetResult returns the current state record for polling.
-func (s *service) GetResult(ctx context.Context, state string) (*RequestState, *serviceerror.ServiceError) {
+func (s *service) GetResult(ctx context.Context, state string) (*RequestState, *tidcommon.ServiceError) {
 	rs, err := s.load(ctx, state)
 	if err != nil {
 		return nil, toServiceError(err)
@@ -351,7 +352,7 @@ func (s *service) GetResult(ctx context.Context, state string) (*RequestState, *
 }
 
 // LookupState returns the state record without evicting expired entries; returns ErrExpiredState vs ErrUnknownState.
-func (s *service) LookupState(ctx context.Context, state string) (*RequestState, *serviceerror.ServiceError) {
+func (s *service) LookupState(ctx context.Context, state string) (*RequestState, *tidcommon.ServiceError) {
 	rs, ok := s.store.GetRequestState(ctx, state)
 	if !ok || rs == nil {
 		return nil, toServiceError(ErrUnknownState)
@@ -364,7 +365,7 @@ func (s *service) LookupState(ctx context.Context, state string) (*RequestState,
 
 // Authenticate retrieves the completed verified presentation and converts it to an AuthnResult.
 func (s *service) Authenticate(ctx context.Context, state string) (
-	*authncommon.AuthnResult, *serviceerror.ServiceError) {
+	*authncommon.AuthnResult, *tidcommon.ServiceError) {
 	rs, svcErr := s.GetResult(ctx, state)
 	if svcErr != nil {
 		return nil, svcErr
@@ -374,7 +375,7 @@ func (s *service) Authenticate(ctx context.Context, state string) (
 	}
 	vp := rs.Result
 	if vp == nil {
-		return nil, &serviceerror.InternalServerError
+		return nil, &tidcommon.InternalServerError
 	}
 
 	claims := make(map[string]interface{}, len(vp.Claims)+3)

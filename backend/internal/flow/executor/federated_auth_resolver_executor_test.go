@@ -22,16 +22,15 @@ import (
 	"encoding/json"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
-	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 )
@@ -47,8 +46,8 @@ func TestFederatedAuthResolverSuite(t *testing.T) {
 	suite.Run(t, new(FederatedAuthResolverTestSuite))
 }
 
-func newFederatedAuthResolverAuthenticatedUser() authnprovidermgr.AuthUser {
-	var authUser authnprovidermgr.AuthUser
+func newFederatedAuthResolverAuthenticatedUser() providers.AuthUser {
+	var authUser providers.AuthUser
 	_ = authUser.UnmarshalJSON([]byte(`{"entityReferenceToken":"tok","attributeToken":"tok"}`))
 	return authUser
 }
@@ -71,7 +70,7 @@ func (suite *FederatedAuthResolverTestSuite) TestNewFederatedAuthResolverExecuto
 }
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_SingleCandidateMatch() {
-	candidates := []*entityprovider.Entity{
+	candidates := []*providers.Entity{
 		{ID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", Type: "Customer"},
 		{ID: "user-2", OUID: "ou-2", OUHandle: "org-beta", Type: "Customer"},
 	}
@@ -98,7 +97,7 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_SingleCandidateMatch() 
 	}, map[string]interface{}{
 		userAttributeSub: "sub-123",
 	}, mock.Anything, mock.Anything, mock.Anything).
-		Return(authenticatedAuthUser, authnprovidercm.AuthenticatedClaims{}, nil)
+		Return(authenticatedAuthUser, providers.AuthenticatedClaims{}, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -124,7 +123,7 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_NoCandidatesInRuntimeDa
 }
 
 func (suite *FederatedAuthResolverTestSuite) executeWithCandidatesAndInput(
-	candidates []*entityprovider.Entity, inputs map[string]string) (*common.ExecutorResponse, error) {
+	candidates []*providers.Entity, inputs map[string]string) (*common.ExecutorResponse, error) {
 	candidatesJSON, _ := json.Marshal(candidates)
 
 	ctx := &core.NodeContext{
@@ -145,7 +144,7 @@ func (suite *FederatedAuthResolverTestSuite) executeWithCandidatesAndInput(
 }
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_NoMatchingCandidate() {
-	candidates := []*entityprovider.Entity{
+	candidates := []*providers.Entity{
 		{ID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", Type: "Customer"},
 		{ID: "user-2", OUID: "ou-2", OUHandle: "org-beta", Type: "Customer"},
 	}
@@ -158,7 +157,7 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_NoMatchingCandidate() {
 }
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_MultipleCandidatesStillAmbiguous() {
-	candidates := []*entityprovider.Entity{
+	candidates := []*providers.Entity{
 		{ID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", Type: "Customer"},
 		{ID: "user-2", OUID: "ou-1", OUHandle: "org-alpha", Type: "Admin"},
 	}
@@ -172,7 +171,7 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_MultipleCandidatesStill
 }
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_IndistinguishableCandidates() {
-	candidates := []*entityprovider.Entity{
+	candidates := []*providers.Entity{
 		{ID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", Type: "Customer"},
 		{ID: "user-2", OUID: "ou-1", OUHandle: "org-alpha", Type: "Customer"},
 	}
@@ -219,7 +218,7 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_InvalidCandidatesJSON()
 }
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_PassesSubToAuthnProvider() {
-	candidates := []*entityprovider.Entity{
+	candidates := []*providers.Entity{
 		{ID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", Type: "Customer"},
 	}
 	candidatesJSON, _ := json.Marshal(candidates)
@@ -245,7 +244,7 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_PassesSubToAuthnProvide
 	}, map[string]interface{}{
 		userAttributeSub: "federated-sub-123",
 	}, mock.Anything, mock.Anything, mock.Anything).
-		Return(authenticatedAuthUser, authnprovidercm.AuthenticatedClaims{}, nil)
+		Return(authenticatedAuthUser, providers.AuthenticatedClaims{}, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -255,7 +254,7 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_PassesSubToAuthnProvide
 }
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_FailsWhenAuthnProviderReturnsError() {
-	candidates := []*entityprovider.Entity{
+	candidates := []*providers.Entity{
 		{ID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", Type: "Customer"},
 	}
 	candidatesJSON, _ := json.Marshal(candidates)
@@ -280,7 +279,7 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_FailsWhenAuthnProviderR
 	}, map[string]interface{}{
 		userAttributeSub: "federated-sub-123",
 	}, mock.Anything, mock.Anything, mock.Anything).Return(
-		authnprovidermgr.AuthUser{}, (authnprovidercm.AuthenticatedClaims)(nil), &serviceerror.ServiceError{
+		providers.AuthUser{}, (providers.AuthenticatedClaims)(nil), &tidcommon.ServiceError{
 			Code: "authentication_failed",
 		})
 
@@ -293,7 +292,7 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_FailsWhenAuthnProviderR
 }
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_IgnoresUnexpectedInputKeys() {
-	candidates := []*entityprovider.Entity{
+	candidates := []*providers.Entity{
 		{ID: "user-1", OUID: "ou-1", OUHandle: "org-alpha", Type: "Customer"},
 		{ID: "user-2", OUID: "ou-2", OUHandle: "org-beta", Type: "Admin"},
 	}
@@ -325,7 +324,7 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_IgnoresUnexpectedInputK
 	}, map[string]interface{}{
 		userAttributeSub: "federated-sub-123",
 	}, mock.Anything, mock.Anything, mock.Anything).
-		Return(authenticatedAuthUser, authnprovidercm.AuthenticatedClaims{}, nil)
+		Return(authenticatedAuthUser, providers.AuthenticatedClaims{}, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 

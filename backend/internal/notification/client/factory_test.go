@@ -22,12 +22,15 @@ import (
 	"context"
 	"testing"
 
+	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
+
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/notification/common"
 	"github.com/thunder-id/thunderid/internal/system/cmodels"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 )
 
 type ClientFactoryTestSuite struct {
@@ -42,7 +45,7 @@ func TestClientFactoryTestSuite(t *testing.T) {
 func (suite *ClientFactoryTestSuite) SetupSuite() {
 	testConfig := &config.Config{
 		Crypto: config.CryptoConfig{
-			Encryption: config.EncryptionConfig{
+			Encryption: engineconfig.EncryptionConfig{
 				Key: "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e",
 			},
 		},
@@ -170,7 +173,7 @@ func (suite *ClientFactoryTestSuite) TestGetClientWithError() {
 			client, err := suite.factory.GetClient(context.Background(), tc.sender)
 			suite.NotNil(err)
 			if err != nil {
-				suite.Equal(serviceerror.InternalServerError.Code, err.Code)
+				suite.Equal(tidcommon.InternalServerError.Code, err.Code)
 			}
 			suite.Nil(client)
 		})

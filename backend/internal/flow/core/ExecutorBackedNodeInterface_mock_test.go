@@ -7,7 +7,7 @@ package core
 import (
 	mock "github.com/stretchr/testify/mock"
 	"github.com/thunder-id/thunderid/internal/flow/common"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	common0 "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 // NewExecutorBackedNodeInterfaceMock creates a new instance of ExecutorBackedNodeInterfaceMock. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -118,7 +118,7 @@ func (_c *ExecutorBackedNodeInterfaceMock_AddPreviousNode_Call) RunAndReturn(run
 }
 
 // Execute provides a mock function for the type ExecutorBackedNodeInterfaceMock
-func (_mock *ExecutorBackedNodeInterfaceMock) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceerror.ServiceError) {
+func (_mock *ExecutorBackedNodeInterfaceMock) Execute(ctx *NodeContext) (*common.NodeResponse, *common0.ServiceError) {
 	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
@@ -126,8 +126,8 @@ func (_mock *ExecutorBackedNodeInterfaceMock) Execute(ctx *NodeContext) (*common
 	}
 
 	var r0 *common.NodeResponse
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(*NodeContext) (*common.NodeResponse, *serviceerror.ServiceError)); ok {
+	var r1 *common0.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(*NodeContext) (*common.NodeResponse, *common0.ServiceError)); ok {
 		return returnFunc(ctx)
 	}
 	if returnFunc, ok := ret.Get(0).(func(*NodeContext) *common.NodeResponse); ok {
@@ -137,11 +137,11 @@ func (_mock *ExecutorBackedNodeInterfaceMock) Execute(ctx *NodeContext) (*common
 			r0 = ret.Get(0).(*common.NodeResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(*NodeContext) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(*NodeContext) *common0.ServiceError); ok {
 		r1 = returnFunc(ctx)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common0.ServiceError)
 		}
 	}
 	return r0, r1
@@ -171,12 +171,12 @@ func (_c *ExecutorBackedNodeInterfaceMock_Execute_Call) Run(run func(ctx *NodeCo
 	return _c
 }
 
-func (_c *ExecutorBackedNodeInterfaceMock_Execute_Call) Return(nodeResponse *common.NodeResponse, serviceError *serviceerror.ServiceError) *ExecutorBackedNodeInterfaceMock_Execute_Call {
+func (_c *ExecutorBackedNodeInterfaceMock_Execute_Call) Return(nodeResponse *common.NodeResponse, serviceError *common0.ServiceError) *ExecutorBackedNodeInterfaceMock_Execute_Call {
 	_c.Call.Return(nodeResponse, serviceError)
 	return _c
 }
 
-func (_c *ExecutorBackedNodeInterfaceMock_Execute_Call) RunAndReturn(run func(ctx *NodeContext) (*common.NodeResponse, *serviceerror.ServiceError)) *ExecutorBackedNodeInterfaceMock_Execute_Call {
+func (_c *ExecutorBackedNodeInterfaceMock_Execute_Call) RunAndReturn(run func(ctx *NodeContext) (*common.NodeResponse, *common0.ServiceError)) *ExecutorBackedNodeInterfaceMock_Execute_Call {
 	_c.Call.Return(run)
 	return _c
 }

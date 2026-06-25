@@ -23,12 +23,13 @@ import (
 	"errors"
 	"net/http"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 
 	"github.com/thunder-id/thunderid/internal/application/model"
-	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -131,9 +132,9 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 		success := ah.processInboundAuthConfig(ctx, logger, createdAppDTO, &returnApp)
 		if !success {
 			errResp := apierror.ErrorResponse{
-				Code:        serviceerror.InternalServerError.Code,
-				Message:     serviceerror.InternalServerError.Error,
-				Description: serviceerror.InternalServerError.ErrorDescription,
+				Code:        tidcommon.InternalServerError.Code,
+				Message:     tidcommon.InternalServerError.Error,
+				Description: tidcommon.InternalServerError.ErrorDescription,
 			}
 			sysutils.WriteErrorResponse(ctx, w, http.StatusInternalServerError, errResp)
 			return
@@ -211,9 +212,9 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 				log.String("type", string(appDTO.InboundAuthConfig[0].Type)))
 
 			errResp := apierror.ErrorResponse{
-				Code:        serviceerror.InternalServerError.Code,
-				Message:     serviceerror.InternalServerError.Error,
-				Description: serviceerror.InternalServerError.ErrorDescription,
+				Code:        tidcommon.InternalServerError.Code,
+				Message:     tidcommon.InternalServerError.Error,
+				Description: tidcommon.InternalServerError.ErrorDescription,
 			}
 			sysutils.WriteErrorResponse(ctx, w, http.StatusInternalServerError, errResp)
 			return
@@ -223,9 +224,9 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 			logger.Error(ctx, "OAuth application configuration is nil")
 
 			errResp := apierror.ErrorResponse{
-				Code:        serviceerror.InternalServerError.Code,
-				Message:     serviceerror.InternalServerError.Error,
-				Description: serviceerror.InternalServerError.ErrorDescription,
+				Code:        tidcommon.InternalServerError.Code,
+				Message:     tidcommon.InternalServerError.Error,
+				Description: tidcommon.InternalServerError.ErrorDescription,
 			}
 			sysutils.WriteErrorResponse(ctx, w, http.StatusInternalServerError, errResp)
 			return
@@ -236,9 +237,9 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 			if config.OAuthConfig == nil {
 				logger.Error(ctx, "OAuth application configuration is nil")
 				errResp := apierror.ErrorResponse{
-					Code:        serviceerror.InternalServerError.Code,
-					Message:     serviceerror.InternalServerError.Error,
-					Description: serviceerror.InternalServerError.ErrorDescription,
+					Code:        tidcommon.InternalServerError.Code,
+					Message:     tidcommon.InternalServerError.Error,
+					Description: tidcommon.InternalServerError.ErrorDescription,
 				}
 				sysutils.WriteErrorResponse(ctx, w, http.StatusInternalServerError, errResp)
 				return
@@ -249,11 +250,11 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 			}
 			grantTypes := config.OAuthConfig.GrantTypes
 			if len(grantTypes) == 0 {
-				grantTypes = []oauth2const.GrantType{}
+				grantTypes = []providers.GrantType{}
 			}
 			responseTypes := config.OAuthConfig.ResponseTypes
 			if len(responseTypes) == 0 {
-				responseTypes = []oauth2const.ResponseType{}
+				responseTypes = []providers.ResponseType{}
 			}
 			oAuthAppConfig := inboundmodel.OAuthConfig{
 				ClientID:                           config.OAuthConfig.ClientID,
@@ -384,9 +385,9 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 		success := ah.processInboundAuthConfig(ctx, logger, updatedAppDTO, &returnApp)
 		if !success {
 			errResp := apierror.ErrorResponse{
-				Code:        serviceerror.InternalServerError.Code,
-				Message:     serviceerror.InternalServerError.Error,
-				Description: serviceerror.InternalServerError.ErrorDescription,
+				Code:        tidcommon.InternalServerError.Code,
+				Message:     tidcommon.InternalServerError.Error,
+				Description: tidcommon.InternalServerError.ErrorDescription,
 			}
 			sysutils.WriteErrorResponse(ctx, w, http.StatusInternalServerError, errResp)
 			return
@@ -448,11 +449,11 @@ func (ah *applicationHandler) processInboundAuthConfig(
 			}
 			grantTypes := config.OAuthConfig.GrantTypes
 			if len(grantTypes) == 0 {
-				grantTypes = []oauth2const.GrantType{}
+				grantTypes = []providers.GrantType{}
 			}
 			responseTypes := config.OAuthConfig.ResponseTypes
 			if len(responseTypes) == 0 {
-				responseTypes = []oauth2const.ResponseType{}
+				responseTypes = []providers.ResponseType{}
 			}
 			oAuthAppConfig := inboundmodel.OAuthConfigWithSecret{
 				ClientID:                           config.OAuthConfig.ClientID,
@@ -488,7 +489,7 @@ func (ah *applicationHandler) processInboundAuthConfig(
 // handleError handles service errors and returns appropriate HTTP responses.
 // When the resolved status is 500, the error is logged with request context.
 func (ah *applicationHandler) handleError(ctx context.Context, w http.ResponseWriter, r *http.Request,
-	svcErr *serviceerror.ServiceError) {
+	svcErr *tidcommon.ServiceError) {
 	errResp := apierror.ErrorResponse{
 		Code:        svcErr.Code,
 		Message:     svcErr.Error,
@@ -496,7 +497,7 @@ func (ah *applicationHandler) handleError(ctx context.Context, w http.ResponseWr
 	}
 
 	statusCode := http.StatusInternalServerError
-	if svcErr.Type == serviceerror.ClientErrorType {
+	if svcErr.Type == tidcommon.ClientErrorType {
 		if svcErr.Code == ErrorApplicationNotFound.Code {
 			statusCode = http.StatusNotFound
 		} else {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -20,20 +20,6 @@
 package common
 
 import "time"
-
-// FlowType defines the type of flow execution.
-type FlowType string
-
-const (
-	// FlowTypeAuthentication represents a flow execution for user authentication.
-	FlowTypeAuthentication FlowType = "AUTHENTICATION"
-	// FlowTypeRegistration represents a flow execution for user registration.
-	FlowTypeRegistration FlowType = "REGISTRATION"
-	// FlowTypeUserOnboarding represents an admin-initiated user onboarding flow.
-	FlowTypeUserOnboarding FlowType = "USER_ONBOARDING"
-	// FlowTypeRecovery represents a flow execution for account recovery (e.g., password reset).
-	FlowTypeRecovery FlowType = "RECOVERY"
-)
 
 // FlowStatus defines the status of a flow execution.
 type FlowStatus string
@@ -153,14 +139,6 @@ const (
 
 // DefaultHTTPTimeout defines the default timeout duration for HTTP requests.
 const DefaultHTTPTimeout = 5 * time.Second
-
-// NodeVariant identifies a PROMPT node sub-type that activates a variant-specific code path.
-type NodeVariant string
-
-const (
-	// NodeVariantLoginOptions identifies a PROMPT node that presents login method choices to the user.
-	NodeVariantLoginOptions NodeVariant = "LOGIN_OPTIONS"
-)
 
 const (
 	// NodePropertyAllowAuthenticationWithoutLocalUser indicates whether authentication is allowed without a local user
@@ -303,7 +281,7 @@ const (
 // Attribute name constants for well-known user attributes used across flow executors.
 const (
 	// AttributeMobileNumber is the default attribute name for a user's mobile phone number.
-	AttributeMobileNumber = "mobileNumber"
+	AttributeMobileNumber = "mobile_number"
 )
 
 // sensitiveInputTypes contains the list of input types that are considered sensitive.
@@ -360,17 +338,6 @@ const (
 	DefaultValidationMessageMaxLength = "validation.maxLength.invalid"
 )
 
-// InterceptorMode represents the lifecycle point at which an interceptor executes.
-type InterceptorMode string
-
-// Interceptor mode constants.
-const (
-	InterceptorModePreRequest  InterceptorMode = "PRE_REQUEST"
-	InterceptorModePreNode     InterceptorMode = "PRE_NODE"
-	InterceptorModePostNode    InterceptorMode = "POST_NODE"
-	InterceptorModePostRequest InterceptorMode = "POST_REQUEST"
-)
-
 // InterceptorStatus represents the outcome of an interceptor execution.
 type InterceptorStatus string
 
@@ -386,26 +353,3 @@ const (
 	// InterceptorDataKeyChallengeTokenIn is the shared data key for the incoming challenge token.
 	InterceptorDataKeyChallengeTokenIn = "challengeTokenIn"
 )
-
-// InterceptorScope determines which nodes a per-node interceptor applies to.
-type InterceptorScope string
-
-// Interceptor scope constants.
-const (
-	InterceptorScopeAll      InterceptorScope = "ALL"
-	InterceptorScopeSelected InterceptorScope = "SELECTED"
-)
-
-// ValidInterceptorModes contains the set of valid interceptor modes for validation.
-var ValidInterceptorModes = map[InterceptorMode]bool{
-	InterceptorModePreRequest:  true,
-	InterceptorModePreNode:     true,
-	InterceptorModePostNode:    true,
-	InterceptorModePostRequest: true,
-}
-
-// ValidInterceptorScopes contains the set of valid interceptor scopes for validation.
-var ValidInterceptorScopes = map[InterceptorScope]bool{
-	InterceptorScopeAll:      true,
-	InterceptorScopeSelected: true,
-}

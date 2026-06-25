@@ -30,12 +30,12 @@ import (
 	"strings"
 	"testing"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/system/error/apierror"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 )
 
 type mockFieldError struct {
@@ -347,7 +347,7 @@ func (suite *HTTPUtilTestSuite) TestGetURIWithQueryParams() {
 }
 
 type testStruct struct {
-	Name  string `json:"name" native:"required,min=3"`
+	Name  string `json:"name"  native:"required,min=3"`
 	Value int    `json:"value" native:"required"`
 }
 
@@ -740,9 +740,9 @@ func (suite *HTTPUtilTestSuite) TestWriteSuccessResponse_EncodingError() {
 		var resp apierror.ErrorResponse
 		err := json.Unmarshal(w.Body.Bytes(), &resp)
 		assert.NoError(t, err)
-		assert.Equal(t, serviceerror.ErrorEncodingError.Code, resp.Code)
-		assert.Equal(t, serviceerror.ErrorEncodingError.Error.Key, resp.Message.Key)
-		assert.Equal(t, serviceerror.ErrorEncodingError.ErrorDescription.Key, resp.Description.Key)
+		assert.Equal(t, tidcommon.ErrorEncodingError.Code, resp.Code)
+		assert.Equal(t, tidcommon.ErrorEncodingError.Error.Key, resp.Message.Key)
+		assert.Equal(t, tidcommon.ErrorEncodingError.ErrorDescription.Key, resp.Description.Key)
 	})
 }
 
@@ -768,8 +768,8 @@ func (suite *HTTPUtilTestSuite) TestWriteErrorResponse_EncodingFallback() {
 
 		errorResp := apierror.ErrorResponse{
 			Code:        "test_error",
-			Message:     core.I18nMessage{Key: "error.test", DefaultValue: "Test error"},
-			Description: core.I18nMessage{Key: "error.test_desc", DefaultValue: "A test error"},
+			Message:     tidcommon.I18nMessage{Key: "error.test", DefaultValue: "Test error"},
+			Description: tidcommon.I18nMessage{Key: "error.test_desc", DefaultValue: "A test error"},
 		}
 		WriteErrorResponse(context.Background(), w, http.StatusBadRequest, errorResp)
 
@@ -777,9 +777,9 @@ func (suite *HTTPUtilTestSuite) TestWriteErrorResponse_EncodingFallback() {
 		var resp apierror.ErrorResponse
 		err := json.Unmarshal(rec.Body.Bytes(), &resp)
 		assert.NoError(t, err)
-		assert.Equal(t, serviceerror.ErrorEncodingError.Code, resp.Code)
-		assert.Equal(t, serviceerror.ErrorEncodingError.Error.Key, resp.Message.Key)
-		assert.Equal(t, serviceerror.ErrorEncodingError.ErrorDescription.Key, resp.Description.Key)
+		assert.Equal(t, tidcommon.ErrorEncodingError.Code, resp.Code)
+		assert.Equal(t, tidcommon.ErrorEncodingError.Error.Key, resp.Message.Key)
+		assert.Equal(t, tidcommon.ErrorEncodingError.ErrorDescription.Key, resp.Description.Key)
 	})
 }
 
@@ -794,8 +794,8 @@ func (suite *HTTPUtilTestSuite) TestWriteI18nErrorResponse() {
 			statusCode: http.StatusBadRequest,
 			errorResp: apierror.ErrorResponse{
 				Code:    "invalid_request",
-				Message: core.I18nMessage{Key: "error.invalid_request", DefaultValue: "Invalid Request"},
-				Description: core.I18nMessage{
+				Message: tidcommon.I18nMessage{Key: "error.invalid_request", DefaultValue: "Invalid Request"},
+				Description: tidcommon.I18nMessage{
 					Key:          "error.invalid_request_desc",
 					DefaultValue: "The request is missing required parameters",
 				},
@@ -806,8 +806,8 @@ func (suite *HTTPUtilTestSuite) TestWriteI18nErrorResponse() {
 			statusCode: http.StatusUnauthorized,
 			errorResp: apierror.ErrorResponse{
 				Code:    "unauthorized",
-				Message: core.I18nMessage{Key: "error.unauthorized", DefaultValue: "Unauthorized"},
-				Description: core.I18nMessage{
+				Message: tidcommon.I18nMessage{Key: "error.unauthorized", DefaultValue: "Unauthorized"},
+				Description: tidcommon.I18nMessage{
 					Key:          "error.unauthorized_desc",
 					DefaultValue: "Authentication is required",
 				},
@@ -818,8 +818,8 @@ func (suite *HTTPUtilTestSuite) TestWriteI18nErrorResponse() {
 			statusCode: http.StatusNotFound,
 			errorResp: apierror.ErrorResponse{
 				Code:    "not_found",
-				Message: core.I18nMessage{Key: "error.not_found", DefaultValue: "Not Found"},
-				Description: core.I18nMessage{
+				Message: tidcommon.I18nMessage{Key: "error.not_found", DefaultValue: "Not Found"},
+				Description: tidcommon.I18nMessage{
 					Key:          "error.not_found_desc",
 					DefaultValue: "The requested resource was not found",
 				},
@@ -829,9 +829,11 @@ func (suite *HTTPUtilTestSuite) TestWriteI18nErrorResponse() {
 			name:       "InternalServerError",
 			statusCode: http.StatusInternalServerError,
 			errorResp: apierror.ErrorResponse{
-				Code:        "internal_error",
-				Message:     core.I18nMessage{Key: "error.internal", DefaultValue: "Internal Server Error"},
-				Description: core.I18nMessage{Key: "error.internal_desc", DefaultValue: "An unexpected error occurred"},
+				Code:    "internal_error",
+				Message: tidcommon.I18nMessage{Key: "error.internal", DefaultValue: "Internal Server Error"},
+				Description: tidcommon.I18nMessage{
+					Key: "error.internal_desc", DefaultValue: "An unexpected error occurred",
+				},
 			},
 		},
 	}

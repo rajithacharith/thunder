@@ -45,6 +45,7 @@ const (
 	resourceTypeAgent                   = "agent"
 	resourceTypePresentationDefinition  = "presentation_definition"
 	resourceTypeCredentialConfiguration = "credential_configuration" //nolint:gosec
+	resourceTypeServerConfig            = "server_config"
 	resourceTypeUnknown                 = "unknown"
 )
 
@@ -172,6 +173,7 @@ func isKnownResourceType(resourceType string) bool {
 		resourceTypeAgent:                   {},
 		resourceTypePresentationDefinition:  {},
 		resourceTypeCredentialConfiguration: {},
+		resourceTypeServerConfig:            {},
 	}
 
 	_, exists := knownTypes[resourceType]

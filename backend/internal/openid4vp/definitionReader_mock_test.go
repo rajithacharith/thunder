@@ -9,7 +9,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 	"github.com/thunder-id/thunderid/internal/openid4vp/definition"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 // newDefinitionReaderMock creates a new instance of definitionReaderMock. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -40,7 +40,7 @@ func (_m *definitionReaderMock) EXPECT() *definitionReaderMock_Expecter {
 }
 
 // GetPresentationDefinitionByHandle provides a mock function for the type definitionReaderMock
-func (_mock *definitionReaderMock) GetPresentationDefinitionByHandle(ctx context.Context, handle string) (*definition.PresentationDefinitionDTO, *serviceerror.ServiceError) {
+func (_mock *definitionReaderMock) GetPresentationDefinitionByHandle(ctx context.Context, handle string) (*definition.PresentationDefinitionDTO, *common.ServiceError) {
 	ret := _mock.Called(ctx, handle)
 
 	if len(ret) == 0 {
@@ -48,8 +48,8 @@ func (_mock *definitionReaderMock) GetPresentationDefinitionByHandle(ctx context
 	}
 
 	var r0 *definition.PresentationDefinitionDTO
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*definition.PresentationDefinitionDTO, *serviceerror.ServiceError)); ok {
+	var r1 *common.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*definition.PresentationDefinitionDTO, *common.ServiceError)); ok {
 		return returnFunc(ctx, handle)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *definition.PresentationDefinitionDTO); ok {
@@ -59,11 +59,11 @@ func (_mock *definitionReaderMock) GetPresentationDefinitionByHandle(ctx context
 			r0 = ret.Get(0).(*definition.PresentationDefinitionDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *common.ServiceError); ok {
 		r1 = returnFunc(ctx, handle)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
+			r1 = ret.Get(1).(*common.ServiceError)
 		}
 	}
 	return r0, r1
@@ -99,12 +99,12 @@ func (_c *definitionReaderMock_GetPresentationDefinitionByHandle_Call) Run(run f
 	return _c
 }
 
-func (_c *definitionReaderMock_GetPresentationDefinitionByHandle_Call) Return(presentationDefinitionDTO *definition.PresentationDefinitionDTO, serviceError *serviceerror.ServiceError) *definitionReaderMock_GetPresentationDefinitionByHandle_Call {
+func (_c *definitionReaderMock_GetPresentationDefinitionByHandle_Call) Return(presentationDefinitionDTO *definition.PresentationDefinitionDTO, serviceError *common.ServiceError) *definitionReaderMock_GetPresentationDefinitionByHandle_Call {
 	_c.Call.Return(presentationDefinitionDTO, serviceError)
 	return _c
 }
 
-func (_c *definitionReaderMock_GetPresentationDefinitionByHandle_Call) RunAndReturn(run func(ctx context.Context, handle string) (*definition.PresentationDefinitionDTO, *serviceerror.ServiceError)) *definitionReaderMock_GetPresentationDefinitionByHandle_Call {
+func (_c *definitionReaderMock_GetPresentationDefinitionByHandle_Call) RunAndReturn(run func(ctx context.Context, handle string) (*definition.PresentationDefinitionDTO, *common.ServiceError)) *definitionReaderMock_GetPresentationDefinitionByHandle_Call {
 	_c.Call.Return(run)
 	return _c
 }

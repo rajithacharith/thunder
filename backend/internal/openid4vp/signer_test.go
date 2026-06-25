@@ -54,7 +54,7 @@ func newSignerMock(
 	m.EXPECT().GetPublicKeys(mock.Anything, mock.Anything).Return([]kmprovider.PublicKeyInfo{info}, nil).Maybe()
 	m.EXPECT().Sign(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		RunAndReturn(func(
-			_ context.Context, _ kmprovider.KeyRef, _ cryptolib.SignAlgorithm, content []byte,
+			_ context.Context, _ kmprovider.KeyRef, _ string, content []byte,
 		) ([]byte, error) {
 			return cryptolib.Generate(content, cryptolib.ECDSASHA256, key)
 		}).Maybe()
@@ -107,6 +107,33 @@ func (suite *OpenID4VPSignerTestSuite) TestRequestSignerSignsVerifiableJAR() {
 	r := new(big.Int).SetBytes(sig[:32])
 	s := new(big.Int).SetBytes(sig[32:])
 	suite.True(ecdsa.Verify(&key.PublicKey, hashed[:], r, s))
+}
+
+func (suite *OpenID4VPSignerTestSuite) TestEcdsaDERToJWS() {
+	digest := sha256.Sum256([]byte("signing input"))
+
+	tests := []struct {
+		name    string
+		curve   elliptic.Curve
+		alg     string
+		wantLen int
+	}{
+		{"ES256", elliptic.P256(), "ES256", 64},
+		{"ES384", elliptic.P384(), "ES384", 96},
+		{"ES512", elliptic.P521(), "ES512", 132},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			key, err := ecdsa.GenerateKey(tt.curve, rand.Reader)
+			suite.Require().NoError(err)
+			der, err := ecdsa.SignASN1(rand.Reader, key, digest[:])
+			suite.Require().NoError(err)
+
+			raw := ecdsaDERToJWS(der, tt.alg)
+			suite.Len(raw, tt.wantLen)
+		})
+	}
 }
 
 func (suite *OpenID4VPSignerTestSuite) TestNewRequestSignerErrors() {

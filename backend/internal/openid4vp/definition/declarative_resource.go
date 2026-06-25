@@ -22,8 +22,9 @@ import (
 	"context"
 	"fmt"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 
 	"gopkg.in/yaml.v3"
@@ -57,7 +58,7 @@ func (e *definitionExporter) GetParameterizerType() string {
 
 // GetAllResourceIDs returns the IDs of all mutable (database-backed) presentation
 // definitions, excluding any declarative (file-based) definitions.
-func (e *definitionExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
+func (e *definitionExporter) GetAllResourceIDs(ctx context.Context) ([]string, *tidcommon.ServiceError) {
 	defs, err := e.service.ListPresentationDefinitions(ctx)
 	if err != nil {
 		return nil, err
@@ -78,7 +79,7 @@ func (e *definitionExporter) GetAllResourceIDs(ctx context.Context) ([]string, *
 // GetResourceByID retrieves a presentation definition by its ID for export.
 // The handle is the stable identifier and is returned as the resource name.
 func (e *definitionExporter) GetResourceByID(ctx context.Context, id string) (
-	interface{}, string, *serviceerror.ServiceError,
+	interface{}, string, *tidcommon.ServiceError,
 ) {
 	dto, err := e.service.GetPresentationDefinition(ctx, id)
 	if err != nil {

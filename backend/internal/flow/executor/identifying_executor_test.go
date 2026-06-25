@@ -30,6 +30,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 )
@@ -187,8 +188,8 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_WithEmail() {
 	suite.mockEntityProvider.AssertExpectations(suite.T())
 }
 
-func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_WithMobileNumber() {
-	filters := map[string]interface{}{"mobileNumber": "+1234567890"}
+func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_Withmobile_number() {
+	filters := map[string]interface{}{"mobile_number": "+1234567890"}
 	execResp := &common.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
@@ -337,7 +338,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_Success_WithVariousAttrib
 		expectedID string
 	}{
 		{"email", "email", "test@example.com", "user-email-456"},
-		{"mobileNumber", "mobileNumber", "+1234567890", "user-mobile-789"},
+		{"mobile_number", "mobile_number", "+1234567890", "user-mobile-789"},
 	}
 
 	for _, tc := range testCases {
@@ -408,7 +409,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_Failure_UserNotFoundByAtt
 		value     string
 	}{
 		{"email", "email", "nonexistent@example.com"},
-		{"mobileNumber", "mobileNumber", "+0000000000"},
+		{"mobile_number", "mobile_number", "+0000000000"},
 	}
 
 	for _, tc := range testCases {
@@ -449,7 +450,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_Success_FromRuntimeData()
 		expectedID string
 	}{
 		{"email", "email", "runtime@example.com", "user-runtime-email-456"},
-		{"mobileNumber", "mobileNumber", "+9876543210", "user-runtime-mobile-789"},
+		{"mobile_number", "mobile_number", "+9876543210", "user-runtime-mobile-789"},
 	}
 
 	for _, tc := range testCases {
@@ -595,7 +596,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_UniqueUser() {
 
 	suite.mockEntityProvider.On("SearchEntities", map[string]interface{}{
 		"given_name": "Alex",
-	}).Return([]*entityprovider.Entity{
+	}).Return([]*providers.Entity{
 		{ID: "user-1", Type: "Person", Attributes: attrsAlex},
 	}, nil)
 
@@ -622,7 +623,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_AmbiguousUser() {
 
 	suite.mockEntityProvider.On("SearchEntities", map[string]interface{}{
 		"given_name": "Alex",
-	}).Return([]*entityprovider.Entity{
+	}).Return([]*providers.Entity{
 		{ID: "user-1", Type: "Person", Attributes: attrsAlexJohnson},
 		{ID: "user-2", Type: "Engineer", Attributes: attrsAlexSmith},
 	}, nil)
@@ -636,7 +637,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_AmbiguousUser() {
 }
 
 func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_FilteredToOne() {
-	candidates := []*entityprovider.Entity{
+	candidates := []*providers.Entity{
 		{ID: "user-1", Type: "Person", Attributes: attrsAlexJohnson},
 		{ID: "user-2", Type: "Person", Attributes: attrsAlexSmith},
 	}
@@ -666,7 +667,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_FilteredToOne() {
 }
 
 func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_StillAmbiguous() {
-	candidates := []*entityprovider.Entity{
+	candidates := []*providers.Entity{
 		{ID: "user-1", Type: "Person", Attributes: attrsAlexSmith},
 		{ID: "user-2", Type: "Engineer", Attributes: attrsAlexSmith},
 	}
@@ -696,7 +697,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_StillAmbiguous() {
 }
 
 func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_FilteredToNone() {
-	candidates := []*entityprovider.Entity{
+	candidates := []*providers.Entity{
 		{ID: "user-1", Type: "Person", Attributes: attrsAlexJohnson},
 	}
 	candidatesJSON, _ := json.Marshal(candidates)
@@ -742,7 +743,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecuteCheckState_NoMatch() {
 
 	suite.mockEntityProvider.On("SearchEntities", map[string]interface{}{
 		"given_name": "Alex",
-	}).Return([]*entityprovider.Entity{}, nil)
+	}).Return([]*providers.Entity{}, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -767,7 +768,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecuteCheckState_SingleMatch() {
 
 	suite.mockEntityProvider.On("SearchEntities", map[string]interface{}{
 		"given_name": "Alex",
-	}).Return([]*entityprovider.Entity{
+	}).Return([]*providers.Entity{
 		{ID: "user-1", Type: "Person", Attributes: attrsAlex},
 	}, nil)
 
@@ -794,7 +795,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecuteCheckState_MultipleMatches
 
 	suite.mockEntityProvider.On("SearchEntities", map[string]interface{}{
 		"given_name": "Alex",
-	}).Return([]*entityprovider.Entity{
+	}).Return([]*providers.Entity{
 		{ID: "user-1", Type: "Person", Attributes: attrsAlexJohnson},
 		{ID: "user-2", Type: "Engineer", Attributes: attrsAlexSmith},
 	}, nil)
@@ -889,7 +890,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_IdentifyMode_SystemError(
 }
 
 func TestFilterUsersByAttributes(t *testing.T) {
-	users := []*entityprovider.Entity{
+	users := []*providers.Entity{
 		{ID: "u1", Type: "Person", Attributes: attrsAlexJohnson},
 		{ID: "u2", Type: "Person", Attributes: attrsAlexSmith},
 		{ID: "u3", Type: "Engineer", Attributes: attrsAlexSmith},
@@ -979,7 +980,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_RetryableIdentificationEr
 }
 
 func TestExtractDisambiguationOptions(t *testing.T) {
-	candidates := []*entityprovider.Entity{
+	candidates := []*providers.Entity{
 		{ID: "u1", Type: "Person", Attributes: attrsAlexJohnson},
 		{ID: "u2", Type: "Person", Attributes: attrsAlexSmith},
 		{ID: "u3", Type: "Engineer", Attributes: attrsAlexSmith},
@@ -1011,7 +1012,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_WithEntityID_Success
 	execResp := &common.ExecutorResponse{RuntimeData: make(map[string]string)}
 
 	suite.mockEntityProvider.On("GetEntity", entityID).
-		Return(&entityprovider.Entity{ID: entityID}, nil)
+		Return(&providers.Entity{ID: entityID}, nil)
 
 	result, err := suite.executor.IdentifyUser(context.Background(), filters, execResp)
 

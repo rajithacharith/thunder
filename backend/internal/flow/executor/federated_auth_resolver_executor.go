@@ -23,11 +23,10 @@ import (
 	"errors"
 	"fmt"
 
-	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
-	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 var _ core.ExecutorInterface = (*federatedAuthResolverExecutor)(nil)
@@ -45,14 +44,14 @@ const (
 // GitHub) has already verified the user's identity.
 type federatedAuthResolverExecutor struct {
 	core.ExecutorInterface
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface
+	authnProvider providers.AuthnProviderManagerInterface
 	logger        *log.Logger
 }
 
 // newFederatedAuthResolverExecutor creates a new instance of FederatedAuthResolverExecutor.
 func newFederatedAuthResolverExecutor(
 	flowFactory core.FlowFactoryInterface,
-	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
+	authnProvider providers.AuthnProviderManagerInterface,
 ) *federatedAuthResolverExecutor {
 	logger := log.GetLogger().With(
 		log.String(log.LoggerKeyComponentName, federatedAuthResolverLoggerComponentName),
@@ -92,7 +91,7 @@ func (f *federatedAuthResolverExecutor) Execute(ctx *core.NodeContext) (*common.
 		return nil, errors.New("no stored candidates found in runtime data")
 	}
 
-	var candidates []*entityprovider.Entity
+	var candidates []*providers.Entity
 	if err := json.Unmarshal([]byte(storedCandidates), &candidates); err != nil {
 		return nil, fmt.Errorf("failed to deserialize candidate users: %w", err)
 	}

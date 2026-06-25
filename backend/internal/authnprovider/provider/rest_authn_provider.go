@@ -25,10 +25,11 @@ import (
 	"io"
 	"net/http"
 
+	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	systemhttp "github.com/thunder-id/thunderid/internal/system/http"
-	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
@@ -42,16 +43,16 @@ type restAuthnProvider struct {
 
 // AuthenticateRequest is the request body for the authentication endpoint.
 type AuthenticateRequest struct {
-	Identifiers map[string]interface{}         `json:"identifiers"`
-	Credentials map[string]interface{}         `json:"credentials"`
-	Metadata    *authnprovidercm.AuthnMetadata `json:"metadata"`
+	Identifiers map[string]interface{}   `json:"identifiers"`
+	Credentials map[string]interface{}   `json:"credentials"`
+	Metadata    *providers.AuthnMetadata `json:"metadata"`
 }
 
 // GetAttributesRequest is the request body for the attributes endpoint.
 type GetAttributesRequest struct {
-	Token               any                                    `json:"token"`
-	RequestedAttributes *authnprovidercm.RequestedAttributes   `json:"requestedAttributes"`
-	Metadata            *authnprovidercm.GetAttributesMetadata `json:"metadata"`
+	Token               any                              `json:"token"`
+	RequestedAttributes *providers.RequestedAttributes   `json:"requestedAttributes"`
+	Metadata            *providers.GetAttributesMetadata `json:"metadata"`
 }
 
 type apiErrorResponse struct {
@@ -72,38 +73,38 @@ func newRestAuthnProvider(baseURL, apiKey string, httpClient systemhttp.HTTPClie
 
 // Authenticate authenticates a user.
 func (p *restAuthnProvider) Authenticate(ctx context.Context, identifiers, credentials map[string]interface{},
-	metadata *authnprovidercm.AuthnMetadata) (*authnprovidercm.AuthnResult, *serviceerror.ServiceError) {
+	metadata *providers.AuthnMetadata) (*providers.AuthnResult, *tidcommon.ServiceError) {
 	reqBody := AuthenticateRequest{
 		Identifiers: identifiers,
 		Credentials: credentials,
 		Metadata:    metadata,
 	}
-	return postAndDecode[authnprovidercm.AuthnResult](p, ctx, p.baseURL+"/authenticate", reqBody)
+	return postAndDecode[providers.AuthnResult](p, ctx, p.baseURL+"/authenticate", reqBody)
 }
 
 // GetEntityReference retrieves the entity reference from the external service.
 func (p *restAuthnProvider) GetEntityReference(ctx context.Context, entityReferenceToken any,
-) (*authnprovidercm.EntityReference, *serviceerror.ServiceError) {
-	return postAndDecode[authnprovidercm.EntityReference](p, ctx, p.baseURL+"/entity-reference",
+) (*providers.EntityReference, *tidcommon.ServiceError) {
+	return postAndDecode[providers.EntityReference](p, ctx, p.baseURL+"/entity-reference",
 		entityReferenceToken)
 }
 
 // GetAttributes retrieves the attributes of a user.
 func (p *restAuthnProvider) GetAttributes(ctx context.Context, token any,
-	requestedAttributes *authnprovidercm.RequestedAttributes,
-	metadata *authnprovidercm.GetAttributesMetadata) (
-	*authnprovidercm.AttributesResponse, *serviceerror.ServiceError) {
+	requestedAttributes *providers.RequestedAttributes,
+	metadata *providers.GetAttributesMetadata) (
+	*providers.AttributesResponse, *tidcommon.ServiceError) {
 	reqBody := GetAttributesRequest{
 		Token:               token,
 		RequestedAttributes: requestedAttributes,
 		Metadata:            metadata,
 	}
-	return postAndDecode[authnprovidercm.AttributesResponse](p, ctx, p.baseURL+"/attributes", reqBody)
+	return postAndDecode[providers.AttributesResponse](p, ctx, p.baseURL+"/attributes", reqBody)
 }
 
 // postAndDecode marshals reqBody as JSON, posts it to url, and decodes the response into T.
 func postAndDecode[T any](p *restAuthnProvider, ctx context.Context, url string,
-	reqBody interface{}) (*T, *serviceerror.ServiceError) {
+	reqBody interface{}) (*T, *tidcommon.ServiceError) {
 	jsonBody, err := json.Marshal(reqBody)
 	if err != nil {
 		return nil, p.logAndReturnServerError(ctx, "Failed to marshal request", log.String("error", err.Error()))
@@ -129,9 +130,9 @@ func postAndDecode[T any](p *restAuthnProvider, ctx context.Context, url string,
 }
 
 func (p *restAuthnProvider) logAndReturnServerError(
-	ctx context.Context, msg string, fields ...log.Field) *serviceerror.ServiceError {
+	ctx context.Context, msg string, fields ...log.Field) *tidcommon.ServiceError {
 	p.logger.Error(ctx, msg, fields...)
-	err := serviceerror.InternalServerError
+	err := tidcommon.InternalServerError
 	return &err
 }
 
@@ -144,32 +145,32 @@ func isClientError(statusCode int, code string) bool {
 }
 
 func (p *restAuthnProvider) decodeError(
-	ctx context.Context, body io.Reader, statusCode int) *serviceerror.ServiceError {
+	ctx context.Context, body io.Reader, statusCode int) *tidcommon.ServiceError {
 	var apiErr apiErrorResponse
 	if err := json.NewDecoder(body).Decode(&apiErr); err != nil {
 		return p.logAndReturnServerError(ctx, "Failed to decode error response from authn provider",
 			log.String("error", err.Error()))
 	}
 
-	errorType := serviceerror.ServerErrorType
+	errorType := tidcommon.ServerErrorType
 	if isClientError(statusCode, apiErr.Code) {
-		errorType = serviceerror.ClientErrorType
+		errorType = tidcommon.ClientErrorType
 	}
 
-	if errorType == serviceerror.ServerErrorType {
+	if errorType == tidcommon.ServerErrorType {
 		return p.logAndReturnServerError(ctx, "Authn provider returned server error",
 			log.String("code", apiErr.Code), log.String("message", apiErr.Message),
 			log.String("description", apiErr.Description))
 	}
 
-	return &serviceerror.ServiceError{
+	return &tidcommon.ServiceError{
 		Type: errorType,
 		Code: apiErr.Code,
-		Error: core.I18nMessage{
+		Error: tidcommon.I18nMessage{
 			Key:          "error.authnproviderservice." + apiErr.Code,
 			DefaultValue: apiErr.Message,
 		},
-		ErrorDescription: core.I18nMessage{
+		ErrorDescription: tidcommon.I18nMessage{
 			Key:          "error.authnproviderservice." + apiErr.Code + "_description",
 			DefaultValue: apiErr.Description,
 		},

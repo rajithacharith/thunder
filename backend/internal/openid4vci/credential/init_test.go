@@ -26,6 +26,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/system/config"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
+	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
 )
 
 type InitTestSuite struct {
@@ -40,7 +41,7 @@ func (s *InitTestSuite) SetupSuite() {
 	// InitializeServerRuntime is guarded by sync.Once; initialize it once for the
 	// whole package so config-dependent functions have a runtime to read from.
 	_ = config.InitializeServerRuntime("/test/thunderid/home", &config.Config{
-		Server: config.ServerConfig{Identifier: testDeploymentID},
+		Server: engineconfig.ServerConfig{Identifier: testDeploymentID},
 	})
 }
 
