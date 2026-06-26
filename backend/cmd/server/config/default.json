@@ -160,6 +160,9 @@
   "declarative_resources": {
     "enabled": false
   },
+  "server_config": {
+    "store": "composite"
+  },
   "observability": {
     "enabled": false,
     "output": {

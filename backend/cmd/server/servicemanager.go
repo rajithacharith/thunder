@@ -154,6 +154,9 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	}
 	exporters = append(exporters, serverConfigExporter)
 
+	// CORS origins now come from the merged server-config cors section.
+	cors.InitializeDynamicMatcher(serverConfigService)
+
 	ouAuthzService, err := sysauthz.Initialize()
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize system authorization service", log.Error(err))

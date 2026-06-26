@@ -89,20 +89,11 @@ Each subdirectory has its own README with the environment variables it reads.
   - Anthropic API key from [console.anthropic.com](https://console.anthropic.com), **or**
   - Google Gemini API key from [aistudio.google.com](https://aistudio.google.com).
 
-### Allow the frontend origin in Thunder
+### CORS for the frontend origin
 
-The Wayfinder web app runs on `http://localhost:5173` and calls Thunder directly for `/oauth2/authorize`, `/oauth2/token`, and `/users/me`. Browsers block these cross-origin calls unless Thunder's CORS allow-list includes the frontend origin.
+The Wayfinder web app runs on `http://localhost:5173` and calls Thunder directly for `/oauth2/authorize`, `/oauth2/token`, and `/users/me`. Browsers block these calls unless the CORS allow-list includes the frontend origin.
 
-Edit `backend/cmd/server/deployment.yaml` and add `http://localhost:5173` under `cors.allowed_origins`. Leave any existing entries in place — they belong to other samples.
-
-```yaml
-cors:
-  allowed_origins:
-    # ...existing entries...
-    - "http://localhost:5173"
-```
-
-Restart the ThunderID server after the change. If you serve the frontend from a different host or port, add that origin instead.
+The importable bundle already adds `http://localhost:5173` to the server-config `cors` section. If you serve the frontend from a different host or port, update the `# resource_type: server_config` document in `thunderid-config/thunderid-config.yaml` before importing, or use `PUT /server-config/cors` after startup.
 
 ## ThunderID Setup
 
