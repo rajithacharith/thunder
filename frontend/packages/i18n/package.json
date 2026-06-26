@@ -39,6 +39,7 @@
     "react-i18next": "catalog:"
   },
   "devDependencies": {
+    "@thunderid/contexts": "workspace:^",
     "@thunderid/eslint-plugin": "workspace:^",
     "@thunderid/prettier-config": "workspace:^",
     "@vitest/browser-playwright": "catalog:",

@@ -40,13 +40,6 @@
     "url": "https://github.com/thunder-id/thunderid",
     "directory": "frontend/packages/eslint-plugin"
   },
-  "nx": {
-    "targets": {
-      "build": {
-        "dependsOn": []
-      }
-    }
-  },
   "scripts": {
     "build": "pnpm clean:dist && rolldown -c rolldown.config.js && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
     "clean": "pnpm clean:node_modules && pnpm clean:dist",
