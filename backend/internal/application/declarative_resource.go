@@ -186,7 +186,6 @@ func parseToApplicationDTO(data []byte) (*model.ApplicationDTO, error) {
 			ThemeID:                   appRequest.ThemeID,
 			LayoutID:                  appRequest.LayoutID,
 			Assertion:                 appRequest.Assertion,
-			Certificate:               appRequest.Certificate,
 			AllowedUserTypes:          appRequest.AllowedUserTypes,
 			LoginConsent:              appRequest.LoginConsent,
 		},

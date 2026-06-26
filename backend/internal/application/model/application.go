@@ -101,9 +101,6 @@ type ApplicationProcessedDTO struct {
 	Metadata                        map[string]interface{}                    `yaml:"metadata,omitempty"`
 }
 
-// ApplicationCertificate is an alias for the canonical inboundclient type.
-type ApplicationCertificate = inboundmodel.Certificate
-
 // ApplicationRequest represents the request structure for creating or updating an application.
 type ApplicationRequest struct {
 	OUID        string   `json:"ouId,omitempty" yaml:"ouId,omitempty"`

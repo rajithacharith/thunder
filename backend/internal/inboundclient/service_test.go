@@ -114,7 +114,7 @@ func (suite *InboundClientServiceTestSuite) TestCreateInboundClient_RunsValidati
 	p := validOAuthProfile()
 	p.GrantTypes = []string{"not_a_real_grant"}
 
-	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(), nil, p, false, "")
+	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(), p, false, "")
 
 	assert.ErrorIs(suite.T(), err, ErrOAuthInvalidGrantType)
 }
@@ -127,7 +127,7 @@ func (suite *InboundClientServiceTestSuite) TestCreateInboundClient_PersistsBoth
 
 	svc := newServiceForTest(store)
 	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(),
-		nil, validOAuthProfile(), true, "")
+		validOAuthProfile(), true, "")
 
 	assert.NoError(suite.T(), err)
 }
@@ -138,9 +138,24 @@ func (suite *InboundClientServiceTestSuite) TestCreateInboundClient_PersistsClie
 	store.EXPECT().CreateInboundClient(mock.Anything, mock.Anything).Return(nil)
 
 	svc := newServiceForTest(store)
-	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(), nil, nil, false, "")
+	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(), nil, false, "")
 
 	assert.NoError(suite.T(), err)
+}
+
+func (suite *InboundClientServiceTestSuite) TestCreateInboundClient_CertificateRequiresClientID() {
+	store := newInboundClientStoreInterfaceMock(suite.T())
+	store.EXPECT().IsDeclarative(mock.Anything, "p1").Return(false)
+	svc := newServiceForTest(store)
+
+	p := &providers.OAuthProfile{
+		TokenEndpointAuthMethod: "private_key_jwt",
+		Certificate:             &inboundmodel.Certificate{Type: cert.CertificateTypeJWKS, Value: "{}"},
+	}
+
+	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(), p, false, "")
+
+	assert.ErrorIs(suite.T(), err, ErrOAuthCertificateRequiresClientID)
 }
 
 func (suite *InboundClientServiceTestSuite) TestCreateInboundClient_RefusesDeclarative() {
@@ -148,7 +163,7 @@ func (suite *InboundClientServiceTestSuite) TestCreateInboundClient_RefusesDecla
 	store.EXPECT().IsDeclarative(mock.Anything, "p1").Return(true)
 
 	svc := newServiceForTest(store)
-	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(), nil, nil, false, "")
+	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(), nil, false, "")
 
 	assert.ErrorIs(suite.T(), err, ErrCannotModifyDeclarative)
 }
@@ -158,9 +173,24 @@ func (suite *InboundClientServiceTestSuite) TestUpdateInboundClient_RefusesDecla
 	store.EXPECT().IsDeclarative(mock.Anything, "p1").Return(true)
 
 	svc := newServiceForTest(store)
-	err := svc.UpdateInboundClient(context.Background(), ptrInboundClient(), nil, nil, false, "", "")
+	err := svc.UpdateInboundClient(context.Background(), ptrInboundClient(), nil, false, "", "")
 
 	assert.ErrorIs(suite.T(), err, ErrCannotModifyDeclarative)
+}
+
+func (suite *InboundClientServiceTestSuite) TestUpdateInboundClient_CertificateRequiresClientID() {
+	store := newInboundClientStoreInterfaceMock(suite.T())
+	store.EXPECT().IsDeclarative(mock.Anything, "p1").Return(false)
+	svc := newServiceForTest(store)
+
+	p := &providers.OAuthProfile{
+		TokenEndpointAuthMethod: "private_key_jwt",
+		Certificate:             &inboundmodel.Certificate{Type: cert.CertificateTypeJWKS, Value: "{}"},
+	}
+
+	err := svc.UpdateInboundClient(context.Background(), ptrInboundClient(), p, false, "", "")
+
+	assert.ErrorIs(suite.T(), err, ErrOAuthCertificateRequiresClientID)
 }
 
 func (suite *InboundClientServiceTestSuite) TestDeleteInboundClient_RefusesDeclarative() {
@@ -203,7 +233,7 @@ func (suite *InboundClientServiceTestSuite) TestStorePropagatesErrors() {
 	store.EXPECT().CreateInboundClient(mock.Anything, mock.Anything).Return(storeErr)
 
 	svc := newServiceForTest(store)
-	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(), nil, nil, false, "")
+	err := svc.CreateInboundClient(context.Background(), ptrInboundClient(), nil, false, "")
 
 	assert.ErrorIs(suite.T(), err, storeErr)
 }
@@ -211,14 +241,14 @@ func (suite *InboundClientServiceTestSuite) TestStorePropagatesErrors() {
 // ----- ValidateCertificateInput -----
 
 func (suite *InboundClientServiceTestSuite) TestValidateCertificateInput_Empty() {
-	c, err := validateCertificateInput(cert.CertificateReferenceTypeOAuthApp, "ref-1", "", nil)
+	c, err := validateCertificateInput("ref-1", "", nil)
 
 	suite.Nil(c)
 	suite.Nil(err)
 }
 
 func (suite *InboundClientServiceTestSuite) TestValidateCertificateInput_JWKS_Success() {
-	c, err := validateCertificateInput(cert.CertificateReferenceTypeOAuthApp, "ref-1", "existing",
+	c, err := validateCertificateInput("ref-1", "existing",
 		&inboundmodel.Certificate{Type: cert.CertificateTypeJWKS, Value: `{"keys":[]}`})
 
 	suite.Nil(err)
@@ -230,7 +260,7 @@ func (suite *InboundClientServiceTestSuite) TestValidateCertificateInput_JWKS_Su
 }
 
 func (suite *InboundClientServiceTestSuite) TestValidateCertificateInput_JWKS_MissingValue() {
-	c, err := validateCertificateInput(cert.CertificateReferenceTypeOAuthApp, "ref-1", "",
+	c, err := validateCertificateInput("ref-1", "",
 		&inboundmodel.Certificate{Type: cert.CertificateTypeJWKS, Value: ""})
 
 	suite.Nil(c)
@@ -238,7 +268,7 @@ func (suite *InboundClientServiceTestSuite) TestValidateCertificateInput_JWKS_Mi
 }
 
 func (suite *InboundClientServiceTestSuite) TestValidateCertificateInput_JWKSURI_Success() {
-	c, err := validateCertificateInput(cert.CertificateReferenceTypeOAuthApp, "ref-1", "",
+	c, err := validateCertificateInput("ref-1", "",
 		&inboundmodel.Certificate{Type: cert.CertificateTypeJWKSURI, Value: "https://example.com/jwks"})
 
 	suite.Nil(err)
@@ -246,7 +276,7 @@ func (suite *InboundClientServiceTestSuite) TestValidateCertificateInput_JWKSURI
 }
 
 func (suite *InboundClientServiceTestSuite) TestValidateCertificateInput_JWKSURI_Invalid() {
-	c, err := validateCertificateInput(cert.CertificateReferenceTypeOAuthApp, "ref-1", "",
+	c, err := validateCertificateInput("ref-1", "",
 		&inboundmodel.Certificate{Type: cert.CertificateTypeJWKSURI, Value: "not-a-uri"})
 
 	suite.Nil(c)
@@ -254,7 +284,7 @@ func (suite *InboundClientServiceTestSuite) TestValidateCertificateInput_JWKSURI
 }
 
 func (suite *InboundClientServiceTestSuite) TestValidateCertificateInput_InvalidType() {
-	c, err := validateCertificateInput(cert.CertificateReferenceTypeOAuthApp, "ref-1", "",
+	c, err := validateCertificateInput("ref-1", "",
 		&inboundmodel.Certificate{Type: "bogus", Value: "x"})
 
 	suite.Nil(c)
@@ -266,8 +296,7 @@ func (suite *InboundClientServiceTestSuite) TestValidateCertificateInput_Invalid
 func (suite *InboundClientServiceTestSuite) TestCreateCertificate_Nil() {
 	svc := newServiceWithCert(certmock.NewCertificateServiceInterfaceMock(suite.T()))
 
-	out, vErr, opErr := svc.createCertificate(context.Background(),
-		cert.CertificateReferenceTypeOAuthApp, "ref-1", nil)
+	out, vErr, opErr := svc.createCertificate(context.Background(), "ref-1", nil)
 
 	suite.Nil(out)
 	suite.Nil(vErr)
@@ -281,8 +310,7 @@ func (suite *InboundClientServiceTestSuite) TestCreateCertificate_Success() {
 	svc := newServiceWithCert(mockCert)
 
 	in := &inboundmodel.Certificate{Type: cert.CertificateTypeJWKS, Value: `{}`}
-	out, vErr, opErr := svc.createCertificate(context.Background(),
-		cert.CertificateReferenceTypeOAuthApp, "ref-1", in)
+	out, vErr, opErr := svc.createCertificate(context.Background(), "ref-1", in)
 
 	suite.Nil(vErr)
 	suite.Nil(opErr)
@@ -294,8 +322,7 @@ func (suite *InboundClientServiceTestSuite) TestCreateCertificate_InvalidInput()
 	svc := newServiceWithCert(certmock.NewCertificateServiceInterfaceMock(suite.T()))
 
 	in := &inboundmodel.Certificate{Type: cert.CertificateTypeJWKSURI, Value: "not-a-uri"}
-	out, vErr, opErr := svc.createCertificate(context.Background(),
-		cert.CertificateReferenceTypeOAuthApp, "ref-1", in)
+	out, vErr, opErr := svc.createCertificate(context.Background(), "ref-1", in)
 
 	suite.Nil(out)
 	suite.Nil(opErr)
@@ -309,8 +336,7 @@ func (suite *InboundClientServiceTestSuite) TestCreateCertificate_ServiceError()
 	svc := newServiceWithCert(mockCert)
 
 	in := &inboundmodel.Certificate{Type: cert.CertificateTypeJWKS, Value: `{}`}
-	out, vErr, opErr := svc.createCertificate(context.Background(),
-		cert.CertificateReferenceTypeOAuthApp, "ref-1", in)
+	out, vErr, opErr := svc.createCertificate(context.Background(), "ref-1", in)
 
 	suite.Nil(out)
 	suite.Nil(vErr)
@@ -324,11 +350,11 @@ func (suite *InboundClientServiceTestSuite) TestCreateCertificate_ServiceError()
 func (suite *InboundClientServiceTestSuite) TestGetCertificate_NotFound() {
 	mockCert := certmock.NewCertificateServiceInterfaceMock(suite.T())
 	mockCert.EXPECT().
-		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "ref-1").
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeOAuthApp, "ref-1").
 		Return(nil, &cert.ErrorCertificateNotFound)
 	svc := newServiceWithCert(mockCert)
 
-	out, err := svc.GetCertificate(context.Background(), cert.CertificateReferenceTypeApplication, "ref-1")
+	out, err := svc.GetCertificate(context.Background(), cert.CertificateReferenceTypeOAuthApp, "ref-1")
 
 	suite.Nil(out)
 	suite.Nil(err)
@@ -337,11 +363,11 @@ func (suite *InboundClientServiceTestSuite) TestGetCertificate_NotFound() {
 func (suite *InboundClientServiceTestSuite) TestGetCertificate_Success() {
 	mockCert := certmock.NewCertificateServiceInterfaceMock(suite.T())
 	mockCert.EXPECT().
-		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "ref-1").
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeOAuthApp, "ref-1").
 		Return(&cert.Certificate{Type: cert.CertificateTypeJWKS, Value: `{}`}, nil)
 	svc := newServiceWithCert(mockCert)
 
-	out, err := svc.GetCertificate(context.Background(), cert.CertificateReferenceTypeApplication, "ref-1")
+	out, err := svc.GetCertificate(context.Background(), cert.CertificateReferenceTypeOAuthApp, "ref-1")
 
 	suite.Nil(err)
 	suite.Equal(cert.CertificateTypeJWKS, out.Type)
@@ -351,11 +377,11 @@ func (suite *InboundClientServiceTestSuite) TestGetCertificate_ServerError() {
 	mockCert := certmock.NewCertificateServiceInterfaceMock(suite.T())
 	srvErr := &tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "S-1"}
 	mockCert.EXPECT().
-		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "ref-1").
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeOAuthApp, "ref-1").
 		Return(nil, srvErr)
 	svc := newServiceWithCert(mockCert)
 
-	out, err := svc.GetCertificate(context.Background(), cert.CertificateReferenceTypeApplication, "ref-1")
+	out, err := svc.GetCertificate(context.Background(), cert.CertificateReferenceTypeOAuthApp, "ref-1")
 
 	suite.Nil(out)
 	suite.Equal(CertOpRetrieve, err.Operation)
@@ -367,11 +393,11 @@ func (suite *InboundClientServiceTestSuite) TestGetCertificate_ServerError() {
 func (suite *InboundClientServiceTestSuite) TestDeleteCertificate_Success() {
 	mockCert := certmock.NewCertificateServiceInterfaceMock(suite.T())
 	mockCert.EXPECT().
-		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "ref-1").
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeOAuthApp, "ref-1").
 		Return(nil)
 	svc := newServiceWithCert(mockCert)
 
-	err := svc.deleteCertificate(context.Background(), cert.CertificateReferenceTypeApplication, "ref-1")
+	err := svc.deleteCertificate(context.Background(), "ref-1")
 
 	suite.Nil(err)
 }
@@ -384,7 +410,7 @@ func (suite *InboundClientServiceTestSuite) TestDeleteCertificate_Error() {
 		Return(clientErr)
 	svc := newServiceWithCert(mockCert)
 
-	err := svc.deleteCertificate(context.Background(), cert.CertificateReferenceTypeOAuthApp, "ref-1")
+	err := svc.deleteCertificate(context.Background(), "ref-1")
 
 	suite.NotNil(err)
 	suite.Equal(CertOpDelete, err.Operation)
@@ -400,8 +426,7 @@ func (suite *InboundClientServiceTestSuite) TestSyncCertificate_NoOp_NoExistingN
 		Return(nil, &cert.ErrorCertificateNotFound)
 	svc := newServiceWithCert(mockCert)
 
-	out, vErr, opErr := svc.syncCertificate(context.Background(),
-		cert.CertificateReferenceTypeApplication, "ref-1", nil)
+	out, vErr, opErr := svc.syncCertificate(context.Background(), "ref-1", nil)
 
 	suite.Nil(out)
 	suite.Nil(vErr)
@@ -417,8 +442,7 @@ func (suite *InboundClientServiceTestSuite) TestSyncCertificate_CreateWhenAbsent
 		Return(&cert.Certificate{}, nil)
 	svc := newServiceWithCert(mockCert)
 
-	out, vErr, opErr := svc.syncCertificate(context.Background(),
-		cert.CertificateReferenceTypeApplication, "ref-1",
+	out, vErr, opErr := svc.syncCertificate(context.Background(), "ref-1",
 		&inboundmodel.Certificate{Type: cert.CertificateTypeJWKS, Value: `{}`})
 
 	suite.Nil(vErr)
@@ -435,8 +459,7 @@ func (suite *InboundClientServiceTestSuite) TestSyncCertificate_UpdateWhenPresen
 		Return(&cert.Certificate{}, nil)
 	svc := newServiceWithCert(mockCert)
 
-	out, vErr, opErr := svc.syncCertificate(context.Background(),
-		cert.CertificateReferenceTypeApplication, "ref-1",
+	out, vErr, opErr := svc.syncCertificate(context.Background(), "ref-1",
 		&inboundmodel.Certificate{Type: cert.CertificateTypeJWKS, Value: `{}`})
 
 	suite.Nil(vErr)
@@ -454,8 +477,7 @@ func (suite *InboundClientServiceTestSuite) TestSyncCertificate_DeleteWhenInputE
 		Return(nil)
 	svc := newServiceWithCert(mockCert)
 
-	out, vErr, opErr := svc.syncCertificate(context.Background(),
-		cert.CertificateReferenceTypeApplication, "ref-1", nil)
+	out, vErr, opErr := svc.syncCertificate(context.Background(), "ref-1", nil)
 
 	suite.Nil(out)
 	suite.Nil(vErr)
@@ -469,8 +491,7 @@ func (suite *InboundClientServiceTestSuite) TestSyncCertificate_ValidationError(
 		Return(nil, &cert.ErrorCertificateNotFound)
 	svc := newServiceWithCert(mockCert)
 
-	out, vErr, opErr := svc.syncCertificate(context.Background(),
-		cert.CertificateReferenceTypeApplication, "ref-1",
+	out, vErr, opErr := svc.syncCertificate(context.Background(), "ref-1",
 		&inboundmodel.Certificate{Type: "bogus", Value: "x"})
 
 	suite.Nil(out)
@@ -510,7 +531,7 @@ func (suite *InboundClientServiceTestSuite) TestUpdateInboundClient_ValidationFa
 	p := validOAuthProfile()
 	p.GrantTypes = []string{"not_a_real_grant"}
 
-	err := svc.UpdateInboundClient(context.Background(), ptrInboundClient(), nil, p, false, "", "")
+	err := svc.UpdateInboundClient(context.Background(), ptrInboundClient(), p, false, "", "")
 	assert.ErrorIs(suite.T(), err, ErrOAuthInvalidGrantType)
 }
 
@@ -522,13 +543,8 @@ func (suite *InboundClientServiceTestSuite) TestUpdateInboundClient_Succeeds() {
 	store.EXPECT().GetOAuthProfileByEntityID(mock.Anything, "p1").Return(nil, ErrInboundClientNotFound)
 	store.EXPECT().CreateOAuthProfile(mock.Anything, "p1", mock.Anything).Return(nil)
 
-	mockCert := certmock.NewCertificateServiceInterfaceMock(suite.T())
-	// syncCertificate for app cert (nil input): gets existing (not found), no update needed
-	mockCert.EXPECT().GetCertificateByReference(mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, &cert.ErrorCertificateNotFound)
-
-	svc := newInboundClientService(store, transaction.NewNoOpTransactioner(), mockCert, nil, nil, nil, nil, nil, nil)
-	err := svc.UpdateInboundClient(context.Background(), ptrInboundClient(), nil, validOAuthProfile(), true, "", "")
+	svc := newInboundClientService(store, transaction.NewNoOpTransactioner(), nil, nil, nil, nil, nil, nil, nil)
+	err := svc.UpdateInboundClient(context.Background(), ptrInboundClient(), validOAuthProfile(), true, "", "")
 	assert.NoError(suite.T(), err)
 }
 
@@ -1556,7 +1572,7 @@ func (suite *InboundClientServiceTestSuite) TestCreateInboundClient_WithoutRecov
 	client := ptrInboundClient()
 	client.RecoveryFlowID = ""
 	client.IsRecoveryFlowEnabled = false
-	err := svc.CreateInboundClient(context.Background(), client, nil, nil, false, "")
+	err := svc.CreateInboundClient(context.Background(), client, nil, false, "")
 
 	assert.NoError(suite.T(), err)
 }
@@ -1570,15 +1586,11 @@ func (suite *InboundClientServiceTestSuite) TestUpdateInboundClient_WithRecovery
 	})).Return(nil)
 	store.EXPECT().GetOAuthProfileByEntityID(mock.Anything, "p1").Return(nil, ErrInboundClientNotFound)
 
-	mockCert := certmock.NewCertificateServiceInterfaceMock(suite.T())
-	mockCert.EXPECT().GetCertificateByReference(mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, &cert.ErrorCertificateNotFound)
-
-	svc := newInboundClientService(store, transaction.NewNoOpTransactioner(), mockCert, nil, nil, nil, nil, nil, nil)
+	svc := newInboundClientService(store, transaction.NewNoOpTransactioner(), nil, nil, nil, nil, nil, nil, nil)
 	client := ptrInboundClient()
 	client.RecoveryFlowID = "recovery-1"
 	client.IsRecoveryFlowEnabled = true
-	err := svc.UpdateInboundClient(context.Background(), client, nil, nil, false, "", "")
+	err := svc.UpdateInboundClient(context.Background(), client, nil, false, "", "")
 
 	assert.NoError(suite.T(), err)
 }
@@ -2180,7 +2192,7 @@ func (suite *InboundClientServiceTestSuite) TestCreateInboundClient_RejectsInval
 	c.AllowedUserTypes = []string{"employee"}
 	c.Assertion = &inboundmodel.AssertionConfig{UserAttributes: []string{"not_a_real_attr"}}
 
-	err := svc.CreateInboundClient(context.Background(), &c, nil, nil, false, "")
+	err := svc.CreateInboundClient(context.Background(), &c, nil, false, "")
 	assert.ErrorIs(suite.T(), err, ErrInvalidUserAttribute)
 }
 
@@ -2205,7 +2217,7 @@ func (suite *InboundClientServiceTestSuite) TestUpdateInboundClient_RejectsInval
 	p := validOAuthProfileData()
 	p.UserInfo = &providers.UserInfoConfig{UserAttributes: []string{"ghost"}}
 
-	err := svc.UpdateInboundClient(context.Background(), &c, nil, p, true, "", "")
+	err := svc.UpdateInboundClient(context.Background(), &c, p, true, "", "")
 	assert.ErrorIs(suite.T(), err, ErrInvalidUserAttribute)
 }
 

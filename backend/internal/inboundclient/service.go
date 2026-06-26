@@ -51,7 +51,7 @@ import (
 // InboundClientServiceInterface is the public API of the inbound client subsystem.
 type InboundClientServiceInterface interface {
 	// CreateInboundClient validates and persists a new inbound auth profile, certificates, and OAuth config.
-	CreateInboundClient(ctx context.Context, client *inboundmodel.InboundClient, appCert *inboundmodel.Certificate,
+	CreateInboundClient(ctx context.Context, client *inboundmodel.InboundClient,
 		oauthProfile *providers.OAuthProfile, hasClientSecret bool, entityName string) error
 	// GetInboundClientByEntityID returns the inbound client for the given entity.
 	GetInboundClientByEntityID(ctx context.Context, entityID string) (*inboundmodel.InboundClient, error)
@@ -59,8 +59,7 @@ type InboundClientServiceInterface interface {
 	GetInboundClientList(ctx context.Context) ([]inboundmodel.InboundClient, error)
 	// UpdateInboundClient validates and persists updates to an inbound client, certificates, and OAuth config.
 	UpdateInboundClient(ctx context.Context, client *inboundmodel.InboundClient,
-		appCert *inboundmodel.Certificate, oauthProfile *providers.OAuthProfile,
-		hasClientSecret bool, oauthClientID string, entityName string) error
+		oauthProfile *providers.OAuthProfile, hasClientSecret bool, oauthClientID string, entityName string) error
 	// DeleteInboundClient removes the inbound client, OAuth profile, and certificates for the given entity.
 	DeleteInboundClient(ctx context.Context, entityID string) error
 	// Validate resolves flow defaults and validates FK constraints and OAuth profile without persisting.
@@ -124,8 +123,7 @@ func newInboundClientService(store inboundClientStoreInterface, transactioner tr
 
 // CreateInboundClient validates and persists a new inbound auth profile, certificates, and OAuth config.
 func (s *inboundClientService) CreateInboundClient(ctx context.Context, client *inboundmodel.InboundClient,
-	appCert *inboundmodel.Certificate, oauthProfile *providers.OAuthProfile,
-	hasClientSecret bool, entityName string) error {
+	oauthProfile *providers.OAuthProfile, hasClientSecret bool, entityName string) error {
 	if client == nil {
 		return fmt.Errorf("inbound client is required")
 	}
@@ -149,21 +147,17 @@ func (s *inboundClientService) CreateInboundClient(ctx context.Context, client *
 	}
 	applyInboundDefaults(client, oauthProfile)
 	oauthClientID := s.resolveClientID(ctx, client.ID)
+	if err := validateOAuthCertificateClientID(oauthProfile, oauthClientID); err != nil {
+		return err
+	}
 	return s.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		if _, vErr, opErr := s.createCertificate(
-			txCtx, cert.CertificateReferenceTypeApplication, client.ID, appCert,
-		); vErr != nil {
-			return vErr
-		} else if opErr != nil {
-			return opErr
-		}
 		if err := s.store.CreateInboundClient(txCtx, *client); err != nil {
 			return err
 		}
 		if oauthProfile != nil {
 			if oauthProfile.Certificate != nil && oauthClientID != "" {
 				if _, vErr, opErr := s.createCertificate(
-					txCtx, cert.CertificateReferenceTypeOAuthApp, oauthClientID, oauthProfile.Certificate,
+					txCtx, oauthClientID, oauthProfile.Certificate,
 				); vErr != nil {
 					return vErr
 				} else if opErr != nil {
@@ -197,8 +191,7 @@ func (s *inboundClientService) GetInboundClientList(ctx context.Context) ([]inbo
 
 // UpdateInboundClient validates and persists updates to an inbound client, certificates, and OAuth config.
 func (s *inboundClientService) UpdateInboundClient(ctx context.Context, client *inboundmodel.InboundClient,
-	appCert *inboundmodel.Certificate, oauthProfile *providers.OAuthProfile,
-	hasClientSecret bool, oauthClientID string, entityName string) error {
+	oauthProfile *providers.OAuthProfile, hasClientSecret bool, oauthClientID string, entityName string) error {
 	if client == nil {
 		return fmt.Errorf("inbound client is required")
 	}
@@ -223,22 +216,16 @@ func (s *inboundClientService) UpdateInboundClient(ctx context.Context, client *
 	applyInboundDefaults(client, oauthProfile)
 	// Capture existing OAuth client_id before the caller updates entity system attributes.
 	oldOAuthClientID := s.resolveClientID(ctx, client.ID)
+	if err := validateOAuthCertificateClientID(oauthProfile, oauthClientID); err != nil {
+		return err
+	}
 	return s.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		if _, vErr, opErr := s.syncCertificate(
-			txCtx, cert.CertificateReferenceTypeApplication, client.ID, appCert,
-		); vErr != nil {
-			return vErr
-		} else if opErr != nil {
-			return opErr
-		}
 		if err := s.store.UpdateInboundClient(txCtx, *client); err != nil {
 			return err
 		}
 		// Clean up the previous OAuth-app cert when the client_id changed or OAuth was removed.
 		if oldOAuthClientID != "" && oldOAuthClientID != oauthClientID {
-			if opErr := s.deleteCertificate(
-				txCtx, cert.CertificateReferenceTypeOAuthApp, oldOAuthClientID,
-			); opErr != nil {
+			if opErr := s.deleteCertificate(txCtx, oldOAuthClientID); opErr != nil {
 				if opErr.Underlying == nil || opErr.Underlying.Code != cert.ErrorCertificateNotFound.Code {
 					return opErr
 				}
@@ -250,7 +237,7 @@ func (s *inboundClientService) UpdateInboundClient(ctx context.Context, client *
 				oauthCert = oauthProfile.Certificate
 			}
 			if _, vErr, opErr := s.syncCertificate(
-				txCtx, cert.CertificateReferenceTypeOAuthApp, oauthClientID, oauthCert,
+				txCtx, oauthClientID, oauthCert,
 			); vErr != nil {
 				return vErr
 			} else if opErr != nil {
@@ -286,6 +273,13 @@ func (s *inboundClientService) Validate(ctx context.Context, client *inboundmode
 		if vErr := validateOAuthProfile(oauthProfile, hasClientSecret); vErr != nil {
 			return vErr
 		}
+	}
+	return nil
+}
+
+func validateOAuthCertificateClientID(oauthProfile *providers.OAuthProfile, oauthClientID string) error {
+	if oauthProfile != nil && oauthProfile.Certificate != nil && oauthClientID == "" {
+		return ErrOAuthCertificateRequiresClientID
 	}
 	return nil
 }
@@ -360,13 +354,8 @@ func (s *inboundClientService) DeleteInboundClient(ctx context.Context, entityID
 		if err := s.store.DeleteInboundClient(txCtx, entityID); err != nil {
 			return err
 		}
-		if opErr := s.deleteCertificate(txCtx, cert.CertificateReferenceTypeApplication, entityID); opErr != nil {
-			if opErr.Underlying == nil || opErr.Underlying.Code != cert.ErrorCertificateNotFound.Code {
-				return opErr
-			}
-		}
 		if oauthClientID != "" {
-			if opErr := s.deleteCertificate(txCtx, cert.CertificateReferenceTypeOAuthApp, oauthClientID); opErr != nil {
+			if opErr := s.deleteCertificate(txCtx, oauthClientID); opErr != nil {
 				if opErr.Underlying == nil || opErr.Underlying.Code != cert.ErrorCertificateNotFound.Code {
 					return opErr
 				}
@@ -552,10 +541,10 @@ func (s *inboundClientService) GetCertificate(ctx context.Context, refType cert.
 	return &inboundmodel.Certificate{Type: c.Type, Value: c.Value}, nil
 }
 
-// createCertificate validates and creates a new certificate record.
-func (s *inboundClientService) createCertificate(ctx context.Context, refType cert.CertificateReferenceType,
-	refID string, in *inboundmodel.Certificate) (*inboundmodel.Certificate, error, *CertOperationError) {
-	c, vErr := validateCertificateInput(refType, refID, "", in)
+// createCertificate validates and creates a new OAuth-app certificate record.
+func (s *inboundClientService) createCertificate(ctx context.Context, refID string,
+	in *inboundmodel.Certificate) (*inboundmodel.Certificate, error, *CertOperationError) {
+	c, vErr := validateCertificateInput(refID, "", in)
 	if vErr != nil {
 		return nil, vErr, nil
 	}
@@ -568,9 +557,10 @@ func (s *inboundClientService) createCertificate(ctx context.Context, refType ce
 	return &inboundmodel.Certificate{Type: c.Type, Value: c.Value}, nil, nil
 }
 
-// syncCertificate creates, updates, or deletes the certificate to match the desired state.
-func (s *inboundClientService) syncCertificate(ctx context.Context, refType cert.CertificateReferenceType,
-	refID string, in *inboundmodel.Certificate) (*inboundmodel.Certificate, error, *CertOperationError) {
+// syncCertificate creates, updates, or deletes the OAuth-app certificate to match the desired state.
+func (s *inboundClientService) syncCertificate(ctx context.Context, refID string,
+	in *inboundmodel.Certificate) (*inboundmodel.Certificate, error, *CertOperationError) {
+	refType := cert.CertificateReferenceTypeOAuthApp
 	existing, svcErr := s.certService.GetCertificateByReference(ctx, refType, refID)
 	if svcErr != nil && svcErr.Code != cert.ErrorCertificateNotFound.Code {
 		return nil, nil, &CertOperationError{Operation: CertOpRetrieve, RefType: refType, Underlying: svcErr}
@@ -580,7 +570,7 @@ func (s *inboundClientService) syncCertificate(ctx context.Context, refType cert
 	if existing != nil {
 		existingID = existing.ID
 	}
-	desired, vErr := validateCertificateInput(refType, refID, existingID, in)
+	desired, vErr := validateCertificateInput(refID, existingID, in)
 	if vErr != nil {
 		return nil, vErr, nil
 	}
@@ -606,9 +596,9 @@ func (s *inboundClientService) syncCertificate(ctx context.Context, refType cert
 	return nil, nil, nil
 }
 
-// deleteCertificate removes the certificate for the given reference type and ID.
-func (s *inboundClientService) deleteCertificate(ctx context.Context, refType cert.CertificateReferenceType,
-	refID string) *CertOperationError {
+// deleteCertificate removes the OAuth-app certificate for the given client ID.
+func (s *inboundClientService) deleteCertificate(ctx context.Context, refID string) *CertOperationError {
+	refType := cert.CertificateReferenceTypeOAuthApp
 	if s.certService == nil {
 		return nil
 	}
@@ -619,11 +609,11 @@ func (s *inboundClientService) deleteCertificate(ctx context.Context, refType ce
 }
 
 // validateCertificateInput validates and maps inbound certificate input to a cert.Certificate.
-func validateCertificateInput(refType cert.CertificateReferenceType,
-	refID, existingCertID string, in *inboundmodel.Certificate) (*cert.Certificate, error) {
+func validateCertificateInput(refID, existingCertID string, in *inboundmodel.Certificate) (*cert.Certificate, error) {
 	if in == nil || in.Type == "" {
 		return nil, nil
 	}
+	refType := cert.CertificateReferenceTypeOAuthApp
 	switch in.Type {
 	case cert.CertificateTypeJWKS:
 		if in.Value == "" {

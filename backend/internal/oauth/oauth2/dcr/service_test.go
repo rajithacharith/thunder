@@ -151,13 +151,11 @@ func (s *DCRServiceTestSuite) TestRegisterClient_JWKSUriProvided() {
 					ClientID:     "client-id",
 					ClientSecret: "client-secret",
 					Scopes:       []string{},
+					Certificate: &inboundmodel.Certificate{
+						Type:  cert.CertificateTypeJWKSURI,
+						Value: "https://client.example.com/.well-known/jwks.json",
+					},
 				},
-			},
-		},
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
-			Certificate: &inboundmodel.Certificate{
-				Type:  cert.CertificateTypeJWKSURI,
-				Value: "https://client.example.com/.well-known/jwks.json",
 			},
 		},
 	}
@@ -291,13 +289,11 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ConvertApplicationToDCRResponse
 					ClientID:     "client-id",
 					ClientSecret: "client-secret",
 					Scopes:       []string{},
+					Certificate: &inboundmodel.Certificate{
+						Type:  cert.CertificateTypeJWKS,
+						Value: "invalid json",
+					},
 				},
-			},
-		},
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
-			Certificate: &inboundmodel.Certificate{
-				Type:  cert.CertificateTypeJWKS,
-				Value: "invalid json",
 			},
 		},
 	}
@@ -332,13 +328,11 @@ func (s *DCRServiceTestSuite) TestRegisterClient_WithJWKS() {
 					ClientID:     "client-id",
 					ClientSecret: "client-secret",
 					Scopes:       []string{},
+					Certificate: &inboundmodel.Certificate{
+						Type:  cert.CertificateTypeJWKS,
+						Value: `{"keys":[]}`,
+					},
 				},
-			},
-		},
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
-			Certificate: &inboundmodel.Certificate{
-				Type:  cert.CertificateTypeJWKS,
-				Value: `{"keys":[]}`,
 			},
 		},
 	}

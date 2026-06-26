@@ -1478,10 +1478,15 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_WithCertificate(
 		OUID:        "ou-123",
 		Name:        "TestApp",
 		Description: "Test Description",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
-			Certificate: &inboundmodel.Certificate{
-				Type:  cert.CertificateTypeJWKS,
-				Value: `{"keys":[{"kty":"RSA","kid":"test"}]}`,
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+			{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+					Certificate: &inboundmodel.Certificate{
+						Type:  cert.CertificateTypeJWKS,
+						Value: `{"keys":[{"kty":"RSA","kid":"test"}]}`,
+					},
+				},
 			},
 		},
 	}
@@ -1491,10 +1496,15 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_WithCertificate(
 		ID:          "test-app-id",
 		Name:        "TestApp",
 		Description: "Test Description",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
-			Certificate: &inboundmodel.Certificate{
-				Type:  cert.CertificateTypeJWKS,
-				Value: `{"keys":[{"kty":"RSA","kid":"test"}]}`,
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+			{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+					Certificate: &inboundmodel.Certificate{
+						Type:  cert.CertificateTypeJWKS,
+						Value: `{"keys":[{"kty":"RSA","kid":"test"}]}`,
+					},
+				},
 			},
 		},
 	}

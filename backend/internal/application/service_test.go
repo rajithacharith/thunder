@@ -381,8 +381,6 @@ func (suite *ServiceTestSuite) TestGetApplication_Success() {
 	}
 
 	mockLoadFullApplication(mockStore, service, app)
-	mockStore.EXPECT().GetCertificate(mock.Anything,
-		cert.CertificateReferenceTypeApplication, testServiceAppID).Return(nil, nil)
 
 	result, svcErr := service.GetApplication(context.Background(), testServiceAppID)
 
@@ -436,8 +434,6 @@ func (suite *ServiceTestSuite) TestGetApplication_WithInboundAuthConfig_Success(
 	}
 
 	mockLoadFullApplication(mockStore, service, app)
-	mockStore.EXPECT().GetCertificate(mock.Anything,
-		cert.CertificateReferenceTypeApplication, testServiceAppID).Return(nil, nil)
 	mockStore.EXPECT().GetCertificate(mock.Anything,
 		cert.CertificateReferenceTypeOAuthApp, "client-id-123").Return(nil, nil)
 
@@ -923,37 +919,6 @@ func (suite *ServiceTestSuite) TestDeleteApplication_Success() {
 	assert.Nil(suite.T(), svcErr)
 }
 
-func (suite *ServiceTestSuite) TestDeleteApplication_CertError() {
-	testConfig := &config.Config{
-		DeclarativeResources: config.DeclarativeResources{
-			Enabled: false,
-		},
-	}
-	config.ResetServerRuntime()
-	err := config.InitializeServerRuntime("/tmp/test", testConfig)
-	require.NoError(suite.T(), err)
-	defer config.ResetServerRuntime()
-
-	service, mockStore := suite.setupTestService()
-
-	certOpErr := &inboundclient.CertOperationError{
-		Operation: inboundclient.CertOpDelete,
-		RefType:   cert.CertificateReferenceTypeApplication,
-		Underlying: &tidcommon.ServiceError{
-			Type: tidcommon.ClientErrorType,
-			ErrorDescription: tidcommon.I18nMessage{
-				DefaultValue: "underlying",
-			},
-		},
-	}
-	mockStore.On("DeleteInboundClient", mock.Anything, testServiceAppID).Return(certOpErr)
-
-	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
-
-	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), ErrorCertificateClientError.Code, svcErr.Code)
-}
-
 // TestDeleteApplication_OAuthCertError verifies that when the inbound-client layer reports an
 // internal error from a certificate operation, DeleteApplication surfaces an internal server error.
 func (suite *ServiceTestSuite) TestDeleteApplication_OAuthCertError() {
@@ -1207,6 +1172,14 @@ func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Error() {
 	app := &model.Application{
 		ID:   testServiceAppID,
 		Name: "Test App",
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+			{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+					ClientID: "client-id-123",
+				},
+			},
+		},
 	}
 
 	svcErr := &tidcommon.ServiceError{
@@ -1215,10 +1188,10 @@ func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Error() {
 	}
 
 	mockStore.EXPECT().
-		GetCertificate(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
+		GetCertificate(mock.Anything, cert.CertificateReferenceTypeOAuthApp, "client-id-123").
 		Return(nil, &inboundclient.CertOperationError{
 			Operation:  inboundclient.CertOpRetrieve,
-			RefType:    cert.CertificateReferenceTypeApplication,
+			RefType:    cert.CertificateReferenceTypeOAuthApp,
 			Underlying: svcErr,
 		})
 
@@ -1234,10 +1207,18 @@ func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Success() {
 	app := &model.Application{
 		ID:   testServiceAppID,
 		Name: "Test App",
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+			{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+					ClientID: "client-id-123",
+				},
+			},
+		},
 	}
 
 	mockStore.EXPECT().
-		GetCertificate(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
+		GetCertificate(mock.Anything, cert.CertificateReferenceTypeOAuthApp, "client-id-123").
 		Return(&inboundmodel.Certificate{
 			Type:  cert.CertificateTypeJWKS,
 			Value: `{"keys":[]}`,
@@ -1247,7 +1228,7 @@ func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Success() {
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), cert.CertificateTypeJWKS, result.Certificate.Type)
+	assert.Equal(suite.T(), cert.CertificateTypeJWKS, result.InboundAuthConfig[0].OAuthConfig.Certificate.Type)
 }
 
 func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_PublicClientSuccess() {
@@ -1405,16 +1386,12 @@ func (suite *ServiceTestSuite) runCreateApplicationStoreErrorTest() {
 		InboundAuthProfile: inboundmodel.InboundAuthProfile{
 			AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
 			RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
-			Certificate: &inboundmodel.Certificate{
-				Type:  "JWKS",
-				Value: `{"keys":[]}`,
-			},
 		},
 	}
 
 	mockStore.On("CreateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything).Return(errors.New("internal server error"))
+		mock.Anything, mock.Anything).Return(errors.New("internal server error"))
 
 	result, svcErr := service.CreateApplication(context.Background(), app)
 
@@ -1577,10 +1554,6 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWithRollback() {
 		InboundAuthProfile: inboundmodel.InboundAuthProfile{
 			AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
 			RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
-			Certificate: &inboundmodel.Certificate{
-				Type:  "JWKS",
-				Value: `{"keys":[]}`,
-			},
 		},
 	}
 
@@ -1588,7 +1561,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWithRollback() {
 	mockLoadFullApplication(mockStore, service, existingApp)
 	mockStore.On("UpdateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		mock.Anything, mock.Anything, mock.Anything).
 		Return(errors.New("internal server error"))
 
 	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, app)
@@ -1621,44 +1594,6 @@ func (suite *ServiceTestSuite) TestCreateApplication_ValidateApplicationError() 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorInvalidApplicationName, svcErr)
-}
-
-func (suite *ServiceTestSuite) TestCreateApplication_CertificateCreationError() {
-	testConfig := &config.Config{
-		DeclarativeResources: config.DeclarativeResources{
-			Enabled: false,
-		},
-	}
-	config.ResetServerRuntime()
-	err := config.InitializeServerRuntime("/tmp/test", testConfig)
-	require.NoError(suite.T(), err)
-	defer config.ResetServerRuntime()
-
-	service, mockStore := suite.setupTestService()
-
-	app := &model.ApplicationDTO{
-		Name: "Test App",
-		OUID: testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
-			Certificate: &inboundmodel.Certificate{
-				Type:  "JWKS",
-				Value: `{"keys":[]}`,
-			},
-			AuthFlowID:         "auth-flow-id",
-			RegistrationFlowID: "reg-flow-id",
-		},
-	}
-
-	mockStore.On("CreateInboundClient",
-		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything).
-		Return(errors.New("internal server error"))
-
-	result, svcErr := service.CreateApplication(context.Background(), app)
-
-	assert.Nil(suite.T(), result)
-	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
 }
 
 func (suite *ServiceTestSuite) TestCreateApplication_WithOAuthCertificate_Success() {
@@ -1701,7 +1636,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_WithOAuthCertificate_Succes
 
 	mockStore.On("CreateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		mock.Anything, mock.Anything).Return(nil)
 
 	result, svcErr := service.CreateApplication(context.Background(), app)
 
@@ -1757,61 +1692,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithOAuthCertRoll
 	// Store creation fails
 	mockStore.On("CreateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything).Return(errors.New("internal server error"))
-
-	result, svcErr := service.CreateApplication(context.Background(), app)
-
-	assert.Nil(suite.T(), result)
-	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &tidcommon.InternalServerError, svcErr)
-}
-
-func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithBothAppAndOAuthCertRollback() {
-	testConfig := &config.Config{
-		DeclarativeResources: config.DeclarativeResources{
-			Enabled: false,
-		},
-	}
-	config.ResetServerRuntime()
-	err := config.InitializeServerRuntime("/tmp/test", testConfig)
-	require.NoError(suite.T(), err)
-	defer config.ResetServerRuntime()
-
-	service, mockStore := suite.setupTestService()
-
-	app := &model.ApplicationDTO{
-		Name: "Test App With Both Certs",
-		OUID: testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
-			AuthFlowID:         "auth-flow-id",
-			RegistrationFlowID: "reg-flow-id",
-			Certificate: &inboundmodel.Certificate{
-				Type:  "JWKS",
-				Value: `{"keys":[{"app":"cert"}]}`,
-			},
-		},
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
-			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
-					ClientID:                testClientID,
-					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
-					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
-					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodPrivateKeyJWT,
-					Certificate: &inboundmodel.Certificate{
-						Type:  "JWKS",
-						Value: `{"keys":[{"oauth":"cert"}]}`,
-					},
-				},
-			},
-		},
-	}
-
-	// Store creation fails
-	mockStore.On("CreateInboundClient",
-		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything).Return(errors.New("internal server error"))
+		mock.Anything, mock.Anything).Return(errors.New("internal server error"))
 
 	result, svcErr := service.CreateApplication(context.Background(), app)
 
@@ -1930,7 +1811,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_MetadataUpdate() {
 	mockLoadFullApplication(mockStore, service, existingApp)
 	mockStore.On("UpdateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
 
@@ -1972,7 +1853,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_AppCertificateUpdateError()
 	mockLoadFullApplication(mockStore, service, existingApp)
 	mockStore.On("UpdateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		mock.Anything, mock.Anything, mock.Anything).
 		Return(errors.New("internal server error"))
 
 	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, app)
@@ -2138,7 +2019,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreFails_RollbackCertFail
 	mockLoadFullApplication(mockStore, service, existingApp)
 	mockStore.On("UpdateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		mock.Anything, mock.Anything, mock.Anything).
 		Return(errors.New("internal server error"))
 
 	result, svcErr := service.UpdateApplication(context.Background(), "app123", app)
@@ -2214,7 +2095,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_WithOAuthConfig_Success() {
 
 	mockStore.On("UpdateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
 
@@ -2281,7 +2162,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_AddOAuthConfig_Success() {
 
 	mockStore.On("UpdateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
 
@@ -2357,7 +2238,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_UpdateOAuthClientID_Success
 
 	mockStore.On("UpdateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
 
@@ -2436,7 +2317,7 @@ func (suite *ServiceTestSuite) runUpdateApplicationWithJWKSCert(jwksValue string
 
 	mockStore.On("UpdateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
 
@@ -2606,7 +2487,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthStoreErrorWithRollback
 	// Mock store update failure
 	mockStore.On("UpdateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		mock.Anything, mock.Anything, mock.Anything).
 		Return(errors.New("internal server error"))
 
 	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
@@ -2691,7 +2572,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthTokenConfigUpdate() {
 
 	mockStore.On("UpdateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
 
@@ -3016,6 +2897,12 @@ func (suite *ServiceTestSuite) TestTranslateOAuthValidationError() {
 			err:         inboundclient.ErrOAuthPrivateKeyJWTRequiresCertificate,
 			wantCode:    ErrorInvalidOAuthConfiguration.Code,
 			wantDescKey: "error.applicationservice.private_key_jwt_requires_certificate_description",
+		},
+		{
+			name:        "CertificateRequiresClientID",
+			err:         inboundclient.ErrOAuthCertificateRequiresClientID,
+			wantCode:    ErrorInvalidOAuthConfiguration.Code,
+			wantDescKey: "error.applicationservice.certificate_requires_client_id_description",
 		},
 		{
 			name:        "PrivateKeyJWTCannotHaveClientSecret",
@@ -3457,7 +3344,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_CreateInboundClientFailsAnd
 
 	mockStore.On("CreateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything).Return(errors.New("internal server error"))
+		mock.Anything, mock.Anything).Return(errors.New("internal server error"))
 
 	ep := resetEntityProviderMethod(service, "DeleteEntity")
 	ep.On("DeleteEntity", mock.Anything).

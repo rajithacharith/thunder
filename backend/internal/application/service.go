@@ -142,7 +142,7 @@ func (as *applicationService) CreateApplication(ctx context.Context, app *model.
 	}
 
 	// Create config (with compensation if it fails).
-	if err := as.inboundClientService.CreateInboundClient(ctx, &inboundClient, app.Certificate, oauthProfile,
+	if err := as.inboundClientService.CreateInboundClient(ctx, &inboundClient, oauthProfile,
 		clientSecret != "", app.Name); err != nil {
 		// Compensate: delete entity since config creation failed.
 		as.deleteEntityCompensation(ctx, appID)
@@ -157,9 +157,6 @@ func (as *applicationService) CreateApplication(ctx context.Context, app *model.
 	appForReturn.AuthFlowID = inboundClient.AuthFlowID
 	appForReturn.RegistrationFlowID = inboundClient.RegistrationFlowID
 	appForReturn.RecoveryFlowID = inboundClient.RecoveryFlowID
-	if app.Certificate == nil || app.Certificate.Type == "" {
-		appForReturn.Certificate = nil
-	}
 	var oauthToken *providers.OAuthTokenConfig
 	var userInfo *providers.UserInfoConfig
 	var scopeClaims map[string][]string
@@ -379,7 +376,7 @@ func (as *applicationService) UpdateApplication(ctx context.Context, appID strin
 	// Update config first, while entity attributes still hold the previous client_id so the
 	// inbound client service can clean up the old OAuth-app cert.
 	if err := as.inboundClientService.UpdateInboundClient(
-		ctx, &inboundClient, app.Certificate, oauthProfile, oauthSecretSupplied, newOAuthClientID, app.Name,
+		ctx, &inboundClient, oauthProfile, oauthSecretSupplied, newOAuthClientID, app.Name,
 	); err != nil {
 		if svcErr := as.translateInboundClientError(ctx, err); svcErr != nil {
 			return nil, svcErr
@@ -400,9 +397,6 @@ func (as *applicationService) UpdateApplication(ctx context.Context, appID strin
 	appForReturn.AuthFlowID = inboundClient.AuthFlowID
 	appForReturn.RegistrationFlowID = inboundClient.RegistrationFlowID
 	appForReturn.RecoveryFlowID = inboundClient.RecoveryFlowID
-	if app.Certificate == nil || app.Certificate.Type == "" {
-		appForReturn.Certificate = nil
-	}
 	var oauthToken *providers.OAuthTokenConfig
 	var userInfo *providers.UserInfoConfig
 	var scopeClaims map[string][]string
@@ -1142,6 +1136,11 @@ func translateOAuthValidationError(err error) *tidcommon.ServiceError {
 			Key:          "error.applicationservice.private_key_jwt_requires_certificate_description",
 			DefaultValue: "private_key_jwt authentication method requires a certificate",
 		})
+	case errors.Is(err, inboundclient.ErrOAuthCertificateRequiresClientID):
+		return tidcommon.CustomServiceError(ErrorInvalidOAuthConfiguration, tidcommon.I18nMessage{
+			Key:          "error.applicationservice.certificate_requires_client_id_description",
+			DefaultValue: "certificate configuration requires an OAuth client ID",
+		})
 	case errors.Is(err, inboundclient.ErrOAuthPrivateKeyJWTCannotHaveClientSecret):
 		return tidcommon.CustomServiceError(ErrorInvalidOAuthConfiguration, tidcommon.I18nMessage{
 			Key:          "error.applicationservice.private_key_jwt_cannot_have_client_secret_description",
@@ -1502,20 +1501,9 @@ func resolveClientSecret(
 	return nil
 }
 
-// enrichApplicationWithCertificate retrieves and adds the certificate to the application.
+// enrichApplicationWithCertificate retrieves and adds OAuth certificates to the application.
 func (as *applicationService) enrichApplicationWithCertificate(ctx context.Context, application *model.Application) (
 	*model.Application, *tidcommon.ServiceError) {
-	appCert, opErr := as.inboundClientService.GetCertificate(
-		ctx, cert.CertificateReferenceTypeApplication, application.ID)
-	if opErr != nil {
-		if mapped := as.translateCertOperationError(ctx, opErr); mapped != nil {
-			return nil, mapped
-		}
-		return nil, &tidcommon.InternalServerError
-	}
-	application.Certificate = appCert
-
-	// Enrich OAuth config certificate for each inbound auth config.
 	for i, inboundAuthConfig := range application.InboundAuthConfig {
 		if inboundAuthConfig.Type == inboundmodel.OAuthInboundAuthType && inboundAuthConfig.OAuthConfig != nil {
 			oauthCert, oauthCertOpErr := as.inboundClientService.GetCertificate(ctx,
@@ -1534,7 +1522,6 @@ func (as *applicationService) enrichApplicationWithCertificate(ctx context.Conte
 }
 
 // buildApplicationResponse maps an ApplicationProcessedDTO to an Application response.
-// The returned application's Certificate field is populated separately by enrichApplicationWithCertificate.
 func buildApplicationResponse(dto *model.ApplicationProcessedDTO) *model.Application {
 	application := &model.Application{
 		ID:          dto.ID,
@@ -1733,7 +1720,6 @@ func buildReturnApplicationDTO(
 			ThemeID:                   app.ThemeID,
 			LayoutID:                  app.LayoutID,
 			Assertion:                 assertion,
-			Certificate:               app.Certificate,
 			AllowedUserTypes:          app.AllowedUserTypes,
 			LoginConsent:              app.LoginConsent,
 		},
