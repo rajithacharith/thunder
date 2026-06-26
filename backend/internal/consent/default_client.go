@@ -30,6 +30,7 @@ import (
 	"time"
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
 	sysconst "github.com/thunder-id/thunderid/internal/system/constants"
@@ -276,7 +277,8 @@ func (c *defaultClient) createConsentElements(ctx context.Context, ouID string, 
 }
 
 // listConsentElements retrieves consent elements filtered by optional name.
-func (c *defaultClient) listConsentElements(ctx context.Context, ouID string, ns Namespace, nameFilter string) (
+func (c *defaultClient) listConsentElements(
+	ctx context.Context, ouID string, ns providers.Namespace, nameFilter string) (
 	[]ConsentElement, *tidcommon.ServiceError) {
 	u, svcErr := c.buildSearchURL(ctx, nameFilter, consentElementsEndpoint)
 	if svcErr != nil {
@@ -543,7 +545,7 @@ func (c *defaultClient) deleteConsentPurpose(ctx context.Context,
 
 // createConsent creates a consent record for a user and resource.
 func (c *defaultClient) createConsent(ctx context.Context, ouID string, req *ConsentRequest) (
-	*Consent, *tidcommon.ServiceError) {
+	*providers.Consent, *tidcommon.ServiceError) {
 	u, svcErr := c.buildServiceEndpoint(ctx, consentsEndpoint)
 	if svcErr != nil {
 		return nil, svcErr
@@ -576,7 +578,7 @@ func (c *defaultClient) createConsent(ctx context.Context, ouID string, req *Con
 
 // searchConsents retrieves consent records filtered by the given criteria.
 func (c *defaultClient) searchConsents(ctx context.Context, ouID string, filter *ConsentSearchFilter) (
-	[]Consent, *tidcommon.ServiceError) {
+	[]providers.Consent, *tidcommon.ServiceError) {
 	u, svcErr := c.buildConsentSearchURL(ctx, filter)
 	if svcErr != nil {
 		return nil, svcErr
@@ -606,7 +608,7 @@ func (c *defaultClient) searchConsents(ctx context.Context, ouID string, filter 
 	// due to the limitations in the consent service API. As a workaround, we apply additional filtering logic here
 	// based on the validity time and status to ensure the expected results are returned to the service layer.
 	// This can be removed once the consent service API is enhanced to support proper filtering by status.
-	statusFilter := map[ConsentStatus]bool{}
+	statusFilter := map[providers.ConsentStatus]bool{}
 	if filter != nil {
 		for _, status := range filter.ConsentStatuses {
 			statusFilter[status] = true
@@ -615,15 +617,16 @@ func (c *defaultClient) searchConsents(ctx context.Context, ouID string, filter 
 	applyStatusFilter := len(statusFilter) > 0
 	nowUnix := time.Now().Unix()
 
-	out := make([]Consent, 0, len(result.Data))
+	out := make([]providers.Consent, 0, len(result.Data))
 	for _, dto := range result.Data {
 		consent := c.dtoToConsent(&dto)
 
 		// Currently the default client doesn't set the expired status for consents based on the validity time
 		// due to the limitations in the consent service API. As a workaround, we set the expired status here
 		// based on the validity time to ensure the expected results are returned
-		if consent.Status == ConsentStatusActive && consent.ValidityTime > 0 && consent.ValidityTime <= nowUnix {
-			consent.Status = ConsentStatusExpired
+		if consent.Status == providers.ConsentStatusActive &&
+			consent.ValidityTime > 0 && consent.ValidityTime <= nowUnix {
+			consent.Status = providers.ConsentStatusExpired
 		}
 
 		if applyStatusFilter {
@@ -673,7 +676,7 @@ func (c *defaultClient) validateConsent(ctx context.Context, ouID, consentID str
 
 // updateConsent replaces the content of an existing consent record by ID.
 func (c *defaultClient) updateConsent(ctx context.Context, ouID, consentID string,
-	req *ConsentRequest) (*Consent, *tidcommon.ServiceError) {
+	req *ConsentRequest) (*providers.Consent, *tidcommon.ServiceError) {
 	u, svcErr := c.buildServiceEndpoint(ctx, consentsEndpoint, consentID)
 	if svcErr != nil {
 		return nil, svcErr
@@ -916,12 +919,12 @@ func PermissionsPurposeName(appID string) string {
 
 // NamespaceFromPurposeName derives the purpose namespace from the name prefix. Returns empty
 // for names without a recognized prefix; callers filter such purposes out.
-func NamespaceFromPurposeName(name string) Namespace {
+func NamespaceFromPurposeName(name string) providers.Namespace {
 	switch {
 	case strings.HasPrefix(name, permissionsPurposeNamePrefix):
-		return NamespacePermission
+		return providers.NamespacePermission
 	case strings.HasPrefix(name, attributesPurposeNamePrefix):
-		return NamespaceAttribute
+		return providers.NamespaceAttribute
 	default:
 		return ""
 	}
@@ -929,16 +932,16 @@ func NamespaceFromPurposeName(name string) Namespace {
 
 // FilterAttributePurposes returns only the attribute-namespace consent purposes.
 func FilterAttributePurposes(purposes []ConsentPurpose) []ConsentPurpose {
-	return filterPurposesByNamespace(purposes, NamespaceAttribute)
+	return filterPurposesByNamespace(purposes, providers.NamespaceAttribute)
 }
 
 // FilterPermissionPurposes returns only the permission-namespace consent purposes.
 func FilterPermissionPurposes(purposes []ConsentPurpose) []ConsentPurpose {
-	return filterPurposesByNamespace(purposes, NamespacePermission)
+	return filterPurposesByNamespace(purposes, providers.NamespacePermission)
 }
 
 // filterPurposesByNamespace returns the subset of purposes whose Namespace matches ns.
-func filterPurposesByNamespace(purposes []ConsentPurpose, ns Namespace) []ConsentPurpose {
+func filterPurposesByNamespace(purposes []ConsentPurpose, ns providers.Namespace) []ConsentPurpose {
 	out := make([]ConsentPurpose, 0, len(purposes))
 	for _, p := range purposes {
 		if p.Namespace == ns {
@@ -990,44 +993,44 @@ func (c *defaultClient) consentRequestToDTO(req *ConsentRequest) consentCreateDT
 
 // consentAuthorizationDtoToResponse converts an authorizationResponseDTO from the API response
 // to a ConsentAuthorization.
-func (c *defaultClient) consentAuthorizationDtoToResponse(a *authorizationResponseDTO) ConsentAuthorization {
-	return ConsentAuthorization{
+func (c *defaultClient) consentAuthorizationDtoToResponse(a *authorizationResponseDTO) providers.ConsentAuthorization {
+	return providers.ConsentAuthorization{
 		ID:          a.ID,
 		UserID:      a.UserID,
-		Type:        ConsentAuthorizationType(a.Type),
-		Status:      ConsentAuthorizationStatus(a.Status),
+		Type:        providers.ConsentAuthorizationType(a.Type),
+		Status:      providers.ConsentAuthorizationStatus(a.Status),
 		UpdatedTime: a.UpdatedTime,
 	}
 }
 
 // dtoToConsent converts a consentResponseDTO from the API response to a Consent.
-func (c *defaultClient) dtoToConsent(dto *consentResponseDTO) Consent {
-	purposes := make([]ConsentPurposeItem, 0, len(dto.Purposes))
+func (c *defaultClient) dtoToConsent(dto *consentResponseDTO) providers.Consent {
+	purposes := make([]providers.ConsentPurposeItem, 0, len(dto.Purposes))
 	for _, p := range dto.Purposes {
-		elements := make([]ConsentElementApproval, 0, len(p.Elements))
+		elements := make([]providers.ConsentElementApproval, 0, len(p.Elements))
 		for _, el := range p.Elements {
-			elements = append(elements, ConsentElementApproval{
+			elements = append(elements, providers.ConsentElementApproval{
 				Name:           el.Name,
 				IsUserApproved: el.IsUserApproved,
 			})
 		}
 
-		purposes = append(purposes, ConsentPurposeItem{
+		purposes = append(purposes, providers.ConsentPurposeItem{
 			Name:     p.Name,
 			Elements: elements,
 		})
 	}
 
-	auths := make([]ConsentAuthorization, 0, len(dto.Authorizations))
+	auths := make([]providers.ConsentAuthorization, 0, len(dto.Authorizations))
 	for _, a := range dto.Authorizations {
 		auths = append(auths, c.consentAuthorizationDtoToResponse(&a))
 	}
 
-	return Consent{
+	return providers.Consent{
 		ID:             dto.ID,
-		Type:           ConsentType(dto.Type),
+		Type:           providers.ConsentType(dto.Type),
 		GroupID:        dto.ClientID,
-		Status:         ConsentStatus(dto.Status),
+		Status:         providers.ConsentStatus(dto.Status),
 		ValidityTime:   dto.ValidityTime,
 		Purposes:       purposes,
 		Authorizations: auths,

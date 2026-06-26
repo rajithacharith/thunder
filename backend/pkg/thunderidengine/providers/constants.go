@@ -271,3 +271,62 @@ const (
 func (es EntityState) String() string {
 	return string(es)
 }
+
+// ConsentStatus defines the possible statuses for a consent record.
+type ConsentStatus string
+
+const (
+	// ConsentStatusCreated indicates that the consent record has been created, but not yet active.
+	ConsentStatusCreated ConsentStatus = "CREATED"
+	// ConsentStatusActive indicates that the consent is active and valid.
+	ConsentStatusActive ConsentStatus = "ACTIVE"
+	// ConsentStatusRejected indicates that the consent has been rejected by the user.
+	ConsentStatusRejected ConsentStatus = "REJECTED"
+	// ConsentStatusRevoked indicates that the consent has been revoked by the user or admin.
+	ConsentStatusRevoked ConsentStatus = "REVOKED"
+	// ConsentStatusExpired indicates that the consent has expired after its validity time.
+	ConsentStatusExpired ConsentStatus = "EXPIRED"
+)
+
+// ConsentType defines the possible types for a consent record.
+type ConsentType string
+
+const (
+	// ConsentTypeAuthentication represents a consent record related to authentication flows.
+	ConsentTypeAuthentication ConsentType = "AUTHENTICATION"
+)
+
+// Namespace represents the consent namespace to scope consent elements and purposes.
+type Namespace string
+
+const (
+	// NamespaceAttribute represents the attribute consent namespace.
+	// Used for managing consent over user attributes (e.g. email, mobile).
+	NamespaceAttribute Namespace = "attribute"
+	// NamespacePermission represents the permission consent namespace.
+	// Used for managing consent over resource action permissions (e.g. booking:reservations:read).
+	NamespacePermission Namespace = "permission"
+)
+
+// ConsentAuthorizationStatus defines the possible statuses for a consent authorization record.
+type ConsentAuthorizationStatus string
+
+const (
+	// AuthorizationStatusCreated indicates that the authorization record has been created,
+	// but not yet approved or rejected.
+	AuthorizationStatusCreated ConsentAuthorizationStatus = "CREATED"
+	// AuthorizationStatusApproved indicates that the authorization record has been approved by the user.
+	AuthorizationStatusApproved ConsentAuthorizationStatus = "APPROVED"
+	// AuthorizationStatusRejected indicates that the authorization record has been rejected by the user.
+	AuthorizationStatusRejected ConsentAuthorizationStatus = "REJECTED"
+)
+
+// ConsentAuthorizationType defines the possible types for a consent authorization record.
+type ConsentAuthorizationType string
+
+const (
+	// AuthorizationTypeAuthorization represents a standard user authorization action for a consent.
+	AuthorizationTypeAuthorization ConsentAuthorizationType = "AUTHORIZATION"
+	// AuthorizationTypeReAuthorization represents a re-authorization action for a consent.
+	AuthorizationTypeReAuthorization ConsentAuthorizationType = "RE_AUTHORIZATION"
+)

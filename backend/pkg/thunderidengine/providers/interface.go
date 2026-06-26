@@ -122,3 +122,25 @@ type IDPProvider interface {
 		propertyValue string) ([]IDPDTO, *common.ServiceError)
 	GetIdentityProvider(ctx context.Context, idpID string) (*IDPDTO, *common.ServiceError)
 }
+
+// ConsentProvider provides functionality to resolve consent requirements and
+// record user consent decisions during runtime authentication flows.
+type ConsentProvider interface {
+	// ResolveConsent checks whether the user has provided required consents for the given
+	// application, attribute set, and authorized permission set. Returns nil if all required
+	// consents are active; otherwise returns ConsentPromptData describing which purposes /
+	// elements still need user consent. When forceReprompt is true, consent is re-prompted for
+	// all required claims regardless of existing active consent.
+	ResolveConsent(ctx context.Context, ouID, appID, appName, userID string,
+		essentialAttributes, optionalAttributes, authorizedPermissions []string,
+		availableAttributes *AttributesResponse, forceReprompt bool,
+		runtimeMetadata map[string]string) (
+		*ConsentPromptData, *common.ServiceError)
+
+	// RecordConsent records the user's consent decisions and returns the persisted consent record.
+	// If the user denied any essential attribute, ErrorEssentialConsentDenied is returned.
+	RecordConsent(ctx context.Context, ouID, appID, userID string,
+		decisions *ConsentDecisions, sessionToken string, validityPeriod int64,
+		runtimeMetadata map[string]string) (
+		*Consent, *common.ServiceError)
+}

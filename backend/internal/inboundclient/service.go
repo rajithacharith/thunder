@@ -1342,7 +1342,7 @@ func (s *inboundClientService) syncConsentOnCreate(ctx context.Context,
 		Name:        consent.AttributesPurposeName(entityID),
 		Description: "Consent purpose for application " + entityName,
 		GroupID:     entityID,
-		Namespace:   consent.NamespaceAttribute,
+		Namespace:   providers.NamespaceAttribute,
 		Elements:    attributesToPurposeElements(attrMap),
 	}
 	if _, err := s.consentService.CreateConsentPurpose(ctx, ouID, &purpose); err != nil {
@@ -1379,7 +1379,7 @@ func (s *inboundClientService) syncConsentOnUpdate(ctx context.Context,
 				Name:        consent.AttributesPurposeName(entityID),
 				Description: "Consent purpose for application " + entityName,
 				GroupID:     entityID,
-				Namespace:   consent.NamespaceAttribute,
+				Namespace:   providers.NamespaceAttribute,
 				Elements:    attributesToPurposeElements(newAttrs),
 			}
 			if _, createErr := s.consentService.CreateConsentPurpose(ctx, ouID, &purpose); createErr != nil {
@@ -1411,7 +1411,7 @@ func (s *inboundClientService) syncConsentOnUpdate(ctx context.Context,
 		Name:        consent.AttributesPurposeName(entityID),
 		Description: "Consent purpose for application " + entityName,
 		GroupID:     entityID,
-		Namespace:   consent.NamespaceAttribute,
+		Namespace:   providers.NamespaceAttribute,
 		Elements:    attributesToPurposeElements(newAttrs),
 	}
 	if _, updateErr := s.consentService.UpdateConsentPurpose(ctx, ouID, existing[0].ID, &updated); updateErr != nil {
@@ -1478,7 +1478,7 @@ func (s *inboundClientService) createMissingConsentElements(ctx context.Context,
 		if !existingMap[n] {
 			toCreate = append(toCreate, consent.ConsentElementInput{
 				Name:      n,
-				Namespace: consent.NamespaceAttribute,
+				Namespace: providers.NamespaceAttribute,
 			})
 		}
 	}
@@ -1536,7 +1536,7 @@ func attributesToPurposeElements(attributes map[string]bool) []consent.PurposeEl
 	for attr := range attributes {
 		elements = append(elements, consent.PurposeElement{
 			Name:        attr,
-			Namespace:   consent.NamespaceAttribute,
+			Namespace:   providers.NamespaceAttribute,
 			IsMandatory: false,
 		})
 	}

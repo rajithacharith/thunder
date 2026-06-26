@@ -277,15 +277,6 @@ packages:
       pkgname: commonmock
       filename: "{{.InterfaceName}}_mock.go"
 
-  github.com/thunder-id/thunderid/internal/authn/consent:
-    interfaces:
-      ConsentEnforcerServiceInterface:
-        config:
-          dir: tests/mocks/authn/consentenforcermock
-          structname: '{{.InterfaceName}}Mock'
-          pkgname: consentenforcermock
-          filename: "{{.InterfaceName}}_mock.go"
-
   github.com/thunder-id/thunderid/internal/idp:
     config:
       all: true
@@ -540,6 +531,12 @@ packages:
           dir: tests/mocks/flow/flowexecmock
           structname: '{{.InterfaceName}}Mock'
           pkgname: flowexecmock
+          filename: "{{.InterfaceName}}_mock.go"
+      ConsentProvider:
+        config:
+          dir: tests/mocks/consentprovidermock
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: consentprovidermock
           filename: "{{.InterfaceName}}_mock.go"
 
   github.com/thunder-id/thunderid/internal/authnprovider/provider:

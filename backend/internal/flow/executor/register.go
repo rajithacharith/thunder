@@ -27,7 +27,6 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/attributecache"
 	"github.com/thunder-id/thunderid/internal/authn/assert"
-	"github.com/thunder-id/thunderid/internal/authn/consent"
 	"github.com/thunder-id/thunderid/internal/authn/github"
 	"github.com/thunder-id/thunderid/internal/authn/google"
 	"github.com/thunder-id/thunderid/internal/authn/magiclink"
@@ -127,7 +126,7 @@ type ExecutorDependencies struct {
 	NotifSenderSvc        notification.NotificationSenderServiceInterface
 	JWTService            jwt.JWTServiceInterface
 	AuthAssertGen         assert.AuthAssertGeneratorInterface
-	ConsentEnforcer       consent.ConsentEnforcerServiceInterface
+	ConsentEnforcer       providers.ConsentProvider
 	AuthnProvider         providers.AuthnProviderManagerInterface
 	OTPService            otp.OTPAuthnServiceInterface
 	PasskeyService        passkey.PasskeyServiceInterface

@@ -681,3 +681,116 @@ type AttributeConfiguration struct {
 	UserTypeResolution        *UserTypeResolution        `json:"userTypeResolution,omitempty"        yaml:"user_type_resolution,omitempty"`         //nolint:lll
 	UserTypeAttributeMappings []UserTypeAttributeMapping `json:"userTypeAttributeMappings,omitempty" yaml:"user_type_attribute_mappings,omitempty"` //nolint:lll
 }
+
+// ConsentElementApproval represents a user's approval decision for a specific element.
+type ConsentElementApproval struct {
+	// Name is the consent element name
+	Name string
+	// Namespace is the consent namespace to which this element belongs (e.g. "attribute")
+	Namespace Namespace
+	// IsUserApproved indicates whether the user approved this element
+	IsUserApproved bool
+}
+
+// ConsentPurposeItem represents an element approval record within a consent.
+type ConsentPurposeItem struct {
+	// Name is the consent purpose name
+	Name string
+	// Elements is the list of element approval records for this purpose
+	Elements []ConsentElementApproval
+}
+
+// ConsentAuthorization represents the authorization record within a consent.
+type ConsentAuthorization struct {
+	// ID is the unique identifier of the authorization record
+	ID string
+	// UserID is the identifier of the user who performed the authorization
+	UserID string
+	// Type is the authorization type (e.g. "authorization")
+	Type ConsentAuthorizationType
+	// Status is the authorization status (e.g. "APPROVED", "CREATED", "REJECTED")
+	Status ConsentAuthorizationStatus
+	// UpdatedTime is the Unix timestamp of the last status change
+	UpdatedTime int64
+}
+
+// ConsentPromptData holds the structured data needed to render a consent prompt for the user.
+// It contains all purposes whose consent is required, with their elements grouped under each purpose.
+type ConsentPromptData struct {
+	// Purposes is the list of consent purposes that require user consent, along with their elements
+	Purposes []ConsentPurposePrompt `json:"purposes"`
+	// SessionToken is the signed JWT token that encapsulates the consent session data
+	SessionToken string `json:"sessionToken,omitempty"`
+}
+
+// ConsentPurposePrompt holds a single consent purpose's elements that need user consent.
+// The Type discriminator tells the UI how to label and group sections.
+type ConsentPurposePrompt struct {
+	// PurposeName is the name of the consent purpose (e.g. "app:my_app:attrs")
+	PurposeName string `json:"purposeName"`
+	// PurposeID is the unique identifier of the consent purpose
+	PurposeID string `json:"purposeId"`
+	// Description is a human-readable description of the consent purpose
+	Description string `json:"description,omitempty"`
+	// Type discriminates between attribute and permission consent purposes.
+	Type string `json:"type,omitempty"`
+	// Essential is the list of mandatory elements that require user consent
+	Essential []PromptElement `json:"essential"`
+	// Optional is the list of elements the user can opt in or out of
+	Optional []PromptElement `json:"optional"`
+}
+
+// PromptElement represents a single element within a consent purpose prompt. Parent carries
+// rollup linkage for permission elements (zero value, omitted on the wire, for attribute elements).
+type PromptElement struct {
+	// Name is the canonical element name (attribute name or permission string)
+	Name string `json:"name"`
+	// Parent is the canonical name of the rollup parent, if any
+	Parent string `json:"parent,omitempty"`
+}
+
+// ConsentDecisions holds the user's consent decisions.
+type ConsentDecisions struct {
+	// Purposes contains the per-purpose element approval decisions
+	Purposes []PurposeDecision `json:"purposes"`
+}
+
+// PurposeDecision holds the consent decisions for a single purpose
+type PurposeDecision struct {
+	// PurposeName is the name of the consent purpose
+	PurposeName string `json:"purposeName"`
+	// Approved indicates whether the user approved this purpose
+	Approved bool `json:"approved"`
+	// Elements contains the per-element approval decisions
+	Elements []ElementDecision `json:"elements"`
+}
+
+// ElementDecision holds the approval decision for a single consent element
+type ElementDecision struct {
+	// Name is the name of the consent element
+	Name string `json:"name"`
+	// Approved indicates whether the user approved sharing this element
+	Approved bool `json:"approved"`
+}
+
+// Consent represents a consent record in the system, containing all relevant details and status.
+type Consent struct {
+	// ID is the unique identifier of the consent
+	ID string
+	// Type is the consent type (e.g. "authentication")
+	Type ConsentType
+	// GroupID is the group ID that this consent is associated with (e.g. app id)
+	GroupID string
+	// Status is the consent status (CREATED, ACTIVE, REJECTED, REVOKED, EXPIRED)
+	Status ConsentStatus
+	// ValidityTime is the Unix timestamp until which the consent is valid
+	ValidityTime int64
+	// Purposes is the list of consent purposes with element approval records
+	Purposes []ConsentPurposeItem
+	// Authorizations is the list of authorization records for this consent
+	Authorizations []ConsentAuthorization
+	// CreatedTime is the Unix timestamp when the consent was created
+	CreatedTime int64
+	// UpdatedTime is the Unix timestamp when the consent was last updated
+	UpdatedTime int64
+}

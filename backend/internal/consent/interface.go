@@ -22,6 +22,7 @@ import (
 	"context"
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // ConsentServiceInterface defines the contract for consent management operations.
@@ -34,7 +35,7 @@ type ConsentServiceInterface interface {
 		[]ConsentElement, *tidcommon.ServiceError)
 
 	// ListConsentElements retrieves consent elements, optionally filtered by namespace and name
-	ListConsentElements(ctx context.Context, ouID string, ns Namespace, nameFilter string) (
+	ListConsentElements(ctx context.Context, ouID string, ns providers.Namespace, nameFilter string) (
 		[]ConsentElement, *tidcommon.ServiceError)
 
 	// UpdateConsentElement updates an existing consent element by ID
@@ -65,11 +66,11 @@ type ConsentServiceInterface interface {
 
 	// CreateConsent creates a new consent record
 	CreateConsent(ctx context.Context, ouID string, consent *ConsentRequest) (
-		*Consent, *tidcommon.ServiceError)
+		*providers.Consent, *tidcommon.ServiceError)
 
 	// SearchConsents searches consent records matching the filter
 	SearchConsents(ctx context.Context, ouID string, filter *ConsentSearchFilter) (
-		[]Consent, *tidcommon.ServiceError)
+		[]providers.Consent, *tidcommon.ServiceError)
 
 	// ValidateConsent validates a consent by ID and returns the validation result
 	ValidateConsent(ctx context.Context, ouID string, consentID string) (
@@ -77,7 +78,7 @@ type ConsentServiceInterface interface {
 
 	// UpdateConsent updates the content of an existing consent record
 	UpdateConsent(ctx context.Context, ouID string, consentID string, consent *ConsentRequest) (
-		*Consent, *tidcommon.ServiceError)
+		*providers.Consent, *tidcommon.ServiceError)
 
 	// RevokeConsent revokes an active consent record (idempotent)
 	RevokeConsent(ctx context.Context, ouID string, consentID string,
@@ -91,7 +92,7 @@ type consentClientInterface interface {
 		[]ConsentElement, *tidcommon.ServiceError)
 
 	// listConsentElements retrieves consent elements, optionally filtered by name
-	listConsentElements(ctx context.Context, ouID string, ns Namespace, nameFilter string) (
+	listConsentElements(ctx context.Context, ouID string, ns providers.Namespace, nameFilter string) (
 		[]ConsentElement, *tidcommon.ServiceError)
 
 	// updateConsentElement updates an existing consent element by ID
@@ -122,11 +123,11 @@ type consentClientInterface interface {
 
 	// createConsent creates a new consent record and returns the created consent with ID
 	createConsent(ctx context.Context, ouID string, req *ConsentRequest) (
-		*Consent, *tidcommon.ServiceError)
+		*providers.Consent, *tidcommon.ServiceError)
 
 	// searchConsents searches consent records matching the filter
 	searchConsents(ctx context.Context, ouID string, filter *ConsentSearchFilter) (
-		[]Consent, *tidcommon.ServiceError)
+		[]providers.Consent, *tidcommon.ServiceError)
 
 	// validateConsent validates a consent by ID
 	validateConsent(ctx context.Context, ouID, consentID string) (
@@ -134,7 +135,7 @@ type consentClientInterface interface {
 
 	// updateConsent updates the content of an existing consent record
 	updateConsent(ctx context.Context, ouID, consentID string, req *ConsentRequest) (
-		*Consent, *tidcommon.ServiceError)
+		*providers.Consent, *tidcommon.ServiceError)
 
 	// revokeConsent revokes an active consent record
 	revokeConsent(ctx context.Context, ouID, consentID string,
