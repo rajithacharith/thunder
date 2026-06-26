@@ -43,7 +43,7 @@ import (
 // prompts if not, and records the user's decisions after they are collected by the prompt node.
 type consentExecutor struct {
 	core.ExecutorInterface
-	consentEnforcer consentauthn.ConsentEnforcerServiceInterface
+	consentEnforcer providers.ConsentProvider
 	authnProvider   providers.AuthnProviderManagerInterface
 	logger          *log.Logger
 }
@@ -53,7 +53,7 @@ var _ core.ExecutorInterface = (*consentExecutor)(nil)
 // newConsentExecutor creates a new instance of consentExecutor.
 func newConsentExecutor(
 	flowFactory core.FlowFactoryInterface,
-	consentEnforcer consentauthn.ConsentEnforcerServiceInterface,
+	consentEnforcer providers.ConsentProvider,
 	authnProvider providers.AuthnProviderManagerInterface,
 ) *consentExecutor {
 	logger := log.GetLogger().With(
@@ -229,7 +229,7 @@ func (e *consentExecutor) handleConsentDecisions(ctx *core.NodeContext, execResp
 	// must be unescaped before parsing
 	decisionsJSON = html.UnescapeString(decisionsJSON)
 
-	var decisions consentauthn.ConsentDecisions
+	var decisions providers.ConsentDecisions
 	if err := json.Unmarshal([]byte(decisionsJSON), &decisions); err != nil {
 		logger.Error(ctx.Context, "Failed to parse consent decisions", log.Error(err))
 		execResp.Status = common.ExecFailure
@@ -377,20 +377,20 @@ func (e *consentExecutor) buildAugmentedAvailableAttributes(
 }
 
 // collectConsentedAttributes extracts all approved attribute names from a consent record.
-func collectConsentedAttributes(c *consent.Consent) []string {
-	return collectApprovedByPurposeNamespace(c, consent.NamespaceAttribute)
+func collectConsentedAttributes(c *providers.Consent) []string {
+	return collectApprovedByPurposeNamespace(c, providers.NamespaceAttribute)
 }
 
 // collectConsentedPermissions extracts all approved permission names from a consent record.
-func collectConsentedPermissions(c *consent.Consent) []string {
-	return collectApprovedByPurposeNamespace(c, consent.NamespacePermission)
+func collectConsentedPermissions(c *providers.Consent) []string {
+	return collectApprovedByPurposeNamespace(c, providers.NamespacePermission)
 }
 
 // collectApprovedByPurposeNamespace returns the deduped approved element names across all
 // consent purposes in the given namespace. The upstream consent service does not round-trip the
 // purpose namespace on reads, so it is derived from the purpose name via
 // consent.NamespaceFromPurposeName.
-func collectApprovedByPurposeNamespace(c *consent.Consent, ns consent.Namespace) []string {
+func collectApprovedByPurposeNamespace(c *providers.Consent, ns providers.Namespace) []string {
 	var out []string
 	for _, p := range c.Purposes {
 		if consent.NamespaceFromPurposeName(p.Name) != ns {

@@ -31,6 +31,7 @@ import (
 	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -126,7 +127,7 @@ func (s *DefaultClientTestSuite) TestCreateConsentElements_Success() {
 	httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).
 		Return(buildHTTPResponse(s.T(), http.StatusOK, respBody), nil)
 
-	inputs := []ConsentElementInput{{Name: "email", Namespace: NamespaceAttribute}}
+	inputs := []ConsentElementInput{{Name: "email", Namespace: providers.NamespaceAttribute}}
 	result, svcErr := c.createConsentElements(context.Background(), "ou1", inputs)
 
 	s.Nil(svcErr)
@@ -201,7 +202,7 @@ func (s *DefaultClientTestSuite) TestListConsentElements_Success() {
 	httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).
 		Return(buildHTTPResponse(s.T(), http.StatusOK, respBody), nil)
 
-	result, svcErr := c.listConsentElements(context.Background(), "ou1", NamespaceAttribute, "email")
+	result, svcErr := c.listConsentElements(context.Background(), "ou1", providers.NamespaceAttribute, "email")
 
 	s.Nil(svcErr)
 	s.Len(result, 1)
@@ -216,7 +217,7 @@ func (s *DefaultClientTestSuite) TestListConsentElements_NoFilter_Success() {
 	httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).
 		Return(buildHTTPResponse(s.T(), http.StatusOK, respBody), nil)
 
-	result, svcErr := c.listConsentElements(context.Background(), "ou1", NamespaceAttribute, "")
+	result, svcErr := c.listConsentElements(context.Background(), "ou1", providers.NamespaceAttribute, "")
 
 	s.Nil(svcErr)
 	s.Empty(result)
@@ -230,7 +231,7 @@ func (s *DefaultClientTestSuite) TestListConsentElements_ServerError() {
 	httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).
 		Return(buildHTTPResponse(s.T(), http.StatusInternalServerError, errBody), nil)
 
-	result, svcErr := c.listConsentElements(context.Background(), "ou1", NamespaceAttribute, "")
+	result, svcErr := c.listConsentElements(context.Background(), "ou1", providers.NamespaceAttribute, "")
 
 	s.Nil(result)
 	s.Equal(&tidcommon.InternalServerError, svcErr)
@@ -605,7 +606,7 @@ func (s *DefaultClientTestSuite) TestCreateConsent_Success() {
 
 	s.Nil(svcErr)
 	s.Equal("c1", result.ID)
-	s.Equal(ConsentStatusActive, result.Status)
+	s.Equal(providers.ConsentStatusActive, result.Status)
 }
 
 func (s *DefaultClientTestSuite) TestCreateConsent_BadRequest() {
@@ -650,7 +651,7 @@ func (s *DefaultClientTestSuite) TestSearchConsents_Success() {
 	httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).
 		Return(buildHTTPResponse(s.T(), http.StatusOK, respBody), nil)
 
-	filter := &ConsentSearchFilter{ConsentTypes: []ConsentType{ConsentTypeAuthentication}}
+	filter := &ConsentSearchFilter{ConsentTypes: []providers.ConsentType{providers.ConsentTypeAuthentication}}
 	result, svcErr := c.searchConsents(context.Background(), "ou1", filter)
 
 	s.Nil(svcErr)
@@ -681,7 +682,7 @@ func (s *DefaultClientTestSuite) TestSearchConsents_EmptyFilter_Success() {
 		Return(buildHTTPResponse(s.T(), http.StatusOK, respBody), nil)
 
 	result, svcErr := c.searchConsents(context.Background(), "ou1", &ConsentSearchFilter{
-		ConsentStatuses: []ConsentStatus{ConsentStatusActive},
+		ConsentStatuses: []providers.ConsentStatus{providers.ConsentStatusActive},
 		GroupIDs:        []string{"app-1"},
 		UserIDs:         []string{"user-1"},
 		PurposeNames:    []string{"login"},
@@ -726,13 +727,13 @@ func (s *DefaultClientTestSuite) TestSearchConsents_ExpiredStatusFilter_Validity
 				Return(buildHTTPResponse(s.T(), http.StatusOK, respBody), nil)
 
 			result, svcErr := c.searchConsents(context.Background(), "ou1", &ConsentSearchFilter{
-				ConsentStatuses: []ConsentStatus{ConsentStatusExpired},
+				ConsentStatuses: []providers.ConsentStatus{providers.ConsentStatusExpired},
 			})
 
 			s.Nil(svcErr)
 			s.Len(result, 1)
 			s.Equal("c-expired", result[0].ID)
-			s.Equal(ConsentStatusExpired, result[0].Status)
+			s.Equal(providers.ConsentStatusExpired, result[0].Status)
 		})
 	}
 }
@@ -819,12 +820,12 @@ func (s *DefaultClientTestSuite) TestUpdateConsent_Success() {
 	})).Return(buildHTTPResponse(s.T(), http.StatusOK, respBody), nil)
 
 	req := &ConsentRequest{
-		Type:    ConsentTypeAuthentication,
+		Type:    providers.ConsentTypeAuthentication,
 		GroupID: "app-1",
-		Purposes: []ConsentPurposeItem{
+		Purposes: []providers.ConsentPurposeItem{
 			{
 				Name: "login",
-				Elements: []ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "email", IsUserApproved: true},
 					{Name: "family_name", IsUserApproved: false},
 				},
@@ -835,7 +836,7 @@ func (s *DefaultClientTestSuite) TestUpdateConsent_Success() {
 
 	s.Nil(svcErr)
 	s.Equal("c1", result.ID)
-	s.Equal(ConsentStatusActive, result.Status)
+	s.Equal(providers.ConsentStatusActive, result.Status)
 	s.Len(result.Purposes, 1)
 	s.Equal("login", result.Purposes[0].Name)
 	s.Len(result.Purposes[0].Elements, 2)
@@ -852,7 +853,7 @@ func (s *DefaultClientTestSuite) TestUpdateConsent_BadRequest() {
 		Return(buildHTTPResponse(s.T(), http.StatusBadRequest, errBody), nil)
 
 	result, svcErr := c.updateConsent(context.Background(), "ou1", "c1",
-		&ConsentRequest{Type: ConsentTypeAuthentication})
+		&ConsentRequest{Type: providers.ConsentTypeAuthentication})
 
 	s.Nil(result)
 	s.Equal(&ErrorInvalidConsentUpdateRequest, svcErr)
@@ -867,7 +868,7 @@ func (s *DefaultClientTestSuite) TestUpdateConsent_NotFound() {
 		Return(buildHTTPResponse(s.T(), http.StatusNotFound, errBody), nil)
 
 	result, svcErr := c.updateConsent(context.Background(), "ou1", "missing",
-		&ConsentRequest{Type: ConsentTypeAuthentication})
+		&ConsentRequest{Type: providers.ConsentTypeAuthentication})
 
 	s.Nil(result)
 	s.Equal(&ErrorConsentRecordNotFound, svcErr)
@@ -882,7 +883,7 @@ func (s *DefaultClientTestSuite) TestUpdateConsent_ServerError() {
 		Return(buildHTTPResponse(s.T(), http.StatusInternalServerError, errBody), nil)
 
 	result, svcErr := c.updateConsent(context.Background(), "ou1", "c1",
-		&ConsentRequest{Type: ConsentTypeAuthentication})
+		&ConsentRequest{Type: providers.ConsentTypeAuthentication})
 
 	s.Nil(result)
 	s.Equal(&tidcommon.InternalServerError, svcErr)
@@ -898,7 +899,7 @@ func (s *DefaultClientTestSuite) TestUpdateConsent_UsesCorrectHTTPMethod() {
 	})).Return(buildHTTPResponse(s.T(), http.StatusOK, respBody), nil)
 
 	_, svcErr := c.updateConsent(context.Background(), "ou1", "c1", &ConsentRequest{
-		Type:    ConsentTypeAuthentication,
+		Type:    providers.ConsentTypeAuthentication,
 		GroupID: "app-1",
 	})
 
@@ -1022,8 +1023,8 @@ func (s *DefaultClientTestSuite) TestBuildConsentSearchURL_AllFilters() {
 	c := newDefaultClient(httpMock).(*defaultClient)
 
 	filter := &ConsentSearchFilter{
-		ConsentTypes:    []ConsentType{ConsentTypeAuthentication},
-		ConsentStatuses: []ConsentStatus{ConsentStatusActive},
+		ConsentTypes:    []providers.ConsentType{providers.ConsentTypeAuthentication},
+		ConsentStatuses: []providers.ConsentStatus{providers.ConsentStatusActive},
 		GroupIDs:        []string{"app-1"},
 		UserIDs:         []string{"user-1"},
 		PurposeNames:    []string{"login"},
@@ -1100,7 +1101,7 @@ func (s *DefaultClientTestSuite) TestListConsentElements_HTTPError_ReturnsIntern
 	httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).
 		Return(nil, errors.New("network failure"))
 
-	result, svcErr := c.listConsentElements(context.Background(), "ou1", NamespaceAttribute, "email")
+	result, svcErr := c.listConsentElements(context.Background(), "ou1", providers.NamespaceAttribute, "email")
 
 	s.Nil(result)
 	s.Equal(&tidcommon.InternalServerError, svcErr)
@@ -1275,7 +1276,7 @@ func (s *DefaultClientTestSuite) TestSearchConsents_WithAuthorizationsInResponse
 	httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).
 		Return(buildHTTPResponse(s.T(), http.StatusOK, respBody), nil)
 
-	filter := &ConsentSearchFilter{ConsentTypes: []ConsentType{ConsentTypeAuthentication}}
+	filter := &ConsentSearchFilter{ConsentTypes: []providers.ConsentType{providers.ConsentTypeAuthentication}}
 	result, svcErr := c.searchConsents(context.Background(), "ou1", filter)
 
 	s.Nil(svcErr)
@@ -1332,7 +1333,7 @@ func (s *DefaultClientTestSuite) TestListConsentElements_InvalidJSON_ReturnsInte
 
 	httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).Return(buildInvalidJSONResponse(), nil)
 
-	result, svcErr := c.listConsentElements(context.Background(), "ou1", NamespaceAttribute, "email")
+	result, svcErr := c.listConsentElements(context.Background(), "ou1", providers.NamespaceAttribute, "email")
 
 	s.Nil(result)
 	s.Equal(&tidcommon.InternalServerError, svcErr)
@@ -1460,10 +1461,10 @@ func (s *DefaultClientTestSuite) TestCreateConsent_WithPurposesAndElements_Succe
 	req := &ConsentRequest{
 		Type:    "authentication",
 		GroupID: "app-1",
-		Purposes: []ConsentPurposeItem{
+		Purposes: []providers.ConsentPurposeItem{
 			{
 				Name: "login",
-				Elements: []ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "email", IsUserApproved: true},
 					{Name: "phone", IsUserApproved: false},
 				},
@@ -1725,12 +1726,13 @@ func (s *DefaultClientTestSuite) TestListConsentPurposes_WithGroupID_UsesClientI
 // ----- purpose name + type helpers -----
 
 func (s *DefaultClientTestSuite) TestNamespaceFromPurposeName() {
-	s.Equal(NamespaceAttribute, NamespaceFromPurposeName("attributes:app1"))
-	s.Equal(NamespaceAttribute, NamespaceFromPurposeName(AttributesPurposeName("app1")))
-	s.Equal(NamespacePermission, NamespaceFromPurposeName("permissions:app1"))
-	s.Equal(NamespacePermission, NamespaceFromPurposeName(PermissionsPurposeName("app1")))
-	s.Equal(Namespace(""), NamespaceFromPurposeName("custom-purpose"), "names without a recognized prefix return empty")
-	s.Equal(Namespace(""), NamespaceFromPurposeName(""))
+	s.Equal(providers.NamespaceAttribute, NamespaceFromPurposeName("attributes:app1"))
+	s.Equal(providers.NamespaceAttribute, NamespaceFromPurposeName(AttributesPurposeName("app1")))
+	s.Equal(providers.NamespacePermission, NamespaceFromPurposeName("permissions:app1"))
+	s.Equal(providers.NamespacePermission, NamespaceFromPurposeName(PermissionsPurposeName("app1")))
+	s.Equal(providers.Namespace(""), NamespaceFromPurposeName("custom-purpose"),
+		"names without a recognized prefix return empty")
+	s.Equal(providers.Namespace(""), NamespaceFromPurposeName(""))
 }
 
 func (s *DefaultClientTestSuite) TestAttributesPurposeName() {
@@ -1740,10 +1742,10 @@ func (s *DefaultClientTestSuite) TestAttributesPurposeName() {
 
 func (s *DefaultClientTestSuite) TestFilterAttributePurposes() {
 	input := []ConsentPurpose{
-		{ID: "1", Namespace: NamespaceAttribute},
-		{ID: "2", Namespace: NamespacePermission},
-		{ID: "3", Namespace: ""},
-		{ID: "4", Namespace: NamespaceAttribute},
+		{ID: "1", Namespace: providers.NamespaceAttribute},
+		{ID: "2", Namespace: providers.NamespacePermission},
+		{ID: "3", Namespace: providers.Namespace("")},
+		{ID: "4", Namespace: providers.NamespaceAttribute},
 	}
 	got := FilterAttributePurposes(input)
 	s.Len(got, 2)

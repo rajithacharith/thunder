@@ -25,6 +25,7 @@ import (
 	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -120,7 +121,7 @@ func (s *ConsentServiceTestSuite) TestCreateConsentElements_DelegatesToClient() 
 	svc := newServiceWithMockClient(s.T(), true, clientMock)
 
 	inputs := []ConsentElementInput{
-		{Name: "email", Namespace: NamespaceAttribute},
+		{Name: "email", Namespace: providers.NamespaceAttribute},
 	}
 	expected := []ConsentElement{
 		{ID: "elem-1", Name: "email"},
@@ -156,9 +157,10 @@ func (s *ConsentServiceTestSuite) TestListConsentElements_Success() {
 	svc := newServiceWithMockClient(s.T(), true, clientMock)
 
 	expected := []ConsentElement{{ID: "elem-1", Name: "email"}}
-	clientMock.EXPECT().listConsentElements(mock.Anything, "ou1", NamespaceAttribute, "email").Return(expected, nil)
+	clientMock.EXPECT().listConsentElements(
+		mock.Anything, "ou1", providers.NamespaceAttribute, "email").Return(expected, nil)
 
-	result, svcErr := svc.ListConsentElements(context.Background(), "ou1", NamespaceAttribute, "email")
+	result, svcErr := svc.ListConsentElements(context.Background(), "ou1", providers.NamespaceAttribute, "email")
 
 	s.Nil(svcErr)
 	s.Equal(expected, result)
@@ -168,10 +170,10 @@ func (s *ConsentServiceTestSuite) TestListConsentElements_ClientError() {
 	clientMock := newConsentClientInterfaceMock(s.T())
 	svc := newServiceWithMockClient(s.T(), true, clientMock)
 
-	clientMock.EXPECT().listConsentElements(mock.Anything, "ou1", NamespaceAttribute, "").
+	clientMock.EXPECT().listConsentElements(mock.Anything, "ou1", providers.NamespaceAttribute, "").
 		Return(nil, &tidcommon.InternalServerError)
 
-	result, svcErr := svc.ListConsentElements(context.Background(), "ou1", NamespaceAttribute, "")
+	result, svcErr := svc.ListConsentElements(context.Background(), "ou1", providers.NamespaceAttribute, "")
 
 	s.Nil(result)
 	s.NotNil(svcErr)
@@ -456,7 +458,7 @@ func (s *ConsentServiceTestSuite) TestCreateConsent_Success() {
 	svc := newServiceWithMockClient(s.T(), true, clientMock)
 
 	req := &ConsentRequest{Type: "authentication", GroupID: "app-1"}
-	expected := &Consent{ID: "consent-1", Type: "authentication"}
+	expected := &providers.Consent{ID: "consent-1", Type: "authentication"}
 	clientMock.EXPECT().createConsent(mock.Anything, "ou1", req).Return(expected, nil)
 
 	result, svcErr := svc.CreateConsent(context.Background(), "ou1", req)
@@ -497,8 +499,8 @@ func (s *ConsentServiceTestSuite) TestSearchConsents_Success() {
 	clientMock := newConsentClientInterfaceMock(s.T())
 	svc := newServiceWithMockClient(s.T(), true, clientMock)
 
-	filter := &ConsentSearchFilter{ConsentTypes: []ConsentType{ConsentTypeAuthentication}}
-	expected := []Consent{{ID: "c1", Type: "authentication"}}
+	filter := &ConsentSearchFilter{ConsentTypes: []providers.ConsentType{providers.ConsentTypeAuthentication}}
+	expected := []providers.Consent{{ID: "c1", Type: "authentication"}}
 	clientMock.EXPECT().searchConsents(mock.Anything, "ou1", filter).Return(expected, nil)
 
 	result, svcErr := svc.SearchConsents(context.Background(), "ou1", filter)
@@ -527,7 +529,7 @@ func (s *ConsentServiceTestSuite) TestValidateConsent_Valid() {
 	clientMock := newConsentClientInterfaceMock(s.T())
 	svc := newServiceWithMockClient(s.T(), true, clientMock)
 
-	consent := &Consent{ID: "c1", Status: "ACTIVE"}
+	consent := &providers.Consent{ID: "c1", Status: "ACTIVE"}
 	expected := &ConsentValidationResult{IsValid: true, ConsentInformation: consent}
 	clientMock.EXPECT().validateConsent(mock.Anything, "ou1", "c1").Return(expected, nil)
 
@@ -607,8 +609,10 @@ func (s *ConsentServiceTestSuite) TestUpdateConsent_Success() {
 	clientMock := newConsentClientInterfaceMock(s.T())
 	svc := newServiceWithMockClient(s.T(), true, clientMock)
 
-	req := &ConsentRequest{Type: ConsentTypeAuthentication, GroupID: "app-1"}
-	expected := &Consent{ID: "consent-1", Type: ConsentTypeAuthentication, Status: ConsentStatusActive}
+	req := &ConsentRequest{Type: providers.ConsentTypeAuthentication, GroupID: "app-1"}
+	expected := &providers.Consent{
+		ID: "consent-1", Type: providers.ConsentTypeAuthentication, Status: providers.ConsentStatusActive,
+	}
 	clientMock.EXPECT().updateConsent(mock.Anything, "ou1", "consent-1", req).Return(expected, nil)
 
 	result, svcErr := svc.UpdateConsent(context.Background(), "ou1", "consent-1", req)
@@ -621,7 +625,7 @@ func (s *ConsentServiceTestSuite) TestUpdateConsent_ClientError() {
 	clientMock := newConsentClientInterfaceMock(s.T())
 	svc := newServiceWithMockClient(s.T(), true, clientMock)
 
-	req := &ConsentRequest{Type: ConsentTypeAuthentication}
+	req := &ConsentRequest{Type: providers.ConsentTypeAuthentication}
 	clientMock.EXPECT().updateConsent(mock.Anything, "ou1", "c-missing", req).
 		Return(nil, &ErrorConsentRecordNotFound)
 

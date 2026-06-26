@@ -5009,7 +5009,7 @@ func (suite *ResourceServiceTestSuite) TestSyncConsentOnPermissionCreate_Creates
 		CreateConsentElements(mock.Anything, "default", []consent.ConsentElementInput{{
 			Name:        "booking:reservations:read",
 			Description: "Read reservations",
-			Namespace:   consent.NamespacePermission,
+			Namespace:   providers.NamespacePermission,
 		}}).
 		Return([]consent.ConsentElement{{ID: "el-1"}}, nil)
 
@@ -5067,7 +5067,7 @@ func (suite *ResourceServiceTestSuite) TestSyncConsentOnPermissionDelete_Deletes
 	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
 	cm.EXPECT().IsEnabled().Return(true)
 	cm.EXPECT().
-		ListConsentElements(mock.Anything, "default", consent.NamespacePermission, "p").
+		ListConsentElements(mock.Anything, "default", providers.NamespacePermission, "p").
 		Return([]consent.ConsentElement{{ID: "el-1", Name: "p"}}, nil)
 	cm.EXPECT().DeleteConsentElement(mock.Anything, "default", "el-1").Return(nil)
 
@@ -5079,7 +5079,7 @@ func (suite *ResourceServiceTestSuite) TestSyncConsentOnPermissionDelete_Success
 	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
 	cm.EXPECT().IsEnabled().Return(true)
 	cm.EXPECT().
-		ListConsentElements(mock.Anything, "default", consent.NamespacePermission, "p").
+		ListConsentElements(mock.Anything, "default", providers.NamespacePermission, "p").
 		Return([]consent.ConsentElement{{ID: "el-1", Name: "p"}}, nil)
 	cm.EXPECT().DeleteConsentElement(mock.Anything, "default", "el-1").
 		Return(&consent.ErrorDeletingConsentElementWithAssociatedPurpose)
@@ -5092,7 +5092,7 @@ func (suite *ResourceServiceTestSuite) TestSyncConsentOnPermissionDelete_NoopWhe
 	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
 	cm.EXPECT().IsEnabled().Return(true)
 	cm.EXPECT().
-		ListConsentElements(mock.Anything, "default", consent.NamespacePermission, "p").
+		ListConsentElements(mock.Anything, "default", providers.NamespacePermission, "p").
 		Return([]consent.ConsentElement{}, nil)
 
 	svc := newSyncTestService(suite.T(), cm)
@@ -5103,13 +5103,13 @@ func (suite *ResourceServiceTestSuite) TestSyncConsentOnPermissionUpdate_Updates
 	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
 	cm.EXPECT().IsEnabled().Return(true)
 	cm.EXPECT().
-		ListConsentElements(mock.Anything, "default", consent.NamespacePermission, "p").
+		ListConsentElements(mock.Anything, "default", providers.NamespacePermission, "p").
 		Return([]consent.ConsentElement{{ID: "el-1", Name: "p", Description: "old"}}, nil)
 	cm.EXPECT().
 		UpdateConsentElement(mock.Anything, "default", "el-1", &consent.ConsentElementInput{
 			Name:        "p",
 			Description: "new",
-			Namespace:   consent.NamespacePermission,
+			Namespace:   providers.NamespacePermission,
 		}).
 		Return(&consent.ConsentElement{ID: "el-1"}, nil)
 
@@ -5121,7 +5121,7 @@ func (suite *ResourceServiceTestSuite) TestSyncConsentOnPermissionUpdate_NoopWhe
 	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
 	cm.EXPECT().IsEnabled().Return(true)
 	cm.EXPECT().
-		ListConsentElements(mock.Anything, "default", consent.NamespacePermission, "p").
+		ListConsentElements(mock.Anything, "default", providers.NamespacePermission, "p").
 		Return([]consent.ConsentElement{{ID: "el-1", Name: "p", Description: "same"}}, nil)
 
 	svc := newSyncTestService(suite.T(), cm)
@@ -5134,7 +5134,7 @@ func (suite *ResourceServiceTestSuite) TestSyncConsentOnPermissionUpdate_LazilyC
 	// delegates to syncConsentOnPermissionCreate.
 	cm.EXPECT().IsEnabled().Return(true)
 	cm.EXPECT().
-		ListConsentElements(mock.Anything, "default", consent.NamespacePermission, "p").
+		ListConsentElements(mock.Anything, "default", providers.NamespacePermission, "p").
 		Return([]consent.ConsentElement{}, nil)
 
 	// syncConsentOnPermissionCreate then validates and creates the missing element.
@@ -5146,7 +5146,7 @@ func (suite *ResourceServiceTestSuite) TestSyncConsentOnPermissionUpdate_LazilyC
 		CreateConsentElements(mock.Anything, "default", []consent.ConsentElementInput{{
 			Name:        "p",
 			Description: "desc",
-			Namespace:   consent.NamespacePermission,
+			Namespace:   providers.NamespacePermission,
 		}}).
 		Return([]consent.ConsentElement{{ID: "el-1"}}, nil)
 
@@ -5404,7 +5404,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_ConsentSyncError() {
 func (suite *ResourceServiceTestSuite) TestUpdateResource_ConsentSyncError() {
 	cm := suite.newEnabledConsentServiceMock()
 	serverErr := &tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "CE-9999"}
-	cm.On("ListConsentElements", mock.Anything, "default", consent.NamespacePermission, "perm-x").
+	cm.On("ListConsentElements", mock.Anything, "default", providers.NamespacePermission, "perm-x").
 		Return([]consent.ConsentElement(nil), serverErr)
 	svc := suite.newServiceWithConsent(cm)
 
@@ -5427,7 +5427,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_ConsentSyncError() {
 func (suite *ResourceServiceTestSuite) TestDeleteResource_ConsentSyncError() {
 	cm := suite.newEnabledConsentServiceMock()
 	serverErr := &tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "CE-9999"}
-	cm.On("ListConsentElements", mock.Anything, "default", consent.NamespacePermission, "perm-x").
+	cm.On("ListConsentElements", mock.Anything, "default", providers.NamespacePermission, "perm-x").
 		Return([]consent.ConsentElement(nil), serverErr)
 	svc := suite.newServiceWithConsent(cm)
 
@@ -5471,7 +5471,7 @@ func (suite *ResourceServiceTestSuite) TestCreateAction_ConsentSyncError() {
 func (suite *ResourceServiceTestSuite) TestUpdateAction_ConsentSyncError() {
 	cm := suite.newEnabledConsentServiceMock()
 	serverErr := &tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "CE-9999"}
-	cm.On("ListConsentElements", mock.Anything, "default", consent.NamespacePermission, "perm-x").
+	cm.On("ListConsentElements", mock.Anything, "default", providers.NamespacePermission, "perm-x").
 		Return([]consent.ConsentElement(nil), serverErr)
 	svc := suite.newServiceWithConsent(cm)
 
@@ -5512,7 +5512,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteAction_LoadForConsentSyncError(
 func (suite *ResourceServiceTestSuite) TestDeleteAction_ConsentSyncError() {
 	cm := suite.newEnabledConsentServiceMock()
 	serverErr := &tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "CE-9999"}
-	cm.On("ListConsentElements", mock.Anything, "default", consent.NamespacePermission, "perm-x").
+	cm.On("ListConsentElements", mock.Anything, "default", providers.NamespacePermission, "perm-x").
 		Return([]consent.ConsentElement(nil), serverErr)
 	svc := suite.newServiceWithConsent(cm)
 

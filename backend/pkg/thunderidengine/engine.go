@@ -24,6 +24,7 @@ import (
 	"net/http"
 
 	"github.com/thunder-id/thunderid/internal/attributecache"
+	"github.com/thunder-id/thunderid/internal/authn/assert"
 	"github.com/thunder-id/thunderid/internal/authz"
 	flowconfig "github.com/thunder-id/thunderid/internal/flow/config"
 	"github.com/thunder-id/thunderid/internal/flow/core"
@@ -81,6 +82,7 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 	engineCtx.observabilitySvc = observability.Initialize(engineCtx.observabilityConfig)
 	attributeCacheService := attributecache.Initialize()
 	authZService := authz.Initialize(engineCtx.roleProvider)
+	engineCtx.authAssertGen = assert.Initialize()
 
 	// Initialize flow metadata service
 	_ = flowmeta.Initialize(mux, engineCtx.actorProvider, engineCtx.ouProvider,
@@ -93,6 +95,10 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 		FlowFactory:       engineCtx.flowFactory,
 		AttributeCacheSvc: attributeCacheService,
 		AuthZService:      authZService,
+		ConsentEnforcer:   engineCtx.consentProvider,
+		AuthnProvider:     engineCtx.authnProvider,
+		JWTService:        engineCtx.jwtService,
+		AuthAssertGen:     engineCtx.authAssertGen,
 	}
 	interceptorDeps := interceptor.InterceptorDependencies{
 		FlowFactory: engineCtx.flowFactory,
@@ -153,6 +159,7 @@ type engineContext struct {
 	execRegistry        executor.ExecutorRegistryInterface
 	interceptorRegistry interceptor.InterceptorRegistryInterface
 	graphBuilder        graphbuilder.GraphBuilderInterface
+	authAssertGen       assert.AuthAssertGeneratorInterface
 
 	serverHome          string
 	runtimeDBType       string
@@ -173,6 +180,7 @@ type engineContext struct {
 	i18nProvider          providers.I18nProviderInterface
 	roleProvider          providers.RoleProvider
 	idpProvider           providers.IDPProvider
+	consentProvider       providers.ConsentProvider
 }
 
 // Option configures engine initialization.
@@ -247,4 +255,9 @@ func WithFlowProvider(provider providers.FlowProviderInterface) Option {
 // WithI18nProvider supplies the i18n provider.
 func WithI18nProvider(provider providers.I18nProviderInterface) Option {
 	return func(c *engineContext) { c.i18nProvider = provider }
+}
+
+// WithConsentProvider supplies the consent provider.
+func WithConsentProvider(provider providers.ConsentProvider) Option {
+	return func(c *engineContext) { c.consentProvider = provider }
 }

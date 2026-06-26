@@ -2247,8 +2247,8 @@ func newInboundClientServiceWithConsent(consentSvc consent.ConsentServiceInterfa
 func (suite *InboundClientServiceTestSuite) TestSyncDeleteConsent_DeletesBothAttributeAndPermissionPurposes() {
 	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
 	cm.EXPECT().ListConsentPurposes(mock.Anything, "default", "app1").Return([]consent.ConsentPurpose{
-		{ID: "attr-p", Namespace: consent.NamespaceAttribute},
-		{ID: "perm-p", Namespace: consent.NamespacePermission},
+		{ID: "attr-p", Namespace: providers.NamespaceAttribute},
+		{ID: "perm-p", Namespace: providers.NamespacePermission},
 	}, nil)
 	cm.EXPECT().DeleteConsentPurpose(mock.Anything, "default", "attr-p").Return(nil)
 	cm.EXPECT().DeleteConsentPurpose(mock.Anything, "default", "perm-p").Return(nil)
@@ -2260,8 +2260,8 @@ func (suite *InboundClientServiceTestSuite) TestSyncDeleteConsent_DeletesBothAtt
 func (suite *InboundClientServiceTestSuite) TestSyncDeleteConsent_SkipsPurposesAssociatedWithRecords() {
 	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
 	cm.EXPECT().ListConsentPurposes(mock.Anything, "default", "app1").Return([]consent.ConsentPurpose{
-		{ID: "attr-p", Namespace: consent.NamespaceAttribute},
-		{ID: "perm-p", Namespace: consent.NamespacePermission},
+		{ID: "attr-p", Namespace: providers.NamespaceAttribute},
+		{ID: "perm-p", Namespace: providers.NamespacePermission},
 	}, nil)
 	cm.EXPECT().DeleteConsentPurpose(mock.Anything, "default", "attr-p").
 		Return(&consent.ErrorDeletingConsentPurposeWithAssociatedRecords)
@@ -2274,7 +2274,7 @@ func (suite *InboundClientServiceTestSuite) TestSyncDeleteConsent_SkipsPurposesA
 func (suite *InboundClientServiceTestSuite) TestSyncDeleteConsent_PropagatesOtherDeleteErrors() {
 	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
 	cm.EXPECT().ListConsentPurposes(mock.Anything, "default", "app1").Return([]consent.ConsentPurpose{
-		{ID: "attr-p", Namespace: consent.NamespaceAttribute},
+		{ID: "attr-p", Namespace: providers.NamespaceAttribute},
 	}, nil)
 	cm.EXPECT().DeleteConsentPurpose(mock.Anything, "default", "attr-p").
 		Return(&tidcommon.ServiceError{Type: tidcommon.ServerErrorType, Code: "X"})
@@ -2292,7 +2292,7 @@ func (suite *InboundClientServiceTestSuite) TestSyncConsentOnUpdate_IgnoresPermi
 	cm := consentmock.NewConsentServiceInterfaceMock(suite.T())
 	// ListConsentPurposes returns a permission purpose for the same app — must be filtered out.
 	cm.EXPECT().ListConsentPurposes(mock.Anything, "default", "app1").Return([]consent.ConsentPurpose{
-		{ID: "perm-p", Namespace: consent.NamespacePermission},
+		{ID: "perm-p", Namespace: providers.NamespacePermission},
 	}, nil)
 	cm.EXPECT().ValidateConsentElements(mock.Anything, "default", []string{"email"}).
 		Return([]string{"email"}, nil)
@@ -2323,7 +2323,7 @@ func (suite *InboundClientServiceTestSuite) TestSyncConsentOnUpdate_SkipsUpdateW
 	cm.EXPECT().ListConsentPurposes(mock.Anything, "default", "app1").Return([]consent.ConsentPurpose{
 		{
 			ID:        "attr-p",
-			Namespace: consent.NamespaceAttribute,
+			Namespace: providers.NamespaceAttribute,
 			// Elements returned by the consent service do not carry a per-element Namespace.
 			Elements: []consent.PurposeElement{
 				{Name: "email"},
@@ -2348,7 +2348,7 @@ func (suite *InboundClientServiceTestSuite) TestSyncConsentOnUpdate_UpdatesWhenA
 	cm.EXPECT().ListConsentPurposes(mock.Anything, "default", "app1").Return([]consent.ConsentPurpose{
 		{
 			ID:        "attr-p",
-			Namespace: consent.NamespaceAttribute,
+			Namespace: providers.NamespaceAttribute,
 			Elements: []consent.PurposeElement{
 				{Name: "email"},
 				{Name: "given_name"},

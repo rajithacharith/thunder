@@ -1598,7 +1598,7 @@ func (rs *resourceService) syncConsentOnPermissionCreate(
 	if _, createErr := rs.consentService.CreateConsentElements(ctx, ouID, []consent.ConsentElementInput{{
 		Name:        permission,
 		Description: description,
-		Namespace:   consent.NamespacePermission,
+		Namespace:   providers.NamespacePermission,
 	}}); createErr != nil {
 		return rs.wrapConsentServiceError(ctx, createErr)
 	}
@@ -1616,7 +1616,7 @@ func (rs *resourceService) syncConsentOnPermissionDelete(ctx context.Context, pe
 	// TODO: Replace with the resource server's actual OU when multi-OU consent is supported.
 	const ouID = "default"
 
-	existing, err := rs.consentService.ListConsentElements(ctx, ouID, consent.NamespacePermission, permission)
+	existing, err := rs.consentService.ListConsentElements(ctx, ouID, providers.NamespacePermission, permission)
 	if err != nil {
 		return rs.wrapConsentServiceError(ctx, err)
 	}
@@ -1646,7 +1646,7 @@ func (rs *resourceService) syncConsentOnPermissionUpdate(
 	// TODO: Replace with the resource server's actual OU when multi-OU consent is supported.
 	const ouID = "default"
 
-	existing, err := rs.consentService.ListConsentElements(ctx, ouID, consent.NamespacePermission, permission)
+	existing, err := rs.consentService.ListConsentElements(ctx, ouID, providers.NamespacePermission, permission)
 	if err != nil {
 		return rs.wrapConsentServiceError(ctx, err)
 	}
@@ -1661,7 +1661,7 @@ func (rs *resourceService) syncConsentOnPermissionUpdate(
 		&consent.ConsentElementInput{
 			Name:        permission,
 			Description: description,
-			Namespace:   consent.NamespacePermission,
+			Namespace:   providers.NamespacePermission,
 		}); updErr != nil {
 		return rs.wrapConsentServiceError(ctx, updErr)
 	}

@@ -23,6 +23,7 @@ import (
 	"context"
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -67,7 +68,7 @@ func (s *consentService) CreateConsentElements(ctx context.Context, ouID string,
 }
 
 // ListConsentElements retrieves consent elements, optionally filtered by namespace and name
-func (s *consentService) ListConsentElements(ctx context.Context, ouID string, ns Namespace,
+func (s *consentService) ListConsentElements(ctx context.Context, ouID string, ns providers.Namespace,
 	nameFilter string) ([]ConsentElement, *tidcommon.ServiceError) {
 	return s.client.listConsentElements(ctx, ouID, ns, nameFilter)
 }
@@ -142,7 +143,7 @@ func (s *consentService) DeleteConsentPurpose(ctx context.Context, ouID string,
 
 // CreateConsent creates a new consent record.
 func (s *consentService) CreateConsent(ctx context.Context, ouID string, consent *ConsentRequest) (
-	*Consent, *tidcommon.ServiceError) {
+	*providers.Consent, *tidcommon.ServiceError) {
 	if consent == nil {
 		return nil, &ErrorInvalidRequestFormat
 	}
@@ -151,7 +152,7 @@ func (s *consentService) CreateConsent(ctx context.Context, ouID string, consent
 
 // SearchConsents searches consent records matching the filter.
 func (s *consentService) SearchConsents(ctx context.Context, ouID string, filter *ConsentSearchFilter) (
-	[]Consent, *tidcommon.ServiceError) {
+	[]providers.Consent, *tidcommon.ServiceError) {
 	return s.client.searchConsents(ctx, ouID, filter)
 }
 
@@ -163,7 +164,7 @@ func (s *consentService) ValidateConsent(ctx context.Context, ouID, consentID st
 
 // UpdateConsent updates the content of an existing consent record.
 func (s *consentService) UpdateConsent(ctx context.Context, ouID string, consentID string,
-	consent *ConsentRequest) (*Consent, *tidcommon.ServiceError) {
+	consent *ConsentRequest) (*providers.Consent, *tidcommon.ServiceError) {
 	if consent == nil {
 		return nil, &ErrorInvalidRequestFormat
 	}

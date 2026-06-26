@@ -34,12 +34,11 @@ import (
 
 	appmodel "github.com/thunder-id/thunderid/internal/application/model"
 	consentauthn "github.com/thunder-id/thunderid/internal/authn/consent"
-	"github.com/thunder-id/thunderid/internal/consent"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
-	"github.com/thunder-id/thunderid/tests/mocks/authn/consentenforcermock"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
+	"github.com/thunder-id/thunderid/tests/mocks/consentprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 )
 
@@ -49,7 +48,7 @@ const (
 
 type ConsentExecutorTestSuite struct {
 	suite.Suite
-	mockConsentEnforcer *consentenforcermock.ConsentEnforcerServiceInterfaceMock
+	mockConsentEnforcer *consentprovidermock.ConsentProviderMock
 	mockAuthnProvider   *managermock.AuthnProviderManagerInterfaceMock
 	mockFlowFactory     *coremock.FlowFactoryInterfaceMock
 	executor            *consentExecutor
@@ -60,7 +59,7 @@ func TestConsentExecutorTestSuite(t *testing.T) {
 }
 
 func (suite *ConsentExecutorTestSuite) SetupTest() {
-	suite.mockConsentEnforcer = consentenforcermock.NewConsentEnforcerServiceInterfaceMock(suite.T())
+	suite.mockConsentEnforcer = consentprovidermock.NewConsentProviderMock(suite.T())
 	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 
@@ -391,13 +390,13 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_PromptRequired_NoTim
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("HasRequiredInputs", ctx, mock.AnythingOfType("*common.ExecutorResponse")).Return(false)
 
-	promptData := &consentauthn.ConsentPromptData{
-		Purposes: []consentauthn.ConsentPurposePrompt{
+	promptData := &providers.ConsentPromptData{
+		Purposes: []providers.ConsentPurposePrompt{
 			{
 				PurposeName: "app:app-123:attrs",
 				PurposeID:   "purpose-1",
-				Essential:   []consentauthn.PromptElement{{Name: "email"}},
-				Optional:    []consentauthn.PromptElement{{Name: "phone"}},
+				Essential:   []providers.PromptElement{{Name: "email"}},
+				Optional:    []providers.PromptElement{{Name: "phone"}},
 			},
 		},
 	}
@@ -419,7 +418,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_PromptRequired_NoTim
 	assert.NotNil(suite.T(), resp.ForwardedData[common.ForwardedDataKeyConsentPrompt])
 
 	// Verify the JSON serialization
-	var parsedPrompt []consentauthn.ConsentPurposePrompt
+	var parsedPrompt []providers.ConsentPurposePrompt
 	parseErr := json.Unmarshal([]byte(resp.AdditionalData[common.DataConsentPrompt]), &parsedPrompt)
 	assert.NoError(suite.T(), parseErr)
 	assert.Len(suite.T(), parsedPrompt, 1)
@@ -435,10 +434,10 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_PromptRequired_Store
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("HasRequiredInputs", ctx, mock.AnythingOfType("*common.ExecutorResponse")).Return(false)
 
-	promptData := &consentauthn.ConsentPromptData{
-		Purposes: []consentauthn.ConsentPurposePrompt{{
+	promptData := &providers.ConsentPromptData{
+		Purposes: []providers.ConsentPurposePrompt{{
 			PurposeName: "attributes:test-app",
-			Optional:    []consentauthn.PromptElement{{Name: "email"}},
+			Optional:    []providers.PromptElement{{Name: "email"}},
 		}},
 		SessionToken: "consent-session-token",
 	}
@@ -464,9 +463,9 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_PromptRequired_WithT
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("HasRequiredInputs", ctx, mock.AnythingOfType("*common.ExecutorResponse")).Return(false)
 
-	promptData := &consentauthn.ConsentPromptData{
-		Purposes: []consentauthn.ConsentPurposePrompt{
-			{PurposeName: "attributes:test-app", Essential: []consentauthn.PromptElement{{Name: "email"}}},
+	promptData := &providers.ConsentPromptData{
+		Purposes: []providers.ConsentPurposePrompt{
+			{PurposeName: "attributes:test-app", Essential: []providers.PromptElement{{Name: "email"}}},
 		},
 	}
 
@@ -508,9 +507,9 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_EmptyTimeout() {
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("HasRequiredInputs", ctx, mock.AnythingOfType("*common.ExecutorResponse")).Return(false)
 
-	promptData := &consentauthn.ConsentPromptData{
-		Purposes: []consentauthn.ConsentPurposePrompt{
-			{PurposeName: "attributes:test-app", Essential: []consentauthn.PromptElement{{Name: "email"}}},
+	promptData := &providers.ConsentPromptData{
+		Purposes: []providers.ConsentPurposePrompt{
+			{PurposeName: "attributes:test-app", Essential: []providers.PromptElement{{Name: "email"}}},
 		},
 	}
 
@@ -528,12 +527,12 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_EmptyTimeout() {
 // ----- Execute: handleConsentDecisions (inputs provided) -----
 
 func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_AllApproved_Success() {
-	decisions := consentauthn.ConsentDecisions{
-		Purposes: []consentauthn.PurposeDecision{
+	decisions := providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
 			{
 				PurposeName: "app:app-123:attrs",
 				Approved:    true,
-				Elements: []consentauthn.ElementDecision{
+				Elements: []providers.ElementDecision{
 					{Name: "email", Approved: true},
 					{Name: "phone", Approved: true},
 				},
@@ -554,13 +553,13 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_AllApproved_Success
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("HasRequiredInputs", ctx, mock.AnythingOfType("*common.ExecutorResponse")).Return(true)
 
-	consentResult := &consent.Consent{
+	consentResult := &providers.Consent{
 		ID:     "consent-001",
-		Status: consent.ConsentStatusActive,
-		Purposes: []consent.ConsentPurposeItem{
+		Status: providers.ConsentStatusActive,
+		Purposes: []providers.ConsentPurposeItem{
 			{
 				Name: "attributes:app-123",
-				Elements: []consent.ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "email", IsUserApproved: true},
 					{Name: "phone", IsUserApproved: true},
 				},
@@ -569,7 +568,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_AllApproved_Success
 	}
 
 	suite.mockConsentEnforcer.On("RecordConsent", mock.Anything, "default", "app-123", "user-123",
-		mock.AnythingOfType("*consent.ConsentDecisions"), mock.Anything, int64(86400), mock.Anything).
+		mock.AnythingOfType("*providers.ConsentDecisions"), mock.Anything, int64(86400), mock.Anything).
 		Return(consentResult, nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -584,8 +583,8 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_AllApproved_Success
 
 func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_HTMLEscapedJSON() {
 	// Simulate the HTML-escaped JSON that SanitizeStringMap would produce
-	decisions := consentauthn.ConsentDecisions{
-		Purposes: []consentauthn.PurposeDecision{
+	decisions := providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
 			{PurposeName: "attributes:test-app", Approved: true},
 		},
 	}
@@ -605,9 +604,9 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_HTMLEscapedJSON() {
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("HasRequiredInputs", ctx, mock.AnythingOfType("*common.ExecutorResponse")).Return(true)
 
-	consentResult := &consent.Consent{
+	consentResult := &providers.Consent{
 		ID:       "consent-002",
-		Purposes: []consent.ConsentPurposeItem{},
+		Purposes: []providers.ConsentPurposeItem{},
 	}
 
 	suite.mockConsentEnforcer.On("RecordConsent", mock.Anything, mock.Anything, mock.Anything,
@@ -674,8 +673,8 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_InvalidJSON() {
 }
 
 func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_ConsentTimeout_Expired() {
-	decisions := consentauthn.ConsentDecisions{
-		Purposes: []consentauthn.PurposeDecision{
+	decisions := providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
 			{PurposeName: "attributes:test-app", Approved: true},
 		},
 	}
@@ -703,8 +702,8 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_ConsentTimeout_Expi
 }
 
 func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_ConsentTimeout_NotExpired() {
-	decisions := consentauthn.ConsentDecisions{
-		Purposes: []consentauthn.PurposeDecision{
+	decisions := providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
 			{PurposeName: "attributes:test-app", Approved: true},
 		},
 	}
@@ -723,9 +722,9 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_ConsentTimeout_NotE
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("HasRequiredInputs", ctx, mock.AnythingOfType("*common.ExecutorResponse")).Return(true)
 
-	consentResult := &consent.Consent{
+	consentResult := &providers.Consent{
 		ID:       "consent-003",
-		Purposes: []consent.ConsentPurposeItem{},
+		Purposes: []providers.ConsentPurposeItem{},
 	}
 
 	suite.mockConsentEnforcer.On("RecordConsent", mock.Anything, mock.Anything, mock.Anything,
@@ -739,12 +738,12 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_ConsentTimeout_NotE
 }
 
 func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_EssentialDenied() {
-	decisions := consentauthn.ConsentDecisions{
-		Purposes: []consentauthn.PurposeDecision{
+	decisions := providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
 			{
 				PurposeName: "attributes:test-app",
 				Approved:    true,
-				Elements: []consentauthn.ElementDecision{
+				Elements: []providers.ElementDecision{
 					{Name: "email", Approved: false}, // User denied essential
 				},
 			},
@@ -764,7 +763,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_EssentialDenied() {
 	// RecordConsent persists the denial and returns an essential-denied error
 	suite.mockConsentEnforcer.On("RecordConsent", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return((*consent.Consent)(nil), &consentauthn.ErrorEssentialConsentDenied)
+		Return((*providers.Consent)(nil), &consentauthn.ErrorEssentialConsentDenied)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -775,8 +774,8 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_EssentialDenied() {
 }
 
 func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_RecordConsent_ClientError() {
-	decisions := consentauthn.ConsentDecisions{
-		Purposes: []consentauthn.PurposeDecision{
+	decisions := providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
 			{PurposeName: "attributes:test-app", Approved: true},
 		},
 	}
@@ -809,8 +808,8 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_RecordConsent_Clien
 }
 
 func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_RecordConsent_ServerError() {
-	decisions := consentauthn.ConsentDecisions{
-		Purposes: []consentauthn.PurposeDecision{
+	decisions := providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
 			{PurposeName: "attributes:test-app", Approved: true},
 		},
 	}
@@ -839,8 +838,8 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_RecordConsent_Serve
 }
 
 func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_NilLoginConsentConfig() {
-	decisions := consentauthn.ConsentDecisions{
-		Purposes: []consentauthn.PurposeDecision{
+	decisions := providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
 			{PurposeName: "attributes:test-app", Approved: true},
 		},
 	}
@@ -856,14 +855,14 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_NilLoginConsentConf
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("HasRequiredInputs", ctx, mock.AnythingOfType("*common.ExecutorResponse")).Return(true)
 
-	consentResult := &consent.Consent{
+	consentResult := &providers.Consent{
 		ID:       "consent-004",
-		Purposes: []consent.ConsentPurposeItem{},
+		Purposes: []providers.ConsentPurposeItem{},
 	}
 
 	// ValidityPeriod should be 0 when LoginConsent is nil
 	suite.mockConsentEnforcer.On("RecordConsent", mock.Anything, "default", "app-123", "user-123",
-		mock.AnythingOfType("*consent.ConsentDecisions"), mock.Anything, int64(0), mock.Anything).
+		mock.AnythingOfType("*providers.ConsentDecisions"), mock.Anything, int64(0), mock.Anything).
 		Return(consentResult, nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -874,12 +873,12 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_NilLoginConsentConf
 
 func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_PartialElementApproval() {
 	// Test where a purpose is approved but some elements are not approved
-	decisions := consentauthn.ConsentDecisions{
-		Purposes: []consentauthn.PurposeDecision{
+	decisions := providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
 			{
 				PurposeName: "attributes:test-app",
 				Approved:    true,
-				Elements: []consentauthn.ElementDecision{
+				Elements: []providers.ElementDecision{
 					{Name: "email", Approved: true},
 					{Name: "phone", Approved: false}, // Not approved but purpose overall is approved
 				},
@@ -897,12 +896,12 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_PartialElementAppro
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("HasRequiredInputs", ctx, mock.AnythingOfType("*common.ExecutorResponse")).Return(true)
 
-	consentResult := &consent.Consent{
+	consentResult := &providers.Consent{
 		ID: "consent-005",
-		Purposes: []consent.ConsentPurposeItem{
+		Purposes: []providers.ConsentPurposeItem{
 			{
 				Name: "attributes:test-app",
-				Elements: []consent.ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "email", IsUserApproved: true},
 					{Name: "phone", IsUserApproved: false},
 				},
@@ -926,8 +925,8 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_PartialElementAppro
 }
 
 func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_MultiplePurposes_AllApproved() {
-	decisions := consentauthn.ConsentDecisions{
-		Purposes: []consentauthn.PurposeDecision{
+	decisions := providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
 			{PurposeName: "attributes:test-app", Approved: true},
 			{PurposeName: "attributes:test-app-2", Approved: true},
 		},
@@ -943,18 +942,18 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_MultiplePurposes_Al
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("HasRequiredInputs", ctx, mock.AnythingOfType("*common.ExecutorResponse")).Return(true)
 
-	consentResult := &consent.Consent{
+	consentResult := &providers.Consent{
 		ID: "consent-006",
-		Purposes: []consent.ConsentPurposeItem{
+		Purposes: []providers.ConsentPurposeItem{
 			{
 				Name: "attributes:test-app",
-				Elements: []consent.ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "email", IsUserApproved: true},
 				},
 			},
 			{
 				Name: "attributes:test-app-2",
-				Elements: []consent.ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "name", IsUserApproved: true},
 					{Name: "phone", IsUserApproved: true},
 				},
@@ -978,8 +977,8 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_MultiplePurposes_Al
 }
 
 func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_NoConsentedElements() {
-	decisions := consentauthn.ConsentDecisions{
-		Purposes: []consentauthn.PurposeDecision{
+	decisions := providers.ConsentDecisions{
+		Purposes: []providers.PurposeDecision{
 			{PurposeName: "attributes:test-app", Approved: true},
 		},
 	}
@@ -995,12 +994,12 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_NoConsentedElements
 		On("HasRequiredInputs", ctx, mock.AnythingOfType("*common.ExecutorResponse")).Return(true)
 
 	// Consent record with no approved elements
-	consentResult := &consent.Consent{
+	consentResult := &providers.Consent{
 		ID: "consent-007",
-		Purposes: []consent.ConsentPurposeItem{
+		Purposes: []providers.ConsentPurposeItem{
 			{
 				Name: "attributes:test-app",
-				Elements: []consent.ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "email", IsUserApproved: false},
 					{Name: "phone", IsUserApproved: false},
 				},
@@ -1155,11 +1154,11 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_AugmentedAttributes_
 // ----- collectConsentedAttributes Tests -----
 
 func (suite *ConsentExecutorTestSuite) TestCollectConsentedAttributes_MixedApprovals() {
-	c := &consent.Consent{
-		Purposes: []consent.ConsentPurposeItem{
+	c := &providers.Consent{
+		Purposes: []providers.ConsentPurposeItem{
 			{
 				Name: "attributes:test-app",
-				Elements: []consent.ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "email", IsUserApproved: true},
 					{Name: "phone", IsUserApproved: false},
 					{Name: "name", IsUserApproved: true},
@@ -1178,17 +1177,17 @@ func (suite *ConsentExecutorTestSuite) TestCollectConsentedAttributes_MixedAppro
 
 func (suite *ConsentExecutorTestSuite) TestCollectConsentedAttributes_NoDuplicates() {
 	// Same attribute name across multiple purposes should not duplicate
-	c := &consent.Consent{
-		Purposes: []consent.ConsentPurposeItem{
+	c := &providers.Consent{
+		Purposes: []providers.ConsentPurposeItem{
 			{
 				Name: "attributes:test-app",
-				Elements: []consent.ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "email", IsUserApproved: true},
 				},
 			},
 			{
 				Name: "attributes:test-app-2",
-				Elements: []consent.ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "email", IsUserApproved: true}, // Duplicate
 					{Name: "phone", IsUserApproved: true},
 				},
@@ -1204,8 +1203,8 @@ func (suite *ConsentExecutorTestSuite) TestCollectConsentedAttributes_NoDuplicat
 }
 
 func (suite *ConsentExecutorTestSuite) TestCollectConsentedAttributes_EmptyPurposes() {
-	c := &consent.Consent{
-		Purposes: []consent.ConsentPurposeItem{},
+	c := &providers.Consent{
+		Purposes: []providers.ConsentPurposeItem{},
 	}
 
 	attrs := collectConsentedAttributes(c)
@@ -1214,7 +1213,7 @@ func (suite *ConsentExecutorTestSuite) TestCollectConsentedAttributes_EmptyPurpo
 }
 
 func (suite *ConsentExecutorTestSuite) TestCollectConsentedAttributes_NilPurposes() {
-	c := &consent.Consent{}
+	c := &providers.Consent{}
 
 	attrs := collectConsentedAttributes(c)
 
@@ -1222,11 +1221,11 @@ func (suite *ConsentExecutorTestSuite) TestCollectConsentedAttributes_NilPurpose
 }
 
 func (suite *ConsentExecutorTestSuite) TestCollectConsentedAttributes_AllRejected() {
-	c := &consent.Consent{
-		Purposes: []consent.ConsentPurposeItem{
+	c := &providers.Consent{
+		Purposes: []providers.ConsentPurposeItem{
 			{
 				Name: "attributes:test-app",
-				Elements: []consent.ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "email", IsUserApproved: false},
 					{Name: "phone", IsUserApproved: false},
 				},
@@ -1240,11 +1239,11 @@ func (suite *ConsentExecutorTestSuite) TestCollectConsentedAttributes_AllRejecte
 }
 
 func (suite *ConsentExecutorTestSuite) TestCollectConsentedAttributes_AllApproved() {
-	c := &consent.Consent{
-		Purposes: []consent.ConsentPurposeItem{
+	c := &providers.Consent{
+		Purposes: []providers.ConsentPurposeItem{
 			{
 				Name: "attributes:test-app",
-				Elements: []consent.ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "email", IsUserApproved: true},
 					{Name: "phone", IsUserApproved: true},
 					{Name: "name", IsUserApproved: true},
@@ -1264,17 +1263,17 @@ func (suite *ConsentExecutorTestSuite) TestCollectConsentedAttributes_AllApprove
 // ----- collectConsentedPermissions / collectApprovedByPurposeNamespace Tests -----
 
 func (suite *ConsentExecutorTestSuite) TestCollectConsentedPermissions_OnlyPermissionPurposes() {
-	c := &consent.Consent{
-		Purposes: []consent.ConsentPurposeItem{
+	c := &providers.Consent{
+		Purposes: []providers.ConsentPurposeItem{
 			{
 				Name: "attributes:test-app",
-				Elements: []consent.ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "email", IsUserApproved: true},
 				},
 			},
 			{
 				Name: "permissions:test-app",
-				Elements: []consent.ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "read", IsUserApproved: true},
 					{Name: "write", IsUserApproved: false},
 					{Name: "cancel", IsUserApproved: true},
@@ -1293,11 +1292,11 @@ func (suite *ConsentExecutorTestSuite) TestCollectConsentedPermissions_OnlyPermi
 }
 
 func (suite *ConsentExecutorTestSuite) TestCollectConsentedPermissions_EmptyWhenNoPermissionPurpose() {
-	c := &consent.Consent{
-		Purposes: []consent.ConsentPurposeItem{
+	c := &providers.Consent{
+		Purposes: []providers.ConsentPurposeItem{
 			{
 				Name: "attributes:test-app",
-				Elements: []consent.ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "email", IsUserApproved: true},
 				},
 			},
@@ -1308,17 +1307,17 @@ func (suite *ConsentExecutorTestSuite) TestCollectConsentedPermissions_EmptyWhen
 
 func (suite *ConsentExecutorTestSuite) TestCollectConsentedPermissions_DedupsAcrossPurposes() {
 	// Hypothetical safety: same permission appearing in two permission purposes is deduped.
-	c := &consent.Consent{
-		Purposes: []consent.ConsentPurposeItem{
+	c := &providers.Consent{
+		Purposes: []providers.ConsentPurposeItem{
 			{
 				Name: "permissions:test-app",
-				Elements: []consent.ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "read", IsUserApproved: true},
 				},
 			},
 			{
 				Name: "permissions:other-app",
-				Elements: []consent.ConsentElementApproval{
+				Elements: []providers.ConsentElementApproval{
 					{Name: "read", IsUserApproved: true},
 					{Name: "write", IsUserApproved: true},
 				},
@@ -1560,12 +1559,12 @@ func (suite *ConsentExecutorTestSuite) TestExecute_BasicAuth_NilAvailableAttribu
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("HasRequiredInputs", ctx, mock.AnythingOfType("*common.ExecutorResponse")).Return(false)
 
-	promptData := &consentauthn.ConsentPromptData{
-		Purposes: []consentauthn.ConsentPurposePrompt{
+	promptData := &providers.ConsentPromptData{
+		Purposes: []providers.ConsentPurposePrompt{
 			{
 				PurposeName: "app:app-123:attrs",
 				PurposeID:   "purpose-1",
-				Optional:    []consentauthn.PromptElement{{Name: "given_name"}, {Name: "email"}},
+				Optional:    []providers.PromptElement{{Name: "given_name"}, {Name: "email"}},
 			},
 		},
 	}
