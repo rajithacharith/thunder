@@ -23,7 +23,6 @@ import {
   Typography,
   Chip,
   Alert,
-  Tooltip,
   Grid,
   Tab,
   Tabs,
@@ -325,29 +324,21 @@ export default function TokenUserAttributesSection({
                   const isActive = (isAdded && !isPendingRemoval) || isPendingAddition;
 
                   return (
-                    <Tooltip
+                    <Chip
                       key={attr}
-                      title={
-                        isActive
-                          ? t('applications:edit.token.click_to_remove', 'Click to remove')
-                          : t('applications:edit.token.click_to_add', 'Click to add')
-                      }
-                    >
-                      <Chip
-                        label={attr}
-                        size="small"
-                        variant={isActive ? 'filled' : 'outlined'}
-                        color={isActive ? 'primary' : 'default'}
-                        onClick={disabled ? undefined : () => onAttributeClick(attr, tokenType)}
-                        sx={{
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease',
-                          transform: isHighlighted ? 'scale(1.05)' : 'scale(1)',
-                          boxShadow: isHighlighted ? '0 0 0 2px rgba(25, 118, 210, 0.4)' : 'none',
-                          '&:hover': {backgroundColor: 'action.hover'},
-                        }}
-                      />
-                    </Tooltip>
+                      label={attr}
+                      size="small"
+                      variant={isActive ? 'filled' : 'outlined'}
+                      color={isActive ? 'primary' : 'default'}
+                      onClick={disabled ? undefined : () => onAttributeClick(attr, tokenType)}
+                      sx={{
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        transform: isHighlighted ? 'scale(1.05)' : 'scale(1)',
+                        boxShadow: isHighlighted ? '0 0 0 2px rgba(25, 118, 210, 0.4)' : 'none',
+                        '&:hover': {backgroundColor: 'action.hover'},
+                      }}
+                    />
                   );
                 })}
               </Stack>
