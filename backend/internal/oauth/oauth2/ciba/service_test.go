@@ -234,6 +234,22 @@ func (suite *CIBAServiceTestSuite) TestInitiate_ACRValuesOmittedFromRuntimeWhenE
 	suite.NotNil(resp)
 }
 
+func (suite *CIBAServiceTestSuite) TestInitiate_ForceConsentRepromptAlwaysSet() {
+	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.MatchedBy(
+		func(initCtx *flowexec.FlowInitContext) bool {
+			return initCtx.RuntimeData[flowcm.RuntimeKeyForceConsentReprompt] == "true"
+		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: flowcm.FlowStatusIncomplete}, nil)
+	suite.expectStoreAddSuccess()
+
+	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
+		LoginHint: "alice",
+		Scope:     "openid",
+	}, suite.oauthApp)
+
+	suite.Nil(cibaErr)
+	suite.NotNil(resp)
+}
+
 func (suite *CIBAServiceTestSuite) TestInitiate_StripsStandardScopesFromRuntime() {
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.MatchedBy(
 		func(initCtx *flowexec.FlowInitContext) bool {

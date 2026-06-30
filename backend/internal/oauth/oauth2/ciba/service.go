@@ -154,6 +154,7 @@ func (s *cibaService) InitiateBackchannelAuth(
 			append(oidcScopes, permissionScopes...), oauthApp),
 		flowcm.RuntimeKeyUserAttributesCacheTTLSeconds: cacheTTL,
 		flowcm.RuntimeKeyBindingMessage:                bindingMessage,
+		flowcm.RuntimeKeyForceConsentReprompt:          "true",
 	}
 	if request.ACRValues != "" {
 		runtimeData[flowcm.RuntimeKeyRequestedAuthClasses] = request.ACRValues
