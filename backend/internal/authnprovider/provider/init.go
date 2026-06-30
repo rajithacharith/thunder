@@ -29,6 +29,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/entity"
 	"github.com/thunder-id/thunderid/internal/openid4vp"
 	"github.com/thunder-id/thunderid/internal/system/config"
+	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	systemhttp "github.com/thunder-id/thunderid/internal/system/http"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
@@ -70,6 +71,7 @@ func initializeRestAuthnProvider() AuthnProviderInterface {
 	baseURL := authnProviderConfig.Rest.BaseURL
 	apiKey := authnProviderConfig.Rest.Security.APIKey
 	timeout := time.Duration(authnProviderConfig.Rest.Timeout) * time.Second
+	correlationIDHeader := authnProviderConfig.Rest.CorrelationIDHeader
 	if baseURL == "" {
 		// Provider initialization runs during application startup, outside any request.
 		log.GetLogger().Fatal(context.Background(), "AuthnProvider Rest BaseURL is required but found empty")
@@ -77,6 +79,9 @@ func initializeRestAuthnProvider() AuthnProviderInterface {
 	if timeout == 0 {
 		timeout = 10 * time.Second
 	}
+	if correlationIDHeader == "" {
+		correlationIDHeader = serverconst.CorrelationIDHeaderName
+	}
 	httpClient := systemhttp.NewHTTPClientWithTimeout(timeout)
-	return newRestAuthnProvider(baseURL, apiKey, httpClient)
+	return newRestAuthnProvider(baseURL, apiKey, correlationIDHeader, httpClient)
 }
