@@ -16,6 +16,7 @@ services:
       - ../../backend/dbscripts/runtimedb/postgres.sql:/docker-entrypoint-initdb.d/runtime-postgres.sql
       - ../../backend/dbscripts/configdb/postgres.sql:/docker-entrypoint-initdb.d/config-postgres.sql
       - ../../backend/dbscripts/userdb/postgres.sql:/docker-entrypoint-initdb.d/user-postgres.sql
-      
+      - ../../backend/dbscripts/operationdb/postgres.sql:/docker-entrypoint-initdb.d/operation-postgres.sql
+
 volumes:
   postgres_data:
