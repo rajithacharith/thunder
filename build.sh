@@ -502,6 +502,7 @@ function prepare_backend_for_packaging() {
     echo "=== Ensuring server certificates exist in the distribution ==="
     ensure_certificates "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR" "server"
     ensure_certificates "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR" "signing"
+    ensure_certificates "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR" "ecdsa-signing"
     echo "================================================================"
 
     echo "=== Ensuring crypto file exists in the distribution ==="
@@ -926,13 +927,25 @@ function ensure_certificates() {
     if [[ ! -f "$local_cert_file" || ! -f "$local_key_file" ]]; then
         mkdir -p "$LOCAL_CERT_DIR"
         echo "Generating certificates (${cert_name_prefix}) in $LOCAL_CERT_DIR..."
-        OPENSSL_ERR=$(
-            openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-                -keyout "$local_key_file" \
-                -out "$local_cert_file" \
-                -subj "/O=WSO2/OU=${PRODUCT_NAME}/CN=localhost" \
-                > /dev/null 2>&1
-        )
+        if [[ "$cert_name_prefix" == ecdsa* ]]; then
+            OPENSSL_ERR=$(
+                openssl req -x509 -nodes -days 3650 \
+                    -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
+                    -keyout "$local_key_file" \
+                    -out "$local_cert_file" \
+                    -subj "/O=WSO2/OU=${PRODUCT_NAME}/CN=localhost" \
+                    -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" \
+                    2>&1 >/dev/null
+            )
+        else
+            OPENSSL_ERR=$(
+                openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+                    -keyout "$local_key_file" \
+                    -out "$local_cert_file" \
+                    -subj "/O=WSO2/OU=${PRODUCT_NAME}/CN=localhost" \
+                    2>&1 >/dev/null
+            )
+        fi
         if [[ $? -ne 0 ]]; then
             echo "Error generating certificates: $OPENSSL_ERR"
             exit 1
@@ -1098,6 +1111,7 @@ function run_backend() {
     echo "=== Ensuring server certificates exist ==="
     ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "server"
     ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "signing"
+    ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "ecdsa-signing"
 
     echo "=== Ensuring sample app certificates exist ==="
     ensure_certificates "$VANILLA_SAMPLE_APP_DIR" "server"

@@ -199,6 +199,11 @@
         "id": "default-key",
         "cert_file": "config/certs/signing.cert",
         "key_file": "config/certs/signing.key"
+      },
+      {
+        "id": "ecdsa-key",
+        "cert_file": "config/certs/ecdsa-signing.cert",
+        "key_file": "config/certs/ecdsa-signing.key"
       }
     ]
   },
@@ -254,8 +259,8 @@
     "type": "default"
   },
   "openid4vp": {
-    "client_id": "x509_san_dns:localhost",
-    "signing_key_id": "",
+    "client_id_scheme": "x509_san_dns",
+    "signing_key_id": "ecdsa-key",
     "ephemeral_key_id": "vp-enc",
     "response_enc_values": ["A128GCM", "A256GCM", "A128CBC-HS256", "A256CBC-HS512"],
     "request_validity_seconds": 300,
@@ -267,7 +272,7 @@
     "trusted_anchors": []
   },
   "openid4vci": {
-    "signing_key_id": "",
+    "signing_key_id": "ecdsa-key",
     "nonce_ttl_seconds": 300,
     "proof_max_age_seconds": 300,
     "credential_validity_seconds": 2592000,

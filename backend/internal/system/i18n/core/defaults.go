@@ -1124,8 +1124,6 @@ var defaultMessages = map[string]string{
 	"flows.executor.errors.openid4vp_expired_desc": "The OpenID4VP presentation request expired before the wallet submitted a response",
 	"flows.executor.errors.openid4vp_initiate_failed": "Failed to initiate the OpenID4VP request",
 	"flows.executor.errors.openid4vp_initiate_failed_desc": "An error occurred while initiating the OpenID4VP presentation request",
-	"flows.executor.errors.openid4vp_not_configured": "OpenID4VP verifier is not configured",
-	"flows.executor.errors.openid4vp_not_configured_desc": "The OpenID4VP verifier service has not been configured",
 	"flows.executor.errors.openid4vp_verification_failed": "OpenID4VP presentation verification failed",
 	"flows.executor.errors.openid4vp_verification_failed_desc": "The OpenID4VP presentation verification failed",
 	"flows.executor.errors.ou_creation_failed": "Organization unit creation failed",

@@ -28,12 +28,12 @@ import (
 	flowmgt "github.com/thunder-id/thunderid/internal/flow/mgt"
 	"github.com/thunder-id/thunderid/internal/group"
 	"github.com/thunder-id/thunderid/internal/idp"
-	"github.com/thunder-id/thunderid/internal/openid4vci/credential"
-	"github.com/thunder-id/thunderid/internal/openid4vp/definition"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
 	"github.com/thunder-id/thunderid/internal/user"
+	"github.com/thunder-id/thunderid/internal/vc/credential"
+	"github.com/thunder-id/thunderid/internal/vc/presentation"
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
@@ -53,7 +53,7 @@ var notFoundErrorCodes = map[string]struct{}{
 	layoutmgt.ErrorLayoutNotFound.Code:         {},
 	user.ErrorUserNotFound.Code:                {},
 	agent.ErrorAgentNotFound.Code:              {},
-	definition.ErrorDefinitionNotFound.Code:    {},
+	presentation.ErrorDefinitionNotFound.Code:  {},
 	credential.ErrorConfigurationNotFound.Code: {},
 }
 

@@ -24,10 +24,10 @@ import (
 
 	authncommon "github.com/thunder-id/thunderid/internal/authn/common"
 	"github.com/thunder-id/thunderid/internal/authn/magiclink"
+	"github.com/thunder-id/thunderid/internal/authn/openid4vp"
 	"github.com/thunder-id/thunderid/internal/authn/otp"
 	"github.com/thunder-id/thunderid/internal/authn/passkey"
 	"github.com/thunder-id/thunderid/internal/entity"
-	"github.com/thunder-id/thunderid/internal/openid4vp"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	systemhttp "github.com/thunder-id/thunderid/internal/system/http"

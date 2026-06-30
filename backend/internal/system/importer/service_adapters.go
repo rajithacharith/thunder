@@ -31,14 +31,14 @@ import (
 	thememgt "github.com/thunder-id/thunderid/internal/design/theme/mgt"
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	"github.com/thunder-id/thunderid/internal/group"
-	"github.com/thunder-id/thunderid/internal/openid4vci/credential"
-	"github.com/thunder-id/thunderid/internal/openid4vp/definition"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/user"
+	"github.com/thunder-id/thunderid/internal/vc/credential"
+	"github.com/thunder-id/thunderid/internal/vc/presentation"
 )
 
 // resolveImportOUHandle resolves an ou_handle to its corresponding OU ID for import operations.
@@ -1135,7 +1135,7 @@ func (s *importService) importPresentationDefinition(
 		}
 	}
 
-	var dto definition.PresentationDefinitionDTO
+	var dto presentation.PresentationDefinitionDTO
 	if err := doc.Node.Decode(&dto); err != nil {
 		return ImportItemOutcome{
 			ResourceType: resourceTypePresentationDefinition,

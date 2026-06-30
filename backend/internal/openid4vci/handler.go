@@ -23,6 +23,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
@@ -54,13 +55,19 @@ type openID4VCIHandler struct {
 	service            OpenID4VCIServiceInterface
 	dpopVerifier       dpop.VerifierInterface
 	credentialEndpoint string
+	nonceTTL           time.Duration
 }
 
-// newOpenID4VCIHandler creates a new openID4VCIHandler with the given service, DPoP verifier, and credential endpoint.
 func newOpenID4VCIHandler(
-	svc OpenID4VCIServiceInterface, dpopVerifier dpop.VerifierInterface, credentialEndpoint string,
+	svc OpenID4VCIServiceInterface, dpopVerifier dpop.VerifierInterface,
+	credentialEndpoint string, nonceTTL time.Duration,
 ) *openID4VCIHandler {
-	return &openID4VCIHandler{service: svc, dpopVerifier: dpopVerifier, credentialEndpoint: credentialEndpoint}
+	return &openID4VCIHandler{
+		service:            svc,
+		dpopVerifier:       dpopVerifier,
+		credentialEndpoint: credentialEndpoint,
+		nonceTTL:           nonceTTL,
+	}
 }
 
 // HandleMetadata returns the credential issuer metadata document.
@@ -147,7 +154,7 @@ func (h *openID4VCIHandler) HandleCredential(w http.ResponseWriter, r *http.Requ
 		if e.Code == errCodeInvalidProof || e.Code == errCodeInvalidNonce {
 			if nonce, nonceErr := h.service.GenerateNonce(r.Context()); nonceErr == nil {
 				e.CNonce = nonce
-				e.CNonceExpiresIn = int64(defaultNonceTTL.Seconds())
+				e.CNonceExpiresIn = int64(h.nonceTTL.Seconds())
 			}
 		}
 		writeOID4VCIError(w, e)

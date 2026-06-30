@@ -32,10 +32,10 @@ import (
 // openID4VCIStoreInterface persists the OpenID4VCI issuer's short-lived runtime
 // state — c_nonces and issuer-initiated credential offers — keyed by nonce/id.
 type openID4VCIStoreInterface interface {
-	SaveNonce(ctx context.Context, rec *nonceRecord) error
+	SaveNonce(ctx context.Context, nonce string, rec *nonceRecord) error
 	GetNonce(ctx context.Context, nonce string) (*nonceRecord, bool)
 	DeleteNonce(ctx context.Context, nonce string) error
-	SaveOffer(ctx context.Context, rec *offerRecord) error
+	SaveOffer(ctx context.Context, id string, rec *offerRecord) error
 	GetOffer(ctx context.Context, id string) (*offerRecord, bool)
 }
 
@@ -56,13 +56,13 @@ func newOpenID4VCIStore() openID4VCIStoreInterface {
 }
 
 // SaveNonce persists a nonce record to the runtime database.
-func (s *openID4VCIStore) SaveNonce(ctx context.Context, rec *nonceRecord) error {
+func (s *openID4VCIStore) SaveNonce(ctx context.Context, nonce string, rec *nonceRecord) error {
 	dbClient, err := s.dbProvider.GetRuntimeDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get runtime database client: %w", err)
 	}
 	if _, err = dbClient.ExecuteContext(ctx, queryInsertNonce,
-		rec.Nonce, s.deploymentID, rec.ExpiresAt.UTC()); err != nil {
+		nonce, s.deploymentID, rec.ExpiresAt.UTC()); err != nil {
 		return fmt.Errorf("failed to insert nonce: %w", err)
 	}
 	return nil
@@ -83,10 +83,7 @@ func (s *openID4VCIStore) GetNonce(ctx context.Context, nonce string) (*nonceRec
 	if err != nil {
 		return nil, false
 	}
-	return &nonceRecord{
-		Nonce:     vciColumnString(row["nonce"]),
-		ExpiresAt: expiry,
-	}, true
+	return &nonceRecord{ExpiresAt: expiry}, true
 }
 
 // DeleteNonce removes a nonce record from the runtime database.
@@ -102,7 +99,7 @@ func (s *openID4VCIStore) DeleteNonce(ctx context.Context, nonce string) error {
 }
 
 // SaveOffer persists a credential offer record to the runtime database.
-func (s *openID4VCIStore) SaveOffer(ctx context.Context, rec *offerRecord) error {
+func (s *openID4VCIStore) SaveOffer(ctx context.Context, id string, rec *offerRecord) error {
 	dbClient, err := s.dbProvider.GetRuntimeDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get runtime database client: %w", err)
@@ -112,7 +109,7 @@ func (s *openID4VCIStore) SaveOffer(ctx context.Context, rec *offerRecord) error
 		return fmt.Errorf("failed to marshal credential offer: %w", err)
 	}
 	if _, err = dbClient.ExecuteContext(ctx, queryInsertOffer,
-		rec.ID, s.deploymentID, string(offerJSON), rec.ExpiresAt.UTC()); err != nil {
+		id, s.deploymentID, string(offerJSON), rec.ExpiresAt.UTC()); err != nil {
 		return fmt.Errorf("failed to insert credential offer: %w", err)
 	}
 	return nil
@@ -138,11 +135,7 @@ func (s *openID4VCIStore) GetOffer(ctx context.Context, id string) (*offerRecord
 	if err != nil {
 		return nil, false
 	}
-	return &offerRecord{
-		ID:        vciColumnString(row["id"]),
-		Offer:     offerMap,
-		ExpiresAt: expiry,
-	}, true
+	return &offerRecord{Offer: offerMap, ExpiresAt: expiry}, true
 }
 
 // vciColumnString coerces a result-row value to a string, tolerating string/[]byte.

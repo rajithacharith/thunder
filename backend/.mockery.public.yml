@@ -596,3 +596,19 @@ packages:
       structname: '{{.InterfaceName}}Mock'
       pkgname: transactionmock
       filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/thunder-id/thunderid/internal/vc/credential:
+    config:
+      all: true
+      dir: tests/mocks/vc/credentialmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: credentialmock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/thunder-id/thunderid/internal/vc/presentation:
+    config:
+      all: true
+      dir: tests/mocks/vc/presentationmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: presentationmock
+      filename: "{{.InterfaceName}}_mock.go"

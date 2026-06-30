@@ -44,6 +44,9 @@ crypto:
     - id: "default-key"
       cert_file: "config/certs/signing.cert"
       key_file: "config/certs/signing.key"
+    - id: "ecdsa-key"
+      cert_file: "config/certs/ecdsa-signing.cert"
+      key_file: "config/certs/ecdsa-signing.key"
 
 jwt:
     preferred_key_id: "default-key"

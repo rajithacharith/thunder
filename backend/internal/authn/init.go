@@ -91,6 +91,10 @@ func Initialize(
 		Name:    common.AuthenticatorMagicLink,
 		Factors: []common.AuthenticationFactor{common.FactorPossession},
 	})
+	common.RegisterAuthenticator(common.AuthenticatorMeta{
+		Name:    common.AuthenticatorOpenID4VP,
+		Factors: []common.AuthenticationFactor{common.FactorPossession, common.FactorInherence},
+	})
 
 	authnService := newAuthenticationService(
 		idpSvc,

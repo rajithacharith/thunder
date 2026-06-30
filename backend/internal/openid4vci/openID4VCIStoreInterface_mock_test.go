@@ -231,16 +231,16 @@ func (_c *openID4VCIStoreInterfaceMock_GetOffer_Call) RunAndReturn(run func(ctx 
 }
 
 // SaveNonce provides a mock function for the type openID4VCIStoreInterfaceMock
-func (_mock *openID4VCIStoreInterfaceMock) SaveNonce(ctx context.Context, rec *nonceRecord) error {
-	ret := _mock.Called(ctx, rec)
+func (_mock *openID4VCIStoreInterfaceMock) SaveNonce(ctx context.Context, nonce string, rec *nonceRecord) error {
+	ret := _mock.Called(ctx, nonce, rec)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SaveNonce")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *nonceRecord) error); ok {
-		r0 = returnFunc(ctx, rec)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *nonceRecord) error); ok {
+		r0 = returnFunc(ctx, nonce, rec)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -254,24 +254,30 @@ type openID4VCIStoreInterfaceMock_SaveNonce_Call struct {
 
 // SaveNonce is a helper method to define mock.On call
 //   - ctx context.Context
+//   - nonce string
 //   - rec *nonceRecord
-func (_e *openID4VCIStoreInterfaceMock_Expecter) SaveNonce(ctx interface{}, rec interface{}) *openID4VCIStoreInterfaceMock_SaveNonce_Call {
-	return &openID4VCIStoreInterfaceMock_SaveNonce_Call{Call: _e.mock.On("SaveNonce", ctx, rec)}
+func (_e *openID4VCIStoreInterfaceMock_Expecter) SaveNonce(ctx interface{}, nonce interface{}, rec interface{}) *openID4VCIStoreInterfaceMock_SaveNonce_Call {
+	return &openID4VCIStoreInterfaceMock_SaveNonce_Call{Call: _e.mock.On("SaveNonce", ctx, nonce, rec)}
 }
 
-func (_c *openID4VCIStoreInterfaceMock_SaveNonce_Call) Run(run func(ctx context.Context, rec *nonceRecord)) *openID4VCIStoreInterfaceMock_SaveNonce_Call {
+func (_c *openID4VCIStoreInterfaceMock_SaveNonce_Call) Run(run func(ctx context.Context, nonce string, rec *nonceRecord)) *openID4VCIStoreInterfaceMock_SaveNonce_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *nonceRecord
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(*nonceRecord)
+			arg1 = args[1].(string)
+		}
+		var arg2 *nonceRecord
+		if args[2] != nil {
+			arg2 = args[2].(*nonceRecord)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -282,22 +288,22 @@ func (_c *openID4VCIStoreInterfaceMock_SaveNonce_Call) Return(err error) *openID
 	return _c
 }
 
-func (_c *openID4VCIStoreInterfaceMock_SaveNonce_Call) RunAndReturn(run func(ctx context.Context, rec *nonceRecord) error) *openID4VCIStoreInterfaceMock_SaveNonce_Call {
+func (_c *openID4VCIStoreInterfaceMock_SaveNonce_Call) RunAndReturn(run func(ctx context.Context, nonce string, rec *nonceRecord) error) *openID4VCIStoreInterfaceMock_SaveNonce_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // SaveOffer provides a mock function for the type openID4VCIStoreInterfaceMock
-func (_mock *openID4VCIStoreInterfaceMock) SaveOffer(ctx context.Context, rec *offerRecord) error {
-	ret := _mock.Called(ctx, rec)
+func (_mock *openID4VCIStoreInterfaceMock) SaveOffer(ctx context.Context, id string, rec *offerRecord) error {
+	ret := _mock.Called(ctx, id, rec)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SaveOffer")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *offerRecord) error); ok {
-		r0 = returnFunc(ctx, rec)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *offerRecord) error); ok {
+		r0 = returnFunc(ctx, id, rec)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -311,24 +317,30 @@ type openID4VCIStoreInterfaceMock_SaveOffer_Call struct {
 
 // SaveOffer is a helper method to define mock.On call
 //   - ctx context.Context
+//   - id string
 //   - rec *offerRecord
-func (_e *openID4VCIStoreInterfaceMock_Expecter) SaveOffer(ctx interface{}, rec interface{}) *openID4VCIStoreInterfaceMock_SaveOffer_Call {
-	return &openID4VCIStoreInterfaceMock_SaveOffer_Call{Call: _e.mock.On("SaveOffer", ctx, rec)}
+func (_e *openID4VCIStoreInterfaceMock_Expecter) SaveOffer(ctx interface{}, id interface{}, rec interface{}) *openID4VCIStoreInterfaceMock_SaveOffer_Call {
+	return &openID4VCIStoreInterfaceMock_SaveOffer_Call{Call: _e.mock.On("SaveOffer", ctx, id, rec)}
 }
 
-func (_c *openID4VCIStoreInterfaceMock_SaveOffer_Call) Run(run func(ctx context.Context, rec *offerRecord)) *openID4VCIStoreInterfaceMock_SaveOffer_Call {
+func (_c *openID4VCIStoreInterfaceMock_SaveOffer_Call) Run(run func(ctx context.Context, id string, rec *offerRecord)) *openID4VCIStoreInterfaceMock_SaveOffer_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *offerRecord
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(*offerRecord)
+			arg1 = args[1].(string)
+		}
+		var arg2 *offerRecord
+		if args[2] != nil {
+			arg2 = args[2].(*offerRecord)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -339,7 +351,7 @@ func (_c *openID4VCIStoreInterfaceMock_SaveOffer_Call) Return(err error) *openID
 	return _c
 }
 
-func (_c *openID4VCIStoreInterfaceMock_SaveOffer_Call) RunAndReturn(run func(ctx context.Context, rec *offerRecord) error) *openID4VCIStoreInterfaceMock_SaveOffer_Call {
+func (_c *openID4VCIStoreInterfaceMock_SaveOffer_Call) RunAndReturn(run func(ctx context.Context, id string, rec *offerRecord) error) *openID4VCIStoreInterfaceMock_SaveOffer_Call {
 	_c.Call.Return(run)
 	return _c
 }
