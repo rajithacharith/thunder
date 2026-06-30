@@ -418,7 +418,7 @@ func (suite *ServiceTestSuite) TestGetApplication_WithInboundAuthConfig_Success(
 		Description: "App with OAuth config",
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
+				Type: providers.OAuthInboundAuthType,
 				OAuthConfig: &providers.OAuthClient{
 					ClientID:                "client-id-123",
 					RedirectURIs:            []string{"https://example.com/callback"},
@@ -446,7 +446,7 @@ func (suite *ServiceTestSuite) TestGetApplication_WithInboundAuthConfig_Success(
 
 	require.Len(suite.T(), result.InboundAuthConfig, 1)
 	inboundAuth := result.InboundAuthConfig[0]
-	assert.Equal(suite.T(), inboundmodel.OAuthInboundAuthType, inboundAuth.Type)
+	assert.Equal(suite.T(), providers.OAuthInboundAuthType, inboundAuth.Type)
 	require.NotNil(suite.T(), inboundAuth.OAuthConfig)
 	assert.Equal(suite.T(), "client-id-123", inboundAuth.OAuthConfig.ClientID)
 	assert.Equal(suite.T(), []string{"https://example.com/callback"}, inboundAuth.OAuthConfig.RedirectURIs)
@@ -1056,7 +1056,7 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_Invalid
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
 				Type: "invalid_type",
 			},
@@ -1073,9 +1073,9 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_NilOAut
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type:        inboundmodel.OAuthInboundAuthType,
+				Type:        providers.OAuthInboundAuthType,
 				OAuthConfig: nil,
 			},
 		},
@@ -1091,10 +1091,10 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithDef
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []providers.GrantType{},
 					ResponseTypes:           []providers.ResponseType{},
@@ -1121,10 +1121,10 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithRes
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
 					ResponseTypes:           []providers.ResponseType{},
@@ -1146,10 +1146,10 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithGra
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []providers.GrantType{providers.GrantTypeClientCredentials},
 					ResponseTypes:           []providers.ResponseType{},
@@ -1169,13 +1169,13 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithGra
 func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Error() {
 	service, mockStore := suite.setupTestService()
 
-	app := &model.Application{
+	app := &providers.Application{
 		ID:   testServiceAppID,
 		Name: "Test App",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID: "client-id-123",
 				},
 			},
@@ -1204,13 +1204,13 @@ func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Error() {
 func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Success() {
 	service, mockStore := suite.setupTestService()
 
-	app := &model.Application{
+	app := &providers.Application{
 		ID:   testServiceAppID,
 		Name: "Test App",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID: "client-id-123",
 				},
 			},
@@ -1235,10 +1235,10 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_PublicC
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
 					ResponseTypes:           []providers.ResponseType{providers.ResponseTypeCode},
@@ -1261,10 +1261,10 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_PublicC
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					GrantTypes:              []providers.GrantType{providers.GrantTypeClientCredentials},
 					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodNone,
 					PublicClient:            true,
@@ -1318,7 +1318,7 @@ func (suite *ServiceTestSuite) TestValidateApplication_InvalidURL() {
 		Name: "Test App",
 		OUID: testOUID,
 		URL:  "not-a-valid-uri",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID: "edc013d0-e893-4dc0-990c-3e1d203e005b",
 		},
 	}
@@ -1345,7 +1345,7 @@ func (suite *ServiceTestSuite) TestValidateApplication_InvalidLogoURL() {
 		Name:    "Test App",
 		OUID:    testOUID,
 		LogoURL: "://invalid",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID: "edc013d0-e893-4dc0-990c-3e1d203e005b",
 		},
 	}
@@ -1383,7 +1383,7 @@ func (suite *ServiceTestSuite) runCreateApplicationStoreErrorTest() {
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
 			RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
 		},
@@ -1498,10 +1498,10 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingClien
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:                "new-client-id",
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
@@ -1551,7 +1551,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWithRollback() {
 		ID:   testServiceAppID,
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
 			RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
 		},
@@ -1612,14 +1612,14 @@ func (suite *ServiceTestSuite) TestCreateApplication_WithOAuthCertificate_Succes
 	app := &model.ApplicationDTO{
 		Name: "Test OAuth Cert App",
 		OUID: testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "auth-flow-id",
 			RegistrationFlowID: "reg-flow-id",
 		},
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
@@ -1644,7 +1644,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_WithOAuthCertificate_Succes
 	assert.Nil(suite.T(), svcErr)
 	assert.Equal(suite.T(), "Test OAuth Cert App", result.Name)
 	require.Len(suite.T(), result.InboundAuthConfig, 1)
-	assert.Equal(suite.T(), inboundmodel.OAuthInboundAuthType, result.InboundAuthConfig[0].Type)
+	assert.Equal(suite.T(), providers.OAuthInboundAuthType, result.InboundAuthConfig[0].Type)
 	require.NotNil(suite.T(), result.InboundAuthConfig[0].OAuthConfig)
 	require.NotNil(suite.T(), result.InboundAuthConfig[0].OAuthConfig.Certificate)
 	assert.Equal(suite.T(), cert.CertificateType("JWKS"), result.InboundAuthConfig[0].OAuthConfig.Certificate.Type)
@@ -1667,14 +1667,14 @@ func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithOAuthCertRoll
 	app := &model.ApplicationDTO{
 		Name: "Test OAuth Cert App",
 		OUID: testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "auth-flow-id",
 			RegistrationFlowID: "reg-flow-id",
 		},
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
@@ -1785,7 +1785,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_MetadataUpdate() {
 	existingApp := &model.ApplicationProcessedDTO{
 		ID:   testServiceAppID,
 		Name: "Test App",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "default-auth-flow",
 			RegistrationFlowID: "default-reg-flow",
 		},
@@ -1797,7 +1797,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_MetadataUpdate() {
 	updatedApp := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "default-auth-flow",
 			RegistrationFlowID: "default-reg-flow",
 		},
@@ -1843,7 +1843,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_AppCertificateUpdateError()
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
 			RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
 		},
@@ -1865,8 +1865,8 @@ func (suite *ServiceTestSuite) TestUpdateApplication_AppCertificateUpdateError()
 
 // TestResolveClientSecret_PublicClient tests that no secret is generated for public clients.
 func TestResolveClientSecret_PublicClient(t *testing.T) {
-	inboundAuthConfig := &inboundmodel.InboundAuthConfigWithSecret{
-		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+	inboundAuthConfig := &providers.InboundAuthConfigWithSecret{
+		OAuthConfig: &providers.OAuthConfigWithSecret{
 			TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodNone,
 			ClientSecret:            "",
 			PublicClient:            true,
@@ -1882,8 +1882,8 @@ func TestResolveClientSecret_PublicClient(t *testing.T) {
 // TestResolveClientSecret_SecretAlreadyProvided tests that existing secrets are not overwritten.
 func TestResolveClientSecret_SecretAlreadyProvided(t *testing.T) {
 	providedSecret := "user-provided-secret"
-	inboundAuthConfig := &inboundmodel.InboundAuthConfigWithSecret{
-		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+	inboundAuthConfig := &providers.InboundAuthConfigWithSecret{
+		OAuthConfig: &providers.OAuthConfigWithSecret{
 			TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 			ClientSecret:            providedSecret,
 			PublicClient:            false,
@@ -1898,8 +1898,8 @@ func TestResolveClientSecret_SecretAlreadyProvided(t *testing.T) {
 
 // TestResolveClientSecret_GenerateForNewConfidentialClient tests secret generation for new clients.
 func TestResolveClientSecret_GenerateForNewConfidentialClient(t *testing.T) {
-	inboundAuthConfig := &inboundmodel.InboundAuthConfigWithSecret{
-		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+	inboundAuthConfig := &providers.InboundAuthConfigWithSecret{
+		OAuthConfig: &providers.OAuthConfigWithSecret{
 			TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 			ClientSecret:            "",
 			PublicClient:            false,
@@ -1919,7 +1919,7 @@ func TestResolveClientSecret_PreserveExistingSecret(t *testing.T) {
 	existingApp := &model.ApplicationProcessedDTO{
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
+				Type: providers.OAuthInboundAuthType,
 				OAuthConfig: &providers.OAuthClient{
 					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 					PublicClient:            false,
@@ -1928,8 +1928,8 @@ func TestResolveClientSecret_PreserveExistingSecret(t *testing.T) {
 		},
 	}
 
-	inboundAuthConfig := &inboundmodel.InboundAuthConfigWithSecret{
-		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+	inboundAuthConfig := &providers.InboundAuthConfigWithSecret{
+		OAuthConfig: &providers.OAuthConfigWithSecret{
 			TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 			ClientSecret:            "",
 			PublicClient:            false,
@@ -1945,8 +1945,8 @@ func TestResolveClientSecret_PreserveExistingSecret(t *testing.T) {
 
 // TestResolveClientSecret_NoExistingApp tests secret generation when no existing app.
 func TestResolveClientSecret_NoExistingApp(t *testing.T) {
-	inboundAuthConfig := &inboundmodel.InboundAuthConfigWithSecret{
-		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+	inboundAuthConfig := &providers.InboundAuthConfigWithSecret{
+		OAuthConfig: &providers.OAuthConfigWithSecret{
 			TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 			ClientSecret:            "",
 			PublicClient:            false,
@@ -1964,7 +1964,7 @@ func TestResolveClientSecret_ExistingAppWithoutSecret(t *testing.T) {
 	existingApp := &model.ApplicationProcessedDTO{
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
+				Type: providers.OAuthInboundAuthType,
 				OAuthConfig: &providers.OAuthClient{
 					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodNone,
 					PublicClient:            false,
@@ -1973,8 +1973,8 @@ func TestResolveClientSecret_ExistingAppWithoutSecret(t *testing.T) {
 		},
 	}
 
-	inboundAuthConfig := &inboundmodel.InboundAuthConfigWithSecret{
-		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+	inboundAuthConfig := &providers.InboundAuthConfigWithSecret{
+		OAuthConfig: &providers.OAuthConfigWithSecret{
 			TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 			ClientSecret:            "",
 			PublicClient:            false,
@@ -2009,7 +2009,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreFails_RollbackCertFail
 		ID:   "app123",
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
 			RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
 		},
@@ -2049,13 +2049,13 @@ func (suite *ServiceTestSuite) TestUpdateApplication_WithOAuthConfig_Success() {
 	existingApp := &model.ApplicationProcessedDTO{
 		ID:   testServiceAppID,
 		Name: "Test App",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "auth-flow-id",
 			RegistrationFlowID: "reg-flow-id",
 		},
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
+				Type: providers.OAuthInboundAuthType,
 				OAuthConfig: &providers.OAuthClient{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
@@ -2071,14 +2071,14 @@ func (suite *ServiceTestSuite) TestUpdateApplication_WithOAuthConfig_Success() {
 		ID:   testServiceAppID,
 		Name: "Test App Updated",
 		OUID: testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "auth-flow-id",
 			RegistrationFlowID: "reg-flow-id",
 		},
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID: testClientID,
 					RedirectURIs: []string{"https://example.com/callback",
 						"https://example.com/callback2"},
@@ -2128,7 +2128,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_AddOAuthConfig_Success() {
 	existingApp := &model.ApplicationProcessedDTO{
 		ID:   testServiceAppID,
 		Name: "Test App",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "auth-flow-id",
 			RegistrationFlowID: "reg-flow-id",
 		},
@@ -2139,14 +2139,14 @@ func (suite *ServiceTestSuite) TestUpdateApplication_AddOAuthConfig_Success() {
 		ID:   testServiceAppID,
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "auth-flow-id",
 			RegistrationFlowID: "reg-flow-id",
 		},
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:                "new-client-id",
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
@@ -2193,13 +2193,13 @@ func (suite *ServiceTestSuite) TestUpdateApplication_UpdateOAuthClientID_Success
 	existingApp := &model.ApplicationProcessedDTO{
 		ID:   testServiceAppID,
 		Name: "Test App",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "auth-flow-id",
 			RegistrationFlowID: "reg-flow-id",
 		},
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
+				Type: providers.OAuthInboundAuthType,
 				OAuthConfig: &providers.OAuthClient{
 					ClientID:                "old-client-id",
 					RedirectURIs:            []string{"https://example.com/callback"},
@@ -2215,14 +2215,14 @@ func (suite *ServiceTestSuite) TestUpdateApplication_UpdateOAuthClientID_Success
 		ID:   testServiceAppID,
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "auth-flow-id",
 			RegistrationFlowID: "reg-flow-id",
 		},
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:                "new-client-id",
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
@@ -2268,13 +2268,13 @@ func (suite *ServiceTestSuite) runUpdateApplicationWithJWKSCert(jwksValue string
 	existingApp := &model.ApplicationProcessedDTO{
 		ID:   testServiceAppID,
 		Name: "Test App",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "auth-flow-id",
 			RegistrationFlowID: "reg-flow-id",
 		},
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
+				Type: providers.OAuthInboundAuthType,
 				OAuthConfig: &providers.OAuthClient{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
@@ -2290,14 +2290,14 @@ func (suite *ServiceTestSuite) runUpdateApplicationWithJWKSCert(jwksValue string
 		ID:   testServiceAppID,
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "auth-flow-id",
 			RegistrationFlowID: "reg-flow-id",
 		},
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
@@ -2356,13 +2356,13 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthClientIDConflict() {
 	existingApp := &model.ApplicationProcessedDTO{
 		ID:   testServiceAppID,
 		Name: "Test App",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "auth-flow-id",
 			RegistrationFlowID: "reg-flow-id",
 		},
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
+				Type: providers.OAuthInboundAuthType,
 				OAuthConfig: &providers.OAuthClient{
 					ClientID:                "old-client-id",
 					RedirectURIs:            []string{"https://example.com/callback"},
@@ -2378,14 +2378,14 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthClientIDConflict() {
 		ID:   testServiceAppID,
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "auth-flow-id",
 			RegistrationFlowID: "reg-flow-id",
 		},
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:                "existing-client-id",
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
@@ -2437,13 +2437,13 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthStoreErrorWithRollback
 	existingApp := &model.ApplicationProcessedDTO{
 		ID:   testServiceAppID,
 		Name: "Test App",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "auth-flow-id",
 			RegistrationFlowID: "reg-flow-id",
 		},
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
+				Type: providers.OAuthInboundAuthType,
 				OAuthConfig: &providers.OAuthClient{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
@@ -2459,14 +2459,14 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthStoreErrorWithRollback
 		ID:   testServiceAppID,
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "auth-flow-id",
 			RegistrationFlowID: "reg-flow-id",
 		},
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
@@ -2517,13 +2517,13 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthTokenConfigUpdate() {
 	existingApp := &model.ApplicationProcessedDTO{
 		ID:   testServiceAppID,
 		Name: "Test App",
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "auth-flow-id",
 			RegistrationFlowID: "reg-flow-id",
 		},
 		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
+				Type: providers.OAuthInboundAuthType,
 				OAuthConfig: &providers.OAuthClient{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
@@ -2539,14 +2539,14 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthTokenConfigUpdate() {
 		ID:   testServiceAppID,
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "auth-flow-id",
 			RegistrationFlowID: "reg-flow-id",
 		},
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
@@ -2638,7 +2638,7 @@ func (suite *ServiceTestSuite) TestValidateApplication_ErrorFromProcessInboundAu
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
 				Type: "InvalidType", // Invalid type, not OAuth
 			},
@@ -3336,7 +3336,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_CreateInboundClientFailsAnd
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
 			RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
 		},
@@ -3453,8 +3453,8 @@ func (suite *ServiceTestSuite) TestUpdateEntityDataForApplicationUpdate_UpdateCr
 	service, _ := suite.setupTestService()
 
 	app := &model.ApplicationDTO{Name: "Test App", OUID: testOUID}
-	inboundAuthConfig := &inboundmodel.InboundAuthConfigWithSecret{
-		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+	inboundAuthConfig := &providers.InboundAuthConfigWithSecret{
+		OAuthConfig: &providers.OAuthConfigWithSecret{
 			ClientID:                testClientID,
 			ClientSecret:            "secret-value",
 			TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,

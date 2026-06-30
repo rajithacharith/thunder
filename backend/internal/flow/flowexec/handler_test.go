@@ -25,12 +25,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-
-	"github.com/thunder-id/thunderid/internal/flow/common"
 )
 
 const testFlowExecRequestBody = `{"applicationId":"app-1","flowType":"AUTHENTICATION","action":"submit"}`
@@ -134,7 +134,7 @@ func (s *HandlerTestSuite) TestHandleFlowExecutionRequest_Success() {
 	mockSvc := NewFlowExecServiceInterfaceMock(t)
 	flowStep := &FlowStep{
 		ExecutionID: "exec-1",
-		Status:      common.FlowStatusIncomplete,
+		Status:      providers.FlowStatusIncomplete,
 	}
 	mockSvc.EXPECT().Execute(mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
@@ -161,7 +161,7 @@ func (s *HandlerTestSuite) TestHandleFlowExecutionRequest_StepWithError() {
 	}
 	flowStep := &FlowStep{
 		ExecutionID: "exec-1",
-		Status:      common.FlowStatusError,
+		Status:      providers.FlowStatusError,
 		Error:       stepErr,
 	}
 	mockSvc.EXPECT().Execute(mock.Anything, mock.Anything, mock.Anything, mock.Anything,

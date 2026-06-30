@@ -22,13 +22,17 @@
 package providers
 
 import (
+	"context"
 	"encoding/json"
+	"regexp"
+	"slices"
 	"time"
 
 	"gopkg.in/yaml.v3"
 
 	"github.com/thunder-id/thunderid/internal/system/cmodels"
 	"github.com/thunder-id/thunderid/internal/system/utils"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 )
 
 // LanguageTranslationsResponse represents all translations for a language, organized by namespace.
@@ -793,4 +797,182 @@ type Consent struct {
 	CreatedTime int64
 	// UpdatedTime is the Unix timestamp when the consent was last updated
 	UpdatedTime int64
+}
+
+// ExecutorResponse represents the response from an executor
+type ExecutorResponse struct {
+	Status         ExecutorStatus         `json:"status"`
+	Inputs         []Input                `json:"inputs,omitempty"`
+	AdditionalData map[string]string      `json:"additionalData,omitempty"`
+	RedirectURL    string                 `json:"redirectUrl,omitempty"`
+	RuntimeData    map[string]string      `json:"runtimeData,omitempty"`
+	ForwardedData  map[string]interface{} `json:"forwardedData,omitempty"`
+	Assertion      string                 `json:"assertion,omitempty"`
+	Error          *common.ServiceError   `json:"error,omitempty"`
+	AuthUser       AuthUser               `json:"-"`
+}
+
+// ExecutionPolicy defines behavioral policies for node execution.
+type ExecutionPolicy struct {
+	SkipChallengeValidation bool
+	AllowSegmentRestart     bool
+}
+
+// sensitiveInputTypes contains the list of input types that are considered sensitive.
+var sensitiveInputTypes = []string{
+	InputTypePassword,
+	InputTypeOTP,
+}
+
+// Input represents the inputs required for a node
+type Input struct {
+	Ref         string           `json:"ref,omitempty"`
+	Identifier  string           `json:"identifier"`
+	Type        string           `json:"type"`
+	Required    bool             `json:"required"`
+	Options     []string         `json:"options,omitempty"`
+	DisplayName string           `json:"-"`
+	Validation  []ValidationRule `json:"validation,omitempty"`
+}
+
+// IsSensitive checks whether this input's type is considered sensitive.
+func (i Input) IsSensitive() bool {
+	return slices.Contains(sensitiveInputTypes, i.Type)
+}
+
+// ValidationRule defines a single constraint on a flow input. CompiledRegex is
+// populated by PrepareValidationRules at graph-build time and excluded from JSON.
+type ValidationRule struct {
+	Type          ValidationType `json:"type"`
+	Value         interface{}    `json:"value"`
+	Message       string         `json:"message,omitempty"`
+	CompiledRegex *regexp.Regexp `json:"-"`
+}
+
+// Application represents the structure for application which returns in GetApplicationById.
+type Application struct {
+	ID          string `yaml:"id,omitempty" json:"id,omitempty" jsonschema:"Application ID. Auto-generated unique identifier."`
+	OUID        string `yaml:"ouId,omitempty" json:"ouId,omitempty" jsonschema:"Organization unit ID. The OU this application belongs to."`
+	Name        string `yaml:"name,omitempty" json:"name,omitempty" jsonschema:"Application name."`
+	Description string `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"Optional description of the application's purpose."`
+	Template    string `yaml:"template,omitempty" json:"template,omitempty" jsonschema:"Template used to create the application."`
+
+	URL       string   `yaml:"url,omitempty" json:"url,omitempty" jsonschema:"Application home URL."`
+	LogoURL   string   `yaml:"logoUrl,omitempty" json:"logoUrl,omitempty" jsonschema:"Application logo URL."`
+	TosURI    string   `yaml:"tosUri,omitempty" json:"tosUri,omitempty" jsonschema:"Terms of Service URI."`
+	PolicyURI string   `yaml:"policyUri,omitempty" json:"policyUri,omitempty" jsonschema:"Privacy Policy URI."`
+	Contacts  []string `yaml:"contacts,omitempty" json:"contacts,omitempty"`
+
+	InboundAuthProfile `yaml:",inline"`
+	InboundAuthConfig  []InboundAuthConfigWithSecret `yaml:"inboundAuthConfig,omitempty" json:"inboundAuthConfig,omitempty" jsonschema:"Inbound authentication configuration (OAuth2/OIDC settings)."`
+	Metadata           map[string]interface{}        `yaml:"metadata,omitempty" json:"metadata,omitempty" jsonschema:"Generic metadata key-value pairs."`
+}
+
+// InboundAuthProfile is the wire field block embedded in entity DTOs (requests and responses).
+type InboundAuthProfile struct {
+	AuthFlowID                string              `json:"authFlowId,omitempty"             yaml:"authFlowId,omitempty"             jsonschema:"Authentication flow ID. Optional. Specifies which login flow to use (e.g., MFA, passwordless). If omitted, the default authentication flow is used."`
+	AuthFlowHandle            string              `json:"authFlowHandle,omitempty"         yaml:"authFlowHandle,omitempty"         jsonschema:"Authentication flow handle. Optional. Alternative to authFlowId — resolved to an ID at import time."`
+	RegistrationFlowID        string              `json:"registrationFlowId,omitempty"     yaml:"registrationFlowId,omitempty"     jsonschema:"Registration flow ID. Optional. Specifies the user registration/signup flow."`
+	RegistrationFlowHandle    string              `json:"registrationFlowHandle,omitempty" yaml:"registrationFlowHandle,omitempty" jsonschema:"Registration flow handle. Optional. Alternative to registrationFlowId — resolved to an ID at import time."`
+	IsRegistrationFlowEnabled bool                `json:"isRegistrationFlowEnabled"        yaml:"isRegistrationFlowEnabled"        jsonschema:"Enable self-service registration. Set to true to allow users to sign up themselves. Requires registrationFlowId or registrationFlowHandle to be set."`
+	RecoveryFlowID            string              `json:"recoveryFlowId,omitempty"         yaml:"recoveryFlowId,omitempty"         jsonschema:"Recovery flow ID. Optional. Specifies the user recovery flow."`
+	RecoveryFlowHandle        string              `json:"recoveryFlowHandle,omitempty"     yaml:"recoveryFlowHandle,omitempty"     jsonschema:"Recovery flow handle. Optional. Alternative to recoveryFlowId — resolved to an ID at import time."`
+	IsRecoveryFlowEnabled     bool                `json:"isRecoveryFlowEnabled"            yaml:"isRecoveryFlowEnabled"            jsonschema:"Enable self-service recovery. Set to true to allow users to recover their accounts (e.g., password reset). Requires recoveryFlowId or recoveryFlowHandle to be set."`
+	ThemeID                   string              `json:"themeId,omitempty"                yaml:"themeId,omitempty"                jsonschema:"Theme configuration ID. Optional. Customizes the visual styling of login pages."`
+	LayoutID                  string              `json:"layoutId,omitempty"               yaml:"layoutId,omitempty"               jsonschema:"Layout configuration ID. Optional. Customizes the screen structure and component positioning of login pages."`
+	Assertion                 *AssertionConfig    `json:"assertion,omitempty"              yaml:"assertion,omitempty"              jsonschema:"Assertion configuration. Optional. Customize assertion validity periods and included user attributes."`
+	LoginConsent              *LoginConsentConfig `json:"loginConsent,omitempty"           yaml:"loginConsent,omitempty"           jsonschema:"Login consent configuration settings."`
+	AllowedUserTypes          []string            `json:"allowedUserTypes,omitempty"       yaml:"allowedUserTypes,omitempty"       jsonschema:"Allowed user types. Optional. Restricts which user types can authenticate to and register against this resource."`
+}
+
+// OAuthConfigWithSecret is the wire input shape and the create/update echo response shape.
+// Carries ClientSecret (omitempty) so it appears only when freshly issued.
+type OAuthConfigWithSecret struct {
+	ClientID                           string                  `json:"clientId,omitempty"                 yaml:"clientId,omitempty"                 jsonschema:"OAuth client ID (auto-generated if not provided)"`
+	ClientSecret                       string                  `json:"clientSecret,omitempty"             yaml:"clientSecret,omitempty"             jsonschema:"OAuth client secret (auto-generated if not provided)"`
+	RedirectURIs                       []string                `json:"redirectUris,omitempty"             yaml:"redirectUris,omitempty"             jsonschema:"Allowed redirect URIs. Required for Public (SPA/Mobile) and Confidential (Server) clients. Omit for M2M."`
+	GrantTypes                         []GrantType             `json:"grantTypes,omitempty"               yaml:"grantTypes,omitempty"               jsonschema:"OAuth grant types. Common: [authorization_code, refresh_token] for user apps, [client_credentials] for M2M."`
+	ResponseTypes                      []ResponseType          `json:"responseTypes,omitempty"            yaml:"responseTypes,omitempty"            jsonschema:"OAuth response types. Common: [code] for user apps. Omit for M2M."`
+	TokenEndpointAuthMethod            TokenEndpointAuthMethod `json:"tokenEndpointAuthMethod,omitempty"  yaml:"tokenEndpointAuthMethod,omitempty"  jsonschema:"Client authentication method. Use 'none' for Public clients, 'client_secret_basic' for Confidential/M2M."`
+	PKCERequired                       bool                    `json:"pkceRequired"                       yaml:"pkceRequired"                       jsonschema:"Require PKCE for security. Recommended for all user-interactive flows."`
+	PublicClient                       bool                    `json:"publicClient"                       yaml:"publicClient"                       jsonschema:"Identify if client is public (cannot store secrets). Set true for SPA/Mobile."`
+	RequirePushedAuthorizationRequests bool                    `json:"requirePushedAuthorizationRequests" yaml:"requirePushedAuthorizationRequests" jsonschema:"Require Pushed Authorization Requests (PAR) per RFC 9126."`
+	DPoPBoundAccessTokens              bool                    `json:"dpopBoundAccessTokens"              yaml:"dpopBoundAccessTokens"              jsonschema:"Require DPoP-bound access tokens (RFC 9449)."`
+	IncludeActClaim                    bool                    `json:"includeActClaim"                    yaml:"includeActClaim"                    jsonschema:"Include an implicit on-behalf-of 'act' claim (identifying the application entity) in access tokens issued through this client's authorization code flow. Agents always include it regardless of this setting."`
+	Token                              *OAuthTokenConfig       `json:"token,omitempty"                    yaml:"token,omitempty"                    jsonschema:"Token configuration for access tokens and ID tokens"`
+	Scopes                             []string                `json:"scopes,omitempty"                   yaml:"scopes,omitempty"                   jsonschema:"Allowed OAuth scopes. Add custom scopes as needed for your application."`
+	UserInfo                           *UserInfoConfig         `json:"userInfo,omitempty"                 yaml:"userInfo,omitempty"                 jsonschema:"UserInfo endpoint configuration. Configure user attributes returned from the OIDC userinfo endpoint."`
+	ScopeClaims                        map[string][]string     `json:"scopeClaims,omitempty"              yaml:"scopeClaims,omitempty"              jsonschema:"Scope-to-claims mapping. Maps OAuth scopes to user claims for both ID token and userinfo."`
+	Certificate                        *Certificate            `json:"certificate,omitempty"              yaml:"certificate,omitempty"              jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
+	AcrValues                          []string                `json:"acrValues,omitempty"                yaml:"acrValues,omitempty"                jsonschema:"Default ACR values applied when the request does not specify acr_values."`
+}
+
+// InboundAuthConfigWithSecret is the wire input wrapper and create/update echo response wrapper.
+type InboundAuthConfigWithSecret struct {
+	Type        InboundAuthType        `json:"type"             yaml:"type"             jsonschema:"Inbound authentication type. Use 'oauth2' for OAuth/OIDC applications."`
+	OAuthConfig *OAuthConfigWithSecret `json:"config,omitempty" yaml:"config,omitempty" jsonschema:"OAuth/OIDC configuration. Required when type is 'oauth2'. Defines OAuth grant types, redirect URIs, client authentication, and PKCE settings."`
+}
+
+// NodeContext holds the context for a specific node in the flow execution.
+type NodeContext struct {
+	Context context.Context
+
+	ExecutionID   string
+	FlowType      FlowType
+	EntityID      string
+	Verbose       bool
+	CurrentAction string
+	CurrentNodeID string
+	ExecutorMode  string
+
+	NodeProperties map[string]interface{}
+	NodeInputs     []Input
+	UserInputs     map[string]string
+	RuntimeData    map[string]string
+	ForwardedData  map[string]interface{}
+
+	Application      Application
+	AuthUser         AuthUser
+	ExecutionHistory map[string]*NodeExecutionRecord
+}
+
+// NodeExecutionRecord represents a record of a node execution in the flow.
+type NodeExecutionRecord struct {
+	NodeID       string             `json:"nodeId"`
+	NodeType     string             `json:"nodeType"`
+	ExecutorName string             `json:"executorName,omitempty"`
+	ExecutorType ExecutorType       `json:"executorType,omitempty"`
+	ExecutorMode string             `json:"executorMode,omitempty"`
+	Step         int                `json:"step"`
+	Status       FlowStatus         `json:"status"`
+	Executions   []ExecutionAttempt `json:"executions"`
+	StartTime    int64              `json:"startTime,omitempty"`
+	EndTime      int64              `json:"endTime,omitempty"`
+}
+
+// GetDuration calculates the duration of the execution in milliseconds.
+func (n *NodeExecutionRecord) GetDuration() int64 {
+	return getDuration(n.StartTime, n.EndTime)
+}
+
+// ExecutionAttempt represents a single execution attempt of a node.
+type ExecutionAttempt struct {
+	Attempt   int        `json:"attempt"`
+	Timestamp int64      `json:"timestamp"`
+	Status    FlowStatus `json:"status"`
+	StartTime int64      `json:"startTime"`
+	EndTime   int64      `json:"endTime"`
+}
+
+// GetDuration calculates the duration of the execution attempt in milliseconds.
+func (e *ExecutionAttempt) GetDuration() int64 {
+	return getDuration(e.StartTime, e.EndTime)
+}
+
+// getDuration calculates the duration between startTime and endTime in milliseconds.
+func getDuration(startTime int64, endTime int64) int64 {
+	if startTime == 0 || endTime == 0 {
+		return 0
+	}
+	return (endTime - startTime) * 1000
 }

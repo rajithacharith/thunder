@@ -70,7 +70,7 @@ func (s *ChallengeTokenInterceptorTestSuite) TestExecute_PostRequestMode_Rotates
 	ctx := &core.InterceptorContext{
 		Mode:        providers.InterceptorModePostRequest,
 		ExecutionID: "exec-1",
-		FlowStatus:  common.FlowStatusIncomplete,
+		FlowStatus:  providers.FlowStatusIncomplete,
 		SharedData:  map[string]string{},
 	}
 
@@ -168,7 +168,7 @@ func (s *ChallengeTokenInterceptorTestSuite) TestValidate_SkipChallengeValidatio
 		SharedData: map[string]string{
 			sharedDataKeyChallengeTokenHash: cryptolib.HashToken("some-token"),
 		},
-		ExecutionPolicy: &core.ExecutionPolicy{SkipChallengeValidation: true},
+		ExecutionPolicy: &providers.ExecutionPolicy{SkipChallengeValidation: true},
 	}
 
 	result, err := s.interceptor.Execute(ctx)
@@ -216,7 +216,7 @@ func (s *ChallengeTokenInterceptorTestSuite) TestValidate_PolicyWithoutSkipFlag_
 		SharedData: map[string]string{
 			sharedDataKeyChallengeTokenHash: cryptolib.HashToken("some-token"),
 		},
-		ExecutionPolicy: &core.ExecutionPolicy{SkipChallengeValidation: false},
+		ExecutionPolicy: &providers.ExecutionPolicy{SkipChallengeValidation: false},
 	}
 
 	result, err := s.interceptor.Execute(ctx)
@@ -231,7 +231,7 @@ func (s *ChallengeTokenInterceptorTestSuite) TestRotate_GeneratesNewToken() {
 	ctx := &core.InterceptorContext{
 		Mode:        providers.InterceptorModePostRequest,
 		ExecutionID: "exec-1",
-		FlowStatus:  common.FlowStatusIncomplete,
+		FlowStatus:  providers.FlowStatusIncomplete,
 		SharedData:  map[string]string{},
 	}
 
@@ -252,7 +252,7 @@ func (s *ChallengeTokenInterceptorTestSuite) TestRotate_ClearsIncomingToken() {
 	ctx := &core.InterceptorContext{
 		Mode:        providers.InterceptorModePostRequest,
 		ExecutionID: "exec-1",
-		FlowStatus:  common.FlowStatusIncomplete,
+		FlowStatus:  providers.FlowStatusIncomplete,
 		SharedData: map[string]string{
 			common.InterceptorDataKeyChallengeTokenIn: "old-incoming-token",
 		},
@@ -268,7 +268,7 @@ func (s *ChallengeTokenInterceptorTestSuite) TestRotate_OverwritesPreviousHash()
 	ctx := &core.InterceptorContext{
 		Mode:        providers.InterceptorModePostRequest,
 		ExecutionID: "exec-1",
-		FlowStatus:  common.FlowStatusIncomplete,
+		FlowStatus:  providers.FlowStatusIncomplete,
 		SharedData: map[string]string{
 			sharedDataKeyChallengeTokenHash: "old-hash",
 		},

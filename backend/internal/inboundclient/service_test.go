@@ -1478,7 +1478,7 @@ func (suite *InboundClientServiceTestSuite) TestResolveFlowDefaults_RecoveryFlow
 
 func (suite *InboundClientServiceTestSuite) TestResolveInboundAuthProfileHandles_NilFlowMgtIsNoOp() {
 	svc := &inboundClientService{}
-	profile := &inboundmodel.InboundAuthProfile{AuthFlowHandle: "some-handle"}
+	profile := &providers.InboundAuthProfile{AuthFlowHandle: "some-handle"}
 	assert.NoError(suite.T(), svc.ResolveInboundAuthProfileHandles(context.Background(), profile))
 	assert.Empty(suite.T(), profile.AuthFlowID)
 }
@@ -1488,7 +1488,7 @@ func (suite *InboundClientServiceTestSuite) TestResolveInboundAuthProfileHandles
 	flowMgt.EXPECT().GetFlowByHandle(mock.Anything, "auth-handle", providers.FlowTypeAuthentication).
 		Return(&providers.CompleteFlowDefinition{ID: "auth-id"}, nil).Once()
 	svc := &inboundClientService{flowMgt: flowMgt}
-	profile := &inboundmodel.InboundAuthProfile{AuthFlowHandle: "auth-handle"}
+	profile := &providers.InboundAuthProfile{AuthFlowHandle: "auth-handle"}
 	assert.NoError(suite.T(), svc.ResolveInboundAuthProfileHandles(context.Background(), profile))
 	assert.Equal(suite.T(), "auth-id", profile.AuthFlowID)
 }
@@ -1498,7 +1498,7 @@ func (suite *InboundClientServiceTestSuite) TestResolveInboundAuthProfileHandles
 	flowMgt.EXPECT().GetFlowByHandle(mock.Anything, "bad-handle", providers.FlowTypeAuthentication).
 		Return(nil, &tidcommon.ServiceError{Code: "NOT_FOUND"}).Once()
 	svc := &inboundClientService{flowMgt: flowMgt}
-	profile := &inboundmodel.InboundAuthProfile{AuthFlowHandle: "bad-handle"}
+	profile := &providers.InboundAuthProfile{AuthFlowHandle: "bad-handle"}
 	assert.ErrorIs(suite.T(), svc.ResolveInboundAuthProfileHandles(context.Background(), profile), ErrFKInvalidAuthFlow)
 }
 
@@ -1507,7 +1507,7 @@ func (suite *InboundClientServiceTestSuite) TestResolveInboundAuthProfileHandles
 	flowMgt.EXPECT().GetFlowByHandle(mock.Anything, "reg-handle", providers.FlowTypeRegistration).
 		Return(&providers.CompleteFlowDefinition{ID: "reg-id"}, nil).Once()
 	svc := &inboundClientService{flowMgt: flowMgt}
-	profile := &inboundmodel.InboundAuthProfile{RegistrationFlowHandle: "reg-handle"}
+	profile := &providers.InboundAuthProfile{RegistrationFlowHandle: "reg-handle"}
 	assert.NoError(suite.T(), svc.ResolveInboundAuthProfileHandles(context.Background(), profile))
 	assert.Equal(suite.T(), "reg-id", profile.RegistrationFlowID)
 }
@@ -1517,7 +1517,7 @@ func (suite *InboundClientServiceTestSuite) TestResolveInboundAuthProfileHandles
 	flowMgt.EXPECT().GetFlowByHandle(mock.Anything, "bad-reg", providers.FlowTypeRegistration).
 		Return(nil, &tidcommon.ServiceError{Code: "NOT_FOUND"}).Once()
 	svc := &inboundClientService{flowMgt: flowMgt}
-	profile := &inboundmodel.InboundAuthProfile{RegistrationFlowHandle: "bad-reg"}
+	profile := &providers.InboundAuthProfile{RegistrationFlowHandle: "bad-reg"}
 	err := svc.ResolveInboundAuthProfileHandles(context.Background(), profile)
 	assert.ErrorIs(suite.T(), err, ErrFKInvalidRegistrationFlow)
 }
@@ -1527,7 +1527,7 @@ func (suite *InboundClientServiceTestSuite) TestResolveInboundAuthProfileHandles
 	flowMgt.EXPECT().GetFlowByHandle(mock.Anything, "rec-handle", providers.FlowTypeRecovery).
 		Return(&providers.CompleteFlowDefinition{ID: "rec-id"}, nil).Once()
 	svc := &inboundClientService{flowMgt: flowMgt}
-	profile := &inboundmodel.InboundAuthProfile{RecoveryFlowHandle: "rec-handle"}
+	profile := &providers.InboundAuthProfile{RecoveryFlowHandle: "rec-handle"}
 	assert.NoError(suite.T(), svc.ResolveInboundAuthProfileHandles(context.Background(), profile))
 	assert.Equal(suite.T(), "rec-id", profile.RecoveryFlowID)
 }
@@ -1537,7 +1537,7 @@ func (suite *InboundClientServiceTestSuite) TestResolveInboundAuthProfileHandles
 	flowMgt.EXPECT().GetFlowByHandle(mock.Anything, "bad-rec", providers.FlowTypeRecovery).
 		Return(nil, &tidcommon.ServiceError{Code: "NOT_FOUND"}).Once()
 	svc := &inboundClientService{flowMgt: flowMgt}
-	profile := &inboundmodel.InboundAuthProfile{RecoveryFlowHandle: "bad-rec"}
+	profile := &providers.InboundAuthProfile{RecoveryFlowHandle: "bad-rec"}
 	err := svc.ResolveInboundAuthProfileHandles(context.Background(), profile)
 	assert.ErrorIs(suite.T(), err, ErrFKInvalidRecoveryFlow)
 }
@@ -1545,7 +1545,7 @@ func (suite *InboundClientServiceTestSuite) TestResolveInboundAuthProfileHandles
 func (suite *InboundClientServiceTestSuite) TestResolveInboundAuthProfileHandles_SkipsWhenIDAlreadySet() {
 	flowMgt := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
 	svc := &inboundClientService{flowMgt: flowMgt}
-	profile := &inboundmodel.InboundAuthProfile{
+	profile := &providers.InboundAuthProfile{
 		AuthFlowID:             "existing-auth",
 		AuthFlowHandle:         "auth-handle",
 		RegistrationFlowID:     "existing-reg",

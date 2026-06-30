@@ -21,6 +21,7 @@ package thunderidengine
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/thunder-id/thunderid/internal/attributecache"
@@ -89,6 +90,11 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 		engineCtx.designResolveProvider, engineCtx.i18nProvider)
 
 	// Initialize flow core services.
+	flowConfig := flowconfig.Config{
+		Flow:          engineCtx.flowConfig,
+		DeploymentID:  engineCtx.serverConfig.Identifier,
+		RuntimeDBType: engineCtx.runtimeDBType,
+	}
 	flowFactory, graphCache := core.Initialize(engineCtx.cacheManager)
 	engineCtx.flowFactory = flowFactory
 	execDeps := executor.ExecutorDependencies{
@@ -104,11 +110,16 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 		FlowFactory: engineCtx.flowFactory,
 	}
 
-	engineCtx.execRegistry, err = executor.Initialize(execDeps, engineCtx.flowConfig)
+	engineCtx.execRegistry, err = executor.Initialize(execDeps, flowConfig.Flow)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to register flow executors", log.Error(err))
 	}
-	engineCtx.interceptorRegistry, err = interceptor.Initialize(interceptorDeps, engineCtx.flowConfig)
+	err = engineCtx.applyCustomExecutors()
+	if err != nil {
+		logger.Fatal(ctx, "Failed to apply custom executors", log.Error(err))
+	}
+
+	engineCtx.interceptorRegistry, err = interceptor.Initialize(interceptorDeps, flowConfig.Flow)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize Interceptor registry", log.Error(err))
 	}
@@ -116,11 +127,6 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 	engineCtx.graphBuilder = graphbuilder.Initialize(engineCtx.flowFactory, engineCtx.execRegistry,
 		engineCtx.interceptorRegistry, graphCache)
 
-	flowConfig := flowconfig.Config{
-		Flow:          engineCtx.flowConfig,
-		DeploymentID:  engineCtx.serverConfig.Identifier,
-		RuntimeDBType: engineCtx.runtimeDBType,
-	}
 	flowExecService, err := flowexec.Initialize(mux, engineCtx.flowProvider, engineCtx.actorProvider,
 		engineCtx.execRegistry, engineCtx.interceptorRegistry, engineCtx.observabilitySvc,
 		engineCtx.runtimeCryptoSvc, engineCtx.graphBuilder, flowConfig)
@@ -149,6 +155,20 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 	}
 }
 
+// applyCustomExecutors registers the custom executors with the executor registry.
+func (e *engineContext) applyCustomExecutors() error {
+	if len(e.customExecutors) == 0 {
+		return nil
+	}
+	if e.execRegistry == nil {
+		return errors.New("thunderidengine: executor registry is nil")
+	}
+	for name, ex := range e.customExecutors {
+		e.execRegistry.RegisterExecutor(name, ex)
+	}
+	return nil
+}
+
 type engineContext struct {
 	cacheManager        cache.CacheManagerInterface
 	jwtService          jwt.JWTServiceInterface
@@ -171,16 +191,17 @@ type engineContext struct {
 	observabilityConfig engineconfig.ObservabilityConfig
 	gateClientConfig    engineconfig.GateClientConfig
 
-	actorProvider         providers.ActorProviderInterface
-	authnProvider         providers.AuthnProviderManagerInterface
-	resourceProvider      providers.ResourceProviderInterface
+	actorProvider         providers.ActorProvider
+	authnProvider         providers.AuthnProviderManager
+	resourceProvider      providers.ResourceServerProvider
 	ouProvider            providers.OrganizationUnitProvider
-	designResolveProvider providers.DesignResolveProviderInterface
-	flowProvider          providers.FlowProviderInterface
-	i18nProvider          providers.I18nProviderInterface
+	designResolveProvider providers.DesignProvider
+	flowProvider          providers.FlowProvider
+	i18nProvider          providers.I18nProvider
 	roleProvider          providers.RoleProvider
 	idpProvider           providers.IDPProvider
 	consentProvider       providers.ConsentProvider
+	customExecutors       map[string]providers.Executor
 }
 
 // Option configures engine initialization.
@@ -223,17 +244,17 @@ func WithObservabilityConfig(config engineconfig.ObservabilityConfig) Option {
 }
 
 // WithActorProvider supplies the actor provider.
-func WithActorProvider(provider providers.ActorProviderInterface) Option {
+func WithActorProvider(provider providers.ActorProvider) Option {
 	return func(c *engineContext) { c.actorProvider = provider }
 }
 
 // WithAuthnProvider supplies the authentication provider manager.
-func WithAuthnProvider(provider providers.AuthnProviderManagerInterface) Option {
+func WithAuthnProvider(provider providers.AuthnProviderManager) Option {
 	return func(c *engineContext) { c.authnProvider = provider }
 }
 
 // WithResourceProvider supplies the resource provider.
-func WithResourceProvider(provider providers.ResourceProviderInterface) Option {
+func WithResourceProvider(provider providers.ResourceServerProvider) Option {
 	return func(c *engineContext) { c.resourceProvider = provider }
 }
 
@@ -243,21 +264,33 @@ func WithOUProvider(provider providers.OrganizationUnitProvider) Option {
 }
 
 // WithDesignResolveProvider supplies the design resolve provider.
-func WithDesignResolveProvider(provider providers.DesignResolveProviderInterface) Option {
+func WithDesignResolveProvider(provider providers.DesignProvider) Option {
 	return func(c *engineContext) { c.designResolveProvider = provider }
 }
 
 // WithFlowProvider supplies the flow provider.
-func WithFlowProvider(provider providers.FlowProviderInterface) Option {
+func WithFlowProvider(provider providers.FlowProvider) Option {
 	return func(c *engineContext) { c.flowProvider = provider }
 }
 
 // WithI18nProvider supplies the i18n provider.
-func WithI18nProvider(provider providers.I18nProviderInterface) Option {
+func WithI18nProvider(provider providers.I18nProvider) Option {
 	return func(c *engineContext) { c.i18nProvider = provider }
 }
 
 // WithConsentProvider supplies the consent provider.
 func WithConsentProvider(provider providers.ConsentProvider) Option {
 	return func(c *engineContext) { c.consentProvider = provider }
+}
+
+// WithCustomExecutors supplies the custom executors to be registered with the engine.
+func WithCustomExecutors(executors map[string]providers.Executor) Option {
+	return func(c *engineContext) {
+		if c.customExecutors == nil {
+			c.customExecutors = make(map[string]providers.Executor, len(executors))
+		}
+		for name, ex := range executors {
+			c.customExecutors[name] = ex
+		}
+	}
 }

@@ -126,7 +126,7 @@ func (s *agentService) CreateAgent(ctx context.Context, agent *model.Agent) (
 
 	authFlowID, regFlowID := agent.AuthFlowID, agent.RegistrationFlowID
 	assertion, loginConsent := agent.Assertion, agent.LoginConsent
-	var inboundConfigs []inboundmodel.InboundAuthConfigWithSecret
+	var inboundConfigs []providers.InboundAuthConfigWithSecret
 
 	if needsInboundClient(agent) {
 		resolvedClient, resolvedOAuth, svcErr := s.createInboundForAgent(ctx, agentID, agent, clientSecret)
@@ -139,8 +139,8 @@ func (s *agentService) CreateAgent(ctx context.Context, agent *model.Agent) (
 		assertion = resolvedClient.Assertion
 		loginConsent = resolvedClient.LoginConsent
 		if resolvedOAuth != nil {
-			inboundConfigs = []inboundmodel.InboundAuthConfigWithSecret{{
-				Type:        inboundmodel.OAuthInboundAuthType,
+			inboundConfigs = []providers.InboundAuthConfigWithSecret{{
+				Type:        providers.OAuthInboundAuthType,
 				OAuthConfig: oauthProfileToComplete(clientID, resolvedOAuth),
 			}}
 		}
@@ -327,10 +327,10 @@ func (s *agentService) UpdateAgent(ctx context.Context, agentID string,
 	regFlowID := resolvedClient.RegistrationFlowID
 	assertion := resolvedClient.Assertion
 	loginConsent := resolvedClient.LoginConsent
-	var inboundConfigs []inboundmodel.InboundAuthConfigWithSecret
+	var inboundConfigs []providers.InboundAuthConfigWithSecret
 	if resolvedOAuth != nil {
-		inboundConfigs = []inboundmodel.InboundAuthConfigWithSecret{{
-			Type:        inboundmodel.OAuthInboundAuthType,
+		inboundConfigs = []providers.InboundAuthConfigWithSecret{{
+			Type:        providers.OAuthInboundAuthType,
 			OAuthConfig: oauthProfileToComplete(clientID, resolvedOAuth),
 		}}
 	}
@@ -650,7 +650,7 @@ func (s *agentService) validateNameUnique(ctx context.Context, name, excludeID s
 
 // resolveOAuthCredentials resolves the clientID and clientSecret for an agent OAuth profile.
 func (s *agentService) resolveOAuthCredentials(ctx context.Context,
-	configs []inboundmodel.InboundAuthConfigWithSecret, existingClientID, existingOAuthMethod string,
+	configs []providers.InboundAuthConfigWithSecret, existingClientID, existingOAuthMethod string,
 ) (string, string, *tidcommon.ServiceError) {
 	oauthCfg, svcErr := pickOAuthConfig(configs)
 	if svcErr != nil {
@@ -844,9 +844,9 @@ func (s *agentService) composeGetResponse(ctx context.Context, e *providers.Enti
 		return nil, &tidcommon.InternalServerError
 	}
 	if oauthErr == nil && oauth != nil {
-		resp.InboundAuthConfig = []inboundmodel.InboundAuthConfigWithSecret{
+		resp.InboundAuthConfig = []providers.InboundAuthConfigWithSecret{
 			{
-				Type:        inboundmodel.OAuthInboundAuthType,
+				Type:        providers.OAuthInboundAuthType,
 				OAuthConfig: oauthProfileToComplete(clientID, oauth),
 			},
 		}
@@ -1027,12 +1027,12 @@ func normalizeLoginConsent(lc *inboundmodel.LoginConsentConfig) {
 // pickOAuthConfig returns the single OAuth-typed entry from a request input, or nil if absent.
 // Returns ErrorMultipleOAuthConfigs if more than one OAuth entry is present.
 func pickOAuthConfig(
-	configs []inboundmodel.InboundAuthConfigWithSecret,
-) (*inboundmodel.OAuthConfigWithSecret, *tidcommon.ServiceError) {
-	var found *inboundmodel.OAuthConfigWithSecret
+	configs []providers.InboundAuthConfigWithSecret,
+) (*providers.OAuthConfigWithSecret, *tidcommon.ServiceError) {
+	var found *providers.OAuthConfigWithSecret
 	isOAuthConfig := false
 	for i := range configs {
-		if configs[i].Type != inboundmodel.OAuthInboundAuthType {
+		if configs[i].Type != providers.OAuthInboundAuthType {
 			continue
 		}
 		if isOAuthConfig {
@@ -1047,7 +1047,7 @@ func pickOAuthConfig(
 }
 
 // requiresClientSecret reports whether the OAuth config implies a confidential client requiring a secret.
-func requiresClientSecret(cfg *inboundmodel.OAuthConfigWithSecret) bool {
+func requiresClientSecret(cfg *providers.OAuthConfigWithSecret) bool {
 	if cfg == nil {
 		return false
 	}
@@ -1164,7 +1164,7 @@ func buildInboundClientRecord(agentID, authFlowID, regFlowID string, isRegEnable
 }
 
 // buildOAuthProfile maps the agent OAuth config to the inbound client profile shape.
-func buildOAuthProfile(configs []inboundmodel.InboundAuthConfigWithSecret) *providers.OAuthProfile {
+func buildOAuthProfile(configs []providers.InboundAuthConfigWithSecret) *providers.OAuthProfile {
 	cfg, _ := pickOAuthConfig(configs)
 	if cfg == nil {
 		return nil
@@ -1197,12 +1197,12 @@ func buildOAuthProfile(configs []inboundmodel.InboundAuthConfigWithSecret) *prov
 }
 
 // oauthProfileToComplete converts a stored OAuth profile into the create/update shape.
-func oauthProfileToComplete(clientID string, p *providers.OAuthProfile) *inboundmodel.OAuthConfigWithSecret {
+func oauthProfileToComplete(clientID string, p *providers.OAuthProfile) *providers.OAuthConfigWithSecret {
 	if p == nil {
 		return nil
 	}
 	grants, respTypes := convertGrantAndResponseTypes(p)
-	return &inboundmodel.OAuthConfigWithSecret{
+	return &providers.OAuthConfigWithSecret{
 		ClientID:                           clientID,
 		RedirectURIs:                       p.RedirectURIs,
 		GrantTypes:                         grants,
@@ -1242,7 +1242,7 @@ func buildCompleteResponse(agentID, owner, clientID, clientSecret, agentType, na
 	attributes json.RawMessage, authFlowID, regFlowID string, isRegEnabled bool,
 	themeID, layoutID string, assertion *inboundmodel.AssertionConfig,
 	loginConsent *inboundmodel.LoginConsentConfig, allowedUserTypes []string,
-	inboundAuthConfig []inboundmodel.InboundAuthConfigWithSecret,
+	inboundAuthConfig []providers.InboundAuthConfigWithSecret,
 ) *model.AgentCompleteResponse {
 	resp := &model.AgentCompleteResponse{
 		ID:          agentID,
@@ -1251,7 +1251,7 @@ func buildCompleteResponse(agentID, owner, clientID, clientSecret, agentType, na
 		Description: description,
 		Owner:       owner,
 		Attributes:  attributes,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:                authFlowID,
 			RegistrationFlowID:        regFlowID,
 			IsRegistrationFlowEnabled: isRegEnabled,
@@ -1270,12 +1270,12 @@ func buildCompleteResponse(agentID, owner, clientID, clientSecret, agentType, na
 
 // annotateOAuthConfig stamps clientID and clientSecret onto the OAuth entry.
 func annotateOAuthConfig(
-	in []inboundmodel.InboundAuthConfigWithSecret, clientID, clientSecret string,
-) []inboundmodel.InboundAuthConfigWithSecret {
-	out := make([]inboundmodel.InboundAuthConfigWithSecret, len(in))
+	in []providers.InboundAuthConfigWithSecret, clientID, clientSecret string,
+) []providers.InboundAuthConfigWithSecret {
+	out := make([]providers.InboundAuthConfigWithSecret, len(in))
 	for i, cfg := range in {
 		copyCfg := cfg
-		if copyCfg.Type == inboundmodel.OAuthInboundAuthType && copyCfg.OAuthConfig != nil {
+		if copyCfg.Type == providers.OAuthInboundAuthType && copyCfg.OAuthConfig != nil {
 			c := *copyCfg.OAuthConfig
 			if clientID != "" {
 				c.ClientID = clientID

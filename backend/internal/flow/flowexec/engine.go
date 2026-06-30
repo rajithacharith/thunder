@@ -98,7 +98,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *tidcommon.ServiceE
 	}
 	if !isSuccess {
 		// Check if flow failed or just incomplete
-		if flowStep.Status == common.FlowStatusError {
+		if flowStep.Status == providers.FlowStatusError {
 			publishFlowFailedEvent(ctx, nil, flowStartTime, time.Now().UnixMilli(), fe.observabilitySvc)
 		}
 		if _, svcErr := fe.runPostRequestInterceptorsOnExit(ctx, &flowStep, flowStartTime); svcErr != nil {
@@ -114,7 +114,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *tidcommon.ServiceE
 		logger.Debug(ctx.Context, "Executing node", log.String("nodeID", currentNode.GetID()),
 			log.String("nodeType", string(currentNode.GetType())))
 
-		nodeCtx := &core.NodeContext{
+		nodeCtx := &providers.NodeContext{
 			Context:          ctx.Context,
 			ExecutionID:      ctx.ExecutionID,
 			FlowType:         ctx.FlowType,
@@ -131,7 +131,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *tidcommon.ServiceE
 			ExecutionHistory: ctx.ExecutionHistory,
 		}
 		if nodeCtx.NodeInputs == nil {
-			nodeCtx.NodeInputs = make([]common.Input, 0)
+			nodeCtx.NodeInputs = make([]providers.Input, 0)
 		}
 		if nodeCtx.UserInputs == nil {
 			nodeCtx.UserInputs = make(map[string]string)
@@ -241,7 +241,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *tidcommon.ServiceE
 	}
 
 	// If we reach here, it means the all flow nodes has been executed successfully.
-	flowStep.Status = common.FlowStatusComplete
+	flowStep.Status = providers.FlowStatusComplete
 	if ctx.Assertion != "" {
 		flowStep.Assertion = ctx.Assertion
 	}
@@ -286,7 +286,7 @@ func (fe *flowEngine) runInterceptors(
 	var currentNodeID string
 	var nodeType common.NodeType
 	var skipInterceptors []string
-	var executionPolicy *core.ExecutionPolicy
+	var executionPolicy *providers.ExecutionPolicy
 	if currentNode != nil {
 		currentNodeID = currentNode.GetID()
 		nodeType = currentNode.GetType()
@@ -366,7 +366,7 @@ func (fe *flowEngine) runPostRequestInterceptorsOnExit(
 		return false, svcErr
 	}
 	if !interceptorExecSuccess {
-		if flowStep.Status == common.FlowStatusError {
+		if flowStep.Status == providers.FlowStatusError {
 			publishFlowFailedEvent(ctx, nil, flowStartTime, time.Now().UnixMilli(), fe.observabilitySvc)
 		}
 		return false, nil
@@ -428,19 +428,19 @@ func (fe *flowEngine) setCurrentExecutionNode(ctx *EngineContext,
 
 	// Initialize execution history map if needed
 	if ctx.ExecutionHistory == nil {
-		ctx.ExecutionHistory = make(map[string]*common.NodeExecutionRecord)
+		ctx.ExecutionHistory = make(map[string]*providers.NodeExecutionRecord)
 	}
 
 	return nil
 }
 
 // getNodeInputs extracts required inputs for a node.
-func getNodeInputs(node core.NodeInterface) []common.Input {
+func getNodeInputs(node core.NodeInterface) []providers.Input {
 	if execNode, ok := node.(core.ExecutorBackedNodeInterface); ok {
 		return execNode.GetInputs()
 	}
 	if promptNode, ok := node.(core.PromptNodeInterface); ok {
-		var inputs []common.Input
+		var inputs []providers.Input
 		for _, prompt := range promptNode.GetPrompts() {
 			inputs = append(inputs, prompt.Inputs...)
 		}
@@ -489,7 +489,7 @@ func (fe *flowEngine) setNodeExecutor(
 }
 
 // getExecutorByName retrieves executor instance from the executor registry.
-func (fe *flowEngine) getExecutorByName(executorName string) (core.ExecutorInterface, error) {
+func (fe *flowEngine) getExecutorByName(executorName string) (providers.Executor, error) {
 	exec, err := fe.executorRegistry.GetExecutor(executorName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get executor '%s': %w", executorName, err)
@@ -594,10 +594,10 @@ func (fe *flowEngine) processInterceptorResponse(resp *common.InterceptorRespons
 		return true
 	case common.InterceptorStatusIncomplete:
 		fe.updateFlowStepWithInterceptorResponse(flowStep, resp)
-		flowStep.Status = common.FlowStatusIncomplete
+		flowStep.Status = providers.FlowStatusIncomplete
 		return false
 	case common.InterceptorStatusFailure:
-		flowStep.Status = common.FlowStatusError
+		flowStep.Status = providers.FlowStatusError
 		flowStep.Error = resp.Error
 		return false
 	default:
@@ -659,7 +659,7 @@ func (fe *flowEngine) processNodeResponse(ctx *EngineContext, nodeResp *common.N
 		}
 		return nextNode, true, nil
 	case common.NodeStatusFailure:
-		flowStep.Status = common.FlowStatusError
+		flowStep.Status = providers.FlowStatusError
 		flowStep.Error = nodeResp.Error
 		return nil, false, nil
 	default:
@@ -693,12 +693,12 @@ func (fe *flowEngine) handleDisplayOnlyPromptResponse(ctx *EngineContext,
 
 	// If the next node is END, complete the flow
 	if nextNode.GetType() == common.NodeTypeEnd {
-		flowStep.Status = common.FlowStatusComplete
+		flowStep.Status = providers.FlowStatusComplete
 		continueExecution = true
 	} else {
 		// Set current node to the next node so that flow can be resumed from there in the next execution
 		ctx.CurrentNode = nextNode
-		flowStep.Status = common.FlowStatusIncomplete
+		flowStep.Status = providers.FlowStatusIncomplete
 		flowStep.Type = common.StepTypeView
 
 		// Set current segment to the next node's segment if segments are defined in the graph
@@ -857,14 +857,14 @@ func (fe *flowEngine) resolveStepForRedirection(ctx *EngineContext, nodeResp *co
 	flowStep.Data.RedirectURL = nodeResp.RedirectURL
 
 	if flowStep.Data.Inputs == nil {
-		flowStep.Data.Inputs = make([]common.Input, 0)
+		flowStep.Data.Inputs = make([]providers.Input, 0)
 		flowStep.Data.Inputs = nodeResp.Inputs
 	} else {
 		// Append to the existing inputs
 		flowStep.Data.Inputs = append(flowStep.Data.Inputs, nodeResp.Inputs...)
 	}
 
-	flowStep.Status = common.FlowStatusIncomplete
+	flowStep.Status = providers.FlowStatusIncomplete
 	flowStep.Type = common.StepTypeRedirection
 	return nil
 }
@@ -881,7 +881,7 @@ func (fe *flowEngine) resolveStepDetailsForPrompt(ctx *EngineContext, nodeResp *
 
 	if len(nodeResp.Inputs) > 0 {
 		if flowStep.Data.Inputs == nil {
-			flowStep.Data.Inputs = make([]common.Input, 0)
+			flowStep.Data.Inputs = make([]providers.Input, 0)
 			flowStep.Data.Inputs = nodeResp.Inputs
 		} else {
 			// Append to the existing inputs
@@ -925,7 +925,7 @@ func (fe *flowEngine) resolveStepDetailsForPrompt(ctx *EngineContext, nodeResp *
 		flowStep.Data.FieldErrors = nodeResp.FieldErrors
 	}
 
-	flowStep.Status = common.FlowStatusIncomplete
+	flowStep.Status = providers.FlowStatusIncomplete
 	flowStep.Type = common.StepTypeView
 	return nil
 }
@@ -977,13 +977,13 @@ func recordNodeExecution(ctx *EngineContext, node core.NodeInterface, nodeResp *
 }
 
 // createExecutionRecord creates a new node execution record.
-func createExecutionRecord(node core.NodeInterface, step int) common.NodeExecutionRecord {
-	record := common.NodeExecutionRecord{
+func createExecutionRecord(node core.NodeInterface, step int) providers.NodeExecutionRecord {
+	record := providers.NodeExecutionRecord{
 		NodeID:     node.GetID(),
 		NodeType:   string(node.GetType()),
 		Step:       step,
-		Status:     common.FlowStatusIncomplete,
-		Executions: make([]common.ExecutionAttempt, 0),
+		Status:     providers.FlowStatusIncomplete,
+		Executions: make([]providers.ExecutionAttempt, 0),
 		StartTime:  time.Now().Unix(),
 	}
 
@@ -1003,9 +1003,9 @@ func createExecutionRecord(node core.NodeInterface, step int) common.NodeExecuti
 }
 
 // createExecutionAttempt creates a new execution attempt.
-func createExecutionAttempt(nodeRecord *common.NodeExecutionRecord, nodeResp *common.NodeResponse,
-	nodeErr *tidcommon.ServiceError, executionStartTime int64, executionEndTime int64) common.ExecutionAttempt {
-	attempt := common.ExecutionAttempt{
+func createExecutionAttempt(nodeRecord *providers.NodeExecutionRecord, nodeResp *common.NodeResponse,
+	nodeErr *tidcommon.ServiceError, executionStartTime int64, executionEndTime int64) providers.ExecutionAttempt {
+	attempt := providers.ExecutionAttempt{
 		Attempt:   len(nodeRecord.Executions) + 1,
 		Timestamp: executionEndTime,
 		StartTime: executionStartTime,
@@ -1014,17 +1014,17 @@ func createExecutionAttempt(nodeRecord *common.NodeExecutionRecord, nodeResp *co
 
 	// Determine status
 	if nodeErr != nil {
-		attempt.Status = common.FlowStatusError
+		attempt.Status = providers.FlowStatusError
 	} else if nodeResp != nil {
 		switch nodeResp.Status {
 		case common.NodeStatusComplete:
-			attempt.Status = common.FlowStatusComplete
+			attempt.Status = providers.FlowStatusComplete
 		case common.NodeStatusIncomplete:
-			attempt.Status = common.FlowStatusIncomplete
+			attempt.Status = providers.FlowStatusIncomplete
 		case common.NodeStatusFailure:
-			attempt.Status = common.FlowStatusError
+			attempt.Status = providers.FlowStatusError
 		default:
-			attempt.Status = common.FlowStatusIncomplete
+			attempt.Status = providers.FlowStatusIncomplete
 		}
 	}
 
@@ -1092,21 +1092,21 @@ func publishNodeExecutionCompletedEvent(ctx *EngineContext, node core.NodeInterf
 	if nodeErr != nil {
 		eventType = event.EventTypeFlowNodeExecutionFailed
 		status = event.StatusFailure
-		nodeStatus = string(common.FlowStatusError)
+		nodeStatus = string(providers.FlowStatusError)
 	} else if nodeResp != nil {
 		switch nodeResp.Status {
 		case common.NodeStatusComplete:
 			eventType = event.EventTypeFlowNodeExecutionCompleted
 			status = event.StatusSuccess
-			nodeStatus = string(common.FlowStatusComplete)
+			nodeStatus = string(providers.FlowStatusComplete)
 		case common.NodeStatusIncomplete:
 			eventType = event.EventTypeFlowNodeExecutionCompleted
 			status = event.StatusSuccess
-			nodeStatus = string(common.FlowStatusIncomplete)
+			nodeStatus = string(providers.FlowStatusIncomplete)
 		case common.NodeStatusFailure:
 			eventType = event.EventTypeFlowNodeExecutionFailed
 			status = event.StatusFailure
-			nodeStatus = string(common.FlowStatusError)
+			nodeStatus = string(providers.FlowStatusError)
 		default:
 			eventType = event.EventTypeFlowNodeExecutionCompleted
 			status = event.StatusSuccess
@@ -1115,7 +1115,7 @@ func publishNodeExecutionCompletedEvent(ctx *EngineContext, node core.NodeInterf
 	} else {
 		eventType = event.EventTypeFlowNodeExecutionCompleted
 		status = event.StatusSuccess
-		nodeStatus = string(common.FlowStatusComplete)
+		nodeStatus = string(providers.FlowStatusComplete)
 	}
 
 	// Calculate duration in milliseconds

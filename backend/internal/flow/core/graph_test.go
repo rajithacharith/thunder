@@ -393,7 +393,7 @@ func (s *GraphTestSuite) TestToJSON() {
 
 	if execNode, ok := node1.(ExecutorBackedNodeInterface); ok {
 		execNode.SetExecutorName("test-executor")
-		execNode.SetInputs([]common.Input{
+		execNode.SetInputs([]providers.Input{
 			{Identifier: "username", Type: "string", Required: true,
 				DisplayName: "User Name"},
 		})

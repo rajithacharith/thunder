@@ -30,7 +30,6 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/flow/common"
-	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/system/security"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 	"github.com/thunder-id/thunderid/tests/mocks/oumock"
@@ -50,7 +49,7 @@ func (suite *OUResolverExecutorTestSuite) SetupTest() {
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 
-	defaultInputs := []common.Input{
+	defaultInputs := []providers.Input{
 		{
 			Ref:        "ou_selection_input",
 			Identifier: ouIDKey,
@@ -61,10 +60,10 @@ func (suite *OUResolverExecutorTestSuite) SetupTest() {
 
 	suite.mockFlowFactory.On("CreateExecutor",
 		ExecutorNameOUResolver,
-		common.ExecutorTypeUtility,
+		providers.ExecutorTypeUtility,
 		defaultInputs,
-		[]common.Input{}).Return(
-		newMockExecutor("OUResolverExecutor", common.ExecutorTypeUtility, defaultInputs, []common.Input{}))
+		[]providers.Input{}).Return(
+		newMockExecutor("OUResolverExecutor", providers.ExecutorTypeUtility, defaultInputs, []providers.Input{}))
 
 	suite.executor = newOUResolverExecutor(suite.mockFlowFactory, suite.mockOUService)
 }
@@ -80,7 +79,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_ResolveFromCaller_Success(
 	)
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "test-flow",
 		Context:     httpCtx,
 		NodeProperties: map[string]interface{}{
@@ -94,7 +93,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_ResolveFromCaller_Success(
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 	assert.Equal(suite.T(), callerOUID, resp.RuntimeData[ouIDKey])
 }
 
@@ -107,7 +106,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_ResolveFromCaller_CallerOU
 	)
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "test-flow",
 		Context:     httpCtx,
 		NodeProperties: map[string]interface{}{
@@ -118,7 +117,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_ResolveFromCaller_CallerOU
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), providers.ExecFailure, resp.Status)
 	assert.Equal(suite.T(), ErrOUResolutionFailed.Error.DefaultValue, resp.Error.Error.DefaultValue)
 }
 
@@ -130,7 +129,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_ResolveFromNotConfigured()
 	)
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID:    "test-flow",
 		Context:        httpCtx,
 		NodeProperties: map[string]interface{}{},
@@ -142,14 +141,14 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_ResolveFromNotConfigured()
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 	assert.Empty(suite.T(), resp.RuntimeData[ouIDKey])
 }
 
 func (suite *OUResolverExecutorTestSuite) TestExecute_UnsupportedResolveFrom() {
 	httpCtx := context.Background()
 
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "test-flow",
 		Context:     httpCtx,
 		NodeProperties: map[string]interface{}{
@@ -160,7 +159,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_UnsupportedResolveFrom() {
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), providers.ExecFailure, resp.Status)
 	assert.Contains(suite.T(), resp.Error.ErrorDescription.DefaultValue,
 		"Unsupported OU resolution strategy: unsupported")
 }
@@ -168,7 +167,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_UnsupportedResolveFrom() {
 func (suite *OUResolverExecutorTestSuite) TestExecute_PropertyMissing() {
 	httpCtx := context.Background()
 
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID:    "test-flow",
 		Context:        httpCtx,
 		NodeProperties: map[string]interface{}{},
@@ -180,14 +179,14 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_PropertyMissing() {
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 	assert.Empty(suite.T(), resp.RuntimeData[ouIDKey])
 }
 
 func (suite *OUResolverExecutorTestSuite) TestExecute_NilNodeProperties() {
 	httpCtx := context.Background()
 
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID:    "test-flow",
 		Context:        httpCtx,
 		NodeProperties: nil,
@@ -199,7 +198,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_NilNodeProperties() {
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 	assert.Empty(suite.T(), resp.RuntimeData[ouIDKey])
 }
 
@@ -211,7 +210,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_PropertyWrongType() {
 	)
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "test-flow",
 		Context:     httpCtx,
 		NodeProperties: map[string]interface{}{
@@ -222,12 +221,12 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_PropertyWrongType() {
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 	assert.Empty(suite.T(), resp.RuntimeData[ouIDKey])
 }
 
 func (suite *OUResolverExecutorTestSuite) TestExecute_NilContext() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "test-flow",
 		Context:     nil,
 		NodeProperties: map[string]interface{}{
@@ -238,14 +237,14 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_NilContext() {
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), providers.ExecFailure, resp.Status)
 	assert.Equal(suite.T(), ErrOUResolutionFailed.Error.DefaultValue, resp.Error.Error.DefaultValue)
 }
 
 // --- Prompt strategy tests ---
 
 func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_NoDefaultOUID_ReturnsError() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		NodeProperties: map[string]interface{}{
 			common.NodePropertyOUResolveFrom: ouResolveFromPrompt,
@@ -268,7 +267,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_Vali
 	parentOUID := testParentOUID
 	selectedOUID := testChildOUID
 
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		NodeProperties: map[string]interface{}{
 			common.NodePropertyOUResolveFrom: ouResolveFromPrompt,
@@ -287,7 +286,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_Vali
 	result, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, result.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, result.Status)
 	assert.Equal(suite.T(), selectedOUID, result.RuntimeData[ouIDKey])
 	suite.mockOUService.AssertExpectations(suite.T())
 }
@@ -296,7 +295,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_NotI
 	parentOUID := testParentOUID
 	selectedOUID := "unrelated-ou-789"
 
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		NodeProperties: map[string]interface{}{
 			common.NodePropertyOUResolveFrom: ouResolveFromPrompt,
@@ -315,7 +314,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_NotI
 	result, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, result.Status)
+	assert.Equal(suite.T(), providers.ExecUserInputRequired, result.Status)
 	assert.Contains(suite.T(), result.Error.ErrorDescription.DefaultValue,
 		ErrOUNotValidForUserType.ErrorDescription.DefaultValue)
 	suite.mockOUService.AssertExpectations(suite.T())
@@ -325,7 +324,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_Serv
 	parentOUID := testParentOUID
 	selectedOUID := testChildOUID
 
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		NodeProperties: map[string]interface{}{
 			common.NodePropertyOUResolveFrom: ouResolveFromPrompt,
@@ -358,7 +357,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_Clie
 	parentOUID := testParentOUID
 	selectedOUID := testChildOUID
 
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		NodeProperties: map[string]interface{}{
 			common.NodePropertyOUResolveFrom: ouResolveFromPrompt,
@@ -382,7 +381,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_Clie
 	result, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, result.Status)
+	assert.Equal(suite.T(), providers.ExecUserInputRequired, result.Status)
 	assert.Contains(suite.T(), result.Error.ErrorDescription.DefaultValue, "not valid")
 	suite.mockOUService.AssertExpectations(suite.T())
 }
@@ -390,7 +389,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_Clie
 func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_NoChildOUs_Skips() {
 	parentOUID := testParentOUID
 
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		NodeProperties: map[string]interface{}{
 			common.NodePropertyOUResolveFrom: ouResolveFromPrompt,
@@ -407,14 +406,14 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_NoChildOUs_Skips() 
 	result, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, result.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, result.Status)
 	suite.mockOUService.AssertExpectations(suite.T())
 }
 
 func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_HasChildOUs_RequestsInput() {
 	parentOUID := testParentOUID
 
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		NodeProperties: map[string]interface{}{
 			common.NodePropertyOUResolveFrom: ouResolveFromPrompt,
@@ -431,7 +430,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_HasChildOUs_Request
 	result, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, result.Status)
+	assert.Equal(suite.T(), providers.ExecUserInputRequired, result.Status)
 	assert.Equal(suite.T(), parentOUID, result.AdditionalData[common.DataRootOUID])
 	assert.NotEmpty(suite.T(), result.Inputs)
 	assert.Equal(suite.T(), ouIDKey, result.Inputs[0].Identifier)
@@ -442,7 +441,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_HasChildOUs_Request
 func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_GetChildrenError_ReturnsError() {
 	parentOUID := testParentOUID
 
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		NodeProperties: map[string]interface{}{
 			common.NodePropertyOUResolveFrom: ouResolveFromPrompt,
@@ -472,7 +471,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_GetChildrenError_Re
 // --- PromptAll strategy tests ---
 
 func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_FirstInvocation_RequestsInput() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		NodeProperties: map[string]interface{}{
 			common.NodePropertyOUResolveFrom: ouResolveFromPromptAll,
@@ -484,7 +483,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_FirstInvocation_
 	result, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, result.Status)
+	assert.Equal(suite.T(), providers.ExecUserInputRequired, result.Status)
 	assert.NotEmpty(suite.T(), result.Inputs)
 	assert.Equal(suite.T(), ouIDKey, result.Inputs[0].Identifier)
 	assert.Equal(suite.T(), "OU_SELECT", result.Inputs[0].Type)
@@ -496,7 +495,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_FirstInvocation_
 func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_ValidOUSelection() {
 	selectedOUID := "valid-ou-123"
 
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		NodeProperties: map[string]interface{}{
 			common.NodePropertyOUResolveFrom: ouResolveFromPromptAll,
@@ -513,7 +512,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_ValidOUSelection
 	result, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, result.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, result.Status)
 	assert.Equal(suite.T(), selectedOUID, result.RuntimeData[ouIDKey])
 	suite.mockOUService.AssertExpectations(suite.T())
 }
@@ -521,7 +520,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_ValidOUSelection
 func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_NonExistentOU() {
 	selectedOUID := "nonexistent-ou-999"
 
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		NodeProperties: map[string]interface{}{
 			common.NodePropertyOUResolveFrom: ouResolveFromPromptAll,
@@ -538,7 +537,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_NonExistentOU() 
 	result, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, result.Status)
+	assert.Equal(suite.T(), providers.ExecUserInputRequired, result.Status)
 	assert.Equal(suite.T(), ErrOUNotFound.ErrorDescription.DefaultValue, result.Error.ErrorDescription.DefaultValue)
 	suite.mockOUService.AssertExpectations(suite.T())
 }
@@ -546,7 +545,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_NonExistentOU() 
 func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_ServiceError() {
 	selectedOUID := "some-ou-123"
 
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		NodeProperties: map[string]interface{}{
 			common.NodePropertyOUResolveFrom: ouResolveFromPromptAll,
@@ -574,7 +573,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_ServiceError() {
 }
 
 func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_EmptyOUInput_RequestsInput() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		NodeProperties: map[string]interface{}{
 			common.NodePropertyOUResolveFrom: ouResolveFromPromptAll,
@@ -588,7 +587,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_EmptyOUInput_Req
 	result, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, result.Status)
+	assert.Equal(suite.T(), providers.ExecUserInputRequired, result.Status)
 	assert.NotEmpty(suite.T(), result.Inputs)
 	suite.mockOUService.AssertNotCalled(suite.T(), "IsOrganizationUnitExists", mock.Anything, mock.Anything)
 }

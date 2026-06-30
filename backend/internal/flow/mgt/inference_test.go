@@ -154,7 +154,7 @@ func (s *FlowInferenceServiceTestSuite) TestInferRegistrationFlow_WithAuthAssert
 	s.Equal(string(common.NodeTypePrompt), phonePromptNode.Type)
 	s.Equal("auth", phonePromptNode.Prompts[0].Action.NextNode, "Phone prompt should point to SMS send node")
 	s.Len(phonePromptNode.Prompts[0].Inputs, 1)
-	s.Equal(common.InputTypePhone, phonePromptNode.Prompts[0].Inputs[0].Type)
+	s.Equal(providers.InputTypePhone, phonePromptNode.Prompts[0].Inputs[0].Type)
 }
 
 func (s *FlowInferenceServiceTestSuite) TestInferRegistrationFlow_WithAuthAssertAndMultiplePaths() {
@@ -529,7 +529,7 @@ func (s *FlowInferenceServiceTestSuite) TestInsertPhoneInputPromptIfNeeded_Phone
 			Prompts: []providers.PromptDefinition{
 				{
 					Inputs: []providers.InputDefinition{
-						{Identifier: "mobileNumber", Type: common.InputTypePhone, Required: true},
+						{Identifier: "mobileNumber", Type: providers.InputTypePhone, Required: true},
 					},
 					Action: &providers.ActionDefinition{NextNode: "sms"},
 				},
@@ -580,7 +580,7 @@ func (s *FlowInferenceServiceTestSuite) TestInsertPhoneInputPromptIfNeeded_Inser
 	s.Equal(string(common.NodeTypePrompt), phonePrompt.Type)
 	s.Len(phonePrompt.Prompts, 1)
 	s.Len(phonePrompt.Prompts[0].Inputs, 1)
-	s.Equal(common.InputTypePhone, phonePrompt.Prompts[0].Inputs[0].Type)
+	s.Equal(providers.InputTypePhone, phonePrompt.Prompts[0].Inputs[0].Type)
 	s.Equal("sms", phonePrompt.Prompts[0].Action.NextNode, "Phone prompt should point to SMS send node")
 	s.Nil(phonePrompt.Layout, "Layout should not be added when includeLayout is false")
 
@@ -625,7 +625,7 @@ func (s *FlowInferenceServiceTestSuite) TestInsertPhoneInputPromptIfNeeded_UsesE
 				Name: executor.ExecutorNameSMSAuth,
 				Mode: executor.ExecutorModeSend,
 				Inputs: []providers.InputDefinition{
-					{Ref: "phone_input_dvq8", Identifier: "mobile", Type: common.InputTypePhone, Required: true},
+					{Ref: "phone_input_dvq8", Identifier: "mobile", Type: providers.InputTypePhone, Required: true},
 				},
 			},
 			OnSuccess: "end",

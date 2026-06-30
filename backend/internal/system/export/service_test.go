@@ -153,7 +153,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_DefaultOptions() {
 		Applications: []string{appID},
 	}
 
-	mockApp := &appmodel.Application{
+	mockApp := &providers.Application{
 		ID:          appID,
 		Name:        "Test App",
 		Description: "Test Description",
@@ -220,7 +220,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_CompleteOAuthApplicatio
 		},
 	}
 
-	mockOAuthConfig := &inboundmodel.OAuthConfigWithSecret{
+	mockOAuthConfig := &providers.OAuthConfigWithSecret{
 		ClientID:                "client123",
 		RedirectURIs:            []string{"http://localhost:3000/callback"},
 		GrantTypes:              []providers.GrantType{providers.GrantTypeAuthorizationCode},
@@ -244,18 +244,18 @@ func (suite *ExportServiceTestSuite) TestExportResources_CompleteOAuthApplicatio
 		},
 	}
 
-	mockApp := &appmodel.Application{
+	mockApp := &providers.Application{
 		ID:          appID,
 		Name:        "OAuth Test App",
 		Description: "OAuth Test Description",
 		URL:         "https://example.com",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type:        inboundmodel.OAuthInboundAuthType,
+				Type:        providers.OAuthInboundAuthType,
 				OAuthConfig: mockOAuthConfig,
 			},
 		},
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			Assertion: &inboundmodel.AssertionConfig{
 				UserAttributes: []string{"email", "username"},
 			},
@@ -298,13 +298,13 @@ func (suite *ExportServiceTestSuite) TestExportResources_MultipleApplications() 
 		},
 	}
 
-	mockApp1 := &appmodel.Application{
+	mockApp1 := &providers.Application{
 		ID:          testApp1ID,
 		Name:        "App One",
 		Description: "First App",
 	}
 
-	mockApp2 := &appmodel.Application{
+	mockApp2 := &providers.Application{
 		ID:          testApp2ID,
 		Name:        "App Two",
 		Description: "Second App",
@@ -333,7 +333,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_PartialFailure() {
 		},
 	}
 
-	mockApp1 := &appmodel.Application{
+	mockApp1 := &providers.Application{
 		ID:   app1ID,
 		Name: "Valid App",
 	}
@@ -377,19 +377,19 @@ func (suite *ExportServiceTestSuite) TestExportResources_WildcardApplications() 
 		},
 	}
 
-	mockApp1 := &appmodel.Application{
+	mockApp1 := &providers.Application{
 		ID:          testApp1ID,
 		Name:        "Application One",
 		Description: "First App",
 	}
 
-	mockApp2 := &appmodel.Application{
+	mockApp2 := &providers.Application{
 		ID:          testApp2ID,
 		Name:        "Application Two",
 		Description: "Second App",
 	}
 
-	mockApp3 := &appmodel.Application{
+	mockApp3 := &providers.Application{
 		ID:          testApp3ID,
 		Name:        "Application Three",
 		Description: "Third App",
@@ -478,13 +478,13 @@ func (suite *ExportServiceTestSuite) TestExportResources_WildcardApplications_Pa
 		},
 	}
 
-	mockApp1 := &appmodel.Application{
+	mockApp1 := &providers.Application{
 		ID:          testApp1ID,
 		Name:        "Application One",
 		Description: "First App",
 	}
 
-	mockApp3 := &appmodel.Application{
+	mockApp3 := &providers.Application{
 		ID:          testApp3ID,
 		Name:        "Application Three",
 		Description: "Third App",
@@ -630,7 +630,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_Mixed_ApplicationsAndID
 		},
 	}
 
-	mockApp := &appmodel.Application{
+	mockApp := &providers.Application{
 		ID:          testAppID,
 		Name:        "Test App",
 		Description: "Test Description",
@@ -934,7 +934,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_PartialFailure_Detailed
 		},
 	}
 
-	mockApp1 := &appmodel.Application{
+	mockApp1 := &providers.Application{
 		ID:   app1ID,
 		Name: "Valid App",
 	}
@@ -1037,7 +1037,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_MixedResources_WithErro
 	}
 
 	// Setup successful app
-	mockApp1 := &appmodel.Application{
+	mockApp1 := &providers.Application{
 		ID:   "app1",
 		Name: "Valid App",
 	}
@@ -1112,13 +1112,13 @@ func (suite *ExportServiceTestSuite) TestExportResources_FileSizeCalculation() {
 		},
 	}
 
-	mockApp1 := &appmodel.Application{
+	mockApp1 := &providers.Application{
 		ID:          testApp1ID,
 		Name:        "Application One",
 		Description: "First application",
 	}
 
-	mockApp2 := &appmodel.Application{
+	mockApp2 := &providers.Application{
 		ID:          testApp2ID,
 		Name:        "Application Two",
 		Description: "Second application with longer description",
@@ -1172,12 +1172,12 @@ func (suite *ExportServiceTestSuite) TestExportResources_TemplateGenerationError
 		},
 	}
 
-	mockApp1 := &appmodel.Application{
+	mockApp1 := &providers.Application{
 		ID:   testApp1ID,
 		Name: "Valid App",
 	}
 
-	mockApp2 := &appmodel.Application{
+	mockApp2 := &providers.Application{
 		ID:   testApp2ID,
 		Name: "App That Fails Template Generation",
 	}
@@ -1226,7 +1226,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_WithCustomFolderStructu
 		},
 	}
 
-	mockApp := &appmodel.Application{
+	mockApp := &providers.Application{
 		ID:   testApp1ID,
 		Name: "Test Application",
 	}
@@ -1256,12 +1256,12 @@ func (suite *ExportServiceTestSuite) TestExportResources_WithGroupByTypeStructur
 		},
 	}
 
-	mockApp1 := &appmodel.Application{
+	mockApp1 := &providers.Application{
 		ID:   testApp1ID,
 		Name: "Application One",
 	}
 
-	mockApp2 := &appmodel.Application{
+	mockApp2 := &providers.Application{
 		ID:   testApp2ID,
 		Name: "Application Two",
 	}
@@ -1814,7 +1814,7 @@ func (suite *ExportServiceTestSuite) assertMultipleResourcesExport(
 // TestExportResourcesWithExporter_Success tests successful export with a valid exporter.
 func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_Success() {
 	appID := testAppTestID
-	mockApp := &appmodel.Application{
+	mockApp := &providers.Application{
 		ID:          appID,
 		Name:        "Test Application",
 		Description: "Test Description",
@@ -1848,19 +1848,19 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_MultipleRes
 	app2ID := "app-2"
 	app3ID := "app-3"
 
-	mockApp1 := &appmodel.Application{
+	mockApp1 := &providers.Application{
 		ID:          app1ID,
 		Name:        "Application One",
 		Description: "First App",
 	}
 
-	mockApp2 := &appmodel.Application{
+	mockApp2 := &providers.Application{
 		ID:          app2ID,
 		Name:        "Application Two",
 		Description: "Second App",
 	}
 
-	mockApp3 := &appmodel.Application{
+	mockApp3 := &providers.Application{
 		ID:          app3ID,
 		Name:        "Application Three",
 		Description: "Third App",
@@ -1914,7 +1914,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_PartialSucc
 	validAppID := "valid-app"
 	invalidAppID := "invalid-app"
 
-	mockApp := &appmodel.Application{
+	mockApp := &providers.Application{
 		ID:          validAppID,
 		Name:        "Valid Application",
 		Description: "Valid Description",
@@ -1953,13 +1953,13 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardSuc
 		},
 	}
 
-	mockApp1 := &appmodel.Application{
+	mockApp1 := &providers.Application{
 		ID:          testApp1ID,
 		Name:        "App One",
 		Description: "First App",
 	}
 
-	mockApp2 := &appmodel.Application{
+	mockApp2 := &providers.Application{
 		ID:          testApp2ID,
 		Name:        "App Two",
 		Description: "Second App",
@@ -2026,7 +2026,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardEmp
 // TestExportResourcesWithExporter_WithGroupByType tests export with GroupByType option.
 func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WithGroupByType() {
 	appID := testAppTestID
-	mockApp := &appmodel.Application{
+	mockApp := &providers.Application{
 		ID:          appID,
 		Name:        "Test App",
 		Description: "Test Description",
@@ -2054,7 +2054,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WithGroupBy
 // TestExportResourcesWithExporter_WithCustomFileNaming tests export with custom file naming pattern.
 func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WithCustomFileNaming() {
 	appID := "app-123"
-	mockApp := &appmodel.Application{
+	mockApp := &providers.Application{
 		ID:          appID,
 		Name:        "My Application",
 		Description: "Test Description",
@@ -2183,7 +2183,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_EmptyResour
 // TestExportResourcesWithExporter_JSONFormatFallback tests that JSON format falls back to YAML.
 func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_JSONFormatFallback() {
 	appID := testAppTestID
-	mockApp := &appmodel.Application{
+	mockApp := &providers.Application{
 		ID:          appID,
 		Name:        "Test App",
 		Description: "Test Description",
@@ -2540,7 +2540,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_MixedWithFlows() {
 	appID := testAppID
 	flowID := testFlowID
 
-	mockApp := &appmodel.Application{
+	mockApp := &providers.Application{
 		ID:          appID,
 		Name:        "Test App",
 		Description: "Test Description",

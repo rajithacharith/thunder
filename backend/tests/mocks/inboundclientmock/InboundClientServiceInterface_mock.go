@@ -630,7 +630,7 @@ func (_c *InboundClientServiceInterfaceMock_LoadDeclarativeResources_Call) RunAn
 }
 
 // ResolveInboundAuthProfileHandles provides a mock function for the type InboundClientServiceInterfaceMock
-func (_mock *InboundClientServiceInterfaceMock) ResolveInboundAuthProfileHandles(ctx context.Context, profile *model.InboundAuthProfile) error {
+func (_mock *InboundClientServiceInterfaceMock) ResolveInboundAuthProfileHandles(ctx context.Context, profile *providers.InboundAuthProfile) error {
 	ret := _mock.Called(ctx, profile)
 
 	if len(ret) == 0 {
@@ -638,7 +638,7 @@ func (_mock *InboundClientServiceInterfaceMock) ResolveInboundAuthProfileHandles
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *model.InboundAuthProfile) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *providers.InboundAuthProfile) error); ok {
 		r0 = returnFunc(ctx, profile)
 	} else {
 		r0 = ret.Error(0)
@@ -653,20 +653,20 @@ type InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call str
 
 // ResolveInboundAuthProfileHandles is a helper method to define mock.On call
 //   - ctx context.Context
-//   - profile *model.InboundAuthProfile
+//   - profile *providers.InboundAuthProfile
 func (_e *InboundClientServiceInterfaceMock_Expecter) ResolveInboundAuthProfileHandles(ctx interface{}, profile interface{}) *InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call {
 	return &InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call{Call: _e.mock.On("ResolveInboundAuthProfileHandles", ctx, profile)}
 }
 
-func (_c *InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call) Run(run func(ctx context.Context, profile *model.InboundAuthProfile)) *InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call {
+func (_c *InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call) Run(run func(ctx context.Context, profile *providers.InboundAuthProfile)) *InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *model.InboundAuthProfile
+		var arg1 *providers.InboundAuthProfile
 		if args[1] != nil {
-			arg1 = args[1].(*model.InboundAuthProfile)
+			arg1 = args[1].(*providers.InboundAuthProfile)
 		}
 		run(
 			arg0,
@@ -681,7 +681,7 @@ func (_c *InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Cal
 	return _c
 }
 
-func (_c *InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call) RunAndReturn(run func(ctx context.Context, profile *model.InboundAuthProfile) error) *InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call {
+func (_c *InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call) RunAndReturn(run func(ctx context.Context, profile *providers.InboundAuthProfile) error) *InboundClientServiceInterfaceMock_ResolveInboundAuthProfileHandles_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -56,7 +56,7 @@ func newAuthenticatedAuthUser() providers.AuthUser {
 func (s *EngineTestSuite) TestGetNodeInputs_ExecutorBackedNode() {
 	t := s.T()
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
-	expectedInputs := []common.Input{
+	expectedInputs := []providers.Input{
 		{Identifier: "username", Type: "string", Required: true},
 		{Identifier: "password", Type: "string", Required: true},
 	}
@@ -75,12 +75,12 @@ func (s *EngineTestSuite) TestGetNodeInputs_PromptNode() {
 	mockNode := coremock.NewPromptNodeInterfaceMock(t)
 	prompts := []common.Prompt{
 		{
-			Inputs: []common.Input{
+			Inputs: []providers.Input{
 				{Identifier: "email", Type: "string", Required: true},
 			},
 		},
 		{
-			Inputs: []common.Input{
+			Inputs: []providers.Input{
 				{Identifier: "code", Type: "string", Required: true},
 			},
 		},
@@ -246,7 +246,7 @@ func (s *EngineTestSuite) TestTrackPresentedOptionalInputs_MergesOptionalInputId
 	nodeResp := &common.NodeResponse{
 		Status: common.NodeStatusIncomplete,
 		Type:   common.NodeResponseTypeView,
-		Inputs: []common.Input{
+		Inputs: []providers.Input{
 			{Identifier: "given_name", Required: false},
 			{Identifier: "username", Required: true},
 		},
@@ -270,7 +270,7 @@ func (s *EngineTestSuite) TestTrackPresentedOptionalInputs_SkipsNonPromptRespons
 	nodeResp := &common.NodeResponse{
 		Status: common.NodeStatusForward,
 		Type:   common.NodeResponseTypeView,
-		Inputs: []common.Input{
+		Inputs: []providers.Input{
 			{Identifier: "given_name", Required: false},
 		},
 	}
@@ -362,7 +362,7 @@ func (s *EngineTestSuite) TestResolveStepDetailsForPrompt_WithAdditionalData() {
 	}
 
 	nodeResp := &common.NodeResponse{
-		Inputs: []common.Input{
+		Inputs: []providers.Input{
 			{Identifier: "username", Type: "string", Required: true},
 		},
 	}
@@ -582,7 +582,7 @@ func (s *EngineTestSuite) TestResolveStepForRedirection_WithInputs() {
 
 	nodeResp := &common.NodeResponse{
 		RedirectURL: "https://example.com/auth",
-		Inputs: []common.Input{
+		Inputs: []providers.Input{
 			{Identifier: "code", Type: "string", Required: true},
 		},
 	}
@@ -596,7 +596,7 @@ func (s *EngineTestSuite) TestResolveStepForRedirection_WithInputs() {
 	s.NoError(err)
 	s.Len(flowStep.Data.Inputs, 1)
 	s.Equal("code", flowStep.Data.Inputs[0].Identifier)
-	s.Equal(common.FlowStatusIncomplete, flowStep.Status)
+	s.Equal(providers.FlowStatusIncomplete, flowStep.Status)
 	s.Equal(common.StepTypeRedirection, flowStep.Type)
 }
 
@@ -607,14 +607,14 @@ func (s *EngineTestSuite) TestResolveStepForRedirection_AppendsInputs() {
 
 	nodeResp := &common.NodeResponse{
 		RedirectURL: "https://example.com/auth",
-		Inputs: []common.Input{
+		Inputs: []providers.Input{
 			{Identifier: "code", Type: "string", Required: true},
 		},
 	}
 
 	flowStep := &FlowStep{
 		Data: FlowData{
-			Inputs: []common.Input{
+			Inputs: []providers.Input{
 				{Identifier: "state", Type: "string", Required: true},
 			},
 		},
@@ -632,7 +632,7 @@ func (s *EngineTestSuite) TestResolveStepDetailsForPrompt_WithMeta() {
 	ctx := &EngineContext{}
 
 	nodeResp := &common.NodeResponse{
-		Inputs: []common.Input{
+		Inputs: []providers.Input{
 			{Identifier: "username", Type: "string", Required: true},
 		},
 		Meta: map[string]interface{}{
@@ -657,7 +657,7 @@ func (s *EngineTestSuite) TestResolveStepDetailsForPrompt_WithError() {
 	ctx := &EngineContext{}
 
 	nodeResp := &common.NodeResponse{
-		Inputs: []common.Input{
+		Inputs: []providers.Input{
 			{Identifier: "otp", Type: "string", Required: true},
 		},
 		Error: &tidcommon.ServiceError{
@@ -683,7 +683,7 @@ func (s *EngineTestSuite) TestResolveStepDetailsForPrompt_WithError() {
 	s.NotNil(flowStep.Error)
 	s.Equal("FET-1008", flowStep.Error.Code)
 	s.Equal("Invalid OTP provided", flowStep.Error.Error.DefaultValue)
-	s.Equal(common.FlowStatusIncomplete, flowStep.Status)
+	s.Equal(providers.FlowStatusIncomplete, flowStep.Status)
 	s.Equal(common.StepTypeView, flowStep.Type)
 }
 
@@ -693,14 +693,14 @@ func (s *EngineTestSuite) TestResolveStepDetailsForPrompt_AppendsInputs() {
 	ctx := &EngineContext{}
 
 	nodeResp := &common.NodeResponse{
-		Inputs: []common.Input{
+		Inputs: []providers.Input{
 			{Identifier: "password", Type: "string", Required: true},
 		},
 	}
 
 	flowStep := &FlowStep{
 		Data: FlowData{
-			Inputs: []common.Input{
+			Inputs: []providers.Input{
 				{Identifier: "username", Type: "string", Required: true},
 			},
 		},
@@ -743,7 +743,7 @@ func (s *EngineTestSuite) TestGetNodeInputs_PromptNodeEmptyInputs() {
 	mockNode := coremock.NewPromptNodeInterfaceMock(s.T())
 	prompts := []common.Prompt{
 		{
-			Inputs: []common.Input{},
+			Inputs: []providers.Input{},
 		},
 	}
 	mockNode.On("GetPrompts").Return(prompts)
@@ -755,9 +755,9 @@ func (s *EngineTestSuite) TestGetNodeInputs_PromptNodeEmptyInputs() {
 
 func (s *EngineTestSuite) TestClearSensitiveInputs_AuthFlowRemovesPassword() {
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(s.T())
-	mockNode.On("GetInputs").Return([]common.Input{
+	mockNode.On("GetInputs").Return([]providers.Input{
 		{Identifier: "username", Type: "TEXT_INPUT", Required: true},
-		{Identifier: "password", Type: common.InputTypePassword, Required: true},
+		{Identifier: "password", Type: providers.InputTypePassword, Required: true},
 	})
 	mockNode.On("GetExecutor").Return(nil).Maybe()
 
@@ -779,8 +779,8 @@ func (s *EngineTestSuite) TestClearSensitiveInputs_AuthFlowRemovesPassword() {
 
 func (s *EngineTestSuite) TestClearSensitiveInputs_AuthFlowRemovesOTP() {
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(s.T())
-	mockNode.On("GetInputs").Return([]common.Input{
-		{Identifier: "otp", Type: common.InputTypeOTP, Required: true},
+	mockNode.On("GetInputs").Return([]providers.Input{
+		{Identifier: "otp", Type: providers.InputTypeOTP, Required: true},
 	})
 	mockNode.On("GetExecutor").Return(nil).Maybe()
 
@@ -800,8 +800,8 @@ func (s *EngineTestSuite) TestClearSensitiveInputs_AuthFlowRemovesOTP() {
 
 func (s *EngineTestSuite) TestClearSensitiveInputs_RegistrationFlowRetainsPassword() {
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(s.T())
-	mockNode.On("GetInputs").Return([]common.Input{
-		{Identifier: "password", Type: common.InputTypePassword, Required: true},
+	mockNode.On("GetInputs").Return([]providers.Input{
+		{Identifier: "password", Type: providers.InputTypePassword, Required: true},
 	}).Maybe()
 
 	fe := &flowEngine{}
@@ -836,7 +836,7 @@ func (s *EngineTestSuite) TestClearSensitiveInputs_NoNodeInputs() {
 
 func (s *EngineTestSuite) TestClearSensitiveInputs_NonSensitiveInputsRetained() {
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(s.T())
-	mockNode.On("GetInputs").Return([]common.Input{
+	mockNode.On("GetInputs").Return([]providers.Input{
 		{Identifier: "username", Type: "TEXT_INPUT", Required: true},
 	})
 	mockNode.On("GetExecutor").Return(nil).Maybe()
@@ -857,13 +857,13 @@ func (s *EngineTestSuite) TestClearSensitiveInputs_NonSensitiveInputsRetained() 
 func (s *EngineTestSuite) TestClearSensitiveInputs_NoNodeInputsUsesExecutorDefaults() {
 	// Node has no configured inputs, but executor defaults have PASSWORD_INPUT.
 	mockExecutor := coremock.NewExecutorInterfaceMock(s.T())
-	mockExecutor.On("GetDefaultInputs").Return([]common.Input{
+	mockExecutor.On("GetDefaultInputs").Return([]providers.Input{
 		{Identifier: "username", Type: "string", Required: true},
-		{Identifier: "password", Type: common.InputTypePassword, Required: true},
+		{Identifier: "password", Type: providers.InputTypePassword, Required: true},
 	})
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(s.T())
-	mockNode.On("GetInputs").Return([]common.Input{})
+	mockNode.On("GetInputs").Return([]providers.Input{})
 	mockNode.On("GetExecutor").Return(mockExecutor)
 
 	fe := &flowEngine{}
@@ -884,8 +884,8 @@ func (s *EngineTestSuite) TestClearSensitiveInputs_NoNodeInputsUsesExecutorDefau
 
 func (s *EngineTestSuite) TestClearSensitiveInputs_UserOnboardingFlowRetainsPassword() {
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(s.T())
-	mockNode.On("GetInputs").Return([]common.Input{
-		{Identifier: "password", Type: common.InputTypePassword, Required: true},
+	mockNode.On("GetInputs").Return([]providers.Input{
+		{Identifier: "password", Type: providers.InputTypePassword, Required: true},
 	}).Maybe()
 
 	fe := &flowEngine{}
@@ -975,7 +975,7 @@ func (s *EngineTestSuite) TestHandleDisplayOnlyPromptResponse_ForwardToNextNode(
 	s.Nil(err)
 	s.False(complete)
 	s.Nil(nextNode)
-	s.Equal(common.FlowStatusIncomplete, flowStep.Status)
+	s.Equal(providers.FlowStatusIncomplete, flowStep.Status)
 	s.Equal(common.StepTypeView, flowStep.Type)
 	s.Equal(map[string]interface{}{"components": []interface{}{}}, flowStep.Data.Meta)
 	s.Contains(flowStep.Data.AdditionalData, "ctx_key")
@@ -1022,7 +1022,7 @@ func (s *EngineTestSuite) TestHandleDisplayOnlyPromptResponse_ForwardToEndNode()
 	s.Nil(err)
 	s.True(complete, "Should complete flow when forwarding to END node")
 	s.Nil(nextNode)
-	s.Equal(common.FlowStatusComplete, flowStep.Status)
+	s.Equal(providers.FlowStatusComplete, flowStep.Status)
 	// Context AdditionalData is copied to flowStep
 	s.Contains(flowStep.Data.AdditionalData, "key")
 	s.Equal("value", flowStep.Data.AdditionalData["key"])
@@ -1107,7 +1107,7 @@ func (s *EngineTestSuite) TestHandleDisplayOnlyPromptResponse_MergesAdditionalDa
 	s.True(complete)
 	s.Nil(nextNode)
 	// Verify merged data
-	s.Equal(common.FlowStatusComplete, flowStep.Status)
+	s.Equal(providers.FlowStatusComplete, flowStep.Status)
 }
 
 func (s *EngineTestSuite) TestIsSegmentRestartAllowed_NoSegments() {
@@ -1173,7 +1173,7 @@ func (s *EngineTestSuite) TestIsSegmentRestartAllowed_NilPolicy() {
 
 	mockNode := coremock.NewNodeInterfaceMock(t)
 	mockNode.On("GetType").Return(common.NodeTypePrompt)
-	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil))
+	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil))
 
 	mockGraph := coremock.NewGraphInterfaceMock(t)
 	mockGraph.On("HasSegments").Return(true)
@@ -1202,7 +1202,7 @@ func (s *EngineTestSuite) TestIsSegmentRestartAllowed_PolicyAllowsRestartFlag() 
 		s.Run(tt.name, func() {
 			t := s.T()
 			seg := &core.Segment{ID: "seg-1", StartNodeID: "task-node"}
-			policy := &core.ExecutionPolicy{SkipChallengeValidation: true, AllowSegmentRestart: tt.allowRestart}
+			policy := &providers.ExecutionPolicy{SkipChallengeValidation: true, AllowSegmentRestart: tt.allowRestart}
 
 			mockNode := coremock.NewNodeInterfaceMock(t)
 			mockNode.On("GetType").Return(common.NodeTypePrompt)
@@ -1308,10 +1308,10 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NodeRespErrorPu
 		ExecutionID: "exec-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		AppID:       "app-456",
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{
 			"test-node": {
 				Step: 1,
-				Executions: []common.ExecutionAttempt{
+				Executions: []providers.ExecutionAttempt{
 					{Attempt: 1},
 				},
 			},
@@ -1373,10 +1373,10 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NodeErrTakesPre
 		ExecutionID: "exec-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		AppID:       "app-456",
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{
 			"test-node": {
 				Step:       1,
-				Executions: []common.ExecutionAttempt{{Attempt: 1}},
+				Executions: []providers.ExecutionAttempt{{Attempt: 1}},
 			},
 		},
 	}
@@ -1434,10 +1434,10 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NoErrorPublishe
 		ExecutionID: "exec-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		AppID:       "app-456",
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{
 			"test-node": {
 				Step:       1,
-				Executions: []common.ExecutionAttempt{{Attempt: 1}},
+				Executions: []providers.ExecutionAttempt{{Attempt: 1}},
 			},
 		},
 	}
@@ -1579,7 +1579,7 @@ func (s *EngineTestSuite) TestSetCurrentExecutionNode_ExistingNode() {
 		Context:          context.Background(),
 		Graph:            mockGraph,
 		CurrentNode:      mockNode,
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 	}
 	err := fe.setCurrentExecutionNode(ctx, log.GetLogger())
 	s.Nil(err)
@@ -1716,7 +1716,7 @@ func (s *EngineTestSuite) TestHandleIncompleteResponse_RedirectionType() {
 	}
 	err := fe.handleIncompleteResponse(ctx, nodeResp, flowStep, log.GetLogger())
 	s.Nil(err)
-	s.Equal(common.FlowStatusIncomplete, flowStep.Status)
+	s.Equal(providers.FlowStatusIncomplete, flowStep.Status)
 	s.Equal(common.StepTypeRedirection, flowStep.Type)
 }
 
@@ -1847,7 +1847,7 @@ func (s *EngineTestSuite) TestProcessNodeResponse_FailureStatus() {
 	s.Nil(err)
 	s.False(continueExec)
 	s.Nil(next)
-	s.Equal(common.FlowStatusError, flowStep.Status)
+	s.Equal(providers.FlowStatusError, flowStep.Status)
 }
 
 func (s *EngineTestSuite) TestProcessNodeResponse_CompleteStatus() {
@@ -1926,7 +1926,7 @@ func (s *EngineTestSuite) TestRecordNodeExecution_NewRecord() {
 
 	ctx := &EngineContext{
 		Context:          context.Background(),
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 	}
 	nodeResp := &common.NodeResponse{Status: common.NodeStatusComplete}
 	recordNodeExecution(ctx, mockNode, nodeResp, nil, 100, 200)
@@ -1942,13 +1942,13 @@ func (s *EngineTestSuite) TestRecordNodeExecution_ExistingRecord() {
 	mockNode := coremock.NewNodeInterfaceMock(t)
 	mockNode.On("GetID").Return("node-1")
 
-	existing := &common.NodeExecutionRecord{
+	existing := &providers.NodeExecutionRecord{
 		NodeID:     "node-1",
-		Executions: make([]common.ExecutionAttempt, 0),
+		Executions: make([]providers.ExecutionAttempt, 0),
 	}
 	ctx := &EngineContext{
 		Context: context.Background(),
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{
 			"node-1": existing,
 		},
 	}
@@ -1975,36 +1975,36 @@ func (s *EngineTestSuite) TestCreateExecutionRecord_BasicNode() {
 // --- createExecutionAttempt ---
 
 func (s *EngineTestSuite) TestCreateExecutionAttempt_WithError() {
-	nodeRecord := &common.NodeExecutionRecord{Executions: make([]common.ExecutionAttempt, 0)}
+	nodeRecord := &providers.NodeExecutionRecord{Executions: make([]providers.ExecutionAttempt, 0)}
 	svcErr := &tidcommon.ServiceError{Code: "err-1"}
 
 	attempt := createExecutionAttempt(nodeRecord, nil, svcErr, 100, 200)
-	s.Equal(common.FlowStatusError, attempt.Status)
+	s.Equal(providers.FlowStatusError, attempt.Status)
 	s.Equal(1, attempt.Attempt)
 }
 
 func (s *EngineTestSuite) TestCreateExecutionAttempt_CompleteResponse() {
-	nodeRecord := &common.NodeExecutionRecord{Executions: make([]common.ExecutionAttempt, 0)}
+	nodeRecord := &providers.NodeExecutionRecord{Executions: make([]providers.ExecutionAttempt, 0)}
 	nodeResp := &common.NodeResponse{Status: common.NodeStatusComplete}
 
 	attempt := createExecutionAttempt(nodeRecord, nodeResp, nil, 100, 200)
-	s.Equal(common.FlowStatusComplete, attempt.Status)
+	s.Equal(providers.FlowStatusComplete, attempt.Status)
 }
 
 func (s *EngineTestSuite) TestCreateExecutionAttempt_IncompleteResponse() {
-	nodeRecord := &common.NodeExecutionRecord{Executions: make([]common.ExecutionAttempt, 0)}
+	nodeRecord := &providers.NodeExecutionRecord{Executions: make([]providers.ExecutionAttempt, 0)}
 	nodeResp := &common.NodeResponse{Status: common.NodeStatusIncomplete}
 
 	attempt := createExecutionAttempt(nodeRecord, nodeResp, nil, 100, 200)
-	s.Equal(common.FlowStatusIncomplete, attempt.Status)
+	s.Equal(providers.FlowStatusIncomplete, attempt.Status)
 }
 
 func (s *EngineTestSuite) TestCreateExecutionAttempt_FailureResponse() {
-	nodeRecord := &common.NodeExecutionRecord{Executions: make([]common.ExecutionAttempt, 0)}
+	nodeRecord := &providers.NodeExecutionRecord{Executions: make([]providers.ExecutionAttempt, 0)}
 	nodeResp := &common.NodeResponse{Status: common.NodeStatusFailure}
 
 	attempt := createExecutionAttempt(nodeRecord, nodeResp, nil, 100, 200)
-	s.Equal(common.FlowStatusError, attempt.Status)
+	s.Equal(providers.FlowStatusError, attempt.Status)
 }
 
 // --- setNodeExecutor ---
@@ -2086,11 +2086,11 @@ func (s *EngineTestSuite) TestHandleIncompleteResponse_ViewType() {
 	nodeResp := &common.NodeResponse{
 		Status: common.NodeStatusIncomplete,
 		Type:   common.NodeResponseTypeView,
-		Inputs: []common.Input{{Identifier: "username", Required: true}},
+		Inputs: []providers.Input{{Identifier: "username", Required: true}},
 	}
 	err := fe.handleIncompleteResponse(ctx, nodeResp, flowStep, log.GetLogger())
 	s.Nil(err)
-	s.Equal(common.FlowStatusIncomplete, flowStep.Status)
+	s.Equal(providers.FlowStatusIncomplete, flowStep.Status)
 }
 
 func (s *EngineTestSuite) TestHandleIncompleteResponse_RedirectionError() {
@@ -2134,7 +2134,7 @@ func (s *EngineTestSuite) TestCreateExecutionRecord_TaskNodeWithExecutor() {
 	t := s.T()
 	mockExec := coremock.NewExecutorInterfaceMock(t)
 	mockExec.On("GetName").Return("PasswordExecutor")
-	mockExec.On("GetType").Return(common.ExecutorType("AUTHENTICATOR"))
+	mockExec.On("GetType").Return(providers.ExecutorType("AUTHENTICATOR"))
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
 	mockNode.On("GetID").Return("node-exec")
@@ -2235,7 +2235,7 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NilRecord() {
 	ctx := &EngineContext{
 		Context:          context.Background(),
 		ExecutionID:      "exec-1",
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 	}
 	// Calling with nil nodeResp and nil nodeErr, but no history entry for the node.
 	publishNodeExecutionCompletedEvent(ctx, mockNode, nil, nil, 1000, 1100, mockObs)
@@ -2255,8 +2255,8 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_DefaultStatus()
 		Context:     context.Background(),
 		ExecutionID: "exec-1",
 		FlowType:    providers.FlowTypeAuthentication,
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{
-			"node-default": {NodeID: "node-default", Step: 1, Executions: []common.ExecutionAttempt{{Attempt: 1}}},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{
+			"node-default": {NodeID: "node-default", Step: 1, Executions: []providers.ExecutionAttempt{{Attempt: 1}}},
 		},
 	}
 	// Use an unrecognized NodeStatus to hit the default branch.
@@ -2278,7 +2278,7 @@ func (s *EngineTestSuite) TestFlowEngineExecute_NilGraph() {
 	ctx := &EngineContext{
 		Context:          context.Background(),
 		ExecutionID:      "exec-1",
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 	}
 
 	_, err := fe.Execute(ctx)
@@ -2313,7 +2313,7 @@ func (s *EngineTestSuite) TestRunInterceptors_PreRequest_Success() {
 	mockNode.On("GetID").Return("node-1").Maybe()
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 
 	fe := &flowEngine{
 		interceptorRunner: mockInterceptorSvc,
@@ -2388,7 +2388,7 @@ func (s *EngineTestSuite) TestRunInterceptors_ReturnsError() {
 			mockNode.On("GetID").Return("node-1").Maybe()
 			mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 			mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-			mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+			mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 
 			fe := &flowEngine{
 				interceptorRunner: mockInterceptorSvc,
@@ -2443,12 +2443,12 @@ func (s *EngineTestSuite) TestRunInterceptors_PreNode_UsesProvidedNode() {
 	mockCurrentNode.On("GetID").Return("node-1").Maybe()
 	mockCurrentNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 	mockCurrentNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-	mockCurrentNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+	mockCurrentNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 	mockTargetNode := coremock.NewNodeInterfaceMock(t)
 	mockTargetNode.On("GetID").Return("target-node-id")
 	mockTargetNode.On("GetType").Return(common.NodeTypeTaskExecution)
 	mockTargetNode.On("GetProperties").Return(map[string]interface{}(nil))
-	mockTargetNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil))
+	mockTargetNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil))
 
 	fe := &flowEngine{
 		interceptorRunner: mockInterceptorSvc,
@@ -2492,12 +2492,12 @@ func (s *EngineTestSuite) TestRunInterceptors_PostNode_UsesProvidedNode() {
 	mockCurrentNode.On("GetID").Return("node-1").Maybe()
 	mockCurrentNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 	mockCurrentNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-	mockCurrentNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+	mockCurrentNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 	mockTargetNode := coremock.NewNodeInterfaceMock(t)
 	mockTargetNode.On("GetID").Return("target-node-id")
 	mockTargetNode.On("GetType").Return(common.NodeTypeTaskExecution)
 	mockTargetNode.On("GetProperties").Return(map[string]interface{}(nil))
-	mockTargetNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil))
+	mockTargetNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil))
 
 	fe := &flowEngine{
 		interceptorRunner: mockInterceptorSvc,
@@ -2540,7 +2540,7 @@ func (s *EngineTestSuite) TestRunInterceptors_PostRequest_Success() {
 	mockNode.On("GetID").Return("node-1").Maybe()
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 
 	fe := &flowEngine{
 		interceptorRunner: mockInterceptorSvc,
@@ -2584,7 +2584,7 @@ func (s *EngineTestSuite) TestRunInterceptors_NoOutputs_RuntimeDataUnchanged() {
 	mockNode.On("GetID").Return("node-1").Maybe()
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 
 	fe := &flowEngine{
 		interceptorRunner: mockInterceptorSvc,
@@ -2625,7 +2625,7 @@ func (s *EngineTestSuite) TestRunInterceptors_NilSharedData_InitializesEmptyMap(
 	mockNode.On("GetID").Return("node-1").Maybe()
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 
 	fe := &flowEngine{
 		interceptorRunner: mockInterceptorSvc,
@@ -2668,7 +2668,7 @@ func (s *EngineTestSuite) TestRunInterceptors_ClonesContextFields() {
 	mockNode.On("GetID").Return("node-1").Maybe()
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 
 	fe := &flowEngine{
 		interceptorRunner: mockInterceptorSvc,
@@ -2762,7 +2762,7 @@ func (s *EngineTestSuite) TestRunInterceptors_NodeFailure_ReturnsError() {
 			mockNode.On("GetID").Return("node-1").Maybe()
 			mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 			mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-			mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+			mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 
 			fe := &flowEngine{
 				interceptorRunner: mockInterceptorSvc,
@@ -2821,7 +2821,7 @@ func (s *EngineTestSuite) TestRunInterceptors_Failure_NilRuntimeData_NoMergeAtte
 	mockNode.On("GetID").Return("node-1").Maybe()
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 
 	fe := &flowEngine{
 		interceptorRunner: mockInterceptorSvc,
@@ -2870,7 +2870,7 @@ func (s *EngineTestSuite) TestRunInterceptors_Failure_PreservesFullErrorDetails(
 	mockNode.On("GetID").Return("node-1").Maybe()
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 
 	fe := &flowEngine{
 		interceptorRunner: mockInterceptorSvc,
@@ -2934,7 +2934,7 @@ func (s *EngineTestSuite) TestRunInterceptors_Failure_AllModes() {
 			mockNode.On("GetID").Return("node-1").Maybe()
 			mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 			mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-			mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+			mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 
 			fe := &flowEngine{
 				interceptorRunner: mockInterceptorSvc,
@@ -2991,7 +2991,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Success_Continues
 	mockNode.On("GetID").Return("node-1").Maybe()
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 
 	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
 	mockObservability.On("IsEnabled").Return(false).Maybe()
@@ -3013,7 +3013,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Success_Continues
 		RuntimeData: map[string]string{"key": "value"},
 	}
 
-	flowStep := &FlowStep{Status: common.FlowStatusComplete}
+	flowStep := &FlowStep{Status: providers.FlowStatusComplete}
 
 	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePostRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
@@ -3040,7 +3040,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_InterceptorError_
 	mockNode.On("GetID").Return("node-1").Maybe()
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 
 	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
 	mockObservability.On("IsEnabled").Return(true)
@@ -3072,7 +3072,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_InterceptorError_
 		AppID:       "app-001",
 	}
 
-	flowStep := &FlowStep{Status: common.FlowStatusIncomplete}
+	flowStep := &FlowStep{Status: providers.FlowStatusIncomplete}
 
 	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePostRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
@@ -3097,7 +3097,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Incomplete_StopsE
 	mockNode.On("GetID").Return("node-1").Maybe()
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 
 	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
 	mockObservability.On("IsEnabled").Return(false).Maybe()
@@ -3118,7 +3118,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Incomplete_StopsE
 		Graph:       mockGraph,
 	}
 
-	flowStep := &FlowStep{Status: common.FlowStatusComplete}
+	flowStep := &FlowStep{Status: providers.FlowStatusComplete}
 
 	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePostRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
@@ -3130,7 +3130,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Incomplete_StopsE
 
 	s.False(continueExec)
 	s.Nil(svcErr)
-	s.Equal(common.FlowStatusIncomplete, flowStep.Status)
+	s.Equal(providers.FlowStatusIncomplete, flowStep.Status)
 }
 
 func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Fail_PublishesFlowFailure() {
@@ -3144,7 +3144,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Fail_PublishesFlo
 	mockNode.On("GetID").Return("node-1").Maybe()
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 
 	var capturedEvent *event.Event
 	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
@@ -3193,7 +3193,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Fail_PublishesFlo
 
 	s.False(continueExec)
 	s.Nil(svcErr)
-	s.Equal(common.FlowStatusError, flowStep.Status)
+	s.Equal(providers.FlowStatusError, flowStep.Status)
 	s.NotNil(flowStep.Error)
 	s.Equal("INT-FAIL-001", flowStep.Error.Code)
 	// Flow error status should trigger event publication
@@ -3212,7 +3212,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Incomplete_NoEven
 	mockNode.On("GetID").Return("node-1").Maybe()
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 
 	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
 	mockObservability.On("IsEnabled").Return(false).Maybe()
@@ -3233,7 +3233,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Incomplete_NoEven
 		Graph:       mockGraph,
 	}
 
-	flowStep := &FlowStep{Status: common.FlowStatusIncomplete}
+	flowStep := &FlowStep{Status: providers.FlowStatusIncomplete}
 
 	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePostRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
@@ -3260,7 +3260,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_UpdatesFlowStepFi
 	mockNode.On("GetID").Return("node-1").Maybe()
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 
 	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
 	mockObservability.On("IsEnabled").Return(false).Maybe()
@@ -3281,7 +3281,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_UpdatesFlowStepFi
 		Graph:       mockGraph,
 	}
 
-	flowStep := &FlowStep{Status: common.FlowStatusComplete}
+	flowStep := &FlowStep{Status: providers.FlowStatusComplete}
 
 	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePostRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
@@ -3317,7 +3317,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_NilGraph_SkipsInt
 		Graph:       nil,
 	}
 
-	flowStep := &FlowStep{Status: common.FlowStatusComplete}
+	flowStep := &FlowStep{Status: providers.FlowStatusComplete}
 
 	continueExec, svcErr := fe.runPostRequestInterceptorsOnExit(ctx, flowStep, 1000)
 
@@ -3336,7 +3336,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_MergesEngineOutpu
 	mockNode.On("GetID").Return("node-1").Maybe()
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 
 	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
 	mockObservability.On("IsEnabled").Return(false).Maybe()
@@ -3358,7 +3358,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_MergesEngineOutpu
 		RuntimeData: map[string]string{"existing": "data"},
 	}
 
-	flowStep := &FlowStep{Status: common.FlowStatusComplete}
+	flowStep := &FlowStep{Status: providers.FlowStatusComplete}
 
 	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePostRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
@@ -3387,7 +3387,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_PassesFlowStatusT
 	mockNode.On("GetID").Return("node-1").Maybe()
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution).Maybe()
 	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
-	mockNode.On("GetExecutionPolicy").Return((*core.ExecutionPolicy)(nil)).Maybe()
+	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 
 	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
 	mockObservability.On("IsEnabled").Return(false).Maybe()
@@ -3408,13 +3408,13 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_PassesFlowStatusT
 		Graph:       mockGraph,
 	}
 
-	flowStep := &FlowStep{Status: common.FlowStatusComplete}
+	flowStep := &FlowStep{Status: providers.FlowStatusComplete}
 
 	mockInterceptorSvc.On("runInterceptors", providers.InterceptorModePostRequest,
 		mock.AnythingOfType("*flowexec.InterceptorRunnerContext")).
 		Run(func(args mock.Arguments) {
 			execCtx := args.Get(1).(*InterceptorRunnerContext)
-			s.Equal(common.FlowStatusComplete, execCtx.FlowStatus,
+			s.Equal(providers.FlowStatusComplete, execCtx.FlowStatus,
 				"Interceptor context should receive current flow status")
 		}).
 		Return(&common.InterceptorResponse{Status: common.InterceptorStatusComplete}, nil)

@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
@@ -55,7 +54,7 @@ func (s *UtilsTestSuite) TestResolvePlaceholderWithNilContext() {
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderNoPlaceholder() {
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		RuntimeData: map[string]string{"key1": "value1"},
 		UserInputs:  map[string]string{"key2": "value2"},
 	}
@@ -65,7 +64,7 @@ func (s *UtilsTestSuite) TestResolvePlaceholderNoPlaceholder() {
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderFromRuntimeData() {
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		RuntimeData: map[string]string{"status": "active", "role": "admin"},
 		UserInputs:  map[string]string{},
 	}
@@ -91,7 +90,7 @@ func (s *UtilsTestSuite) TestResolvePlaceholderFromRuntimeData() {
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderFromUserInputs() {
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		RuntimeData: map[string]string{},
 		UserInputs:  map[string]string{"username": "john_doe", "email": "john@example.com"},
 	}
@@ -115,7 +114,7 @@ func (s *UtilsTestSuite) TestResolvePlaceholderFromUserInputs() {
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderRuntimeTakesPrecedence() {
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		RuntimeData: map[string]string{"key": "runtime_value"},
 		UserInputs:  map[string]string{"key": "user_input_value"},
 	}
@@ -125,14 +124,14 @@ func (s *UtilsTestSuite) TestResolvePlaceholderRuntimeTakesPrecedence() {
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderUserIDFromAuthnProvider() {
-	mockProvider := managermock.NewAuthnProviderManagerInterfaceMock(s.T())
+	mockProvider := managermock.NewAuthnProviderManagerMock(s.T())
 	authUser := newAuthenticatedAuthUser()
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		Context:     context.Background(),
 		RuntimeData: map[string]string{},
 		AuthUser:    authUser,
 	}
-	execResp := &common.ExecutorResponse{}
+	execResp := &providers.ExecutorResponse{}
 	logger := log.GetLogger()
 
 	mockProvider.On("GetEntityReference", mock.Anything, authUser).
@@ -146,7 +145,7 @@ func (s *UtilsTestSuite) TestResolvePlaceholderUserIDFromAuthnProvider() {
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderUserIDFromRuntimeData() {
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		RuntimeData: map[string]string{"userId": "runtime-user-456"},
 	}
 
@@ -155,14 +154,14 @@ func (s *UtilsTestSuite) TestResolvePlaceholderUserIDFromRuntimeData() {
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderUserIDRuntimeDataTakesPrecedence() {
-	mockProvider := managermock.NewAuthnProviderManagerInterfaceMock(s.T())
+	mockProvider := managermock.NewAuthnProviderManagerMock(s.T())
 	authUser := newAuthenticatedAuthUser()
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		Context:     context.Background(),
 		RuntimeData: map[string]string{"userId": "runtime-user-id"},
 		AuthUser:    authUser,
 	}
-	execResp := &common.ExecutorResponse{}
+	execResp := &providers.ExecutorResponse{}
 	logger := log.GetLogger()
 
 	result := ResolvePlaceholder(ctx, "{{ context.userId }}", execResp, mockProvider, logger)
@@ -170,7 +169,7 @@ func (s *UtilsTestSuite) TestResolvePlaceholderUserIDRuntimeDataTakesPrecedence(
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderUserIDNotFromUserInputs() {
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		UserInputs:  map[string]string{"userId": "input-user-id"},
 		RuntimeData: map[string]string{},
 	}
@@ -180,14 +179,14 @@ func (s *UtilsTestSuite) TestResolvePlaceholderUserIDNotFromUserInputs() {
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderOUIDFromAuthnProvider() {
-	mockProvider := managermock.NewAuthnProviderManagerInterfaceMock(s.T())
+	mockProvider := managermock.NewAuthnProviderManagerMock(s.T())
 	authUser := newAuthenticatedAuthUser()
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		Context:     context.Background(),
 		RuntimeData: map[string]string{},
 		AuthUser:    authUser,
 	}
-	execResp := &common.ExecutorResponse{}
+	execResp := &providers.ExecutorResponse{}
 	logger := log.GetLogger()
 
 	mockProvider.On("GetEntityReference", mock.Anything, authUser).
@@ -201,14 +200,14 @@ func (s *UtilsTestSuite) TestResolvePlaceholderOUIDFromAuthnProvider() {
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderOUIDFromAuthnProviderWithoutEntityID() {
-	mockProvider := managermock.NewAuthnProviderManagerInterfaceMock(s.T())
+	mockProvider := managermock.NewAuthnProviderManagerMock(s.T())
 	authUser := newAuthenticatedAuthUser()
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		Context:     context.Background(),
 		RuntimeData: map[string]string{},
 		AuthUser:    authUser,
 	}
-	execResp := &common.ExecutorResponse{}
+	execResp := &providers.ExecutorResponse{}
 	logger := log.GetLogger()
 
 	mockProvider.On("GetEntityReference", mock.Anything, authUser).
@@ -221,7 +220,7 @@ func (s *UtilsTestSuite) TestResolvePlaceholderOUIDFromAuthnProviderWithoutEntit
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderOUIDFromRuntimeData() {
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		RuntimeData: map[string]string{"ouId": "runtime-ou-456"},
 	}
 
@@ -230,14 +229,14 @@ func (s *UtilsTestSuite) TestResolvePlaceholderOUIDFromRuntimeData() {
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderOUIDRuntimeDataTakesPrecedence() {
-	mockProvider := managermock.NewAuthnProviderManagerInterfaceMock(s.T())
+	mockProvider := managermock.NewAuthnProviderManagerMock(s.T())
 	authUser := newAuthenticatedAuthUser()
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		Context:     context.Background(),
 		RuntimeData: map[string]string{"ouId": "runtime-ou-id"},
 		AuthUser:    authUser,
 	}
-	execResp := &common.ExecutorResponse{}
+	execResp := &providers.ExecutorResponse{}
 	logger := log.GetLogger()
 
 	result := ResolvePlaceholder(ctx, "{{ context.ouId }}", execResp, mockProvider, logger)
@@ -245,7 +244,7 @@ func (s *UtilsTestSuite) TestResolvePlaceholderOUIDRuntimeDataTakesPrecedence() 
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderOUIDNotFromUserInputs() {
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		UserInputs:  map[string]string{"ouId": "input-ou-id"},
 		RuntimeData: map[string]string{},
 	}
@@ -255,14 +254,14 @@ func (s *UtilsTestSuite) TestResolvePlaceholderOUIDNotFromUserInputs() {
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderUserIDAndOUIDShareSingleFetch() {
-	mockProvider := managermock.NewAuthnProviderManagerInterfaceMock(s.T())
+	mockProvider := managermock.NewAuthnProviderManagerMock(s.T())
 	authUser := newAuthenticatedAuthUser()
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		Context:     context.Background(),
 		RuntimeData: map[string]string{},
 		AuthUser:    authUser,
 	}
-	execResp := &common.ExecutorResponse{}
+	execResp := &providers.ExecutorResponse{}
 	logger := log.GetLogger()
 
 	mockProvider.On("GetEntityReference", mock.Anything, authUser).
@@ -278,7 +277,7 @@ func (s *UtilsTestSuite) TestResolvePlaceholderUserIDAndOUIDShareSingleFetch() {
 
 func (s *UtilsTestSuite) TestResolvePlaceholderUserIDWithNilAuthnProvider() {
 	authUser := newAuthenticatedAuthUser()
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		Context:     context.Background(),
 		RuntimeData: map[string]string{},
 		AuthUser:    authUser,
@@ -289,12 +288,12 @@ func (s *UtilsTestSuite) TestResolvePlaceholderUserIDWithNilAuthnProvider() {
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderUserIDWithUnauthenticatedUser() {
-	mockProvider := managermock.NewAuthnProviderManagerInterfaceMock(s.T())
-	ctx := &NodeContext{
+	mockProvider := managermock.NewAuthnProviderManagerMock(s.T())
+	ctx := &providers.NodeContext{
 		Context:     context.Background(),
 		RuntimeData: map[string]string{},
 	}
-	execResp := &common.ExecutorResponse{}
+	execResp := &providers.ExecutorResponse{}
 	logger := log.GetLogger()
 
 	result := ResolvePlaceholder(ctx, "{{ context.userId }}", execResp, mockProvider, logger)
@@ -302,7 +301,7 @@ func (s *UtilsTestSuite) TestResolvePlaceholderUserIDWithUnauthenticatedUser() {
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderKeyNotFound() {
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		RuntimeData: map[string]string{"existing": "value"},
 		UserInputs:  map[string]string{},
 	}
@@ -312,7 +311,7 @@ func (s *UtilsTestSuite) TestResolvePlaceholderKeyNotFound() {
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderEmptyValue() {
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		RuntimeData: map[string]string{"empty": ""},
 		UserInputs:  map[string]string{"nonempty": "value"},
 	}
@@ -327,7 +326,7 @@ func (s *UtilsTestSuite) TestResolvePlaceholderEmptyValue() {
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderMixedStaticAndDynamic() {
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		RuntimeData: map[string]string{"name": "John"},
 		UserInputs:  map[string]string{"action": "login"},
 	}
@@ -353,7 +352,7 @@ func (s *UtilsTestSuite) TestResolvePlaceholderMixedStaticAndDynamic() {
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderWithNilMaps() {
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		RuntimeData: nil,
 		UserInputs:  nil,
 	}
@@ -364,7 +363,7 @@ func (s *UtilsTestSuite) TestResolvePlaceholderWithNilMaps() {
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderEmptyString() {
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		RuntimeData: map[string]string{"key": "value"},
 	}
 
@@ -373,7 +372,7 @@ func (s *UtilsTestSuite) TestResolvePlaceholderEmptyString() {
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderSpecialCharactersInValue() {
-	ctx := &NodeContext{
+	ctx := &providers.NodeContext{
 		RuntimeData: map[string]string{
 			"url":   "https://example.com?foo=bar&baz=qux",
 			"json":  `{"key": "value"}`,

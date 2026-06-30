@@ -290,7 +290,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithExecutor() {
 
 	s.mockExecutorRegistry.EXPECT().IsRegistered("test-executor").Return(true)
 	mockTaskNode.EXPECT().SetExecutorName("test-executor")
-	mockTaskNode.EXPECT().SetInputs([]common.Input{})
+	mockTaskNode.EXPECT().SetInputs([]providers.Input{})
 
 	mockGraph.EXPECT().AddNode(mockStartNode).Return(nil)
 	mockGraph.EXPECT().AddNode(mockTaskNode).Return(nil)
@@ -334,7 +334,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_ExecutorNotRegistered() {
 	s.mockFlowFactory.EXPECT().CreateNode(
 		"task", "TASK_EXECUTION", map[string]interface{}(nil), false, true).Return(
 		mockTaskNode, nil)
-	mockTaskNode.EXPECT().SetInputs([]common.Input{})
+	mockTaskNode.EXPECT().SetInputs([]providers.Input{})
 
 	s.mockExecutorRegistry.EXPECT().IsRegistered("unknown-executor").Return(false)
 
@@ -390,7 +390,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithOnFailure() {
 	mockStartNode.EXPECT().SetOnSuccess("task")
 	mockTaskNode.EXPECT().SetOnSuccess("end")
 	mockTaskNode.EXPECT().SetOnFailure("error-prompt")
-	mockTaskNode.EXPECT().SetInputs([]common.Input{})
+	mockTaskNode.EXPECT().SetInputs([]providers.Input{})
 
 	s.mockExecutorRegistry.EXPECT().IsRegistered("test-executor").Return(true)
 	mockTaskNode.EXPECT().SetExecutorName("test-executor")
@@ -526,7 +526,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithInputs() {
 		mockTaskNode, nil)
 
 	mockStartNode.EXPECT().SetOnSuccess("task")
-	mockTaskNode.EXPECT().SetInputs([]common.Input{
+	mockTaskNode.EXPECT().SetInputs([]providers.Input{
 		{Ref: "username", Type: "string", Identifier: "user", Required: true},
 		{Ref: "password", Type: "string", Identifier: "pass", Required: true},
 	})
@@ -606,8 +606,8 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithActions() {
 		}
 		return true
 	}))
-	mockTask1Node.EXPECT().SetInputs([]common.Input{})
-	mockTask2Node.EXPECT().SetInputs([]common.Input{})
+	mockTask1Node.EXPECT().SetInputs([]providers.Input{})
+	mockTask2Node.EXPECT().SetInputs([]providers.Input{})
 
 	mockGraph.EXPECT().AddNode(mockStartNode).Return(nil)
 	mockGraph.EXPECT().AddNode(mockPromptNode).Return(nil)
@@ -774,7 +774,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithCondition() {
 		mockEndNode, nil)
 
 	mockStartNode.EXPECT().SetOnSuccess("task")
-	mockTaskNode.EXPECT().SetInputs([]common.Input{})
+	mockTaskNode.EXPECT().SetInputs([]providers.Input{})
 	mockTaskNode.EXPECT().SetCondition(&core.NodeCondition{
 		Key:    "userType",
 		Value:  "premium",
@@ -1051,7 +1051,7 @@ func (s *GraphBuilderTestSuite) TestBuildGraph_WithExecutorMode() {
 	s.mockExecutorRegistry.EXPECT().IsRegistered("SMSOTPAuthExecutor").Return(true)
 	mockTaskNode.EXPECT().SetExecutorName("SMSOTPAuthExecutor")
 	mockTaskNode.EXPECT().SetMode("send") // Verify mode is set
-	mockTaskNode.EXPECT().SetInputs([]common.Input{})
+	mockTaskNode.EXPECT().SetInputs([]providers.Input{})
 
 	mockGraph.EXPECT().AddNode(mockStartNode).Return(nil)
 	mockGraph.EXPECT().AddNode(mockTaskNode).Return(nil)
@@ -1661,7 +1661,7 @@ func (s *GraphBuilderTestSuite) TestConfigureNodePrompts_ValidationRulesCompiled
 			return false
 		}
 		rule := prompts[0].Inputs[0].Validation[0]
-		return rule.Type == common.ValidationTypeRegex && rule.CompiledRegex != nil
+		return rule.Type == providers.ValidationTypeRegex && rule.CompiledRegex != nil
 	}))
 
 	err := s.builder.configureNodePrompts(context.Background(), nodeDef, mockPromptNode, map[string][]string{})

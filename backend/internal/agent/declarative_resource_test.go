@@ -22,6 +22,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
+
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 
 	"github.com/stretchr/testify/assert"
@@ -30,7 +32,6 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/agent"
 	"github.com/thunder-id/thunderid/internal/agent/model"
-	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/tests/mocks/agentmock"
@@ -197,9 +198,9 @@ func (s *AgentExporterTestSuite) TestGetResourceRulesForResource_PublicClientNoR
 	a := &model.AgentGetResponse{
 		ID:   "agent1",
 		Name: "Public Agent",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:     "client-id-1",
 					PublicClient: true,
 				},
@@ -222,9 +223,9 @@ func (s *AgentExporterTestSuite) TestGetResourceRulesForResource_PublicClientWit
 	a := &model.AgentGetResponse{
 		ID:   "agent1",
 		Name: "Public Agent",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:     "client-id-1",
 					PublicClient: true,
 					RedirectURIs: []string{"https://app.example.com/callback"},
@@ -248,9 +249,9 @@ func (s *AgentExporterTestSuite) TestGetResourceRulesForResource_ConfidentialCli
 	a := &model.AgentGetResponse{
 		ID:   "agent2",
 		Name: "Confidential Agent",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:     "client-id-2",
 					PublicClient: false,
 				},
@@ -273,9 +274,9 @@ func (s *AgentExporterTestSuite) TestGetResourceRulesForResource_ConfidentialCli
 	a := &model.AgentGetResponse{
 		ID:   "agent2",
 		Name: "Confidential Agent",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:     "client-id-2",
 					PublicClient: false,
 					RedirectURIs: []string{"https://srv.example.com/callback"},
@@ -313,7 +314,7 @@ func (s *AgentExporterTestSuite) TestGetResourceRulesForResource_NilOAuthConfig(
 	a := &model.AgentGetResponse{
 		ID:   "agent4",
 		Name: "Agent With Nil OAuth",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{OAuthConfig: nil},
 		},
 	}

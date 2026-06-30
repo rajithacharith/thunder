@@ -29,7 +29,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/executor"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -59,7 +58,7 @@ func (s *GraphBuilderSubsetRegistryTestSuite) subsetExecutorRegistry() executor.
 	mockFactory := coremock.NewFlowFactoryInterfaceMock(s.T())
 	mockBase := coremock.NewExecutorInterfaceMock(s.T())
 	mockBase.On("GetName").Return("").Maybe()
-	mockBase.On("GetType").Return(common.ExecutorTypeUtility).Maybe()
+	mockBase.On("GetType").Return(providers.ExecutorTypeUtility).Maybe()
 	mockFactory.On("CreateExecutor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(mockBase).Maybe()
 
@@ -108,7 +107,7 @@ func (s *GraphBuilderSubsetRegistryTestSuite) TestBuildGraph_SubsetRegistryRejec
 	mockFlowFactory.EXPECT().CreateGraph("flow-1", providers.FlowTypeAuthentication, 0).Return(mockGraph)
 	mockFlowFactory.EXPECT().CreateNode(
 		"task", "TASK_EXECUTION", map[string]interface{}(nil), false, true).Return(mockTaskNode, nil)
-	mockTaskNode.EXPECT().SetInputs([]common.Input{})
+	mockTaskNode.EXPECT().SetInputs([]providers.Input{})
 
 	graph, err := builder.buildGraph(context.Background(), flow)
 

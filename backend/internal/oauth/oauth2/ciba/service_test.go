@@ -93,7 +93,7 @@ func (suite *CIBAServiceTestSuite) expectFlowInitiateSuccess() {
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.Anything).
 		Return(&flowexec.FlowStep{
 			ExecutionID: "exec-1",
-			Status:      flowcm.FlowStatusIncomplete,
+			Status:      providers.FlowStatusIncomplete,
 		}, nil)
 }
 
@@ -134,7 +134,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_ExpirySecondsMatchesResolvedExpi
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.MatchedBy(
 		func(initCtx *flowexec.FlowInitContext) bool {
 			return initCtx.ExpirySeconds == oauth2const.CIBADefaultExpiresInSeconds
-		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: flowcm.FlowStatusIncomplete}, nil)
+		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: providers.FlowStatusIncomplete}, nil)
 	suite.expectStoreAddSuccess()
 
 	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
@@ -151,7 +151,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_CustomExpiryPassedToFlow() {
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.MatchedBy(
 		func(initCtx *flowexec.FlowInitContext) bool {
 			return initCtx.ExpirySeconds == 300
-		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: flowcm.FlowStatusIncomplete}, nil)
+		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: providers.FlowStatusIncomplete}, nil)
 	suite.expectStoreAddSuccess()
 
 	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
@@ -170,7 +170,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_AuthReqIDInjectedIntoRuntimeData
 		func(initCtx *flowexec.FlowInitContext) bool {
 			capturedAuthReqID = initCtx.RuntimeData[flowcm.RuntimeKeyAuthReqID]
 			return capturedAuthReqID != ""
-		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: flowcm.FlowStatusIncomplete}, nil)
+		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: providers.FlowStatusIncomplete}, nil)
 	suite.mockStore.EXPECT().Add(mock.Anything, mock.MatchedBy(func(r *CIBAAuthRequest) bool {
 		return r.AuthReqID == capturedAuthReqID
 	})).Return(nil)
@@ -188,7 +188,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_LoginHintInInitialInputs() {
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.MatchedBy(
 		func(initCtx *flowexec.FlowInitContext) bool {
 			return initCtx.InitialInputs[oauth2const.RequestParamLoginHint] == "alice"
-		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: flowcm.FlowStatusIncomplete}, nil)
+		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: providers.FlowStatusIncomplete}, nil)
 	suite.expectStoreAddSuccess()
 
 	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
@@ -204,7 +204,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_ACRValuesPassedToRuntime() {
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.MatchedBy(
 		func(initCtx *flowexec.FlowInitContext) bool {
 			return initCtx.RuntimeData[flowcm.RuntimeKeyRequestedAuthClasses] == "urn:acr:silver"
-		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: flowcm.FlowStatusIncomplete}, nil)
+		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: providers.FlowStatusIncomplete}, nil)
 	suite.expectStoreAddSuccess()
 
 	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
@@ -222,7 +222,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_ACRValuesOmittedFromRuntimeWhenE
 		func(initCtx *flowexec.FlowInitContext) bool {
 			_, present := initCtx.RuntimeData[flowcm.RuntimeKeyRequestedAuthClasses]
 			return !present
-		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: flowcm.FlowStatusIncomplete}, nil)
+		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: providers.FlowStatusIncomplete}, nil)
 	suite.expectStoreAddSuccess()
 
 	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
@@ -238,7 +238,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_ForceConsentRepromptAlwaysSet() 
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.MatchedBy(
 		func(initCtx *flowexec.FlowInitContext) bool {
 			return initCtx.RuntimeData[flowcm.RuntimeKeyForceConsentReprompt] == "true"
-		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: flowcm.FlowStatusIncomplete}, nil)
+		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: providers.FlowStatusIncomplete}, nil)
 	suite.expectStoreAddSuccess()
 
 	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
@@ -258,7 +258,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_StripsStandardScopesFromRuntime(
 				slices.Contains(perms, "read") && slices.Contains(perms, "write") &&
 				!slices.Contains(perms, "openid") && !slices.Contains(perms, "profile") &&
 				!slices.Contains(perms, "email")
-		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: flowcm.FlowStatusIncomplete}, nil)
+		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: providers.FlowStatusIncomplete}, nil)
 	suite.mockStore.EXPECT().Add(mock.Anything, mock.MatchedBy(func(r *CIBAAuthRequest) bool {
 		return r.StandardScopes == "openid profile email"
 	})).Return(nil)
@@ -292,7 +292,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_InjectsRequiredAttributes() {
 			suite.Empty(strings.Fields(initCtx.RuntimeData[flowcm.RuntimeKeyRequiredEssentialAttributes]))
 			suite.ElementsMatch([]string{"email", "given_name", "family_name", "name"},
 				strings.Fields(initCtx.RuntimeData[flowcm.RuntimeKeyRequiredOptionalAttributes]))
-		}).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: flowcm.FlowStatusIncomplete}, nil)
+		}).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: providers.FlowStatusIncomplete}, nil)
 	suite.mockStore.EXPECT().Add(mock.Anything, mock.Anything).Return(nil)
 
 	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
@@ -405,7 +405,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_FlowInitiationFails() {
 
 func (suite *CIBAServiceTestSuite) TestInitiate_FlowErrorMapsToUnknownUser() {
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.Anything).Return(
-		&flowexec.FlowStep{Status: flowcm.FlowStatusError, Error: &tidcommon.ServiceError{
+		&flowexec.FlowStep{Status: providers.FlowStatusError, Error: &tidcommon.ServiceError{
 			Error: tidcommon.I18nMessage{DefaultValue: "User not found"},
 		}}, nil)
 
@@ -421,7 +421,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_FlowErrorMapsToUnknownUser() {
 
 func (suite *CIBAServiceTestSuite) TestInitiate_FlowErrorAmbiguousUserMapsToUnknownUser() {
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.Anything).Return(
-		&flowexec.FlowStep{Status: flowcm.FlowStatusError, Error: &tidcommon.ServiceError{
+		&flowexec.FlowStep{Status: providers.FlowStatusError, Error: &tidcommon.ServiceError{
 			Error: tidcommon.I18nMessage{DefaultValue: "User identity is ambiguous"},
 		}}, nil)
 
@@ -437,7 +437,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_FlowErrorAmbiguousUserMapsToUnkn
 
 func (suite *CIBAServiceTestSuite) TestInitiate_FlowErrorGenericMapsToServerError() {
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.Anything).Return(
-		&flowexec.FlowStep{Status: flowcm.FlowStatusError, Error: &tidcommon.ServiceError{
+		&flowexec.FlowStep{Status: providers.FlowStatusError, Error: &tidcommon.ServiceError{
 			Error: tidcommon.I18nMessage{DefaultValue: "something else"},
 		}}, nil)
 
@@ -829,7 +829,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_WithIDTokenHint_Success() {
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.MatchedBy(
 		func(initCtx *flowexec.FlowInitContext) bool {
 			return initCtx.InitialInputs[oauth2const.RequestParamLoginHint] == testEntityID
-		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: flowcm.FlowStatusIncomplete}, nil)
+		})).Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: providers.FlowStatusIncomplete}, nil)
 	suite.expectStoreAddSuccess()
 
 	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
@@ -883,7 +883,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_WithIDTokenHint_AudNotChecked() 
 	})
 	suite.mockJWTService.EXPECT().VerifyJWTSignature(mock.Anything, hint).Return(nil)
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.Anything).
-		Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: flowcm.FlowStatusIncomplete}, nil)
+		Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: providers.FlowStatusIncomplete}, nil)
 	suite.expectStoreAddSuccess()
 
 	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{
@@ -996,7 +996,7 @@ func (suite *CIBAServiceTestSuite) TestInitiate_WithIDTokenHint_ExpiredWithinThr
 	})
 	suite.mockJWTService.EXPECT().VerifyJWTSignature(mock.Anything, hint).Return(nil)
 	suite.mockFlowExec.EXPECT().InitiateAndExecute(mock.Anything, mock.Anything).
-		Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: flowcm.FlowStatusIncomplete}, nil)
+		Return(&flowexec.FlowStep{ExecutionID: "exec-1", Status: providers.FlowStatusIncomplete}, nil)
 	suite.expectStoreAddSuccess()
 
 	resp, cibaErr := suite.service.InitiateBackchannelAuth(context.Background(), &BackchannelAuthRequest{

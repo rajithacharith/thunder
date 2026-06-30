@@ -34,8 +34,8 @@ var placeholderPattern = regexp.MustCompile(`{{\s*context\.\s*(\w+)\s*}}`)
 // ResolvePlaceholder resolves a single placeholder string using the "{{ context.key }}" syntax.
 // If no placeholder is found, the original value is returned.
 // If a placeholder is found but the key doesn't exist in any data source, the placeholder is kept as-is.
-func ResolvePlaceholder(ctx *NodeContext, value string, execResp *common.ExecutorResponse,
-	authnProvider providers.AuthnProviderManagerInterface, logger *log.Logger) string {
+func ResolvePlaceholder(ctx *providers.NodeContext, value string, execResp *providers.ExecutorResponse,
+	authnProvider providers.AuthnProviderManager, logger *log.Logger) string {
 	if ctx == nil {
 		return value
 	}
@@ -96,9 +96,9 @@ func ResolvePlaceholder(ctx *NodeContext, value string, execResp *common.Executo
 
 // fetchContextUserRef attempts to resolve the authenticated user's entity reference using the authn provider.
 func fetchContextUserRef(
-	authnProvider providers.AuthnProviderManagerInterface,
-	ctx *NodeContext,
-	execResp *common.ExecutorResponse,
+	authnProvider providers.AuthnProviderManager,
+	ctx *providers.NodeContext,
+	execResp *providers.ExecutorResponse,
 	logger *log.Logger,
 	contextUserRef *providers.EntityReference,
 ) *providers.EntityReference {
@@ -152,9 +152,9 @@ func IsOptionalInputPrompted(presentedOptionalInputs map[string]struct{}, identi
 
 // collectMissingInputs returns inputs from requiredInputs that are not satisfied by user inputs,
 // runtime data, forwarded data, or already-presented optional inputs.
-func collectMissingInputs(ctx *NodeContext, presentedOptionalInputs map[string]struct{},
-	requiredInputs []common.Input, logger *log.Logger) []common.Input {
-	missing := make([]common.Input, 0, len(requiredInputs))
+func collectMissingInputs(ctx *providers.NodeContext, presentedOptionalInputs map[string]struct{},
+	requiredInputs []providers.Input, logger *log.Logger) []providers.Input {
+	missing := make([]providers.Input, 0, len(requiredInputs))
 	for _, input := range requiredInputs {
 		if _, ok := ctx.UserInputs[input.Identifier]; ok {
 			continue

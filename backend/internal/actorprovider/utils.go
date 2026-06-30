@@ -24,16 +24,13 @@ import (
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
-
-	appmodel "github.com/thunder-id/thunderid/internal/application/model"
-	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 )
 
 // BuildApplication assembles the runtime application view read from engineCtx.Application.
 // Entity-agnostic: works for any actor with an inbound-client row.
 func BuildApplication(
-	ctx context.Context, provider providers.ActorProviderInterface, actorID string,
-) (*appmodel.Application, *tidcommon.ServiceError) {
+	ctx context.Context, provider providers.ActorProvider, actorID string,
+) (*providers.Application, *tidcommon.ServiceError) {
 	client, svcErr := provider.GetInboundClientByID(ctx, actorID)
 	if svcErr != nil {
 		return nil, svcErr
@@ -53,10 +50,10 @@ func BuildApplication(
 // assembleApplication maps inbound-client and actor records into the application model.
 func assembleApplication(
 	client *providers.InboundClient, entity *providers.Entity,
-) *appmodel.Application {
-	app := &appmodel.Application{
+) *providers.Application {
+	app := &providers.Application{
 		ID: client.ID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			Assertion:        client.Assertion,
 			LoginConsent:     client.LoginConsent,
 			AllowedUserTypes: client.AllowedUserTypes,
@@ -72,10 +69,10 @@ func assembleApplication(
 	}
 
 	if clientID, _ := entityAttrs["clientId"].(string); clientID != "" {
-		app.InboundAuthConfig = []inboundmodel.InboundAuthConfigWithSecret{
+		app.InboundAuthConfig = []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID: clientID,
 				},
 			},
