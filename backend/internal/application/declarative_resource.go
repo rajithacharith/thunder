@@ -103,7 +103,7 @@ func (e *applicationExporter) GetResourceByID(ctx context.Context, id string) (
 func (e *applicationExporter) ValidateResource(ctx context.Context,
 	resource interface{}, id string, logger *log.Logger,
 ) (string, *declarativeresource.ExportError) {
-	app, ok := resource.(*model.Application)
+	app, ok := resource.(*providers.Application)
 	if !ok {
 		return "", declarativeresource.CreateTypeError(resourceTypeApplication, id)
 	}
@@ -174,7 +174,7 @@ func parseToApplicationDTO(data []byte) (*model.ApplicationDTO, error) {
 		OUHandle:    appRequest.OUHandle,
 		Name:        appRequest.Name,
 		Description: appRequest.Description,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+		InboundAuthProfile: providers.InboundAuthProfile{
 			AuthFlowID:                appRequest.AuthFlowID,
 			AuthFlowHandle:            appRequest.AuthFlowHandle,
 			RegistrationFlowID:        appRequest.RegistrationFlowID,
@@ -198,15 +198,15 @@ func parseToApplicationDTO(data []byte) (*model.ApplicationDTO, error) {
 		Metadata:  appRequest.Metadata,
 	}
 	if len(appRequest.InboundAuthConfig) > 0 {
-		inboundAuthConfigDTOs := make([]inboundmodel.InboundAuthConfigWithSecret, 0)
+		inboundAuthConfigDTOs := make([]providers.InboundAuthConfigWithSecret, 0)
 		for _, config := range appRequest.InboundAuthConfig {
-			if config.Type != inboundmodel.OAuthInboundAuthType || config.OAuthConfig == nil {
+			if config.Type != providers.OAuthInboundAuthType || config.OAuthConfig == nil {
 				continue
 			}
 
-			inboundAuthConfigDTO := inboundmodel.InboundAuthConfigWithSecret{
+			inboundAuthConfigDTO := providers.InboundAuthConfigWithSecret{
 				Type: config.Type,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:                           config.OAuthConfig.ClientID,
 					ClientSecret:                       config.OAuthConfig.ClientSecret,
 					RedirectURIs:                       config.OAuthConfig.RedirectURIs,
@@ -249,7 +249,7 @@ func (e *applicationExporter) GetResourceRules() *declarativeresource.ResourceRu
 // instance. Public clients do not have a client secret, so the ClientSecret variable is excluded
 // from their export to avoid injecting an empty or invalid placeholder into the YAML template.
 func (e *applicationExporter) GetResourceRulesForResource(resource interface{}) *declarativeresource.ResourceRules {
-	app, ok := resource.(*model.Application)
+	app, ok := resource.(*providers.Application)
 	if !ok {
 		return e.GetResourceRules()
 	}

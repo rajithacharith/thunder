@@ -33,8 +33,8 @@ type FlowFactoryInterface interface {
 	CreateNode(id, _type string, properties map[string]interface{}, isStartNode, isFinalNode bool) (
 		NodeInterface, error)
 	CreateGraph(id string, _type providers.FlowType, version int) GraphInterface
-	CreateExecutor(name string, executorType common.ExecutorType,
-		defaultInputs, prerequisites []common.Input) ExecutorInterface
+	CreateExecutor(name string, executorType providers.ExecutorType,
+		defaultInputs, prerequisites []providers.Input) providers.Executor
 	CreateInterceptor(name string, isDefault bool, priority int) InterceptorInterface
 	CreateInterceptorUnit(name string, mode providers.InterceptorMode,
 		scope providers.InterceptorScope, applyTo []string,
@@ -97,8 +97,8 @@ func (f *flowFactory) CreateGraph(id string, _type providers.FlowType, version i
 }
 
 // CreateExecutor creates a new executor with the given properties
-func (f *flowFactory) CreateExecutor(name string, executorType common.ExecutorType,
-	defaultInputs, prerequisites []common.Input) ExecutorInterface {
+func (f *flowFactory) CreateExecutor(name string, executorType providers.ExecutorType,
+	defaultInputs, prerequisites []providers.Input) providers.Executor {
 	return newExecutor(name, executorType, defaultInputs, prerequisites)
 }
 
@@ -163,7 +163,7 @@ func (f *flowFactory) CloneNode(source NodeInterface) (NodeInterface, error) {
 	if executableSource, ok := source.(ExecutorBackedNodeInterface); ok {
 		if executableCopy, ok := nodeCopy.(ExecutorBackedNodeInterface); ok {
 			executableCopy.SetExecutorName(executableSource.GetExecutorName())
-			executableCopy.SetInputs(append([]common.Input{}, executableSource.GetInputs()...))
+			executableCopy.SetInputs(append([]providers.Input{}, executableSource.GetInputs()...))
 			executableCopy.SetOnSuccess(executableSource.GetOnSuccess())
 			executableCopy.SetOnFailure(executableSource.GetOnFailure())
 			executableCopy.SetOnIncomplete(executableSource.GetOnIncomplete())

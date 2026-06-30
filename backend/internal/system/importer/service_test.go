@@ -38,7 +38,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	flowmgt "github.com/thunder-id/thunderid/internal/flow/mgt"
 	"github.com/thunder-id/thunderid/internal/group"
-	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
@@ -83,7 +82,7 @@ func updateOUCommon(existing map[string]providers.OrganizationUnit, updated *[]o
 type fakeApplicationService struct {
 	created  []*model.ApplicationDTO
 	updated  []*model.ApplicationDTO
-	existing map[string]*model.Application
+	existing map[string]*providers.Application
 }
 
 func (f *fakeApplicationService) CreateApplication(
@@ -94,15 +93,15 @@ func (f *fakeApplicationService) CreateApplication(
 	}
 	f.created = append(f.created, app)
 	if f.existing == nil {
-		f.existing = map[string]*model.Application{}
+		f.existing = map[string]*providers.Application{}
 	}
-	f.existing[app.ID] = &model.Application{ID: app.ID, Name: app.Name}
+	f.existing[app.ID] = &providers.Application{ID: app.ID, Name: app.Name}
 	return app, nil
 }
 
 func (f *fakeApplicationService) ValidateApplication(
 	_ context.Context, _ *model.ApplicationDTO,
-) (*model.ApplicationProcessedDTO, *inboundmodel.InboundAuthConfigWithSecret, *tidcommon.ServiceError) {
+) (*model.ApplicationProcessedDTO, *providers.InboundAuthConfigWithSecret, *tidcommon.ServiceError) {
 	return nil, nil, nil
 }
 
@@ -120,7 +119,7 @@ func (f *fakeApplicationService) GetOAuthApplication(
 
 func (f *fakeApplicationService) GetApplication(
 	_ context.Context, appID string,
-) (*model.Application, *tidcommon.ServiceError) {
+) (*providers.Application, *tidcommon.ServiceError) {
 	if app, ok := f.existing[appID]; ok {
 		return app, nil
 	}
@@ -143,7 +142,7 @@ func (f *fakeApplicationService) UpdateApplication(
 	}
 	app.ID = appID
 	f.updated = append(f.updated, app)
-	f.existing[appID] = &model.Application{ID: app.ID, Name: app.Name}
+	f.existing[appID] = &providers.Application{ID: app.ID, Name: app.Name}
 	return app, nil
 }
 
@@ -685,7 +684,7 @@ func (f *fakeFlowService) UpdateFlow(
 
 func newTestImportService(appSvc *fakeApplicationService) ImportServiceInterface {
 	if appSvc == nil {
-		appSvc = &fakeApplicationService{existing: map[string]*model.Application{}}
+		appSvc = &fakeApplicationService{existing: map[string]*providers.Application{}}
 	}
 
 	return newImportService(
@@ -705,7 +704,7 @@ func runOAuthClientSecretImport(
 ) (*fakeApplicationService, *ImportResponse, *tidcommon.ServiceError) {
 	t.Helper()
 
-	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
+	appSvc := &fakeApplicationService{existing: map[string]*providers.Application{}}
 	svc := newTestImportService(appSvc)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
@@ -733,7 +732,7 @@ func TestImportResources_CreateApplication(t *testing.T) {
 
 func TestImportResources_UpdateApplication(t *testing.T) {
 	svc := newTestImportService(&fakeApplicationService{
-		existing: map[string]*model.Application{
+		existing: map[string]*providers.Application{
 			"app-1": {ID: "app-1", Name: "Existing App"},
 		},
 	})
@@ -751,7 +750,7 @@ func TestImportResources_UpdateApplication(t *testing.T) {
 }
 
 func TestImportResources_DryRunCreateApplicationWithoutWrite(t *testing.T) {
-	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
+	appSvc := &fakeApplicationService{existing: map[string]*providers.Application{}}
 	svc := newTestImportService(appSvc)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
@@ -770,7 +769,7 @@ func TestImportResources_DryRunCreateApplicationWithoutWrite(t *testing.T) {
 
 func TestImportResources_DryRunUpdateApplicationWithoutWrite(t *testing.T) {
 	appSvc := &fakeApplicationService{
-		existing: map[string]*model.Application{
+		existing: map[string]*providers.Application{
 			"app-1": {ID: "app-1", Name: "Existing App"},
 		},
 	}
@@ -834,7 +833,7 @@ func TestImportResources_CreateIDPAndFlow(t *testing.T) {
 }
 
 func TestImportResources_DefaultsToRuntimeTarget(t *testing.T) {
-	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
+	appSvc := &fakeApplicationService{existing: map[string]*providers.Application{}}
 	svc := newTestImportService(appSvc)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
@@ -850,7 +849,7 @@ func TestImportResources_DefaultsToRuntimeTarget(t *testing.T) {
 }
 
 func TestImportResources_PreservesExplicitFalseOptions(t *testing.T) {
-	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
+	appSvc := &fakeApplicationService{existing: map[string]*providers.Application{}}
 	svc := newTestImportService(appSvc)
 
 	falseVal := false
@@ -1239,7 +1238,7 @@ func TestImportResources_ApplicationFlowReferencesAreRemappedFromFlowAlias(t *te
 	flowSvc.byKey[string(providers.FlowTypeRegistration)+":registration-flow"] =
 		flowSvc.byID["existing-registration-flow-id"]
 
-	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
+	appSvc := &fakeApplicationService{existing: map[string]*providers.Application{}}
 	svc := newImportService(appSvc, nil, flowSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	content := strings.Join([]string{
@@ -1579,7 +1578,7 @@ func TestDeleteResource_RemovesDeclarativeFile(t *testing.T) {
 }
 
 func TestImportResources_ApplicationOUHandlePassedToService(t *testing.T) {
-	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
+	appSvc := &fakeApplicationService{existing: map[string]*providers.Application{}}
 	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
@@ -1599,7 +1598,7 @@ func TestImportResources_ApplicationOUHandlePassedToService(t *testing.T) {
 }
 
 func TestImportResources_ApplicationAuthFlowHandlePassedToService(t *testing.T) {
-	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
+	appSvc := &fakeApplicationService{existing: map[string]*providers.Application{}}
 	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
@@ -1619,7 +1618,7 @@ func TestImportResources_ApplicationAuthFlowHandlePassedToService(t *testing.T) 
 }
 
 func TestImportResources_ApplicationRegistrationFlowHandlePassedToService(t *testing.T) {
-	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
+	appSvc := &fakeApplicationService{existing: map[string]*providers.Application{}}
 	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
@@ -1641,7 +1640,7 @@ func TestImportResources_ApplicationRegistrationFlowHandlePassedToService(t *tes
 }
 
 func TestImportResources_ApplicationRecoveryFlowHandlePassedToService(t *testing.T) {
-	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
+	appSvc := &fakeApplicationService{existing: map[string]*providers.Application{}}
 	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{
@@ -1664,7 +1663,7 @@ func TestImportResources_ApplicationRecoveryFlowHandlePassedToService(t *testing
 
 func TestImportResources_DryRunSkipsApplicationHandleResolution(t *testing.T) {
 	// With dry-run, handle resolution is skipped — unknown handles must not cause failure.
-	appSvc := &fakeApplicationService{existing: map[string]*model.Application{}}
+	appSvc := &fakeApplicationService{existing: map[string]*providers.Application{}}
 	svc := newImportService(appSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	resp, err := svc.ImportResources(context.Background(), &ImportRequest{

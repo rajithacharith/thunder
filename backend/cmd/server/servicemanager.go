@@ -299,6 +299,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	attributeCacheService := attributecache.Initialize()
 
 	emailClient := initEmailClient(ctx, logger)
+	flowConfig := flowconfig.FromServerRuntime()
 	flowFactory, execRegistry, interceptorRegistry, graphBuilder := initializeFlowCoreAndExecutor(ctx, logger,
 		cacheManager, executor.ExecutorDependencies{
 			OUService:             ouService,
@@ -327,6 +328,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 			OpenID4VPVerifierSvc:  openid4vpVerifierSvc,
 		},
 		interceptor.InterceptorDependencies{},
+		flowConfig,
 	)
 
 	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(
@@ -459,6 +461,7 @@ func initializeFlowCoreAndExecutor(
 	cacheManager cache.CacheManagerInterface,
 	execDeps executor.ExecutorDependencies,
 	interceptorDeps interceptor.InterceptorDependencies,
+	flowConfig flowconfig.Config,
 ) (flowcore.FlowFactoryInterface, executor.ExecutorRegistryInterface,
 	interceptor.InterceptorRegistryInterface, graphbuilder.GraphBuilderInterface) {
 	// Initialize flow core services.
@@ -467,11 +470,11 @@ func initializeFlowCoreAndExecutor(
 	interceptorDeps.FlowFactory = flowFactory
 
 	// Initialize flow executor registry
-	execRegistry, err := executor.Initialize(execDeps, config.GetServerRuntime().Config.Flow)
+	execRegistry, err := executor.Initialize(execDeps, flowConfig.Flow)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to register flow executors", log.Error(err))
 	}
-	interceptorRegistry, err := interceptor.Initialize(interceptorDeps, config.GetServerRuntime().Config.Flow)
+	interceptorRegistry, err := interceptor.Initialize(interceptorDeps, flowConfig.Flow)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize Interceptor registry", log.Error(err))
 	}

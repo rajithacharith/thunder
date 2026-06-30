@@ -108,7 +108,7 @@ func (suite *ApplicationToolsTestSuite) TestGetApplicationByID_Success() {
 	mockService := NewApplicationServiceInterfaceMock(suite.T())
 	tools := &applicationTools{appService: mockService}
 
-	expectedApp := &model.Application{
+	expectedApp := &providers.Application{
 		ID:          "app123",
 		Name:        "Test App",
 		Description: "Test Description",
@@ -160,7 +160,7 @@ func (suite *ApplicationToolsTestSuite) TestGetApplicationByClientID_Success() {
 		ClientID: "client123",
 	}
 
-	expectedApp := &model.Application{
+	expectedApp := &providers.Application{
 		ID:   "app123",
 		Name: "Test App",
 	}

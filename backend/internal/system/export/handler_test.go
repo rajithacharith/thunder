@@ -32,11 +32,11 @@ import (
 	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"github.com/stretchr/testify/mock"
 
 	"github.com/thunder-id/thunderid/internal/application"
-	"github.com/thunder-id/thunderid/internal/application/model"
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	"github.com/thunder-id/thunderid/internal/idp"
 	"github.com/thunder-id/thunderid/internal/notification"
@@ -457,7 +457,7 @@ func TestNewExportHandler(t *testing.T) {
 // TestHandleExportRequest_Success tests successful JSON export on the /export endpoint.
 func (suite *HandlerTestSuite) TestHandleExportRequest_Success() {
 	// Setup mock expectations
-	suite.mockAppService.EXPECT().GetApplication(mock.Anything, "app1").Return(&model.Application{
+	suite.mockAppService.EXPECT().GetApplication(mock.Anything, "app1").Return(&providers.Application{
 		ID:          "app1",
 		Name:        "Test App 1",
 		Description: "Test Application 1",
@@ -559,11 +559,11 @@ func (suite *HandlerTestSuite) TestHandleExportRequest_ServiceError() {
 // TestHandleExportRequest_MultipleFiles tests JSON export with multiple files.
 func (suite *HandlerTestSuite) TestHandleExportRequest_MultipleFiles() {
 	// Setup mock expectations for multiple applications
-	suite.mockAppService.EXPECT().GetApplication(mock.Anything, "app1").Return(&model.Application{
+	suite.mockAppService.EXPECT().GetApplication(mock.Anything, "app1").Return(&providers.Application{
 		ID:   "app1",
 		Name: "App One",
 	}, nil).Once()
-	suite.mockAppService.EXPECT().GetApplication(mock.Anything, "app2").Return(&model.Application{
+	suite.mockAppService.EXPECT().GetApplication(mock.Anything, "app2").Return(&providers.Application{
 		ID:   "app2",
 		Name: "App Two",
 	}, nil).Once()
@@ -603,7 +603,7 @@ func (suite *HandlerTestSuite) TestHandleExportRequest_MultipleFiles() {
 // TestHandleExportJSONRequest_Success tests successful JSON export.
 func (suite *HandlerTestSuite) TestHandleExportJSONRequest_Success() {
 	// Setup mock expectations
-	suite.mockAppService.EXPECT().GetApplication(mock.Anything, "app1").Return(&model.Application{
+	suite.mockAppService.EXPECT().GetApplication(mock.Anything, "app1").Return(&providers.Application{
 		ID:          "app1",
 		Name:        "Test App JSON",
 		Description: "JSON Test Application",
@@ -667,7 +667,7 @@ func (suite *HandlerTestSuite) TestHandleExportJSONRequest_ServiceError() {
 // TestHandleExportZipRequest_Success tests successful ZIP export.
 func (suite *HandlerTestSuite) TestHandleExportZipRequest_Success() {
 	// Setup mock expectations
-	suite.mockAppService.EXPECT().GetApplication(mock.Anything, "app1").Return(&model.Application{
+	suite.mockAppService.EXPECT().GetApplication(mock.Anything, "app1").Return(&providers.Application{
 		ID:   "app1",
 		Name: "ZIP Test App",
 	}, nil).Once()
@@ -799,7 +799,7 @@ func (suite *HandlerTestSuite) TestHandleExportRequest_EmptyBody() {
 // TestHandleExportRequest_NilOptions tests request with nil options.
 func (suite *HandlerTestSuite) TestHandleExportRequest_NilOptions() {
 	// Setup mock expectations
-	suite.mockAppService.EXPECT().GetApplication(mock.Anything, "app1").Return(&model.Application{
+	suite.mockAppService.EXPECT().GetApplication(mock.Anything, "app1").Return(&providers.Application{
 		ID:   "app1",
 		Name: "Test App",
 	}, nil).Once()
@@ -917,7 +917,7 @@ func setupBenchmarkTest(b *testing.B) (*exportHandler, []byte) {
 	handler := newExportHandler(exportService)
 
 	// Setup mock expectation
-	mockAppService.EXPECT().GetApplication(mock.Anything, "benchmark-app").Return(&model.Application{
+	mockAppService.EXPECT().GetApplication(mock.Anything, "benchmark-app").Return(&providers.Application{
 		ID:   "benchmark-app",
 		Name: "Benchmark Application",
 	}, nil).Times(b.N)

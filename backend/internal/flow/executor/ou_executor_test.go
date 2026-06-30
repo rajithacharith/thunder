@@ -28,8 +28,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/thunder-id/thunderid/internal/flow/common"
-	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
@@ -44,7 +42,7 @@ type OUExecutorTestSuite struct {
 	suite.Suite
 	mockOUService         *oumock.OrganizationUnitServiceInterfaceMock
 	mockFlowFactory       *coremock.FlowFactoryInterfaceMock
-	mockAuthnProvider     *managermock.AuthnProviderManagerInterfaceMock
+	mockAuthnProvider     *managermock.AuthnProviderManagerMock
 	mockEntityTypeService *entitytypemock.EntityTypeServiceInterfaceMock
 	executor              *ouExecutor
 }
@@ -56,10 +54,10 @@ func TestOUExecutorSuite(t *testing.T) {
 func (suite *OUExecutorTestSuite) SetupTest() {
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
-	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
+	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerMock(suite.T())
 	suite.mockEntityTypeService = entitytypemock.NewEntityTypeServiceInterfaceMock(suite.T())
 
-	defaultInputs := []common.Input{
+	defaultInputs := []providers.Input{
 		{
 			Identifier: userInputOuName,
 			Required:   true,
@@ -73,17 +71,17 @@ func (suite *OUExecutorTestSuite) SetupTest() {
 	}
 
 	// Mock the CreateExecutor method to return a base executor
-	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameOUCreation, common.ExecutorTypeRegistration,
-		defaultInputs, []common.Input{}).
-		Return(newMockExecutor("TestOUExecutor", common.ExecutorTypeUtility, defaultInputs, []common.Input{}))
+	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameOUCreation, providers.ExecutorTypeRegistration,
+		defaultInputs, []providers.Input{}).
+		Return(newMockExecutor("TestOUExecutor", providers.ExecutorTypeUtility, defaultInputs, []providers.Input{}))
 
 	suite.executor = newOUExecutor(
 		suite.mockFlowFactory, suite.mockOUService, suite.mockAuthnProvider, suite.mockEntityTypeService)
 }
 
 // newMockExecutor creates a mock executor for testing purposes
-func newMockExecutor(name string, executorType common.ExecutorType, defaultInputs []common.Input,
-	prerequisites []common.Input) core.ExecutorInterface {
+func newMockExecutor(name string, executorType providers.ExecutorType, defaultInputs []providers.Input,
+	prerequisites []providers.Input) providers.Executor {
 	mockExec := coremock.NewExecutorInterfaceMock(&testing.T{})
 	mockExec.On("GetName").Return(name)
 	mockExec.On("GetType").Return(executorType)
@@ -92,10 +90,10 @@ func newMockExecutor(name string, executorType common.ExecutorType, defaultInput
 	mockExec.On("GetInputs", mock.Anything).Return(defaultInputs)
 	mockExec.On("GetRequiredInputs", mock.Anything).Return(defaultInputs)
 	mockExec.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(
-		func(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool {
+		func(ctx *providers.NodeContext, execResp *providers.ExecutorResponse) bool {
 			requiredInputs := defaultInputs
 			if execResp.Inputs == nil {
-				execResp.Inputs = make([]common.Input, 0)
+				execResp.Inputs = make([]providers.Input, 0)
 			}
 			if len(ctx.UserInputs) == 0 && len(ctx.RuntimeData) == 0 {
 				execResp.Inputs = append(execResp.Inputs, requiredInputs...)
@@ -122,7 +120,7 @@ func (suite *OUExecutorTestSuite) TestNewOUExecutor() {
 	mockFlowFactory := coremock.NewFlowFactoryInterfaceMock(suite.T())
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 
-	defaultInputs := []common.Input{
+	defaultInputs := []providers.Input{
 		{
 			Identifier: userInputOuName,
 			Required:   true,
@@ -136,11 +134,11 @@ func (suite *OUExecutorTestSuite) TestNewOUExecutor() {
 	}
 
 	// Mock the CreateExecutor method
-	mockFlowFactory.On("CreateExecutor", ExecutorNameOUCreation, common.ExecutorTypeRegistration,
-		defaultInputs, []common.Input{}).
-		Return(newMockExecutor("OUExecutor", common.ExecutorTypeRegistration, defaultInputs, []common.Input{}))
+	mockFlowFactory.On("CreateExecutor", ExecutorNameOUCreation, providers.ExecutorTypeRegistration,
+		defaultInputs, []providers.Input{}).
+		Return(newMockExecutor("OUExecutor", providers.ExecutorTypeRegistration, defaultInputs, []providers.Input{}))
 
-	mockAuthnProvider := managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
+	mockAuthnProvider := managermock.NewAuthnProviderManagerMock(suite.T())
 	mockEntityTypeService := entitytypemock.NewEntityTypeServiceInterfaceMock(suite.T())
 	executor := newOUExecutor(mockFlowFactory, mockOUService, mockAuthnProvider, mockEntityTypeService)
 
@@ -220,7 +218,7 @@ func (suite *OUExecutorTestSuite) TestExecute_Success() {
 		suite.Run(tc.name, func() {
 			suite.SetupTest()
 
-			ctx := &core.NodeContext{
+			ctx := &providers.NodeContext{
 				ExecutionID: "flow-123",
 				FlowType:    providers.FlowTypeRegistration,
 				UserInputs:  tc.userInputs,
@@ -234,7 +232,7 @@ func (suite *OUExecutorTestSuite) TestExecute_Success() {
 
 			assert.NoError(suite.T(), err)
 			assert.NotNil(suite.T(), result)
-			assert.Equal(suite.T(), common.ExecComplete, result.Status)
+			assert.Equal(suite.T(), providers.ExecComplete, result.Status)
 			assert.Equal(suite.T(), tc.expectedOUID, result.RuntimeData[ouIDKey])
 			suite.mockOUService.AssertExpectations(suite.T())
 		})
@@ -258,7 +256,7 @@ func (suite *OUExecutorTestSuite) TestExecute_NonRegistrationFlow() {
 		suite.Run(tc.name, func() {
 			suite.SetupTest()
 
-			ctx := &core.NodeContext{
+			ctx := &providers.NodeContext{
 				ExecutionID: "flow-123",
 				FlowType:    tc.flowType,
 			}
@@ -267,7 +265,7 @@ func (suite *OUExecutorTestSuite) TestExecute_NonRegistrationFlow() {
 
 			assert.NoError(suite.T(), err)
 			assert.NotNil(suite.T(), result)
-			assert.Equal(suite.T(), common.ExecUserInputRequired, result.Status)
+			assert.Equal(suite.T(), providers.ExecUserInputRequired, result.Status)
 			assert.Empty(suite.T(), result.RuntimeData[ouIDKey])
 		})
 	}
@@ -275,14 +273,14 @@ func (suite *OUExecutorTestSuite) TestExecute_NonRegistrationFlow() {
 
 type ExecutePrerequisitesFailureTestCase struct {
 	name        string
-	ctx         *core.NodeContext
+	ctx         *providers.NodeContext
 	expectedMsg string
 }
 
 func (suite *OUExecutorTestSuite) TestExecute_PrerequisitesFailure() {
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 
-	defaultInputs := []common.Input{
+	defaultInputs := []providers.Input{
 		{
 			Identifier: userInputOuName,
 			Required:   true,
@@ -295,24 +293,24 @@ func (suite *OUExecutorTestSuite) TestExecute_PrerequisitesFailure() {
 		},
 	}
 
-	prerequisites := []common.Input{{Identifier: "requiredField", Required: true, Type: "string"}}
+	prerequisites := []providers.Input{{Identifier: "requiredField", Required: true, Type: "string"}}
 
 	// Create a mock executor with prerequisites
 	mockExec := coremock.NewExecutorInterfaceMock(suite.T())
 	mockExec.On("GetName").Return("Test").Maybe()
-	mockExec.On("GetType").Return(common.ExecutorTypeUtility).Maybe()
+	mockExec.On("GetType").Return(providers.ExecutorTypeUtility).Maybe()
 	mockExec.On("GetDefaultInputs").Return(defaultInputs).Maybe()
 	mockExec.On("GetPrerequisites").Return(prerequisites).Maybe()
 	mockExec.On("ValidatePrerequisites", mock.Anything, mock.Anything, mock.Anything).Return(
 		func(
-			ctx *core.NodeContext,
-			execResp *common.ExecutorResponse,
-			_ providers.AuthnProviderManagerInterface,
+			ctx *providers.NodeContext,
+			execResp *providers.ExecutorResponse,
+			_ providers.AuthnProviderManager,
 		) bool {
 			for _, prerequisite := range prerequisites {
 				if _, ok := ctx.UserInputs[prerequisite.Identifier]; !ok {
 					if _, ok := ctx.RuntimeData[prerequisite.Identifier]; !ok {
-						execResp.Status = common.ExecFailure
+						execResp.Status = providers.ExecFailure
 						execResp.Error = &ErrPrerequisitesFailed
 						return false
 					}
@@ -323,8 +321,8 @@ func (suite *OUExecutorTestSuite) TestExecute_PrerequisitesFailure() {
 
 	// Create a prerequisitesExecutor with the mock interface directly
 	prerequisitesExecutor := &ouExecutor{
-		ExecutorInterface: mockExec,
-		ouService:         mockOUService,
+		Executor:  mockExec,
+		ouService: mockOUService,
 		logger: log.GetLogger().With(
 			log.String(log.LoggerKeyComponentName, ouExecLoggerComponentName)),
 	}
@@ -332,7 +330,7 @@ func (suite *OUExecutorTestSuite) TestExecute_PrerequisitesFailure() {
 	testCases := []ExecutePrerequisitesFailureTestCase{
 		{
 			name: "Missing prerequisite field",
-			ctx: &core.NodeContext{
+			ctx: &providers.NodeContext{
 				ExecutionID: "flow-123",
 				FlowType:    providers.FlowTypeRegistration,
 				UserInputs:  map[string]string{},
@@ -348,7 +346,7 @@ func (suite *OUExecutorTestSuite) TestExecute_PrerequisitesFailure() {
 
 			assert.NoError(suite.T(), err)
 			assert.NotNil(suite.T(), result)
-			assert.Equal(suite.T(), common.ExecFailure, result.Status)
+			assert.Equal(suite.T(), providers.ExecFailure, result.Status)
 			assert.Equal(suite.T(), tc.expectedMsg, result.Error.Error.DefaultValue)
 			mockOUService.AssertNotCalled(suite.T(), "CreateOrganizationUnit", mock.Anything)
 		})
@@ -384,7 +382,7 @@ func (suite *OUExecutorTestSuite) TestExecute_UserInputRequired() {
 		suite.Run(tc.name, func() {
 			suite.SetupTest()
 
-			ctx := &core.NodeContext{
+			ctx := &providers.NodeContext{
 				ExecutionID: "flow-123",
 				FlowType:    providers.FlowTypeRegistration,
 				UserInputs:  tc.userInputs,
@@ -394,7 +392,7 @@ func (suite *OUExecutorTestSuite) TestExecute_UserInputRequired() {
 
 			assert.NoError(suite.T(), err)
 			assert.NotNil(suite.T(), result)
-			assert.Equal(suite.T(), common.ExecUserInputRequired, result.Status)
+			assert.Equal(suite.T(), providers.ExecUserInputRequired, result.Status)
 			assert.NotEmpty(suite.T(), result.Inputs)
 			suite.mockOUService.AssertNotCalled(suite.T(), "CreateOrganizationUnit", mock.Anything)
 		})
@@ -482,7 +480,7 @@ func (suite *OUExecutorTestSuite) TestExecute_ErrorScenarios() {
 		suite.Run(tc.name, func() {
 			suite.SetupTest()
 
-			ctx := &core.NodeContext{
+			ctx := &providers.NodeContext{
 				ExecutionID: "flow-123",
 				FlowType:    providers.FlowTypeRegistration,
 				UserInputs:  tc.userInputs,
@@ -499,7 +497,7 @@ func (suite *OUExecutorTestSuite) TestExecute_ErrorScenarios() {
 				assert.Equal(suite.T(), tc.expectedFailure, err.Error())
 			} else {
 				assert.NoError(suite.T(), err)
-				assert.Equal(suite.T(), common.ExecUserInputRequired, result.Status)
+				assert.Equal(suite.T(), providers.ExecUserInputRequired, result.Status)
 				assert.Equal(suite.T(), tc.expectedFailure, result.Error.Error.DefaultValue)
 			}
 
@@ -517,7 +515,7 @@ func (suite *OUExecutorTestSuite) TestExecute_ErrorScenarios() {
 func (suite *OUExecutorTestSuite) TestExecute_EmptyOUID() {
 	suite.SetupTest()
 
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
@@ -609,7 +607,7 @@ func (suite *OUExecutorTestSuite) TestExecute_ParentOuIdProperty() {
 		suite.Run(tc.name, func() {
 			suite.SetupTest()
 
-			ctx := &core.NodeContext{
+			ctx := &providers.NodeContext{
 				ExecutionID:    "flow-123",
 				FlowType:       providers.FlowTypeRegistration,
 				NodeProperties: tc.nodeProperties,
@@ -627,7 +625,7 @@ func (suite *OUExecutorTestSuite) TestExecute_ParentOuIdProperty() {
 
 			assert.NoError(suite.T(), err)
 			assert.NotNil(suite.T(), result)
-			assert.Equal(suite.T(), common.ExecComplete, result.Status)
+			assert.Equal(suite.T(), providers.ExecComplete, result.Status)
 			assert.Equal(suite.T(), testOUID, result.RuntimeData[ouIDKey])
 			suite.mockOUService.AssertExpectations(suite.T())
 		})
@@ -636,7 +634,7 @@ func (suite *OUExecutorTestSuite) TestExecute_ParentOuIdProperty() {
 	suite.Run("non-string parentOuId returns error", func() {
 		suite.SetupTest()
 
-		ctx := &core.NodeContext{
+		ctx := &providers.NodeContext{
 			ExecutionID:    "flow-123",
 			FlowType:       providers.FlowTypeRegistration,
 			NodeProperties: map[string]interface{}{"parentOuId": 123},
@@ -663,11 +661,11 @@ func (suite *OUExecutorTestSuite) TestExecutorHelperMethods() {
 		{
 			name: "HasRequiredInputs with empty inputs returns false and sets required data",
 			testFunc: func() {
-				ctx := &core.NodeContext{
+				ctx := &providers.NodeContext{
 					UserInputs:  map[string]string{},
 					RuntimeData: map[string]string{},
 				}
-				execResp := &common.ExecutorResponse{
+				execResp := &providers.ExecutorResponse{
 					AdditionalData: make(map[string]string),
 					RuntimeData:    make(map[string]string),
 				}
@@ -681,11 +679,11 @@ func (suite *OUExecutorTestSuite) TestExecutorHelperMethods() {
 		{
 			name: "ValidatePrerequisites with no prerequisites returns true",
 			testFunc: func() {
-				ctx := &core.NodeContext{
+				ctx := &providers.NodeContext{
 					UserInputs:  map[string]string{},
 					RuntimeData: map[string]string{},
 				}
-				execResp := &common.ExecutorResponse{
+				execResp := &providers.ExecutorResponse{
 					AdditionalData: make(map[string]string),
 					RuntimeData:    make(map[string]string),
 				}
@@ -698,11 +696,11 @@ func (suite *OUExecutorTestSuite) TestExecutorHelperMethods() {
 		{
 			name: "GetUserIDFromContext with empty context returns empty string",
 			testFunc: func() {
-				ctx := &core.NodeContext{
+				ctx := &providers.NodeContext{
 					UserInputs:  map[string]string{},
 					RuntimeData: map[string]string{},
 				}
-				execResp := &common.ExecutorResponse{
+				execResp := &providers.ExecutorResponse{
 					RuntimeData: make(map[string]string),
 				}
 
@@ -713,7 +711,7 @@ func (suite *OUExecutorTestSuite) TestExecutorHelperMethods() {
 		{
 			name: "GetInputs returns three required fields",
 			testFunc: func() {
-				ctx := &core.NodeContext{
+				ctx := &providers.NodeContext{
 					UserInputs:  map[string]string{},
 					RuntimeData: map[string]string{},
 				}
@@ -727,7 +725,7 @@ func (suite *OUExecutorTestSuite) TestExecutorHelperMethods() {
 		{
 			name: "getOrganizationUnitRequest constructs request correctly",
 			testFunc: func() {
-				ctx := &core.NodeContext{
+				ctx := &providers.NodeContext{
 					UserInputs: map[string]string{
 						userInputOuName:   "Engineering",
 						userInputOuHandle: "engineering",
@@ -749,7 +747,7 @@ func (suite *OUExecutorTestSuite) TestExecutorHelperMethods() {
 }
 
 func (suite *OUExecutorTestSuite) TestOUExecutorInterface() {
-	var _ core.ExecutorInterface = (*ouExecutor)(nil)
+	var _ providers.Executor = (*ouExecutor)(nil)
 }
 
 func (suite *OUExecutorTestSuite) TestExecute_RetryableOUCreationErrors() {
@@ -777,7 +775,7 @@ func (suite *OUExecutorTestSuite) TestExecute_RetryableOUCreationErrors() {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			suite.SetupTest()
 
-			ctx := &core.NodeContext{
+			ctx := &providers.NodeContext{
 				ExecutionID: "flow-123",
 				FlowType:    providers.FlowTypeRegistration,
 				UserInputs: map[string]string{
@@ -796,7 +794,7 @@ func (suite *OUExecutorTestSuite) TestExecute_RetryableOUCreationErrors() {
 
 			assert.NoError(t, err)
 			assert.NotNil(t, resp)
-			assert.Equal(t, common.ExecUserInputRequired, resp.Status)
+			assert.Equal(t, providers.ExecUserInputRequired, resp.Status)
 			assert.Equal(t, tt.expectedReason, resp.Error.Error.DefaultValue, tt.message)
 			assert.NotEmpty(t, resp.Inputs, "Inputs should be re-populated for retry")
 			assert.Len(t, resp.Inputs, 2, "Should include both ouName and ouHandle inputs")

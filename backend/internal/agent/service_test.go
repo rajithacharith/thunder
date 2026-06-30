@@ -170,14 +170,14 @@ func (suite *AgentServiceTestSuite) TestNeedsInboundClient_EmptyRequest() {
 }
 
 func (suite *AgentServiceTestSuite) TestNeedsInboundClient_WithAuthFlowID() {
-	req := &model.Agent{InboundAuthProfile: inboundmodel.InboundAuthProfile{AuthFlowID: "flow-1"}}
+	req := &model.Agent{InboundAuthProfile: providers.InboundAuthProfile{AuthFlowID: "flow-1"}}
 	assert.True(suite.T(), needsInboundClient(req))
 }
 
 func (suite *AgentServiceTestSuite) TestNeedsInboundClient_WithInboundAuthConfig() {
 	req := &model.Agent{
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
-			{Type: inboundmodel.OAuthInboundAuthType, OAuthConfig: &inboundmodel.OAuthConfigWithSecret{}},
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
+			{Type: providers.OAuthInboundAuthType, OAuthConfig: &providers.OAuthConfigWithSecret{}},
 		},
 	}
 	assert.True(suite.T(), needsInboundClient(req))
@@ -185,7 +185,7 @@ func (suite *AgentServiceTestSuite) TestNeedsInboundClient_WithInboundAuthConfig
 
 func (suite *AgentServiceTestSuite) TestNeedsInboundClient_WithAllowedUserTypes() {
 	req := &model.Agent{
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{AllowedUserTypes: []string{"employee"}},
+		InboundAuthProfile: providers.InboundAuthProfile{AllowedUserTypes: []string{"employee"}},
 	}
 	assert.True(suite.T(), needsInboundClient(req))
 }
@@ -199,7 +199,7 @@ func (suite *AgentServiceTestSuite) TestUpdateNeedsInboundClient_EmptyRequest() 
 }
 
 func (suite *AgentServiceTestSuite) TestUpdateNeedsInboundClient_WithThemeID() {
-	req := &model.UpdateAgentRequest{InboundAuthProfile: inboundmodel.InboundAuthProfile{ThemeID: "theme-abc"}}
+	req := &model.UpdateAgentRequest{InboundAuthProfile: providers.InboundAuthProfile{ThemeID: "theme-abc"}}
 	assert.True(suite.T(), updateNeedsInboundClient(req))
 }
 
@@ -208,26 +208,26 @@ func (suite *AgentServiceTestSuite) TestRequiresClientSecret_NilConfig() {
 }
 
 func (suite *AgentServiceTestSuite) TestRequiresClientSecret_PublicClient() {
-	cfg := &inboundmodel.OAuthConfigWithSecret{PublicClient: true}
+	cfg := &providers.OAuthConfigWithSecret{PublicClient: true}
 	assert.False(suite.T(), requiresClientSecret(cfg))
 }
 
 func (suite *AgentServiceTestSuite) TestRequiresClientSecret_ClientSecretBasic() {
-	cfg := &inboundmodel.OAuthConfigWithSecret{
+	cfg := &providers.OAuthConfigWithSecret{
 		TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 	}
 	assert.True(suite.T(), requiresClientSecret(cfg))
 }
 
 func (suite *AgentServiceTestSuite) TestRequiresClientSecret_NoneMethod() {
-	cfg := &inboundmodel.OAuthConfigWithSecret{
+	cfg := &providers.OAuthConfigWithSecret{
 		TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodNone,
 	}
 	assert.False(suite.T(), requiresClientSecret(cfg))
 }
 
 func (suite *AgentServiceTestSuite) TestRequiresClientSecret_DefaultIsTrue() {
-	cfg := &inboundmodel.OAuthConfigWithSecret{}
+	cfg := &providers.OAuthConfigWithSecret{}
 	assert.True(suite.T(), requiresClientSecret(cfg))
 }
 
@@ -448,7 +448,7 @@ func (suite *AgentServiceTestSuite) TestCreateAgent_WithInboundAuth_Success() {
 		Name:               testAgentName,
 		Type:               testAgentType,
 		OUID:               testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{AuthFlowID: "flow-1"},
+		InboundAuthProfile: providers.InboundAuthProfile{AuthFlowID: "flow-1"},
 	}
 	resp, svcErr := svc.CreateAgent(context.Background(), req)
 	suite.Require().Nil(svcErr)
@@ -479,10 +479,10 @@ func (suite *AgentServiceTestSuite) TestCreateAgent_FlowIDResolvedToDefault() {
 		Name: testAgentName,
 		Type: testAgentType,
 		OUID: testOUID,
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					GrantTypes:              []providers.GrantType{providers.GrantTypeClientCredentials},
 					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
@@ -512,11 +512,11 @@ func (suite *AgentServiceTestSuite) TestCreateAgent_WithOAuth_Success() {
 		Name:               testAgentName,
 		Type:               testAgentType,
 		OUID:               testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{AuthFlowID: "flow-1"},
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthProfile: providers.InboundAuthProfile{AuthFlowID: "flow-1"},
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					GrantTypes:              []providers.GrantType{providers.GrantTypeClientCredentials},
 					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
@@ -527,7 +527,7 @@ func (suite *AgentServiceTestSuite) TestCreateAgent_WithOAuth_Success() {
 	suite.Require().Nil(svcErr)
 	suite.Require().NotNil(resp)
 	suite.Require().Len(resp.InboundAuthConfig, 1)
-	assert.Equal(suite.T(), inboundmodel.OAuthInboundAuthType, resp.InboundAuthConfig[0].Type)
+	assert.Equal(suite.T(), providers.OAuthInboundAuthType, resp.InboundAuthConfig[0].Type)
 	assert.NotEmpty(suite.T(), resp.InboundAuthConfig[0].OAuthConfig.ClientID)
 	assert.NotEmpty(suite.T(), resp.InboundAuthConfig[0].OAuthConfig.ClientSecret)
 }
@@ -566,7 +566,7 @@ func (suite *AgentServiceTestSuite) TestCreateAgent_InboundCreationFails_Compens
 		Name:               testAgentName,
 		Type:               testAgentType,
 		OUID:               testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{AuthFlowID: "flow-1"},
+		InboundAuthProfile: providers.InboundAuthProfile{AuthFlowID: "flow-1"},
 	}
 	resp, svcErr := svc.CreateAgent(context.Background(), req)
 	assert.Nil(suite.T(), resp)
@@ -855,10 +855,10 @@ func (suite *AgentServiceTestSuite) TestUpdateAgent_FlowIDResolvedToDefault() {
 	resp, svcErr := svc.UpdateAgent(context.Background(), testAgentID, &model.UpdateAgentRequest{
 		Name: testAgentName,
 		Type: testAgentType,
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					GrantTypes:              []providers.GrantType{providers.GrantTypeClientCredentials},
 					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
@@ -1655,7 +1655,7 @@ func (suite *AgentServiceTestSuite) TestUpdateAgent_WantsInbound_NoExisting_Crea
 	resp, svcErr := svc.UpdateAgent(context.Background(), testAgentID, &model.UpdateAgentRequest{
 		Name:               testAgentName,
 		Type:               testAgentType,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{AuthFlowID: "new-flow-id"},
+		InboundAuthProfile: providers.InboundAuthProfile{AuthFlowID: "new-flow-id"},
 	})
 	suite.Require().Nil(svcErr)
 	suite.Require().NotNil(resp)
@@ -2134,7 +2134,7 @@ func (suite *AgentServiceTestSuite) TestCreateAgent_InboundCreationFails_NonTran
 		Name:               testAgentName,
 		Type:               testAgentType,
 		OUID:               testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{AuthFlowID: "flow-1"},
+		InboundAuthProfile: providers.InboundAuthProfile{AuthFlowID: "flow-1"},
 	}
 	resp, svcErr := svc.CreateAgent(context.Background(), req)
 	assert.Nil(suite.T(), resp)
@@ -2164,7 +2164,7 @@ func (suite *AgentServiceTestSuite) TestCreateAgent_InboundFails_CompensationDel
 		Name:               testAgentName,
 		Type:               testAgentType,
 		OUID:               testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{AuthFlowID: "flow-1"},
+		InboundAuthProfile: providers.InboundAuthProfile{AuthFlowID: "flow-1"},
 	}
 	resp, svcErr := svc.CreateAgent(context.Background(), req)
 	assert.Nil(suite.T(), resp)
@@ -2237,10 +2237,10 @@ func (suite *AgentServiceTestSuite) TestUpdateAgent_UpdateSystemCredentialsFails
 	req := &model.UpdateAgentRequest{
 		Name: testAgentName,
 		Type: testAgentType,
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					GrantTypes:              []providers.GrantType{providers.GrantTypeClientCredentials},
 					TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 				},
@@ -2272,7 +2272,7 @@ func (suite *AgentServiceTestSuite) TestUpdateAgent_ReconcileUpdateInboundFails_
 	req := &model.UpdateAgentRequest{
 		Name:               testAgentName,
 		Type:               testAgentType,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{AuthFlowID: "flow-1"},
+		InboundAuthProfile: providers.InboundAuthProfile{AuthFlowID: "flow-1"},
 	}
 	resp, svcErr := svc.UpdateAgent(context.Background(), testAgentID, req)
 	assert.Nil(suite.T(), resp)
@@ -2299,7 +2299,7 @@ func (suite *AgentServiceTestSuite) TestUpdateAgent_ReconcileCreateInboundFails_
 	req := &model.UpdateAgentRequest{
 		Name:               testAgentName,
 		Type:               testAgentType,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{AuthFlowID: "flow-1"},
+		InboundAuthProfile: providers.InboundAuthProfile{AuthFlowID: "flow-1"},
 	}
 	resp, svcErr := svc.UpdateAgent(context.Background(), testAgentID, req)
 	assert.Nil(suite.T(), resp)
@@ -2389,7 +2389,7 @@ func (suite *AgentServiceTestSuite) TestValidateAgent_InboundValidateFails_NonTr
 		Name:               testAgentName,
 		Type:               testAgentType,
 		OUID:               testOUID,
-		InboundAuthProfile: inboundmodel.InboundAuthProfile{AuthFlowID: "flow-1"},
+		InboundAuthProfile: providers.InboundAuthProfile{AuthFlowID: "flow-1"},
 	}
 	_, _, _, svcErr := svc.ValidateAgent(context.Background(), req, "")
 	suite.Require().NotNil(svcErr)

@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	authncm "github.com/thunder-id/thunderid/internal/authn/common"
-	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 )
@@ -75,7 +74,7 @@ func (s *ModelTestSuite) TestFromEngineContext_WithToken() {
 				"email": "test@example.com",
 			},
 		},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            mockGraph,
 	}
 
@@ -115,7 +114,7 @@ func (s *ModelTestSuite) TestFromEngineContext_WithoutToken() {
 			Token:           "",
 			Attributes:      map[string]interface{}{},
 		},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            mockGraph,
 	}
 
@@ -143,7 +142,7 @@ func (s *ModelTestSuite) TestFromEngineContext_WithEmptyAuthenticatedUser() {
 		UserInputs:        map[string]string{},
 		RuntimeData:       map[string]string{},
 		AuthenticatedUser: authncm.AuthenticatedUser{},
-		ExecutionHistory:  map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory:  map[string]*providers.NodeExecutionRecord{},
 		Graph:             mockGraph,
 	}
 
@@ -179,7 +178,7 @@ func (s *ModelTestSuite) TestToEngineContext_WithToken() {
 		},
 		UserInputs:       map[string]string{},
 		RuntimeData:      map[string]string{},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            mockGraph,
 	}
 
@@ -307,7 +306,7 @@ func (s *ModelTestSuite) TestContextRoundTrip() {
 				},
 				UserInputs:       tc.inputs,
 				RuntimeData:      tc.runtime,
-				ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+				ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 				Graph:            mockGraph,
 			}
 
@@ -357,7 +356,7 @@ func (s *ModelTestSuite) TestFromEngineContext_PreservesOtherFields() {
 				"attr1": "value1",
 			},
 		},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{
 			"node1": {NodeID: "node1"},
 		},
 		Graph: mockGraph,
@@ -427,7 +426,7 @@ func (s *ModelTestSuite) TestFromEngineContext_WithAvailableAttributes() {
 				"email": "test@example.com",
 			},
 		},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            mockGraph,
 	}
 
@@ -469,7 +468,7 @@ func (s *ModelTestSuite) TestFromEngineContext_WithoutAvailableAttributes() {
 			AvailableAttributes: nil,
 			Attributes:          map[string]interface{}{},
 		},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            mockGraph,
 	}
 
@@ -519,7 +518,7 @@ func (s *ModelTestSuite) TestToEngineContext_WithAvailableAttributes() {
 		},
 		UserInputs:       map[string]string{},
 		RuntimeData:      map[string]string{},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            mockGraph,
 	}
 
@@ -642,7 +641,7 @@ func (s *ModelTestSuite) TestAvailableAttributesSerializationRoundTrip() {
 				},
 				UserInputs:       map[string]string{},
 				RuntimeData:      map[string]string{},
-				ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+				ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 				Graph:            mockGraph,
 			}
 
@@ -678,7 +677,7 @@ func (s *ModelTestSuite) TestFromEngineContext_WithCurrentSegmentID() {
 		CurrentSegmentID: "seg-1",
 		UserInputs:       map[string]string{},
 		RuntimeData:      map[string]string{},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            mockGraph,
 	}
 
@@ -701,7 +700,7 @@ func (s *ModelTestSuite) TestFromEngineContext_EmptyCurrentSegmentID_OmitsField(
 		CurrentSegmentID: "",
 		UserInputs:       map[string]string{},
 		RuntimeData:      map[string]string{},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            mockGraph,
 	}
 
@@ -771,7 +770,7 @@ func (s *ModelTestSuite) TestCurrentSegmentID_RoundTrip() {
 		CurrentSegmentID: "seg-2",
 		UserInputs:       map[string]string{},
 		RuntimeData:      map[string]string{},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            mockGraph,
 	}
 
@@ -853,7 +852,7 @@ func (s *ModelTestSuite) TestFromEngineContext_WithInterceptorSharedData() {
 		FlowType:              providers.FlowTypeAuthentication,
 		UserInputs:            map[string]string{},
 		RuntimeData:           map[string]string{},
-		ExecutionHistory:      map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory:      map[string]*providers.NodeExecutionRecord{},
 		Graph:                 mockGraph,
 		InterceptorSharedData: map[string]string{"challenge": "abc123"},
 	}
@@ -878,7 +877,7 @@ func (s *ModelTestSuite) TestFromEngineContext_NilInterceptorSharedData() {
 		FlowType:              providers.FlowTypeAuthentication,
 		UserInputs:            map[string]string{},
 		RuntimeData:           map[string]string{},
-		ExecutionHistory:      map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory:      map[string]*providers.NodeExecutionRecord{},
 		Graph:                 mockGraph,
 		InterceptorSharedData: nil,
 	}
@@ -954,7 +953,7 @@ func (s *ModelTestSuite) TestInterceptorSharedData_RoundTrip() {
 		FlowType:              providers.FlowTypeAuthentication,
 		UserInputs:            map[string]string{},
 		RuntimeData:           map[string]string{},
-		ExecutionHistory:      map[string]*common.NodeExecutionRecord{},
+		ExecutionHistory:      map[string]*providers.NodeExecutionRecord{},
 		Graph:                 mockGraph,
 		InterceptorSharedData: map[string]string{"reqCount": "3"},
 	}

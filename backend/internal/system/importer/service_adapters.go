@@ -31,7 +31,6 @@ import (
 	thememgt "github.com/thunder-id/thunderid/internal/design/theme/mgt"
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	"github.com/thunder-id/thunderid/internal/group"
-	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	"github.com/thunder-id/thunderid/internal/openid4vci/credential"
 	"github.com/thunder-id/thunderid/internal/openid4vp/definition"
 	"github.com/thunder-id/thunderid/internal/resource"
@@ -978,13 +977,13 @@ func (s *importService) importAgent(
 	return successOutcome(resourceTypeAgent, created.ID, created.Name, operationCreate)
 }
 
-func getAgentOAuthConfigForImport(req *agentmodel.AgentRequestWithID) *inboundmodel.OAuthConfigWithSecret {
+func getAgentOAuthConfigForImport(req *agentmodel.AgentRequestWithID) *providers.OAuthConfigWithSecret {
 	if req == nil {
 		return nil
 	}
 
 	for _, inboundAuth := range req.InboundAuthConfig {
-		if inboundAuth.Type == inboundmodel.OAuthInboundAuthType && inboundAuth.OAuthConfig != nil {
+		if inboundAuth.Type == providers.OAuthInboundAuthType && inboundAuth.OAuthConfig != nil {
 			return inboundAuth.OAuthConfig
 		}
 	}

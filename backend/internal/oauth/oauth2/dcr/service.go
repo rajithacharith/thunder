@@ -240,7 +240,7 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 		appName = application.AppI18nRef(appID, "name")
 	}
 
-	oauthAppConfig := &inboundmodel.OAuthConfigWithSecret{
+	oauthAppConfig := &providers.OAuthConfigWithSecret{
 		ClientID:                           clientID,
 		RedirectURIs:                       request.RedirectURIs,
 		GrantTypes:                         request.GrantTypes,
@@ -256,9 +256,9 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 		Certificate:                        oauthCertificate,
 	}
 
-	inboundAuthConfig := []inboundmodel.InboundAuthConfigWithSecret{
+	inboundAuthConfig := []providers.InboundAuthConfigWithSecret{
 		{
-			Type:        inboundmodel.OAuthInboundAuthType,
+			Type:        providers.OAuthInboundAuthType,
 			OAuthConfig: oauthAppConfig,
 		},
 	}

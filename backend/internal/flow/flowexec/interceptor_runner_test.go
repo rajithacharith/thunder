@@ -374,12 +374,12 @@ func (s *InterceptorRunnerTestSuite) TestRunInterceptors_DefaultInterceptorCanno
 }
 
 func (s *InterceptorRunnerTestSuite) TestRunInterceptors_CurrentNodeInputsPassedToInterceptor() {
-	expectedInputs := []common.Input{
+	expectedInputs := []providers.Input{
 		{Identifier: "email", Type: "string", Required: true},
-		{Identifier: "password", Type: common.InputTypePassword, Required: true},
+		{Identifier: "password", Type: providers.InputTypePassword, Required: true},
 	}
 
-	var receivedInputs []common.Input
+	var receivedInputs []providers.Input
 	icMock := newTestInterceptorMock(s.T(), "InputIC", false, 100)
 	icMock.On("Execute", mock.Anything).
 		Run(func(args mock.Arguments) {
@@ -407,7 +407,7 @@ func (s *InterceptorRunnerTestSuite) TestRunInterceptors_CurrentNodeInputsPassed
 }
 
 func (s *InterceptorRunnerTestSuite) TestRunInterceptors_NilCurrentNodeInputsPassedAsNil() {
-	var receivedInputs []common.Input
+	var receivedInputs []providers.Input
 	called := false
 	icMock := newTestInterceptorMock(s.T(), "NilInputIC", false, 100)
 	icMock.On("Execute", mock.Anything).

@@ -52,19 +52,19 @@ const (
 // flowExecService is the implementation of FlowExecServiceInterface
 type flowExecService struct {
 	flowEngine       flowEngineInterface
-	flowProvider     providers.FlowProviderInterface
+	flowProvider     providers.FlowProvider
 	graphBuilder     graphbuilder.GraphBuilderInterface
 	flowStore        flowStoreInterface
-	actorProvider    providers.ActorProviderInterface
+	actorProvider    providers.ActorProvider
 	observabilitySvc observability.ObservabilityServiceInterface
 	transactioner    transaction.Transactioner
 	cryptoSvc        kmprovider.RuntimeCryptoProvider
 	cfg              flowconfig.Config
 }
 
-func newFlowExecService(flowProvider providers.FlowProviderInterface,
+func newFlowExecService(flowProvider providers.FlowProvider,
 	flowStore flowStoreInterface, flowEngine flowEngineInterface,
-	actorProvider providers.ActorProviderInterface,
+	actorProvider providers.ActorProvider,
 	observabilitySvc observability.ObservabilityServiceInterface,
 	transactioner transaction.Transactioner,
 	cryptoSvc kmprovider.RuntimeCryptoProvider,
@@ -349,7 +349,7 @@ func (s *flowExecService) loadContextFromStore(ctx context.Context, executionID 
 }
 
 // setApplicationToContext loads the inbound-client / entity records for the flow's owning entity
-// and assembles a model.Application view onto engineCtx.Application. Entity-agnostic: works for
+// and assembles a providers.Application view onto engineCtx.Application. Entity-agnostic: works for
 // any entity (application, agent, ...) that has an inbound-client row.
 func (s *flowExecService) setApplicationToContext(engineCtx *EngineContext,
 	logger *log.Logger) *tidcommon.ServiceError {
@@ -392,7 +392,7 @@ func (s *flowExecService) removeContext(ctx context.Context, executionID string,
 // updateContext updates the flow context in the store based on the flow step status.
 func (s *flowExecService) updateContext(ctx context.Context, engineCtx *EngineContext,
 	flowStep *FlowStep, logger *log.Logger) error {
-	if flowStep.Status == common.FlowStatusComplete {
+	if flowStep.Status == providers.FlowStatusComplete {
 		return s.removeContext(ctx, engineCtx.ExecutionID, logger)
 	} else {
 		logger.Debug(ctx, "Flow execution is incomplete, updating the flow context",
@@ -560,7 +560,7 @@ func (s *flowExecService) getSystemFlowGraph(ctx context.Context, flowType provi
 
 // isComplete checks if the flow step status indicates completion.
 func isComplete(step FlowStep) bool {
-	return step.Status == common.FlowStatusComplete
+	return step.Status == providers.FlowStatusComplete
 }
 
 // prepareContext prepares the flow context by merging any data.
@@ -687,7 +687,7 @@ func (s *flowExecService) InitiateAndExecute(ctx context.Context,
 		return nil, flowErr
 	}
 
-	if flowStep.Status == common.FlowStatusIncomplete {
+	if flowStep.Status == providers.FlowStatusIncomplete {
 		if storeErr := s.storeContext(ctx, engineCtx, initContext.ExpirySeconds, logger); storeErr != nil {
 			logger.Error(ctx, "Failed to store flow context after execution",
 				log.String(log.LoggerKeyExecutionID, engineCtx.ExecutionID),

@@ -107,10 +107,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ClientNameProvided() {
 	appDTO := &model.ApplicationDTO{
 		ID:   "app-id",
 		Name: "Test Client",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:     "client-id",
 					ClientSecret: "client-secret",
 					Scopes:       []string{},
@@ -144,10 +144,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_JWKSUriProvided() {
 	appDTO := &model.ApplicationDTO{
 		ID:   "app-id",
 		Name: "Test Client",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:     "client-id",
 					ClientSecret: "client-secret",
 					Scopes:       []string{},
@@ -282,10 +282,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ConvertApplicationToDCRResponse
 	appDTO := &model.ApplicationDTO{
 		ID:   "app-id",
 		Name: "Test Client",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:     "client-id",
 					ClientSecret: "client-secret",
 					Scopes:       []string{},
@@ -321,10 +321,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_WithJWKS() {
 	appDTO := &model.ApplicationDTO{
 		ID:   "app-id",
 		Name: "Test Client",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:     "client-id",
 					ClientSecret: "client-secret",
 					Scopes:       []string{},
@@ -360,10 +360,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_WithScope() {
 	appDTO := &model.ApplicationDTO{
 		ID:   "app-id",
 		Name: "Test Client",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:     "client-id",
 					ClientSecret: "client-secret",
 					Scopes:       []string{"read", "write", "admin"},
@@ -395,10 +395,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_RequirePushedAuthorizationReque
 	appDTO := &model.ApplicationDTO{
 		ID:   "app-id",
 		Name: "Test Client",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:                           "client-id",
 					ClientSecret:                       "client-secret",
 					Scopes:                             []string{},
@@ -439,7 +439,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_EmptyInboundAuthConfig() {
 	appDTO := &model.ApplicationDTO{
 		ID:                "app-id",
 		Name:              "Test Client",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{},
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{},
 	}
 
 	s.mockAppService.On(
@@ -469,10 +469,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_WithLocalizedVariants() {
 	appDTO := &model.ApplicationDTO{
 		ID:   "app-id",
 		Name: "Test Client",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID:     "client-id",
 					ClientSecret: "client-secret",
 					Scopes:       []string{},
@@ -522,10 +522,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_DefaultOnlyStoresSystemLanguage
 	appDTO := &model.ApplicationDTO{
 		ID:   "app-id",
 		Name: "My App",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID: "client-id",
 					Scopes:   []string{},
 				},
@@ -568,10 +568,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_TaggedSystemLanguageWinsOverDef
 	appDTO := &model.ApplicationDTO{
 		ID:   "app-id",
 		Name: "My App",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID: "client-id",
 					Scopes:   []string{},
 				},
@@ -616,10 +616,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_LocalizedVariantsWriteFailure()
 	appDTO := &model.ApplicationDTO{
 		ID:   "app-id",
 		Name: "Test Client",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID: "client-id",
 					Scopes:   []string{},
 				},
@@ -667,10 +667,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_InvalidLocalizedURI() {
 	appDTO := &model.ApplicationDTO{
 		ID:   "app-id",
 		Name: "Test Client",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID: "client-id",
 					Scopes:   []string{},
 				},
@@ -731,10 +731,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_WithIDTokenEncryption() {
 	appDTO := &model.ApplicationDTO{
 		ID:   "app-id",
 		Name: "IDToken Encryption Client",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID: "client-id",
 					Scopes:   []string{"openid"},
 					Token: &providers.OAuthTokenConfig{
@@ -788,10 +788,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_LocalizedVariantsWriteFailure_C
 	appDTO := &model.ApplicationDTO{
 		ID:   "app-id",
 		Name: "Test Client",
-		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+		InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 			{
-				Type: inboundmodel.OAuthInboundAuthType,
-				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				Type: providers.OAuthInboundAuthType,
+				OAuthConfig: &providers.OAuthConfigWithSecret{
 					ClientID: "client-id",
 					Scopes:   []string{},
 				},

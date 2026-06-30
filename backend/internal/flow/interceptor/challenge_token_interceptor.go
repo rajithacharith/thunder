@@ -35,7 +35,7 @@ import (
 // across requests within a flow instance.
 type challengeTokenInterceptor struct {
 	core.InterceptorInterface
-	postRequestStatuses []common.FlowStatus
+	postRequestStatuses []providers.FlowStatus
 	logger              *log.Logger
 }
 
@@ -47,8 +47,8 @@ func newChallengeTokenInterceptor(flowFactory core.FlowFactoryInterface) *challe
 
 	return &challengeTokenInterceptor{
 		InterceptorInterface: base,
-		postRequestStatuses: []common.FlowStatus{
-			common.FlowStatusIncomplete,
+		postRequestStatuses: []providers.FlowStatus{
+			providers.FlowStatusIncomplete,
 		},
 		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, ChallengeTokenInterceptor)),
 	}

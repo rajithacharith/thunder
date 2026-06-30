@@ -29,8 +29,6 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/entityprovider"
-	"github.com/thunder-id/thunderid/internal/flow/common"
-	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/entitytypemock"
@@ -47,7 +45,7 @@ type AttributeUniquenessValidatorTestSuite struct {
 	mockFlowFactory       *coremock.FlowFactoryInterfaceMock
 	mockEntityTypeService *entitytypemock.EntityTypeServiceInterfaceMock
 	mockEntityProvider    *entityprovidermock.EntityProviderInterfaceMock
-	mockAuthnProvider     *managermock.AuthnProviderManagerInterfaceMock
+	mockAuthnProvider     *managermock.AuthnProviderManagerMock
 	mockBaseExecutor      *coremock.ExecutorInterfaceMock
 	executor              *attributeUniquenessValidator
 }
@@ -56,17 +54,17 @@ func (suite *AttributeUniquenessValidatorTestSuite) SetupTest() {
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 	suite.mockEntityTypeService = entitytypemock.NewEntityTypeServiceInterfaceMock(suite.T())
 	suite.mockEntityProvider = entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
-	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
+	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerMock(suite.T())
 
 	suite.mockBaseExecutor = coremock.NewExecutorInterfaceMock(suite.T())
 	suite.mockBaseExecutor.On("ValidatePrerequisites", mock.Anything, mock.Anything, mock.Anything).
 		Return(func(
-			ctx *core.NodeContext,
-			execResp *common.ExecutorResponse,
-			_ providers.AuthnProviderManagerInterface,
+			ctx *providers.NodeContext,
+			execResp *providers.ExecutorResponse,
+			_ providers.AuthnProviderManager,
 		) bool {
 			if _, ok := ctx.RuntimeData[userTypeKey]; !ok {
-				execResp.Status = common.ExecFailure
+				execResp.Status = providers.ExecFailure
 				execResp.Error = &tidcommon.ServiceError{
 					Error: tidcommon.I18nMessage{DefaultValue: "Prerequisite not met: " + userTypeKey},
 				}
@@ -75,11 +73,11 @@ func (suite *AttributeUniquenessValidatorTestSuite) SetupTest() {
 			return true
 		}).Maybe()
 
-	prerequisites := []common.Input{{Identifier: userTypeKey, Required: true}}
+	prerequisites := []providers.Input{{Identifier: userTypeKey, Required: true}}
 	suite.mockFlowFactory.On("CreateExecutor",
 		ExecutorNameAttributeUniquenessValidator,
-		common.ExecutorTypeUtility,
-		[]common.Input{},
+		providers.ExecutorTypeUtility,
+		[]providers.Input{},
 		prerequisites).Return(suite.mockBaseExecutor)
 
 	suite.executor = newAttributeUniquenessValidator(
@@ -87,7 +85,7 @@ func (suite *AttributeUniquenessValidatorTestSuite) SetupTest() {
 }
 
 func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_NoUserType_SkipsCheck() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-1",
 		UserInputs:  map[string]string{"email": "test@example.com"},
 		RuntimeData: map[string]string{},
@@ -96,12 +94,12 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_NoUserType_Skips
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), providers.ExecFailure, resp.Status)
 	suite.mockEntityTypeService.AssertNotCalled(suite.T(), "GetUniqueAttributes")
 }
 
 func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_NoConflict_ReturnsComplete() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-1",
 		UserInputs:  map[string]string{"email": "free@example.com", "username": "newuser"},
 		RuntimeData: map[string]string{
@@ -121,7 +119,7 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_NoConflict_Retur
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 	suite.mockEntityProvider.AssertExpectations(suite.T())
 }
 
@@ -137,7 +135,7 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_AttributeConflic
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			ctx := &core.NodeContext{
+			ctx := &providers.NodeContext{
 				ExecutionID: "flow-1",
 				UserInputs:  map[string]string{tt.attribute: tt.value},
 				RuntimeData: map[string]string{
@@ -155,7 +153,7 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_AttributeConflic
 			resp, err := suite.executor.Execute(ctx)
 
 			assert.NoError(suite.T(), err)
-			assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
+			assert.Equal(suite.T(), providers.ExecUserInputRequired, resp.Status)
 			assert.Contains(suite.T(), resp.Error.ErrorDescription.DefaultValue, tt.attribute)
 			assert.Contains(suite.T(), resp.Error.ErrorDescription.DefaultValue, "already exists")
 			suite.mockEntityProvider.AssertExpectations(suite.T())
@@ -165,7 +163,7 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_AttributeConflic
 
 func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_UniqueAttrNotInInputs_Skipped() {
 	// Schema says "email" is unique, but the user hasn't provided it yet — skip the check.
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-1",
 		UserInputs:  map[string]string{"username": "newuser"},
 		RuntimeData: map[string]string{
@@ -183,14 +181,14 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_UniqueAttrNotInI
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 	// email was NOT in UserInputs so IdentifyUser must not be called for it
 	suite.mockEntityProvider.AssertNotCalled(suite.T(), "IdentifyEntity",
 		map[string]interface{}{"email": ""})
 }
 
 func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_SchemaServiceError_ReturnsFailure() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-1",
 		UserInputs:  map[string]string{"email": "test@example.com"},
 		RuntimeData: map[string]string{
@@ -212,7 +210,7 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_SchemaServiceErr
 }
 
 func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_IdentifyUserSystemError_ReturnsFailure() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-1",
 		UserInputs:  map[string]string{"email": "test@example.com"},
 		RuntimeData: map[string]string{
@@ -234,7 +232,7 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_IdentifyUserSyst
 }
 
 func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_NoUniqueAttributesInSchema_ReturnsComplete() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-1",
 		UserInputs:  map[string]string{"given_name": "John"},
 		RuntimeData: map[string]string{
@@ -248,7 +246,7 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_NoUniqueAttribut
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 	suite.mockEntityProvider.AssertNotCalled(suite.T(), "IdentifyEntity")
 }
 

@@ -28,7 +28,6 @@ import (
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
-	appmodel "github.com/thunder-id/thunderid/internal/application/model"
 	authncm "github.com/thunder-id/thunderid/internal/authn/common"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
@@ -55,12 +54,12 @@ type EngineContext struct {
 	CurrentSegmentID    string
 
 	Graph       core.GraphInterface
-	Application appmodel.Application
+	Application providers.Application
 
 	AuthenticatedUser authncm.AuthenticatedUser
 	AuthUser          providers.AuthUser
 	Assertion         string
-	ExecutionHistory  map[string]*common.NodeExecutionRecord
+	ExecutionHistory  map[string]*providers.NodeExecutionRecord
 
 	InterceptorSharedData map[string]string
 }
@@ -83,16 +82,16 @@ type InterceptorRunnerContext struct {
 	ExecutionID          string
 	AppID                string
 	FlowType             providers.FlowType
-	FlowStatus           common.FlowStatus
+	FlowStatus           providers.FlowStatus
 	CurrentNodeID        string
 	NodeType             common.NodeType
 	SkipInterceptors     []string
-	ExecutionPolicy      *core.ExecutionPolicy
+	ExecutionPolicy      *providers.ExecutionPolicy
 	AllowSegmentRestart  bool
 	UserInputs           map[string]string
 	ForwardedData        map[string]interface{}
 	AdditionalData       map[string]string
-	CurrentNodeInputs    []common.Input
+	CurrentNodeInputs    []providers.Input
 	ResolvedInterceptors []core.InterceptorUnitInterface
 	SharedData           map[string]string
 }
@@ -102,7 +101,7 @@ type FlowStep struct {
 	ExecutionID    string
 	StepID         string
 	Type           common.FlowStepType
-	Status         common.FlowStatus
+	Status         providers.FlowStatus
 	ChallengeToken string
 	Data           FlowData
 	Assertion      string
@@ -111,7 +110,7 @@ type FlowStep struct {
 
 // FlowData holds the data returned by a flow execution step
 type FlowData struct {
-	Inputs         []common.Input      `json:"inputs,omitempty"`
+	Inputs         []providers.Input   `json:"inputs,omitempty"`
 	RedirectURL    string              `json:"redirectURL,omitempty"`
 	Actions        []common.Action     `json:"actions,omitempty"`
 	Meta           interface{}         `json:"meta,omitempty"`
@@ -261,13 +260,13 @@ func (f *FlowContextDB) ToEngineContext(ctx context.Context, graph core.GraphInt
 	}
 
 	// Parse execution history
-	var executionHistory map[string]*common.NodeExecutionRecord
+	var executionHistory map[string]*providers.NodeExecutionRecord
 	if content.ExecutionHistory != nil {
 		if err := json.Unmarshal([]byte(*content.ExecutionHistory), &executionHistory); err != nil {
 			return EngineContext{}, err
 		}
 	} else {
-		executionHistory = make(map[string]*common.NodeExecutionRecord)
+		executionHistory = make(map[string]*providers.NodeExecutionRecord)
 	}
 
 	// Get current node from graph if available

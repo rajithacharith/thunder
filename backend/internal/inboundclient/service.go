@@ -67,7 +67,7 @@ type InboundClientServiceInterface interface {
 		oauthProfile *providers.OAuthProfile, hasClientSecret bool) error
 	// ResolveInboundAuthProfileHandles resolves flow handle fields in-place to their IDs.
 	// Only fields with an empty ID but a non-empty handle are resolved.
-	ResolveInboundAuthProfileHandles(ctx context.Context, profile *inboundmodel.InboundAuthProfile) error
+	ResolveInboundAuthProfileHandles(ctx context.Context, profile *providers.InboundAuthProfile) error
 
 	// GetOAuthProfileByEntityID returns the stored OAuth profile for the given entity.
 	GetOAuthProfileByEntityID(ctx context.Context, entityID string) (*providers.OAuthProfile, error)
@@ -287,7 +287,7 @@ func validateOAuthCertificateClientID(oauthProfile *providers.OAuthProfile, oaut
 // ResolveInboundAuthProfileHandles resolves flow handle fields to their IDs in-place.
 // Each handle is only resolved when the corresponding ID field is empty.
 func (s *inboundClientService) ResolveInboundAuthProfileHandles(
-	ctx context.Context, profile *inboundmodel.InboundAuthProfile,
+	ctx context.Context, profile *providers.InboundAuthProfile,
 ) error {
 	if s.flowMgt == nil {
 		return nil

@@ -28,11 +28,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	appmodel "github.com/thunder-id/thunderid/internal/application/model"
 	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
-	"github.com/thunder-id/thunderid/internal/flow/common"
-	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
@@ -41,7 +38,7 @@ import (
 type CredentialsAuthExecutorTestSuite struct {
 	suite.Suite
 	mockEntityProvider *entityprovidermock.EntityProviderInterfaceMock
-	mockAuthnProvider  *managermock.AuthnProviderManagerInterfaceMock
+	mockAuthnProvider  *managermock.AuthnProviderManagerMock
 	mockFlowFactory    *coremock.FlowFactoryInterfaceMock
 	executor           *credentialsAuthExecutor
 }
@@ -52,22 +49,22 @@ func TestCredentialsAuthExecutorSuite(t *testing.T) {
 
 func (suite *CredentialsAuthExecutorTestSuite) SetupTest() {
 	suite.mockEntityProvider = entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
-	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
+	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 
-	defaultInputs := []common.Input{
-		{Identifier: userAttributeUsername, Type: common.InputTypeText, Required: true},
-		{Identifier: userAttributePassword, Type: common.InputTypePassword, Required: true},
+	defaultInputs := []providers.Input{
+		{Identifier: userAttributeUsername, Type: providers.InputTypeText, Required: true},
+		{Identifier: userAttributePassword, Type: providers.InputTypePassword, Required: true},
 	}
 
 	// Mock the embedded identifying executor first
 	identifyingMock := createMockIdentifyingExecutor(suite.T())
-	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameIdentifying, common.ExecutorTypeUtility,
+	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameIdentifying, providers.ExecutorTypeUtility,
 		mock.Anything, mock.Anything).Return(identifyingMock).Maybe()
 
 	mockExec := createMockCredentialsAuthExecutor(suite.T())
-	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameCredentialsAuth, common.ExecutorTypeAuthentication,
-		defaultInputs, []common.Input{}).Return(mockExec)
+	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameCredentialsAuth, providers.ExecutorTypeAuthentication,
+		defaultInputs, []providers.Input{}).Return(mockExec)
 
 	suite.executor = newCredentialsAuthExecutor(suite.mockFlowFactory, suite.mockEntityProvider,
 		suite.mockAuthnProvider)
@@ -80,31 +77,31 @@ func newCredentialsAuthAuthenticatedUser() providers.AuthUser {
 	return authUser
 }
 
-func createMockIdentifyingExecutor(t *testing.T) core.ExecutorInterface {
+func createMockIdentifyingExecutor(t *testing.T) providers.Executor {
 	mockExec := coremock.NewExecutorInterfaceMock(t)
 	mockExec.On("GetName").Return(ExecutorNameIdentifying).Maybe()
-	mockExec.On("GetType").Return(common.ExecutorTypeUtility).Maybe()
-	mockExec.On("GetDefaultInputs").Return([]common.Input{}).Maybe()
-	mockExec.On("GetPrerequisites").Return([]common.Input{}).Maybe()
+	mockExec.On("GetType").Return(providers.ExecutorTypeUtility).Maybe()
+	mockExec.On("GetDefaultInputs").Return([]providers.Input{}).Maybe()
+	mockExec.On("GetPrerequisites").Return([]providers.Input{}).Maybe()
 	return mockExec
 }
 
 func createMockExecutorWithCustomInputs(t *testing.T, name string,
-	inputs []common.Input) core.ExecutorInterface {
+	inputs []providers.Input) providers.Executor {
 	mockExec := coremock.NewExecutorInterfaceMock(t)
 	mockExec.On("GetName").Return(name).Maybe()
-	mockExec.On("GetType").Return(common.ExecutorTypeAuthentication).Maybe()
+	mockExec.On("GetType").Return(providers.ExecutorTypeAuthentication).Maybe()
 	mockExec.On("GetDefaultInputs").Return(inputs).Maybe()
 	mockExec.On("GetRequiredInputs", mock.Anything).Return(inputs).Maybe()
-	mockExec.On("GetPrerequisites").Return([]common.Input{}).Maybe()
+	mockExec.On("GetPrerequisites").Return([]providers.Input{}).Maybe()
 	mockExec.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(
-		func(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool {
+		func(ctx *providers.NodeContext, execResp *providers.ExecutorResponse) bool {
 			for _, input := range inputs {
 				if input.Required {
 					value, exists := ctx.UserInputs[input.Identifier]
 					if !exists || value == "" {
 						execResp.Inputs = inputs
-						execResp.Status = common.ExecUserInputRequired
+						execResp.Status = providers.ExecUserInputRequired
 						return false
 					}
 				}
@@ -114,29 +111,29 @@ func createMockExecutorWithCustomInputs(t *testing.T, name string,
 	return mockExec
 }
 
-func createMockCredentialsAuthExecutor(t *testing.T) core.ExecutorInterface {
+func createMockCredentialsAuthExecutor(t *testing.T) providers.Executor {
 	mockExec := coremock.NewExecutorInterfaceMock(t)
 	mockExec.On("GetName").Return(ExecutorNameCredentialsAuth).Maybe()
-	mockExec.On("GetType").Return(common.ExecutorTypeAuthentication).Maybe()
-	mockExec.On("GetDefaultInputs").Return([]common.Input{
-		{Identifier: userAttributeUsername, Type: common.InputTypeText, Required: true},
-		{Identifier: userAttributePassword, Type: common.InputTypePassword, Required: true},
+	mockExec.On("GetType").Return(providers.ExecutorTypeAuthentication).Maybe()
+	mockExec.On("GetDefaultInputs").Return([]providers.Input{
+		{Identifier: userAttributeUsername, Type: providers.InputTypeText, Required: true},
+		{Identifier: userAttributePassword, Type: providers.InputTypePassword, Required: true},
 	}).Maybe()
-	mockExec.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
-		{Identifier: userAttributeUsername, Type: common.InputTypeText, Required: true},
-		{Identifier: userAttributePassword, Type: common.InputTypePassword, Required: true},
+	mockExec.On("GetRequiredInputs", mock.Anything).Return([]providers.Input{
+		{Identifier: userAttributeUsername, Type: providers.InputTypeText, Required: true},
+		{Identifier: userAttributePassword, Type: providers.InputTypePassword, Required: true},
 	}).Maybe()
-	mockExec.On("GetPrerequisites").Return([]common.Input{}).Maybe()
+	mockExec.On("GetPrerequisites").Return([]providers.Input{}).Maybe()
 	mockExec.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(
-		func(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool {
+		func(ctx *providers.NodeContext, execResp *providers.ExecutorResponse) bool {
 			username, hasUsername := ctx.UserInputs[userAttributeUsername]
 			password, hasPassword := ctx.UserInputs[userAttributePassword]
 			if !hasUsername || username == "" || !hasPassword || password == "" {
-				execResp.Inputs = []common.Input{
-					{Identifier: userAttributeUsername, Type: common.InputTypeText, Required: true},
-					{Identifier: userAttributePassword, Type: common.InputTypePassword, Required: true},
+				execResp.Inputs = []providers.Input{
+					{Identifier: userAttributeUsername, Type: providers.InputTypeText, Required: true},
+					{Identifier: userAttributePassword, Type: providers.InputTypePassword, Required: true},
 				}
-				execResp.Status = common.ExecUserInputRequired
+				execResp.Status = providers.ExecUserInputRequired
 				return false
 			}
 			return true
@@ -151,7 +148,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestNewCredentialsAuthExecutor() 
 }
 
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_AuthenticationFlow() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -173,13 +170,13 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_Authenticatio
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 	assert.True(suite.T(), resp.AuthUser.IsAuthenticated())
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_WithEmailAttribute() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -190,11 +187,11 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_WithEmailAttr
 	}
 
 	// Override GetRequiredInputs to return email and password as required fields
-	originalInputs := []common.Input{
-		{Identifier: "email", Type: common.InputTypeText, Required: true},
-		{Identifier: "password", Type: common.InputTypePassword, Required: true},
+	originalInputs := []providers.Input{
+		{Identifier: "email", Type: providers.InputTypeText, Required: true},
+		{Identifier: "password", Type: providers.InputTypePassword, Required: true},
 	}
-	suite.executor.ExecutorInterface = createMockExecutorWithCustomInputs(
+	suite.executor.Executor = createMockExecutorWithCustomInputs(
 		suite.T(), ExecutorNameCredentialsAuth, originalInputs)
 
 	authenticatedAuthUser := newCredentialsAuthAuthenticatedUser()
@@ -209,13 +206,13 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_WithEmailAttr
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 	assert.True(suite.T(), resp.AuthUser.IsAuthenticated())
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_RegistrationFlow() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
@@ -233,13 +230,13 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_RegistrationF
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 	assert.False(suite.T(), resp.AuthUser.IsAuthenticated())
 	suite.mockEntityProvider.AssertExpectations(suite.T())
 }
 
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttributes() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -251,12 +248,12 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_WithMultipleA
 	}
 
 	// Override GetRequiredInputs to return email, phone, and password as required fields
-	customInputs := []common.Input{
-		{Identifier: "email", Type: common.InputTypeText, Required: true},
-		{Identifier: "phone", Type: common.InputTypeText, Required: true},
-		{Identifier: "password", Type: common.InputTypePassword, Required: true},
+	customInputs := []providers.Input{
+		{Identifier: "email", Type: providers.InputTypeText, Required: true},
+		{Identifier: "phone", Type: providers.InputTypeText, Required: true},
+		{Identifier: "password", Type: providers.InputTypePassword, Required: true},
 	}
-	suite.executor.ExecutorInterface = createMockExecutorWithCustomInputs(
+	suite.executor.Executor = createMockExecutorWithCustomInputs(
 		suite.T(), ExecutorNameCredentialsAuth, customInputs)
 
 	authenticatedAuthUser := newCredentialsAuthAuthenticatedUser()
@@ -272,13 +269,13 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_Success_WithMultipleA
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 	assert.True(suite.T(), resp.AuthUser.IsAuthenticated())
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_UserInputRequired() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs:  map[string]string{},
@@ -289,12 +286,12 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_UserInputRequired() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
+	assert.Equal(suite.T(), providers.ExecUserInputRequired, resp.Status)
 	assert.NotEmpty(suite.T(), resp.Inputs)
 }
 
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_AuthenticationFailed() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -320,14 +317,14 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_AuthenticationFailed(
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
+	assert.Equal(suite.T(), providers.ExecUserInputRequired, resp.Status)
 	assert.Equal(suite.T(), ErrUserAuthFailed.Code, resp.Error.Code)
 	assert.NotEmpty(suite.T(), resp.Inputs, "Inputs should be re-populated for retry")
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_UserNotFound_AuthenticationFlow() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -352,7 +349,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_UserNotFound_Authenti
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
+	assert.Equal(suite.T(), providers.ExecUserInputRequired, resp.Status)
 	assert.Equal(suite.T(), ErrUserAuthFailed.Code, resp.Error.Code,
 		"Failure reason should contain authentication failure message")
 	assert.NotEmpty(suite.T(), resp.Inputs, "Inputs should be re-populated for retry")
@@ -360,7 +357,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_UserNotFound_Authenti
 }
 
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_UserAlreadyExists_RegistrationFlow() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
@@ -379,13 +376,13 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_UserAlreadyExists_Reg
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), providers.ExecFailure, resp.Status)
 	assert.Equal(suite.T(), ErrUserAlreadyExists.Code, resp.Error.Code)
 	suite.mockEntityProvider.AssertExpectations(suite.T())
 }
 
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_ServiceError() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -410,12 +407,12 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_ServiceError() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), providers.ExecFailure, resp.Status)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_AuthenticationServiceError() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -438,13 +435,13 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_AuthenticationService
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), providers.ExecFailure, resp.Status)
 	assert.Equal(suite.T(), ErrUserAuthFailed.Code, resp.Error.Code)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_SuccessfulAuthentication() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -453,7 +450,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_SuccessfulAu
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
 
@@ -473,7 +470,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_SuccessfulAu
 }
 
 func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_Success_WithAuthenticatedClaims() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -482,7 +479,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_Success_With
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
 
@@ -508,7 +505,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_Success_With
 }
 
 func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_AuthenticationFlow_NoRedundantIdentifyUser() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -517,7 +514,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_Authenticati
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
 
@@ -537,7 +534,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_Authenticati
 }
 
 func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_RegistrationFlow_CallsIdentifyUser() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeRegistration,
 		UserInputs: map[string]string{
@@ -546,7 +543,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestAuthenticateUser_Registration
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
 
@@ -592,7 +589,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_RetryableAuthenticati
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			suite.mockAuthnProvider.ExpectedCalls = nil
-			ctx := &core.NodeContext{
+			ctx := &providers.NodeContext{
 				ExecutionID: "flow-123",
 				FlowType:    providers.FlowTypeAuthentication,
 				UserInputs: map[string]string{
@@ -616,7 +613,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_RetryableAuthenticati
 
 			assert.NoError(t, err)
 			assert.NotNil(t, resp)
-			assert.Equal(t, common.ExecUserInputRequired, resp.Status)
+			assert.Equal(t, providers.ExecUserInputRequired, resp.Status)
 			assert.Equal(t, tt.expectedErrorCode, resp.Error.Code, tt.message)
 			assert.NotEmpty(t, resp.Inputs, "Inputs should be re-populated for retry")
 			assert.Len(t, resp.Inputs, 2, "Should include both username and password inputs")
@@ -626,7 +623,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_RetryableAuthenticati
 }
 
 func (suite *CredentialsAuthExecutorTestSuite) TestGetAuthenticatedUser_ClientError_ReturnsInputsForRetry() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -635,7 +632,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestGetAuthenticatedUser_ClientEr
 		},
 	}
 
-	execResp := &common.ExecutorResponse{
+	execResp := &providers.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
 
@@ -653,7 +650,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestGetAuthenticatedUser_ClientEr
 	err := suite.executor.authenticateUser(ctx, execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, execResp.Status,
+	assert.Equal(suite.T(), providers.ExecUserInputRequired, execResp.Status,
 		"Should return ExecUserInputRequired for invalid credentials")
 	assert.Equal(suite.T(), ErrInvalidCredentials.Code, execResp.Error.Code)
 	assert.NotEmpty(suite.T(), execResp.Inputs, "Inputs should be re-populated for retry")
@@ -661,7 +658,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestGetAuthenticatedUser_ClientEr
 }
 
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_PreResolvedUser_RequestsPassword() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs:  map[string]string{},
@@ -674,13 +671,13 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_PreResolvedUser_Reque
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
+	assert.Equal(suite.T(), providers.ExecUserInputRequired, resp.Status)
 	assert.Len(suite.T(), resp.Inputs, 1)
 	assert.Equal(suite.T(), userAttributePassword, resp.Inputs[0].Identifier)
 }
 
 func (suite *CredentialsAuthExecutorTestSuite) TestExecute_PreResolvedUser_WithPassword() {
-	ctx := &core.NodeContext{
+	ctx := &providers.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    providers.FlowTypeAuthentication,
 		UserInputs: map[string]string{
@@ -689,7 +686,7 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_PreResolvedUser_WithP
 		RuntimeData: map[string]string{
 			userAttributeUserID: "pre-resolved-user-123",
 		},
-		Application: appmodel.Application{},
+		Application: providers.Application{},
 	}
 
 	authenticatedAuthUser := newCredentialsAuthAuthenticatedUser()
@@ -703,6 +700,6 @@ func (suite *CredentialsAuthExecutorTestSuite) TestExecute_PreResolvedUser_WithP
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), providers.ExecComplete, resp.Status)
 	assert.True(suite.T(), resp.AuthUser.IsAuthenticated())
 }

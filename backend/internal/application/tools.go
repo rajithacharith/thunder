@@ -22,7 +22,6 @@ import (
 	"context"
 	"fmt"
 
-	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"github.com/google/jsonschema-go/jsonschema"
@@ -160,7 +159,7 @@ func (t *applicationTools) getApplicationByID(
 	ctx context.Context,
 	req *mcp.CallToolRequest,
 	input tool.IDInput,
-) (*mcp.CallToolResult, *model.Application, error) {
+) (*mcp.CallToolResult, *providers.Application, error) {
 	app, svcErr := t.appService.GetApplication(ctx, input.ID)
 	if svcErr != nil {
 		return nil, nil, fmt.Errorf("failed to get application: %s", svcErr.ErrorDescription)
@@ -174,7 +173,7 @@ func (t *applicationTools) getApplicationByClientID(
 	ctx context.Context,
 	req *mcp.CallToolRequest,
 	input model.ClientIDInput,
-) (*mcp.CallToolResult, *model.Application, error) {
+) (*mcp.CallToolResult, *providers.Application, error) {
 	// Get OAuth application to find app ID
 	oauthApp, svcErr := t.appService.GetOAuthApplication(ctx, input.ClientID)
 	if svcErr != nil {
@@ -229,13 +228,13 @@ func (t *applicationTools) getApplicationTemplates(
 		"spa": {
 			OUID: "<OU_ID>",
 			Name: "<APP_NAME>",
-			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			InboundAuthProfile: providers.InboundAuthProfile{
 				ThemeID: "<THEME_ID>",
 			},
-			InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+			InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 				{
-					Type: inboundmodel.OAuthInboundAuthType,
-					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+					Type: providers.OAuthInboundAuthType,
+					OAuthConfig: &providers.OAuthConfigWithSecret{
 						RedirectURIs: []string{"<REDIRECT_URI>"},
 						GrantTypes: []providers.GrantType{
 							providers.GrantTypeAuthorizationCode,
@@ -261,13 +260,13 @@ func (t *applicationTools) getApplicationTemplates(
 		"mobile": {
 			OUID: "<OU_ID>",
 			Name: "<APP_NAME>",
-			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			InboundAuthProfile: providers.InboundAuthProfile{
 				ThemeID: "<THEME_ID>",
 			},
-			InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+			InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 				{
-					Type: inboundmodel.OAuthInboundAuthType,
-					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+					Type: providers.OAuthInboundAuthType,
+					OAuthConfig: &providers.OAuthConfigWithSecret{
 						RedirectURIs: []string{"<CUSTOM_SCHEME>://callback"},
 						GrantTypes: []providers.GrantType{
 							providers.GrantTypeAuthorizationCode,
@@ -293,13 +292,13 @@ func (t *applicationTools) getApplicationTemplates(
 		"server": {
 			OUID: "<OU_ID>",
 			Name: "<APP_NAME>",
-			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			InboundAuthProfile: providers.InboundAuthProfile{
 				ThemeID: "<THEME_ID>",
 			},
-			InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+			InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 				{
-					Type: inboundmodel.OAuthInboundAuthType,
-					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+					Type: providers.OAuthInboundAuthType,
+					OAuthConfig: &providers.OAuthConfigWithSecret{
 						RedirectURIs: []string{"<REDIRECT_URI>"},
 						GrantTypes: []providers.GrantType{
 							providers.GrantTypeAuthorizationCode,
@@ -324,10 +323,10 @@ func (t *applicationTools) getApplicationTemplates(
 		"m2m": {
 			OUID: "<OU_ID>",
 			Name: "<APP_NAME>",
-			InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+			InboundAuthConfig: []providers.InboundAuthConfigWithSecret{
 				{
-					Type: inboundmodel.OAuthInboundAuthType,
-					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+					Type: providers.OAuthInboundAuthType,
+					OAuthConfig: &providers.OAuthConfigWithSecret{
 						GrantTypes:              []providers.GrantType{providers.GrantTypeClientCredentials},
 						TokenEndpointAuthMethod: providers.TokenEndpointAuthMethodClientSecretBasic,
 					},
@@ -346,7 +345,7 @@ func getCommonSchemaModifiers() []func(*jsonschema.Schema) {
 		tool.WithEnum("inbound_auth_config.config", "response_types", oauth2const.GetSupportedResponseTypes()),
 		tool.WithEnum("inbound_auth_config.config", "token_endpoint_auth_method",
 			oauth2const.GetSupportedTokenEndpointAuthMethods()),
-		tool.WithEnum("inbound_auth_config", "type", []string{string(inboundmodel.OAuthInboundAuthType)}),
+		tool.WithEnum("inbound_auth_config", "type", []string{string(providers.OAuthInboundAuthType)}),
 	}
 }
 
