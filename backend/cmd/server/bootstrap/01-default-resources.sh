@@ -198,21 +198,22 @@ RESPONSE=$(api_call POST "/agent-types" '{
   "name": "default",
   "ouId": "'${DEFAULT_OU_ID}'",
   "schema": {
+    "modelProvider": {
+      "type": "string",
+      "displayName": "Model Provider",
+      "required": true,
+      "enum": ["openai", "anthropic", "gemini", "mistral", "custom"]
+    },
     "model": {
       "type": "string",
       "displayName": "Model",
+      "required": true
+    },
+    "function": {
+      "type": "string",
+      "displayName": "Function",
       "required": false,
-      "enum": ["claude-opus-4.7", "claude-opus-4.6", "claude-sonnet-4.6", "claude-sonnet-4.5", "claude-haiku-4.5", "openai-gpt-5.4", "openai-gpt-5.3", "gemini-3.5", "gemini-3.1", "gemini-3", "other"]
-    },
-    "department": {
-      "type": "string",
-      "displayName": "Department",
-      "required": false
-    },
-    "purpose": {
-      "type": "string",
-      "displayName": "Purpose",
-      "required": false
+      "enum": ["task-automation", "rag-retrieval", "code-gen", "data-analysis", "orchestrator", "sub-agent", "assistant", "custom"]
     }
   }
 }')

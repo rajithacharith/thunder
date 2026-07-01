@@ -1403,18 +1403,17 @@ paths:
               systemAttributes:
                 display: "name"
               schema:
-                name:
+                modelProvider:
                   type: "string"
                   required: true
-                  unique: true
-                description:
-                  type: "string"
+                  enum: ["openai", "anthropic", "gemini", "mistral", "custom"]
                 model:
                   type: "string"
                   required: true
-                  enum: ["gpt-4", "gpt-4o", "claude-sonnet", "claude-opus"]
-                isActive:
-                  type: "boolean"
+                function:
+                  type: "string"
+                  required: false
+                  enum: ["task-automation", "rag-retrieval", "code-gen", "data-analysis", "orchestrator", "sub-agent", "assistant", "custom"]
       responses:
         "201":
           description: Agent type created
@@ -1430,18 +1429,17 @@ paths:
                 systemAttributes:
                   display: "name"
                 schema:
-                  name:
+                  modelProvider:
                     type: "string"
                     required: true
-                    unique: true
-                  description:
-                    type: "string"
+                    enum: ["openai", "anthropic", "gemini", "mistral", "custom"]
                   model:
                     type: "string"
                     required: true
-                    enum: ["gpt-4", "gpt-4o", "claude-sonnet", "claude-opus"]
-                  isActive:
-                    type: "boolean"
+                  function:
+                    type: "string"
+                    required: false
+                    enum: ["task-automation", "rag-retrieval", "code-gen", "data-analysis", "orchestrator", "sub-agent", "assistant", "custom"]
         "400":
           description: Bad request
           content:
@@ -1531,23 +1529,17 @@ paths:
                 systemAttributes:
                   display: "name"
                 schema:
-                  name:
+                  modelProvider:
                     type: "string"
                     required: true
-                    unique: true
-                  description:
-                    type: "string"
+                    enum: ["openai", "anthropic", "gemini", "mistral", "custom"]
                   model:
                     type: "string"
                     required: true
-                    enum: ["gpt-4", "gpt-4o", "claude-sonnet", "claude-opus"]
-                  capabilities:
-                    type: "array"
-                    items:
-                      type: "string"
-                      enum: ["chat", "tools", "vision", "code"]
-                  isActive:
-                    type: "boolean"
+                  function:
+                    type: "string"
+                    required: false
+                    enum: ["task-automation", "rag-retrieval", "code-gen", "data-analysis", "orchestrator", "sub-agent", "assistant", "custom"]
         "404":
           description: Agent type not found
           content:
@@ -1598,15 +1590,17 @@ paths:
               systemAttributes:
                 display: "name"
               schema:
-                name:
+                modelProvider:
                   type: "string"
                   required: true
-                  unique: true
+                  enum: ["openai", "anthropic", "gemini", "mistral", "custom"]
                 model:
                   type: "string"
                   required: true
-                temperature:
-                  type: "number"
+                function:
+                  type: "string"
+                  required: false
+                  enum: ["task-automation", "rag-retrieval", "code-gen", "data-analysis", "orchestrator", "sub-agent", "assistant", "custom"]
       responses:
         "200":
           description: Agent type updated
@@ -2583,6 +2577,9 @@ components:
                     type: boolean
                     default: false
                     description: "Whether this property should be treated as a credential attribute"
+                  displayName:
+                    type: string
+                    description: "Human-readable label shown in the UI for this property"
                   enum:
                     type: array
                     items:
@@ -2604,6 +2601,9 @@ components:
                     type: boolean
                     default: false
                     description: "Whether this attribute must be provided for the agent type"
+                  displayName:
+                    type: string
+                    description: "Human-readable label shown in the UI for this property"
                 additionalProperties: false
               - type: object
                 description: "Object property definition"
@@ -2617,6 +2617,9 @@ components:
                     type: boolean
                     default: false
                     description: "Whether this attribute must be provided for the agent type"
+                  displayName:
+                    type: string
+                    description: "Human-readable label shown in the UI for this property"
                   properties:
                     type: object
                     description: "Nested properties of the object"
@@ -2635,6 +2638,9 @@ components:
                     type: boolean
                     default: false
                     description: "Whether this attribute must be provided for the agent type"
+                  displayName:
+                    type: string
+                    description: "Human-readable label shown in the UI for this property"
                   items:
                     oneOf:
                       - type: object
@@ -2671,25 +2677,17 @@ components:
                         additionalProperties: false
                 additionalProperties: false
           example:
-            name:
+            modelProvider:
               type: "string"
               required: true
-              unique: true
-            description:
-              type: "string"
+              enum: ["openai", "anthropic", "gemini", "mistral", "custom"]
             model:
               type: "string"
               required: true
-              enum: ["gpt-4", "gpt-4o", "claude-sonnet", "claude-opus"]
-            temperature:
-              type: "number"
-            isActive:
-              type: "boolean"
-            capabilities:
-              type: "array"
-              items:
-                type: "string"
-                enum: ["chat", "tools", "vision", "code"]
+            function:
+              type: "string"
+              required: false
+              enum: ["task-automation", "rag-retrieval", "code-gen", "data-analysis", "orchestrator", "sub-agent", "assistant", "custom"]
 
     AgentTypeListResponse:
       type: object
