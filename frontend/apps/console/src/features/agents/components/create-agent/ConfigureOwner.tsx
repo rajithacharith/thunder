@@ -18,7 +18,7 @@
 
 import {useGetUsers} from '@thunderid/configure-users';
 import {useThunderID} from '@thunderid/react';
-import {FormControl, FormLabel, MenuItem, Select, Stack, Typography} from '@wso2/oxygen-ui';
+import {FormControl, FormHelperText, FormLabel, MenuItem, Select, Stack, Typography} from '@wso2/oxygen-ui';
 import {useEffect, useMemo, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 
@@ -80,7 +80,7 @@ export default function ConfigureOwner({
         </Typography>
       </div>
 
-      <FormControl fullWidth required>
+      <FormControl fullWidth>
         <FormLabel htmlFor="agent-owner-user-select">{t('agents:createWizard.owner.userLabel', 'Owner')}</FormLabel>
         <Select
           id="agent-owner-user-select"
@@ -88,6 +88,7 @@ export default function ConfigureOwner({
           onChange={(e) => onOwnerIdChange(e.target.value || null)}
           displayEmpty
           disabled={usersLoading}
+          aria-describedby="agent-owner-user-select-helper-text"
         >
           <MenuItem value="" disabled>
             <em>
@@ -102,6 +103,12 @@ export default function ConfigureOwner({
             </MenuItem>
           ))}
         </Select>
+        <FormHelperText id="agent-owner-user-select-helper-text">
+          {t(
+            'agents:createWizard.owner.helperText',
+            'Defaults to you if left unchanged. You can assign ownership to another user instead.',
+          )}
+        </FormHelperText>
       </FormControl>
     </Stack>
   );
