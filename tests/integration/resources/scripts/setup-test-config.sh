@@ -46,6 +46,16 @@ if [ "$DB_TYPE" = "postgres" ]; then
       username: dbuser
       password: dbpassword
       sslmode: disable
+
+  operation:
+    type: postgres
+    postgres:
+      hostname: localhost
+      port: 5432
+      name: operationdb
+      username: dbuser
+      password: dbpassword
+      sslmode: disable
 EOF
 elif [ "$DB_TYPE" = "redis" ]; then
   cat >> tests/integration/resources/deployment.yaml <<EOF
@@ -67,6 +77,12 @@ elif [ "$DB_TYPE" = "redis" ]; then
     sqlite:
       path: "database/userdb.db"
       options: "cache=shared"
+
+  operation:
+    type: sqlite
+    sqlite:
+      path: "database/operationdb.db"
+      options: "cache=shared"
 EOF
 else
   cat >> tests/integration/resources/deployment.yaml <<EOF
@@ -86,6 +102,12 @@ else
     type: sqlite
     sqlite:
       path: "database/userdb.db"
+      options: "cache=shared"
+
+  operation:
+    type: sqlite
+    sqlite:
+      path: "database/operationdb.db"
       options: "cache=shared"
 EOF
 fi

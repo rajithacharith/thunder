@@ -321,8 +321,8 @@ function initialize_databases() {
 
     mkdir -p "$REPOSITORY_DB_DIR"
 
-    db_files=("configdb.db" "runtimedb.db" "userdb.db")
-    script_paths=("configdb/sqlite.sql" "runtimedb/sqlite.sql" "userdb/sqlite.sql")
+    db_files=("configdb.db" "runtimedb.db" "userdb.db" "operationdb.db")
+    script_paths=("configdb/sqlite.sql" "runtimedb/sqlite.sql" "userdb/sqlite.sql" "operationdb/sqlite.sql")
 
     for ((i = 0; i < ${#db_files[@]}; i++)); do
         db_file="${db_files[$i]}"

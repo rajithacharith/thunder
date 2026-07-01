@@ -96,9 +96,10 @@ type RedisDataSource struct {
 
 // DatabaseConfig holds the different database configuration details.
 type DatabaseConfig struct {
-	Config  DataSource `yaml:"config"  json:"config"`
-	Runtime DataSource `yaml:"runtime" json:"runtime"`
-	User    DataSource `yaml:"user"    json:"user"`
+	Config    DataSource `yaml:"config"    json:"config"`
+	Runtime   DataSource `yaml:"runtime"   json:"runtime"`
+	User      DataSource `yaml:"user"      json:"user"`
+	Operation DataSource `yaml:"operation" json:"operation"`
 }
 
 // NotificationConfig holds the notification configuration details.
