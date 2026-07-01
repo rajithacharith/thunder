@@ -33,7 +33,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/flow/executor"
 	"github.com/thunder-id/thunderid/internal/system/log"
-	"github.com/thunder-id/thunderid/internal/system/observability"
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -47,7 +46,7 @@ type flowEngineInterface interface {
 type flowEngine struct {
 	executorRegistry  executor.ExecutorRegistryInterface
 	interceptorRunner InterceptorRunnerInterface
-	observabilitySvc  observability.ObservabilityServiceInterface
+	observabilitySvc  providers.ObservabilityProvider
 	logger            *log.Logger
 }
 
@@ -55,7 +54,7 @@ type flowEngine struct {
 func newFlowEngine(
 	executorRegistry executor.ExecutorRegistryInterface,
 	interceptorRunner InterceptorRunnerInterface,
-	observabilitySvc observability.ObservabilityServiceInterface,
+	observabilitySvc providers.ObservabilityProvider,
 ) flowEngineInterface {
 	return &flowEngine{
 		executorRegistry:  executorRegistry,
@@ -1035,7 +1034,7 @@ func createExecutionAttempt(nodeRecord *providers.NodeExecutionRecord, nodeResp 
 func publishNodeExecutionStartedEvent(
 	ctx *EngineContext,
 	node core.NodeInterface,
-	obsSvc observability.ObservabilityServiceInterface,
+	obsSvc providers.ObservabilityProvider,
 ) {
 	if obsSvc == nil || !obsSvc.IsEnabled() {
 		return
@@ -1055,7 +1054,7 @@ func publishNodeExecutionStartedEvent(
 		string(event.EventTypeFlowNodeExecutionStarted),
 		event.ComponentFlowEngine,
 	).
-		WithStatus(event.StatusInProgress).
+		WithStatus(providers.StatusInProgress).
 		WithData(event.DataKey.ExecutionID, ctx.ExecutionID).
 		WithData(event.DataKey.FlowType, string(ctx.FlowType)).
 		WithData(event.DataKey.NodeID, node.GetID()).
@@ -1070,7 +1069,7 @@ func publishNodeExecutionStartedEvent(
 // publishNodeExecutionCompletedEvent publishes an observability event when node execution completes or fails.
 func publishNodeExecutionCompletedEvent(ctx *EngineContext, node core.NodeInterface,
 	nodeResp *common.NodeResponse, nodeErr *tidcommon.ServiceError,
-	executionStartTime int64, executionEndTime int64, obsSvc observability.ObservabilityServiceInterface) {
+	executionStartTime int64, executionEndTime int64, obsSvc providers.ObservabilityProvider) {
 	if obsSvc == nil || !obsSvc.IsEnabled() {
 		return
 	}
@@ -1085,36 +1084,36 @@ func publishNodeExecutionCompletedEvent(ctx *EngineContext, node core.NodeInterf
 	attemptNumber := len(record.Executions)
 
 	// Determine event type and status based on outcome
-	var eventType event.EventType
+	var eventType providers.EventType
 	var status string
 	var nodeStatus string
 
 	if nodeErr != nil {
 		eventType = event.EventTypeFlowNodeExecutionFailed
-		status = event.StatusFailure
+		status = providers.StatusFailure
 		nodeStatus = string(providers.FlowStatusError)
 	} else if nodeResp != nil {
 		switch nodeResp.Status {
 		case common.NodeStatusComplete:
 			eventType = event.EventTypeFlowNodeExecutionCompleted
-			status = event.StatusSuccess
+			status = providers.StatusSuccess
 			nodeStatus = string(providers.FlowStatusComplete)
 		case common.NodeStatusIncomplete:
 			eventType = event.EventTypeFlowNodeExecutionCompleted
-			status = event.StatusSuccess
+			status = providers.StatusSuccess
 			nodeStatus = string(providers.FlowStatusIncomplete)
 		case common.NodeStatusFailure:
 			eventType = event.EventTypeFlowNodeExecutionFailed
-			status = event.StatusFailure
+			status = providers.StatusFailure
 			nodeStatus = string(providers.FlowStatusError)
 		default:
 			eventType = event.EventTypeFlowNodeExecutionCompleted
-			status = event.StatusSuccess
+			status = providers.StatusSuccess
 			nodeStatus = string(nodeResp.Status)
 		}
 	} else {
 		eventType = event.EventTypeFlowNodeExecutionCompleted
-		status = event.StatusSuccess
+		status = providers.StatusSuccess
 		nodeStatus = string(providers.FlowStatusComplete)
 	}
 
@@ -1153,7 +1152,7 @@ func publishNodeExecutionCompletedEvent(ctx *EngineContext, node core.NodeInterf
 }
 
 // publishFlowStartedEvent publishes an observability event when flow execution starts.
-func publishFlowStartedEvent(ctx *EngineContext, obsSvc observability.ObservabilityServiceInterface) {
+func publishFlowStartedEvent(ctx *EngineContext, obsSvc providers.ObservabilityProvider) {
 	if obsSvc == nil || !obsSvc.IsEnabled() {
 		return
 	}
@@ -1163,7 +1162,7 @@ func publishFlowStartedEvent(ctx *EngineContext, obsSvc observability.Observabil
 		string(event.EventTypeFlowStarted),
 		event.ComponentFlowEngine,
 	).
-		WithStatus(event.StatusInProgress).
+		WithStatus(providers.StatusInProgress).
 		WithData(event.DataKey.ExecutionID, ctx.ExecutionID).
 		WithData(event.DataKey.FlowType, string(ctx.FlowType)).
 		WithData(event.DataKey.EntityID, ctx.AppID)
@@ -1181,7 +1180,7 @@ func publishFlowCompletedEvent(
 	ctx *EngineContext,
 	flowStartTime int64,
 	flowEndTime int64,
-	obsSvc observability.ObservabilityServiceInterface,
+	obsSvc providers.ObservabilityProvider,
 ) {
 	if obsSvc == nil || !obsSvc.IsEnabled() {
 		return
@@ -1195,7 +1194,7 @@ func publishFlowCompletedEvent(
 		string(event.EventTypeFlowCompleted),
 		event.ComponentFlowEngine,
 	).
-		WithStatus(event.StatusSuccess).
+		WithStatus(providers.StatusSuccess).
 		WithData(event.DataKey.ExecutionID, ctx.ExecutionID).
 		WithData(event.DataKey.FlowType, string(ctx.FlowType)).
 		WithData(event.DataKey.EntityID, ctx.AppID).
@@ -1211,7 +1210,7 @@ func publishFlowCompletedEvent(
 
 // publishFlowFailedEvent publishes an observability event when flow execution fails.
 func publishFlowFailedEvent(ctx *EngineContext, svcErr *tidcommon.ServiceError,
-	flowStartTime int64, flowEndTime int64, obsSvc observability.ObservabilityServiceInterface) {
+	flowStartTime int64, flowEndTime int64, obsSvc providers.ObservabilityProvider) {
 	if obsSvc == nil || !obsSvc.IsEnabled() {
 		return
 	}
@@ -1224,7 +1223,7 @@ func publishFlowFailedEvent(ctx *EngineContext, svcErr *tidcommon.ServiceError,
 		string(event.EventTypeFlowFailed),
 		event.ComponentFlowEngine,
 	).
-		WithStatus(event.StatusFailure).
+		WithStatus(providers.StatusFailure).
 		WithData(event.DataKey.ExecutionID, ctx.ExecutionID).
 		WithData(event.DataKey.FlowType, string(ctx.FlowType)).
 		WithData(event.DataKey.EntityID, ctx.AppID).

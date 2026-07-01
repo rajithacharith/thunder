@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -35,7 +36,7 @@ import (
 type AuthorizationServiceTestSuite struct {
 	suite.Suite
 	mockEngine *enginemock.AuthorizationEngineMock
-	service    AuthorizationServiceInterface
+	service    providers.AuthorizationProvider
 }
 
 func TestAuthorizationServiceTestSuite(t *testing.T) {
@@ -48,10 +49,10 @@ func (suite *AuthorizationServiceTestSuite) SetupTest() {
 }
 
 func (suite *AuthorizationServiceTestSuite) TestEvaluateAccessSuccess() {
-	request := AccessEvaluationRequest{
-		Subject:        Subject{ID: "user1", GroupIDs: []string{"group1"}},
-		ResourceServer: ResourceServer{Handle: "document"},
-		Permission:     Permission{Name: "read"},
+	request := providers.AccessEvaluationRequest{
+		Subject:        providers.Subject{ID: "user1", GroupIDs: []string{"group1"}},
+		ResourceServer: providers.AccessEvaluationResourceServer{Handle: "document"},
+		Permission:     providers.Permission{Name: "read"},
 	}
 
 	suite.mockEngine.On("EvaluateAccessBatch", mock.Anything,
@@ -74,17 +75,17 @@ func (suite *AuthorizationServiceTestSuite) TestEvaluateAccessSuccess() {
 }
 
 func (suite *AuthorizationServiceTestSuite) TestEvaluateAccessBatchSuccess() {
-	request := AccessEvaluationsRequest{
-		Evaluations: []AccessEvaluationRequest{
+	request := providers.AccessEvaluationsRequest{
+		Evaluations: []providers.AccessEvaluationRequest{
 			{
-				Subject:        Subject{ID: "user1", GroupIDs: []string{"group1"}},
-				ResourceServer: ResourceServer{Handle: "document"},
-				Permission:     Permission{Name: "read"},
+				Subject:        providers.Subject{ID: "user1", GroupIDs: []string{"group1"}},
+				ResourceServer: providers.AccessEvaluationResourceServer{Handle: "document"},
+				Permission:     providers.Permission{Name: "read"},
 			},
 			{
-				Subject:        Subject{ID: "user1", GroupIDs: []string{"group1"}},
-				ResourceServer: ResourceServer{Handle: "document"},
-				Permission:     Permission{Name: "delete"},
+				Subject:        providers.Subject{ID: "user1", GroupIDs: []string{"group1"}},
+				ResourceServer: providers.AccessEvaluationResourceServer{Handle: "document"},
+				Permission:     providers.Permission{Name: "delete"},
 			},
 		},
 	}
@@ -107,12 +108,12 @@ func (suite *AuthorizationServiceTestSuite) TestEvaluateAccessBatchSuccess() {
 }
 
 func (suite *AuthorizationServiceTestSuite) TestEvaluateAccessBatchReturnsContext() {
-	request := AccessEvaluationsRequest{
-		Evaluations: []AccessEvaluationRequest{
+	request := providers.AccessEvaluationsRequest{
+		Evaluations: []providers.AccessEvaluationRequest{
 			{
-				Subject:        Subject{ID: "user1"},
-				ResourceServer: ResourceServer{Handle: "document"},
-				Permission:     Permission{Name: "read"},
+				Subject:        providers.Subject{ID: "user1"},
+				ResourceServer: providers.AccessEvaluationResourceServer{Handle: "document"},
+				Permission:     providers.Permission{Name: "read"},
 			},
 		},
 	}
@@ -138,17 +139,17 @@ func (suite *AuthorizationServiceTestSuite) TestEvaluateAccessPassesPropertiesTo
 	subjectProperties := map[string]interface{}{"department": "Sales"}
 	resourceProperties := map[string]interface{}{"owner": "user1"}
 	actionProperties := map[string]interface{}{"method": "GET"}
-	request := AccessEvaluationRequest{
-		Subject: Subject{
+	request := providers.AccessEvaluationRequest{
+		Subject: providers.Subject{
 			Type:       "user",
 			ID:         "user1",
 			Properties: subjectProperties,
 		},
-		ResourceServer: ResourceServer{
+		ResourceServer: providers.AccessEvaluationResourceServer{
 			Handle:     "document",
 			Properties: resourceProperties,
 		},
-		Permission: Permission{
+		Permission: providers.Permission{
 			Name:       "read",
 			Properties: actionProperties,
 		},
@@ -176,7 +177,7 @@ func (suite *AuthorizationServiceTestSuite) TestEvaluateAccessPassesPropertiesTo
 }
 
 func (suite *AuthorizationServiceTestSuite) TestEvaluateAccessBatchEmpty() {
-	response, err := suite.service.EvaluateAccessBatch(context.Background(), AccessEvaluationsRequest{})
+	response, err := suite.service.EvaluateAccessBatch(context.Background(), providers.AccessEvaluationsRequest{})
 
 	suite.Nil(err)
 	suite.NotNil(response)
@@ -185,12 +186,12 @@ func (suite *AuthorizationServiceTestSuite) TestEvaluateAccessBatchEmpty() {
 }
 
 func (suite *AuthorizationServiceTestSuite) TestEvaluateAccessBatchEngineError() {
-	request := AccessEvaluationsRequest{
-		Evaluations: []AccessEvaluationRequest{
+	request := providers.AccessEvaluationsRequest{
+		Evaluations: []providers.AccessEvaluationRequest{
 			{
-				Subject:        Subject{ID: "user1"},
-				ResourceServer: ResourceServer{Handle: "document"},
-				Permission:     Permission{Name: "read"},
+				Subject:        providers.Subject{ID: "user1"},
+				ResourceServer: providers.AccessEvaluationResourceServer{Handle: "document"},
+				Permission:     providers.Permission{Name: "read"},
 			},
 		},
 	}
@@ -206,10 +207,10 @@ func (suite *AuthorizationServiceTestSuite) TestEvaluateAccessBatchEngineError()
 }
 
 func (suite *AuthorizationServiceTestSuite) TestEvaluateAccessEmptyEngineResponse() {
-	request := AccessEvaluationRequest{
-		Subject:        Subject{ID: "user1"},
-		ResourceServer: ResourceServer{Handle: "document"},
-		Permission:     Permission{Name: "read"},
+	request := providers.AccessEvaluationRequest{
+		Subject:        providers.Subject{ID: "user1"},
+		ResourceServer: providers.AccessEvaluationResourceServer{Handle: "document"},
+		Permission:     providers.Permission{Name: "read"},
 	}
 
 	suite.mockEngine.On("EvaluateAccessBatch", mock.Anything, mock.Anything).

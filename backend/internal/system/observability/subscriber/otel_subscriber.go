@@ -37,6 +37,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
 	otelconfig "github.com/thunder-id/thunderid/internal/system/observability/opentelemetry"
 	"github.com/thunder-id/thunderid/internal/system/utils"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 const otelSubscriberComponentName = "OTelSubscriber"
@@ -145,7 +146,7 @@ func (o *OTelSubscriber) GetCategories() []event.EventCategory {
 //
 // Note: Currently each event creates an independent span. For proper distributed tracing
 // with span hierarchies, context propagation would need to be implemented separately.
-func (o *OTelSubscriber) OnEvent(evt *event.Event) error {
+func (o *OTelSubscriber) OnEvent(evt *providers.Event) error {
 	if evt == nil {
 		return fmt.Errorf("event is nil")
 	}
@@ -155,7 +156,7 @@ func (o *OTelSubscriber) OnEvent(evt *event.Event) error {
 
 // createSpan creates a span with span events for the event data.
 // Following OTel best practices: event data becomes a span event (timestamp is meaningful).
-func (o *OTelSubscriber) createSpan(evt *event.Event) error {
+func (o *OTelSubscriber) createSpan(evt *providers.Event) error {
 	// Subscribers run in detached goroutines after the request context may be
 	// cancelled, so derive a logging context from the event's trace ID.
 	ctx := sysContext.WithTraceID(context.Background(), evt.TraceID)
@@ -239,7 +240,7 @@ func (o *OTelSubscriber) createSpan(evt *event.Event) error {
 	)
 
 	// Set span status based on event status
-	if evt.Status == event.StatusFailure {
+	if evt.Status == providers.StatusFailure {
 		errorMsg := o.extractErrorMessage(evt)
 		span.SetStatus(codes.Error, errorMsg)
 		span.RecordError(fmt.Errorf("%s", errorMsg),
@@ -298,7 +299,7 @@ func (o *OTelSubscriber) convertDataToAttributes(data map[string]interface{}) []
 }
 
 // getStringData safely extracts string data from event.
-func (o *OTelSubscriber) getStringData(evt *event.Event, key string) string {
+func (o *OTelSubscriber) getStringData(evt *providers.Event, key string) string {
 	if val, ok := evt.Data[key]; ok {
 		if str, ok := val.(string); ok {
 			return str
@@ -309,7 +310,7 @@ func (o *OTelSubscriber) getStringData(evt *event.Event, key string) string {
 
 // extractErrorMessage extracts a human-readable error message from an event.
 // It reads the structured error map from DataKey.Error and falls back to "unknown error".
-func (o *OTelSubscriber) extractErrorMessage(evt *event.Event) string {
+func (o *OTelSubscriber) extractErrorMessage(evt *providers.Event) string {
 	val, ok := evt.Data[event.DataKey.Error]
 	if !ok {
 		return "unknown error"

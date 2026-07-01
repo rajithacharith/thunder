@@ -427,3 +427,15 @@ const (
 	// FlowStatusError indicates that there was an error during the flow execution.
 	FlowStatusError FlowStatus = "ERROR"
 )
+
+// EventType is a type alias for event type strings.
+// This allows for type-safe event type constants while keeping the Event struct generic.
+type EventType string
+
+// Common status values (use these for consistency, but not enforced)
+const (
+	StatusSuccess    = "success"
+	StatusFailure    = "failure"
+	StatusInProgress = "in_progress"
+	StatusPending    = "pending"
+)

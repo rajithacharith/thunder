@@ -29,6 +29,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
 	"github.com/thunder-id/thunderid/internal/system/observability/formatter"
 	"github.com/thunder-id/thunderid/internal/system/utils"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 const fileSubscriberComponentName = "FileSubscriber"
@@ -132,7 +133,7 @@ func (fs *FileSubscriber) GetCategories() []event.EventCategory {
 }
 
 // OnEvent is called when a new event is published.
-func (fs *FileSubscriber) OnEvent(evt *event.Event) error {
+func (fs *FileSubscriber) OnEvent(evt *providers.Event) error {
 	return processEvent(evt, fs.formatter, fs.adapter, fs.logger, "file")
 }
 

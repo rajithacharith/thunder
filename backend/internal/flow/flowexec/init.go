@@ -28,7 +28,6 @@ import (
 	dbprovider "github.com/thunder-id/thunderid/internal/system/database/provider"
 	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
-	"github.com/thunder-id/thunderid/internal/system/observability"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
@@ -41,7 +40,7 @@ func Initialize(
 	actorProvider providers.ActorProvider,
 	executorRegistry executor.ExecutorRegistryInterface,
 	interceptorRegistry interceptor.InterceptorRegistryInterface,
-	observabilitySvc observability.ObservabilityServiceInterface,
+	observabilitySvc providers.ObservabilityProvider,
 	cryptoSvc kmprovider.RuntimeCryptoProvider,
 	graphBuilder graphbuilder.GraphBuilderInterface,
 	cfg flowconfig.Config,

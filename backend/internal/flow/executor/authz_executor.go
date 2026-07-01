@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"errors"
 
-	authzsvc "github.com/thunder-id/thunderid/internal/authz"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -40,7 +39,7 @@ const (
 // during flow execution. It enriches the flow context with authorized permissions.
 type authorizationExecutor struct {
 	providers.Executor
-	authzService   authzsvc.AuthorizationServiceInterface
+	authzService   providers.AuthorizationProvider
 	entityProvider entityprovider.EntityProviderInterface
 	authnProvider  providers.AuthnProviderManager
 	logger         *log.Logger
@@ -51,7 +50,7 @@ var _ providers.Executor = (*authorizationExecutor)(nil)
 // newAuthorizationExecutor creates a new instance of AuthorizationExecutor.
 func newAuthorizationExecutor(
 	flowFactory core.FlowFactoryInterface,
-	authZService authzsvc.AuthorizationServiceInterface,
+	authZService providers.AuthorizationProvider,
 	entityProvider entityprovider.EntityProviderInterface,
 	authnProvider providers.AuthnProviderManager,
 ) *authorizationExecutor {
@@ -164,24 +163,24 @@ func (a *authorizationExecutor) buildAccessEvaluationsRequest(
 	entityID string,
 	groupIDs []string,
 	requestedPermissions []string,
-) authzsvc.AccessEvaluationsRequest {
-	evaluations := make([]authzsvc.AccessEvaluationRequest, 0, len(requestedPermissions))
+) providers.AccessEvaluationsRequest {
+	evaluations := make([]providers.AccessEvaluationRequest, 0, len(requestedPermissions))
 	for _, permission := range requestedPermissions {
-		evaluations = append(evaluations, authzsvc.AccessEvaluationRequest{
-			Subject: authzsvc.Subject{
+		evaluations = append(evaluations, providers.AccessEvaluationRequest{
+			Subject: providers.Subject{
 				ID:       entityID,
 				GroupIDs: groupIDs,
 			},
-			Permission: authzsvc.Permission{Name: permission},
+			Permission: providers.Permission{Name: permission},
 		})
 	}
-	return authzsvc.AccessEvaluationsRequest{Evaluations: evaluations}
+	return providers.AccessEvaluationsRequest{Evaluations: evaluations}
 }
 
 // filterAuthorizedPermissions returns the requested permissions that were allowed by the authorization service.
 func (a *authorizationExecutor) filterAuthorizedPermissions(
 	requestedPermissions []string,
-	evaluations []authzsvc.AccessEvaluationResponse,
+	evaluations []providers.AccessEvaluationResponse,
 ) []string {
 	authorizedPermissions := make([]string, 0, len(evaluations))
 	for i, evaluation := range evaluations {

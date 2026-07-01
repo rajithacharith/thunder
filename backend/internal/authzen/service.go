@@ -28,7 +28,6 @@ import (
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
-	"github.com/thunder-id/thunderid/internal/authz"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/resource"
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
@@ -50,7 +49,7 @@ type AuthZENServiceInterface interface {
 
 // authzenService adapts AuthZEN requests to Thunder authorization services.
 type authzenService struct {
-	authzService    authz.AuthorizationServiceInterface
+	authzService    providers.AuthorizationProvider
 	entityProvider  entityprovider.EntityProviderInterface
 	resourceService resource.ResourceServiceInterface
 	logger          *log.Logger
@@ -58,7 +57,7 @@ type authzenService struct {
 
 // newService creates an AuthZEN service with its dependent services.
 func newService(
-	authzService authz.AuthorizationServiceInterface,
+	authzService providers.AuthorizationProvider,
 	entityProvider entityprovider.EntityProviderInterface,
 	resourceService resource.ResourceServiceInterface,
 ) AuthZENServiceInterface {
@@ -128,7 +127,7 @@ func (s *authzenService) EvaluateAccessBatch(ctx context.Context, request Access
 		return nil, &ErrorMissingEvaluations
 	}
 
-	authzEvaluations := make([]authz.AccessEvaluationRequest, 0, len(request.Evaluations))
+	authzEvaluations := make([]providers.AccessEvaluationRequest, 0, len(request.Evaluations))
 	responses := make([]AccessEvaluationResponse, len(request.Evaluations))
 	authzEvaluationIndexes := make([]int, 0, len(request.Evaluations))
 	groupIDsBySubject := make(map[string][]string)
@@ -214,7 +213,7 @@ func (s *authzenService) EvaluateAccessBatch(ctx context.Context, request Access
 		}, nil
 	}
 
-	authzResp, svcErr := s.authzService.EvaluateAccessBatch(ctx, authz.AccessEvaluationsRequest{
+	authzResp, svcErr := s.authzService.EvaluateAccessBatch(ctx, providers.AccessEvaluationsRequest{
 		Evaluations: authzEvaluations,
 	})
 	if svcErr != nil {
@@ -276,27 +275,27 @@ func (s *authzenService) SearchActions(ctx context.Context, request AccessAction
 		actionByPermission[action.Permission] = Action{Name: action.Permission}
 	}
 
-	authzEvaluations := make([]authz.AccessEvaluationRequest, 0, len(requestedPermissions))
+	authzEvaluations := make([]providers.AccessEvaluationRequest, 0, len(requestedPermissions))
 	for _, permission := range requestedPermissions {
-		authzEvaluations = append(authzEvaluations, authz.AccessEvaluationRequest{
-			Subject: authz.Subject{
+		authzEvaluations = append(authzEvaluations, providers.AccessEvaluationRequest{
+			Subject: providers.Subject{
 				ID:         request.Subject.ID,
 				Type:       request.Subject.Type,
 				GroupIDs:   groupIDs,
 				Properties: request.Subject.Properties,
 			},
-			ResourceServer: authz.ResourceServer{
+			ResourceServer: providers.AccessEvaluationResourceServer{
 				Handle:     request.Resource.Type,
 				Properties: request.Resource.Properties,
 			},
-			Permission: authz.Permission{
+			Permission: providers.Permission{
 				Name: permission,
 			},
 			Context: request.Context,
 		})
 	}
 
-	authzResp, svcErr := s.authzService.EvaluateAccessBatch(ctx, authz.AccessEvaluationsRequest{
+	authzResp, svcErr := s.authzService.EvaluateAccessBatch(ctx, providers.AccessEvaluationsRequest{
 		Evaluations: authzEvaluations,
 	})
 	if svcErr != nil {
@@ -555,19 +554,20 @@ func (s *authzenService) resolveGroupIDs(ctx context.Context, entityID string) (
 }
 
 // toAuthzAccessEvaluationRequest converts an AuthZEN request to an authorization request.
-func toAuthzAccessEvaluationRequest(request AccessEvaluationRequest, groupIDs []string) authz.AccessEvaluationRequest {
-	return authz.AccessEvaluationRequest{
-		Subject: authz.Subject{
+func toAuthzAccessEvaluationRequest(request AccessEvaluationRequest,
+	groupIDs []string) providers.AccessEvaluationRequest {
+	return providers.AccessEvaluationRequest{
+		Subject: providers.Subject{
 			Type:       request.Subject.Type,
 			ID:         request.Subject.ID,
 			GroupIDs:   groupIDs,
 			Properties: request.Subject.Properties,
 		},
-		ResourceServer: authz.ResourceServer{
+		ResourceServer: providers.AccessEvaluationResourceServer{
 			Handle:     request.Resource.Type,
 			Properties: request.Resource.Properties,
 		},
-		Permission: authz.Permission{
+		Permission: providers.Permission{
 			Name:       request.Action.Name,
 			Properties: request.Action.Properties,
 		},

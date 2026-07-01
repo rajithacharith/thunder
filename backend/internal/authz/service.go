@@ -23,6 +23,7 @@ import (
 	"context"
 
 	tidcommon "github.com/thunder-id/thunderid/pkg/thunderidengine/common"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 
 	"github.com/thunder-id/thunderid/internal/authz/engine"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -30,29 +31,13 @@ import (
 
 const loggerComponentName = "AuthorizationService"
 
-// AuthorizationServiceInterface defines the interface for authorization operations.
-// This is the public interface exposed to external consumers.
-type AuthorizationServiceInterface interface {
-	// EvaluateAccess evaluates a single fine-grained access request.
-	EvaluateAccess(
-		ctx context.Context,
-		request AccessEvaluationRequest,
-	) (*AccessEvaluationResponse, *tidcommon.ServiceError)
-
-	// EvaluateAccessBatch evaluates multiple fine-grained access requests.
-	EvaluateAccessBatch(
-		ctx context.Context,
-		request AccessEvaluationsRequest,
-	) (*AccessEvaluationsResponse, *tidcommon.ServiceError)
-}
-
-// authorizationService is the default implementation of AuthorizationServiceInterface.
+// authorizationService is the default implementation of providers.AuthorizationProvider.
 type authorizationService struct {
 	engine engine.AuthorizationEngine
 }
 
 // newAuthorizationService creates a new instance of authorizationService.
-func newAuthorizationService(engine engine.AuthorizationEngine) AuthorizationServiceInterface {
+func newAuthorizationService(engine engine.AuthorizationEngine) providers.AuthorizationProvider {
 	return &authorizationService{
 		engine: engine,
 	}
@@ -61,16 +46,16 @@ func newAuthorizationService(engine engine.AuthorizationEngine) AuthorizationSer
 // EvaluateAccess evaluates a single fine-grained access request.
 func (s *authorizationService) EvaluateAccess(
 	ctx context.Context,
-	request AccessEvaluationRequest,
-) (*AccessEvaluationResponse, *tidcommon.ServiceError) {
-	response, svcErr := s.EvaluateAccessBatch(ctx, AccessEvaluationsRequest{
-		Evaluations: []AccessEvaluationRequest{request},
+	request providers.AccessEvaluationRequest,
+) (*providers.AccessEvaluationResponse, *tidcommon.ServiceError) {
+	response, svcErr := s.EvaluateAccessBatch(ctx, providers.AccessEvaluationsRequest{
+		Evaluations: []providers.AccessEvaluationRequest{request},
 	})
 	if svcErr != nil {
 		return nil, svcErr
 	}
 	if len(response.Evaluations) == 0 {
-		return &AccessEvaluationResponse{}, nil
+		return &providers.AccessEvaluationResponse{}, nil
 	}
 	return &response.Evaluations[0], nil
 }
@@ -78,15 +63,15 @@ func (s *authorizationService) EvaluateAccess(
 // EvaluateAccessBatch evaluates multiple fine-grained access requests.
 func (s *authorizationService) EvaluateAccessBatch(
 	ctx context.Context,
-	request AccessEvaluationsRequest,
-) (*AccessEvaluationsResponse, *tidcommon.ServiceError) {
+	request providers.AccessEvaluationsRequest,
+) (*providers.AccessEvaluationsResponse, *tidcommon.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug(ctx, "Evaluating authorization request",
 		log.Int("evaluationCount", len(request.Evaluations)))
 
 	if len(request.Evaluations) == 0 {
-		return &AccessEvaluationsResponse{
-			Evaluations: []AccessEvaluationResponse{},
+		return &providers.AccessEvaluationsResponse{
+			Evaluations: []providers.AccessEvaluationResponse{},
 		}, nil
 	}
 
@@ -105,7 +90,7 @@ func (s *authorizationService) EvaluateAccessBatch(
 	return fromEngineAccessEvaluationsResponse(evaluationResp), nil
 }
 
-func toEngineAccessEvaluationsRequest(request AccessEvaluationsRequest) engine.AccessEvaluationsRequest {
+func toEngineAccessEvaluationsRequest(request providers.AccessEvaluationsRequest) engine.AccessEvaluationsRequest {
 	evaluations := make([]engine.AccessEvaluationRequest, 0, len(request.Evaluations))
 	for _, evaluation := range request.Evaluations {
 		evaluations = append(evaluations, engine.AccessEvaluationRequest{
@@ -129,17 +114,18 @@ func toEngineAccessEvaluationsRequest(request AccessEvaluationsRequest) engine.A
 	return engine.AccessEvaluationsRequest{Evaluations: evaluations}
 }
 
-func fromEngineAccessEvaluationsResponse(response *engine.AccessEvaluationsResponse) *AccessEvaluationsResponse {
+func fromEngineAccessEvaluationsResponse(
+	response *engine.AccessEvaluationsResponse) *providers.AccessEvaluationsResponse {
 	if response == nil {
-		return &AccessEvaluationsResponse{Evaluations: []AccessEvaluationResponse{}}
+		return &providers.AccessEvaluationsResponse{Evaluations: []providers.AccessEvaluationResponse{}}
 	}
 
-	evaluations := make([]AccessEvaluationResponse, 0, len(response.Evaluations))
+	evaluations := make([]providers.AccessEvaluationResponse, 0, len(response.Evaluations))
 	for _, evaluation := range response.Evaluations {
-		evaluations = append(evaluations, AccessEvaluationResponse{
+		evaluations = append(evaluations, providers.AccessEvaluationResponse{
 			Decision: evaluation.Decision,
 			Context:  evaluation.Context,
 		})
 	}
-	return &AccessEvaluationsResponse{Evaluations: evaluations}
+	return &providers.AccessEvaluationsResponse{Evaluations: evaluations}
 }

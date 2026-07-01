@@ -28,8 +28,8 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
 	sysconst "github.com/thunder-id/thunderid/internal/system/constants"
 	"github.com/thunder-id/thunderid/internal/system/log"
-	"github.com/thunder-id/thunderid/internal/system/observability"
 	"github.com/thunder-id/thunderid/internal/system/utils"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // TokenHandlerInterface defines the interface for handling OAuth 2.0 token requests.
@@ -40,13 +40,13 @@ type TokenHandlerInterface interface {
 // tokenHandler implements the TokenHandlerInterface.
 type tokenHandler struct {
 	tokenService     TokenServiceInterface
-	observabilitySvc observability.ObservabilityServiceInterface
+	observabilitySvc providers.ObservabilityProvider
 }
 
 // newTokenHandler creates a new instance of tokenHandler.
 func newTokenHandler(
 	tokenService TokenServiceInterface,
-	observabilitySvc observability.ObservabilityServiceInterface,
+	observabilitySvc providers.ObservabilityProvider,
 ) TokenHandlerInterface {
 	return &tokenHandler{
 		tokenService:     tokenService,

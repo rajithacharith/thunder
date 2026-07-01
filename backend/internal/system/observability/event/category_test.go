@@ -23,12 +23,14 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 func TestGetCategory(t *testing.T) {
 	tests := []struct {
 		name         string
-		eventType    EventType
+		eventType    providers.EventType
 		wantCategory EventCategory
 	}{
 		// Authentication events
@@ -82,12 +84,12 @@ func TestGetCategory(t *testing.T) {
 func TestEvent_GetCategory(t *testing.T) {
 	tests := []struct {
 		name         string
-		event        *Event
+		event        *providers.Event
 		wantCategory EventCategory
 	}{
 		{
 			name: "authentication event",
-			event: &Event{
+			event: &providers.Event{
 				TraceID:   "trace-1",
 				EventID:   "event-1",
 				Type:      string(EventTypeTokenIssuanceStarted),
@@ -98,7 +100,7 @@ func TestEvent_GetCategory(t *testing.T) {
 		},
 		{
 			name: "flow event",
-			event: &Event{
+			event: &providers.Event{
 				TraceID:   "trace-2",
 				EventID:   "event-2",
 				Type:      string(EventTypeFlowStarted),
@@ -111,19 +113,19 @@ func TestEvent_GetCategory(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.event.GetCategory()
+			got, err := GetCategory(providers.EventType(tt.event.Type))
 			if err != nil {
-				t.Errorf("Event.GetCategory() unexpected error: %v", err)
+				t.Errorf("GetCategory() unexpected error: %v", err)
 			}
 			if got != tt.wantCategory {
-				t.Errorf("Event.GetCategory() = %s, want %s", got, tt.wantCategory)
+				t.Errorf("GetCategory() = %s, want %s", got, tt.wantCategory)
 			}
 		})
 	}
 }
 
 func TestGetCategory_ReturnsErrorOnUnmappedEventType(t *testing.T) {
-	_, err := GetCategory(EventType("unknown.unmapped.event"))
+	_, err := GetCategory(providers.EventType("unknown.unmapped.event"))
 	if err == nil {
 		t.Error("GetCategory() should return error for unmapped event type")
 	}
@@ -142,17 +144,13 @@ func TestGetCategory_ReturnsErrorOnUnmappedEventType(t *testing.T) {
 }
 
 func TestEvent_GetCategory_ReturnsErrorOnUnmappedEventType(t *testing.T) {
-	evt := &Event{
-		TraceID:   "trace-1",
-		EventID:   "event-1",
-		Type:      "unknown.unmapped.event",
-		Component: "test",
-		Timestamp: time.Now(),
+	evt := &providers.Event{
+		Type: "unknown.unmapped.event",
 	}
 
-	_, err := evt.GetCategory()
+	_, err := GetCategory(providers.EventType(evt.Type))
 	if err == nil {
-		t.Error("Event.GetCategory() should return error for unmapped event type")
+		t.Error("GetCategory() should return error for unmapped event type")
 	}
 
 	// Verify it's the correct error type
@@ -279,7 +277,7 @@ func TestCategoryConstants(t *testing.T) {
 
 func TestEventTypeToCategoryMapping_Comprehensive(t *testing.T) {
 	// Verify all defined event types have a category mapping
-	allEventTypes := []EventType{
+	allEventTypes := []providers.EventType{
 		// Authentication
 		EventTypeTokenIssuanceStarted,
 		EventTypeTokenIssued,
@@ -312,7 +310,7 @@ func TestCategoryToEventTypeConsistency(t *testing.T) {
 	// Verify that each category has at least one event type mapped to it
 	categoryEventCount := make(map[EventCategory]int)
 
-	allEventTypes := []EventType{
+	allEventTypes := []providers.EventType{
 		EventTypeTokenIssuanceStarted, EventTypeTokenIssued, EventTypeTokenIssuanceFailed,
 		EventTypeFlowStarted, EventTypeFlowCompleted, EventTypeFlowFailed,
 	}

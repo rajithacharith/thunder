@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // mockSubscriber is a mock implementation of SubscriberInterface for testing
@@ -40,7 +41,7 @@ func (m *mockSubscriber) GetCategories() []event.EventCategory {
 	return m.categories
 }
 
-func (m *mockSubscriber) OnEvent(evt *event.Event) error {
+func (m *mockSubscriber) OnEvent(evt *providers.Event) error {
 	return nil
 }
 

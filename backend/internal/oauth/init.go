@@ -23,7 +23,6 @@ import (
 	"net/http"
 
 	"github.com/thunder-id/thunderid/internal/attributecache"
-	"github.com/thunder-id/thunderid/internal/authz"
 	"github.com/thunder-id/thunderid/internal/flow/flowexec"
 	oauthconfig "github.com/thunder-id/thunderid/internal/oauth/config"
 	"github.com/thunder-id/thunderid/internal/oauth/jwks"
@@ -44,7 +43,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
-	"github.com/thunder-id/thunderid/internal/system/observability"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
@@ -56,11 +54,11 @@ func Initialize(
 	jwtService jwt.JWTServiceInterface,
 	jweService jwe.JWEServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
-	observabilitySvc observability.ObservabilityServiceInterface,
+	observabilitySvc providers.ObservabilityProvider,
 	runtimeCrypto kmprovider.RuntimeCryptoProvider,
 	ouService providers.OrganizationUnitProvider,
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
-	authzService authz.AuthorizationServiceInterface,
+	authzService providers.AuthorizationProvider,
 	resourceService providers.ResourceServerProvider,
 	i18nService providers.I18nProvider,
 	idpService providers.IDPProvider,

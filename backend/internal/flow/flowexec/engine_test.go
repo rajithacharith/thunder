@@ -1294,10 +1294,10 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NodeRespErrorPu
 	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
 	mockObservability.On("IsEnabled").Return(true)
 
-	var capturedEvent *event.Event
-	mockObservability.On("PublishEvent", mock.Anything, mock.AnythingOfType("*event.Event")).
+	var capturedEvent *providers.Event
+	mockObservability.On("PublishEvent", mock.Anything, mock.AnythingOfType("*providers.Event")).
 		Run(func(args mock.Arguments) {
-			capturedEvent = args.Get(1).(*event.Event)
+			capturedEvent = args.Get(1).(*providers.Event)
 		}).Return()
 
 	mockNode := coremock.NewNodeInterfaceMock(t)
@@ -1337,7 +1337,7 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NodeRespErrorPu
 
 	s.NotNil(capturedEvent)
 	s.Equal(string(event.EventTypeFlowNodeExecutionCompleted), capturedEvent.Type)
-	s.Equal(event.StatusSuccess, capturedEvent.Status)
+	s.Equal(providers.StatusSuccess, capturedEvent.Status)
 
 	errorData, ok := capturedEvent.Data[event.DataKey.Error].(map[string]interface{})
 	s.True(ok)
@@ -1359,10 +1359,10 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NodeErrTakesPre
 	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
 	mockObservability.On("IsEnabled").Return(true)
 
-	var capturedEvent *event.Event
-	mockObservability.On("PublishEvent", mock.Anything, mock.AnythingOfType("*event.Event")).
+	var capturedEvent *providers.Event
+	mockObservability.On("PublishEvent", mock.Anything, mock.AnythingOfType("*providers.Event")).
 		Run(func(args mock.Arguments) {
-			capturedEvent = args.Get(1).(*event.Event)
+			capturedEvent = args.Get(1).(*providers.Event)
 		}).Return()
 
 	mockNode := coremock.NewNodeInterfaceMock(t)
@@ -1408,7 +1408,7 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NodeErrTakesPre
 
 	s.NotNil(capturedEvent)
 	s.Equal(string(event.EventTypeFlowNodeExecutionFailed), capturedEvent.Type)
-	s.Equal(event.StatusFailure, capturedEvent.Status)
+	s.Equal(providers.StatusFailure, capturedEvent.Status)
 
 	errorData, ok := capturedEvent.Data[event.DataKey.Error].(map[string]interface{})
 	s.True(ok)
@@ -1420,10 +1420,10 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NoErrorPublishe
 	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
 	mockObservability.On("IsEnabled").Return(true)
 
-	var capturedEvent *event.Event
-	mockObservability.On("PublishEvent", mock.Anything, mock.AnythingOfType("*event.Event")).
+	var capturedEvent *providers.Event
+	mockObservability.On("PublishEvent", mock.Anything, mock.AnythingOfType("*providers.Event")).
 		Run(func(args mock.Arguments) {
-			capturedEvent = args.Get(1).(*event.Event)
+			capturedEvent = args.Get(1).(*providers.Event)
 		}).Return()
 
 	mockNode := coremock.NewNodeInterfaceMock(t)
@@ -1450,7 +1450,7 @@ func (s *EngineTestSuite) TestPublishNodeExecutionCompletedEvent_NoErrorPublishe
 
 	s.NotNil(capturedEvent)
 	s.Equal(string(event.EventTypeFlowNodeExecutionCompleted), capturedEvent.Type)
-	s.Equal(event.StatusSuccess, capturedEvent.Status)
+	s.Equal(providers.StatusSuccess, capturedEvent.Status)
 	_, hasError := capturedEvent.Data[event.DataKey.Error]
 	s.False(hasError)
 }
@@ -3044,7 +3044,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_InterceptorError_
 
 	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
 	mockObservability.On("IsEnabled").Return(true)
-	mockObservability.On("PublishEvent", mock.Anything, mock.AnythingOfType("*event.Event")).Return()
+	mockObservability.On("PublishEvent", mock.Anything, mock.AnythingOfType("*providers.Event")).Return()
 
 	fe := &flowEngine{
 		interceptorRunner: mockInterceptorSvc,
@@ -3083,7 +3083,7 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_InterceptorError_
 	s.False(continueExec)
 	s.NotNil(err)
 	s.Equal("INT-POST-ERR", err.Code)
-	mockObservability.AssertCalled(t, "PublishEvent", mock.Anything, mock.AnythingOfType("*event.Event"))
+	mockObservability.AssertCalled(t, "PublishEvent", mock.Anything, mock.AnythingOfType("*providers.Event"))
 }
 
 func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Incomplete_StopsExecution() {
@@ -3146,12 +3146,12 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_Fail_PublishesFlo
 	mockNode.On("GetProperties").Return(map[string]interface{}(nil)).Maybe()
 	mockNode.On("GetExecutionPolicy").Return((*providers.ExecutionPolicy)(nil)).Maybe()
 
-	var capturedEvent *event.Event
+	var capturedEvent *providers.Event
 	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
 	mockObservability.On("IsEnabled").Return(true)
-	mockObservability.On("PublishEvent", mock.Anything, mock.AnythingOfType("*event.Event")).
+	mockObservability.On("PublishEvent", mock.Anything, mock.AnythingOfType("*providers.Event")).
 		Run(func(args mock.Arguments) {
-			capturedEvent = args.Get(1).(*event.Event)
+			capturedEvent = args.Get(1).(*providers.Event)
 		}).Return()
 
 	fe := &flowEngine{

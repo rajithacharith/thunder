@@ -25,10 +25,10 @@ import (
 	"fmt"
 
 	"github.com/thunder-id/thunderid/internal/system/log"
-	"github.com/thunder-id/thunderid/internal/system/observability/event"
 	"github.com/thunder-id/thunderid/internal/system/observability/publisher"
 	"github.com/thunder-id/thunderid/internal/system/observability/subscriber"
 	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 const loggerComponentName = "ObservabilityService"
@@ -149,7 +149,7 @@ func (s *Service) RegisterSubscriber(sub subscriber.SubscriberInterface) {
 // PublishEvent publishes an event to the observability system.
 // This is a no-op if observability is disabled.
 // The publisher will validate the event, so no need to check here.
-func (s *Service) PublishEvent(ctx context.Context, evt *event.Event) {
+func (s *Service) PublishEvent(ctx context.Context, evt *providers.Event) {
 	// Quick exit if observability is disabled
 	if !s.config.Enabled || s.publisher == nil {
 		return
