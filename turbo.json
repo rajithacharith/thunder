@@ -10,14 +10,6 @@
       "outputs": ["build/**"],
       "env": ["DOCUSAURUS_URL", "DOCUSAURUS_BASE_URL"]
     },
-    "@thunderid/eslint-plugin#build": {
-      "dependsOn": [],
-      "outputs": ["dist/**"]
-    },
-    "@thunderid/prettier-config#build": {
-      "dependsOn": [],
-      "outputs": ["dist/**"]
-    },
     "typecheck": {
       "dependsOn": ["^build"]
     },
