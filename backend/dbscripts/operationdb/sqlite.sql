@@ -15,6 +15,20 @@
 -- under the License.
 -- ----------------------------------------------------------------------------
 
--- Schema for the database.operation classification.
--- Holds authoritative authorization-operation state that must survive a runtime
--- database flush. Tables are introduced by the features that own them.
+-- Table to store revoked token JTIs (single-token revocation deny list).
+-- Part of the database.operation classification: authoritative authorization
+-- enforcement state that must survive a runtime database flush.
+CREATE TABLE "REVOKED_TOKEN" (
+    DEPLOYMENT_ID VARCHAR(255) NOT NULL,
+    ID VARCHAR(36) NOT NULL PRIMARY KEY,
+    JTI VARCHAR(255) NOT NULL,
+    REVOCATION_REASON VARCHAR(30) NOT NULL CHECK (REVOCATION_REASON IN ('explicit', 'refresh_rotation')),
+    REVOKED_AT DATETIME NOT NULL,
+    EXPIRY_TIME DATETIME NOT NULL
+);
+
+-- Unique index backs the hot deny-list lookup by (deployment, jti) and enforces idempotent revocation writes.
+CREATE UNIQUE INDEX idx_revoked_token_jti_deployment ON "REVOKED_TOKEN" (DEPLOYMENT_ID, JTI);
+
+-- Index for expiry time on REVOKED_TOKEN (supports cleanup and expiry checks).
+CREATE INDEX idx_revoked_token_expiry_time ON "REVOKED_TOKEN" (EXPIRY_TIME);
