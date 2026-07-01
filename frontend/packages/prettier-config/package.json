@@ -43,16 +43,14 @@
     "clean": "pnpm clean:node_modules && pnpm clean:dist",
     "clean:dist": "rimraf dist",
     "clean:node_modules": "rimraf node_modules",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
+    "lint": "node -e \"console.log('Lint is not configured for @thunderid/prettier-config')\"",
+    "lint:fix": "node -e \"console.log('Lint is not configured for @thunderid/prettier-config')\"",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "typecheck": "tsc -p tsconfig.lib.json"
   },
   "devDependencies": {
-    "@thunderid/eslint-plugin": "workspace:^",
     "@types/node": "catalog:",
-    "eslint": "catalog:",
     "prettier": "catalog:",
     "rimraf": "catalog:",
     "rolldown": "catalog:",
