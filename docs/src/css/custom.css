@@ -491,7 +491,9 @@ html[data-page='home'][data-theme='dark'] .navbar .navbar__github--link::before 
   html[data-page^='thunder-docs-'] .navbar.navbar--fixed-top {
     padding-left: 1rem;
     padding-right: 1rem;
-    background: var(--oxygen-palette-background-paper);
+    /* Solid opaque background on mobile — no backdrop-filter available (Safari stacking bug) */
+    background: var(--ifm-navbar-background-color) !important;
+    border-bottom: 1px solid var(--oxygen-palette-divider) !important;
   }
 
   html[data-page^='thunder-docs-'] .navbar .navbar__brand {

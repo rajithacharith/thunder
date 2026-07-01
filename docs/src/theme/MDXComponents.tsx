@@ -31,6 +31,7 @@ import CodeBlock from '@site/src/components/CodeBlock';
 import CodeGroup from '@site/src/components/CodeGroup';
 import ColorSchemeImage from '@site/src/components/ColorSchemeImage';
 import DeploymentCards from '@site/src/components/DeploymentCards';
+import DeveloperShortcut from '@site/src/components/DeveloperShortcut';
 import DocsGetStarted from '@site/src/components/DocsGetStarted';
 import FloatingLogosBackground from '@site/src/components/FloatingLogosBackground';
 import {BuildAFlowDiagram, FlowNodeTypesRoadmap, FlowBuildingBlocksRoadmap} from '@site/src/components/FlowConcepts';
@@ -58,6 +59,7 @@ import SkillsLogo from '@site/src/components/icons/SkillsLogo';
 import TanStackLogo from '@site/src/components/icons/TanStackLogo';
 import VueLogo from '@site/src/components/icons/VueLogo';
 import {InfographicTimeline, InfographicStep} from '@site/src/components/InfographicTimeline';
+import IntegrationTypePicker from '@site/src/components/IntegrationTypePicker';
 import {K8sArchDiagram} from '@site/src/components/K8sArchDiagram';
 import {ConsoleUrl, WayFinderSampleUrl, WayFinderMailUrl} from '@site/src/components/LocalUrls';
 import {NextSteps, NextStepsCard} from '@site/src/components/NextSteps';
@@ -123,6 +125,7 @@ export default {
   ConsoleUrl,
   WayFinderSampleUrl,
   WayFinderMailUrl,
+  IntegrationTypePicker,
   RepoLink,
   RunThunderID,
   WayfinderCast,
@@ -145,6 +148,7 @@ export default {
   K8sArchDiagram,
   ApiVersionReference,
   DeploymentCards,
+  DeveloperShortcut,
   GettingStartedJourney,
   SampleDownload,
   UseCaseBranchCards,
