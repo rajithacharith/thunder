@@ -89,7 +89,8 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithToken() {
 	}
 
 	// Execute
-	dbModel, err := FromEngineContext(ctx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 	err = store.StoreFlowContext(context.Background(), *dbModel, expirySeconds)
 
@@ -136,7 +137,8 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithoutToken() {
 	}
 
 	// Execute
-	dbModel, err := FromEngineContext(ctx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 	err = store.StoreFlowContext(context.Background(), *dbModel, expirySeconds)
 
@@ -182,7 +184,8 @@ func (s *StoreTestSuite) TestUpdateFlowContext_WithToken() {
 	}
 
 	// Execute
-	dbModel, err := FromEngineContext(ctx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 	err = store.UpdateFlowContext(context.Background(), *dbModel)
 
@@ -218,7 +221,8 @@ func (s *StoreTestSuite) TestGetFlowContext_WithToken() {
 		Graph:            mockGraph,
 	}
 
-	dbModel, err := FromEngineContext(ctx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 
 	content := s.getContextContent(dbModel)
@@ -257,7 +261,7 @@ func (s *StoreTestSuite) TestGetFlowContext_WithToken() {
 	s.True(content.IsAuthenticated)
 	s.NotNil(content.Token)
 
-	restoredCtx, err := result.ToEngineContext(context.Background(), mockGraph)
+	restoredCtx, err := result.ToEngineContext(context.Background(), mockGraph, nil)
 	s.NoError(err)
 	s.Equal(testToken, restoredCtx.AuthenticatedUser.Token)
 
@@ -352,7 +356,8 @@ func (s *StoreTestSuite) TestStoreAndRetrieve_TokenRoundTrip() {
 	}
 
 	// Step 1: Convert to DB model (serializes context to plain JSON)
-	dbModel, err := FromEngineContext(originalCtx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(originalCtx)
 	s.NoError(err)
 	s.NotNil(dbModel)
 
@@ -362,7 +367,7 @@ func (s *StoreTestSuite) TestStoreAndRetrieve_TokenRoundTrip() {
 	s.Equal(originalToken, *content.Token)
 
 	// Step 3: Convert to EngineContext
-	retrievedCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+	retrievedCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph, nil)
 	s.NoError(err)
 
 	// Step 4: Verify all data is preserved correctly
@@ -415,7 +420,8 @@ func (s *StoreTestSuite) TestStoreAndRetrieve_ContextEncryptionRoundTrip() {
 	}
 
 	// Step 1: Convert to DB model (serializes context to plain JSON)
-	dbModel, err := FromEngineContext(originalCtx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(originalCtx)
 	s.NoError(err)
 	s.NotNil(dbModel)
 
@@ -435,7 +441,7 @@ func (s *StoreTestSuite) TestStoreAndRetrieve_ContextEncryptionRoundTrip() {
 	s.Equal(sensitiveRuntimeData, runtimeData["runtime_key"])
 
 	// Step 4: Convert to EngineContext and verify all data is preserved
-	retrievedCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+	retrievedCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph, nil)
 	s.NoError(err)
 	s.Equal(originalCtx.ExecutionID, retrievedCtx.ExecutionID)
 
@@ -470,7 +476,8 @@ func (s *StoreTestSuite) TestBuildFlowContextFromResultRow_WithToken() {
 		Graph:            mockGraph,
 	}
 
-	dbModel, err := FromEngineContext(ctx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 
 	store := &flowStore{deploymentID: "test-deployment"}
@@ -515,7 +522,8 @@ func (s *StoreTestSuite) TestBuildFlowContextFromResultRow_WithByteToken() {
 		Graph:            mockGraph,
 	}
 
-	dbModel, err := FromEngineContext(ctx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 
 	store := &flowStore{deploymentID: "test-deployment"}
@@ -586,7 +594,8 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithAvailableAttributes() {
 	}
 
 	// Execute
-	dbModel, err := FromEngineContext(ctx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 	err = store.StoreFlowContext(context.Background(), *dbModel, expirySeconds)
 
@@ -646,7 +655,8 @@ func (s *StoreTestSuite) TestUpdateFlowContext_WithAvailableAttributes() {
 	}
 
 	// Execute
-	dbModel, err := FromEngineContext(ctx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 	err = store.UpdateFlowContext(context.Background(), *dbModel)
 
@@ -696,7 +706,8 @@ func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
 		Graph:            mockGraph,
 	}
 
-	dbModel, err := FromEngineContext(ctx)
+	dbModel := &FlowContextDB{}
+	err := dbModel.FromEngineContext(ctx)
 	s.NoError(err)
 
 	content := s.getContextContent(dbModel)
@@ -736,7 +747,7 @@ func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
 	s.NotNil(content.AvailableAttributes)
 
 	// Verify we can deserialize it back to original
-	restoredCtx, err := result.ToEngineContext(context.Background(), mockGraph)
+	restoredCtx, err := result.ToEngineContext(context.Background(), mockGraph, nil)
 	s.NoError(err)
 	s.NotNil(restoredCtx.AuthenticatedUser.AvailableAttributes)
 	s.Len(restoredCtx.AuthenticatedUser.AvailableAttributes.Attributes, 2)
@@ -777,7 +788,8 @@ func (s *StoreTestSuite) TestEngineContextRoundTrip_WithAuthUser() {
 		Graph:            mockGraph,
 	}
 
-	dbModel, err := FromEngineContext(originalCtx)
+	dbModel := &FlowContextDB{}
+	err = dbModel.FromEngineContext(originalCtx)
 	s.NoError(err)
 	s.NotNil(dbModel)
 
@@ -785,7 +797,7 @@ func (s *StoreTestSuite) TestEngineContextRoundTrip_WithAuthUser() {
 	content := s.getContextContent(dbModel)
 	s.NotNil(content.AuthUser)
 
-	restoredCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
+	restoredCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph, nil)
 	s.NoError(err)
 	s.True(restoredCtx.AuthUser.IsAuthenticated())
 }

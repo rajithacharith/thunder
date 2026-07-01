@@ -580,7 +580,8 @@ func TestDecryptCalledForEncryptedStoredContext(t *testing.T) {
 		ExecutionHistory:  map[string]*providers.NodeExecutionRecord{},
 		Graph:             testGraph,
 	}
-	plainCtx, err := FromEngineContext(engineCtx)
+	plainCtx := &FlowContextDB{}
+	err := plainCtx.FromEngineContext(engineCtx)
 	assert.NoError(t, err)
 
 	// Simulate what the store returns: an encrypted blob
@@ -827,7 +828,7 @@ func TestEncryptDecryptRoundTrip_AllFieldsPreserved(t *testing.T) {
 	}
 
 	// Step 3: Convert back to EngineContext
-	resultCtx, err := restoredDB.ToEngineContext(context.Background(), testGraph)
+	resultCtx, err := restoredDB.ToEngineContext(context.Background(), testGraph, nil)
 	assert.NoError(t, err)
 
 	// Verify all fields survived the round trip
@@ -889,7 +890,8 @@ func TestExecute_ContextDecryptionSuccess(t *testing.T) {
 		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            testGraph,
 	}
-	storedCtx, err := FromEngineContext(engineCtx)
+	storedCtx := &FlowContextDB{}
+	err := storedCtx.FromEngineContext(engineCtx)
 	assert.NoError(t, err)
 
 	mockStore := newFlowStoreInterfaceMock(t)
@@ -955,7 +957,8 @@ func TestExecute_ExistingFlowWithoutChallengeToken(t *testing.T) {
 		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            testGraph,
 	}
-	storedCtx, err := FromEngineContext(engineCtx)
+	storedCtx := &FlowContextDB{}
+	err := storedCtx.FromEngineContext(engineCtx)
 	assert.NoError(t, err)
 
 	mockStore := newFlowStoreInterfaceMock(t)
@@ -1049,7 +1052,8 @@ func TestExecute_ExistingFlowWithDifferentChallengeTokens(t *testing.T) {
 				ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 				Graph:            testGraph,
 			}
-			storedCtx, err := FromEngineContext(engineCtx)
+			storedCtx := &FlowContextDB{}
+			err := storedCtx.FromEngineContext(engineCtx)
 			assert.NoError(t, err)
 
 			mockStore := newFlowStoreInterfaceMock(t)
@@ -1122,7 +1126,8 @@ func TestExecute_EngineError_InvalidChallengeToken_PreservesContext(t *testing.T
 		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            testGraph,
 	}
-	storedCtx, err := FromEngineContext(engineCtx)
+	storedCtx := &FlowContextDB{}
+	err := storedCtx.FromEngineContext(engineCtx)
 	assert.NoError(t, err)
 
 	mockStore := newFlowStoreInterfaceMock(t)
@@ -1193,7 +1198,8 @@ func TestExecute_EngineError_NonChallengeToken_RemovesContext(t *testing.T) {
 		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 		Graph:            testGraph,
 	}
-	storedCtx, err := FromEngineContext(engineCtx)
+	storedCtx := &FlowContextDB{}
+	err := storedCtx.FromEngineContext(engineCtx)
 	assert.NoError(t, err)
 
 	mockStore := newFlowStoreInterfaceMock(t)
@@ -2040,7 +2046,8 @@ func (s *ServiceTestSuite) TestExecute_ExistingFlow_CompleteRemovesContext() {
 		ExecutionHistory:  map[string]*providers.NodeExecutionRecord{},
 		Graph:             testGraph,
 	}
-	storedCtx, err := FromEngineContext(engineCtx)
+	storedCtx := &FlowContextDB{}
+	err := storedCtx.FromEngineContext(engineCtx)
 	s.NoError(err)
 
 	mockStore := newFlowStoreInterfaceMock(s.T())
@@ -2385,7 +2392,8 @@ func (s *ServiceTestSuite) TestExecute_ContinuationFlow_AuthCodeApp_NotBlocked()
 		RuntimeData:      map[string]string{},
 		ExecutionHistory: map[string]*providers.NodeExecutionRecord{},
 	}
-	storedCtx, err := FromEngineContext(engineCtx)
+	storedCtx := &FlowContextDB{}
+	err := storedCtx.FromEngineContext(engineCtx)
 	s.NoError(err)
 
 	mockStore.EXPECT().GetFlowContext(mock.Anything, "existing-execution-id").Return(storedCtx, nil)
