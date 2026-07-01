@@ -29,11 +29,11 @@ import (
 
 	authncommon "github.com/thunder-id/thunderid/internal/authn/common"
 	"github.com/thunder-id/thunderid/internal/authn/magiclink"
+	"github.com/thunder-id/thunderid/internal/authn/openid4vp"
 	"github.com/thunder-id/thunderid/internal/authn/otp"
 	"github.com/thunder-id/thunderid/internal/authn/passkey"
 	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
 	"github.com/thunder-id/thunderid/internal/entity"
-	"github.com/thunder-id/thunderid/internal/openid4vp"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
@@ -426,19 +426,16 @@ func (p *defaultAuthnProvider) authenticateWithMagicLink(
 }
 
 // authenticateWithOpenID4VP authenticates the user using the OpenID4VP service.
-// The raw credential is expected to be an OpenID4VPCredential struct with a non-empty state field.
+// The raw credential is expected to be an OpenID4VPCredential carrying the verified presentation fields.
 func (p *defaultAuthnProvider) authenticateWithOpenID4VP(
 	ctx context.Context, raw interface{},
 ) (*authnResult, *tidcommon.ServiceError) {
 	cred, ok := raw.(*authncommon.OpenID4VPCredential)
-	if !ok || cred == nil || cred.State == "" {
+	if !ok || cred == nil {
 		return nil, newClientError(authnprovidercm.ErrorCodeInvalidRequest,
 			"Invalid OpenID4VP payload", "The provided OpenID4VP credential is invalid")
 	}
-	if p.openid4vpService == nil {
-		return nil, p.logAndReturnServerError(ctx, "OpenID4VP service is not configured")
-	}
-	result, svcErr := p.openid4vpService.Authenticate(ctx, cred.State)
+	result, svcErr := p.openid4vpService.Authenticate(ctx, cred)
 	if svcErr != nil {
 		if svcErr.Type == tidcommon.ClientErrorType {
 			return nil, newClientError(authnprovidercm.ErrorCodeAuthenticationFailed,

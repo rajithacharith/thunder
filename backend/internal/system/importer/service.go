@@ -36,12 +36,12 @@ import (
 	flowmgt "github.com/thunder-id/thunderid/internal/flow/mgt"
 	"github.com/thunder-id/thunderid/internal/group"
 	"github.com/thunder-id/thunderid/internal/idp"
-	"github.com/thunder-id/thunderid/internal/openid4vci/credential"
-	"github.com/thunder-id/thunderid/internal/openid4vp/definition"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/user"
+	"github.com/thunder-id/thunderid/internal/vc/credential"
+	"github.com/thunder-id/thunderid/internal/vc/presentation"
 )
 
 type applicationAdapter interface {
@@ -183,12 +183,12 @@ type agentAdapter interface {
 }
 
 type presentationDefinitionAdapter interface {
-	CreatePresentationDefinition(ctx context.Context, dto *definition.PresentationDefinitionDTO) (
-		*definition.PresentationDefinitionDTO, *tidcommon.ServiceError)
+	CreatePresentationDefinition(ctx context.Context, dto *presentation.PresentationDefinitionDTO) (
+		*presentation.PresentationDefinitionDTO, *tidcommon.ServiceError)
 	GetPresentationDefinition(ctx context.Context, id string) (
-		*definition.PresentationDefinitionDTO, *tidcommon.ServiceError)
-	UpdatePresentationDefinition(ctx context.Context, id string, dto *definition.PresentationDefinitionDTO) (
-		*definition.PresentationDefinitionDTO, *tidcommon.ServiceError)
+		*presentation.PresentationDefinitionDTO, *tidcommon.ServiceError)
+	UpdatePresentationDefinition(ctx context.Context, id string, dto *presentation.PresentationDefinitionDTO) (
+		*presentation.PresentationDefinitionDTO, *tidcommon.ServiceError)
 }
 
 type credentialConfigurationAdapter interface {

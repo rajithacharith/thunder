@@ -20,47 +20,32 @@ package openid4vci
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
-	"github.com/thunder-id/thunderid/internal/openid4vci/credential"
-	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
+	"github.com/thunder-id/thunderid/internal/system/jose/jws"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
-	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
 	"github.com/thunder-id/thunderid/internal/user"
+	"github.com/thunder-id/thunderid/internal/vc/credential"
 )
 
-// Initialize wires the OpenID4VCI issuer engine, the credential-configuration
-// management API, and the wallet-facing endpoints. When no signing key is
-// configured, issuance is disabled and Initialize returns nil without error.
+// Initialize wires the OpenID4VCI issuer engine and the wallet-facing endpoints.
+// credSvc is the already-initialized credential-configuration service (owned by the caller).
+// When no signing key is configured, issuance is disabled and Initialize returns nil without error.
 func Initialize(
 	mux *http.ServeMux, cryptoProvider kmprovider.RuntimeCryptoProvider,
 	jwtService jwt.JWTServiceInterface, userService user.UserServiceInterface,
-	dpopVerifier dpop.VerifierInterface, ouService ou.OrganizationUnitServiceInterface,
-) (
-	OpenID4VCIServiceInterface, credential.CredentialConfigurationServiceInterface,
-	declarativeresource.ResourceExporter, error,
-) {
+	dpopVerifier dpop.VerifierInterface, credSvc credential.CredentialConfigurationServiceInterface,
+) (OpenID4VCIServiceInterface, error) {
 	runtime := config.GetServerRuntime()
 	cfg := runtime.Config.OpenID4VCI
-
-	// The credential-configuration management API is always available; only the
-	// wallet-facing issuer engine is gated on the signing key.
-	credSvc, credExporter, err := credential.Initialize(mux, ouService)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	if cfg.SigningKeyID == "" {
-		log.GetLogger().Debug(context.Background(), "OpenID4VCI issuer not configured; credential issuance disabled")
-		return nil, credSvc, credExporter, nil
-	}
 
 	// Engine URLs default to the server's public URL; explicit config overrides.
 	serverCfg := runtime.Config.Server
@@ -78,9 +63,32 @@ func Initialize(
 		authServers = []string{serverURL}
 	}
 
-	signer, err := newIssuerSigner(context.Background(), cryptoProvider, cfg.SigningKeyID)
+	if cfg.SigningKeyID == "" {
+		return nil, nil
+	}
+
+	keys, err := cryptoProvider.GetPublicKeys(context.Background(), kmprovider.PublicKeyFilter{KeyID: cfg.SigningKeyID})
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, fmt.Errorf("failed to load signing key %q: %w", cfg.SigningKeyID, err)
+	}
+	if len(keys) == 0 {
+		return nil, fmt.Errorf("%w: no signing key found for key id %q", ErrPolicy, cfg.SigningKeyID)
+	}
+	signingKey := keys[0]
+	if _, err := jws.MapAlgorithmToSignAlg(jws.Algorithm(signingKey.Algorithm)); err != nil {
+		return nil, fmt.Errorf("%w: unsupported signing algorithm for key %q", ErrPolicy, cfg.SigningKeyID)
+	}
+	if len(signingKey.CertificateDER) == 0 {
+		return nil, fmt.Errorf("%w: signing key %q is not certificate-backed (x5c required)",
+			ErrPolicy, cfg.SigningKeyID)
+	}
+	chain := signingKey.CertificateChainDER
+	if len(chain) == 0 {
+		chain = [][]byte{signingKey.CertificateDER}
+	}
+	x5c := make([]string, 0, len(chain))
+	for _, derBytes := range chain {
+		x5c = append(x5c, base64.StdEncoding.EncodeToString(derBytes))
 	}
 
 	svc, err := newOpenID4VCIService(serviceConfig{
@@ -92,14 +100,16 @@ func Initialize(
 		CredentialValidity:   time.Duration(cfg.CredentialValiditySeconds) * time.Second,
 		BatchSize:            cfg.BatchSize,
 		EnforceScope:         cfg.EnforceScope,
-	}, signer, newOpenID4VCIStore(),
-		jwtService, userService, credSvc)
+	}, cryptoProvider, kmprovider.KeyRef{KeyID: cfg.SigningKeyID},
+		string(signingKey.Algorithm), signingKey.Thumbprint, x5c,
+		newOpenID4VCIStore(), jwtService, userService, credSvc)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 
-	registerRoutes(mux, newOpenID4VCIHandler(svc, dpopVerifier, baseURL+credentialPath))
-	return svc, credSvc, credExporter, nil
+	nonceTTL := time.Duration(cfg.NonceTTLSeconds) * time.Second
+	registerRoutes(mux, newOpenID4VCIHandler(svc, dpopVerifier, baseURL+credentialPath, nonceTTL))
+	return svc, nil
 }
 
 // registerRoutes registers the OpenID4VCI HTTP routes with CORS middleware on the given mux.

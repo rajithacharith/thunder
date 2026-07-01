@@ -52,6 +52,18 @@ var (
 	ErrIssuance = errors.New("openid4vci: credential issuance failed")
 )
 
+// serviceConfig is the engine-level configuration of the OpenID4VCI issuer.
+type serviceConfig struct {
+	CredentialIssuer     string
+	BaseURL              string
+	AuthorizationServers []string
+	NonceTTL             time.Duration
+	ProofMaxAge          time.Duration
+	CredentialValidity   time.Duration
+	BatchSize            int
+	EnforceScope         bool
+}
+
 // credentialConfig is a resolved credential configuration the issuer can serve.
 type credentialConfig struct {
 	Format   string
@@ -62,13 +74,11 @@ type credentialConfig struct {
 
 // nonceRecord is the stored c_nonce state, keyed by the nonce value.
 type nonceRecord struct {
-	Nonce     string
 	ExpiresAt time.Time
 }
 
 // offerRecord is a stored issuer-initiated credential offer, keyed by its id.
 type offerRecord struct {
-	ID        string
 	Offer     map[string]interface{}
 	ExpiresAt time.Time
 }

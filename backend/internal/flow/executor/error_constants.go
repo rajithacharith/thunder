@@ -1089,20 +1089,6 @@ var (
 		},
 	}
 
-	// ErrOpenID4VPNotConfigured is returned when the OpenID4VP verifier service is not configured.
-	ErrOpenID4VPNotConfigured = tidcommon.ServiceError{
-		Type: tidcommon.ServerErrorType,
-		Code: "FET-1077",
-		Error: tidcommon.I18nMessage{
-			Key:          "flows.executor.errors.openid4vp_not_configured",
-			DefaultValue: "OpenID4VP verifier is not configured",
-		},
-		ErrorDescription: tidcommon.I18nMessage{
-			Key:          "flows.executor.errors.openid4vp_not_configured_desc",
-			DefaultValue: "The OpenID4VP verifier service has not been configured",
-		},
-	}
-
 	// ErrOpenID4VPDefinitionNotConfigured is returned when the OpenID4VP node has no presentation_definition_id.
 	ErrOpenID4VPDefinitionNotConfigured = tidcommon.ServiceError{
 		Type: tidcommon.ServerErrorType,

@@ -35,6 +35,7 @@ const (
 	AuthenticatorOAuth       = "OAuthAuthenticator"
 	AuthenticatorOIDC        = "OIDCAuthenticator"
 	AuthenticatorPasskey     = "Passkey"
+	AuthenticatorOpenID4VP   = "OpenID4VPAuthenticator"
 )
 
 // AuthenticationFactor represents the type of authentication factor.

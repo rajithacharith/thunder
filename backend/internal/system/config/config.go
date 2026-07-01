@@ -183,7 +183,7 @@ type PasskeyConfig struct {
 }
 
 // OpenID4VPConfig holds the OpenID4VP verifier engine configuration. Engine
-// defaults (client_id, signing key, base URLs, response advertisement, trust
+// defaults (client_id_scheme, signing key, base URLs, response advertisement, trust
 // anchors) live at the top level; presentation definitions are managed at runtime
 // via the management API and stored in configdb, not in static configuration.
 type OpenID4VPConfig struct {
@@ -192,8 +192,11 @@ type OpenID4VPConfig struct {
 	// If not specified, falls back to global DeclarativeResources.Enabled setting:
 	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
 	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
-	Store                      string               `yaml:"store" json:"store"`
-	ClientID                   string               `yaml:"client_id" json:"client_id"`
+	Store string `yaml:"store" json:"store"`
+	// ClientIDScheme selects how the verifier's client_id is determined.
+	// Supported values: "x509_hash" (SHA-256 thumbprint of signing cert leaf),
+	// "x509_san_dns" (first DNS SAN of signing cert leaf), "redirect_uri" (response URI).
+	ClientIDScheme             string               `yaml:"client_id_scheme" json:"client_id_scheme"`
 	SigningKeyID               string               `yaml:"signing_key_id" json:"signing_key_id"`
 	ResultRedirectURI          string               `yaml:"result_redirect_uri" json:"result_redirect_uri"`
 	RequestAudience            string               `yaml:"request_audience" json:"request_audience"`
