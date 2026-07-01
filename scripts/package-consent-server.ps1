@@ -39,7 +39,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 # Consent server release coordinates
-$CONSENT_SERVER_VERSION = "0.2.0"
+$CONSENT_SERVER_VERSION = "0.3.0"
 $CONSENT_SERVER_DOWNLOAD_URL = "https://github.com/wso2/openfgc/releases/download"
 $CONSENT_SERVER_PORT = 9090
 
