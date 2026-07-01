@@ -993,6 +993,8 @@ const translations = {
     'createWizard.owner.subtitle': 'Choose the user that owns this agent.',
     'createWizard.owner.userLabel': 'Owner',
     'createWizard.owner.userPlaceholder': 'Select a user',
+    'createWizard.owner.helperText':
+      'Defaults to you if left unchanged. You can assign ownership to another user instead.',
 
     // Client secret (creation)
     'clientSecret.saveTitle': 'Save your client secret',
