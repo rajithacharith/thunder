@@ -43,6 +43,8 @@ const (
 	NodeTypeTaskExecution NodeType = "TASK_EXECUTION"
 	// NodeTypePrompt represents a prompt node
 	NodeTypePrompt NodeType = "PROMPT"
+	// NodeTypeCall represents a CALL node that invokes another flow
+	NodeTypeCall NodeType = "CALL"
 )
 
 // NodeStatus defines the status of a node in the flow execution.
@@ -58,6 +60,8 @@ const (
 	// NodeStatusForward indicates that the engine should forward execution to NextNodeID.
 	// Used for scenarios like onFailure handlers where context should be preserved.
 	NodeStatusForward NodeStatus = "FORWARD"
+	// NodeStatusCall signals the engine to push a frame and transfer execution to the referenced flow.
+	NodeStatusCall NodeStatus = "CALL_FLOW"
 )
 
 // NodeResponseType defines the type of response from a node in the flow execution.

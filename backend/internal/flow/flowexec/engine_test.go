@@ -1541,8 +1541,10 @@ func (s *EngineTestSuite) TestNewFlowEngine() {
 	mockRegistry := executormock.NewExecutorRegistryInterfaceMock(t)
 	mockInterceptorRunner := NewInterceptorRunnerInterfaceMock(t)
 	mockObs := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockFlowProvider := NewFlowProviderMock(t)
+	mockGraphBuilder := NewGraphBuilderInterfaceMock(t)
 
-	engine := newFlowEngine(mockRegistry, mockInterceptorRunner, mockObs)
+	engine := newFlowEngine(mockRegistry, mockInterceptorRunner, mockObs, mockFlowProvider, mockGraphBuilder)
 	s.NotNil(engine)
 }
 
@@ -3423,4 +3425,514 @@ func (s *EngineTestSuite) TestRunPostRequestInterceptorsOnExit_PassesFlowStatusT
 
 	s.True(continueExec)
 	s.Nil(svcErr)
+}
+
+// --- handleCallResponse ---
+
+func (s *EngineTestSuite) TestHandleCallResponse_DepthExceeded() {
+	t := s.T()
+	mockCurrentNode := coremock.NewNodeInterfaceMock(t)
+	mockCurrentNode.On("GetID").Return("call-node-1")
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{Context: context.Background(), CurrentNode: mockCurrentNode}
+
+	// Fill the stack to maxCallDepth.
+	for i := 0; i < maxCallDepth; i++ {
+		ctx.pushFrame("call-node-1")
+	}
+
+	nodeResp := &common.NodeResponse{
+		Status:           common.NodeStatusCall,
+		CallTargetFlowID: "target-flow",
+	}
+	next, svcErr := fe.handleCallResponse(ctx, nodeResp, log.GetLogger())
+	s.Nil(next)
+	s.NotNil(svcErr)
+	s.Equal(tidcommon.InternalServerError.Code, svcErr.Code)
+}
+
+func (s *EngineTestSuite) TestHandleCallResponse_FlowProviderError() {
+	t := s.T()
+	mockFlowProvider := NewFlowProviderMock(t)
+	mockGraphBuilder := NewGraphBuilderInterfaceMock(t)
+
+	svcErr := &tidcommon.ServiceError{Code: "not-found"}
+	mockFlowProvider.On("GetFlow", mock.Anything, "target-flow").Return(nil, svcErr)
+
+	fe := &flowEngine{
+		logger:       log.GetLogger(),
+		flowProvider: mockFlowProvider,
+		graphBuilder: mockGraphBuilder,
+	}
+	ctx := &EngineContext{Context: context.Background()}
+
+	nodeResp := &common.NodeResponse{
+		Status:           common.NodeStatusCall,
+		CallTargetFlowID: "target-flow",
+	}
+	next, err := fe.handleCallResponse(ctx, nodeResp, log.GetLogger())
+	s.Nil(next)
+	s.NotNil(err)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
+}
+
+func (s *EngineTestSuite) TestHandleCallResponse_GraphBuilderError() {
+	t := s.T()
+	mockFlowProvider := NewFlowProviderMock(t)
+	mockGraphBuilder := NewGraphBuilderInterfaceMock(t)
+
+	flow := &providers.CompleteFlowDefinition{ID: "target-flow"}
+	mockFlowProvider.On("GetFlow", mock.Anything, "target-flow").Return(flow, nil)
+	graphErr := &tidcommon.ServiceError{Code: "graph-err"}
+	mockGraphBuilder.On("GetGraph", mock.Anything, flow).Return(nil, graphErr)
+
+	fe := &flowEngine{
+		logger:       log.GetLogger(),
+		flowProvider: mockFlowProvider,
+		graphBuilder: mockGraphBuilder,
+	}
+	ctx := &EngineContext{Context: context.Background()}
+
+	nodeResp := &common.NodeResponse{
+		Status:           common.NodeStatusCall,
+		CallTargetFlowID: "target-flow",
+	}
+	next, err := fe.handleCallResponse(ctx, nodeResp, log.GetLogger())
+	s.Nil(next)
+	s.NotNil(err)
+	s.Equal(tidcommon.InternalServerError.Code, err.Code)
+}
+
+func (s *EngineTestSuite) TestHandleCallResponse_NoStartNode() {
+	t := s.T()
+	mockCurrentNode := coremock.NewNodeInterfaceMock(t)
+	mockCurrentNode.On("GetID").Return("call-node-1")
+	mockFlowProvider := NewFlowProviderMock(t)
+	mockGraphBuilder := NewGraphBuilderInterfaceMock(t)
+	mockCalleeGraph := coremock.NewGraphInterfaceMock(t)
+
+	flow := &providers.CompleteFlowDefinition{ID: "target-flow", FlowType: providers.FlowTypeRegistration}
+	mockFlowProvider.On("GetFlow", mock.Anything, "target-flow").Return(flow, nil)
+	mockGraphBuilder.On("GetGraph", mock.Anything, flow).Return(mockCalleeGraph, nil)
+	mockCalleeGraph.On("GetType").Return(providers.FlowTypeRegistration)
+	mockCalleeGraph.On("GetStartNode").Return(nil, errors.New("no start node"))
+
+	fe := &flowEngine{
+		logger:       log.GetLogger(),
+		flowProvider: mockFlowProvider,
+		graphBuilder: mockGraphBuilder,
+	}
+	ctx := &EngineContext{Context: context.Background(), CurrentNode: mockCurrentNode}
+
+	nodeResp := &common.NodeResponse{
+		Status:           common.NodeStatusCall,
+		CallTargetFlowID: "target-flow",
+	}
+	next, err := fe.handleCallResponse(ctx, nodeResp, log.GetLogger())
+	s.Nil(next)
+	s.NotNil(err)
+}
+
+func (s *EngineTestSuite) TestHandleCallResponse_Success() {
+	t := s.T()
+	mockCurrentNode := coremock.NewNodeInterfaceMock(t)
+	mockCurrentNode.On("GetID").Return("call-node-1")
+	mockFlowProvider := NewFlowProviderMock(t)
+	mockGraphBuilder := NewGraphBuilderInterfaceMock(t)
+	mockCalleeGraph := coremock.NewGraphInterfaceMock(t)
+	mockStartNode := coremock.NewNodeInterfaceMock(t)
+
+	flow := &providers.CompleteFlowDefinition{ID: "target-flow", FlowType: providers.FlowTypeRegistration}
+	mockFlowProvider.On("GetFlow", mock.Anything, "target-flow").Return(flow, nil)
+	mockGraphBuilder.On("GetGraph", mock.Anything, flow).Return(mockCalleeGraph, nil)
+	mockCalleeGraph.On("GetType").Return(providers.FlowTypeRegistration)
+	mockCalleeGraph.On("GetStartNode").Return(mockStartNode, nil)
+
+	fe := &flowEngine{
+		logger:       log.GetLogger(),
+		flowProvider: mockFlowProvider,
+		graphBuilder: mockGraphBuilder,
+	}
+	ctx := &EngineContext{
+		Context:     context.Background(),
+		CurrentNode: mockCurrentNode,
+		FlowType:    providers.FlowTypeAuthentication,
+	}
+
+	nodeResp := &common.NodeResponse{
+		Status:           common.NodeStatusCall,
+		CallTargetFlowID: "target-flow",
+	}
+	next, err := fe.handleCallResponse(ctx, nodeResp, log.GetLogger())
+	s.Nil(err)
+	s.Equal(mockStartNode, next)
+	s.Equal(1, ctx.frameDepth())
+	s.Equal(mockCalleeGraph, ctx.Graph)
+	s.Equal(providers.FlowTypeRegistration, ctx.FlowType)
+	s.Equal(mockStartNode, ctx.CurrentNode)
+}
+
+// --- handleCalleeReturn ---
+
+func (s *EngineTestSuite) TestHandleCalleeReturn_Success() {
+	t := s.T()
+	mockCallerGraph := coremock.NewGraphInterfaceMock(t)
+	mockCallNode := coremock.NewCallNodeInterfaceMock(t)
+	mockNextNode := coremock.NewNodeInterfaceMock(t)
+
+	mockCallerGraph.On("GetNode", "call-node-1").Return(mockCallNode, true)
+	mockCallNode.On("GetOnSuccess").Return("next-node")
+	mockCallerGraph.On("GetNode", "next-node").Return(mockNextNode, true)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+
+	// Simulate caller context.
+	ctx := &EngineContext{
+		Context:  context.Background(),
+		Graph:    mockCallerGraph,
+		FlowType: providers.FlowTypeAuthentication,
+	}
+	ctx.pushFrame("call-node-1")
+
+	// Simulate being in callee now.
+	ctx.Graph = coremock.NewGraphInterfaceMock(t)
+	ctx.AdditionalData = map[string]string{}
+
+	next, svcErr := fe.handleCalleeReturn(ctx, log.GetLogger())
+	s.Nil(svcErr)
+	s.Equal(mockNextNode, next)
+	s.Equal(0, ctx.frameDepth())
+	s.Equal(mockCallerGraph, ctx.Graph)
+}
+
+func (s *EngineTestSuite) TestHandleCalleeReturn_CallerCallNodeNotFound() {
+	t := s.T()
+	mockCallerGraph := coremock.NewGraphInterfaceMock(t)
+	mockCallerGraph.On("GetNode", "call-node-1").Return(nil, false)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{Context: context.Background(), Graph: mockCallerGraph}
+	ctx.pushFrame("call-node-1")
+	ctx.Graph = coremock.NewGraphInterfaceMock(t)
+
+	next, svcErr := fe.handleCalleeReturn(ctx, log.GetLogger())
+	s.Nil(next)
+	s.NotNil(svcErr)
+}
+
+func (s *EngineTestSuite) TestHandleCalleeReturn_CallerResumeNodeNotCallNode() {
+	t := s.T()
+	mockCallerGraph := coremock.NewGraphInterfaceMock(t)
+	mockNonCallNode := coremock.NewNodeInterfaceMock(t)
+	mockCallerGraph.On("GetNode", "call-node-1").Return(mockNonCallNode, true)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{Context: context.Background(), Graph: mockCallerGraph}
+	ctx.pushFrame("call-node-1")
+	ctx.Graph = coremock.NewGraphInterfaceMock(t)
+
+	next, svcErr := fe.handleCalleeReturn(ctx, log.GetLogger())
+	s.Nil(next)
+	s.NotNil(svcErr)
+}
+
+func (s *EngineTestSuite) TestHandleCalleeReturn_OnSuccessNodeNotFound() {
+	t := s.T()
+	mockCallerGraph := coremock.NewGraphInterfaceMock(t)
+	mockCallNode := coremock.NewCallNodeInterfaceMock(t)
+
+	mockCallerGraph.On("GetNode", "call-node-1").Return(mockCallNode, true)
+	mockCallNode.On("GetOnSuccess").Return("next-node")
+	mockCallerGraph.On("GetNode", "next-node").Return(nil, false)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{Context: context.Background(), Graph: mockCallerGraph}
+	ctx.pushFrame("call-node-1")
+	ctx.Graph = coremock.NewGraphInterfaceMock(t)
+
+	next, svcErr := fe.handleCalleeReturn(ctx, log.GetLogger())
+	s.Nil(next)
+	s.NotNil(svcErr)
+}
+
+func (s *EngineTestSuite) TestHandleCalleeReturn_AdditionalDataMerge() {
+	t := s.T()
+	mockCallerGraph := coremock.NewGraphInterfaceMock(t)
+	mockCallNode := coremock.NewCallNodeInterfaceMock(t)
+	mockNextNode := coremock.NewNodeInterfaceMock(t)
+
+	mockCallerGraph.On("GetNode", "call-node-1").Return(mockCallNode, true)
+	mockCallNode.On("GetOnSuccess").Return("next-node")
+	mockCallerGraph.On("GetNode", "next-node").Return(mockNextNode, true)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+
+	// Caller had additionalData = {"caller-key": "caller-val", "shared": "caller"}.
+	ctx := &EngineContext{
+		Context:        context.Background(),
+		Graph:          mockCallerGraph,
+		AdditionalData: map[string]string{"caller-key": "caller-val", "shared": "caller"},
+	}
+	ctx.pushFrame("call-node-1")
+
+	// Callee mutates the shared AdditionalData map in-place (adds a key, overrides "shared").
+	ctx.Graph = coremock.NewGraphInterfaceMock(t)
+	ctx.AdditionalData["callee-key"] = "callee-val"
+	ctx.AdditionalData["shared"] = "callee"
+
+	_, svcErr := fe.handleCalleeReturn(ctx, log.GetLogger())
+	s.Nil(svcErr)
+
+	// Callee overrides "shared"; caller-key survives; callee-key is added.
+	s.Equal("caller-val", ctx.AdditionalData["caller-key"])
+	s.Equal("callee-val", ctx.AdditionalData["callee-key"])
+	s.Equal("callee", ctx.AdditionalData["shared"])
+}
+
+// --- handleCalleeFailure ---
+
+func (s *EngineTestSuite) TestHandleCalleeFailure_NoOnFailure() {
+	t := s.T()
+	mockCallerGraph := coremock.NewGraphInterfaceMock(t)
+	mockCallNode := coremock.NewCallNodeInterfaceMock(t)
+
+	mockCallerGraph.On("GetNode", "call-node-1").Return(mockCallNode, true)
+	mockCallNode.On("GetOnFailure").Return("")
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	flowStep := &FlowStep{}
+
+	callerErr := &tidcommon.ServiceError{Code: "callee-failed"}
+	nodeResp := &common.NodeResponse{
+		Status: common.NodeStatusFailure,
+		Error:  callerErr,
+	}
+
+	ctx := &EngineContext{Context: context.Background(), Graph: mockCallerGraph}
+	ctx.pushFrame("call-node-1")
+	ctx.Graph = coremock.NewGraphInterfaceMock(t)
+
+	next, continueExec, svcErr := fe.handleCalleeFailure(ctx, nodeResp, flowStep, log.GetLogger())
+	s.Nil(next)
+	s.False(continueExec)
+	s.Nil(svcErr)
+	s.Equal(providers.FlowStatusError, flowStep.Status)
+	s.Equal(callerErr, flowStep.Error)
+}
+
+func (s *EngineTestSuite) TestHandleCalleeFailure_WithOnFailure() {
+	t := s.T()
+	mockCallerGraph := coremock.NewGraphInterfaceMock(t)
+	mockCallNode := coremock.NewCallNodeInterfaceMock(t)
+	mockFailureNode := coremock.NewNodeInterfaceMock(t)
+
+	mockCallerGraph.On("GetNode", "call-node-1").Return(mockCallNode, true)
+	mockCallNode.On("GetOnFailure").Return("failure-node")
+	mockCallerGraph.On("GetNode", "failure-node").Return(mockFailureNode, true)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	flowStep := &FlowStep{}
+
+	callerErr := &tidcommon.ServiceError{Code: "callee-failed"}
+	nodeResp := &common.NodeResponse{
+		Status: common.NodeStatusFailure,
+		Error:  callerErr,
+	}
+
+	ctx := &EngineContext{Context: context.Background(), Graph: mockCallerGraph}
+	ctx.pushFrame("call-node-1")
+	ctx.Graph = coremock.NewGraphInterfaceMock(t)
+
+	next, continueExec, svcErr := fe.handleCalleeFailure(ctx, nodeResp, flowStep, log.GetLogger())
+	s.Nil(svcErr)
+	s.True(continueExec)
+	s.Equal(mockFailureNode, next)
+	s.NotNil(ctx.CurrentNodeResponse)
+	s.Equal(common.NodeStatusForward, ctx.CurrentNodeResponse.Status)
+	s.Equal(callerErr, ctx.CurrentNodeResponse.Error)
+}
+
+func (s *EngineTestSuite) TestHandleCalleeFailure_CallNodeNotFound() {
+	t := s.T()
+	mockCallerGraph := coremock.NewGraphInterfaceMock(t)
+	mockCallerGraph.On("GetNode", "call-node-1").Return(nil, false)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	flowStep := &FlowStep{}
+	nodeResp := &common.NodeResponse{Status: common.NodeStatusFailure}
+
+	ctx := &EngineContext{Context: context.Background(), Graph: mockCallerGraph}
+	ctx.pushFrame("call-node-1")
+	ctx.Graph = coremock.NewGraphInterfaceMock(t)
+
+	next, continueExec, svcErr := fe.handleCalleeFailure(ctx, nodeResp, flowStep, log.GetLogger())
+	s.Nil(next)
+	s.False(continueExec)
+	s.NotNil(svcErr)
+}
+
+func (s *EngineTestSuite) TestHandleCalleeReturn_FrameUnderflow() {
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{Context: context.Background()}
+
+	next, svcErr := fe.handleCalleeReturn(ctx, log.GetLogger())
+	s.Nil(next)
+	s.NotNil(svcErr)
+}
+
+func (s *EngineTestSuite) TestHandleCalleeReturn_EmptyOnSuccess() {
+	t := s.T()
+	mockCallerGraph := coremock.NewGraphInterfaceMock(t)
+	mockCallNode := coremock.NewCallNodeInterfaceMock(t)
+
+	mockCallerGraph.On("GetNode", "call-node-1").Return(mockCallNode, true)
+	mockCallNode.On("GetOnSuccess").Return("")
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{Context: context.Background(), Graph: mockCallerGraph}
+	ctx.pushFrame("call-node-1")
+	ctx.Graph = coremock.NewGraphInterfaceMock(t)
+	ctx.AdditionalData = map[string]string{}
+
+	next, svcErr := fe.handleCalleeReturn(ctx, log.GetLogger())
+	s.Nil(next)
+	s.NotNil(svcErr)
+}
+
+func (s *EngineTestSuite) TestHandleCalleeFailure_FrameUnderflow() {
+	fe := &flowEngine{logger: log.GetLogger()}
+	flowStep := &FlowStep{}
+	nodeResp := &common.NodeResponse{Status: common.NodeStatusFailure}
+	ctx := &EngineContext{Context: context.Background()}
+
+	next, continueExec, svcErr := fe.handleCalleeFailure(ctx, nodeResp, flowStep, log.GetLogger())
+	s.Nil(next)
+	s.False(continueExec)
+	s.NotNil(svcErr)
+}
+
+func (s *EngineTestSuite) TestHandleCalleeFailure_CallerResumeNodeNotCallNode() {
+	t := s.T()
+	mockCallerGraph := coremock.NewGraphInterfaceMock(t)
+	mockNonCallNode := coremock.NewNodeInterfaceMock(t)
+	mockCallerGraph.On("GetNode", "call-node-1").Return(mockNonCallNode, true)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	flowStep := &FlowStep{}
+	nodeResp := &common.NodeResponse{Status: common.NodeStatusFailure}
+
+	ctx := &EngineContext{Context: context.Background(), Graph: mockCallerGraph}
+	ctx.pushFrame("call-node-1")
+	ctx.Graph = coremock.NewGraphInterfaceMock(t)
+
+	next, continueExec, svcErr := fe.handleCalleeFailure(ctx, nodeResp, flowStep, log.GetLogger())
+	s.Nil(next)
+	s.False(continueExec)
+	s.NotNil(svcErr)
+}
+
+func (s *EngineTestSuite) TestHandleCalleeFailure_OnFailureNodeNotFound() {
+	t := s.T()
+	mockCallerGraph := coremock.NewGraphInterfaceMock(t)
+	mockCallNode := coremock.NewCallNodeInterfaceMock(t)
+
+	mockCallerGraph.On("GetNode", "call-node-1").Return(mockCallNode, true)
+	mockCallNode.On("GetOnFailure").Return("missing-node")
+	mockCallerGraph.On("GetNode", "missing-node").Return(nil, false)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	flowStep := &FlowStep{}
+	nodeResp := &common.NodeResponse{Status: common.NodeStatusFailure}
+
+	ctx := &EngineContext{Context: context.Background(), Graph: mockCallerGraph}
+	ctx.pushFrame("call-node-1")
+	ctx.Graph = coremock.NewGraphInterfaceMock(t)
+
+	next, continueExec, svcErr := fe.handleCalleeFailure(ctx, nodeResp, flowStep, log.GetLogger())
+	s.Nil(next)
+	s.False(continueExec)
+	s.NotNil(svcErr)
+}
+
+// --- processNodeResponse with frame stack ---
+
+func (s *EngineTestSuite) TestProcessNodeResponse_CallStatus_DepthExceeded() {
+	t := s.T()
+	mockCurrentNode := coremock.NewNodeInterfaceMock(t)
+	mockCurrentNode.On("GetID").Return("call-node-1")
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{Context: context.Background(), CurrentNode: mockCurrentNode}
+
+	for i := 0; i < maxCallDepth; i++ {
+		ctx.pushFrame("call-node-1")
+	}
+
+	nodeResp := &common.NodeResponse{
+		Status:           common.NodeStatusCall,
+		CallTargetFlowID: "target-flow",
+	}
+	flowStep := &FlowStep{}
+	next, continueExec, svcErr := fe.processNodeResponse(ctx, nodeResp, flowStep, log.GetLogger())
+	s.Nil(next)
+	s.False(continueExec)
+	s.NotNil(svcErr)
+}
+
+func (s *EngineTestSuite) TestProcessNodeResponse_FailureStatus_WithFrameStack() {
+	t := s.T()
+	mockCallerGraph := coremock.NewGraphInterfaceMock(t)
+	mockCallNode := coremock.NewCallNodeInterfaceMock(t)
+	mockFailureNode := coremock.NewNodeInterfaceMock(t)
+
+	mockCallerGraph.On("GetNode", "call-node-1").Return(mockCallNode, true)
+	mockCallNode.On("GetOnFailure").Return("failure-node")
+	mockCallerGraph.On("GetNode", "failure-node").Return(mockFailureNode, true)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{Context: context.Background(), Graph: mockCallerGraph}
+	ctx.pushFrame("call-node-1")
+	ctx.Graph = coremock.NewGraphInterfaceMock(t)
+
+	callerErr := &tidcommon.ServiceError{Code: "callee-failed"}
+	nodeResp := &common.NodeResponse{
+		Status: common.NodeStatusFailure,
+		Error:  callerErr,
+	}
+	flowStep := &FlowStep{}
+	next, continueExec, svcErr := fe.processNodeResponse(ctx, nodeResp, flowStep, log.GetLogger())
+	s.Nil(svcErr)
+	s.True(continueExec)
+	s.Equal(mockFailureNode, next)
+}
+
+func (s *EngineTestSuite) TestHandleCompletedResponse_EndNodeWithFrameStack() {
+	t := s.T()
+	mockCallerGraph := coremock.NewGraphInterfaceMock(t)
+	mockCallNode := coremock.NewCallNodeInterfaceMock(t)
+	mockNextNode := coremock.NewNodeInterfaceMock(t)
+	mockEndNode := coremock.NewNodeInterfaceMock(t)
+	mockEndNode.On("GetType").Return(common.NodeTypeEnd)
+
+	mockCallerGraph.On("GetNode", "call-node-1").Return(mockCallNode, true)
+	mockCallNode.On("GetOnSuccess").Return("next-node")
+	mockCallerGraph.On("GetNode", "next-node").Return(mockNextNode, true)
+
+	fe := &flowEngine{logger: log.GetLogger()}
+	ctx := &EngineContext{
+		Context:     context.Background(),
+		Graph:       mockCallerGraph,
+		CurrentNode: mockEndNode,
+	}
+	ctx.pushFrame("call-node-1")
+	ctx.Graph = coremock.NewGraphInterfaceMock(t)
+	ctx.CurrentNode = mockEndNode
+	ctx.AdditionalData = map[string]string{}
+
+	nodeResp := &common.NodeResponse{Status: common.NodeStatusComplete}
+	next, svcErr := fe.handleCompletedResponse(ctx, nodeResp, log.GetLogger())
+	s.Nil(svcErr)
+	s.Equal(mockNextNode, next)
+	s.Equal(0, ctx.frameDepth())
 }

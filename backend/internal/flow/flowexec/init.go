@@ -61,7 +61,8 @@ func Initialize(
 		flowStore = newFlowStore(dbProvider, cfg.DeploymentID)
 	}
 	interceptorRunner := newInterceptorRunner(interceptorRegistry)
-	flowEngine := newFlowEngine(executorRegistry, interceptorRunner, observabilitySvc)
+	flowEngine := newFlowEngine(executorRegistry, interceptorRunner, observabilitySvc,
+		flowProvider, graphBuilder)
 	flowExecService := newFlowExecService(flowProvider, flowStore, flowEngine,
 		actorProvider, observabilitySvc, transactioner, cryptoSvc, graphBuilder, cfg)
 

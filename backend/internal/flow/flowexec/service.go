@@ -30,6 +30,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/actorprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	flowconfig "github.com/thunder-id/thunderid/internal/flow/config"
+	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/flow/graphbuilder"
 	sysContext "github.com/thunder-id/thunderid/internal/system/context"
 	"github.com/thunder-id/thunderid/internal/system/cryptolib"
@@ -61,6 +62,7 @@ type flowExecService struct {
 	cfg              flowconfig.Config
 }
 
+// newFlowExecService creates a new instance of flowExecService with the provided dependencies.
 func newFlowExecService(flowProvider providers.FlowProvider,
 	flowStore flowStoreInterface, flowEngine flowEngineInterface,
 	actorProvider providers.ActorProvider,
@@ -332,7 +334,19 @@ func (s *flowExecService) loadContextFromStore(ctx context.Context, executionID 
 		return nil, &tidcommon.InternalServerError
 	}
 
-	engineContext, err := dbModel.ToEngineContext(ctx, graph)
+	graphResolver := graphResolverFunc(func(rctx context.Context, flowID string) (core.GraphInterface, error) {
+		f, svcErr := s.flowProvider.GetFlow(rctx, flowID)
+		if svcErr != nil {
+			return nil, fmt.Errorf("failed to get flow %s: %s", flowID, svcErr.Error.DefaultValue)
+		}
+		g, svcErr := s.graphBuilder.GetGraph(rctx, f)
+		if svcErr != nil {
+			return nil, fmt.Errorf("failed to build graph for flow %s: %s", flowID, svcErr.Error.DefaultValue)
+		}
+		return g, nil
+	})
+
+	engineContext, err := dbModel.ToEngineContext(ctx, graph, graphResolver)
 	if err != nil {
 		logger.Error(ctx, "Failed to convert flow context from database format",
 			log.String(log.LoggerKeyExecutionID, executionID), log.Error(err))
@@ -450,7 +464,8 @@ func (s *flowExecService) storeContext(ctx context.Context, engineCtx *EngineCon
 // encryptEngineContext serializes an EngineContext and encrypts the context field, returning
 // an EncryptedEngineContext ready to be handed to the store.
 func (s *flowExecService) encryptEngineContext(ctx context.Context, engineCtx *EngineContext) (*FlowContextDB, error) {
-	serialized, err := FromEngineContext(*engineCtx)
+	serialized := &FlowContextDB{}
+	err := serialized.FromEngineContext(*engineCtx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize engine context: %w", err)
 	}
