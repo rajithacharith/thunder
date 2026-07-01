@@ -47,7 +47,7 @@ type GrantHandlerProviderTestSuite struct {
 	mockTokenValidator   *tokenservicemock.TokenValidatorInterfaceMock
 	mockAttrCacheService *attributecachemock.AttributeCacheServiceInterfaceMock
 	mockOUService        *oumock.OrganizationUnitServiceInterfaceMock
-	mockRBACAuthzService *rbacauthzmock.AuthorizationServiceInterfaceMock
+	mockRBACAuthzService *rbacauthzmock.AuthorizationProviderMock
 	mockEntityProvider   *actorprovidermock.ActorProviderMock
 	mockResourceService  *resourcemock.ResourceServiceInterfaceMock
 	mockCIBAService      *cibamock.CIBAServiceInterfaceMock
@@ -64,7 +64,7 @@ func (suite *GrantHandlerProviderTestSuite) SetupTest() {
 	suite.mockTokenValidator = tokenservicemock.NewTokenValidatorInterfaceMock(suite.T())
 	suite.mockAttrCacheService = attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
-	suite.mockRBACAuthzService = rbacauthzmock.NewAuthorizationServiceInterfaceMock(suite.T())
+	suite.mockRBACAuthzService = rbacauthzmock.NewAuthorizationProviderMock(suite.T())
 	suite.mockEntityProvider = actorprovidermock.NewActorProviderMock(suite.T())
 	suite.mockResourceService = resourcemock.NewResourceServiceInterfaceMock(suite.T())
 	suite.mockCIBAService = cibamock.NewCIBAServiceInterfaceMock(suite.T())

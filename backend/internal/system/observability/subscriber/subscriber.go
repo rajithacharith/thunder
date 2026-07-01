@@ -21,6 +21,7 @@ package subscriber
 
 import (
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // SubscriberInterface is the interface that all event subscribers must implement.
@@ -35,7 +36,7 @@ type SubscriberInterface interface {
 
 	// OnEvent is called when a new event is published.
 	// Subscribers are responsible for filtering events they don't want to process.
-	OnEvent(evt *event.Event) error
+	OnEvent(evt *providers.Event) error
 
 	// Close is called during shutdown to allow cleanup.
 	Close() error

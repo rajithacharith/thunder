@@ -21,16 +21,16 @@ package authzen
 import (
 	"net/http"
 
-	"github.com/thunder-id/thunderid/internal/authz"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // Initialize initializes the AuthZEN API adapter and registers its routes.
 func Initialize(
 	mux *http.ServeMux,
-	authzService authz.AuthorizationServiceInterface,
+	authzService providers.AuthorizationProvider,
 	entityProvider entityprovider.EntityProviderInterface,
 	resourceService resource.ResourceServiceInterface,
 ) AuthZENServiceInterface {

@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 func TestNewJSONFormatter(t *testing.T) {
@@ -57,31 +58,31 @@ func TestJSONFormatter_Format(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		event   *event.Event
+		event   *providers.Event
 		wantErr bool
 	}{
 		{
 			name: "simple event",
-			event: &event.Event{
+			event: &providers.Event{
 				TraceID:   "trace-123",
 				EventID:   "event-456",
 				Type:      string(event.EventTypeTokenIssuanceStarted),
 				Component: "AuthHandler",
 				Timestamp: timestamp,
-				Status:    event.StatusInProgress,
+				Status:    providers.StatusInProgress,
 				Data:      make(map[string]interface{}),
 			},
 			wantErr: false,
 		},
 		{
 			name: "event with data",
-			event: &event.Event{
+			event: &providers.Event{
 				TraceID:   "trace-123",
 				EventID:   "event-456",
 				Type:      string(event.EventTypeFlowStarted),
 				Component: "TokenHandler",
 				Timestamp: timestamp,
-				Status:    event.StatusSuccess,
+				Status:    providers.StatusSuccess,
 				Data: map[string]interface{}{
 					"user_id":     "user-789",
 					"client_id":   "client-abc",
@@ -93,26 +94,26 @@ func TestJSONFormatter_Format(t *testing.T) {
 		},
 		{
 			name: "event with nil data",
-			event: &event.Event{
+			event: &providers.Event{
 				TraceID:   "trace-123",
 				EventID:   "event-456",
 				Type:      "test.event",
 				Component: "TestComponent",
 				Timestamp: timestamp,
-				Status:    event.StatusSuccess,
+				Status:    providers.StatusSuccess,
 				Data:      nil,
 			},
 			wantErr: false,
 		},
 		{
 			name: "event with nested data",
-			event: &event.Event{
+			event: &providers.Event{
 				TraceID:   "trace-123",
 				EventID:   "event-456",
 				Type:      "test.event",
 				Component: "TestComponent",
 				Timestamp: timestamp,
-				Status:    event.StatusSuccess,
+				Status:    providers.StatusSuccess,
 				Data: map[string]interface{}{
 					"user": map[string]interface{}{
 						"id":    "user-123",
@@ -174,14 +175,14 @@ func TestJSONFormatter_FormatMultipleEvents(t *testing.T) {
 
 	timestamp := time.Date(2025, 11, 3, 10, 0, 0, 0, time.UTC)
 
-	events := []*event.Event{
+	events := []*providers.Event{
 		{
 			TraceID:   "trace-1",
 			EventID:   "event-1",
 			Type:      string(event.EventTypeTokenIssuanceStarted),
 			Component: "test",
 			Timestamp: timestamp,
-			Status:    event.StatusInProgress,
+			Status:    providers.StatusInProgress,
 			Data:      nil, // nil data map
 		},
 		{
@@ -190,7 +191,7 @@ func TestJSONFormatter_FormatMultipleEvents(t *testing.T) {
 			Type:      string(event.EventTypeTokenIssued),
 			Component: "AuthHandler",
 			Timestamp: timestamp.Add(time.Second),
-			Status:    event.StatusSuccess,
+			Status:    providers.StatusSuccess,
 			Data:      map[string]interface{}{"user_id": "user-123"},
 		},
 		{
@@ -199,7 +200,7 @@ func TestJSONFormatter_FormatMultipleEvents(t *testing.T) {
 			Type:      string(event.EventTypeFlowStarted),
 			Component: "TokenHandler",
 			Timestamp: timestamp.Add(2 * time.Second),
-			Status:    event.StatusSuccess,
+			Status:    providers.StatusSuccess,
 			Data:      map[string]interface{}{"token_type": "Bearer"},
 		},
 	}
@@ -222,13 +223,13 @@ func TestJSONFormatter_FormatPreservesDataTypes(t *testing.T) {
 
 	timestamp := time.Date(2025, 11, 3, 10, 0, 0, 0, time.UTC)
 
-	evt := &event.Event{
+	evt := &providers.Event{
 		TraceID:   "trace-123",
 		EventID:   "event-456",
 		Type:      "test.event",
 		Component: "TestComponent",
 		Timestamp: timestamp,
-		Status:    event.StatusSuccess,
+		Status:    providers.StatusSuccess,
 		Data: map[string]interface{}{
 			"string_value": "test",
 			"int_value":    42,
@@ -279,7 +280,7 @@ func TestJSONFormatter_FormatPreservesDataTypes(t *testing.T) {
 func TestJSONFormatter_FormatEmptyEvent(t *testing.T) {
 	f := newJSONFormatter()
 
-	evt := &event.Event{}
+	evt := &providers.Event{}
 	data, err := f.Format(evt)
 
 	if err != nil {
@@ -301,13 +302,13 @@ func BenchmarkJSONFormatter_Format(b *testing.B) {
 	f := newJSONFormatter()
 
 	timestamp := time.Now()
-	evt := &event.Event{
+	evt := &providers.Event{
 		TraceID:   "trace-123",
 		EventID:   "event-456",
 		Type:      string(event.EventTypeTokenIssuanceStarted),
 		Component: "AuthHandler",
 		Timestamp: timestamp,
-		Status:    event.StatusSuccess,
+		Status:    providers.StatusSuccess,
 		Data: map[string]interface{}{
 			"user_id":   "user-789",
 			"client_id": "client-abc",
@@ -332,13 +333,13 @@ func BenchmarkJSONFormatter_FormatLargeData(b *testing.B) {
 		largeData[fmt.Sprintf("key_%d", i)] = fmt.Sprintf("value_%d", i)
 	}
 
-	evt := &event.Event{
+	evt := &providers.Event{
 		TraceID:   "trace-123",
 		EventID:   "event-456",
 		Type:      string(event.EventTypeTokenIssuanceStarted),
 		Component: "AuthHandler",
 		Timestamp: timestamp,
-		Status:    event.StatusSuccess,
+		Status:    providers.StatusSuccess,
 		Data:      largeData,
 	}
 

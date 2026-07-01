@@ -22,7 +22,7 @@ package formatter
 import (
 	"encoding/json"
 
-	"github.com/thunder-id/thunderid/internal/system/observability/event"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // JSONFormatter formats events as JSON.
@@ -36,7 +36,7 @@ func newJSONFormatter() *JSONFormatter {
 }
 
 // Format formats an event as JSON.
-func (jf *JSONFormatter) Format(evt *event.Event) ([]byte, error) {
+func (jf *JSONFormatter) Format(evt *providers.Event) ([]byte, error) {
 	return json.Marshal(evt)
 }
 

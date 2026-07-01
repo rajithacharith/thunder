@@ -24,6 +24,7 @@ package providers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"slices"
 	"time"
@@ -1003,4 +1004,135 @@ func getDuration(startTime int64, endTime int64) int64 {
 		return 0
 	}
 	return (endTime - startTime) * 1000
+}
+
+// Subject identifies the principal for an access evaluation.
+type Subject struct {
+	Type       string                 `json:"type,omitempty"`
+	ID         string                 `json:"id"`
+	GroupIDs   []string               `json:"groupIds,omitempty"`
+	Properties map[string]interface{} `json:"properties,omitempty"`
+}
+
+// AccessEvaluationResourceServer identifies the resource server for an access evaluation.
+type AccessEvaluationResourceServer struct {
+	Handle     string                 `json:"handle"`
+	Properties map[string]interface{} `json:"properties,omitempty"`
+}
+
+// Permission identifies the permission string being evaluated.
+type Permission struct {
+	Name       string                 `json:"name"`
+	Properties map[string]interface{} `json:"properties,omitempty"`
+}
+
+// AccessEvaluationRequest represents a single fine-grained access evaluation request.
+type AccessEvaluationRequest struct {
+	Subject        Subject                        `json:"subject"`
+	ResourceServer AccessEvaluationResourceServer `json:"resourceServer"`
+	Permission     Permission                     `json:"permission"`
+	Context        map[string]interface{}         `json:"context,omitempty"`
+}
+
+// AccessEvaluationResponse represents a single fine-grained access evaluation response.
+type AccessEvaluationResponse struct {
+	Decision bool                   `json:"decision"`
+	Context  map[string]interface{} `json:"context,omitempty"`
+}
+
+// AccessEvaluationsRequest represents a batched fine-grained access evaluation request.
+type AccessEvaluationsRequest struct {
+	Evaluations []AccessEvaluationRequest `json:"evaluations"`
+}
+
+// AccessEvaluationsResponse represents a batched fine-grained access evaluation response.
+type AccessEvaluationsResponse struct {
+	Evaluations []AccessEvaluationResponse `json:"evaluations"`
+}
+
+// Event represents a generic analytics or audit event in the system.
+// This is a minimal, generic structure that can represent any type of event.
+// Event-specific data should be stored in the Data map.
+type Event struct {
+	// TraceID is the correlation ID for tracking related events across the system.
+	TraceID string `json:"trace_id"`
+
+	// EventID is the unique identifier for this specific event.
+	EventID string `json:"event_id"`
+
+	// Type indicates the type/name of the event (e.g., "user.created", "order.completed").
+	Type string `json:"type"`
+
+	// Timestamp is when the event occurred.
+	Timestamp time.Time `json:"timestamp"`
+
+	// Component is the source component/service that generated the event.
+	Component string `json:"component"`
+
+	// Status indicates the outcome of the event (e.g., "success", "failure", "in_progress").
+	Status string `json:"status"`
+
+	// Data contains event-specific structured data.
+	// Use this to store any additional information relevant to the event type.
+	// Examples:
+	//   - user_id, client_id, session_id
+	//   - error details, duration, IP address
+	//   - business-specific fields
+	Data map[string]interface{} `json:"data,omitempty"`
+}
+
+// WithStatus sets the status and returns the event for chaining.
+func (e *Event) WithStatus(status string) *Event {
+	e.Status = status
+	return e
+}
+
+// WithData sets a data field and returns the event for chaining.
+// Use this to add event-specific information like user_id, client_id, error details, etc.
+func (e *Event) WithData(key string, value interface{}) *Event {
+	if e.Data == nil {
+		e.Data = make(map[string]interface{})
+	}
+	e.Data[key] = value
+	return e
+}
+
+// WithDataMap sets multiple data fields at once and returns the event for chaining.
+func (e *Event) WithDataMap(data map[string]interface{}) *Event {
+	if e.Data == nil {
+		e.Data = make(map[string]interface{})
+	}
+	for k, v := range data {
+		e.Data[k] = v
+	}
+	return e
+}
+
+// Validate validates the event and returns an error if invalid.
+func (e *Event) Validate() error {
+	if e == nil {
+		return fmt.Errorf("event is nil")
+	}
+
+	if e.TraceID == "" {
+		return fmt.Errorf("trace_id is required")
+	}
+
+	if e.EventID == "" {
+		return fmt.Errorf("event_id is required")
+	}
+
+	if e.Type == "" {
+		return fmt.Errorf("type is required")
+	}
+
+	if e.Component == "" {
+		return fmt.Errorf("component is required")
+	}
+
+	if e.Timestamp.IsZero() {
+		return fmt.Errorf("timestamp is required")
+	}
+
+	return nil
 }

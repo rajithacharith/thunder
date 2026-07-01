@@ -26,6 +26,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
 	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // setupTestService creates a test service with controlled configuration.
@@ -126,7 +127,7 @@ func TestService_PublishEvent(t *testing.T) {
 	// This test just verifies PublishEvent doesn't panic
 
 	evt := event.NewEvent("trace-123", string(event.EventTypeTokenIssued), "test")
-	evt.WithStatus(event.StatusSuccess)
+	evt.WithStatus(providers.StatusSuccess)
 
 	// Should not panic
 	svc.PublishEvent(context.Background(), evt)

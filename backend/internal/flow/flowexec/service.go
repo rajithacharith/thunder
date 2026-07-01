@@ -35,7 +35,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/cryptolib"
 	kmprovider "github.com/thunder-id/thunderid/internal/system/kmprovider/common"
 	"github.com/thunder-id/thunderid/internal/system/log"
-	"github.com/thunder-id/thunderid/internal/system/observability"
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
@@ -56,7 +55,7 @@ type flowExecService struct {
 	graphBuilder     graphbuilder.GraphBuilderInterface
 	flowStore        flowStoreInterface
 	actorProvider    providers.ActorProvider
-	observabilitySvc observability.ObservabilityServiceInterface
+	observabilitySvc providers.ObservabilityProvider
 	transactioner    transaction.Transactioner
 	cryptoSvc        kmprovider.RuntimeCryptoProvider
 	cfg              flowconfig.Config
@@ -65,7 +64,7 @@ type flowExecService struct {
 func newFlowExecService(flowProvider providers.FlowProvider,
 	flowStore flowStoreInterface, flowEngine flowEngineInterface,
 	actorProvider providers.ActorProvider,
-	observabilitySvc observability.ObservabilityServiceInterface,
+	observabilitySvc providers.ObservabilityProvider,
 	transactioner transaction.Transactioner,
 	cryptoSvc kmprovider.RuntimeCryptoProvider,
 	graphBuilder graphbuilder.GraphBuilderInterface,
@@ -110,7 +109,7 @@ func (s *flowExecService) Execute(ctx context.Context,
 					string(event.EventTypeFlowFailed),
 					event.ComponentFlowEngine,
 				).
-					WithStatus(event.StatusFailure).
+					WithStatus(providers.StatusFailure).
 					WithData(event.DataKey.EntityID, appID).
 					WithData(event.DataKey.FlowType, flowType).
 					WithData(event.DataKey.Error, processServiceErrorForEventPublish(loadErr))

@@ -32,7 +32,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/thunder-id/thunderid/internal/authz"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/dpop"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
@@ -56,7 +55,7 @@ type ClientCredentialsGrantHandlerTestSuite struct {
 	mockJWTService      *jwtmock.JWTServiceInterfaceMock
 	mockTokenBuilder    *tokenservicemock.TokenBuilderInterfaceMock
 	mockOUService       *oumock.OrganizationUnitServiceInterfaceMock
-	mockAuthzService    *authzmock.AuthorizationServiceInterfaceMock
+	mockAuthzService    *authzmock.AuthorizationProviderMock
 	mockEntityProvider  *actorprovidermock.ActorProviderMock
 	mockResourceService *resourcemock.ResourceServiceInterfaceMock
 	handler             *clientCredentialsGrantHandler
@@ -81,7 +80,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) SetupTest() {
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
-	suite.mockAuthzService = authzmock.NewAuthorizationServiceInterfaceMock(suite.T())
+	suite.mockAuthzService = authzmock.NewAuthorizationProviderMock(suite.T())
 	suite.mockEntityProvider = actorprovidermock.NewActorProviderMock(suite.T())
 	suite.mockResourceService = resourcemock.NewResourceServiceInterfaceMock(suite.T())
 	suite.mockResourceService.On("GetResourceServerByIdentifier", mock.Anything, mock.Anything).
@@ -116,7 +115,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) SetupTest() {
 }
 
 func mockEvaluateAccessBatch(
-	authzService *authzmock.AuthorizationServiceInterfaceMock,
+	authzService *authzmock.AuthorizationProviderMock,
 	entityID string,
 	requestedScopes []string,
 	authorizedScopes []string,
@@ -126,15 +125,15 @@ func mockEvaluateAccessBatch(
 		authorizedScopeSet[scope] = true
 	}
 
-	evaluations := make([]authz.AccessEvaluationResponse, 0, len(requestedScopes))
+	evaluations := make([]providers.AccessEvaluationResponse, 0, len(requestedScopes))
 	for _, scope := range requestedScopes {
-		evaluations = append(evaluations, authz.AccessEvaluationResponse{
+		evaluations = append(evaluations, providers.AccessEvaluationResponse{
 			Decision: authorizedScopeSet[scope],
 		})
 	}
 
 	authzService.On("EvaluateAccessBatch", mock.Anything,
-		mock.MatchedBy(func(req authz.AccessEvaluationsRequest) bool {
+		mock.MatchedBy(func(req providers.AccessEvaluationsRequest) bool {
 			if len(req.Evaluations) != len(requestedScopes) {
 				return false
 			}
@@ -149,7 +148,7 @@ func mockEvaluateAccessBatch(
 			}
 			return true
 		})).
-		Return(&authz.AccessEvaluationsResponse{Evaluations: evaluations}, nil)
+		Return(&providers.AccessEvaluationsResponse{Evaluations: evaluations}, nil)
 }
 
 func (suite *ClientCredentialsGrantHandlerTestSuite) TestNewClientCredentialsGrantHandler() {
@@ -556,7 +555,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_AuthzServic
 	}
 
 	suite.mockAuthzService.On("EvaluateAccessBatch", mock.Anything, mock.Anything).
-		Return((*authz.AccessEvaluationsResponse)(nil),
+		Return((*providers.AccessEvaluationsResponse)(nil),
 			&tidcommon.ServiceError{
 				Code: "AUTHZ-0001",
 				Error: tidcommon.I18nMessage{
@@ -613,7 +612,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_ImplicitRSD
 	const rsIdentifier = "https://rs01.example.com"
 
 	mockTokenBuilder := tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
-	mockAuthzService := authzmock.NewAuthorizationServiceInterfaceMock(suite.T())
+	mockAuthzService := authzmock.NewAuthorizationProviderMock(suite.T())
 	mockResourceService := resourcemock.NewResourceServiceInterfaceMock(suite.T())
 	mockEntityProvider := actorprovidermock.NewActorProviderMock(suite.T())
 
@@ -675,7 +674,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_ImplicitRSD
 	const rsIdentifier2 = "https://rs02.example.com"
 
 	mockTokenBuilder := tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
-	mockAuthzService := authzmock.NewAuthorizationServiceInterfaceMock(suite.T())
+	mockAuthzService := authzmock.NewAuthorizationProviderMock(suite.T())
 	mockResourceService := resourcemock.NewResourceServiceInterfaceMock(suite.T())
 	mockEntityProvider := actorprovidermock.NewActorProviderMock(suite.T())
 

@@ -109,13 +109,6 @@ type ResourceServerProvider interface {
 	) ([]ResourceServer, *common.ServiceError)
 }
 
-// RoleProvider defines the interface for the role provider.
-type RoleProvider interface {
-	GetAuthorizedPermissions(
-		ctx context.Context, entityID string, groups []string, requestedPermissions []string,
-	) ([]string, *common.ServiceError)
-}
-
 // IDPProvider defines the interface for the identity provider provider.
 type IDPProvider interface {
 	GetIdentityProvidersByProperty(ctx context.Context, propertyKey,
@@ -159,4 +152,31 @@ type Executor interface {
 		authnProvider AuthnProviderManager) string
 	GetRequiredInputs(ctx *NodeContext) []Input
 	GetExecutionPolicy(mode string) *ExecutionPolicy
+}
+
+// ObservabilityProvider defines the interface for the observability provider.
+type ObservabilityProvider interface {
+	// PublishEvent publishes an event to the observability system.
+	// This is a no-op if observability is disabled.
+	// The context carries the request trace ID used for correlated logging.
+	PublishEvent(ctx context.Context, evt *Event)
+
+	// IsEnabled returns true if observability is enabled and operational.
+	IsEnabled() bool
+}
+
+// AuthorizationProvider defines the interface for authorization operations.
+// This is the public interface exposed to external consumers.
+type AuthorizationProvider interface {
+	// EvaluateAccess evaluates a single fine-grained access request.
+	EvaluateAccess(
+		ctx context.Context,
+		request AccessEvaluationRequest,
+	) (*AccessEvaluationResponse, *common.ServiceError)
+
+	// EvaluateAccessBatch evaluates multiple fine-grained access requests.
+	EvaluateAccessBatch(
+		ctx context.Context,
+		request AccessEvaluationsRequest,
+	) (*AccessEvaluationsResponse, *common.ServiceError)
 }

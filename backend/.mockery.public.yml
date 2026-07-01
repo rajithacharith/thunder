@@ -409,14 +409,6 @@ packages:
       pkgname: groupmock
       filename: "{{.InterfaceName}}_mock.go"
 
-  github.com/thunder-id/thunderid/internal/authz:
-    config:
-      all: true
-      dir: tests/mocks/authzmock
-      structname: '{{.InterfaceName}}Mock'
-      pkgname: authzmock
-      filename: "{{.InterfaceName}}_mock.go"
-
   github.com/thunder-id/thunderid/internal/authz/engine:
     config:
       all: true
@@ -546,6 +538,18 @@ packages:
           dir: tests/mocks/consentprovidermock
           structname: '{{.InterfaceName}}Mock'
           pkgname: consentprovidermock
+          filename: "{{.InterfaceName}}_mock.go"
+      AuthorizationProvider:
+        config:
+          dir: tests/mocks/authzmock
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: authzmock
+          filename: "{{.InterfaceName}}_mock.go"
+      ObservabilityProvider:
+        config:
+          dir: tests/mocks/observabilityprovidermock
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: observabilityprovidermock
           filename: "{{.InterfaceName}}_mock.go"
 
   github.com/thunder-id/thunderid/internal/authnprovider/provider:

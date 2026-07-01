@@ -33,7 +33,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/scope"
 	sysContext "github.com/thunder-id/thunderid/internal/system/context"
 	"github.com/thunder-id/thunderid/internal/system/log"
-	"github.com/thunder-id/thunderid/internal/system/observability"
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
@@ -51,7 +50,7 @@ type TokenServiceInterface interface {
 type tokenService struct {
 	grantHandlerProvider granthandlers.GrantHandlerProviderInterface
 	scopeValidator       scope.ScopeValidatorInterface
-	observabilitySvc     observability.ObservabilityServiceInterface
+	observabilitySvc     providers.ObservabilityProvider
 	dpopVerifier         dpop.VerifierInterface
 	tokenEndpoint        string
 	dpopRequired         bool
@@ -61,7 +60,7 @@ type tokenService struct {
 func newTokenService(
 	grantHandlerProvider granthandlers.GrantHandlerProviderInterface,
 	scopeValidator scope.ScopeValidatorInterface,
-	observabilitySvc observability.ObservabilityServiceInterface,
+	observabilitySvc providers.ObservabilityProvider,
 	dpopVerifier dpop.VerifierInterface,
 	tokenEndpoint string,
 	dpopRequired bool,
@@ -318,7 +317,7 @@ func (ts *tokenService) publishTokenIssuanceStartedEvent(ctx context.Context, cl
 		string(event.EventTypeTokenIssuanceStarted),
 		event.ComponentAuthHandler,
 	).
-		WithStatus(event.StatusInProgress).
+		WithStatus(providers.StatusInProgress).
 		WithData(event.DataKey.ClientID, clientID).
 		WithData(event.DataKey.GrantType, grantType).
 		WithData(event.DataKey.Scope, scope)
@@ -340,7 +339,7 @@ func (ts *tokenService) publishTokenIssuedEvent(
 		string(event.EventTypeTokenIssued),
 		event.ComponentAuthHandler,
 	).
-		WithStatus(event.StatusSuccess).
+		WithStatus(providers.StatusSuccess).
 		WithData(event.DataKey.ClientID, clientID).
 		WithData(event.DataKey.GrantType, grantType).
 		WithData(event.DataKey.Scope, scope).
@@ -351,7 +350,7 @@ func (ts *tokenService) publishTokenIssuedEvent(
 
 // publishTokenIssuanceFailedEvent is a package-level helper shared by tokenService and tokenHandler.
 func publishTokenIssuanceFailedEvent(
-	svc observability.ObservabilityServiceInterface,
+	svc providers.ObservabilityProvider,
 	ctx context.Context, clientID, grantType, scope string, statusCode int, message string, startTime int64,
 ) {
 	if svc == nil || !svc.IsEnabled() {
@@ -370,7 +369,7 @@ func publishTokenIssuanceFailedEvent(
 		string(event.EventTypeTokenIssuanceFailed),
 		event.ComponentAuthHandler,
 	).
-		WithStatus(event.StatusFailure).
+		WithStatus(providers.StatusFailure).
 		WithData(event.DataKey.ClientID, clientID).
 		WithData(event.DataKey.GrantType, grantType).
 		WithData(event.DataKey.Scope, scope).

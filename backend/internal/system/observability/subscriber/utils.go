@@ -26,6 +26,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/observability/event"
 	"github.com/thunder-id/thunderid/internal/system/observability/formatter"
+	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
 )
 
 // Format constants - duplicated here to avoid import cycle with observability package
@@ -52,7 +53,7 @@ func convertCategories(stringCategories []string) []event.EventCategory {
 // processEvent is a shared helper that formats an event and writes it using the provided adapter.
 // This eliminates duplicate code between ConsoleSubscriber and FileSubscriber OnEvent implementations.
 func processEvent(
-	evt *event.Event,
+	evt *providers.Event,
 	fmtr formatter.FormatterInterface,
 	adapter writerAdapter,
 	logger *log.Logger,

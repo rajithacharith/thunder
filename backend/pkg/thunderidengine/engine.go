@@ -26,7 +26,6 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/attributecache"
 	"github.com/thunder-id/thunderid/internal/authn/assert"
-	"github.com/thunder-id/thunderid/internal/authz"
 	flowconfig "github.com/thunder-id/thunderid/internal/flow/config"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/flow/executor"
@@ -43,7 +42,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider/defaultkm/pki"
 	"github.com/thunder-id/thunderid/internal/system/log"
-	"github.com/thunder-id/thunderid/internal/system/observability"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/config"
 	engineconfig "github.com/thunder-id/thunderid/pkg/thunderidengine/config"
 	"github.com/thunder-id/thunderid/pkg/thunderidengine/providers"
@@ -64,6 +62,11 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 		opt(&engineCtx)
 	}
 
+	err := validateEngineContext(&engineCtx)
+	if err != nil {
+		logger.Fatal(ctx, "Engine context is missing required fields", log.Error(err))
+	}
+
 	// Initialize the cache manager.
 	engineCtx.cacheManager = cache.Initialize(engineCtx.cacheConfig, engineCtx.serverConfig.Identifier)
 	// Load the server's private key for signing JWTs.
@@ -80,9 +83,7 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 		logger.Fatal(ctx, "Failed to initialize JOSE services", log.Error(err))
 	}
 
-	engineCtx.observabilitySvc = observability.Initialize(engineCtx.observabilityConfig)
 	attributeCacheService := attributecache.Initialize()
-	authZService := authz.Initialize(engineCtx.roleProvider)
 	engineCtx.authAssertGen = assert.Initialize()
 
 	// Initialize flow metadata service
@@ -100,7 +101,7 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 	execDeps := executor.ExecutorDependencies{
 		FlowFactory:       engineCtx.flowFactory,
 		AttributeCacheSvc: attributeCacheService,
-		AuthZService:      authZService,
+		AuthZService:      engineCtx.authzProvider,
 		ConsentEnforcer:   engineCtx.consentProvider,
 		AuthnProvider:     engineCtx.authnProvider,
 		JWTService:        engineCtx.jwtService,
@@ -144,7 +145,7 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 	}
 	err = oauth.Initialize(mux, engineCtx.actorProvider, engineCtx.authnProvider, engineCtx.jwtService,
 		engineCtx.jweService, flowExecService, engineCtx.observabilitySvc, engineCtx.runtimeCryptoSvc,
-		engineCtx.ouProvider, attributeCacheService, authZService, engineCtx.resourceProvider,
+		engineCtx.ouProvider, attributeCacheService, engineCtx.authzProvider, engineCtx.resourceProvider,
 		engineCtx.i18nProvider, engineCtx.idpProvider, nil, oauthConfig)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize OAuth services", log.Error(err))
@@ -153,6 +154,23 @@ func New(mux *http.ServeMux, opts ...Option) *Engine {
 	return &Engine{
 		engineCtx: &engineCtx,
 	}
+}
+
+// validateEngineContext checks that the engine context has all required fields set.
+func validateEngineContext(ctx *engineContext) error {
+	if ctx.serverHome == "" {
+		return errors.New("thunderidengine: server home directory is not set")
+	}
+	if ctx.serverConfig.Identifier == "" {
+		return errors.New("thunderidengine: server identifier is not set")
+	}
+	if ctx.observabilitySvc == nil {
+		return errors.New("thunderidengine: observability provider is not set")
+	}
+	if ctx.authzProvider == nil {
+		return errors.New("thunderidengine: authorization provider is not set")
+	}
+	return nil
 }
 
 // applyCustomExecutors registers the custom executors with the executor registry.
@@ -174,7 +192,6 @@ type engineContext struct {
 	jwtService          jwt.JWTServiceInterface
 	jweService          jwe.JWEServiceInterface
 	runtimeCryptoSvc    kmprovider.RuntimeCryptoProvider
-	observabilitySvc    observability.ObservabilityServiceInterface
 	flowFactory         core.FlowFactoryInterface
 	execRegistry        executor.ExecutorRegistryInterface
 	interceptorRegistry interceptor.InterceptorRegistryInterface
@@ -198,10 +215,11 @@ type engineContext struct {
 	designResolveProvider providers.DesignProvider
 	flowProvider          providers.FlowProvider
 	i18nProvider          providers.I18nProvider
-	roleProvider          providers.RoleProvider
 	idpProvider           providers.IDPProvider
 	consentProvider       providers.ConsentProvider
 	customExecutors       map[string]providers.Executor
+	observabilitySvc      providers.ObservabilityProvider
+	authzProvider         providers.AuthorizationProvider
 }
 
 // Option configures engine initialization.
@@ -293,4 +311,14 @@ func WithCustomExecutors(executors map[string]providers.Executor) Option {
 			c.customExecutors[name] = ex
 		}
 	}
+}
+
+// WithObservabilityProvider supplies the observability provider.
+func WithObservabilityProvider(provider providers.ObservabilityProvider) Option {
+	return func(c *engineContext) { c.observabilitySvc = provider }
+}
+
+// WithAuthorizationProvider supplies the authorization provider.
+func WithAuthorizationProvider(provider providers.AuthorizationProvider) Option {
+	return func(c *engineContext) { c.authzProvider = provider }
 }

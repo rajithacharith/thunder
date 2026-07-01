@@ -35,7 +35,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/authn/openid4vp"
 	"github.com/thunder-id/thunderid/internal/authn/otp"
 	"github.com/thunder-id/thunderid/internal/authn/passkey"
-	"github.com/thunder-id/thunderid/internal/authz"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	"github.com/thunder-id/thunderid/internal/flow/core"
@@ -130,7 +129,7 @@ type ExecutorDependencies struct {
 	OTPService            otp.OTPAuthnServiceInterface
 	PasskeyService        passkey.PasskeyServiceInterface
 	MagicLinkService      magiclink.MagicLinkAuthnServiceInterface
-	AuthZService          authz.AuthorizationServiceInterface
+	AuthZService          providers.AuthorizationProvider
 	EntityTypeService     entitytype.EntityTypeServiceInterface
 	GroupService          group.GroupServiceInterface
 	RoleService           role.RoleServiceInterface

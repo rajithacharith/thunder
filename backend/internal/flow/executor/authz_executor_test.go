@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	authzsvc "github.com/thunder-id/thunderid/internal/authz"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
 	"github.com/thunder-id/thunderid/tests/mocks/authzmock"
@@ -40,7 +39,7 @@ const testExistingUser123ID = "existing-user-123"
 
 // createTestAuthzExecutor creates an authorization executor with mocks for testing
 func createTestAuthzExecutor(t *testing.T,
-	mockAuthzService *authzmock.AuthorizationServiceInterfaceMock,
+	mockAuthzService *authzmock.AuthorizationProviderMock,
 	mockEntityProvider *entityprovidermock.EntityProviderInterfaceMock,
 	mockAuthnProvider *managermock.AuthnProviderManagerMock) *authorizationExecutor {
 	mockFlowFactory := coremock.NewFlowFactoryInterfaceMock(t)
@@ -71,7 +70,7 @@ func createMockExecutor(t *testing.T, name string, executorType providers.Execut
 }
 
 func TestNewAuthorizationExecutor(t *testing.T) {
-	mockAuthzService := authzmock.NewAuthorizationServiceInterfaceMock(t)
+	mockAuthzService := authzmock.NewAuthorizationProviderMock(t)
 	mockEntityProvider := entityprovidermock.NewEntityProviderInterfaceMock(t)
 	mockAuthnProvider := managermock.NewAuthnProviderManagerMock(t)
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockEntityProvider, mockAuthnProvider)
@@ -84,7 +83,7 @@ func TestNewAuthorizationExecutor(t *testing.T) {
 
 func TestAuthorizationExecutor_Execute_Success(t *testing.T) {
 	// Setup
-	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
+	mockAuthzService := new(authzmock.AuthorizationProviderMock)
 	mockEntityProvider := new(entityprovidermock.EntityProviderInterfaceMock)
 	mockAuthnProvider := managermock.NewAuthnProviderManagerMock(t)
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockEntityProvider, mockAuthnProvider)
@@ -105,7 +104,7 @@ func TestAuthorizationExecutor_Execute_Success(t *testing.T) {
 
 	mockAuthzService.On("EvaluateAccessBatch",
 		mock.Anything,
-		mock.MatchedBy(func(req authzsvc.AccessEvaluationsRequest) bool {
+		mock.MatchedBy(func(req providers.AccessEvaluationsRequest) bool {
 			return len(req.Evaluations) == 3 &&
 				req.Evaluations[0].Subject.ID == "user123" &&
 				len(req.Evaluations[0].Subject.GroupIDs) == 2 &&
@@ -115,8 +114,8 @@ func TestAuthorizationExecutor_Execute_Success(t *testing.T) {
 				req.Evaluations[0].Permission.Name == "read:documents" &&
 				req.Evaluations[1].Permission.Name == "write:documents" &&
 				req.Evaluations[2].Permission.Name == "delete:documents"
-		})).Return(&authzsvc.AccessEvaluationsResponse{
-		Evaluations: []authzsvc.AccessEvaluationResponse{
+		})).Return(&providers.AccessEvaluationsResponse{
+		Evaluations: []providers.AccessEvaluationResponse{
 			{Decision: true},
 			{Decision: true},
 			{Decision: false},
@@ -137,7 +136,7 @@ func TestAuthorizationExecutor_Execute_Success(t *testing.T) {
 
 func TestAuthorizationExecutor_Execute_PartialPermissions(t *testing.T) {
 	// Setup - user requests multiple permissions but only gets some
-	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
+	mockAuthzService := new(authzmock.AuthorizationProviderMock)
 	mockEntityProvider := new(entityprovidermock.EntityProviderInterfaceMock)
 	mockAuthnProvider := managermock.NewAuthnProviderManagerMock(t)
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockEntityProvider, mockAuthnProvider)
@@ -160,8 +159,8 @@ func TestAuthorizationExecutor_Execute_PartialPermissions(t *testing.T) {
 
 	// User only has read permission
 	mockAuthzService.On("EvaluateAccessBatch", mock.Anything, mock.Anything).Return(
-		&authzsvc.AccessEvaluationsResponse{
-			Evaluations: []authzsvc.AccessEvaluationResponse{
+		&providers.AccessEvaluationsResponse{
+			Evaluations: []providers.AccessEvaluationResponse{
 				{Decision: true},
 				{Decision: false},
 				{Decision: false},
@@ -182,7 +181,7 @@ func TestAuthorizationExecutor_Execute_PartialPermissions(t *testing.T) {
 
 func TestAuthorizationExecutor_Execute_NoPermissions(t *testing.T) {
 	// Setup - user has no permissions at all
-	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
+	mockAuthzService := new(authzmock.AuthorizationProviderMock)
 	mockEntityProvider := new(entityprovidermock.EntityProviderInterfaceMock)
 	mockAuthnProvider := managermock.NewAuthnProviderManagerMock(t)
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockEntityProvider, mockAuthnProvider)
@@ -204,8 +203,8 @@ func TestAuthorizationExecutor_Execute_NoPermissions(t *testing.T) {
 		[]providers.EntityGroup{}, nil)
 
 	mockAuthzService.On("EvaluateAccessBatch", mock.Anything, mock.Anything).Return(
-		&authzsvc.AccessEvaluationsResponse{
-			Evaluations: []authzsvc.AccessEvaluationResponse{
+		&providers.AccessEvaluationsResponse{
+			Evaluations: []providers.AccessEvaluationResponse{
 				{Decision: false},
 				{Decision: false},
 			},
@@ -225,7 +224,7 @@ func TestAuthorizationExecutor_Execute_NoPermissions(t *testing.T) {
 
 func TestAuthorizationExecutor_Execute_NotAuthenticated(t *testing.T) {
 	// Setup - user not authenticated
-	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
+	mockAuthzService := new(authzmock.AuthorizationProviderMock)
 	mockEntityProvider := new(entityprovidermock.EntityProviderInterfaceMock)
 	mockAuthnProvider := managermock.NewAuthnProviderManagerMock(t)
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockEntityProvider, mockAuthnProvider)
@@ -250,7 +249,7 @@ func TestAuthorizationExecutor_Execute_NotAuthenticated(t *testing.T) {
 
 func TestAuthorizationExecutor_Execute_ServiceError(t *testing.T) {
 	// Setup - service returns error
-	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
+	mockAuthzService := new(authzmock.AuthorizationProviderMock)
 	mockEntityProvider := new(entityprovidermock.EntityProviderInterfaceMock)
 	mockAuthnProvider := managermock.NewAuthnProviderManagerMock(t)
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockEntityProvider, mockAuthnProvider)
@@ -289,7 +288,7 @@ func TestAuthorizationExecutor_Execute_ServiceError(t *testing.T) {
 
 func TestAuthorizationExecutor_Execute_GroupExtractionError(t *testing.T) {
 	// Setup - user group retrieval fails and execution should fail before authz service call
-	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
+	mockAuthzService := new(authzmock.AuthorizationProviderMock)
 	mockEntityProvider := new(entityprovidermock.EntityProviderInterfaceMock)
 	mockAuthnProvider := managermock.NewAuthnProviderManagerMock(t)
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockEntityProvider, mockAuthnProvider)
@@ -328,7 +327,7 @@ func TestAuthorizationExecutor_Execute_NoRequestedPermissions(t *testing.T) {
 	// This test verifies behavior when extractRequestedPermissions returns empty
 	// The service should NOT be called, and should return early with ExecComplete
 
-	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
+	mockAuthzService := new(authzmock.AuthorizationProviderMock)
 	mockEntityProvider := new(entityprovidermock.EntityProviderInterfaceMock)
 	mockAuthnProvider := managermock.NewAuthnProviderManagerMock(t)
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockEntityProvider, mockAuthnProvider)
@@ -357,7 +356,7 @@ func TestAuthorizationExecutor_Execute_NoRequestedPermissions(t *testing.T) {
 }
 
 func TestAuthorizationExecutor_ExtractGroupIDs_NoGroupsInContext(t *testing.T) {
-	mockAuthzService := authzmock.NewAuthorizationServiceInterfaceMock(t)
+	mockAuthzService := authzmock.NewAuthorizationProviderMock(t)
 	mockEntityProvider := entityprovidermock.NewEntityProviderInterfaceMock(t)
 	mockAuthnProvider := managermock.NewAuthnProviderManagerMock(t)
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockEntityProvider, mockAuthnProvider)
@@ -375,7 +374,7 @@ func TestAuthorizationExecutor_ExtractGroupIDs_NoGroupsInContext(t *testing.T) {
 }
 
 func TestAuthorizationExecutor_ExtractGroupIDs_FromRuntimeData(t *testing.T) {
-	mockAuthzService := authzmock.NewAuthorizationServiceInterfaceMock(t)
+	mockAuthzService := authzmock.NewAuthorizationProviderMock(t)
 	mockEntityProvider := entityprovidermock.NewEntityProviderInterfaceMock(t)
 	mockAuthnProvider := managermock.NewAuthnProviderManagerMock(t)
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockEntityProvider, mockAuthnProvider)
@@ -458,7 +457,7 @@ func TestExtractRequestedPermissions(t *testing.T) {
 }
 
 func TestAuthorizationExecutor_ExtractGroupIDs_WithNoGroups(t *testing.T) {
-	mockAuthzService := authzmock.NewAuthorizationServiceInterfaceMock(t)
+	mockAuthzService := authzmock.NewAuthorizationProviderMock(t)
 	mockEntityProvider := entityprovidermock.NewEntityProviderInterfaceMock(t)
 	mockAuthnProvider := managermock.NewAuthnProviderManagerMock(t)
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockEntityProvider, mockAuthnProvider)
@@ -476,7 +475,7 @@ func TestAuthorizationExecutor_ExtractGroupIDs_WithNoGroups(t *testing.T) {
 }
 
 func TestAuthorizationExecutor_Execute_WithMultipleGroups(t *testing.T) {
-	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
+	mockAuthzService := new(authzmock.AuthorizationProviderMock)
 	mockEntityProvider := new(entityprovidermock.EntityProviderInterfaceMock)
 	mockAuthnProvider := managermock.NewAuthnProviderManagerMock(t)
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockEntityProvider, mockAuthnProvider)
@@ -497,15 +496,15 @@ func TestAuthorizationExecutor_Execute_WithMultipleGroups(t *testing.T) {
 
 	mockAuthzService.On("EvaluateAccessBatch",
 		mock.Anything,
-		mock.MatchedBy(func(req authzsvc.AccessEvaluationsRequest) bool {
+		mock.MatchedBy(func(req providers.AccessEvaluationsRequest) bool {
 			return len(req.Evaluations) == 3 &&
 				req.Evaluations[0].Subject.ID == "user123" &&
 				len(req.Evaluations[0].Subject.GroupIDs) == 3 &&
 				req.Evaluations[0].Subject.GroupIDs[0] == "admin" &&
 				req.Evaluations[0].Subject.GroupIDs[1] == "editor" &&
 				req.Evaluations[0].Subject.GroupIDs[2] == "viewer"
-		})).Return(&authzsvc.AccessEvaluationsResponse{
-		Evaluations: []authzsvc.AccessEvaluationResponse{
+		})).Return(&providers.AccessEvaluationsResponse{
+		Evaluations: []providers.AccessEvaluationResponse{
 			{Decision: true},
 			{Decision: true},
 			{Decision: true},
@@ -560,7 +559,7 @@ func TestSetAuthorizedPermissions(t *testing.T) {
 
 func TestAuthorizationExecutor_Execute_RegistrationFlow_UnauthenticatedWithoutPermissions(t *testing.T) {
 	// Setup - registration flow with unauthenticated user and no requested permissions
-	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
+	mockAuthzService := new(authzmock.AuthorizationProviderMock)
 	mockEntityProvider := new(entityprovidermock.EntityProviderInterfaceMock)
 	mockAuthnProvider := managermock.NewAuthnProviderManagerMock(t)
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockEntityProvider, mockAuthnProvider)
@@ -585,7 +584,7 @@ func TestAuthorizationExecutor_Execute_RegistrationFlow_UnauthenticatedWithoutPe
 
 func TestAuthorizationExecutor_Execute_RegistrationFlow_UnauthenticatedWithPermissions(t *testing.T) {
 	// Setup - registration flow with unauthenticated user but WITH requested permissions
-	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
+	mockAuthzService := new(authzmock.AuthorizationProviderMock)
 	mockEntityProvider := new(entityprovidermock.EntityProviderInterfaceMock)
 	mockAuthnProvider := managermock.NewAuthnProviderManagerMock(t)
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockEntityProvider, mockAuthnProvider)
@@ -611,7 +610,7 @@ func TestAuthorizationExecutor_Execute_RegistrationFlow_UnauthenticatedWithPermi
 
 func TestAuthorizationExecutor_Execute_RegistrationFlow_AuthenticatedWithPermissions(t *testing.T) {
 	// Setup - registration flow with authenticated user (edge case but possible)
-	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
+	mockAuthzService := new(authzmock.AuthorizationProviderMock)
 	mockEntityProvider := new(entityprovidermock.EntityProviderInterfaceMock)
 	mockAuthnProvider := managermock.NewAuthnProviderManagerMock(t)
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockEntityProvider, mockAuthnProvider)
@@ -633,13 +632,13 @@ func TestAuthorizationExecutor_Execute_RegistrationFlow_AuthenticatedWithPermiss
 
 	mockAuthzService.On("EvaluateAccessBatch",
 		mock.Anything,
-		mock.MatchedBy(func(req authzsvc.AccessEvaluationsRequest) bool {
+		mock.MatchedBy(func(req providers.AccessEvaluationsRequest) bool {
 			return len(req.Evaluations) == 2 &&
 				req.Evaluations[0].Subject.ID == existingUserID &&
 				len(req.Evaluations[0].Subject.GroupIDs) == 1 &&
 				req.Evaluations[0].Subject.GroupIDs[0] == "new-users"
-		})).Return(&authzsvc.AccessEvaluationsResponse{
-		Evaluations: []authzsvc.AccessEvaluationResponse{
+		})).Return(&providers.AccessEvaluationsResponse{
+		Evaluations: []providers.AccessEvaluationResponse{
 			{Decision: true},
 			{Decision: false},
 		},
@@ -674,7 +673,7 @@ func TestAuthorizationExecutor_Execute_NonRegistrationFlow_UnauthenticatedShould
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
+			mockAuthzService := new(authzmock.AuthorizationProviderMock)
 			mockEntityProvider := new(entityprovidermock.EntityProviderInterfaceMock)
 			mockAuthnProvider := managermock.NewAuthnProviderManagerMock(t)
 			executor := createTestAuthzExecutor(t, mockAuthzService, mockEntityProvider, mockAuthnProvider)
@@ -702,7 +701,7 @@ func TestAuthorizationExecutor_Execute_NonRegistrationFlow_UnauthenticatedShould
 }
 
 func TestAuthorizationExecutor_ExtractGroupIDs_FromEntityProvider(t *testing.T) {
-	mockAuthzService := authzmock.NewAuthorizationServiceInterfaceMock(t)
+	mockAuthzService := authzmock.NewAuthorizationProviderMock(t)
 	mockEntityProvider := entityprovidermock.NewEntityProviderInterfaceMock(t)
 	mockAuthnProvider := managermock.NewAuthnProviderManagerMock(t)
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockEntityProvider, mockAuthnProvider)
@@ -725,7 +724,7 @@ func TestAuthorizationExecutor_ExtractGroupIDs_FromEntityProvider(t *testing.T) 
 }
 
 func TestAuthorizationExecutor_ExtractGroupIDs_FromEntityProvider_Error(t *testing.T) {
-	mockAuthzService := authzmock.NewAuthorizationServiceInterfaceMock(t)
+	mockAuthzService := authzmock.NewAuthorizationProviderMock(t)
 	mockEntityProvider := entityprovidermock.NewEntityProviderInterfaceMock(t)
 	mockAuthnProvider := managermock.NewAuthnProviderManagerMock(t)
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockEntityProvider, mockAuthnProvider)
