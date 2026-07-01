@@ -2,7 +2,7 @@
   "private": false,
   "name": "thunderid",
   "version": "0.1.5",
-  "description": "ThunderID: Auth for the Modern Dev — instantly via npx",
+  "description": "ThunderID: Auth for Modern Apps and Agents — instantly via npx",
   "keywords": [
     "thunderid",
     "cli",

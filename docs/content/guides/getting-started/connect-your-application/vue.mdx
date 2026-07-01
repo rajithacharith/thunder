@@ -40,7 +40,7 @@ Use this guide to add <ProductName /> authentication to a Vue 3 application usin
 
 <Stepper stepNode="h2" as="h2">
 
-## Run ThunderID
+## Run <ProductName />
 
 Start a local ThunderID instance. Pick the method that works best for you:
 
@@ -103,56 +103,29 @@ Install the <ProductName /> Vue SDK in your project:
   </CodeBlock>
 </CodeGroup>
 
-## Register the Plugin and Add <ProductName />Provider
+## Register the Plugin
 
-The `@thunderid/vue` SDK provides a Vue plugin that registers the <ProductName />Provider component globally. Register the plugin in `main.js`, then wrap your root component with <ProductName />Provider in `App.vue`.
+Register `ThunderIDPlugin` in `src/main.js`:
 
-**Step 1:** Update `src/main.js` to register the plugin:
-
-```js title="src/main.js" showLineNumbers
+```js title="src/main.js" {2,6-8} showLineNumbers
 import { createApp } from 'vue'
-import { {{ProductName}}Plugin } from '@thunderid/vue'
-import App from './App.vue'
+import { ThunderIDPlugin } from '@thunderid/vue'
 import './style.css'
+import App from './App.vue'
 
 const app = createApp(App)
-app.use({{ProductName}}Plugin)
+app.use(ThunderIDPlugin)
 app.mount('#app')
 ```
 
-**Step 2:** Wrap your application with <ProductName />Provider in `src/App.vue`:
+## Build with ThunderID Components
 
-```vue title="src/App.vue" showLineNumbers
-<template>
-  <{{ProductName}}Provider
-    client-id="<your-client-id>"
-    base-url="https://localhost:8090"
-  >
-    <!-- your app content goes here -->
-  </{{ProductName}}Provider>
-</template>
-
-<script setup>
-</script>
-```
+Update `src/App.vue` with ThunderID authentication components:
 
 :::warning Configuration
 Replace `<your-client-id>` with the Client ID you obtained when creating the application in <ProductName />.
 :::
 
-### Configuration Parameters
-
-| Parameter | Description |
-|-----------|-------------|
-| `client-id` | The Client ID from your <ProductName /> application |
-| `base-url` | Your <ProductName /> instance URL (e.g., `https://localhost:8090`) |
-
-## Add Sign-In and Sign-Out
-
-The <ProductName /> Vue SDK provides `SignInButton` and `SignOutButton` components along with `SignedIn`, `SignedOut`, and `Loading` components for conditional rendering.
-
-Replace the content of `src/App.vue` with:
-
 ```vue title="src/App.vue" showLineNumbers
 <script setup>
 import {
@@ -160,90 +133,24 @@ import {
   SignedOut,
   SignInButton,
   SignOutButton,
-  Loading,
+  UserDropdown,
 } from '@thunderid/vue'
 </script>
 
 <template>
-  <{{ProductName}}Provider
+  <ThunderIDProvider
     client-id="<your-client-id>"
     base-url="https://localhost:8090"
   >
-    <Loading>
-      <div>Loading authentication...</div>
-    </Loading>
-
-    <header>
-      <h1>{{ProductName}} Auth Demo</h1>
+    <section id="center">
       <SignedIn>
-        <SignOutButton>Sign Out</SignOutButton>
+        <UserDropdown />
       </SignedIn>
       <SignedOut>
         <SignInButton>Sign In</SignInButton>
       </SignedOut>
-    </header>
-  </{{ProductName}}Provider>
-</template>
-```
-
-## Display User Profile Information
-
-Use the `User` component with a scoped slot to access and display user profile information:
-
-```vue title="src/App.vue" showLineNumbers
-<script setup>
-import {
-  SignedIn,
-  SignedOut,
-  SignInButton,
-  SignOutButton,
-  Loading,
-  User,
-} from '@thunderid/vue'
-</script>
-
-<template>
-  <{{ProductName}}Provider
-    client-id="<your-client-id>"
-    base-url="https://localhost:8090"
-  >
-    <Loading>
-      <div>Loading authentication...</div>
-    </Loading>
-
-    <header>
-      <h1>{{ProductName}} Auth Demo</h1>
-      <SignedIn>
-        <SignOutButton>Sign Out</SignOutButton>
-      </SignedIn>
-      <SignedOut>
-        <SignInButton>Sign In</SignInButton>
-      </SignedOut>
-    </header>
-
-    <main>
-      <SignedIn>
-        <User>
-          <template #default="{ user }">
-            <div class="user-profile">
-              <img
-                v-if="user.picture"
-                :src="user.picture"
-                :alt="user.name || 'User avatar'"
-                style="width: 80px; height: 80px; border-radius: 50%"
-              />
-              <h2>Welcome, {{ user.name || user.username }}!</h2>
-              <div class="user-details">
-                <p><strong>Email:</strong> {{ user.email }}</p>
-                <p><strong>First Name:</strong> {{ user.given_name }}</p>
-                <p><strong>Last Name:</strong> {{ user.family_name }}</p>
-              </div>
-            </div>
-          </template>
-        </User>
-      </SignedIn>
-    </main>
-  </{{ProductName}}Provider>
+    </section>
+  </ThunderIDProvider>
 </template>
 ```
 
@@ -265,14 +172,10 @@ Start the development server:
   </CodeBlock>
 </CodeGroup>
 
-Visit your app at [http://localhost:5173](http://localhost:5173)
-
-:::note Test credentials
-You'll need a user to sign in with. If you haven't created one yet, open <ConsoleUrl />, navigate to **Users**, and add a test user with an email and password.
-:::
-
 :::tip Success
-You should see the sign-in button. Click it, you'll be redirected to the <ProductName />-hosted sign-in page. Authenticate with your test user, and you will land back in your app with the user profile displayed.
+Visit your app at 🌐 [http://localhost:5173](http://localhost:5173)
+
+You should see the `<SignInButton />`. Click it to be redirected to the <ProductName />-hosted sign-in page. Login with the test user you created in step 2, then return to your app with the user dropdown displayed.
 :::
 
 </Stepper>
@@ -280,15 +183,13 @@ You should see the sign-in button. Click it, you'll be redirected to the <Produc
 ## What's Next
 
 <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginTop: '1.5rem'}}>
-
   <a href="../../../guides/flows/what-are-flows" style={{textDecoration: 'none', color: 'inherit'}}>
     <div style={{border: '1px solid var(--ifm-color-emphasis-300)', borderRadius: '10px', padding: '1.25rem', cursor: 'pointer'}}>
-      <div style={{fontSize: '1rem', fontWeight: '700', marginBottom: '0.4rem'}}>Upgrade the sign-in flow</div>
-      <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-emphasis-700)', marginBottom: '0.75rem'}}>Add MFA, passkeys, or social login to your flow, no app code changes required.</div>
+      <div style={{fontSize: '1rem', fontWeight: '700', marginBottom: '0.4rem'}}>Upgrade the Sign-In Flow</div>
+      <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-emphasis-700)', marginBottom: '0.75rem'}}>Add MFA, passkeys, or social login to your flow — no app code changes required.</div>
       <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-primary)', fontWeight: 600}}>Flow Designer →</div>
     </div>
   </a>
-
   <a href="../../../../sdks/vue/overview" style={{textDecoration: 'none', color: 'inherit'}}>
     <div style={{border: '1px solid var(--ifm-color-emphasis-300)', borderRadius: '10px', padding: '1.25rem', cursor: 'pointer'}}>
       <div style={{fontSize: '1rem', fontWeight: '700', marginBottom: '0.4rem'}}>Vue SDK Reference</div>
@@ -296,5 +197,4 @@ You should see the sign-in button. Click it, you'll be redirected to the <Produc
       <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-primary)', fontWeight: 600}}>API Reference →</div>
     </div>
   </a>
-
 </div>

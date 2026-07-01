@@ -104,7 +104,7 @@ func BannerString() string {
 		Foreground(lipgloss.Color(colorGrey)).
 		Width(logoWidth).
 		Align(lipgloss.Center).
-		Render("Auth for the Modern Dev")
+		Render("Auth for Modern Apps and Agents")
 
 	return introBoxStyle.Render(banner + "\n\n" + slogan)
 }
