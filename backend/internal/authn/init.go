@@ -28,6 +28,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/authn/github"
 	"github.com/thunder-id/thunderid/internal/authn/google"
 	"github.com/thunder-id/thunderid/internal/authn/magiclink"
+	"github.com/thunder-id/thunderid/internal/authn/nextjssdk"
 	"github.com/thunder-id/thunderid/internal/authn/oauth"
 	"github.com/thunder-id/thunderid/internal/authn/oidc"
 	"github.com/thunder-id/thunderid/internal/authn/otp"
@@ -116,6 +117,7 @@ func Initialize(
 	// Register MCP tools
 	if mcpServer != nil {
 		reactsdk.RegisterTools(mcpServer)
+		nextjssdk.RegisterTools(mcpServer)
 	}
 
 	return authnService

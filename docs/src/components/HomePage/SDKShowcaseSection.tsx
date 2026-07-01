@@ -127,7 +127,7 @@ export default function SDKShowcaseSection(): JSX.Element {
           }}
         >
           {/* Left: slot-machine text */}
-          <Box>
+          <Box sx={{textAlign: {xs: 'center', md: 'left'}}}>
             <Typography
               variant="h2"
               sx={{
@@ -146,6 +146,7 @@ export default function SDKShowcaseSection(): JSX.Element {
                   inset: 0,
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: {xs: 'center', md: 'flex-start'},
                   transition: 'transform 0.35s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.25s ease',
                   transform: isHovering ? 'translateY(-110%)' : 'translateY(0)',
                   opacity: isHovering ? 0 : 1,
@@ -174,6 +175,7 @@ export default function SDKShowcaseSection(): JSX.Element {
                   inset: 0,
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: {xs: 'center', md: 'flex-start'},
                   transition: 'transform 0.35s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.25s ease',
                   transform: isHovering ? 'translateY(0)' : 'translateY(110%)',
                   opacity: isHovering ? 1 : 0,
@@ -202,7 +204,7 @@ export default function SDKShowcaseSection(): JSX.Element {
             <Box
               sx={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(10, 1fr)',
+                gridTemplateColumns: 'repeat(5, 1fr)',
                 gap: {xs: 1.5, md: 2},
                 justifyItems: 'center',
               }}
@@ -210,7 +212,6 @@ export default function SDKShowcaseSection(): JSX.Element {
               {SDKS.map((sdk, index) => {
                 const Icon = sdk.icon;
                 const isActive = hoveredIndex === index;
-                const isDimmed = isHovering && !isActive;
 
                 return (
                   <Link key={sdk.name} to={sdk.href} title={sdk.name} style={{textDecoration: 'none'}}>
@@ -225,17 +226,12 @@ export default function SDKShowcaseSection(): JSX.Element {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        width: {xs: 44, sm: 52, md: 56},
-                        height: {xs: 44, sm: 52, md: 56},
+                        width: 88,
+                        height: 88,
                         borderRadius: '10px',
                         border: '1px solid',
-                        borderColor: isActive ? 'rgba(255,255,255,0.25)' : 'transparent',
+                        borderColor: isActive ? 'rgba(255,255,255,0.25)' : 'divider',
                         bgcolor: isActive ? 'rgba(255,255,255,0.05)' : 'transparent',
-                        filter: isDimmed
-                          ? 'grayscale(1) opacity(0.3)'
-                          : isActive
-                            ? 'grayscale(0) opacity(1)'
-                            : 'grayscale(1) opacity(0.6)',
                         transform: isActive ? 'scale(1.06)' : 'scale(1)',
                         transition: [
                           'border-color 0.2s ease',
@@ -246,7 +242,7 @@ export default function SDKShowcaseSection(): JSX.Element {
                         cursor: 'pointer',
                       }}
                     >
-                      <Icon size={26} />
+                      <Icon size={32} />
                     </Box>
                   </Link>
                 );

@@ -52,7 +52,7 @@
           "description": "Run the following command to create a new Nuxt 3 app:",
           "code": {
             "language": "terminal",
-            "content": "npx nuxi@latest init my-nuxt-app\ncd my-nuxt-app\nnpm install"
+            "content": "npm create nuxt@latest my-nuxt-app\ncd my-nuxt-app"
           }
         },
         {
@@ -72,7 +72,7 @@
           "code": {
             "language": "typescript",
             "filename": "nuxt.config.ts",
-            "content": "export default defineNuxtConfig({\n  modules: ['@thunderid/nuxt'],\n})"
+            "content": "export default defineNuxtConfig({\n  compatibilityDate: '2025-07-15',\n  devtools: { enabled: true },\n  modules: ['@thunderid/nuxt'],\n})"
           }
         },
         {
@@ -82,7 +82,7 @@
           "code": {
             "language": "bash",
             "filename": ".env",
-            "content": "NUXT_PUBLIC_THUNDERID_BASE_URL=https://localhost:8090\nNUXT_PUBLIC_THUNDERID_CLIENT_ID={{clientId}}\nTHUNDERID_CLIENT_SECRET=<your-client-secret>\nTHUNDERID_SESSION_SECRET=<a-random-secret-at-least-32-chars>"
+            "content": "NUXT_PUBLIC_THUNDERID_BASE_URL=https://localhost:8090\nNUXT_PUBLIC_THUNDERID_CLIENT_ID={{clientId}}\nTHUNDERID_CLIENT_SECRET=<your-client-secret>\nTHUNDERID_SESSION_SECRET=<a-random-secret-for-session-signing>\n# DANGER: Disables ALL TLS verification. Only for local development with self-signed certs. NEVER use in production.\nNODE_TLS_REJECT_UNAUTHORIZED=0"
           }
         },
         {
@@ -97,26 +97,16 @@
         },
         {
           "step": 6,
-          "title": "Add sign-in and sign-out",
-          "description": "Create pages/index.vue with authentication components (all auto-imported by the module):",
+          "title": "Build with ThunderID components",
+          "description": "Update your home page with ThunderID authentication components (all auto-imported by the module):",
           "code": {
             "language": "vue",
-            "filename": "pages/index.vue",
-            "content": "<template>\n  <main>\n    <header>\n      <h1>{{productName}} Auth Demo</h1>\n      <SignedIn>\n        <SignOutButton>Sign Out</SignOutButton>\n      </SignedIn>\n      <SignedOut>\n        <SignInButton>Sign In</SignInButton>\n      </SignedOut>\n    </header>\n  </main>\n</template>"
+            "filename": "app/pages/index.vue",
+            "content": "<template>\n  <main>\n    <SignedIn>\n      <UserDropdown />\n    </SignedIn>\n    <SignedOut>\n      <SignInButton>Sign In</SignInButton>\n    </SignedOut>\n  </main>\n</template>"
           }
         },
         {
           "step": 7,
-          "title": "Display signed-in user's profile information",
-          "description": "Update pages/index.vue to use the User component with a scoped slot to display the signed-in user's profile:",
-          "code": {
-            "language": "vue",
-            "filename": "pages/index.vue",
-            "content": "<template>\n  <main>\n    <header>\n      <h1>{{productName}} Auth Demo</h1>\n      <SignedIn>\n        <SignOutButton>Sign Out</SignOutButton>\n      </SignedIn>\n      <SignedOut>\n        <SignInButton>Sign In</SignInButton>\n      </SignedOut>\n    </header>\n\n    <section>\n      <SignedIn>\n        <User>\n          <template #default=\"{ user }\">\n            <div class=\"user-profile\">\n              <img\n                v-if=\"user.picture\"\n                :src=\"user.picture\"\n                :alt=\"user.name || 'User avatar'\"\n                style=\"width: 80px; height: 80px; border-radius: 50%\"\n              />\n              <h2>Welcome, {{ user.name || user.username }}!</h2>\n              <div>\n                <p><strong>Email:</strong> {{ user.email }}</p>\n                <p><strong>First Name:</strong> {{ user.given_name }}</p>\n                <p><strong>Last Name:</strong> {{ user.family_name }}</p>\n              </div>\n            </div>\n          </template>\n        </User>\n      </SignedIn>\n    </section>\n  </main>\n</template>"
-          }
-        },
-        {
-          "step": 8,
           "title": "Run the app",
           "description": "Start your development server and test the authentication flow:",
           "code": {
