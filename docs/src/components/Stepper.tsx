@@ -122,7 +122,7 @@ export default function Stepper({children, stepNode = 'h2', as = 'h2'}: StepperP
               variant={as}
               component={as}
               className="anchor"
-              sx={{margin: 0, padding: 0, lineHeight: '36px', fontWeight: 700}}
+              sx={{'&&': {margin: 0, padding: 0}, lineHeight: '36px', fontWeight: 700}}
             >
               {step.label}
             </Typography>

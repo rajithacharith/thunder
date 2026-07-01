@@ -19,8 +19,7 @@
 import {Box} from '@wso2/oxygen-ui';
 import {Bot, Check, ChevronDown, MonitorSmartphone, Server} from '@wso2/oxygen-ui-icons-react';
 import React, {useEffect, useRef, useState} from 'react';
-
-const STORAGE_KEY = 'thunder-connect-type';
+import {CONNECT_TYPE_STORAGE_KEY, applyConnectType, toConnectType} from '../utils/connectType';
 
 const OPTIONS = [
   {Icon: MonitorSmartphone, description: 'Web, mobile & desktop apps', label: 'Application', value: 'app', comingSoon: false},
@@ -29,17 +28,6 @@ const OPTIONS = [
 ] as const;
 
 type ConnectType = (typeof OPTIONS)[number]['value'];
-
-const VALID_TYPES = new Set<string>(OPTIONS.map(o => o.value));
-
-function toConnectType(raw: string | null): ConnectType {
-  return raw !== null && VALID_TYPES.has(raw) ? (raw as ConnectType) : 'app';
-}
-
-function applyType(type: ConnectType): void {
-  document.documentElement.dataset.connectType = type;
-  localStorage.setItem(STORAGE_KEY, type);
-}
 
 
 const triggerSx = {
@@ -154,7 +142,7 @@ const optionIconSx = {
 export default function ConnectTypeSelector(): React.ReactElement {
   const [selected, setSelected] = useState<ConnectType>(() => {
     if (typeof window !== 'undefined') {
-      return toConnectType(localStorage.getItem(STORAGE_KEY));
+      return toConnectType(localStorage.getItem(CONNECT_TYPE_STORAGE_KEY));
     }
     return 'app';
   });
@@ -162,7 +150,7 @@ export default function ConnectTypeSelector(): React.ReactElement {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    applyType(selected);
+    applyConnectType(selected);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -178,7 +166,7 @@ export default function ConnectTypeSelector(): React.ReactElement {
 
   function handleSelect(value: ConnectType): void {
     setSelected(value);
-    applyType(value);
+    applyConnectType(value);
     setOpen(false);
   }
 

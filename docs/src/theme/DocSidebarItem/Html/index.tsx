@@ -23,7 +23,7 @@ import ConnectTypeSelector from '@site/src/components/ConnectTypeSelector';
 type OriginalProps = React.ComponentProps<typeof OriginalDocSidebarItemHtml>;
 
 export default function DocSidebarItemHtml({item, ...rest}: OriginalProps): React.ReactElement {
-  if ((item as {className?: string}).className === 'connect-type-selector-wrapper') {
+  if ((item as {className?: string}).className?.split(' ').includes('connect-type-selector-wrapper')) {
     return (
       <li className="menu__list-item connect-type-selector-item">
         <ConnectTypeSelector />

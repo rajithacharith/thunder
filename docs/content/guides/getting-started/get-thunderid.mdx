@@ -13,6 +13,8 @@ import {NextSteps, NextStepsCard} from '../../../src/components/NextSteps';
 
 <ProductName /> is available in multiple formats to suit your deployment needs. Choose the option that works best for you.
 
+<DeveloperShortcut compact title="Building something? Start with a quickstart instead." subtitle="Quickstarts include setup and take you from zero to a working sign-in. Choose a quickstart from the sidebar." />
+
 <Tabs>
 <TabItem value="release" label="Release Artifact" default>
 
@@ -226,14 +228,23 @@ Access <ProductName /> on **https://localhost:8090/console**
 
 ## What's Next
 
-<ProductName /> is running. The next step is registering your application.
-
 <NextSteps>
   <NextStepsCard
-    step={2}
-    title="Register an Application"
-    description="Create your first application in ThunderID and get your Client ID."
-    href="/docs/next/guides/getting-started/register-an-application"
-    cta="Register your app"
+    title="Explore Use Cases"
+    description="See how the platform fits B2C apps, B2B organizations, and AI agents — with architecture patterns and ready-to-run samples."
+    href="/docs/next/use-cases/overview"
+    cta="Browse use cases"
+  />
+  <NextStepsCard
+    title="Manage Applications"
+    description="Register applications, configure OAuth settings, manage redirect URIs, and control access policies from the Console."
+    href="/docs/next/guides/guides/applications/manage-applications"
+    cta="Manage applications"
+  />
+  <NextStepsCard
+    title="Build a Sign-In Flow"
+    description="Use the visual flow designer to configure authentication — add MFA, passkeys, or social login without changing app code."
+    href="/docs/next/guides/guides/flows/build-a-flow"
+    cta="Open flow designer"
   />
 </NextSteps>
