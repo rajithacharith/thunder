@@ -9,20 +9,23 @@ hide_table_of_contents: false
 
 ## Configure the Server
 
-Open `backend/cmd/server/deployment.yaml` in your favorite text editor and make the following changes:
-
 **Add CORS allowed origins:**
 
+Add the Gate and Console origins to `backend/cmd/server/config/resources/server_configs/cors.yaml`:
+
 ```yaml
-cors:
-  allowed_origins:
+name: cors
+value:
+  allowedOrigins:
     - "https://localhost:5190"
     - "https://localhost:5191"
 ```
 
 :::tip
-This configuration allows the <ProductName /> Gate and <ProductName /> Console applications to communicate with the backend server during development.
+This lets the <ProductName /> Gate and <ProductName /> Console development servers call the backend. You can also update the same CORS section at runtime with `PUT /server-config/cors`.
 :::
+
+Open `backend/cmd/server/deployment.yaml` and make the following change:
 
 **Configure the Gate client:**
 
@@ -121,4 +124,3 @@ Don't use `./setup.sh` here. That script is designed for the packaged distributi
 :::
 
 </details>
-
