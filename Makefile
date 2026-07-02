@@ -172,7 +172,8 @@ format_check:
 	pnpm format:check
 
 test_frontend:
-	pnpm install --frozen-lockfile && pnpm build:packages
+	pnpm install --frozen-lockfile
+	cd frontend && pnpm build:packages
 	cd frontend/apps/console && pnpm test
 	cd frontend/apps/gate && pnpm test
 
