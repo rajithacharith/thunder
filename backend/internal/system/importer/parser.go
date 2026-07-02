@@ -59,6 +59,8 @@ func parseDocuments(content string) ([]parsedDocument, error) {
 	decoder := yaml.NewDecoder(bytes.NewReader([]byte(content)))
 
 	docs := make([]parsedDocument, 0)
+	var previousFootComment string
+
 	for seq := 0; ; seq++ {
 		var doc yaml.Node
 		err := decoder.Decode(&doc)
@@ -78,9 +80,16 @@ func parseDocuments(content string) ([]parsedDocument, error) {
 			return nil, fmt.Errorf("document %d root must be a YAML mapping", seq+1)
 		}
 
-		resourceType := classifyResourceTypeWithComments(&doc, root)
+		resourceType := classifyResourceTypeWithComments(&doc, root, previousFootComment)
 		if resourceType == resourceTypeUnknown {
 			return nil, fmt.Errorf("unable to determine resource type for document %d", seq+1)
+		}
+
+		// Save the foot comments for the next document, because yaml.v3 attaches
+		// the next document's head comment (after ---) as the previous document's foot comment.
+		previousFootComment = doc.FootComment
+		if previousFootComment == "" {
+			previousFootComment = root.FootComment
 		}
 
 		docs = append(docs, parsedDocument{
@@ -93,21 +102,19 @@ func parseDocuments(content string) ([]parsedDocument, error) {
 	return docs, nil
 }
 
-func classifyResourceTypeWithComments(doc *yaml.Node, node *yaml.Node) string {
+func classifyResourceTypeWithComments(doc *yaml.Node, node *yaml.Node, previousFootComment string) string {
 	commentCandidates := []string{
+		previousFootComment,
 		doc.HeadComment,
 		doc.LineComment,
-		doc.FootComment,
 		node.HeadComment,
 		node.LineComment,
-		node.FootComment,
 	}
 	for _, contentNode := range node.Content {
 		commentCandidates = append(
 			commentCandidates,
 			contentNode.HeadComment,
 			contentNode.LineComment,
-			contentNode.FootComment,
 		)
 	}
 
