@@ -50,7 +50,7 @@ function CommunityCard({icon, iconBg, title, description, linkLabel, href}: Comm
         textAlign: 'center',
         cursor: 'pointer',
         transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-        bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+        bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'background.paper',
         backdropFilter: 'blur(12px)',
         border: '1px solid',
         borderColor: 'divider',
@@ -88,14 +88,15 @@ function CommunityCard({icon, iconBg, title, description, linkLabel, href}: Comm
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: iconBg,
-          color: 'common.white',
+          background: isDark ? iconBg : 'rgba(59,130,246,0.1)',
+          color: isDark ? 'common.white' : 'primary.main',
+          border: isDark ? 'none' : '1px solid rgba(59,130,246,0.2)',
           mb: 3,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+          boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.2)' : '0 4px 14px rgba(59,130,246,0.14)',
           transition: 'transform 0.3s ease, box-shadow 0.3s ease',
           '.MuiCard-root:hover &': {
             transform: 'scale(1.1)',
-            boxShadow: '0 12px 32px rgba(0,0,0,0.3)',
+            boxShadow: isDark ? '0 12px 32px rgba(0,0,0,0.3)' : '0 8px 20px rgba(59,130,246,0.22)',
           },
         }}
       >
