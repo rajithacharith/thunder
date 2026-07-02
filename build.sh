@@ -929,9 +929,10 @@ function ensure_certificates() {
         echo "Generating certificates (${cert_name_prefix}) in $LOCAL_CERT_DIR..."
         if [[ "$cert_name_prefix" == ecdsa* ]]; then
             OPENSSL_ERR=$(
-                openssl req -x509 -nodes -days 3650 \
-                    -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
-                    -keyout "$local_key_file" \
+                openssl ecparam -name prime256v1 -genkey -noout -param_enc named_curve \
+                    -out "$local_key_file" && \
+                openssl req -new -x509 -nodes -days 3650 \
+                    -key "$local_key_file" \
                     -out "$local_cert_file" \
                     -subj "/O=WSO2/OU=${PRODUCT_NAME}/CN=localhost" \
                     -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" \
