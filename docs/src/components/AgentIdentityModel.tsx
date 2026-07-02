@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {Box, Typography} from '@wso2/oxygen-ui';
 
 // ── Diagram geometry ─────────────────────────────────────────────────────────
 // Total height: 270px
@@ -27,6 +28,12 @@
 const H = 270;
 const ROLE_Y = [44, 135, 226] as const;
 const CAP_Y  = [30, 100, 170, 240] as const;
+
+const BADGE_COLORS: Record<string, { light: string; dark: string }> = {
+  subject:  { light: 'var(--ifm-color-primary)',  dark: 'var(--ifm-color-primary)' },
+  client:   { light: '#b45309',                   dark: '#fbbf24' },
+  resource: { light: '#6d28d9',                   dark: '#a78bfa' },
+};
 
 const roles = [
   {
@@ -98,22 +105,48 @@ const caps = [
 
 export function AgentIdentityModel() {
   return (
-    <figure className="aim" aria-label="Agent identity model">
-      <div className="aim__scroll">
-        <div className="aim__layout" style={{ height: H }}>
+    <Box
+      component="figure"
+      aria-label="Agent identity model"
+      sx={{ margin: '2rem 0 2.5rem', border: 0, padding: 0 }}
+    >
+      <Box sx={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <Box sx={{ display: 'flex', alignItems: 'stretch', minWidth: '640px', height: H }}>
 
           {/* ── Column 1: Agent node ── */}
-          <div className="aim__agent-col">
-            <div className="aim__agent-node">
+          <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '1rem 1.25rem',
+                borderRadius: '14px',
+                border: '2px solid var(--ifm-color-primary)',
+                background: 'color-mix(in srgb, var(--ifm-color-primary) 8%, transparent)',
+                color: 'var(--ifm-color-primary)',
+              }}
+            >
               <svg className="aim__agent-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <rect x="7" y="7" width="10" height="8" rx="2"/>
                 <path d="M9 11h.01M15 11h.01"/>
                 <path d="M12 7V4"/>
                 <path d="M9 15v3M15 15v3"/>
               </svg>
-              <span className="aim__agent-name">AI Agent</span>
-            </div>
-          </div>
+              <Typography
+                component="span"
+                sx={{
+                  fontSize: '0.85rem',
+                  fontWeight: 800,
+                  letterSpacing: '-0.01em',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                AI Agent
+              </Typography>
+            </Box>
+          </Box>
 
           {/* ── Column 2: Left connector SVG ── */}
           <svg className="aim__conn" viewBox={`0 0 60 ${H}`} width="60" height={H} aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -132,15 +165,67 @@ export function AgentIdentityModel() {
           </svg>
 
           {/* ── Column 3: Role cards ── */}
-          <div className="aim__roles-col">
+          <Box
+            sx={{
+              flex: '0 0 200px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '15px',
+              padding: '6px 0',
+            }}
+          >
             {roles.map((r) => (
-              <div key={r.id} className={`aim__role aim__role--${r.id}`}>
-                <span className="aim__role-badge">{r.label}</span>
-                <span className="aim__role-connects">{r.connects}</span>
-                <span className="aim__role-desc">{r.desc}</span>
-              </div>
+              <Box
+                key={r.id}
+                sx={{
+                  flex: '0 0 76px',
+                  borderRadius: '10px',
+                  border: '1px solid var(--ifm-color-emphasis-200)',
+                  padding: '0.5rem 0.75rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  gap: '0.2rem',
+                  background: 'var(--ifm-background-surface-color)',
+                }}
+              >
+                <Typography
+                  component="span"
+                  sx={{
+                    fontSize: '0.63rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: BADGE_COLORS[r.id]?.light,
+                    '[data-theme=\'dark\'] &': {
+                      color: BADGE_COLORS[r.id]?.dark,
+                    },
+                  }}
+                >
+                  {r.label}
+                </Typography>
+                <Typography
+                  component="span"
+                  sx={{
+                    fontSize: '0.83rem',
+                    fontWeight: 700,
+                    color: 'var(--ifm-font-color-base)',
+                  }}
+                >
+                  {r.connects}
+                </Typography>
+                <Typography
+                  component="span"
+                  sx={{
+                    fontSize: '0.72rem',
+                    color: 'var(--ifm-color-emphasis-600)',
+                  }}
+                >
+                  {r.desc}
+                </Typography>
+              </Box>
             ))}
-          </div>
+          </Box>
 
           {/* ── Column 4: Right connector / bracket SVG ── */}
           <svg className="aim__conn" viewBox={`0 0 60 ${H}`} width="60" height={H} aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -161,18 +246,55 @@ export function AgentIdentityModel() {
           </svg>
 
           {/* ── Column 5: Capability cards ── */}
-          <div className="aim__caps-col">
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: '150px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+            }}
+          >
             {caps.map((c) => (
-              <a key={c.id} href={c.href} className={`aim__cap aim__cap--${c.id}`}>
+              <Box
+                key={c.id}
+                component="a"
+                href={c.href}
+                className={`aim__cap aim__cap--${c.id}`}
+                sx={{
+                  flex: '0 0 60px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  borderRadius: '10px',
+                  border: '1px solid var(--ifm-color-emphasis-200)',
+                  padding: '0 0.85rem',
+                  textDecoration: 'none',
+                  color: 'var(--ifm-font-color-base)',
+                  background: 'var(--ifm-background-surface-color)',
+                  transition: 'border-color 0.15s, background 0.15s, color 0.15s',
+                  '&:hover': {
+                    borderColor: 'var(--ifm-color-primary)',
+                    background: 'color-mix(in srgb, var(--ifm-color-primary) 6%, transparent)',
+                    color: 'var(--ifm-color-primary)',
+                    textDecoration: 'none',
+                  },
+                }}
+              >
                 <span className="aim__cap-icon">{c.icon}</span>
-                <span className="aim__cap-title">{c.title}</span>
-                <span className="aim__cap-arrow" aria-hidden="true">→</span>
-              </a>
+                <Typography
+                  component="span"
+                  sx={{ fontSize: '0.83rem', fontWeight: 700, flex: 1 }}
+                >
+                  {c.title}
+                </Typography>
+                <span aria-hidden="true">→</span>
+              </Box>
             ))}
-          </div>
+          </Box>
 
-        </div>
-      </div>
-    </figure>
+        </Box>
+      </Box>
+    </Box>
   );
 }

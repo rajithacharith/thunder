@@ -16,7 +16,76 @@
  * under the License.
  */
 
+import {Box, Typography} from '@wso2/oxygen-ui';
 import React from 'react';
+
+const roadmapSx = {
+  '--uc-node-w': '9rem',
+  '--uc-node-h': '5rem',
+  '--uc-icon-size': '4rem',
+  display: 'flex',
+  flexWrap: 'wrap',
+  justifyContent: 'center',
+  alignItems: 'flex-start',
+  gap: '1.25rem 1.4rem',
+  margin: '1.5rem 0 2rem',
+  padding: '0.5rem 0.2rem',
+  '@media (max-width: 640px)': {
+    '--uc-node-w': '7.5rem',
+    '--uc-node-h': '4.4rem',
+    '--uc-icon-size': '3.4rem',
+    gap: '1rem 0.8rem',
+  },
+} as const;
+
+const roadmapNodeSx = {
+  width: 'var(--uc-node-w)',
+  minHeight: 'var(--uc-node-h)',
+  border: 0,
+  background: 'transparent',
+  cursor: 'pointer',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'flex-start',
+  gap: '0.55rem',
+  textAlign: 'center',
+  textDecoration: 'none',
+  color: 'var(--ifm-font-color-base)',
+  fontWeight: 700,
+  fontSize: '0.82rem',
+  lineHeight: 1.2,
+  transition: 'transform 160ms ease',
+  '&:hover': {transform: 'translateY(-2px)', textDecoration: 'none'},
+  '&:focus-visible': {
+    outline: '2px solid color-mix(in srgb, var(--ifm-color-primary) 58%, white)',
+    outlineOffset: '4px',
+    borderRadius: '6px',
+  },
+} as const;
+
+const roadmapIconSx = {
+  width: 'var(--uc-icon-size)',
+  minWidth: 'var(--uc-icon-size)',
+  height: 'var(--uc-icon-size)',
+  borderRadius: '999px',
+  border: '1px solid color-mix(in srgb, var(--ifm-color-primary) 38%, var(--ifm-color-emphasis-300))',
+  background: `radial-gradient(80px 80px at 28% 18%, color-mix(in srgb, var(--ifm-color-primary) 24%, transparent), transparent),
+    linear-gradient(160deg, color-mix(in srgb, var(--ifm-color-primary) 72%, #091629), color-mix(in srgb, var(--ifm-color-primary) 44%, #030712))`,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  boxShadow: 'inset 0 0 0 1px color-mix(in srgb, #fff 24%, transparent), 0 8px 18px color-mix(in srgb, var(--ifm-color-primary) 24%, transparent)',
+  '& svg': {
+    width: '1.75rem',
+    height: '1.75rem',
+    stroke: '#fff',
+    fill: 'none',
+    strokeWidth: '1.8',
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+  },
+} as const;
 
 interface ConceptNode {
   href: string;
@@ -132,34 +201,29 @@ const buildingBlockNodes: ConceptNode[] = [
   },
 ];
 
-export function FlowNodeTypesRoadmap() {
+function RoadmapGrid({nodes, label}: {nodes: ConceptNode[]; label: string}): React.ReactElement {
   return (
-    <nav className="uc-b2c-roadmap" aria-label="Flow node types">
-      {nodeTypeNodes.map((node) => (
-        <a key={node.href} href={node.href} className="uc-b2c-roadmap__node">
-          <span className="uc-b2c-roadmap__icon" aria-hidden>
+    <Box component="nav" sx={roadmapSx} aria-label={label}>
+      {nodes.map((node) => (
+        <Box key={node.href} component="a" href={node.href} sx={roadmapNodeSx}>
+          <Box component="span" sx={roadmapIconSx} aria-hidden>
             {node.icon}
-          </span>
-          <span className="uc-b2c-roadmap__label">{node.label}</span>
-        </a>
+          </Box>
+          <Typography component="span" sx={{display: 'block', maxWidth: '9.4rem', fontSize: 'inherit', fontWeight: 'inherit'}}>
+            {node.label}
+          </Typography>
+        </Box>
       ))}
-    </nav>
+    </Box>
   );
 }
 
-export function FlowBuildingBlocksRoadmap() {
-  return (
-    <nav className="uc-b2c-roadmap" aria-label="Flow building blocks">
-      {buildingBlockNodes.map((node) => (
-        <a key={node.href} href={node.href} className="uc-b2c-roadmap__node">
-          <span className="uc-b2c-roadmap__icon" aria-hidden>
-            {node.icon}
-          </span>
-          <span className="uc-b2c-roadmap__label">{node.label}</span>
-        </a>
-      ))}
-    </nav>
-  );
+export function FlowNodeTypesRoadmap(): React.ReactElement {
+  return <RoadmapGrid nodes={nodeTypeNodes} label="Flow node types" />;
+}
+
+export function FlowBuildingBlocksRoadmap(): React.ReactElement {
+  return <RoadmapGrid nodes={buildingBlockNodes} label="Flow building blocks" />;
 }
 
 export function BuildAFlowDiagram() {
